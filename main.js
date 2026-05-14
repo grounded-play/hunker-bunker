@@ -103,6 +103,14 @@ if (closeAbout && aboutModal) {
     closeAbout.addEventListener('click', () => aboutModal.classList.add('hidden'));
 }
 
+// Typography Diagnostic Toggle (Debug Tool)
+const typoToggle = document.getElementById('toggle-typo');
+if (typoToggle) {
+    typoToggle.addEventListener('click', () => {
+        document.body.classList.toggle('show-typo');
+    });
+}
+
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', () => {
     setDebugMode(false);

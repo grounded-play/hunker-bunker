@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1242_v9">
+  <link rel="stylesheet" href="/style.css?v=1242_v15">
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 </head>
@@ -16,7 +16,13 @@
 <body>
   <div id="game-viewport">
     <!-- Tactical Telemetry -->
-    <div id="fps-counter">FPS: --</div>
+    <div id="debug-toolbar">
+      <div id="fps-counter">FPS: --</div>
+      <button id="toggle-typo" class="debug-btn">
+        <span style="font-size: var(--font-sm); color: var(--accent-secondary);">T</span>
+        <span style="font-size: var(--font-xs); color: var(--text-muted); margin-left: 4px;">T</span>
+      </button>
+    </div>
     <div id="cabinet-bezel"></div>
 
     <!-- Splash Screen (Monolithic) -->

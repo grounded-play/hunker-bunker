@@ -11,6 +11,13 @@
   /* Global Tactical Scale */
   --vu: calc(min(1vw / 1.77, 1vh / 1));
   --gutter: calc(var(--vu) * 4);
+
+  /* Typography Scale */
+  --font-xl: calc(var(--vu) * 18);
+  --font-lg: calc(var(--vu) * 6);
+  --font-md: calc(var(--vu) * 4);
+  --font-sm: calc(var(--vu) * 2.5);
+  --font-xs: calc(var(--vu) * 1.8);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; cursor: default; user-select: none; }
@@ -32,13 +39,31 @@ body {
 }
 
 /* --- Performance Telemetry --- */
-#fps-counter { 
-  position: absolute; top: calc(var(--vu) * 2); left: calc(var(--vu) * 2); 
-  font-size: calc(var(--vu) * 1.8); color: #00ff00; font-family: monospace; 
-  z-index: 9999; opacity: 0.5; 
-  display: none;
+#debug-toolbar { 
+  position: absolute; top: calc(var(--vu) * 4); left: calc(var(--vu) * 4); 
+  display: none; flex-direction: column; gap: 8px;
+  z-index: 100000 !important;
 }
-.show-debug #fps-counter { display: block; }
+.show-debug #debug-toolbar { display: flex; }
+
+#fps-counter { 
+  font-size: calc(var(--vu) * 1.8); 
+  color: var(--text-muted); 
+  font-family: 'Outfit', sans-serif; 
+  font-weight: 900;
+  letter-spacing: 1px;
+  opacity: 0.8; 
+}
+
+.debug-btn {
+  background: rgba(0,0,0,0.6); border: 1px solid var(--border-subtle);
+  color: var(--text-muted); font-family: monospace; font-size: 14px;
+  width: 28px; height: 28px; border-radius: 4px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.debug-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-main); }
+.show-typo .debug-btn { border-color: var(--accent-primary); color: var(--accent-primary); background: rgba(255, 159, 28, 0.1); }
 
 /* --- Arcade Cabinet Bezel --- */
 #cabinet-bezel { 
@@ -201,13 +226,13 @@ body {
   border: 1px solid var(--border-subtle); border-radius: 4px;
   display: none; flex-direction: column; gap: 4px; z-index: 9500;
 }
-.show-debug .diag-typography { display: flex; }
+.show-debug.show-typo .diag-typography { display: flex; }
 .typo-sample { font-weight: 900; letter-spacing: 1px; }
-.scale-xl { font-size: calc(var(--vu) * 18); color: var(--text-main); }
-.scale-lg { font-size: calc(var(--vu) * 6); color: var(--accent-primary); }
-.scale-md { font-size: calc(var(--vu) * 4); color: var(--text-main); }
-.scale-sm { font-size: calc(var(--vu) * 2.5); color: var(--accent-secondary); }
-.scale-xs { font-size: calc(var(--vu) * 1.8); color: var(--text-muted); }
+.scale-xl { font-size: var(--font-xl); color: var(--text-main); }
+.scale-lg { font-size: var(--font-lg); color: var(--accent-primary); }
+.scale-md { font-size: var(--font-md); color: var(--text-main); }
+.scale-sm { font-size: var(--font-sm); color: var(--accent-secondary); }
+.scale-xs { font-size: var(--font-xs); color: var(--text-muted); }
 
 /* --- Utility --- */
 .hidden { display: none !important; }
@@ -260,6 +285,7 @@ input:checked + .slider:before { transform: translateX(20px); }
 }
 
 .about-btn {
+  margin-top: calc(var(--vu) * 8) !important;
   background: var(--bg-panel) !important;
   border: 1px solid var(--accent-primary) !important;
   color: var(--accent-primary) !important;
