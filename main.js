@@ -11,7 +11,7 @@ const state = {
     settings: {
         debug: false, 
         sound: true,
-        fullscreen: true
+        fullscreen: false
     },
     onlineCount: 1,
     gameInitialized: false
@@ -60,10 +60,18 @@ if (splashFsToggle) {
         if (state.settings.fullscreen) {
             document.documentElement.requestFullscreen().catch(() => {});
         } else {
-            document.exitFullscreen().catch(() => {});
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
         }
     });
 }
+
+// Fullscreen State Sync Listener
+document.addEventListener('fullscreenchange', () => {
+    const isFs = !!document.fullscreenElement;
+    state.settings.fullscreen = isFs;
+    if (splashFsToggle) splashFsToggle.checked = isFs;
+    if (mainFsToggle) mainFsToggle.checked = isFs;
+});
 
 // Global UI Updates
 function setDebugMode(active) {
@@ -188,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (previewIcon) previewIcon.textContent = data.icon;
         if (previewName) previewName.textContent = data.name;
     }
-    if (splashFsToggle) splashFsToggle.checked = true;
+    if (splashFsToggle) splashFsToggle.checked = false;
     if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
 });
