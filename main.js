@@ -151,9 +151,43 @@ if (mainFsToggle) {
     });
 }
 
+// Character Selection Logic
+const charCards = document.querySelectorAll('.char-card');
+const previewIcon = document.getElementById('char-preview-icon');
+const previewName = document.getElementById('char-preview-name');
+
+const heroData = {
+    'SCOUT': { icon: '◈', name: 'SCOUT' },
+    'TANK': { icon: '⬢', name: 'TANK' },
+    'ENGINEER': { icon: '⬣', name: 'ENGINEER' }
+};
+
+charCards.forEach(card => {
+    card.addEventListener('click', () => {
+        // Remove selected from others
+        charCards.forEach(c => c.classList.remove('selected'));
+        // Add to clicked
+        card.classList.add('selected');
+        
+        // Update Preview
+        const type = card.getAttribute('data-type');
+        if (heroData[type]) {
+            if (previewIcon) previewIcon.textContent = heroData[type].icon;
+            if (previewName) previewName.textContent = heroData[type].name;
+        }
+    });
+});
+
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', () => {
     setDebugMode(false);
+    // Initialize preview with first selected
+    const initialSelected = document.querySelector('.char-card.selected');
+    if (initialSelected && heroData[initialSelected.getAttribute('data-type')]) {
+        const data = heroData[initialSelected.getAttribute('data-type')];
+        if (previewIcon) previewIcon.textContent = data.icon;
+        if (previewName) previewName.textContent = data.name;
+    }
     if (splashFsToggle) splashFsToggle.checked = true;
     if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
