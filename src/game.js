@@ -1,6 +1,4 @@
-import Phaser from 'phaser';
-
-export class GameScene extends Phaser.Scene {
+export class GameScene extends window.Phaser.Scene {
     constructor() {
         super('GameScene');
         this.level = 0;
@@ -29,18 +27,27 @@ export class GameScene extends Phaser.Scene {
         this.wasd = this.input.keyboard.addKeys('W,A,S,D');
 
         // Camera follow & Tactical Zoom
+        this.cameras.main.scrollX = this.player.x - this.cameras.main.width / 2;
+        this.cameras.main.scrollY = this.player.y - this.cameras.main.height / 2;
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-        this.cameras.main.setZoom(2.0); /* Aggressive zoom to fill Map Box */
+        this.cameras.main.setZoom(1.2); /* Zoomed out for tactical overview */
         this.cameras.main.setBackgroundColor('#0b0d0f');
-        this.cameras.main.centerOn(0, 0);
     }
 
-    getPlayerColor() {
-        switch(this.playerType) {
+    getPlayerColor(type = null) {
+        const checkType = type || this.playerType;
+        switch(checkType) {
             case 'SCOUT': return 0x00ff00;
             case 'TANK': return 0xffb700;
             case 'ENGINEER': return 0x00e5ff;
             default: return 0xffffff;
+        }
+    }
+
+    updatePlayerType(type) {
+        this.playerType = type;
+        if (this.player) {
+            this.player.setFillStyle(this.getPlayerColor(type));
         }
     }
 
@@ -54,10 +61,10 @@ export class GameScene extends Phaser.Scene {
         
         for(let i=0; i<600; i++) {
             this.grid[cy][cx] = '.';
-            cx += Phaser.Math.Between(-1, 1);
-            cy += Phaser.Math.Between(-1, 1);
-            cx = Phaser.Math.Clamp(cx, 1, size-2);
-            cy = Phaser.Math.Clamp(cy, 1, size-2);
+            cx += window.Phaser.Math.Between(-1, 1);
+            cy += window.Phaser.Math.Between(-1, 1);
+            cx = window.Phaser.Math.Clamp(cx, 1, size-2);
+            cy = window.Phaser.Math.Clamp(cy, 1, size-2);
         }
 
         // Batch Draw
@@ -149,7 +156,7 @@ export class GameScene extends Phaser.Scene {
         if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1;
 
         if (vx !== 0 || vy !== 0) {
-            const vec = new Phaser.Math.Vector2(vx, vy).normalize().scale(speed);
+            const vec = new window.Phaser.Math.Vector2(vx, vy).normalize().scale(speed);
             this.player.x += vec.x;
             this.player.y += vec.y;
             this.events.emit('playerMove', { x: this.player.x, y: this.player.y });
