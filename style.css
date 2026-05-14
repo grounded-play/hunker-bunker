@@ -20,7 +20,9 @@
   --font-xs: calc(var(--vu) * 1.8);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; cursor: default; user-select: none; }
+* { margin: 0; padding: 0; box-sizing: border-box; cursor: default; user-select: none; -webkit-tap-highlight-color: transparent; }
+html, body { touch-action: manipulation; }
+button, input, select, textarea, .char-card { user-select: auto; }
 body { 
   background: #000; 
   font-family: 'Outfit', sans-serif; 
@@ -74,6 +76,38 @@ body {
   box-shadow: inset 0 0 150px rgba(0,0,0,0.9), 0 0 50px rgba(0,0,0,1);
   pointer-events: none; z-index: 9999; 
   border-radius: 20px; 
+}
+
+/* --- Loading Screen (Pre-Splash) --- */
+#loading-screen {
+  position: absolute; inset: 0;
+  background: var(--bg-dark);
+  z-index: 10000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.loader-content { display: flex; flex-direction: column; align-items: center; width: calc(var(--vu) * 80); }
+.loader-title { 
+  font-size: var(--font-md); font-weight: 900; color: var(--accent-primary); 
+  letter-spacing: 4px; margin-bottom: calc(var(--vu) * 4);
+  animation: tactical-pulse 2s infinite ease-in-out;
+}
+.loader-bar-container { 
+  width: 100%; height: calc(var(--vu) * 1.5); 
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle);
+  border-radius: 4px; overflow: hidden; margin-bottom: calc(var(--vu) * 2);
+}
+.loader-bar { 
+  height: 100%; width: 0%; background: var(--accent-primary); 
+  box-shadow: 0 0 20px var(--accent-primary);
+  transition: width 0.3s ease;
+}
+.loader-status { font-size: var(--font-xs); color: var(--text-muted); font-weight: 700; letter-spacing: 2px; }
+
+@keyframes tactical-pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
 }
 
 /* --- Splash Screen (Monolithic & Centered) --- */
@@ -177,8 +211,8 @@ body {
   display: flex; flex-direction: column; gap: calc(var(--vu) * 1.5); 
 }
 
-.map-label { font-size: var(--font-xs); color: var(--accent-primary); font-weight: 900; margin-bottom: 10px; letter-spacing: 2px; }
-#game-container { width: 100%; aspect-ratio: 16/9; background: #000; border: 1px solid rgba(255, 159, 28, 0.2); }
+#game-container { position: absolute; inset: 0; background: #000; border: 1px solid rgba(255, 159, 28, 0.2); z-index: 1; }
+.map-label { position: relative; z-index: 10; font-size: var(--font-xs); color: var(--accent-primary); font-weight: 900; margin-bottom: 10px; letter-spacing: 2px; pointer-events: none; }
 #char-preview-icon { font-size: calc(var(--vu) * 15); color: var(--accent-primary); filter: drop-shadow(0 0 20px rgba(46, 196, 182, 0.4)); }
 #char-preview-name { font-size: calc(var(--vu) * 4); font-weight: 900; color: var(--text-main); margin-top: 10px; letter-spacing: 3px; text-transform: uppercase; }
 
@@ -231,9 +265,21 @@ body {
 }
 
 
-/* --- 9-Zone Diagnostic Grid --- */
-#debug-overlay {
-  position: absolute; inset: 0; pointer-events: none; z-index: 10000; display: none;
+/* --- Tactical Diagnostic Overlays --- */
+#calibration-overlay, #debug-overlay {
+  position: absolute; 
+  inset: 0; 
+  pointer-events: none; 
+  z-index: 10000;
+  display: none; /* Hidden by default */
+}
+
+.show-debug #calibration-overlay, 
+.show-debug #debug-overlay { 
+  display: block; 
+}
+
+#debug-overlay { 
   /* Sub-grid (48x27) + Big-grid (16x9) v26 */
   background-image: 
     linear-gradient(to right, rgba(0, 255, 255, 0.2) 1.5px, transparent 1.5px),

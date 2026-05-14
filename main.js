@@ -1,7 +1,11 @@
+
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
+const loadingScreen = document.getElementById('loading-screen');
+const loaderBar = document.querySelector('.loader-bar');
+const loaderStatus = document.querySelector('.loader-status');
 
 const splashDebugToggle = document.getElementById('splash-debug-toggle');
 const splashFsToggle = document.getElementById('splash-fs-toggle');
@@ -182,13 +186,24 @@ charCards.forEach(card => {
         if (heroData[type]) {
             if (previewIcon) previewIcon.textContent = heroData[type].icon;
             if (previewName) previewName.textContent = heroData[type].name;
+            
+            // Sync with Phaser Scan
+            if (window.game) {
+                const gameScene = window.game.scene.getScene('GameScene');
+                if (gameScene && gameScene.updatePlayerType) {
+                    gameScene.updatePlayerType(type);
+                }
+            }
         }
     });
 });
 
 // Initial State Setup
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     setDebugMode(false);
+    
+    const { GameScene } = await import('./src/game.js');
+
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
     if (initialSelected && heroData[initialSelected.getAttribute('data-type')]) {
@@ -199,6 +214,57 @@ document.addEventListener('DOMContentLoaded', () => {
     if (splashFsToggle) splashFsToggle.checked = false;
     if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
+
+    // --- Surgical Phaser Initialization ---
+    if (window.Phaser && !window.game) {
+        const config = {
+            type: window.Phaser.AUTO,
+            parent: 'game-container',
+            scale: {
+                mode: window.Phaser.Scale.RESIZE,
+                width: '100%',
+                height: '100%'
+            },
+            input: {
+                touch: {
+                    capture: false
+                },
+                mouse: {
+                    capture: false
+                }
+            },
+            scene: [GameScene],
+            physics: {
+                default: 'arcade',
+                arcade: { debug: false }
+            },
+            backgroundColor: '#0b0d0f'
+        };
+        window.game = new window.Phaser.Game(config);
+        
+        // --- Loading Sequence Logic ---
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+                if (loaderStatus) loaderStatus.textContent = "SYSTEMS ONLINE";
+                setTimeout(() => {
+                    if (loadingScreen) {
+                        loadingScreen.style.opacity = '0';
+                        loadingScreen.style.pointerEvents = 'none';
+                        setTimeout(() => loadingScreen.classList.add('hidden'), 800);
+                    }
+                }, 500);
+            }
+            if (loaderBar) loaderBar.style.width = `${progress}%`;
+            if (progress < 100 && loaderStatus) {
+                const statuses = ["SYNCING GRID...", "CALIBRATING SCANNER...", "ESTABLISHING UPLINK...", "READY"];
+                loaderStatus.textContent = statuses[Math.floor(progress / 30)] || "READY";
+            }
+        }, 150);
+    }
 });
 
 setDebugMode(false);
