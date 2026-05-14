@@ -111,6 +111,46 @@ if (typoToggle) {
     });
 }
 
+// Settings Modal Logic
+const settingsBtn = document.getElementById('open-settings');
+const settingsPopup = document.getElementById('settings-popup');
+const closeSettings = document.getElementById('close-settings');
+const mainFsToggle = document.getElementById('main-fs-toggle');
+
+if (settingsBtn && settingsPopup) {
+    settingsBtn.addEventListener('click', () => {
+        settingsPopup.classList.remove('hidden');
+        if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
+        if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
+    });
+}
+if (closeSettings && settingsPopup) {
+    closeSettings.addEventListener('click', () => settingsPopup.classList.add('hidden'));
+}
+
+if (mainDebugToggle) {
+    mainDebugToggle.addEventListener('change', (e) => {
+        state.settings.debug = e.target.checked;
+        setDebugMode(state.settings.debug);
+        if (splashDebugToggle) splashDebugToggle.checked = state.settings.debug;
+    });
+}
+
+if (mainFsToggle) {
+    mainFsToggle.addEventListener('change', (e) => {
+        state.settings.fullscreen = e.target.checked;
+        if (splashFsToggle) splashFsToggle.checked = state.settings.fullscreen;
+        
+        if (state.settings.fullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+    });
+}
+
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', () => {
     setDebugMode(false);

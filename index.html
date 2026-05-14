@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1242_v15">
+  <link rel="stylesheet" href="/style.css?v=1242_v17">
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 </head>
@@ -175,11 +175,15 @@
     <!-- Settings Modal -->
     <div id="settings-popup" class="modal hidden">
       <div class="modal-content">
-        <button class="close-modal">×</button>
+        <button class="close-modal" id="close-settings">×</button>
         <h2 class="modal-title">SYSTEM SETTINGS</h2>
         <div class="setting-item">
           <span>DEBUG OVERLAY</span>
-          <label class="toggle"><input type="checkbox" id="toggle-debug" checked> <span class="slider"></span></label>
+          <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span>FULLSCREEN MODE</span>
+          <label class="toggle"><input type="checkbox" id="main-fs-toggle"> <span class="slider"></span></label>
         </div>
         <div class="setting-item">
           <span>AUDIO SYSTEMS</span>

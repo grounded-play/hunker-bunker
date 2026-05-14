@@ -245,25 +245,33 @@ body {
 input:checked + .slider { background-color: var(--accent-primary); }
 input:checked + .slider:before { transform: translateX(20px); }
 
-.modal { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 9500; display: flex; align-items: center; justify-content: center; }
-.modal-content { background: var(--bg-panel); border: 1px solid var(--accent-primary); padding: var(--gutter); width: 400px; position: relative; border-radius: 8px; }
-.modal-title { font-size: calc(var(--vu) * 4); font-weight: 900; color: var(--accent-primary); margin-bottom: 20px; letter-spacing: 2px; }
+.modal { position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 9500; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+.modal-content { 
+  background: var(--bg-panel); 
+  border: 1px solid var(--accent-primary); 
+  padding: calc(var(--vu) * 6); 
+  width: calc(var(--vu) * 80); 
+  max-width: 90vw;
+  position: relative; 
+  border-radius: 12px;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+.modal-title { font-size: var(--font-md); font-weight: 900; color: var(--accent-primary); margin-bottom: calc(var(--vu) * 4); letter-spacing: 2px; text-transform: uppercase; }
 .close-modal { 
-  position: absolute; top: 15px; right: 15px; 
+  position: absolute; top: calc(var(--vu) * 3); right: calc(var(--vu) * 3); 
   background: transparent; border: 1px solid var(--border-subtle); 
-  color: #fff; font-size: 20px; width: 30px; height: 30px;
+  color: #fff; font-size: calc(var(--vu) * 3); width: calc(var(--vu) * 5); height: calc(var(--vu) * 5);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; border-radius: 4px; transition: all 0.2s;
 }
-.close-modal:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: var(--text-main);
-  transform: scale(1.1);
+.close-modal:hover { background: rgba(255,255,255,0.1); border-color: var(--text-main); transform: scale(1.1); }
+.close-modal:active { transform: scale(0.9); }
+.setting-item { 
+  display: flex; justify-content: space-between; align-items: center; 
+  margin-bottom: calc(var(--vu) * 3); 
+  font-size: var(--font-sm); color: var(--text-main); font-weight: 700; 
+  letter-spacing: 1px;
 }
-.close-modal:active {
-  transform: scale(0.9);
-}
-.setting-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-size: calc(var(--vu) * 2.5); color: var(--text-main); font-weight: 700; }
 
 /* --- TACTICAL BUTTON REINFORCEMENTS --- */
 .splash-btn, .start-btn, .about-btn {
