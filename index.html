@@ -8,14 +8,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1242_v22">
+  <link rel="stylesheet" href="/style.css?v=1242_v26">
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 </head>
 
 <body>
   <div id="game-viewport">
-    <!-- Tactical Telemetry -->
+    
     <div id="debug-toolbar">
       <div id="fps-counter">FPS: --</div>
       <button id="toggle-typo" class="debug-btn">
@@ -199,6 +199,14 @@
         <div class="lock-msg">PLEASE ROTATE DEVICE TO LANDSCAPE FOR TACTICAL DEPLOYMENT</div>
         <div class="lock-scanner"></div>
       </div>
+    </div>
+
+    <!-- Tactical Telemetry -->
+    <div id="debug-overlay">
+      <div class="guide-gutter"></div>
+      <div class="guide-diagonals"></div>
+      <div class="guide-thirds"></div>
+      <div class="guide-center"></div>
     </div>
   </div>
   <script type="module" src="/main.js?v=1242"></script>
