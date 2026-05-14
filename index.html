@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=1242_v9">
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
+  <title>HUNKER BUNKER | TACTICAL COMMAND</title>
+</head>
+
+<body>
+  <div id="game-viewport">
+    <!-- Tactical Telemetry -->
+    <div id="fps-counter">FPS: --</div>
+    <div id="cabinet-bezel"></div>
+
+    <!-- Splash Screen (Monolithic) -->
+    <div id="splash">
+      <div class="splash-content">
+        <div class="splash-title">HUNKER BUNKER</div>
+        <div class="splash-subtitle">TACTICAL COMMAND v2.0</div>
+
+        <button class="splash-btn" id="enter-fullscreen">PLAY GAME</button>
+
+        <div class="splash-settings">
+          <div class="setting-row">
+            <span class="setting-label">FULLSCREEN MODE</span>
+            <label class="toggle"><input type="checkbox" id="splash-fs-toggle" checked> <span
+                class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">DEBUG DIAGNOSTICS</span>
+            <label class="toggle"><input type="checkbox" id="splash-debug-toggle"> <span class="slider"></span></label>
+          </div>
+        </div>
+
+        <button class="about-btn" id="about-btn">ABOUT</button>
+      </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="about-modal" class="modal hidden">
+      <div class="modal-content" style="text-align: center;">
+        <button class="close-modal" id="close-about">&times;</button>
+        <div class="modal-title">ABOUT</div>
+
+        <div style="margin-bottom: 20px;">
+          <span style="font-size: var(--font-xs); color: var(--text-muted); display: block; margin-bottom: 5px;">Made
+            for and by the</span>
+          <a href="http://linktr.ee/Tuesday_Cinema_Club" target="_blank"
+            style="color: var(--accent-primary); text-decoration: underline; font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px;">TUESDAY
+            CINEMA CLUB</a>
+        </div>
+
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
+          <span
+            style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 5px; color: var(--text-main);">THANK
+            YOU FOR PLAYING</span>
+          <span style="font-size: 10px; color: var(--text-muted); letter-spacing: 2px;">BUILD VER: 0.0.1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Briefing Console (#menu) -->
+    <div id="menu" class="hidden">
+      <div class="header-bar">
+        <div class="title-group">
+          <h1 class="title-small">HUNKER BUNKER</h1>
+          <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
+        </div>
+        <div class="utility-btns">
+          <button class="calibrate-btn" id="open-settings">⚙</button>
+        </div>
+      </div>
+
+      <div class="main-layout">
+        <div class="left-empty-zone"></div>
+
+        <div class="console-cluster">
+          <div class="module-row">
+            <!-- Module 1: Sector Scan -->
+            <div class="map-box">
+              <div class="map-label">SECTOR SCAN [001]</div>
+              <div id="game-container"></div>
+              <div class="module-scanline"></div>
+            </div>
+
+            <!-- Module 2: Hero UI -->
+            <div class="preview-box">
+              <div id="char-preview-icon">◈</div>
+              <div id="char-preview-name">SCOUT</div>
+              <div class="module-scanline"></div>
+            </div>
+
+            <!-- Module 3: Selection Stack -->
+            <div class="char-selection">
+              <div class="char-card selected" data-type="SCOUT">
+                <div class="char-info">
+                  <span class="char-name">SCOUT</span>
+                  <span class="char-desc">FAST / AGILE</span>
+                </div>
+                <div class="char-icon">◈</div>
+              </div>
+              <div class="char-card" data-type="TANK">
+                <div class="char-info">
+                  <span class="char-name">TANK</span>
+                  <span class="char-desc">HEAVY / ARMORED</span>
+                </div>
+                <div class="char-icon">⬢</div>
+              </div>
+              <div class="char-card" data-type="ENGINEER">
+                <div class="char-info">
+                  <span class="char-name">ENGINEER</span>
+                  <span class="char-desc">UTILITY / TECH</span>
+                </div>
+                <div class="char-icon">⬣</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Row -->
+      <div class="action-row">
+        <button class="start-btn" id="start-game">INITIALIZE</button>
+      </div>
+    </div>
+
+    <!-- Diagnostic Grid Overlays -->
+    <div id="calibration-overlay">
+      <div class="grid-line-v line-third-v1"></div>
+      <div class="grid-line-v line-third-v2"></div>
+      <div class="grid-line-h line-third-h1"></div>
+      <div class="grid-line-h line-third-h2"></div>
+
+      <!-- Center Axes -->
+      <div class="grid-line-v line-center-v"></div>
+      <div class="grid-line-h line-center-h"></div>
+
+      <!-- Diagonals -->
+      <div class="grid-line-diag line-diag-1"></div>
+      <div class="grid-line-diag line-diag-2"></div>
+
+    </div>
+
+    <!-- Typography Diagnostic (Base Underlay) -->
+    <div class="diag-typography">
+      <div class="typo-sample scale-xl">XL: 18</div>
+      <div class="typo-sample scale-lg">LG: 06</div>
+      <div class="typo-sample scale-md">MD: 04</div>
+      <div class="typo-sample scale-sm">SM: 02.5</div>
+      <div class="typo-sample scale-xs">XS: 01.8</div>
+    </div>
+
+    <!-- Live HUD (Post-Initialization) -->
+    <div id="ui" class="hidden">
+      <div class="level-indicator">BUNKER LEVEL <span id="level-num">0</span></div>
+      <div id="world-status">
+        <div class="status-title">TACTICAL FEED</div>
+        <div class="status-item"><span>UNITS</span><span class="status-value" id="online-count">1</span></div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-popup" class="modal hidden">
+      <div class="modal-content">
+        <button class="close-modal">×</button>
+        <h2 class="modal-title">SYSTEM SETTINGS</h2>
+        <div class="setting-item">
+          <span>DEBUG OVERLAY</span>
+          <label class="toggle"><input type="checkbox" id="toggle-debug" checked> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span>AUDIO SYSTEMS</span>
+          <label class="toggle"><input type="checkbox" checked disabled> <span class="slider"></span></label>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Orientation Lock Overlay -->
+    <div id="orientation-lock">
+      <div class="lock-content">
+        <div class="lock-icon">🔄</div>
+        <div class="lock-title">SYSTEM ERROR: PORTRAIT DETECTED</div>
+        <div class="lock-msg">PLEASE ROTATE DEVICE TO LANDSCAPE FOR TACTICAL DEPLOYMENT</div>
+        <div class="lock-scanner"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/main.js?v=1242"></script>
+</body>
+
+</html>
