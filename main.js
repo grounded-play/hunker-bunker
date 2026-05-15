@@ -139,14 +139,55 @@ const settingsPopup = document.getElementById('settings-popup');
 const closeSettings = document.getElementById('close-settings');
 const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
+const abortBtn = document.getElementById('abort-mission');
 
 if (settingsBtns.length > 0 && settingsPopup) {
     settingsBtns.forEach(btn => {
         btn.addEventListener('click', () => {
+            // Only show Abort Mission if we are actually in the tactical HUD
+            const isHUD = !document.getElementById('ui').classList.contains('hidden');
+            if (abortBtn) {
+                if (isHUD) abortBtn.classList.remove('hidden');
+                else abortBtn.classList.add('hidden');
+            }
+
             settingsPopup.classList.remove('hidden');
             if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
             if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
         });
+    });
+}
+
+if (abortBtn) {
+    abortBtn.addEventListener('click', () => {
+        const confirmModal = document.getElementById('confirm-modal');
+        if (confirmModal) confirmModal.classList.remove('hidden');
+    });
+}
+
+const confirmYes = document.getElementById('confirm-yes');
+const confirmNo = document.getElementById('confirm-no');
+
+if (confirmNo) {
+    confirmNo.addEventListener('click', () => {
+        const confirmModal = document.getElementById('confirm-modal');
+        if (confirmModal) confirmModal.classList.add('hidden');
+    });
+}
+
+if (confirmYes) {
+    confirmYes.addEventListener('click', () => {
+        const confirmModal = document.getElementById('confirm-modal');
+        if (confirmModal) confirmModal.classList.add('hidden');
+        if (settingsPopup) settingsPopup.classList.add('hidden');
+        
+        triggerDoorTransition(
+            () => {
+                if (document.getElementById('ui')) document.getElementById('ui').classList.add('hidden');
+                if (menu) menu.classList.remove('hidden');
+            },
+            null
+        );
     });
 }
 if (closeSettings && settingsPopup) {

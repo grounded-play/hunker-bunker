@@ -141,13 +141,11 @@ body {
   top: 0; width: 100%; height: 50%; transform: translateY(-100%);
   background-position: center calc(50% + calc(var(--vu) * 25));
   background-size: calc(var(--vu) * 222) calc(var(--vu) * 222);
-  border-bottom: 2px solid #1a1c1e;
 }
 #transition-overlay.closing-v #door-bottom {
   bottom: 0; width: 100%; height: 50%; transform: translateY(100%);
   background-position: center calc(50% - calc(var(--vu) * 25));
   background-size: calc(var(--vu) * 222) calc(var(--vu) * 222);
-  border-top: 2px solid #1a1c1e;
 }
 #transition-overlay.closing-v.active #door-top,
 #transition-overlay.closing-v.active #door-bottom {
@@ -163,13 +161,11 @@ body {
   left: 0; top: 0; width: 50%; height: 100%; transform: translateX(0);
   background-position: calc(50% + calc(var(--vu) * 44.25)) center;
   background-size: calc(var(--vu) * 222) calc(var(--vu) * 222);
-  border-right: 2px solid #1a1c1e;
 }
 #transition-overlay.opening-h #door-right {
   right: 0; top: 0; width: 50%; height: 100%; transform: translateX(0);
   background-position: calc(50% - calc(var(--vu) * 44.25)) center;
   background-size: calc(var(--vu) * 222) calc(var(--vu) * 222);
-  border-left: 2px solid #1a1c1e;
 }
 #transition-overlay.opening-h.active #door-left {
   transform: translateX(-100%);
@@ -521,9 +517,30 @@ input:checked + .slider:before { transform: translateX(20px); }
   background: var(--accent-primary) !important;
 }
 
-.splash-btn:active, .start-btn:active, .about-btn:active {
+.splash-btn:active, .start-btn:active, .about-btn:active, .abort-btn:active {
   transform: translateY(4px) !important;
   box-shadow: none !important;
+}
+
+.abort-btn {
+  background: #dc2626 !important;
+  color: #fff !important;
+  border: none !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 6) !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 0 #991b1b !important;
+  transition: all 0.2s !important;
+}
+
+.abort-btn:hover {
+  background: #ef4444 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #991b1b !important;
 }
 
 /* --- Orientation Lock Overlay --- */
