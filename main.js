@@ -24,28 +24,39 @@ const state = {
 // --- Initialization ---
 if (playBtn) {
     playBtn.addEventListener('click', () => {
-        if (splash) splash.classList.add('hidden');
-        if (menu) menu.classList.remove('hidden');
-        if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {});
-        }
+        triggerDoorTransition(
+            () => {
+                if (splash) splash.classList.add('hidden');
+                if (menu) menu.classList.remove('hidden');
+            },
+            () => {
+                if (state.settings.fullscreen) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+            }
+        );
     });
 }
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        if (menu) menu.classList.add('hidden');
-        document.getElementById('ui').classList.remove('hidden');
-        
-        // Clear hanging audio states
-        if (window.Phaser) {
-            const game = window.Phaser.Display.Canvas.CanvasPool.pool[0]?.parent?.game;
-            if (game && game.sound) {
-                game.sound.stopAll();
+        triggerDoorTransition(
+            () => {
+                if (menu) menu.classList.add('hidden');
+                document.getElementById('ui').classList.remove('hidden');
+                
+                // Clear hanging audio states
+                if (window.Phaser) {
+                    const game = window.Phaser.Display.Canvas.CanvasPool.pool[0]?.parent?.game;
+                    if (game && game.sound) {
+                        game.sound.stopAll();
+                    }
+                }
+            },
+            () => {
+                console.log("Mission Initialized. Tactical HUD Active.");
             }
-        }
-        
-        console.log("Mission Initialized. Tactical HUD Active.");
+        );
     });
 }
 
@@ -161,6 +172,52 @@ if (mainFsToggle) {
             }
         }
     });
+}
+
+function triggerDoorTransition(onClosed, onOpened) {
+    const overlay = transitionOverlay || document.getElementById('transition-overlay');
+    if (!overlay) {
+        if (onClosed) onClosed();
+        if (onOpened) onOpened();
+        return;
+    }
+
+    // 1. Prepare for vertical close
+    overlay.classList.add('visible');
+    overlay.classList.add('closing-v');
+    
+    // Force reflow
+    void overlay.offsetWidth;
+    
+    // 2. Start closing
+    requestAnimationFrame(() => {
+        overlay.classList.add('active');
+    });
+    
+    // 3. Once closed, swap content and prepare horizontal open
+    setTimeout(() => {
+        spawnSmoke(0, 0, 30, true); // Slam smoke
+        if (onClosed) onClosed();
+        
+        // Swap classes
+        overlay.classList.remove('closing-v', 'active');
+        overlay.classList.add('opening-h');
+        
+        // Force reflow
+        void overlay.offsetWidth;
+        
+        // 4. Start opening after a small "hold" gap
+        setTimeout(() => {
+            spawnSmoke(0, 0, 30, false); // Separation smoke
+            overlay.classList.add('active');
+            if (onOpened) onOpened();
+        }, 300);
+        
+        // 5. Cleanup
+        setTimeout(() => {
+            overlay.classList.remove('visible', 'opening-h', 'active');
+        }, 1200);
+    }, 900);
 }
 
 function spawnSmoke(x, y, count, isVertical = true) {
@@ -284,48 +341,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 clearInterval(interval);
                 if (loaderStatus) loaderStatus.textContent = "SYSTEMS ONLINE";
                 setTimeout(() => {
-                    const overlay = transitionOverlay || document.getElementById('transition-overlay');
-                    if (overlay && loadingScreen) {
-                        // 1. Prepare for vertical close
-                        overlay.classList.add('visible');
-                        overlay.classList.add('closing-v');
-                        
-                        // Force reflow
-                        void overlay.offsetWidth;
-                        
-                        // 2. Start closing
-                        requestAnimationFrame(() => {
-                            overlay.classList.add('active');
-                        });
-                        
-                        // 3. Once closed, swap screens and prepare horizontal open
-                        setTimeout(() => {
-                            spawnSmoke(0, 0, 30, true); // Slam smoke
-                            loadingScreen.classList.add('hidden');
-                            
-                            // Swap classes
-                            overlay.classList.remove('closing-v');
-                            overlay.classList.remove('active');
-                            overlay.classList.add('opening-h');
-                            
-                            // Force reflow
-                            void overlay.offsetWidth;
-                            
-                            // 4. Start opening after a small "hold" gap
-                            setTimeout(() => {
-                                spawnSmoke(0, 0, 30, false); // Separation smoke
-                                overlay.classList.add('active');
-                            }, 300);
-                            
-                            // 5. Cleanup
-                            setTimeout(() => {
-                                overlay.classList.remove('visible', 'opening-h', 'active');
-                            }, 1200);
-                        }, 900);
-                    } else if (loadingScreen) {
-                        loadingScreen.style.opacity = '0';
-                        setTimeout(() => loadingScreen.classList.add('hidden'), 800);
-                    }
+                    triggerDoorTransition(
+                        () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
+                        null
+                    );
                 }, 500);
             }
             if (loaderBar) loaderBar.style.width = `${progress}%`;
