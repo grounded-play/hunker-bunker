@@ -1,3 +1,4 @@
+import { AudioManager } from './src/audio.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
@@ -260,6 +261,7 @@ function triggerDoorTransition(onClosed, onOpened) {
     // 1. Prepare for vertical close
     overlay.classList.add('visible');
     overlay.classList.add('closing-v');
+    AudioManager.play('ui_boot1', { volume: 0.5 });
     
     // Force reflow
     void overlay.offsetWidth;
@@ -267,6 +269,8 @@ function triggerDoorTransition(onClosed, onOpened) {
     // 2. Start closing
     requestAnimationFrame(() => {
         overlay.classList.add('active');
+        AudioManager.play('door_slam_vertical', { volume: 0.4 });
+        AudioManager.play('door_gears_spin', { volume: 0.25 });
     });
     
     // 3. Once closed, swap content and prepare horizontal open
@@ -285,6 +289,8 @@ function triggerDoorTransition(onClosed, onOpened) {
         setTimeout(() => {
             spawnSmoke(0, 0, 30, false); // Separation smoke
             overlay.classList.add('active');
+            AudioManager.play('door_slide_horiz', { volume: 0.4 });
+            AudioManager.play('door_gears_spin', { volume: 0.25 });
             if (onOpened) onOpened();
         }, 300);
         
@@ -341,6 +347,7 @@ const heroData = {
 
 charCards.forEach(card => {
     card.addEventListener('click', () => {
+        AudioManager.play('ui_click', { volume: 0.6 });
         // Remove selected from others
         charCards.forEach(c => c.classList.remove('selected'));
         // Add to clicked
@@ -357,6 +364,7 @@ charCards.forEach(card => {
                 const gameScene = window.game.scene.getScene('GameScene');
                 if (gameScene && gameScene.updatePlayerType) {
                     gameScene.updatePlayerType(type);
+                    AudioManager.play('class_lock', { volume: 0.5 });
                 }
             }
         }
@@ -367,6 +375,67 @@ charCards.forEach(card => {
 document.addEventListener('DOMContentLoaded', async () => {
     setDebugMode(false);
     
+    const mainAudioToggle = document.getElementById('main-audio-toggle');
+    if (mainAudioToggle) {
+        mainAudioToggle.addEventListener('change', (e) => {
+            AudioManager.toggleMute(!e.target.checked);
+            if (e.target.checked) AudioManager.play('ui_click', { volume: 0.6 });
+        });
+    }
+
+    // Load audio manifest
+    const manifest = {
+        images: ['/door.png'], // Add other large images if necessary
+        audio: [
+            { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
+            { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
+            { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
+            { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
+            { key: 'amb_drip4', url: '/audio/vg2/amb_drip4.wav' },
+            { key: 'amb_metal_stress1', url: '/audio/vg2/amb_metal_stress1.wav' },
+            { key: 'amb_metal_stress2', url: '/audio/vg2/amb_metal_stress2.wav' },
+            { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' },
+            { key: 'door_slam_vertical1', url: '/audio/vg2/door_slam_vertical1.wav' },
+            { key: 'door_slam_vertical2', url: '/audio/vg2/door_slam_vertical2.wav' },
+            { key: 'door_slam_vertical3', url: '/audio/vg2/door_slam_vertical3.wav' },
+            { key: 'door_slide_horiz1', url: '/audio/vg2/door_slide_horiz.wav' },
+            { key: 'door_slide_horiz2', url: '/audio/vg2/door_slide_horiz2.wav' },
+            { key: 'door_slide_horiz3', url: '/audio/vg2/door_slide_horiz3.wav' },
+            { key: 'door_slide_horiz4', url: '/audio/vg2/door_slide_horiz4.wav' },
+            { key: 'door_gears_spin1', url: '/audio/vg2/door_gears_spin1.wav' },
+            { key: 'door_gears_spin2', url: '/audio/vg2/door_gears_spin2.wav' },
+            { key: 'door_gears_spin3', url: '/audio/vg2/door_gears_spin3.wav' },
+            { key: 'door_gears_spin4', url: '/audio/vg2/door_gears_spin4.wav' },
+            { key: 'ui_boot1', url: '/audio/vg2/ui_boot.wav' },
+            { key: 'ui_boot2', url: '/audio/vg2/ui_boot2.wav' },
+            { key: 'ui_hover1', url: '/audio/vg2/ui_hover1.wav' },
+            { key: 'ui_hover2', url: '/audio/vg2/ui_hover2.wav' },
+            { key: 'ui_click1', url: '/audio/vg2/ui_click_confirm1.wav' },
+            { key: 'ui_error1', url: '/audio/vg2/ui_error1.wav' },
+            { key: 'ui_error2', url: '/audio/vg2/ui_error2.wav' },
+            { key: 'ui_error3', url: '/audio/vg2/ui_error3.wav' },
+            { key: 'ui_scan_ping1', url: '/audio/vg2/ui_scan_ping1.wav' },
+            { key: 'ui_scan_ping2', url: '/audio/vg2/ui_scan_ping2.wav' },
+            { key: 'ui_scan_ping3', url: '/audio/vg2/ui_scan_ping3.wav' },
+            { key: 'ui_scan_ping4', url: '/audio/vg2/ui_scan_ping4.wav' },
+            { key: 'class_lock1', url: '/audio/vg2/class_lock1.wav' },
+            { key: 'class_lock2', url: '/audio/vg2/class_lock2.wav' },
+            { key: 'class_lock3', url: '/audio/vg2/class_lock3.wav' },
+            { key: 'class_lock4', url: '/audio/vg2/class_lock4.wav' }
+        ]
+    };
+
+    // Clicks for generic buttons
+    document.querySelectorAll('button, .toggle').forEach(el => {
+        if (el.tagName === 'BUTTON' || el.classList.contains('toggle')) {
+            el.addEventListener('click', () => {
+                if (el.classList.contains('abort-btn')) AudioManager.play('ui_error', { volume: 0.6 });
+                else AudioManager.play('ui_click', { volume: 0.6 });
+            });
+        }
+    });
+
     const { GameScene } = await import('./src/game.js');
 
     // Initialize preview with first selected
@@ -408,26 +477,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.game = new window.Phaser.Game(config);
         
         // --- Loading Sequence Logic ---
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-                if (loaderStatus) loaderStatus.textContent = "SYSTEMS ONLINE";
-                setTimeout(() => {
-                    triggerDoorTransition(
-                        () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
-                        null
-                    );
-                }, 500);
-            }
+        await AudioManager.loadAssets(manifest, (progress, itemName) => {
             if (loaderBar) loaderBar.style.width = `${progress}%`;
-            if (progress < 100 && loaderStatus) {
-                const statuses = ["SYNCING GRID...", "CALIBRATING SCANNER...", "ESTABLISHING UPLINK...", "READY"];
-                loaderStatus.textContent = statuses[Math.floor(progress / 30)] || "READY";
+            if (loaderStatus && itemName) {
+                const parts = itemName.split('/');
+                const filename = parts[parts.length - 1];
+                loaderStatus.textContent = `LOADING ASSET: ${filename.toUpperCase()}`;
             }
-        }, 150);
+        });
+        
+        if (loaderBar) loaderBar.style.width = `100%`;
+        if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
+        
+        // Wait for first click
+        document.body.addEventListener('click', async () => {
+            if (AudioManager.isUnlocked) return;
+            await AudioManager.unlock();
+            
+            triggerDoorTransition(
+                () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
+                null
+            );
+        }, { once: true });
     }
 });
 
