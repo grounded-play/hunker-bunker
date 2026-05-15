@@ -336,7 +336,7 @@ body {
   position: absolute; 
   top: calc(var(--vu) * 4); left: calc(var(--vu) * 4); 
   right: calc(var(--vu) * 4); bottom: calc(var(--vu) * 4);
-  background: rgba(11, 13, 15, 0.98);
+  background: var(--bg-dark) url('/menu_bg.png') center/100% 100% no-repeat;
   border: 1px solid var(--border-subtle); border-radius: 12px;
   padding: var(--gutter); z-index: 8000;
   display: flex; flex-direction: column;
