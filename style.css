@@ -284,9 +284,22 @@ body {
 /* --- Splash Screen (Monolithic & Centered) --- */
 #splash {
   position: absolute; inset: 0;
-  background: var(--bg-dark);
+  background: var(--bg-dark) url('/bg.png') center 85% / cover no-repeat;
   z-index: 9000;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+
+#splash::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 45%;
+  background: linear-gradient(to bottom, rgba(11, 13, 15, 0.8) 0%, transparent 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  z-index: -1;
+  pointer-events: none;
 }
 .splash-content {
   display: flex; flex-direction: column; align-items: center;
