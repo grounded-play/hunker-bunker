@@ -46,6 +46,10 @@
 
         <button class="splash-btn" id="enter-fullscreen">PLAY GAME</button>
 
+        <div class="utility-btns splash-corner">
+          <button class="calibrate-btn open-settings-btn">⚙</button>
+        </div>
+
         <div class="splash-settings">
           <div class="setting-row">
             <span class="setting-label">FULLSCREEN MODE</span>
@@ -93,7 +97,7 @@
           <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
         </div>
         <div class="utility-btns">
-          <button class="calibrate-btn" id="open-settings">⚙</button>
+          <button class="calibrate-btn open-settings-btn">⚙</button>
         </div>
       </div>
 
@@ -177,7 +181,12 @@
 
     <!-- Live HUD (Post-Initialization) -->
     <div id="ui" class="hidden">
-      <div class="level-indicator">BUNKER LEVEL <span id="level-num">0</span></div>
+      <div class="header-bar hud-header">
+        <div class="level-indicator">BUNKER LEVEL <span id="level-num">0</span></div>
+        <div class="utility-btns">
+          <button class="calibrate-btn open-settings-btn">⚙</button>
+        </div>
+      </div>
       <div id="world-status">
         <div class="status-title">TACTICAL FEED</div>
         <div class="status-item"><span>UNITS</span><span class="status-value" id="online-count">1</span></div>

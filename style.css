@@ -260,6 +260,7 @@ body {
   background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted);
   font-size: calc(var(--vu) * 3); padding: calc(var(--vu) * 0.5) calc(var(--vu) * 1.5); 
   border-radius: 4px; cursor: pointer; transition: all 0.2s;
+  pointer-events: auto;
 }
 .calibrate-btn:hover { 
   color: var(--accent-primary); 
@@ -588,4 +589,21 @@ input:checked + .slider:before { transform: translateX(20px); }
 @keyframes scan-vertical {
   0% { top: -20%; }
   100% { top: 120%; }
+}
+/* --- HUD UI --- */
+#ui {
+  position: absolute; inset: 0; pointer-events: none; z-index: 7000;
+}
+.hud-header {
+  position: absolute; top: calc(var(--vu) * 4); left: calc(var(--vu) * 4);
+  right: calc(var(--vu) * 4); display: flex; justify-content: space-between;
+  align-items: flex-start; border: none;
+}
+.level-indicator {
+  font-size: calc(var(--vu) * 2.5); font-weight: 900; color: var(--accent-primary);
+  background: rgba(0,0,0,0.5); padding: calc(var(--vu) * 1) calc(var(--vu) * 2);
+  border-left: 4px solid var(--accent-primary); letter-spacing: 2px;
+}
+.splash-corner {
+  position: absolute; top: calc(var(--vu) * 4); right: calc(var(--vu) * 4);
 }

@@ -135,16 +135,18 @@ if (typoToggle) {
 }
 
 // Settings Modal Logic
-const settingsBtn = document.getElementById('open-settings');
 const settingsPopup = document.getElementById('settings-popup');
 const closeSettings = document.getElementById('close-settings');
 const mainFsToggle = document.getElementById('main-fs-toggle');
+const settingsBtns = document.querySelectorAll('.open-settings-btn');
 
-if (settingsBtn && settingsPopup) {
-    settingsBtn.addEventListener('click', () => {
-        settingsPopup.classList.remove('hidden');
-        if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
-        if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
+if (settingsBtns.length > 0 && settingsPopup) {
+    settingsBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            settingsPopup.classList.remove('hidden');
+            if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
+            if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
+        });
     });
 }
 if (closeSettings && settingsPopup) {
