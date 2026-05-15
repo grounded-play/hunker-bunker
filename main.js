@@ -1,9 +1,9 @@
-
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
+const transitionOverlay = document.getElementById('transition-overlay');
 const loaderBar = document.querySelector('.loader-bar');
 const loaderStatus = document.querySelector('.loader-status');
 
@@ -163,6 +163,39 @@ if (mainFsToggle) {
     });
 }
 
+function spawnSmoke(x, y, count, isVertical = true) {
+    const overlay = document.getElementById('transition-overlay');
+    if (!overlay) return;
+
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'smoke-particle';
+        
+        // Randomize size
+        const size = 20 + Math.random() * 40;
+        p.style.width = `${size}px`;
+        p.style.height = `${size}px`;
+        
+        // Randomize position along the seam
+        if (isVertical) {
+            // Horizontal seam across the middle
+            p.style.left = `${Math.random() * 100}%`;
+            p.style.top = `calc(50% - ${size/2}px)`;
+            p.style.setProperty('--dx', `${(Math.random() - 0.5) * 100}px`);
+            p.style.setProperty('--dy', `${(Math.random() - 0.5) * 50}px`);
+        } else {
+            // Vertical seam down the middle
+            p.style.top = `${Math.random() * 100}%`;
+            p.style.left = `calc(50% - ${size/2}px)`;
+            p.style.setProperty('--dx', `${(Math.random() - 0.5) * 50}px`);
+            p.style.setProperty('--dy', `${(Math.random() - 0.5) * 100}px`);
+        }
+        
+        overlay.appendChild(p);
+        setTimeout(() => p.remove(), 1500);
+    }
+}
+
 // Character Selection Logic
 const charCards = document.querySelectorAll('.char-card');
 const previewIcon = document.getElementById('char-preview-icon');
@@ -251,9 +284,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                 clearInterval(interval);
                 if (loaderStatus) loaderStatus.textContent = "SYSTEMS ONLINE";
                 setTimeout(() => {
-                    if (loadingScreen) {
+                    const overlay = transitionOverlay || document.getElementById('transition-overlay');
+                    if (overlay && loadingScreen) {
+                        // 1. Prepare for vertical close
+                        overlay.classList.add('visible');
+                        overlay.classList.add('closing-v');
+                        
+                        // Force reflow
+                        void overlay.offsetWidth;
+                        
+                        // 2. Start closing
+                        requestAnimationFrame(() => {
+                            overlay.classList.add('active');
+                        });
+                        
+                        // 3. Once closed, swap screens and prepare horizontal open
+                        setTimeout(() => {
+                            spawnSmoke(0, 0, 30, true); // Slam smoke
+                            loadingScreen.classList.add('hidden');
+                            
+                            // Swap classes
+                            overlay.classList.remove('closing-v');
+                            overlay.classList.remove('active');
+                            overlay.classList.add('opening-h');
+                            
+                            // Force reflow
+                            void overlay.offsetWidth;
+                            
+                            // 4. Start opening after a small "hold" gap
+                            setTimeout(() => {
+                                spawnSmoke(0, 0, 30, false); // Separation smoke
+                                overlay.classList.add('active');
+                            }, 300);
+                            
+                            // 5. Cleanup
+                            setTimeout(() => {
+                                overlay.classList.remove('visible', 'opening-h', 'active');
+                            }, 1200);
+                        }, 900);
+                    } else if (loadingScreen) {
                         loadingScreen.style.opacity = '0';
-                        loadingScreen.style.pointerEvents = 'none';
                         setTimeout(() => loadingScreen.classList.add('hidden'), 800);
                     }
                 }, 500);

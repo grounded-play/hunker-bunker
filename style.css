@@ -84,7 +84,7 @@ body {
   background: var(--bg-dark);
   z-index: 10000;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: none; /* Removed fade, using door transition instead */
 }
 .loader-content { display: flex; flex-direction: column; align-items: center; width: calc(var(--vu) * 80); }
 .loader-title { 
@@ -103,6 +103,96 @@ body {
   transition: width 0.3s ease;
 }
 .loader-status { font-size: var(--font-xs); color: var(--text-muted); font-weight: 700; letter-spacing: 2px; }
+
+/* --- Tactical Door Transition --- */
+#transition-overlay {
+  position: absolute; inset: 0;
+  z-index: 15000;
+  pointer-events: none;
+  display: flex;
+  visibility: hidden;
+  opacity: 0;
+}
+#transition-overlay.visible {
+  visibility: visible;
+  opacity: 1;
+}
+
+.door {
+  position: absolute;
+  background-image: url('/door.png');
+  background-repeat: no-repeat;
+  /* border: 4px solid #1a1c1e; */ /* Removed central borders */
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+  z-index: 15001;
+  display: none;
+}
+
+#transition-overlay.active .door {
+  transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+}
+
+/* Vertical Close State */
+#transition-overlay.closing-v #door-top,
+#transition-overlay.closing-v #door-bottom {
+  display: block;
+}
+#transition-overlay.closing-v #door-top {
+  top: 0; width: 100%; height: 50%; transform: translateY(-100%);
+  background-position: center calc(50% + calc(var(--vu) * 25));
+  background-size: calc(var(--vu) * 222) calc(var(--vu) * 222);
+  border-bottom: 2px solid #1a1c1e;
+}
+#transition-overlay.closing-v #door-bottom {
+  bottom: 0; width: 100%; height: 50%; transform: translateY(100%);
+  background-position: center calc(50% - calc(var(--vu) * 25));
+  background-size: calc(var(--vu) * 222) calc(var(--vu) * 222);
+  border-top: 2px solid #1a1c1e;
+}
+#transition-overlay.closing-v.active #door-top,
+#transition-overlay.closing-v.active #door-bottom {
+  transform: translateY(0);
+}
+
+/* Horizontal Open State */
+#transition-overlay.opening-h #door-left,
+#transition-overlay.opening-h #door-right {
+  display: block;
+}
+#transition-overlay.opening-h #door-left {
+  left: 0; top: 0; width: 50%; height: 100%; transform: translateX(0);
+  background-position: calc(50% + calc(var(--vu) * 44.25)) center;
+  background-size: calc(var(--vu) * 222) calc(var(--vu) * 222);
+  border-right: 2px solid #1a1c1e;
+}
+#transition-overlay.opening-h #door-right {
+  right: 0; top: 0; width: 50%; height: 100%; transform: translateX(0);
+  background-position: calc(50% - calc(var(--vu) * 44.25)) center;
+  background-size: calc(var(--vu) * 222) calc(var(--vu) * 222);
+  border-left: 2px solid #1a1c1e;
+}
+#transition-overlay.opening-h.active #door-left {
+  transform: translateX(-100%);
+}
+#transition-overlay.opening-h.active #door-right {
+  transform: translateX(100%);
+}
+
+/* --- Smoke Particles --- */
+.smoke-particle {
+  position: absolute;
+  background: radial-gradient(circle, rgba(200, 200, 200, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 15100;
+  filter: blur(8px);
+  animation: smoke-drift 1.5s forwards ease-out;
+}
+
+@keyframes smoke-drift {
+  0% { transform: scale(0.5) translate(0, 0); opacity: 0.8; }
+  100% { transform: scale(3) translate(var(--dx), var(--dy)); opacity: 0; }
+}
 
 @keyframes tactical-pulse {
   0% { opacity: 0.4; }
