@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1242_v26">
+  <link rel="stylesheet" href="/style.css?v=1242_v28">
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 </head>
@@ -240,10 +240,13 @@
       <div id="door-bottom" class="door"></div>
       <div id="door-left" class="door"></div>
       <div id="door-right" class="door"></div>
-      
-      <!-- Persistent Gears (Right Side Only) -->
-      <div class="gear gear-tr"></div>
-      <div class="gear gear-br"></div>
+
+      <div class="shared-gear focus-top-right">
+        <div class="gear-stack">
+          <div class="gear-layer gear-base"></div>
+          <div class="gear-layer gear-ridge"></div>
+        </div>
+      </div>
     </div>
   </div>
 

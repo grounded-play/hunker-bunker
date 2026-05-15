@@ -21,6 +21,13 @@ const state = {
     gameInitialized: false
 };
 
+const gearSpinState = {
+    rotation: 0,
+    velocity: 0,
+    targetVelocity: 0,
+    lastTime: performance.now()
+};
+
 // --- Initialization ---
 if (playBtn) {
     playBtn.addEventListener('click', () => {
@@ -113,6 +120,31 @@ function updateFPS() {
     requestAnimationFrame(updateFPS);
 }
 requestAnimationFrame(updateFPS);
+
+function updateGearSpin(now) {
+    const overlay = transitionOverlay || document.getElementById('transition-overlay');
+    const dt = Math.min((now - gearSpinState.lastTime) / 1000, 0.05);
+    gearSpinState.lastTime = now;
+
+    if (overlay?.classList.contains('closing-v')) {
+        gearSpinState.targetVelocity = 150;
+    } else if (overlay?.classList.contains('opening-h')) {
+        gearSpinState.targetVelocity = -120;
+    } else {
+        gearSpinState.targetVelocity = 0;
+    }
+
+    const smoothing = 1 - Math.exp(-dt * 7.5);
+    gearSpinState.velocity += (gearSpinState.targetVelocity - gearSpinState.velocity) * smoothing;
+    gearSpinState.rotation += gearSpinState.velocity * dt;
+
+    if (overlay) {
+        overlay.style.setProperty('--gear-rotation', `${gearSpinState.rotation}deg`);
+    }
+
+    requestAnimationFrame(updateGearSpin);
+}
+requestAnimationFrame(updateGearSpin);
 
 // About Modal Logic
 const aboutBtn = document.getElementById('about-btn');
