@@ -424,7 +424,22 @@ body {
   display: flex; flex-direction: column; gap: calc(var(--vu) * 1.5); 
 }
 
-#game-container { position: absolute; inset: 0; background: #000; border: 1px solid rgba(255, 159, 28, 0.2); z-index: 1; }
+#game-container { position: absolute; inset: 0; background: #000; border: 1px solid rgba(255, 159, 28, 0.2); z-index: 1; overflow: hidden; }
+#game-container.fullscreen-mode {
+  inset: auto;
+  width: calc(var(--vu) * 160);
+  height: calc(var(--vu) * 85);
+  top: 54%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+#game-container.fullscreen-mode canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 .map-label { position: relative; z-index: 10; font-size: var(--font-xs); color: var(--accent-primary); font-weight: 900; margin-bottom: 10px; letter-spacing: 2px; pointer-events: none; }
 #char-preview-icon { font-size: calc(var(--vu) * 15); color: var(--accent-primary); filter: drop-shadow(0 0 20px rgba(46, 196, 182, 0.4)); }
 #char-preview-name { font-size: calc(var(--vu) * 4); font-weight: 900; color: var(--text-main); margin-top: 10px; letter-spacing: 3px; text-transform: uppercase; }

@@ -53,6 +53,16 @@ if (startBtn) {
                 if (menu) menu.classList.add('hidden');
                 document.getElementById('ui').classList.remove('hidden');
                 
+                const gameContainer = document.getElementById('game-container');
+                const viewport = document.getElementById('game-viewport');
+                if (gameContainer && viewport) {
+                    viewport.insertBefore(gameContainer, document.getElementById('ui'));
+                    gameContainer.classList.add('fullscreen-mode');
+                    if (window.game && window.game.scale) {
+                        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+                    }
+                }
+                
                 // Clear hanging audio states
                 if (window.Phaser) {
                     const game = window.Phaser.Display.Canvas.CanvasPool.pool[0]?.parent?.game;
@@ -218,6 +228,16 @@ if (confirmYes) {
             () => {
                 if (document.getElementById('ui')) document.getElementById('ui').classList.add('hidden');
                 if (menu) menu.classList.remove('hidden');
+                
+                const gameContainer = document.getElementById('game-container');
+                const mapBox = document.querySelector('.map-box');
+                if (gameContainer && mapBox) {
+                    mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
+                    gameContainer.classList.remove('fullscreen-mode');
+                    if (window.game && window.game.scale) {
+                        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+                    }
+                }
             },
             null
         );
