@@ -377,8 +377,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const mainAudioToggle = document.getElementById('main-audio-toggle');
     if (mainAudioToggle) {
+        const storedAudio = localStorage.getItem('hunker_audio_enabled');
+        if (storedAudio !== null) {
+            mainAudioToggle.checked = storedAudio === 'true';
+            AudioManager.toggleMute(!mainAudioToggle.checked);
+        }
+
         mainAudioToggle.addEventListener('change', (e) => {
             AudioManager.toggleMute(!e.target.checked);
+            localStorage.setItem('hunker_audio_enabled', e.target.checked);
             if (e.target.checked) AudioManager.play('ui_click', { volume: 0.6 });
         });
     }
