@@ -29,7 +29,7 @@ export class GameScene extends window.Phaser.Scene {
         // Camera follow & Tactical Zoom
         this.cameras.main.scrollX = this.player.x - this.cameras.main.width / 2;
         this.cameras.main.scrollY = this.player.y - this.cameras.main.height / 2;
-        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+        this.cameras.main.startFollow(this.player, true, 0.1, 0.1, 0, 50);
         this.cameras.main.setZoom(1.2); /* Zoomed out for tactical overview */
         this.cameras.main.setBackgroundColor('#0b0d0f');
     }
