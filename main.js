@@ -11,6 +11,12 @@ const loaderStatus = document.querySelector('.loader-status');
 const splashDebugToggle = document.getElementById('splash-debug-toggle');
 const splashFsToggle = document.getElementById('splash-fs-toggle');
 const mainDebugToggle = document.getElementById('main-debug-toggle');
+const gameViewport = document.getElementById('game-viewport');
+
+const DESIGN_STAGE = {
+    width: 177,
+    height: 100
+};
 
 const state = {
     settings: {
@@ -28,6 +34,39 @@ const gearSpinState = {
     targetVelocity: 0,
     lastTime: performance.now()
 };
+
+let stageResizeObserver = null;
+
+function syncStageMetrics() {
+    if (!gameViewport) return;
+
+    const rect = gameViewport.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const unit = Math.min(rect.width / DESIGN_STAGE.width, rect.height / DESIGN_STAGE.height);
+    gameViewport.style.setProperty('--vu', `${unit}px`);
+}
+
+function refreshGameLayout() {
+    syncStageMetrics();
+
+    if (window.game?.scale) {
+        requestAnimationFrame(() => {
+            window.game.scale.refresh();
+        });
+    }
+}
+
+function installStageLayoutSync() {
+    syncStageMetrics();
+
+    if (stageResizeObserver || !gameViewport || !('ResizeObserver' in window)) return;
+
+    stageResizeObserver = new ResizeObserver(() => {
+        refreshGameLayout();
+    });
+    stageResizeObserver.observe(gameViewport);
+}
 
 // --- Initialization ---
 if (playBtn) {
@@ -58,9 +97,7 @@ if (startBtn) {
                 if (gameContainer && viewport) {
                     viewport.insertBefore(gameContainer, document.getElementById('ui'));
                     gameContainer.classList.add('fullscreen-mode');
-                    if (window.game && window.game.scale) {
-                        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-                    }
+                    setTimeout(refreshGameLayout, 50);
                 }
                 
                 // Clear hanging audio states
@@ -104,6 +141,7 @@ document.addEventListener('fullscreenchange', () => {
     state.settings.fullscreen = isFs;
     if (splashFsToggle) splashFsToggle.checked = isFs;
     if (mainFsToggle) mainFsToggle.checked = isFs;
+    setTimeout(refreshGameLayout, 50);
 });
 
 // Global UI Updates
@@ -234,9 +272,7 @@ if (confirmYes) {
                 if (gameContainer && mapBox) {
                     mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
                     gameContainer.classList.remove('fullscreen-mode');
-                    if (window.game && window.game.scale) {
-                        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-                    }
+                    setTimeout(refreshGameLayout, 50);
                 }
             },
             null
@@ -393,6 +429,10 @@ charCards.forEach(card => {
 
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
+    installStageLayoutSync();
+    window.addEventListener('resize', refreshGameLayout);
+    window.addEventListener('orientationchange', refreshGameLayout);
+
     setDebugMode(false);
     
     const mainAudioToggle = document.getElementById('main-audio-toggle');
