@@ -5,6 +5,11 @@ export class GameScene extends window.Phaser.Scene {
         this.grid = [];
         this.tileWidth = 64;
         this.tileHeight = 32;
+        this.baseCameraZoom = 1.2;
+        this.referenceViewport = {
+            width: 960,
+            height: 600
+        };
     }
 
     init(data) {
@@ -27,11 +32,10 @@ export class GameScene extends window.Phaser.Scene {
         this.wasd = this.input.keyboard.addKeys('W,A,S,D');
 
         // Camera follow & Tactical Zoom
-        this.cameras.main.scrollX = this.player.x - this.cameras.main.width / 2;
-        this.cameras.main.scrollY = this.player.y - this.cameras.main.height / 2;
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1, 0, 50);
-        this.cameras.main.setZoom(1.2); /* Zoomed out for tactical overview */
         this.cameras.main.setBackgroundColor('#0b0d0f');
+        this.scale.on('resize', this.updateResponsiveCamera, this);
+        this.updateResponsiveCamera({ width: this.scale.width, height: this.scale.height });
     }
 
     getPlayerColor(type = null) {
@@ -144,6 +148,20 @@ export class GameScene extends window.Phaser.Scene {
             rel.push({ x: x + points[i], y: y + points[i+1] });
         }
         return rel;
+    }
+
+    updateResponsiveCamera(viewport = null) {
+        const width = viewport?.width ?? this.scale.width;
+        const height = viewport?.height ?? this.scale.height;
+        if (!width || !height) return;
+
+        const widthFactor = width / this.referenceViewport.width;
+        const heightFactor = height / this.referenceViewport.height;
+        const responsiveFactor = Math.min(widthFactor, heightFactor);
+        const zoom = window.Phaser.Math.Clamp(this.baseCameraZoom * responsiveFactor, 0.5, 1.35);
+
+        this.cameras.main.setZoom(zoom);
+        this.cameras.main.centerOn(this.player.x, this.player.y);
     }
 
     update() {

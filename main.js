@@ -12,6 +12,7 @@ const splashDebugToggle = document.getElementById('splash-debug-toggle');
 const splashFsToggle = document.getElementById('splash-fs-toggle');
 const mainDebugToggle = document.getElementById('main-debug-toggle');
 const gameViewport = document.getElementById('game-viewport');
+const gameStageContainer = document.getElementById('game-container');
 
 const DESIGN_STAGE = {
     width: 177,
@@ -57,6 +58,21 @@ function refreshGameLayout() {
     }
 }
 
+function queueGameLayoutRefresh(frameCount = 3) {
+    let framesRemaining = frameCount;
+
+    const step = () => {
+        refreshGameLayout();
+        framesRemaining -= 1;
+
+        if (framesRemaining > 0) {
+            requestAnimationFrame(step);
+        }
+    };
+
+    requestAnimationFrame(step);
+}
+
 function installStageLayoutSync() {
     syncStageMetrics();
 
@@ -66,6 +82,9 @@ function installStageLayoutSync() {
         refreshGameLayout();
     });
     stageResizeObserver.observe(gameViewport);
+    if (gameStageContainer) {
+        stageResizeObserver.observe(gameStageContainer);
+    }
 }
 
 // --- Initialization ---
@@ -74,7 +93,10 @@ if (playBtn) {
         triggerDoorTransition(
             () => {
                 if (splash) splash.classList.add('hidden');
-                if (menu) menu.classList.remove('hidden');
+                if (menu) {
+                    menu.classList.remove('hidden');
+                    queueGameLayoutRefresh();
+                }
             },
             () => {
                 if (state.settings.fullscreen) {
@@ -97,7 +119,7 @@ if (startBtn) {
                 if (gameContainer && viewport) {
                     viewport.insertBefore(gameContainer, document.getElementById('ui'));
                     gameContainer.classList.add('fullscreen-mode');
-                    setTimeout(refreshGameLayout, 50);
+                    queueGameLayoutRefresh();
                 }
 
                 // Clear hanging audio states
@@ -141,7 +163,7 @@ document.addEventListener('fullscreenchange', () => {
     state.settings.fullscreen = isFs;
     if (splashFsToggle) splashFsToggle.checked = isFs;
     if (mainFsToggle) mainFsToggle.checked = isFs;
-    setTimeout(refreshGameLayout, 50);
+    queueGameLayoutRefresh();
 });
 
 // Global UI Updates
@@ -272,7 +294,7 @@ if (confirmYes) {
                 if (gameContainer && mapBox) {
                     mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
                     gameContainer.classList.remove('fullscreen-mode');
-                    setTimeout(refreshGameLayout, 50);
+                    queueGameLayoutRefresh();
                 }
             },
             null

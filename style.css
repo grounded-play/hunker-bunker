@@ -636,6 +636,9 @@ body {
 .map-box {
   width: calc(var(--vu) * 56);
   padding: calc(var(--vu) * 2);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.5);
 }
 
 .preview-box {
@@ -656,12 +659,17 @@ body {
 }
 
 #game-container {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  flex: 1 1 auto;
+  min-height: 0;
   background: #000;
   border: 1px solid rgba(255, 159, 28, 0.2);
   z-index: 1;
   overflow: hidden;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
 }
 
 #game-container canvas {
@@ -671,9 +679,12 @@ body {
 }
 
 #game-container.fullscreen-mode {
+  position: absolute;
   inset: auto;
-  width: calc(var(--vu) * 160);
-  height: calc(var(--vu) * 85);
+  width: min(90%, calc(78dvh * 1.6));
+  aspect-ratio: 16 / 10;
+  height: auto;
+  max-height: 78%;
   top: 54%;
   left: 50%;
   transform: translate(-50%, -50%);
