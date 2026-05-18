@@ -2,9 +2,10 @@
  * A simplified MarkovJunior-style pattern rewriting engine.
  */
 export class MarkovGenerator {
-    constructor(width, height) {
+    constructor(width, height, random = Math.random) {
         this.width = width;
         this.height = height;
+        this.random = random;
         this.grid = Array(height).fill(null).map(() => Array(width).fill(' '));
         this.rules = [];
     }
@@ -29,13 +30,13 @@ export class MarkovGenerator {
 
     step() {
         // Shuffle rules for randomness
-        const shuffledRules = [...this.rules].sort(() => Math.random() - 0.5);
+        const shuffledRules = [...this.rules].sort(() => this.random() - 0.5);
 
         for (const rule of shuffledRules) {
             const matches = this.findMatches(rule);
-            if (matches.length > 0 && Math.random() <= rule.probability) {
+            if (matches.length > 0 && this.random() <= rule.probability) {
                 // Pick a random match
-                const match = matches[Math.floor(Math.random() * matches.length)];
+                const match = matches[Math.floor(this.random() * matches.length)];
                 this.applyRule(match, rule.replace);
                 return true;
             }
