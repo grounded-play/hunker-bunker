@@ -1068,6 +1068,43 @@ input:checked+.slider:before {
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
 }
 
+.confirm-modal-content {
+  width: min(calc(var(--vu) * 92), 92%);
+}
+
+.confirm-copy {
+  line-height: 1.35;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: calc(var(--vu) * 3);
+  flex-wrap: wrap;
+}
+
+.confirm-actions .abort-btn,
+.confirm-actions .calibrate-btn {
+  min-width: calc(var(--vu) * 14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-sm);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  letter-spacing: 2px;
+  line-height: 1;
+  padding: calc(var(--vu) * 1.3) calc(var(--vu) * 4);
+  text-transform: uppercase;
+}
+
+.confirm-actions .calibrate-btn {
+  border-radius: 8px;
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--text-main);
+}
+
 .modal-title {
   font-size: var(--font-md);
   font-weight: 900;
