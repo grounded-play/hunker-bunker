@@ -20,7 +20,7 @@ const DESIGN_STAGE = {
 
 const state = {
     settings: {
-        debug: false, 
+        debug: false,
         sound: true,
         fullscreen: false
     },
@@ -78,7 +78,7 @@ if (playBtn) {
             },
             () => {
                 if (state.settings.fullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => {});
+                    document.documentElement.requestFullscreen().catch(() => { });
                 }
             }
         );
@@ -91,7 +91,7 @@ if (startBtn) {
             () => {
                 if (menu) menu.classList.add('hidden');
                 document.getElementById('ui').classList.remove('hidden');
-                
+
                 const gameContainer = document.getElementById('game-container');
                 const viewport = document.getElementById('game-viewport');
                 if (gameContainer && viewport) {
@@ -99,7 +99,7 @@ if (startBtn) {
                     gameContainer.classList.add('fullscreen-mode');
                     setTimeout(refreshGameLayout, 50);
                 }
-                
+
                 // Clear hanging audio states
                 if (window.Phaser) {
                     const game = window.Phaser.Display.Canvas.CanvasPool.pool[0]?.parent?.game;
@@ -128,9 +128,9 @@ if (splashFsToggle) {
     splashFsToggle.addEventListener('change', (e) => {
         state.settings.fullscreen = e.target.checked;
         if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {});
+            document.documentElement.requestFullscreen().catch(() => { });
         } else {
-            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
         }
     });
 }
@@ -261,12 +261,12 @@ if (confirmYes) {
         const confirmModal = document.getElementById('confirm-modal');
         if (confirmModal) confirmModal.classList.add('hidden');
         if (settingsPopup) settingsPopup.classList.add('hidden');
-        
+
         triggerDoorTransition(
             () => {
                 if (document.getElementById('ui')) document.getElementById('ui').classList.add('hidden');
                 if (menu) menu.classList.remove('hidden');
-                
+
                 const gameContainer = document.getElementById('game-container');
                 const mapBox = document.querySelector('.map-box');
                 if (gameContainer && mapBox) {
@@ -295,12 +295,12 @@ if (mainFsToggle) {
     mainFsToggle.addEventListener('change', (e) => {
         state.settings.fullscreen = e.target.checked;
         if (splashFsToggle) splashFsToggle.checked = state.settings.fullscreen;
-        
+
         if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {});
+            document.documentElement.requestFullscreen().catch(() => { });
         } else {
             if (document.fullscreenElement) {
-                document.exitFullscreen().catch(() => {});
+                document.exitFullscreen().catch(() => { });
             }
         }
     });
@@ -318,29 +318,29 @@ function triggerDoorTransition(onClosed, onOpened) {
     overlay.classList.add('visible');
     overlay.classList.add('closing-v');
     AudioManager.play('ui_boot1', { volume: 0.5 });
-    
+
     // Force reflow
     void overlay.offsetWidth;
-    
+
     // 2. Start closing
     requestAnimationFrame(() => {
         overlay.classList.add('active');
         AudioManager.play('door_slam_vertical', { volume: 0.4 });
         AudioManager.play('door_gears_spin', { volume: 0.25 });
     });
-    
+
     // 3. Once closed, swap content and prepare horizontal open
     setTimeout(() => {
         spawnSmoke(0, 0, 30, true); // Slam smoke
         if (onClosed) onClosed();
-        
+
         // Swap classes
         overlay.classList.remove('closing-v', 'active');
         overlay.classList.add('opening-h');
-        
+
         // Force reflow
         void overlay.offsetWidth;
-        
+
         // 4. Start opening after a small "hold" gap
         setTimeout(() => {
             spawnSmoke(0, 0, 30, false); // Separation smoke
@@ -349,7 +349,7 @@ function triggerDoorTransition(onClosed, onOpened) {
             AudioManager.play('door_gears_spin', { volume: 0.25 });
             if (onOpened) onOpened();
         }, 300);
-        
+
         // 5. Cleanup
         setTimeout(() => {
             overlay.classList.remove('visible', 'opening-h', 'active');
@@ -364,27 +364,27 @@ function spawnSmoke(x, y, count, isVertical = true) {
     for (let i = 0; i < count; i++) {
         const p = document.createElement('div');
         p.className = 'smoke-particle';
-        
+
         // Randomize size
         const size = 20 + Math.random() * 40;
         p.style.width = `${size}px`;
         p.style.height = `${size}px`;
-        
+
         // Randomize position along the seam
         if (isVertical) {
             // Horizontal seam across the middle
             p.style.left = `${Math.random() * 100}%`;
-            p.style.top = `calc(50% - ${size/2}px)`;
+            p.style.top = `calc(50% - ${size / 2}px)`;
             p.style.setProperty('--dx', `${(Math.random() - 0.5) * 100}px`);
             p.style.setProperty('--dy', `${(Math.random() - 0.5) * 50}px`);
         } else {
             // Vertical seam down the middle
             p.style.top = `${Math.random() * 100}%`;
-            p.style.left = `calc(50% - ${size/2}px)`;
+            p.style.left = `calc(50% - ${size / 2}px)`;
             p.style.setProperty('--dx', `${(Math.random() - 0.5) * 50}px`);
             p.style.setProperty('--dy', `${(Math.random() - 0.5) * 100}px`);
         }
-        
+
         overlay.appendChild(p);
         setTimeout(() => p.remove(), 1500);
     }
@@ -408,13 +408,13 @@ charCards.forEach(card => {
         charCards.forEach(c => c.classList.remove('selected'));
         // Add to clicked
         card.classList.add('selected');
-        
+
         // Update Preview
         const type = card.getAttribute('data-type');
         if (heroData[type]) {
             if (previewIcon) previewIcon.textContent = heroData[type].icon;
             if (previewName) previewName.textContent = heroData[type].name;
-            
+
             // Sync with Phaser Scan
             if (window.game) {
                 const gameScene = window.game.scene.getScene('GameScene');
@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('orientationchange', refreshGameLayout);
 
     setDebugMode(false);
-    
+
     const mainAudioToggle = document.getElementById('main-audio-toggle');
     if (mainAudioToggle) {
         const storedAudio = localStorage.getItem('hunker_audio_enabled');
@@ -542,7 +542,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             backgroundColor: '#0b0d0f'
         };
         window.game = new window.Phaser.Game(config);
-        
+
         // --- Loading Sequence Logic ---
         await AudioManager.loadAssets(manifest, (progress, itemName) => {
             if (loaderBar) loaderBar.style.width = `${progress}%`;
@@ -552,15 +552,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 loaderStatus.textContent = `LOADING ASSET: ${filename.toUpperCase()}`;
             }
         });
-        
+
         if (loaderBar) loaderBar.style.width = `100%`;
         if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
-        
+
         // Wait for first click
         document.body.addEventListener('click', async () => {
             if (AudioManager.isUnlocked) return;
             await AudioManager.unlock();
-            
+
             triggerDoorTransition(
                 () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
                 null

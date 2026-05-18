@@ -199,6 +199,7 @@ body {
   --gear-focus-size: calc(var(--vu) * 21);
   --door-half-span: calc(var(--vu) * 88.5);
   --gear-drop-distance: calc(var(--vu) * 50);
+  --transition-scene-fade: 0;
   position: absolute;
   inset: 0;
   z-index: 15000;
@@ -209,9 +210,32 @@ body {
   opacity: 0;
 }
 
+#transition-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 15000;
+  background:
+    radial-gradient(circle at center, rgba(3, 4, 8, 0.55) 0%, rgba(1, 2, 4, 0.82) 45%, rgba(0, 0, 0, 0.97) 100%);
+  opacity: var(--transition-scene-fade);
+  transition: opacity 180ms ease-out;
+  will-change: opacity;
+}
+
 #transition-overlay.visible {
   visibility: visible;
   opacity: 1;
+}
+
+#transition-overlay.closing-v,
+#transition-overlay.opening-h {
+  --transition-scene-fade: 1;
+}
+
+#transition-overlay.opening-h.active::before {
+  opacity: 0;
+  transition-duration: 260ms;
+  transition-timing-function: ease-in;
 }
 
 .door {
