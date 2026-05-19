@@ -192,6 +192,12 @@
         <div class="status-item"><span>UNITS</span><span class="status-value" id="online-count">1</span></div>
       </div>
     </div>
+    <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
+      <div class="touch-move-control__ring">
+        <div class="touch-move-control__thumb"></div>
+      </div>
+      <div class="touch-move-control__label">MOVE</div>
+    </div>
 
     <!-- Settings Modal -->
     <div id="settings-popup" class="modal hidden">
@@ -209,6 +215,10 @@
         <div class="setting-item">
           <span>AUDIO SYSTEMS</span>
           <label class="toggle"><input type="checkbox" id="main-audio-toggle" checked> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item hidden" id="touch-controls-setting">
+          <span>TOUCH MOVE PAD</span>
+          <label class="toggle"><input type="checkbox" id="main-touch-toggle"> <span class="slider"></span></label>
         </div>
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">

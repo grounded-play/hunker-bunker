@@ -1362,6 +1362,96 @@ input:checked+.slider:before {
   z-index: 7000;
 }
 
+.touch-move-control {
+  --touch-pad-size: clamp(108px, 11vmin, 176px);
+  --touch-pad-thumb-size: calc(var(--touch-pad-size) * 0.36);
+  --touch-pad-gap: clamp(6px, 0.9vmin, 12px);
+  --touch-pad-offset: clamp(18px, 2.2vmin, 34px);
+  --touch-pad-label-size: clamp(14px, 1.35vmin, 22px);
+  --touch-pad-glow: calc(var(--touch-pad-size) * 0.24);
+  position: absolute;
+  left: var(--touch-pad-offset);
+  bottom: var(--touch-pad-offset);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--touch-pad-gap);
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 12000;
+}
+
+.touch-move-control__ring {
+  position: relative;
+  width: var(--touch-pad-size);
+  height: var(--touch-pad-size);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 159, 28, 0.9);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(46, 196, 182, 0.35), rgba(11, 13, 15, 0.9) 58%),
+    linear-gradient(145deg, rgba(255, 159, 28, 0.28), rgba(46, 196, 182, 0.14));
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+    inset 0 0 calc(var(--touch-pad-size) * 0.3) rgba(0, 0, 0, 0.45),
+    0 0 var(--touch-pad-glow) rgba(255, 159, 28, 0.5),
+    0 calc(var(--touch-pad-size) * 0.08) calc(var(--touch-pad-size) * 0.2) rgba(0, 0, 0, 0.35);
+}
+
+.touch-move-control__ring::before,
+.touch-move-control__ring::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  transform: translate(-50%, -50%);
+}
+
+.touch-move-control__ring::before {
+  width: 1px;
+  height: 72%;
+}
+
+.touch-move-control__ring::after {
+  width: 72%;
+  height: 1px;
+}
+
+.touch-move-control__thumb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--touch-pad-thumb-size);
+  height: var(--touch-pad-thumb-size);
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.95), rgba(255, 159, 28, 0.92) 38%, rgba(84, 46, 10, 0.98) 100%);
+  box-shadow:
+    0 0 calc(var(--touch-pad-size) * 0.18) rgba(255, 159, 28, 0.62),
+    inset 0 0 calc(var(--touch-pad-thumb-size) * 0.2) rgba(255, 255, 255, 0.28);
+  transform: translate(-50%, -50%);
+  transition: transform 90ms ease-out;
+}
+
+.touch-move-control.active .touch-move-control__thumb {
+  transition: none;
+}
+
+.touch-move-control__label {
+  font-size: var(--touch-pad-label-size);
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: #fff3cf;
+  text-shadow:
+    0 0 calc(var(--touch-pad-label-size) * 0.7) rgba(255, 159, 28, 0.8),
+    0 0 calc(var(--touch-pad-label-size) * 1.4) rgba(255, 159, 28, 0.45);
+}
+
+body:not(.touch-device) .touch-move-control {
+  opacity: 0.96;
+}
+
 .hud-header {
   position: absolute;
   top: calc(var(--vu) * 4);
@@ -1387,4 +1477,12 @@ input:checked+.slider:before {
   position: absolute;
   top: calc(var(--vu) * 4);
   right: calc(var(--vu) * 4);
+}
+
+@media (max-width: 900px), (pointer: coarse) {
+  .touch-move-control {
+    --touch-pad-size: clamp(104px, 15vmin, 168px);
+    --touch-pad-offset: clamp(14px, 2vmin, 28px);
+    --touch-pad-label-size: clamp(13px, 1.6vmin, 20px);
+  }
 }

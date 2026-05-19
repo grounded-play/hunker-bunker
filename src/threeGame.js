@@ -28,6 +28,7 @@ export class ThreeGame {
         this.chunkGroups = new THREE.Group();
         this.wallMeshes = [];
         this.keys = { up: false, down: false, left: false, right: false };
+        this.virtualInput = { x: 0, z: 0 };
         this.lastTime = performance.now();
         this.raycaster = new THREE.Raycaster();
 
@@ -199,6 +200,11 @@ export class ThreeGame {
         if (code === 'ArrowRight' || code === 'KeyD') this.keys.right = pressed;
     }
 
+    setVirtualInput(x = 0, z = 0) {
+        this.virtualInput.x = THREE.MathUtils.clamp(x, -1, 1);
+        this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
+    }
+
     updatePlayerType(type) {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
@@ -235,8 +241,10 @@ export class ThreeGame {
     }
 
     updatePlayer(delta) {
-        const axisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
-        const axisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+        const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+        const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+        const axisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
+        const axisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
         if (!axisX && !axisZ) return;
 
         const moveVector = new THREE.Vector3(axisX, 0, axisZ).normalize().multiplyScalar(this.moveSpeed * delta);

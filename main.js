@@ -13,6 +13,11 @@ const splashFsToggle = document.getElementById('splash-fs-toggle');
 const mainDebugToggle = document.getElementById('main-debug-toggle');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
+const touchMoveControl = document.getElementById('touch-move-control');
+const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring');
+const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
+const touchControlsSetting = document.getElementById('touch-controls-setting');
+const mainTouchToggle = document.getElementById('main-touch-toggle');
 
 const DESIGN_STAGE = {
     width: 177,
@@ -23,7 +28,8 @@ const state = {
     settings: {
         debug: false,
         sound: true,
-        fullscreen: false
+        fullscreen: false,
+        touchControls: isTouchDevice()
     },
     onlineCount: 1,
     gameInitialized: false
@@ -37,6 +43,109 @@ const gearSpinState = {
 };
 
 let stageResizeObserver = null;
+let activeTouchPointerId = null;
+
+function isTouchDevice() {
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const touchPoints = navigator.maxTouchPoints > 0;
+    const touchEvents = 'ontouchstart' in window;
+    const mobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+    const narrowViewport = window.innerWidth <= 900 || window.innerHeight <= 900;
+
+    return coarsePointer || touchPoints || touchEvents || (mobileUserAgent && narrowViewport);
+}
+
+function setTouchDeviceMode() {
+    const touchDevice = isTouchDevice();
+    document.body.classList.toggle('touch-device', touchDevice);
+
+    if (!touchDevice && state.settings.touchControls) {
+        state.settings.touchControls = false;
+        localStorage.setItem('hunker_touch_controls_enabled', 'false');
+    }
+
+    if (mainTouchToggle) {
+        mainTouchToggle.checked = !!state.settings.touchControls;
+    }
+
+    syncTouchSettingsVisibility();
+    syncTouchMoveControlVisibility();
+}
+
+function syncTouchSettingsVisibility() {
+    if (!touchControlsSetting) return;
+    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
+    touchControlsSetting.classList.toggle('hidden', !isHUD);
+}
+
+function syncTouchMoveControlVisibility() {
+    if (!touchMoveControl) return;
+
+    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
+    const shouldShow = isHUD && state.settings.touchControls;
+    touchMoveControl.classList.toggle('hidden', !shouldShow);
+
+    if (!shouldShow) {
+        activeTouchPointerId = null;
+        touchMoveControl.classList.remove('active');
+        touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
+        window.game?.setVirtualInput?.(0, 0);
+    }
+}
+
+function installTouchMoveControl() {
+    if (!touchMoveControl || !touchMoveRing || !touchMoveThumb) return;
+
+    const maxThumbOffset = () => touchMoveRing.clientWidth * 0.22;
+
+    const resetTouchControl = () => {
+        activeTouchPointerId = null;
+        touchMoveControl.classList.remove('active');
+        touchMoveThumb.style.transform = 'translate(-50%, -50%)';
+        window.game?.setVirtualInput?.(0, 0);
+    };
+
+    const updateTouchVector = (clientX, clientY) => {
+        const rect = touchMoveRing.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const deltaX = clientX - centerX;
+        const deltaY = clientY - centerY;
+        const radius = Math.max(rect.width * 0.36, 1);
+        const distance = Math.hypot(deltaX, deltaY);
+        const clampRatio = distance > radius ? radius / distance : 1;
+        const clampedX = deltaX * clampRatio;
+        const clampedY = deltaY * clampRatio;
+        const thumbRange = maxThumbOffset();
+        const thumbScale = radius > 0 ? thumbRange / radius : 0;
+
+        touchMoveThumb.style.transform = `translate(calc(-50% + ${clampedX * thumbScale}px), calc(-50% + ${clampedY * thumbScale}px))`;
+        window.game?.setVirtualInput?.(clampedX / radius, clampedY / radius);
+    };
+
+    touchMoveRing.addEventListener('pointerdown', (event) => {
+        activeTouchPointerId = event.pointerId;
+        touchMoveControl.classList.add('active');
+        touchMoveRing.setPointerCapture(event.pointerId);
+        updateTouchVector(event.clientX, event.clientY);
+        event.preventDefault();
+    });
+
+    touchMoveRing.addEventListener('pointermove', (event) => {
+        if (event.pointerId !== activeTouchPointerId) return;
+        updateTouchVector(event.clientX, event.clientY);
+        event.preventDefault();
+    });
+
+    const releaseTouchControl = (event) => {
+        if (event.pointerId !== activeTouchPointerId) return;
+        resetTouchControl();
+    };
+
+    touchMoveRing.addEventListener('pointerup', releaseTouchControl);
+    touchMoveRing.addEventListener('pointercancel', releaseTouchControl);
+    touchMoveRing.addEventListener('lostpointercapture', resetTouchControl);
+}
 
 function syncStageMetrics() {
     if (!gameViewport) return;
@@ -113,6 +222,8 @@ if (startBtn) {
             () => {
                 if (menu) menu.classList.add('hidden');
                 document.getElementById('ui').classList.remove('hidden');
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
 
                 const gameContainer = document.getElementById('game-container');
                 const viewport = document.getElementById('game-viewport');
@@ -246,9 +357,11 @@ if (settingsBtns.length > 0 && settingsPopup) {
                 else abortBtn.classList.add('hidden');
             }
 
+            syncTouchSettingsVisibility();
             settingsPopup.classList.remove('hidden');
             if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
             if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
+            if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
         });
     });
 }
@@ -279,6 +392,8 @@ if (confirmYes) {
         triggerDoorTransition(
             () => {
                 if (document.getElementById('ui')) document.getElementById('ui').classList.add('hidden');
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
                 if (menu) menu.classList.remove('hidden');
 
                 const gameContainer = document.getElementById('game-container');
@@ -317,6 +432,15 @@ if (mainFsToggle) {
                 document.exitFullscreen().catch(() => { });
             }
         }
+    });
+}
+
+if (mainTouchToggle) {
+    mainTouchToggle.addEventListener('change', (e) => {
+        state.settings.touchControls = e.target.checked && isTouchDevice();
+        e.target.checked = state.settings.touchControls;
+        localStorage.setItem('hunker_touch_controls_enabled', String(state.settings.touchControls));
+        syncTouchMoveControlVisibility();
     });
 }
 
@@ -440,8 +564,12 @@ charCards.forEach(card => {
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
     installStageLayoutSync();
+    setTouchDeviceMode();
+    installTouchMoveControl();
     window.addEventListener('resize', refreshGameLayout);
     window.addEventListener('orientationchange', refreshGameLayout);
+    window.addEventListener('resize', setTouchDeviceMode);
+    window.addEventListener('orientationchange', setTouchDeviceMode);
 
     setDebugMode(false);
 
@@ -458,6 +586,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('hunker_audio_enabled', e.target.checked);
             if (e.target.checked) AudioManager.play('ui_click', { volume: 0.6 });
         });
+    }
+
+    const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
+    if (storedTouchControls !== null) {
+        state.settings.touchControls = storedTouchControls === 'true' && isTouchDevice();
+    } else {
+        state.settings.touchControls = isTouchDevice();
+    }
+    if (mainTouchToggle) {
+        mainTouchToggle.checked = !!state.settings.touchControls;
     }
 
     // Load audio manifest
@@ -525,6 +663,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (splashFsToggle) splashFsToggle.checked = false;
     if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
+    syncTouchSettingsVisibility();
+    syncTouchMoveControlVisibility();
 
     if (!window.game) {
         const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
