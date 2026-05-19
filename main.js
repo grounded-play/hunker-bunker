@@ -51,7 +51,7 @@ function syncStageMetrics() {
 function refreshGameLayout() {
     syncStageMetrics();
 
-    if (window.game?.scale) {
+    if (window.game?.scale?.refresh) {
         requestAnimationFrame(() => {
             window.game.scale.refresh();
         });
@@ -120,14 +120,6 @@ if (startBtn) {
                     viewport.insertBefore(gameContainer, document.getElementById('ui'));
                     gameContainer.classList.add('fullscreen-mode');
                     queueGameLayoutRefresh();
-                }
-
-                // Clear hanging audio states
-                if (window.Phaser) {
-                    const game = window.Phaser.Display.Canvas.CanvasPool.pool[0]?.parent?.game;
-                    if (game && game.sound) {
-                        game.sound.stopAll();
-                    }
                 }
             },
             () => {
@@ -437,13 +429,9 @@ charCards.forEach(card => {
             if (previewIcon) previewIcon.textContent = heroData[type].icon;
             if (previewName) previewName.textContent = heroData[type].name;
 
-            // Sync with Phaser Scan
-            if (window.game) {
-                const gameScene = window.game.scene.getScene('GameScene');
-                if (gameScene && gameScene.updatePlayerType) {
-                    gameScene.updatePlayerType(type);
-                    AudioManager.play('class_lock', { volume: 0.5 });
-                }
+            if (window.game?.updatePlayerType) {
+                window.game.updatePlayerType(type);
+                AudioManager.play('class_lock', { volume: 0.5 });
             }
         }
     });
@@ -525,7 +513,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    const { GameScene } = await import('./src/game.js');
+    const { ThreeGame } = await import('./src/threeGame.js');
 
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
@@ -538,57 +526,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
 
-    // --- Surgical Phaser Initialization ---
-    if (window.Phaser && !window.game) {
-        const config = {
-            type: window.Phaser.AUTO,
+    if (!window.game) {
+        const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
+        window.game = new ThreeGame({
             parent: 'game-container',
-            scale: {
-                mode: window.Phaser.Scale.RESIZE,
-                width: '100%',
-                height: '100%'
-            },
-            input: {
-                touch: {
-                    capture: false
-                },
-                mouse: {
-                    capture: false
-                }
-            },
-            scene: [GameScene],
-            physics: {
-                default: 'arcade',
-                arcade: { debug: false }
-            },
-            backgroundColor: '#0b0d0f'
-        };
-        window.game = new window.Phaser.Game(config);
-
-        // --- Loading Sequence Logic ---
-        await AudioManager.loadAssets(manifest, (progress, itemName) => {
-            if (loaderBar) loaderBar.style.width = `${progress}%`;
-            if (loaderStatus && itemName) {
-                const parts = itemName.split('/');
-                const filename = parts[parts.length - 1];
-                loaderStatus.textContent = `LOADING ASSET: ${filename.toUpperCase()}`;
-            }
+            playerType: initialType
         });
-
-        if (loaderBar) loaderBar.style.width = `100%`;
-        if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
-
-        // Wait for first click
-        document.body.addEventListener('click', async () => {
-            if (AudioManager.isUnlocked) return;
-            await AudioManager.unlock();
-
-            triggerDoorTransition(
-                () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
-                null
-            );
-        }, { once: true });
     }
+
+    await AudioManager.loadAssets(manifest, (progress, itemName) => {
+        if (loaderBar) loaderBar.style.width = `${progress}%`;
+        if (loaderStatus && itemName) {
+            const parts = itemName.split('/');
+            const filename = parts[parts.length - 1];
+            loaderStatus.textContent = `LOADING ASSET: ${filename.toUpperCase()}`;
+        }
+    });
+
+    if (loaderBar) loaderBar.style.width = `100%`;
+    if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
+
+    document.body.addEventListener('click', async () => {
+        if (AudioManager.isUnlocked) return;
+        await AudioManager.unlock();
+
+        triggerDoorTransition(
+            () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
+            null
+        );
+    }, { once: true });
 });
 
 setDebugMode(false);
