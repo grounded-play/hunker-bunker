@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "cesarejohn.gltf-tools",
+    "kisstherake.qiniu-image-preview",
+    "slevesque.shader",
+    "WallabyJs.console-ninja",
+    "naumovs.color-highlight",
+    "ecmel.vscode-html-css",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ]
+}

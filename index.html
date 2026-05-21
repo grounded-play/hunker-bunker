@@ -8,9 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1242_v28">
+  <link rel="stylesheet" href="/style.css?v=1242_v29">
   <link rel="icon" type="image/png" href="/favicon.png" />
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.0/dist/phaser.min.js"></script>
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 </head>
 
@@ -193,6 +192,12 @@
         <div class="status-item"><span>UNITS</span><span class="status-value" id="online-count">1</span></div>
       </div>
     </div>
+    <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
+      <div class="touch-move-control__ring">
+        <div class="touch-move-control__thumb"></div>
+      </div>
+      <div class="touch-move-control__label">MOVE</div>
+    </div>
 
     <!-- Settings Modal -->
     <div id="settings-popup" class="modal hidden">
@@ -210,6 +215,10 @@
         <div class="setting-item">
           <span>AUDIO SYSTEMS</span>
           <label class="toggle"><input type="checkbox" id="main-audio-toggle" checked> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item hidden" id="touch-controls-setting">
+          <span>TOUCH MOVE PAD</span>
+          <label class="toggle"><input type="checkbox" id="main-touch-toggle"> <span class="slider"></span></label>
         </div>
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">
@@ -249,24 +258,23 @@
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- Tactical Confirmation Modal -->
-  <div id="confirm-modal" class="modal hidden" style="z-index: 10001;">
-    <div class="modal-content" style="border-color: #dc2626; text-align: center;">
-      <h2 class="modal-title" style="color: #dc2626;">CRITICAL ALERT</h2>
-      <p style="color: var(--text-main); font-size: var(--font-sm); margin-bottom: calc(var(--vu) * 4);">
-        ABORTING MISSION WILL TERMINATE CURRENT TACTICAL DATA FEED.<br>
-        PROCEED WITH SHUTDOWN?
-      </p>
-      <div style="display: flex; gap: calc(var(--vu) * 4); justify-content: center;">
-        <button class="abort-btn" id="confirm-yes" style="padding: calc(var(--vu) * 1) calc(var(--vu) * 4) !important;">YES</button>
-        <button class="calibrate-btn" id="confirm-no" style="padding: calc(var(--vu) * 1) calc(var(--vu) * 4) !important;">NO</button>
+    <!-- Tactical Confirmation Modal -->
+    <div id="confirm-modal" class="modal hidden" style="z-index: 10001;">
+      <div class="modal-content confirm-modal-content" style="border-color: #dc2626; text-align: center;">
+        <h2 class="modal-title" style="color: #dc2626;">CRITICAL ALERT</h2>
+        <p class="confirm-copy" style="color: var(--text-main); font-size: var(--font-sm); margin-bottom: calc(var(--vu) * 4);">
+          ABORTING MISSION WILL TERMINATE CURRENT TACTICAL DATA FEED.<br>
+          PROCEED WITH SHUTDOWN?
+        </p>
+        <div class="confirm-actions">
+          <button class="abort-btn" id="confirm-yes">YES</button>
+          <button class="confirm-secondary-btn" id="confirm-no">NO</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <script type="module" src="/main.js?v=1242"></script>
+  <script type="module" src="/main.js?v=1243"></script>
 </body>
 
 </html>

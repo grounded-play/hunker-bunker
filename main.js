@@ -12,6 +12,12 @@ const splashDebugToggle = document.getElementById('splash-debug-toggle');
 const splashFsToggle = document.getElementById('splash-fs-toggle');
 const mainDebugToggle = document.getElementById('main-debug-toggle');
 const gameViewport = document.getElementById('game-viewport');
+const gameStageContainer = document.getElementById('game-container');
+const touchMoveControl = document.getElementById('touch-move-control');
+const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring');
+const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
+const touchControlsSetting = document.getElementById('touch-controls-setting');
+const mainTouchToggle = document.getElementById('main-touch-toggle');
 
 const DESIGN_STAGE = {
     width: 177,
@@ -20,9 +26,10 @@ const DESIGN_STAGE = {
 
 const state = {
     settings: {
-        debug: false, 
+        debug: false,
         sound: true,
-        fullscreen: false
+        fullscreen: false,
+        touchControls: false
     },
     onlineCount: 1,
     gameInitialized: false
@@ -36,6 +43,104 @@ const gearSpinState = {
 };
 
 let stageResizeObserver = null;
+let activeTouchPointerId = null;
+
+function isTouchDevice() {
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+    const touchPoints = navigator.maxTouchPoints > 0;
+    const touchEvents = 'ontouchstart' in window;
+    const mobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
+    const narrowViewport = window.innerWidth <= 900 || window.innerHeight <= 900;
+
+    return coarsePointer || touchPoints || touchEvents || (mobileUserAgent && narrowViewport);
+}
+
+function setTouchDeviceMode() {
+    const touchDevice = isTouchDevice();
+    document.body.classList.toggle('touch-device', touchDevice);
+
+    if (mainTouchToggle) {
+        mainTouchToggle.checked = !!state.settings.touchControls;
+    }
+
+    syncTouchSettingsVisibility();
+    syncTouchMoveControlVisibility();
+}
+
+function syncTouchSettingsVisibility() {
+    if (!touchControlsSetting) return;
+    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
+    touchControlsSetting.classList.toggle('hidden', !isHUD);
+}
+
+function syncTouchMoveControlVisibility() {
+    if (!touchMoveControl) return;
+
+    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
+    const shouldShow = isHUD && state.settings.touchControls;
+    touchMoveControl.classList.toggle('hidden', !shouldShow);
+
+    if (!shouldShow) {
+        activeTouchPointerId = null;
+        touchMoveControl.classList.remove('active');
+        touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
+        window.game?.setVirtualInput?.(0, 0);
+    }
+}
+
+function installTouchMoveControl() {
+    if (!touchMoveControl || !touchMoveRing || !touchMoveThumb) return;
+
+    const maxThumbOffset = () => touchMoveRing.clientWidth * 0.22;
+
+    const resetTouchControl = () => {
+        activeTouchPointerId = null;
+        touchMoveControl.classList.remove('active');
+        touchMoveThumb.style.transform = 'translate(-50%, -50%)';
+        window.game?.setVirtualInput?.(0, 0);
+    };
+
+    const updateTouchVector = (clientX, clientY) => {
+        const rect = touchMoveRing.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const deltaX = clientX - centerX;
+        const deltaY = clientY - centerY;
+        const radius = Math.max(rect.width * 0.36, 1);
+        const distance = Math.hypot(deltaX, deltaY);
+        const clampRatio = distance > radius ? radius / distance : 1;
+        const clampedX = deltaX * clampRatio;
+        const clampedY = deltaY * clampRatio;
+        const thumbRange = maxThumbOffset();
+        const thumbScale = radius > 0 ? thumbRange / radius : 0;
+
+        touchMoveThumb.style.transform = `translate(calc(-50% + ${clampedX * thumbScale}px), calc(-50% + ${clampedY * thumbScale}px))`;
+        window.game?.setVirtualInput?.(clampedX / radius, clampedY / radius);
+    };
+
+    touchMoveRing.addEventListener('pointerdown', (event) => {
+        activeTouchPointerId = event.pointerId;
+        touchMoveControl.classList.add('active');
+        touchMoveRing.setPointerCapture(event.pointerId);
+        updateTouchVector(event.clientX, event.clientY);
+        event.preventDefault();
+    });
+
+    touchMoveRing.addEventListener('pointermove', (event) => {
+        if (event.pointerId !== activeTouchPointerId) return;
+        updateTouchVector(event.clientX, event.clientY);
+        event.preventDefault();
+    });
+
+    const releaseTouchControl = (event) => {
+        if (event.pointerId !== activeTouchPointerId) return;
+        resetTouchControl();
+    };
+
+    touchMoveRing.addEventListener('pointerup', releaseTouchControl);
+    touchMoveRing.addEventListener('pointercancel', releaseTouchControl);
+    touchMoveRing.addEventListener('lostpointercapture', resetTouchControl);
+}
 
 function syncStageMetrics() {
     if (!gameViewport) return;
@@ -50,11 +155,26 @@ function syncStageMetrics() {
 function refreshGameLayout() {
     syncStageMetrics();
 
-    if (window.game?.scale) {
+    if (window.game?.scale?.refresh) {
         requestAnimationFrame(() => {
             window.game.scale.refresh();
         });
     }
+}
+
+function queueGameLayoutRefresh(frameCount = 3) {
+    let framesRemaining = frameCount;
+
+    const step = () => {
+        refreshGameLayout();
+        framesRemaining -= 1;
+
+        if (framesRemaining > 0) {
+            requestAnimationFrame(step);
+        }
+    };
+
+    requestAnimationFrame(step);
 }
 
 function installStageLayoutSync() {
@@ -66,6 +186,9 @@ function installStageLayoutSync() {
         refreshGameLayout();
     });
     stageResizeObserver.observe(gameViewport);
+    if (gameStageContainer) {
+        stageResizeObserver.observe(gameStageContainer);
+    }
 }
 
 // --- Initialization ---
@@ -74,11 +197,14 @@ if (playBtn) {
         triggerDoorTransition(
             () => {
                 if (splash) splash.classList.add('hidden');
-                if (menu) menu.classList.remove('hidden');
+                if (menu) {
+                    menu.classList.remove('hidden');
+                    queueGameLayoutRefresh();
+                }
             },
             () => {
                 if (state.settings.fullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => {});
+                    document.documentElement.requestFullscreen().catch(() => { });
                 }
             }
         );
@@ -91,21 +217,15 @@ if (startBtn) {
             () => {
                 if (menu) menu.classList.add('hidden');
                 document.getElementById('ui').classList.remove('hidden');
-                
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
+
                 const gameContainer = document.getElementById('game-container');
                 const viewport = document.getElementById('game-viewport');
                 if (gameContainer && viewport) {
                     viewport.insertBefore(gameContainer, document.getElementById('ui'));
                     gameContainer.classList.add('fullscreen-mode');
-                    setTimeout(refreshGameLayout, 50);
-                }
-                
-                // Clear hanging audio states
-                if (window.Phaser) {
-                    const game = window.Phaser.Display.Canvas.CanvasPool.pool[0]?.parent?.game;
-                    if (game && game.sound) {
-                        game.sound.stopAll();
-                    }
+                    queueGameLayoutRefresh();
                 }
             },
             () => {
@@ -128,9 +248,9 @@ if (splashFsToggle) {
     splashFsToggle.addEventListener('change', (e) => {
         state.settings.fullscreen = e.target.checked;
         if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {});
+            document.documentElement.requestFullscreen().catch(() => { });
         } else {
-            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
         }
     });
 }
@@ -141,7 +261,7 @@ document.addEventListener('fullscreenchange', () => {
     state.settings.fullscreen = isFs;
     if (splashFsToggle) splashFsToggle.checked = isFs;
     if (mainFsToggle) mainFsToggle.checked = isFs;
-    setTimeout(refreshGameLayout, 50);
+    queueGameLayoutRefresh();
 });
 
 // Global UI Updates
@@ -232,9 +352,11 @@ if (settingsBtns.length > 0 && settingsPopup) {
                 else abortBtn.classList.add('hidden');
             }
 
+            syncTouchSettingsVisibility();
             settingsPopup.classList.remove('hidden');
             if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
             if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
+            if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
         });
     });
 }
@@ -261,18 +383,20 @@ if (confirmYes) {
         const confirmModal = document.getElementById('confirm-modal');
         if (confirmModal) confirmModal.classList.add('hidden');
         if (settingsPopup) settingsPopup.classList.add('hidden');
-        
+
         triggerDoorTransition(
             () => {
                 if (document.getElementById('ui')) document.getElementById('ui').classList.add('hidden');
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
                 if (menu) menu.classList.remove('hidden');
-                
+
                 const gameContainer = document.getElementById('game-container');
                 const mapBox = document.querySelector('.map-box');
                 if (gameContainer && mapBox) {
                     mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
                     gameContainer.classList.remove('fullscreen-mode');
-                    setTimeout(refreshGameLayout, 50);
+                    queueGameLayoutRefresh();
                 }
             },
             null
@@ -295,14 +419,23 @@ if (mainFsToggle) {
     mainFsToggle.addEventListener('change', (e) => {
         state.settings.fullscreen = e.target.checked;
         if (splashFsToggle) splashFsToggle.checked = state.settings.fullscreen;
-        
+
         if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {});
+            document.documentElement.requestFullscreen().catch(() => { });
         } else {
             if (document.fullscreenElement) {
-                document.exitFullscreen().catch(() => {});
+                document.exitFullscreen().catch(() => { });
             }
         }
+    });
+}
+
+if (mainTouchToggle) {
+    mainTouchToggle.addEventListener('change', (e) => {
+        state.settings.touchControls = e.target.checked;
+        e.target.checked = state.settings.touchControls;
+        localStorage.setItem('hunker_touch_controls_enabled', String(state.settings.touchControls));
+        syncTouchMoveControlVisibility();
     });
 }
 
@@ -318,29 +451,29 @@ function triggerDoorTransition(onClosed, onOpened) {
     overlay.classList.add('visible');
     overlay.classList.add('closing-v');
     AudioManager.play('ui_boot1', { volume: 0.5 });
-    
+
     // Force reflow
     void overlay.offsetWidth;
-    
+
     // 2. Start closing
     requestAnimationFrame(() => {
         overlay.classList.add('active');
         AudioManager.play('door_slam_vertical', { volume: 0.4 });
         AudioManager.play('door_gears_spin', { volume: 0.25 });
     });
-    
+
     // 3. Once closed, swap content and prepare horizontal open
     setTimeout(() => {
         spawnSmoke(0, 0, 30, true); // Slam smoke
         if (onClosed) onClosed();
-        
+
         // Swap classes
         overlay.classList.remove('closing-v', 'active');
         overlay.classList.add('opening-h');
-        
+
         // Force reflow
         void overlay.offsetWidth;
-        
+
         // 4. Start opening after a small "hold" gap
         setTimeout(() => {
             spawnSmoke(0, 0, 30, false); // Separation smoke
@@ -349,7 +482,7 @@ function triggerDoorTransition(onClosed, onOpened) {
             AudioManager.play('door_gears_spin', { volume: 0.25 });
             if (onOpened) onOpened();
         }, 300);
-        
+
         // 5. Cleanup
         setTimeout(() => {
             overlay.classList.remove('visible', 'opening-h', 'active');
@@ -364,27 +497,27 @@ function spawnSmoke(x, y, count, isVertical = true) {
     for (let i = 0; i < count; i++) {
         const p = document.createElement('div');
         p.className = 'smoke-particle';
-        
+
         // Randomize size
         const size = 20 + Math.random() * 40;
         p.style.width = `${size}px`;
         p.style.height = `${size}px`;
-        
+
         // Randomize position along the seam
         if (isVertical) {
             // Horizontal seam across the middle
             p.style.left = `${Math.random() * 100}%`;
-            p.style.top = `calc(50% - ${size/2}px)`;
+            p.style.top = `calc(50% - ${size / 2}px)`;
             p.style.setProperty('--dx', `${(Math.random() - 0.5) * 100}px`);
             p.style.setProperty('--dy', `${(Math.random() - 0.5) * 50}px`);
         } else {
             // Vertical seam down the middle
             p.style.top = `${Math.random() * 100}%`;
-            p.style.left = `calc(50% - ${size/2}px)`;
+            p.style.left = `calc(50% - ${size / 2}px)`;
             p.style.setProperty('--dx', `${(Math.random() - 0.5) * 50}px`);
             p.style.setProperty('--dy', `${(Math.random() - 0.5) * 100}px`);
         }
-        
+
         overlay.appendChild(p);
         setTimeout(() => p.remove(), 1500);
     }
@@ -408,20 +541,16 @@ charCards.forEach(card => {
         charCards.forEach(c => c.classList.remove('selected'));
         // Add to clicked
         card.classList.add('selected');
-        
+
         // Update Preview
         const type = card.getAttribute('data-type');
         if (heroData[type]) {
             if (previewIcon) previewIcon.textContent = heroData[type].icon;
             if (previewName) previewName.textContent = heroData[type].name;
-            
-            // Sync with Phaser Scan
-            if (window.game) {
-                const gameScene = window.game.scene.getScene('GameScene');
-                if (gameScene && gameScene.updatePlayerType) {
-                    gameScene.updatePlayerType(type);
-                    AudioManager.play('class_lock', { volume: 0.5 });
-                }
+
+            if (window.game?.updatePlayerType) {
+                window.game.updatePlayerType(type);
+                AudioManager.play('class_lock', { volume: 0.5 });
             }
         }
     });
@@ -430,11 +559,15 @@ charCards.forEach(card => {
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
     installStageLayoutSync();
+    setTouchDeviceMode();
+    installTouchMoveControl();
     window.addEventListener('resize', refreshGameLayout);
     window.addEventListener('orientationchange', refreshGameLayout);
+    window.addEventListener('resize', setTouchDeviceMode);
+    window.addEventListener('orientationchange', setTouchDeviceMode);
 
     setDebugMode(false);
-    
+
     const mainAudioToggle = document.getElementById('main-audio-toggle');
     if (mainAudioToggle) {
         const storedAudio = localStorage.getItem('hunker_audio_enabled');
@@ -448,6 +581,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('hunker_audio_enabled', e.target.checked);
             if (e.target.checked) AudioManager.play('ui_click', { volume: 0.6 });
         });
+    }
+
+    const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
+    if (storedTouchControls !== null) {
+        state.settings.touchControls = storedTouchControls === 'true';
+    } else {
+        state.settings.touchControls = isTouchDevice();
+    }
+    if (mainTouchToggle) {
+        mainTouchToggle.checked = !!state.settings.touchControls;
     }
 
     // Load audio manifest
@@ -503,7 +646,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    const { GameScene } = await import('./src/game.js');
+    const { ThreeGame } = await import('./src/threeGame.js');
 
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
@@ -515,58 +658,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (splashFsToggle) splashFsToggle.checked = false;
     if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
+    syncTouchSettingsVisibility();
+    syncTouchMoveControlVisibility();
 
-    // --- Surgical Phaser Initialization ---
-    if (window.Phaser && !window.game) {
-        const config = {
-            type: window.Phaser.AUTO,
+    if (!window.game) {
+        const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
+        window.game = new ThreeGame({
             parent: 'game-container',
-            scale: {
-                mode: window.Phaser.Scale.RESIZE,
-                width: '100%',
-                height: '100%'
-            },
-            input: {
-                touch: {
-                    capture: false
-                },
-                mouse: {
-                    capture: false
-                }
-            },
-            scene: [GameScene],
-            physics: {
-                default: 'arcade',
-                arcade: { debug: false }
-            },
-            backgroundColor: '#0b0d0f'
-        };
-        window.game = new window.Phaser.Game(config);
-        
-        // --- Loading Sequence Logic ---
-        await AudioManager.loadAssets(manifest, (progress, itemName) => {
-            if (loaderBar) loaderBar.style.width = `${progress}%`;
-            if (loaderStatus && itemName) {
-                const parts = itemName.split('/');
-                const filename = parts[parts.length - 1];
-                loaderStatus.textContent = `LOADING ASSET: ${filename.toUpperCase()}`;
-            }
+            playerType: initialType
         });
-        
-        if (loaderBar) loaderBar.style.width = `100%`;
-        if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
-        
-        // Wait for first click
-        document.body.addEventListener('click', async () => {
-            if (AudioManager.isUnlocked) return;
-            await AudioManager.unlock();
-            
-            triggerDoorTransition(
-                () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
-                null
-            );
-        }, { once: true });
     }
+
+    await AudioManager.loadAssets(manifest, (progress, itemName) => {
+        if (loaderBar) loaderBar.style.width = `${progress}%`;
+        if (loaderStatus && itemName) {
+            const parts = itemName.split('/');
+            const filename = parts[parts.length - 1];
+            loaderStatus.textContent = `LOADING ASSET: ${filename.toUpperCase()}`;
+        }
+    });
+
+    if (loaderBar) loaderBar.style.width = `100%`;
+    if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
+
+    document.body.addEventListener('click', async () => {
+        if (AudioManager.isUnlocked) return;
+        await AudioManager.unlock();
+
+        triggerDoorTransition(
+            () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
+            null
+        );
+    }, { once: true });
 });
 
 setDebugMode(false);
