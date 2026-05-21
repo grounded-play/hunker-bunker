@@ -536,10 +536,6 @@ const PREVIEW_FRONT_ROW = 0;
 const PREVIEW_DOOR_CLOSE_MS = 360;
 const PREVIEW_DOOR_HOLD_MS = 220;
 const PREVIEW_DOOR_OPEN_MS = 520;
-const CHROMA_GREEN_MIN = 70;
-const CHROMA_DOMINANCE_START = 14;
-const CHROMA_DOMINANCE_FULL = 36;
-
 let previewFrameIndex = 0;
 let previewAnimationTimer = null;
 let previewDoorTimer = null;
@@ -575,35 +571,6 @@ function getPreviewSpriteImage(path) {
     return imagePromise;
 }
 
-function applyChromaKey(imageData) {
-    const data = imageData.data;
-
-    for (let index = 0; index < data.length; index += 4) {
-        const red = data[index];
-        const green = data[index + 1];
-        const blue = data[index + 2];
-        const strongestOther = Math.max(red, blue);
-        const dominance = green - strongestOther;
-
-        if (green < CHROMA_GREEN_MIN || dominance <= CHROMA_DOMINANCE_START) {
-            continue;
-        }
-
-        const alphaFactor = 1 - Math.min(
-            1,
-            (dominance - CHROMA_DOMINANCE_START) / (CHROMA_DOMINANCE_FULL - CHROMA_DOMINANCE_START)
-        );
-
-        data[index + 3] = Math.round(data[index + 3] * alphaFactor);
-
-        if (alphaFactor < 1) {
-            data[index + 1] = Math.min(green, strongestOther + 12);
-        }
-    }
-
-    return imageData;
-}
-
 async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
     const data = heroData[type];
     if (!data || !previewSprite || !previewSpriteContext) return;
@@ -635,8 +602,6 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
         frameHeight
     );
 
-    const frame = previewSpriteContext.getImageData(0, 0, frameWidth, frameHeight);
-    previewSpriteContext.putImageData(applyChromaKey(frame), 0, 0);
 }
 
 function syncHeroPreview(type) {

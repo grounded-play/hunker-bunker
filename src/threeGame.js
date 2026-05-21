@@ -16,9 +16,6 @@ const PLAYER_SPRITESHEET_PATHS = {
 const SPRITE_GRID_SIZE = 4;
 const SPRITE_FRAME_REPEAT = 1 / SPRITE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
-const SPRITE_CHROMA_GREEN_MIN = 70;
-const SPRITE_CHROMA_DOMINANCE_START = 14;
-const SPRITE_CHROMA_DOMINANCE_FULL = 36;
 
 export class ThreeGame {
     constructor({ parent, playerType = 'SCOUT' } = {}) {
@@ -36,6 +33,8 @@ export class ThreeGame {
         this.moveSpeed = 3.8;
         this.cameraLift = 10;
         this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
+        this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
+        this.cameraPlanarRight = new THREE.Vector2(-this.cameraPlanarForward.y, this.cameraPlanarForward.x).normalize();
         this.chunkCache = new Map();
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
@@ -69,14 +68,13 @@ export class ThreeGame {
         this.container.replaceChildren(this.renderer.domElement);
 
         const textureLoader = new THREE.TextureLoader();
-        const imageLoader = new THREE.ImageLoader();
         const baseMetalTex = textureLoader.load('/bunker_base_metal.png');
         const grungeRustTex = textureLoader.load('/bunker_grunge_rust.png');
         const techScratchesTex = textureLoader.load('/bunker_tech_scratches.png');
         this.playerTextures = Object.fromEntries(
             Object.entries(PLAYER_SPRITESHEET_PATHS).map(([type, path]) => [
                 type,
-                this.createPlayerSpriteTexture(path, imageLoader)
+                this.createPlayerSpriteTexture(type, path, textureLoader)
             ])
         );
 
@@ -311,7 +309,7 @@ export class ThreeGame {
                 const material = new THREE.SpriteMaterial({
                     map: texture,
                     transparent: true,
-                    alphaTest: 0.02,
+                    alphaTest: 0.12,
                     depthWrite: false,
                     depthTest: true
                 });
@@ -321,11 +319,6 @@ export class ThreeGame {
                         `
                         #ifdef USE_MAP
                             vec4 mapTexel = texture2D( map, vMapUv );
-                            float dominantOther = max(mapTexel.r, mapTexel.b);
-                            float greenSignal = (mapTexel.g - dominantOther) * 255.0;
-                            float chroma = smoothstep(${SPRITE_CHROMA_DOMINANCE_START.toFixed(1)}, ${SPRITE_CHROMA_DOMINANCE_FULL.toFixed(1)}, greenSignal)
-                                * smoothstep(${SPRITE_CHROMA_GREEN_MIN.toFixed(1)}, ${(SPRITE_CHROMA_GREEN_MIN + 16).toFixed(1)}, mapTexel.g * 255.0);
-                            mapTexel.a *= (1.0 - chroma);
                             diffuseColor *= mapTexel;
                         #endif
                         `
@@ -497,67 +490,31 @@ export class ThreeGame {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
         this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
+        this.playerSprite.material.needsUpdate = true;
         this.playerMaterial.color.setHex(color);
         this.playerMaterial.emissive.setHex(color);
         this.playerGlow.color.setHex(color);
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
     }
 
-    createPlayerSpriteTexture(path, imageLoader) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 1;
-        canvas.height = 1;
-        const texture = new THREE.CanvasTexture(canvas);
+    refreshActivePlayerSprite(type) {
+        if (!this.playerSprite || this.playerType !== type) {
+            return;
+        }
 
-        imageLoader.load(path, (image) => {
-            texture.image = this.createChromaKeyCanvas(image);
-            texture.needsUpdate = true;
-        }, undefined, (error) => {
-            console.warn(`Failed to load player sprite: ${path}`, error);
-        });
-
-        return texture;
+        this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
+        this.playerSprite.material.needsUpdate = true;
+        this.updatePlayerSpriteFrame(0, this.currentFacingRow);
     }
 
-    createChromaKeyCanvas(image) {
-        const canvas = document.createElement('canvas');
-        canvas.width = image.width;
-        canvas.height = image.height;
-        const context = canvas.getContext('2d', { willReadFrequently: true });
-
-        if (!context) {
-            return canvas;
-        }
-
-        context.drawImage(image, 0, 0);
-        const frame = context.getImageData(0, 0, canvas.width, canvas.height);
-        const data = frame.data;
-
-        for (let index = 0; index < data.length; index += 4) {
-            const red = data[index];
-            const green = data[index + 1];
-            const blue = data[index + 2];
-            const strongestOther = Math.max(red, blue);
-            const dominance = green - strongestOther;
-
-            if (green < SPRITE_CHROMA_GREEN_MIN || dominance <= SPRITE_CHROMA_DOMINANCE_START) {
-                continue;
-            }
-
-            const alphaFactor = 1 - Math.min(
-                1,
-                (dominance - SPRITE_CHROMA_DOMINANCE_START) / (SPRITE_CHROMA_DOMINANCE_FULL - SPRITE_CHROMA_DOMINANCE_START)
-            );
-
-            data[index + 3] = Math.round(data[index + 3] * alphaFactor);
-
-            if (alphaFactor < 1) {
-                data[index + 1] = Math.min(green, strongestOther + 12);
-            }
-        }
-
-        context.putImageData(frame, 0, 0);
-        return canvas;
+    createPlayerSpriteTexture(type, path, textureLoader) {
+        return textureLoader.load(path, (texture) => {
+            this.playerMaterials?.[type] && (this.playerMaterials[type].needsUpdate = true);
+            this.refreshActivePlayerSprite(type);
+            console.info(`[ThreeGame] Loaded player sprite ${type} from ${path} (${texture.image?.width ?? 0}x${texture.image?.height ?? 0})`);
+        }, undefined, (error) => {
+            console.warn(`[ThreeGame] Failed to load player sprite ${type} from ${path}`, error);
+        });
     }
 
     resize() {
@@ -590,12 +547,14 @@ export class ThreeGame {
     updatePlayer(delta) {
         const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
-        const axisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
-        const axisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
-        const isMoving = Boolean(axisX || axisZ);
+        const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
+        const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
+        const moveAxisX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
+        const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
+        const isMoving = Boolean(moveAxisX || moveAxisZ);
 
         if (isMoving) {
-            const moveVector = new THREE.Vector3(axisX, 0, axisZ).normalize().multiplyScalar(this.moveSpeed * delta);
+            const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(this.moveSpeed * delta);
             const current = this.player.position.clone();
             const nextX = new THREE.Vector3(current.x + moveVector.x, current.y, current.z);
             const nextZ = new THREE.Vector3(current.x, current.y, current.z + moveVector.z);
@@ -609,7 +568,7 @@ export class ThreeGame {
             }
         }
 
-        this.updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving);
+        this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
         this.playerGlow.position.set(this.player.position.x, 1.6, this.player.position.z);
         this.playerMarker.position.set(this.player.position.x, this.playerRadius + 0.08, this.player.position.z);
     }
