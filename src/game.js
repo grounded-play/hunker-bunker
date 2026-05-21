@@ -73,7 +73,7 @@ export class GameScene extends window.Phaser.Scene {
         }
     }
 
-    generateLevel(depth) {
+    generateLevel(_depth) {
         this.floorGraphics.clear();
         this.backWallGraphics.clear();
         this.frontWallGraphics.clear();

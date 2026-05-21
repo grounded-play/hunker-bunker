@@ -50,16 +50,228 @@ export class ThreeGame {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.container.replaceChildren(this.renderer.domElement);
 
+        const textureLoader = new THREE.TextureLoader();
+        const baseMetalTex = textureLoader.load('/bunker_base_metal.png');
+        const grungeRustTex = textureLoader.load('/bunker_grunge_rust.png');
+        const techScratchesTex = textureLoader.load('/bunker_tech_scratches.png');
+
+        baseMetalTex.wrapS = THREE.RepeatWrapping;
+        baseMetalTex.wrapT = THREE.RepeatWrapping;
+        baseMetalTex.minFilter = THREE.LinearMipmapLinearFilter;
+        baseMetalTex.magFilter = THREE.LinearFilter;
+
+        grungeRustTex.wrapS = THREE.RepeatWrapping;
+        grungeRustTex.wrapT = THREE.RepeatWrapping;
+        grungeRustTex.minFilter = THREE.LinearMipmapLinearFilter;
+        grungeRustTex.magFilter = THREE.LinearFilter;
+
+        techScratchesTex.wrapS = THREE.RepeatWrapping;
+        techScratchesTex.wrapT = THREE.RepeatWrapping;
+        techScratchesTex.minFilter = THREE.LinearMipmapLinearFilter;
+        techScratchesTex.magFilter = THREE.LinearFilter;
+
+        const maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        if (maxAnisotropy > 1) {
+            baseMetalTex.anisotropy = maxAnisotropy;
+            grungeRustTex.anisotropy = maxAnisotropy;
+            techScratchesTex.anisotropy = maxAnisotropy;
+        }
+
         this.floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x1a1c1e,
-            roughness: 0.94,
-            metalness: 0.06
+            color: 0xffffff,
+            roughness: 0.85,
+            metalness: 0.22,
+            emissive: new THREE.Color(0x000000)
         });
+
+        // Set map so the ThreeJS compiler compiles mapping features into the shader
+        this.floorMaterial.map = baseMetalTex;
+
+        this.floorMaterial.onBeforeCompile = (shader) => {
+            shader.uniforms.tBase = { value: baseMetalTex };
+            shader.uniforms.tGrunge = { value: grungeRustTex };
+            shader.uniforms.tDetail = { value: techScratchesTex };
+
+            // Inject world position varying into vertex shader
+            shader.vertexShader = shader.vertexShader.replace(
+                'void main() {',
+                `
+                varying vec3 vWorldPos;
+                void main() {
+                `
+            );
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <worldpos_vertex>',
+                `
+                #include <worldpos_vertex>
+                vWorldPos = (modelMatrix * vec4( transformed, 1.0 )).xyz;
+                `
+            );
+
+            // Inject uniforms and varying into fragment shader
+            shader.fragmentShader = `
+                varying vec3 vWorldPos;
+                uniform sampler2D tBase;
+                uniform sampler2D tGrunge;
+                uniform sampler2D tDetail;
+                ${shader.fragmentShader}
+            `;
+
+            // Replace standard UV-mapping chunk with our world-space, coprime scale blending
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <map_fragment>',
+                `
+                #ifdef USE_MAP
+                    // Map using absolute world-space coordinates
+                    vec2 uvBase = vWorldPos.xz * 0.12;      // metal plates
+                    vec2 uvGrunge = vWorldPos.xz * 0.053;   // slow rust/grunge spots
+                    vec2 uvDetail = vWorldPos.xz * 0.27;    // tech stencils and fine scratches
+
+                    vec4 colBase = texture2D( tBase, uvBase );
+                    vec4 colGrunge = texture2D( tGrunge, uvGrunge );
+                    vec4 colDetail = texture2D( tDetail, uvDetail );
+
+                    // Base metal plates
+                    vec3 blended = colBase.rgb;
+
+                    // Blend rust grunge layer based on red & green channels
+                    float rustMask = clamp((colGrunge.r * 0.85 + colGrunge.g * 0.35) * 0.95, 0.0, 1.0);
+                    vec3 rustColor = vec3(0.18, 0.09, 0.05) * (0.6 + 0.4 * colGrunge.b);
+                    blended = mix(blended, rustColor, rustMask * 0.88);
+
+                    // Add mechanical scratch lines
+                    float scratchMask = colDetail.r * 0.22;
+                    blended += vec3(scratchMask);
+
+                    diffuseColor *= vec4(blended, 1.0);
+                #endif
+                `
+            );
+
+            // Add glowing high-tech stencils to emissive light
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <emissivemap_fragment>',
+                `
+                #include <emissivemap_fragment>
+                #ifdef USE_MAP
+                    vec2 uvDetailEmissive = vWorldPos.xz * 0.27;
+                    vec4 colDetailEmissive = texture2D( tDetail, uvDetailEmissive );
+                    float glowIntensity = smoothstep(0.35, 0.7, colDetailEmissive.g * colDetailEmissive.b);
+                    totalEmissiveRadiance += vec3(0.0, 0.7, 0.85) * glowIntensity * 1.35;
+                #endif
+                `
+            );
+        };
+
+        const wallMetalTex = textureLoader.load('/bunker_wall_metal.png');
+        const wallGrungeTex = textureLoader.load('/bunker_wall_grunge.png');
+
+        wallMetalTex.wrapS = THREE.RepeatWrapping;
+        wallMetalTex.wrapT = THREE.RepeatWrapping;
+        wallMetalTex.minFilter = THREE.LinearMipmapLinearFilter;
+        wallMetalTex.magFilter = THREE.LinearFilter;
+
+        wallGrungeTex.wrapS = THREE.RepeatWrapping;
+        wallGrungeTex.wrapT = THREE.RepeatWrapping;
+        wallGrungeTex.minFilter = THREE.LinearMipmapLinearFilter;
+        wallGrungeTex.magFilter = THREE.LinearFilter;
+
+        if (maxAnisotropy > 1) {
+            wallMetalTex.anisotropy = maxAnisotropy;
+            wallGrungeTex.anisotropy = maxAnisotropy;
+        }
+
         this.wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x2f3947,
-            roughness: 0.72,
-            metalness: 0.12
+            color: 0xffffff,
+            roughness: 0.76,
+            metalness: 0.26
         });
+
+        // Set map so THREE compiler enables map fragment code path
+        this.wallMaterial.map = wallMetalTex;
+
+        this.wallMaterial.onBeforeCompile = (shader) => {
+            shader.uniforms.tWallSide = { value: wallMetalTex };
+            shader.uniforms.tWallTop = { value: baseMetalTex }; // reuses floor plates for the top face
+            shader.uniforms.tWallGrunge = { value: wallGrungeTex };
+
+            // Inject world position and world normal varyings in vertex shader
+            shader.vertexShader = shader.vertexShader.replace(
+                'void main() {',
+                `
+                varying vec3 vWorldPos;
+                varying vec3 vWorldNormal;
+                void main() {
+                `
+            );
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <worldpos_vertex>',
+                `
+                #include <worldpos_vertex>
+                vWorldPos = (modelMatrix * vec4( transformed, 1.0 )).xyz;
+                vWorldNormal = normalize( (modelMatrix * vec4( normal, 0.0 )).xyz );
+                `
+            );
+
+            // Inject uniforms and varyings in fragment shader
+            shader.fragmentShader = `
+                varying vec3 vWorldPos;
+                varying vec3 vWorldNormal;
+                uniform sampler2D tWallSide;
+                uniform sampler2D tWallTop;
+                uniform sampler2D tWallGrunge;
+                ${shader.fragmentShader}
+            `;
+
+            // Replace standard UV-mapping with Triplanar World-Space Projection
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <map_fragment>',
+                `
+                #ifdef USE_MAP
+                    // Triplanar mapping axis blend weights based on normal alignment
+                    vec3 blendWeights = abs( normalize( vWorldNormal ) );
+                    // Normalize weights
+                    blendWeights /= ( blendWeights.x + blendWeights.y + blendWeights.z );
+
+                    // Project texture coordinates along X, Y, Z world axes
+                    // Y projection (top face) uses floor metal plate texture (XZ plane)
+                    vec2 uvY = vWorldPos.xz * 0.12; 
+                    vec4 colY = texture2D( tWallTop, uvY );
+
+                    // X projection (left/right sides) uses vertical bulkhead panels (ZY plane)
+                    vec2 uvX = vec2( vWorldPos.z * 0.45, vWorldPos.y * 0.35 );
+                    vec4 colX = texture2D( tWallSide, uvX );
+
+                    // Z projection (front/back sides) uses vertical bulkhead panels (XY plane)
+                    vec2 uvZ = vec2( vWorldPos.x * 0.45, vWorldPos.y * 0.35 );
+                    vec4 colZ = texture2D( tWallSide, uvZ );
+
+                    // Blend colors
+                    vec4 wallCol = colX * blendWeights.x + colY * blendWeights.y + colZ * blendWeights.z;
+
+                    // Project wall grunge/rust drip streaks
+                    vec2 uvGrungeY = vWorldPos.xz * 0.053;
+                    vec4 grungeY = texture2D( tWallGrunge, uvGrungeY );
+
+                    vec2 uvGrungeX = vec2( vWorldPos.z * 0.25, vWorldPos.y * 0.2 );
+                    vec4 grungeX = texture2D( tWallGrunge, uvGrungeX );
+
+                    vec2 uvGrungeZ = vec2( vWorldPos.x * 0.25, vWorldPos.y * 0.2 );
+                    vec4 grungeZ = texture2D( tWallGrunge, uvGrungeZ );
+
+                    vec4 wallGrunge = grungeX * blendWeights.x + grungeY * blendWeights.y + grungeZ * blendWeights.z;
+
+                    // Blend grunge with base metals
+                    vec3 blended = wallCol.rgb;
+                    float rustMask = clamp((wallGrunge.r * 0.85 + wallGrunge.g * 0.3) * 0.95, 0.0, 1.0);
+                    vec3 rustColor = vec3(0.18, 0.09, 0.05) * (0.6 + 0.4 * wallGrunge.b);
+                    blended = mix(blended, rustColor, rustMask * 0.82);
+
+                    diffuseColor *= vec4(blended, 1.0);
+                #endif
+                `
+            );
+        };
         this.playerMaterial = new THREE.MeshStandardMaterial({
             color: PLAYER_COLORS[this.playerType] ?? 0xffffff,
             emissive: PLAYER_COLORS[this.playerType] ?? 0xffffff,
