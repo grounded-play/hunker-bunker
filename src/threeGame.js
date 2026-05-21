@@ -7,6 +7,19 @@ const PLAYER_COLORS = {
     ENGINEER: 0x00e5ff
 };
 
+const PLAYER_SPRITESHEET_PATHS = {
+    SCOUT: '/scout_walk.png',
+    TANK: '/tank_walk.png',
+    ENGINEER: '/engineer_walk.png'
+};
+
+const SPRITE_GRID_SIZE = 4;
+const SPRITE_FRAME_REPEAT = 1 / SPRITE_GRID_SIZE;
+const SPRITE_ANIMATION_SPEED = 12;
+const SPRITE_CHROMA_GREEN_MIN = 70;
+const SPRITE_CHROMA_DOMINANCE_START = 14;
+const SPRITE_CHROMA_DOMINANCE_FULL = 36;
+
 export class ThreeGame {
     constructor({ parent, playerType = 'SCOUT' } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -19,7 +32,7 @@ export class ThreeGame {
         this.chunkCellCount = (this.chunkSize - 1) / 2;
         this.visibleChunkRadius = 1;
         this.wallHeight = 2.8;
-        this.playerRadius = 0.22;
+        this.playerRadius = 0.66;
         this.moveSpeed = 3.8;
         this.cameraLift = 10;
         this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
@@ -29,6 +42,11 @@ export class ThreeGame {
         this.wallMeshes = [];
         this.keys = { up: false, down: false, left: false, right: false };
         this.virtualInput = { x: 0, z: 0 };
+        this.animationTimer = 0;
+        this.currentFacingRow = 0;
+        this.playerSpriteScale = 1.6;
+        this.playerHeight = -0.18;
+        this.playerSpriteLead = 0.18;
         this.lastTime = performance.now();
         this.raycaster = new THREE.Raycaster();
 
@@ -51,9 +69,16 @@ export class ThreeGame {
         this.container.replaceChildren(this.renderer.domElement);
 
         const textureLoader = new THREE.TextureLoader();
+        const imageLoader = new THREE.ImageLoader();
         const baseMetalTex = textureLoader.load('/bunker_base_metal.png');
         const grungeRustTex = textureLoader.load('/bunker_grunge_rust.png');
         const techScratchesTex = textureLoader.load('/bunker_tech_scratches.png');
+        this.playerTextures = Object.fromEntries(
+            Object.entries(PLAYER_SPRITESHEET_PATHS).map(([type, path]) => [
+                type,
+                this.createPlayerSpriteTexture(path, imageLoader)
+            ])
+        );
 
         baseMetalTex.wrapS = THREE.RepeatWrapping;
         baseMetalTex.wrapT = THREE.RepeatWrapping;
@@ -76,6 +101,15 @@ export class ThreeGame {
             grungeRustTex.anisotropy = maxAnisotropy;
             techScratchesTex.anisotropy = maxAnisotropy;
         }
+
+        Object.values(this.playerTextures).forEach((texture) => {
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.magFilter = THREE.NearestFilter;
+            texture.minFilter = THREE.NearestFilter;
+            texture.repeat.set(SPRITE_FRAME_REPEAT, SPRITE_FRAME_REPEAT);
+            texture.offset.set(0, (SPRITE_GRID_SIZE - 1) * SPRITE_FRAME_REPEAT);
+        });
 
         this.floorMaterial = new THREE.MeshStandardMaterial({
             color: 0xffffff,
@@ -272,6 +306,34 @@ export class ThreeGame {
                 `
             );
         };
+        this.playerMaterials = Object.fromEntries(
+            Object.entries(this.playerTextures).map(([type, texture]) => {
+                const material = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    alphaTest: 0.02,
+                    depthWrite: false,
+                    depthTest: true
+                });
+                material.onBeforeCompile = (shader) => {
+                    shader.fragmentShader = shader.fragmentShader.replace(
+                        '#include <map_fragment>',
+                        `
+                        #ifdef USE_MAP
+                            vec4 mapTexel = texture2D( map, vMapUv );
+                            float dominantOther = max(mapTexel.r, mapTexel.b);
+                            float greenSignal = (mapTexel.g - dominantOther) * 255.0;
+                            float chroma = smoothstep(${SPRITE_CHROMA_DOMINANCE_START.toFixed(1)}, ${SPRITE_CHROMA_DOMINANCE_FULL.toFixed(1)}, greenSignal)
+                                * smoothstep(${SPRITE_CHROMA_GREEN_MIN.toFixed(1)}, ${(SPRITE_CHROMA_GREEN_MIN + 16).toFixed(1)}, mapTexel.g * 255.0);
+                            mapTexel.a *= (1.0 - chroma);
+                            diffuseColor *= mapTexel;
+                        #endif
+                        `
+                    );
+                };
+                return [type, material];
+            })
+        );
         this.playerMaterial = new THREE.MeshStandardMaterial({
             color: PLAYER_COLORS[this.playerType] ?? 0xffffff,
             emissive: PLAYER_COLORS[this.playerType] ?? 0xffffff,
@@ -279,6 +341,8 @@ export class ThreeGame {
             roughness: 0.3,
             metalness: 0.05
         });
+        this.playerMaterial.colorWrite = false;
+        this.playerMaterial.depthWrite = false;
 
         this.setupLighting();
         this.setupWorld();
@@ -333,22 +397,34 @@ export class ThreeGame {
     }
 
     setupPlayer() {
-        this.player = new THREE.Mesh(
+        this.player = new THREE.Group();
+
+        this.playerMesh = new THREE.Mesh(
             new THREE.SphereGeometry(this.playerRadius, 20, 20),
             this.playerMaterial
         );
-        this.player.castShadow = true;
-        this.player.receiveShadow = true;
+        this.playerMesh.position.y = this.playerRadius + 0.02;
+        this.playerMesh.castShadow = true;
+        this.player.add(this.playerMesh);
+
+        this.playerSprite = new THREE.Sprite(this.playerMaterials[this.playerType] ?? this.playerMaterials.SCOUT);
+        this.playerSprite.center.set(0.5, 0);
+        this.playerSprite.position.x = this.playerSpriteLead;
+        this.playerSprite.position.y = this.playerHeight;
+        this.playerSprite.position.z = this.playerSpriteLead;
+        this.playerSprite.scale.set(this.playerSpriteScale, this.playerSpriteScale, 1);
+        this.player.add(this.playerSprite);
 
         this.playerMarker = this.createHiddenPlayerMarker();
         this.playerMarker.visible = false;
         this.scene.add(this.playerMarker);
 
         const spawn = this.getSpawnTile();
-        this.player.position.set(spawn.x, this.playerRadius + 0.02, spawn.y);
+        this.player.position.set(spawn.x, 0, spawn.y);
         this.scene.add(this.player);
         this.playerGlow.position.set(spawn.x, 1.6, spawn.y);
         this.playerMarker.position.set(spawn.x, this.playerRadius + 0.08, spawn.y);
+        this.updatePlayerSpriteFrame(0, this.currentFacingRow);
     }
 
     createHiddenPlayerMarker() {
@@ -420,9 +496,68 @@ export class ThreeGame {
     updatePlayerType(type) {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
+        this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
         this.playerMaterial.color.setHex(color);
         this.playerMaterial.emissive.setHex(color);
         this.playerGlow.color.setHex(color);
+        this.updatePlayerSpriteFrame(0, this.currentFacingRow);
+    }
+
+    createPlayerSpriteTexture(path, imageLoader) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const texture = new THREE.CanvasTexture(canvas);
+
+        imageLoader.load(path, (image) => {
+            texture.image = this.createChromaKeyCanvas(image);
+            texture.needsUpdate = true;
+        }, undefined, (error) => {
+            console.warn(`Failed to load player sprite: ${path}`, error);
+        });
+
+        return texture;
+    }
+
+    createChromaKeyCanvas(image) {
+        const canvas = document.createElement('canvas');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext('2d', { willReadFrequently: true });
+
+        if (!context) {
+            return canvas;
+        }
+
+        context.drawImage(image, 0, 0);
+        const frame = context.getImageData(0, 0, canvas.width, canvas.height);
+        const data = frame.data;
+
+        for (let index = 0; index < data.length; index += 4) {
+            const red = data[index];
+            const green = data[index + 1];
+            const blue = data[index + 2];
+            const strongestOther = Math.max(red, blue);
+            const dominance = green - strongestOther;
+
+            if (green < SPRITE_CHROMA_GREEN_MIN || dominance <= SPRITE_CHROMA_DOMINANCE_START) {
+                continue;
+            }
+
+            const alphaFactor = 1 - Math.min(
+                1,
+                (dominance - SPRITE_CHROMA_DOMINANCE_START) / (SPRITE_CHROMA_DOMINANCE_FULL - SPRITE_CHROMA_DOMINANCE_START)
+            );
+
+            data[index + 3] = Math.round(data[index + 3] * alphaFactor);
+
+            if (alphaFactor < 1) {
+                data[index + 1] = Math.min(green, strongestOther + 12);
+            }
+        }
+
+        context.putImageData(frame, 0, 0);
+        return canvas;
     }
 
     resize() {
@@ -457,23 +592,62 @@ export class ThreeGame {
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
         const axisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
         const axisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
-        if (!axisX && !axisZ) return;
+        const isMoving = Boolean(axisX || axisZ);
 
-        const moveVector = new THREE.Vector3(axisX, 0, axisZ).normalize().multiplyScalar(this.moveSpeed * delta);
-        const current = this.player.position.clone();
-        const nextX = new THREE.Vector3(current.x + moveVector.x, current.y, current.z);
-        const nextZ = new THREE.Vector3(current.x, current.y, current.z + moveVector.z);
+        if (isMoving) {
+            const moveVector = new THREE.Vector3(axisX, 0, axisZ).normalize().multiplyScalar(this.moveSpeed * delta);
+            const current = this.player.position.clone();
+            const nextX = new THREE.Vector3(current.x + moveVector.x, current.y, current.z);
+            const nextZ = new THREE.Vector3(current.x, current.y, current.z + moveVector.z);
 
-        if (this.canOccupyPosition(nextX.x, nextX.z)) {
-            this.player.position.x = nextX.x;
+            if (this.canOccupyPosition(nextX.x, nextX.z)) {
+                this.player.position.x = nextX.x;
+            }
+
+            if (this.canOccupyPosition(nextZ.x, nextZ.z)) {
+                this.player.position.z = nextZ.z;
+            }
         }
 
-        if (this.canOccupyPosition(nextZ.x, nextZ.z)) {
-            this.player.position.z = nextZ.z;
-        }
-
+        this.updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving);
         this.playerGlow.position.set(this.player.position.x, 1.6, this.player.position.z);
         this.playerMarker.position.set(this.player.position.x, this.playerRadius + 0.08, this.player.position.z);
+    }
+
+    updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving) {
+        if (isMoving) {
+            this.currentFacingRow = this.getFacingRow(axisX, axisZ);
+            this.animationTimer += delta * SPRITE_ANIMATION_SPEED;
+            const column = Math.floor(this.animationTimer) % SPRITE_GRID_SIZE;
+            this.updatePlayerSpriteFrame(column, this.currentFacingRow);
+            return;
+        }
+
+        this.animationTimer = 0;
+        this.updatePlayerSpriteFrame(0, this.currentFacingRow);
+    }
+
+    getFacingRow(axisX, axisZ) {
+        const angle = Math.atan2(axisZ, axisX);
+
+        if (angle > -Math.PI / 4 && angle <= Math.PI / 4) {
+            return 2;
+        }
+
+        if (angle > Math.PI / 4 && angle <= (3 * Math.PI) / 4) {
+            return 0;
+        }
+
+        if (angle > (-3 * Math.PI) / 4 && angle <= -Math.PI / 4) {
+            return 3;
+        }
+
+        return 1;
+    }
+
+    updatePlayerSpriteFrame(column, row) {
+        const texture = this.playerTextures[this.playerType] ?? this.playerTextures.SCOUT;
+        texture.offset.set(column * SPRITE_FRAME_REPEAT, (SPRITE_GRID_SIZE - 1 - row) * SPRITE_FRAME_REPEAT);
     }
 
     updateCamera(delta) {
@@ -835,6 +1009,8 @@ export class ThreeGame {
         this.renderer.setAnimationLoop(null);
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
+        Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
+        Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
         this.renderer.dispose();
         this.container.replaceChildren();
     }

@@ -526,13 +526,187 @@ function spawnSmoke(x, y, count, isVertical = true) {
 // Character Selection Logic
 const charCards = document.querySelectorAll('.char-card');
 const previewIcon = document.getElementById('char-preview-icon');
+const previewSprite = document.getElementById('char-preview-sprite');
+const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
+const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
+const PREVIEW_FRAME_COUNT = 4;
+const PREVIEW_FRAME_MS = 140;
+const PREVIEW_FRONT_ROW = 0;
+const PREVIEW_DOOR_CLOSE_MS = 360;
+const PREVIEW_DOOR_HOLD_MS = 220;
+const PREVIEW_DOOR_OPEN_MS = 520;
+const CHROMA_GREEN_MIN = 70;
+const CHROMA_DOMINANCE_START = 14;
+const CHROMA_DOMINANCE_FULL = 36;
+
+let previewFrameIndex = 0;
+let previewAnimationTimer = null;
+let previewDoorTimer = null;
+let pendingPreviewType = null;
+let activePreviewType = 'SCOUT';
+const previewSpriteImages = new Map();
 
 const heroData = {
-    'SCOUT': { icon: '◈', name: 'SCOUT' },
-    'TANK': { icon: '⬢', name: 'TANK' },
-    'ENGINEER': { icon: '⬣', name: 'ENGINEER' }
+    'SCOUT': { icon: '◈', name: 'SCOUT', sprite: '/scout_walk.png' },
+    'TANK': { icon: '⬢', name: 'TANK', sprite: '/tank_walk.png' },
+    'ENGINEER': { icon: '⬣', name: 'ENGINEER', sprite: '/engineer_walk.png' }
 };
+
+function getPreviewSpriteImage(path) {
+    if (!path) return Promise.resolve(null);
+
+    const cached = previewSpriteImages.get(path);
+    if (cached) {
+        return cached instanceof Promise ? cached : Promise.resolve(cached);
+    }
+
+    const imagePromise = new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+            previewSpriteImages.set(path, image);
+            resolve(image);
+        };
+        image.onerror = reject;
+        image.src = path;
+    });
+
+    previewSpriteImages.set(path, imagePromise);
+    return imagePromise;
+}
+
+function applyChromaKey(imageData) {
+    const data = imageData.data;
+
+    for (let index = 0; index < data.length; index += 4) {
+        const red = data[index];
+        const green = data[index + 1];
+        const blue = data[index + 2];
+        const strongestOther = Math.max(red, blue);
+        const dominance = green - strongestOther;
+
+        if (green < CHROMA_GREEN_MIN || dominance <= CHROMA_DOMINANCE_START) {
+            continue;
+        }
+
+        const alphaFactor = 1 - Math.min(
+            1,
+            (dominance - CHROMA_DOMINANCE_START) / (CHROMA_DOMINANCE_FULL - CHROMA_DOMINANCE_START)
+        );
+
+        data[index + 3] = Math.round(data[index + 3] * alphaFactor);
+
+        if (alphaFactor < 1) {
+            data[index + 1] = Math.min(green, strongestOther + 12);
+        }
+    }
+
+    return imageData;
+}
+
+async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
+    const data = heroData[type];
+    if (!data || !previewSprite || !previewSpriteContext) return;
+
+    const image = await getPreviewSpriteImage(data.sprite).catch(() => null);
+    if (!image || !heroData[type] || heroData[type].sprite !== data.sprite) return;
+
+    const frameWidth = Math.floor(image.width / PREVIEW_FRAME_COUNT);
+    const frameHeight = Math.floor(image.height / PREVIEW_FRAME_COUNT);
+    const sourceX = frameIndex * frameWidth;
+    const sourceY = PREVIEW_FRONT_ROW * frameHeight;
+
+    if (previewSprite.width !== frameWidth || previewSprite.height !== frameHeight) {
+        previewSprite.width = frameWidth;
+        previewSprite.height = frameHeight;
+    }
+
+    previewSpriteContext.clearRect(0, 0, frameWidth, frameHeight);
+    previewSpriteContext.imageSmoothingEnabled = false;
+    previewSpriteContext.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        frameWidth,
+        frameHeight,
+        0,
+        0,
+        frameWidth,
+        frameHeight
+    );
+
+    const frame = previewSpriteContext.getImageData(0, 0, frameWidth, frameHeight);
+    previewSpriteContext.putImageData(applyChromaKey(frame), 0, 0);
+}
+
+function syncHeroPreview(type) {
+    const data = heroData[type];
+    if (!data) return;
+
+    activePreviewType = type;
+    if (previewIcon) previewIcon.textContent = data.icon;
+    if (previewName) previewName.textContent = data.name;
+    previewFrameIndex = 0;
+    void renderPreviewFrame(type, previewFrameIndex);
+}
+
+function startHeroPreviewAnimation() {
+    if (!previewSprite || previewAnimationTimer !== null) return;
+
+    previewAnimationTimer = window.setInterval(() => {
+        previewFrameIndex = (previewFrameIndex + 1) % PREVIEW_FRAME_COUNT;
+        void renderPreviewFrame(activePreviewType, previewFrameIndex);
+    }, PREVIEW_FRAME_MS);
+}
+
+function triggerHeroPreviewSwap(type) {
+    if (!heroData[type]) return;
+
+    if (!previewDoor) {
+        syncHeroPreview(type);
+        return;
+    }
+
+    pendingPreviewType = type;
+
+    if (previewDoorTimer !== null) {
+        return;
+    }
+
+    const targetType = pendingPreviewType;
+    previewDoor.classList.remove('opening', 'ready-to-open');
+    previewDoor.classList.add('active', 'closing');
+    AudioManager.play('door_slam_vertical', { volume: 0.2 });
+    AudioManager.play('door_gears_spin', { volume: 0.12 });
+
+    previewDoorTimer = window.setTimeout(() => {
+        syncHeroPreview(targetType);
+        previewDoor.classList.remove('closing');
+        previewDoor.classList.add('ready-to-open');
+
+        window.setTimeout(() => {
+            void previewDoor.offsetWidth;
+            previewDoor.classList.remove('ready-to-open');
+            previewDoor.classList.add('opening');
+            AudioManager.play('door_slide_horiz', { volume: 0.18 });
+            AudioManager.play('door_gears_spin', { volume: 0.1 });
+        }, PREVIEW_DOOR_HOLD_MS);
+
+        previewDoorTimer = window.setTimeout(() => {
+            previewDoor.classList.remove('active', 'opening', 'ready-to-open');
+            previewDoorTimer = null;
+
+            if (pendingPreviewType !== targetType) {
+                const queuedType = pendingPreviewType;
+                pendingPreviewType = null;
+                triggerHeroPreviewSwap(queuedType);
+                return;
+            }
+
+            pendingPreviewType = null;
+        }, PREVIEW_DOOR_HOLD_MS + PREVIEW_DOOR_OPEN_MS);
+    }, PREVIEW_DOOR_CLOSE_MS);
+}
 
 charCards.forEach(card => {
     card.addEventListener('click', () => {
@@ -545,8 +719,7 @@ charCards.forEach(card => {
         // Update Preview
         const type = card.getAttribute('data-type');
         if (heroData[type]) {
-            if (previewIcon) previewIcon.textContent = heroData[type].icon;
-            if (previewName) previewName.textContent = heroData[type].name;
+            triggerHeroPreviewSwap(type);
 
             if (window.game?.updatePlayerType) {
                 window.game.updatePlayerType(type);
@@ -556,8 +729,191 @@ charCards.forEach(card => {
     });
 });
 
+// In-Universe Tactical Cursor and Hover React
+function initTacticalCursor() {
+    const cursor = document.createElement('div');
+    cursor.id = 'tactical-cursor';
+
+    const dot = document.createElement('div');
+    dot.className = 'cursor-dot';
+    cursor.appendChild(dot);
+
+    const ring = document.createElement('div');
+    ring.className = 'cursor-ring';
+    cursor.appendChild(ring);
+
+    ['tl', 'tr', 'bl', 'br'].forEach(dir => {
+        const b = document.createElement('div');
+        b.className = `cursor-bracket cursor-bracket-${dir}`;
+        cursor.appendChild(b);
+    });
+
+    document.body.appendChild(cursor);
+
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let curX = mouseX;
+    let curY = mouseY;
+    let targetScale = 1.0;
+    let curScale = 1.0;
+    const LERP_FACTOR = 0.15; // authentic retro mechanical delay
+    let hasMoved = false;
+    let touchFadeTimeout = null;
+
+    let lastTouchTime = 0;
+
+    window.addEventListener('mousemove', (e) => {
+        // Ignore synthetic mousemove events triggered by touchscreen touch/taps
+        if (Date.now() - lastTouchTime < 1000) return;
+
+        // Ensure clientX and clientY are valid, finite numbers
+        if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
+        if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
+
+        // Filter out simulated browser events (common on clicks/focus transitions) 
+        // that report false (0,0) or extremely small coordinates on either axis.
+        if (e.clientX < 8 || e.clientY < 8) return;
+
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        
+        // Ensure cursor is visible on desktop move (clearing touch fade states)
+        cursor.classList.remove('cursor-fade-out');
+        targetScale = 1.0;
+        if (touchFadeTimeout) {
+            clearTimeout(touchFadeTimeout);
+            touchFadeTimeout = null;
+        }
+
+        if (!hasMoved) {
+            hasMoved = true;
+            document.documentElement.classList.add('custom-cursor-enabled');
+        }
+    }, { passive: true });
+
+    // Instantly support touchscreen interaction: show cursor on tap/drag and fade it out nicely
+    window.addEventListener('touchstart', (e) => {
+        lastTouchTime = Date.now();
+        if (e.touches && e.touches[0]) {
+            const touch = e.touches[0];
+            
+            // Snap position instantly to tapped coordinate to avoid sliding from previous location
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+            curX = mouseX;
+            curY = mouseY;
+            
+            hasMoved = true;
+            document.documentElement.classList.add('custom-cursor-enabled');
+            cursor.classList.remove('cursor-fade-out');
+            targetScale = 0.72; // Snappy touch tap compression
+            
+            if (touchFadeTimeout) {
+                clearTimeout(touchFadeTimeout);
+            }
+            
+            // Fade out cursor after a short delay following tap
+            touchFadeTimeout = setTimeout(() => {
+                cursor.classList.add('cursor-fade-out');
+                targetScale = 0.65; // Collapse scale on fade-out
+            }, 450);
+        }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        lastTouchTime = Date.now();
+        if (e.touches && e.touches[0]) {
+            const touch = e.touches[0];
+            mouseX = touch.clientX;
+            mouseY = touch.clientY;
+            
+            cursor.classList.remove('cursor-fade-out');
+            targetScale = 1.0; // scale up to 1.0 during active touch dragging
+            if (touchFadeTimeout) {
+                clearTimeout(touchFadeTimeout);
+            }
+        }
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+        lastTouchTime = Date.now();
+        if (touchFadeTimeout) {
+            clearTimeout(touchFadeTimeout);
+        }
+        touchFadeTimeout = setTimeout(() => {
+            cursor.classList.add('cursor-fade-out');
+            targetScale = 0.65; // Collapse scale on fade-out
+        }, 300);
+    }, { passive: true });
+
+    function updateCursorPosition() {
+        curX += (mouseX - curX) * LERP_FACTOR;
+        curY += (mouseY - curY) * LERP_FACTOR;
+
+        // Snappy dynamic scale LERP for precise clicks and fadeouts
+        curScale += (targetScale - curScale) * 0.35;
+
+        // Keep the custom cursor perfectly centered on the physical pointer tip and scaled correctly
+        cursor.style.transform = `translate3d(${curX}px, ${curY}px, 0) translate3d(-50%, -50%, 0) scale(${curScale})`;
+        requestAnimationFrame(updateCursorPosition);
+    }
+    requestAnimationFrame(updateCursorPosition);
+
+    window.addEventListener('pointerdown', (e) => {
+        // Skip touchpointerdown events as touchscreen taps are custom-scaled via touchstart
+        if (e.pointerType === 'touch') return;
+
+        cursor.classList.add('cursor-clicking');
+        targetScale = 0.72; // Snap scale down on press and hold
+        
+        // Spawn the click sonar ripple exactly at the smoothed cursor's position.
+        // This is robust against synthetic pointer events and ensures precise alignment.
+        const ripple = document.createElement('div');
+        ripple.className = 'cursor-ripple';
+        ripple.style.left = `${curX}px`;
+        ripple.style.top = `${curY}px`;
+        document.body.appendChild(ripple);
+        
+        setTimeout(() => ripple.remove(), 600);
+    });
+
+    window.addEventListener('pointerup', (e) => {
+        if (e.pointerType === 'touch') return;
+        cursor.classList.remove('cursor-clicking');
+        targetScale = 1.0; // Restore full scale on release
+    });
+
+    let currentHoverTarget = null;
+
+    document.addEventListener('pointerover', (e) => {
+        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select');
+        if (target) {
+            if (currentHoverTarget !== target) {
+                currentHoverTarget = target;
+                cursor.classList.add('cursor-hovering');
+                // Play in-universe hover click blip
+                AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });
+            }
+        }
+    });
+
+    document.addEventListener('pointerout', (e) => {
+        const target = e.target.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select');
+        if (target) {
+            const related = e.relatedTarget ? e.relatedTarget.closest('button, .char-card, .toggle, .calibrate-btn, .close-modal, .about-btn, a, input, select') : null;
+            if (related !== currentHoverTarget) {
+                currentHoverTarget = related;
+                if (!related) {
+                    cursor.classList.remove('cursor-hovering');
+                }
+            }
+        }
+    });
+}
+
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
+    initTacticalCursor();
     installStageLayoutSync();
     setTouchDeviceMode();
     installTouchMoveControl();
@@ -651,10 +1007,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
     if (initialSelected && heroData[initialSelected.getAttribute('data-type')]) {
-        const data = heroData[initialSelected.getAttribute('data-type')];
-        if (previewIcon) previewIcon.textContent = data.icon;
-        if (previewName) previewName.textContent = data.name;
+        syncHeroPreview(initialSelected.getAttribute('data-type'));
     }
+    startHeroPreviewAnimation();
     if (splashFsToggle) splashFsToggle.checked = false;
     if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
