@@ -29,7 +29,7 @@ const state = {
         debug: false,
         sound: true,
         fullscreen: false,
-        touchControls: isTouchDevice()
+        touchControls: false
     },
     onlineCount: 1,
     gameInitialized: false
@@ -58,11 +58,6 @@ function isTouchDevice() {
 function setTouchDeviceMode() {
     const touchDevice = isTouchDevice();
     document.body.classList.toggle('touch-device', touchDevice);
-
-    if (!touchDevice && state.settings.touchControls) {
-        state.settings.touchControls = false;
-        localStorage.setItem('hunker_touch_controls_enabled', 'false');
-    }
 
     if (mainTouchToggle) {
         mainTouchToggle.checked = !!state.settings.touchControls;
@@ -437,7 +432,7 @@ if (mainFsToggle) {
 
 if (mainTouchToggle) {
     mainTouchToggle.addEventListener('change', (e) => {
-        state.settings.touchControls = e.target.checked && isTouchDevice();
+        state.settings.touchControls = e.target.checked;
         e.target.checked = state.settings.touchControls;
         localStorage.setItem('hunker_touch_controls_enabled', String(state.settings.touchControls));
         syncTouchMoveControlVisibility();
@@ -590,7 +585,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
     if (storedTouchControls !== null) {
-        state.settings.touchControls = storedTouchControls === 'true' && isTouchDevice();
+        state.settings.touchControls = storedTouchControls === 'true';
     } else {
         state.settings.touchControls = isTouchDevice();
     }

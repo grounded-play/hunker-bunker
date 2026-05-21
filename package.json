@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/three": "^0.184.1",
     "express": "^5.2.1",
     "nodemon": "^3.1.14",
     "socket.io": "^4.8.3",

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "target": "ESNext",
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "phaser": ["node_modules/phaser/types/phaser.d.ts"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "server/**/*",
+    "main.js",
+    "node_modules/phaser/types/phaser.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
