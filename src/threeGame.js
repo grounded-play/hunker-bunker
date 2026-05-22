@@ -16,6 +16,63 @@ const PLAYER_SPRITESHEET_PATHS = {
 const SPRITE_GRID_SIZE = 4;
 const SPRITE_FRAME_REPEAT = 1 / SPRITE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
+const PICKUP_DISTRIBUTION = {
+    clustered: 0.7,
+    transitional: 0.2,
+    stray: 0.1
+};
+const PICKUP_TYPES = [
+    { type: 'health', weight: 0.42 },
+    { type: 'ammo', weight: 0.4 },
+    { type: 'weapon', weight: 0.18 }
+];
+const PICKUP_MAGNET_RADIUS = 3.4;
+const PICKUP_COLLECT_RADIUS = 0.72;
+const PICKUP_COLLECT_DURATION = 0.2;
+const SCATTER_CLUSTER_RATIO = 0.7;
+const SCATTER_TRANSITION_RATIO = 0.2;
+const SCATTER_STRAY_RATIO = 0.1;
+const SCATTER_MIN_SEPARATION = 0.78;
+const SCATTER_CLUSTER_CENTER_MIN_DISTANCE = 4.8;
+const BUNKER_JUNK_TRIGGER_RADIUS = 1.35;
+const BUNKER_JUNK_MIN_SEPARATION = 2.2;
+const BUNKER_JUNK_DROP_COUNT_MIN = 2;
+const BUNKER_JUNK_DROP_COUNT_MAX = 4;
+const LOOT_RARITIES = [
+    { key: 'basic', weight: 0.55, color: 0xb7c3d0 },
+    { key: 'uncommon', weight: 0.27, color: 0x66ff9a },
+    { key: 'rare', weight: 0.13, color: 0x58bbff },
+    { key: 'legendary', weight: 0.05, color: 0xffb347 }
+];
+const JUNK_SCATTER_VARIANTS = [
+    { type: 'bunker_junk', weight: 0.55, glowColor: 0xffcc74, smokeColor: 0x95a1ab },
+    { type: 'bunker_junk_uncommon', weight: 0.27, glowColor: 0x66ff9a, smokeColor: 0x7ebd98 },
+    { type: 'bunker_junk_rare', weight: 0.13, glowColor: 0x58bbff, smokeColor: 0x6d98bb },
+    { type: 'bunker_junk_legendary', weight: 0.05, glowColor: 0xffb347, smokeColor: 0xc09762 }
+];
+const SPORE_SCATTER_VARIANTS = [
+    { type: 'bio_spores', weight: 0.45 },
+    { type: 'bio_spores_blue', weight: 0.275 },
+    { type: 'bio_spores_amber', weight: 0.275 }
+];
+const JUNK_LOOT_BIAS = {
+    bunker_junk: [
+        { key: 'basic', weight: 0.8 },
+        { key: 'uncommon', weight: 0.2 }
+    ],
+    bunker_junk_uncommon: [
+        { key: 'uncommon', weight: 0.7 },
+        { key: 'basic', weight: 0.3 }
+    ],
+    bunker_junk_rare: [
+        { key: 'rare', weight: 0.7 },
+        { key: 'uncommon', weight: 0.3 }
+    ],
+    bunker_junk_legendary: [
+        { key: 'legendary', weight: 0.75 },
+        { key: 'rare', weight: 0.25 }
+    ]
+};
 
 export class ThreeGame {
     constructor({ parent, playerType = 'SCOUT' } = {}) {
@@ -38,14 +95,22 @@ export class ThreeGame {
         this.chunkCache = new Map();
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
+        this.pendingChunkMounts = [];
+        this.pendingChunkMountKeys = new Set();
+        this.maxChunkMountsPerFrame = 2;
         this.wallMeshes = [];
+        this.pickupMeshes = [];
+        this.scatterSprites = [];
+        this.depletedGearPileKeys = new Set();
+        this.transientEffects = [];
         this.keys = { up: false, down: false, left: false, right: false };
         this.virtualInput = { x: 0, z: 0 };
         this.animationTimer = 0;
         this.currentFacingRow = 0;
         this.playerSpriteScale = 1.6;
-        this.playerHeight = -0.18;
+        this.playerHeight = 0.06;
         this.playerSpriteLead = 0.18;
+        this.playerMarkerHeight = 0.05;
         this.lastTime = performance.now();
         this.raycaster = new THREE.Raycaster();
 
@@ -336,6 +401,125 @@ export class ThreeGame {
         });
         this.playerMaterial.colorWrite = false;
         this.playerMaterial.depthWrite = false;
+        this.pickupAssets = this.createPickupAssets();
+
+        // Load scatter textures directly from assets. The source files already contain alpha,
+        // so avoid aggressive color-key postprocessing that can erase dark details.
+        this.scatterTextures = {
+            cybersnail: this.loadScatterTexture('/cybersnail.png', textureLoader),
+            bunker_junk: this.loadScatterTexture('/bunker_junk.png', textureLoader),
+            bunker_junk_uncommon: this.loadScatterTexture('/bunker_junk_uncommon.png', textureLoader),
+            bunker_junk_rare: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
+            bunker_junk_legendary: this.loadScatterTexture('/bunker_junk_legendary.png', textureLoader),
+            bio_spores: this.loadScatterTexture('/bio_spores.png', textureLoader),
+            bio_spores_blue: this.loadScatterTexture('/bio_spores_blue.png', textureLoader),
+            bio_spores_amber: this.loadScatterTexture('/bio_spores_amber.png', textureLoader)
+        };
+
+        this.scatterMaterials = {
+            cybersnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.cybersnail,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            bunker_junk: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bunker_junk,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            bunker_junk_uncommon: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bunker_junk_uncommon,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            bunker_junk_rare: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bunker_junk_rare,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            bunker_junk_legendary: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bunker_junk_legendary,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            bio_spores: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bio_spores,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            bio_spores_blue: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bio_spores_blue,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            bio_spores_amber: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bio_spores_amber,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            })
+        };
+        this.scatterPlaneMaterials = {
+            bunker_junk: new THREE.MeshBasicMaterial({
+                map: this.scatterTextures.bunker_junk,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                side: THREE.DoubleSide,
+                fog: false
+            }),
+            bunker_junk_uncommon: new THREE.MeshBasicMaterial({
+                map: this.scatterTextures.bunker_junk_uncommon,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                side: THREE.DoubleSide,
+                fog: false
+            }),
+            bunker_junk_rare: new THREE.MeshBasicMaterial({
+                map: this.scatterTextures.bunker_junk_rare,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                side: THREE.DoubleSide,
+                fog: false
+            }),
+            bunker_junk_legendary: new THREE.MeshBasicMaterial({
+                map: this.scatterTextures.bunker_junk_legendary,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                side: THREE.DoubleSide,
+                fog: false
+            })
+        };
 
         this.setupLighting();
         this.setupWorld();
@@ -397,8 +581,23 @@ export class ThreeGame {
             this.playerMaterial
         );
         this.playerMesh.position.y = this.playerRadius + 0.02;
-        this.playerMesh.castShadow = true;
+        // Keep the collision sphere invisible and prevent a second large shadow under the player.
+        this.playerMesh.castShadow = false;
         this.player.add(this.playerMesh);
+
+        this.playerShadow = new THREE.Mesh(
+            new THREE.CircleGeometry(0.42, 20),
+            new THREE.MeshBasicMaterial({
+                color: 0x000000,
+                transparent: true,
+                opacity: 0.24,
+                depthWrite: false
+            })
+        );
+        this.playerShadow.rotation.x = -Math.PI / 2;
+        this.playerShadow.position.set(this.playerSpriteLead, 0.035, this.playerSpriteLead);
+        this.playerShadow.scale.set(1, 1, 0.7);
+        this.player.add(this.playerShadow);
 
         this.playerSprite = new THREE.Sprite(this.playerMaterials[this.playerType] ?? this.playerMaterials.SCOUT);
         this.playerSprite.center.set(0.5, 0);
@@ -406,6 +605,7 @@ export class ThreeGame {
         this.playerSprite.position.y = this.playerHeight;
         this.playerSprite.position.z = this.playerSpriteLead;
         this.playerSprite.scale.set(this.playerSpriteScale, this.playerSpriteScale, 1);
+        this.playerSprite.renderOrder = 5;
         this.player.add(this.playerSprite);
 
         this.playerMarker = this.createHiddenPlayerMarker();
@@ -416,7 +616,7 @@ export class ThreeGame {
         this.player.position.set(spawn.x, 0, spawn.y);
         this.scene.add(this.player);
         this.playerGlow.position.set(spawn.x, 1.6, spawn.y);
-        this.playerMarker.position.set(spawn.x, this.playerRadius + 0.08, spawn.y);
+        this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
     }
 
@@ -517,6 +717,187 @@ export class ThreeGame {
         });
     }
 
+    loadScatterTexture(path, textureLoader) {
+        return textureLoader.load(path, (texture) => {
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.wrapS = THREE.ClampToEdgeWrapping;
+            texture.wrapT = THREE.ClampToEdgeWrapping;
+
+            const maxAnisotropy = this.renderer?.capabilities?.getMaxAnisotropy?.() ?? 1;
+            if (maxAnisotropy > 1) {
+                texture.anisotropy = Math.min(4, maxAnisotropy);
+            }
+        }, undefined, (error) => {
+            console.warn(`[ThreeGame] Failed to load scatter texture from ${path}`, error);
+        });
+    }
+
+    loadKeyedSpriteTexture(path, threshold = 15) {
+        const canvas = document.createElement('canvas');
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+
+        const image = new Image();
+        image.onload = () => {
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            let minX = image.width;
+            let minY = image.height;
+            let maxX = 0;
+            let maxY = 0;
+            let foundVisible = false;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const brightness = (r + g + b) / 3;
+                const pixelIndex = i / 4;
+                const x = pixelIndex % image.width;
+                const y = Math.floor(pixelIndex / image.width);
+
+                // Remove black/dark pixels nicely with slight edge feathering
+                if (brightness < threshold) {
+                    data[i + 3] = 0; // Alpha
+                } else if (brightness < threshold * 2.5) {
+                    const factor = (brightness - threshold) / (threshold * 1.5);
+                    data[i + 3] = Math.round(data[i + 3] * factor);
+                }
+
+                if (data[i + 3] > 8) {
+                    foundVisible = true;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+
+            if (!foundVisible) {
+                ctx.putImageData(imgData, 0, 0);
+                texture.needsUpdate = true;
+                return;
+            }
+
+            const padding = 10;
+            const cropX = Math.max(0, minX - padding);
+            const cropY = Math.max(0, minY - padding);
+            const cropWidth = Math.min(image.width - cropX, (maxX - minX + 1) + padding * 2);
+            const cropHeight = Math.min(image.height - cropY, (maxY - minY + 1) + padding * 2);
+            const croppedCanvas = document.createElement('canvas');
+            croppedCanvas.width = cropWidth;
+            croppedCanvas.height = cropHeight;
+            const croppedCtx = croppedCanvas.getContext('2d');
+
+            ctx.putImageData(imgData, 0, 0);
+            croppedCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+            canvas.width = cropWidth;
+            canvas.height = cropHeight;
+            ctx.clearRect(0, 0, cropWidth, cropHeight);
+            ctx.drawImage(croppedCanvas, 0, 0);
+            texture.needsUpdate = true;
+        };
+
+        image.onerror = (err) => {
+            console.error(`[ThreeGame] loadKeyedSpriteTexture: Failed to load image: ${path}`, err);
+        };
+
+        // Set src AFTER onload and onerror to avoid caching race conditions
+        image.src = path;
+
+        return texture;
+    }
+
+    loadDecalTexture(path) {
+        const canvas = document.createElement('canvas');
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+
+        const image = new Image();
+        image.onload = () => {
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            let minX = image.width;
+            let minY = image.height;
+            let maxX = 0;
+            let maxY = 0;
+            let foundVisible = false;
+
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const maxChannel = Math.max(r, g, b);
+                const pixelIndex = i / 4;
+                const x = pixelIndex % image.width;
+                const y = Math.floor(pixelIndex / image.width);
+                let alpha = 0;
+
+                if (maxChannel > 6) {
+                    alpha = Math.min(255, Math.max(0, ((maxChannel - 6) / 40) * 255));
+                }
+
+                data[i + 3] = Math.max(data[i + 3], alpha);
+
+                if (data[i + 3] > 10) {
+                    foundVisible = true;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
+                }
+            }
+
+            if (!foundVisible) {
+                ctx.putImageData(imgData, 0, 0);
+                texture.needsUpdate = true;
+                return;
+            }
+
+            const padding = 12;
+            const cropX = Math.max(0, minX - padding);
+            const cropY = Math.max(0, minY - padding);
+            const cropWidth = Math.min(image.width - cropX, (maxX - minX + 1) + padding * 2);
+            const cropHeight = Math.min(image.height - cropY, (maxY - minY + 1) + padding * 2);
+            const croppedCanvas = document.createElement('canvas');
+            croppedCanvas.width = cropWidth;
+            croppedCanvas.height = cropHeight;
+            const croppedCtx = croppedCanvas.getContext('2d');
+
+            ctx.putImageData(imgData, 0, 0);
+            croppedCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+            canvas.width = cropWidth;
+            canvas.height = cropHeight;
+            ctx.clearRect(0, 0, cropWidth, cropHeight);
+            ctx.drawImage(croppedCanvas, 0, 0);
+            texture.needsUpdate = true;
+        };
+
+        image.onerror = (err) => {
+            console.error(`[ThreeGame] loadDecalTexture: Failed to load image: ${path}`, err);
+        };
+
+        image.src = path;
+
+        return texture;
+    }
+
     resize() {
         const width = this.container.clientWidth || 1;
         const height = this.container.clientHeight || 1;
@@ -540,6 +921,9 @@ export class ThreeGame {
         this.updatePlayer(delta);
         this.updateCamera(delta);
         this.syncVisibleChunks();
+        this.updatePickups(delta, now);
+        this.updateScatter(delta, now);
+        this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
         this.renderer.render(this.scene, this.camera);
     }
@@ -570,7 +954,7 @@ export class ThreeGame {
 
         this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
         this.playerGlow.position.set(this.player.position.x, 1.6, this.player.position.z);
-        this.playerMarker.position.set(this.player.position.x, this.playerRadius + 0.08, this.player.position.z);
+        this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
     }
 
     updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving) {
@@ -624,21 +1008,43 @@ export class ThreeGame {
         const centerChunkY = Math.floor(this.player.position.z / this.chunkSize);
         const needed = new Set();
         this.wallMeshes = [];
+        this.pickupMeshes = [];
+        this.scatterSprites = [];
 
         for (let chunkY = centerChunkY - this.visibleChunkRadius; chunkY <= centerChunkY + this.visibleChunkRadius; chunkY++) {
             for (let chunkX = centerChunkX - this.visibleChunkRadius; chunkX <= centerChunkX + this.visibleChunkRadius; chunkX++) {
                 const key = `${chunkX},${chunkY}`;
                 needed.add(key);
                 if (force || !this.chunkMeshes.has(key)) {
-                    this.mountChunk(chunkX, chunkY);
+                    this.queueChunkMount(chunkX, chunkY, centerChunkX, centerChunkY);
                 }
             }
         }
 
+        this.pendingChunkMounts = this.pendingChunkMounts.filter((entry) => needed.has(entry.key));
+        this.pendingChunkMountKeys = new Set(this.pendingChunkMounts.map((entry) => entry.key));
+
+        this.processPendingChunkMounts(force ? 1 : this.maxChunkMountsPerFrame);
+
         for (const [key, group] of this.chunkMeshes.entries()) {
             if (needed.has(key)) continue;
+            group.traverse((child) => {
+                if (child.userData?.isScatter) {
+                    child.material?.dispose?.();
+                    child.geometry?.dispose?.();
+                }
+                if (child.userData?.isPickup) {
+                    child.userData.shadow?.material?.dispose?.();
+                    child.userData.shadow?.geometry?.dispose?.();
+                    child.userData.glow?.material?.dispose?.();
+                    child.userData.glow?.geometry?.dispose?.();
+                    child.userData.burst?.material?.dispose?.();
+                    child.userData.burst?.geometry?.dispose?.();
+                }
+            });
             this.chunkGroups.remove(group);
             this.chunkMeshes.delete(key);
+            this.pendingChunkMountKeys.delete(key);
         }
 
         for (const group of this.chunkMeshes.values()) {
@@ -646,7 +1052,43 @@ export class ThreeGame {
                 if (child.userData.isWall) {
                     this.wallMeshes.push(child);
                 }
+                if (child.userData.isPickup) {
+                    this.pickupMeshes.push(child);
+                }
+                if (child.userData.isScatter) {
+                    this.scatterSprites.push(child);
+                }
             }
+        }
+    }
+
+    queueChunkMount(chunkX, chunkY, centerChunkX, centerChunkY) {
+        const key = `${chunkX},${chunkY}`;
+        if (this.chunkMeshes.has(key) || this.pendingChunkMountKeys.has(key)) {
+            return;
+        }
+
+        this.pendingChunkMountKeys.add(key);
+        this.pendingChunkMounts.push({
+            key,
+            chunkX,
+            chunkY,
+            priority: Math.abs(chunkX - centerChunkX) + Math.abs(chunkY - centerChunkY)
+        });
+        this.pendingChunkMounts.sort((a, b) => a.priority - b.priority);
+    }
+
+    processPendingChunkMounts(limit = 1) {
+        let mounted = 0;
+        while (mounted < limit && this.pendingChunkMounts.length > 0) {
+            const next = this.pendingChunkMounts.shift();
+            this.pendingChunkMountKeys.delete(next.key);
+            if (this.chunkMeshes.has(next.key)) {
+                continue;
+            }
+
+            this.mountChunk(next.chunkX, next.chunkY);
+            mounted += 1;
         }
     }
 
@@ -678,8 +1120,1398 @@ export class ThreeGame {
             }
         }
 
+        // Spawn visual scatter sprites using the Snail Swarm Scatter algorithm
+        const scatterPlacements = this.createChunkScatterPlacements(chunkX, chunkY, grid);
+        for (const placement of scatterPlacements) {
+            if (placement.type.startsWith('bunker_junk') && this.depletedGearPileKeys.has(placement.scatterKey)) {
+                continue;
+            }
+            const scatter = this.createScatterInstance(placement);
+            if (scatter) {
+                group.add(scatter);
+            }
+        }
+
         this.chunkGroups.add(group);
         this.chunkMeshes.set(`${chunkX},${chunkY}`, group);
+    }
+
+    createPickupAssets() {
+        const healthMaterial = new THREE.MeshStandardMaterial({
+            color: 0xff6f7d,
+            emissive: 0x8f1c28,
+            emissiveIntensity: 0.85,
+            roughness: 0.28,
+            metalness: 0.1
+        });
+        const ammoMaterial = new THREE.MeshStandardMaterial({
+            color: 0x63d4ff,
+            emissive: 0x0d4c72,
+            emissiveIntensity: 0.75,
+            roughness: 0.32,
+            metalness: 0.5
+        });
+        const weaponMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffcc58,
+            emissive: 0x72560a,
+            emissiveIntensity: 0.72,
+            roughness: 0.3,
+            metalness: 0.58
+        });
+        const coinMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffd86a,
+            emissive: 0x7c5600,
+            emissiveIntensity: 0.82,
+            roughness: 0.22,
+            metalness: 0.68
+        });
+        const shadowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.16,
+            depthWrite: false
+        });
+
+        return {
+            health: {
+                material: healthMaterial,
+                accent: new THREE.MeshStandardMaterial({
+                    color: 0xffd6db,
+                    emissive: 0x4f0d16,
+                    emissiveIntensity: 0.45,
+                    roughness: 0.24,
+                    metalness: 0.08
+                })
+            },
+            ammo: {
+                material: ammoMaterial,
+                accent: new THREE.MeshStandardMaterial({
+                    color: 0xc9f2ff,
+                    emissive: 0x12435f,
+                    emissiveIntensity: 0.36,
+                    roughness: 0.18,
+                    metalness: 0.2
+                })
+            },
+            weapon: {
+                material: weaponMaterial,
+                accent: new THREE.MeshStandardMaterial({
+                    color: 0xfff0b3,
+                    emissive: 0x4f3908,
+                    emissiveIntensity: 0.42,
+                    roughness: 0.18,
+                    metalness: 0.24
+                })
+            },
+            coin: {
+                material: coinMaterial,
+                accent: new THREE.MeshStandardMaterial({
+                    color: 0xfff2b0,
+                    emissive: 0x5b4308,
+                    emissiveIntensity: 0.42,
+                    roughness: 0.16,
+                    metalness: 0.32
+                })
+            },
+            shadowMaterial
+        };
+    }
+
+    createChunkPickupPlacements(chunkX, chunkY, grid) {
+        const random = this.createSeededRandom(this.hashTile(chunkX * 401 + 17, chunkY * 733 + 29));
+        const spawn = this.getSpawnTile();
+        const candidates = [];
+
+        for (let localY = 0; localY < this.chunkSize; localY++) {
+            for (let localX = 0; localX < this.chunkSize; localX++) {
+                if (grid[localY][localX] === '#') continue;
+
+                const worldX = chunkX * this.chunkSize + localX;
+                const worldZ = chunkY * this.chunkSize + localY;
+                const spawnDistance = Math.abs(worldX - spawn.x) + Math.abs(worldZ - spawn.y);
+
+                if (spawnDistance <= 4) continue;
+
+                candidates.push({
+                    localX,
+                    localY,
+                    worldX,
+                    worldZ,
+                    edgeDistance: Math.min(localX, localY, this.chunkSize - 1 - localX, this.chunkSize - 1 - localY)
+                });
+            }
+        }
+
+        if (candidates.length < 10) {
+            return [];
+        }
+
+        const occupied = new Set();
+        const placements = [];
+        const totalPlacements = Math.min(
+            Math.max(5, Math.round(candidates.length * 0.08)),
+            12
+        );
+        const clusterCount = Math.min(4, Math.max(2, Math.round(totalPlacements / 3.2)));
+        const clusterTargets = [];
+
+        for (let clusterIndex = 0; clusterIndex < clusterCount; clusterIndex++) {
+            const center = this.selectClusterCenter(candidates, clusterTargets, random);
+            if (!center) break;
+
+            const clusterRadius = 1.3 + random() * 2.1;
+            const clusterSize = Math.max(2, Math.round((totalPlacements / clusterCount) * (0.75 + random() * 0.6)));
+            const subgroupCount = 1 + Math.floor(random() * 3);
+            const subgroupAnchors = Array.from({ length: subgroupCount }, () => ({
+                x: center.worldX + (random() - 0.5) * clusterRadius * 1.3,
+                z: center.worldZ + (random() - 0.5) * clusterRadius * 1.3
+            }));
+
+            clusterTargets.push({ center, clusterRadius, clusterSize, subgroupAnchors });
+        }
+
+        const clusteredTarget = Math.round(totalPlacements * PICKUP_DISTRIBUTION.clustered);
+        const transitionalTarget = Math.round(totalPlacements * PICKUP_DISTRIBUTION.transitional);
+        const strayTarget = Math.max(1, totalPlacements - clusteredTarget - transitionalTarget);
+
+        for (const cluster of clusterTargets) {
+            while (placements.length < clusteredTarget && cluster.clusterSize > 0) {
+                const subgroup = cluster.subgroupAnchors[Math.floor(random() * cluster.subgroupAnchors.length)];
+                const point = this.selectPickupCandidateNear(candidates, occupied, subgroup, cluster.clusterRadius, random);
+                if (!point) break;
+                placements.push(this.buildPickupPlacement(point, random));
+                cluster.clusterSize -= 1;
+            }
+        }
+
+        let transitionsPlaced = 0;
+        while (transitionsPlaced < transitionalTarget) {
+            const sourceCluster = clusterTargets[Math.floor(random() * clusterTargets.length)];
+            const point = this.selectTransitionCandidate(candidates, occupied, sourceCluster, random);
+            if (!point) break;
+            placements.push(this.buildPickupPlacement(point, random));
+            transitionsPlaced += 1;
+        }
+
+        let straysPlaced = 0;
+        while (straysPlaced < strayTarget) {
+            const point = this.selectStrayCandidate(candidates, occupied, clusterTargets, random);
+            if (!point) break;
+            placements.push(this.buildPickupPlacement(point, random));
+            straysPlaced += 1;
+        }
+
+        return placements;
+    }
+
+    selectClusterCenter(candidates, clusters, random) {
+        let bestCandidate = null;
+        let bestScore = -Infinity;
+
+        for (const candidate of candidates) {
+            if (candidate.edgeDistance < 1) continue;
+
+            const nearestClusterDistance = clusters.length === 0
+                ? this.chunkSize
+                : Math.min(...clusters.map((cluster) => (
+                    Math.hypot(
+                        candidate.worldX - cluster.center.worldX,
+                        candidate.worldZ - cluster.center.worldZ
+                    )
+                )));
+
+            if (nearestClusterDistance < 3.1) continue;
+
+            const score = candidate.edgeDistance * 1.5 + nearestClusterDistance * 0.65 + random() * 1.2;
+            if (score > bestScore) {
+                bestScore = score;
+                bestCandidate = candidate;
+            }
+        }
+
+        return bestCandidate;
+    }
+
+    selectPickupCandidateNear(candidates, occupied, anchor, radius, random) {
+        const nearby = candidates
+            .filter((candidate) => {
+                const key = `${candidate.localX},${candidate.localY}`;
+                if (occupied.has(key)) return false;
+                const distance = Math.hypot(candidate.worldX - anchor.x, candidate.worldZ - anchor.z);
+                return distance <= radius + random() * 0.7;
+            })
+            .sort((a, b) => {
+                const distA = Math.hypot(a.worldX - anchor.x, a.worldZ - anchor.z);
+                const distB = Math.hypot(b.worldX - anchor.x, b.worldZ - anchor.z);
+                return (distA + random() * 0.45) - (distB + random() * 0.45);
+            });
+
+        const choice = nearby.find((candidate) => this.claimPickupTile(candidate, occupied));
+        return choice ?? null;
+    }
+
+    selectTransitionCandidate(candidates, occupied, cluster, random) {
+        if (!cluster) return null;
+
+        const angle = random() * Math.PI * 2;
+        const stretch = cluster.clusterRadius * (1.4 + random() * 1.7);
+        const anchor = {
+            x: cluster.center.worldX + Math.cos(angle) * stretch,
+            z: cluster.center.worldZ + Math.sin(angle) * stretch
+        };
+
+        return this.selectPickupCandidateNear(candidates, occupied, anchor, 1.8 + random() * 1.3, random);
+    }
+
+    selectStrayCandidate(candidates, occupied, clusters, random) {
+        const isolated = candidates
+            .filter((candidate) => {
+                const key = `${candidate.localX},${candidate.localY}`;
+                if (occupied.has(key)) return false;
+                return clusters.every((cluster) => {
+                    const distance = Math.hypot(candidate.worldX - cluster.center.worldX, candidate.worldZ - cluster.center.worldZ);
+                    return distance >= cluster.clusterRadius * 1.2;
+                });
+            })
+            .sort((a, b) => (b.edgeDistance + random()) - (a.edgeDistance + random()));
+
+        const choice = isolated.find((candidate) => this.claimPickupTile(candidate, occupied));
+        return choice ?? null;
+    }
+
+    claimPickupTile(candidate, occupied) {
+        const neighbors = [
+            [0, 0],
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [0, -1]
+        ];
+
+        for (const [offsetX, offsetY] of neighbors) {
+            if (occupied.has(`${candidate.localX + offsetX},${candidate.localY + offsetY}`)) {
+                return false;
+            }
+        }
+
+        occupied.add(`${candidate.localX},${candidate.localY}`);
+        return true;
+    }
+
+    buildPickupPlacement(candidate, random) {
+        const type = this.choosePickupType(random);
+        const scale = type === 'weapon'
+            ? 0.9 + random() * 0.3
+            : 0.82 + random() * 0.24;
+
+        return {
+            ...candidate,
+            type,
+            scale,
+            rotation: random() * Math.PI * 2,
+            tiltX: (random() - 0.5) * 0.16,
+            tiltZ: (random() - 0.5) * 0.16,
+            elevation: 0.2 + random() * 0.18,
+            offsetX: (random() - 0.5) * 0.28,
+            offsetZ: (random() - 0.5) * 0.28,
+            bobOffset: random() * Math.PI * 2,
+            shadowRadius: (type === 'weapon' ? 0.34 : 0.28) + random() * 0.06
+        };
+    }
+
+    createChunkScatterPlacements(chunkX, chunkY, grid) {
+        const random = this.createSeededRandom(this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71));
+        const spawn = this.getSpawnTile();
+        const candidates = [];
+
+        // Find walkable candidates in this chunk
+        for (let localY = 0; localY < this.chunkSize; localY++) {
+            for (let localX = 0; localX < this.chunkSize; localX++) {
+                if (grid[localY][localX] === '#') continue;
+
+                const worldX = chunkX * this.chunkSize + localX;
+                const worldZ = chunkY * this.chunkSize + localY;
+                const spawnDistance = Math.abs(worldX - spawn.x) + Math.abs(worldZ - spawn.y);
+
+                // Keep away from player's starting spawn tile
+                if (spawnDistance <= 3) continue;
+
+                candidates.push({
+                    localX,
+                    localY,
+                    worldX,
+                    worldZ
+                });
+            }
+        }
+
+        if (candidates.length < 10) return [];
+
+        const totalItems = Math.floor(6 + random() * 5);
+        const targetClustered = Math.round(totalItems * SCATTER_CLUSTER_RATIO);
+        const targetTransitional = Math.round(totalItems * SCATTER_TRANSITION_RATIO);
+        const targetStrays = Math.max(
+            1,
+            Math.round(totalItems * SCATTER_STRAY_RATIO),
+            totalItems - targetClustered - targetTransitional
+        );
+
+        const placements = [];
+
+        // 1. Setup Macro Cluster Centers
+        const numClusters = Math.min(3, Math.max(2, Math.round(totalItems / 6)));
+        const clusters = [];
+        for (let i = 0; i < numClusters; i++) {
+            const center = this.selectScatterClusterCenter(candidates, clusters, random);
+            if (!center) break;
+            clusters.push({
+                center,
+                radius: 1.8 + random() * 1.6,
+                weight: 0.5 + random() * 0.5
+            });
+        }
+
+        // Helper to check if a continuous coordinate is walkable
+        const isWalkable = (x, z) => {
+            const localX = Math.round(x - chunkX * this.chunkSize);
+            const localY = Math.round(z - chunkY * this.chunkSize);
+            if (localX < 0 || localX >= this.chunkSize || localY < 0 || localY >= this.chunkSize) return false;
+            return grid[localY][localX] !== '#';
+        };
+
+        // 2. Generate Clustered elements (70%)
+        let clusteredPlaced = 0;
+        let attempts = 0;
+        while (clusteredPlaced < targetClustered && attempts < 120 && clusters.length > 0) {
+            attempts++;
+            const cluster = clusters[Math.floor(random() * clusters.length)];
+            const angle = random() * Math.PI * 2;
+            const dist = Math.pow(random(), 0.8) * cluster.radius;
+            const x = cluster.center.worldX + Math.cos(angle) * dist;
+            const z = cluster.center.worldZ + Math.sin(angle) * dist;
+
+            if (isWalkable(x, z)) {
+                placements.push({ x, z, groupType: 'clustered' });
+                clusteredPlaced++;
+            }
+        }
+
+        // 3. Generate Transitional elements (20%) - bridge between clusters
+        let transitionalPlaced = 0;
+        attempts = 0;
+        while (transitionalPlaced < targetTransitional && attempts < 80 && clusters.length >= 2) {
+            attempts++;
+            const idxA = Math.floor(random() * clusters.length);
+            let idxB = Math.floor(random() * clusters.length);
+            if (idxA === idxB) idxB = (idxA + 1) % clusters.length;
+
+            const cA = clusters[idxA].center;
+            const cB = clusters[idxB].center;
+
+            // Choose an interpolation point with some perpendicular jitter
+            const t = 0.2 + random() * 0.6;
+            const perpAngle = Math.atan2(cB.worldZ - cA.worldZ, cB.worldX - cA.worldX) + Math.PI / 2;
+            const jitter = (random() - 0.5) * 1.9;
+
+            const x = cA.worldX + (cB.worldX - cA.worldX) * t + Math.cos(perpAngle) * jitter;
+            const z = cA.worldZ + (cB.worldZ - cA.worldZ) * t + Math.sin(perpAngle) * jitter;
+
+            if (isWalkable(x, z)) {
+                placements.push({ x, z, groupType: 'transitional' });
+                transitionalPlaced++;
+            }
+        }
+
+        // Fallback for transitional if there's only 1 cluster
+        if (transitionalPlaced < targetTransitional && clusters.length === 1) {
+            attempts = 0;
+            while (transitionalPlaced < targetTransitional && attempts < 80) {
+                attempts++;
+                const cluster = clusters[0];
+                const angle = random() * Math.PI * 2;
+                // Place further out
+                const dist = cluster.radius + 0.8 + random() * 2.4;
+                const x = cluster.center.worldX + Math.cos(angle) * dist;
+                const z = cluster.center.worldZ + Math.sin(angle) * dist;
+
+                if (isWalkable(x, z)) {
+                    placements.push({ x, z, groupType: 'transitional' });
+                    transitionalPlaced++;
+                }
+            }
+        }
+
+        // 4. Generate Isolated Strays (10%) - far from clusters
+        let straysPlaced = 0;
+        attempts = 0;
+        while (straysPlaced < targetStrays && attempts < 120) {
+            attempts++;
+            const candidate = candidates[Math.floor(random() * candidates.length)];
+            const offsetAngle = random() * Math.PI * 2;
+            const offsetDist = random() * 0.65;
+            const x = candidate.worldX + Math.cos(offsetAngle) * offsetDist;
+            const z = candidate.worldZ + Math.sin(offsetAngle) * offsetDist;
+
+            // Check if far from all cluster centers
+            const farFromClusters = clusters.every(c => {
+                const dist = Math.hypot(x - c.center.worldX, z - c.center.worldZ);
+                    return dist > c.radius * 1.8 + 1.8;
+                });
+
+            if (farFromClusters && isWalkable(x, z)) {
+                placements.push({ x, z, groupType: 'stray' });
+                straysPlaced++;
+            }
+        }
+
+        // 5. Relaxation pass to push overlaps away (5 passes)
+        const minDistance = SCATTER_MIN_SEPARATION;
+        for (let pass = 0; pass < 5; pass++) {
+            for (let i = 0; i < placements.length; i++) {
+                for (let j = i + 1; j < placements.length; j++) {
+                    const p1 = placements[i];
+                    const p2 = placements[j];
+                    const dx = p2.x - p1.x;
+                    const dz = p2.z - p1.z;
+                    const dist = Math.hypot(dx, dz);
+                    if (dist < minDistance) {
+                        const overlap = minDistance - dist;
+                        const angle = dist > 0.001 ? Math.atan2(dz, dx) : random() * Math.PI * 2;
+                        const pushX = Math.cos(angle) * overlap * 0.5;
+                        const pushZ = Math.sin(angle) * overlap * 0.5;
+
+                        // Push away if still walkable
+                        if (isWalkable(p1.x - pushX, p1.z - pushZ)) {
+                            p1.x -= pushX;
+                            p1.z -= pushZ;
+                        }
+                        if (isWalkable(p2.x + pushX, p2.z + pushZ)) {
+                            p2.x += pushX;
+                            p2.z += pushZ;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 6. Build the final micro-varied placement properties
+        const finalPlacements = [];
+        const junkPlacementAnchors = [];
+        for (const p of placements) {
+            // Re-verify after relaxation that it's still walkable
+            if (!isWalkable(p.x, p.z)) continue;
+
+            // Determine asset type based on weighted roll
+            // no snails for now: gears on the floor, spores floating above
+            const roll = random();
+            let type;
+            let scaleMultiplier;
+            let elevation;
+            let opacity;
+            if (roll < 0.62) {
+                type = this.chooseWeightedType(JUNK_SCATTER_VARIANTS, random);
+                scaleMultiplier = 1.72 + random() * 0.34;
+                // Keep junk piles visually grounded but high enough to avoid floor clipping artifacts.
+                elevation = 0.13 + random() * 0.08;
+                opacity = 1;
+            } else {
+                type = this.chooseWeightedType(SPORE_SCATTER_VARIANTS, random);
+                scaleMultiplier = 0.42 + random() * 0.1;
+                elevation = 1.45 + random() * 0.95;
+                opacity = 0.58 + random() * 0.16;
+            }
+
+            // Prevent junk piles from spawning too close to each other.
+            if (type.startsWith('bunker_junk')) {
+                const tooCloseToOtherJunk = junkPlacementAnchors.some((anchor) => (
+                    Math.hypot(p.x - anchor.x, p.z - anchor.z) < BUNKER_JUNK_MIN_SEPARATION
+                ));
+
+                if (tooCloseToOtherJunk) {
+                    type = this.chooseWeightedType(SPORE_SCATTER_VARIANTS, random);
+                    scaleMultiplier = 0.42 + random() * 0.1;
+                    elevation = 1.45 + random() * 0.95;
+                    opacity = 0.58 + random() * 0.16;
+                } else {
+                    junkPlacementAnchors.push({ x: p.x, z: p.z });
+                }
+            }
+
+            // Micro-variations
+            // Scale variation (+- 25%)
+            const scale = scaleMultiplier * (0.75 + random() * 0.5);
+            // Tilt distortion
+            const tiltX = (random() - 0.5) * 0.16;
+            const tiltZ = (random() - 0.5) * 0.16;
+            // Subtle rotation (0 to 2pi)
+            const rotation = random() * Math.PI * 2;
+
+            finalPlacements.push({
+                x: p.x,
+                z: p.z,
+                type,
+                scatterKey: `${chunkX},${chunkY}:${finalPlacements.length}:${type}`,
+                scale,
+                rotation,
+                tiltX,
+                tiltZ,
+                elevation,
+                groupType: p.groupType,
+                phase: random() * Math.PI * 2,
+                opacity
+            });
+        }
+
+        return finalPlacements;
+    }
+
+    createJunkBurstPickupPlacement(originX, originZ, targetX, targetZ, random, junkType = 'bunker_junk') {
+        const rarity = this.chooseLootRarityForJunkType(junkType, random);
+        const type = this.chooseJunkBurstPickupType(rarity, random);
+        const scale = type === 'coin'
+            ? 0.66 + random() * 0.14
+            : 0.78 + random() * 0.18;
+
+        return {
+            worldX: targetX,
+            worldZ: targetZ,
+            type,
+            rarity,
+            scale,
+            rotation: random() * Math.PI * 2,
+            tiltX: (random() - 0.5) * 0.12,
+            tiltZ: (random() - 0.5) * 0.12,
+            elevation: 0.18 + random() * 0.08,
+            offsetX: 0,
+            offsetZ: 0,
+            bobOffset: random() * Math.PI * 2,
+            shadowRadius: (
+                type === 'coin'
+                    ? 0.18
+                    : type === 'weapon'
+                        ? 0.32
+                        : 0.26
+            ) + random() * 0.05,
+            collectLock: 0.58,
+            ejectStartX: originX,
+            ejectStartZ: originZ,
+            ejectTargetX: targetX,
+            ejectTargetZ: targetZ
+        };
+    }
+
+    createScatterInstance(placement) {
+        const scaleX = placement.scale;
+        const scaleY = placement.scale * (1.0 + placement.tiltX);
+
+        if (placement.type.startsWith('bunker_junk')) {
+            const spriteMaterial = this.scatterMaterials[placement.type];
+            if (!spriteMaterial) return null;
+
+            const clonedMat = spriteMaterial.clone();
+            clonedMat.rotation = placement.rotation;
+            clonedMat.alphaTest = 0.001;
+
+            const sprite = new THREE.Sprite(clonedMat);
+            sprite.center.set(0.5, 0);
+            sprite.position.set(placement.x, placement.elevation, placement.z);
+            sprite.scale.set(scaleX, scaleY, 1);
+            sprite.frustumCulled = false;
+            sprite.renderOrder = 4;
+            sprite.userData = {
+                isScatter: true,
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: placement.elevation,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                burstTriggered: false,
+                burstTimer: 0,
+                phase: placement.phase ?? 0,
+                baseOpacity: placement.opacity ?? 1
+            };
+            return sprite;
+        }
+
+        const spriteMaterial = this.scatterMaterials[placement.type];
+        if (!spriteMaterial) return null;
+
+        const clonedMat = spriteMaterial.clone();
+        clonedMat.rotation = placement.rotation;
+        clonedMat.alphaTest = 0.001;
+
+        const sprite = new THREE.Sprite(clonedMat);
+        sprite.center.set(0.5, 0);
+        sprite.position.set(placement.x, placement.elevation, placement.z);
+        sprite.frustumCulled = false;
+        sprite.renderOrder = 3;
+        sprite.scale.set(scaleX, scaleY, 1);
+        sprite.userData = {
+            isScatter: true,
+            type: placement.type,
+            scatterKey: placement.scatterKey,
+            groupType: placement.groupType,
+            baseY: placement.elevation,
+            baseScaleX: scaleX,
+            baseScaleY: scaleY,
+            burstTriggered: false,
+            burstTimer: 0,
+            phase: placement.phase ?? 0,
+            baseOpacity: placement.opacity ?? 1
+        };
+        return sprite;
+    }
+
+    chooseWeightedType(variants, random) {
+        const totalWeight = variants.reduce((sum, entry) => sum + entry.weight, 0);
+        let roll = random() * totalWeight;
+
+        for (const variant of variants) {
+            roll -= variant.weight;
+            if (roll <= 0) {
+                return variant.type;
+            }
+        }
+
+        return variants[variants.length - 1].type;
+    }
+
+    chooseLootRarity(random) {
+        const totalWeight = LOOT_RARITIES.reduce((sum, entry) => sum + entry.weight, 0);
+        let roll = random() * totalWeight;
+
+        for (const rarity of LOOT_RARITIES) {
+            roll -= rarity.weight;
+            if (roll <= 0) {
+                return rarity;
+            }
+        }
+
+        return LOOT_RARITIES[0];
+    }
+
+    chooseLootRarityForJunkType(junkType, random) {
+        const weightedBias = JUNK_LOOT_BIAS[junkType];
+        if (!weightedBias) {
+            return this.chooseLootRarity(random);
+        }
+
+        const totalWeight = weightedBias.reduce((sum, entry) => sum + entry.weight, 0);
+        let roll = random() * totalWeight;
+
+        for (const entry of weightedBias) {
+            roll -= entry.weight;
+            if (roll <= 0) {
+                return LOOT_RARITIES.find((rarity) => rarity.key === entry.key) ?? LOOT_RARITIES[0];
+            }
+        }
+
+        return LOOT_RARITIES[0];
+    }
+
+    chooseJunkBurstPickupType(rarity, random) {
+        const rarityKey = rarity?.key ?? 'basic';
+        const roll = random();
+
+        if (rarityKey === 'legendary') {
+            if (roll < 0.44) return 'coin';
+            if (roll < 0.73) return 'ammo';
+            return 'health';
+        }
+
+        if (rarityKey === 'rare') {
+            if (roll < 0.3) return 'coin';
+            if (roll < 0.69) return 'ammo';
+            return 'health';
+        }
+
+        if (rarityKey === 'uncommon') {
+            if (roll < 0.2) return 'coin';
+            if (roll < 0.57) return 'ammo';
+            return 'health';
+        }
+
+        if (roll < 0.12) return 'coin';
+        if (roll < 0.52) return 'ammo';
+        return 'health';
+    }
+
+    getJunkVariantEffectColors(junkType) {
+        const variant = JUNK_SCATTER_VARIANTS.find((entry) => entry.type === junkType);
+        return variant ?? JUNK_SCATTER_VARIANTS[0];
+    }
+
+    createJunkBurstTargets(originX, originZ, random) {
+        const totalItems = BUNKER_JUNK_DROP_COUNT_MIN + Math.floor(random() * (BUNKER_JUNK_DROP_COUNT_MAX - BUNKER_JUNK_DROP_COUNT_MIN + 1));
+        const clusteredTarget = Math.max(1, Math.round(totalItems * 0.7));
+        const transitionalTarget = Math.max(0, Math.round(totalItems * 0.2));
+        const strayTarget = Math.max(0, totalItems - clusteredTarget - transitionalTarget);
+        const targets = [];
+        const centerAngle = random() * Math.PI * 2;
+        const centerRadius = 0.9 + random() * 0.35;
+        const clusterCenter = {
+            x: originX + Math.cos(centerAngle) * centerRadius,
+            z: originZ + Math.sin(centerAngle) * centerRadius
+        };
+
+        for (let i = 0; i < clusteredTarget; i++) {
+            const angle = random() * Math.PI * 2;
+            const radius = 0.35 + random() * 0.65;
+            targets.push({
+                x: clusterCenter.x + Math.cos(angle) * radius,
+                z: clusterCenter.z + Math.sin(angle) * radius
+            });
+        }
+
+        for (let i = 0; i < transitionalTarget; i++) {
+            const t = 0.35 + random() * 0.45;
+            const jitterAngle = centerAngle + (random() - 0.5) * 1.3;
+            const jitterRadius = (random() - 0.5) * 0.55;
+            targets.push({
+                x: originX + (clusterCenter.x - originX) * t + Math.cos(jitterAngle) * jitterRadius,
+                z: originZ + (clusterCenter.z - originZ) * t + Math.sin(jitterAngle) * jitterRadius
+            });
+        }
+
+        for (let i = 0; i < strayTarget; i++) {
+            const angle = centerAngle + Math.PI + (random() - 0.5) * 1.8;
+            const radius = 1.35 + random() * 0.75;
+            targets.push({
+                x: originX + Math.cos(angle) * radius,
+                z: originZ + Math.sin(angle) * radius
+            });
+        }
+
+        return targets;
+    }
+
+    selectScatterClusterCenter(candidates, clusters, random) {
+        let bestCandidate = null;
+        let bestScore = -Infinity;
+
+        for (const candidate of candidates) {
+            const nearestClusterDistance = clusters.length === 0
+                ? this.chunkSize
+                : Math.min(...clusters.map((cluster) => (
+                    Math.hypot(
+                        candidate.worldX - cluster.center.worldX,
+                        candidate.worldZ - cluster.center.worldZ
+                    )
+                )));
+
+            if (nearestClusterDistance < SCATTER_CLUSTER_CENTER_MIN_DISTANCE) {
+                continue;
+            }
+
+            const edgeDistance = Math.min(
+                candidate.localX,
+                candidate.localY,
+                this.chunkSize - 1 - candidate.localX,
+                this.chunkSize - 1 - candidate.localY
+            );
+            const score = nearestClusterDistance * 0.8 + edgeDistance * 0.45 + random() * 0.8;
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestCandidate = candidate;
+            }
+        }
+
+        return bestCandidate ?? candidates[Math.floor(random() * candidates.length)] ?? null;
+    }
+
+    choosePickupType(random) {
+        const totalWeight = PICKUP_TYPES.reduce((sum, entry) => sum + entry.weight, 0);
+        let roll = random() * totalWeight;
+
+        for (const entry of PICKUP_TYPES) {
+            roll -= entry.weight;
+            if (roll <= 0) return entry.type;
+        }
+
+        return PICKUP_TYPES[PICKUP_TYPES.length - 1].type;
+    }
+
+    createPickupInstance(placement) {
+        const root = new THREE.Group();
+        const body = new THREE.Group();
+        const burst = new THREE.Mesh(
+            new THREE.RingGeometry(0.12, 0.24, 20),
+            new THREE.MeshBasicMaterial({
+                color: placement.type === 'health'
+                    ? 0xffa4af
+                    : placement.type === 'coin'
+                        ? 0xffde8f
+                    : placement.type === 'weapon'
+                        ? 0xffdb78
+                        : 0x8fe4ff,
+                transparent: true,
+                opacity: 0,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            })
+        );
+        root.userData = {
+            isPickup: true,
+            type: placement.type,
+            state: placement.ejectStartX !== undefined ? 'ejecting' : 'idle',
+            bobOffset: placement.bobOffset,
+            baseY: placement.elevation,
+            scale: placement.scale,
+            rarity: placement.rarity ?? LOOT_RARITIES[0],
+            burst,
+            collectTimer: 0,
+            collectLock: placement.collectLock ?? 0,
+            ejectTimer: 0,
+            ejectDuration: 0.24 + Math.random() * 0.1,
+            ejectTargetX: placement.ejectTargetX ?? placement.worldX + placement.offsetX,
+            ejectTargetZ: placement.ejectTargetZ ?? placement.worldZ + placement.offsetZ
+        };
+
+        if (placement.type === 'health') {
+            body.add(this.createHealthPickupMesh());
+        } else if (placement.type === 'coin') {
+            body.add(this.createCoinPickupMesh());
+        } else if (placement.type === 'weapon') {
+            body.add(this.createWeaponPickupMesh());
+        } else {
+            body.add(this.createAmmoPickupMesh());
+        }
+
+        const shadow = new THREE.Mesh(
+            new THREE.CircleGeometry(placement.shadowRadius, 18),
+            this.pickupAssets.shadowMaterial.clone()
+        );
+        shadow.rotation.x = -Math.PI / 2;
+        shadow.position.y = -placement.elevation + 0.02;
+        shadow.scale.setScalar(placement.scale * 1.1);
+        body.add(shadow);
+
+        body.rotation.y = placement.rotation;
+        body.rotation.x = placement.tiltX;
+        body.rotation.z = placement.tiltZ;
+        body.scale.setScalar(placement.scale);
+        const glow = new THREE.Mesh(
+            new THREE.RingGeometry(0.16, 0.34, 20),
+            new THREE.MeshBasicMaterial({
+                color: root.userData.rarity.color,
+                transparent: true,
+                opacity: 0.7,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            })
+        );
+        glow.rotation.x = -Math.PI / 2;
+        glow.position.y = 0.03;
+        body.add(glow);
+        root.userData.body = body;
+        root.userData.shadow = shadow;
+        root.userData.glow = glow;
+
+        burst.rotation.x = -Math.PI / 2;
+        burst.position.y = 0.04;
+        burst.scale.setScalar(0.2);
+        body.add(burst);
+
+        root.position.set(
+            (placement.ejectStartX ?? placement.worldX) + placement.offsetX,
+            placement.elevation,
+            (placement.ejectStartZ ?? placement.worldZ) + placement.offsetZ
+        );
+        root.add(body);
+        return root;
+    }
+
+    createHealthPickupMesh() {
+        const group = new THREE.Group();
+        const core = new THREE.Mesh(
+            new THREE.BoxGeometry(0.54, 0.14, 0.18),
+            this.pickupAssets.health.material
+        );
+        const cross = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.14, 0.54),
+            this.pickupAssets.health.material
+        );
+        const halo = new THREE.Mesh(
+            new THREE.TorusGeometry(0.28, 0.045, 10, 20),
+            this.pickupAssets.health.accent
+        );
+        halo.rotation.x = Math.PI / 2;
+        halo.position.y = 0.03;
+        core.castShadow = true;
+        cross.castShadow = true;
+        group.add(core, cross, halo);
+        return group;
+    }
+
+    createAmmoPickupMesh() {
+        const group = new THREE.Group();
+        const crate = new THREE.Mesh(
+            new THREE.BoxGeometry(0.42, 0.22, 0.3),
+            this.pickupAssets.ammo.material
+        );
+        const band = new THREE.Mesh(
+            new THREE.BoxGeometry(0.48, 0.07, 0.08),
+            this.pickupAssets.ammo.accent
+        );
+        band.position.y = 0.08;
+        const shellLeft = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.05, 0.05, 0.24, 10),
+            this.pickupAssets.weapon.accent
+        );
+        const shellRight = shellLeft.clone();
+        shellLeft.rotation.z = Math.PI / 2;
+        shellRight.rotation.z = Math.PI / 2;
+        shellLeft.position.set(-0.12, 0.18, 0);
+        shellRight.position.set(0.12, 0.18, 0);
+        crate.castShadow = true;
+        band.castShadow = true;
+        shellLeft.castShadow = true;
+        shellRight.castShadow = true;
+        group.add(crate, band, shellLeft, shellRight);
+        return group;
+    }
+
+    createCoinPickupMesh() {
+        const group = new THREE.Group();
+        const coin = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.18, 0.18, 0.08, 20),
+            this.pickupAssets.coin.material
+        );
+        coin.rotation.x = Math.PI / 2;
+
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(0.145, 0.022, 10, 20),
+            this.pickupAssets.coin.accent
+        );
+        ring.position.z = 0.01;
+
+        const ringBack = ring.clone();
+        ringBack.position.z = -0.01;
+
+        coin.castShadow = true;
+        ring.castShadow = true;
+        ringBack.castShadow = true;
+        group.add(coin, ring, ringBack);
+        return group;
+    }
+
+    createWeaponPickupMesh() {
+        const group = new THREE.Group();
+        const base = new THREE.Mesh(
+            new THREE.BoxGeometry(0.56, 0.12, 0.18),
+            this.pickupAssets.weapon.material
+        );
+        const barrel = new THREE.Mesh(
+            new THREE.BoxGeometry(0.3, 0.08, 0.08),
+            this.pickupAssets.weapon.accent
+        );
+        const stock = new THREE.Mesh(
+            new THREE.BoxGeometry(0.16, 0.14, 0.18),
+            this.pickupAssets.weapon.material
+        );
+        barrel.position.set(0.28, 0.04, 0);
+        stock.position.set(-0.18, -0.02, 0);
+        base.castShadow = true;
+        barrel.castShadow = true;
+        stock.castShadow = true;
+        group.add(base, barrel, stock);
+        return group;
+    }
+
+    updatePickups(delta, now) {
+        const time = now * 0.0012;
+        const removals = [];
+
+        for (const pickup of this.pickupMeshes) {
+            const body = pickup.userData.body;
+            if (!body) continue;
+
+            const shadow = pickup.userData.shadow;
+            const burst = pickup.userData.burst;
+            const toPlayerX = this.player.position.x - pickup.position.x;
+            const toPlayerZ = this.player.position.z - pickup.position.z;
+            const planarDistance = Math.hypot(toPlayerX, toPlayerZ);
+            const isCollecting = pickup.userData.state === 'collecting';
+            pickup.userData.collectLock = Math.max(0, (pickup.userData.collectLock ?? 0) - delta);
+
+            if (pickup.userData.state === 'ejecting') {
+                pickup.userData.ejectTimer += delta;
+                const t = Math.min(pickup.userData.ejectTimer / pickup.userData.ejectDuration, 1);
+                const lift = Math.sin(t * Math.PI) * 0.58;
+                const targetX = Number.isFinite(pickup.userData.ejectTargetX)
+                    ? pickup.userData.ejectTargetX
+                    : pickup.position.x;
+                const targetZ = Number.isFinite(pickup.userData.ejectTargetZ)
+                    ? pickup.userData.ejectTargetZ
+                    : pickup.position.z;
+                pickup.position.x = THREE.MathUtils.lerp(pickup.position.x, targetX, Math.min(delta * 18, 1));
+                pickup.position.z = THREE.MathUtils.lerp(pickup.position.z, targetZ, Math.min(delta * 18, 1));
+                pickup.position.y = pickup.userData.baseY + lift;
+                body.rotation.y += 0.16;
+                body.scale.setScalar(pickup.userData.scale * (0.9 + Math.sin(t * Math.PI) * 0.18));
+
+                if (shadow) {
+                    shadow.material.opacity = 0.12 + t * 0.05;
+                }
+                if (pickup.userData.glow) {
+                    pickup.userData.glow.material.opacity = 0.85;
+                    pickup.userData.glow.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.55);
+                }
+
+                if (t >= 1) {
+                    pickup.userData.state = 'idle';
+                    pickup.position.x = targetX;
+                    pickup.position.z = targetZ;
+                    pickup.position.y = pickup.userData.baseY;
+                }
+
+                continue;
+            }
+
+            if (pickup.userData.collectLock > 0) {
+                pickup.userData.state = pickup.userData.state === 'magnetized' ? 'idle' : pickup.userData.state;
+            } else if (!isCollecting && planarDistance <= PICKUP_COLLECT_RADIUS) {
+                pickup.userData.state = 'collecting';
+                pickup.userData.collectTimer = 0;
+            } else if (pickup.userData.state === 'idle' && planarDistance <= PICKUP_MAGNET_RADIUS) {
+                pickup.userData.state = 'magnetized';
+            } else if (pickup.userData.state === 'magnetized' && planarDistance > PICKUP_MAGNET_RADIUS * 1.35) {
+                pickup.userData.state = 'idle';
+            }
+
+            if (pickup.userData.state === 'collecting') {
+                pickup.userData.collectTimer += delta;
+                const t = Math.min(pickup.userData.collectTimer / PICKUP_COLLECT_DURATION, 1);
+                const burstT = Math.min(t / 0.45, 1);
+                const targetY = this.playerRadius + 0.45;
+
+                pickup.position.x += toPlayerX * Math.min(delta * 18, 1);
+                pickup.position.z += toPlayerZ * Math.min(delta * 18, 1);
+                pickup.position.y = THREE.MathUtils.lerp(pickup.position.y, targetY, Math.min(delta * 18, 1));
+
+                const popScale = pickup.userData.scale * (1 + Math.sin(burstT * Math.PI) * 0.42) * (1 - t * 0.65);
+                body.scale.setScalar(Math.max(popScale, 0.001));
+                body.rotation.y += 0.14;
+
+                if (shadow) {
+                    shadow.scale.setScalar((1.1 + t * 0.5) * pickup.userData.scale);
+                    shadow.material.opacity = 0.16 * (1 - t);
+                }
+                if (pickup.userData.glow) {
+                    pickup.userData.glow.material.opacity = (1 - t) * 0.95;
+                    pickup.userData.glow.scale.setScalar(1.15 + burstT * 0.85);
+                }
+
+                if (burst) {
+                    burst.material.opacity = (1 - t) * 0.85;
+                    burst.scale.setScalar(0.2 + burstT * 1.25);
+                }
+
+                if (t >= 1) {
+                    removals.push(pickup);
+                }
+
+                continue;
+            }
+
+            if (pickup.userData.state === 'magnetized' && planarDistance > 0.001) {
+                const magnetStrength = 2.8 + (1 - Math.min(planarDistance / PICKUP_MAGNET_RADIUS, 1)) * 6.2;
+                const moveStep = Math.min(delta * magnetStrength, planarDistance);
+                pickup.position.x += (toPlayerX / planarDistance) * moveStep;
+                pickup.position.z += (toPlayerZ / planarDistance) * moveStep;
+                pickup.position.y = THREE.MathUtils.lerp(
+                    pickup.position.y,
+                    pickup.userData.baseY + 0.18,
+                    Math.min(delta * 8, 1)
+                );
+            } else {
+                const bob = Math.sin(time * 2.6 + pickup.userData.bobOffset) * 0.06;
+                pickup.position.y = pickup.userData.baseY + bob;
+            }
+
+            body.scale.setScalar(pickup.userData.scale);
+            const baseSpin = pickup.userData.rarity?.key === 'legendary' || pickup.userData.type === 'coin'
+                ? 0.02
+                : 0.006;
+            body.rotation.y += pickup.userData.state === 'magnetized' ? Math.max(baseSpin, 0.03) : baseSpin;
+
+            if (shadow) {
+                shadow.material.opacity = 0.16;
+                shadow.scale.setScalar(pickup.userData.scale * 1.1);
+            }
+            if (pickup.userData.glow) {
+                const rarityPulse = 0.78 + Math.sin(time * 3.1 + pickup.userData.bobOffset) * 0.12;
+                pickup.userData.glow.material.opacity = rarityPulse;
+                pickup.userData.glow.scale.setScalar(1 + Math.sin(time * 2.3 + pickup.userData.bobOffset) * 0.08);
+            }
+
+            if (burst) {
+                burst.material.opacity = 0;
+                burst.scale.setScalar(0.2);
+            }
+        }
+
+        for (const pickup of removals) {
+            pickup.userData.shadow?.material?.dispose?.();
+            pickup.userData.shadow?.geometry?.dispose?.();
+            pickup.userData.glow?.material?.dispose?.();
+            pickup.userData.glow?.geometry?.dispose?.();
+            pickup.userData.burst?.material?.dispose?.();
+            pickup.userData.burst?.geometry?.dispose?.();
+            pickup.parent?.remove(pickup);
+        }
+    }
+
+    updateScatter(delta, now) {
+        const time = now * 0.001;
+        
+        for (const child of this.scatterSprites) {
+            if (child.userData.type.startsWith('bio_spores')) {
+                const phase = child.userData.phase;
+                const drift = Math.sin(time * 0.75 + phase) * 0.16;
+                const pulse = 0.92 + Math.sin(time * 1.15 + phase * 1.3) * 0.16;
+                const shimmer = 0.72 + Math.sin(time * 1.6 + phase) * 0.28;
+                child.position.y = child.userData.baseY + drift;
+                child.scale.set(
+                    child.userData.baseScaleX * pulse,
+                    child.userData.baseScaleY * pulse,
+                    1
+                );
+                child.material.opacity = child.userData.baseOpacity * shimmer;
+            } else if (child.userData.type.startsWith('bunker_junk')) {
+                child.position.y = child.userData.baseY;
+                child.scale.set(
+                    child.userData.baseScaleX,
+                    child.userData.baseScaleY,
+                    1
+                );
+                child.material.opacity = child.userData.baseOpacity;
+            }
+
+            if (child.userData.burstTriggered) {
+                child.userData.burstTimer += delta;
+                if (child.userData.type.startsWith('bunker_junk')) {
+                    const fadeDuration = 0.28;
+                    const fadeT = Math.min(child.userData.burstTimer / fadeDuration, 1);
+                    const burstScale = 1 + Math.sin(Math.min(child.userData.burstTimer * 8, Math.PI)) * 0.18;
+                    child.scale.set(
+                        child.userData.baseScaleX * burstScale,
+                        child.userData.baseScaleY * burstScale,
+                        1
+                    );
+                    child.material.opacity = child.userData.baseOpacity * (1 - fadeT);
+
+                    if (fadeT >= 1) {
+                        child.parent?.remove(child);
+                        child.material?.dispose?.();
+                        child.geometry?.dispose?.();
+                        this.scatterSprites = this.scatterSprites.filter((sprite) => sprite !== child);
+                        continue;
+                    }
+                }
+            }
+
+            if (
+                child.userData.type.startsWith('bunker_junk') &&
+                !child.userData.burstTriggered &&
+                Math.hypot(this.player.position.x - child.position.x, this.player.position.z - child.position.z)
+                    <= Math.max(
+                        BUNKER_JUNK_TRIGGER_RADIUS,
+                        Math.max(child.userData.baseScaleX ?? 1, child.userData.baseScaleY ?? 1) * 0.62
+                            + this.playerRadius * 0.95
+                    )
+            ) {
+                this.triggerBunkerJunkBurst(child);
+            }
+        }
+    }
+
+    triggerBunkerJunkBurst(sprite) {
+        sprite.userData.burstTriggered = true;
+        sprite.userData.burstTimer = 0;
+        if (sprite.userData.scatterKey) {
+            this.depletedGearPileKeys.add(sprite.userData.scatterKey);
+        }
+
+        const seed = this.hashTile(Math.round(sprite.position.x * 100), Math.round(sprite.position.z * 100));
+        const random = this.createSeededRandom(seed);
+        const chunkGroup = sprite.parent;
+
+        if (!chunkGroup) {
+            return;
+        }
+
+        this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, sprite.userData.type);
+
+        for (const target of this.createJunkBurstTargets(sprite.position.x, sprite.position.z, random)) {
+            let placement = null;
+
+            for (let attempt = 0; attempt < 10; attempt++) {
+                const targetX = target.x + (random() - 0.5) * 0.14;
+                const targetZ = target.z + (random() - 0.5) * 0.14;
+
+                if (this.getTileType(Math.round(targetX), Math.round(targetZ)) === '#') {
+                    continue;
+                }
+
+                placement = this.createJunkBurstPickupPlacement(
+                    sprite.position.x,
+                    sprite.position.z,
+                    targetX,
+                    targetZ,
+                    random,
+                    sprite.userData.type
+                );
+                break;
+            }
+
+            if (!placement) {
+                // Fallback to guaranteed nearby placement so every burst spawns visible loot.
+                const fallbackAngle = random() * Math.PI * 2;
+                let fallbackRadius = 0.9 + (random() - 0.5) * 0.22;
+                let fallbackX = sprite.position.x + Math.cos(fallbackAngle) * fallbackRadius;
+                let fallbackZ = sprite.position.z + Math.sin(fallbackAngle) * fallbackRadius;
+
+                if (this.getTileType(Math.round(fallbackX), Math.round(fallbackZ)) === '#') {
+                    fallbackRadius = 0.48;
+                    fallbackX = sprite.position.x + Math.cos(fallbackAngle) * fallbackRadius;
+                    fallbackZ = sprite.position.z + Math.sin(fallbackAngle) * fallbackRadius;
+                }
+
+                if (this.getTileType(Math.round(fallbackX), Math.round(fallbackZ)) === '#') {
+                    fallbackX = sprite.position.x;
+                    fallbackZ = sprite.position.z;
+                }
+
+                placement = this.createJunkBurstPickupPlacement(
+                    sprite.position.x,
+                    sprite.position.z,
+                    fallbackX,
+                    fallbackZ,
+                    random,
+                    sprite.userData.type
+                );
+            }
+
+            const pickup = this.createPickupInstance(placement);
+            chunkGroup.add(pickup);
+            this.pickupMeshes.push(pickup);
+        }
+    }
+
+    spawnGearPoofEffect(x, z, junkType = 'bunker_junk') {
+        const colors = this.getJunkVariantEffectColors(junkType);
+        const smokeColor = new THREE.Color(colors.smokeColor).lerp(new THREE.Color(0x6b7177), 0.45);
+        const glowColor = new THREE.Color(colors.glowColor).lerp(new THREE.Color(0x7a7a7a), 0.62);
+        const sporeColor = new THREE.Color(colors.glowColor).lerp(new THREE.Color(0xcce7b6), 0.38);
+        const effect = new THREE.Group();
+        const smokeMaterial = new THREE.MeshBasicMaterial({
+            color: smokeColor,
+            transparent: true,
+            opacity: 0.34,
+            depthWrite: false,
+            depthTest: false
+        });
+        const glowMaterial = new THREE.MeshBasicMaterial({
+            color: glowColor,
+            transparent: true,
+            opacity: 0.44,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            depthTest: false
+        });
+        const sporeMaterial = new THREE.MeshBasicMaterial({
+            color: sporeColor,
+            transparent: true,
+            opacity: 0.82,
+            depthWrite: false,
+            depthTest: false
+        });
+
+        for (let i = 0; i < 6; i++) {
+            const puff = new THREE.Mesh(new THREE.CircleGeometry(0.08 + i * 0.016, 14), smokeMaterial.clone());
+            puff.rotation.x = -Math.PI / 2;
+            puff.position.set((Math.random() - 0.5) * 0.14, 0.025 + i * 0.008, (Math.random() - 0.5) * 0.14);
+            puff.renderOrder = 26;
+            puff.userData = {
+                isSmoke: true,
+                vx: (Math.random() - 0.5) * 0.42,
+                vz: (Math.random() - 0.5) * 0.42,
+                vy: 0.2 + Math.random() * 0.12,
+                growth: 0.45 + Math.random() * 0.22
+            };
+            effect.add(puff);
+        }
+
+        for (let i = 0; i < 9; i++) {
+            const mote = new THREE.Mesh(new THREE.CircleGeometry(0.02 + Math.random() * 0.025, 12), sporeMaterial.clone());
+            mote.rotation.x = -Math.PI / 2;
+            mote.position.set((Math.random() - 0.5) * 0.12, 0.04 + Math.random() * 0.08, (Math.random() - 0.5) * 0.12);
+            mote.renderOrder = 27;
+            mote.userData = {
+                isSpore: true,
+                vx: (Math.random() - 0.5) * 0.32,
+                vz: (Math.random() - 0.5) * 0.32,
+                vy: 0.28 + Math.random() * 0.24,
+                growth: 0.2 + Math.random() * 0.2
+            };
+            effect.add(mote);
+        }
+
+        const glow = new THREE.Mesh(new THREE.RingGeometry(0.1, 0.3, 24), glowMaterial);
+        glow.rotation.x = -Math.PI / 2;
+        glow.position.y = 0.045;
+        glow.renderOrder = 28;
+        glow.userData = { isGlow: true };
+        effect.add(glow);
+
+        effect.position.set(x, 0.02, z);
+        effect.userData = { age: 0, duration: 0.56 };
+        this.scene.add(effect);
+        this.transientEffects.push(effect);
+    }
+
+    updateTransientEffects(delta) {
+        const removals = [];
+
+        for (const effect of this.transientEffects) {
+            effect.userData.age += delta;
+            const t = Math.min(effect.userData.age / effect.userData.duration, 1);
+
+            for (const child of effect.children) {
+                if (child.userData?.isGlow) {
+                    child.material.opacity = (1 - t) * 0.9;
+                    child.scale.setScalar(1 + t * 1.45);
+                    continue;
+                }
+
+                child.position.x += child.userData.vx * delta;
+                child.position.z += child.userData.vz * delta;
+                child.position.y += child.userData.vy * delta;
+                child.scale.setScalar(1 + t * child.userData.growth);
+                if (child.userData?.isSpore) {
+                    child.material.opacity = (1 - t) * 0.9;
+                } else {
+                    child.material.opacity = (1 - t) * 0.45;
+                }
+            }
+
+            if (t >= 1) {
+                removals.push(effect);
+            }
+        }
+
+        for (const effect of removals) {
+            effect.traverse((child) => {
+                child.material?.dispose?.();
+                child.geometry?.dispose?.();
+            });
+            this.scene.remove(effect);
+        }
+
+        this.transientEffects = this.transientEffects.filter((effect) => !removals.includes(effect));
     }
 
     canOccupyPosition(x, z) {
@@ -970,6 +2802,23 @@ export class ThreeGame {
         window.removeEventListener('keyup', this.handleKeyUp);
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
+        Object.values(this.scatterMaterials ?? {}).forEach((material) => material.dispose?.());
+        Object.values(this.scatterPlaneMaterials ?? {}).forEach((material) => material.dispose?.());
+        Object.values(this.scatterTextures ?? {}).forEach((texture) => texture.dispose?.());
+        this.playerShadow?.material?.dispose?.();
+        this.playerShadow?.geometry?.dispose?.();
+        Object.values(this.pickupAssets ?? {}).forEach((asset) => {
+            if (asset?.material?.dispose) asset.material.dispose();
+            if (asset?.accent?.dispose) asset.accent.dispose();
+        });
+        this.pickupAssets?.shadowMaterial?.dispose?.();
+        for (const effect of this.transientEffects) {
+            effect.traverse((child) => {
+                child.material?.dispose?.();
+                child.geometry?.dispose?.();
+            });
+            this.scene.remove(effect);
+        }
         this.renderer.dispose();
         this.container.replaceChildren();
     }
