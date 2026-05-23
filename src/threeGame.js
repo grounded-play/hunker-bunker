@@ -575,17 +575,11 @@ export class ThreeGame {
     }
 
     setupCrashedShips() {
-        const textureLoader = new THREE.TextureLoader();
-        const scoutShipTex = textureLoader.load('/scout_ship.png');
-        const tankShipTex = textureLoader.load('/tank_ship.png');
-        const engineerShipTex = textureLoader.load('/engineer_ship.png');
-        const consoleTex = textureLoader.load('/console.png');
-
-        [scoutShipTex, tankShipTex, engineerShipTex, consoleTex].forEach((tex) => {
-            tex.colorSpace = THREE.SRGBColorSpace;
-            tex.minFilter = THREE.LinearFilter;
-            tex.magFilter = THREE.LinearFilter;
-        });
+        // Load textures using our high-fidelity chroma-key transparency shader to strip black backgrounds perfectly!
+        const scoutShipTex = this.loadKeyedSpriteTexture('/scout_ship.png', 10);
+        const tankShipTex = this.loadKeyedSpriteTexture('/tank_ship.png', 10);
+        const engineerShipTex = this.loadKeyedSpriteTexture('/engineer_ship.png', 10);
+        const consoleTex = this.loadKeyedSpriteTexture('/console.png', 10);
 
         // Placements relative to spawn (which is 9, 9 in starting chunk)
         this.crashedShips = [
