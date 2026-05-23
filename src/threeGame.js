@@ -706,7 +706,12 @@ export class ThreeGame {
             const terminalLight = new THREE.PointLight(ship.color, 1.8, 2.8, 2);
             terminalLight.position.set(consoleX, 0.5, consoleZ);
             this.scene.add(terminalLight);
+
+            // Store all 3D objects associated with this base so we can toggle visibility
+            ship.threeObjects = [shadow, shipSprite, consoleShadow, consoleSprite, ringMesh, terminalLight];
         }
+
+        this.updateCrashedShipsVisibility(false);
     }
 
     setupPlayer() {
@@ -836,6 +841,67 @@ export class ThreeGame {
         this.playerMaterial.emissive.setHex(color);
         this.playerGlow.color.setHex(color);
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
+
+        this.updateCrashedShipsVisibility(true);
+    }
+
+    updateCrashedShipsVisibility(poof = false) {
+        if (!this.crashedShips) return;
+
+        for (const ship of this.crashedShips) {
+            const shouldBeVisible = ship.type === this.playerType;
+
+            // Trigger visual 3D smoke poof if it just became visible
+            if (shouldBeVisible && !ship.isVisible && poof) {
+                this.spawnShipPoofEffect(ship.tileX, ship.tileZ, ship.color);
+            }
+
+            ship.isVisible = shouldBeVisible;
+
+            if (ship.threeObjects) {
+                for (const obj of ship.threeObjects) {
+                    obj.visible = shouldBeVisible;
+                }
+            }
+        }
+    }
+
+    spawnShipPoofEffect(x, z, colorHex) {
+        const color = new THREE.Color(colorHex);
+        const effect = new THREE.Group();
+        const smokeMaterial = new THREE.MeshBasicMaterial({
+            color: color,
+            transparent: true,
+            opacity: 0.38,
+            depthWrite: false,
+            depthTest: false
+        });
+
+        // Spawn 22 glowing smoke spheres expanding and rising!
+        for (let i = 0; i < 22; i++) {
+            const size = 0.4 + Math.random() * 0.72;
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 8, 8), smokeMaterial);
+            
+            const angle = Math.random() * Math.PI * 2;
+            const radius = Math.random() * 0.9;
+            mesh.position.set(
+                x + Math.cos(angle) * radius,
+                0.2 + Math.random() * 1.3,
+                z + Math.sin(angle) * radius
+            );
+            
+            mesh.userData = {
+                vx: (Math.random() - 0.5) * 1.6,
+                vy: 1.0 + Math.random() * 1.4,
+                vz: (Math.random() - 0.5) * 1.6,
+                life: 1.0,
+                decay: 0.75 + Math.random() * 0.5
+            };
+            effect.add(mesh);
+        }
+
+        this.scene.add(effect);
+        this.transientEffects.push(effect);
     }
 
     refreshActivePlayerSprite(type) {
@@ -1077,6 +1143,7 @@ export class ThreeGame {
         let minDistance = Infinity;
 
         for (const ship of this.crashedShips) {
+            if (!ship.isVisible) continue;
             // Animate pulsing neon floor rings
             if (ship.consoleRing) {
                 const pulse = 0.65 + Math.sin(now * 0.006) * 0.25;
@@ -2874,6 +2941,7 @@ export class ThreeGame {
     canOccupyPosition(x, z) {
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
+                if (!ship.isVisible) continue;
                 // 1. Ship collision
                 const dxShip = x - ship.tileX;
                 const dzShip = z - ship.tileZ;
