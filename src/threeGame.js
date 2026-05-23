@@ -575,11 +575,29 @@ export class ThreeGame {
     }
 
     setupCrashedShips() {
+        // Create SpriteMaterials first and dynamically bind textures as they load
+        const scoutShipMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
+        const tankShipMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
+        const engineerShipMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
+        const consoleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
+
         // Load textures using our high-fidelity chroma-key transparency shader to strip black backgrounds perfectly!
-        const scoutShipTex = this.loadKeyedSpriteTexture('/scout_ship.png', 10);
-        const tankShipTex = this.loadKeyedSpriteTexture('/tank_ship.png', 10);
-        const engineerShipTex = this.loadKeyedSpriteTexture('/engineer_ship.png', 10);
-        const consoleTex = this.loadKeyedSpriteTexture('/console.png', 10);
+        this.loadKeyedSpriteTexture('/scout_ship.png', 15, (tex) => {
+            scoutShipMat.map = tex;
+            scoutShipMat.needsUpdate = true;
+        });
+        this.loadKeyedSpriteTexture('/tank_ship.png', 15, (tex) => {
+            tankShipMat.map = tex;
+            tankShipMat.needsUpdate = true;
+        });
+        this.loadKeyedSpriteTexture('/engineer_ship.png', 15, (tex) => {
+            engineerShipMat.map = tex;
+            engineerShipMat.needsUpdate = true;
+        });
+        this.loadKeyedSpriteTexture('/console.png', 15, (tex) => {
+            consoleMat.map = tex;
+            consoleMat.needsUpdate = true;
+        });
 
         // Placements relative to spawn (which is 9, 9 in starting chunk)
         this.crashedShips = [
@@ -590,8 +608,8 @@ export class ThreeGame {
                 width: 1.3,
                 scale: 3.5,
                 elevation: 0.1,
-                texture: scoutShipTex,
-                consoleOffset: { x: -1.3, z: 0.2 },
+                material: scoutShipMat,
+                consoleOffset: { x: -1.6, z: 1.6 },
                 color: 0x7dff5a
             },
             {
@@ -601,8 +619,8 @@ export class ThreeGame {
                 width: 1.3,
                 scale: 3.5,
                 elevation: 0.1,
-                texture: tankShipTex,
-                consoleOffset: { x: -1.3, z: 0.2 },
+                material: tankShipMat,
+                consoleOffset: { x: -1.6, z: 1.6 },
                 color: 0xffb700
             },
             {
@@ -612,11 +630,12 @@ export class ThreeGame {
                 width: 1.3,
                 scale: 3.5,
                 elevation: 0.1,
-                texture: engineerShipTex,
-                consoleOffset: { x: -1.3, z: 0.2 },
+                material: engineerShipMat,
+                consoleOffset: { x: -1.6, z: 1.6 },
                 color: 0x00e5ff
             }
         ];
+
 
         const shadowMat = new THREE.MeshBasicMaterial({
             color: 0x000000,
@@ -641,14 +660,7 @@ export class ThreeGame {
             this.scene.add(shadow);
 
             // 2. Sprite for Ship
-            const shipMat = new THREE.SpriteMaterial({
-                map: ship.texture,
-                transparent: true,
-                alphaTest: 0.05,
-                depthWrite: true,
-                depthTest: true
-            });
-            const shipSprite = new THREE.Sprite(shipMat);
+            const shipSprite = new THREE.Sprite(ship.material);
             shipSprite.center.set(0.5, 0.15); // Adjust center so base stands on ground
             shipSprite.position.set(ship.tileX, ship.elevation, ship.tileZ);
             shipSprite.scale.set(ship.scale, ship.scale, 1);
@@ -667,13 +679,6 @@ export class ThreeGame {
             this.scene.add(consoleShadow);
 
             // Console Sprite
-            const consoleMat = new THREE.SpriteMaterial({
-                map: consoleTex,
-                transparent: true,
-                alphaTest: 0.05,
-                depthWrite: true,
-                depthTest: true
-            });
             const consoleSprite = new THREE.Sprite(consoleMat);
             consoleSprite.center.set(0.5, 0.1);
             consoleSprite.position.set(consoleX, 0.1, consoleZ);
@@ -810,8 +815,14 @@ export class ThreeGame {
             this.setKeyState(event.code, true);
         };
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
+        this.handlePromptTap = (event) => {
+            event.preventDefault();
+            this.interactWithConsole();
+        };
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
+        this.consolePromptEl = document.getElementById('console-hud-prompt');
+        this.consolePromptEl?.addEventListener('pointerup', this.handlePromptTap);
     }
 
     setKeyState(code, pressed) {
@@ -935,15 +946,15 @@ export class ThreeGame {
         });
     }
 
-    loadKeyedSpriteTexture(path, threshold = 15) {
-        const canvas = document.createElement('canvas');
-        const texture = new THREE.CanvasTexture(canvas);
+    loadKeyedSpriteTexture(path, threshold = 15, onLoad = null) {
+        const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
 
         const image = new Image();
         image.onload = () => {
+            const canvas = document.createElement('canvas');
             canvas.width = image.width;
             canvas.height = image.height;
             const ctx = canvas.getContext('2d');
@@ -951,82 +962,44 @@ export class ThreeGame {
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imgData.data;
-            let minX = image.width;
-            let minY = image.height;
-            let maxX = 0;
-            let maxY = 0;
-            let foundVisible = false;
 
+            // Remove flat black background nicely using threshold for dark pixels
             for (let i = 0; i < data.length; i += 4) {
                 const r = data[i];
                 const g = data[i + 1];
                 const b = data[i + 2];
-                const brightness = (r + g + b) / 3;
-                const pixelIndex = i / 4;
-                const x = pixelIndex % image.width;
-                const y = Math.floor(pixelIndex / image.width);
-
-                // Remove black/dark pixels nicely with slight edge feathering
-                if (brightness < threshold) {
-                    data[i + 3] = 0; // Alpha
-                } else if (brightness < threshold * 2.5) {
-                    const factor = (brightness - threshold) / (threshold * 1.5);
-                    data[i + 3] = Math.round(data[i + 3] * factor);
-                }
-
-                if (data[i + 3] > 8) {
-                    foundVisible = true;
-                    minX = Math.min(minX, x);
-                    minY = Math.min(minY, y);
-                    maxX = Math.max(maxX, x);
-                    maxY = Math.max(maxY, y);
+                if (r <= threshold && g <= threshold && b <= threshold) {
+                    data[i + 3] = 0; // Make transparent
                 }
             }
-
-            if (!foundVisible) {
-                ctx.putImageData(imgData, 0, 0);
-                texture.needsUpdate = true;
-                return;
-            }
-
-            const padding = 10;
-            const cropX = Math.max(0, minX - padding);
-            const cropY = Math.max(0, minY - padding);
-            const cropWidth = Math.min(image.width - cropX, (maxX - minX + 1) + padding * 2);
-            const cropHeight = Math.min(image.height - cropY, (maxY - minY + 1) + padding * 2);
-            const croppedCanvas = document.createElement('canvas');
-            croppedCanvas.width = cropWidth;
-            croppedCanvas.height = cropHeight;
-            const croppedCtx = croppedCanvas.getContext('2d');
 
             ctx.putImageData(imgData, 0, 0);
-            croppedCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-            canvas.width = cropWidth;
-            canvas.height = cropHeight;
-            ctx.clearRect(0, 0, cropWidth, cropHeight);
-            ctx.drawImage(croppedCanvas, 0, 0);
+            
+            texture.image = canvas;
             texture.needsUpdate = true;
+            if (onLoad) {
+                onLoad(texture);
+            }
         };
 
         image.onerror = (err) => {
             console.error(`[ThreeGame] loadKeyedSpriteTexture: Failed to load image: ${path}`, err);
         };
 
-        // Set src AFTER onload and onerror to avoid caching race conditions
         image.src = path;
 
         return texture;
     }
 
     loadDecalTexture(path) {
-        const canvas = document.createElement('canvas');
-        const texture = new THREE.CanvasTexture(canvas);
+        const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
 
         const image = new Image();
         image.onload = () => {
+            const canvas = document.createElement('canvas');
             canvas.width = image.width;
             canvas.height = image.height;
             const ctx = canvas.getContext('2d');
@@ -1067,6 +1040,7 @@ export class ThreeGame {
 
             if (!foundVisible) {
                 ctx.putImageData(imgData, 0, 0);
+                texture.image = canvas;
                 texture.needsUpdate = true;
                 return;
             }
@@ -1083,10 +1057,8 @@ export class ThreeGame {
 
             ctx.putImageData(imgData, 0, 0);
             croppedCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-            canvas.width = cropWidth;
-            canvas.height = cropHeight;
-            ctx.clearRect(0, 0, cropWidth, cropHeight);
-            ctx.drawImage(croppedCanvas, 0, 0);
+            
+            texture.image = croppedCanvas;
             texture.needsUpdate = true;
         };
 
@@ -1164,8 +1136,16 @@ export class ThreeGame {
             this.activeInteractiveConsole = nearestConsole;
             if (promptEl) {
                 const actionText = promptEl.querySelector('.prompt-text');
+                const promptKey = promptEl.querySelector('.prompt-key');
+                const touchMoveControl = document.getElementById('touch-move-control');
+                const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
+                const shouldUseTapLabel = Boolean(touchMoveVisible);
                 if (actionText) {
-                    actionText.textContent = `ACCESS ${nearestConsole.type} BASE TELEMETRY`;
+                    actionText.textContent = `${shouldUseTapLabel ? 'TAP TO ACCESS' : 'PRESS E TO ACCESS'} ${nearestConsole.type} BASE TELEMETRY`;
+                }
+                if (promptKey) {
+                    promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'E';
+                    promptKey.classList.toggle('prompt-key--tap', shouldUseTapLabel);
                 }
                 promptEl.classList.add('visible');
                 promptEl.classList.remove('hidden');
@@ -1175,6 +1155,12 @@ export class ThreeGame {
             if (promptEl) {
                 promptEl.classList.add('hidden');
                 promptEl.classList.remove('visible');
+            }
+
+            // Automagically close terminal window if the player walks too far away
+            const modal = document.getElementById('console-terminal-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                this.closeConsoleModal();
             }
         }
     }
@@ -3243,6 +3229,7 @@ export class ThreeGame {
         this.renderer.setAnimationLoop(null);
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
+        this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
         Object.values(this.scatterMaterials ?? {}).forEach((material) => material.dispose?.());

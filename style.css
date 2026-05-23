@@ -573,8 +573,8 @@ body {
 
 .calibrate-btn {
   background: transparent;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-muted);
+  border: 1px solid rgba(255, 159, 28, 0.68);
+  color: var(--accent-primary);
   font-size: calc(var(--vu) * 3);
   padding: calc(var(--vu) * 0.5) calc(var(--vu) * 1.5);
   border-radius: 4px;
@@ -584,9 +584,10 @@ body {
 }
 
 .calibrate-btn:hover {
-  color: var(--accent-primary);
-  border-color: var(--accent-primary);
-  background: rgba(255, 159, 28, 0.05);
+  color: #ffd89f;
+  border-color: #ffb347;
+  background: rgba(255, 159, 28, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 159, 28, 0.35);
   transform: translateY(-1px);
 }
 
@@ -1186,11 +1187,15 @@ input:checked+.slider:before {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
-  z-index: 9500;
+  z-index: 13000;
   display: flex;
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(5px);
+}
+
+.critical-modal {
+  z-index: 13010;
 }
 
 .modal-content {
@@ -1205,11 +1210,25 @@ input:checked+.slider:before {
 }
 
 .confirm-modal-content {
-  width: min(calc(var(--vu) * 92), 92%);
+  width: min(calc(var(--vu) * 86), 92%);
+  border-color: #dc2626;
+  text-align: center;
+  padding: calc(var(--vu) * 5.5) calc(var(--vu) * 4.5);
+}
+
+.confirm-title {
+  color: #dc2626;
+  margin-bottom: calc(var(--vu) * 2.5);
 }
 
 .confirm-copy {
-  line-height: 1.35;
+  color: var(--text-main);
+  font-size: var(--font-sm);
+  line-height: 1.45;
+  letter-spacing: 0.06em;
+  max-width: 34ch;
+  margin: 0 auto calc(var(--vu) * 4);
+  text-wrap: pretty;
 }
 
 .confirm-actions {
@@ -1222,7 +1241,7 @@ input:checked+.slider:before {
 
 .confirm-actions .abort-btn,
 .confirm-actions .confirm-secondary-btn {
-  min-width: calc(var(--vu) * 14);
+  min-width: calc(var(--vu) * 20);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1233,6 +1252,24 @@ input:checked+.slider:before {
   line-height: 1;
   padding: calc(var(--vu) * 1.3) calc(var(--vu) * 4);
   text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .confirm-modal-content {
+    width: min(calc(var(--vu) * 98), 95%);
+    padding: calc(var(--vu) * 4.5) calc(var(--vu) * 3.5);
+  }
+
+  .confirm-actions {
+    flex-direction: column;
+    gap: calc(var(--vu) * 2);
+  }
+
+  .confirm-actions .abort-btn,
+  .confirm-actions .confirm-secondary-btn {
+    width: 100%;
+    max-width: calc(var(--vu) * 42);
+  }
 }
 
 .confirm-secondary-btn {
@@ -1942,9 +1979,9 @@ html.custom-cursor-enabled #confirm-no {
 /* --- CONSOLE INTERACTION PROMPT & TELEMETRY TERMINAL --- */
 #console-hud-prompt {
   position: absolute;
-  bottom: calc(var(--vu) * 16);
-  left: 50%;
-  transform: translate(-50%, 0);
+  top: calc(var(--vu) * 12);
+  right: calc(var(--vu) * 4);
+  transform: translateY(0);
   background: rgba(11, 13, 15, 0.9);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -1958,6 +1995,9 @@ html.custom-cursor-enabled #confirm-no {
   box-shadow: 0 0 20px rgba(255, 159, 28, 0.15), inset 0 0 8px rgba(255, 159, 28, 0.05);
   animation: prompt-float 2.5s infinite ease-in-out;
   pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
 }
 
 #console-hud-prompt.hidden {
@@ -1986,6 +2026,13 @@ html.custom-cursor-enabled #confirm-no {
   text-shadow: 0 0 4px var(--accent-primary);
 }
 
+.prompt-key--tap {
+  width: auto;
+  min-width: calc(var(--vu) * 9);
+  padding: 0 calc(var(--vu) * 1.2);
+  letter-spacing: 1px;
+}
+
 .prompt-text {
   font-family: 'Outfit', sans-serif;
   font-size: var(--font-xs);
@@ -1998,10 +2045,10 @@ html.custom-cursor-enabled #confirm-no {
 
 @keyframes prompt-float {
   0%, 100% {
-    transform: translate(-50%, 0);
+    transform: translateY(0);
   }
   50% {
-    transform: translate(-50%, calc(var(--vu) * -1.5));
+    transform: translateY(calc(var(--vu) * -1.1));
   }
 }
 
@@ -2080,6 +2127,7 @@ html.custom-cursor-enabled #confirm-no {
   text-transform: uppercase;
   text-shadow: 0 0 4px var(--terminal-glow);
   box-shadow: 0 0 8px rgba(var(--terminal-glow-rgb), 0.15);
+  margin-right: calc(var(--vu) * 10);
 }
 
 .terminal-layout {

@@ -371,16 +371,16 @@
       </div>
     </div>
     <!-- Tactical Confirmation Modal -->
-    <div id="confirm-modal" class="modal hidden" style="z-index: 10001;">
-      <div class="modal-content confirm-modal-content" style="border-color: #dc2626; text-align: center;">
-        <h2 class="modal-title" style="color: #dc2626;">CRITICAL ALERT</h2>
-        <p class="confirm-copy" style="color: var(--text-main); font-size: var(--font-sm); margin-bottom: calc(var(--vu) * 4);">
-          ABORTING MISSION WILL TERMINATE CURRENT TACTICAL DATA FEED.<br>
-          PROCEED WITH SHUTDOWN?
+    <div id="confirm-modal" class="modal critical-modal hidden">
+      <div class="modal-content confirm-modal-content">
+        <h2 class="modal-title confirm-title">CRITICAL ALERT</h2>
+        <p class="confirm-copy">
+          ABORT MISSION AND RETURN TO COMMAND?<br>
+          UNSAVED TACTICAL PROGRESS WILL BE LOST.
         </p>
         <div class="confirm-actions">
-          <button class="abort-btn" id="confirm-yes">YES</button>
-          <button class="confirm-secondary-btn" id="confirm-no">NO</button>
+          <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>
+          <button class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
         </div>
       </div>
     </div>
