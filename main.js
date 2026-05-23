@@ -18,6 +18,13 @@ const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring
 const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
+const pickupCountTotal = document.getElementById('pickup-count-total');
+const pickupCountByType = {
+    health: document.getElementById('pickup-count-health'),
+    ammo: document.getElementById('pickup-count-ammo'),
+    weapon: document.getElementById('pickup-count-weapon'),
+    coin: document.getElementById('pickup-count-coin')
+};
 
 const DESIGN_STAGE = {
     width: 177,
@@ -44,6 +51,44 @@ const gearSpinState = {
 
 let stageResizeObserver = null;
 let activeTouchPointerId = null;
+const pickupCounterState = {
+    total: 0,
+    health: 0,
+    ammo: 0,
+    weapon: 0,
+    coin: 0
+};
+function renderPickupCounter() {
+    if (pickupCountTotal) {
+        pickupCountTotal.textContent = String(pickupCounterState.total);
+    }
+
+    for (const [type, el] of Object.entries(pickupCountByType)) {
+        if (!el) continue;
+        el.textContent = String(pickupCounterState[type] ?? 0);
+    }
+}
+
+function resetPickupCounter() {
+    pickupCounterState.total = 0;
+    pickupCounterState.health = 0;
+    pickupCounterState.ammo = 0;
+    pickupCounterState.weapon = 0;
+    pickupCounterState.coin = 0;
+    renderPickupCounter();
+}
+
+function trackPickupCollected(event) {
+    const type = event?.detail?.type;
+    if (!type || !(type in pickupCounterState)) return;
+
+    pickupCounterState.total += 1;
+    pickupCounterState[type] += 1;
+    renderPickupCounter();
+}
+
+window.addEventListener('pickup-collected', trackPickupCollected);
+renderPickupCounter();
 
 function isTouchDevice() {
     const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
@@ -217,6 +262,7 @@ if (startBtn) {
             () => {
                 if (menu) menu.classList.add('hidden');
                 document.getElementById('ui').classList.remove('hidden');
+                resetPickupCounter();
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
 

@@ -196,6 +196,29 @@
           <button class="calibrate-btn open-settings-btn">⚙</button>
         </div>
       </div>
+      <div id="pickup-counter-panel" class="pickup-counter-panel" aria-live="polite">
+        <div class="pickup-counter-panel__title">LOOT</div>
+        <div class="pickup-counter-panel__row pickup-counter-panel__row--total">
+          <span class="pickup-counter-panel__label">TOTAL</span>
+          <span id="pickup-count-total">0</span>
+        </div>
+        <div class="pickup-counter-panel__row">
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">✚</span>MED</span>
+          <span id="pickup-count-health">0</span>
+        </div>
+        <div class="pickup-counter-panel__row">
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◍</span>AMMO</span>
+          <span id="pickup-count-ammo">0</span>
+        </div>
+        <div class="pickup-counter-panel__row">
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">⬢</span>TECH</span>
+          <span id="pickup-count-weapon">0</span>
+        </div>
+        <div class="pickup-counter-panel__row">
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◎</span>COIN</span>
+          <span id="pickup-count-coin">0</span>
+        </div>
+      </div>
       <div id="world-status" class="hidden">
         <div class="status-title">TACTICAL FEED</div>
         <div class="status-item"><span>UNITS</span><span class="status-value" id="online-count">1</span></div>

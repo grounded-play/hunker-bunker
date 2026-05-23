@@ -1815,24 +1815,28 @@ export class ThreeGame {
         const roll = random();
 
         if (rarityKey === 'legendary') {
-            if (roll < 0.44) return 'coin';
-            if (roll < 0.73) return 'ammo';
+            if (roll < 0.28) return 'coin';
+            if (roll < 0.56) return 'weapon';
+            if (roll < 0.79) return 'ammo';
             return 'health';
         }
 
         if (rarityKey === 'rare') {
-            if (roll < 0.3) return 'coin';
-            if (roll < 0.69) return 'ammo';
+            if (roll < 0.2) return 'coin';
+            if (roll < 0.38) return 'weapon';
+            if (roll < 0.72) return 'ammo';
             return 'health';
         }
 
         if (rarityKey === 'uncommon') {
-            if (roll < 0.2) return 'coin';
-            if (roll < 0.57) return 'ammo';
+            if (roll < 0.16) return 'coin';
+            if (roll < 0.24) return 'weapon';
+            if (roll < 0.58) return 'ammo';
             return 'health';
         }
 
-        if (roll < 0.12) return 'coin';
+        if (roll < 0.1) return 'coin';
+        if (roll < 0.13) return 'weapon';
         if (roll < 0.52) return 'ammo';
         return 'health';
     }
@@ -2210,6 +2214,15 @@ export class ThreeGame {
                 }
 
                 if (t >= 1) {
+                    if (!pickup.userData.collectedReported) {
+                        pickup.userData.collectedReported = true;
+                        window.dispatchEvent(new CustomEvent('pickup-collected', {
+                            detail: {
+                                type: pickup.userData.type ?? 'unknown',
+                                rarity: pickup.userData.rarity?.key ?? null
+                            }
+                        }));
+                    }
                     removals.push(pickup);
                 }
 

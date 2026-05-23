@@ -680,14 +680,21 @@ body {
 }
 
 #game-container.fullscreen-mode {
+  --game-left-lane: clamp(132px, 13vw, 230px);
+  --game-right-gutter: clamp(18px, 2.5vw, 56px);
+  --game-top-gutter: clamp(84px, 11vh, 150px);
+  --game-bottom-gutter: clamp(22px, 5vh, 72px);
+  --game-usable-width: calc(100% - var(--game-left-lane) - var(--game-right-gutter));
+  --game-usable-height: calc(100% - var(--game-top-gutter) - var(--game-bottom-gutter));
   position: absolute;
   inset: auto;
-  width: min(90%, calc(78dvh * 1.6));
+  width: min(var(--game-usable-width), calc(var(--game-usable-height) * 1.6));
   aspect-ratio: 16 / 10;
   height: auto;
-  max-height: 78%;
-  top: 54%;
-  left: 50%;
+  max-width: var(--game-usable-width);
+  max-height: var(--game-usable-height);
+  top: calc(var(--game-top-gutter) + (var(--game-usable-height) / 2));
+  left: calc(var(--game-left-lane) + (var(--game-usable-width) / 2));
   transform: translate(-50%, -50%);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
@@ -1485,13 +1492,13 @@ input:checked+.slider:before {
 }
 
 .touch-move-control {
-  --touch-pad-size: clamp(132px, 12.5vmin, 196px);
+  --touch-pad-size: clamp(104px, 10vmin, 152px);
   --touch-pad-thumb-size: calc(var(--touch-pad-size) * 0.36);
   --touch-pad-gap: clamp(6px, 0.8vmin, 12px);
-  --touch-pad-offset-x: clamp(24px, 3vmin, 52px);
-  --touch-pad-offset-y: clamp(20px, 2.4vmin, 42px);
-  --touch-pad-label-size: clamp(15px, 1.55vmin, 24px);
-  --touch-pad-glow: calc(var(--touch-pad-size) * 0.24);
+  --touch-pad-offset-x: clamp(18px, 2.4vmin, 38px);
+  --touch-pad-offset-y: clamp(16px, 2vmin, 34px);
+  --touch-pad-label-size: clamp(12px, 1.35vmin, 19px);
+  --touch-pad-glow: calc(var(--touch-pad-size) * 0.2);
   position: absolute;
   left: var(--touch-pad-offset-x);
   bottom: var(--touch-pad-offset-y);
@@ -1596,6 +1603,74 @@ body:not(.touch-device) .touch-move-control {
   letter-spacing: 2px;
 }
 
+.pickup-counter-panel {
+  position: absolute;
+  top: calc(var(--vu) * 13);
+  left: calc(var(--vu) * 4);
+  width: clamp(108px, calc(var(--vu) * 16.5), 152px);
+  padding: calc(var(--vu) * 1.7) calc(var(--vu) * 1.2);
+  border: 1px solid rgba(255, 159, 28, 0.18);
+  background: rgba(0, 0, 0, 0.58);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  color: var(--text-main);
+  font-size: clamp(12px, calc(var(--vu) * 1.9), 17px);
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.pickup-counter-panel__title {
+  color: rgba(255, 198, 96, 0.96);
+  font-weight: 900;
+  margin-bottom: calc(var(--vu) * 1.1);
+  font-size: clamp(13px, calc(var(--vu) * 2.05), 20px);
+}
+
+.pickup-counter-panel__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(2ch, auto);
+  align-items: center;
+  column-gap: calc(var(--vu) * 0.6);
+  padding: calc(var(--vu) * 0.46) 0;
+  color: rgba(245, 248, 251, 0.84);
+}
+
+.pickup-counter-panel__row span:last-child {
+  color: rgba(255, 228, 172, 0.95);
+  font-weight: 900;
+  text-align: right;
+  min-width: 2ch;
+  font-variant-numeric: tabular-nums;
+}
+
+.pickup-counter-panel__row--total {
+  margin-bottom: calc(var(--vu) * 0.3);
+}
+
+.pickup-counter-panel__row--total span:last-child {
+  font-size: clamp(16px, calc(var(--vu) * 2.8), 24px);
+  font-weight: 900;
+  color: #ffd18c;
+  text-shadow: 0 0 10px rgba(255, 159, 28, 0.45);
+}
+
+.pickup-counter-panel__label {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--vu) * 0.8);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.pickup-counter-panel__icon {
+  width: calc(var(--vu) * 1.8);
+  display: inline-flex;
+  justify-content: center;
+  color: rgba(255, 199, 99, 0.96);
+  font-weight: 900;
+}
+
 .splash-corner {
   position: absolute;
   top: calc(var(--vu) * 4);
@@ -1603,12 +1678,46 @@ body:not(.touch-device) .touch-move-control {
 }
 
 @media (max-width: 900px), (pointer: coarse) {
+  #game-container.fullscreen-mode {
+    --game-left-lane: clamp(100px, 20vw, 148px);
+    --game-right-gutter: clamp(8px, 2vw, 20px);
+    --game-top-gutter: clamp(58px, 14vh, 96px);
+    --game-bottom-gutter: clamp(12px, 8vh, 36px);
+  }
+
   .touch-move-control {
     --touch-pad-size: clamp(78px, 17vmin, 110px);
     --touch-pad-gap: clamp(4px, 0.7vmin, 8px);
     --touch-pad-offset-x: calc(env(safe-area-inset-left, 0px) + clamp(10px, 2vmin, 18px));
     --touch-pad-offset-y: calc(env(safe-area-inset-bottom, 0px) + clamp(10px, 2vmin, 18px));
     --touch-pad-label-size: clamp(11px, 1.9vmin, 16px);
+  }
+
+  .pickup-counter-panel {
+    top: calc(var(--vu) * 10.8);
+    left: calc(var(--vu) * 3.2);
+    width: clamp(96px, 19.5vw, 118px);
+    padding: clamp(8px, calc(var(--vu) * 1.9), 14px) clamp(6px, calc(var(--vu) * 1.1), 8px);
+    font-size: clamp(12px, calc(var(--vu) * 1.95), 16px);
+    letter-spacing: 0.02em;
+  }
+
+  .pickup-counter-panel__title {
+    font-size: clamp(16px, calc(var(--vu) * 2.5), 20px);
+    margin-bottom: calc(var(--vu) * 0.95);
+  }
+
+  .pickup-counter-panel__row {
+    column-gap: clamp(4px, calc(var(--vu) * 0.6), 8px);
+    padding: clamp(2px, calc(var(--vu) * 0.54), 7px) 0;
+  }
+
+  .pickup-counter-panel__icon {
+    width: clamp(10px, calc(var(--vu) * 1.55), 13px);
+  }
+
+  .pickup-counter-panel__row--total span:last-child {
+    font-size: clamp(16px, calc(var(--vu) * 2.4), 22px);
   }
 }
 
@@ -1829,4 +1938,3 @@ html.custom-cursor-enabled #confirm-no {
     box-shadow: 0 0 0 rgba(255, 159, 28, 0);
   }
 }
-
