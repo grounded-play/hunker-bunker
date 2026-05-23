@@ -18,6 +18,13 @@ const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring
 const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
+const pickupCountTotal = document.getElementById('pickup-count-total');
+const pickupCountByType = {
+    health: document.getElementById('pickup-count-health'),
+    ammo: document.getElementById('pickup-count-ammo'),
+    weapon: document.getElementById('pickup-count-weapon'),
+    coin: document.getElementById('pickup-count-coin')
+};
 
 const DESIGN_STAGE = {
     width: 177,
@@ -44,6 +51,44 @@ const gearSpinState = {
 
 let stageResizeObserver = null;
 let activeTouchPointerId = null;
+const pickupCounterState = {
+    total: 0,
+    health: 0,
+    ammo: 0,
+    weapon: 0,
+    coin: 0
+};
+function renderPickupCounter() {
+    if (pickupCountTotal) {
+        pickupCountTotal.textContent = String(pickupCounterState.total);
+    }
+
+    for (const [type, el] of Object.entries(pickupCountByType)) {
+        if (!el) continue;
+        el.textContent = String(pickupCounterState[type] ?? 0);
+    }
+}
+
+function resetPickupCounter() {
+    pickupCounterState.total = 0;
+    pickupCounterState.health = 0;
+    pickupCounterState.ammo = 0;
+    pickupCounterState.weapon = 0;
+    pickupCounterState.coin = 0;
+    renderPickupCounter();
+}
+
+function trackPickupCollected(event) {
+    const type = event?.detail?.type;
+    if (!type || !(type in pickupCounterState)) return;
+
+    pickupCounterState.total += 1;
+    pickupCounterState[type] += 1;
+    renderPickupCounter();
+}
+
+window.addEventListener('pickup-collected', trackPickupCollected);
+renderPickupCounter();
 
 function isTouchDevice() {
     const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
@@ -217,6 +262,7 @@ if (startBtn) {
             () => {
                 if (menu) menu.classList.add('hidden');
                 document.getElementById('ui').classList.remove('hidden');
+                resetPickupCounter();
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
 
@@ -673,6 +719,29 @@ function triggerHeroPreviewSwap(type) {
     }, PREVIEW_DOOR_CLOSE_MS);
 }
 
+function spawnSectorScanSmoke(container, count = 15) {
+    if (!container) return;
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'smoke-particle';
+        const size = 40 + Math.random() * 60;
+        p.style.width = `${size}px`;
+        p.style.height = `${size}px`;
+        p.style.left = `calc(50% - ${size / 2}px)`;
+        p.style.top = `calc(50% - ${size / 2}px)`;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 80;
+        const dx = Math.cos(angle) * dist;
+        const dy = Math.sin(angle) * dist - 20;
+        p.style.setProperty('--dx', `${dx}px`);
+        p.style.setProperty('--dy', `${dy}px`);
+        p.style.animationDuration = `${0.6 + Math.random() * 0.4}s`;
+        p.style.zIndex = '100';
+        container.appendChild(p);
+        setTimeout(() => p.remove(), 1200);
+    }
+}
+
 charCards.forEach(card => {
     card.addEventListener('click', () => {
         AudioManager.play('ui_click', { volume: 0.6 });
@@ -687,8 +756,14 @@ charCards.forEach(card => {
             triggerHeroPreviewSwap(type);
 
             if (window.game?.updatePlayerType) {
-                window.game.updatePlayerType(type);
-                AudioManager.play('class_lock', { volume: 0.5 });
+                const gameContainer = document.getElementById('game-container');
+                spawnSectorScanSmoke(gameContainer, 25);
+                AudioManager.play('amb_metal_stress1', { volume: 0.4 });
+                
+                setTimeout(() => {
+                    window.game.updatePlayerType(type);
+                    AudioManager.play('class_lock', { volume: 0.5 });
+                }, 150);
             }
         }
     });
