@@ -571,6 +571,142 @@ export class ThreeGame {
         this.scene.add(baseFloor);
 
         this.scene.add(this.chunkGroups);
+        this.setupCrashedShips();
+    }
+
+    setupCrashedShips() {
+        const textureLoader = new THREE.TextureLoader();
+        const scoutShipTex = textureLoader.load('/scout_ship.png');
+        const tankShipTex = textureLoader.load('/tank_ship.png');
+        const engineerShipTex = textureLoader.load('/engineer_ship.png');
+        const consoleTex = textureLoader.load('/console.png');
+
+        [scoutShipTex, tankShipTex, engineerShipTex, consoleTex].forEach((tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+        });
+
+        // Placements relative to spawn (which is 9, 9 in starting chunk)
+        this.crashedShips = [
+            {
+                type: 'SCOUT',
+                tileX: 6,
+                tileZ: 6,
+                width: 1.3,
+                scale: 3.5,
+                elevation: 0.1,
+                texture: scoutShipTex,
+                consoleOffset: { x: -1.3, z: 0.2 },
+                color: 0x7dff5a
+            },
+            {
+                type: 'TANK',
+                tileX: 12,
+                tileZ: 6,
+                width: 1.3,
+                scale: 3.5,
+                elevation: 0.1,
+                texture: tankShipTex,
+                consoleOffset: { x: -1.3, z: 0.2 },
+                color: 0xffb700
+            },
+            {
+                type: 'ENGINEER',
+                tileX: 9,
+                tileZ: 13,
+                width: 1.3,
+                scale: 3.5,
+                elevation: 0.1,
+                texture: engineerShipTex,
+                consoleOffset: { x: -1.3, z: 0.2 },
+                color: 0x00e5ff
+            }
+        ];
+
+        const shadowMat = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.35,
+            depthWrite: false
+        });
+
+        const consoleShadowMat = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.25,
+            depthWrite: false
+        });
+
+        for (const ship of this.crashedShips) {
+            // 1. Shadow for Ship
+            const shadowGeo = new THREE.CircleGeometry(1.2, 32);
+            const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+            shadow.rotation.x = -Math.PI / 2;
+            shadow.position.set(ship.tileX, 0.02, ship.tileZ);
+            this.scene.add(shadow);
+
+            // 2. Sprite for Ship
+            const shipMat = new THREE.SpriteMaterial({
+                map: ship.texture,
+                transparent: true,
+                alphaTest: 0.05,
+                depthWrite: true,
+                depthTest: true
+            });
+            const shipSprite = new THREE.Sprite(shipMat);
+            shipSprite.center.set(0.5, 0.15); // Adjust center so base stands on ground
+            shipSprite.position.set(ship.tileX, ship.elevation, ship.tileZ);
+            shipSprite.scale.set(ship.scale, ship.scale, 1);
+            shipSprite.renderOrder = 4;
+            this.scene.add(shipSprite);
+
+            // 3. Console Placement
+            const consoleX = ship.tileX + ship.consoleOffset.x;
+            const consoleZ = ship.tileZ + ship.consoleOffset.z;
+
+            // Console Shadow
+            const consoleShadowGeo = new THREE.CircleGeometry(0.42, 32);
+            const consoleShadow = new THREE.Mesh(consoleShadowGeo, consoleShadowMat);
+            consoleShadow.rotation.x = -Math.PI / 2;
+            consoleShadow.position.set(consoleX, 0.02, consoleZ);
+            this.scene.add(consoleShadow);
+
+            // Console Sprite
+            const consoleMat = new THREE.SpriteMaterial({
+                map: consoleTex,
+                transparent: true,
+                alphaTest: 0.05,
+                depthWrite: true,
+                depthTest: true
+            });
+            const consoleSprite = new THREE.Sprite(consoleMat);
+            consoleSprite.center.set(0.5, 0.1);
+            consoleSprite.position.set(consoleX, 0.1, consoleZ);
+            consoleSprite.scale.set(1.0, 1.0, 1);
+            consoleSprite.renderOrder = 4;
+            this.scene.add(consoleSprite);
+
+            // 4. Interactive Console Neon Glowing Ring (Pulsing Indicator)
+            const ringGeo = new THREE.RingGeometry(0.38, 0.44, 32);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: ship.color,
+                transparent: true,
+                opacity: 0.85,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.rotation.x = -Math.PI / 2;
+            ringMesh.position.set(consoleX, 0.03, consoleZ);
+            this.scene.add(ringMesh);
+            ship.consoleRing = ringMesh;
+
+            // 5. Light source for terminal screen (wow factor!)
+            const terminalLight = new THREE.PointLight(ship.color, 1.8, 2.8, 2);
+            terminalLight.position.set(consoleX, 0.5, consoleZ);
+            this.scene.add(terminalLight);
+        }
     }
 
     setupPlayer() {
@@ -668,7 +804,12 @@ export class ThreeGame {
     }
 
     setupInput() {
-        this.handleKeyDown = (event) => this.setKeyState(event.code, true);
+        this.handleKeyDown = (event) => {
+            if (event.code === 'KeyE') {
+                this.interactWithConsole();
+            }
+            this.setKeyState(event.code, true);
+        };
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
@@ -925,7 +1066,206 @@ export class ThreeGame {
         this.updateScatter(delta, now);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
+        this.updateConsoles(delta, now);
         this.renderer.render(this.scene, this.camera);
+    }
+
+    updateConsoles(delta, now) {
+        if (!this.crashedShips || !this.player) return;
+
+        let nearestConsole = null;
+        let minDistance = Infinity;
+
+        for (const ship of this.crashedShips) {
+            // Animate pulsing neon floor rings
+            if (ship.consoleRing) {
+                const pulse = 0.65 + Math.sin(now * 0.006) * 0.25;
+                ship.consoleRing.material.opacity = pulse;
+                const scalePulse = 0.95 + Math.sin(now * 0.006) * 0.05;
+                ship.consoleRing.scale.set(scalePulse, scalePulse, 1.0);
+            }
+
+            const consoleX = ship.tileX + ship.consoleOffset.x;
+            const consoleZ = ship.tileZ + ship.consoleOffset.z;
+            const dx = this.player.position.x - consoleX;
+            const dz = this.player.position.z - consoleZ;
+            const distance = Math.hypot(dx, dz);
+
+            if (distance < 1.6 && distance < minDistance) {
+                nearestConsole = ship;
+                minDistance = distance;
+            }
+        }
+
+        // Show/hide floating HUD prompt
+        const promptEl = document.getElementById('console-hud-prompt');
+        if (nearestConsole) {
+            this.activeInteractiveConsole = nearestConsole;
+            if (promptEl) {
+                const actionText = promptEl.querySelector('.prompt-text');
+                if (actionText) {
+                    actionText.textContent = `ACCESS ${nearestConsole.type} BASE TELEMETRY`;
+                }
+                promptEl.classList.add('visible');
+                promptEl.classList.remove('hidden');
+            }
+        } else {
+            this.activeInteractiveConsole = null;
+            if (promptEl) {
+                promptEl.classList.add('hidden');
+                promptEl.classList.remove('visible');
+            }
+        }
+    }
+
+    interactWithConsole() {
+        if (!this.activeInteractiveConsole) return;
+        this.openConsoleModal(this.activeInteractiveConsole);
+    }
+
+    openConsoleModal(ship) {
+        const modal = document.getElementById('console-terminal-modal');
+        if (!modal) return;
+
+        window.AudioManager?.play('ui_scan_ping', { volume: 0.6 });
+
+        // Update class styling based on ship type
+        const content = modal.querySelector('.console-terminal-content');
+        if (content) {
+            const glowColor = ship.type === 'SCOUT' ? '#7dff5a' : (ship.type === 'TANK' ? '#ffb700' : '#00e5ff');
+            const glowRgb = ship.type === 'SCOUT' ? '125, 255, 90' : (ship.type === 'TANK' ? '255, 183, 0' : '0, 229, 255');
+            content.style.setProperty('--terminal-glow', glowColor);
+            content.style.setProperty('--terminal-glow-rgb', glowRgb);
+        }
+
+        // Update badge text
+        const badge = document.getElementById('terminal-class-badge');
+        if (badge) {
+            const isActive = this.playerType === ship.type;
+            badge.textContent = `${ship.type} BASE STATUS ${isActive ? '[ACTIVE EXOSUIT]' : '[STANDBY]'}`;
+        }
+
+        // Initial setup for progress bars
+        this.baseUpgrades = this.baseUpgrades || {};
+        this.baseUpgrades[ship.type] = this.baseUpgrades[ship.type] || { hull: 0, radar: 0, reactor: 0 };
+        const upgrades = this.baseUpgrades[ship.type];
+
+        const reactorStability = document.getElementById('telemetry-reactor-stability');
+        const reactorPct = document.getElementById('telemetry-reactor-percent');
+        const shieldIntensity = document.getElementById('telemetry-shield-intensity');
+        const shieldPct = document.getElementById('telemetry-shield-percent');
+        const energyLevel = document.getElementById('telemetry-energy-level');
+
+        if (reactorStability) {
+            const percent = Math.min(100, 91.2 + upgrades.reactor * 1.5);
+            reactorStability.style.width = `${percent}%`;
+            if (reactorPct) reactorPct.textContent = `${percent.toFixed(1)}% STABLE`;
+        }
+
+        if (shieldIntensity) {
+            const percent = Math.min(100, 68.0 + upgrades.hull * 6.4);
+            shieldIntensity.style.width = `${percent}%`;
+            if (shieldPct) shieldPct.textContent = `${percent.toFixed(1)}% INTENSITY`;
+        }
+
+        if (energyLevel) {
+            energyLevel.textContent = `${3400 + upgrades.reactor * 250} / 5,000 MW`;
+        }
+
+        // Hook up Hull and Radar buttons
+        const hullBtn = document.getElementById('terminal-btn-hull');
+        const radarBtn = document.getElementById('terminal-btn-radar');
+
+        if (hullBtn) {
+            hullBtn.textContent = upgrades.hull >= 5 ? 'MAX LEVEL' : `UPGRADE [LEVEL ${upgrades.hull + 1}]`;
+            hullBtn.replaceWith(hullBtn.cloneNode(true));
+            const newHullBtn = document.getElementById('terminal-btn-hull');
+            newHullBtn.addEventListener('click', () => {
+                if (upgrades.hull >= 5) return;
+                upgrades.hull += 1;
+                window.AudioManager?.play('class_lock', { volume: 0.5 });
+                newHullBtn.textContent = upgrades.hull >= 5 ? 'MAX LEVEL' : `UPGRADE [LEVEL ${upgrades.hull + 1}]`;
+                if (shieldIntensity) {
+                    const percent = Math.min(100, 68.0 + upgrades.hull * 6.4);
+                    shieldIntensity.style.width = `${percent}%`;
+                    if (shieldPct) shieldPct.textContent = `${percent.toFixed(1)}% INTENSITY`;
+                }
+            });
+        }
+
+        if (radarBtn) {
+            radarBtn.textContent = upgrades.radar >= 5 ? 'MAX LEVEL' : `UPGRADE [LEVEL ${upgrades.radar + 1}]`;
+            radarBtn.replaceWith(radarBtn.cloneNode(true));
+            const newRadarBtn = document.getElementById('terminal-btn-radar');
+            newRadarBtn.addEventListener('click', () => {
+                if (upgrades.radar >= 5) return;
+                upgrades.radar += 1;
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.6 });
+                newRadarBtn.textContent = upgrades.radar >= 5 ? 'MAX LEVEL' : `UPGRADE [LEVEL ${upgrades.radar + 1}]`;
+            });
+        }
+
+        // Dynamically morph third button to Deployed Class Exosuit Swapper!
+        const reactorCard = document.getElementById('terminal-btn-reactor').closest('.action-card');
+        const reactorTitle = reactorCard?.querySelector('.action-title');
+        const reactorCost = reactorCard?.querySelector('.action-cost');
+        const reactorDesc = reactorCard?.querySelector('.action-desc');
+        const reactorBtn = document.getElementById('terminal-btn-reactor');
+
+        if (reactorTitle) reactorTitle.textContent = `SYNC CLASS: ${ship.type}`;
+        if (reactorCost) reactorCost.textContent = "✔ INTEGRATE";
+        if (reactorDesc) reactorDesc.textContent = `Synchronize combat suit module telemetry with local ${ship.type} crashed wreckage reactor matrix.`;
+        
+        if (reactorBtn) {
+            reactorBtn.textContent = `DEPLOY ${ship.type} SUIT`;
+            reactorBtn.replaceWith(reactorBtn.cloneNode(true));
+            const newReactorBtn = document.getElementById('terminal-btn-reactor');
+            newReactorBtn.addEventListener('click', () => {
+                this.updatePlayerType(ship.type);
+                
+                // Spawn beautiful micro sector scan smoke around the player in HUD space!
+                const container = document.getElementById('game-container');
+                if (container) {
+                    for (let i = 0; i < 20; i++) {
+                        const p = document.createElement('div');
+                        p.className = 'smoke-particle';
+                        const size = 30 + Math.random() * 40;
+                        p.style.width = `${size}px`;
+                        p.style.height = `${size}px`;
+                        p.style.left = `${40 + Math.random() * 20}%`;
+                        p.style.top = `${40 + Math.random() * 20}%`;
+                        p.style.setProperty('--dx', `${(Math.random() - 0.5) * 120}px`);
+                        p.style.setProperty('--dy', `${(Math.random() - 0.5) * 120}px`);
+                        container.appendChild(p);
+                        setTimeout(() => p.remove(), 1200);
+                    }
+                }
+                
+                window.AudioManager?.play('class_lock', { volume: 0.6 });
+                if (badge) {
+                    badge.textContent = `${ship.type} BASE STATUS [ACTIVE EXOSUIT]`;
+                }
+            });
+        }
+
+        // Hook up Close button
+        const closeBtn = document.getElementById('close-console-terminal');
+        if (closeBtn) {
+            closeBtn.replaceWith(closeBtn.cloneNode(true));
+            document.getElementById('close-console-terminal').addEventListener('click', () => {
+                this.closeConsoleModal();
+            });
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    closeConsoleModal() {
+        const modal = document.getElementById('console-terminal-modal');
+        if (modal) {
+            window.AudioManager?.play('ui_click', { volume: 0.5 });
+            modal.classList.add('hidden');
+        }
     }
 
     updatePlayer(delta) {
@@ -1228,9 +1568,11 @@ export class ThreeGame {
 
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
-                const spawnDistance = Math.abs(worldX - spawn.x) + Math.abs(worldZ - spawn.y);
+                const dx = worldX - spawn.x;
+                const dz = worldZ - spawn.y;
+                const distToSpawn = Math.sqrt(dx * dx + dz * dz);
 
-                if (spawnDistance <= 4) continue;
+                if (distToSpawn <= 6.0) continue;
 
                 candidates.push({
                     localX,
@@ -1431,10 +1773,12 @@ export class ThreeGame {
 
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
-                const spawnDistance = Math.abs(worldX - spawn.x) + Math.abs(worldZ - spawn.y);
+                const dx = worldX - spawn.x;
+                const dz = worldZ - spawn.y;
+                const distToSpawn = Math.sqrt(dx * dx + dz * dz);
 
                 // Keep away from player's starting spawn tile
-                if (spawnDistance <= 3) continue;
+                if (distToSpawn <= 6.0) continue;
 
                 candidates.push({
                     localX,
@@ -2528,6 +2872,28 @@ export class ThreeGame {
     }
 
     canOccupyPosition(x, z) {
+        if (this.crashedShips) {
+            for (const ship of this.crashedShips) {
+                // 1. Ship collision
+                const dxShip = x - ship.tileX;
+                const dzShip = z - ship.tileZ;
+                const distShip = Math.hypot(dxShip, dzShip);
+                if (distShip < (ship.width + this.playerRadius * 0.7)) {
+                    return false;
+                }
+
+                // 2. Console collision
+                const consoleX = ship.tileX + ship.consoleOffset.x;
+                const consoleZ = ship.tileZ + ship.consoleOffset.z;
+                const dxConsole = x - consoleX;
+                const dzConsole = z - consoleZ;
+                const distConsole = Math.hypot(dxConsole, dzConsole);
+                if (distConsole < (0.42 + this.playerRadius * 0.7)) {
+                    return false;
+                }
+            }
+        }
+
         const tileX = Math.round(x);
         const tileY = Math.round(z);
 
@@ -2769,8 +3135,10 @@ export class ThreeGame {
             for (let localX = 0; localX < this.chunkSize; localX++) {
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldY = chunkY * this.chunkSize + localY;
-                const distance = Math.abs(worldX - spawn.x) + Math.abs(worldY - spawn.y);
-                if (distance <= 2) {
+                const dx = worldX - spawn.x;
+                const dy = worldY - spawn.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance <= 6.0) {
                     grid[localY][localX] = '.';
                 }
             }

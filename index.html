@@ -231,6 +231,86 @@
       <div class="touch-move-control__label">MOVE</div>
     </div>
 
+    <!-- Interactive Console HUD Floating Prompt -->
+    <div id="console-hud-prompt" class="hidden">
+      <span class="prompt-key">E</span>
+      <span class="prompt-text">ACCESS CONSOLE</span>
+    </div>
+
+    <!-- Holographic Retro Terminal Console Modal -->
+    <div id="console-terminal-modal" class="modal hidden">
+      <div class="modal-content console-terminal-content">
+        <button class="close-modal" id="close-console-terminal">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+        
+        <div class="terminal-header">
+          <div class="terminal-title">BUNKER TACTICAL TERMINAL</div>
+          <div class="terminal-class-badge" id="terminal-class-badge">SCOUT BASE STATUS</div>
+        </div>
+
+        <div class="terminal-layout">
+          <!-- Left: Diagnostic telemetry and core specs -->
+          <div class="terminal-telemetry-col">
+            <div class="telemetry-block">
+              <span class="telemetry-label">SYSTEM CORE MATRIX STATUS</span>
+              <span class="telemetry-value text-glow-green" id="telemetry-core-status">ONLINE / SECURE</span>
+            </div>
+            <div class="telemetry-block">
+              <span class="telemetry-label">REACTOR STABILITY INDEX</span>
+              <div class="progress-bar-container">
+                <div class="progress-bar glow-green" id="telemetry-reactor-stability" style="width: 98.4%;"></div>
+              </div>
+              <span class="telemetry-value-sub" id="telemetry-reactor-percent">98.4% STABLE</span>
+            </div>
+            <div class="telemetry-block">
+              <span class="telemetry-label">SHIELD DEFLECTION INTENSITY</span>
+              <div class="progress-bar-container">
+                <div class="progress-bar glow-green" id="telemetry-shield-intensity" style="width: 85%;"></div>
+              </div>
+              <span class="telemetry-value-sub" id="telemetry-shield-percent">85.0% DETECTED</span>
+            </div>
+            <div class="telemetry-block">
+              <span class="telemetry-label">CRITICAL ENERGY THRESHOLD</span>
+              <span class="telemetry-value" id="telemetry-energy-level">4,812 / 5,000 MW</span>
+            </div>
+          </div>
+
+          <!-- Right: Base expansion actions -->
+          <div class="terminal-actions-col">
+            <div class="action-card">
+              <div class="action-card-header">
+                <span class="action-title">HULL EXPANSION MATRIX</span>
+                <span class="action-cost">✚ 200 TECH</span>
+              </div>
+              <p class="action-desc">Reinforce exterior structures with advanced heavy bulkhead plating.</p>
+              <button class="terminal-action-btn" id="terminal-btn-hull">INITIALIZE BUILD</button>
+            </div>
+            <div class="action-card">
+              <div class="action-card-header">
+                <span class="action-title">COMMUNICATION RADAR NODE</span>
+                <span class="action-cost">✚ 350 TECH</span>
+              </div>
+              <p class="action-desc">Establish long-range tactical feeds to locate survivors and base components.</p>
+              <button class="terminal-action-btn" id="terminal-btn-radar">UPGRADE NODE</button>
+            </div>
+            <div class="action-card">
+              <div class="action-card-header">
+                <span class="action-title">REACTOR COMPRESSOR</span>
+                <span class="action-cost">✚ 500 TECH</span>
+              </div>
+              <p class="action-desc">Increase generator efficiency and shield capacity by upgrading the core matrix.</p>
+              <button class="terminal-action-btn" id="terminal-btn-reactor">ACTIVATE CORE</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-footer">
+          <div class="telemetry-ticker">WARNING: RADIATION LEVELS DETECTED OUTSIDE SHIP ENCLOSURE. DOCK SECURE.</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Settings Modal -->
     <div id="settings-popup" class="modal hidden">
       <div class="modal-content">
