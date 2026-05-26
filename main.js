@@ -16,8 +16,21 @@ const gameStageContainer = document.getElementById('game-container');
 const touchMoveControl = document.getElementById('touch-move-control');
 const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring');
 const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
+const touchCompass = touchMoveControl?.querySelector('.touch-move-control__compass');
+const touchCompassArrow = touchCompass?.querySelector('.touch-move-control__compass-arrow');
+const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
+const openAudioMixerBtn = document.getElementById('open-audio-mixer');
+const audioMixerPopup = document.getElementById('audio-mixer-popup');
+const closeAudioMixerBtn = document.getElementById('close-audio-mixer');
+const saveAudioMixBtn = document.getElementById('save-audio-mix');
+const audioMasterSlider = document.getElementById('audio-master-slider');
+const audioMusicSlider = document.getElementById('audio-music-slider');
+const audioVfxSlider = document.getElementById('audio-vfx-slider');
+const audioMasterValue = document.getElementById('audio-master-value');
+const audioMusicValue = document.getElementById('audio-music-value');
+const audioVfxValue = document.getElementById('audio-vfx-value');
 const pickupCountTotal = document.getElementById('pickup-count-total');
 const pickupCountByType = {
     health: document.getElementById('pickup-count-health'),
@@ -30,11 +43,18 @@ const DESIGN_STAGE = {
     width: 177,
     height: 100
 };
+const AUDIO_MIX_STORAGE_KEY = 'hunker_audio_mix_v1';
+const LEGACY_AUDIO_TOGGLE_KEY = 'hunker_audio_enabled';
+const DEFAULT_AUDIO_MIX = Object.freeze({
+    master: 1,
+    music: 1,
+    vfx: 1
+});
 
 const state = {
     settings: {
         debug: false,
-        sound: true,
+        audioMix: { ...DEFAULT_AUDIO_MIX },
         fullscreen: false,
         touchControls: false
     },
@@ -51,6 +71,7 @@ const gearSpinState = {
 
 let stageResizeObserver = null;
 let activeTouchPointerId = null;
+let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -58,6 +79,7 @@ const pickupCounterState = {
     weapon: 0,
     coin: 0
 };
+
 function renderPickupCounter() {
     if (pickupCountTotal) {
         pickupCountTotal.textContent = String(pickupCounterState.total);
@@ -67,6 +89,140 @@ function renderPickupCounter() {
         if (!el) continue;
         el.textContent = String(pickupCounterState[type] ?? 0);
     }
+}
+
+function clampAudioMixValue(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 1;
+    return Math.min(1, Math.max(0, numeric));
+}
+
+function parseStoredAudioMix(rawValue) {
+    if (!rawValue) return null;
+    try {
+        const parsed = JSON.parse(rawValue);
+        if (!parsed || typeof parsed !== 'object') return null;
+        return {
+            master: clampAudioMixValue(parsed.master !== undefined ? parsed.master : parsed.world),
+            music: clampAudioMixValue(parsed.music),
+            vfx: clampAudioMixValue(parsed.vfx !== undefined ? parsed.vfx : parsed.sfx)
+        };
+    } catch {
+        return null;
+    }
+}
+
+function cloneAudioMix(mix) {
+    return {
+        master: clampAudioMixValue(mix?.master),
+        music: clampAudioMixValue(mix?.music),
+        vfx: clampAudioMixValue(mix?.vfx)
+    };
+}
+
+function setAudioMixerOpen(isOpen) {
+    if (!audioMixerPopup) return;
+    audioMixerPopup.classList.toggle('hidden', !isOpen);
+}
+
+function syncAudioMixerUI(mix = state.settings.audioMix) {
+    const controls = [
+        { channel: 'master', slider: audioMasterSlider, valueEl: audioMasterValue },
+        { channel: 'music', slider: audioMusicSlider, valueEl: audioMusicValue },
+        { channel: 'vfx', slider: audioVfxSlider, valueEl: audioVfxValue }
+    ];
+
+    controls.forEach(({ channel, slider, valueEl }) => {
+        const pct = Math.round(clampAudioMixValue(mix[channel]) * 100);
+        if (slider) slider.value = String(pct);
+        if (valueEl) valueEl.textContent = `${pct}%`;
+    });
+}
+
+function applyAudioMixSettings(nextMix, { persist = true } = {}) {
+    state.settings.audioMix = cloneAudioMix(nextMix);
+    draftAudioMix = cloneAudioMix(state.settings.audioMix);
+
+    AudioManager.setMix(state.settings.audioMix);
+    syncAudioMixerUI(state.settings.audioMix);
+
+    if (persist) {
+        localStorage.setItem(AUDIO_MIX_STORAGE_KEY, JSON.stringify(state.settings.audioMix));
+    }
+}
+
+function loadAudioMixSettings() {
+    const storedMix = parseStoredAudioMix(localStorage.getItem(AUDIO_MIX_STORAGE_KEY));
+    if (storedMix) {
+        applyAudioMixSettings(storedMix, { persist: false });
+        return;
+    }
+
+    const legacyAudioEnabled = localStorage.getItem(LEGACY_AUDIO_TOGGLE_KEY);
+    const migratedMix = legacyAudioEnabled === 'false'
+        ? { master: 0, music: 0, vfx: 0 }
+        : { ...DEFAULT_AUDIO_MIX };
+
+    applyAudioMixSettings(migratedMix, { persist: true });
+    localStorage.removeItem(LEGACY_AUDIO_TOGGLE_KEY);
+}
+
+function installAudioMixerControls() {
+    if (openAudioMixerBtn) {
+        openAudioMixerBtn.addEventListener('click', () => {
+            draftAudioMix = cloneAudioMix(state.settings.audioMix);
+            syncAudioMixerUI(draftAudioMix);
+            setAudioMixerOpen(true);
+        });
+    }
+
+    if (closeAudioMixerBtn) {
+        closeAudioMixerBtn.addEventListener('click', () => {
+            draftAudioMix = cloneAudioMix(state.settings.audioMix);
+            AudioManager.setMix(state.settings.audioMix);
+            syncAudioMixerUI(draftAudioMix);
+            setAudioMixerOpen(false);
+        });
+    }
+
+    if (saveAudioMixBtn) {
+        saveAudioMixBtn.addEventListener('click', () => {
+            applyAudioMixSettings(draftAudioMix, { persist: true });
+            setAudioMixerOpen(false);
+            AudioManager.play('ui_click', { volume: 0.5 });
+        });
+    }
+
+    if (audioMixerPopup) {
+        audioMixerPopup.addEventListener('click', (event) => {
+            if (event.target !== audioMixerPopup) return;
+            draftAudioMix = cloneAudioMix(state.settings.audioMix);
+            AudioManager.setMix(state.settings.audioMix);
+            syncAudioMixerUI(draftAudioMix);
+            setAudioMixerOpen(false);
+        });
+    }
+
+    const sliderDefs = [
+        { channel: 'master', slider: audioMasterSlider },
+        { channel: 'music', slider: audioMusicSlider },
+        { channel: 'vfx', slider: audioVfxSlider }
+    ];
+
+    sliderDefs.forEach(({ channel, slider }) => {
+        if (!slider) return;
+        const updateChannel = (event) => {
+            const percent = clampAudioMixValue(Number(event.target.value) / 100);
+            draftAudioMix = {
+                ...draftAudioMix,
+                [channel]: percent
+            };
+            AudioManager.setMix(draftAudioMix);
+            syncAudioMixerUI(draftAudioMix);
+        };
+        slider.addEventListener('input', updateChannel);
+        slider.addEventListener('change', updateChannel);
+    });
 }
 
 function resetPickupCounter() {
@@ -122,15 +278,59 @@ function syncTouchMoveControlVisibility() {
     if (!touchMoveControl) return;
 
     const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
-    const shouldShow = isHUD && state.settings.touchControls;
-    touchMoveControl.classList.toggle('hidden', !shouldShow);
+    // Keep touchMoveControl container visible on the HUD so the compass is always visible
+    touchMoveControl.classList.toggle('hidden', !isHUD);
 
-    if (!shouldShow) {
+    // Show/hide the joystick ring and label based on the touchControls setting
+    const showJoystick = state.settings.touchControls;
+    if (touchMoveRing) {
+        touchMoveRing.classList.toggle('hidden', !showJoystick);
+    }
+    const label = touchMoveControl.querySelector('.touch-move-control__label');
+    if (label) {
+        label.classList.toggle('hidden', !showJoystick);
+    }
+
+    if (!isHUD || !showJoystick) {
         activeTouchPointerId = null;
         touchMoveControl.classList.remove('active');
         touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
         window.game?.setVirtualInput?.(0, 0);
     }
+}
+
+function formatTouchCompassDistance(distance) {
+    if (!Number.isFinite(distance) || distance <= 0) return '0u';
+    return `${Math.round(distance)}u`;
+}
+
+function updateTouchCompass() {
+    if (!touchCompassArrow || !touchCompassDistance) return;
+
+    const compassState = window.game?.getSpawnCompassState?.();
+    if (!compassState) {
+        touchCompassArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
+        touchCompassArrow.style.opacity = '0.35';
+        touchCompassDistance.textContent = '0u';
+        return;
+    }
+
+    const angle = Number.isFinite(compassState.angle) ? compassState.angle : 0;
+    const distance = Number.isFinite(compassState.distance) ? compassState.distance : 0;
+    touchCompassArrow.style.transform = `translate(-50%, -100%) rotate(${angle.toFixed(2)}deg)`;
+    touchCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
+    touchCompassDistance.textContent = formatTouchCompassDistance(distance);
+}
+
+function installTouchCompass() {
+    if (!touchCompassArrow || !touchCompassDistance) return;
+
+    const step = () => {
+        updateTouchCompass();
+        requestAnimationFrame(step);
+    };
+
+    requestAnimationFrame(step);
 }
 
 function installTouchMoveControl() {
@@ -403,6 +603,8 @@ if (settingsBtns.length > 0 && settingsPopup) {
             if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
             if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
             if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
+            syncAudioMixerUI(state.settings.audioMix);
+            setAudioMixerOpen(false);
         });
     });
 }
@@ -429,6 +631,7 @@ if (confirmYes) {
         const confirmModal = document.getElementById('confirm-modal');
         if (confirmModal) confirmModal.classList.add('hidden');
         if (settingsPopup) settingsPopup.classList.add('hidden');
+        setAudioMixerOpen(false);
 
         triggerDoorTransition(
             () => {
@@ -450,7 +653,12 @@ if (confirmYes) {
     });
 }
 if (closeSettings && settingsPopup) {
-    closeSettings.addEventListener('click', () => settingsPopup.classList.add('hidden'));
+    closeSettings.addEventListener('click', () => {
+        settingsPopup.classList.add('hidden');
+        draftAudioMix = cloneAudioMix(state.settings.audioMix);
+        AudioManager.setMix(state.settings.audioMix);
+        setAudioMixerOpen(false);
+    });
 }
 
 if (mainDebugToggle) {
@@ -606,8 +814,32 @@ function getPreviewSpriteImage(path) {
     const imagePromise = new Promise((resolve, reject) => {
         const image = new Image();
         image.onload = () => {
-            previewSpriteImages.set(path, image);
-            resolve(image);
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            // Remove chroma green border/background pixels
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const a = data[i + 3];
+                if (a > 0) {
+                    if (r < 140 && b < 140 && g > 90 && g > r * 1.4 && g > b * 1.4) {
+                        data[i + 3] = 0; // Make transparent
+                    }
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+
+            previewSpriteImages.set(path, canvas);
+            resolve(canvas);
         };
         image.onerror = reject;
         image.src = path;
@@ -957,27 +1189,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     installStageLayoutSync();
     setTouchDeviceMode();
     installTouchMoveControl();
+    installTouchCompass();
     window.addEventListener('resize', refreshGameLayout);
     window.addEventListener('orientationchange', refreshGameLayout);
     window.addEventListener('resize', setTouchDeviceMode);
     window.addEventListener('orientationchange', setTouchDeviceMode);
 
     setDebugMode(false);
-
-    const mainAudioToggle = document.getElementById('main-audio-toggle');
-    if (mainAudioToggle) {
-        const storedAudio = localStorage.getItem('hunker_audio_enabled');
-        if (storedAudio !== null) {
-            mainAudioToggle.checked = storedAudio === 'true';
-            AudioManager.toggleMute(!mainAudioToggle.checked);
-        }
-
-        mainAudioToggle.addEventListener('change', (e) => {
-            AudioManager.toggleMute(!e.target.checked);
-            localStorage.setItem('hunker_audio_enabled', e.target.checked);
-            if (e.target.checked) AudioManager.play('ui_click', { volume: 0.6 });
-        });
-    }
+    installAudioMixerControls();
+    setAudioMixerOpen(false);
+    loadAudioMixSettings();
 
     const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
     if (storedTouchControls !== null) {

@@ -225,10 +225,96 @@
       </div>
     </div>
     <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
+      <div class="touch-move-control__compass" aria-hidden="true">
+        <div class="touch-move-control__compass-face">
+          <div class="touch-move-control__compass-arrow"></div>
+          <div class="touch-move-control__compass-distance">0u</div>
+        </div>
+      </div>
       <div class="touch-move-control__ring">
         <div class="touch-move-control__thumb"></div>
       </div>
       <div class="touch-move-control__label">MOVE</div>
+    </div>
+
+    <!-- Interactive Console HUD Floating Prompt -->
+    <div id="console-hud-prompt" class="hidden">
+      <span class="prompt-key">E</span>
+      <span class="prompt-text">ACCESS CONSOLE</span>
+    </div>
+
+    <!-- Holographic Retro Terminal Console Modal -->
+    <div id="console-terminal-modal" class="modal hidden">
+      <div class="modal-content console-terminal-content">
+        <button class="close-modal" id="close-console-terminal">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+        
+        <div class="terminal-header">
+          <div class="terminal-title">BUNKER TACTICAL TERMINAL</div>
+          <div class="terminal-class-badge" id="terminal-class-badge">SCOUT BASE STATUS</div>
+        </div>
+
+        <div class="terminal-layout">
+          <!-- Left: Diagnostic telemetry and core specs -->
+          <div class="terminal-telemetry-col">
+            <div class="telemetry-block">
+              <span class="telemetry-label">SYSTEM CORE MATRIX STATUS</span>
+              <span class="telemetry-value text-glow-green" id="telemetry-core-status">ONLINE / SECURE</span>
+            </div>
+            <div class="telemetry-block">
+              <span class="telemetry-label">REACTOR STABILITY INDEX</span>
+              <div class="progress-bar-container">
+                <div class="progress-bar glow-green" id="telemetry-reactor-stability" style="width: 98.4%;"></div>
+              </div>
+              <span class="telemetry-value-sub" id="telemetry-reactor-percent">98.4% STABLE</span>
+            </div>
+            <div class="telemetry-block">
+              <span class="telemetry-label">SHIELD DEFLECTION INTENSITY</span>
+              <div class="progress-bar-container">
+                <div class="progress-bar glow-green" id="telemetry-shield-intensity" style="width: 85%;"></div>
+              </div>
+              <span class="telemetry-value-sub" id="telemetry-shield-percent">85.0% DETECTED</span>
+            </div>
+            <div class="telemetry-block">
+              <span class="telemetry-label">CRITICAL ENERGY THRESHOLD</span>
+              <span class="telemetry-value" id="telemetry-energy-level">4,812 / 5,000 MW</span>
+            </div>
+          </div>
+
+          <!-- Right: Base expansion actions -->
+          <div class="terminal-actions-col">
+            <div class="action-card">
+              <div class="action-card-header">
+                <span class="action-title">HULL EXPANSION MATRIX</span>
+                <span class="action-cost">✚ 200 TECH</span>
+              </div>
+              <p class="action-desc">Reinforce exterior structures with advanced heavy bulkhead plating.</p>
+              <button class="terminal-action-btn" id="terminal-btn-hull">INITIALIZE BUILD</button>
+            </div>
+            <div class="action-card">
+              <div class="action-card-header">
+                <span class="action-title">COMMUNICATION RADAR NODE</span>
+                <span class="action-cost">✚ 350 TECH</span>
+              </div>
+              <p class="action-desc">Establish long-range tactical feeds to locate survivors and base components.</p>
+              <button class="terminal-action-btn" id="terminal-btn-radar">UPGRADE NODE</button>
+            </div>
+            <div class="action-card">
+              <div class="action-card-header">
+                <span class="action-title">REACTOR COMPRESSOR</span>
+                <span class="action-cost">✚ 500 TECH</span>
+              </div>
+              <p class="action-desc">Increase generator efficiency and shield capacity by upgrading the core matrix.</p>
+              <button class="terminal-action-btn" id="terminal-btn-reactor">ACTIVATE CORE</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="terminal-footer">
+          <div class="telemetry-ticker">WARNING: RADIATION LEVELS DETECTED OUTSIDE SHIP ENCLOSURE. DOCK SECURE.</div>
+        </div>
+      </div>
     </div>
 
     <!-- Settings Modal -->
@@ -244,9 +330,9 @@
           <span>FULLSCREEN MODE</span>
           <label class="toggle"><input type="checkbox" id="main-fs-toggle"> <span class="slider"></span></label>
         </div>
-        <div class="setting-item">
-          <span>AUDIO SYSTEMS</span>
-          <label class="toggle"><input type="checkbox" id="main-audio-toggle" checked> <span class="slider"></span></label>
+        <div class="setting-item setting-item--action">
+          <span>AUDIO MIXER</span>
+          <button type="button" class="calibrate-btn settings-action-btn" id="open-audio-mixer">OPEN</button>
         </div>
         <div class="setting-item hidden" id="touch-controls-setting">
           <span>TOUCH MOVE PAD</span>
@@ -255,6 +341,32 @@
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">
           <button class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="audio-mixer-popup" class="modal audio-mixer-modal hidden">
+      <div class="modal-content audio-mixer-panel">
+        <button class="close-modal audio-mixer-close" id="close-audio-mixer">×</button>
+        <h2 class="modal-title">AUDIO MIXER</h2>
+        <label class="audio-slider-row" for="audio-master-slider">
+          <span class="audio-slider-row__label">MASTER</span>
+          <input type="range" id="audio-master-slider" min="0" max="100" step="1" value="100">
+          <span class="audio-slider-row__value" id="audio-master-value">100%</span>
+        </label>
+        <label class="audio-slider-row" for="audio-music-slider">
+          <span class="audio-slider-row__label">MUSIC</span>
+          <input type="range" id="audio-music-slider" min="0" max="100" step="1" value="100">
+          <span class="audio-slider-row__value" id="audio-music-value">100%</span>
+        </label>
+        <label class="audio-slider-row" for="audio-vfx-slider">
+          <span class="audio-slider-row__label">VFX</span>
+          <input type="range" id="audio-vfx-slider" min="0" max="100" step="1" value="100">
+          <span class="audio-slider-row__value" id="audio-vfx-value">100%</span>
+        </label>
+        <div class="audio-mixer-actions">
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-audio-mix">SAVE SETTINGS</button>
         </div>
       </div>
     </div>
@@ -291,16 +403,16 @@
       </div>
     </div>
     <!-- Tactical Confirmation Modal -->
-    <div id="confirm-modal" class="modal hidden" style="z-index: 10001;">
-      <div class="modal-content confirm-modal-content" style="border-color: #dc2626; text-align: center;">
-        <h2 class="modal-title" style="color: #dc2626;">CRITICAL ALERT</h2>
-        <p class="confirm-copy" style="color: var(--text-main); font-size: var(--font-sm); margin-bottom: calc(var(--vu) * 4);">
-          ABORTING MISSION WILL TERMINATE CURRENT TACTICAL DATA FEED.<br>
-          PROCEED WITH SHUTDOWN?
+    <div id="confirm-modal" class="modal critical-modal hidden">
+      <div class="modal-content confirm-modal-content">
+        <h2 class="modal-title confirm-title">CRITICAL ALERT</h2>
+        <p class="confirm-copy">
+          ABORT MISSION AND RETURN TO COMMAND?<br>
+          UNSAVED TACTICAL PROGRESS WILL BE LOST.
         </p>
         <div class="confirm-actions">
-          <button class="abort-btn" id="confirm-yes">YES</button>
-          <button class="confirm-secondary-btn" id="confirm-no">NO</button>
+          <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>
+          <button class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
         </div>
       </div>
     </div>
