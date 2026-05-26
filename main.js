@@ -22,12 +22,12 @@ const openAudioMixerBtn = document.getElementById('open-audio-mixer');
 const audioMixerPopup = document.getElementById('audio-mixer-popup');
 const closeAudioMixerBtn = document.getElementById('close-audio-mixer');
 const saveAudioMixBtn = document.getElementById('save-audio-mix');
-const audioWorldSlider = document.getElementById('audio-world-slider');
+const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
-const audioSfxSlider = document.getElementById('audio-sfx-slider');
-const audioWorldValue = document.getElementById('audio-world-value');
+const audioVfxSlider = document.getElementById('audio-vfx-slider');
+const audioMasterValue = document.getElementById('audio-master-value');
 const audioMusicValue = document.getElementById('audio-music-value');
-const audioSfxValue = document.getElementById('audio-sfx-value');
+const audioVfxValue = document.getElementById('audio-vfx-value');
 const pickupCountTotal = document.getElementById('pickup-count-total');
 const pickupCountByType = {
     health: document.getElementById('pickup-count-health'),
@@ -43,9 +43,9 @@ const DESIGN_STAGE = {
 const AUDIO_MIX_STORAGE_KEY = 'hunker_audio_mix_v1';
 const LEGACY_AUDIO_TOGGLE_KEY = 'hunker_audio_enabled';
 const DEFAULT_AUDIO_MIX = Object.freeze({
-    world: 1,
+    master: 1,
     music: 1,
-    sfx: 1
+    vfx: 1
 });
 
 const state = {
@@ -76,6 +76,7 @@ const pickupCounterState = {
     weapon: 0,
     coin: 0
 };
+
 function renderPickupCounter() {
     if (pickupCountTotal) {
         pickupCountTotal.textContent = String(pickupCounterState.total);
@@ -99,9 +100,9 @@ function parseStoredAudioMix(rawValue) {
         const parsed = JSON.parse(rawValue);
         if (!parsed || typeof parsed !== 'object') return null;
         return {
-            world: clampAudioMixValue(parsed.world),
+            master: clampAudioMixValue(parsed.master !== undefined ? parsed.master : parsed.world),
             music: clampAudioMixValue(parsed.music),
-            sfx: clampAudioMixValue(parsed.sfx)
+            vfx: clampAudioMixValue(parsed.vfx !== undefined ? parsed.vfx : parsed.sfx)
         };
     } catch {
         return null;
@@ -110,9 +111,9 @@ function parseStoredAudioMix(rawValue) {
 
 function cloneAudioMix(mix) {
     return {
-        world: clampAudioMixValue(mix?.world),
+        master: clampAudioMixValue(mix?.master),
         music: clampAudioMixValue(mix?.music),
-        sfx: clampAudioMixValue(mix?.sfx)
+        vfx: clampAudioMixValue(mix?.vfx)
     };
 }
 
@@ -123,9 +124,9 @@ function setAudioMixerOpen(isOpen) {
 
 function syncAudioMixerUI(mix = state.settings.audioMix) {
     const controls = [
-        { channel: 'world', slider: audioWorldSlider, valueEl: audioWorldValue },
+        { channel: 'master', slider: audioMasterSlider, valueEl: audioMasterValue },
         { channel: 'music', slider: audioMusicSlider, valueEl: audioMusicValue },
-        { channel: 'sfx', slider: audioSfxSlider, valueEl: audioSfxValue }
+        { channel: 'vfx', slider: audioVfxSlider, valueEl: audioVfxValue }
     ];
 
     controls.forEach(({ channel, slider, valueEl }) => {
@@ -156,7 +157,7 @@ function loadAudioMixSettings() {
 
     const legacyAudioEnabled = localStorage.getItem(LEGACY_AUDIO_TOGGLE_KEY);
     const migratedMix = legacyAudioEnabled === 'false'
-        ? { world: 0, music: 0, sfx: 0 }
+        ? { master: 0, music: 0, vfx: 0 }
         : { ...DEFAULT_AUDIO_MIX };
 
     applyAudioMixSettings(migratedMix, { persist: true });
@@ -200,9 +201,9 @@ function installAudioMixerControls() {
     }
 
     const sliderDefs = [
-        { channel: 'world', slider: audioWorldSlider },
+        { channel: 'master', slider: audioMasterSlider },
         { channel: 'music', slider: audioMusicSlider },
-        { channel: 'sfx', slider: audioSfxSlider }
+        { channel: 'vfx', slider: audioVfxSlider }
     ];
 
     sliderDefs.forEach(({ channel, slider }) => {

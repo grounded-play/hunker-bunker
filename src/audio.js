@@ -7,6 +7,7 @@ export class AudioManager {
     static buffers = {};
     static images = {};
     static globalMuted = false;
+    static masterVolume = 1.0;
     
     // Persistent sources for looping background
     static ambientSource = null;
@@ -46,28 +47,39 @@ export class AudioManager {
 
     static toggleMute(muted) {
         this.globalMuted = muted;
-        this.masterGain.gain.setTargetAtTime(muted ? 0 : 1.0, audioCtx.currentTime, 0.1);
+        this.masterGain.gain.setTargetAtTime(muted ? 0 : this.masterVolume, audioCtx.currentTime, 0.1);
     }
 
     static setChannelVolume(channel, volume = 1.0) {
         const numeric = Number(volume);
         const clamped = Number.isFinite(numeric) ? Math.min(1, Math.max(0, numeric)) : 1;
-        const gainNode = channel === 'world'
-            ? this.worldGain
-            : channel === 'music'
-                ? this.musicGain
-                : channel === 'sfx'
-                    ? this.sfxGain
-                    : null;
+        
+        if (channel === 'master') {
+            this.masterVolume = clamped;
+            if (!this.globalMuted) {
+                this.masterGain.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
+            }
+            return;
+        }
+
+        const gainNode = channel === 'music'
+            ? this.musicGain
+            : (channel === 'vfx' || channel === 'sfx')
+                ? this.sfxGain
+                : null;
 
         if (!gainNode) return;
         gainNode.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
     }
 
     static setMix(mix = {}) {
-        if (mix.world !== undefined) this.setChannelVolume('world', mix.world);
+        if (mix.master !== undefined) this.setChannelVolume('master', mix.master);
+        else if (mix.world !== undefined) this.setChannelVolume('master', mix.world);
+
         if (mix.music !== undefined) this.setChannelVolume('music', mix.music);
-        if (mix.sfx !== undefined) this.setChannelVolume('sfx', mix.sfx);
+
+        if (mix.vfx !== undefined) this.setChannelVolume('vfx', mix.vfx);
+        else if (mix.sfx !== undefined) this.setChannelVolume('vfx', mix.sfx);
     }
 
     static async loadAssets(manifest, onProgress) {
@@ -155,7 +167,7 @@ export class AudioManager {
         
         // Connect to appropriate bus
         if (bus === 'world') {
-            gainNode.connect(this.worldGain);
+            gainNode.connect(this.sfxGain); // Route environment/world sounds to SFX/VFX
         } else if (bus === 'music') {
             gainNode.connect(this.musicGain);
         } else {

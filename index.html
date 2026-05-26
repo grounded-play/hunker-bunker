@@ -225,6 +225,12 @@
       </div>
     </div>
     <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
+      <div class="touch-move-control__compass" aria-hidden="true">
+        <div class="touch-move-control__compass-face">
+          <div class="touch-move-control__compass-arrow"></div>
+          <div class="touch-move-control__compass-distance">0u</div>
+        </div>
+      </div>
       <div class="touch-move-control__ring">
         <div class="touch-move-control__thumb"></div>
       </div>
@@ -344,20 +350,20 @@
       <div class="modal-content audio-mixer-panel">
         <button class="close-modal audio-mixer-close" id="close-audio-mixer">×</button>
         <h2 class="modal-title">AUDIO MIXER</h2>
-        <label class="audio-slider-row" for="audio-world-slider">
-          <span class="audio-slider-row__label">WORLD</span>
-          <input type="range" id="audio-world-slider" min="0" max="100" step="1" value="100">
-          <span class="audio-slider-row__value" id="audio-world-value">100%</span>
+        <label class="audio-slider-row" for="audio-master-slider">
+          <span class="audio-slider-row__label">MASTER</span>
+          <input type="range" id="audio-master-slider" min="0" max="100" step="1" value="100">
+          <span class="audio-slider-row__value" id="audio-master-value">100%</span>
         </label>
         <label class="audio-slider-row" for="audio-music-slider">
-          <span class="audio-slider-row__label">BG MUSIC</span>
+          <span class="audio-slider-row__label">MUSIC</span>
           <input type="range" id="audio-music-slider" min="0" max="100" step="1" value="100">
           <span class="audio-slider-row__value" id="audio-music-value">100%</span>
         </label>
-        <label class="audio-slider-row" for="audio-sfx-slider">
-          <span class="audio-slider-row__label">SFX</span>
-          <input type="range" id="audio-sfx-slider" min="0" max="100" step="1" value="100">
-          <span class="audio-slider-row__value" id="audio-sfx-value">100%</span>
+        <label class="audio-slider-row" for="audio-vfx-slider">
+          <span class="audio-slider-row__label">VFX</span>
+          <input type="range" id="audio-vfx-slider" min="0" max="100" step="1" value="100">
+          <span class="audio-slider-row__value" id="audio-vfx-value">100%</span>
         </label>
         <div class="audio-mixer-actions">
           <button type="button" class="settings-action-btn settings-action-btn--save" id="save-audio-mix">SAVE SETTINGS</button>

@@ -1673,6 +1673,8 @@ input:checked+.slider:before {
 .touch-move-control {
   --touch-pad-size: clamp(104px, 10vmin, 152px);
   --touch-pad-thumb-size: calc(var(--touch-pad-size) * 0.36);
+  --touch-compass-size: calc(var(--touch-pad-size) * 0.82);
+  --touch-compass-text-size: clamp(10px, 1.1vmin, 14px);
   --touch-pad-gap: clamp(6px, 0.8vmin, 12px);
   --touch-pad-offset-x: clamp(18px, 2.4vmin, 38px);
   --touch-pad-offset-y: clamp(16px, 2vmin, 34px);
@@ -1688,6 +1690,69 @@ input:checked+.slider:before {
   pointer-events: auto;
   touch-action: none;
   z-index: 12000;
+}
+
+.touch-move-control__compass {
+  width: var(--touch-compass-size);
+  height: var(--touch-compass-size);
+  pointer-events: none;
+}
+
+.touch-move-control__compass-face {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 78, 78, 0.95);
+  background:
+    radial-gradient(circle at 45% 40%, rgba(255, 120, 120, 0.16), rgba(8, 10, 12, 0.94) 62%),
+    linear-gradient(160deg, rgba(255, 74, 74, 0.2), rgba(90, 12, 12, 0.26));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 0 calc(var(--touch-compass-size) * 0.2) rgba(0, 0, 0, 0.5),
+    0 0 calc(var(--touch-compass-size) * 0.2) rgba(255, 62, 62, 0.42);
+}
+
+.touch-move-control__compass-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(2px, calc(var(--touch-compass-size) * 0.04), 4px);
+  height: calc(var(--touch-compass-size) * 0.34);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 250, 250, 0.95), #ff3b30 42%, #a90e0b 100%);
+  box-shadow: 0 0 10px rgba(255, 69, 58, 0.75);
+  transform-origin: 50% 100%;
+  transform: translate(-50%, -100%) rotate(0deg);
+}
+
+.touch-move-control__compass-arrow::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -96%);
+  width: 0;
+  height: 0;
+  border-left: calc(var(--touch-compass-size) * 0.09) solid transparent;
+  border-right: calc(var(--touch-compass-size) * 0.09) solid transparent;
+  border-bottom: calc(var(--touch-compass-size) * 0.17) solid #ff3b30;
+  filter: drop-shadow(0 0 6px rgba(255, 69, 58, 0.72));
+}
+
+.touch-move-control__compass-distance {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--touch-compass-text-size);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #ffd3cf;
+  text-shadow:
+    0 0 8px rgba(255, 84, 71, 0.88),
+    0 0 14px rgba(255, 84, 71, 0.5);
 }
 
 .touch-move-control__ring {
@@ -1866,6 +1931,8 @@ body:not(.touch-device) .touch-move-control {
 
   .touch-move-control {
     --touch-pad-size: clamp(78px, 17vmin, 110px);
+    --touch-compass-size: calc(var(--touch-pad-size) * 0.8);
+    --touch-compass-text-size: clamp(9px, 1.6vmin, 12px);
     --touch-pad-gap: clamp(4px, 0.7vmin, 8px);
     --touch-pad-offset-x: calc(env(safe-area-inset-left, 0px) + clamp(10px, 2vmin, 18px));
     --touch-pad-offset-y: calc(env(safe-area-inset-bottom, 0px) + clamp(10px, 2vmin, 18px));
