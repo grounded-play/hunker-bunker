@@ -16,6 +16,9 @@ const gameStageContainer = document.getElementById('game-container');
 const touchMoveControl = document.getElementById('touch-move-control');
 const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring');
 const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
+const touchCompass = touchMoveControl?.querySelector('.touch-move-control__compass');
+const touchCompassArrow = touchCompass?.querySelector('.touch-move-control__compass-arrow');
+const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
 const openAudioMixerBtn = document.getElementById('open-audio-mixer');
@@ -275,15 +278,59 @@ function syncTouchMoveControlVisibility() {
     if (!touchMoveControl) return;
 
     const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
-    const shouldShow = isHUD && state.settings.touchControls;
-    touchMoveControl.classList.toggle('hidden', !shouldShow);
+    // Keep touchMoveControl container visible on the HUD so the compass is always visible
+    touchMoveControl.classList.toggle('hidden', !isHUD);
 
-    if (!shouldShow) {
+    // Show/hide the joystick ring and label based on the touchControls setting
+    const showJoystick = state.settings.touchControls;
+    if (touchMoveRing) {
+        touchMoveRing.classList.toggle('hidden', !showJoystick);
+    }
+    const label = touchMoveControl.querySelector('.touch-move-control__label');
+    if (label) {
+        label.classList.toggle('hidden', !showJoystick);
+    }
+
+    if (!isHUD || !showJoystick) {
         activeTouchPointerId = null;
         touchMoveControl.classList.remove('active');
         touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
         window.game?.setVirtualInput?.(0, 0);
     }
+}
+
+function formatTouchCompassDistance(distance) {
+    if (!Number.isFinite(distance) || distance <= 0) return '0u';
+    return `${Math.round(distance)}u`;
+}
+
+function updateTouchCompass() {
+    if (!touchCompassArrow || !touchCompassDistance) return;
+
+    const compassState = window.game?.getSpawnCompassState?.();
+    if (!compassState) {
+        touchCompassArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
+        touchCompassArrow.style.opacity = '0.35';
+        touchCompassDistance.textContent = '0u';
+        return;
+    }
+
+    const angle = Number.isFinite(compassState.angle) ? compassState.angle : 0;
+    const distance = Number.isFinite(compassState.distance) ? compassState.distance : 0;
+    touchCompassArrow.style.transform = `translate(-50%, -100%) rotate(${angle.toFixed(2)}deg)`;
+    touchCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
+    touchCompassDistance.textContent = formatTouchCompassDistance(distance);
+}
+
+function installTouchCompass() {
+    if (!touchCompassArrow || !touchCompassDistance) return;
+
+    const step = () => {
+        updateTouchCompass();
+        requestAnimationFrame(step);
+    };
+
+    requestAnimationFrame(step);
 }
 
 function installTouchMoveControl() {
@@ -1142,6 +1189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     installStageLayoutSync();
     setTouchDeviceMode();
     installTouchMoveControl();
+    installTouchCompass();
     window.addEventListener('resize', refreshGameLayout);
     window.addEventListener('orientationchange', refreshGameLayout);
     window.addEventListener('resize', setTouchDeviceMode);

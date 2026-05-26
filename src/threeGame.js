@@ -837,6 +837,32 @@ export class ThreeGame {
         this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
     }
 
+    getSpawnCompassState() {
+        if (!this.player) return null;
+
+        const activeShip = this.crashedShips?.find(ship => ship.type === this.playerType);
+        let targetX, targetZ;
+        if (activeShip) {
+            targetX = activeShip.tileX + activeShip.consoleOffset.x;
+            targetZ = activeShip.tileZ + activeShip.consoleOffset.z;
+        } else {
+            const spawn = this.getSpawnTile();
+            targetX = spawn.x;
+            targetZ = spawn.y;
+        }
+
+        const toTargetX = targetX - this.player.position.x;
+        const toTargetZ = targetZ - this.player.position.z;
+        const distance = Math.hypot(toTargetX, toTargetZ);
+        const screenX = (toTargetX * this.cameraPlanarRight.x) + (toTargetZ * this.cameraPlanarRight.y);
+        const screenY = (toTargetX * this.cameraPlanarForward.x) + (toTargetZ * this.cameraPlanarForward.y);
+        const angle = distance > 0.0001
+            ? THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY))
+            : 0;
+
+        return { angle, distance };
+    }
+
     updatePlayerType(type) {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
