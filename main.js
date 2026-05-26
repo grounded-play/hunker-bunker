@@ -50,47 +50,6 @@ const DEFAULT_AUDIO_MIX = Object.freeze({
     music: 1,
     vfx: 1
 });
-const GAME_ASSET_MANIFEST = {
-    images: ['/door.png'],
-    audio: [
-        { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
-        { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
-        { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
-        { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
-        { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
-        { key: 'amb_drip4', url: '/audio/vg2/amb_drip4.wav' },
-        { key: 'amb_metal_stress1', url: '/audio/vg2/amb_metal_stress1.wav' },
-        { key: 'amb_metal_stress2', url: '/audio/vg2/amb_metal_stress2.wav' },
-        { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' },
-        { key: 'door_slam_vertical1', url: '/audio/vg2/door_slam_vertical1.wav' },
-        { key: 'door_slam_vertical2', url: '/audio/vg2/door_slam_vertical2.wav' },
-        { key: 'door_slam_vertical3', url: '/audio/vg2/door_slam_vertical3.wav' },
-        { key: 'door_slide_horiz1', url: '/audio/vg2/door_slide_horiz.wav' },
-        { key: 'door_slide_horiz2', url: '/audio/vg2/door_slide_horiz2.wav' },
-        { key: 'door_slide_horiz3', url: '/audio/vg2/door_slide_horiz3.wav' },
-        { key: 'door_slide_horiz4', url: '/audio/vg2/door_slide_horiz4.wav' },
-        { key: 'door_gears_spin1', url: '/audio/vg2/door_gears_spin1.wav' },
-        { key: 'door_gears_spin2', url: '/audio/vg2/door_gears_spin2.wav' },
-        { key: 'door_gears_spin3', url: '/audio/vg2/door_gears_spin3.wav' },
-        { key: 'door_gears_spin4', url: '/audio/vg2/door_gears_spin4.wav' },
-        { key: 'ui_boot1', url: '/audio/vg2/ui_boot.wav' },
-        { key: 'ui_boot2', url: '/audio/vg2/ui_boot2.wav' },
-        { key: 'ui_hover1', url: '/audio/vg2/ui_hover1.wav' },
-        { key: 'ui_hover2', url: '/audio/vg2/ui_hover2.wav' },
-        { key: 'ui_click1', url: '/audio/vg2/ui_click_confirm1.wav' },
-        { key: 'ui_error1', url: '/audio/vg2/ui_error1.wav' },
-        { key: 'ui_error2', url: '/audio/vg2/ui_error2.wav' },
-        { key: 'ui_error3', url: '/audio/vg2/ui_error3.wav' },
-        { key: 'ui_scan_ping1', url: '/audio/vg2/ui_scan_ping1.wav' },
-        { key: 'ui_scan_ping2', url: '/audio/vg2/ui_scan_ping2.wav' },
-        { key: 'ui_scan_ping3', url: '/audio/vg2/ui_scan_ping3.wav' },
-        { key: 'ui_scan_ping4', url: '/audio/vg2/ui_scan_ping4.wav' },
-        { key: 'class_lock1', url: '/audio/vg2/class_lock1.wav' },
-        { key: 'class_lock2', url: '/audio/vg2/class_lock2.wav' },
-        { key: 'class_lock3', url: '/audio/vg2/class_lock3.wav' },
-        { key: 'class_lock4', url: '/audio/vg2/class_lock4.wav' }
-    ]
-};
 
 const state = {
     settings: {
@@ -113,8 +72,6 @@ const gearSpinState = {
 let stageResizeObserver = null;
 let activeTouchPointerId = null;
 let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
-let gameInitPromise = null;
-let missionStartInProgress = false;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -321,23 +278,15 @@ function syncTouchMoveControlVisibility() {
     if (!touchMoveControl) return;
 
     const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
-    // Keep touchMoveControl container visible on the HUD so the compass is always visible
-    touchMoveControl.classList.toggle('hidden', !isHUD);
+    const shouldShow = isHUD && state.settings.touchControls;
+    touchMoveControl.classList.toggle('hidden', !shouldShow);
 
-    // Show/hide the joystick ring and label based on the touchControls setting
-    const showJoystick = state.settings.touchControls;
-    if (touchMoveRing) {
-        touchMoveRing.classList.toggle('hidden', !showJoystick);
-    }
-    const label = touchMoveControl.querySelector('.touch-move-control__label');
-    if (label) {
-        label.classList.toggle('hidden', !showJoystick);
-    }
-
-    if (!isHUD || !showJoystick) {
+    if (!shouldShow) {
         activeTouchPointerId = null;
         touchMoveControl.classList.remove('active');
         touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
+        touchCompassArrow?.style.setProperty('transform', 'translate(-50%, -100%) rotate(0deg)');
+        if (touchCompassDistance) touchCompassDistance.textContent = '0u';
         window.game?.setVirtualInput?.(0, 0);
     }
 }
@@ -479,134 +428,6 @@ function installStageLayoutSync() {
     }
 }
 
-function updateLoadingScreen(progress, statusText) {
-    if (loaderBar && Number.isFinite(progress)) {
-        const clamped = Math.min(100, Math.max(0, progress));
-        loaderBar.style.width = `${clamped}%`;
-    }
-
-    if (loaderStatus && statusText) {
-        loaderStatus.textContent = statusText;
-    }
-}
-
-function showLoadingScreen() {
-    loadingScreen?.classList.remove('hidden');
-}
-
-function hideLoadingScreen() {
-    loadingScreen?.classList.add('hidden');
-}
-
-function getSelectedHeroType() {
-    const selected = document.querySelector('.char-card.selected');
-    const selectedType = selected?.getAttribute('data-type');
-    return heroData[selectedType] ? selectedType : 'SCOUT';
-}
-
-function enableSectorScanPreviewMode() {
-    if (!window.game) return;
-    window.game.setPreviewMode?.(true);
-    window.game.startPreviewLoop?.(10);
-    window.game.renderOnce?.();
-}
-
-function disableSectorScanPreviewMode() {
-    if (!window.game) return;
-    window.game.stopPreviewLoop?.();
-    window.game.setPreviewMode?.(false);
-}
-
-async function triggerDoorTransitionAsync(onClosed, onOpened) {
-    return new Promise((resolve) => {
-        triggerDoorTransition(
-            () => {
-                if (onClosed) onClosed();
-            },
-            () => {
-                if (onOpened) onOpened();
-                resolve();
-            }
-        );
-    });
-}
-
-async function initializeGameWorldIfNeeded(playerType = 'SCOUT') {
-    if (state.gameInitialized && window.game) {
-        window.game.updatePlayerType?.(playerType);
-        return;
-    }
-
-    if (!gameInitPromise) {
-        gameInitPromise = (async () => {
-            updateLoadingScreen(8, 'INITIALIZING RENDER ENGINE...');
-            const { ThreeGame } = await import('./src/threeGame.js');
-            await new Promise((resolve) => requestAnimationFrame(resolve));
-
-            updateLoadingScreen(26, 'SPAWNING BUNKER WORLD...');
-            if (!window.game) {
-                window.game = new ThreeGame({
-                    parent: 'game-container',
-                    playerType
-                });
-            }
-            await new Promise((resolve) => requestAnimationFrame(resolve));
-
-            updateLoadingScreen(100, 'TACTICAL WORLD ONLINE');
-            state.gameInitialized = true;
-        })().catch((error) => {
-            gameInitPromise = null;
-            throw error;
-        });
-    }
-
-    await gameInitPromise;
-    window.game?.updatePlayerType?.(playerType);
-}
-
-async function beginMissionFromMenu() {
-    if (missionStartInProgress) return;
-    missionStartInProgress = true;
-
-    try {
-        const selectedType = getSelectedHeroType();
-        showLoadingScreen();
-        updateLoadingScreen(0, 'INITIALIZING SYSTEMS...');
-
-        await initializeGameWorldIfNeeded(selectedType);
-        disableSectorScanPreviewMode();
-        window.game?.startRenderLoop?.();
-
-        await triggerDoorTransitionAsync(
-            () => {
-                if (menu) menu.classList.add('hidden');
-                document.getElementById('ui').classList.remove('hidden');
-                resetPickupCounter();
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
-
-                const gameContainer = document.getElementById('game-container');
-                const viewport = document.getElementById('game-viewport');
-                if (gameContainer && viewport) {
-                    viewport.insertBefore(gameContainer, document.getElementById('ui'));
-                    gameContainer.classList.add('fullscreen-mode');
-                    queueGameLayoutRefresh();
-                }
-
-                hideLoadingScreen();
-            },
-            () => {
-                console.log("Mission Initialized. Tactical HUD Active.");
-            }
-        );
-    } catch (error) {
-        console.error('Mission bootstrap failed:', error);
-        updateLoadingScreen(100, 'INITIALIZATION FAILED - RETRY');
-    } finally {
-        missionStartInProgress = false;
-    }
-}
-
 // --- Initialization ---
 if (playBtn) {
     playBtn.addEventListener('click', () => {
@@ -615,7 +436,6 @@ if (playBtn) {
                 if (splash) splash.classList.add('hidden');
                 if (menu) {
                     menu.classList.remove('hidden');
-                    enableSectorScanPreviewMode();
                     queueGameLayoutRefresh();
                 }
             },
@@ -630,7 +450,26 @@ if (playBtn) {
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        void beginMissionFromMenu();
+        triggerDoorTransition(
+            () => {
+                if (menu) menu.classList.add('hidden');
+                document.getElementById('ui').classList.remove('hidden');
+                resetPickupCounter();
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
+
+                const gameContainer = document.getElementById('game-container');
+                const viewport = document.getElementById('game-viewport');
+                if (gameContainer && viewport) {
+                    viewport.insertBefore(gameContainer, document.getElementById('ui'));
+                    gameContainer.classList.add('fullscreen-mode');
+                    queueGameLayoutRefresh();
+                }
+            },
+            () => {
+                console.log("Mission Initialized. Tactical HUD Active.");
+            }
+        );
     });
 }
 
@@ -791,7 +630,6 @@ if (confirmYes) {
                 if (document.getElementById('ui')) document.getElementById('ui').classList.add('hidden');
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
-                window.game?.setVirtualInput?.(0, 0);
                 if (menu) menu.classList.remove('hidden');
 
                 const gameContainer = document.getElementById('game-container');
@@ -801,7 +639,6 @@ if (confirmYes) {
                     gameContainer.classList.remove('fullscreen-mode');
                     queueGameLayoutRefresh();
                 }
-                enableSectorScanPreviewMode();
             },
             null
         );
@@ -1365,6 +1202,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         mainTouchToggle.checked = !!state.settings.touchControls;
     }
 
+    // Load audio manifest
+    const manifest = {
+        images: ['/door.png'], // Add other large images if necessary
+        audio: [
+            { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
+            { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
+            { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
+            { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
+            { key: 'amb_drip4', url: '/audio/vg2/amb_drip4.wav' },
+            { key: 'amb_metal_stress1', url: '/audio/vg2/amb_metal_stress1.wav' },
+            { key: 'amb_metal_stress2', url: '/audio/vg2/amb_metal_stress2.wav' },
+            { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' },
+            { key: 'door_slam_vertical1', url: '/audio/vg2/door_slam_vertical1.wav' },
+            { key: 'door_slam_vertical2', url: '/audio/vg2/door_slam_vertical2.wav' },
+            { key: 'door_slam_vertical3', url: '/audio/vg2/door_slam_vertical3.wav' },
+            { key: 'door_slide_horiz1', url: '/audio/vg2/door_slide_horiz.wav' },
+            { key: 'door_slide_horiz2', url: '/audio/vg2/door_slide_horiz2.wav' },
+            { key: 'door_slide_horiz3', url: '/audio/vg2/door_slide_horiz3.wav' },
+            { key: 'door_slide_horiz4', url: '/audio/vg2/door_slide_horiz4.wav' },
+            { key: 'door_gears_spin1', url: '/audio/vg2/door_gears_spin1.wav' },
+            { key: 'door_gears_spin2', url: '/audio/vg2/door_gears_spin2.wav' },
+            { key: 'door_gears_spin3', url: '/audio/vg2/door_gears_spin3.wav' },
+            { key: 'door_gears_spin4', url: '/audio/vg2/door_gears_spin4.wav' },
+            { key: 'ui_boot1', url: '/audio/vg2/ui_boot.wav' },
+            { key: 'ui_boot2', url: '/audio/vg2/ui_boot2.wav' },
+            { key: 'ui_hover1', url: '/audio/vg2/ui_hover1.wav' },
+            { key: 'ui_hover2', url: '/audio/vg2/ui_hover2.wav' },
+            { key: 'ui_click1', url: '/audio/vg2/ui_click_confirm1.wav' },
+            { key: 'ui_error1', url: '/audio/vg2/ui_error1.wav' },
+            { key: 'ui_error2', url: '/audio/vg2/ui_error2.wav' },
+            { key: 'ui_error3', url: '/audio/vg2/ui_error3.wav' },
+            { key: 'ui_scan_ping1', url: '/audio/vg2/ui_scan_ping1.wav' },
+            { key: 'ui_scan_ping2', url: '/audio/vg2/ui_scan_ping2.wav' },
+            { key: 'ui_scan_ping3', url: '/audio/vg2/ui_scan_ping3.wav' },
+            { key: 'ui_scan_ping4', url: '/audio/vg2/ui_scan_ping4.wav' },
+            { key: 'class_lock1', url: '/audio/vg2/class_lock1.wav' },
+            { key: 'class_lock2', url: '/audio/vg2/class_lock2.wav' },
+            { key: 'class_lock3', url: '/audio/vg2/class_lock3.wav' },
+            { key: 'class_lock4', url: '/audio/vg2/class_lock4.wav' }
+        ]
+    };
+
     // Clicks for generic buttons
     document.querySelectorAll('button, .toggle').forEach(el => {
         if (el.tagName === 'BUTTON' || el.classList.contains('toggle')) {
@@ -1374,6 +1254,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     });
+
+    const { ThreeGame } = await import('./src/threeGame.js');
 
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
@@ -1387,8 +1269,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncTouchSettingsVisibility();
     syncTouchMoveControlVisibility();
 
-    await AudioManager.loadAssets(GAME_ASSET_MANIFEST, (progress, itemName) => {
-        updateLoadingScreen(progress, null);
+    if (!window.game) {
+        const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
+        window.game = new ThreeGame({
+            parent: 'game-container',
+            playerType: initialType
+        });
+    }
+
+    await AudioManager.loadAssets(manifest, (progress, itemName) => {
+        if (loaderBar) loaderBar.style.width = `${progress}%`;
         if (loaderStatus && itemName) {
             const parts = itemName.split('/');
             const filename = parts[parts.length - 1];
@@ -1396,24 +1286,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    updateLoadingScreen(100, "[ CLICK ANYWHERE TO INITIALIZE ]");
+    if (loaderBar) loaderBar.style.width = `100%`;
+    if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
 
     document.body.addEventListener('click', async () => {
         if (AudioManager.isUnlocked) return;
         await AudioManager.unlock();
 
-        try {
-            updateLoadingScreen(0, 'BOOTING SECTOR SCAN...');
-            await initializeGameWorldIfNeeded(getSelectedHeroType());
-            enableSectorScanPreviewMode();
-            updateLoadingScreen(100, 'SECTOR SCAN READY');
-        } catch (error) {
-            console.error('Pre-menu world bootstrap failed:', error);
-            updateLoadingScreen(100, 'SECTOR SCAN OFFLINE');
-        }
-
         triggerDoorTransition(
-            () => { hideLoadingScreen(); },
+            () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
             null
         );
     }, { once: true });

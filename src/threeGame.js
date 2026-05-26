@@ -113,11 +113,6 @@ export class ThreeGame {
         this.playerMarkerHeight = 0.05;
         this.lastTime = performance.now();
         this.raycaster = new THREE.Raycaster();
-        this.renderLoopActive = false;
-        this.previewLoopActive = false;
-        this.previewLoopRafId = null;
-        this.previewFrameIntervalMs = 1000 / 10;
-        this.previewMode = false;
 
         this.scale = {
             refresh: () => this.resize()
@@ -532,7 +527,7 @@ export class ThreeGame {
         this.setupInput();
         this.resize();
         this.syncVisibleChunks(true);
-        this.startRenderLoop();
+        this.renderer.setAnimationLoop(() => this.render());
     }
 
     setupLighting() {
@@ -845,22 +840,12 @@ export class ThreeGame {
     getSpawnCompassState() {
         if (!this.player) return null;
 
-        const activeShip = this.crashedShips?.find(ship => ship.type === this.playerType);
-        let targetX, targetZ;
-        if (activeShip) {
-            targetX = activeShip.tileX + activeShip.consoleOffset.x;
-            targetZ = activeShip.tileZ + activeShip.consoleOffset.z;
-        } else {
-            const spawn = this.getSpawnTile();
-            targetX = spawn.x;
-            targetZ = spawn.y;
-        }
-
-        const toTargetX = targetX - this.player.position.x;
-        const toTargetZ = targetZ - this.player.position.z;
-        const distance = Math.hypot(toTargetX, toTargetZ);
-        const screenX = (toTargetX * this.cameraPlanarRight.x) + (toTargetZ * this.cameraPlanarRight.y);
-        const screenY = (toTargetX * this.cameraPlanarForward.x) + (toTargetZ * this.cameraPlanarForward.y);
+        const spawn = this.getSpawnTile();
+        const toSpawnX = spawn.x - this.player.position.x;
+        const toSpawnZ = spawn.y - this.player.position.z;
+        const distance = Math.hypot(toSpawnX, toSpawnZ);
+        const screenX = (toSpawnX * this.cameraPlanarRight.x) + (toSpawnZ * this.cameraPlanarRight.y);
+        const screenY = (toSpawnX * this.cameraPlanarForward.x) + (toSpawnZ * this.cameraPlanarForward.y);
         const angle = distance > 0.0001
             ? THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY))
             : 0;
@@ -1154,81 +1139,10 @@ export class ThreeGame {
         this.renderer.setSize(width, height, false);
     }
 
-    setPreviewMode(enabled) {
-        this.previewMode = Boolean(enabled);
-        const targetPixelRatio = this.previewMode
-            ? Math.min(window.devicePixelRatio, 1)
-            : Math.min(window.devicePixelRatio, 2);
-        this.renderer.setPixelRatio(targetPixelRatio);
-        this.resize();
-        this.lastTime = performance.now();
-    }
-
-    startRenderLoop() {
-        if (this.renderLoopActive) return;
-        this.stopPreviewLoop();
-        this.previewMode = false;
-        this.lastTime = performance.now();
-        this.renderer.setAnimationLoop(() => this.render());
-        this.renderLoopActive = true;
-    }
-
-    stopRenderLoop() {
-        if (!this.renderLoopActive) return;
-        this.renderer.setAnimationLoop(null);
-        this.renderLoopActive = false;
-    }
-
-    startPreviewLoop(targetFps = 10) {
-        const fps = Math.max(1, Number.isFinite(targetFps) ? targetFps : 10);
-        this.previewFrameIntervalMs = 1000 / fps;
-
-        this.stopRenderLoop();
-        if (this.previewLoopActive) return;
-
-        this.previewMode = true;
-        this.previewLoopActive = true;
-        this.lastTime = performance.now();
-        let previousFrameTime = 0;
-
-        const step = (now) => {
-            if (!this.previewLoopActive) return;
-
-            if (previousFrameTime === 0 || now - previousFrameTime >= this.previewFrameIntervalMs) {
-                previousFrameTime = now;
-                this.render();
-            }
-
-            this.previewLoopRafId = requestAnimationFrame(step);
-        };
-
-        this.previewLoopRafId = requestAnimationFrame(step);
-    }
-
-    stopPreviewLoop() {
-        if (!this.previewLoopActive) return;
-        this.previewLoopActive = false;
-
-        if (this.previewLoopRafId !== null) {
-            cancelAnimationFrame(this.previewLoopRafId);
-            this.previewLoopRafId = null;
-        }
-    }
-
-    renderOnce() {
-        this.render();
-    }
-
     render() {
         const now = performance.now();
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
-
-        if (this.previewMode) {
-            this.updateConsoles(delta, now);
-            this.renderer.render(this.scene, this.camera);
-            return;
-        }
 
         this.updatePlayer(delta);
         this.updateCamera(delta);
@@ -3365,8 +3279,7 @@ export class ThreeGame {
     }
 
     destroy() {
-        this.stopPreviewLoop();
-        this.stopRenderLoop();
+        this.renderer.setAnimationLoop(null);
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
