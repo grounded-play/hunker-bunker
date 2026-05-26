@@ -772,7 +772,7 @@ export class ThreeGame {
 
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const material = new THREE.LineDashedMaterial({
-            color: 0xffffff,
+            color: 0xff9f1c,
             dashSize: 0.08,
             gapSize: 0.05,
             transparent: true,
@@ -789,7 +789,7 @@ export class ThreeGame {
         const beacon = new THREE.Mesh(
             new THREE.RingGeometry(0.08, 0.16, 24),
             new THREE.MeshBasicMaterial({
-                color: 0xffffff,
+                color: 0xff9f1c,
                 transparent: true,
                 opacity: 0.9,
                 side: THREE.DoubleSide,
