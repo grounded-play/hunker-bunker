@@ -766,8 +766,32 @@ function getPreviewSpriteImage(path) {
     const imagePromise = new Promise((resolve, reject) => {
         const image = new Image();
         image.onload = () => {
-            previewSpriteImages.set(path, image);
-            resolve(image);
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            // Remove chroma green border/background pixels
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const a = data[i + 3];
+                if (a > 0) {
+                    if (r < 140 && b < 140 && g > 90 && g > r * 1.4 && g > b * 1.4) {
+                        data[i + 3] = 0; // Make transparent
+                    }
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+
+            previewSpriteImages.set(path, canvas);
+            resolve(canvas);
         };
         image.onerror = reject;
         image.src = path;

@@ -919,14 +919,51 @@ export class ThreeGame {
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
     }
 
-    createPlayerSpriteTexture(type, path, textureLoader) {
-        return textureLoader.load(path, (texture) => {
+    createPlayerSpriteTexture(type, path, _textureLoader) {
+        const texture = new THREE.Texture();
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const image = new Image();
+        image.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(image, 0, 0);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            // Remove chroma green border/background pixels
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const a = data[i + 3];
+                if (a > 0) {
+                    if (r < 140 && b < 140 && g > 90 && g > r * 1.4 && g > b * 1.4) {
+                        data[i + 3] = 0; // Make transparent
+                    }
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+
+            texture.image = canvas;
+            texture.needsUpdate = true;
+
             this.playerMaterials?.[type] && (this.playerMaterials[type].needsUpdate = true);
             this.refreshActivePlayerSprite(type);
-            console.info(`[ThreeGame] Loaded player sprite ${type} from ${path} (${texture.image?.width ?? 0}x${texture.image?.height ?? 0})`);
-        }, undefined, (error) => {
+            console.info(`[ThreeGame] Loaded and green-keyed player sprite ${type} from ${path} (${image.width}x${image.height})`);
+        };
+
+        image.onerror = (error) => {
             console.warn(`[ThreeGame] Failed to load player sprite ${type} from ${path}`, error);
-        });
+        };
+
+        image.src = path;
+
+        return texture;
     }
 
     loadScatterTexture(path, textureLoader) {
