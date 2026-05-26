@@ -837,6 +837,22 @@ export class ThreeGame {
         this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
     }
 
+    getSpawnCompassState() {
+        if (!this.player) return null;
+
+        const spawn = this.getSpawnTile();
+        const toSpawnX = spawn.x - this.player.position.x;
+        const toSpawnZ = spawn.y - this.player.position.z;
+        const distance = Math.hypot(toSpawnX, toSpawnZ);
+        const screenX = (toSpawnX * this.cameraPlanarRight.x) + (toSpawnZ * this.cameraPlanarRight.y);
+        const screenY = (toSpawnX * this.cameraPlanarForward.x) + (toSpawnZ * this.cameraPlanarForward.y);
+        const angle = distance > 0.0001
+            ? THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY))
+            : 0;
+
+        return { angle, distance };
+    }
+
     updatePlayerType(type) {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
