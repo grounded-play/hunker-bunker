@@ -15,7 +15,8 @@ export class AudioManager {
     // Gain nodes for volume control
     static masterGain = audioCtx.createGain();
     static sfxGain = audioCtx.createGain();
-    static bgGain = audioCtx.createGain();
+    static worldGain = audioCtx.createGain();
+    static musicGain = audioCtx.createGain();
 
     static isUnlocked = false;
     static randInterval = null;
@@ -23,12 +24,14 @@ export class AudioManager {
     static init() {
         this.masterGain.connect(audioCtx.destination);
         this.sfxGain.connect(this.masterGain);
-        this.bgGain.connect(this.masterGain);
+        this.worldGain.connect(this.masterGain);
+        this.musicGain.connect(this.masterGain);
         
         // Base volume mix
         this.masterGain.gain.value = 1.0;
         this.sfxGain.gain.value = 1.0;
-        this.bgGain.gain.value = 1.0;
+        this.worldGain.gain.value = 1.0;
+        this.musicGain.gain.value = 1.0;
     }
 
     static async unlock() {
@@ -44,6 +47,27 @@ export class AudioManager {
     static toggleMute(muted) {
         this.globalMuted = muted;
         this.masterGain.gain.setTargetAtTime(muted ? 0 : 1.0, audioCtx.currentTime, 0.1);
+    }
+
+    static setChannelVolume(channel, volume = 1.0) {
+        const numeric = Number(volume);
+        const clamped = Number.isFinite(numeric) ? Math.min(1, Math.max(0, numeric)) : 1;
+        const gainNode = channel === 'world'
+            ? this.worldGain
+            : channel === 'music'
+                ? this.musicGain
+                : channel === 'sfx'
+                    ? this.sfxGain
+                    : null;
+
+        if (!gainNode) return;
+        gainNode.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
+    }
+
+    static setMix(mix = {}) {
+        if (mix.world !== undefined) this.setChannelVolume('world', mix.world);
+        if (mix.music !== undefined) this.setChannelVolume('music', mix.music);
+        if (mix.sfx !== undefined) this.setChannelVolume('sfx', mix.sfx);
     }
 
     static async loadAssets(manifest, onProgress) {
@@ -109,8 +133,18 @@ export class AudioManager {
         if (options.detune) source.detune.value = options.detune;
         
         let pbRate = options.playbackRate !== undefined ? options.playbackRate : 1.0;
+        const requestedBus = typeof options.bus === 'string' ? options.bus.toLowerCase() : null;
+        const inferredBus = key.startsWith('amb_')
+            ? 'world'
+            : key.startsWith('mainbg_')
+                ? 'music'
+                : (options.isBg ? 'music' : 'sfx');
+        const bus = requestedBus === 'world' || requestedBus === 'music' || requestedBus === 'sfx'
+            ? requestedBus
+            : inferredBus;
+
         // Subtle pitch variation for SFX if not explicitly disabled
-        if (!options.isBg && options.varyPitch !== false) {
+        if (bus === 'sfx' && options.varyPitch !== false) {
              pbRate *= (0.95 + Math.random() * 0.1); // +/- 5%
         }
         source.playbackRate.value = pbRate;
@@ -120,8 +154,10 @@ export class AudioManager {
         source.connect(gainNode);
         
         // Connect to appropriate bus
-        if (options.isBg) {
-            gainNode.connect(this.bgGain);
+        if (bus === 'world') {
+            gainNode.connect(this.worldGain);
+        } else if (bus === 'music') {
+            gainNode.connect(this.musicGain);
         } else {
             gainNode.connect(this.sfxGain);
         }
@@ -134,11 +170,11 @@ export class AudioManager {
         if (this.ambientSource) return; // Already playing
 
         // Play Drone
-        const drone = this.play('amb_bunker_loop', { volume: 0.005, loop: true, isBg: true });
+        const drone = this.play('amb_bunker_loop', { volume: 0.005, loop: true, bus: 'world', varyPitch: false });
         if (drone) this.ambientSource = drone.source;
 
         // Play Music
-        const music = this.play('mainbg_music', { volume: 0.05, loop: true, isBg: true });
+        const music = this.play('mainbg_music', { volume: 0.05, loop: true, bus: 'music', varyPitch: false });
         if (music) this.musicSource = music.source;
 
         // Start random ambient pings (drips, metal stress)
@@ -150,6 +186,7 @@ export class AudioManager {
                 const key = types[Math.floor(Math.random() * types.length)];
                 
                 this.play(key, { 
+                    bus: 'world',
                     volume: 0.15 + (Math.random() * 0.1),
                     playbackRate: 0.8 + (Math.random() * 0.4) // randomize pitch slightly
                 });
