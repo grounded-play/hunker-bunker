@@ -853,7 +853,14 @@ export class ThreeGame {
 
         const toTargetX = targetX - this.player.position.x;
         const toTargetZ = targetZ - this.player.position.z;
-        const distance = Math.hypot(toTargetX, toTargetZ);
+        let distance = Math.hypot(toTargetX, toTargetZ);
+
+        if (activeShip) {
+            // Subtract the console collision threshold so that distance reads 0 when standing right next to it
+            const collisionRadius = 0.42 + this.playerRadius * 0.7;
+            distance = Math.max(0, distance - collisionRadius);
+        }
+
         const screenX = (toTargetX * this.cameraPlanarRight.x) + (toTargetZ * this.cameraPlanarRight.y);
         const screenY = (toTargetX * this.cameraPlanarForward.x) + (toTargetZ * this.cameraPlanarForward.y);
         const angle = distance > 0.0001
