@@ -3077,14 +3077,16 @@ body.mission-intro-active #game-container {
   border: 1.5px solid var(--terminal-glow) !important;
   box-shadow: 0 0 40px rgba(var(--terminal-glow-rgb), 0.25) !important;
   width: calc(var(--vu) * 142) !important;
-  height: calc(var(--vu) * 88) !important;
+  /* min ensures enough room for banking content on small viewports where vu is tiny */
+  height: max(calc(var(--vu) * 88), min(92vh, 460px)) !important;
   max-width: 95% !important;
-  max-height: 95% !important;
+  max-height: 95vh !important;
   border-radius: 12px;
   padding: calc(var(--vu) * 4) !important;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   position: relative;
 }
 
