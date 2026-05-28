@@ -40,12 +40,53 @@ const O2_DRAIN_RATE_DANGER_MULT = 1.5;
 const O2_HEALTH_DRAIN_INTERVAL = 1;
 const BASE_HEARTS = 3;
 const UPGRADED_HEARTS = 4;
+const DEPTH_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
+const DEPTH_TIER_LOOT_CONFIG = Object.freeze([
+    Object.freeze({ pickupMultiplier: 0.8, legendaryBoost: 0 }),
+    Object.freeze({ pickupMultiplier: 1.0, legendaryBoost: 0 }),
+    Object.freeze({ pickupMultiplier: 1.3, legendaryBoost: 0.05 }),
+    Object.freeze({ pickupMultiplier: 1.7, legendaryBoost: 0.15 })
+]);
 
 const O2_GENERATOR_BUTTON_ID = 'terminal-btn-o2-generator';
 const O2_GENERATOR_RING_BASE_RADIUS = 1;
 const O2_GENERATOR_RING_BAND_THICKNESS = 0.24;
 const O2_MODULE_COLLISION_RADIUS = 0.5;
-const O2_MODULE_OFFSET = Object.freeze({ x: 1.75, z: 1.2 });
+const MODULE_OFFSETS = Object.freeze({
+    o2Generator: Object.freeze({ x: 1.75, z: 1.2 }),
+    hullMatrix: Object.freeze({ x: 2.7, z: 0.25 }),
+    radarDish: Object.freeze({ x: 1.9, z: -1.15 }),
+    reactorCompressor: Object.freeze({ x: 0.45, z: 3.0 })
+});
+const O2_MODULE_OFFSET = MODULE_OFFSETS.o2Generator;
+const LOCKED_MODULE_OPACITY = 0.4;
+const UNLOCKED_MODULE_OPACITY = 1;
+const GOAL_CARD_CONFIGS = Object.freeze([
+    Object.freeze({
+        goalKey: 'hullExpansion',
+        prereqKey: 'o2Bubble',
+        statusId: 'terminal-hull-status',
+        costId: 'terminal-hull-cost',
+        buttonId: 'terminal-btn-hull',
+        lockedStatusText: 'LOCKED — REPAIR O₂ GENERATOR FIRST'
+    }),
+    Object.freeze({
+        goalKey: 'radarNode',
+        prereqKey: 'hullExpansion',
+        statusId: 'terminal-radar-status',
+        costId: 'terminal-radar-cost',
+        buttonId: 'terminal-btn-radar',
+        lockedStatusText: 'LOCKED — INSTALL HULL MATRIX FIRST'
+    }),
+    Object.freeze({
+        goalKey: 'reactorCompressor',
+        prereqKey: 'radarNode',
+        statusId: 'terminal-reactor-status',
+        costId: 'terminal-reactor-cost',
+        buttonId: 'terminal-btn-reactor',
+        lockedStatusText: 'LOCKED — INSTALL RADAR NODE FIRST'
+    })
+]);
 const PICKUP_MAGNET_RADIUS = 3.4;
 const PICKUP_COLLECT_RADIUS = 0.72;
 const PICKUP_COLLECT_DURATION = 0.2;
@@ -93,6 +134,19 @@ const JUNK_LOOT_BIAS = {
         { key: 'rare', weight: 0.25 }
     ]
 };
+
+function getDepthTier(chunkX, chunkY) {
+    const dist = Math.hypot(chunkX, chunkY);
+    if (dist < 2) return 0;
+    if (dist < 5) return 1;
+    if (dist < 9) return 2;
+    return 3;
+}
+
+function getDepthLootConfig(depthTier) {
+    const index = Math.max(0, Math.min(DEPTH_TIER_LOOT_CONFIG.length - 1, Math.floor(depthTier)));
+    return DEPTH_TIER_LOOT_CONFIG[index];
+}
 
 export class ThreeGame {
     constructor({ parent, playerType = 'SCOUT', bankManager = null } = {}) {
@@ -147,8 +201,11 @@ export class ThreeGame {
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
         this.totalDistanceTravelled = 0;
+        this.maxDepthTierReached = 0;
+        this.currentDepthTier = 0;
         this.terminalCloseListenerBound = false;
         this.o2BubbleObjects = null;
+        this.goalModuleMaterials = null;
 
         this.scale = {
             refresh: () => this.resize()
@@ -617,6 +674,14 @@ export class ThreeGame {
         const engineerShipMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
         const consoleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
         const o2ModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true });
+        const hullModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true, opacity: LOCKED_MODULE_OPACITY });
+        const radarModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true, opacity: LOCKED_MODULE_OPACITY });
+        const reactorModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true, opacity: LOCKED_MODULE_OPACITY });
+        this.goalModuleMaterials = {
+            hullMatrix: hullModuleMat,
+            radarDish: radarModuleMat,
+            reactorCompressor: reactorModuleMat
+        };
 
         // Load textures using our high-fidelity chroma-key transparency shader to strip black backgrounds perfectly!
         this.loadKeyedSpriteTexture('/scout_ship.png', 15, (tex) => {
@@ -639,6 +704,18 @@ export class ThreeGame {
             o2ModuleMat.map = tex;
             o2ModuleMat.needsUpdate = true;
         }, { cropBottomRatio: 0.16 });
+        this.loadKeyedSpriteTexture('/module_hull_matrix.png', 18, (tex) => {
+            hullModuleMat.map = tex;
+            hullModuleMat.needsUpdate = true;
+        }, { cropBottomRatio: 0.16 });
+        this.loadKeyedSpriteTexture('/module_radar_dish.png', 18, (tex) => {
+            radarModuleMat.map = tex;
+            radarModuleMat.needsUpdate = true;
+        }, { cropBottomRatio: 0.16 });
+        this.loadKeyedSpriteTexture('/module_reactor_compressor.png', 18, (tex) => {
+            reactorModuleMat.map = tex;
+            reactorModuleMat.needsUpdate = true;
+        }, { cropBottomRatio: 0.16 });
 
         // Placements relative to spawn (which is 9, 9 in starting chunk)
         this.crashedShips = [
@@ -652,6 +729,9 @@ export class ThreeGame {
                 material: scoutShipMat,
                 consoleOffset: { x: -1.6, z: 1.6 },
                 o2ModuleOffset: { ...O2_MODULE_OFFSET },
+                hullModuleOffset: { ...MODULE_OFFSETS.hullMatrix },
+                radarModuleOffset: { ...MODULE_OFFSETS.radarDish },
+                reactorModuleOffset: { ...MODULE_OFFSETS.reactorCompressor },
                 color: 0x7dff5a
             },
             {
@@ -664,6 +744,9 @@ export class ThreeGame {
                 material: tankShipMat,
                 consoleOffset: { x: -1.6, z: 1.6 },
                 o2ModuleOffset: { ...O2_MODULE_OFFSET },
+                hullModuleOffset: { ...MODULE_OFFSETS.hullMatrix },
+                radarModuleOffset: { ...MODULE_OFFSETS.radarDish },
+                reactorModuleOffset: { ...MODULE_OFFSETS.reactorCompressor },
                 color: 0xffb700
             },
             {
@@ -676,6 +759,9 @@ export class ThreeGame {
                 material: engineerShipMat,
                 consoleOffset: { x: -1.6, z: 1.6 },
                 o2ModuleOffset: { ...O2_MODULE_OFFSET },
+                hullModuleOffset: { ...MODULE_OFFSETS.hullMatrix },
+                radarModuleOffset: { ...MODULE_OFFSETS.radarDish },
+                reactorModuleOffset: { ...MODULE_OFFSETS.reactorCompressor },
                 color: 0x00e5ff
             }
         ];
@@ -694,6 +780,32 @@ export class ThreeGame {
             opacity: 0.25,
             depthWrite: false
         });
+        const createModuleSprite = (ship, {
+            keyPrefix,
+            offset,
+            material
+        }) => {
+            const moduleX = ship.tileX + offset.x;
+            const moduleZ = ship.tileZ + offset.z;
+            ship[`${keyPrefix}X`] = moduleX;
+            ship[`${keyPrefix}Z`] = moduleZ;
+
+            const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.48, 32), consoleShadowMat);
+            shadow.rotation.x = -Math.PI / 2;
+            shadow.position.set(moduleX, 0.021, moduleZ);
+            this.scene.add(shadow);
+            ship[`${keyPrefix}Shadow`] = shadow;
+
+            const sprite = new THREE.Sprite(material);
+            sprite.center.set(0.5, 0.08);
+            sprite.position.set(moduleX, 0.09, moduleZ);
+            sprite.scale.set(1.58, 1.58, 1);
+            sprite.renderOrder = 4;
+            this.scene.add(sprite);
+            ship[`${keyPrefix}Sprite`] = sprite;
+
+            return { shadow, sprite };
+        };
 
         for (const ship of this.crashedShips) {
             // 1. Shadow for Ship
@@ -730,26 +842,26 @@ export class ThreeGame {
             consoleSprite.renderOrder = 4;
             this.scene.add(consoleSprite);
 
-            // O2 generator module near each crashed ship
-            const moduleX = ship.tileX + ship.o2ModuleOffset.x;
-            const moduleZ = ship.tileZ + ship.o2ModuleOffset.z;
-            ship.o2ModuleX = moduleX;
-            ship.o2ModuleZ = moduleZ;
-
-            const moduleShadowGeo = new THREE.CircleGeometry(0.48, 32);
-            const moduleShadow = new THREE.Mesh(moduleShadowGeo, consoleShadowMat);
-            moduleShadow.rotation.x = -Math.PI / 2;
-            moduleShadow.position.set(moduleX, 0.021, moduleZ);
-            this.scene.add(moduleShadow);
-            ship.o2ModuleShadow = moduleShadow;
-
-            const moduleSprite = new THREE.Sprite(o2ModuleMat);
-            moduleSprite.center.set(0.5, 0.08);
-            moduleSprite.position.set(moduleX, 0.09, moduleZ);
-            moduleSprite.scale.set(1.58, 1.58, 1);
-            moduleSprite.renderOrder = 4;
-            this.scene.add(moduleSprite);
-            ship.o2ModuleSprite = moduleSprite;
+            const o2Module = createModuleSprite(ship, {
+                keyPrefix: 'o2Module',
+                offset: ship.o2ModuleOffset,
+                material: o2ModuleMat
+            });
+            const hullModule = createModuleSprite(ship, {
+                keyPrefix: 'hullModule',
+                offset: ship.hullModuleOffset,
+                material: hullModuleMat
+            });
+            const radarModule = createModuleSprite(ship, {
+                keyPrefix: 'radarModule',
+                offset: ship.radarModuleOffset,
+                material: radarModuleMat
+            });
+            const reactorModule = createModuleSprite(ship, {
+                keyPrefix: 'reactorModule',
+                offset: ship.reactorModuleOffset,
+                material: reactorModuleMat
+            });
 
             // 4. Interactive Console Neon Glowing Ring (Pulsing Indicator)
             const ringGeo = new THREE.RingGeometry(0.38, 0.44, 32);
@@ -772,9 +884,25 @@ export class ThreeGame {
             this.scene.add(terminalLight);
 
             // Store all 3D objects associated with this base so we can toggle visibility
-            ship.threeObjects = [shadow, shipSprite, consoleShadow, consoleSprite, moduleShadow, moduleSprite, ringMesh, terminalLight];
+            ship.threeObjects = [
+                shadow,
+                shipSprite,
+                consoleShadow,
+                consoleSprite,
+                o2Module.shadow,
+                o2Module.sprite,
+                hullModule.shadow,
+                hullModule.sprite,
+                radarModule.shadow,
+                radarModule.sprite,
+                reactorModule.shadow,
+                reactorModule.sprite,
+                ringMesh,
+                terminalLight
+            ];
         }
 
+        this.syncPersistentUpgrades();
         this.updateCrashedShipsVisibility(false);
     }
 
@@ -1547,10 +1675,111 @@ export class ThreeGame {
         };
     }
 
+    getGoalCardButtonState({ unlocked, prereqMet, affordable }) {
+        if (unlocked) {
+            return {
+                stateClass: 'btn-state--online',
+                label: 'ONLINE',
+                enabled: false
+            };
+        }
+
+        if (!prereqMet) {
+            return {
+                stateClass: 'btn-state--locked',
+                label: 'LOCKED',
+                enabled: false
+            };
+        }
+
+        if (!affordable) {
+            return {
+                stateClass: 'btn-state--insufficient',
+                label: 'INSUFFICIENT RESOURCES',
+                enabled: false
+            };
+        }
+
+        return {
+            stateClass: 'btn-state--available',
+            label: 'INITIATE BUILD',
+            enabled: true
+        };
+    }
+
+    renderGoalCard(ship, bankState, cardConfig) {
+        const cost = this.bank.getGoalCost(cardConfig.goalKey) ?? {};
+        const unlocked = Boolean(bankState?.unlocks?.[cardConfig.goalKey]);
+        const prereqMet = cardConfig.prereqKey
+            ? Boolean(bankState?.unlocks?.[cardConfig.prereqKey])
+            : true;
+        const affordable = this.bank.canAfford(cost);
+
+        const statusEl = document.getElementById(cardConfig.statusId);
+        if (statusEl) {
+            if (unlocked) {
+                statusEl.textContent = 'ONLINE';
+            } else if (!prereqMet) {
+                statusEl.textContent = cardConfig.lockedStatusText;
+            } else if (!affordable) {
+                statusEl.textContent = 'READY — RESOURCE DEFICIT';
+            } else {
+                statusEl.textContent = 'READY — BUILD PERMITTED';
+            }
+        }
+
+        const costEl = document.getElementById(cardConfig.costId);
+        if (costEl) {
+            costEl.textContent = `COST: ${this.formatResourceCost(cost)}`;
+        }
+
+        const button = document.getElementById(cardConfig.buttonId);
+        if (!button) return;
+
+        const buttonState = this.getGoalCardButtonState({
+            unlocked,
+            prereqMet,
+            affordable
+        });
+
+        button.textContent = buttonState.label;
+        button.disabled = !buttonState.enabled;
+        button.classList.remove('btn-state--online', 'btn-state--locked', 'btn-state--insufficient', 'btn-state--available');
+        button.classList.add(buttonState.stateClass);
+
+        if (button.dataset.listenerAttached === 'true') return;
+        button.dataset.listenerAttached = 'true';
+        button.addEventListener('click', () => this.attemptGoalUnlock(this.activeInteractiveConsole ?? ship, cardConfig));
+    }
+
+    updateGoalModuleVisualState(unlocks = this.unlocks) {
+        const safeUnlocks = unlocks ?? {};
+        const hullUnlocked = Boolean(safeUnlocks.hullExpansion);
+        const radarUnlocked = Boolean(safeUnlocks.radarNode);
+        const reactorUnlocked = Boolean(safeUnlocks.reactorCompressor);
+        const hullOpacity = hullUnlocked ? UNLOCKED_MODULE_OPACITY : LOCKED_MODULE_OPACITY;
+        const radarOpacity = radarUnlocked ? UNLOCKED_MODULE_OPACITY : LOCKED_MODULE_OPACITY;
+        const reactorOpacity = reactorUnlocked ? UNLOCKED_MODULE_OPACITY : LOCKED_MODULE_OPACITY;
+
+        if (this.goalModuleMaterials?.hullMatrix) {
+            this.goalModuleMaterials.hullMatrix.opacity = hullOpacity;
+            this.goalModuleMaterials.hullMatrix.needsUpdate = true;
+        }
+        if (this.goalModuleMaterials?.radarDish) {
+            this.goalModuleMaterials.radarDish.opacity = radarOpacity;
+            this.goalModuleMaterials.radarDish.needsUpdate = true;
+        }
+        if (this.goalModuleMaterials?.reactorCompressor) {
+            this.goalModuleMaterials.reactorCompressor.opacity = reactorOpacity;
+            this.goalModuleMaterials.reactorCompressor.needsUpdate = true;
+        }
+    }
+
     renderConsoleBanking(ship) {
         const inventory = this.getSessionInventory();
         const bankState = this.bank.getState();
         const generatorState = this.getO2GeneratorState(bankState);
+        this.updateGoalModuleVisualState(bankState.unlocks);
         const setText = (id, value) => {
             const el = document.getElementById(id);
             if (el) el.textContent = String(value);
@@ -1611,6 +1840,10 @@ export class ThreeGame {
             upgradeBtn.classList.add(buttonState.stateClass);
         }
 
+        for (const cardConfig of GOAL_CARD_CONFIGS) {
+            this.renderGoalCard(ship, bankState, cardConfig);
+        }
+
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {
             if (this.isPlayerDead) {
@@ -1638,6 +1871,34 @@ export class ThreeGame {
         this.bank.deposit(inventory);
         window.resetPickupCounter?.();
         window.AudioManager?.play('ui_click', { volume: 0.62 });
+        this.renderConsoleBanking(ship);
+    }
+
+    attemptGoalUnlock(ship, cardConfig) {
+        const cost = this.bank.getGoalCost(cardConfig.goalKey);
+        if (!cost || !this.bank.canUnlock(cardConfig.goalKey)) {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+
+        if (!this.bank.spend(cost)) {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+
+        const unlocked = this.bank.setUnlock(cardConfig.goalKey);
+        if (!unlocked) {
+            this.bank.deposit(cost);
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+
+        this.syncPersistentUpgrades();
+        this.emitVitalsState();
+        window.AudioManager?.play('class_lock', { volume: 0.55 });
         this.renderConsoleBanking(ship);
     }
 
@@ -1720,6 +1981,7 @@ export class ThreeGame {
         this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
         this.playerVitals.maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
+        this.updateGoalModuleVisualState(this.unlocks);
         this.ensureO2BubbleVisualState();
     }
 
@@ -1788,15 +2050,38 @@ export class ThreeGame {
         const generatorState = this.getO2GeneratorState();
         const generatorPos = this.getActiveO2GeneratorPosition();
         const enabled = generatorState.isOnline && Boolean(generatorPos);
+        const unlocks = this.unlocks ?? this.bank.getUnlocks();
 
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
-                const isThisOnline = (ship.type === this.playerType) && generatorState.isOnline;
+                const isActiveShip = ship.type === this.playerType;
+                const o2ModuleOnline = isActiveShip && generatorState.isOnline;
+                const hullOnline = isActiveShip && Boolean(unlocks.hullExpansion);
+                const radarOnline = isActiveShip && Boolean(unlocks.radarNode);
+                const reactorOnline = isActiveShip && Boolean(unlocks.reactorCompressor);
                 if (ship.o2ModuleSprite) {
-                    ship.o2ModuleSprite.visible = isThisOnline;
+                    ship.o2ModuleSprite.visible = o2ModuleOnline;
                 }
                 if (ship.o2ModuleShadow) {
-                    ship.o2ModuleShadow.visible = isThisOnline;
+                    ship.o2ModuleShadow.visible = o2ModuleOnline;
+                }
+                if (ship.hullModuleSprite) {
+                    ship.hullModuleSprite.visible = hullOnline;
+                }
+                if (ship.hullModuleShadow) {
+                    ship.hullModuleShadow.visible = hullOnline;
+                }
+                if (ship.radarModuleSprite) {
+                    ship.radarModuleSprite.visible = radarOnline;
+                }
+                if (ship.radarModuleShadow) {
+                    ship.radarModuleShadow.visible = radarOnline;
+                }
+                if (ship.reactorModuleSprite) {
+                    ship.reactorModuleSprite.visible = reactorOnline;
+                }
+                if (ship.reactorModuleShadow) {
+                    ship.reactorModuleShadow.visible = reactorOnline;
                 }
             }
         }
@@ -1990,10 +2275,13 @@ export class ThreeGame {
 
         if (resetRunState) {
             this.totalDistanceTravelled = 0;
+            this.maxDepthTierReached = 0;
+            this.currentDepthTier = 0;
             window.resetPickupCounter?.();
             this.depletedGearPileKeys.clear();
             this.clearLoadedChunksForRunReset();
             this.syncVisibleChunks(true);
+            this.emitDepthTierChanged(0);
         }
 
         this.ensureO2BubbleVisualState();
@@ -2109,11 +2397,53 @@ export class ThreeGame {
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
     }
 
+    getDepthTier(chunkX, chunkY) {
+        return getDepthTier(chunkX, chunkY);
+    }
+
+    getDepthTierName(depthTier) {
+        const index = Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, Math.floor(depthTier)));
+        return DEPTH_TIER_NAMES[index];
+    }
+
+    getDepthLootConfigForWorldPosition(worldX, worldZ) {
+        const chunkX = Math.floor(worldX / this.chunkSize);
+        const chunkY = Math.floor(worldZ / this.chunkSize);
+        return getDepthLootConfig(this.getDepthTier(chunkX, chunkY));
+    }
+
+    emitDepthTierChanged(depthTier = this.maxDepthTierReached) {
+        const tier = Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, Math.floor(depthTier)));
+        window.dispatchEvent(new CustomEvent('depth-tier-changed', {
+            detail: {
+                tier,
+                label: this.getDepthTierName(tier)
+            }
+        }));
+    }
+
+    updateDepthTierProgress(chunkX, chunkY, { forceEmit = false } = {}) {
+        const depthTier = this.getDepthTier(chunkX, chunkY);
+        this.currentDepthTier = depthTier;
+
+        if (depthTier > this.maxDepthTierReached) {
+            this.maxDepthTierReached = depthTier;
+            this.emitDepthTierChanged(depthTier);
+            return;
+        }
+
+        if (forceEmit) {
+            this.emitDepthTierChanged(this.maxDepthTierReached);
+        }
+    }
+
     getRunStats() {
         return {
             distanceTravelled: Math.round(this.totalDistanceTravelled),
             totalPickups: window.pickupCounterState?.total ?? 0,
-            generatorLevel: this.bank.getO2GeneratorLevel()
+            generatorLevel: this.bank.getO2GeneratorLevel(),
+            depthTier: this.maxDepthTierReached,
+            depthTierName: this.getDepthTierName(this.maxDepthTierReached)
         };
     }
 
@@ -2177,6 +2507,7 @@ export class ThreeGame {
     syncVisibleChunks(force = false) {
         const centerChunkX = Math.floor(this.player.position.x / this.chunkSize);
         const centerChunkY = Math.floor(this.player.position.z / this.chunkSize);
+        this.updateDepthTierProgress(centerChunkX, centerChunkY);
         const needed = new Set();
         this.wallMeshes = [];
         this.pickupMeshes = [];
@@ -2390,6 +2721,8 @@ export class ThreeGame {
 
     createChunkPickupPlacements(chunkX, chunkY, grid) {
         const random = this.createSeededRandom(this.hashTile(chunkX * 401 + 17, chunkY * 733 + 29));
+        const depthTier = this.getDepthTier(chunkX, chunkY);
+        const depthLootConfig = getDepthLootConfig(depthTier);
         const spawn = this.getSpawnTile();
         const candidates = [];
 
@@ -2421,9 +2754,13 @@ export class ThreeGame {
 
         const occupied = new Set();
         const placements = [];
-        const totalPlacements = Math.min(
+        const basePlacements = Math.min(
             Math.max(5, Math.round(candidates.length * 0.08)),
             12
+        );
+        const totalPlacements = Math.min(
+            candidates.length,
+            Math.max(3, Math.round(basePlacements * depthLootConfig.pickupMultiplier))
         );
         const clusterCount = Math.min(4, Math.max(2, Math.round(totalPlacements / 3.2)));
         const clusterTargets = [];
@@ -2452,7 +2789,7 @@ export class ThreeGame {
                 const subgroup = cluster.subgroupAnchors[Math.floor(random() * cluster.subgroupAnchors.length)];
                 const point = this.selectPickupCandidateNear(candidates, occupied, subgroup, cluster.clusterRadius, random);
                 if (!point) break;
-                placements.push(this.buildPickupPlacement(point, random));
+                placements.push(this.buildPickupPlacement(point, random, depthLootConfig.legendaryBoost));
                 cluster.clusterSize -= 1;
             }
         }
@@ -2462,7 +2799,7 @@ export class ThreeGame {
             const sourceCluster = clusterTargets[Math.floor(random() * clusterTargets.length)];
             const point = this.selectTransitionCandidate(candidates, occupied, sourceCluster, random);
             if (!point) break;
-            placements.push(this.buildPickupPlacement(point, random));
+            placements.push(this.buildPickupPlacement(point, random, depthLootConfig.legendaryBoost));
             transitionsPlaced += 1;
         }
 
@@ -2470,7 +2807,7 @@ export class ThreeGame {
         while (straysPlaced < strayTarget) {
             const point = this.selectStrayCandidate(candidates, occupied, clusterTargets, random);
             if (!point) break;
-            placements.push(this.buildPickupPlacement(point, random));
+            placements.push(this.buildPickupPlacement(point, random, depthLootConfig.legendaryBoost));
             straysPlaced += 1;
         }
 
@@ -2571,8 +2908,9 @@ export class ThreeGame {
         return true;
     }
 
-    buildPickupPlacement(candidate, random) {
+    buildPickupPlacement(candidate, random, legendaryBoost = 0) {
         const type = this.choosePickupType(random);
+        const rarity = this.chooseLootRarity(random, legendaryBoost);
         const scale = type === 'weapon'
             ? 0.9 + random() * 0.3
             : 0.82 + random() * 0.24;
@@ -2580,6 +2918,7 @@ export class ThreeGame {
         return {
             ...candidate,
             type,
+            rarity,
             scale,
             rotation: random() * Math.PI * 2,
             tiltX: (random() - 0.5) * 0.16,
@@ -2841,7 +3180,8 @@ export class ThreeGame {
     }
 
     createJunkBurstPickupPlacement(originX, originZ, targetX, targetZ, random, junkType = 'bunker_junk') {
-        const rarity = this.chooseLootRarityForJunkType(junkType, random);
+        const depthLootConfig = this.getDepthLootConfigForWorldPosition(originX, originZ);
+        const rarity = this.chooseLootRarityForJunkType(junkType, random, depthLootConfig.legendaryBoost);
         const type = this.chooseJunkBurstPickupType(rarity, random);
         const scale = type === 'coin'
             ? 0.66 + random() * 0.14
@@ -2952,30 +3292,52 @@ export class ThreeGame {
         return variants[variants.length - 1].type;
     }
 
-    chooseLootRarity(random) {
-        const totalWeight = LOOT_RARITIES.reduce((sum, entry) => sum + entry.weight, 0);
-        let roll = random() * totalWeight;
+    sampleLootRarity(weightedEntries, random, legendaryBoost = 0) {
+        const boost = Number.isFinite(legendaryBoost) ? Math.max(0, legendaryBoost) : 0;
+        const sourceEntries = Array.isArray(weightedEntries) ? weightedEntries : [];
+        const normalized = sourceEntries
+            .map((entry) => ({
+                key: entry?.key,
+                weight: Number.isFinite(entry?.weight) ? Math.max(0, entry.weight) : 0
+            }))
+            .filter((entry) => typeof entry.key === 'string' && entry.weight > 0);
 
-        for (const rarity of LOOT_RARITIES) {
-            roll -= rarity.weight;
-            if (roll <= 0) {
-                return rarity;
+        if (normalized.length === 0) {
+            return LOOT_RARITIES[0];
+        }
+
+        const totalWeight = normalized.reduce((sum, entry) => sum + entry.weight, 0);
+        if (totalWeight <= 0) {
+            return LOOT_RARITIES[0];
+        }
+
+        const normalizedWithLegend = [...normalized];
+        if (!normalizedWithLegend.some((entry) => entry.key === 'legendary')) {
+            normalizedWithLegend.push({ key: 'legendary', weight: 0 });
+        }
+
+        const normalizedByTotal = normalizedWithLegend.map((entry) => ({
+            key: entry.key,
+            weight: entry.weight / totalWeight
+        }));
+        const legendaryEntry = normalizedByTotal.find((entry) => entry.key === 'legendary');
+        const currentLegendary = legendaryEntry?.weight ?? 0;
+        const targetLegendary = Math.min(0.95, currentLegendary + boost);
+        const remainingCurrent = Math.max(0, 1 - currentLegendary);
+        const remainingTarget = Math.max(0, 1 - targetLegendary);
+        const scale = remainingCurrent > 0 ? (remainingTarget / remainingCurrent) : 0;
+
+        const adjusted = normalizedByTotal.map((entry) => {
+            if (entry.key === 'legendary') {
+                return { key: entry.key, weight: targetLegendary };
             }
-        }
+            return { key: entry.key, weight: entry.weight * scale };
+        }).filter((entry) => entry.weight > 0);
 
-        return LOOT_RARITIES[0];
-    }
+        const adjustedTotal = adjusted.reduce((sum, entry) => sum + entry.weight, 0);
+        let roll = random() * adjustedTotal;
 
-    chooseLootRarityForJunkType(junkType, random) {
-        const weightedBias = JUNK_LOOT_BIAS[junkType];
-        if (!weightedBias) {
-            return this.chooseLootRarity(random);
-        }
-
-        const totalWeight = weightedBias.reduce((sum, entry) => sum + entry.weight, 0);
-        let roll = random() * totalWeight;
-
-        for (const entry of weightedBias) {
+        for (const entry of adjusted) {
             roll -= entry.weight;
             if (roll <= 0) {
                 return LOOT_RARITIES.find((rarity) => rarity.key === entry.key) ?? LOOT_RARITIES[0];
@@ -2983,6 +3345,20 @@ export class ThreeGame {
         }
 
         return LOOT_RARITIES[0];
+    }
+
+    chooseLootRarity(random, legendaryBoost = 0) {
+        const weighted = LOOT_RARITIES.map((entry) => ({ key: entry.key, weight: entry.weight }));
+        return this.sampleLootRarity(weighted, random, legendaryBoost);
+    }
+
+    chooseLootRarityForJunkType(junkType, random, legendaryBoost = 0) {
+        const weightedBias = JUNK_LOOT_BIAS[junkType];
+        if (!weightedBias) {
+            return this.chooseLootRarity(random, legendaryBoost);
+        }
+
+        return this.sampleLootRarity(weightedBias, random, legendaryBoost);
     }
 
     chooseJunkBurstPickupType(rarity, random) {
@@ -3022,7 +3398,9 @@ export class ThreeGame {
     }
 
     createJunkBurstTargets(originX, originZ, random) {
-        const totalItems = BUNKER_JUNK_DROP_COUNT_MIN + Math.floor(random() * (BUNKER_JUNK_DROP_COUNT_MAX - BUNKER_JUNK_DROP_COUNT_MIN + 1));
+        const depthLootConfig = this.getDepthLootConfigForWorldPosition(originX, originZ);
+        const baseItems = BUNKER_JUNK_DROP_COUNT_MIN + Math.floor(random() * (BUNKER_JUNK_DROP_COUNT_MAX - BUNKER_JUNK_DROP_COUNT_MIN + 1));
+        const totalItems = Math.max(1, Math.round(baseItems * depthLootConfig.pickupMultiplier));
         const clusteredTarget = Math.max(1, Math.round(totalItems * 0.7));
         const transitionalTarget = Math.max(0, Math.round(totalItems * 0.2));
         const strayTarget = Math.max(0, totalItems - clusteredTarget - transitionalTarget);
@@ -3732,18 +4110,51 @@ export class ThreeGame {
                     return false;
                 }
 
-                // 3. O2 module collision
-                const moduleX = Number.isFinite(ship.o2ModuleX)
-                    ? ship.o2ModuleX
-                    : ship.tileX + (ship.o2ModuleOffset?.x ?? O2_MODULE_OFFSET.x);
-                const moduleZ = Number.isFinite(ship.o2ModuleZ)
-                    ? ship.o2ModuleZ
-                    : ship.tileZ + (ship.o2ModuleOffset?.z ?? O2_MODULE_OFFSET.z);
-                const dxModule = x - moduleX;
-                const dzModule = z - moduleZ;
-                const distModule = Math.hypot(dxModule, dzModule);
-                if (distModule < (O2_MODULE_COLLISION_RADIUS + this.playerRadius * 0.7)) {
-                    return false;
+                const modulePositions = [
+                    {
+                        enabled: Boolean(ship.o2ModuleSprite?.visible),
+                        x: Number.isFinite(ship.o2ModuleX)
+                            ? ship.o2ModuleX
+                            : ship.tileX + (ship.o2ModuleOffset?.x ?? O2_MODULE_OFFSET.x),
+                        z: Number.isFinite(ship.o2ModuleZ)
+                            ? ship.o2ModuleZ
+                            : ship.tileZ + (ship.o2ModuleOffset?.z ?? O2_MODULE_OFFSET.z)
+                    },
+                    {
+                        enabled: Boolean(ship.hullModuleSprite?.visible),
+                        x: Number.isFinite(ship.hullModuleX)
+                            ? ship.hullModuleX
+                            : ship.tileX + (ship.hullModuleOffset?.x ?? MODULE_OFFSETS.hullMatrix.x),
+                        z: Number.isFinite(ship.hullModuleZ)
+                            ? ship.hullModuleZ
+                            : ship.tileZ + (ship.hullModuleOffset?.z ?? MODULE_OFFSETS.hullMatrix.z)
+                    },
+                    {
+                        enabled: Boolean(ship.radarModuleSprite?.visible),
+                        x: Number.isFinite(ship.radarModuleX)
+                            ? ship.radarModuleX
+                            : ship.tileX + (ship.radarModuleOffset?.x ?? MODULE_OFFSETS.radarDish.x),
+                        z: Number.isFinite(ship.radarModuleZ)
+                            ? ship.radarModuleZ
+                            : ship.tileZ + (ship.radarModuleOffset?.z ?? MODULE_OFFSETS.radarDish.z)
+                    },
+                    {
+                        enabled: Boolean(ship.reactorModuleSprite?.visible),
+                        x: Number.isFinite(ship.reactorModuleX)
+                            ? ship.reactorModuleX
+                            : ship.tileX + (ship.reactorModuleOffset?.x ?? MODULE_OFFSETS.reactorCompressor.x),
+                        z: Number.isFinite(ship.reactorModuleZ)
+                            ? ship.reactorModuleZ
+                            : ship.tileZ + (ship.reactorModuleOffset?.z ?? MODULE_OFFSETS.reactorCompressor.z)
+                    }
+                ];
+
+                for (const modulePos of modulePositions) {
+                    if (!modulePos.enabled) continue;
+                    const distModule = Math.hypot(x - modulePos.x, z - modulePos.z);
+                    if (distModule < (O2_MODULE_COLLISION_RADIUS + this.playerRadius * 0.7)) {
+                        return false;
+                    }
                 }
             }
         }

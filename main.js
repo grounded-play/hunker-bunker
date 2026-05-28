@@ -37,6 +37,7 @@ const audioMasterValue = document.getElementById('audio-master-value');
 const audioMusicValue = document.getElementById('audio-music-value');
 const audioVfxValue = document.getElementById('audio-vfx-value');
 const pickupCountTotal = document.getElementById('pickup-count-total');
+const bunkerLevelNum = document.getElementById('level-num');
 const pickupCountByType = {
     health: document.getElementById('pickup-count-health'),
     ammo: document.getElementById('pickup-count-ammo'),
@@ -55,6 +56,7 @@ const DEFAULT_AUDIO_MIX = Object.freeze({
     music: 1,
     vfx: 1
 });
+const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 
 const state = {
     settings: {
@@ -276,6 +278,22 @@ window.pickupCounterState = pickupCounterState;
 window.resetPickupCounter = resetPickupCounter;
 window.getPickupCounterState = getSessionInventorySnapshot;
 window.vitalsHUD = new VitalsHUD();
+
+function renderBunkerLevel(tier = 0) {
+    const normalized = Number.isFinite(tier)
+        ? Math.max(0, Math.min(BUNKER_TIER_NAMES.length - 1, Math.floor(tier)))
+        : 0;
+    if (!bunkerLevelNum) return;
+
+    bunkerLevelNum.textContent = String(normalized);
+    bunkerLevelNum.title = BUNKER_TIER_NAMES[normalized];
+    bunkerLevelNum.setAttribute('aria-label', `BUNKER LEVEL ${normalized} (${BUNKER_TIER_NAMES[normalized]})`);
+}
+
+window.addEventListener('depth-tier-changed', (event) => {
+    renderBunkerLevel(event?.detail?.tier ?? 0);
+});
+renderBunkerLevel(0);
 
 function clearTimedClass(timerRefName, className) {
     if (timerRefName === 'damage') {

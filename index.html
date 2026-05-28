@@ -165,14 +165,14 @@
         </div>
         <div class="action-row__center">
           <div class="hero-stats-compact" id="hero-stats-row">
-            <div class="map-label">CLASS PROFILE</div>
+            <div class="hero-stats-compact__title">CLASS PROFILE</div>
             <div class="hero-stat-compact-row">
               <span class="hero-stat-compact-label">SPEED</span>
               <div class="hero-stat-pips" id="hero-stat-spd"></div>
               <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
             </div>
             <div class="hero-stat-compact-row">
-              <span class="hero-stat-compact-label">O₂ USE</span>
+              <span class="hero-stat-compact-label">O₂ USAGE</span>
               <div class="hero-stat-pips" id="hero-stat-o2"></div>
               <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
             </div>
@@ -396,6 +396,45 @@
               <p class="action-desc" id="terminal-o2-generator-field">FIELD RADIUS 0.0u // REFILL OFFLINE</p>
               <p class="action-desc action-desc--hint" id="terminal-o2-generator-hint">REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.</p>
               <button class="terminal-action-btn" id="terminal-btn-o2-generator">REPAIR GENERATOR</button>
+            </div>
+          </div>
+
+          <div id="hull-expansion-section" class="upgrade-goals-section">
+            <div class="terminal-section-title">GOAL 2</div>
+            <div class="action-card" data-goal-card="hullExpansion">
+              <div class="action-card-header">
+                <span class="action-title">HULL EXPANSION MATRIX</span>
+                <span class="action-cost" id="terminal-hull-status">LOCKED — REPAIR O₂ GENERATOR FIRST</span>
+              </div>
+              <p class="action-desc">Reinforce exterior hull. Increases max exosuit integrity to 4 hearts.</p>
+              <p class="action-desc action-desc--cost" id="terminal-hull-cost">COST: 50 TECH / 20 MED</p>
+              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-hull" disabled>LOCKED</button>
+            </div>
+          </div>
+
+          <div id="radar-node-section" class="upgrade-goals-section">
+            <div class="terminal-section-title">GOAL 3</div>
+            <div class="action-card" data-goal-card="radarNode">
+              <div class="action-card-header">
+                <span class="action-title">COMMUNICATION RADAR NODE</span>
+                <span class="action-cost" id="terminal-radar-status">LOCKED — INSTALL HULL MATRIX FIRST</span>
+              </div>
+              <p class="action-desc">Establish long-range tactical feeds. Compass tracks nearest supply cache cluster.</p>
+              <p class="action-desc action-desc--cost" id="terminal-radar-cost">COST: 150 TECH / 30 COIN</p>
+              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-radar" disabled>LOCKED</button>
+            </div>
+          </div>
+
+          <div id="reactor-compressor-section" class="upgrade-goals-section">
+            <div class="terminal-section-title">GOAL 4</div>
+            <div class="action-card" data-goal-card="reactorCompressor">
+              <div class="action-card-header">
+                <span class="action-title">REACTOR COMPRESSOR</span>
+                <span class="action-cost" id="terminal-reactor-status">LOCKED — INSTALL RADAR NODE FIRST</span>
+              </div>
+              <p class="action-desc">Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.</p>
+              <p class="action-desc action-desc--cost" id="terminal-reactor-cost">COST: 300 TECH / 100 COIN</p>
+              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-reactor" disabled>LOCKED</button>
             </div>
           </div>
 

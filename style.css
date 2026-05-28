@@ -931,45 +931,51 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1);
+  gap: calc(var(--vu) * 0.72);
   background: rgba(11, 13, 15, 0.85);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 3);
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 2.3) calc(var(--vu) * 1.15);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   position: relative;
   overflow: hidden;
 }
 
-.hero-stats-compact .map-label {
+.hero-stats-compact__title {
+  font-size: calc(var(--vu) * 1.8);
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-main);
   text-decoration: underline;
-  text-underline-offset: 3px;
-  margin-bottom: 0;
+  text-underline-offset: calc(var(--vu) * 0.45);
+  text-decoration-thickness: 1px;
+  margin-bottom: calc(var(--vu) * 0.25);
 }
 
 .hero-stat-compact-row {
   display: flex;
   align-items: center;
-  gap: calc(var(--vu) * 1.8);
+  gap: calc(var(--vu) * 1.2);
 }
 
 .hero-stat-compact-label {
-  font-size: calc(var(--vu) * 1.8);
+  font-size: calc(var(--vu) * 1.62);
   font-weight: 900;
   letter-spacing: 0.08em;
   color: rgba(255, 255, 255, 0.38);
-  min-width: calc(var(--vu) * 8);
+  min-width: calc(var(--vu) * 11.6);
 }
 
 .hero-stat-pips {
   display: flex;
   align-items: center;
-  gap: calc(var(--vu) * 0.7);
+  gap: calc(var(--vu) * 0.58);
   flex: 1;
 }
 
 .hero-stat-compact-value {
-  font-size: calc(var(--vu) * 2);
+  font-size: calc(var(--vu) * 1.78);
   font-weight: 900;
   letter-spacing: 0.1em;
   color: var(--class-pip-color, var(--accent-primary));
@@ -979,8 +985,8 @@ body {
 }
 
 .pip {
-  width: calc(var(--vu) * 1.9);
-  height: calc(var(--vu) * 1.9);
+  width: calc(var(--vu) * 1.62);
+  height: calc(var(--vu) * 1.62);
   border-radius: 50%;
   display: inline-block;
   transition: background 0.25s, box-shadow 0.25s;
@@ -1137,7 +1143,7 @@ body {
   width: 100%;
   max-width: calc(var(--vu) * 142);
   justify-self: center;
-  margin-top: calc(var(--vu) * -28);
+  margin-top: calc(var(--vu) * -24);
   position: relative;
   z-index: 20;
 }
