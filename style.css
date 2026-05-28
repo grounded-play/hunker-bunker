@@ -2211,21 +2211,86 @@ body.mission-intro-active #console-hud-prompt {
   display: none !important;
 }
 
+body.mission-intro-active #game-viewport {
+  background: #000;
+}
+
+body.mission-intro-active #game-container {
+  visibility: hidden;
+}
+
 #cutscene-overlay.is-flash .cutscene-impact-flash {
   opacity: 0.78;
+}
+
+.cutscene-space-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 260ms ease-out;
+  background:
+    radial-gradient(120% 85% at 50% -10%, rgba(62, 82, 118, 0.5) 0%, rgba(13, 20, 35, 0.45) 32%, rgba(0, 0, 0, 0.96) 78%),
+    radial-gradient(110% 75% at 50% 115%, rgba(25, 48, 72, 0.46) 0%, rgba(9, 13, 20, 0.2) 45%, rgba(0, 0, 0, 0) 80%);
+}
+
+.cutscene-planet {
+  position: absolute;
+  left: -26%;
+  bottom: -118%;
+  width: 152%;
+  height: 132%;
+  border-radius: 50%;
+  z-index: 2;
+  opacity: 0;
+  background:
+    radial-gradient(68% 40% at 58% 24%, rgba(255, 190, 108, 0.34) 0%, rgba(255, 171, 88, 0.2) 23%, rgba(58, 84, 103, 0.25) 58%, rgba(22, 36, 50, 0.9) 100%),
+    radial-gradient(85% 70% at 48% 58%, rgba(30, 54, 74, 0.95) 0%, rgba(13, 23, 37, 0.94) 58%, rgba(0, 0, 0, 1) 100%);
+  box-shadow:
+    0 calc(var(--vu) * -1.6) calc(var(--vu) * 6.2) rgba(255, 194, 118, 0.18),
+    inset 0 calc(var(--vu) * 2.1) calc(var(--vu) * 7.6) rgba(255, 186, 98, 0.13);
+  transform: translateY(18%) scale(0.78);
+}
+
+#cutscene-overlay.is-falling .cutscene-space-bg {
+  opacity: 1;
+}
+
+#cutscene-overlay.is-falling .cutscene-starfield {
+  opacity: 1;
+}
+
+#cutscene-overlay.is-falling .cutscene-planet {
+  opacity: 0.92;
+  animation: cutscene-planet-rise 1800ms cubic-bezier(0.1, 0.76, 0.2, 1) forwards;
+}
+
+#cutscene-overlay.is-impact .cutscene-planet {
+  filter: brightness(1.24) saturate(1.08);
 }
 
 .cutscene-impact-flash {
   position: absolute;
   inset: 0;
+  z-index: 10;
   background: #fff;
   opacity: 0;
   transition: opacity 60ms ease-out;
 }
 
+.cutscene-starfield {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  overflow: hidden;
+  transition: opacity 180ms ease-out;
+}
+
 .cutscene-ship,
 .cutscene-wreck {
   position: absolute;
+  z-index: 5;
   width: calc(var(--vu) * 24);
   max-width: 26vw;
   height: auto;
@@ -2245,6 +2310,7 @@ body.mission-intro-active #console-hud-prompt {
 .cutscene-particles {
   position: absolute;
   inset: 0;
+  z-index: 7;
   pointer-events: none;
 }
 
@@ -2269,6 +2335,20 @@ body.mission-intro-active #console-hud-prompt {
   animation: cutscene-dust-expand 720ms ease-out forwards;
 }
 
+.cutscene-far-star {
+  position: absolute;
+  width: var(--length, 14px);
+  height: var(--thickness, 1.4px);
+  border-radius: 99px;
+  transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
+  opacity: var(--alpha, 0.8);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(247, 251, 255, 0.94) 48%, rgba(255, 255, 255, 1) 100%);
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.92),
+    0 0 16px rgba(206, 230, 255, 0.35);
+  animation: cutscene-far-star-stream 620ms linear forwards;
+}
+
 @keyframes debris-burst {
   0% {
     transform: translate(-50%, -50%) rotate(0deg) scale(1);
@@ -2288,6 +2368,28 @@ body.mission-intro-active #console-hud-prompt {
   100% {
     transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2);
     opacity: 0;
+  }
+}
+
+@keyframes cutscene-far-star-stream {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--angle, 0deg)) scaleX(0.42);
+    opacity: var(--alpha, 0.8);
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--angle, 0deg)) scaleX(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes cutscene-planet-rise {
+  0% {
+    transform: translateY(20%) scale(0.78);
+    filter: brightness(0.82);
+  }
+  100% {
+    transform: translateY(-36%) scale(1.1);
+    filter: brightness(1.03);
   }
 }
 

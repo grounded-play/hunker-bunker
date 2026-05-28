@@ -19,6 +19,7 @@ export class CutsceneManager {
         overlayId = 'cutscene-overlay',
         shipId = 'cutscene-ship',
         wreckId = 'cutscene-wreck',
+        starfieldId = 'cutscene-starfield',
         particlesId = 'cutscene-particles',
         viewportId = 'game-viewport',
         resolveImpactPoint = null
@@ -26,6 +27,7 @@ export class CutsceneManager {
         this.overlayEl = document.getElementById(overlayId);
         this.shipEl = document.getElementById(shipId);
         this.wreckEl = document.getElementById(wreckId);
+        this.starfieldEl = document.getElementById(starfieldId);
         this.particlesEl = document.getElementById(particlesId);
         this.viewportEl = document.getElementById(viewportId);
         this.resolveImpactPoint = resolveImpactPoint;
@@ -34,6 +36,8 @@ export class CutsceneManager {
         this.activeRunId = 0;
         this.resolveRun = null;
         this.timers = [];
+        this.starStreamTimer = 0;
+        this.spriteCache = new Map();
         this.allowSkip = true;
         this.handleSkipKey = (event) => {
             if (!this.allowSkip) return;
@@ -43,7 +47,7 @@ export class CutsceneManager {
         };
     }
 
-    play({ playerType = 'SCOUT', allowSkip = true, resolveImpactPoint = null } = {}) {
+    async play({ playerType = 'SCOUT', allowSkip = true, resolveImpactPoint = null } = {}) {
         if (!this.overlayEl || !this.shipEl || !this.wreckEl || !this.particlesEl) {
             return Promise.resolve({ skipped: false });
         }
@@ -55,16 +59,22 @@ export class CutsceneManager {
         this.allowSkip = allowSkip;
 
         const sprite = SHIP_SPRITES[playerType] ?? SHIP_SPRITES.SCOUT;
+        const preparedSprite = await this.prepareSprite(sprite);
+        if (this.activeRunId !== runId) {
+            return { skipped: true };
+        }
+
         const getImpactPoint = resolveImpactPoint || this.resolveImpactPoint;
 
         this.clearTimers();
+        this.clearStarField();
         this.clearParticles();
-        this.overlayEl.classList.remove('hidden', 'is-visible', 'is-fading', 'is-flash');
+        this.overlayEl.classList.remove('hidden', 'is-visible', 'is-fading', 'is-flash', 'is-falling', 'is-impact');
         this.overlayEl.setAttribute('aria-hidden', 'false');
         this.overlayEl.classList.add('is-active');
 
-        this.shipEl.src = sprite;
-        this.wreckEl.src = sprite;
+        this.shipEl.src = preparedSprite;
+        this.wreckEl.src = preparedSprite;
         this.shipEl.style.opacity = '0';
         this.shipEl.style.transition = 'none';
         this.wreckEl.classList.add('hidden');
@@ -101,6 +111,8 @@ export class CutsceneManager {
                 `transform ${CUTSCENE_TIMING.shipFallDurationMs}ms cubic-bezier(0.2, 0.75, 0.25, 1)`
             ].join(', ');
             this.positionElement(this.shipEl, impact.x, impact.y, 'translate(-50%, -50%) rotate(540deg) scale(0.9)');
+            this.overlayEl.classList.add('is-falling');
+            this.startStarField(runId, overlayRect.width, overlayRect.height);
         });
 
         this.queue(runId, CUTSCENE_TIMING.impactMs, () => {
@@ -128,6 +140,8 @@ export class CutsceneManager {
         if (this.activeRunId !== runId) return;
 
         this.clearTimers();
+        this.stopStarField();
+        this.clearStarField();
         this.clearParticles();
         window.removeEventListener('keydown', this.handleSkipKey);
 
@@ -135,7 +149,7 @@ export class CutsceneManager {
             this.viewportEl.classList.remove('cutscene-shake');
         }
 
-        this.overlayEl.classList.remove('is-active', 'is-visible', 'is-fading', 'is-flash');
+        this.overlayEl.classList.remove('is-active', 'is-visible', 'is-fading', 'is-flash', 'is-falling', 'is-impact');
         this.overlayEl.classList.add('hidden');
         this.overlayEl.setAttribute('aria-hidden', 'true');
 
@@ -150,7 +164,9 @@ export class CutsceneManager {
     }
 
     triggerImpact(impact) {
+        this.stopStarField();
         this.overlayEl.classList.add('is-flash');
+        this.overlayEl.classList.add('is-impact');
         window.AudioManager?.play('door_slam_vertical', { volume: 0.48, bus: 'world' });
         window.AudioManager?.play('ui_error', { volume: 0.4, bus: 'sfx' });
         window.AudioManager?.play('amb_metal_stress2', { volume: 0.3, bus: 'world' });
@@ -171,6 +187,9 @@ export class CutsceneManager {
 
         this.queue(this.activeRunId, 90, () => {
             this.overlayEl.classList.remove('is-flash');
+        });
+        this.queue(this.activeRunId, 360, () => {
+            this.overlayEl.classList.remove('is-impact');
         });
     }
 
@@ -210,6 +229,55 @@ export class CutsceneManager {
         this.particlesEl.replaceChildren();
     }
 
+    clearStarField() {
+        if (!this.starfieldEl) return;
+        this.starfieldEl.replaceChildren();
+    }
+
+    startStarField(runId, width, height) {
+        this.stopStarField();
+        this.clearStarField();
+
+        const spawn = () => {
+            if (this.activeRunId !== runId || !this.starfieldEl) return;
+            for (let index = 0; index < 7; index++) {
+                this.spawnStar(width, height);
+            }
+        };
+
+        for (let index = 0; index < 120; index++) {
+            this.spawnStar(width, height);
+        }
+
+        this.starStreamTimer = window.setInterval(spawn, 34);
+    }
+
+    stopStarField() {
+        if (!this.starStreamTimer) return;
+        window.clearInterval(this.starStreamTimer);
+        this.starStreamTimer = 0;
+    }
+
+    spawnStar(width, height) {
+        if (!this.starfieldEl) return;
+        const star = document.createElement('div');
+        star.className = 'cutscene-far-star';
+        star.style.left = `${Math.random() * width}px`;
+        star.style.top = `${Math.random() * (height * 0.96)}px`;
+        star.style.setProperty('--dx', `${(Math.random() - 0.5) * 360}px`);
+        star.style.setProperty('--dy', `${-140 - Math.random() * 320}px`);
+        star.style.setProperty('--angle', `${(Math.random() - 0.5) * 14}deg`);
+        star.style.setProperty('--length', `${8 + Math.random() * 20}px`);
+        star.style.setProperty('--thickness', `${1 + Math.random() * 1.5}px`);
+        star.style.setProperty('--alpha', `${0.65 + Math.random() * 0.35}`);
+        star.style.animationDuration = `${480 + Math.random() * 320}ms`;
+        this.starfieldEl.appendChild(star);
+
+        this.queue(this.activeRunId, 960, () => {
+            star.remove();
+        });
+    }
+
     queue(runId, delayMs, fn) {
         const timer = window.setTimeout(() => {
             if (this.activeRunId !== runId) return;
@@ -223,6 +291,64 @@ export class CutsceneManager {
             window.clearTimeout(timer);
         }
         this.timers.length = 0;
+    }
+
+    async prepareSprite(spritePath) {
+        const cached = this.spriteCache.get(spritePath);
+        if (cached) {
+            return cached;
+        }
+
+        const prepared = new Promise((resolve) => {
+            const image = new Image();
+            image.decoding = 'async';
+
+            image.onload = () => {
+                const width = image.naturalWidth || image.width;
+                const height = image.naturalHeight || image.height;
+                if (!width || !height) {
+                    resolve(spritePath);
+                    return;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const context = canvas.getContext('2d', { willReadFrequently: true });
+                if (!context) {
+                    resolve(spritePath);
+                    return;
+                }
+
+                context.drawImage(image, 0, 0);
+                const frame = context.getImageData(0, 0, width, height);
+                const pixels = frame.data;
+
+                for (let i = 0; i < pixels.length; i += 4) {
+                    const alpha = pixels[i + 3];
+                    if (alpha === 0) continue;
+
+                    const maxChannel = Math.max(pixels[i], pixels[i + 1], pixels[i + 2]);
+                    if (maxChannel <= 28) {
+                        pixels[i + 3] = 0;
+                        continue;
+                    }
+
+                    if (maxChannel < 56) {
+                        pixels[i + 3] = Math.round(alpha * 0.35);
+                    }
+                }
+
+                context.putImageData(frame, 0, 0);
+                resolve(canvas.toDataURL('image/png'));
+            };
+
+            image.onerror = () => resolve(spritePath);
+            image.src = spritePath;
+        });
+
+        this.spriteCache.set(spritePath, prepared);
+        return prepared;
     }
 
     clampImpactPoint(point, rect) {
