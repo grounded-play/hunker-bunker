@@ -28,10 +28,16 @@ const PICKUP_TYPES = [
     { type: 'weapon', weight: 0.18 },
     { type: 'coin', weight: 0.12 }
 ];
+const CLASS_STATS = {
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25 },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0  }
+};
+
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
 const O2_DANGER_THRESHOLD = 25;
 const O2_DRAIN_RATE_DANGER_MULT = 1.5;
-const O2_HEALTH_DRAIN_INTERVAL = 20;
+const O2_HEALTH_DRAIN_INTERVAL = 1;
 const BASE_HEARTS = 3;
 const UPGRADED_HEARTS = 4;
 
@@ -101,7 +107,9 @@ export class ThreeGame {
         this.visibleChunkRadius = 1;
         this.wallHeight = 2.8;
         this.playerRadius = 0.66;
-        this.moveSpeed = 3.8;
+        const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
+        this.moveSpeed = _initialStats.moveSpeed;
+        this.o2DrainMult = _initialStats.o2DrainMult;
         this.cameraLift = 10;
         this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
         this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
@@ -138,6 +146,7 @@ export class ThreeGame {
         };
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
+        this.totalDistanceTravelled = 0;
         this.terminalCloseListenerBound = false;
         this.o2BubbleObjects = null;
 
@@ -1052,6 +1061,9 @@ export class ThreeGame {
     updatePlayerType(type) {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
+        const stats = CLASS_STATS[type] ?? CLASS_STATS.ENGINEER;
+        this.moveSpeed = stats.moveSpeed;
+        this.o2DrainMult = stats.o2DrainMult;
         this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
         this.playerMaterial.color.setHex(color);
@@ -1977,6 +1989,7 @@ export class ThreeGame {
         this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
 
         if (resetRunState) {
+            this.totalDistanceTravelled = 0;
             window.resetPickupCounter?.();
             this.depletedGearPileKeys.clear();
             this.clearLoadedChunksForRunReset();
@@ -2013,7 +2026,7 @@ export class ThreeGame {
             this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
-            let drainRate = O2_DRAIN_RATE_PCT_PER_SEC;
+            let drainRate = O2_DRAIN_RATE_PCT_PER_SEC * (this.o2DrainMult ?? 1.0);
             if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
                 drainRate *= O2_DRAIN_RATE_DANGER_MULT;
             }
@@ -2070,6 +2083,9 @@ export class ThreeGame {
         this.isMoving = isMoving;
 
         if (isMoving) {
+            const prevX = this.player.position.x;
+            const prevZ = this.player.position.z;
+
             const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(this.moveSpeed * delta);
             const current = this.player.position.clone();
             const nextX = new THREE.Vector3(current.x + moveVector.x, current.y, current.z);
@@ -2082,11 +2098,23 @@ export class ThreeGame {
             if (this.canOccupyPosition(nextZ.x, nextZ.z)) {
                 this.player.position.z = nextZ.z;
             }
+
+            const dx = this.player.position.x - prevX;
+            const dz = this.player.position.z - prevZ;
+            this.totalDistanceTravelled += Math.sqrt(dx * dx + dz * dz);
         }
 
         this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
         this.playerGlow.position.set(this.player.position.x, 1.6, this.player.position.z);
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
+    }
+
+    getRunStats() {
+        return {
+            distanceTravelled: Math.round(this.totalDistanceTravelled),
+            totalPickups: window.pickupCounterState?.total ?? 0,
+            generatorLevel: this.bank.getO2GeneratorLevel()
+        };
     }
 
     updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving) {

@@ -154,12 +154,31 @@
               </div>
             </div>
           </div>
+
         </div>
       </div>
 
-      <!-- Action Row -->
+      <!-- Action Row: mirrors module-row column widths so stats align under hero preview -->
       <div class="action-row">
-        <button class="start-btn" id="start-game">INITIALIZE</button>
+        <div class="action-row__left">
+          <button class="start-btn" id="start-game">INITIALIZE</button>
+        </div>
+        <div class="action-row__center">
+          <div class="hero-stats-compact" id="hero-stats-row">
+            <div class="map-label">CLASS PROFILE</div>
+            <div class="hero-stat-compact-row">
+              <span class="hero-stat-compact-label">SPEED</span>
+              <div class="hero-stat-pips" id="hero-stat-spd"></div>
+              <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+            </div>
+            <div class="hero-stat-compact-row">
+              <span class="hero-stat-compact-label">O₂ USE</span>
+              <div class="hero-stat-pips" id="hero-stat-o2"></div>
+              <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+            </div>
+            <div class="module-scanline"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -245,6 +264,50 @@
         <div class="status-item"><span>UNITS</span><span class="status-value" id="online-count">1</span></div>
       </div>
     </div>
+    <!-- Game Over Screen -->
+    <div id="game-over-modal" class="modal hidden" aria-live="assertive">
+      <div class="modal-content game-over-content">
+        <div class="terminal-scanline"></div>
+        <div class="game-over-header">
+          <div class="game-over-title">EXOSUIT FAILURE</div>
+          <div class="game-over-subtitle">&gt; AGENT LOST IN SECTOR 9. TELEMETRY RECOVERED.</div>
+        </div>
+        <div class="game-over-report">
+          <div class="game-over-section-label">MISSION REPORT</div>
+
+          <div class="game-over-stat-block">
+            <span class="game-over-stat-label">DISTANCE COVERED</span>
+            <div class="game-over-stat-bar-row">
+              <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-distance"></div></div>
+              <span class="game-over-stat-value" id="go-val-distance">0u</span>
+            </div>
+          </div>
+
+          <div class="game-over-stat-block">
+            <span class="game-over-stat-label">ITEMS RECOVERED</span>
+            <div class="game-over-stat-bar-row">
+              <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-items"></div></div>
+              <span class="game-over-stat-value" id="go-val-items">0</span>
+            </div>
+          </div>
+
+          <div class="game-over-stat-block">
+            <span class="game-over-stat-label">O₂ GENERATOR</span>
+            <div class="game-over-stat-bar-row">
+              <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-generator"></div></div>
+              <span class="game-over-stat-value" id="go-val-generator">OFFLINE</span>
+            </div>
+          </div>
+
+          <div class="game-over-bank-note">◈ BANKED RESOURCES PRESERVED</div>
+        </div>
+        <div class="game-over-actions">
+          <button class="start-btn game-over-btn" id="game-over-try-again">TRY AGAIN</button>
+          <button class="abort-btn game-over-btn" id="game-over-main-menu">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
     <div id="cutscene-overlay" class="hidden" aria-hidden="true">
       <div class="cutscene-space-bg" aria-hidden="true"></div>
       <div id="cutscene-starfield" class="cutscene-starfield" aria-hidden="true"></div>

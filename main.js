@@ -302,6 +302,80 @@ function triggerDamageFlash() {
     }, 240);
 }
 
+// ---- Hero select stat pips ----
+const HERO_DISPLAY_STATS = {
+    SCOUT:    { spdPips: 5, o2Pips: 2, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW'    },
+    TANK:     { spdPips: 2, o2Pips: 5, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH'   },
+    ENGINEER: { spdPips: 4, o2Pips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL' }
+};
+const HERO_STAT_TOTAL = 5;
+
+function renderPips(containerId, filled) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.replaceChildren();
+    for (let i = 0; i < HERO_STAT_TOTAL; i++) {
+        const pip = document.createElement('span');
+        pip.className = `pip ${i < filled ? 'pip--full' : 'pip--empty'}`;
+        el.appendChild(pip);
+    }
+}
+
+function updateHeroStats(type) {
+    const stats = HERO_DISPLAY_STATS[type];
+    if (!stats) return;
+
+    // Set class colour on the row container so all pips + value text inherit it
+    const row = document.getElementById('hero-stats-row');
+    if (row) row.style.setProperty('--class-pip-color', stats.color);
+
+    renderPips('hero-stat-spd', stats.spdPips);
+    renderPips('hero-stat-o2', stats.o2Pips);
+
+    const spdVal = document.getElementById('hero-stat-spd-val');
+    const o2Val  = document.getElementById('hero-stat-o2-val');
+    if (spdVal) spdVal.textContent = stats.spdLabel;
+    if (o2Val)  o2Val.textContent  = stats.o2Label;
+}
+
+// ---- Game Over Screen ----
+function showGameOverScreen(stats) {
+    const distancePct = Math.min(100, (stats.distanceTravelled / 500) * 100);
+    const itemsPct    = Math.min(100, (stats.totalPickups / 50) * 100);
+    const genPct      = Math.min(100, (stats.generatorLevel / 3) * 100);
+
+    const distBar = document.getElementById('go-bar-distance');
+    const itemBar = document.getElementById('go-bar-items');
+    const genBar  = document.getElementById('go-bar-generator');
+
+    if (distBar) distBar.style.width = '0%';
+    if (itemBar) itemBar.style.width = '0%';
+    if (genBar)  genBar.style.width  = '0%';
+
+    const distVal = document.getElementById('go-val-distance');
+    const itemVal = document.getElementById('go-val-items');
+    const genVal  = document.getElementById('go-val-generator');
+
+    if (distVal) distVal.textContent = `${stats.distanceTravelled}u`;
+    if (itemVal) itemVal.textContent = String(stats.totalPickups);
+    if (genVal)  genVal.textContent  = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
+
+    const modal = document.getElementById('game-over-modal');
+    if (modal) modal.classList.remove('hidden');
+
+    // Stagger bar animations for a readout effect
+    requestAnimationFrame(() => {
+        setTimeout(() => { if (distBar) distBar.style.width = `${distancePct}%`; }, 120);
+        setTimeout(() => { if (itemBar) itemBar.style.width = `${itemsPct}%`;    }, 340);
+        setTimeout(() => { if (genBar)  genBar.style.width  = `${genPct}%`;      }, 560);
+    });
+}
+
+function hideGameOverScreen() {
+    const modal = document.getElementById('game-over-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
 function runDeathSequence() {
     if (deathSequenceTimer) return;
 
@@ -310,11 +384,16 @@ function runDeathSequence() {
     AudioManager.play('ui_error', { volume: 0.7 });
 
     deathSequenceTimer = window.setTimeout(() => {
-        window.game?.respawnPlayer?.();
-        window.game?.setInputEnabled?.(true);
         document.body.classList.remove('player-dead-flash');
         deathSequenceTimer = null;
-    }, 1000);
+
+        const stats = window.game?.getRunStats?.() ?? {
+            distanceTravelled: 0,
+            totalPickups: 0,
+            generatorLevel: 0
+        };
+        showGameOverScreen(stats);
+    }, 900);
 }
 
 window.addEventListener('player-damaged', triggerDamageFlash);
@@ -323,6 +402,56 @@ window.addEventListener('player-respawned', () => {
     clearTimedClass('death', 'player-dead-flash');
     window.game?.setInputEnabled?.(true);
 });
+
+// Game over button handlers
+const gameOverTryAgain = document.getElementById('game-over-try-again');
+const gameOverMainMenu = document.getElementById('game-over-main-menu');
+
+if (gameOverTryAgain) {
+    gameOverTryAgain.addEventListener('click', () => {
+        hideGameOverScreen();
+        triggerDoorTransition(
+            () => {
+                window.game?.setInputEnabled?.(false);
+                resetPickupCounter();
+                window.game?.respawnPlayer?.({ resetRunState: true, skipEffects: false });
+                document.getElementById('ui')?.classList.remove('hidden');
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
+            },
+            () => {
+                window.game?.setInputEnabled?.(true);
+            }
+        );
+    });
+}
+
+if (gameOverMainMenu) {
+    gameOverMainMenu.addEventListener('click', () => {
+        hideGameOverScreen();
+        missionFlowRunning = false;
+        window.game?.setInputEnabled?.(false);
+
+        triggerDoorTransition(
+            () => {
+                document.getElementById('ui')?.classList.add('hidden');
+                window.game?.setInputEnabled?.(false);
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
+                if (menu) menu.classList.remove('hidden');
+
+                const gameContainer = document.getElementById('game-container');
+                const mapBox = document.querySelector('.map-box');
+                if (gameContainer && mapBox) {
+                    mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
+                    gameContainer.classList.remove('fullscreen-mode');
+                    queueGameLayoutRefresh();
+                }
+            },
+            null
+        );
+    });
+}
 
 function isTouchDevice() {
     const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
@@ -1277,6 +1406,7 @@ charCards.forEach(card => {
         const type = card.getAttribute('data-type');
         if (heroData[type]) {
             triggerHeroPreviewSwap(type);
+            updateHeroStats(type);
 
             if (window.game?.updatePlayerType) {
                 const gameContainer = document.getElementById('game-container');
@@ -1560,7 +1690,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
     if (initialSelected && heroData[initialSelected.getAttribute('data-type')]) {
-        syncHeroPreview(initialSelected.getAttribute('data-type'));
+        const initialType = initialSelected.getAttribute('data-type');
+        syncHeroPreview(initialType);
+        updateHeroStats(initialType);
     }
     startHeroPreviewAnimation();
     if (splashFsToggle) splashFsToggle.checked = false;
