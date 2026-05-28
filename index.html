@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1242_v31">
+  <link rel="stylesheet" href="/style.css?v=1242_v32">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 </head>
@@ -291,73 +291,57 @@
           <div class="terminal-class-badge" id="terminal-class-badge">SCOUT BASE STATUS</div>
         </div>
 
-        <div class="terminal-layout terminal-layout--banking">
-          <div class="terminal-telemetry-col terminal-telemetry-col--inventory" id="terminal-inventory-panel">
-            <div class="terminal-section-title">INVENTORY (THIS RUN)</div>
-            <div class="terminal-resource-list">
-              <div class="terminal-resource-row">
-                <span class="terminal-resource-row__label">MED</span>
-                <span class="terminal-resource-row__value" id="terminal-run-med">0</span>
+        <div class="terminal-body">
+        <div class="terminal-layout terminal-layout--shop">
+
+          <!-- Bank balance: compact resource grid + deposit -->
+          <div id="terminal-bank-panel" class="terminal-shop-bank">
+            <div class="terminal-section-title">BANK BALANCE</div>
+            <div class="terminal-bank-grid">
+              <div class="terminal-bank-cell">
+                <span class="terminal-bank-cell__label">MED</span>
+                <span class="terminal-bank-cell__value" id="terminal-bank-med">0</span>
               </div>
-              <div class="terminal-resource-row">
-                <span class="terminal-resource-row__label">AMMO</span>
-                <span class="terminal-resource-row__value" id="terminal-run-ammo">0</span>
+              <div class="terminal-bank-cell">
+                <span class="terminal-bank-cell__label">AMMO</span>
+                <span class="terminal-bank-cell__value" id="terminal-bank-ammo">0</span>
               </div>
-              <div class="terminal-resource-row">
-                <span class="terminal-resource-row__label">TECH</span>
-                <span class="terminal-resource-row__value" id="terminal-run-tech">0</span>
+              <div class="terminal-bank-cell">
+                <span class="terminal-bank-cell__label">TECH</span>
+                <span class="terminal-bank-cell__value" id="terminal-bank-tech">0</span>
               </div>
-              <div class="terminal-resource-row">
-                <span class="terminal-resource-row__label">COIN</span>
-                <span class="terminal-resource-row__value" id="terminal-run-coin">0</span>
+              <div class="terminal-bank-cell">
+                <span class="terminal-bank-cell__label">COIN</span>
+                <span class="terminal-bank-cell__value" id="terminal-bank-coin">0</span>
               </div>
             </div>
-            <button class="terminal-action-btn" id="terminal-deposit-all">DEPOSIT ALL</button>
-          </div>
-
-          <div class="terminal-actions-col terminal-actions-col--stack">
-            <div class="terminal-actions-col terminal-actions-col--bank" id="terminal-bank-panel">
-              <div class="terminal-section-title">BANK BALANCE</div>
-              <div class="terminal-resource-list">
-                <div class="terminal-resource-row">
-                  <span class="terminal-resource-row__label">MED</span>
-                  <span class="terminal-resource-row__value" id="terminal-bank-med">0</span>
-                </div>
-                <div class="terminal-resource-row">
-                  <span class="terminal-resource-row__label">AMMO</span>
-                  <span class="terminal-resource-row__value" id="terminal-bank-ammo">0</span>
-                </div>
-                <div class="terminal-resource-row">
-                  <span class="terminal-resource-row__label">TECH</span>
-                  <span class="terminal-resource-row__value" id="terminal-bank-tech">0</span>
-                </div>
-                <div class="terminal-resource-row">
-                  <span class="terminal-resource-row__label">COIN</span>
-                  <span class="terminal-resource-row__value" id="terminal-bank-coin">0</span>
-                </div>
-              </div>
+            <div class="terminal-bank-actions">
+              <button class="terminal-action-btn" id="terminal-deposit-all">DEPOSIT RUN LOOT</button>
               <div class="terminal-bank-hint" id="terminal-bank-hint">DEPOSIT RESOURCES TO FUND O₂ REPAIRS.</div>
             </div>
+          </div>
 
-            <div id="o2-generator-section" class="upgrade-goals-section upgrade-goals-section--generator">
-              <div class="terminal-section-title">O₂ GENERATOR MODULE</div>
-              <div class="action-card action-card--generator" data-goal-card="o2Generator">
-                <div class="action-card-header">
-                  <span class="action-title">FIELD STABILIZER</span>
-                  <span class="action-cost" id="terminal-o2-generator-status">OFFLINE // REPAIR REQUIRED</span>
-                </div>
-                <p class="action-desc" id="terminal-o2-generator-cost">NEXT COST: 10 TECH / 5 MED / 5 COIN</p>
-                <p class="action-desc" id="terminal-o2-generator-field">FIELD RADIUS 0.0u // REFILL OFFLINE</p>
-                <p class="action-desc action-desc--hint" id="terminal-o2-generator-hint">REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.</p>
-                <button class="terminal-action-btn" id="terminal-btn-o2-generator">REPAIR GENERATOR</button>
+          <!-- O2 generator upgrade -->
+          <div id="o2-generator-section" class="upgrade-goals-section upgrade-goals-section--generator">
+            <div class="terminal-section-title">O₂ GENERATOR MODULE</div>
+            <div class="action-card action-card--generator" data-goal-card="o2Generator">
+              <div class="action-card-header">
+                <span class="action-title">FIELD STABILIZER</span>
+                <span class="action-cost" id="terminal-o2-generator-status">OFFLINE // REPAIR REQUIRED</span>
               </div>
+              <p class="action-desc" id="terminal-o2-generator-cost">NEXT COST: 10 TECH / 5 MED / 5 COIN</p>
+              <p class="action-desc" id="terminal-o2-generator-field">FIELD RADIUS 0.0u // REFILL OFFLINE</p>
+              <p class="action-desc action-desc--hint" id="terminal-o2-generator-hint">REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.</p>
+              <button class="terminal-action-btn" id="terminal-btn-o2-generator">REPAIR GENERATOR</button>
             </div>
           </div>
+
         </div>
 
         <div class="terminal-footer">
           <div class="telemetry-ticker" id="terminal-status-ticker">WARNING: RADIATION LEVELS DETECTED OUTSIDE SHIP ENCLOSURE. DOCK SECURE.</div>
         </div>
+        </div><!-- /.terminal-body -->
       </div>
     </div>
 

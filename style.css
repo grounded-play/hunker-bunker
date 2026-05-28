@@ -3085,9 +3085,43 @@ body.mission-intro-active #game-container {
   padding: calc(var(--vu) * 4) !important;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Inner scroll wrapper — sits inside the border-radius so the track is clipped by it */
+.terminal-body {
+  flex: 1;
   overflow-x: hidden;
   overflow-y: auto;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 2.2);
+  /* inset the scrollbar so it floats clear of the panels */
+  padding-right: 10px;
+  /* Firefox: always-visible faint track with glow thumb */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--terminal-glow-rgb), 0.45) rgba(var(--terminal-glow-rgb), 0.08);
+}
+
+/* Wider container + transparent border trick = visible pill-shaped thumb */
+.terminal-body::-webkit-scrollbar {
+  width: 14px;
+}
+.terminal-body::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 10px 0; /* curved breathing room at top and bottom */
+}
+.terminal-body::-webkit-scrollbar-thumb {
+  /* transparent border carves out rounded space around the actual bar */
+  border: 5px solid transparent;
+  background-clip: padding-box;
+  background-color: rgba(var(--terminal-glow-rgb), 0.35);
+  border-radius: 999px;
+  transition: background-color 0.2s;
+}
+.terminal-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--terminal-glow-rgb), 0.75);
 }
 
 .terminal-scanline {
@@ -3160,6 +3194,72 @@ body.mission-intro-active #game-container {
 .terminal-layout--banking {
   flex: 0 0 auto;
   min-height: calc(var(--vu) * 25);
+}
+
+/* Simplified single-column shop layout */
+.terminal-layout--shop {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 3);
+  overflow: visible;
+  margin-bottom: 0;
+}
+
+.terminal-shop-bank {
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(var(--terminal-glow-rgb), 0.18);
+  border-radius: 8px;
+  padding: calc(var(--vu) * 2.5) calc(var(--vu) * 3);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.8);
+}
+
+.terminal-bank-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(var(--vu) * 1.5);
+}
+
+.terminal-bank-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vu) * 0.5);
+  background: rgba(var(--terminal-glow-rgb), 0.06);
+  border: 1px solid rgba(var(--terminal-glow-rgb), 0.12);
+  border-radius: 6px;
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 0.5);
+}
+
+.terminal-bank-cell__label {
+  font-size: calc(var(--vu) * 1.45);
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.1em;
+}
+
+.terminal-bank-cell__value {
+  font-size: calc(var(--vu) * 2.6);
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 6px rgba(var(--terminal-glow-rgb), 0.45);
+  font-variant-numeric: tabular-nums;
+}
+
+.terminal-bank-actions {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 2);
+}
+
+.terminal-bank-actions .terminal-action-btn {
+  flex-shrink: 0;
+}
+
+.terminal-bank-actions .terminal-bank-hint {
+  margin-top: 0;
 }
 
 /* Left Telemetry Column */

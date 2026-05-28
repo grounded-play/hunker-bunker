@@ -881,10 +881,29 @@ export class ThreeGame {
             event.preventDefault();
             this.interactWithConsole();
         };
+
+        // Tap the canvas itself to open the console when in range
+        this._canvasTapStartX = 0;
+        this._canvasTapStartY = 0;
+        this.handleCanvasPointerDown = (event) => {
+            this._canvasTapStartX = event.clientX;
+            this._canvasTapStartY = event.clientY;
+        };
+        this.handleCanvasTap = (event) => {
+            if (!this.inputEnabled || !this.activeInteractiveConsole) return;
+            const dx = event.clientX - this._canvasTapStartX;
+            const dy = event.clientY - this._canvasTapStartY;
+            if (Math.sqrt(dx * dx + dy * dy) < 14) {
+                this.interactWithConsole();
+            }
+        };
+
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
         this.consolePromptEl = document.getElementById('console-hud-prompt');
         this.consolePromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
+        this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
     }
 
     setKeyState(code, pressed) {
@@ -1384,7 +1403,7 @@ export class ThreeGame {
             const dz = this.player.position.z - consoleZ;
             const distance = Math.hypot(dx, dz);
 
-            if (distance < 2.05 && distance < minDistance) {
+            if (distance < 3.0 && distance < minDistance) {
                 nearestConsole = ship;
                 minDistance = distance;
             }
@@ -1524,11 +1543,6 @@ export class ThreeGame {
             const el = document.getElementById(id);
             if (el) el.textContent = String(value);
         };
-
-        setText('terminal-run-med', inventory.health);
-        setText('terminal-run-ammo', inventory.ammo);
-        setText('terminal-run-tech', inventory.weapon);
-        setText('terminal-run-coin', inventory.coin);
 
         setText('terminal-bank-med', bankState.med);
         setText('terminal-bank-ammo', bankState.ammo);
@@ -3994,6 +4008,8 @@ export class ThreeGame {
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
+        this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
         Object.values(this.scatterMaterials ?? {}).forEach((material) => material.dispose?.());
