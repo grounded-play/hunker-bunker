@@ -865,6 +865,93 @@ if (closeSettings && settingsPopup) {
     });
 }
 
+// Global Escape Key Listener for Modals
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const dialogueModal = document.getElementById('mothership-dialogue');
+        if (dialogueModal && !dialogueModal.classList.contains('hidden')) {
+            return; // Let DialogueManager handle its own Escape key
+        }
+
+        const confirmModal = document.getElementById('confirm-modal');
+        if (confirmModal && !confirmModal.classList.contains('hidden')) {
+            confirmModal.classList.add('hidden');
+            event.preventDefault();
+            return;
+        }
+
+        const audioMixerPopup = document.getElementById('audio-mixer-popup');
+        if (audioMixerPopup && !audioMixerPopup.classList.contains('hidden')) {
+            draftAudioMix = cloneAudioMix(state.settings.audioMix);
+            AudioManager.setMix(state.settings.audioMix);
+            syncAudioMixerUI(draftAudioMix);
+            setAudioMixerOpen(false);
+            event.preventDefault();
+            return;
+        }
+
+        const settingsPopup = document.getElementById('settings-popup');
+        if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
+            settingsPopup.classList.add('hidden');
+            draftAudioMix = cloneAudioMix(state.settings.audioMix);
+            AudioManager.setMix(state.settings.audioMix);
+            setAudioMixerOpen(false);
+            event.preventDefault();
+            return;
+        }
+
+        const aboutModal = document.getElementById('about-modal');
+        if (aboutModal && !aboutModal.classList.contains('hidden')) {
+            aboutModal.classList.add('hidden');
+            event.preventDefault();
+            return;
+        }
+
+        const consoleModal = document.getElementById('console-terminal-modal');
+        if (consoleModal && !consoleModal.classList.contains('hidden')) {
+            window.game?.closeConsoleModal?.();
+            event.preventDefault();
+            return;
+        }
+    }
+});
+
+// Click Outside Helper to Close Modals
+const setupClickOutside = (modalId, closeAction) => {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeAction();
+            }
+        });
+    }
+};
+
+setupClickOutside('about-modal', () => {
+    const aboutModal = document.getElementById('about-modal');
+    if (aboutModal) aboutModal.classList.add('hidden');
+});
+
+setupClickOutside('settings-popup', () => {
+    const settingsPopup = document.getElementById('settings-popup');
+    if (settingsPopup) {
+        settingsPopup.classList.add('hidden');
+        draftAudioMix = cloneAudioMix(state.settings.audioMix);
+        AudioManager.setMix(state.settings.audioMix);
+        setAudioMixerOpen(false);
+    }
+});
+
+setupClickOutside('confirm-modal', () => {
+    const confirmModal = document.getElementById('confirm-modal');
+    if (confirmModal) confirmModal.classList.add('hidden');
+});
+
+setupClickOutside('console-terminal-modal', () => {
+    window.game?.closeConsoleModal?.();
+});
+
 if (mainDebugToggle) {
     mainDebugToggle.addEventListener('change', (e) => {
         state.settings.debug = e.target.checked;
