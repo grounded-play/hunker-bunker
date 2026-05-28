@@ -13,6 +13,9 @@ dist-ssr
 coverage
 *.local
 
+# Claude work notes (local only)
+.claude-work/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

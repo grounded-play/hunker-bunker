@@ -1,4 +1,6 @@
 import { AudioManager } from './src/audio.js';
+import { CutsceneManager } from './src/cutscene.js';
+import { DialogueManager } from './src/dialogue.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
@@ -72,6 +74,9 @@ const gearSpinState = {
 let stageResizeObserver = null;
 let activeTouchPointerId = null;
 let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
+let cutsceneManager = null;
+let dialogueManager = null;
+let missionFlowRunning = false;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -241,6 +246,10 @@ function trackPickupCollected(event) {
     pickupCounterState.total += 1;
     pickupCounterState[type] += 1;
     renderPickupCounter();
+
+    // Play dynamic procedurally synthesized loot sound
+    const rarity = event?.detail?.rarity;
+    AudioManager.playProceduralLoot(type, rarity);
 }
 
 window.addEventListener('pickup-collected', trackPickupCollected);
@@ -436,6 +445,93 @@ function installStageLayoutSync() {
     }
 }
 
+function getSelectedHeroType() {
+    const selected = document.querySelector('.char-card.selected');
+    return selected?.getAttribute('data-type') || window.game?.playerType || 'SCOUT';
+}
+
+function resolveCutsceneImpactPoint() {
+    const overlay = document.getElementById('cutscene-overlay');
+    const gameContainer = document.getElementById('game-container');
+    if (!overlay || !gameContainer) {
+        return null;
+    }
+
+    const rect = overlay.getBoundingClientRect();
+    const gameRect = gameContainer.getBoundingClientRect();
+    return {
+        x: (gameRect.left - rect.left) + (gameRect.width * 0.5),
+        y: (gameRect.top - rect.top) + (gameRect.height * 0.62)
+    };
+}
+
+function ensureMissionManagers() {
+    if (!cutsceneManager) {
+        cutsceneManager = new CutsceneManager({
+            resolveImpactPoint: resolveCutsceneImpactPoint
+        });
+    }
+
+    if (!dialogueManager) {
+        dialogueManager = new DialogueManager({
+            setInputEnabled: (enabled) => {
+                window.game?.setInputEnabled?.(enabled);
+            }
+        });
+    }
+}
+
+function runDoorTransitionAsync() {
+    return new Promise((resolve) => {
+        triggerDoorTransition(
+            null,
+            () => resolve()
+        );
+    });
+}
+
+async function runMissionIntroSequence() {
+    if (missionFlowRunning) return;
+
+    ensureMissionManagers();
+    missionFlowRunning = true;
+    document.body.classList.add('mission-intro-active');
+    const game = window.game;
+    const playerType = getSelectedHeroType();
+
+    game?.setInputEnabled?.(false);
+    const consoleModal = document.getElementById('console-terminal-modal');
+    if (consoleModal) {
+        consoleModal.classList.add('hidden');
+    }
+
+    try {
+        await cutsceneManager?.play({
+            playerType,
+            allowSkip: true,
+            resolveImpactPoint: resolveCutsceneImpactPoint
+        });
+
+        const choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
+
+        if (choice === 'tutorial') {
+            // Reveal HUD/touch elements for in-world tutorial prompts.
+            document.body.classList.remove('mission-intro-active');
+            game?.setInputEnabled?.(true);
+            await dialogueManager?.startTutorialSequence({
+                game,
+                touchControlsEnabled: Boolean(state.settings.touchControls)
+            });
+        } else {
+            await runDoorTransitionAsync();
+        }
+    } finally {
+        document.body.classList.remove('mission-intro-active');
+        game?.setInputEnabled?.(true);
+        missionFlowRunning = false;
+    }
+}
+
 // --- Initialization ---
 if (playBtn) {
     playBtn.addEventListener('click', () => {
@@ -462,6 +558,7 @@ if (startBtn) {
             () => {
                 if (menu) menu.classList.add('hidden');
                 document.getElementById('ui').classList.remove('hidden');
+                window.game?.setInputEnabled?.(false);
                 resetPickupCounter();
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
@@ -475,7 +572,7 @@ if (startBtn) {
                 }
             },
             () => {
-                console.log("Mission Initialized. Tactical HUD Active.");
+                void runMissionIntroSequence();
             }
         );
     });
@@ -632,6 +729,12 @@ if (confirmYes) {
         if (confirmModal) confirmModal.classList.add('hidden');
         if (settingsPopup) settingsPopup.classList.add('hidden');
         setAudioMixerOpen(false);
+        cutsceneManager?.finishActiveRun(true);
+        dialogueManager?.cancelDialogue();
+        dialogueManager?.cancelTutorial();
+        document.body.classList.remove('mission-intro-active');
+        missionFlowRunning = false;
+        window.game?.setInputEnabled?.(true);
 
         triggerDoorTransition(
             () => {
@@ -1185,6 +1288,7 @@ function initTacticalCursor() {
 
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
+    window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     initTacticalCursor();
     installStageLayoutSync();
     setTouchDeviceMode();
@@ -1212,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load audio manifest
     const manifest = {
-        images: ['/door.png'], // Add other large images if necessary
+        images: ['/door.png', '/scout_ship.png', '/tank_ship.png', '/engineer_ship.png'],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
@@ -1284,6 +1388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             playerType: initialType
         });
     }
+    ensureMissionManagers();
 
     await AudioManager.loadAssets(manifest, (progress, itemName) => {
         if (loaderBar) loaderBar.style.width = `${progress}%`;

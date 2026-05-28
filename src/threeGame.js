@@ -105,6 +105,8 @@ export class ThreeGame {
         this.transientEffects = [];
         this.keys = { up: false, down: false, left: false, right: false };
         this.virtualInput = { x: 0, z: 0 };
+        this.inputEnabled = true;
+        this.isMoving = false;
         this.animationTimer = 0;
         this.currentFacingRow = 0;
         this.playerSpriteScale = 1.6;
@@ -809,6 +811,7 @@ export class ThreeGame {
 
     setupInput() {
         this.handleKeyDown = (event) => {
+            if (!this.inputEnabled) return;
             if (event.code === 'KeyE') {
                 this.interactWithConsole();
             }
@@ -826,6 +829,7 @@ export class ThreeGame {
     }
 
     setKeyState(code, pressed) {
+        if (!this.inputEnabled && pressed) return;
         if (code === 'ArrowUp' || code === 'KeyW') this.keys.up = pressed;
         if (code === 'ArrowDown' || code === 'KeyS') this.keys.down = pressed;
         if (code === 'ArrowLeft' || code === 'KeyA') this.keys.left = pressed;
@@ -833,8 +837,101 @@ export class ThreeGame {
     }
 
     setVirtualInput(x = 0, z = 0) {
+        if (!this.inputEnabled) {
+            this.virtualInput.x = 0;
+            this.virtualInput.z = 0;
+            return;
+        }
         this.virtualInput.x = THREE.MathUtils.clamp(x, -1, 1);
         this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
+    }
+
+    setInputEnabled(enabled = true) {
+        this.inputEnabled = Boolean(enabled);
+
+        if (this.inputEnabled) {
+            return;
+        }
+
+        this.keys.up = false;
+        this.keys.down = false;
+        this.keys.left = false;
+        this.keys.right = false;
+        this.virtualInput.x = 0;
+        this.virtualInput.z = 0;
+        this.isMoving = false;
+
+        this.activeInteractiveConsole = null;
+        const promptEl = document.getElementById('console-hud-prompt');
+        if (promptEl) {
+            promptEl.classList.add('hidden');
+            promptEl.classList.remove('visible');
+        }
+
+        const modal = document.getElementById('console-terminal-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    getPlayerPosition() {
+        if (!this.player) return null;
+        return {
+            x: this.player.position.x,
+            z: this.player.position.z
+        };
+    }
+
+    isPlayerMoving() {
+        return Boolean(this.isMoving);
+    }
+
+    getActiveShipInfo() {
+        const activeShip = this.crashedShips?.find((ship) => ship.type === this.playerType);
+        if (!activeShip) return null;
+
+        const consoleX = activeShip.tileX + activeShip.consoleOffset.x;
+        const consoleZ = activeShip.tileZ + activeShip.consoleOffset.z;
+
+        return {
+            type: activeShip.type,
+            color: activeShip.color,
+            tileX: activeShip.tileX,
+            tileZ: activeShip.tileZ,
+            elevation: activeShip.elevation,
+            consoleX,
+            consoleZ
+        };
+    }
+
+    getActiveConsoleDistance() {
+        if (!this.player) return Infinity;
+        const activeShip = this.crashedShips?.find((ship) => ship.type === this.playerType);
+        if (!activeShip) return Infinity;
+
+        const consoleX = activeShip.tileX + activeShip.consoleOffset.x;
+        const consoleZ = activeShip.tileZ + activeShip.consoleOffset.z;
+        const dx = this.player.position.x - consoleX;
+        const dz = this.player.position.z - consoleZ;
+        return Math.hypot(dx, dz);
+    }
+
+    getWorldScreenPoint(worldX, worldY = 0.1, worldZ) {
+        if (!this.camera || !this.renderer?.domElement) return null;
+        if (!Number.isFinite(worldX) || !Number.isFinite(worldY) || !Number.isFinite(worldZ)) return null;
+
+        const point = new THREE.Vector3(worldX, worldY, worldZ).project(this.camera);
+        const canvas = this.renderer.domElement;
+        const rect = canvas.getBoundingClientRect();
+        const canvasX = (point.x * 0.5 + 0.5) * rect.width;
+        const canvasY = (-point.y * 0.5 + 0.5) * rect.height;
+
+        return {
+            x: canvasX,
+            y: canvasY,
+            viewportX: rect.left + canvasX,
+            viewportY: rect.top + canvasY
+        };
     }
 
     getSpawnCompassState() {
@@ -1175,6 +1272,16 @@ export class ThreeGame {
     updateConsoles(delta, now) {
         if (!this.crashedShips || !this.player) return;
 
+        if (!this.inputEnabled) {
+            this.activeInteractiveConsole = null;
+            const promptEl = document.getElementById('console-hud-prompt');
+            if (promptEl) {
+                promptEl.classList.add('hidden');
+                promptEl.classList.remove('visible');
+            }
+            return;
+        }
+
         let nearestConsole = null;
         let minDistance = Infinity;
 
@@ -1393,6 +1500,7 @@ export class ThreeGame {
         const moveAxisX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
         const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
         const isMoving = Boolean(moveAxisX || moveAxisZ);
+        this.isMoving = isMoving;
 
         if (isMoving) {
             const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(this.moveSpeed * delta);
@@ -1420,10 +1528,21 @@ export class ThreeGame {
             this.animationTimer += delta * SPRITE_ANIMATION_SPEED;
             const column = Math.floor(this.animationTimer) % SPRITE_GRID_SIZE;
             this.updatePlayerSpriteFrame(column, this.currentFacingRow);
+
+            if (this.lastAnimationColumn === undefined) {
+                this.lastAnimationColumn = -1;
+            }
+            if (column !== this.lastAnimationColumn) {
+                this.lastAnimationColumn = column;
+                if (column === 1 || column === 3) {
+                    window.AudioManager?.playProceduralFootstep(this.playerType);
+                }
+            }
             return;
         }
 
         this.animationTimer = 0;
+        this.lastAnimationColumn = -1;
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
     }
 
@@ -2818,6 +2937,7 @@ export class ThreeGame {
         }
 
         this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, sprite.userData.type);
+        window.AudioManager?.playProceduralJunkBurst(sprite.userData.type);
 
         for (const target of this.createJunkBurstTargets(sprite.position.x, sprite.position.z, random)) {
             let placement = null;
