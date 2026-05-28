@@ -1,6 +1,8 @@
 import { AudioManager } from './src/audio.js';
+import { BankManager } from './src/bank.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DialogueManager } from './src/dialogue.js';
+import { VitalsHUD } from './src/vitals.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
@@ -20,6 +22,7 @@ const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring
 const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
 const touchCompass = touchMoveControl?.querySelector('.touch-move-control__compass');
 const touchCompassArrow = touchCompass?.querySelector('.touch-move-control__compass-arrow');
+const touchCompassRadarArrow = touchCompass?.querySelector('#touch-compass-radar-arrow');
 const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
@@ -77,6 +80,8 @@ let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 let cutsceneManager = null;
 let dialogueManager = null;
 let missionFlowRunning = false;
+let deathSequenceTimer = null;
+let damageFlashTimer = null;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -84,6 +89,9 @@ const pickupCounterState = {
     weapon: 0,
     coin: 0
 };
+const bankManager = new BankManager();
+
+window.bankManager = bankManager;
 
 function renderPickupCounter() {
     if (pickupCountTotal) {
@@ -239,6 +247,16 @@ function resetPickupCounter() {
     renderPickupCounter();
 }
 
+function getSessionInventorySnapshot() {
+    return {
+        health: pickupCounterState.health,
+        ammo: pickupCounterState.ammo,
+        weapon: pickupCounterState.weapon,
+        coin: pickupCounterState.coin,
+        total: pickupCounterState.total
+    };
+}
+
 function trackPickupCollected(event) {
     const type = event?.detail?.type;
     if (!type || !(type in pickupCounterState)) return;
@@ -254,6 +272,57 @@ function trackPickupCollected(event) {
 
 window.addEventListener('pickup-collected', trackPickupCollected);
 renderPickupCounter();
+window.pickupCounterState = pickupCounterState;
+window.resetPickupCounter = resetPickupCounter;
+window.getPickupCounterState = getSessionInventorySnapshot;
+window.vitalsHUD = new VitalsHUD();
+
+function clearTimedClass(timerRefName, className) {
+    if (timerRefName === 'damage') {
+        if (damageFlashTimer) {
+            clearTimeout(damageFlashTimer);
+            damageFlashTimer = null;
+        }
+    } else if (timerRefName === 'death') {
+        if (deathSequenceTimer) {
+            clearTimeout(deathSequenceTimer);
+            deathSequenceTimer = null;
+        }
+    }
+
+    document.body.classList.remove(className);
+}
+
+function triggerDamageFlash() {
+    clearTimedClass('damage', 'player-damage-flash');
+    document.body.classList.add('player-damage-flash');
+    damageFlashTimer = window.setTimeout(() => {
+        document.body.classList.remove('player-damage-flash');
+        damageFlashTimer = null;
+    }, 240);
+}
+
+function runDeathSequence() {
+    if (deathSequenceTimer) return;
+
+    window.game?.setInputEnabled?.(false);
+    document.body.classList.add('player-dead-flash');
+    AudioManager.play('ui_error', { volume: 0.7 });
+
+    deathSequenceTimer = window.setTimeout(() => {
+        window.game?.respawnPlayer?.();
+        window.game?.setInputEnabled?.(true);
+        document.body.classList.remove('player-dead-flash');
+        deathSequenceTimer = null;
+    }, 1000);
+}
+
+window.addEventListener('player-damaged', triggerDamageFlash);
+window.addEventListener('player-death', runDeathSequence);
+window.addEventListener('player-respawned', () => {
+    clearTimedClass('death', 'player-dead-flash');
+    window.game?.setInputEnabled?.(true);
+});
 
 function isTouchDevice() {
     const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
@@ -321,6 +390,11 @@ function updateTouchCompass() {
         touchCompassArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
         touchCompassArrow.style.opacity = '0.35';
         touchCompassDistance.textContent = '0u';
+        if (touchCompassRadarArrow) {
+            touchCompassRadarArrow.classList.add('hidden');
+            touchCompassRadarArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
+            touchCompassRadarArrow.style.opacity = '0';
+        }
         return;
     }
 
@@ -329,6 +403,21 @@ function updateTouchCompass() {
     touchCompassArrow.style.transform = `translate(-50%, -100%) rotate(${angle.toFixed(2)}deg)`;
     touchCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
     touchCompassDistance.textContent = formatTouchCompassDistance(distance);
+
+    const radarState = compassState.radar ?? null;
+    const radarActive = Boolean(radarState?.active);
+    if (touchCompassRadarArrow) {
+        if (!radarActive) {
+            touchCompassRadarArrow.classList.add('hidden');
+            touchCompassRadarArrow.style.opacity = '0';
+        } else {
+            const radarAngle = Number.isFinite(radarState.angle) ? radarState.angle : 0;
+            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
+            touchCompassRadarArrow.classList.remove('hidden');
+            touchCompassRadarArrow.style.transform = `translate(-50%, -100%) rotate(${radarAngle.toFixed(2)}deg)`;
+            touchCompassRadarArrow.style.opacity = radarDistance <= 0.05 ? '0.35' : '0.95';
+        }
+    }
 }
 
 function installTouchCompass() {
@@ -557,9 +646,11 @@ if (startBtn) {
         triggerDoorTransition(
             () => {
                 if (menu) menu.classList.add('hidden');
-                document.getElementById('ui').classList.remove('hidden');
                 window.game?.setInputEnabled?.(false);
                 resetPickupCounter();
+                bankManager.reset();
+                window.game?.respawnPlayer?.({ resetRunState: true, skipEffects: true });
+                document.getElementById('ui').classList.remove('hidden');
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
 
@@ -733,12 +824,22 @@ if (confirmYes) {
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
         document.body.classList.remove('mission-intro-active');
+        document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical');
+        if (damageFlashTimer) {
+            clearTimeout(damageFlashTimer);
+            damageFlashTimer = null;
+        }
+        if (deathSequenceTimer) {
+            clearTimeout(deathSequenceTimer);
+            deathSequenceTimer = null;
+        }
         missionFlowRunning = false;
         window.game?.setInputEnabled?.(true);
 
         triggerDoorTransition(
             () => {
                 if (document.getElementById('ui')) document.getElementById('ui').classList.add('hidden');
+                window.game?.setInputEnabled?.(false);
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
                 if (menu) menu.classList.remove('hidden');
@@ -1385,9 +1486,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
         window.game = new ThreeGame({
             parent: 'game-container',
-            playerType: initialType
+            playerType: initialType,
+            bankManager
         });
     }
+    window.game?.emitVitalsState?.();
     ensureMissionManagers();
 
     await AudioManager.loadAssets(manifest, (progress, itemName) => {

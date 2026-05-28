@@ -167,6 +167,9 @@ export class DialogueManager {
         await this.tutorialStepMovement(runId, game, touchControlsEnabled);
         if (!this.isTutorialRunActive(runId)) return;
 
+        await this.tutorialStepVitals(runId);
+        if (!this.isTutorialRunActive(runId)) return;
+
         await this.tutorialStepPickup(runId);
         if (!this.isTutorialRunActive(runId)) return;
 
@@ -177,6 +180,15 @@ export class DialogueManager {
         if (!this.isTutorialRunActive(runId)) return;
 
         await this.tutorialStepConsole(runId, game, touchControlsEnabled);
+        if (!this.isTutorialRunActive(runId)) return;
+
+        await this.tutorialStepConsoleAccess(runId, touchControlsEnabled);
+        if (!this.isTutorialRunActive(runId)) return;
+
+        await this.tutorialStepDeposit(runId);
+        if (!this.isTutorialRunActive(runId)) return;
+
+        await this.tutorialStepGoals(runId);
         if (!this.isTutorialRunActive(runId)) return;
 
         await this.showTutorialPrompt(runId, {
@@ -325,6 +337,19 @@ export class DialogueManager {
         this.hideTutorialPrompt(runId);
     }
 
+    async tutorialStepVitals(runId) {
+        await this.showTutorialPrompt(runId, {
+            icon: '♥',
+            text: 'VITALS ARE NOW IN THE TOP HUD. KEEP AN EYE ON HEARTS + O2 AT ALL TIMES.'
+        });
+
+        const panel = document.getElementById('vitals-panel');
+        panel?.classList.add('tutorial-focus-pulse');
+        await this.sleep(runId, 3200);
+        panel?.classList.remove('tutorial-focus-pulse');
+        this.hideTutorialPrompt(runId);
+    }
+
     async tutorialStepPickup(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '◍',
@@ -375,9 +400,69 @@ export class DialogueManager {
         await this.waitUntil(runId, () => {
             const distance = Number(game.getActiveConsoleDistance?.());
             return Number.isFinite(distance) && distance <= 4;
-        }, { timeoutMs: 6000, intervalMs: 80 });
+        }, { timeoutMs: 20000, intervalMs: 80 });
 
         consolePrompt?.classList.remove('tutorial-focus-pulse');
+        this.hideTutorialPrompt(runId);
+    }
+
+    async tutorialStepConsoleAccess(runId, touchControlsEnabled) {
+        await this.showTutorialPrompt(runId, {
+            icon: touchControlsEnabled ? 'TAP' : 'E',
+            text: touchControlsEnabled
+                ? 'OPEN THE TERMINAL TO ACCESS BANKING AND THE O2 GENERATOR MODULE.'
+                : 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING AND THE O2 GENERATOR MODULE.'
+        });
+
+        const modal = document.getElementById('console-terminal-modal');
+        await this.waitUntil(runId, () => Boolean(modal && !modal.classList.contains('hidden')), {
+            timeoutMs: 16000,
+            intervalMs: 80
+        });
+
+        this.hideTutorialPrompt(runId);
+    }
+
+    async tutorialStepDeposit(runId) {
+        await this.showTutorialPrompt(runId, {
+            icon: '⤴',
+            text: 'USE DEPOSIT ALL TO TRANSFER RUN RESOURCES INTO YOUR PERSISTENT BANK.'
+        });
+
+        const depositBtn = document.getElementById('terminal-deposit-all');
+        depositBtn?.classList.add('tutorial-focus-pulse');
+
+        const deposited = await this.waitForWindowEvent(runId, 'bank-deposited', 18000);
+        if (!deposited) {
+            await this.sleep(runId, 1800);
+        }
+
+        depositBtn?.classList.remove('tutorial-focus-pulse');
+        this.hideTutorialPrompt(runId);
+    }
+
+    async tutorialStepGoals(runId) {
+        await this.showTutorialPrompt(runId, {
+            icon: '◈',
+            text: 'REPAIR THE O2 GENERATOR FIRST. UPGRADING AGAIN WILL EXPAND THE BLUE O2 FIELD.'
+        });
+
+        const generatorSection = document.getElementById('o2-generator-section');
+        generatorSection?.classList.add('tutorial-focus-pulse');
+
+        const upgraded = await this.waitForWindowEvent(runId, 'o2-generator-upgraded', 18000);
+        if (!upgraded) {
+            await this.sleep(runId, 2200);
+        }
+
+        generatorSection?.classList.remove('tutorial-focus-pulse');
+        this.hideTutorialPrompt(runId);
+
+        await this.showTutorialPrompt(runId, {
+            icon: '◌',
+            text: 'WHEN THE BLUE CIRCLE APPEARS ON THE FLOOR, STAND INSIDE IT TO REFILL O2.'
+        });
+        await this.sleep(runId, 2600);
         this.hideTutorialPrompt(runId);
     }
 

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BankManager, O2_GENERATOR_UPGRADES } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 
 const PLAYER_COLORS = {
@@ -22,10 +23,23 @@ const PICKUP_DISTRIBUTION = {
     stray: 0.1
 };
 const PICKUP_TYPES = [
-    { type: 'health', weight: 0.42 },
-    { type: 'ammo', weight: 0.4 },
-    { type: 'weapon', weight: 0.18 }
+    { type: 'health', weight: 0.35 },
+    { type: 'ammo', weight: 0.35 },
+    { type: 'weapon', weight: 0.18 },
+    { type: 'coin', weight: 0.12 }
 ];
+const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
+const O2_DANGER_THRESHOLD = 25;
+const O2_DRAIN_RATE_DANGER_MULT = 1.5;
+const O2_HEALTH_DRAIN_INTERVAL = 20;
+const BASE_HEARTS = 3;
+const UPGRADED_HEARTS = 4;
+
+const O2_GENERATOR_BUTTON_ID = 'terminal-btn-o2-generator';
+const O2_GENERATOR_RING_BASE_RADIUS = 1;
+const O2_GENERATOR_RING_BAND_THICKNESS = 0.24;
+const O2_MODULE_COLLISION_RADIUS = 0.5;
+const O2_MODULE_OFFSET = Object.freeze({ x: 1.75, z: 1.2 });
 const PICKUP_MAGNET_RADIUS = 3.4;
 const PICKUP_COLLECT_RADIUS = 0.72;
 const PICKUP_COLLECT_DURATION = 0.2;
@@ -75,7 +89,7 @@ const JUNK_LOOT_BIAS = {
 };
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'SCOUT' } = {}) {
+    constructor({ parent, playerType = 'SCOUT', bankManager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -115,6 +129,17 @@ export class ThreeGame {
         this.playerMarkerHeight = 0.05;
         this.lastTime = performance.now();
         this.raycaster = new THREE.Raycaster();
+        this.bank = bankManager instanceof BankManager ? bankManager : new BankManager();
+        this.playerVitals = {
+            hp: BASE_HEARTS,
+            maxHp: BASE_HEARTS,
+            o2: 100,
+            o2HealthTimer: 0
+        };
+        this.isPlayerDead = false;
+        this.o2DispatchTimer = 0;
+        this.terminalCloseListenerBound = false;
+        this.o2BubbleObjects = null;
 
         this.scale = {
             refresh: () => this.resize()
@@ -582,6 +607,7 @@ export class ThreeGame {
         const tankShipMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
         const engineerShipMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
         const consoleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.05, depthWrite: true, depthTest: true });
+        const o2ModuleMat = new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.04, depthWrite: true, depthTest: true });
 
         // Load textures using our high-fidelity chroma-key transparency shader to strip black backgrounds perfectly!
         this.loadKeyedSpriteTexture('/scout_ship.png', 15, (tex) => {
@@ -600,6 +626,10 @@ export class ThreeGame {
             consoleMat.map = tex;
             consoleMat.needsUpdate = true;
         });
+        this.loadKeyedSpriteTexture('/module_o2_generator.png', 18, (tex) => {
+            o2ModuleMat.map = tex;
+            o2ModuleMat.needsUpdate = true;
+        }, { cropBottomRatio: 0.16 });
 
         // Placements relative to spawn (which is 9, 9 in starting chunk)
         this.crashedShips = [
@@ -612,6 +642,7 @@ export class ThreeGame {
                 elevation: 0.1,
                 material: scoutShipMat,
                 consoleOffset: { x: -1.6, z: 1.6 },
+                o2ModuleOffset: { ...O2_MODULE_OFFSET },
                 color: 0x7dff5a
             },
             {
@@ -623,6 +654,7 @@ export class ThreeGame {
                 elevation: 0.1,
                 material: tankShipMat,
                 consoleOffset: { x: -1.6, z: 1.6 },
+                o2ModuleOffset: { ...O2_MODULE_OFFSET },
                 color: 0xffb700
             },
             {
@@ -634,6 +666,7 @@ export class ThreeGame {
                 elevation: 0.1,
                 material: engineerShipMat,
                 consoleOffset: { x: -1.6, z: 1.6 },
+                o2ModuleOffset: { ...O2_MODULE_OFFSET },
                 color: 0x00e5ff
             }
         ];
@@ -688,6 +721,27 @@ export class ThreeGame {
             consoleSprite.renderOrder = 4;
             this.scene.add(consoleSprite);
 
+            // O2 generator module near each crashed ship
+            const moduleX = ship.tileX + ship.o2ModuleOffset.x;
+            const moduleZ = ship.tileZ + ship.o2ModuleOffset.z;
+            ship.o2ModuleX = moduleX;
+            ship.o2ModuleZ = moduleZ;
+
+            const moduleShadowGeo = new THREE.CircleGeometry(0.48, 32);
+            const moduleShadow = new THREE.Mesh(moduleShadowGeo, consoleShadowMat);
+            moduleShadow.rotation.x = -Math.PI / 2;
+            moduleShadow.position.set(moduleX, 0.021, moduleZ);
+            this.scene.add(moduleShadow);
+            ship.o2ModuleShadow = moduleShadow;
+
+            const moduleSprite = new THREE.Sprite(o2ModuleMat);
+            moduleSprite.center.set(0.5, 0.08);
+            moduleSprite.position.set(moduleX, 0.09, moduleZ);
+            moduleSprite.scale.set(1.58, 1.58, 1);
+            moduleSprite.renderOrder = 4;
+            this.scene.add(moduleSprite);
+            ship.o2ModuleSprite = moduleSprite;
+
             // 4. Interactive Console Neon Glowing Ring (Pulsing Indicator)
             const ringGeo = new THREE.RingGeometry(0.38, 0.44, 32);
             const ringMat = new THREE.MeshBasicMaterial({
@@ -709,7 +763,7 @@ export class ThreeGame {
             this.scene.add(terminalLight);
 
             // Store all 3D objects associated with this base so we can toggle visibility
-            ship.threeObjects = [shadow, shipSprite, consoleShadow, consoleSprite, ringMesh, terminalLight];
+            ship.threeObjects = [shadow, shipSprite, consoleShadow, consoleSprite, moduleShadow, moduleSprite, ringMesh, terminalLight];
         }
 
         this.updateCrashedShipsVisibility(false);
@@ -754,12 +808,17 @@ export class ThreeGame {
         this.playerMarker.visible = false;
         this.scene.add(this.playerMarker);
 
+        this.syncPersistentUpgrades();
+        this.resetVitalsForRun({ emit: false });
+
         const spawn = this.getSpawnTile();
         this.player.position.set(spawn.x, 0, spawn.y);
         this.scene.add(this.player);
         this.playerGlow.position.set(spawn.x, 1.6, spawn.y);
         this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
+        this.ensureO2BubbleVisualState();
+        this.emitVitalsState();
     }
 
     createHiddenPlayerMarker() {
@@ -964,7 +1023,11 @@ export class ThreeGame {
             ? THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY))
             : 0;
 
-        return { angle, distance };
+        return {
+            angle,
+            distance,
+            radar: this.getRadarCompassState()
+        };
     }
 
     updatePlayerType(type) {
@@ -978,6 +1041,8 @@ export class ThreeGame {
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
 
         this.updateCrashedShipsVisibility(true);
+        this.ensureO2BubbleVisualState();
+        this.emitVitalsState();
     }
 
     updateCrashedShipsVisibility(poof = false) {
@@ -1113,7 +1178,7 @@ export class ThreeGame {
         });
     }
 
-    loadKeyedSpriteTexture(path, threshold = 15, onLoad = null) {
+    loadKeyedSpriteTexture(path, threshold = 15, onLoad = null, options = {}) {
         const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
@@ -1121,11 +1186,27 @@ export class ThreeGame {
 
         const image = new Image();
         image.onload = () => {
+            const cropBottomRatioRaw = Number(options?.cropBottomRatio);
+            const cropBottomRatio = Number.isFinite(cropBottomRatioRaw)
+                ? THREE.MathUtils.clamp(cropBottomRatioRaw, 0, 0.9)
+                : 0;
+            const sourceHeight = Math.max(1, Math.floor(image.height * (1 - cropBottomRatio)));
+
             const canvas = document.createElement('canvas');
             canvas.width = image.width;
-            canvas.height = image.height;
+            canvas.height = sourceHeight;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(image, 0, 0);
+            ctx.drawImage(
+                image,
+                0,
+                0,
+                image.width,
+                sourceHeight,
+                0,
+                0,
+                image.width,
+                sourceHeight
+            );
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imgData.data;
@@ -1266,13 +1347,15 @@ export class ThreeGame {
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
         this.updateConsoles(delta, now);
+        this.updateVitals(delta);
         this.renderer.render(this.scene, this.camera);
     }
 
     updateConsoles(delta, now) {
         if (!this.crashedShips || !this.player) return;
 
-        if (!this.inputEnabled) {
+        const hudActive = !document.getElementById('ui')?.classList.contains('hidden');
+        if (!this.inputEnabled || !hudActive) {
             this.activeInteractiveConsole = null;
             const promptEl = document.getElementById('console-hud-prompt');
             if (promptEl) {
@@ -1301,7 +1384,7 @@ export class ThreeGame {
             const dz = this.player.position.z - consoleZ;
             const distance = Math.hypot(dx, dz);
 
-            if (distance < 1.6 && distance < minDistance) {
+            if (distance < 2.05 && distance < minDistance) {
                 nearestConsole = ship;
                 minDistance = distance;
             }
@@ -1318,7 +1401,7 @@ export class ThreeGame {
                 const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
                 const shouldUseTapLabel = Boolean(touchMoveVisible);
                 if (actionText) {
-                    actionText.textContent = `${shouldUseTapLabel ? 'TAP TO ACCESS' : 'PRESS E TO ACCESS'} ${nearestConsole.type} BASE TELEMETRY`;
+                    actionText.textContent = `${shouldUseTapLabel ? 'TAP TO ACCESS' : 'PRESS E TO ACCESS'} ${nearestConsole.type} BASE SHOP`;
                 }
                 if (promptKey) {
                     promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'E';
@@ -1347,6 +1430,213 @@ export class ThreeGame {
         this.openConsoleModal(this.activeInteractiveConsole);
     }
 
+    getSessionInventory() {
+        const snapshot = window.getPickupCounterState?.();
+        if (!snapshot || typeof snapshot !== 'object') {
+            return { health: 0, ammo: 0, weapon: 0, coin: 0, total: 0 };
+        }
+
+        const health = Number.isFinite(snapshot.health) ? Math.max(0, Math.floor(snapshot.health)) : 0;
+        const ammo = Number.isFinite(snapshot.ammo) ? Math.max(0, Math.floor(snapshot.ammo)) : 0;
+        const weapon = Number.isFinite(snapshot.weapon) ? Math.max(0, Math.floor(snapshot.weapon)) : 0;
+        const coin = Number.isFinite(snapshot.coin) ? Math.max(0, Math.floor(snapshot.coin)) : 0;
+
+        return {
+            health,
+            ammo,
+            weapon,
+            coin,
+            total: health + ammo + weapon + coin
+        };
+    }
+
+    getO2GeneratorState(bankState = this.bank.getState()) {
+        const level = Number.isFinite(bankState?.o2GeneratorLevel)
+            ? Math.max(0, Math.floor(bankState.o2GeneratorLevel))
+            : 0;
+        const currentUpgrade = O2_GENERATOR_UPGRADES.find((entry) => entry.level === level) ?? null;
+        const nextUpgrade = O2_GENERATOR_UPGRADES.find((entry) => entry.level === level + 1) ?? null;
+
+        return {
+            level,
+            isOnline: level > 0,
+            maxed: !nextUpgrade,
+            currentUpgrade,
+            nextUpgrade,
+            radius: currentUpgrade?.radius ?? 0,
+            refillRate: currentUpgrade?.refillRate ?? 0
+        };
+    }
+
+    formatResourceCost(cost = {}) {
+        const rows = [];
+        const med = Number.isFinite(cost.med) ? Math.max(0, Math.floor(cost.med)) : 0;
+        const ammo = Number.isFinite(cost.ammo) ? Math.max(0, Math.floor(cost.ammo)) : 0;
+        const tech = Number.isFinite(cost.tech) ? Math.max(0, Math.floor(cost.tech)) : 0;
+        const coin = Number.isFinite(cost.coin) ? Math.max(0, Math.floor(cost.coin)) : 0;
+
+        if (tech > 0) rows.push(`${tech} TECH`);
+        if (med > 0) rows.push(`${med} MED`);
+        if (ammo > 0) rows.push(`${ammo} AMMO`);
+        if (coin > 0) rows.push(`${coin} COIN`);
+
+        return rows.length > 0 ? rows.join(' / ') : 'NO COST';
+    }
+
+    getO2GeneratorButtonState(generatorState) {
+        if (generatorState.maxed) {
+            return {
+                stateClass: 'btn-state--online',
+                label: 'FIELD AT MAX RANGE',
+                enabled: false
+            };
+        }
+
+        if (!generatorState.nextUpgrade) {
+            return {
+                stateClass: 'btn-state--locked',
+                label: 'NO UPGRADE PATH',
+                enabled: false
+            };
+        }
+
+        const affordable = this.bank.canAfford(generatorState.nextUpgrade.cost);
+        if (!affordable) {
+            return {
+                stateClass: 'btn-state--insufficient',
+                label: `NEED ${this.formatResourceCost(generatorState.nextUpgrade.cost)}`,
+                enabled: false
+            };
+        }
+
+        return {
+            stateClass: 'btn-state--available',
+            label: generatorState.level === 0 ? 'REPAIR GENERATOR' : 'UPGRADE FIELD RADIUS',
+            enabled: true
+        };
+    }
+
+    renderConsoleBanking(ship) {
+        const inventory = this.getSessionInventory();
+        const bankState = this.bank.getState();
+        const generatorState = this.getO2GeneratorState(bankState);
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(value);
+        };
+
+        setText('terminal-run-med', inventory.health);
+        setText('terminal-run-ammo', inventory.ammo);
+        setText('terminal-run-tech', inventory.weapon);
+        setText('terminal-run-coin', inventory.coin);
+
+        setText('terminal-bank-med', bankState.med);
+        setText('terminal-bank-ammo', bankState.ammo);
+        setText('terminal-bank-tech', bankState.tech);
+        setText('terminal-bank-coin', bankState.coin);
+
+        const hint = document.getElementById('terminal-bank-hint');
+        if (hint) {
+            if (inventory.total > 0) {
+                hint.textContent = 'DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.';
+            } else {
+                hint.textContent = 'DEPOSIT RESOURCES TO FUND O2 REPAIRS.';
+            }
+        }
+
+        const statusEl = document.getElementById('terminal-o2-generator-status');
+        if (statusEl) {
+            statusEl.textContent = generatorState.isOnline
+                ? `ONLINE // LVL ${generatorState.level}`
+                : 'OFFLINE // REPAIR REQUIRED';
+        }
+
+        const costEl = document.getElementById('terminal-o2-generator-cost');
+        if (costEl) {
+            costEl.textContent = generatorState.nextUpgrade
+                ? `NEXT COST: ${this.formatResourceCost(generatorState.nextUpgrade.cost)}`
+                : 'NEXT COST: NONE';
+        }
+
+        const fieldEl = document.getElementById('terminal-o2-generator-field');
+        if (fieldEl) {
+            fieldEl.textContent = generatorState.isOnline
+                ? `FIELD RADIUS ${generatorState.radius.toFixed(1)}u // REFILL ${generatorState.refillRate.toFixed(1)}%/s`
+                : 'FIELD RADIUS 0.0u // REFILL OFFLINE';
+        }
+
+        const generatorHint = document.getElementById('terminal-o2-generator-hint');
+        if (generatorHint) {
+            if (generatorState.maxed) {
+                generatorHint.textContent = 'O2 GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.';
+            } else if (!generatorState.isOnline) {
+                generatorHint.textContent = 'REPAIR THIS MODULE TO CREATE A SAFE O2 ZONE NEAR YOUR SHIP.';
+            } else {
+                generatorHint.textContent = 'UPGRADES EXPAND THE BLUE O2 FIELD SO YOU CAN REFILL FROM FURTHER OUT.';
+            }
+        }
+
+        const upgradeBtn = document.getElementById(O2_GENERATOR_BUTTON_ID);
+        if (upgradeBtn) {
+            const buttonState = this.getO2GeneratorButtonState(generatorState);
+            upgradeBtn.textContent = buttonState.label;
+            upgradeBtn.disabled = !buttonState.enabled;
+            upgradeBtn.classList.remove('btn-state--online', 'btn-state--locked', 'btn-state--insufficient', 'btn-state--available');
+            upgradeBtn.classList.add(buttonState.stateClass);
+        }
+
+        const ticker = document.getElementById('terminal-status-ticker');
+        if (ticker) {
+            if (this.isPlayerDead) {
+                ticker.textContent = 'WARNING: EXOSUIT LIFE SUPPORT FAILURE DETECTED.';
+            } else if (this.playerVitals.o2 <= O2_DANGER_THRESHOLD) {
+                ticker.textContent = 'WARNING: O2 LEVELS CRITICAL. RETURN TO SHIP IMMEDIATELY.';
+            } else if (!generatorState.isOnline) {
+                ticker.textContent = 'ALERT: O2 GENERATOR OFFLINE. REPAIR IS STRONGLY ADVISED.';
+            } else if (!generatorState.maxed) {
+                ticker.textContent = `O2 FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. PAY TO EXPAND RANGE.`;
+            } else if (ship) {
+                ticker.textContent = `${ship.type} BASE LINK STABLE. O2 FIELD OPERATING AT MAXIMUM RANGE.`;
+            }
+        }
+    }
+
+    handleDepositAll(ship) {
+        const inventory = this.getSessionInventory();
+        if (inventory.total <= 0) {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+
+        this.bank.deposit(inventory);
+        window.resetPickupCounter?.();
+        window.AudioManager?.play('ui_click', { volume: 0.62 });
+        this.renderConsoleBanking(ship);
+    }
+
+    attemptO2GeneratorUpgrade(ship) {
+        const upgrade = this.bank.upgradeO2Generator();
+        if (!upgrade) {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+
+        this.syncPersistentUpgrades();
+        this.ensureO2BubbleVisualState();
+        this.emitO2State();
+        window.dispatchEvent(new CustomEvent('o2-bubble-activated', {
+            detail: {
+                active: true,
+                level: upgrade.level,
+                radius: upgrade.radius
+            }
+        }));
+        window.AudioManager?.play('class_lock', { volume: 0.55 });
+        this.renderConsoleBanking(ship);
+    }
+
     openConsoleModal(ship) {
         const modal = document.getElementById('console-terminal-modal');
         if (!modal) return;
@@ -1369,116 +1659,23 @@ export class ThreeGame {
             badge.textContent = `${ship.type} BASE STATUS ${isActive ? '[ACTIVE EXOSUIT]' : '[STANDBY]'}`;
         }
 
-        // Initial setup for progress bars
-        this.baseUpgrades = this.baseUpgrades || {};
-        this.baseUpgrades[ship.type] = this.baseUpgrades[ship.type] || { hull: 0, radar: 0, reactor: 0 };
-        const upgrades = this.baseUpgrades[ship.type];
+        this.syncPersistentUpgrades();
+        this.renderConsoleBanking(ship);
 
-        const reactorStability = document.getElementById('telemetry-reactor-stability');
-        const reactorPct = document.getElementById('telemetry-reactor-percent');
-        const shieldIntensity = document.getElementById('telemetry-shield-intensity');
-        const shieldPct = document.getElementById('telemetry-shield-percent');
-        const energyLevel = document.getElementById('telemetry-energy-level');
-
-        if (reactorStability) {
-            const percent = Math.min(100, 91.2 + upgrades.reactor * 1.5);
-            reactorStability.style.width = `${percent}%`;
-            if (reactorPct) reactorPct.textContent = `${percent.toFixed(1)}% STABLE`;
+        const depositBtn = document.getElementById('terminal-deposit-all');
+        if (depositBtn) {
+            depositBtn.onclick = () => this.handleDepositAll(ship);
         }
 
-        if (shieldIntensity) {
-            const percent = Math.min(100, 68.0 + upgrades.hull * 6.4);
-            shieldIntensity.style.width = `${percent}%`;
-            if (shieldPct) shieldPct.textContent = `${percent.toFixed(1)}% INTENSITY`;
-        }
-
-        if (energyLevel) {
-            energyLevel.textContent = `${3400 + upgrades.reactor * 250} / 5,000 MW`;
-        }
-
-        // Hook up Hull and Radar buttons
-        const hullBtn = document.getElementById('terminal-btn-hull');
-        const radarBtn = document.getElementById('terminal-btn-radar');
-
-        if (hullBtn) {
-            hullBtn.textContent = upgrades.hull >= 5 ? 'MAX LEVEL' : `UPGRADE [LEVEL ${upgrades.hull + 1}]`;
-            hullBtn.replaceWith(hullBtn.cloneNode(true));
-            const newHullBtn = document.getElementById('terminal-btn-hull');
-            newHullBtn.addEventListener('click', () => {
-                if (upgrades.hull >= 5) return;
-                upgrades.hull += 1;
-                window.AudioManager?.play('class_lock', { volume: 0.5 });
-                newHullBtn.textContent = upgrades.hull >= 5 ? 'MAX LEVEL' : `UPGRADE [LEVEL ${upgrades.hull + 1}]`;
-                if (shieldIntensity) {
-                    const percent = Math.min(100, 68.0 + upgrades.hull * 6.4);
-                    shieldIntensity.style.width = `${percent}%`;
-                    if (shieldPct) shieldPct.textContent = `${percent.toFixed(1)}% INTENSITY`;
-                }
-            });
-        }
-
-        if (radarBtn) {
-            radarBtn.textContent = upgrades.radar >= 5 ? 'MAX LEVEL' : `UPGRADE [LEVEL ${upgrades.radar + 1}]`;
-            radarBtn.replaceWith(radarBtn.cloneNode(true));
-            const newRadarBtn = document.getElementById('terminal-btn-radar');
-            newRadarBtn.addEventListener('click', () => {
-                if (upgrades.radar >= 5) return;
-                upgrades.radar += 1;
-                window.AudioManager?.play('ui_scan_ping', { volume: 0.6 });
-                newRadarBtn.textContent = upgrades.radar >= 5 ? 'MAX LEVEL' : `UPGRADE [LEVEL ${upgrades.radar + 1}]`;
-            });
-        }
-
-        // Dynamically morph third button to Deployed Class Exosuit Swapper!
-        const reactorCard = document.getElementById('terminal-btn-reactor').closest('.action-card');
-        const reactorTitle = reactorCard?.querySelector('.action-title');
-        const reactorCost = reactorCard?.querySelector('.action-cost');
-        const reactorDesc = reactorCard?.querySelector('.action-desc');
-        const reactorBtn = document.getElementById('terminal-btn-reactor');
-
-        if (reactorTitle) reactorTitle.textContent = `SYNC CLASS: ${ship.type}`;
-        if (reactorCost) reactorCost.textContent = "✔ INTEGRATE";
-        if (reactorDesc) reactorDesc.textContent = `Synchronize combat suit module telemetry with local ${ship.type} crashed wreckage reactor matrix.`;
-        
-        if (reactorBtn) {
-            reactorBtn.textContent = `DEPLOY ${ship.type} SUIT`;
-            reactorBtn.replaceWith(reactorBtn.cloneNode(true));
-            const newReactorBtn = document.getElementById('terminal-btn-reactor');
-            newReactorBtn.addEventListener('click', () => {
-                this.updatePlayerType(ship.type);
-                
-                // Spawn beautiful micro sector scan smoke around the player in HUD space!
-                const container = document.getElementById('game-container');
-                if (container) {
-                    for (let i = 0; i < 20; i++) {
-                        const p = document.createElement('div');
-                        p.className = 'smoke-particle';
-                        const size = 30 + Math.random() * 40;
-                        p.style.width = `${size}px`;
-                        p.style.height = `${size}px`;
-                        p.style.left = `${40 + Math.random() * 20}%`;
-                        p.style.top = `${40 + Math.random() * 20}%`;
-                        p.style.setProperty('--dx', `${(Math.random() - 0.5) * 120}px`);
-                        p.style.setProperty('--dy', `${(Math.random() - 0.5) * 120}px`);
-                        container.appendChild(p);
-                        setTimeout(() => p.remove(), 1200);
-                    }
-                }
-                
-                window.AudioManager?.play('class_lock', { volume: 0.6 });
-                if (badge) {
-                    badge.textContent = `${ship.type} BASE STATUS [ACTIVE EXOSUIT]`;
-                }
-            });
+        const o2UpgradeBtn = document.getElementById(O2_GENERATOR_BUTTON_ID);
+        if (o2UpgradeBtn) {
+            o2UpgradeBtn.onclick = () => this.attemptO2GeneratorUpgrade(ship);
         }
 
         // Hook up Close button
         const closeBtn = document.getElementById('close-console-terminal');
         if (closeBtn) {
-            closeBtn.replaceWith(closeBtn.cloneNode(true));
-            document.getElementById('close-console-terminal').addEventListener('click', () => {
-                this.closeConsoleModal();
-            });
+            closeBtn.onclick = () => this.closeConsoleModal();
         }
 
         modal.classList.remove('hidden');
@@ -1492,7 +1689,363 @@ export class ThreeGame {
         }
     }
 
+    syncPersistentUpgrades() {
+        this.unlocks = this.bank.getUnlocks();
+        this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
+        this.playerVitals.maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
+        this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
+        this.ensureO2BubbleVisualState();
+    }
+
+    hasUpgrade(goalKey) {
+        return Boolean(this.unlocks?.[goalKey]);
+    }
+
+    getActiveShip() {
+        return this.crashedShips?.find((ship) => ship.type === this.playerType) ?? null;
+    }
+
+    getActiveO2GeneratorPosition() {
+        const activeShip = this.getActiveShip();
+        if (!activeShip) return null;
+
+        const x = Number.isFinite(activeShip.o2ModuleX)
+            ? activeShip.o2ModuleX
+            : activeShip.tileX + (activeShip.o2ModuleOffset?.x ?? O2_MODULE_OFFSET.x);
+        const z = Number.isFinite(activeShip.o2ModuleZ)
+            ? activeShip.o2ModuleZ
+            : activeShip.tileZ + (activeShip.o2ModuleOffset?.z ?? O2_MODULE_OFFSET.z);
+
+        return { x, z };
+    }
+
+    getActiveO2GeneratorDistance() {
+        if (!this.player) return Infinity;
+        const generatorPos = this.getActiveO2GeneratorPosition();
+        if (!generatorPos) return Infinity;
+
+        const dx = this.player.position.x - generatorPos.x;
+        const dz = this.player.position.z - generatorPos.z;
+        return Math.hypot(dx, dz);
+    }
+
+    createO2BubbleObjects() {
+        if (this.o2BubbleObjects) return;
+
+        const light = new THREE.PointLight(0x8af1ff, 0.62, 6, 2);
+        const ringInnerRadius = Math.max(0.2, O2_GENERATOR_RING_BASE_RADIUS - (O2_GENERATOR_RING_BAND_THICKNESS * 0.5));
+        const ringOuterRadius = O2_GENERATOR_RING_BASE_RADIUS + (O2_GENERATOR_RING_BAND_THICKNESS * 0.5);
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(ringInnerRadius, ringOuterRadius, 72),
+            new THREE.MeshBasicMaterial({
+                color: 0x91f2ff,
+                transparent: true,
+                opacity: 0.24,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            })
+        );
+
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.035;
+        ring.visible = false;
+        light.visible = false;
+
+        this.scene.add(light);
+        this.scene.add(ring);
+
+        this.o2BubbleObjects = { light, ring };
+    }
+
+    ensureO2BubbleVisualState() {
+        this.createO2BubbleObjects();
+        const generatorState = this.getO2GeneratorState();
+        const generatorPos = this.getActiveO2GeneratorPosition();
+        const enabled = generatorState.isOnline && Boolean(generatorPos);
+
+        if (this.crashedShips) {
+            for (const ship of this.crashedShips) {
+                const isThisOnline = (ship.type === this.playerType) && generatorState.isOnline;
+                if (ship.o2ModuleSprite) {
+                    ship.o2ModuleSprite.visible = isThisOnline;
+                }
+                if (ship.o2ModuleShadow) {
+                    ship.o2ModuleShadow.visible = isThisOnline;
+                }
+            }
+        }
+
+        if (!this.o2BubbleObjects) return;
+
+        if (!enabled) {
+            this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.ring.visible = false;
+            return;
+        }
+
+        const ringScale = Math.max(0.01, generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS);
+        this.o2BubbleObjects.ring.scale.set(ringScale, ringScale, 1);
+        this.o2BubbleObjects.light.position.set(generatorPos.x, 0.68, generatorPos.z);
+        this.o2BubbleObjects.light.distance = Math.max(6, generatorState.radius * 2.15);
+        this.o2BubbleObjects.ring.position.set(generatorPos.x, 0.035, generatorPos.z);
+        this.o2BubbleObjects.light.visible = true;
+        this.o2BubbleObjects.ring.visible = true;
+    }
+
+    resetVitalsForRun({ emit = true } = {}) {
+        this.syncPersistentUpgrades();
+        this.playerVitals.hp = this.playerVitals.maxHp;
+        this.playerVitals.o2 = 100;
+        this.playerVitals.o2HealthTimer = 0;
+        this.isPlayerDead = false;
+        this.o2DispatchTimer = 0;
+
+        if (emit) {
+            this.emitVitalsState();
+        }
+    }
+
+    emitHealthState() {
+        window.dispatchEvent(new CustomEvent('player-health-changed', {
+            detail: {
+                hp: this.playerVitals.hp,
+                maxHp: this.playerVitals.maxHp
+            }
+        }));
+    }
+
+    emitO2State() {
+        const generatorState = this.getO2GeneratorState();
+        window.dispatchEvent(new CustomEvent('player-o2-changed', {
+            detail: {
+                o2: this.playerVitals.o2,
+                bubbleActive: generatorState.isOnline
+            }
+        }));
+    }
+
+    emitVitalsState() {
+        this.emitHealthState();
+        this.emitO2State();
+    }
+
+    getPlayerVitals() {
+        return {
+            hp: this.playerVitals.hp,
+            maxHp: this.playerVitals.maxHp,
+            o2: this.playerVitals.o2
+        };
+    }
+
+    getRadarCompassState() {
+        if (!this.player || !this.hasUpgrade('radarNode')) {
+            return { active: false, angle: 0, distance: 0 };
+        }
+
+        let nearest = null;
+        let nearestDistance = Infinity;
+
+        for (const pickup of this.pickupMeshes) {
+            if (!pickup?.parent || pickup.userData?.collectedReported) continue;
+
+            const dx = pickup.position.x - this.player.position.x;
+            const dz = pickup.position.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = { dx, dz, distance };
+            }
+        }
+
+        if (!nearest) {
+            return { active: false, angle: 0, distance: 0 };
+        }
+
+        const screenX = (nearest.dx * this.cameraPlanarRight.x) + (nearest.dz * this.cameraPlanarRight.y);
+        const screenY = (nearest.dx * this.cameraPlanarForward.x) + (nearest.dz * this.cameraPlanarForward.y);
+        const angle = nearest.distance > 0.0001
+            ? THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY))
+            : 0;
+
+        return {
+            active: true,
+            angle,
+            distance: nearest.distance
+        };
+    }
+
+    healPlayer(amount = 1) {
+        if (this.isPlayerDead) return;
+        const previousHp = this.playerVitals.hp;
+        this.playerVitals.hp = Math.min(this.playerVitals.maxHp, this.playerVitals.hp + Math.max(0, amount));
+        if (this.playerVitals.hp === previousHp) return;
+
+        this.emitHealthState();
+        window.dispatchEvent(new CustomEvent('health-restored', {
+            detail: {
+                amount: this.playerVitals.hp - previousHp,
+                hp: this.playerVitals.hp,
+                maxHp: this.playerVitals.maxHp
+            }
+        }));
+    }
+
+    takeDamage(amount = 1, reason = 'hazard') {
+        if (this.isPlayerDead) return;
+        const previousHp = this.playerVitals.hp;
+        this.playerVitals.hp = Math.max(0, this.playerVitals.hp - Math.max(0, amount));
+        if (this.playerVitals.hp === previousHp) return;
+
+        this.emitHealthState();
+        window.dispatchEvent(new CustomEvent('player-damaged', {
+            detail: {
+                amount: previousHp - this.playerVitals.hp,
+                hp: this.playerVitals.hp,
+                maxHp: this.playerVitals.maxHp,
+                reason
+            }
+        }));
+
+        if (this.playerVitals.hp <= 0) {
+            this.handleDeath(reason);
+        }
+    }
+
+    handleDeath(reason = 'hazard') {
+        if (this.isPlayerDead) return;
+        this.isPlayerDead = true;
+        this.closeConsoleModal();
+        window.dispatchEvent(new CustomEvent('player-death', {
+            detail: { reason }
+        }));
+    }
+
+    clearLoadedChunksForRunReset() {
+        for (const group of this.chunkMeshes.values()) {
+            group.traverse((child) => {
+                if (child.userData?.isScatter) {
+                    child.material?.dispose?.();
+                    child.geometry?.dispose?.();
+                }
+                if (child.userData?.isPickup) {
+                    child.userData.shadow?.material?.dispose?.();
+                    child.userData.shadow?.geometry?.dispose?.();
+                    child.userData.glow?.material?.dispose?.();
+                    child.userData.glow?.geometry?.dispose?.();
+                    child.userData.burst?.material?.dispose?.();
+                    child.userData.burst?.geometry?.dispose?.();
+                }
+            });
+            this.chunkGroups.remove(group);
+        }
+
+        this.chunkMeshes.clear();
+        this.pendingChunkMounts = [];
+        this.pendingChunkMountKeys.clear();
+        this.wallMeshes = [];
+        this.pickupMeshes = [];
+        this.scatterSprites = [];
+    }
+
+    respawnPlayer({ resetRunState = true, skipEffects = false } = {}) {
+        this.resetVitalsForRun({ emit: false });
+        this.keys.up = false;
+        this.keys.down = false;
+        this.keys.left = false;
+        this.keys.right = false;
+        this.virtualInput.x = 0;
+        this.virtualInput.z = 0;
+        this.isMoving = false;
+
+        const spawn = this.getSpawnTile();
+        this.player.position.set(spawn.x, 0, spawn.y);
+        this.playerGlow.position.set(spawn.x, 1.6, spawn.y);
+        this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
+
+        if (resetRunState) {
+            window.resetPickupCounter?.();
+            this.depletedGearPileKeys.clear();
+            this.clearLoadedChunksForRunReset();
+            this.syncVisibleChunks(true);
+        }
+
+        this.ensureO2BubbleVisualState();
+        if (!skipEffects) {
+            this.spawnShipPoofEffect(spawn.x, spawn.y, PLAYER_COLORS[this.playerType] ?? 0xffffff);
+        }
+
+        this.emitVitalsState();
+        window.dispatchEvent(new CustomEvent('player-respawned', {
+            detail: {
+                hp: this.playerVitals.hp,
+                maxHp: this.playerVitals.maxHp,
+                o2: this.playerVitals.o2
+            }
+        }));
+    }
+
+    updateVitals(delta) {
+        if (!this.player || this.isPlayerDead) return;
+
+        const previousO2 = this.playerVitals.o2;
+        const generatorState = this.getO2GeneratorState();
+        const inBubble = generatorState.isOnline && this.getActiveO2GeneratorDistance() <= generatorState.radius;
+        const reactorUpgrade = this.hasUpgrade('reactorCompressor');
+
+        if (inBubble) {
+            const refillRate = reactorUpgrade
+                ? generatorState.refillRate * 1.2
+                : generatorState.refillRate;
+            this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
+            this.playerVitals.o2HealthTimer = 0;
+        } else {
+            let drainRate = O2_DRAIN_RATE_PCT_PER_SEC;
+            if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
+                drainRate *= O2_DRAIN_RATE_DANGER_MULT;
+            }
+            if (reactorUpgrade) {
+                drainRate *= 0.8;
+            }
+            this.playerVitals.o2 = Math.max(0, this.playerVitals.o2 - drainRate * delta);
+
+            if (this.playerVitals.o2 <= 0) {
+                this.playerVitals.o2HealthTimer += delta;
+                while (this.playerVitals.o2HealthTimer >= O2_HEALTH_DRAIN_INTERVAL && !this.isPlayerDead) {
+                    this.playerVitals.o2HealthTimer -= O2_HEALTH_DRAIN_INTERVAL;
+                    this.takeDamage(1, 'o2-depletion');
+                }
+            } else {
+                this.playerVitals.o2HealthTimer = 0;
+            }
+        }
+
+        if (this.o2BubbleObjects?.ring?.visible) {
+            const t = performance.now() * 0.001;
+            const ringBaseScale = Math.max(0.01, generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS);
+            const pulse = ringBaseScale * (0.97 + Math.sin(t * 2.2) * 0.06);
+            const opacity = 0.16 + Math.sin(t * 2.6) * 0.06;
+            this.o2BubbleObjects.ring.scale.set(pulse, pulse, 1);
+            this.o2BubbleObjects.ring.material.opacity = opacity;
+            this.o2BubbleObjects.light.intensity = 0.5 + Math.sin(t * 2.4) * 0.1;
+        }
+
+        this.o2DispatchTimer += delta;
+        if (Math.abs(this.playerVitals.o2 - previousO2) >= 0.05 || this.o2DispatchTimer >= 0.12) {
+            this.emitO2State();
+            const modal = document.getElementById('console-terminal-modal');
+            if (modal && !modal.classList.contains('hidden') && this.activeInteractiveConsole) {
+                this.renderConsoleBanking(this.activeInteractiveConsole);
+            }
+            this.o2DispatchTimer = 0;
+        }
+    }
+
     updatePlayer(delta) {
+        if (this.isPlayerDead) {
+            this.isMoving = false;
+            return;
+        }
+
         const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
         const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
@@ -2796,12 +3349,19 @@ export class ThreeGame {
                 if (t >= 1) {
                     if (!pickup.userData.collectedReported) {
                         pickup.userData.collectedReported = true;
-                        window.dispatchEvent(new CustomEvent('pickup-collected', {
-                            detail: {
-                                type: pickup.userData.type ?? 'unknown',
-                                rarity: pickup.userData.rarity?.key ?? null
-                            }
-                        }));
+                        const pickupType = pickup.userData.type ?? 'unknown';
+                        const rarity = pickup.userData.rarity?.key ?? null;
+                        if (pickupType === 'health' && this.playerVitals.hp < this.playerVitals.maxHp) {
+                            this.healPlayer(1);
+                            window.AudioManager?.playProceduralLoot('health', rarity);
+                        } else {
+                            window.dispatchEvent(new CustomEvent('pickup-collected', {
+                                detail: {
+                                    type: pickupType,
+                                    rarity
+                                }
+                            }));
+                        }
                     }
                     removals.push(pickup);
                 }
@@ -3129,6 +3689,20 @@ export class ThreeGame {
                 if (distConsole < (0.42 + this.playerRadius * 0.7)) {
                     return false;
                 }
+
+                // 3. O2 module collision
+                const moduleX = Number.isFinite(ship.o2ModuleX)
+                    ? ship.o2ModuleX
+                    : ship.tileX + (ship.o2ModuleOffset?.x ?? O2_MODULE_OFFSET.x);
+                const moduleZ = Number.isFinite(ship.o2ModuleZ)
+                    ? ship.o2ModuleZ
+                    : ship.tileZ + (ship.o2ModuleOffset?.z ?? O2_MODULE_OFFSET.z);
+                const dxModule = x - moduleX;
+                const dzModule = z - moduleZ;
+                const distModule = Math.hypot(dxModule, dzModule);
+                if (distModule < (O2_MODULE_COLLISION_RADIUS + this.playerRadius * 0.7)) {
+                    return false;
+                }
             }
         }
 
@@ -3438,6 +4012,13 @@ export class ThreeGame {
                 child.geometry?.dispose?.();
             });
             this.scene.remove(effect);
+        }
+        if (this.o2BubbleObjects) {
+            this.o2BubbleObjects.ring?.material?.dispose?.();
+            this.o2BubbleObjects.ring?.geometry?.dispose?.();
+            this.scene.remove(this.o2BubbleObjects.ring);
+            this.scene.remove(this.o2BubbleObjects.light);
+            this.o2BubbleObjects = null;
         }
         this.renderer.dispose();
         this.container.replaceChildren();
