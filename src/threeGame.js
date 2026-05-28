@@ -1540,7 +1540,7 @@ export class ThreeGame {
             if (inventory.total > 0) {
                 hint.textContent = 'DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.';
             } else {
-                hint.textContent = 'DEPOSIT RESOURCES TO FUND O2 REPAIRS.';
+                hint.textContent = 'DEPOSIT RESOURCES TO FUND O₂ REPAIRS.';
             }
         }
 
@@ -1568,11 +1568,11 @@ export class ThreeGame {
         const generatorHint = document.getElementById('terminal-o2-generator-hint');
         if (generatorHint) {
             if (generatorState.maxed) {
-                generatorHint.textContent = 'O2 GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.';
+                generatorHint.textContent = 'O₂ GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.';
             } else if (!generatorState.isOnline) {
-                generatorHint.textContent = 'REPAIR THIS MODULE TO CREATE A SAFE O2 ZONE NEAR YOUR SHIP.';
+                generatorHint.textContent = 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.';
             } else {
-                generatorHint.textContent = 'UPGRADES EXPAND THE BLUE O2 FIELD SO YOU CAN REFILL FROM FURTHER OUT.';
+                generatorHint.textContent = 'UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT.';
             }
         }
 
@@ -1590,13 +1590,13 @@ export class ThreeGame {
             if (this.isPlayerDead) {
                 ticker.textContent = 'WARNING: EXOSUIT LIFE SUPPORT FAILURE DETECTED.';
             } else if (this.playerVitals.o2 <= O2_DANGER_THRESHOLD) {
-                ticker.textContent = 'WARNING: O2 LEVELS CRITICAL. RETURN TO SHIP IMMEDIATELY.';
+                ticker.textContent = 'WARNING: O₂ LEVELS CRITICAL. RETURN TO SHIP IMMEDIATELY.';
             } else if (!generatorState.isOnline) {
-                ticker.textContent = 'ALERT: O2 GENERATOR OFFLINE. REPAIR IS STRONGLY ADVISED.';
+                ticker.textContent = 'ALERT: O₂ GENERATOR OFFLINE. REPAIR IS STRONGLY ADVISED.';
             } else if (!generatorState.maxed) {
-                ticker.textContent = `O2 FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. PAY TO EXPAND RANGE.`;
+                ticker.textContent = `O₂ FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. PAY TO EXPAND RANGE.`;
             } else if (ship) {
-                ticker.textContent = `${ship.type} BASE LINK STABLE. O2 FIELD OPERATING AT MAXIMUM RANGE.`;
+                ticker.textContent = `${ship.type} BASE LINK STABLE. O₂ FIELD OPERATING AT MAXIMUM RANGE.`;
             }
         }
     }

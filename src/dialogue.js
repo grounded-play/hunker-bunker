@@ -340,7 +340,7 @@ export class DialogueManager {
     async tutorialStepVitals(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '♥',
-            text: 'VITALS ARE NOW IN THE TOP HUD. KEEP AN EYE ON HEARTS + O2 AT ALL TIMES.'
+            text: 'VITALS ARE NOW IN THE TOP HUD. KEEP AN EYE ON HEARTS + O₂ AT ALL TIMES.'
         });
 
         const panel = document.getElementById('vitals-panel');
@@ -410,8 +410,8 @@ export class DialogueManager {
         await this.showTutorialPrompt(runId, {
             icon: touchControlsEnabled ? 'TAP' : 'E',
             text: touchControlsEnabled
-                ? 'OPEN THE TERMINAL TO ACCESS BANKING AND THE O2 GENERATOR MODULE.'
-                : 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING AND THE O2 GENERATOR MODULE.'
+                ? 'OPEN THE TERMINAL TO ACCESS BANKING AND THE O₂ GENERATOR MODULE.'
+                : 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING AND THE O₂ GENERATOR MODULE.'
         });
 
         const modal = document.getElementById('console-terminal-modal');
@@ -444,7 +444,7 @@ export class DialogueManager {
     async tutorialStepGoals(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '◈',
-            text: 'REPAIR THE O2 GENERATOR FIRST. UPGRADING AGAIN WILL EXPAND THE BLUE O2 FIELD.'
+            text: 'REPAIR THE O₂ GENERATOR FIRST. UPGRADING AGAIN WILL EXPAND THE BLUE O₂ FIELD.'
         });
 
         const generatorSection = document.getElementById('o2-generator-section');
@@ -460,7 +460,7 @@ export class DialogueManager {
 
         await this.showTutorialPrompt(runId, {
             icon: '◌',
-            text: 'WHEN THE BLUE CIRCLE APPEARS ON THE FLOOR, STAND INSIDE IT TO REFILL O2.'
+            text: 'WHEN THE BLUE CIRCLE APPEARS ON THE FLOOR, STAND INSIDE IT TO REFILL O₂.'
         });
         await this.sleep(runId, 2600);
         this.hideTutorialPrompt(runId);

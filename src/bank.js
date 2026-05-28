@@ -18,7 +18,7 @@ export const O2_GENERATOR_UPGRADES = Object.freeze([
     Object.freeze({
         level: 1,
         key: 'repair',
-        label: 'REPAIR O2 GENERATOR',
+        label: 'REPAIR O₂ GENERATOR',
         cost: Object.freeze({ tech: 10, med: 5, coin: 5 }),
         radius: 4.5,
         refillRate: 2.8
@@ -26,7 +26,7 @@ export const O2_GENERATOR_UPGRADES = Object.freeze([
     Object.freeze({
         level: 2,
         key: 'field-boost',
-        label: 'EXPAND O2 FIELD',
+        label: 'EXPAND O₂ FIELD',
         cost: Object.freeze({ tech: 50, med: 20, coin: 15 }),
         radius: 6,
         refillRate: 3.6
@@ -34,7 +34,7 @@ export const O2_GENERATOR_UPGRADES = Object.freeze([
     Object.freeze({
         level: 3,
         key: 'overclock',
-        label: 'OVERCLOCK O2 FIELD',
+        label: 'OVERCLOCK O₂ FIELD',
         cost: Object.freeze({ tech: 150, med: 35, coin: 40 }),
         radius: 7.5,
         refillRate: 4.6

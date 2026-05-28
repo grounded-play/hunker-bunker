@@ -98,7 +98,7 @@ export class VitalsHUD {
         document.body.classList.toggle('vitals-critical', critical);
 
         if (this.o2LabelEl) {
-            this.o2LabelEl.textContent = this.state.bubbleActive ? 'O2 ◈' : 'O2';
+            this.o2LabelEl.textContent = this.state.bubbleActive ? 'O₂ ◈' : 'O₂';
         }
     }
 
