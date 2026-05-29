@@ -2078,14 +2078,14 @@ body:not(.touch-device) .touch-move-control {
 
 .hud-header {
   position: absolute;
-  top: calc(var(--vu) * 4);
+  top: calc(var(--vu) * 3);
   left: calc(var(--vu) * 4);
-  right: 0;
+  right: calc(var(--vu) * 4);
   /* padding-right clears the pinned gear button so vitals never slide under it */
   padding-right: calc(var(--vu) * 11);
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   border: none;
   gap: calc(var(--vu) * 2.2);
   padding-bottom: 0;
@@ -2121,7 +2121,7 @@ body:not(.touch-device) .touch-move-control {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: max-content;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: calc(var(--vu) * 1.2);
   flex: 0 1 auto;
@@ -2131,7 +2131,7 @@ body:not(.touch-device) .touch-move-control {
 
 .hud-header__right {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-end;
   flex: 1 1 auto;
   min-width: 0;
@@ -2192,6 +2192,10 @@ body:not(.touch-device) .touch-move-control {
   box-shadow:
     inset 0 0 0 1px rgba(255, 190, 92, 0.12),
     0 0 10px rgba(255, 159, 28, 0.14);
+  align-items: flex-start;
+  pointer-events: auto;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .ship-status-panel {
@@ -2210,16 +2214,66 @@ body:not(.touch-device) .touch-move-control {
 .weapon-status-panel__clip {
   font-size: clamp(11px, calc(var(--vu) * 1.65), 16px);
   color: #ffd18c;
+  line-height: 1;
+  white-space: nowrap;
   text-shadow: 0 0 6px rgba(255, 159, 28, 0.36);
+  transition: opacity 0.16s ease-out, filter 0.16s ease-out;
 }
 
-.weapon-status-panel__reload {
-  font-size: clamp(9px, calc(var(--vu) * 1.2), 12px);
-  color: #ff8f8f;
+.weapon-status-panel__ammo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--vu) * 0.2);
+  min-width: 0;
+}
+
+.weapon-status-panel__cache {
+  font-size: clamp(8px, calc(var(--vu) * 1.05), 11px);
+  line-height: 1;
+  color: rgba(255, 212, 149, 0.92);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: opacity 0.16s ease-out, filter 0.16s ease-out;
+}
+
+.weapon-status-panel__reload-track {
+  position: relative;
+  width: clamp(40px, calc(var(--vu) * 6.4), 64px);
+  height: calc(var(--vu) * 0.62);
+  border-radius: 999px;
+  border: 1px solid rgba(255, 174, 116, 0.34);
+  background: rgba(36, 18, 6, 0.85);
+  overflow: hidden;
+  opacity: 0.22;
+  align-self: flex-start;
+  margin-top: calc(var(--vu) * 0.16);
+  transition: opacity 0.16s ease-out;
+}
+
+.weapon-status-panel__reload-bar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff7d29, #ffd27a);
+  box-shadow: 0 0 9px rgba(255, 162, 67, 0.5);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.08s linear;
 }
 
 .weapon-status-panel.is-reloading {
   border-color: rgba(255, 143, 143, 0.35);
+}
+
+.weapon-status-panel.is-reloading .weapon-status-panel__ammo {
+  opacity: 0.46;
+  filter: saturate(0.8);
+}
+
+.weapon-status-panel.is-reloading .weapon-status-panel__reload-track {
+  opacity: 1;
 }
 
 .weapon-status-panel.is-error {
@@ -2426,6 +2480,81 @@ body:not(.touch-device) .touch-move-control {
   border-color: rgba(0, 229, 255, 0.4);
 }
 
+@media (min-width: 901px) and (pointer: fine) {
+  .hud-header {
+    top: clamp(14px, calc(var(--vu) * 2), 34px);
+    left: clamp(20px, calc(var(--vu) * 3.2), 56px);
+    right: clamp(20px, calc(var(--vu) * 3.2), 56px);
+    gap: clamp(10px, calc(var(--vu) * 1.45), 22px);
+    padding-right: clamp(52px, calc(var(--vu) * 8.6), 110px);
+  }
+
+  .weapon-status-panel,
+  .ship-status-panel {
+    gap: clamp(6px, calc(var(--vu) * 0.78), 12px);
+    padding: clamp(6px, calc(var(--vu) * 0.8), 12px) clamp(10px, calc(var(--vu) * 1.4), 18px);
+    border-radius: 8px;
+  }
+
+  .weapon-status-panel__title,
+  .ship-status-panel__title {
+    font-size: clamp(11px, calc(var(--vu) * 1.25), 20px);
+  }
+
+  .weapon-status-panel__clip {
+    font-size: clamp(14px, calc(var(--vu) * 2.08), 30px);
+  }
+
+  .weapon-status-panel__cache {
+    font-size: clamp(10px, calc(var(--vu) * 1.2), 17px);
+  }
+
+  .weapon-status-panel__reload-track {
+    width: clamp(76px, calc(var(--vu) * 10.2), 170px);
+    height: clamp(4px, calc(var(--vu) * 0.72), 9px);
+  }
+
+  .ship-status-panel__track {
+    width: clamp(98px, calc(var(--vu) * 13), 220px);
+    height: clamp(5px, calc(var(--vu) * 0.86), 10px);
+  }
+
+  .ship-status-panel__value {
+    font-size: clamp(11px, calc(var(--vu) * 1.42), 20px);
+  }
+
+  .vitals-panel--topbar {
+    gap: clamp(10px, calc(var(--vu) * 1.6), 24px);
+    padding: clamp(7px, calc(var(--vu) * 0.9), 13px) clamp(12px, calc(var(--vu) * 1.8), 24px);
+    border-radius: 8px;
+  }
+
+  .vitals-panel--topbar .vitals-panel__title {
+    font-size: clamp(12px, calc(var(--vu) * 1.75), 22px);
+  }
+
+  .vitals-panel--topbar .vitals-panel__hearts {
+    gap: clamp(4px, calc(var(--vu) * 0.55), 8px);
+  }
+
+  .heart {
+    font-size: clamp(17px, calc(var(--vu) * 2.25), 28px);
+  }
+
+  .vitals-panel--topbar .vitals-panel__o2-row {
+    width: clamp(130px, calc(var(--vu) * 17.5), 280px);
+    gap: clamp(6px, calc(var(--vu) * 0.95), 12px);
+  }
+
+  .vitals-panel__o2-label {
+    font-size: clamp(11px, calc(var(--vu) * 1.5), 19px);
+  }
+
+  .vitals-panel__o2-pct {
+    font-size: clamp(11px, calc(var(--vu) * 1.35), 18px);
+  }
+}
+
 @keyframes vitals-o2-warning-pulse {
   0%, 100% {
     opacity: 0.92;
@@ -2537,10 +2666,6 @@ body.vitals-critical #game-viewport::after {
   font-weight: 900;
 }
 
-#pickup-row-ammo.counter-flash--error {
-  animation: ammo-error-pulse 0.35s ease-in-out 2;
-}
-
 @keyframes ammo-error-pulse {
   0%, 100% {
     filter: none;
@@ -2607,6 +2732,12 @@ body.vitals-critical #game-viewport::after {
 }
 
 @media (max-width: 900px), (pointer: coarse) {
+  .hud-header {
+    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.5));
+    left: calc(var(--vu) * 3);
+    right: calc(var(--vu) * 3);
+  }
+
   #game-container.fullscreen-mode {
     --game-left-lane: clamp(100px, 20vw, 148px);
     --game-right-gutter: clamp(8px, 2vw, 20px);
@@ -2625,39 +2756,63 @@ body.vitals-critical #game-viewport::after {
   }
 
   .pickup-counter-panel {
-    /* safe-area-inset-top + enough vu to clear the header height on all devices */
-    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 16));
+    top: calc(env(safe-area-inset-top, 0px) + clamp(74px, 12vh, 116px));
     left: calc(var(--vu) * 3.2);
-    width: clamp(96px, 19.5vw, 118px);
+    width: clamp(96px, 19vw, 116px);
     padding: clamp(8px, calc(var(--vu) * 1.9), 14px) clamp(6px, calc(var(--vu) * 1.1), 8px);
     font-size: clamp(12px, calc(var(--vu) * 1.95), 16px);
     letter-spacing: 0.02em;
   }
 
   .hud-header {
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: clamp(6px, calc(var(--vu) * 0.9), 10px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: "left center right";
+    align-items: start;
+    row-gap: 0;
+    column-gap: clamp(6px, calc(var(--vu) * 0.9), 10px);
+    padding-right: clamp(6px, calc(var(--vu) * 1.2), 12px);
+  }
+
+  .hud-header__left {
+    grid-area: left;
+    align-self: start;
   }
 
   .hud-header__center {
+    grid-area: center;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: auto;
     gap: clamp(4px, calc(var(--vu) * 0.6), 8px);
+    min-width: 0;
+    align-self: start;
+    white-space: nowrap;
   }
 
   .hud-header__right {
+    grid-area: right;
     width: auto;
     justify-content: flex-end;
     gap: clamp(6px, calc(var(--vu) * 0.9), 10px);
+    align-self: start;
   }
 
   .weapon-status-panel,
   .ship-status-panel {
     gap: clamp(4px, calc(var(--vu) * 0.5), 7px);
     padding: clamp(4px, calc(var(--vu) * 0.62), 7px) clamp(6px, calc(var(--vu) * 0.9), 10px);
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  .weapon-status-panel__cache {
+    font-size: clamp(8px, calc(var(--vu) * 0.95), 10px);
   }
 
   .ship-status-panel__track {
-    width: clamp(52px, 8.5vw, 72px);
+    width: clamp(42px, 7vw, 62px);
   }
 
   .vitals-panel {
@@ -2673,7 +2828,7 @@ body.vitals-critical #game-viewport::after {
     width: auto;
     max-width: none;
     padding: clamp(6px, calc(var(--vu) * 1), 9px) clamp(8px, calc(var(--vu) * 1.2), 12px);
-    gap: clamp(8px, calc(var(--vu) * 1.2), 14px);
+    gap: clamp(6px, calc(var(--vu) * 0.9), 10px);
   }
 
   .vitals-panel--topbar .vitals-panel__title {
@@ -2686,13 +2841,13 @@ body.vitals-critical #game-viewport::after {
   }
 
   .vitals-panel--topbar .vitals-panel__o2-row {
-    width: clamp(100px, 12vw, 140px);
+    width: clamp(76px, 10vw, 118px);
   }
 
   .level-indicator {
-    font-size: clamp(12px, calc(var(--vu) * 2.05), 15px);
-    padding: clamp(6px, calc(var(--vu) * 0.86), 9px) clamp(9px, calc(var(--vu) * 1.5), 13px);
-    letter-spacing: 1.25px;
+    font-size: clamp(10px, calc(var(--vu) * 1.55), 13px);
+    padding: clamp(4px, calc(var(--vu) * 0.62), 7px) clamp(7px, calc(var(--vu) * 1.05), 10px);
+    letter-spacing: 1.05px;
   }
 
   .level-indicator__title {
@@ -2701,7 +2856,7 @@ body.vitals-critical #game-viewport::after {
   }
 
   .level-indicator__biome {
-    font-size: clamp(10px, calc(var(--vu) * 1.45), 12px);
+    font-size: clamp(9px, calc(var(--vu) * 1.2), 11px);
     letter-spacing: 0.95px;
   }
 
@@ -2734,20 +2889,49 @@ body.vitals-critical #game-viewport::after {
 }
 
 @media (max-width: 620px) {
+  .hud-header {
+    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.1));
+    left: calc(var(--vu) * 2.4);
+    right: calc(var(--vu) * 2.4);
+    grid-template-columns: auto auto auto;
+    grid-template-areas: "left center right";
+    align-items: start;
+    column-gap: clamp(4px, calc(var(--vu) * 0.55), 7px);
+    padding-right: calc(var(--vu) * 8.4);
+  }
+
   .weapon-status-panel__title,
   .ship-status-panel__title {
     display: none;
   }
 
+  .weapon-status-panel,
+  .ship-status-panel {
+    padding: clamp(3px, calc(var(--vu) * 0.5), 5px) clamp(5px, calc(var(--vu) * 0.72), 8px);
+    gap: clamp(3px, calc(var(--vu) * 0.4), 5px);
+  }
+
+  .ship-status-panel__track {
+    width: clamp(34px, 6vw, 46px);
+  }
+
+  .weapon-status-panel__clip {
+    font-size: clamp(10px, calc(var(--vu) * 1.35), 13px);
+  }
+
+  .weapon-status-panel__cache {
+    font-size: clamp(7px, calc(var(--vu) * 0.95), 9px);
+  }
+
   .pickup-counter-panel {
-    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 15));
+    top: calc(env(safe-area-inset-top, 0px) + clamp(70px, 13vh, 106px));
   }
 
   .vitals-panel--topbar {
     width: auto;
     max-width: none;
-    padding: clamp(4px, calc(var(--vu) * 0.7), 7px) clamp(6px, calc(var(--vu) * 0.9), 10px);
-    gap: clamp(6px, calc(var(--vu) * 0.8), 10px);
+    padding: clamp(3px, calc(var(--vu) * 0.55), 6px) clamp(5px, calc(var(--vu) * 0.75), 8px);
+    gap: clamp(4px, calc(var(--vu) * 0.6), 7px);
   }
 
   .vitals-panel--topbar .vitals-panel__title {
@@ -2756,7 +2940,7 @@ body.vitals-critical #game-viewport::after {
   }
 
   .vitals-panel__o2-pct {
-    min-width: 2.6ch;
+    min-width: 2.2ch;
   }
 
   .biome-hud-prompt {
@@ -2767,10 +2951,28 @@ body.vitals-critical #game-viewport::after {
 }
 
 #game-container.fullscreen-mode ~ #ui .hud-header {
-  top: calc(var(--vu) * 4);
-  left: calc(var(--vu) * 4);
-  right: 0;
-  padding-right: calc(var(--vu) * 11);
+  top: clamp(14px, calc(var(--vu) * 2), 34px);
+  left: clamp(20px, calc(var(--vu) * 3.2), 56px);
+  right: clamp(20px, calc(var(--vu) * 3.2), 56px);
+  padding-right: clamp(52px, calc(var(--vu) * 8.6), 110px);
+}
+
+@media (max-width: 900px), (pointer: coarse) {
+  #game-container.fullscreen-mode ~ #ui .hud-header {
+    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.5));
+    left: calc(var(--vu) * 3);
+    right: calc(var(--vu) * 3);
+    padding-right: calc(var(--vu) * 9.4);
+  }
+}
+
+@media (max-width: 620px) {
+  #game-container.fullscreen-mode ~ #ui .hud-header {
+    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.1));
+    left: calc(var(--vu) * 2.4);
+    right: calc(var(--vu) * 2.4);
+    padding-right: calc(var(--vu) * 8.4);
+  }
 }
 
 #game-container.fullscreen-mode ~ #ui .hud-corner-settings {

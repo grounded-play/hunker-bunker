@@ -226,10 +226,15 @@
         <div class="hud-header__center">
           <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
             <span class="weapon-status-panel__title">SIDEARM</span>
-            <span class="weapon-status-panel__clip">
-              <span id="weapon-clip-current">6</span>/<span id="weapon-clip-max">6</span>
-            </span>
-            <span id="weapon-reload-label" class="weapon-status-panel__reload hidden">RELOADING</span>
+            <div class="weapon-status-panel__ammo">
+              <span class="weapon-status-panel__clip">
+                <span id="weapon-clip-current">6</span>/<span id="weapon-clip-max">6</span>
+              </span>
+              <span id="weapon-ammo-cache" class="weapon-status-panel__cache">CACHE 18</span>
+            </div>
+            <div class="weapon-status-panel__reload-track" aria-hidden="true">
+              <div id="weapon-reload-bar" class="weapon-status-panel__reload-bar"></div>
+            </div>
           </div>
           <div id="ship-status-panel" class="ship-status-panel" aria-live="polite">
             <span class="ship-status-panel__title">SHIP INTEGRITY</span>
@@ -270,10 +275,6 @@
         <div class="pickup-counter-panel__row">
           <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">✚</span>MED</span>
           <span id="pickup-count-health">0</span>
-        </div>
-        <div class="pickup-counter-panel__row" id="pickup-row-ammo">
-          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◍</span>AMMO</span>
-          <span id="pickup-count-ammo">0</span>
         </div>
         <div class="pickup-counter-panel__row">
           <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">⬢</span>TECH</span>
@@ -425,14 +426,6 @@
                     <span class="terminal-bank-cell__stored" id="terminal-bank-med">0</span>
                   </span>
                   <span class="terminal-bank-cell__subtext" id="terminal-med-hearts">0/10 for ♥</span>
-                </div>
-                <div class="terminal-bank-cell">
-                  <span class="terminal-bank-cell__label">AMMO</span>
-                  <span class="terminal-bank-cell__values">
-                    <span class="terminal-bank-cell__carried" id="terminal-session-ammo">0</span>
-                    <span class="terminal-bank-cell__arrow">→</span>
-                    <span class="terminal-bank-cell__stored" id="terminal-bank-ammo">0</span>
-                  </span>
                 </div>
                 <div class="terminal-bank-cell">
                   <span class="terminal-bank-cell__label">TECH</span>

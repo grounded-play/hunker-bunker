@@ -1360,6 +1360,10 @@ export class ThreeGame {
             if (event.code === 'KeyE') {
                 this.interactWithConsole();
             }
+            if (event.code === 'KeyR') {
+                event.preventDefault();
+                this.requestReload({ manual: true });
+            }
             this.setKeyState(event.code, true);
         };
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
@@ -2150,7 +2154,7 @@ export class ThreeGame {
             ammo,
             weapon,
             coin,
-            total: health + ammo + weapon + coin
+            total: health + weapon + coin
         };
     }
 
@@ -2346,15 +2350,14 @@ export class ThreeGame {
         };
 
         setText('terminal-session-med', inventory.health);
-        setText('terminal-session-ammo', inventory.ammo);
         setText('terminal-session-tech', inventory.weapon);
         setText('terminal-session-coin', inventory.coin);
+        const depositableTotal = (inventory.health ?? 0) + (inventory.weapon ?? 0) + (inventory.coin ?? 0);
         setText('terminal-bank-med', bankState.med);
-        setText('terminal-bank-ammo', bankState.ammo);
         setText('terminal-bank-tech', bankState.tech);
         setText('terminal-bank-coin', bankState.coin);
-        const totalBanked = (bankState.med ?? 0) + (bankState.ammo ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
-        setText('terminal-summary-run', inventory.total);
+        const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
+        setText('terminal-summary-run', depositableTotal);
         setText('terminal-summary-bank', totalBanked);
         setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
         setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
@@ -2363,7 +2366,7 @@ export class ThreeGame {
 
         const hint = document.getElementById('terminal-bank-hint');
         if (hint) {
-            if (inventory.total > 0) {
+            if (depositableTotal > 0) {
                 hint.textContent = 'DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.';
             } else {
                 hint.textContent = 'DEPOSIT RESOURCES TO FUND O₂ REPAIRS.';
@@ -2466,7 +2469,6 @@ export class ThreeGame {
         const biomeKey = this.currentBiomeKey ?? BIOME_KEYS.ACTIVE;
         const o2 = this.playerVitals?.o2 ?? 100;
         const hp = this.playerVitals?.hp ?? 3;
-        const maxHp = this.playerVitals?.maxHp ?? 3;
         const unlocks = bankState?.unlocks ?? {};
         const depthTier = this.currentDepthTier ?? 0;
 
@@ -2541,14 +2543,25 @@ export class ThreeGame {
 
     handleDepositAll(ship) {
         const inventory = this.getSessionInventory();
-        if (inventory.total <= 0) {
+        const depositPayload = {
+            med: Math.max(0, Math.floor(inventory.health ?? 0)),
+            tech: Math.max(0, Math.floor(inventory.weapon ?? 0)),
+            coin: Math.max(0, Math.floor(inventory.coin ?? 0))
+        };
+        const depositableTotal = depositPayload.med + depositPayload.tech + depositPayload.coin;
+
+        if (depositableTotal <= 0) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
             return;
         }
 
-        this.bank.deposit(inventory);
-        window.resetPickupCounter?.();
+        this.bank.deposit(depositPayload);
+        window.consumeSessionInventoryForDeposit?.({
+            health: depositPayload.med,
+            weapon: depositPayload.tech,
+            coin: depositPayload.coin
+        });
         window.AudioManager?.play('ui_click', { volume: 0.62 });
         this.renderConsoleBanking(ship);
     }
@@ -2870,11 +2883,16 @@ export class ThreeGame {
     }
 
     emitWeaponClipState() {
+        const reloadProgress = this.weaponReloading
+            ? Math.max(0, Math.min(1, 1 - (this.weaponReloadTimer / WEAPON_RELOAD_DURATION)))
+            : 0;
         window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
             detail: {
                 clip: this.weaponClipAmmo,
                 maxClip: WEAPON_CLIP_SIZE,
-                reloading: this.weaponReloading
+                cache: this.getAvailableAmmo(),
+                reloading: this.weaponReloading,
+                reloadProgress
             }
         }));
     }
@@ -3474,7 +3492,7 @@ export class ThreeGame {
 
     getRunStats() {
         const bankState = this.bank.getState();
-        const totalBanked = (bankState.med ?? 0) + (bankState.ammo ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
+        const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
         return {
             distanceTravelled: Math.round(this.totalDistanceTravelled),
             totalPickups: totalBanked,
@@ -3580,32 +3598,71 @@ export class ThreeGame {
         }
 
         if (!this.weaponReloading) return;
+        const previousTimer = this.weaponReloadTimer;
         this.weaponReloadTimer = Math.max(0, this.weaponReloadTimer - delta);
+        if (this.weaponReloadTimer !== previousTimer) {
+            this.emitWeaponClipState();
+        }
         if (this.weaponReloadTimer > 0) return;
 
         this.weaponReloading = false;
-        const availableAmmo = Number.isFinite(window.pickupCounterState?.ammo)
-            ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
-            : 0;
-        this.weaponClipAmmo = Math.min(WEAPON_CLIP_SIZE, availableAmmo);
+        const availableAmmo = this.getAvailableAmmo();
+        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const ammoLoaded = Math.min(missingAmmo, availableAmmo);
+        if (ammoLoaded > 0) {
+            this.weaponClipAmmo += ammoLoaded;
+            window.dispatchEvent(new CustomEvent('player-consume-ammo-cache', { detail: { amount: ammoLoaded } }));
+        }
         this.emitWeaponClipState();
         window.AudioManager?.play('ui_click', { volume: 0.28, playbackRate: 1.18 });
     }
 
+    getAvailableAmmo() {
+        return Number.isFinite(window.pickupCounterState?.ammo)
+            ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
+            : 0;
+    }
+
     startReload() {
-        if (this.weaponReloading) return;
+        if (this.weaponReloading) return false;
+        const availableAmmo = this.getAvailableAmmo();
+        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const refillAmount = Math.min(missingAmmo, availableAmmo);
+        if (refillAmount <= 0) return false;
         this.weaponReloading = true;
         this.weaponReloadTimer = WEAPON_RELOAD_DURATION;
         this.emitWeaponClipState();
         window.AudioManager?.play('door_gears_spin', { volume: 0.22, playbackRate: 1.22 });
+        return true;
+    }
+
+    requestReload({ manual = false } = {}) {
+        if (!this.inputEnabled || this.isPlayerDead) return false;
+        if (this.weaponReloading) return false;
+
+        const availableAmmo = this.getAvailableAmmo();
+        if (availableAmmo < 1) {
+            if (manual) {
+                window.AudioManager?.play('ui_error', { volume: 0.45 });
+                window.dispatchEvent(new CustomEvent('combat-no-ammo'));
+            }
+            return false;
+        }
+
+        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const refillAmount = Math.min(missingAmmo, availableAmmo);
+        if (refillAmount <= 0) {
+            if (manual) {
+                window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.05 });
+            }
+            return false;
+        }
+
+        return this.startReload();
     }
 
     tryFireWeapon(clientX, clientY) {
         if (!this.inputEnabled || this.isPlayerDead) return;
-
-        const availableAmmo = Number.isFinite(window.pickupCounterState?.ammo)
-            ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
-            : 0;
 
         if (this.isInsideNoFireZone()) {
             window.AudioManager?.play('ui_error', { volume: 0.42 });
@@ -3621,18 +3678,13 @@ export class ThreeGame {
             return;
         }
         if (this.weaponClipAmmo <= 0) {
+            const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
                 window.AudioManager?.play('ui_error', { volume: 0.45 });
                 window.dispatchEvent(new CustomEvent('combat-no-ammo'));
                 return;
             }
-            this.startReload();
-            return;
-        }
-
-        if (availableAmmo < 1) {
-            window.AudioManager?.play('ui_error', { volume: 0.45 });
-            window.dispatchEvent(new CustomEvent('combat-no-ammo'));
+            this.requestReload();
             return;
         }
 
@@ -3647,7 +3699,6 @@ export class ThreeGame {
         const normZ = this.aimDirZ;
         if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return;
 
-        window.dispatchEvent(new CustomEvent('player-spend-ammo', { detail: { amount: 1 } }));
         this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         this.weaponFireCooldown = WEAPON_FIRE_COOLDOWN;
         this.emitWeaponClipState();
@@ -3665,7 +3716,7 @@ export class ThreeGame {
         window.AudioManager?.play('ui_scan_ping', { volume: 0.34, playbackRate: 1.42 });
 
         if (this.weaponClipAmmo <= 0) {
-            this.startReload();
+            this.requestReload();
         }
     }
 
