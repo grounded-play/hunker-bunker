@@ -2161,8 +2161,9 @@ body:not(.touch-device) .touch-move-control {
 .level-indicator__biome {
   font-size: calc(var(--vu) * 1.5);
   letter-spacing: 1.15px;
-  color: rgba(173, 225, 255, 0.98);
-  text-shadow: 0 0 8px rgba(94, 178, 255, 0.33);
+  color: var(--biome-label-color, rgba(173, 225, 255, 0.98));
+  text-shadow: 0 0 8px var(--biome-label-glow, rgba(94, 178, 255, 0.33));
+  transition: color 1.2s ease, text-shadow 1.2s ease;
 }
 
 .level-indicator #level-num {

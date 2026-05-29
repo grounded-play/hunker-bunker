@@ -497,10 +497,21 @@ window.addEventListener('depth-tier-changed', (event) => {
         showBiomePrompt(`> DEPTH TIER: ${label} — HAZARD ASSESSMENT ELEVATED`);
     }
 });
+const BIOME_HUD_COLORS = {
+    active: { label: 'rgba(173, 225, 255, 0.98)', glow: 'rgba(94, 178, 255, 0.33)' },
+    cryo:   { label: 'rgba(148, 204, 255, 0.98)', glow: 'rgba(68, 158, 240, 0.45)' },
+    bio:    { label: 'rgba(144, 220, 140, 0.98)', glow: 'rgba(60, 160, 80, 0.40)'  }
+};
 window.addEventListener('biome-changed', (event) => {
     renderBiomeStatus(event?.detail ?? {}, { showPrompt: true });
     renderBunkerLevel(window.game?.maxDepthTierReached ?? Number(bunkerLevelNum?.textContent ?? 0));
     const biomeKey = event?.detail?.key ?? 'active';
+    const biomeCols = BIOME_HUD_COLORS[biomeKey] ?? BIOME_HUD_COLORS.active;
+    const hud = document.getElementById('ui');
+    if (hud) {
+        hud.style.setProperty('--biome-label-color', biomeCols.label);
+        hud.style.setProperty('--biome-label-glow', biomeCols.glow);
+    }
     if (biomeKey === 'cryo') {
         AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
     } else if (biomeKey === 'bio') {
