@@ -466,8 +466,16 @@ function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
     }
 }
 
+let lastReportedDepthTier = 0;
 window.addEventListener('depth-tier-changed', (event) => {
-    renderBunkerLevel(event?.detail?.tier ?? 0);
+    const tier = event?.detail?.tier ?? 0;
+    renderBunkerLevel(tier);
+    if (tier > lastReportedDepthTier && tier > 0) {
+        lastReportedDepthTier = tier;
+        const label = event?.detail?.label ?? `DEPTH ${tier}`;
+        AudioManager.play('ui_boot', { volume: 0.28, playbackRate: 0.78 + tier * 0.06, bus: 'sfx' });
+        showBiomePrompt(`> DEPTH TIER: ${label} — HAZARD ASSESSMENT ELEVATED`);
+    }
 });
 window.addEventListener('biome-changed', (event) => {
     renderBiomeStatus(event?.detail ?? {}, { showPrompt: true });
@@ -643,6 +651,7 @@ window.addEventListener('player-death', runDeathSequence);
 window.addEventListener('player-respawned', () => {
     clearTimedClass('death', 'player-dead-flash');
     stopO2Alarm();
+    lastReportedDepthTier = 0;
     window.game?.setInputEnabled?.(true);
 });
 
