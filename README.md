@@ -1,6 +1,6 @@
 # 🛡️ HUNKER BUNKER | TACTICAL COMMAND v2.0
 
-[![Presubmit CI](https://github.com/Tuesday-Cinema-Club/hunker-bunker/actions/workflows/presubmit.yml/badge.svg)](https://github.com/Tuesday-Cinema-Club/hunker-bunker/actions/workflows/presubmit.yml)
+[![Presubmit CI](https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml/badge.svg)](https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Three.js](https://img.shields.io/badge/Three.js-r184-00e5ff.svg?logo=three.js)](https://threejs.org/)
 [![Phaser](https://img.shields.io/badge/Phaser-v3.80-ff9f1c.svg?logo=phaser)](https://phaser.io/)
@@ -48,6 +48,30 @@ An asset-cached, multi-layered sound engine powered by the Web Audio API:
 * **Procedural Transitions**: Vertical door slams, horizontal bulkhead slides, and heavy industrial gear rotations align dynamically with visual UI animations.
 * **Dynamic Spatial Ambience**: Heavy tactical hum loops, dripping water, and industrial metal stress sound effects trigger at randomized intervals, immersing players in a desolate subterranean atmosphere.
 
+### 📡 5. Interactive Telemetry Terminals & Exosuit Upgrades
+Integrated around the starting sector, crashed ship wreckage nodes function as tactical telemetry bases:
+* **Real-time Diagnostic Consoles**: Players can access consoles with direct feedback displays indicating Reactor Stability, Shield Intensity, and Exosuit energy levels.
+* **Modular Upgrades**: Dynamically spend collected salvage points to upgrade exosuit properties like hull integrity and radar range.
+* **Live Suit Synchronization**: Seamlessly hot-swap between Scout, Tank, and Engineer classes directly inside the active sector with visual smoke poof feedback.
+
+### 💎 6. Seeded Loot Pipelines & Magnetic Attractor Mechanics
+To reward subterranean exploration, sectors are populated with drop caches and materials:
+* **Coarse-to-Fine Rarity System**: Items spawn across four distinct rarity tiers (Basic, Uncommon, Rare, Legendary) using weighted seed-based probability tables.
+* **Magnetic Trajectory Attractor**: Items automatically polarize and pull towards the player within a specific magnetic radius using smooth kinematic interpolation.
+* **Dynamic Item Classes**: Collect specialized gear categorized into Health, Ammo, Weapon, and Coin/Salvage units to update the persistent HUD counters.
+
+### 🐌 7. Cybernetic Flora, Fauna & Ambient Decor
+Subterranean metallic corridors are decorated with procedurally scattered debris and organisms:
+* **Bioluminescent Bio-Spores**: Glowing fungal growths in Green, Blue, and Amber variants scattered across dark corners.
+* **Cybernetic Cyber-Snails**: Cyber-enhanced snails crawling around the corridors, contributing to the desolate retro-arcade atmosphere.
+* **Salvageable Junk Piles**: Interactable debris clusters that burst into loot caches and scrap items upon proximity or impact.
+
+### 🕹️ 8. Hybrid Touch Controls & Tactical HUD Compass
+Optimized for cross-platform deployments with zero configuration:
+* **Dynamic Device Detection**: Automatic UI morphing adjusts layout styling for touchscreens, activating the virtual analog joystick.
+* **Radar Spawn Compass**: A high-contrast HUD compass pointing back to the sector's main telemetry console, showing real-time distance and angle metrics.
+* **Audio Mixer Overlay**: Full control over volume channels (Master, Music, SFX/VFX) via an interactive settings mixer panel.
+
 ---
 
 ## 📐 Project Architecture
@@ -80,7 +104,7 @@ graph TD
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Tuesday-Cinema-Club/hunker-bunker.git
+   git clone https://github.com/grounded-play/hunker-bunker.git
    cd hunker-bunker
    ```
 2. Install all development and core dependencies:
@@ -114,6 +138,17 @@ graph TD
   ```bash
   npm run lint
   ```
+
+## 🎮 Controls & Console Interface
+
+| Command / Action | Desktop Inputs | Touch/Mobile Inputs |
+| :--- | :--- | :--- |
+| **Movement** | `W`, `A`, `S`, `D` or `Arrow Keys` | Virtual Analog Joystick |
+| **Interact / Access Console** | `E` key near wreckage terminals | "TAP TO ACCESS" HUD Prompt |
+| **Upgrade Attributes** | Click interface cards in Console | Tap interface cards in Console |
+| **Class Hot-Swap** | Trigger suit synchronizer in Console | Trigger suit synchronizer in Console |
+| **Open Menu / Settings** | Click `SETTINGS` button | Tap `SETTINGS` button |
+| **Adjust Audio Channels** | Drag Mixer Sliders in settings | Drag Mixer Sliders in settings |
 
 ---
 

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=1242_v29">
+  <link rel="stylesheet" href="/style.css?v=1242_v32">
   <link rel="icon" type="image/png" href="/favicon.png" />
   <title>HUNKER BUNKER | TACTICAL COMMAND</title>
 </head>
@@ -91,13 +91,14 @@
 
     <!-- Briefing Console (#menu) -->
     <div id="menu" class="hidden">
+      <!-- Settings gear: pinned to top-right corner of menu, never displaced by layout -->
+      <div class="menu-corner-settings">
+        <button class="calibrate-btn open-settings-btn">⚙</button>
+      </div>
       <div class="header-bar">
         <div class="title-group">
           <h1 class="title-small">HUNKER BUNKER</h1>
           <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
-        </div>
-        <div class="utility-btns">
-          <button class="calibrate-btn open-settings-btn">⚙</button>
         </div>
       </div>
 
@@ -153,12 +154,31 @@
               </div>
             </div>
           </div>
+
         </div>
       </div>
 
-      <!-- Action Row -->
+      <!-- Action Row: mirrors module-row column widths so stats align under hero preview -->
       <div class="action-row">
-        <button class="start-btn" id="start-game">INITIALIZE</button>
+        <div class="action-row__left">
+          <button class="start-btn" id="start-game">INITIALIZE</button>
+        </div>
+        <div class="action-row__center">
+          <div class="hero-stats-compact" id="hero-stats-row">
+            <div class="hero-stats-compact__title">CLASS PROFILE</div>
+            <div class="hero-stat-compact-row">
+              <span class="hero-stat-compact-label">SPEED</span>
+              <div class="hero-stat-pips" id="hero-stat-spd"></div>
+              <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+            </div>
+            <div class="hero-stat-compact-row">
+              <span class="hero-stat-compact-label">O₂ USAGE</span>
+              <div class="hero-stat-pips" id="hero-stat-o2"></div>
+              <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+            </div>
+            <div class="module-scanline"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -191,10 +211,50 @@
     <!-- Live HUD (Post-Initialization) -->
     <div id="ui" class="hidden">
       <div class="header-bar hud-header">
-        <div class="level-indicator">BUNKER LEVEL <span id="level-num">0</span></div>
-        <div class="utility-btns">
-          <button class="calibrate-btn open-settings-btn">⚙</button>
+        <div class="hud-header__left">
+          <div class="level-indicator">
+            <span class="level-indicator__title">BUNKER LEVEL</span>
+            <span id="level-num">0</span>
+            <span id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
+          </div>
         </div>
+        <div class="hud-header__center">
+          <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
+            <span class="weapon-status-panel__title">SIDEARM</span>
+            <span class="weapon-status-panel__clip">
+              <span id="weapon-clip-current">6</span>/<span id="weapon-clip-max">6</span>
+            </span>
+            <span id="weapon-reload-label" class="weapon-status-panel__reload hidden">RELOADING</span>
+          </div>
+          <div id="ship-status-panel" class="ship-status-panel" aria-live="polite">
+            <span class="ship-status-panel__title">SHIP INTEGRITY</span>
+            <div class="ship-status-panel__track">
+              <div id="ship-hp-bar" class="ship-status-panel__bar"></div>
+            </div>
+            <span id="ship-hp-text" class="ship-status-panel__value">100%</span>
+          </div>
+        </div>
+        <div class="hud-header__right">
+          <div id="vitals-panel" class="vitals-panel vitals-panel--topbar" aria-live="polite">
+            <div class="vitals-panel__title">VITALS</div>
+            <div class="vitals-panel__hearts" id="vitals-hearts" aria-label="Health">
+              <span class="heart heart--full" data-index="0">♥</span>
+              <span class="heart heart--full" data-index="1">♥</span>
+              <span class="heart heart--full" data-index="2">♥</span>
+            </div>
+            <div class="vitals-panel__o2-row">
+              <span class="vitals-panel__o2-label" id="vitals-o2-label">O₂</span>
+              <div class="vitals-panel__o2-bar-track">
+                <div class="vitals-panel__o2-bar" id="vitals-o2-bar"></div>
+              </div>
+              <span class="vitals-panel__o2-pct" id="vitals-o2-pct">100%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Settings gear: pinned to top-right corner, never part of any flex layout -->
+      <div class="hud-corner-settings">
+        <button class="calibrate-btn open-settings-btn">⚙</button>
       </div>
       <div id="pickup-counter-panel" class="pickup-counter-panel" aria-live="polite">
         <div class="pickup-counter-panel__title">LOOT</div>
@@ -206,7 +266,7 @@
           <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">✚</span>MED</span>
           <span id="pickup-count-health">0</span>
         </div>
-        <div class="pickup-counter-panel__row">
+        <div class="pickup-counter-panel__row" id="pickup-row-ammo">
           <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◍</span>AMMO</span>
           <span id="pickup-count-ammo">0</span>
         </div>
@@ -224,10 +284,64 @@
         <div class="status-item"><span>UNITS</span><span class="status-value" id="online-count">1</span></div>
       </div>
     </div>
+    <!-- Game Over Screen -->
+    <div id="game-over-modal" class="modal hidden" aria-live="assertive">
+      <div class="modal-content game-over-content">
+        <div class="terminal-scanline"></div>
+        <div class="game-over-header">
+          <div class="game-over-title">EXOSUIT FAILURE</div>
+          <div class="game-over-subtitle">&gt; AGENT LOST IN SECTOR 9. TELEMETRY RECOVERED.</div>
+        </div>
+        <div class="game-over-report">
+          <div class="game-over-section-label">MISSION REPORT</div>
+
+          <div class="game-over-stat-block">
+            <span class="game-over-stat-label">DISTANCE COVERED</span>
+            <div class="game-over-stat-bar-row">
+              <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-distance"></div></div>
+              <span class="game-over-stat-value" id="go-val-distance">0u</span>
+            </div>
+          </div>
+
+          <div class="game-over-stat-block">
+            <span class="game-over-stat-label">ITEMS RECOVERED</span>
+            <div class="game-over-stat-bar-row">
+              <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-items"></div></div>
+              <span class="game-over-stat-value" id="go-val-items">0</span>
+            </div>
+          </div>
+
+          <div class="game-over-stat-block">
+            <span class="game-over-stat-label">O₂ GENERATOR</span>
+            <div class="game-over-stat-bar-row">
+              <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-generator"></div></div>
+              <span class="game-over-stat-value" id="go-val-generator">OFFLINE</span>
+            </div>
+          </div>
+
+          <div class="game-over-bank-note">◈ BANKED RESOURCES PRESERVED</div>
+        </div>
+        <div class="game-over-actions">
+          <button class="start-btn game-over-btn" id="game-over-try-again">TRY AGAIN</button>
+          <button class="abort-btn game-over-btn" id="game-over-main-menu">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="cutscene-overlay" class="hidden" aria-hidden="true">
+      <div class="cutscene-space-bg" aria-hidden="true"></div>
+      <div id="cutscene-starfield" class="cutscene-starfield" aria-hidden="true"></div>
+      <div class="cutscene-planet" aria-hidden="true"></div>
+      <div class="cutscene-impact-flash" aria-hidden="true"></div>
+      <img id="cutscene-ship" class="cutscene-ship" alt="Incoming ship">
+      <img id="cutscene-wreck" class="cutscene-wreck hidden" alt="Crashed ship">
+      <div id="cutscene-particles" class="cutscene-particles" aria-hidden="true"></div>
+    </div>
     <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
       <div class="touch-move-control__compass" aria-hidden="true">
         <div class="touch-move-control__compass-face">
           <div class="touch-move-control__compass-arrow"></div>
+          <div class="touch-move-control__compass-radar-arrow hidden" id="touch-compass-radar-arrow"></div>
           <div class="touch-move-control__compass-distance">0u</div>
         </div>
       </div>
@@ -240,7 +354,16 @@
     <!-- Interactive Console HUD Floating Prompt -->
     <div id="console-hud-prompt" class="hidden">
       <span class="prompt-key">E</span>
-      <span class="prompt-text">ACCESS CONSOLE</span>
+      <span class="prompt-text">ACCESS BASE SHOP</span>
+    </div>
+
+    <div id="tutorial-prompt" class="tutorial-prompt hidden" aria-live="polite">
+      <span id="tutorial-prompt-icon" class="tutorial-prompt__icon hidden"></span>
+      <span id="tutorial-prompt-text" class="tutorial-prompt__text"></span>
+    </div>
+    <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
+      <span class="biome-hud-prompt__icon">ZONE</span>
+      <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
     </div>
 
     <!-- Holographic Retro Terminal Console Modal -->
@@ -255,64 +378,171 @@
           <div class="terminal-class-badge" id="terminal-class-badge">SCOUT BASE STATUS</div>
         </div>
 
-        <div class="terminal-layout">
-          <!-- Left: Diagnostic telemetry and core specs -->
-          <div class="terminal-telemetry-col">
-            <div class="telemetry-block">
-              <span class="telemetry-label">SYSTEM CORE MATRIX STATUS</span>
-              <span class="telemetry-value text-glow-green" id="telemetry-core-status">ONLINE / SECURE</span>
-            </div>
-            <div class="telemetry-block">
-              <span class="telemetry-label">REACTOR STABILITY INDEX</span>
-              <div class="progress-bar-container">
-                <div class="progress-bar glow-green" id="telemetry-reactor-stability" style="width: 98.4%;"></div>
+        <div class="terminal-body">
+        <div class="terminal-layout terminal-layout--shop">
+
+          <div class="terminal-shop-toprow">
+            <!-- Bank balance: compact resource grid + deposit -->
+            <div id="terminal-bank-panel" class="terminal-shop-bank terminal-tone--bank">
+              <div class="terminal-section-title">BANK BALANCE</div>
+              <div class="terminal-info-grid">
+                <div class="terminal-info-chip">
+                  <span class="terminal-info-chip__label">RUN CARRY</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-run">0</span>
+                </div>
+                <div class="terminal-info-chip">
+                  <span class="terminal-info-chip__label">BANK TOTAL</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-bank">0</span>
+                </div>
+                <div class="terminal-info-chip">
+                  <span class="terminal-info-chip__label">HEARTS</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-hp">3/3</span>
+                </div>
+                <div class="terminal-info-chip">
+                  <span class="terminal-info-chip__label">O₂</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-o2">100%</span>
+                </div>
               </div>
-              <span class="telemetry-value-sub" id="telemetry-reactor-percent">98.4% STABLE</span>
-            </div>
-            <div class="telemetry-block">
-              <span class="telemetry-label">SHIELD DEFLECTION INTENSITY</span>
-              <div class="progress-bar-container">
-                <div class="progress-bar glow-green" id="telemetry-shield-intensity" style="width: 85%;"></div>
+              <div class="terminal-bank-grid">
+                <div class="terminal-bank-cell">
+                  <span class="terminal-bank-cell__label">MED</span>
+                  <span class="terminal-bank-cell__values">
+                    <span class="terminal-bank-cell__carried" id="terminal-session-med">0</span>
+                    <span class="terminal-bank-cell__arrow">→</span>
+                    <span class="terminal-bank-cell__stored" id="terminal-bank-med">0</span>
+                  </span>
+                  <span class="terminal-bank-cell__subtext" id="terminal-med-hearts">0/10 for ♥</span>
+                </div>
+                <div class="terminal-bank-cell">
+                  <span class="terminal-bank-cell__label">AMMO</span>
+                  <span class="terminal-bank-cell__values">
+                    <span class="terminal-bank-cell__carried" id="terminal-session-ammo">0</span>
+                    <span class="terminal-bank-cell__arrow">→</span>
+                    <span class="terminal-bank-cell__stored" id="terminal-bank-ammo">0</span>
+                  </span>
+                </div>
+                <div class="terminal-bank-cell">
+                  <span class="terminal-bank-cell__label">TECH</span>
+                  <span class="terminal-bank-cell__values">
+                    <span class="terminal-bank-cell__carried" id="terminal-session-tech">0</span>
+                    <span class="terminal-bank-cell__arrow">→</span>
+                    <span class="terminal-bank-cell__stored" id="terminal-bank-tech">0</span>
+                  </span>
+                </div>
+                <div class="terminal-bank-cell">
+                  <span class="terminal-bank-cell__label">COIN</span>
+                  <span class="terminal-bank-cell__values">
+                    <span class="terminal-bank-cell__carried" id="terminal-session-coin">0</span>
+                    <span class="terminal-bank-cell__arrow">→</span>
+                    <span class="terminal-bank-cell__stored" id="terminal-bank-coin">0</span>
+                  </span>
+                </div>
               </div>
-              <span class="telemetry-value-sub" id="telemetry-shield-percent">85.0% DETECTED</span>
+              <div class="terminal-bank-actions">
+                <button class="terminal-action-btn" id="terminal-deposit-all">DEPOSIT RUN LOOT</button>
+                <div class="terminal-bank-hint" id="terminal-bank-hint">DEPOSIT RESOURCES TO FUND O₂ REPAIRS.</div>
+              </div>
             </div>
-            <div class="telemetry-block">
-              <span class="telemetry-label">CRITICAL ENERGY THRESHOLD</span>
-              <span class="telemetry-value" id="telemetry-energy-level">4,812 / 5,000 MW</span>
+
+            <div id="med-conversion-section" class="upgrade-goals-section upgrade-goals-section--medkit terminal-tone--medkit">
+              <div class="terminal-section-title">FIELD MEDKIT</div>
+              <div class="action-card action-card--medkit" data-goal-card="medkit">
+                <div class="action-card-header">
+                  <span class="action-title">MED CONVERSION</span>
+                  <span class="action-cost" id="terminal-medkit-status">OFFLINE</span>
+                </div>
+                <p class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
+                <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
+                <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
+              </div>
             </div>
           </div>
 
-          <!-- Right: Base expansion actions -->
-          <div class="terminal-actions-col">
-            <div class="action-card">
+          <!-- O2 generator upgrade -->
+          <div id="o2-generator-section" class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
+            <div class="terminal-section-title">O₂ GENERATOR MODULE</div>
+            <div class="action-card action-card--generator" data-goal-card="o2Generator">
               <div class="action-card-header">
-                <span class="action-title">HULL EXPANSION MATRIX</span>
-                <span class="action-cost">✚ 200 TECH</span>
+                <span class="action-title">FIELD STABILIZER</span>
+                <span class="action-cost" id="terminal-o2-generator-status">OFFLINE // REPAIR REQUIRED</span>
               </div>
-              <p class="action-desc">Reinforce exterior structures with advanced heavy bulkhead plating.</p>
-              <button class="terminal-action-btn" id="terminal-btn-hull">INITIALIZE BUILD</button>
-            </div>
-            <div class="action-card">
-              <div class="action-card-header">
-                <span class="action-title">COMMUNICATION RADAR NODE</span>
-                <span class="action-cost">✚ 350 TECH</span>
-              </div>
-              <p class="action-desc">Establish long-range tactical feeds to locate survivors and base components.</p>
-              <button class="terminal-action-btn" id="terminal-btn-radar">UPGRADE NODE</button>
-            </div>
-            <div class="action-card">
-              <div class="action-card-header">
-                <span class="action-title">REACTOR COMPRESSOR</span>
-                <span class="action-cost">✚ 500 TECH</span>
-              </div>
-              <p class="action-desc">Increase generator efficiency and shield capacity by upgrading the core matrix.</p>
-              <button class="terminal-action-btn" id="terminal-btn-reactor">ACTIVATE CORE</button>
+              <p class="action-desc" id="terminal-o2-generator-cost">NEXT COST: 10 TECH / 5 MED / 5 COIN</p>
+              <p class="action-desc" id="terminal-o2-generator-field">FIELD RADIUS 0.0u // REFILL OFFLINE</p>
+              <p class="action-desc action-desc--hint" id="terminal-o2-generator-hint">REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.</p>
+              <button class="terminal-action-btn" id="terminal-btn-o2-generator">REPAIR GENERATOR</button>
             </div>
           </div>
+
+          <div id="hull-expansion-section" class="upgrade-goals-section terminal-tone--goal">
+            <div class="terminal-section-title">GOAL 2</div>
+            <div class="action-card" data-goal-card="hullExpansion">
+              <div class="action-card-header">
+                <span class="action-title">HULL EXPANSION MATRIX</span>
+                <span class="action-cost" id="terminal-hull-status">LOCKED — REPAIR O₂ GENERATOR FIRST</span>
+              </div>
+              <p class="action-desc">Reinforce exterior hull. Increases max exosuit integrity to 4 hearts.</p>
+              <p class="action-desc action-desc--cost" id="terminal-hull-cost">COST: 50 TECH / 20 MED</p>
+              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-hull" disabled>LOCKED</button>
+            </div>
+          </div>
+
+          <div id="radar-node-section" class="upgrade-goals-section terminal-tone--goal">
+            <div class="terminal-section-title">GOAL 3</div>
+            <div class="action-card" data-goal-card="radarNode">
+              <div class="action-card-header">
+                <span class="action-title">COMMUNICATION RADAR NODE</span>
+                <span class="action-cost" id="terminal-radar-status">LOCKED — INSTALL HULL MATRIX FIRST</span>
+              </div>
+              <p class="action-desc">Establish long-range tactical feeds. Compass tracks nearest supply cache cluster.</p>
+              <p class="action-desc action-desc--cost" id="terminal-radar-cost">COST: 150 TECH / 30 COIN</p>
+              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-radar" disabled>LOCKED</button>
+            </div>
+          </div>
+
+          <div id="reactor-compressor-section" class="upgrade-goals-section terminal-tone--goal">
+            <div class="terminal-section-title">GOAL 4</div>
+            <div class="action-card" data-goal-card="reactorCompressor">
+              <div class="action-card-header">
+                <span class="action-title">REACTOR COMPRESSOR</span>
+                <span class="action-cost" id="terminal-reactor-status">LOCKED — INSTALL RADAR NODE FIRST</span>
+              </div>
+              <p class="action-desc">Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.</p>
+              <p class="action-desc action-desc--cost" id="terminal-reactor-cost">COST: 300 TECH / 100 COIN</p>
+              <button class="terminal-action-btn btn-state--locked" id="terminal-btn-reactor" disabled>LOCKED</button>
+            </div>
+          </div>
+
         </div>
 
         <div class="terminal-footer">
-          <div class="telemetry-ticker">WARNING: RADIATION LEVELS DETECTED OUTSIDE SHIP ENCLOSURE. DOCK SECURE.</div>
+          <div class="telemetry-ticker" id="terminal-status-ticker">WARNING: RADIATION LEVELS DETECTED OUTSIDE SHIP ENCLOSURE. DOCK SECURE.</div>
+        </div>
+        </div><!-- /.terminal-body -->
+      </div>
+    </div>
+
+    <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
+        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+
+        <div class="terminal-header">
+          <div class="terminal-title">MOTHERSHIP UPLINK CHANNEL 7</div>
+          <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
+        </div>
+
+        <div id="mothership-dialogue-body" class="mothership-dialogue-body" aria-live="polite"></div>
+
+        <div id="mothership-dialogue-choices" class="mothership-dialogue-choices hidden">
+          <button id="mothership-choice-skip" class="choice-card">
+            <span class="choice-card__label">[A] UNDERSTOOD. MOVING OUT.</span>
+            <span class="choice-card__hint">SKIP TUTORIAL</span>
+          </button>
+          <button id="mothership-choice-tutorial" class="choice-card">
+            <span class="choice-card__label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
+            <span class="choice-card__hint">START TUTORIAL</span>
+          </button>
         </div>
       </div>
     </div>
