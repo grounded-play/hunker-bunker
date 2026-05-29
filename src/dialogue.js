@@ -188,6 +188,9 @@ export class DialogueManager {
         await this.tutorialStepHudCounter(runId);
         if (!this.isTutorialRunActive(runId)) return;
 
+        await this.tutorialStepDeadEnds(runId);
+        if (!this.isTutorialRunActive(runId)) return;
+
         await this.tutorialStepEnemyIntel(runId);
         if (!this.isTutorialRunActive(runId)) return;
 
@@ -385,6 +388,15 @@ export class DialogueManager {
         panel?.classList.add('tutorial-focus-pulse');
         await this.sleep(runId, 3000);
         panel?.classList.remove('tutorial-focus-pulse');
+        this.hideTutorialPrompt(runId);
+    }
+
+    async tutorialStepDeadEnds(runId) {
+        await this.showTutorialPrompt(runId, {
+            icon: '⬡',
+            text: 'DEAD-END CORRIDORS ARE REWARD CACHES — DENSER LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
+        });
+        await this.sleep(runId, 3200);
         this.hideTutorialPrompt(runId);
     }
 
