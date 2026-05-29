@@ -102,6 +102,10 @@ let weaponErrorTimer = null;
 let biomePromptTimer = null;
 let o2AlarmTimer = null;
 let o2AlarmActive = false;
+let pickupComboCount = 0;
+let pickupComboTimer = null;
+const PICKUP_COMBO_WINDOW_MS = 1400;
+const PICKUP_COMBO_THRESHOLD = 3;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -298,6 +302,22 @@ function trackPickupCollected(event) {
     // Play dynamic procedurally synthesized loot sound
     const rarity = event?.detail?.rarity;
     AudioManager.playProceduralLoot(type, rarity);
+
+    // Pickup combo tracking
+    pickupComboCount += 1;
+    if (pickupComboTimer) clearTimeout(pickupComboTimer);
+    if (pickupComboCount >= PICKUP_COMBO_THRESHOLD) {
+        AudioManager.play('ui_scan_ping', { volume: 0.28, playbackRate: 1.65 + Math.min(pickupComboCount - PICKUP_COMBO_THRESHOLD, 4) * 0.08, bus: 'sfx' });
+        const lootPanel = document.getElementById('pickup-counter-panel');
+        if (lootPanel) {
+            lootPanel.classList.add('pickup-counter-panel--combo');
+            setTimeout(() => lootPanel.classList.remove('pickup-counter-panel--combo'), 380);
+        }
+    }
+    pickupComboTimer = setTimeout(() => {
+        pickupComboCount = 0;
+        pickupComboTimer = null;
+    }, PICKUP_COMBO_WINDOW_MS);
 }
 
 function spendSessionAmmo(amount = 1) {
@@ -480,6 +500,12 @@ window.addEventListener('depth-tier-changed', (event) => {
 window.addEventListener('biome-changed', (event) => {
     renderBiomeStatus(event?.detail ?? {}, { showPrompt: true });
     renderBunkerLevel(window.game?.maxDepthTierReached ?? Number(bunkerLevelNum?.textContent ?? 0));
+    const biomeKey = event?.detail?.key ?? 'active';
+    if (biomeKey === 'cryo') {
+        AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
+    } else if (biomeKey === 'bio') {
+        AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
+    }
 });
 renderBunkerLevel(0);
 renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });

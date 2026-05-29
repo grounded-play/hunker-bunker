@@ -2549,6 +2549,24 @@ body.vitals-critical #game-viewport::after {
   }
 }
 
+.pickup-counter-panel--combo {
+  animation: pickup-combo-flash 0.38s ease-out forwards;
+}
+
+@keyframes pickup-combo-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--terminal-glow-rgb), 0);
+  }
+  30% {
+    box-shadow: 0 0 12px 3px rgba(var(--terminal-glow-rgb), 0.55);
+    filter: brightness(1.4);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--terminal-glow-rgb), 0);
+    filter: brightness(1);
+  }
+}
+
 .splash-corner {
   position: absolute;
   top: calc(var(--vu) * 4);
