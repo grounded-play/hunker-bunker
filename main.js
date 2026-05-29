@@ -702,6 +702,14 @@ function runDeathSequence() {
 }
 
 window.addEventListener('player-damaged', triggerDamageFlash);
+window.addEventListener('health-restored', () => {
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) {
+        viewport.classList.add('heal-flash');
+        setTimeout(() => viewport.classList.remove('heal-flash'), 500);
+    }
+    AudioManager.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.1, bus: 'sfx' });
+});
 window.addEventListener('player-death', runDeathSequence);
 window.addEventListener('player-respawned', () => {
     clearTimedClass('death', 'player-dead-flash');
