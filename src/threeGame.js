@@ -397,6 +397,7 @@ export class ThreeGame {
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
         this.snailsKilledThisRun = 0;
+        this.visitedChunks = new Set();
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
         this.currentDepthTier = 0;
@@ -3052,6 +3053,7 @@ export class ThreeGame {
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;
             this.snailsKilledThisRun = 0;
+            this.visitedChunks = new Set();
             if (this.crashedShips) {
                 for (const ship of this.crashedShips) {
                     ship.hp = ship.maxHp;
@@ -3196,6 +3198,22 @@ export class ThreeGame {
             }
         } else {
             this.footstepTimer = 0;
+        }
+    }
+
+    onNewChunkDiscovered(chunkX, chunkY) {
+        const biomeKey = this.getBiomeKeyForWorldPosition(
+            chunkX * this.chunkSize + this.chunkSize * 0.5,
+            chunkY * this.chunkSize + this.chunkSize * 0.5
+        );
+        const depthTier = getDepthTier(chunkX, chunkY);
+        if (depthTier >= 1) {
+            const drips = ['amb_drip1', 'amb_drip2', 'amb_drip3', 'amb_drip4'];
+            const pick = drips[Math.floor(Math.random() * drips.length)];
+            const vol = 0.08 + depthTier * 0.04 + (biomeKey === 'cryo' ? 0.05 : 0);
+            setTimeout(() => {
+                window.AudioManager?.play(pick, { volume: vol, playbackRate: 0.82 + Math.random() * 0.36, bus: 'world' });
+            }, 200 + Math.random() * 400);
         }
     }
 
@@ -3799,8 +3817,13 @@ export class ThreeGame {
             for (let chunkX = centerChunkX - this.visibleChunkRadius; chunkX <= centerChunkX + this.visibleChunkRadius; chunkX++) {
                 const key = `${chunkX},${chunkY}`;
                 needed.add(key);
+                const isNewChunk = !this.chunkMeshes.has(key) && !this.visitedChunks.has(key);
                 if (force || !this.chunkMeshes.has(key)) {
                     this.queueChunkMount(chunkX, chunkY, centerChunkX, centerChunkY);
+                }
+                if (isNewChunk && !force) {
+                    this.visitedChunks.add(key);
+                    this.onNewChunkDiscovered(chunkX, chunkY);
                 }
             }
         }
