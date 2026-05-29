@@ -5348,7 +5348,10 @@ export class ThreeGame {
     }
 
     createSnailDropPlacement(originX, originZ, targetX, targetZ, type = 'weapon') {
-        const rarity = LOOT_RARITIES.find((entry) => entry.key === 'uncommon') ?? LOOT_RARITIES[0];
+        const depthLootConfig = this.getDepthLootConfigForWorldPosition(originX, originZ);
+        const rarity = this.chooseLootRarity(() => Math.random(), depthLootConfig.legendaryBoost + 0.08)
+            ?? LOOT_RARITIES.find((entry) => entry.key === 'uncommon')
+            ?? LOOT_RARITIES[0];
         return {
             worldX: targetX,
             worldZ: targetZ,
@@ -5376,7 +5379,11 @@ export class ThreeGame {
         if (!parent) return;
         const x = sprite.position.x;
         const z = sprite.position.z;
-        const dropTypes = ['weapon', 'weapon', 'ammo'];
+        const depthLootConfig = this.getDepthLootConfigForWorldPosition(x, z);
+        const depthTier = Math.floor(depthLootConfig.pickupMultiplier);
+        const wasEnraged = Boolean(sprite.userData.enraged);
+        const baseDrops = wasEnraged ? ['weapon', 'weapon', 'ammo', 'coin'] : ['weapon', 'weapon', 'ammo'];
+        const dropTypes = depthTier >= 2 ? [...baseDrops, 'ammo'] : baseDrops;
         let placed = 0;
 
         for (const type of dropTypes) {
