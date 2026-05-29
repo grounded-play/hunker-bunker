@@ -29,9 +29,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0  }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2 },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4 }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -222,8 +222,9 @@ const BIOME_TERRAIN_TEXTURE_PATHS = Object.freeze({
     })
 });
 const CRYO_SCATTER_VARIANTS = [
-    { type: 'scatter_coolant_puddle', weight: 0.62 },
-    { type: 'scatter_ice_stalagmite', weight: 0.38 }
+    { type: 'scatter_coolant_puddle', weight: 0.42 },
+    { type: 'scatter_ice_stalagmite', weight: 0.32 },
+    { type: 'scatter_cryo_icicle', weight: 0.26 }
 ];
 const BIO_SCATTER_VARIANTS = [
     { type: 'scatter_bio_pod', weight: 0.42 },
@@ -279,6 +280,52 @@ function getDepthLootConfig(depthTier) {
     return DEPTH_TIER_LOOT_CONFIG[index];
 }
 
+const ROOM_TYPES = Object.freeze({
+    DEAD_END: 'dead_end',
+    CORRIDOR: 'corridor',
+    JUNCTION: 'junction',
+    CHAMBER:  'chamber'
+});
+
+const ROOM_TYPE_PICKUP_MULT = Object.freeze({
+    [ROOM_TYPES.DEAD_END]: 2.5,
+    [ROOM_TYPES.CORRIDOR]: 0.5,
+    [ROOM_TYPES.JUNCTION]: 1.0,
+    [ROOM_TYPES.CHAMBER]:  1.4
+});
+
+const SNAIL_DEPTH_SPAWN = Object.freeze([
+    Object.freeze({ maxCount: 0, chance: 0 }),
+    Object.freeze({ maxCount: 1, chance: 0.08 }),
+    Object.freeze({ maxCount: 2, chance: 0.12 }),
+    Object.freeze({ maxCount: 3, chance: 0.16 })
+]);
+
+const SNAIL_BIOME_TINTS = Object.freeze({
+    active: 0xffffff,
+    cryo:   0x88ccff,
+    bio:    0x88ff88
+});
+
+function classifyChunkCells(grid, chunkSize) {
+    const roomTypes = Array.from({ length: chunkSize }, () => Array(chunkSize).fill(null));
+    for (let y = 0; y < chunkSize; y++) {
+        for (let x = 0; x < chunkSize; x++) {
+            if (grid[y][x] === '#') continue;
+            let floorNeighbors = 0;
+            if (y > 0 && grid[y - 1][x] !== '#') floorNeighbors++;
+            if (y < chunkSize - 1 && grid[y + 1][x] !== '#') floorNeighbors++;
+            if (x > 0 && grid[y][x - 1] !== '#') floorNeighbors++;
+            if (x < chunkSize - 1 && grid[y][x + 1] !== '#') floorNeighbors++;
+            if (floorNeighbors <= 1) roomTypes[y][x] = ROOM_TYPES.DEAD_END;
+            else if (floorNeighbors === 2) roomTypes[y][x] = ROOM_TYPES.CORRIDOR;
+            else if (floorNeighbors === 3) roomTypes[y][x] = ROOM_TYPES.JUNCTION;
+            else roomTypes[y][x] = ROOM_TYPES.CHAMBER;
+        }
+    }
+    return roomTypes;
+}
+
 export class ThreeGame {
     constructor({ parent, playerType = 'SCOUT', bankManager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -295,6 +342,7 @@ export class ThreeGame {
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = _initialStats.moveSpeed;
         this.o2DrainMult = _initialStats.o2DrainMult;
+        this.pickupMagnetRadius = _initialStats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
         this.cameraLift = 10;
         this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
         this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
@@ -347,6 +395,7 @@ export class ThreeGame {
         this.weaponFireCooldown = 0;
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
+        this.footstepTimer = 0;
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
         this.currentDepthTier = 0;
@@ -720,6 +769,7 @@ export class ThreeGame {
             scatter_bio_pod: this.loadScatterTexture('/scatter_bio_pod.png', textureLoader),
             scatter_slime_puddle: this.loadScatterTexture('/scatter_slime_puddle.png', textureLoader),
             scatter_gravel: this.loadScatterTexture('/scatter_gravel.png', textureLoader),
+            scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader)
         };
 
@@ -822,6 +872,14 @@ export class ThreeGame {
             }),
             scatter_gravel: new THREE.SpriteMaterial({
                 map: this.scatterTextures.scatter_gravel,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_cryo_icicle: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_cryo_icicle,
                 transparent: true,
                 alphaTest: 0.001,
                 depthWrite: false,
@@ -1591,6 +1649,7 @@ export class ThreeGame {
         const stats = CLASS_STATS[type] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = stats.moveSpeed;
         this.o2DrainMult = stats.o2DrainMult;
+        this.pickupMagnetRadius = stats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
         this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
         this.playerMaterial.color.setHex(color);
@@ -2374,18 +2433,91 @@ export class ThreeGame {
 
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {
-            if (this.isPlayerDead) {
-                ticker.textContent = 'WARNING: EXOSUIT LIFE SUPPORT FAILURE DETECTED.';
-            } else if (this.playerVitals.o2 <= O2_DANGER_THRESHOLD) {
-                ticker.textContent = 'WARNING: O₂ LEVELS CRITICAL. RETURN TO SHIP IMMEDIATELY.';
-            } else if (!generatorState.isOnline) {
-                ticker.textContent = 'ALERT: O₂ GENERATOR OFFLINE. REPAIR IS STRONGLY ADVISED.';
-            } else if (!generatorState.maxed) {
-                ticker.textContent = `O₂ FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. PAY TO EXPAND RANGE.`;
-            } else if (ship) {
-                ticker.textContent = `${ship.type} BASE LINK STABLE. O₂ FIELD OPERATING AT MAXIMUM RANGE.`;
+            const message = this._buildTerminalTickerMessage(ship, bankState, generatorState);
+            if (ticker.textContent !== message) {
+                ticker.textContent = message;
             }
         }
+    }
+
+    _buildTerminalTickerMessage(ship, bankState, generatorState) {
+        const biomeKey = this.currentBiomeKey ?? BIOME_KEYS.ACTIVE;
+        const o2 = this.playerVitals?.o2 ?? 100;
+        const hp = this.playerVitals?.hp ?? 3;
+        const maxHp = this.playerVitals?.maxHp ?? 3;
+        const unlocks = bankState?.unlocks ?? {};
+        const depthTier = this.currentDepthTier ?? 0;
+
+        if (this.isPlayerDead) {
+            return 'CRITICAL: EXOSUIT LIFE SUPPORT FAILURE. EMERGENCY REVIVAL PROTOCOL INITIATED.';
+        }
+
+        if (o2 <= 0) {
+            return 'CRITICAL: O₂ RESERVES EXHAUSTED. SUIT INTEGRITY COMPROMISED. IMMEDIATE RETURN REQUIRED.';
+        }
+
+        if (o2 <= O2_DANGER_THRESHOLD) {
+            const pct = Math.round(o2);
+            return `WARNING: O₂ AT ${pct}%. EXOSUIT FILTERS FAILING. RETURN TO SHIP IMMEDIATELY.`;
+        }
+
+        if (!generatorState.isOnline) {
+            const techNeeded = generatorState.nextUpgrade?.cost?.tech ?? 10;
+            return `ALERT: O₂ GENERATOR OFFLINE. DEPOSIT ${techNeeded} TECH TO INITIATE FIELD REPAIR.`;
+        }
+
+        if (hp <= 1) {
+            return 'WARNING: EXOSUIT HULL BREACH CRITICAL. SEEK MEDICAL SUPPLIES OR RETURN TO BASE.';
+        }
+
+        if (biomeKey === BIOME_KEYS.BIO) {
+            const pool = [
+                'CONTAMINATION ALERT: BIOHAZARD SPORE DENSITY CRITICAL. SUIT DECON FILTERS OVERLOADED.',
+                'BIO SECTOR: ALIEN ORGANISM GROWTH DETECTED. PROCEED WITH EXTREME CAUTION.',
+                `BIO SECTOR DEPTH ${depthTier}. LOOT DENSITY ELEVATED. OXYGEN DEMAND +30%.`
+            ];
+            if (!this._tickerMsgIndex || this._tickerMsgIndex >= pool.length) this._tickerMsgIndex = 0;
+            const msg = pool[this._tickerMsgIndex % pool.length];
+            if (!this._tickerBiomeFlip) { this._tickerMsgIndex = (this._tickerMsgIndex + 1) % pool.length; this._tickerBiomeFlip = true; }
+            return msg;
+        }
+
+        if (biomeKey === BIOME_KEYS.CRYO) {
+            const pool = [
+                'THERMAL WARNING: CRYO SECTOR DETECTED. SUIT INSULATION LOAD ELEVATED BY 15%.',
+                'CRYO SECTOR: RUPTURED COOLANT LINES DETECTED. FROZEN DEBRIS DENSITY HIGH.',
+                `CRYO SECTOR DEPTH ${depthTier}. LOOT DENSITY ELEVATED. THERMAL DRAIN ACTIVE.`
+            ];
+            if (!this._tickerMsgIndex || this._tickerMsgIndex >= pool.length) this._tickerMsgIndex = 0;
+            const msg = pool[this._tickerMsgIndex % pool.length];
+            if (!this._tickerCryoFlip) { this._tickerMsgIndex = (this._tickerMsgIndex + 1) % pool.length; this._tickerCryoFlip = true; }
+            return msg;
+        }
+
+        this._tickerBiomeFlip = false;
+        this._tickerCryoFlip = false;
+
+        if (generatorState.maxed) {
+            if (unlocks.reactorCompressor) {
+                return `ALL SYSTEMS NOMINAL. O₂ FIELD AT MAX RANGE [${generatorState.radius.toFixed(1)}u]. REACTOR EFFICIENCY OPTIMAL.`;
+            }
+            return `O₂ FIELD MAXED [${generatorState.radius.toFixed(1)}u]. REACTOR COMPRESSOR UPGRADE RECOMMENDED.`;
+        }
+
+        if (unlocks.hullExpansion) {
+            return `HULL MATRIX ACTIVE. STRUCTURAL INTEGRITY ENHANCED. O₂ FIELD RADIUS ${generatorState.radius.toFixed(1)}u.`;
+        }
+
+        const fallback = [
+            'BUNKER PERIMETER SCAN NOMINAL. TACTICAL NETWORK UPLINK STABLE.',
+            'RESOURCE CACHES DETECTED WITHIN OPERATIONAL RANGE. CONTINUE EXTRACTION.',
+            `MOTHERSHIP MONITORING ACTIVE. DEPTH TIER: ${DEPTH_TIER_NAMES[depthTier] ?? 'SURFACE'}. STAY VIGILANT.`,
+            `O₂ FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. REFILL RATE: ${generatorState.refillRate?.toFixed(1) ?? '0.0'}%/s.`
+        ];
+        if (!Number.isFinite(this._tickerFallbackIndex)) this._tickerFallbackIndex = 0;
+        const msg = fallback[this._tickerFallbackIndex % fallback.length];
+        this._tickerFallbackIndex = (this._tickerFallbackIndex + 1) % fallback.length;
+        return msg;
     }
 
     handleDepositAll(ship) {
@@ -2885,6 +3017,8 @@ export class ThreeGame {
         }
 
         this.chunkMeshes.clear();
+        this.chunkCache.clear();
+        this._chunkRoomTypeCache?.clear();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys.clear();
         this.wallMeshes = [];
@@ -3044,6 +3178,18 @@ export class ThreeGame {
         this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
         this.playerGlow.position.set(this.player.position.x, 1.6, this.player.position.z);
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
+
+        if (isMoving) {
+            this.footstepTimer += delta;
+            const stepInterval = 0.38 + (this.moveSpeed > 4 ? -0.08 : this.moveSpeed < 3 ? 0.08 : 0);
+            if (this.footstepTimer >= stepInterval) {
+                this.footstepTimer = 0;
+                const footRate = 1.6 + Math.random() * 0.3;
+                window.AudioManager?.play('amb_metal_stress', { volume: 0.055, playbackRate: footRate });
+            }
+        } else {
+            this.footstepTimer = 0;
+        }
     }
 
     getDepthTier(chunkX, chunkY) {
@@ -3806,6 +3952,7 @@ export class ThreeGame {
         const depthTier = this.getDepthTier(chunkX, chunkY);
         const depthLootConfig = getDepthLootConfig(depthTier);
         const spawn = this.getSpawnTile();
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const candidates = [];
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
@@ -3820,11 +3967,13 @@ export class ThreeGame {
 
                 if (distToSpawn <= 6.0) continue;
 
+                const roomType = roomTypes?.[localY]?.[localX] ?? ROOM_TYPES.CORRIDOR;
                 candidates.push({
                     localX,
                     localY,
                     worldX,
                     worldZ,
+                    roomType,
                     edgeDistance: Math.min(localX, localY, this.chunkSize - 1 - localX, this.chunkSize - 1 - localY)
                 });
             }
@@ -3891,6 +4040,21 @@ export class ThreeGame {
             if (!point) break;
             placements.push(this.buildPickupPlacement(point, random, depthLootConfig.legendaryBoost));
             straysPlaced += 1;
+        }
+
+        // Dead-end reward rooms: guaranteed extra pickups at any dead-end tiles in this chunk.
+        // Dead ends are branching paths worth exploring — payoff the player for detouring.
+        const deadEndCandidates = candidates.filter((c) => c.roomType === ROOM_TYPES.DEAD_END);
+        for (const de of deadEndCandidates) {
+            const key = `${de.localX},${de.localY}`;
+            if (occupied.has(key)) continue;
+            const extraCount = 2 + Math.floor(random() * 2);
+            for (let i = 0; i < extraCount; i++) {
+                const nearKey = `${de.localX + Math.round((random() - 0.5))},${de.localY + Math.round((random() - 0.5))}`;
+                if (occupied.has(nearKey)) continue;
+                occupied.add(nearKey);
+                placements.push(this.buildPickupPlacement(de, random, depthLootConfig.legendaryBoost + 0.08));
+            }
         }
 
         return placements;
@@ -4199,6 +4363,9 @@ export class ThreeGame {
         const finalPlacements = [];
         const junkPlacementAnchors = [];
         let snailCount = 0;
+        const depthTierForScatter = this.getDepthTier(chunkX, chunkY);
+        const snailSpawnConfig = SNAIL_DEPTH_SPAWN[Math.min(depthTierForScatter, SNAIL_DEPTH_SPAWN.length - 1)];
+        const chunkBiomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
         for (const p of placements) {
             // Re-verify after relaxation that it's still walkable
             if (!isWalkable(p.x, p.z)) continue;
@@ -4206,12 +4373,12 @@ export class ThreeGame {
             // Determine asset type based on weighted roll.
             const roll = random();
             const distFromSpawn = Math.hypot(p.x - spawn.x, p.z - spawn.y);
-            const canSpawnSnail = distFromSpawn > 14 && snailCount < 1;
+            const canSpawnSnail = distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount;
             let type;
             let scaleMultiplier;
             let elevation;
             let opacity;
-            if (canSpawnSnail && roll < 0.08) {
+            if (canSpawnSnail && roll < snailSpawnConfig.chance) {
                 type = 'cybersnail';
                 scaleMultiplier = 1.05 + random() * 0.26;
                 elevation = 0.09 + random() * 0.05;
@@ -4284,7 +4451,9 @@ export class ThreeGame {
                 elevation,
                 groupType: p.groupType,
                 phase: random() * Math.PI * 2,
-                opacity
+                opacity,
+                biomeTint: type === 'cybersnail' ? (SNAIL_BIOME_TINTS[chunkBiomeKey] ?? 0xffffff) : undefined,
+                spawnedEnraged: type === 'cybersnail' && depthTierForScatter >= 3
             });
         }
 
@@ -4368,8 +4537,10 @@ export class ThreeGame {
             const clonedMat = snailMaterial.clone();
             clonedMat.rotation = 0;
             clonedMat.alphaTest = 0.06;
-            clonedMat.color.setHex(0xffffff);
+            const tintColor = placement.biomeTint ?? 0xffffff;
+            clonedMat.color.setHex(tintColor);
 
+            const isPreEnraged = Boolean(placement.spawnedEnraged);
             const sprite = new THREE.Sprite(clonedMat);
             sprite.center.set(0.5, 0);
             sprite.position.set(placement.x, placement.elevation, placement.z);
@@ -4390,8 +4561,8 @@ export class ThreeGame {
                 baseOpacity: placement.opacity ?? 1,
                 hp: SNAIL_MAX_HP,
                 maxHp: SNAIL_MAX_HP,
-                speed: SNAIL_MOVE_SPEED,
-                enraged: false,
+                speed: isPreEnraged ? SNAIL_ENRAGED_MOVE_SPEED : SNAIL_MOVE_SPEED,
+                enraged: isPreEnraged,
                 facingSign: 1,
                 pathNodes: null,
                 pathIndex: 0,
@@ -4400,8 +4571,12 @@ export class ThreeGame {
                 pathRetargetTimer: 0,
                 aiMode: 'hunt',
                 targetType: 'ship',
-                attackCooldown: 0
+                attackCooldown: 0,
+                biomeTint: tintColor
             };
+            if (isPreEnraged) {
+                clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
+            }
             return sprite;
         }
 
@@ -4888,9 +5063,9 @@ export class ThreeGame {
             } else if (!isCollecting && planarDistance <= PICKUP_COLLECT_RADIUS) {
                 pickup.userData.state = 'collecting';
                 pickup.userData.collectTimer = 0;
-            } else if (pickup.userData.state === 'idle' && planarDistance <= PICKUP_MAGNET_RADIUS) {
+            } else if (pickup.userData.state === 'idle' && planarDistance <= this.pickupMagnetRadius) {
                 pickup.userData.state = 'magnetized';
-            } else if (pickup.userData.state === 'magnetized' && planarDistance > PICKUP_MAGNET_RADIUS * 1.35) {
+            } else if (pickup.userData.state === 'magnetized' && planarDistance > this.pickupMagnetRadius * 1.35) {
                 pickup.userData.state = 'idle';
             }
 
@@ -4946,7 +5121,7 @@ export class ThreeGame {
             }
 
             if (pickup.userData.state === 'magnetized' && planarDistance > 0.001) {
-                const magnetStrength = 2.8 + (1 - Math.min(planarDistance / PICKUP_MAGNET_RADIUS, 1)) * 6.2;
+                const magnetStrength = 2.8 + (1 - Math.min(planarDistance / this.pickupMagnetRadius, 1)) * 6.2;
                 const moveStep = Math.min(delta * magnetStrength, planarDistance);
                 pickup.position.x += (toPlayerX / planarDistance) * moveStep;
                 pickup.position.z += (toPlayerZ / planarDistance) * moveStep;
@@ -5766,14 +5941,24 @@ export class ThreeGame {
         const chunkY = Math.floor(worldY / this.chunkSize);
         const localX = worldX - chunkX * this.chunkSize;
         const localY = worldY - chunkY * this.chunkSize;
-        const chunk = this.getOrCreateChunk(chunkX, chunkY);
-        return chunk[localY][localX];
+        return this.getOrCreateChunk(chunkX, chunkY)[localY][localX];
+    }
+
+    getRoomTypeGrid(chunkX, chunkY) {
+        const key = `${chunkX},${chunkY}`;
+        if (!this.chunkCache.has(key)) {
+            this.getOrCreateChunk(chunkX, chunkY);
+        }
+        return this._chunkRoomTypeCache?.get(key) ?? null;
     }
 
     getOrCreateChunk(chunkX, chunkY) {
         const key = `${chunkX},${chunkY}`;
         if (!this.chunkCache.has(key)) {
-            this.chunkCache.set(key, this.buildChunk(chunkX, chunkY));
+            const grid = this.buildChunk(chunkX, chunkY);
+            this.chunkCache.set(key, grid);
+            if (!this._chunkRoomTypeCache) this._chunkRoomTypeCache = new Map();
+            this._chunkRoomTypeCache.set(key, classifyChunkCells(grid, this.chunkSize));
         }
         return this.chunkCache.get(key);
     }

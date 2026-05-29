@@ -59,7 +59,10 @@ export class CutsceneManager {
         this.allowSkip = allowSkip;
 
         const sprite = SHIP_SPRITES[playerType] ?? SHIP_SPRITES.SCOUT;
-        const preparedSprite = await this.prepareSprite(sprite);
+        const [preparedSprite, preparedWreck] = await Promise.all([
+            this.prepareSprite(sprite),
+            this.prepareSprite('/ship_wreckage.png').catch(() => null)
+        ]);
         if (this.activeRunId !== runId) {
             return { skipped: true };
         }
@@ -74,7 +77,7 @@ export class CutsceneManager {
         this.overlayEl.classList.add('is-active');
 
         this.shipEl.src = preparedSprite;
-        this.wreckEl.src = preparedSprite;
+        this.wreckEl.src = preparedWreck ?? preparedSprite;
         this.shipEl.style.opacity = '0';
         this.shipEl.style.transition = 'none';
         this.wreckEl.classList.add('hidden');
@@ -85,7 +88,7 @@ export class CutsceneManager {
         const startY = -overlayRect.height * 0.24;
 
         this.positionElement(this.shipEl, startX, startY, 'translate(-50%, -50%) rotate(0deg) scale(0.4)');
-        this.positionElement(this.wreckEl, impact.x, impact.y, 'translate(-50%, -50%) rotate(8deg) scale(0.9)');
+        this.positionElement(this.wreckEl, impact.x, impact.y, 'translate(-50%, -50%) rotate(22deg) scale(1.05)');
 
         window.addEventListener('keydown', this.handleSkipKey);
 
@@ -180,7 +183,7 @@ export class CutsceneManager {
 
         this.shipEl.style.opacity = '0';
         this.wreckEl.classList.remove('hidden');
-        this.positionElement(this.wreckEl, impact.x, impact.y, 'translate(-50%, -50%) rotate(8deg) scale(0.9)');
+        this.positionElement(this.wreckEl, impact.x, impact.y, 'translate(-50%, -50%) rotate(22deg) scale(1.05)');
 
         this.spawnDebris(impact.x, impact.y);
         this.spawnDust(impact.x, impact.y);
