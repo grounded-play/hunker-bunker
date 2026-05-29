@@ -463,8 +463,13 @@ window.addEventListener('combat-no-fire-zone', () => {
     flashWeaponError();
 });
 window.addEventListener('enemy-hit', (event) => {
+    const type = event?.detail?.type || 'cybersnail';
+    const isBoss = type.startsWith('boss_');
     const enraged = Boolean(event?.detail?.enraged);
-    if (enraged) {
+    if (isBoss) {
+        window.game?.triggerCameraShake?.(0.12, 0.25);
+        AudioManager.play('ui_error', { volume: 0.22, playbackRate: 0.58, bus: 'sfx' });
+    } else if (enraged) {
         AudioManager.play('ui_scan_ping', { volume: 0.18, playbackRate: 1.85, bus: 'sfx' });
     }
 });

@@ -421,6 +421,11 @@ export class ThreeGame {
         this.o2BubbleObjects = null;
         this.goalModuleMaterials = null;
         this.snailsEnabled = false;
+        this.playerSlowTimer = 0;
+        this.playerPoisonTimer = 0;
+        this.playerPoisonTickTimer = 0;
+        this.killedBosses = new Set();
+        this.activeBoss = null;
 
         this.scale = {
             refresh: () => this.resize()
@@ -757,6 +762,11 @@ export class ThreeGame {
         // so their background does not render as a dark rectangle.
         this.scatterTextures = {
             cybersnail: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
+            cryosnail: this.loadKeyedSpriteTexture('/cryosnail.png', 14),
+            sporesnail: this.loadKeyedSpriteTexture('/sporesnail.png', 14),
+            boss_cybersnail: this.loadKeyedSpriteTexture('/boss_cybersnail.png', 14),
+            boss_cryosnail: this.loadKeyedSpriteTexture('/boss_cryosnail.png', 14),
+            boss_sporesnail: this.loadKeyedSpriteTexture('/boss_sporesnail.png', 14),
             bunker_junk: this.loadScatterTexture('/bunker_junk.png', textureLoader),
             bunker_junk_uncommon: this.loadScatterTexture('/bunker_junk_uncommon.png', textureLoader),
             bunker_junk_rare: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
@@ -776,6 +786,46 @@ export class ThreeGame {
         this.scatterMaterials = {
             cybersnail: new THREE.SpriteMaterial({
                 map: this.scatterTextures.cybersnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            cryosnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.cryosnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            sporesnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.sporesnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_cybersnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_cybersnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_cryosnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_cryosnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_sporesnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_sporesnail,
                 transparent: true,
                 alphaTest: 0.06,
                 depthWrite: false,
@@ -1538,7 +1588,7 @@ export class ThreeGame {
     removeActiveSnails() {
         const survivors = [];
         for (const sprite of this.scatterSprites) {
-            if (sprite?.userData?.type !== 'cybersnail') {
+            if (!this.isEnemyType(sprite?.userData?.type)) {
                 survivors.push(sprite);
                 continue;
             }
@@ -3125,6 +3175,14 @@ export class ThreeGame {
             }
             window.resetPickupCounter?.();
             this.depletedGearPileKeys.clear();
+            this.killedBosses.clear();
+            this.playerSlowTimer = 0;
+            this.playerPoisonTimer = 0;
+            this.playerPoisonTickTimer = 0;
+            const bossPanel = document.getElementById('boss-status-panel');
+            if (bossPanel) {
+                bossPanel.classList.add('hidden');
+            }
             this.clearLoadedChunksForRunReset();
             this.syncVisibleChunks(true);
             this.emitDepthTierChanged(0);
@@ -3217,6 +3275,26 @@ export class ThreeGame {
             return;
         }
 
+        // Handle slow and poison status effects
+        if (this.playerSlowTimer > 0) {
+            this.playerSlowTimer = Math.max(0, this.playerSlowTimer - delta);
+            if (this.playerSprite?.material?.color) {
+                this.playerSprite.material.color.setHex(0x88ccff); // blue frost tint
+            }
+        } else if (this.playerPoisonTimer > 0) {
+            this.playerPoisonTimer = Math.max(0, this.playerPoisonTimer - delta);
+            this.playerPoisonTickTimer += delta;
+            if (this.playerPoisonTickTimer >= 1.2) {
+                this.playerPoisonTickTimer = 0;
+                this.takeDamage(1, 'poison');
+            }
+            if (this.playerSprite?.material?.color) {
+                this.playerSprite.material.color.setHex(0x88ff88); // green poison tint
+            }
+        } else if (this.playerSprite?.material?.color && this.playerSprite.material.color.getHex() !== 0xffffff) {
+            this.playerSprite.material.color.setHex(0xffffff);
+        }
+
         const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
         const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
@@ -3230,7 +3308,11 @@ export class ThreeGame {
             const prevX = this.player.position.x;
             const prevZ = this.player.position.z;
 
-            const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(this.moveSpeed * delta);
+            let speed = this.moveSpeed;
+            if (this.playerSlowTimer > 0) {
+                speed *= 0.55; // 45% slow
+            }
+            const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(speed * delta);
             const current = this.player.position.clone();
             const nextX = new THREE.Vector3(current.x + moveVector.x, current.y, current.z);
             const nextZ = new THREE.Vector3(current.x, current.y, current.z + moveVector.z);
@@ -3727,13 +3809,18 @@ export class ThreeGame {
         vz,
         ttl = PROJECTILE_TTL,
         damage = PROJECTILE_DAMAGE,
-        radius = PROJECTILE_RADIUS
+        radius = PROJECTILE_RADIUS,
+        isEnemy = false,
+        options = {}
     }) {
         const group = new THREE.Group();
+        const coreColor = options.color ?? (isEnemy ? 0xff4a4a : 0xffe08f);
+        const glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : 0xffaa22);
+
         const core = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 8, 8),
             new THREE.MeshBasicMaterial({
-                color: 0xffe08f,
+                color: coreColor,
                 transparent: true,
                 opacity: 0.95
             })
@@ -3741,7 +3828,7 @@ export class ThreeGame {
         const glow = new THREE.Mesh(
             new THREE.SphereGeometry(radius * 2.8, 6, 6),
             new THREE.MeshBasicMaterial({
-                color: 0xffaa22,
+                color: glowColor,
                 transparent: true,
                 opacity: 0.28,
                 depthWrite: false
@@ -3759,7 +3846,8 @@ export class ThreeGame {
             vz,
             ttl,
             damage,
-            radius
+            radius,
+            isEnemy
         });
     }
 
@@ -3773,6 +3861,15 @@ export class ThreeGame {
         this._projRaycaster.far = Math.max(0.08, speed * 0.045);
         const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
         return hits.length > 0;
+    }
+
+    checkProjectilePlayerHit(projectile) {
+        if (!this.player || this.isPlayerDead) return false;
+        const dist = Math.hypot(
+            projectile.mesh.position.x - this.player.position.x,
+            projectile.mesh.position.z - this.player.position.z
+        );
+        return dist <= this.playerRadius + (projectile.radius ?? PROJECTILE_RADIUS);
     }
 
     checkProjectileShipHit(projectile) {
@@ -3793,13 +3890,14 @@ export class ThreeGame {
     checkProjectileSnailHit(projectile) {
         for (const sprite of this.scatterSprites) {
             if (!sprite?.parent) continue;
-            if (sprite.userData?.type !== 'cybersnail') continue;
+            if (!this.isEnemyType(sprite.userData?.type)) continue;
             if (sprite.userData?.burstTriggered) continue;
             const dist = Math.hypot(
                 projectile.mesh.position.x - sprite.position.x,
                 projectile.mesh.position.z - sprite.position.z
             );
-            if (dist <= SNAIL_HIT_RADIUS + (projectile.radius ?? PROJECTILE_RADIUS)) {
+            const hitRadius = sprite.userData.isBoss ? (SNAIL_HIT_RADIUS * 2.8) : SNAIL_HIT_RADIUS;
+            if (dist <= hitRadius + (projectile.radius ?? PROJECTILE_RADIUS)) {
                 return sprite;
             }
         }
@@ -3865,17 +3963,33 @@ export class ThreeGame {
                 continue;
             }
 
-            const snail = this.checkProjectileSnailHit(projectile);
-            if (snail) {
-                this.damageSnail(snail, projectile.damage);
-                toRemove.add(projectile);
-                continue;
-            }
+            if (projectile.isEnemy) {
+                if (this.checkProjectilePlayerHit(projectile)) {
+                    this.takeDamage(projectile.damage, 'enemy-projectile');
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    toRemove.add(projectile);
+                    continue;
+                }
+                const ship = this.checkProjectileShipHit(projectile);
+                if (ship) {
+                    this.damageShip(ship, projectile.damage, 'boss-projectile');
+                    toRemove.add(projectile);
+                    continue;
+                }
+            } else {
+                const snail = this.checkProjectileSnailHit(projectile);
+                if (snail) {
+                    this.damageSnail(snail, projectile.damage);
+                    toRemove.add(projectile);
+                    continue;
+                }
 
-            const ship = this.checkProjectileShipHit(projectile);
-            if (ship) {
-                this.damageShip(ship, projectile.damage, 'friendly-fire');
-                toRemove.add(projectile);
+                const ship = this.checkProjectileShipHit(projectile);
+                if (ship) {
+                    this.damageShip(ship, projectile.damage, 'friendly-fire');
+                    toRemove.add(projectile);
+                    continue;
+                }
             }
         }
 
@@ -3894,7 +4008,7 @@ export class ThreeGame {
     updateCamera(delta) {
         const target = new THREE.Vector3(
             this.player.position.x + this.cameraOffset.x,
-            this.cameraOffset.y,
+            this.player.position.y + this.cameraOffset.y,
             this.player.position.z + this.cameraOffset.z
         );
         this.camera.position.lerp(target, 1 - Math.exp(-delta * 7));
@@ -3906,7 +4020,7 @@ export class ThreeGame {
             this.camera.position.z += (Math.random() - 0.5) * intensity;
         }
 
-        this.camera.lookAt(this.player.position.x, 0.4, this.player.position.z);
+        this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
     }
 
     triggerCameraShake(intensity = 0.18, duration = 0.35) {
@@ -4046,6 +4160,14 @@ export class ThreeGame {
             const scatter = this.createScatterInstance(placement);
             if (scatter) {
                 group.add(scatter);
+            }
+        }
+
+        const pickupPlacements = this.createChunkPickupPlacements(chunkX, chunkY, grid);
+        for (const placement of pickupPlacements) {
+            const pickup = this.createPickupInstance(placement);
+            if (pickup) {
+                group.add(pickup);
             }
         }
 
@@ -4575,10 +4697,60 @@ export class ThreeGame {
         // 6. Build the final micro-varied placement properties
         const finalPlacements = [];
         const junkPlacementAnchors = [];
+        const chunkBiomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
+        
+        // Spawn boss if conditions match!
+        const distance = Math.hypot(chunkCenterX, chunkCenterZ);
+        let spawnBossType = null;
+        const generatorLevel = this.bank ? this.bank.getO2GeneratorLevel() : 0;
+
+        if (chunkBiomeKey === BIOME_KEYS.ACTIVE && distance >= 50 && distance <= 60 && generatorLevel >= 1) {
+            if (!this.killedBosses.has('active') && !this.scatterSprites.some(s => s.userData.isBoss && s.userData.biome === 'active')) {
+                spawnBossType = 'boss_cybersnail';
+            }
+        } else if (chunkBiomeKey === BIOME_KEYS.CRYO && distance >= 120 && distance <= 140 && generatorLevel >= 2) {
+            if (!this.killedBosses.has('cryo') && !this.scatterSprites.some(s => s.userData.isBoss && s.userData.biome === 'cryo')) {
+                spawnBossType = 'boss_cryosnail';
+            }
+        } else if (chunkBiomeKey === BIOME_KEYS.BIO && distance >= 220 && distance <= 250 && generatorLevel >= 3) {
+            if (!this.killedBosses.has('bio') && !this.scatterSprites.some(s => s.userData.isBoss && s.userData.biome === 'bio')) {
+                spawnBossType = 'boss_sporesnail';
+            }
+        }
+
+        if (spawnBossType && candidates.length > 0) {
+            let bestIndex = 0;
+            let minCenterDist = Infinity;
+            for (let i = 0; i < candidates.length; i++) {
+                const c = candidates[i];
+                const d = Math.hypot(c.localX - this.chunkSize/2, c.localY - this.chunkSize/2);
+                if (d < minCenterDist) {
+                    minCenterDist = d;
+                    bestIndex = i;
+                }
+            }
+            const bossCand = candidates.splice(bestIndex, 1)[0];
+            finalPlacements.push({
+                x: bossCand.worldX,
+                z: bossCand.worldZ,
+                type: spawnBossType,
+                scatterKey: `${chunkX},${chunkY}:boss:${spawnBossType}`,
+                scale: spawnBossType === 'boss_cybersnail' ? 3.2 : spawnBossType === 'boss_cryosnail' ? 3.8 : 4.4,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'boss',
+                phase: 0,
+                opacity: 1,
+                biomeTint: spawnBossType === 'boss_cryosnail' ? 0x88ccff : spawnBossType === 'boss_sporesnail' ? 0x88ff88 : 0xffffff,
+                isBoss: true
+            });
+        }
+
         let snailCount = 0;
         const depthTierForScatter = this.getDepthTier(chunkX, chunkY);
         const snailSpawnConfig = SNAIL_DEPTH_SPAWN[Math.min(depthTierForScatter, SNAIL_DEPTH_SPAWN.length - 1)];
-        const chunkBiomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
         for (const p of placements) {
             // Re-verify after relaxation that it's still walkable
             if (!isWalkable(p.x, p.z)) continue;
@@ -4596,7 +4768,13 @@ export class ThreeGame {
             let elevation;
             let opacity;
             if (canSpawnSnail && roll < snailSpawnConfig.chance) {
-                type = 'cybersnail';
+                if (chunkBiomeKey === BIOME_KEYS.BIO) {
+                    type = 'sporesnail';
+                } else if (chunkBiomeKey === BIOME_KEYS.CRYO) {
+                    type = 'cryosnail';
+                } else {
+                    type = 'cybersnail';
+                }
                 scaleMultiplier = 1.05 + random() * 0.26;
                 elevation = 0.09 + random() * 0.05;
                 opacity = 1;
@@ -4716,6 +4894,7 @@ export class ThreeGame {
     createScatterInstance(placement) {
         const scaleX = placement.scale;
         const scaleY = placement.scale * (1.0 + placement.tiltX);
+        const anchoredY = placement.elevation;
 
         if (placement.type.startsWith('bunker_junk')) {
             const spriteMaterial = this.scatterMaterials[placement.type];
@@ -4727,7 +4906,7 @@ export class ThreeGame {
 
             const sprite = new THREE.Sprite(clonedMat);
             sprite.center.set(0.5, 0);
-            sprite.position.set(placement.x, placement.elevation, placement.z);
+            sprite.position.set(placement.x, anchoredY, placement.z);
             sprite.scale.set(scaleX, scaleY, 1);
             sprite.frustumCulled = false;
             sprite.renderOrder = 4;
@@ -4736,7 +4915,8 @@ export class ThreeGame {
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
-                baseY: placement.elevation,
+                baseY: anchoredY,
+                elevationOffset: placement.elevation,
                 baseScaleX: scaleX,
                 baseScaleY: scaleY,
                 burstTriggered: false,
@@ -4747,38 +4927,63 @@ export class ThreeGame {
             return sprite;
         }
 
-        if (placement.type === 'cybersnail') {
+        if (this.isEnemyType(placement.type)) {
             if (!this.snailsEnabled) return null;
-            const snailMaterial = this.scatterMaterials.cybersnail;
-            if (!snailMaterial) return null;
-            const clonedMat = snailMaterial.clone();
+            const mat = this.scatterMaterials[placement.type];
+            if (!mat) return null;
+            const clonedMat = mat.clone();
             clonedMat.rotation = 0;
             clonedMat.alphaTest = 0.06;
             const tintColor = placement.biomeTint ?? 0xffffff;
             clonedMat.color.setHex(tintColor);
 
-            const isPreEnraged = Boolean(placement.spawnedEnraged);
+            const isBoss = placement.isBoss || placement.type.startsWith('boss_');
+            const isPreEnraged = Boolean(placement.spawnedEnraged) || isBoss;
             const sprite = new THREE.Sprite(clonedMat);
             sprite.center.set(0.5, 0);
-            sprite.position.set(placement.x, placement.elevation, placement.z);
+            sprite.position.set(placement.x, anchoredY, placement.z);
             sprite.frustumCulled = false;
-            sprite.renderOrder = 6;
+            sprite.renderOrder = isBoss ? 8 : 6;
             sprite.scale.set(scaleX, scaleY, 1);
+
+            let maxHp = SNAIL_MAX_HP;
+            let speed = SNAIL_MOVE_SPEED;
+            if (placement.type === 'cryosnail') {
+                maxHp = 4;
+                speed = 0.9;
+            } else if (placement.type === 'sporesnail') {
+                maxHp = 3;
+                speed = 1.4;
+            } else if (placement.type === 'boss_cybersnail') {
+                maxHp = 20;
+                speed = 1.5;
+            } else if (placement.type === 'boss_cryosnail') {
+                maxHp = 40;
+                speed = 1.1;
+            } else if (placement.type === 'boss_sporesnail') {
+                maxHp = 75;
+                speed = 1.3;
+            }
+
             sprite.userData = {
                 isScatter: true,
+                isEnemy: true,
+                isBoss: isBoss,
+                biome: placement.type.includes('cryo') ? 'cryo' : placement.type.includes('spore') ? 'bio' : 'active',
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
-                baseY: placement.elevation,
+                baseY: anchoredY,
+                elevationOffset: placement.elevation,
                 baseScaleX: scaleX,
                 baseScaleY: scaleY,
                 burstTriggered: false,
                 burstTimer: 0,
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1,
-                hp: SNAIL_MAX_HP,
-                maxHp: SNAIL_MAX_HP,
-                speed: isPreEnraged ? SNAIL_ENRAGED_MOVE_SPEED : SNAIL_MOVE_SPEED,
+                hp: maxHp,
+                maxHp: maxHp,
+                speed: speed,
                 enraged: isPreEnraged,
                 facingSign: 1,
                 pathNodes: null,
@@ -4789,9 +4994,11 @@ export class ThreeGame {
                 aiMode: 'hunt',
                 targetType: 'ship',
                 attackCooldown: 0,
+                bossAttackTimer: 0,
+                sporeEmitTimer: 0,
                 biomeTint: tintColor
             };
-            if (isPreEnraged) {
+            if (isPreEnraged && !isBoss) {
                 clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
             }
             return sprite;
@@ -4806,7 +5013,7 @@ export class ThreeGame {
 
         const sprite = new THREE.Sprite(clonedMat);
         sprite.center.set(0.5, 0);
-        sprite.position.set(placement.x, placement.elevation, placement.z);
+        sprite.position.set(placement.x, anchoredY, placement.z);
         sprite.frustumCulled = false;
         sprite.renderOrder = 3;
         sprite.scale.set(scaleX, scaleY, 1);
@@ -4815,7 +5022,8 @@ export class ThreeGame {
             type: placement.type,
             scatterKey: placement.scatterKey,
             groupType: placement.groupType,
-            baseY: placement.elevation,
+            baseY: anchoredY,
+            elevationOffset: placement.elevation,
             baseScaleX: scaleX,
             baseScaleY: scaleY,
             burstTriggered: false,
@@ -5072,6 +5280,12 @@ export class ThreeGame {
     createPickupInstance(placement) {
         const root = new THREE.Group();
         const body = new THREE.Group();
+        const startX = (placement.ejectStartX ?? placement.worldX) + placement.offsetX;
+        const startZ = (placement.ejectStartZ ?? placement.worldZ) + placement.offsetZ;
+        const targetX = placement.ejectTargetX ?? placement.worldX + placement.offsetX;
+        const targetZ = placement.ejectTargetZ ?? placement.worldZ + placement.offsetZ;
+        const startY = placement.elevation;
+        const baseY = placement.elevation;
         const burst = new THREE.Mesh(
             new THREE.RingGeometry(0.12, 0.24, 20),
             new THREE.MeshBasicMaterial({
@@ -5093,7 +5307,7 @@ export class ThreeGame {
             type: placement.type,
             state: placement.ejectStartX !== undefined ? 'ejecting' : 'idle',
             bobOffset: placement.bobOffset,
-            baseY: placement.elevation,
+            baseY,
             scale: placement.scale,
             rarity: placement.rarity ?? LOOT_RARITIES[0],
             burst,
@@ -5101,8 +5315,8 @@ export class ThreeGame {
             collectLock: placement.collectLock ?? 0,
             ejectTimer: 0,
             ejectDuration: 0.24 + Math.random() * 0.1,
-            ejectTargetX: placement.ejectTargetX ?? placement.worldX + placement.offsetX,
-            ejectTargetZ: placement.ejectTargetZ ?? placement.worldZ + placement.offsetZ
+            ejectTargetX: targetX,
+            ejectTargetZ: targetZ
         };
 
         if (placement.type === 'health') {
@@ -5151,9 +5365,9 @@ export class ThreeGame {
         body.add(burst);
 
         root.position.set(
-            (placement.ejectStartX ?? placement.worldX) + placement.offsetX,
-            placement.elevation,
-            (placement.ejectStartZ ?? placement.worldZ) + placement.offsetZ
+            startX,
+            startY,
+            startZ
         );
         root.add(body);
         return root;
@@ -5448,16 +5662,24 @@ export class ThreeGame {
         if (!parent) return;
         const x = sprite.position.x;
         const z = sprite.position.z;
-        const depthLootConfig = this.getDepthLootConfigForWorldPosition(x, z);
-        const depthTier = Math.floor(depthLootConfig.pickupMultiplier);
-        const wasEnraged = Boolean(sprite.userData.enraged);
-        const baseDrops = wasEnraged ? ['weapon', 'weapon', 'ammo', 'coin'] : ['weapon', 'weapon', 'ammo'];
-        const dropTypes = depthTier >= 2 ? [...baseDrops, 'ammo'] : baseDrops;
-        let placed = 0;
+        const isBoss = Boolean(sprite.userData.isBoss);
 
+        let dropTypes;
+        if (isBoss) {
+            // Boss drops: lots of coins, health, ammo, and weapons!
+            dropTypes = ['weapon', 'weapon', 'weapon', 'ammo', 'ammo', 'health', 'health', 'coin', 'coin', 'coin', 'coin'];
+        } else {
+            const depthLootConfig = this.getDepthLootConfigForWorldPosition(x, z);
+            const depthTier = Math.floor(depthLootConfig.pickupMultiplier);
+            const wasEnraged = Boolean(sprite.userData.enraged);
+            const baseDrops = wasEnraged ? ['weapon', 'weapon', 'ammo', 'coin'] : ['weapon', 'weapon', 'ammo'];
+            dropTypes = depthTier >= 2 ? [...baseDrops, 'ammo'] : baseDrops;
+        }
+
+        let placed = 0;
         for (const type of dropTypes) {
             const angle = Math.random() * Math.PI * 2;
-            const radius = 0.45 + Math.random() * 0.32;
+            const radius = isBoss ? 0.8 + Math.random() * 0.9 : 0.45 + Math.random() * 0.32;
             const targetX = x + Math.cos(angle) * radius;
             const targetZ = z + Math.sin(angle) * radius;
             if (this.getTileType(Math.round(targetX), Math.round(targetZ)) === '#') {
@@ -5479,14 +5701,15 @@ export class ThreeGame {
     }
 
     damageSnail(sprite, amount = 1) {
-        if (!sprite?.userData || sprite.userData.type !== 'cybersnail' || sprite.userData.burstTriggered) return;
-        const previousHp = Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : SNAIL_MAX_HP;
+        if (!sprite?.userData || !this.isEnemyType(sprite.userData.type) || sprite.userData.burstTriggered) return;
+        const previousHp = Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : (sprite.userData.maxHp ?? SNAIL_MAX_HP);
         const damage = Math.max(0, amount);
         if (damage <= 0) return;
         sprite.userData.hp = Math.max(0, previousHp - damage);
         if (sprite.userData.hp === previousHp) return;
 
-        if (sprite.userData.hp === 1 && !sprite.userData.enraged) {
+        const isBoss = Boolean(sprite.userData.isBoss);
+        if (!isBoss && sprite.userData.hp === 1 && !sprite.userData.enraged) {
             sprite.userData.enraged = true;
             sprite.userData.speed = SNAIL_ENRAGED_MOVE_SPEED;
             sprite.userData.attackCooldown = Math.min(sprite.userData.attackCooldown ?? 0, 0.2);
@@ -5499,7 +5722,7 @@ export class ThreeGame {
             this._flashSnailHit(sprite);
             window.dispatchEvent(new CustomEvent('enemy-hit', {
                 detail: {
-                    type: 'cybersnail',
+                    type: sprite.userData.type,
                     hp: sprite.userData.hp,
                     maxHp: sprite.userData.maxHp ?? SNAIL_MAX_HP,
                     enraged: Boolean(sprite.userData.enraged)
@@ -5511,6 +5734,11 @@ export class ThreeGame {
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
+        
+        if (isBoss) {
+            this.killedBosses.add(sprite.userData.biome);
+        }
+
         this.spawnSnailDrops(sprite);
         this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, 'bunker_junk_uncommon');
         window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
@@ -5804,26 +6032,227 @@ export class ThreeGame {
         }
 
         const distanceToTarget = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
-        if (distanceToTarget <= SNAIL_ATTACK_RADIUS && data.attackCooldown <= 0) {
+
+        // Boss special attacks logic
+        if (data.isBoss && data.aiMode === 'hunt') {
+            data.bossAttackTimer = (data.bossAttackTimer ?? 0) - delta;
+            if (data.bossAttackTimer <= 0) {
+                // Determine attack based on type
+                if (data.type === 'boss_cybersnail' && target.type === 'player' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 4.5;
+                    const angleToPlayer = Math.atan2(target.z - sprite.position.z, target.x - sprite.position.x);
+                    for (let i = -1; i <= 1; i++) {
+                        const spreadAngle = angleToPlayer + i * 0.22;
+                        const vx = Math.cos(spreadAngle) * 7.5;
+                        const vz = Math.sin(spreadAngle) * 7.5;
+                        this.spawnProjectile({
+                            x: sprite.position.x,
+                            z: sprite.position.z,
+                            vx,
+                            vz,
+                            ttl: 2.0,
+                            damage: 1,
+                            radius: 0.22,
+                            isEnemy: true
+                        });
+                    }
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.45 });
+                } else if (data.type === 'boss_cryosnail' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 5.5;
+                    this.spawnFrostShockwaveEffect(sprite.position.x, sprite.position.z, 4.5);
+                    if (this.player && !this.isPlayerDead) {
+                        const d = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
+                        if (d <= 4.5) {
+                            this.takeDamage(1, 'frost-shockwave');
+                            this.playerSlowTimer = 3.0; // slowed for 3 seconds
+                        }
+                    }
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.45, playbackRate: 0.38 });
+                } else if (data.type === 'boss_sporesnail' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 6.5;
+                    const parent = sprite.parent;
+                    if (parent) {
+                        const spawnOffset = [
+                            [1.2, 1.2], [-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2]
+                        ];
+                        let spawnedCount = 0;
+                        for (const [dx, dz] of spawnOffset) {
+                            const tx = sprite.position.x + dx;
+                            const tz = sprite.position.z + dz;
+                            if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                                const placement = {
+                                    x: tx,
+                                    z: tz,
+                                    type: 'sporesnail',
+                                    scatterKey: `${sprite.userData.scatterKey}:minion:${Date.now()}:${spawnedCount}`,
+                                    scale: 0.9 + Math.random() * 0.2,
+                                    rotation: 0,
+                                    tiltX: 0,
+                                    tiltZ: 0,
+                                    elevation: 0.09,
+                                    groupType: 'minion',
+                                    phase: Math.random() * Math.PI,
+                                    opacity: 1,
+                                    biomeTint: 0x88ff88
+                                };
+                                const minion = this.createScatterInstance(placement);
+                                if (minion) {
+                                    parent.add(minion);
+                                    this.scatterSprites.push(minion);
+                                    this.spawnGearPoofEffect(tx, tz, 'bio_spores');
+                                    spawnedCount++;
+                                    if (spawnedCount >= 2) break;
+                                }
+                            }
+                        }
+                        window.AudioManager?.play('amb_metal_stress', { volume: 0.5, playbackRate: 0.5 });
+                    }
+                }
+            }
+        }
+
+        const attackRadius = SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
+        if (distanceToTarget <= attackRadius && data.attackCooldown <= 0) {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
+            const damage = data.isBoss ? 2 : 1;
             if (target.type === 'player') {
-                this.takeDamage(1, 'snail');
+                this.takeDamage(damage, data.type);
+                if (data.type === 'cryosnail') {
+                    this.playerSlowTimer = 2.5; // Cryosnail slows player on hit
+                }
             } else if (activeShip) {
-                this.damageShip(activeShip, 1, 'snail');
+                this.damageShip(activeShip, damage, data.type);
             }
             window.AudioManager?.play('amb_metal_stress', { volume: 0.24, playbackRate: 1.1 });
         }
+    }
+
+    isEnemyType(type) {
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail'].includes(type);
+    }
+
+    spawnFrostShockwaveEffect(x, z, maxRadius = 4.5) {
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.1, 0.25, 32),
+            new THREE.MeshBasicMaterial({
+                color: 0x88ccff,
+                transparent: true,
+                opacity: 0.8,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(x, 0.08, z);
+        this.scene.add(ring);
+        
+        const duration = 0.6;
+        this.transientEffects.push({
+            mesh: ring,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = age / duration;
+                const r = t * maxRadius;
+                ring.geometry.dispose();
+                ring.geometry = new THREE.RingGeometry(Math.max(0.1, r - 0.25), r + 0.05, 32);
+                ring.material.opacity = 0.8 * (1 - t);
+            }
+        });
+    }
+
+    spawnToxicSporePuddle(x, z, isLarge = false) {
+        const mat = this.scatterMaterials.scatter_slime_puddle.clone();
+        mat.color.setHex(0x55ff55); // neon toxic green
+        mat.opacity = 0.85;
+        
+        const sprite = new THREE.Sprite(mat);
+        sprite.center.set(0.5, 0.5);
+        sprite.position.set(x, 0.06, z);
+        const size = isLarge ? 2.2 : 0.85;
+        sprite.scale.set(size, size, 1);
+        this.scene.add(sprite);
+        
+        const duration = isLarge ? 6.5 : 4.0;
+        this.transientEffects.push({
+            mesh: sprite,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = age / duration;
+                sprite.material.opacity = 0.85 * (1 - t);
+                
+                // Deal damage if player walks in it
+                if (this.player && !this.isPlayerDead && age % 0.4 < dt) {
+                    const d = Math.hypot(this.player.position.x - x, this.player.position.z - z);
+                    const damageRadius = isLarge ? 1.1 : 0.45;
+                    if (d <= damageRadius) {
+                        this.playerPoisonTimer = 3.0; // poisoned for 3 seconds
+                    }
+                }
+            }
+        });
     }
 
     updateScatter(delta, now) {
         const time = now * 0.001;
         const activeShip = this.getActiveShip();
 
+        // Update Boss HUD status bar
+        let nearestBoss = null;
+        let minBossDist = Infinity;
+        if (this.player && !this.isPlayerDead) {
+            for (const child of this.scatterSprites) {
+                if (child.userData?.isBoss && !child.userData?.burstTriggered) {
+                    const dist = Math.hypot(this.player.position.x - child.position.x, this.player.position.z - child.position.z);
+                    if (dist < minBossDist) {
+                        minBossDist = dist;
+                        nearestBoss = child;
+                    }
+                }
+            }
+        }
+        
+        const bossPanel = document.getElementById('boss-status-panel');
+        if (nearestBoss && minBossDist < 16.0) {
+            this.activeBoss = nearestBoss;
+            if (bossPanel) {
+                bossPanel.classList.remove('hidden');
+                const nameEl = document.getElementById('boss-name');
+                const hpBar = document.getElementById('boss-hp-bar');
+                const hpText = document.getElementById('boss-hp-text');
+                
+                if (nameEl) {
+                    if (nearestBoss.userData.type === 'boss_cybersnail') {
+                        nameEl.textContent = 'CYBER-SHELL TITAN';
+                    } else if (nearestBoss.userData.type === 'boss_cryosnail') {
+                        nameEl.textContent = 'CRYO-GOLIATH SNAIL';
+                    } else if (nearestBoss.userData.type === 'boss_sporesnail') {
+                        nameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
+                    } else {
+                        nameEl.textContent = 'ELITE THREAT';
+                    }
+                }
+                
+                const hp = nearestBoss.userData.hp ?? 0;
+                const maxHp = nearestBoss.userData.maxHp ?? 10;
+                const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+                
+                if (hpBar) hpBar.style.width = `${pct}%`;
+                if (hpText) hpText.textContent = `${hp} / ${maxHp}`;
+            }
+        } else {
+            this.activeBoss = null;
+            if (bossPanel) {
+                bossPanel.classList.add('hidden');
+            }
+        }
+
         this._threatAudioTimer = (this._threatAudioTimer ?? 0) - delta;
         if (this._threatAudioTimer <= 0 && this.player && !this.isPlayerDead) {
             let nearestHuntingSnail = Infinity;
             for (const child of this.scatterSprites) {
-                if (child.userData?.type !== 'cybersnail') continue;
+                if (!this.isEnemyType(child.userData?.type)) continue;
                 if (child.userData?.burstTriggered) continue;
                 if (child.userData?.aiMode !== 'hunt') continue;
                 const dist = Math.hypot(this.player.position.x - child.position.x, this.player.position.z - child.position.z);
@@ -5838,12 +6267,14 @@ export class ThreeGame {
         }
 
         for (const child of this.scatterSprites) {
+            const baseY = child.userData.elevationOffset ?? 0;
+            child.userData.baseY = baseY;
             if (child.userData.type.startsWith('bio_spores')) {
                 const phase = child.userData.phase;
                 const drift = Math.sin(time * 0.75 + phase) * 0.16;
                 const pulse = 0.92 + Math.sin(time * 1.15 + phase * 1.3) * 0.16;
                 const shimmer = 0.72 + Math.sin(time * 1.6 + phase) * 0.28;
-                child.position.y = child.userData.baseY + drift;
+                child.position.y = baseY + drift;
                 child.scale.set(
                     child.userData.baseScaleX * pulse,
                     child.userData.baseScaleY * pulse,
@@ -5851,17 +6282,27 @@ export class ThreeGame {
                 );
                 child.material.opacity = child.userData.baseOpacity * shimmer;
             } else if (child.userData.type.startsWith('bunker_junk')) {
-                child.position.y = child.userData.baseY;
+                child.position.y = baseY;
                 child.scale.set(
                     child.userData.baseScaleX,
                     child.userData.baseScaleY,
                     1
                 );
                 child.material.opacity = child.userData.baseOpacity;
-            } else if (child.userData.type === 'cybersnail') {
-                child.position.y = child.userData.baseY + Math.sin(time * 4 + child.userData.phase) * 0.04;
+            } else if (this.isEnemyType(child.userData.type)) {
+                child.position.y = baseY + Math.sin(time * 4 + child.userData.phase) * 0.04;
                 child.material.opacity = child.userData.baseOpacity;
                 this.updateSnailBehavior(child, delta, activeShip);
+
+                // Sporesnail leaves slime puddles
+                if (child.userData.type === 'sporesnail' || child.userData.type === 'boss_sporesnail') {
+                    child.userData.sporeEmitTimer = (child.userData.sporeEmitTimer ?? 0) + delta;
+                    const interval = child.userData.isBoss ? 1.2 : 2.4;
+                    if (child.userData.sporeEmitTimer >= interval && !child.userData.burstTriggered) {
+                        child.userData.sporeEmitTimer = 0;
+                        this.spawnToxicSporePuddle(child.position.x, child.position.z, child.userData.isBoss);
+                    }
+                }
             }
 
             if (child.userData.burstTriggered) {
@@ -5884,7 +6325,7 @@ export class ThreeGame {
                         this.scatterSprites = this.scatterSprites.filter((sprite) => sprite !== child);
                         continue;
                     }
-                } else if (child.userData.type === 'cybersnail') {
+                } else if (this.isEnemyType(child.userData.type)) {
                     const fadeDuration = 0.22;
                     const fadeT = Math.min(child.userData.burstTimer / fadeDuration, 1);
                     const burstScale = 1 + Math.sin(Math.min(child.userData.burstTimer * 11, Math.PI)) * 0.24;
