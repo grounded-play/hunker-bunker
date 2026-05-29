@@ -267,6 +267,16 @@ export class BankManager {
         return upgrade;
     }
 
+    markO2GeneratorLevelOnly(level) {
+        const upgrade = O2_GENERATOR_UPGRADES.find((entry) => entry.level === level) ?? null;
+        if (!upgrade) return null;
+        this.state.o2GeneratorLevel = upgrade.level;
+        syncLegacyUnlocksFromGeneratorLevel(this.state);
+        this.save();
+        emit('o2-generator-upgraded', { level: upgrade.level, upgrade, bank: this.getState() });
+        return upgrade;
+    }
+
     getGoalCost(goalKey) {
         return GOAL_COSTS[goalKey] ?? null;
     }

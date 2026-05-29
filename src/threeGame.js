@@ -280,6 +280,8 @@ function getDepthLootConfig(depthTier) {
     return DEPTH_TIER_LOOT_CONFIG[index];
 }
 
+const ENGINEER_CONSOLE_DISCOUNT = 0.80;
+
 const ROOM_TYPES = Object.freeze({
     DEAD_END: 'dead_end',
     CORRIDOR: 'corridor',
@@ -2174,6 +2176,17 @@ export class ThreeGame {
         };
     }
 
+    getEffectiveCost(cost = {}) {
+        if (this.playerType !== 'ENGINEER') return cost;
+        const discount = ENGINEER_CONSOLE_DISCOUNT;
+        return {
+            med:  Number.isFinite(cost.med)  ? Math.max(1, Math.ceil(cost.med  * discount)) : 0,
+            ammo: Number.isFinite(cost.ammo) ? Math.max(1, Math.ceil(cost.ammo * discount)) : 0,
+            tech: Number.isFinite(cost.tech) ? Math.max(1, Math.ceil(cost.tech * discount)) : 0,
+            coin: Number.isFinite(cost.coin) ? Math.max(1, Math.ceil(cost.coin * discount)) : 0
+        };
+    }
+
     formatResourceCost(cost = {}) {
         const rows = [];
         const med = Number.isFinite(cost.med) ? Math.max(0, Math.floor(cost.med)) : 0;
@@ -2206,11 +2219,12 @@ export class ThreeGame {
             };
         }
 
-        const affordable = this.bank.canAfford(generatorState.nextUpgrade.cost);
+        const effectiveCost = this.getEffectiveCost(generatorState.nextUpgrade.cost);
+        const affordable = this.bank.canAfford(effectiveCost);
         if (!affordable) {
             return {
                 stateClass: 'btn-state--insufficient',
-                label: `NEED ${this.formatResourceCost(generatorState.nextUpgrade.cost)}`,
+                label: `NEED ${this.formatResourceCost(effectiveCost)}`,
                 enabled: false
             };
         }
@@ -2255,12 +2269,14 @@ export class ThreeGame {
     }
 
     renderGoalCard(ship, bankState, cardConfig) {
-        const cost = this.bank.getGoalCost(cardConfig.goalKey) ?? {};
+        const rawCost = this.bank.getGoalCost(cardConfig.goalKey) ?? {};
+        const cost = this.getEffectiveCost(rawCost);
         const unlocked = Boolean(bankState?.unlocks?.[cardConfig.goalKey]);
         const prereqMet = cardConfig.prereqKey
             ? Boolean(bankState?.unlocks?.[cardConfig.prereqKey])
             : true;
         const affordable = this.bank.canAfford(cost);
+        const isDiscounted = this.playerType === 'ENGINEER';
 
         const statusEl = document.getElementById(cardConfig.statusId);
         if (statusEl) {
@@ -2277,7 +2293,8 @@ export class ThreeGame {
 
         const costEl = document.getElementById(cardConfig.costId);
         if (costEl) {
-            costEl.textContent = `COST: ${this.formatResourceCost(cost)}`;
+            const discountTag = isDiscounted ? ' [ENG -20%]' : '';
+            costEl.textContent = `COST: ${this.formatResourceCost(cost)}${discountTag}`;
         }
 
         const button = document.getElementById(cardConfig.buttonId);
@@ -2397,9 +2414,13 @@ export class ThreeGame {
 
         const costEl = document.getElementById('terminal-o2-generator-cost');
         if (costEl) {
-            costEl.textContent = generatorState.nextUpgrade
-                ? `NEXT COST: ${this.formatResourceCost(generatorState.nextUpgrade.cost)}`
-                : 'NEXT COST: NONE';
+            if (generatorState.nextUpgrade) {
+                const effectiveCost = this.getEffectiveCost(generatorState.nextUpgrade.cost);
+                const discountTag = this.playerType === 'ENGINEER' ? ' [ENG -20%]' : '';
+                costEl.textContent = `NEXT COST: ${this.formatResourceCost(effectiveCost)}${discountTag}`;
+            } else {
+                costEl.textContent = 'NEXT COST: NONE';
+            }
         }
 
         const fieldEl = document.getElementById('terminal-o2-generator-field');
@@ -2537,8 +2558,17 @@ export class ThreeGame {
     }
 
     attemptGoalUnlock(ship, cardConfig) {
-        const cost = this.bank.getGoalCost(cardConfig.goalKey);
-        if (!cost || !this.bank.canUnlock(cardConfig.goalKey)) {
+        const rawCost = this.bank.getGoalCost(cardConfig.goalKey);
+        if (!rawCost) {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+        const cost = this.getEffectiveCost(rawCost);
+        const prereqKey = cardConfig.prereqKey;
+        const prereqMet = !prereqKey || Boolean(this.bank.getState()?.unlocks?.[prereqKey]);
+        const alreadyUnlocked = Boolean(this.bank.getState()?.unlocks?.[cardConfig.goalKey]);
+        if (alreadyUnlocked || !prereqMet || !this.bank.canAfford(cost)) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
             return;
@@ -2565,7 +2595,25 @@ export class ThreeGame {
     }
 
     attemptO2GeneratorUpgrade(ship) {
-        const upgrade = this.bank.upgradeO2Generator();
+        const generatorState = this.getO2GeneratorState();
+        const nextUpgrade = generatorState.nextUpgrade;
+        let upgrade;
+        if (nextUpgrade && this.playerType === 'ENGINEER') {
+            const discountedCost = this.getEffectiveCost(nextUpgrade.cost);
+            if (!this.bank.canAfford(discountedCost)) {
+                window.AudioManager?.play('ui_error', { volume: 0.58 });
+                this.renderConsoleBanking(ship);
+                return;
+            }
+            if (!this.bank.spend(discountedCost)) {
+                window.AudioManager?.play('ui_error', { volume: 0.58 });
+                this.renderConsoleBanking(ship);
+                return;
+            }
+            upgrade = this.bank.markO2GeneratorLevelOnly(nextUpgrade.level);
+        } else {
+            upgrade = this.bank.upgradeO2Generator();
+        }
         if (!upgrade) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
