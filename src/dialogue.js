@@ -176,6 +176,9 @@ export class DialogueManager {
         await this.tutorialStepHudCounter(runId);
         if (!this.isTutorialRunActive(runId)) return;
 
+        await this.tutorialStepEnemyIntel(runId);
+        if (!this.isTutorialRunActive(runId)) return;
+
         await this.tutorialStepCompass(runId);
         if (!this.isTutorialRunActive(runId)) return;
 
@@ -370,6 +373,30 @@ export class DialogueManager {
         panel?.classList.add('tutorial-focus-pulse');
         await this.sleep(runId, 3000);
         panel?.classList.remove('tutorial-focus-pulse');
+        this.hideTutorialPrompt(runId);
+    }
+
+    async tutorialStepEnemyIntel(runId) {
+        await this.showTutorialPrompt(runId, {
+            icon: '!',
+            text: 'HOSTILE INTEL: CYBER SNAILS TAKE 2 SHOTS. LAND ONE HIT TO EXPOSE THEIR WEAK STATE.'
+        });
+
+        const weaponPanel = document.getElementById('weapon-status-panel');
+        weaponPanel?.classList.add('tutorial-focus-pulse');
+
+        const hitEnemy = await this.waitForWindowEvent(runId, 'enemy-hit', 26000);
+        if (hitEnemy) {
+            await this.showTutorialPrompt(runId, {
+                icon: '!',
+                text: 'RED SNAIL = 1 HP REMAINING. IT WILL CHARGE FASTER AFTER THAT FIRST HIT.'
+            });
+            await this.sleep(runId, 2400);
+        } else {
+            await this.sleep(runId, 1400);
+        }
+
+        weaponPanel?.classList.remove('tutorial-focus-pulse');
         this.hideTutorialPrompt(runId);
     }
 

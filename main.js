@@ -38,6 +38,13 @@ const audioMusicValue = document.getElementById('audio-music-value');
 const audioVfxValue = document.getElementById('audio-vfx-value');
 const pickupCountTotal = document.getElementById('pickup-count-total');
 const bunkerLevelNum = document.getElementById('level-num');
+const ammoRow = document.getElementById('pickup-row-ammo');
+const weaponStatusPanel = document.getElementById('weapon-status-panel');
+const weaponClipCurrent = document.getElementById('weapon-clip-current');
+const weaponClipMax = document.getElementById('weapon-clip-max');
+const weaponReloadLabel = document.getElementById('weapon-reload-label');
+const shipHpBar = document.getElementById('ship-hp-bar');
+const shipHpText = document.getElementById('ship-hp-text');
 const pickupCountByType = {
     health: document.getElementById('pickup-count-health'),
     ammo: document.getElementById('pickup-count-ammo'),
@@ -57,6 +64,7 @@ const DEFAULT_AUDIO_MIX = Object.freeze({
     vfx: 1
 });
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
+const STARTING_RUN_AMMO = 18;
 
 const state = {
     settings: {
@@ -84,6 +92,8 @@ let dialogueManager = null;
 let missionFlowRunning = false;
 let deathSequenceTimer = null;
 let damageFlashTimer = null;
+let ammoFlashTimer = null;
+let weaponErrorTimer = null;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -94,6 +104,16 @@ const pickupCounterState = {
 const bankManager = new BankManager();
 
 window.bankManager = bankManager;
+
+function recomputePickupTotal() {
+    pickupCounterState.total = Math.max(
+        0,
+        (pickupCounterState.health ?? 0)
+        + (pickupCounterState.ammo ?? 0)
+        + (pickupCounterState.weapon ?? 0)
+        + (pickupCounterState.coin ?? 0)
+    );
+}
 
 function renderPickupCounter() {
     if (pickupCountTotal) {
@@ -241,11 +261,11 @@ function installAudioMixerControls() {
 }
 
 function resetPickupCounter() {
-    pickupCounterState.total = 0;
     pickupCounterState.health = 0;
-    pickupCounterState.ammo = 0;
+    pickupCounterState.ammo = STARTING_RUN_AMMO;
     pickupCounterState.weapon = 0;
     pickupCounterState.coin = 0;
+    recomputePickupTotal();
     renderPickupCounter();
 }
 
@@ -263,8 +283,8 @@ function trackPickupCollected(event) {
     const type = event?.detail?.type;
     if (!type || !(type in pickupCounterState)) return;
 
-    pickupCounterState.total += 1;
     pickupCounterState[type] += 1;
+    recomputePickupTotal();
     renderPickupCounter();
 
     // Play dynamic procedurally synthesized loot sound
@@ -272,8 +292,99 @@ function trackPickupCollected(event) {
     AudioManager.playProceduralLoot(type, rarity);
 }
 
+function spendSessionAmmo(amount = 1) {
+    const spend = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+    if (spend <= 0) return;
+    pickupCounterState.ammo = Math.max(0, pickupCounterState.ammo - spend);
+    recomputePickupTotal();
+    renderPickupCounter();
+}
+
+function flashAmmoCounterError() {
+    if (!ammoRow) return;
+    ammoRow.classList.add('counter-flash--error');
+    if (ammoFlashTimer) {
+        clearTimeout(ammoFlashTimer);
+        ammoFlashTimer = null;
+    }
+    ammoFlashTimer = window.setTimeout(() => {
+        ammoRow.classList.remove('counter-flash--error');
+        ammoFlashTimer = null;
+    }, 620);
+}
+
+function renderWeaponClipState(detail = {}) {
+    const clip = Number.isFinite(detail.clip) ? Math.max(0, Math.floor(detail.clip)) : 0;
+    const maxClip = Number.isFinite(detail.maxClip) ? Math.max(1, Math.floor(detail.maxClip)) : 6;
+    const reloading = Boolean(detail.reloading);
+
+    if (weaponClipCurrent) {
+        weaponClipCurrent.textContent = String(clip);
+    }
+    if (weaponClipMax) {
+        weaponClipMax.textContent = String(maxClip);
+    }
+    if (weaponReloadLabel) {
+        weaponReloadLabel.classList.toggle('hidden', !reloading);
+    }
+    if (weaponStatusPanel) {
+        weaponStatusPanel.classList.toggle('is-reloading', reloading);
+    }
+}
+
+function flashWeaponError() {
+    if (!weaponStatusPanel) return;
+    weaponStatusPanel.classList.add('is-error');
+    if (weaponErrorTimer) {
+        clearTimeout(weaponErrorTimer);
+        weaponErrorTimer = null;
+    }
+    weaponErrorTimer = window.setTimeout(() => {
+        weaponStatusPanel.classList.remove('is-error');
+        weaponErrorTimer = null;
+    }, 740);
+}
+
+function renderShipHealth(detail = {}) {
+    const hp = Number.isFinite(detail.hp) ? Math.max(0, detail.hp) : 0;
+    const maxHp = Number.isFinite(detail.maxHp) ? Math.max(1, detail.maxHp) : 1;
+    const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+
+    if (shipHpBar) {
+        shipHpBar.style.width = `${pct}%`;
+        if (pct <= 25) {
+            shipHpBar.style.background = 'linear-gradient(90deg, #a90f0f, #ff4d4d)';
+        } else if (pct <= 55) {
+            shipHpBar.style.background = 'linear-gradient(90deg, #c37d00, #ffb700)';
+        } else {
+            shipHpBar.style.background = 'linear-gradient(90deg, #00b4d8, #00e5ff)';
+        }
+    }
+    if (shipHpText) {
+        shipHpText.textContent = `${Math.round(pct)}%`;
+    }
+}
+
 window.addEventListener('pickup-collected', trackPickupCollected);
+window.addEventListener('player-spend-ammo', (event) => {
+    spendSessionAmmo(event?.detail?.amount ?? 1);
+});
+window.addEventListener('combat-no-ammo', () => {
+    flashAmmoCounterError();
+    flashWeaponError();
+});
+window.addEventListener('combat-no-fire-zone', () => {
+    flashWeaponError();
+});
+window.addEventListener('weapon-clip-updated', (event) => {
+    renderWeaponClipState(event?.detail ?? {});
+});
+window.addEventListener('ship-health-changed', (event) => {
+    renderShipHealth(event?.detail ?? {});
+});
 renderPickupCounter();
+renderWeaponClipState({ clip: 6, maxClip: 6, reloading: false });
+renderShipHealth({ hp: 1, maxHp: 1 });
 window.pickupCounterState = pickupCounterState;
 window.resetPickupCounter = resetPickupCounter;
 window.getPickupCounterState = getSessionInventorySnapshot;
@@ -431,6 +542,7 @@ if (gameOverTryAgain) {
         triggerDoorTransition(
             () => {
                 window.game?.setInputEnabled?.(false);
+                setSnailSpawnState(true);
                 resetPickupCounter();
                 window.game?.respawnPlayer?.({ resetRunState: true, skipEffects: false });
                 document.getElementById('ui')?.classList.remove('hidden');
@@ -449,6 +561,7 @@ if (gameOverMainMenu) {
         hideGameOverScreen();
         missionFlowRunning = false;
         window.game?.setInputEnabled?.(false);
+        setSnailSpawnState(false, { purgeExisting: true });
 
         triggerDoorTransition(
             () => {
@@ -726,6 +839,10 @@ function runDoorTransitionAsync() {
     });
 }
 
+function setSnailSpawnState(enabled, { purgeExisting = false } = {}) {
+    window.game?.setSnailsEnabled?.(Boolean(enabled), { removeExisting: purgeExisting });
+}
+
 async function runMissionIntroSequence() {
     if (missionFlowRunning) return;
 
@@ -794,6 +911,7 @@ if (startBtn) {
             () => {
                 if (menu) menu.classList.add('hidden');
                 window.game?.setInputEnabled?.(false);
+                setSnailSpawnState(true);
                 resetPickupCounter();
                 bankManager.reset();
                 window.game?.respawnPlayer?.({ resetRunState: true, skipEffects: true });
@@ -982,6 +1100,7 @@ if (confirmYes) {
         }
         missionFlowRunning = false;
         window.game?.setInputEnabled?.(true);
+        setSnailSpawnState(false, { purgeExisting: true });
 
         triggerDoorTransition(
             () => {
@@ -1727,6 +1846,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             bankManager
         });
     }
+    setSnailSpawnState(false, { purgeExisting: true });
     window.game?.emitVitalsState?.();
     ensureMissionManagers();
 

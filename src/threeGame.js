@@ -90,6 +90,31 @@ const GOAL_CARD_CONFIGS = Object.freeze([
 const PICKUP_MAGNET_RADIUS = 3.4;
 const PICKUP_COLLECT_RADIUS = 0.72;
 const PICKUP_COLLECT_DURATION = 0.2;
+const WEAPON_CLIP_SIZE = 6;
+const WEAPON_RELOAD_DURATION = 1.25;
+const WEAPON_FIRE_COOLDOWN = 0.14;
+const PROJECTILE_SPEED = 13.4;
+const PROJECTILE_TTL = 1.15;
+const PROJECTILE_RADIUS = 0.16;
+const PROJECTILE_DAMAGE = 1;
+const SHIP_MAX_HP = 24;
+const SHIP_NO_FIRE_RADIUS = 2.4;
+const SHIP_HIT_RADIUS_MULT = 0.78;
+const SNAIL_MAX_HP = 2;
+const SNAIL_MOVE_SPEED = 1.2;
+const SNAIL_ENRAGED_MOVE_SPEED = 2.1;
+const SNAIL_ENRAGED_TINT = 0xff4a4a;
+const SNAIL_HIT_RADIUS = 0.62;
+const SNAIL_ATTACK_RADIUS = 1.1;
+const SNAIL_ATTACK_COOLDOWN = 1.1;
+const SNAIL_PATH_RECALC_MIN = 0.24;
+const SNAIL_PATH_RECALC_MAX = 0.5;
+const SNAIL_WANDER_RECALC_MIN = 0.9;
+const SNAIL_WANDER_RECALC_MAX = 1.6;
+const SNAIL_WANDER_DISTANCE_MIN = 1.2;
+const SNAIL_WANDER_DISTANCE_MAX = 4.2;
+const SNAIL_WANDER_TARGET_DISTANCE = 10.5;
+const SNAIL_PATH_NODE_BUDGET = 360;
 const SCATTER_CLUSTER_RATIO = 0.7;
 const SCATTER_TRANSITION_RATIO = 0.2;
 const SCATTER_STRAY_RATIO = 0.1;
@@ -198,6 +223,22 @@ export class ThreeGame {
             o2: 100,
             o2HealthTimer: 0
         };
+        this.aimDirX = 1;
+        this.aimDirZ = 0;
+        this.aimFacingRow = 2;
+        this.aimWorldPoint = null;
+        this.hasActiveAim = false;
+        this.mouseAimActive = false;
+        this.lastMouseClientX = null;
+        this.lastMouseClientY = null;
+        this._aimResetTimer = 0;
+        this._aimRaycaster = new THREE.Raycaster();
+        this._projRaycaster = new THREE.Raycaster();
+        this.activeProjectiles = [];
+        this.weaponClipAmmo = WEAPON_CLIP_SIZE;
+        this.weaponReloading = false;
+        this.weaponReloadTimer = 0;
+        this.weaponFireCooldown = 0;
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
         this.totalDistanceTravelled = 0;
@@ -206,6 +247,7 @@ export class ThreeGame {
         this.terminalCloseListenerBound = false;
         this.o2BubbleObjects = null;
         this.goalModuleMaterials = null;
+        this.snailsEnabled = false;
 
         this.scale = {
             refresh: () => this.resize()
@@ -496,10 +538,10 @@ export class ThreeGame {
         this.playerMaterial.depthWrite = false;
         this.pickupAssets = this.createPickupAssets();
 
-        // Load scatter textures directly from assets. The source files already contain alpha,
-        // so avoid aggressive color-key postprocessing that can erase dark details.
+        // Most scatter assets carry alpha already. Cyber snails are keyed from black
+        // so their background does not render as a dark rectangle.
         this.scatterTextures = {
-            cybersnail: this.loadScatterTexture('/cybersnail.png', textureLoader),
+            cybersnail: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
             bunker_junk: this.loadScatterTexture('/bunker_junk.png', textureLoader),
             bunker_junk_uncommon: this.loadScatterTexture('/bunker_junk_uncommon.png', textureLoader),
             bunker_junk_rare: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
@@ -513,7 +555,7 @@ export class ThreeGame {
             cybersnail: new THREE.SpriteMaterial({
                 map: this.scatterTextures.cybersnail,
                 transparent: true,
-                alphaTest: 0.001,
+                alphaTest: 0.06,
                 depthWrite: false,
                 depthTest: true,
                 fog: false
@@ -732,7 +774,9 @@ export class ThreeGame {
                 hullModuleOffset: { ...MODULE_OFFSETS.hullMatrix },
                 radarModuleOffset: { ...MODULE_OFFSETS.radarDish },
                 reactorModuleOffset: { ...MODULE_OFFSETS.reactorCompressor },
-                color: 0x7dff5a
+                color: 0x7dff5a,
+                maxHp: SHIP_MAX_HP,
+                hp: SHIP_MAX_HP
             },
             {
                 type: 'TANK',
@@ -747,7 +791,9 @@ export class ThreeGame {
                 hullModuleOffset: { ...MODULE_OFFSETS.hullMatrix },
                 radarModuleOffset: { ...MODULE_OFFSETS.radarDish },
                 reactorModuleOffset: { ...MODULE_OFFSETS.reactorCompressor },
-                color: 0xffb700
+                color: 0xffb700,
+                maxHp: SHIP_MAX_HP,
+                hp: SHIP_MAX_HP
             },
             {
                 type: 'ENGINEER',
@@ -762,7 +808,9 @@ export class ThreeGame {
                 hullModuleOffset: { ...MODULE_OFFSETS.hullMatrix },
                 radarModuleOffset: { ...MODULE_OFFSETS.radarDish },
                 reactorModuleOffset: { ...MODULE_OFFSETS.reactorCompressor },
-                color: 0x00e5ff
+                color: 0x00e5ff,
+                maxHp: SHIP_MAX_HP,
+                hp: SHIP_MAX_HP
             }
         ];
 
@@ -878,6 +926,21 @@ export class ThreeGame {
             this.scene.add(ringMesh);
             ship.consoleRing = ringMesh;
 
+            const safeRing = new THREE.Mesh(
+                new THREE.RingGeometry(Math.max(0.1, SHIP_NO_FIRE_RADIUS - 0.04), SHIP_NO_FIRE_RADIUS + 0.04, 64),
+                new THREE.MeshBasicMaterial({
+                    color: ship.color,
+                    transparent: true,
+                    opacity: 0.14,
+                    side: THREE.DoubleSide,
+                    depthWrite: false
+                })
+            );
+            safeRing.rotation.x = -Math.PI / 2;
+            safeRing.position.set(ship.tileX, 0.028, ship.tileZ);
+            this.scene.add(safeRing);
+            ship.safeRing = safeRing;
+
             // 5. Light source for terminal screen (wow factor!)
             const terminalLight = new THREE.PointLight(ship.color, 1.8, 2.8, 2);
             terminalLight.position.set(consoleX, 0.5, consoleZ);
@@ -898,12 +961,14 @@ export class ThreeGame {
                 reactorModule.shadow,
                 reactorModule.sprite,
                 ringMesh,
+                safeRing,
                 terminalLight
             ];
         }
 
         this.syncPersistentUpgrades();
         this.updateCrashedShipsVisibility(false);
+        this.emitShipHealthState();
     }
 
     setupPlayer() {
@@ -956,6 +1021,8 @@ export class ThreeGame {
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
         this.ensureO2BubbleVisualState();
         this.emitVitalsState();
+        this.emitWeaponClipState();
+        this.emitShipHealthState();
     }
 
     createHiddenPlayerMarker() {
@@ -1019,20 +1086,55 @@ export class ThreeGame {
             this.interactWithConsole();
         };
 
-        // Tap the canvas itself to open the console when in range
+        // Pointer/tap state for canvas input.
         this._canvasTapStartX = 0;
         this._canvasTapStartY = 0;
+        this._canvasPointerType = 'mouse';
         this.handleCanvasPointerDown = (event) => {
             this._canvasTapStartX = event.clientX;
             this._canvasTapStartY = event.clientY;
+            this._canvasPointerType = event.pointerType || 'mouse';
+            if (this._canvasPointerType === 'mouse') {
+                this.lastMouseClientX = event.clientX;
+                this.lastMouseClientY = event.clientY;
+            }
+
+            if (!this.inputEnabled || this.isPlayerDead) return;
+            const pointerType = this._canvasPointerType;
+            const isTouchPointer = pointerType !== 'mouse';
+            if (isTouchPointer && this.isInTouchMoveControlBounds(event.clientX, event.clientY)) {
+                return;
+            }
+
+            if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
+                return;
+            }
+
+            this.updateAimFromClient(event.clientX, event.clientY, {
+                keepMouseActive: pointerType === 'mouse',
+                persistDuration: pointerType === 'mouse' ? 0 : 2.0
+            });
+            this.tryFireWeapon(event.clientX, event.clientY);
         };
+
+        this.handleCanvasPointerMove = (event) => {
+            if (!this.inputEnabled || this.isPlayerDead) return;
+            const pointerType = event.pointerType || this._canvasPointerType || 'mouse';
+            if (pointerType !== 'mouse') return;
+            this.lastMouseClientX = event.clientX;
+            this.lastMouseClientY = event.clientY;
+            this.updateAimFromClient(event.clientX, event.clientY, {
+                keepMouseActive: true,
+                persistDuration: 0
+            });
+        };
+
         this.handleCanvasTap = (event) => {
-            if (!this.inputEnabled || !this.activeInteractiveConsole) return;
+            if (!this.inputEnabled || this.isPlayerDead) return;
             const dx = event.clientX - this._canvasTapStartX;
             const dy = event.clientY - this._canvasTapStartY;
-            if (Math.sqrt(dx * dx + dy * dy) < 14) {
-                this.interactWithConsole();
-            }
+            const wasTap = Math.sqrt(dx * dx + dy * dy) < 14;
+            if (!wasTap) return;
         };
 
         window.addEventListener('keydown', this.handleKeyDown);
@@ -1040,7 +1142,53 @@ export class ThreeGame {
         this.consolePromptEl = document.getElementById('console-hud-prompt');
         this.consolePromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
+        this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
+    }
+
+    isInTouchMoveControlBounds(clientX, clientY) {
+        const touchMoveControl = document.getElementById('touch-move-control');
+        if (!touchMoveControl || touchMoveControl.classList.contains('hidden')) return false;
+        const rect = touchMoveControl.getBoundingClientRect();
+        return (
+            clientX >= rect.left
+            && clientX <= rect.right
+            && clientY >= rect.top
+            && clientY <= rect.bottom
+        );
+    }
+
+    getWorldAimPoint(clientX, clientY) {
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+        this._aimRaycaster.setFromCamera({ x: ndcX, y: ndcY }, this.camera);
+
+        const worldPoint = new THREE.Vector3();
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const hit = this._aimRaycaster.ray.intersectPlane(groundPlane, worldPoint);
+        if (!hit) return null;
+        return worldPoint;
+    }
+
+    updateAimFromClient(clientX, clientY, { keepMouseActive = false, persistDuration = 2.0 } = {}) {
+        if (!this.player) return null;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return null;
+
+        const aimDirX = worldPoint.x - this.player.position.x;
+        const aimDirZ = worldPoint.z - this.player.position.z;
+        const length = Math.hypot(aimDirX, aimDirZ);
+        if (length <= 0.0001) return null;
+
+        this.aimWorldPoint = worldPoint.clone();
+        this.aimDirX = aimDirX / length;
+        this.aimDirZ = aimDirZ / length;
+        this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
+        this.hasActiveAim = true;
+        this.mouseAimActive = keepMouseActive;
+        this._aimResetTimer = keepMouseActive ? 0 : Math.max(0, persistDuration);
+        return worldPoint;
     }
 
     setKeyState(code, pressed) {
@@ -1075,6 +1223,11 @@ export class ThreeGame {
         this.virtualInput.x = 0;
         this.virtualInput.z = 0;
         this.isMoving = false;
+        this.mouseAimActive = false;
+        this.hasActiveAim = false;
+        this._aimResetTimer = 0;
+        this.lastMouseClientX = null;
+        this.lastMouseClientY = null;
 
         this.activeInteractiveConsole = null;
         const promptEl = document.getElementById('console-hud-prompt');
@@ -1087,6 +1240,28 @@ export class ThreeGame {
         if (modal && !modal.classList.contains('hidden')) {
             modal.classList.add('hidden');
         }
+    }
+
+    setSnailsEnabled(enabled = true, { removeExisting = true } = {}) {
+        this.snailsEnabled = Boolean(enabled);
+        if (!this.snailsEnabled && removeExisting) {
+            this.removeActiveSnails();
+        }
+    }
+
+    removeActiveSnails() {
+        const survivors = [];
+        for (const sprite of this.scatterSprites) {
+            if (sprite?.userData?.type !== 'cybersnail') {
+                survivors.push(sprite);
+                continue;
+            }
+
+            sprite.parent?.remove(sprite);
+            sprite.material?.dispose?.();
+            sprite.geometry?.dispose?.();
+        }
+        this.scatterSprites = survivors;
     }
 
     getPlayerPosition() {
@@ -1202,6 +1377,7 @@ export class ThreeGame {
         this.updateCrashedShipsVisibility(true);
         this.ensureO2BubbleVisualState();
         this.emitVitalsState();
+        this.emitShipHealthState();
     }
 
     updateCrashedShipsVisibility(poof = false) {
@@ -1499,6 +1675,8 @@ export class ThreeGame {
         this.lastTime = now;
 
         this.updatePlayer(delta);
+        this.updateWeaponState(delta);
+        this.updateProjectiles(delta);
         this.updateCamera(delta);
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
@@ -1535,6 +1713,9 @@ export class ThreeGame {
                 ship.consoleRing.material.opacity = pulse;
                 const scalePulse = 0.95 + Math.sin(now * 0.006) * 0.05;
                 ship.consoleRing.scale.set(scalePulse, scalePulse, 1.0);
+            }
+            if (ship.safeRing) {
+                ship.safeRing.material.opacity = 0.1 + Math.sin(now * 0.003 + 1.1) * 0.03;
             }
 
             const consoleX = ship.tileX + ship.consoleOffset.x;
@@ -1587,6 +1768,31 @@ export class ThreeGame {
     interactWithConsole() {
         if (!this.activeInteractiveConsole) return;
         this.openConsoleModal(this.activeInteractiveConsole);
+    }
+
+    tryInteractWithConsolePointer(clientX, clientY) {
+        const ship = this.activeInteractiveConsole;
+        if (!ship || !this.inputEnabled) return false;
+
+        const modal = document.getElementById('console-terminal-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            return false;
+        }
+
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        const consoleX = ship.tileX + ship.consoleOffset.x;
+        const consoleZ = ship.tileZ + ship.consoleOffset.z;
+        const distToConsole = Math.hypot(worldPoint.x - consoleX, worldPoint.z - consoleZ);
+        const distToShipCore = Math.hypot(worldPoint.x - ship.tileX, worldPoint.z - ship.tileZ);
+
+        if (distToConsole <= 1.25 || distToShipCore <= Math.max(0.95, ship.width * 0.72)) {
+            this.interactWithConsole();
+            return true;
+        }
+
+        return false;
     }
 
     getSessionInventory() {
@@ -1785,10 +1991,21 @@ export class ThreeGame {
             if (el) el.textContent = String(value);
         };
 
+        setText('terminal-session-med', inventory.health);
+        setText('terminal-session-ammo', inventory.ammo);
+        setText('terminal-session-tech', inventory.weapon);
+        setText('terminal-session-coin', inventory.coin);
         setText('terminal-bank-med', bankState.med);
         setText('terminal-bank-ammo', bankState.ammo);
         setText('terminal-bank-tech', bankState.tech);
         setText('terminal-bank-coin', bankState.coin);
+        const totalBanked = (bankState.med ?? 0) + (bankState.ammo ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
+        setText('terminal-summary-run', inventory.total);
+        setText('terminal-summary-bank', totalBanked);
+        setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
+        setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
+        const heartsFromMed = Math.floor(bankState.med / 10);
+        setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
 
         const hint = document.getElementById('terminal-bank-hint');
         if (hint) {
@@ -1797,6 +2014,37 @@ export class ThreeGame {
             } else {
                 hint.textContent = 'DEPOSIT RESOURCES TO FUND O₂ REPAIRS.';
             }
+        }
+
+        const medkitBtn = document.getElementById('terminal-btn-medkit');
+        const medkitStatus = document.getElementById('terminal-medkit-status');
+        const medkitHint = document.getElementById('terminal-medkit-hint');
+        const canConvertMed = bankState.med >= 10 && this.playerVitals.hp < this.playerVitals.maxHp;
+        const heartsMissing = Math.max(0, this.playerVitals.maxHp - this.playerVitals.hp);
+        const conversionsReady = Math.floor(bankState.med / 10);
+
+        if (medkitStatus) {
+            if (this.playerVitals.hp >= this.playerVitals.maxHp) {
+                medkitStatus.textContent = 'HP FULL';
+            } else if (bankState.med < 10) {
+                medkitStatus.textContent = `${bankState.med}/10 MED`;
+            } else {
+                medkitStatus.textContent = `×${conversionsReady} AVAILABLE`;
+            }
+        }
+
+        if (medkitHint) {
+            if (this.playerVitals.hp >= this.playerVitals.maxHp) {
+                medkitHint.textContent = 'EXOSUIT INTEGRITY IS FULL. NO CONVERSION NEEDED.';
+            } else {
+                medkitHint.textContent = `${heartsMissing} HEART${heartsMissing === 1 ? '' : 'S'} MISSING. ${conversionsReady} CONVERSION${conversionsReady === 1 ? '' : 'S'} AVAILABLE (${bankState.med} MED STORED).`;
+            }
+        }
+
+        if (medkitBtn) {
+            medkitBtn.disabled = !canConvertMed;
+            medkitBtn.classList.toggle('btn-state--available', canConvertMed);
+            medkitBtn.classList.toggle('btn-state--locked', !canConvertMed);
         }
 
         const statusEl = document.getElementById('terminal-o2-generator-status');
@@ -1924,6 +2172,24 @@ export class ThreeGame {
         this.renderConsoleBanking(ship);
     }
 
+    attemptMedConversion(ship) {
+        const bankState = this.bank.getState();
+        if (bankState.med < 10 || this.playerVitals.hp >= this.playerVitals.maxHp) {
+            window.AudioManager?.play('ui_error', { volume: 0.55 });
+            return;
+        }
+
+        if (!this.bank.spend({ med: 10 })) {
+            window.AudioManager?.play('ui_error', { volume: 0.55 });
+            return;
+        }
+
+        this.healPlayer(1);
+        window.AudioManager?.play('ui_click', { volume: 0.55, playbackRate: 1.08 });
+        window.AudioManager?.play('ui_scan_ping', { volume: 0.3, playbackRate: 0.85 });
+        this.renderConsoleBanking(ship);
+    }
+
     openConsoleModal(ship) {
         const modal = document.getElementById('console-terminal-modal');
         if (!modal) return;
@@ -1957,6 +2223,11 @@ export class ThreeGame {
         const o2UpgradeBtn = document.getElementById(O2_GENERATOR_BUTTON_ID);
         if (o2UpgradeBtn) {
             o2UpgradeBtn.onclick = () => this.attemptO2GeneratorUpgrade(ship);
+        }
+
+        const medkitBtn = document.getElementById('terminal-btn-medkit');
+        if (medkitBtn) {
+            medkitBtn.onclick = () => this.attemptMedConversion(ship);
         }
 
         // Hook up Close button
@@ -2140,6 +2411,89 @@ export class ThreeGame {
         this.emitO2State();
     }
 
+    emitWeaponClipState() {
+        window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
+            detail: {
+                clip: this.weaponClipAmmo,
+                maxClip: WEAPON_CLIP_SIZE,
+                reloading: this.weaponReloading
+            }
+        }));
+    }
+
+    emitShipHealthState(ship = this.getActiveShip()) {
+        const activeShip = ship ?? this.getActiveShip();
+        if (!activeShip) return;
+        window.dispatchEvent(new CustomEvent('ship-health-changed', {
+            detail: {
+                shipType: activeShip.type,
+                hp: activeShip.hp,
+                maxHp: activeShip.maxHp
+            }
+        }));
+    }
+
+    resetWeaponState({ emit = true } = {}) {
+        for (const projectile of this.activeProjectiles) {
+            projectile?.mesh?.parent?.remove(projectile.mesh);
+            projectile?.mesh?.material?.dispose?.();
+            projectile?.mesh?.geometry?.dispose?.();
+        }
+        this.weaponClipAmmo = WEAPON_CLIP_SIZE;
+        this.weaponReloading = false;
+        this.weaponReloadTimer = 0;
+        this.weaponFireCooldown = 0;
+        this.activeProjectiles = [];
+        if (emit) {
+            this.emitWeaponClipState();
+        }
+    }
+
+    isInsideNoFireZone() {
+        const activeShip = this.getActiveShip();
+        if (!activeShip || !this.player) return false;
+
+        const shipDist = Math.hypot(
+            this.player.position.x - activeShip.tileX,
+            this.player.position.z - activeShip.tileZ
+        );
+        if (shipDist <= SHIP_NO_FIRE_RADIUS) {
+            return true;
+        }
+
+        const generatorState = this.getO2GeneratorState();
+        if (!generatorState.isOnline) {
+            return false;
+        }
+
+        return this.getActiveO2GeneratorDistance() <= generatorState.radius;
+    }
+
+    damageShip(ship, amount = 1, reason = 'impact') {
+        if (!ship) return;
+        const prevHp = Number.isFinite(ship.hp) ? ship.hp : ship.maxHp;
+        ship.hp = Math.max(0, prevHp - Math.max(0, amount));
+        if (ship.hp === prevHp) return;
+
+        if (ship.type === this.playerType) {
+            this.emitShipHealthState(ship);
+        }
+
+        window.dispatchEvent(new CustomEvent('ship-damaged', {
+            detail: {
+                shipType: ship.type,
+                amount: prevHp - ship.hp,
+                hp: ship.hp,
+                maxHp: ship.maxHp,
+                reason
+            }
+        }));
+
+        if (ship.hp <= 0 && ship.type === this.playerType) {
+            this.handleDeath('ship-destroyed');
+        }
+    }
+
     getPlayerVitals() {
         return {
             hp: this.playerVitals.hp,
@@ -2260,6 +2614,11 @@ export class ThreeGame {
 
     respawnPlayer({ resetRunState = true, skipEffects = false } = {}) {
         this.resetVitalsForRun({ emit: false });
+        this.resetWeaponState({ emit: false });
+        this.mouseAimActive = false;
+        this.hasActiveAim = false;
+        this._aimResetTimer = 0;
+        this.aimWorldPoint = null;
         this.keys.up = false;
         this.keys.down = false;
         this.keys.left = false;
@@ -2277,6 +2636,11 @@ export class ThreeGame {
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;
+            if (this.crashedShips) {
+                for (const ship of this.crashedShips) {
+                    ship.hp = ship.maxHp;
+                }
+            }
             window.resetPickupCounter?.();
             this.depletedGearPileKeys.clear();
             this.clearLoadedChunksForRunReset();
@@ -2290,6 +2654,8 @@ export class ThreeGame {
         }
 
         this.emitVitalsState();
+        this.emitWeaponClipState();
+        this.emitShipHealthState();
         window.dispatchEvent(new CustomEvent('player-respawned', {
             detail: {
                 hp: this.playerVitals.hp,
@@ -2438,9 +2804,11 @@ export class ThreeGame {
     }
 
     getRunStats() {
+        const bankState = this.bank.getState();
+        const totalBanked = (bankState.med ?? 0) + (bankState.ammo ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
         return {
             distanceTravelled: Math.round(this.totalDistanceTravelled),
-            totalPickups: window.pickupCounterState?.total ?? 0,
+            totalPickups: totalBanked,
             generatorLevel: this.bank.getO2GeneratorLevel(),
             depthTier: this.maxDepthTierReached,
             depthTierName: this.getDepthTierName(this.maxDepthTierReached)
@@ -2468,6 +2836,9 @@ export class ThreeGame {
 
         this.animationTimer = 0;
         this.lastAnimationColumn = -1;
+        if (this.hasActiveAim) {
+            this.currentFacingRow = this.aimFacingRow;
+        }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
     }
 
@@ -2492,6 +2863,229 @@ export class ThreeGame {
     updatePlayerSpriteFrame(column, row) {
         const texture = this.playerTextures[this.playerType] ?? this.playerTextures.SCOUT;
         texture.offset.set(column * SPRITE_FRAME_REPEAT, (SPRITE_GRID_SIZE - 1 - row) * SPRITE_FRAME_REPEAT);
+    }
+
+    updateWeaponState(delta) {
+        if (this.weaponFireCooldown > 0) {
+            this.weaponFireCooldown = Math.max(0, this.weaponFireCooldown - delta);
+        }
+
+        if (this.mouseAimActive && Number.isFinite(this.lastMouseClientX) && Number.isFinite(this.lastMouseClientY)) {
+            this.updateAimFromClient(this.lastMouseClientX, this.lastMouseClientY, {
+                keepMouseActive: true,
+                persistDuration: 0
+            });
+        }
+
+        if (!this.mouseAimActive && this._aimResetTimer > 0) {
+            this._aimResetTimer = Math.max(0, this._aimResetTimer - delta);
+            if (this._aimResetTimer === 0) {
+                this.hasActiveAim = false;
+            }
+        }
+
+        if (!this.weaponReloading) return;
+        this.weaponReloadTimer = Math.max(0, this.weaponReloadTimer - delta);
+        if (this.weaponReloadTimer > 0) return;
+
+        this.weaponReloading = false;
+        this.weaponClipAmmo = WEAPON_CLIP_SIZE;
+        this.emitWeaponClipState();
+        window.AudioManager?.play('ui_click', { volume: 0.28, playbackRate: 1.18 });
+    }
+
+    startReload() {
+        if (this.weaponReloading) return;
+        this.weaponReloading = true;
+        this.weaponReloadTimer = WEAPON_RELOAD_DURATION;
+        this.emitWeaponClipState();
+        window.AudioManager?.play('door_gears_spin', { volume: 0.22, playbackRate: 1.22 });
+    }
+
+    tryFireWeapon(clientX, clientY) {
+        if (!this.inputEnabled || this.isPlayerDead) return;
+
+        if (this.isInsideNoFireZone()) {
+            window.AudioManager?.play('ui_error', { volume: 0.42 });
+            window.dispatchEvent(new CustomEvent('combat-no-fire-zone'));
+            return;
+        }
+
+        if (this.weaponReloading) {
+            window.AudioManager?.play('ui_error', { volume: 0.34, playbackRate: 1.05 });
+            return;
+        }
+        if (this.weaponFireCooldown > 0) {
+            return;
+        }
+        if (this.weaponClipAmmo <= 0) {
+            this.startReload();
+            return;
+        }
+
+        const availableAmmo = window.pickupCounterState?.ammo ?? 0;
+        if (availableAmmo < 1) {
+            window.AudioManager?.play('ui_error', { volume: 0.45 });
+            window.dispatchEvent(new CustomEvent('combat-no-ammo'));
+            return;
+        }
+
+        const worldPoint = this.updateAimFromClient(clientX, clientY, {
+            keepMouseActive: this._canvasPointerType === 'mouse',
+            persistDuration: this._canvasPointerType === 'mouse' ? 0 : 2.0
+        });
+
+        if (!worldPoint && !this.hasActiveAim) return;
+
+        const normX = this.aimDirX;
+        const normZ = this.aimDirZ;
+        if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return;
+
+        window.dispatchEvent(new CustomEvent('player-spend-ammo', { detail: { amount: 1 } }));
+        this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
+        this.weaponFireCooldown = WEAPON_FIRE_COOLDOWN;
+        this.emitWeaponClipState();
+
+        this.spawnProjectile({
+            x: this.player.position.x + normX * 0.62,
+            z: this.player.position.z + normZ * 0.62,
+            vx: normX * PROJECTILE_SPEED,
+            vz: normZ * PROJECTILE_SPEED,
+            ttl: PROJECTILE_TTL,
+            damage: PROJECTILE_DAMAGE,
+            radius: PROJECTILE_RADIUS
+        });
+
+        window.AudioManager?.play('ui_scan_ping', { volume: 0.34, playbackRate: 1.42 });
+
+        if (this.weaponClipAmmo <= 0) {
+            this.startReload();
+        }
+    }
+
+    spawnProjectile({
+        x,
+        z,
+        vx,
+        vz,
+        ttl = PROJECTILE_TTL,
+        damage = PROJECTILE_DAMAGE,
+        radius = PROJECTILE_RADIUS
+    }) {
+        const mesh = new THREE.Mesh(
+            new THREE.SphereGeometry(radius, 8, 8),
+            new THREE.MeshBasicMaterial({
+                color: 0xffe08f,
+                transparent: true,
+                opacity: 0.95
+            })
+        );
+        mesh.position.set(x, 0.42, z);
+        mesh.renderOrder = 25;
+        this.scene.add(mesh);
+
+        this.activeProjectiles.push({
+            mesh,
+            vx,
+            vz,
+            ttl,
+            damage,
+            radius
+        });
+    }
+
+    checkProjectileWallHit(projectile) {
+        const speed = Math.hypot(projectile.vx, projectile.vz);
+        if (speed <= 0.0001) return false;
+        this._projRaycaster.set(
+            new THREE.Vector3(projectile.mesh.position.x, 0.45, projectile.mesh.position.z),
+            new THREE.Vector3(projectile.vx / speed, 0, projectile.vz / speed)
+        );
+        this._projRaycaster.far = Math.max(0.08, speed * 0.045);
+        const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
+        return hits.length > 0;
+    }
+
+    checkProjectileShipHit(projectile) {
+        if (!this.crashedShips) return null;
+        for (const ship of this.crashedShips) {
+            if (!ship.isVisible || ship.hp <= 0) continue;
+            const dist = Math.hypot(
+                projectile.mesh.position.x - ship.tileX,
+                projectile.mesh.position.z - ship.tileZ
+            );
+            if (dist <= (ship.width * SHIP_HIT_RADIUS_MULT) + (projectile.radius ?? PROJECTILE_RADIUS)) {
+                return ship;
+            }
+        }
+        return null;
+    }
+
+    checkProjectileSnailHit(projectile) {
+        for (const sprite of this.scatterSprites) {
+            if (!sprite?.parent) continue;
+            if (sprite.userData?.type !== 'cybersnail') continue;
+            if (sprite.userData?.burstTriggered) continue;
+            const dist = Math.hypot(
+                projectile.mesh.position.x - sprite.position.x,
+                projectile.mesh.position.z - sprite.position.z
+            );
+            if (dist <= SNAIL_HIT_RADIUS + (projectile.radius ?? PROJECTILE_RADIUS)) {
+                return sprite;
+            }
+        }
+        return null;
+    }
+
+    destroyProjectile(projectile) {
+        projectile?.mesh?.parent?.remove(projectile.mesh);
+        projectile?.mesh?.material?.dispose?.();
+        projectile?.mesh?.geometry?.dispose?.();
+    }
+
+    updateProjectiles(delta) {
+        if (!this.activeProjectiles.length) return;
+        const toRemove = new Set();
+
+        for (const projectile of this.activeProjectiles) {
+            projectile.ttl -= delta;
+            if (projectile.ttl <= 0) {
+                toRemove.add(projectile);
+                continue;
+            }
+
+            projectile.mesh.position.x += projectile.vx * delta;
+            projectile.mesh.position.z += projectile.vz * delta;
+
+            if (this.checkProjectileWallHit(projectile)) {
+                toRemove.add(projectile);
+                continue;
+            }
+
+            const snail = this.checkProjectileSnailHit(projectile);
+            if (snail) {
+                this.damageSnail(snail, projectile.damage);
+                toRemove.add(projectile);
+                continue;
+            }
+
+            const ship = this.checkProjectileShipHit(projectile);
+            if (ship) {
+                this.damageShip(ship, projectile.damage, 'friendly-fire');
+                toRemove.add(projectile);
+            }
+        }
+
+        if (toRemove.size === 0) return;
+        const survivors = [];
+        for (const projectile of this.activeProjectiles) {
+            if (toRemove.has(projectile)) {
+                this.destroyProjectile(projectile);
+                continue;
+            }
+            survivors.push(projectile);
+        }
+        this.activeProjectiles = survivors;
     }
 
     updateCamera(delta) {
@@ -3111,18 +3705,26 @@ export class ThreeGame {
         // 6. Build the final micro-varied placement properties
         const finalPlacements = [];
         const junkPlacementAnchors = [];
+        let snailCount = 0;
         for (const p of placements) {
             // Re-verify after relaxation that it's still walkable
             if (!isWalkable(p.x, p.z)) continue;
 
-            // Determine asset type based on weighted roll
-            // no snails for now: gears on the floor, spores floating above
+            // Determine asset type based on weighted roll.
             const roll = random();
+            const distFromSpawn = Math.hypot(p.x - spawn.x, p.z - spawn.y);
+            const canSpawnSnail = distFromSpawn > 14 && snailCount < 1;
             let type;
             let scaleMultiplier;
             let elevation;
             let opacity;
-            if (roll < 0.62) {
+            if (canSpawnSnail && roll < 0.08) {
+                type = 'cybersnail';
+                scaleMultiplier = 1.05 + random() * 0.26;
+                elevation = 0.09 + random() * 0.05;
+                opacity = 1;
+                snailCount += 1;
+            } else if (roll < 0.62) {
                 type = this.chooseWeightedType(JUNK_SCATTER_VARIANTS, random);
                 scaleMultiplier = 1.72 + random() * 0.34;
                 // Keep junk piles visually grounded but high enough to avoid floor clipping artifacts.
@@ -3155,10 +3757,10 @@ export class ThreeGame {
             // Scale variation (+- 25%)
             const scale = scaleMultiplier * (0.75 + random() * 0.5);
             // Tilt distortion
-            const tiltX = (random() - 0.5) * 0.16;
-            const tiltZ = (random() - 0.5) * 0.16;
+            const tiltX = type === 'cybersnail' ? 0 : (random() - 0.5) * 0.16;
+            const tiltZ = type === 'cybersnail' ? 0 : (random() - 0.5) * 0.16;
             // Subtle rotation (0 to 2pi)
-            const rotation = random() * Math.PI * 2;
+            const rotation = type === 'cybersnail' ? 0 : random() * Math.PI * 2;
 
             finalPlacements.push({
                 x: p.x,
@@ -3245,6 +3847,50 @@ export class ThreeGame {
                 burstTimer: 0,
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1
+            };
+            return sprite;
+        }
+
+        if (placement.type === 'cybersnail') {
+            if (!this.snailsEnabled) return null;
+            const snailMaterial = this.scatterMaterials.cybersnail;
+            if (!snailMaterial) return null;
+            const clonedMat = snailMaterial.clone();
+            clonedMat.rotation = 0;
+            clonedMat.alphaTest = 0.06;
+            clonedMat.color.setHex(0xffffff);
+
+            const sprite = new THREE.Sprite(clonedMat);
+            sprite.center.set(0.5, 0);
+            sprite.position.set(placement.x, placement.elevation, placement.z);
+            sprite.frustumCulled = false;
+            sprite.renderOrder = 6;
+            sprite.scale.set(scaleX, scaleY, 1);
+            sprite.userData = {
+                isScatter: true,
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: placement.elevation,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                burstTriggered: false,
+                burstTimer: 0,
+                phase: placement.phase ?? 0,
+                baseOpacity: placement.opacity ?? 1,
+                hp: SNAIL_MAX_HP,
+                maxHp: SNAIL_MAX_HP,
+                speed: SNAIL_MOVE_SPEED,
+                enraged: false,
+                facingSign: 1,
+                pathNodes: null,
+                pathIndex: 0,
+                pathGoalTileX: null,
+                pathGoalTileZ: null,
+                pathRetargetTimer: 0,
+                aiMode: 'hunt',
+                targetType: 'ship',
+                attackCooldown: 0
             };
             return sprite;
         }
@@ -3837,8 +4483,381 @@ export class ThreeGame {
         }
     }
 
+    createSnailDropPlacement(originX, originZ, targetX, targetZ, type = 'weapon') {
+        const rarity = LOOT_RARITIES.find((entry) => entry.key === 'uncommon') ?? LOOT_RARITIES[0];
+        return {
+            worldX: targetX,
+            worldZ: targetZ,
+            type,
+            rarity,
+            scale: type === 'coin' ? 0.7 : 0.82,
+            rotation: Math.random() * Math.PI * 2,
+            tiltX: (Math.random() - 0.5) * 0.12,
+            tiltZ: (Math.random() - 0.5) * 0.12,
+            elevation: 0.18 + Math.random() * 0.08,
+            offsetX: 0,
+            offsetZ: 0,
+            bobOffset: Math.random() * Math.PI * 2,
+            shadowRadius: type === 'weapon' ? 0.3 : 0.24,
+            collectLock: 0.34,
+            ejectStartX: originX,
+            ejectStartZ: originZ,
+            ejectTargetX: targetX,
+            ejectTargetZ: targetZ
+        };
+    }
+
+    spawnSnailDrops(sprite) {
+        const parent = sprite?.parent;
+        if (!parent) return;
+        const x = sprite.position.x;
+        const z = sprite.position.z;
+        const dropTypes = ['weapon', 'weapon', 'ammo'];
+        let placed = 0;
+
+        for (const type of dropTypes) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 0.45 + Math.random() * 0.32;
+            const targetX = x + Math.cos(angle) * radius;
+            const targetZ = z + Math.sin(angle) * radius;
+            if (this.getTileType(Math.round(targetX), Math.round(targetZ)) === '#') {
+                continue;
+            }
+            const placement = this.createSnailDropPlacement(x, z, targetX, targetZ, type);
+            const pickup = this.createPickupInstance(placement);
+            parent.add(pickup);
+            this.pickupMeshes.push(pickup);
+            placed += 1;
+        }
+
+        if (placed === 0) {
+            const placement = this.createSnailDropPlacement(x, z, x, z, 'weapon');
+            const pickup = this.createPickupInstance(placement);
+            parent.add(pickup);
+            this.pickupMeshes.push(pickup);
+        }
+    }
+
+    damageSnail(sprite, amount = 1) {
+        if (!sprite?.userData || sprite.userData.type !== 'cybersnail' || sprite.userData.burstTriggered) return;
+        const previousHp = Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : SNAIL_MAX_HP;
+        const damage = Math.max(0, amount);
+        if (damage <= 0) return;
+        sprite.userData.hp = Math.max(0, previousHp - damage);
+        if (sprite.userData.hp === previousHp) return;
+
+        if (sprite.userData.hp === 1 && !sprite.userData.enraged) {
+            sprite.userData.enraged = true;
+            sprite.userData.speed = SNAIL_ENRAGED_MOVE_SPEED;
+            sprite.userData.attackCooldown = Math.min(sprite.userData.attackCooldown ?? 0, 0.2);
+            sprite.material?.color?.setHex(SNAIL_ENRAGED_TINT);
+        }
+
+        if (sprite.userData.hp > 0) {
+            window.dispatchEvent(new CustomEvent('enemy-hit', {
+                detail: {
+                    type: 'cybersnail',
+                    hp: sprite.userData.hp,
+                    maxHp: sprite.userData.maxHp ?? SNAIL_MAX_HP,
+                    enraged: Boolean(sprite.userData.enraged)
+                }
+            }));
+            return;
+        }
+
+        sprite.userData.burstTriggered = true;
+        sprite.userData.burstTimer = 0;
+        this.spawnSnailDrops(sprite);
+        this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, 'bunker_junk_uncommon');
+        window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
+    }
+
+    isSnailTileWalkable(tileX, tileZ) {
+        return this.getTileType(tileX, tileZ) !== '#';
+    }
+
+    pickSnailWanderTile(sprite, target = null) {
+        const originX = sprite.position.x;
+        const originZ = sprite.position.z;
+        const baseAngle = target
+            ? Math.atan2(target.z - originZ, target.x - originX)
+            : Math.random() * Math.PI * 2;
+
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const angle = baseAngle + (Math.random() - 0.5) * Math.PI * (1.2 + attempt * 0.18);
+            const distance = SNAIL_WANDER_DISTANCE_MIN + Math.random() * (SNAIL_WANDER_DISTANCE_MAX - SNAIL_WANDER_DISTANCE_MIN);
+            const tileX = Math.round(originX + Math.cos(angle) * distance);
+            const tileZ = Math.round(originZ + Math.sin(angle) * distance);
+            if (this.isSnailTileWalkable(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+
+        return null;
+    }
+
+    selectSnailTarget(sprite, activeShip) {
+        const targets = [];
+        if (this.player && !this.isPlayerDead) {
+            targets.push({
+                type: 'player',
+                x: this.player.position.x,
+                z: this.player.position.z
+            });
+        }
+        if (activeShip && activeShip.hp > 0) {
+            targets.push({
+                type: 'ship',
+                x: activeShip.tileX,
+                z: activeShip.tileZ
+            });
+        }
+        if (!targets.length) return null;
+
+        for (const target of targets) {
+            target.distance = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
+        }
+        targets.sort((a, b) => a.distance - b.distance);
+        const nearest = targets[0];
+
+        if (!sprite.userData.enraged && nearest.distance > SNAIL_WANDER_TARGET_DISTANCE) {
+            const wanderTile = this.pickSnailWanderTile(sprite, nearest);
+            if (wanderTile) {
+                return {
+                    ...nearest,
+                    mode: 'wander',
+                    goalX: wanderTile.x,
+                    goalZ: wanderTile.z
+                };
+            }
+        }
+
+        return {
+            ...nearest,
+            mode: 'hunt',
+            goalX: nearest.x,
+            goalZ: nearest.z
+        };
+    }
+
+    findSnailPath(startTileX, startTileZ, goalTileX, goalTileZ, nodeBudget = SNAIL_PATH_NODE_BUDGET) {
+        const keyOf = (x, z) => `${x},${z}`;
+        const parseKey = (key) => {
+            const [x, z] = key.split(',');
+            return { x: Number(x), z: Number(z) };
+        };
+        const heuristic = (ax, az, bx, bz) => Math.hypot(bx - ax, bz - az);
+        const directions = [
+            { dx: 1, dz: 0, cost: 1 },
+            { dx: -1, dz: 0, cost: 1 },
+            { dx: 0, dz: 1, cost: 1 },
+            { dx: 0, dz: -1, cost: 1 },
+            { dx: 1, dz: 1, cost: Math.SQRT2, diagonal: true },
+            { dx: 1, dz: -1, cost: Math.SQRT2, diagonal: true },
+            { dx: -1, dz: 1, cost: Math.SQRT2, diagonal: true },
+            { dx: -1, dz: -1, cost: Math.SQRT2, diagonal: true }
+        ];
+
+        if (!this.isSnailTileWalkable(startTileX, startTileZ)) {
+            return [{ x: startTileX, z: startTileZ }];
+        }
+
+        let resolvedGoalX = goalTileX;
+        let resolvedGoalZ = goalTileZ;
+        if (!this.isSnailTileWalkable(resolvedGoalX, resolvedGoalZ)) {
+            const fallbackOffsets = [
+                [1, 0], [-1, 0], [0, 1], [0, -1],
+                [1, 1], [-1, 1], [1, -1], [-1, -1],
+                [2, 0], [-2, 0], [0, 2], [0, -2]
+            ];
+            let fallback = null;
+            let fallbackDist = Infinity;
+            for (const [dx, dz] of fallbackOffsets) {
+                const nx = resolvedGoalX + dx;
+                const nz = resolvedGoalZ + dz;
+                if (!this.isSnailTileWalkable(nx, nz)) continue;
+                const dist = heuristic(startTileX, startTileZ, nx, nz);
+                if (dist < fallbackDist) {
+                    fallback = { x: nx, z: nz };
+                    fallbackDist = dist;
+                }
+            }
+            if (fallback) {
+                resolvedGoalX = fallback.x;
+                resolvedGoalZ = fallback.z;
+            }
+        }
+
+        const startKey = keyOf(startTileX, startTileZ);
+        const goalKey = keyOf(resolvedGoalX, resolvedGoalZ);
+        if (startKey === goalKey) {
+            return [{ x: startTileX, z: startTileZ }];
+        }
+
+        const openSet = [startKey];
+        const closedSet = new Set();
+        const cameFrom = new Map();
+        const gScore = new Map([[startKey, 0]]);
+        const fScore = new Map([[startKey, heuristic(startTileX, startTileZ, resolvedGoalX, resolvedGoalZ)]]);
+
+        let explored = 0;
+        let bestKey = startKey;
+        let bestDistance = heuristic(startTileX, startTileZ, resolvedGoalX, resolvedGoalZ);
+
+        while (openSet.length > 0 && explored < nodeBudget) {
+            openSet.sort((a, b) => (fScore.get(a) ?? Infinity) - (fScore.get(b) ?? Infinity));
+            const currentKey = openSet.shift();
+            if (!currentKey) break;
+            if (closedSet.has(currentKey)) continue;
+
+            const current = parseKey(currentKey);
+            const distanceToGoal = heuristic(current.x, current.z, resolvedGoalX, resolvedGoalZ);
+            if (distanceToGoal < bestDistance) {
+                bestDistance = distanceToGoal;
+                bestKey = currentKey;
+            }
+
+            if (currentKey === goalKey) {
+                bestKey = currentKey;
+                break;
+            }
+
+            closedSet.add(currentKey);
+            explored += 1;
+            const currentG = gScore.get(currentKey) ?? Infinity;
+
+            for (const dir of directions) {
+                const nx = current.x + dir.dx;
+                const nz = current.z + dir.dz;
+                if (!this.isSnailTileWalkable(nx, nz)) continue;
+                if (dir.diagonal) {
+                    if (!this.isSnailTileWalkable(current.x + dir.dx, current.z) || !this.isSnailTileWalkable(current.x, current.z + dir.dz)) {
+                        continue;
+                    }
+                }
+
+                const neighborKey = keyOf(nx, nz);
+                if (closedSet.has(neighborKey)) continue;
+                const tentativeG = currentG + dir.cost;
+                if (tentativeG >= (gScore.get(neighborKey) ?? Infinity)) continue;
+
+                cameFrom.set(neighborKey, currentKey);
+                gScore.set(neighborKey, tentativeG);
+                const nextF = tentativeG + heuristic(nx, nz, resolvedGoalX, resolvedGoalZ);
+                fScore.set(neighborKey, nextF);
+                if (!openSet.includes(neighborKey)) {
+                    openSet.push(neighborKey);
+                }
+            }
+        }
+
+        const pathKeys = [bestKey];
+        let walkKey = bestKey;
+        while (cameFrom.has(walkKey)) {
+            walkKey = cameFrom.get(walkKey);
+            pathKeys.push(walkKey);
+        }
+        pathKeys.reverse();
+
+        return pathKeys.map((key) => {
+            const point = parseKey(key);
+            return { x: point.x, z: point.z };
+        });
+    }
+
+    updateSnailBehavior(sprite, delta, activeShip) {
+        const data = sprite.userData;
+        data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
+        data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
+
+        const target = this.selectSnailTarget(sprite, activeShip);
+        if (!target) return;
+
+        const startTileX = Math.round(sprite.position.x);
+        const startTileZ = Math.round(sprite.position.z);
+        const goalTileX = Math.round(target.goalX);
+        const goalTileZ = Math.round(target.goalZ);
+        const targetChanged = data.pathGoalTileX !== goalTileX
+            || data.pathGoalTileZ !== goalTileZ
+            || data.aiMode !== target.mode
+            || data.targetType !== target.type;
+        const noPath = !Array.isArray(data.pathNodes) || data.pathNodes.length === 0 || data.pathIndex >= data.pathNodes.length;
+        const shouldRepath = targetChanged || noPath || data.pathRetargetTimer <= 0;
+
+        if (shouldRepath) {
+            const pathNodes = this.findSnailPath(startTileX, startTileZ, goalTileX, goalTileZ, SNAIL_PATH_NODE_BUDGET);
+            data.pathNodes = pathNodes;
+            data.pathIndex = pathNodes.length > 1 ? 1 : 0;
+            data.pathGoalTileX = goalTileX;
+            data.pathGoalTileZ = goalTileZ;
+            data.aiMode = target.mode;
+            data.targetType = target.type;
+            data.pathRetargetTimer = target.mode === 'hunt'
+                ? SNAIL_PATH_RECALC_MIN + Math.random() * (SNAIL_PATH_RECALC_MAX - SNAIL_PATH_RECALC_MIN)
+                : SNAIL_WANDER_RECALC_MIN + Math.random() * (SNAIL_WANDER_RECALC_MAX - SNAIL_WANDER_RECALC_MIN);
+        }
+
+        let moveTargetX = target.goalX;
+        let moveTargetZ = target.goalZ;
+        if (Array.isArray(data.pathNodes) && data.pathNodes.length > 0) {
+            const index = Math.max(0, Math.min(data.pathIndex ?? 0, data.pathNodes.length - 1));
+            const waypoint = data.pathNodes[index];
+            moveTargetX = waypoint.x;
+            moveTargetZ = waypoint.z;
+            const waypointDistance = Math.hypot(moveTargetX - sprite.position.x, moveTargetZ - sprite.position.z);
+            if (waypointDistance <= 0.22 && index < data.pathNodes.length - 1) {
+                data.pathIndex = index + 1;
+                const nextWaypoint = data.pathNodes[data.pathIndex];
+                moveTargetX = nextWaypoint.x;
+                moveTargetZ = nextWaypoint.z;
+            } else {
+                data.pathIndex = index;
+            }
+        }
+
+        const toGoalX = moveTargetX - sprite.position.x;
+        const toGoalZ = moveTargetZ - sprite.position.z;
+        const moveDistance = Math.hypot(toGoalX, toGoalZ);
+        if (moveDistance > 0.001) {
+            const dirX = toGoalX / moveDistance;
+            const dirZ = toGoalZ / moveDistance;
+            const step = Math.min(moveDistance, (data.speed ?? SNAIL_MOVE_SPEED) * delta);
+            const nextX = sprite.position.x + dirX * step;
+            const nextZ = sprite.position.z + dirZ * step;
+
+            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                sprite.position.x = nextX;
+                sprite.position.z = nextZ;
+            } else {
+                data.pathRetargetTimer = 0;
+                data.pathNodes = null;
+            }
+
+            const xTurnThreshold = 0.08;
+            if (dirX <= -xTurnThreshold) {
+                data.facingSign = -1;
+            } else if (dirX >= xTurnThreshold) {
+                data.facingSign = 1;
+            }
+            const facingSign = data.facingSign === -1 ? -1 : 1;
+            sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
+        }
+
+        const distanceToTarget = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
+        if (distanceToTarget <= SNAIL_ATTACK_RADIUS && data.attackCooldown <= 0) {
+            data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
+            if (target.type === 'player') {
+                this.takeDamage(1, 'snail');
+            } else if (activeShip) {
+                this.damageShip(activeShip, 1, 'snail');
+            }
+            window.AudioManager?.play('amb_metal_stress', { volume: 0.24, playbackRate: 1.1 });
+        }
+    }
+
     updateScatter(delta, now) {
         const time = now * 0.001;
+        const activeShip = this.getActiveShip();
         
         for (const child of this.scatterSprites) {
             if (child.userData.type.startsWith('bio_spores')) {
@@ -3861,6 +4880,10 @@ export class ThreeGame {
                     1
                 );
                 child.material.opacity = child.userData.baseOpacity;
+            } else if (child.userData.type === 'cybersnail') {
+                child.position.y = child.userData.baseY + Math.sin(time * 4 + child.userData.phase) * 0.04;
+                child.material.opacity = child.userData.baseOpacity;
+                this.updateSnailBehavior(child, delta, activeShip);
             }
 
             if (child.userData.burstTriggered) {
@@ -3871,6 +4894,25 @@ export class ThreeGame {
                     const burstScale = 1 + Math.sin(Math.min(child.userData.burstTimer * 8, Math.PI)) * 0.18;
                     child.scale.set(
                         child.userData.baseScaleX * burstScale,
+                        child.userData.baseScaleY * burstScale,
+                        1
+                    );
+                    child.material.opacity = child.userData.baseOpacity * (1 - fadeT);
+
+                    if (fadeT >= 1) {
+                        child.parent?.remove(child);
+                        child.material?.dispose?.();
+                        child.geometry?.dispose?.();
+                        this.scatterSprites = this.scatterSprites.filter((sprite) => sprite !== child);
+                        continue;
+                    }
+                } else if (child.userData.type === 'cybersnail') {
+                    const fadeDuration = 0.22;
+                    const fadeT = Math.min(child.userData.burstTimer / fadeDuration, 1);
+                    const burstScale = 1 + Math.sin(Math.min(child.userData.burstTimer * 11, Math.PI)) * 0.24;
+                    const facingSign = child.scale.x < 0 ? -1 : 1;
+                    child.scale.set(
+                        child.userData.baseScaleX * facingSign * burstScale,
                         child.userData.baseScaleY * burstScale,
                         1
                     );
@@ -4444,10 +5486,12 @@ export class ThreeGame {
 
     destroy() {
         this.renderer.setAnimationLoop(null);
+        this.resetWeaponState({ emit: false });
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
+        this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());

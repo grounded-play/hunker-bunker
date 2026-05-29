@@ -214,6 +214,22 @@
         <div class="hud-header__left">
           <div class="level-indicator">BUNKER LEVEL <span id="level-num">0</span></div>
         </div>
+        <div class="hud-header__center">
+          <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
+            <span class="weapon-status-panel__title">SIDEARM</span>
+            <span class="weapon-status-panel__clip">
+              <span id="weapon-clip-current">6</span>/<span id="weapon-clip-max">6</span>
+            </span>
+            <span id="weapon-reload-label" class="weapon-status-panel__reload hidden">RELOADING</span>
+          </div>
+          <div id="ship-status-panel" class="ship-status-panel" aria-live="polite">
+            <span class="ship-status-panel__title">SHIP INTEGRITY</span>
+            <div class="ship-status-panel__track">
+              <div id="ship-hp-bar" class="ship-status-panel__bar"></div>
+            </div>
+            <span id="ship-hp-text" class="ship-status-panel__value">100%</span>
+          </div>
+        </div>
         <div class="hud-header__right">
           <div id="vitals-panel" class="vitals-panel vitals-panel--topbar" aria-live="polite">
             <div class="vitals-panel__title">VITALS</div>
@@ -246,7 +262,7 @@
           <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">✚</span>MED</span>
           <span id="pickup-count-health">0</span>
         </div>
-        <div class="pickup-counter-panel__row">
+        <div class="pickup-counter-panel__row" id="pickup-row-ammo">
           <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◍</span>AMMO</span>
           <span id="pickup-count-ammo">0</span>
         </div>
@@ -357,35 +373,85 @@
         <div class="terminal-body">
         <div class="terminal-layout terminal-layout--shop">
 
-          <!-- Bank balance: compact resource grid + deposit -->
-          <div id="terminal-bank-panel" class="terminal-shop-bank">
-            <div class="terminal-section-title">BANK BALANCE</div>
-            <div class="terminal-bank-grid">
-              <div class="terminal-bank-cell">
-                <span class="terminal-bank-cell__label">MED</span>
-                <span class="terminal-bank-cell__value" id="terminal-bank-med">0</span>
+          <div class="terminal-shop-toprow">
+            <!-- Bank balance: compact resource grid + deposit -->
+            <div id="terminal-bank-panel" class="terminal-shop-bank terminal-tone--bank">
+              <div class="terminal-section-title">BANK BALANCE</div>
+              <div class="terminal-info-grid">
+                <div class="terminal-info-chip">
+                  <span class="terminal-info-chip__label">RUN CARRY</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-run">0</span>
+                </div>
+                <div class="terminal-info-chip">
+                  <span class="terminal-info-chip__label">BANK TOTAL</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-bank">0</span>
+                </div>
+                <div class="terminal-info-chip">
+                  <span class="terminal-info-chip__label">HEARTS</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-hp">3/3</span>
+                </div>
+                <div class="terminal-info-chip">
+                  <span class="terminal-info-chip__label">O₂</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-o2">100%</span>
+                </div>
               </div>
-              <div class="terminal-bank-cell">
-                <span class="terminal-bank-cell__label">AMMO</span>
-                <span class="terminal-bank-cell__value" id="terminal-bank-ammo">0</span>
+              <div class="terminal-bank-grid">
+                <div class="terminal-bank-cell">
+                  <span class="terminal-bank-cell__label">MED</span>
+                  <span class="terminal-bank-cell__values">
+                    <span class="terminal-bank-cell__carried" id="terminal-session-med">0</span>
+                    <span class="terminal-bank-cell__arrow">→</span>
+                    <span class="terminal-bank-cell__stored" id="terminal-bank-med">0</span>
+                  </span>
+                  <span class="terminal-bank-cell__subtext" id="terminal-med-hearts">0/10 for ♥</span>
+                </div>
+                <div class="terminal-bank-cell">
+                  <span class="terminal-bank-cell__label">AMMO</span>
+                  <span class="terminal-bank-cell__values">
+                    <span class="terminal-bank-cell__carried" id="terminal-session-ammo">0</span>
+                    <span class="terminal-bank-cell__arrow">→</span>
+                    <span class="terminal-bank-cell__stored" id="terminal-bank-ammo">0</span>
+                  </span>
+                </div>
+                <div class="terminal-bank-cell">
+                  <span class="terminal-bank-cell__label">TECH</span>
+                  <span class="terminal-bank-cell__values">
+                    <span class="terminal-bank-cell__carried" id="terminal-session-tech">0</span>
+                    <span class="terminal-bank-cell__arrow">→</span>
+                    <span class="terminal-bank-cell__stored" id="terminal-bank-tech">0</span>
+                  </span>
+                </div>
+                <div class="terminal-bank-cell">
+                  <span class="terminal-bank-cell__label">COIN</span>
+                  <span class="terminal-bank-cell__values">
+                    <span class="terminal-bank-cell__carried" id="terminal-session-coin">0</span>
+                    <span class="terminal-bank-cell__arrow">→</span>
+                    <span class="terminal-bank-cell__stored" id="terminal-bank-coin">0</span>
+                  </span>
+                </div>
               </div>
-              <div class="terminal-bank-cell">
-                <span class="terminal-bank-cell__label">TECH</span>
-                <span class="terminal-bank-cell__value" id="terminal-bank-tech">0</span>
-              </div>
-              <div class="terminal-bank-cell">
-                <span class="terminal-bank-cell__label">COIN</span>
-                <span class="terminal-bank-cell__value" id="terminal-bank-coin">0</span>
+              <div class="terminal-bank-actions">
+                <button class="terminal-action-btn" id="terminal-deposit-all">DEPOSIT RUN LOOT</button>
+                <div class="terminal-bank-hint" id="terminal-bank-hint">DEPOSIT RESOURCES TO FUND O₂ REPAIRS.</div>
               </div>
             </div>
-            <div class="terminal-bank-actions">
-              <button class="terminal-action-btn" id="terminal-deposit-all">DEPOSIT RUN LOOT</button>
-              <div class="terminal-bank-hint" id="terminal-bank-hint">DEPOSIT RESOURCES TO FUND O₂ REPAIRS.</div>
+
+            <div id="med-conversion-section" class="upgrade-goals-section upgrade-goals-section--medkit terminal-tone--medkit">
+              <div class="terminal-section-title">FIELD MEDKIT</div>
+              <div class="action-card action-card--medkit" data-goal-card="medkit">
+                <div class="action-card-header">
+                  <span class="action-title">MED CONVERSION</span>
+                  <span class="action-cost" id="terminal-medkit-status">OFFLINE</span>
+                </div>
+                <p class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
+                <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
+                <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
+              </div>
             </div>
           </div>
 
           <!-- O2 generator upgrade -->
-          <div id="o2-generator-section" class="upgrade-goals-section upgrade-goals-section--generator">
+          <div id="o2-generator-section" class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
             <div class="terminal-section-title">O₂ GENERATOR MODULE</div>
             <div class="action-card action-card--generator" data-goal-card="o2Generator">
               <div class="action-card-header">
@@ -399,7 +465,7 @@
             </div>
           </div>
 
-          <div id="hull-expansion-section" class="upgrade-goals-section">
+          <div id="hull-expansion-section" class="upgrade-goals-section terminal-tone--goal">
             <div class="terminal-section-title">GOAL 2</div>
             <div class="action-card" data-goal-card="hullExpansion">
               <div class="action-card-header">
@@ -412,7 +478,7 @@
             </div>
           </div>
 
-          <div id="radar-node-section" class="upgrade-goals-section">
+          <div id="radar-node-section" class="upgrade-goals-section terminal-tone--goal">
             <div class="terminal-section-title">GOAL 3</div>
             <div class="action-card" data-goal-card="radarNode">
               <div class="action-card-header">
@@ -425,7 +491,7 @@
             </div>
           </div>
 
-          <div id="reactor-compressor-section" class="upgrade-goals-section">
+          <div id="reactor-compressor-section" class="upgrade-goals-section terminal-tone--goal">
             <div class="terminal-section-title">GOAL 4</div>
             <div class="action-card" data-goal-card="reactorCompressor">
               <div class="action-card-header">
