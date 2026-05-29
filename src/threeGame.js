@@ -3614,7 +3614,8 @@ export class ThreeGame {
         damage = PROJECTILE_DAMAGE,
         radius = PROJECTILE_RADIUS
     }) {
-        const mesh = new THREE.Mesh(
+        const group = new THREE.Group();
+        const core = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 8, 8),
             new THREE.MeshBasicMaterial({
                 color: 0xffe08f,
@@ -3622,12 +3623,23 @@ export class ThreeGame {
                 opacity: 0.95
             })
         );
-        mesh.position.set(x, 0.42, z);
-        mesh.renderOrder = 25;
-        this.scene.add(mesh);
+        const glow = new THREE.Mesh(
+            new THREE.SphereGeometry(radius * 2.8, 6, 6),
+            new THREE.MeshBasicMaterial({
+                color: 0xffaa22,
+                transparent: true,
+                opacity: 0.28,
+                depthWrite: false
+            })
+        );
+        core.renderOrder = 25;
+        glow.renderOrder = 24;
+        group.add(core, glow);
+        group.position.set(x, 0.42, z);
+        this.scene.add(group);
 
         this.activeProjectiles.push({
-            mesh,
+            mesh: group,
             vx,
             vz,
             ttl,
@@ -3680,9 +3692,42 @@ export class ThreeGame {
     }
 
     destroyProjectile(projectile) {
-        projectile?.mesh?.parent?.remove(projectile.mesh);
-        projectile?.mesh?.material?.dispose?.();
-        projectile?.mesh?.geometry?.dispose?.();
+        if (!projectile?.mesh) return;
+        projectile.mesh.parent?.remove(projectile.mesh);
+        projectile.mesh.traverse?.((child) => {
+            child.material?.dispose?.();
+            child.geometry?.dispose?.();
+        });
+    }
+
+    spawnProjectileImpactEffect(x, z) {
+        const effect = new THREE.Group();
+        for (let i = 0; i < 4; i++) {
+            const spark = new THREE.Mesh(
+                new THREE.CircleGeometry(0.04 + Math.random() * 0.04, 5),
+                new THREE.MeshBasicMaterial({
+                    color: 0xffe08f,
+                    transparent: true,
+                    opacity: 0.9,
+                    depthWrite: false
+                })
+            );
+            spark.rotation.x = -Math.PI / 2;
+            spark.position.set((Math.random() - 0.5) * 0.1, 0.05 + Math.random() * 0.06, (Math.random() - 0.5) * 0.1);
+            spark.renderOrder = 30;
+            spark.userData = {
+                vx: (Math.random() - 0.5) * 0.6,
+                vz: (Math.random() - 0.5) * 0.6,
+                vy: 0.18 + Math.random() * 0.14,
+                growth: 0,
+                isSpark: true
+            };
+            effect.add(spark);
+        }
+        effect.position.set(x, 0, z);
+        effect.userData = { age: 0, duration: 0.18 };
+        this.scene.add(effect);
+        this.transientEffects.push(effect);
     }
 
     updateProjectiles(delta) {
@@ -3700,6 +3745,7 @@ export class ThreeGame {
             projectile.mesh.position.z += projectile.vz * delta;
 
             if (this.checkProjectileWallHit(projectile)) {
+                this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
                 toRemove.add(projectile);
                 continue;
             }
