@@ -393,6 +393,8 @@ export class ThreeGame {
         this.footstepTimer = 0;
         this.snailsKilledThisRun = 0;
         this._threatAudioTimer = 0;
+        this._cameraShakeTimer = 0;
+        this._cameraShakeIntensity = 0;
         this.visitedChunks = new Set();
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
@@ -2930,6 +2932,7 @@ export class ThreeGame {
         const prevHp = Number.isFinite(ship.hp) ? ship.hp : ship.maxHp;
         ship.hp = Math.max(0, prevHp - Math.max(0, amount));
         if (ship.hp === prevHp) return;
+        if (reason !== 'friendly-fire') this.triggerCameraShake(0.12, 0.25);
 
         if (ship.type === this.playerType) {
             this.emitShipHealthState(ship);
@@ -3017,6 +3020,7 @@ export class ThreeGame {
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - Math.max(0, amount));
         if (this.playerVitals.hp === previousHp) return;
 
+        this.triggerCameraShake(0.22, 0.4);
         this.emitHealthState();
         window.dispatchEvent(new CustomEvent('player-damaged', {
             detail: {
@@ -3843,7 +3847,20 @@ export class ThreeGame {
             this.player.position.z + this.cameraOffset.z
         );
         this.camera.position.lerp(target, 1 - Math.exp(-delta * 7));
+
+        if (this._cameraShakeTimer > 0) {
+            this._cameraShakeTimer -= delta;
+            const intensity = this._cameraShakeIntensity * Math.max(0, this._cameraShakeTimer / 0.35);
+            this.camera.position.x += (Math.random() - 0.5) * intensity;
+            this.camera.position.z += (Math.random() - 0.5) * intensity;
+        }
+
         this.camera.lookAt(this.player.position.x, 0.4, this.player.position.z);
+    }
+
+    triggerCameraShake(intensity = 0.18, duration = 0.35) {
+        this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, intensity);
+        this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
     }
 
     syncVisibleChunks(force = false) {
