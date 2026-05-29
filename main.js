@@ -100,6 +100,8 @@ let damageFlashTimer = null;
 let ammoFlashTimer = null;
 let weaponErrorTimer = null;
 let biomePromptTimer = null;
+let o2AlarmTimer = null;
+let o2AlarmActive = false;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -382,6 +384,12 @@ window.addEventListener('combat-no-ammo', () => {
 window.addEventListener('combat-no-fire-zone', () => {
     flashWeaponError();
 });
+window.addEventListener('enemy-hit', (event) => {
+    const enraged = Boolean(event?.detail?.enraged);
+    if (enraged) {
+        AudioManager.play('ui_scan_ping', { volume: 0.18, playbackRate: 1.85, bus: 'sfx' });
+    }
+});
 window.addEventListener('weapon-clip-updated', (event) => {
     renderWeaponClipState(event?.detail ?? {});
 });
@@ -551,6 +559,15 @@ function showGameOverScreen(stats) {
     if (itemVal) itemVal.textContent = String(stats.totalPickups);
     if (genVal)  genVal.textContent  = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
 
+    // Update subtitle to reflect deepest biome + snail kills
+    const subtitle = document.querySelector('.game-over-subtitle');
+    if (subtitle) {
+        const kills = stats.snailsKilled ?? 0;
+        const biome = stats.biomeLabel ?? 'ACTIVE SECTOR';
+        const killText = kills > 0 ? ` ${kills} CYBERSNAIL${kills > 1 ? 'S' : ''} ELIMINATED.` : '';
+        subtitle.textContent = `> DEEPEST ZONE: ${biome}.${killText} TELEMETRY RECOVERED.`;
+    }
+
     const modal = document.getElementById('game-over-modal');
     if (modal) modal.classList.remove('hidden');
 
@@ -622,7 +639,41 @@ window.addEventListener('player-damaged', triggerDamageFlash);
 window.addEventListener('player-death', runDeathSequence);
 window.addEventListener('player-respawned', () => {
     clearTimedClass('death', 'player-dead-flash');
+    stopO2Alarm();
     window.game?.setInputEnabled?.(true);
+});
+
+function startO2Alarm() {
+    if (o2AlarmActive) return;
+    o2AlarmActive = true;
+    const tick = () => {
+        if (!o2AlarmActive) return;
+        const currentO2 = window.game?.playerVitals?.o2 ?? 100;
+        if (currentO2 > 10) {
+            o2AlarmActive = false;
+            return;
+        }
+        AudioManager.play('ui_error', { volume: 0.18, playbackRate: 0.72, bus: 'sfx' });
+        o2AlarmTimer = window.setTimeout(tick, 2800);
+    };
+    tick();
+}
+
+function stopO2Alarm() {
+    o2AlarmActive = false;
+    if (o2AlarmTimer) {
+        clearTimeout(o2AlarmTimer);
+        o2AlarmTimer = null;
+    }
+}
+
+window.addEventListener('player-o2-changed', (event) => {
+    const o2 = event?.detail?.o2 ?? 100;
+    if (o2 <= 10 && !o2AlarmActive) {
+        startO2Alarm();
+    } else if (o2 > 10 && o2AlarmActive) {
+        stopO2Alarm();
+    }
 });
 
 // Game over button handlers

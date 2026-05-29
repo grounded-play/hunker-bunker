@@ -396,6 +396,7 @@ export class ThreeGame {
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
+        this.snailsKilledThisRun = 0;
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
         this.currentDepthTier = 0;
@@ -3050,6 +3051,7 @@ export class ThreeGame {
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;
+            this.snailsKilledThisRun = 0;
             if (this.crashedShips) {
                 for (const ship of this.crashedShips) {
                     ship.hp = ship.maxHp;
@@ -3411,7 +3413,8 @@ export class ThreeGame {
             depthTier: this.maxDepthTierReached,
             depthTierName: this.getDepthTierName(this.maxDepthTierReached),
             biomeKey: this.currentBiomeKey,
-            biomeLabel: this.getBiomeLabel(this.currentBiomeKey)
+            biomeLabel: this.getBiomeLabel(this.currentBiomeKey),
+            snailsKilled: this.snailsKilledThisRun ?? 0
         };
     }
 
@@ -4155,7 +4158,7 @@ export class ThreeGame {
     }
 
     buildPickupPlacement(candidate, random, legendaryBoost = 0) {
-        const type = this.choosePickupType(random);
+        const type = this.choosePickupTypeForRoom(random, candidate.roomType);
         const rarity = this.chooseLootRarity(random, legendaryBoost);
         const scale = type === 'weapon'
             ? 0.9 + random() * 0.3
@@ -4821,6 +4824,37 @@ export class ThreeGame {
         return PICKUP_TYPES[PICKUP_TYPES.length - 1].type;
     }
 
+    choosePickupTypeForRoom(random, roomType) {
+        const ROOM_PICKUP_BIAS = {
+            [ROOM_TYPES.DEAD_END]: [
+                { type: 'health', weight: 0.20 },
+                { type: 'ammo',   weight: 0.20 },
+                { type: 'weapon', weight: 0.34 },
+                { type: 'coin',   weight: 0.26 }
+            ],
+            [ROOM_TYPES.CORRIDOR]: [
+                { type: 'health', weight: 0.28 },
+                { type: 'ammo',   weight: 0.52 },
+                { type: 'weapon', weight: 0.12 },
+                { type: 'coin',   weight: 0.08 }
+            ],
+            [ROOM_TYPES.CHAMBER]: [
+                { type: 'health', weight: 0.32 },
+                { type: 'ammo',   weight: 0.30 },
+                { type: 'weapon', weight: 0.24 },
+                { type: 'coin',   weight: 0.14 }
+            ]
+        };
+        const weights = ROOM_PICKUP_BIAS[roomType] ?? PICKUP_TYPES;
+        const totalWeight = weights.reduce((s, e) => s + e.weight, 0);
+        let roll = random() * totalWeight;
+        for (const entry of weights) {
+            roll -= entry.weight;
+            if (roll <= 0) return entry.type;
+        }
+        return weights[weights.length - 1].type;
+    }
+
     createPickupInstance(placement) {
         const root = new THREE.Group();
         const body = new THREE.Group();
@@ -5236,9 +5270,12 @@ export class ThreeGame {
             sprite.userData.speed = SNAIL_ENRAGED_MOVE_SPEED;
             sprite.userData.attackCooldown = Math.min(sprite.userData.attackCooldown ?? 0, 0.2);
             sprite.material?.color?.setHex(SNAIL_ENRAGED_TINT);
+            window.AudioManager?.play('amb_metal_stress', { volume: 0.38, playbackRate: 1.55 });
         }
 
         if (sprite.userData.hp > 0) {
+            window.AudioManager?.play('ui_scan_ping', { volume: 0.26, playbackRate: 0.65 });
+            this._flashSnailHit(sprite);
             window.dispatchEvent(new CustomEvent('enemy-hit', {
                 detail: {
                     type: 'cybersnail',
@@ -5252,9 +5289,22 @@ export class ThreeGame {
 
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
+        this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
         this.spawnSnailDrops(sprite);
         this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, 'bunker_junk_uncommon');
         window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
+        window.AudioManager?.play('ui_error', { volume: 0.2, playbackRate: 0.72 });
+    }
+
+    _flashSnailHit(sprite) {
+        if (!sprite?.material?.color) return;
+        const originalColor = sprite.userData.enraged ? SNAIL_ENRAGED_TINT : (sprite.userData.biomeTint ?? 0xffffff);
+        sprite.material.color.setHex(0xffffff);
+        setTimeout(() => {
+            if (sprite?.material?.color && !sprite.userData.burstTriggered) {
+                sprite.material.color.setHex(originalColor);
+            }
+        }, 80);
     }
 
     isSnailTileWalkable(tileX, tileZ) {
