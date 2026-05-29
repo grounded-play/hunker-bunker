@@ -16,6 +16,12 @@ const MOTHERSHIP_LINES = [
     { text: 'AWAITING YOUR RESPONSE, AGENT.' }
 ];
 
+const CLASS_BRIEFING_LINES = {
+    SCOUT: { text: 'NOTE: YOUR SCOUT FRAME READS ENHANCED PICKUP ACQUISITION RANGE. USE IT.' },
+    TANK:  { text: 'NOTE: YOUR TANK FRAME PROVIDES SUPERIOR EXOSUIT ENDURANCE. O₂ DRAIN IS REDUCED.' },
+    ENGINEER: { text: 'NOTE: YOUR ENGINEER FRAME GRANTS 20% CONSOLE DISCOUNT. PRIORITIZE UPGRADES EARLY.' }
+};
+
 const CHOICE_REPLY = {
     skip: 'ACKNOWLEDGED. RETURN CACHES TO THE SALVAGE CONSOLE.',
     tutorial: 'CONFIRMED. DISPLAYING OPERATIONAL BRIEFING NOW.'
@@ -125,7 +131,13 @@ export class DialogueManager {
         window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
         window.addEventListener('keydown', this.handleDialogueKey);
 
-        for (const line of MOTHERSHIP_LINES) {
+        const allLines = [...MOTHERSHIP_LINES];
+        const classBriefing = CLASS_BRIEFING_LINES[playerType];
+        if (classBriefing) {
+            allLines.splice(allLines.length - 1, 0, classBriefing);
+        }
+
+        for (const line of allLines) {
             const resolvedLine = line.text.replace('{CLASS}', playerType);
             await this.typeLine(runId, resolvedLine);
             if (!this.isDialogueRunActive(runId)) return 'skip';
