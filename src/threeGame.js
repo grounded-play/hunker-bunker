@@ -392,6 +392,7 @@ export class ThreeGame {
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
         this.snailsKilledThisRun = 0;
+        this._threatAudioTimer = 0;
         this.visitedChunks = new Set();
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
@@ -5749,7 +5750,25 @@ export class ThreeGame {
     updateScatter(delta, now) {
         const time = now * 0.001;
         const activeShip = this.getActiveShip();
-        
+
+        this._threatAudioTimer = (this._threatAudioTimer ?? 0) - delta;
+        if (this._threatAudioTimer <= 0 && this.player && !this.isPlayerDead) {
+            let nearestHuntingSnail = Infinity;
+            for (const child of this.scatterSprites) {
+                if (child.userData?.type !== 'cybersnail') continue;
+                if (child.userData?.burstTriggered) continue;
+                if (child.userData?.aiMode !== 'hunt') continue;
+                const dist = Math.hypot(this.player.position.x - child.position.x, this.player.position.z - child.position.z);
+                if (dist < nearestHuntingSnail) nearestHuntingSnail = dist;
+            }
+            if (nearestHuntingSnail < 5.5) {
+                window.AudioManager?.play('amb_metal_stress', { volume: 0.08 + (1 - nearestHuntingSnail / 5.5) * 0.06, playbackRate: 1.25, bus: 'sfx' });
+                this._threatAudioTimer = 1.8;
+            } else {
+                this._threatAudioTimer = 0.5;
+            }
+        }
+
         for (const child of this.scatterSprites) {
             if (child.userData.type.startsWith('bio_spores')) {
                 const phase = child.userData.phase;
