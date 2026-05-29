@@ -579,29 +579,34 @@ function showGameOverScreen(stats) {
     const distancePct = Math.min(100, (stats.distanceTravelled / 500) * 100);
     const itemsPct    = Math.min(100, (stats.totalPickups / 50) * 100);
     const genPct      = Math.min(100, (stats.generatorLevel / 3) * 100);
+    const kills       = stats.snailsKilled ?? 0;
+    const killsPct    = Math.min(100, (kills / 10) * 100);
 
-    const distBar = document.getElementById('go-bar-distance');
-    const itemBar = document.getElementById('go-bar-items');
-    const genBar  = document.getElementById('go-bar-generator');
+    const distBar  = document.getElementById('go-bar-distance');
+    const itemBar  = document.getElementById('go-bar-items');
+    const genBar   = document.getElementById('go-bar-generator');
+    const killsBar = document.getElementById('go-bar-kills');
 
-    if (distBar) distBar.style.width = '0%';
-    if (itemBar) itemBar.style.width = '0%';
-    if (genBar)  genBar.style.width  = '0%';
+    if (distBar)  distBar.style.width  = '0%';
+    if (itemBar)  itemBar.style.width  = '0%';
+    if (genBar)   genBar.style.width   = '0%';
+    if (killsBar) killsBar.style.width = '0%';
 
-    const distVal = document.getElementById('go-val-distance');
-    const itemVal = document.getElementById('go-val-items');
-    const genVal  = document.getElementById('go-val-generator');
+    const distVal  = document.getElementById('go-val-distance');
+    const itemVal  = document.getElementById('go-val-items');
+    const genVal   = document.getElementById('go-val-generator');
+    const killsVal = document.getElementById('go-val-kills');
 
-    if (distVal) distVal.textContent = `${stats.distanceTravelled}u`;
-    if (itemVal) itemVal.textContent = String(stats.totalPickups);
-    if (genVal)  genVal.textContent  = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
+    if (distVal)  distVal.textContent  = `${stats.distanceTravelled}u`;
+    if (itemVal)  itemVal.textContent  = String(stats.totalPickups);
+    if (genVal)   genVal.textContent   = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
+    if (killsVal) killsVal.textContent = kills > 0 ? String(kills) : 'NONE';
 
     // Update subtitle to reflect deepest biome + snail kills
     const subtitle = document.querySelector('.game-over-subtitle');
     if (subtitle) {
-        const kills = stats.snailsKilled ?? 0;
         const biome = stats.biomeLabel ?? 'ACTIVE SECTOR';
-        const killText = kills > 0 ? ` ${kills} CYBERSNAIL${kills > 1 ? 'S' : ''} ELIMINATED.` : '';
+        const killText = kills > 0 ? ` ${kills} THREAT${kills > 1 ? 'S' : ''} NEUTRALIZED.` : '';
         subtitle.textContent = `> DEEPEST ZONE: ${biome}.${killText} TELEMETRY RECOVERED.`;
     }
 
@@ -610,9 +615,10 @@ function showGameOverScreen(stats) {
 
     // Stagger bar animations for a readout effect
     requestAnimationFrame(() => {
-        setTimeout(() => { if (distBar) distBar.style.width = `${distancePct}%`; }, 120);
-        setTimeout(() => { if (itemBar) itemBar.style.width = `${itemsPct}%`;    }, 340);
-        setTimeout(() => { if (genBar)  genBar.style.width  = `${genPct}%`;      }, 560);
+        setTimeout(() => { if (distBar)  distBar.style.width  = `${distancePct}%`; }, 120);
+        setTimeout(() => { if (itemBar)  itemBar.style.width  = `${itemsPct}%`;    }, 340);
+        setTimeout(() => { if (genBar)   genBar.style.width   = `${genPct}%`;      }, 560);
+        setTimeout(() => { if (killsBar) killsBar.style.width = `${killsPct}%`;    }, 760);
     });
 }
 
