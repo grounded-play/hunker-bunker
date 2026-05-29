@@ -289,13 +289,6 @@ const ROOM_TYPES = Object.freeze({
     CHAMBER:  'chamber'
 });
 
-const ROOM_TYPE_PICKUP_MULT = Object.freeze({
-    [ROOM_TYPES.DEAD_END]: 2.5,
-    [ROOM_TYPES.CORRIDOR]: 0.5,
-    [ROOM_TYPES.JUNCTION]: 1.0,
-    [ROOM_TYPES.CHAMBER]:  1.4
-});
-
 const SNAIL_DEPTH_SPAWN = Object.freeze([
     Object.freeze({ maxCount: 0, chance: 0 }),
     Object.freeze({ maxCount: 1, chance: 0.08 }),
@@ -4330,6 +4323,7 @@ export class ThreeGame {
     createChunkScatterPlacements(chunkX, chunkY, grid) {
         const random = this.createSeededRandom(this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71));
         const spawn = this.getSpawnTile();
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const candidates = [];
 
         // Find walkable candidates in this chunk
@@ -4523,7 +4517,11 @@ export class ThreeGame {
             // Determine asset type based on weighted roll.
             const roll = random();
             const distFromSpawn = Math.hypot(p.x - spawn.x, p.z - spawn.y);
-            const canSpawnSnail = distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount;
+            const localPX = Math.round(p.x - chunkX * this.chunkSize);
+            const localPZ = Math.round(p.z - chunkY * this.chunkSize);
+            const pRoomType = roomTypes?.[localPZ]?.[localPX] ?? null;
+            const isDeadEnd = pRoomType === ROOM_TYPES.DEAD_END;
+            const canSpawnSnail = distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount && !isDeadEnd;
             let type;
             let scaleMultiplier;
             let elevation;
