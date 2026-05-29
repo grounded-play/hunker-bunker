@@ -141,6 +141,112 @@ const SPORE_SCATTER_VARIANTS = [
     { type: 'bio_spores_blue', weight: 0.275 },
     { type: 'bio_spores_amber', weight: 0.275 }
 ];
+const BIOME_KEYS = Object.freeze({
+    ACTIVE: 'active',
+    CRYO: 'cryo',
+    BIO: 'bio'
+});
+const BIOME_LABELS = Object.freeze({
+    [BIOME_KEYS.ACTIVE]: 'ACTIVE SECTOR',
+    [BIOME_KEYS.CRYO]: 'CRYO SECTOR',
+    [BIOME_KEYS.BIO]: 'BIO SECTOR'
+});
+const BIOME_ORDER = Object.freeze([
+    BIOME_KEYS.ACTIVE,
+    BIOME_KEYS.CRYO,
+    BIOME_KEYS.BIO
+]);
+const BIOME_THRESHOLD_CRYO = 60;
+const BIOME_THRESHOLD_BIO = 140;
+const BIOME_BLEND_HALF_WIDTH = 10;
+const BIOME_O2_DRAIN_MULTIPLIERS = Object.freeze({
+    [BIOME_KEYS.ACTIVE]: 1.0,
+    [BIOME_KEYS.CRYO]: 1.15,
+    [BIOME_KEYS.BIO]: 1.3
+});
+const BIOME_LIGHTING = Object.freeze({
+    [BIOME_KEYS.ACTIVE]: Object.freeze({
+        fog: 0x0b0d0f,
+        ambient: 0xffffff,
+        directional: 0xd6e7ff,
+        hemisphereSky: 0x6b8db3,
+        hemisphereGround: 0x07090c
+    }),
+    [BIOME_KEYS.CRYO]: Object.freeze({
+        fog: 0x080f1a,
+        ambient: 0xb0ccff,
+        directional: 0xa8cfff,
+        hemisphereSky: 0x456da2,
+        hemisphereGround: 0x06090f
+    }),
+    [BIOME_KEYS.BIO]: Object.freeze({
+        fog: 0x060d08,
+        ambient: 0x90a870,
+        directional: 0xc8b878,
+        hemisphereSky: 0x3f5c38,
+        hemisphereGround: 0x050804
+    })
+});
+const BIOME_TERRAIN_TEXTURE_PATHS = Object.freeze({
+    [BIOME_KEYS.ACTIVE]: Object.freeze({
+        floorBase: '/bunker_base_metal.png',
+        floorGrunge: '/bunker_grunge_rust.png',
+        floorDetail: '/bunker_tech_scratches.png',
+        wallSide: '/bunker_wall_metal.png',
+        wallTop: '/bunker_base_metal.png',
+        wallGrunge: '/bunker_wall_grunge.png'
+    }),
+    [BIOME_KEYS.CRYO]: Object.freeze({
+        floorBase: '/cryo_base_frost.png',
+        floorGrunge: '/cryo_grunge_rime.png',
+        floorDetail: '/cryo_wall_conduit.png',
+        wallSide: '/cryo_wall_conduit.png',
+        wallTop: '/cryo_base_frost.png',
+        wallGrunge: '/cryo_grunge_rime.png',
+        fallback: Object.freeze({
+            floorBase: '/ice_base_rock.png',
+            floorGrunge: '/ice_grunge_snow.png',
+            floorDetail: '/ice_wall_glacier.png',
+            wallSide: '/ice_wall_glacier.png',
+            wallTop: '/ice_base_rock.png',
+            wallGrunge: '/ice_grunge_snow.png'
+        })
+    }),
+    [BIOME_KEYS.BIO]: Object.freeze({
+        floorBase: '/bio_base_growth.png',
+        floorGrunge: '/bio_grunge_spores.png',
+        floorDetail: '/bio_wall_veins.png',
+        wallSide: '/bio_wall_veins.png',
+        wallTop: '/bio_base_growth.png',
+        wallGrunge: '/bio_grunge_spores.png'
+    })
+});
+const CRYO_SCATTER_VARIANTS = [
+    { type: 'scatter_coolant_puddle', weight: 0.62 },
+    { type: 'scatter_ice_stalagmite', weight: 0.38 }
+];
+const BIO_SCATTER_VARIANTS = [
+    { type: 'scatter_bio_pod', weight: 0.42 },
+    { type: 'scatter_slime_puddle', weight: 0.3 },
+    { type: 'bio_spores', weight: 0.16 },
+    { type: 'bio_spores_blue', weight: 0.06 },
+    { type: 'bio_spores_amber', weight: 0.06 }
+];
+const ACTIVE_SCATTER_VARIANTS = [
+    { type: 'scatter_gravel', weight: 0.38 },
+    { type: 'ship_wreckage', weight: 0.08 },
+    ...SPORE_SCATTER_VARIANTS
+];
+const BIOME_SCATTER_VARIANTS = Object.freeze({
+    [BIOME_KEYS.ACTIVE]: ACTIVE_SCATTER_VARIANTS,
+    [BIOME_KEYS.CRYO]: CRYO_SCATTER_VARIANTS,
+    [BIOME_KEYS.BIO]: BIO_SCATTER_VARIANTS
+});
+const BIOME_NOTIFICATION_MESSAGES = Object.freeze({
+    [BIOME_KEYS.ACTIVE]: 'ENTERING ACTIVE SECTOR — NAV GRID STABLE',
+    [BIOME_KEYS.CRYO]: 'ENTERING CRYO SECTOR — SUIT THERMAL LOAD INCREASING',
+    [BIOME_KEYS.BIO]: 'ENTERING BIO SECTOR — SPORE DENSITY RISING'
+});
 const JUNK_LOOT_BIAS = {
     bunker_junk: [
         { key: 'basic', weight: 0.8 },
@@ -244,6 +350,24 @@ export class ThreeGame {
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
         this.currentDepthTier = 0;
+        this.currentBiomeKey = BIOME_KEYS.ACTIVE;
+        this.currentBiomeO2DrainMult = BIOME_O2_DRAIN_MULTIPLIERS[BIOME_KEYS.ACTIVE];
+        this.biomeMixState = { cryoMix: 0, bioMix: 0 };
+        this.biomeShipAnchor = new THREE.Vector2();
+        this.floorShaderUniforms = null;
+        this.wallShaderUniforms = null;
+        this.biomeLightingColors = {
+            fogA: new THREE.Color(),
+            fogB: new THREE.Color(),
+            ambientA: new THREE.Color(),
+            ambientB: new THREE.Color(),
+            directionalA: new THREE.Color(),
+            directionalB: new THREE.Color(),
+            hemiSkyA: new THREE.Color(),
+            hemiSkyB: new THREE.Color(),
+            hemiGroundA: new THREE.Color(),
+            hemiGroundB: new THREE.Color()
+        };
         this.terminalCloseListenerBound = false;
         this.o2BubbleObjects = null;
         this.goalModuleMaterials = null;
@@ -268,37 +392,23 @@ export class ThreeGame {
         this.container.replaceChildren(this.renderer.domElement);
 
         const textureLoader = new THREE.TextureLoader();
-        const baseMetalTex = textureLoader.load('/bunker_base_metal.png');
-        const grungeRustTex = textureLoader.load('/bunker_grunge_rust.png');
-        const techScratchesTex = textureLoader.load('/bunker_tech_scratches.png');
+        this.textureLoader = textureLoader;
+        const maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
+        this.maxTextureAnisotropy = maxAnisotropy;
+        this.biomeTerrainTextures = this.createBiomeTerrainTextures(textureLoader, maxAnisotropy);
+        const activeTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.ACTIVE];
+        const cryoTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.CRYO];
+        const bioTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.BIO];
+
+        const baseMetalTex = activeTerrainTextures.floorBase;
+        const grungeRustTex = activeTerrainTextures.floorGrunge;
+        const techScratchesTex = activeTerrainTextures.floorDetail;
         this.playerTextures = Object.fromEntries(
             Object.entries(PLAYER_SPRITESHEET_PATHS).map(([type, path]) => [
                 type,
                 this.createPlayerSpriteTexture(type, path, textureLoader)
             ])
         );
-
-        baseMetalTex.wrapS = THREE.RepeatWrapping;
-        baseMetalTex.wrapT = THREE.RepeatWrapping;
-        baseMetalTex.minFilter = THREE.LinearMipmapLinearFilter;
-        baseMetalTex.magFilter = THREE.LinearFilter;
-
-        grungeRustTex.wrapS = THREE.RepeatWrapping;
-        grungeRustTex.wrapT = THREE.RepeatWrapping;
-        grungeRustTex.minFilter = THREE.LinearMipmapLinearFilter;
-        grungeRustTex.magFilter = THREE.LinearFilter;
-
-        techScratchesTex.wrapS = THREE.RepeatWrapping;
-        techScratchesTex.wrapT = THREE.RepeatWrapping;
-        techScratchesTex.minFilter = THREE.LinearMipmapLinearFilter;
-        techScratchesTex.magFilter = THREE.LinearFilter;
-
-        const maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
-        if (maxAnisotropy > 1) {
-            baseMetalTex.anisotropy = maxAnisotropy;
-            grungeRustTex.anisotropy = maxAnisotropy;
-            techScratchesTex.anisotropy = maxAnisotropy;
-        }
 
         Object.values(this.playerTextures).forEach((texture) => {
             texture.wrapS = THREE.RepeatWrapping;
@@ -323,6 +433,14 @@ export class ThreeGame {
             shader.uniforms.tBase = { value: baseMetalTex };
             shader.uniforms.tGrunge = { value: grungeRustTex };
             shader.uniforms.tDetail = { value: techScratchesTex };
+            shader.uniforms.tCryoBase = { value: cryoTerrainTextures.floorBase };
+            shader.uniforms.tCryoGrunge = { value: cryoTerrainTextures.floorGrunge };
+            shader.uniforms.tCryoDetail = { value: cryoTerrainTextures.floorDetail };
+            shader.uniforms.tBioBase = { value: bioTerrainTextures.floorBase };
+            shader.uniforms.tBioGrunge = { value: bioTerrainTextures.floorGrunge };
+            shader.uniforms.tBioDetail = { value: bioTerrainTextures.floorDetail };
+            shader.uniforms.uShipWorldPos = { value: this.biomeShipAnchor };
+            this.floorShaderUniforms = shader.uniforms;
 
             // Inject world position varying into vertex shader
             shader.vertexShader = shader.vertexShader.replace(
@@ -346,6 +464,13 @@ export class ThreeGame {
                 uniform sampler2D tBase;
                 uniform sampler2D tGrunge;
                 uniform sampler2D tDetail;
+                uniform sampler2D tCryoBase;
+                uniform sampler2D tCryoGrunge;
+                uniform sampler2D tCryoDetail;
+                uniform sampler2D tBioBase;
+                uniform sampler2D tBioGrunge;
+                uniform sampler2D tBioDetail;
+                uniform vec2 uShipWorldPos;
                 ${shader.fragmentShader}
             `;
 
@@ -354,28 +479,47 @@ export class ThreeGame {
                 '#include <map_fragment>',
                 `
                 #ifdef USE_MAP
-                    // Map using absolute world-space coordinates
-                    vec2 uvBase = vWorldPos.xz * 0.12;      // metal plates
-                    vec2 uvGrunge = vWorldPos.xz * 0.053;   // slow rust/grunge spots
-                    vec2 uvDetail = vWorldPos.xz * 0.27;    // tech stencils and fine scratches
+                    vec2 uvBase = vWorldPos.xz * 0.12;
+                    vec2 uvGrunge = vWorldPos.xz * 0.053;
+                    vec2 uvDetail = vWorldPos.xz * 0.27;
 
-                    vec4 colBase = texture2D( tBase, uvBase );
-                    vec4 colGrunge = texture2D( tGrunge, uvGrunge );
-                    vec4 colDetail = texture2D( tDetail, uvDetail );
+                    vec4 bunkerBase = texture2D( tBase, uvBase );
+                    vec4 bunkerGrunge = texture2D( tGrunge, uvGrunge );
+                    vec4 bunkerDetail = texture2D( tDetail, uvDetail );
 
-                    // Base metal plates
-                    vec3 blended = colBase.rgb;
+                    vec4 cryoBase = texture2D( tCryoBase, uvBase );
+                    vec4 cryoGrunge = texture2D( tCryoGrunge, uvGrunge );
+                    vec4 cryoDetail = texture2D( tCryoDetail, uvDetail );
 
-                    // Blend rust grunge layer based on red & green channels
-                    float rustMask = clamp((colGrunge.r * 0.85 + colGrunge.g * 0.35) * 0.95, 0.0, 1.0);
-                    vec3 rustColor = vec3(0.18, 0.09, 0.05) * (0.6 + 0.4 * colGrunge.b);
-                    blended = mix(blended, rustColor, rustMask * 0.88);
+                    vec4 bioBase = texture2D( tBioBase, uvBase );
+                    vec4 bioGrunge = texture2D( tBioGrunge, uvGrunge );
+                    vec4 bioDetail = texture2D( tBioDetail, uvDetail );
 
-                    // Add mechanical scratch lines
-                    float scratchMask = colDetail.r * 0.22;
-                    blended += vec3(scratchMask);
+                    float distFromShip = length(vWorldPos.xz - uShipWorldPos);
+                    float cryoMix = smoothstep(${(BIOME_THRESHOLD_CRYO - BIOME_BLEND_HALF_WIDTH).toFixed(1)}, ${(BIOME_THRESHOLD_CRYO + BIOME_BLEND_HALF_WIDTH).toFixed(1)}, distFromShip);
+                    float bioMix = smoothstep(${(BIOME_THRESHOLD_BIO - BIOME_BLEND_HALF_WIDTH).toFixed(1)}, ${(BIOME_THRESHOLD_BIO + BIOME_BLEND_HALF_WIDTH).toFixed(1)}, distFromShip);
 
-                    diffuseColor *= vec4(blended, 1.0);
+                    vec3 bunkerColor = bunkerBase.rgb;
+                    float bunkerRustMask = clamp((bunkerGrunge.r * 0.85 + bunkerGrunge.g * 0.35) * 0.95, 0.0, 1.0);
+                    vec3 bunkerRustColor = vec3(0.18, 0.09, 0.05) * (0.6 + 0.4 * bunkerGrunge.b);
+                    bunkerColor = mix(bunkerColor, bunkerRustColor, bunkerRustMask * 0.88);
+                    bunkerColor += vec3(bunkerDetail.r * 0.22);
+
+                    vec3 cryoColor = cryoBase.rgb;
+                    float cryoRustMask = clamp((cryoGrunge.r * 0.6 + cryoGrunge.g * 0.55) * 0.9, 0.0, 1.0);
+                    vec3 cryoTint = vec3(0.45, 0.67, 0.85) * (0.65 + 0.35 * cryoGrunge.b);
+                    cryoColor = mix(cryoColor, cryoTint, cryoRustMask * 0.82);
+                    cryoColor += vec3(cryoDetail.r * 0.16);
+
+                    vec3 bioColor = bioBase.rgb;
+                    float bioMask = clamp((bioGrunge.g * 0.82 + bioGrunge.r * 0.28) * 1.02, 0.0, 1.0);
+                    vec3 bioTint = vec3(0.21, 0.34, 0.16) * (0.7 + 0.3 * bioGrunge.b);
+                    bioColor = mix(bioColor, bioTint, bioMask * 0.9);
+                    bioColor += vec3(bioDetail.g * 0.18);
+
+                    vec3 floorColor = mix(bunkerColor, cryoColor, cryoMix);
+                    floorColor = mix(floorColor, bioColor, bioMix);
+                    diffuseColor *= vec4(floorColor, 1.0);
                 #endif
                 `
             );
@@ -395,23 +539,8 @@ export class ThreeGame {
             );
         };
 
-        const wallMetalTex = textureLoader.load('/bunker_wall_metal.png');
-        const wallGrungeTex = textureLoader.load('/bunker_wall_grunge.png');
-
-        wallMetalTex.wrapS = THREE.RepeatWrapping;
-        wallMetalTex.wrapT = THREE.RepeatWrapping;
-        wallMetalTex.minFilter = THREE.LinearMipmapLinearFilter;
-        wallMetalTex.magFilter = THREE.LinearFilter;
-
-        wallGrungeTex.wrapS = THREE.RepeatWrapping;
-        wallGrungeTex.wrapT = THREE.RepeatWrapping;
-        wallGrungeTex.minFilter = THREE.LinearMipmapLinearFilter;
-        wallGrungeTex.magFilter = THREE.LinearFilter;
-
-        if (maxAnisotropy > 1) {
-            wallMetalTex.anisotropy = maxAnisotropy;
-            wallGrungeTex.anisotropy = maxAnisotropy;
-        }
+        const wallMetalTex = activeTerrainTextures.wallSide;
+        const wallGrungeTex = activeTerrainTextures.wallGrunge;
 
         this.wallMaterial = new THREE.MeshStandardMaterial({
             color: 0xffffff,
@@ -426,6 +555,14 @@ export class ThreeGame {
             shader.uniforms.tWallSide = { value: wallMetalTex };
             shader.uniforms.tWallTop = { value: baseMetalTex }; // reuses floor plates for the top face
             shader.uniforms.tWallGrunge = { value: wallGrungeTex };
+            shader.uniforms.tCryoWallSide = { value: cryoTerrainTextures.wallSide };
+            shader.uniforms.tCryoWallTop = { value: cryoTerrainTextures.wallTop };
+            shader.uniforms.tCryoWallGrunge = { value: cryoTerrainTextures.wallGrunge };
+            shader.uniforms.tBioWallSide = { value: bioTerrainTextures.wallSide };
+            shader.uniforms.tBioWallTop = { value: bioTerrainTextures.wallTop };
+            shader.uniforms.tBioWallGrunge = { value: bioTerrainTextures.wallGrunge };
+            shader.uniforms.uShipWorldPos = { value: this.biomeShipAnchor };
+            this.wallShaderUniforms = shader.uniforms;
 
             // Inject world position and world normal varyings in vertex shader
             shader.vertexShader = shader.vertexShader.replace(
@@ -452,6 +589,13 @@ export class ThreeGame {
                 uniform sampler2D tWallSide;
                 uniform sampler2D tWallTop;
                 uniform sampler2D tWallGrunge;
+                uniform sampler2D tCryoWallSide;
+                uniform sampler2D tCryoWallTop;
+                uniform sampler2D tCryoWallGrunge;
+                uniform sampler2D tBioWallSide;
+                uniform sampler2D tBioWallTop;
+                uniform sampler2D tBioWallGrunge;
+                uniform vec2 uShipWorldPos;
                 ${shader.fragmentShader}
             `;
 
@@ -460,46 +604,68 @@ export class ThreeGame {
                 '#include <map_fragment>',
                 `
                 #ifdef USE_MAP
-                    // Triplanar mapping axis blend weights based on normal alignment
                     vec3 blendWeights = abs( normalize( vWorldNormal ) );
-                    // Normalize weights
                     blendWeights /= ( blendWeights.x + blendWeights.y + blendWeights.z );
 
-                    // Project texture coordinates along X, Y, Z world axes
-                    // Y projection (top face) uses floor metal plate texture (XZ plane)
                     vec2 uvY = vWorldPos.xz * 0.12; 
-                    vec4 colY = texture2D( tWallTop, uvY );
-
-                    // X projection (left/right sides) uses vertical bulkhead panels (ZY plane)
                     vec2 uvX = vec2( vWorldPos.z * 0.45, vWorldPos.y * 0.35 );
-                    vec4 colX = texture2D( tWallSide, uvX );
-
-                    // Z projection (front/back sides) uses vertical bulkhead panels (XY plane)
                     vec2 uvZ = vec2( vWorldPos.x * 0.45, vWorldPos.y * 0.35 );
-                    vec4 colZ = texture2D( tWallSide, uvZ );
-
-                    // Blend colors
-                    vec4 wallCol = colX * blendWeights.x + colY * blendWeights.y + colZ * blendWeights.z;
-
-                    // Project wall grunge/rust drip streaks
                     vec2 uvGrungeY = vWorldPos.xz * 0.053;
-                    vec4 grungeY = texture2D( tWallGrunge, uvGrungeY );
-
                     vec2 uvGrungeX = vec2( vWorldPos.z * 0.25, vWorldPos.y * 0.2 );
-                    vec4 grungeX = texture2D( tWallGrunge, uvGrungeX );
-
                     vec2 uvGrungeZ = vec2( vWorldPos.x * 0.25, vWorldPos.y * 0.2 );
-                    vec4 grungeZ = texture2D( tWallGrunge, uvGrungeZ );
 
-                    vec4 wallGrunge = grungeX * blendWeights.x + grungeY * blendWeights.y + grungeZ * blendWeights.z;
+                    vec4 bunkerY = texture2D( tWallTop, uvY );
+                    vec4 bunkerX = texture2D( tWallSide, uvX );
+                    vec4 bunkerZ = texture2D( tWallSide, uvZ );
+                    vec4 bunkerWallCol = bunkerX * blendWeights.x + bunkerY * blendWeights.y + bunkerZ * blendWeights.z;
 
-                    // Blend grunge with base metals
-                    vec3 blended = wallCol.rgb;
-                    float rustMask = clamp((wallGrunge.r * 0.85 + wallGrunge.g * 0.3) * 0.95, 0.0, 1.0);
-                    vec3 rustColor = vec3(0.18, 0.09, 0.05) * (0.6 + 0.4 * wallGrunge.b);
-                    blended = mix(blended, rustColor, rustMask * 0.82);
+                    vec4 bunkerGrungeY = texture2D( tWallGrunge, uvGrungeY );
+                    vec4 bunkerGrungeX = texture2D( tWallGrunge, uvGrungeX );
+                    vec4 bunkerGrungeZ = texture2D( tWallGrunge, uvGrungeZ );
+                    vec4 bunkerWallGrunge = bunkerGrungeX * blendWeights.x + bunkerGrungeY * blendWeights.y + bunkerGrungeZ * blendWeights.z;
 
-                    diffuseColor *= vec4(blended, 1.0);
+                    vec4 cryoY = texture2D( tCryoWallTop, uvY );
+                    vec4 cryoX = texture2D( tCryoWallSide, uvX );
+                    vec4 cryoZ = texture2D( tCryoWallSide, uvZ );
+                    vec4 cryoWallCol = cryoX * blendWeights.x + cryoY * blendWeights.y + cryoZ * blendWeights.z;
+
+                    vec4 cryoGrungeY = texture2D( tCryoWallGrunge, uvGrungeY );
+                    vec4 cryoGrungeX = texture2D( tCryoWallGrunge, uvGrungeX );
+                    vec4 cryoGrungeZ = texture2D( tCryoWallGrunge, uvGrungeZ );
+                    vec4 cryoWallGrunge = cryoGrungeX * blendWeights.x + cryoGrungeY * blendWeights.y + cryoGrungeZ * blendWeights.z;
+
+                    vec4 bioY = texture2D( tBioWallTop, uvY );
+                    vec4 bioX = texture2D( tBioWallSide, uvX );
+                    vec4 bioZ = texture2D( tBioWallSide, uvZ );
+                    vec4 bioWallCol = bioX * blendWeights.x + bioY * blendWeights.y + bioZ * blendWeights.z;
+
+                    vec4 bioGrungeY = texture2D( tBioWallGrunge, uvGrungeY );
+                    vec4 bioGrungeX = texture2D( tBioWallGrunge, uvGrungeX );
+                    vec4 bioGrungeZ = texture2D( tBioWallGrunge, uvGrungeZ );
+                    vec4 bioWallGrunge = bioGrungeX * blendWeights.x + bioGrungeY * blendWeights.y + bioGrungeZ * blendWeights.z;
+
+                    float distFromShip = length(vWorldPos.xz - uShipWorldPos);
+                    float cryoMix = smoothstep(${(BIOME_THRESHOLD_CRYO - BIOME_BLEND_HALF_WIDTH).toFixed(1)}, ${(BIOME_THRESHOLD_CRYO + BIOME_BLEND_HALF_WIDTH).toFixed(1)}, distFromShip);
+                    float bioMix = smoothstep(${(BIOME_THRESHOLD_BIO - BIOME_BLEND_HALF_WIDTH).toFixed(1)}, ${(BIOME_THRESHOLD_BIO + BIOME_BLEND_HALF_WIDTH).toFixed(1)}, distFromShip);
+
+                    vec3 bunkerBlended = bunkerWallCol.rgb;
+                    float bunkerRustMask = clamp((bunkerWallGrunge.r * 0.85 + bunkerWallGrunge.g * 0.3) * 0.95, 0.0, 1.0);
+                    vec3 bunkerRustColor = vec3(0.18, 0.09, 0.05) * (0.6 + 0.4 * bunkerWallGrunge.b);
+                    bunkerBlended = mix(bunkerBlended, bunkerRustColor, bunkerRustMask * 0.82);
+
+                    vec3 cryoBlended = cryoWallCol.rgb;
+                    float cryoMask = clamp((cryoWallGrunge.r * 0.52 + cryoWallGrunge.g * 0.72) * 0.88, 0.0, 1.0);
+                    vec3 cryoColor = vec3(0.52, 0.7, 0.86) * (0.65 + 0.35 * cryoWallGrunge.b);
+                    cryoBlended = mix(cryoBlended, cryoColor, cryoMask * 0.78);
+
+                    vec3 bioBlended = bioWallCol.rgb;
+                    float bioMask = clamp((bioWallGrunge.g * 0.84 + bioWallGrunge.r * 0.24) * 0.98, 0.0, 1.0);
+                    vec3 bioColor = vec3(0.2, 0.36, 0.16) * (0.72 + 0.28 * bioWallGrunge.b);
+                    bioBlended = mix(bioBlended, bioColor, bioMask * 0.88);
+
+                    vec3 finalWallColor = mix(bunkerBlended, cryoBlended, cryoMix);
+                    finalWallColor = mix(finalWallColor, bioBlended, bioMix);
+                    diffuseColor *= vec4(finalWallColor, 1.0);
                 #endif
                 `
             );
@@ -548,7 +714,13 @@ export class ThreeGame {
             bunker_junk_legendary: this.loadScatterTexture('/bunker_junk_legendary.png', textureLoader),
             bio_spores: this.loadScatterTexture('/bio_spores.png', textureLoader),
             bio_spores_blue: this.loadScatterTexture('/bio_spores_blue.png', textureLoader),
-            bio_spores_amber: this.loadScatterTexture('/bio_spores_amber.png', textureLoader)
+            bio_spores_amber: this.loadScatterTexture('/bio_spores_amber.png', textureLoader),
+            scatter_coolant_puddle: this.loadScatterTexture('/scatter_coolant_puddle.png', textureLoader),
+            scatter_ice_stalagmite: this.loadScatterTexture('/scatter_ice_stalagmite.png', textureLoader),
+            scatter_bio_pod: this.loadScatterTexture('/scatter_bio_pod.png', textureLoader),
+            scatter_slime_puddle: this.loadScatterTexture('/scatter_slime_puddle.png', textureLoader),
+            scatter_gravel: this.loadScatterTexture('/scatter_gravel.png', textureLoader),
+            ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader)
         };
 
         this.scatterMaterials = {
@@ -615,6 +787,54 @@ export class ThreeGame {
                 depthWrite: false,
                 depthTest: true,
                 fog: false
+            }),
+            scatter_coolant_puddle: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_coolant_puddle,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_ice_stalagmite: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_ice_stalagmite,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_bio_pod: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_bio_pod,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_slime_puddle: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_slime_puddle,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_gravel: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_gravel,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            ship_wreckage: new THREE.SpriteMaterial({
+                map: this.scatterTextures.ship_wreckage,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
             })
         };
         this.scatterPlaneMaterials = {
@@ -662,15 +882,18 @@ export class ThreeGame {
         this.setupInput();
         this.resize();
         this.syncVisibleChunks(true);
+        this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
         this.renderer.setAnimationLoop(() => this.render());
     }
 
     setupLighting() {
         const ambientLight = new THREE.AmbientLight(0xffffff, 1.9);
         this.scene.add(ambientLight);
+        this.ambientLight = ambientLight;
 
         const fillLight = new THREE.HemisphereLight(0x6b8db3, 0x07090c, 0.8);
         this.scene.add(fillLight);
+        this.fillLight = fillLight;
 
         const directionalLight = new THREE.DirectionalLight(0xd6e7ff, 2.3);
         directionalLight.position.set(10, 18, 8);
@@ -684,6 +907,7 @@ export class ThreeGame {
         directionalLight.shadow.camera.top = 14;
         directionalLight.shadow.camera.bottom = -14;
         this.scene.add(directionalLight);
+        this.directionalLight = directionalLight;
 
         const playerGlow = new THREE.PointLight(PLAYER_COLORS[this.playerType] ?? 0xffffff, 2.4, 8, 2);
         playerGlow.position.set(0, 1.6, 0);
@@ -1376,6 +1600,7 @@ export class ThreeGame {
 
         this.updateCrashedShipsVisibility(true);
         this.ensureO2BubbleVisualState();
+        this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
         this.emitVitalsState();
         this.emitShipHealthState();
     }
@@ -1494,6 +1719,60 @@ export class ThreeGame {
         image.src = path;
 
         return texture;
+    }
+
+    configureTerrainTexture(texture, maxAnisotropy = 1) {
+        if (!texture) return;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        if (maxAnisotropy > 1) {
+            texture.anisotropy = maxAnisotropy;
+        }
+    }
+
+    loadTerrainTexture(path, textureLoader, maxAnisotropy = 1, fallbackPath = null) {
+        const texture = textureLoader.load(path, (loadedTexture) => {
+            this.configureTerrainTexture(loadedTexture, maxAnisotropy);
+        }, undefined, (error) => {
+            if (!fallbackPath || fallbackPath === path) {
+                console.warn(`[ThreeGame] Failed to load terrain texture from ${path}`, error);
+                return;
+            }
+
+            console.warn(`[ThreeGame] Failed to load ${path}; falling back to ${fallbackPath}`, error);
+            textureLoader.load(fallbackPath, (fallbackTexture) => {
+                this.configureTerrainTexture(fallbackTexture, maxAnisotropy);
+                texture.image = fallbackTexture.image;
+                texture.needsUpdate = true;
+            }, undefined, (fallbackError) => {
+                console.warn(`[ThreeGame] Failed to load terrain fallback texture from ${fallbackPath}`, fallbackError);
+            });
+        });
+
+        this.configureTerrainTexture(texture, maxAnisotropy);
+        return texture;
+    }
+
+    createBiomeTerrainTextures(textureLoader, maxAnisotropy = 1) {
+        const textures = {};
+
+        for (const biomeKey of BIOME_ORDER) {
+            const config = BIOME_TERRAIN_TEXTURE_PATHS[biomeKey];
+            const fallback = config?.fallback ?? null;
+            textures[biomeKey] = {
+                floorBase: this.loadTerrainTexture(config.floorBase, textureLoader, maxAnisotropy, fallback?.floorBase),
+                floorGrunge: this.loadTerrainTexture(config.floorGrunge, textureLoader, maxAnisotropy, fallback?.floorGrunge),
+                floorDetail: this.loadTerrainTexture(config.floorDetail, textureLoader, maxAnisotropy, fallback?.floorDetail),
+                wallSide: this.loadTerrainTexture(config.wallSide, textureLoader, maxAnisotropy, fallback?.wallSide),
+                wallTop: this.loadTerrainTexture(config.wallTop, textureLoader, maxAnisotropy, fallback?.wallTop),
+                wallGrunge: this.loadTerrainTexture(config.wallGrunge, textureLoader, maxAnisotropy, fallback?.wallGrunge)
+            };
+        }
+
+        return textures;
     }
 
     loadScatterTexture(path, textureLoader) {
@@ -1675,6 +1954,7 @@ export class ThreeGame {
         this.lastTime = now;
 
         this.updatePlayer(delta);
+        this.updateBiomeEnvironment({ delta });
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
@@ -2649,6 +2929,7 @@ export class ThreeGame {
         }
 
         this.ensureO2BubbleVisualState();
+        this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
         if (!skipEffects) {
             this.spawnShipPoofEffect(spawn.x, spawn.y, PLAYER_COLORS[this.playerType] ?? 0xffffff);
         }
@@ -2680,7 +2961,9 @@ export class ThreeGame {
             this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
-            let drainRate = O2_DRAIN_RATE_PCT_PER_SEC * (this.o2DrainMult ?? 1.0);
+            let drainRate = O2_DRAIN_RATE_PCT_PER_SEC
+                * (this.o2DrainMult ?? 1.0)
+                * (this.currentBiomeO2DrainMult ?? 1.0);
             if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
                 drainRate *= O2_DRAIN_RATE_DANGER_MULT;
             }
@@ -2778,6 +3061,175 @@ export class ThreeGame {
         return getDepthLootConfig(this.getDepthTier(chunkX, chunkY));
     }
 
+    getBiomeAnchorPosition() {
+        const ship = this.getActiveShip();
+        if (ship) {
+            return { x: ship.tileX, z: ship.tileZ };
+        }
+
+        const spawn = this.getSpawnTile();
+        return { x: spawn.x, z: spawn.y };
+    }
+
+    getBiomeMixValues(distanceFromAnchor) {
+        const distance = Number.isFinite(distanceFromAnchor) ? Math.max(0, distanceFromAnchor) : 0;
+        const cryoMix = THREE.MathUtils.clamp(
+            THREE.MathUtils.smoothstep(
+                distance,
+                BIOME_THRESHOLD_CRYO - BIOME_BLEND_HALF_WIDTH,
+                BIOME_THRESHOLD_CRYO + BIOME_BLEND_HALF_WIDTH
+            ),
+            0,
+            1
+        );
+        const bioMix = THREE.MathUtils.clamp(
+            THREE.MathUtils.smoothstep(
+                distance,
+                BIOME_THRESHOLD_BIO - BIOME_BLEND_HALF_WIDTH,
+                BIOME_THRESHOLD_BIO + BIOME_BLEND_HALF_WIDTH
+            ),
+            0,
+            1
+        );
+        return { cryoMix, bioMix };
+    }
+
+    getBiomeKeyFromDistance(distanceFromAnchor) {
+        if (distanceFromAnchor >= BIOME_THRESHOLD_BIO) {
+            return BIOME_KEYS.BIO;
+        }
+
+        if (distanceFromAnchor >= BIOME_THRESHOLD_CRYO) {
+            return BIOME_KEYS.CRYO;
+        }
+
+        return BIOME_KEYS.ACTIVE;
+    }
+
+    getBiomeKeyForWorldPosition(worldX, worldZ) {
+        const anchor = this.getBiomeAnchorPosition();
+        const distance = Math.hypot(worldX - anchor.x, worldZ - anchor.z);
+        return this.getBiomeKeyFromDistance(distance);
+    }
+
+    getBiomeLabel(biomeKey = this.currentBiomeKey) {
+        return BIOME_LABELS[biomeKey] ?? BIOME_LABELS[BIOME_KEYS.ACTIVE];
+    }
+
+    emitBiomeChanged(biomeKey, distanceFromAnchor = 0) {
+        const key = BIOME_ORDER.includes(biomeKey) ? biomeKey : BIOME_KEYS.ACTIVE;
+        window.dispatchEvent(new CustomEvent('biome-changed', {
+            detail: {
+                key,
+                label: this.getBiomeLabel(key),
+                distance: Math.round(distanceFromAnchor),
+                o2DrainMultiplier: BIOME_O2_DRAIN_MULTIPLIERS[key] ?? 1,
+                message: BIOME_NOTIFICATION_MESSAGES[key] ?? ''
+            }
+        }));
+    }
+
+    blendBiomeColor(activeHex, cryoHex, bioHex, cryoMix, bioMix, lowColor, highColor) {
+        lowColor.setHex(activeHex).lerp(highColor.setHex(cryoHex), cryoMix);
+        return lowColor.lerp(highColor.setHex(bioHex), bioMix);
+    }
+
+    updateBiomeLighting(cryoMix, bioMix, delta = 0.016, immediate = false) {
+        if (!this.scene?.fog || !this.ambientLight || !this.directionalLight || !this.fillLight) {
+            return;
+        }
+
+        const lerpAlpha = immediate
+            ? 1
+            : THREE.MathUtils.clamp(delta * 3.6, 0.04, 0.2);
+        const blendedFog = this.blendBiomeColor(
+            BIOME_LIGHTING[BIOME_KEYS.ACTIVE].fog,
+            BIOME_LIGHTING[BIOME_KEYS.CRYO].fog,
+            BIOME_LIGHTING[BIOME_KEYS.BIO].fog,
+            cryoMix,
+            bioMix,
+            this.biomeLightingColors.fogA,
+            this.biomeLightingColors.fogB
+        );
+        this.scene.fog.color.lerp(blendedFog, lerpAlpha);
+        if (this.scene.background?.isColor) {
+            this.scene.background.lerp(blendedFog, lerpAlpha * 0.85);
+        }
+
+        const blendedAmbient = this.blendBiomeColor(
+            BIOME_LIGHTING[BIOME_KEYS.ACTIVE].ambient,
+            BIOME_LIGHTING[BIOME_KEYS.CRYO].ambient,
+            BIOME_LIGHTING[BIOME_KEYS.BIO].ambient,
+            cryoMix,
+            bioMix,
+            this.biomeLightingColors.ambientA,
+            this.biomeLightingColors.ambientB
+        );
+        this.ambientLight.color.lerp(blendedAmbient, lerpAlpha);
+
+        const blendedDirectional = this.blendBiomeColor(
+            BIOME_LIGHTING[BIOME_KEYS.ACTIVE].directional,
+            BIOME_LIGHTING[BIOME_KEYS.CRYO].directional,
+            BIOME_LIGHTING[BIOME_KEYS.BIO].directional,
+            cryoMix,
+            bioMix,
+            this.biomeLightingColors.directionalA,
+            this.biomeLightingColors.directionalB
+        );
+        this.directionalLight.color.lerp(blendedDirectional, lerpAlpha);
+
+        const blendedHemiSky = this.blendBiomeColor(
+            BIOME_LIGHTING[BIOME_KEYS.ACTIVE].hemisphereSky,
+            BIOME_LIGHTING[BIOME_KEYS.CRYO].hemisphereSky,
+            BIOME_LIGHTING[BIOME_KEYS.BIO].hemisphereSky,
+            cryoMix,
+            bioMix,
+            this.biomeLightingColors.hemiSkyA,
+            this.biomeLightingColors.hemiSkyB
+        );
+        this.fillLight.color.lerp(blendedHemiSky, lerpAlpha);
+
+        const blendedHemiGround = this.blendBiomeColor(
+            BIOME_LIGHTING[BIOME_KEYS.ACTIVE].hemisphereGround,
+            BIOME_LIGHTING[BIOME_KEYS.CRYO].hemisphereGround,
+            BIOME_LIGHTING[BIOME_KEYS.BIO].hemisphereGround,
+            cryoMix,
+            bioMix,
+            this.biomeLightingColors.hemiGroundA,
+            this.biomeLightingColors.hemiGroundB
+        );
+        this.fillLight.groundColor.lerp(blendedHemiGround, lerpAlpha);
+    }
+
+    updateBiomeEnvironment({ delta = 0.016, immediate = false, forceEvent = false } = {}) {
+        if (!this.player) return;
+
+        const anchor = this.getBiomeAnchorPosition();
+        this.biomeShipAnchor.set(anchor.x, anchor.z);
+        const distanceFromAnchor = Math.hypot(
+            this.player.position.x - anchor.x,
+            this.player.position.z - anchor.z
+        );
+        const { cryoMix, bioMix } = this.getBiomeMixValues(distanceFromAnchor);
+        this.biomeMixState = { cryoMix, bioMix };
+
+        if (this.floorShaderUniforms?.uShipWorldPos) {
+            this.floorShaderUniforms.uShipWorldPos.value = this.biomeShipAnchor;
+        }
+        if (this.wallShaderUniforms?.uShipWorldPos) {
+            this.wallShaderUniforms.uShipWorldPos.value = this.biomeShipAnchor;
+        }
+
+        this.updateBiomeLighting(cryoMix, bioMix, delta, immediate);
+
+        const nextBiomeKey = this.getBiomeKeyFromDistance(distanceFromAnchor);
+        this.currentBiomeO2DrainMult = BIOME_O2_DRAIN_MULTIPLIERS[nextBiomeKey] ?? 1;
+        if (nextBiomeKey !== this.currentBiomeKey || forceEvent) {
+            this.currentBiomeKey = nextBiomeKey;
+            this.emitBiomeChanged(nextBiomeKey, distanceFromAnchor);
+        }
+    }
+
     emitDepthTierChanged(depthTier = this.maxDepthTierReached) {
         const tier = Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, Math.floor(depthTier)));
         window.dispatchEvent(new CustomEvent('depth-tier-changed', {
@@ -2811,7 +3263,32 @@ export class ThreeGame {
             totalPickups: totalBanked,
             generatorLevel: this.bank.getO2GeneratorLevel(),
             depthTier: this.maxDepthTierReached,
-            depthTierName: this.getDepthTierName(this.maxDepthTierReached)
+            depthTierName: this.getDepthTierName(this.maxDepthTierReached),
+            biomeKey: this.currentBiomeKey,
+            biomeLabel: this.getBiomeLabel(this.currentBiomeKey)
+        };
+    }
+
+    getBiomeState() {
+        if (!this.player) {
+            return {
+                key: this.currentBiomeKey,
+                label: this.getBiomeLabel(this.currentBiomeKey),
+                distance: 0,
+                o2DrainMultiplier: this.currentBiomeO2DrainMult
+            };
+        }
+
+        const anchor = this.getBiomeAnchorPosition();
+        const distance = Math.hypot(
+            this.player.position.x - anchor.x,
+            this.player.position.z - anchor.z
+        );
+        return {
+            key: this.currentBiomeKey,
+            label: this.getBiomeLabel(this.currentBiomeKey),
+            distance,
+            o2DrainMultiplier: this.currentBiomeO2DrainMult
         };
     }
 
@@ -3565,6 +4042,11 @@ export class ThreeGame {
         }
 
         if (candidates.length < 10) return [];
+        const chunkCenterX = chunkX * this.chunkSize + (this.chunkSize * 0.5);
+        const chunkCenterZ = chunkY * this.chunkSize + (this.chunkSize * 0.5);
+        const biomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
+        const biomeVariants = BIOME_SCATTER_VARIANTS[biomeKey] ?? BIOME_SCATTER_VARIANTS[BIOME_KEYS.ACTIVE];
+        const allowJunkPiles = biomeKey === BIOME_KEYS.ACTIVE;
 
         const totalItems = Math.floor(6 + random() * 5);
         const targetClustered = Math.round(totalItems * SCATTER_CLUSTER_RATIO);
@@ -3735,17 +4217,34 @@ export class ThreeGame {
                 elevation = 0.09 + random() * 0.05;
                 opacity = 1;
                 snailCount += 1;
-            } else if (roll < 0.62) {
+            } else if (allowJunkPiles && roll < 0.52) {
                 type = this.chooseWeightedType(JUNK_SCATTER_VARIANTS, random);
                 scaleMultiplier = 1.72 + random() * 0.34;
                 // Keep junk piles visually grounded but high enough to avoid floor clipping artifacts.
                 elevation = 0.13 + random() * 0.08;
                 opacity = 1;
             } else {
-                type = this.chooseWeightedType(SPORE_SCATTER_VARIANTS, random);
-                scaleMultiplier = 0.42 + random() * 0.1;
-                elevation = 1.45 + random() * 0.95;
-                opacity = 0.58 + random() * 0.16;
+                type = this.chooseWeightedType(biomeVariants, random);
+                const isGroundCover = type.includes('puddle') || type === 'scatter_gravel';
+                const isTallScatter = type === 'scatter_ice_stalagmite' || type === 'scatter_bio_pod';
+                const isWreckage = type === 'ship_wreckage';
+                if (isWreckage) {
+                    scaleMultiplier = 1.05 + random() * 0.3;
+                    elevation = 0.12 + random() * 0.08;
+                    opacity = 0.92;
+                } else if (isGroundCover) {
+                    scaleMultiplier = 0.85 + random() * 0.28;
+                    elevation = 0.05 + random() * 0.04;
+                    opacity = 0.72 + random() * 0.14;
+                } else if (isTallScatter) {
+                    scaleMultiplier = 0.62 + random() * 0.24;
+                    elevation = 0.8 + random() * 0.55;
+                    opacity = 0.68 + random() * 0.22;
+                } else {
+                    scaleMultiplier = 0.42 + random() * 0.1;
+                    elevation = 1.45 + random() * 0.95;
+                    opacity = 0.58 + random() * 0.16;
+                }
             }
 
             // Prevent junk piles from spawning too close to each other.
@@ -3755,10 +4254,10 @@ export class ThreeGame {
                 ));
 
                 if (tooCloseToOtherJunk) {
-                    type = this.chooseWeightedType(SPORE_SCATTER_VARIANTS, random);
-                    scaleMultiplier = 0.42 + random() * 0.1;
-                    elevation = 1.45 + random() * 0.95;
-                    opacity = 0.58 + random() * 0.16;
+                    type = this.chooseWeightedType(biomeVariants, random);
+                    scaleMultiplier = 0.58 + random() * 0.18;
+                    elevation = 0.9 + random() * 0.7;
+                    opacity = 0.62 + random() * 0.16;
                 } else {
                     junkPlacementAnchors.push({ x: p.x, z: p.z });
                 }
@@ -5506,6 +6005,11 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
+        Object.values(this.biomeTerrainTextures ?? {}).forEach((textureSet) => {
+            Object.values(textureSet ?? {}).forEach((texture) => texture?.dispose?.());
+        });
+        this.floorMaterial?.dispose?.();
+        this.wallMaterial?.dispose?.();
         Object.values(this.scatterMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterPlaneMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterTextures ?? {}).forEach((texture) => texture.dispose?.());

@@ -38,6 +38,9 @@ const audioMusicValue = document.getElementById('audio-music-value');
 const audioVfxValue = document.getElementById('audio-vfx-value');
 const pickupCountTotal = document.getElementById('pickup-count-total');
 const bunkerLevelNum = document.getElementById('level-num');
+const biomeLabelEl = document.getElementById('biome-label');
+const biomeHudPromptEl = document.getElementById('biome-hud-prompt');
+const biomeHudTextEl = document.getElementById('biome-hud-text');
 const ammoRow = document.getElementById('pickup-row-ammo');
 const weaponStatusPanel = document.getElementById('weapon-status-panel');
 const weaponClipCurrent = document.getElementById('weapon-clip-current');
@@ -64,6 +67,8 @@ const DEFAULT_AUDIO_MIX = Object.freeze({
     vfx: 1
 });
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
+const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
+const BIOME_PROMPT_DURATION_MS = 2800;
 const STARTING_RUN_AMMO = 18;
 
 const state = {
@@ -94,6 +99,7 @@ let deathSequenceTimer = null;
 let damageFlashTimer = null;
 let ammoFlashTimer = null;
 let weaponErrorTimer = null;
+let biomePromptTimer = null;
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -398,13 +404,69 @@ function renderBunkerLevel(tier = 0) {
 
     bunkerLevelNum.textContent = String(normalized);
     bunkerLevelNum.title = BUNKER_TIER_NAMES[normalized];
-    bunkerLevelNum.setAttribute('aria-label', `BUNKER LEVEL ${normalized} (${BUNKER_TIER_NAMES[normalized]})`);
+    const biomeLabel = biomeLabelEl?.textContent?.trim() || DEFAULT_BIOME_LABEL;
+    bunkerLevelNum.setAttribute('aria-label', `BUNKER LEVEL ${normalized} (${BUNKER_TIER_NAMES[normalized]}) — ${biomeLabel}`);
+}
+
+function hideBiomePrompt() {
+    if (!biomeHudPromptEl) return;
+    if (biomePromptTimer) {
+        clearTimeout(biomePromptTimer);
+        biomePromptTimer = null;
+    }
+    biomeHudPromptEl.classList.remove('visible');
+    biomeHudPromptEl.classList.add('hidden');
+}
+
+function showBiomePrompt(message = '') {
+    if (!biomeHudPromptEl || !biomeHudTextEl) return;
+    biomeHudTextEl.textContent = message;
+    biomeHudPromptEl.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        biomeHudPromptEl.classList.add('visible');
+    });
+
+    if (biomePromptTimer) {
+        clearTimeout(biomePromptTimer);
+        biomePromptTimer = null;
+    }
+
+    biomePromptTimer = window.setTimeout(() => {
+        hideBiomePrompt();
+    }, BIOME_PROMPT_DURATION_MS);
+}
+
+function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
+    const label = typeof detail?.label === 'string' && detail.label.trim()
+        ? detail.label.trim()
+        : DEFAULT_BIOME_LABEL;
+    if (biomeLabelEl) {
+        biomeLabelEl.textContent = label;
+        biomeLabelEl.title = label;
+        biomeLabelEl.setAttribute('aria-label', `CURRENT BIOME ${label}`);
+    }
+
+    const hudVisible = !document.getElementById('ui')?.classList.contains('hidden');
+    if (!hudVisible) {
+        hideBiomePrompt();
+    }
+    if (showPrompt && hudVisible) {
+        const message = typeof detail?.message === 'string' && detail.message.trim()
+            ? detail.message.trim()
+            : `ENTERING ${label}`;
+        showBiomePrompt(message);
+    }
 }
 
 window.addEventListener('depth-tier-changed', (event) => {
     renderBunkerLevel(event?.detail?.tier ?? 0);
 });
+window.addEventListener('biome-changed', (event) => {
+    renderBiomeStatus(event?.detail ?? {}, { showPrompt: true });
+    renderBunkerLevel(window.game?.maxDepthTierReached ?? Number(bunkerLevelNum?.textContent ?? 0));
+});
 renderBunkerLevel(0);
+renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
 
 function clearTimedClass(timerRefName, className) {
     if (timerRefName === 'damage') {
@@ -505,10 +567,34 @@ function hideGameOverScreen() {
     if (modal) modal.classList.add('hidden');
 }
 
+function resetRunToStartingState({
+    resetBank = false,
+    skipEffects = true,
+    snailSpawnEnabled = false,
+    purgeSnails = true
+} = {}) {
+    if (resetBank) {
+        bankManager.reset();
+    }
+
+    resetPickupCounter();
+    window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
+    setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
+    window.game?.setInputEnabled?.(false);
+    renderBunkerLevel(0);
+    renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
+    hideBiomePrompt();
+}
+
 function runDeathSequence() {
     if (deathSequenceTimer) return;
 
     window.game?.setInputEnabled?.(false);
+    hideBiomePrompt();
+    if (biomePromptTimer) {
+        clearTimeout(biomePromptTimer);
+        biomePromptTimer = null;
+    }
     document.body.classList.add('player-dead-flash');
     AudioManager.play('ui_error', { volume: 0.7 });
 
@@ -522,6 +608,13 @@ function runDeathSequence() {
             generatorLevel: 0
         };
         showGameOverScreen(stats);
+        resetRunToStartingState({
+            resetBank: false,
+            skipEffects: true,
+            snailSpawnEnabled: false,
+            purgeSnails: true
+        });
+        window.game?.setInputEnabled?.(false);
     }, 900);
 }
 
@@ -541,10 +634,12 @@ if (gameOverTryAgain) {
         hideGameOverScreen();
         triggerDoorTransition(
             () => {
-                window.game?.setInputEnabled?.(false);
-                setSnailSpawnState(true);
-                resetPickupCounter();
-                window.game?.respawnPlayer?.({ resetRunState: true, skipEffects: false });
+                resetRunToStartingState({
+                    resetBank: false,
+                    skipEffects: false,
+                    snailSpawnEnabled: true,
+                    purgeSnails: false
+                });
                 document.getElementById('ui')?.classList.remove('hidden');
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
@@ -559,9 +654,18 @@ if (gameOverTryAgain) {
 if (gameOverMainMenu) {
     gameOverMainMenu.addEventListener('click', () => {
         hideGameOverScreen();
+        hideBiomePrompt();
+        if (biomePromptTimer) {
+            clearTimeout(biomePromptTimer);
+            biomePromptTimer = null;
+        }
         missionFlowRunning = false;
-        window.game?.setInputEnabled?.(false);
-        setSnailSpawnState(false, { purgeExisting: true });
+        resetRunToStartingState({
+            resetBank: false,
+            skipEffects: true,
+            snailSpawnEnabled: false,
+            purgeSnails: true
+        });
 
         triggerDoorTransition(
             () => {
@@ -910,11 +1014,12 @@ if (startBtn) {
         triggerDoorTransition(
             () => {
                 if (menu) menu.classList.add('hidden');
-                window.game?.setInputEnabled?.(false);
-                setSnailSpawnState(true);
-                resetPickupCounter();
-                bankManager.reset();
-                window.game?.respawnPlayer?.({ resetRunState: true, skipEffects: true });
+                resetRunToStartingState({
+                    resetBank: true,
+                    skipEffects: true,
+                    snailSpawnEnabled: true,
+                    purgeSnails: false
+                });
                 document.getElementById('ui').classList.remove('hidden');
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
@@ -1090,6 +1195,11 @@ if (confirmYes) {
         dialogueManager?.cancelTutorial();
         document.body.classList.remove('mission-intro-active');
         document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical');
+        hideBiomePrompt();
+        if (biomePromptTimer) {
+            clearTimeout(biomePromptTimer);
+            biomePromptTimer = null;
+        }
         if (damageFlashTimer) {
             clearTimeout(damageFlashTimer);
             damageFlashTimer = null;
@@ -1099,8 +1209,12 @@ if (confirmYes) {
             deathSequenceTimer = null;
         }
         missionFlowRunning = false;
-        window.game?.setInputEnabled?.(true);
-        setSnailSpawnState(false, { purgeExisting: true });
+        resetRunToStartingState({
+            resetBank: false,
+            skipEffects: true,
+            snailSpawnEnabled: false,
+            purgeSnails: true
+        });
 
         triggerDoorTransition(
             () => {
@@ -1847,6 +1961,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     setSnailSpawnState(false, { purgeExisting: true });
+    const initialBiomeState = window.game?.getBiomeState?.();
+    if (initialBiomeState) {
+        renderBiomeStatus(initialBiomeState, { showPrompt: false });
+    }
     window.game?.emitVitalsState?.();
     ensureMissionManagers();
 

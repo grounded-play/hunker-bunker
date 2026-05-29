@@ -212,7 +212,11 @@
     <div id="ui" class="hidden">
       <div class="header-bar hud-header">
         <div class="hud-header__left">
-          <div class="level-indicator">BUNKER LEVEL <span id="level-num">0</span></div>
+          <div class="level-indicator">
+            <span class="level-indicator__title">BUNKER LEVEL</span>
+            <span id="level-num">0</span>
+            <span id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
+          </div>
         </div>
         <div class="hud-header__center">
           <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
@@ -356,6 +360,10 @@
     <div id="tutorial-prompt" class="tutorial-prompt hidden" aria-live="polite">
       <span id="tutorial-prompt-icon" class="tutorial-prompt__icon hidden"></span>
       <span id="tutorial-prompt-text" class="tutorial-prompt__text"></span>
+    </div>
+    <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
+      <span class="biome-hud-prompt__icon">ZONE</span>
+      <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
     </div>
 
     <!-- Holographic Retro Terminal Console Modal -->
