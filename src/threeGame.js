@@ -2889,7 +2889,10 @@ export class ThreeGame {
         if (this.weaponReloadTimer > 0) return;
 
         this.weaponReloading = false;
-        this.weaponClipAmmo = WEAPON_CLIP_SIZE;
+        const availableAmmo = Number.isFinite(window.pickupCounterState?.ammo)
+            ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
+            : 0;
+        this.weaponClipAmmo = Math.min(WEAPON_CLIP_SIZE, availableAmmo);
         this.emitWeaponClipState();
         window.AudioManager?.play('ui_click', { volume: 0.28, playbackRate: 1.18 });
     }
@@ -2905,6 +2908,10 @@ export class ThreeGame {
     tryFireWeapon(clientX, clientY) {
         if (!this.inputEnabled || this.isPlayerDead) return;
 
+        const availableAmmo = Number.isFinite(window.pickupCounterState?.ammo)
+            ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
+            : 0;
+
         if (this.isInsideNoFireZone()) {
             window.AudioManager?.play('ui_error', { volume: 0.42 });
             window.dispatchEvent(new CustomEvent('combat-no-fire-zone'));
@@ -2919,11 +2926,15 @@ export class ThreeGame {
             return;
         }
         if (this.weaponClipAmmo <= 0) {
+            if (availableAmmo < 1) {
+                window.AudioManager?.play('ui_error', { volume: 0.45 });
+                window.dispatchEvent(new CustomEvent('combat-no-ammo'));
+                return;
+            }
             this.startReload();
             return;
         }
 
-        const availableAmmo = window.pickupCounterState?.ammo ?? 0;
         if (availableAmmo < 1) {
             window.AudioManager?.play('ui_error', { volume: 0.45 });
             window.dispatchEvent(new CustomEvent('combat-no-ammo'));
