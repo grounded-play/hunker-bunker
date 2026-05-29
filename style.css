@@ -2568,6 +2568,22 @@ body.vitals-critical #game-viewport::after {
   }
 }
 
+#game-viewport.pickup-legendary-flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9500;
+  background: radial-gradient(circle at center, rgba(255, 183, 71, 0.08) 30%, rgba(255, 183, 71, 0.22) 100%);
+  animation: legendary-vignette 0.5s ease-out forwards;
+}
+
+@keyframes legendary-vignette {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .splash-corner {
   position: absolute;
   top: calc(var(--vu) * 4);

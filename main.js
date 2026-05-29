@@ -303,6 +303,18 @@ function trackPickupCollected(event) {
     const rarity = event?.detail?.rarity;
     AudioManager.playProceduralLoot(type, rarity);
 
+    // Rare+ loot flash
+    if (rarity === 'legendary') {
+        AudioManager.play('ui_boot', { volume: 0.32, playbackRate: 1.22, bus: 'sfx' });
+        const viewport = document.getElementById('game-viewport');
+        if (viewport) {
+            viewport.classList.add('pickup-legendary-flash');
+            setTimeout(() => viewport.classList.remove('pickup-legendary-flash'), 500);
+        }
+    } else if (rarity === 'rare') {
+        AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 1.35, bus: 'sfx' });
+    }
+
     // Pickup combo tracking
     pickupComboCount += 1;
     if (pickupComboTimer) clearTimeout(pickupComboTimer);
