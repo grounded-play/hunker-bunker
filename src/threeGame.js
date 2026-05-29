@@ -2434,14 +2434,17 @@ export class ThreeGame {
 
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {
-            const message = this._buildTerminalTickerMessage(ship, bankState, generatorState);
+            this._tickerRefreshTimer = (this._tickerRefreshTimer ?? 0) + 0.12;
+            const shouldCycle = this._tickerRefreshTimer >= 6.0;
+            if (shouldCycle) this._tickerRefreshTimer = 0;
+            const message = this._buildTerminalTickerMessage(ship, bankState, generatorState, shouldCycle);
             if (ticker.textContent !== message) {
                 ticker.textContent = message;
             }
         }
     }
 
-    _buildTerminalTickerMessage(ship, bankState, generatorState) {
+    _buildTerminalTickerMessage(ship, bankState, generatorState, shouldCycle = false) {
         const biomeKey = this.currentBiomeKey ?? BIOME_KEYS.ACTIVE;
         const o2 = this.playerVitals?.o2 ?? 100;
         const hp = this.playerVitals?.hp ?? 3;
@@ -2477,9 +2480,9 @@ export class ThreeGame {
                 'BIO SECTOR: ALIEN ORGANISM GROWTH DETECTED. PROCEED WITH EXTREME CAUTION.',
                 `BIO SECTOR DEPTH ${depthTier}. LOOT DENSITY ELEVATED. OXYGEN DEMAND +30%.`
             ];
-            if (!this._tickerMsgIndex || this._tickerMsgIndex >= pool.length) this._tickerMsgIndex = 0;
-            const msg = pool[this._tickerMsgIndex % pool.length];
-            if (!this._tickerBiomeFlip) { this._tickerMsgIndex = (this._tickerMsgIndex + 1) % pool.length; this._tickerBiomeFlip = true; }
+            if (!Number.isFinite(this._tickerBioIndex)) this._tickerBioIndex = 0;
+            const msg = pool[this._tickerBioIndex % pool.length];
+            if (shouldCycle) this._tickerBioIndex = (this._tickerBioIndex + 1) % pool.length;
             return msg;
         }
 
@@ -2489,14 +2492,11 @@ export class ThreeGame {
                 'CRYO SECTOR: RUPTURED COOLANT LINES DETECTED. FROZEN DEBRIS DENSITY HIGH.',
                 `CRYO SECTOR DEPTH ${depthTier}. LOOT DENSITY ELEVATED. THERMAL DRAIN ACTIVE.`
             ];
-            if (!this._tickerMsgIndex || this._tickerMsgIndex >= pool.length) this._tickerMsgIndex = 0;
-            const msg = pool[this._tickerMsgIndex % pool.length];
-            if (!this._tickerCryoFlip) { this._tickerMsgIndex = (this._tickerMsgIndex + 1) % pool.length; this._tickerCryoFlip = true; }
+            if (!Number.isFinite(this._tickerCryoIndex)) this._tickerCryoIndex = 0;
+            const msg = pool[this._tickerCryoIndex % pool.length];
+            if (shouldCycle) this._tickerCryoIndex = (this._tickerCryoIndex + 1) % pool.length;
             return msg;
         }
-
-        this._tickerBiomeFlip = false;
-        this._tickerCryoFlip = false;
 
         if (generatorState.maxed) {
             if (unlocks.reactorCompressor) {
@@ -2517,7 +2517,7 @@ export class ThreeGame {
         ];
         if (!Number.isFinite(this._tickerFallbackIndex)) this._tickerFallbackIndex = 0;
         const msg = fallback[this._tickerFallbackIndex % fallback.length];
-        this._tickerFallbackIndex = (this._tickerFallbackIndex + 1) % fallback.length;
+        if (shouldCycle) this._tickerFallbackIndex = (this._tickerFallbackIndex + 1) % fallback.length;
         return msg;
     }
 
@@ -5550,6 +5550,7 @@ export class ThreeGame {
         const shouldRepath = targetChanged || noPath || data.pathRetargetTimer <= 0;
 
         if (shouldRepath) {
+            const previousMode = data.aiMode;
             const pathNodes = this.findSnailPath(startTileX, startTileZ, goalTileX, goalTileZ, SNAIL_PATH_NODE_BUDGET);
             data.pathNodes = pathNodes;
             data.pathIndex = pathNodes.length > 1 ? 1 : 0;
@@ -5557,6 +5558,9 @@ export class ThreeGame {
             data.pathGoalTileZ = goalTileZ;
             data.aiMode = target.mode;
             data.targetType = target.type;
+            if (previousMode !== 'hunt' && target.mode === 'hunt' && target.type === 'player') {
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.2, playbackRate: 0.55, bus: 'sfx' });
+            }
             data.pathRetargetTimer = target.mode === 'hunt'
                 ? SNAIL_PATH_RECALC_MIN + Math.random() * (SNAIL_PATH_RECALC_MAX - SNAIL_PATH_RECALC_MIN)
                 : SNAIL_WANDER_RECALC_MIN + Math.random() * (SNAIL_WANDER_RECALC_MAX - SNAIL_WANDER_RECALC_MIN);
