@@ -503,9 +503,9 @@ function triggerDamageFlash() {
 
 // ---- Hero select stat pips ----
 const HERO_DISPLAY_STATS = {
-    SCOUT:    { spdPips: 5, o2Pips: 2, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW'    },
-    TANK:     { spdPips: 2, o2Pips: 5, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH'   },
-    ENGINEER: { spdPips: 4, o2Pips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL' }
+    SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE'  },
+    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT' },
+    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'MED'   }
 };
 const HERO_STAT_TOTAL = 5;
 
@@ -530,11 +530,14 @@ function updateHeroStats(type) {
 
     renderPips('hero-stat-spd', stats.spdPips);
     renderPips('hero-stat-o2', stats.o2Pips);
+    renderPips('hero-stat-loot', stats.lootPips);
 
-    const spdVal = document.getElementById('hero-stat-spd-val');
-    const o2Val  = document.getElementById('hero-stat-o2-val');
-    if (spdVal) spdVal.textContent = stats.spdLabel;
-    if (o2Val)  o2Val.textContent  = stats.o2Label;
+    const spdVal  = document.getElementById('hero-stat-spd-val');
+    const o2Val   = document.getElementById('hero-stat-o2-val');
+    const lootVal = document.getElementById('hero-stat-loot-val');
+    if (spdVal)  spdVal.textContent  = stats.spdLabel;
+    if (o2Val)   o2Val.textContent   = stats.o2Label;
+    if (lootVal) lootVal.textContent = stats.lootLabel;
 }
 
 // ---- Game Over Screen ----

@@ -3090,6 +3090,11 @@ export class ThreeGame {
         const inBubble = generatorState.isOnline && this.getActiveO2GeneratorDistance() <= generatorState.radius;
         const reactorUpgrade = this.hasUpgrade('reactorCompressor');
 
+        if (inBubble && !this._wasInBubble) {
+            window.AudioManager?.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.72, bus: 'sfx' });
+        }
+        this._wasInBubble = inBubble;
+
         if (inBubble) {
             const refillRate = reactorUpgrade
                 ? generatorState.refillRate * 1.2
@@ -3862,6 +3867,31 @@ export class ThreeGame {
             const scatter = this.createScatterInstance(placement);
             if (scatter) {
                 group.add(scatter);
+            }
+        }
+
+        // Add subtle reward-cache glow lights in dead-end rooms
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
+        if (roomTypes) {
+            const biomeKey = this.getBiomeKeyForWorldPosition(
+                chunkX * this.chunkSize + this.chunkSize * 0.5,
+                chunkY * this.chunkSize + this.chunkSize * 0.5
+            );
+            const lightColor = biomeKey === 'cryo' ? 0x88aaff : biomeKey === 'bio' ? 0x66cc88 : 0xffcc66;
+            const deadEndLights = [];
+            for (let localY = 1; localY < this.chunkSize - 1; localY++) {
+                for (let localX = 1; localX < this.chunkSize - 1; localX++) {
+                    if (roomTypes[localY][localX] === ROOM_TYPES.DEAD_END) {
+                        const wx = chunkX * this.chunkSize + localX;
+                        const wz = chunkY * this.chunkSize + localY;
+                        deadEndLights.push({ wx, wz });
+                    }
+                }
+            }
+            for (const { wx, wz } of deadEndLights.slice(0, 2)) {
+                const deLight = new THREE.PointLight(lightColor, 1.1, 5, 2);
+                deLight.position.set(wx, 1.4, wz);
+                group.add(deLight);
             }
         }
 
