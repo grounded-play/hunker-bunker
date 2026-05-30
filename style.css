@@ -4163,6 +4163,26 @@ body.mission-intro-active #game-container {
   font-style: italic;
 }
 
+.go-seed-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1);
+  margin-top: calc(var(--vu) * 0.6);
+}
+
+.go-seed-label {
+  font-size: var(--font-xs);
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.06em;
+}
+
+.go-seed-val {
+  font-size: var(--font-xs);
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
+  font-family: 'Space Mono', monospace;
+}
+
 .archive-section-label {
   font-size: var(--font-xs);
   font-weight: 900;

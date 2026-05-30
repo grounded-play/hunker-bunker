@@ -881,7 +881,22 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const ratingLabel = document.getElementById('go-rating-label');
     const newBest = document.getElementById('go-new-best');
 
-    if (scoreVal) scoreVal.textContent = String(score);
+    if (scoreVal) {
+        // Animated score roll
+        scoreVal.textContent = '0';
+        const duration = 1200;
+        const startTime = performance.now();
+        const rollScore = () => {
+            const elapsed = performance.now() - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease out cubic
+            const current = Math.floor(eased * score);
+            if (scoreVal) scoreVal.textContent = String(current);
+            if (progress < 1) requestAnimationFrame(rollScore);
+            else if (scoreVal) scoreVal.textContent = String(score);
+        };
+        setTimeout(() => requestAnimationFrame(rollScore), 800);
+    }
     if (ratingBadge) {
         ratingBadge.textContent = rating.grade;
         ratingBadge.className = `go-rating-badge go-rating-badge--${rating.grade.toLowerCase()}`;
@@ -897,6 +912,13 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         refreshCharBestScores();
     }
     if (newBest) newBest.classList.toggle('hidden', !isNewBest);
+
+    // World seed display
+    const seedRow = document.getElementById('go-seed-row');
+    const seedVal = document.getElementById('go-seed-val');
+    const currentSeed = window.game?.globalSeedOffset ?? 0;
+    if (seedRow) seedRow.classList.toggle('hidden', !_isDailyOpsRun);
+    if (seedVal && _isDailyOpsRun) seedVal.textContent = `DAILY-${getTodayDateString()}`;
 
     // Daily Ops result save
     if (_isDailyOpsRun) {
