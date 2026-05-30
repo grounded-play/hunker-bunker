@@ -170,14 +170,23 @@ export class AudioManager {
         if (options.loop) source.loop = true;
 
         source.connect(gainNode);
-        
+
+        // Optional stereo panning
+        let lastNode = gainNode;
+        if (options.pan !== undefined && Number.isFinite(options.pan)) {
+            const panner = audioCtx.createStereoPanner();
+            panner.pan.value = Math.max(-1, Math.min(1, options.pan));
+            gainNode.connect(panner);
+            lastNode = panner;
+        }
+
         // Connect to appropriate bus
         if (bus === 'world') {
-            gainNode.connect(this.sfxGain); // Route environment/world sounds to SFX/VFX
+            lastNode.connect(this.sfxGain); // Route environment/world sounds to SFX/VFX
         } else if (bus === 'music') {
-            gainNode.connect(this.musicGain);
+            lastNode.connect(this.musicGain);
         } else {
-            gainNode.connect(this.sfxGain);
+            lastNode.connect(this.sfxGain);
         }
 
         source.start(0);

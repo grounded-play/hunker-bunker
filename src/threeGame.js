@@ -7169,15 +7169,25 @@ export class ThreeGame {
         this._threatAudioTimer = (this._threatAudioTimer ?? 0) - delta;
         if (this._threatAudioTimer <= 0 && this.player && !this.isPlayerDead) {
             let nearestHuntingSnail = Infinity;
+            let nearestSnailX = 0;
             for (const child of this.scatterSprites) {
                 if (!this.isEnemyType(child.userData?.type)) continue;
                 if (child.userData?.burstTriggered) continue;
-                if (child.userData?.aiMode !== 'hunt') continue;
+                if (child.userData?.aiMode !== 'hunt' && child.userData?.crawlerState !== 'charging') continue;
                 const dist = Math.hypot(this.player.position.x - child.position.x, this.player.position.z - child.position.z);
-                if (dist < nearestHuntingSnail) nearestHuntingSnail = dist;
+                if (dist < nearestHuntingSnail) {
+                    nearestHuntingSnail = dist;
+                    nearestSnailX = child.position.x;
+                }
             }
             if (nearestHuntingSnail < 5.5) {
-                window.AudioManager?.play('amb_metal_stress', { volume: 0.08 + (1 - nearestHuntingSnail / 5.5) * 0.06, playbackRate: 1.25, bus: 'sfx' });
+                const pan = Math.max(-1, Math.min(1, (nearestSnailX - this.player.position.x) / 6));
+                window.AudioManager?.play('amb_metal_stress', {
+                    volume: 0.08 + (1 - nearestHuntingSnail / 5.5) * 0.06,
+                    playbackRate: 1.25,
+                    bus: 'sfx',
+                    pan
+                });
                 this._threatAudioTimer = 1.8;
             } else {
                 this._threatAudioTimer = 0.5;
