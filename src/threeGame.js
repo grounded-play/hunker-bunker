@@ -6487,13 +6487,21 @@ export class ThreeGame {
                 }
             }
         }
-        // Coin drop
-        const coinPlacement = this.createSnailDropPlacement(x, z, x + (Math.random() - 0.5), z + (Math.random() - 0.5), 'coin');
-        if (coinPlacement) {
-            const coinPickup = this.createPickupInstance(coinPlacement);
-            if (coinPickup) {
-                this.scene.add(coinPickup);
-                this.pickupMeshes.push(coinPickup);
+        // Coin drop(s)
+        for (let i = 0; i < SENTINEL_COIN_DROP; i++) {
+            const coinPlacement = this.createSnailDropPlacement(
+                x,
+                z,
+                x + (Math.random() - 0.5),
+                z + (Math.random() - 0.5),
+                'coin'
+            );
+            if (coinPlacement) {
+                const coinPickup = this.createPickupInstance(coinPlacement);
+                if (coinPickup) {
+                    this.scene.add(coinPickup);
+                    this.pickupMeshes.push(coinPickup);
+                }
             }
         }
     }
