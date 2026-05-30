@@ -2785,6 +2785,22 @@ body.vitals-critical #game-viewport::after {
   }
 }
 
+/* POISON STATUS */
+body.player-poisoned #game-viewport::after {
+  background: radial-gradient(circle at center, rgba(0,0,0,0.02) 40%, rgba(60, 200, 60, 0.28) 100%);
+  animation: poison-pulse 0.9s ease-in-out infinite;
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9390;
+}
+
+@keyframes poison-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 0.9; }
+}
+
 /* DISTRESS MODE — HP ≤ 1 AND O2 < 15% */
 body.distress-mode #game-viewport {
   filter: saturate(0.35) contrast(1.12);

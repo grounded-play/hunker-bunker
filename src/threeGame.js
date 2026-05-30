@@ -3781,6 +3781,7 @@ export class ThreeGame {
                 this.playerSprite.material.color.setHex(0x88ccff); // blue frost tint
             }
         } else if (this.playerPoisonTimer > 0) {
+            const wasPoisoned = this.playerPoisonTimer > 0;
             this.playerPoisonTimer = Math.max(0, this.playerPoisonTimer - delta);
             this.playerPoisonTickTimer += delta;
             if (this.playerPoisonTickTimer >= 1.2) {
@@ -3789,6 +3790,11 @@ export class ThreeGame {
             }
             if (this.playerSprite?.material?.color) {
                 this.playerSprite.material.color.setHex(0x88ff88); // green poison tint
+            }
+            if (wasPoisoned && this.playerPoisonTimer <= 0) {
+                window.dispatchEvent(new CustomEvent('player-poison-cleared'));
+            } else if (wasPoisoned) {
+                window.dispatchEvent(new CustomEvent('player-poisoned', { detail: { timeLeft: this.playerPoisonTimer } }));
             }
         } else if (this.playerSprite?.material?.color && this.playerSprite.material.color.getHex() !== 0xffffff) {
             this.playerSprite.material.color.setHex(0xffffff);

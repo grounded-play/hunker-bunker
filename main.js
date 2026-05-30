@@ -1503,6 +1503,13 @@ window.addEventListener('player-damaged', (event) => {
     updateMusicTension();
 });
 
+window.addEventListener('player-poisoned', () => {
+    document.body.classList.add('player-poisoned');
+});
+window.addEventListener('player-poison-cleared', () => {
+    document.body.classList.remove('player-poisoned');
+});
+
 window.addEventListener('health-restored', () => {
     const hp = window.game?.playerVitals?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
@@ -2143,7 +2150,7 @@ if (confirmYes) {
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
         document.body.classList.remove('mission-intro-active');
-        document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode');
+        document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode', 'player-poisoned');
         _distressModeActive = false;
         hideMissionProgressHUD();
         hideBiomePrompt();
