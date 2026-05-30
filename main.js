@@ -99,10 +99,12 @@ let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 let cutsceneManager = null;
 let dialogueManager = null;
 let missionFlowRunning = false;
+let isResettingRun = false;
 let deathSequenceTimer = null;
 let damageFlashTimer = null;
 let weaponErrorTimer = null;
 let biomePromptTimer = null;
+let missionProgressHUDTimer = null;
 let o2AlarmTimer = null;
 let o2AlarmActive = false;
 let pickupComboCount = 0;
@@ -629,6 +631,18 @@ function hideBiomePrompt() {
 
 function showBiomePrompt(message = '') {
     if (!biomeHudPromptEl || !biomeHudTextEl) return;
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (!isGameplayActive || isResettingRun) return;
+
     biomeHudTextEl.textContent = message;
     biomeHudPromptEl.classList.remove('hidden');
     requestAnimationFrame(() => {
@@ -691,7 +705,7 @@ const BIOME_HUD_COLORS = {
     bio:    { label: 'rgba(144, 220, 140, 0.98)', glow: 'rgba(60, 160, 80, 0.40)'  }
 };
 window.addEventListener('biome-changed', (event) => {
-    renderBiomeStatus(event?.detail ?? {}, { showPrompt: true });
+    renderBiomeStatus(event?.detail ?? {}, { showPrompt: !isResettingRun });
     renderBunkerLevel(window.game?.maxDepthTierReached ?? Number(bunkerLevelNum?.textContent ?? 0));
     const biomeKey = event?.detail?.key ?? 'active';
     const biomeCols = BIOME_HUD_COLORS[biomeKey] ?? BIOME_HUD_COLORS.active;
@@ -700,12 +714,14 @@ window.addEventListener('biome-changed', (event) => {
         hud.style.setProperty('--biome-label-color', biomeCols.label);
         hud.style.setProperty('--biome-label-glow', biomeCols.glow);
     }
-    if (biomeKey === 'cryo') {
-        AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
-        fireMothershipReactiveLine('first_cryo');
-    } else if (biomeKey === 'bio') {
-        AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
-        fireMothershipReactiveLine('first_bio');
+    if (!isResettingRun) {
+        if (biomeKey === 'cryo') {
+            AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
+            fireMothershipReactiveLine('first_cryo');
+        } else if (biomeKey === 'bio') {
+            AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
+            fireMothershipReactiveLine('first_bio');
+        }
     }
 });
 renderBunkerLevel(0);
@@ -973,22 +989,28 @@ function resetRunToStartingState({
     snailSpawnEnabled = false,
     purgeSnails = true
 } = {}) {
-    if (resetBank) {
-        bankManager.reset();
+    isResettingRun = true;
+    try {
+        if (resetBank) {
+            bankManager.reset();
+        }
+
+        runStartTime = Date.now();
+        currentMission = assignMission(bankManager.getState());
+        _mothershipFiredTriggers.clear();
+
+        resetPickupCounter();
+        window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
+        window.game?.initMission?.(currentMission);
+        setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
+        window.game?.setInputEnabled?.(false);
+        renderBunkerLevel(0);
+        renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
+        hideBiomePrompt();
+        hideMissionProgressHUD();
+    } finally {
+        isResettingRun = false;
     }
-
-    runStartTime = Date.now();
-    currentMission = assignMission(bankManager.getState());
-    _mothershipFiredTriggers.clear();
-
-    resetPickupCounter();
-    window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
-    window.game?.initMission?.(currentMission);
-    setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
-    window.game?.setInputEnabled?.(false);
-    renderBunkerLevel(0);
-    renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
-    hideBiomePrompt();
 }
 
 function runDeathSequence(event) {
@@ -1051,7 +1073,7 @@ window.addEventListener('player-respawned', () => {
     _distressModeActive = false;
     _musicTension = 'exploring';
     window.AudioManager?.setMusicTension?.('exploring');
-    document.body.classList.remove('distress-mode', 'vitals-critical');
+    document.body.classList.remove('distress-mode', 'vitals-critical', 'player-poisoned', 'player-damage-flash', 'mission-intro-active');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
     updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
@@ -1337,10 +1359,26 @@ function showMissionProgressHUD(text) {
     const hud = document.getElementById('mission-progress-hud');
     const textEl = document.getElementById('mission-progress-text');
     if (textEl) textEl.textContent = text;
-    if (hud) hud.classList.remove('hidden');
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (isGameplayActive && !isResettingRun && hud) {
+        hud.classList.remove('hidden');
+    }
 }
 
 function hideMissionProgressHUD() {
+    if (missionProgressHUDTimer) {
+        clearTimeout(missionProgressHUDTimer);
+        missionProgressHUDTimer = null;
+    }
     const hud = document.getElementById('mission-progress-hud');
     if (hud) hud.classList.add('hidden');
 }
@@ -1944,12 +1982,24 @@ async function runMissionIntroSequence() {
         // Show mission briefing after door transition
         if (currentMission?.label) {
             window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
+            if (missionProgressHUDTimer) {
+                clearTimeout(missionProgressHUDTimer);
+            }
             if (currentMission.type === 'elimination' && currentMission.targetKills > 0) {
-                window.setTimeout(() => showMissionProgressHUD(`ELIMINATE: 0 / ${currentMission.targetKills}`), 600);
+                missionProgressHUDTimer = window.setTimeout(() => {
+                    showMissionProgressHUD(`ELIMINATE: 0 / ${currentMission.targetKills}`);
+                    missionProgressHUDTimer = null;
+                }, 600);
             } else if (currentMission.type === 'retrieval') {
-                window.setTimeout(() => showMissionProgressHUD('RETRIEVE: TECH CACHE — SCAN AREA'), 600);
+                missionProgressHUDTimer = window.setTimeout(() => {
+                    showMissionProgressHUD('RETRIEVE: TECH CACHE — SCAN AREA');
+                    missionProgressHUDTimer = null;
+                }, 600);
             } else if (currentMission.type === 'survey') {
-                window.setTimeout(() => showMissionProgressHUD(`SURVEY: REACH ${currentMission.targetDepth}u DEPTH`), 600);
+                missionProgressHUDTimer = window.setTimeout(() => {
+                    showMissionProgressHUD(`SURVEY: REACH ${currentMission.targetDepth}u DEPTH`);
+                    missionProgressHUDTimer = null;
+                }, 600);
             }
         }
     } finally {
