@@ -102,6 +102,8 @@ const PROJECTILE_DAMAGE = 1;
 const FEATURE_WALL_DECALS = true;
 const FEATURE_MULTISHOT = true;
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
+const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
+const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
 const MULTISHOT_SPREADS = Object.freeze([[], [-0.085, 0.085], [-0.15, 0.0, 0.15]]);
 const WALL_DECAL_CAP = 24;
 const PHYS_PARTICLE_GRAVITY = 7.0;   // units/s²
@@ -495,7 +497,9 @@ export class ThreeGame {
         this._aimRaycaster = new THREE.Raycaster();
         this._projRaycaster = new THREE.Raycaster();
         this.activeProjectiles = [];
-        this.weaponClipAmmo = WEAPON_CLIP_SIZE;
+        this.weaponClipSize = WEAPON_CLIP_SIZE;
+        this.weaponUpgradeBonuses = { shotDamage: 0, speedAdd: 0, shotAmount: 0 };
+        this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponFireCooldown = 0;
@@ -3171,8 +3175,28 @@ export class ThreeGame {
         this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
         this.playerVitals.maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
+        this.applyWeaponUpgrades();
         this.updateGoalModuleVisualState(this.unlocks);
         this.ensureO2BubbleVisualState();
+    }
+
+    // Translate persisted weapon-upgrade levels into the live combat tuning used by
+    // spawnPlayerShot() and the reload/clip logic. Called whenever upgrades change.
+    applyWeaponUpgrades() {
+        const levels = this.bank?.getWeaponUpgrades?.() ?? {};
+        const ammoCapacity = Math.max(0, Math.floor(levels.ammoCapacity ?? 0));
+        const shotSpeed = Math.max(0, Math.floor(levels.shotSpeed ?? 0));
+        const shotDamage = Math.max(0, Math.floor(levels.shotDamage ?? 0));
+        const shotAmount = Math.max(0, Math.floor(levels.shotAmount ?? 0));
+
+        this.weaponClipSize = WEAPON_CLIP_SIZE + ammoCapacity * WEAPON_CLIP_PER_CAPACITY;
+        this.weaponUpgradeBonuses = {
+            shotDamage,
+            speedAdd: shotSpeed * WEAPON_SPEED_PER_TIER,
+            shotAmount
+        };
+        // Never leave more rounds chambered than the (possibly shrunk) clip allows.
+        this.weaponClipAmmo = Math.min(this.weaponClipAmmo, this.weaponClipSize);
     }
 
     hasUpgrade(goalKey) {
@@ -3337,7 +3361,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
             detail: {
                 clip: this.weaponClipAmmo,
-                maxClip: WEAPON_CLIP_SIZE,
+                maxClip: this.weaponClipSize,
                 cache: this.getAvailableAmmo(),
                 reloading: this.weaponReloading,
                 reloadProgress
@@ -3363,7 +3387,7 @@ export class ThreeGame {
             projectile?.mesh?.material?.dispose?.();
             projectile?.mesh?.geometry?.dispose?.();
         }
-        this.weaponClipAmmo = WEAPON_CLIP_SIZE;
+        this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponFireCooldown = 0;
@@ -4388,7 +4412,7 @@ export class ThreeGame {
 
         this.weaponReloading = false;
         const availableAmmo = this.getAvailableAmmo();
-        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const ammoLoaded = Math.min(missingAmmo, availableAmmo);
         if (ammoLoaded > 0) {
             this.weaponClipAmmo += ammoLoaded;
@@ -4407,7 +4431,7 @@ export class ThreeGame {
     startReload() {
         if (this.weaponReloading) return false;
         const availableAmmo = this.getAvailableAmmo();
-        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const refillAmount = Math.min(missingAmmo, availableAmmo);
         if (refillAmount <= 0) return false;
         this.weaponReloading = true;
@@ -4430,7 +4454,7 @@ export class ThreeGame {
             return false;
         }
 
-        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const refillAmount = Math.min(missingAmmo, availableAmmo);
         if (refillAmount <= 0) {
             if (manual) {
