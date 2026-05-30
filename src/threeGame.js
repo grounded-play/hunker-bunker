@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BankManager, O2_GENERATOR_UPGRADES } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 
 const PLAYER_COLORS = {
@@ -2559,6 +2559,52 @@ export class ThreeGame {
         button.addEventListener('click', () => this.attemptGoalUnlock(this.activeInteractiveConsole ?? ship, cardConfig));
     }
 
+    renderTier2Section(ship, bankState) {
+        const allGoalsDone = Boolean(bankState?.unlocks?.reactorCompressor);
+        const section = document.getElementById('tier2-section');
+        if (section) section.classList.toggle('hidden', !allGoalsDone);
+        if (!allGoalsDone) return;
+
+        const tier2Unlocks = bankState?.tier2Unlocks ?? {};
+        for (const key of TIER2_UPGRADE_ORDER) {
+            const cfg = TIER2_UPGRADE_CONFIGS[key];
+            if (!cfg) continue;
+            const alreadyUnlocked = Boolean(tier2Unlocks[key]);
+            const canAfford = this.bank.canAfford(cfg.cost);
+
+            const statusEl = document.getElementById(`terminal-tier2-${key}-status`);
+            if (statusEl) {
+                statusEl.textContent = alreadyUnlocked ? 'INSTALLED' : canAfford ? 'READY' : 'RESOURCE DEFICIT';
+            }
+            const costEl = document.getElementById(`terminal-tier2-${key}-cost`);
+            if (costEl) {
+                costEl.textContent = alreadyUnlocked ? '' : `COST: ${cfg.cost.tech} TECH / ${cfg.cost.coin} COIN`;
+            }
+            const btn = document.getElementById(`terminal-btn-tier2-${key}`);
+            if (!btn) continue;
+            btn.disabled = alreadyUnlocked || !canAfford;
+            btn.textContent = alreadyUnlocked ? 'INSTALLED' : 'INSTALL';
+            btn.classList.toggle('btn-state--online', alreadyUnlocked);
+            btn.classList.toggle('btn-state--available', !alreadyUnlocked && canAfford);
+            btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && !canAfford);
+
+            if (btn.dataset.listenerAttached === 'true') continue;
+            btn.dataset.listenerAttached = 'true';
+            btn.addEventListener('click', () => this.attemptTier2Unlock(this.activeInteractiveConsole ?? ship, key));
+        }
+    }
+
+    attemptTier2Unlock(ship, key) {
+        const success = this.bank.unlockTier2(key);
+        if (success) {
+            window.AudioManager?.play('class_lock', { volume: 0.55 });
+            this.syncPersistentUpgrades();
+        } else {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+        }
+        this.renderConsoleBanking(ship);
+    }
+
     updateGoalModuleVisualState(unlocks = this.unlocks) {
         const safeUnlocks = unlocks ?? {};
         const hullUnlocked = Boolean(safeUnlocks.hullExpansion);
@@ -2695,6 +2741,7 @@ export class ThreeGame {
         for (const cardConfig of GOAL_CARD_CONFIGS) {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
+        this.renderTier2Section(ship, bankState);
 
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {
@@ -3395,6 +3442,38 @@ export class ThreeGame {
             this.emitDepthTierChanged(0);
         }
 
+        // Stim Cache tier2 upgrade: spawn a health pack near spawn at run start
+        if (resetRunState && this.bank?.getState?.()?.tier2Unlocks?.stimCache) {
+            setTimeout(() => {
+                const sp = this.getSpawnTile();
+                const placement = {
+                    worldX: sp.x + 1.2,
+                    worldZ: sp.y + 0.8,
+                    type: 'health',
+                    rarity: { key: 'uncommon', color: 0x00ff88, label: 'STIM PACK', emissiveIntensity: 1.2 },
+                    scale: 0.9,
+                    rotation: 0,
+                    tiltX: 0,
+                    tiltZ: 0,
+                    elevation: 0.22,
+                    offsetX: 0,
+                    offsetZ: 0,
+                    bobOffset: 0,
+                    shadowRadius: 0.28,
+                    collectLock: 0,
+                    ejectStartX: sp.x,
+                    ejectStartZ: sp.y,
+                    ejectTargetX: sp.x + 1.2,
+                    ejectTargetZ: sp.y + 0.8
+                };
+                const pickup = this.createPickupInstance(placement);
+                if (pickup) {
+                    this.scene.add(pickup);
+                    this.pickupMeshes.push(pickup);
+                }
+            }, 800);
+        }
+
         this.ensureO2BubbleVisualState();
         this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
         if (!skipEffects) {
@@ -3621,6 +3700,14 @@ export class ThreeGame {
             }
             if (reactorUpgrade) {
                 drainRate *= 0.8;
+            }
+            // Tier 2 biome O2 drain reductions
+            const t2Unlocks = this.bank?.getState?.()?.tier2Unlocks ?? {};
+            if (t2Unlocks.suitThermal && this.currentBiomeKey === BIOME_KEYS.CRYO) {
+                drainRate *= 0.5;
+            }
+            if (t2Unlocks.deconFilters && this.currentBiomeKey === BIOME_KEYS.BIO) {
+                drainRate *= 0.5;
             }
             this.playerVitals.o2 = Math.max(0, this.playerVitals.o2 - drainRate * delta);
 

@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'hb_bank';
-const BANK_SCHEMA_VERSION = 1;
+const BANK_SCHEMA_VERSION = 2;
 
 export const GOAL_ORDER = Object.freeze([
     'o2Bubble',
@@ -44,6 +44,36 @@ export const O2_GENERATOR_UPGRADES = Object.freeze([
 
 export const MAX_O2_GENERATOR_LEVEL = O2_GENERATOR_UPGRADES.length;
 
+export const TIER2_UPGRADE_ORDER = Object.freeze([
+    'suitThermal',
+    'deconFilters',
+    'stimCache'
+]);
+
+export const TIER2_UPGRADE_CONFIGS = Object.freeze({
+    suitThermal: Object.freeze({
+        key: 'suitThermal',
+        label: 'SUIT THERMAL COATING',
+        desc: 'Reduces O₂ drain in CRYO sector by 50%.',
+        cost: Object.freeze({ tech: 80, coin: 15 }),
+        prereq: 'reactorCompressor'
+    }),
+    deconFilters: Object.freeze({
+        key: 'deconFilters',
+        label: 'DECONTAMINATION FILTERS',
+        desc: 'Reduces O₂ drain in BIO sector by 50%.',
+        cost: Object.freeze({ tech: 100, coin: 20 }),
+        prereq: 'reactorCompressor'
+    }),
+    stimCache: Object.freeze({
+        key: 'stimCache',
+        label: 'EMERGENCY STIM CACHE',
+        desc: 'Each run starts with a STIM PACK in your kit. Use [F] for 3s immunity.',
+        cost: Object.freeze({ tech: 60, coin: 25 }),
+        prereq: 'reactorCompressor'
+    })
+});
+
 function clampCount(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return 0;
@@ -63,6 +93,11 @@ function createDefaultState() {
             hullExpansion: false,
             radarNode: false,
             reactorCompressor: false
+        },
+        tier2Unlocks: {
+            suitThermal: false,
+            deconFilters: false,
+            stimCache: false
         }
     };
 }
@@ -71,10 +106,15 @@ function migrateBank(raw) {
     if (!raw || typeof raw !== 'object') return raw;
     const version = raw.schemaVersion ?? 0;
     if (version < 1) {
-        // v0 → v1: add schemaVersion field; all unlocks were present before
         raw.schemaVersion = 1;
     }
-    // Future: if (version < 2) { add tier 2 keys with false defaults }
+    if (version < 2) {
+        // v1 → v2: add tier2Unlocks object with all false defaults
+        if (!raw.tier2Unlocks || typeof raw.tier2Unlocks !== 'object') {
+            raw.tier2Unlocks = { suitThermal: false, deconFilters: false, stimCache: false };
+        }
+        raw.schemaVersion = 2;
+    }
     return raw;
 }
 
@@ -126,6 +166,14 @@ function toSerializableState(raw) {
     }
 
     syncLegacyUnlocksFromGeneratorLevel(base);
+
+    // Tier 2 unlocks
+    if (raw.tier2Unlocks && typeof raw.tier2Unlocks === 'object') {
+        for (const key of TIER2_UPGRADE_ORDER) {
+            base.tier2Unlocks[key] = Boolean(raw.tier2Unlocks[key]);
+        }
+    }
+
     return base;
 }
 
@@ -139,6 +187,9 @@ function cloneState(state) {
         o2GeneratorLevel: state.o2GeneratorLevel,
         unlocks: {
             ...state.unlocks
+        },
+        tier2Unlocks: {
+            ...(state.tier2Unlocks ?? { suitThermal: false, deconFilters: false, stimCache: false })
         }
     };
 }
@@ -334,6 +385,31 @@ export class BankManager {
             bank: this.getState()
         });
 
+        return true;
+    }
+
+    getTier2Unlocks() {
+        return { ...(this.state.tier2Unlocks ?? {}) };
+    }
+
+    canUnlockTier2(key) {
+        if (!TIER2_UPGRADE_ORDER.includes(key)) return false;
+        if (this.state.tier2Unlocks?.[key]) return false;
+        const cfg = TIER2_UPGRADE_CONFIGS[key];
+        if (!cfg) return false;
+        if (cfg.prereq && !this.state.unlocks?.[cfg.prereq]) return false;
+        return this.canAfford(cfg.cost);
+    }
+
+    unlockTier2(key) {
+        if (!this.canUnlockTier2(key)) return false;
+        const cfg = TIER2_UPGRADE_CONFIGS[key];
+        if (!cfg) return false;
+        if (!this.spend(cfg.cost)) return false;
+        if (!this.state.tier2Unlocks) this.state.tier2Unlocks = {};
+        this.state.tier2Unlocks[key] = true;
+        this.save();
+        emit('tier2-unlocked', { key, unlocks: this.getTier2Unlocks(), bank: this.getState() });
         return true;
     }
 

@@ -4440,6 +4440,26 @@ body.mission-intro-active #game-container {
   text-shadow: 0 0 8px rgba(var(--section-rgb), 0.25);
 }
 
+.terminal-tone--tier2 {
+  --section-rgb: 180, 120, 255;
+  border-left: 2px solid rgba(180, 120, 255, 0.4);
+  padding-left: calc(var(--vu) * 1.2);
+}
+
+.terminal-tone--tier2 .terminal-section-title {
+  color: rgba(180, 120, 255, 0.96);
+  text-shadow: 0 0 8px rgba(180, 120, 255, 0.25);
+}
+
+.action-card--tier2 {
+  border-color: rgba(180, 120, 255, 0.22);
+}
+
+.action-card--tier2:hover {
+  border-color: rgba(180, 120, 255, 0.55);
+  box-shadow: 0 0 12px rgba(180, 120, 255, 0.12);
+}
+
 .terminal-tone--bank .action-cost,
 .terminal-tone--medkit .action-cost,
 .terminal-tone--generator .action-cost,
