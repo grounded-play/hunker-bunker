@@ -7770,6 +7770,13 @@ export class ThreeGame {
         }
 
         this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, sprite.userData.type);
+        const junkColors = this.getJunkVariantEffectColors(sprite.userData.type);
+        this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, {
+            color: junkColors.glowColor,
+            count: 7,
+            upward: 0.2,
+            spread: 1.6
+        });
         window.AudioManager?.playProceduralJunkBurst(sprite.userData.type);
 
         for (const target of this.createJunkBurstTargets(sprite.position.x, sprite.position.z, random)) {
