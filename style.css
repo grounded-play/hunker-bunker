@@ -4892,6 +4892,32 @@ body.mission-intro-active #game-container {
   box-shadow: 0 0 12px rgba(180, 120, 255, 0.12);
 }
 
+/* COMBAT MATRIX (weapon skill tree) — scoped combat-red accent, additive only. */
+.weapons-matrix-section {
+  --section-rgb: 255, 110, 80;
+  border-left-color: rgba(255, 110, 80, 0.4);
+}
+
+.weapons-matrix-section .terminal-section-title {
+  color: rgba(255, 130, 95, 0.96);
+  text-shadow: 0 0 8px rgba(255, 110, 80, 0.25);
+}
+
+.action-card--weapon {
+  border-color: rgba(255, 110, 80, 0.22);
+}
+
+.action-card--weapon:hover {
+  border-color: rgba(255, 110, 80, 0.55);
+  box-shadow: 0 0 12px rgba(255, 110, 80, 0.12);
+}
+
+.action-card--weapon .action-cost {
+  border-color: rgba(255, 110, 80, 0.42);
+  color: rgba(255, 150, 120, 1);
+  background: rgba(255, 110, 80, 0.16);
+}
+
 .terminal-tone--bank .action-cost,
 .terminal-tone--medkit .action-cost,
 .terminal-tone--generator .action-cost,

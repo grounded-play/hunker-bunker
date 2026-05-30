@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 
 const PLAYER_COLORS = {
@@ -2756,6 +2756,65 @@ export class ThreeGame {
         this.renderConsoleBanking(ship);
     }
 
+    // COMBAT MATRIX skill tree. Mirrors renderTier2Section: reuses the same action-card
+    // markup + btn-state classes. Gated on the O2 generator being repaired so weapon
+    // progression is available early-game (unlike end-game tier2 systems).
+    renderWeaponsSection(ship, bankState) {
+        const available = (bankState?.o2GeneratorLevel ?? 0) >= 1;
+        const section = document.getElementById('weapons-section');
+        if (section) section.classList.toggle('hidden', !available);
+        if (!available) return;
+
+        const levels = bankState?.weaponUpgrades ?? {};
+        for (const key of WEAPON_UPGRADE_ORDER) {
+            const cfg = WEAPON_UPGRADES_CONFIG[key];
+            if (!cfg) continue;
+            const level = Math.max(0, Math.floor(levels[key] ?? 0));
+            const maxed = level >= cfg.maxLevel;
+            const nextCost = maxed ? null : cfg.costs[level];
+            const canAfford = nextCost ? this.bank.canAfford(nextCost) : false;
+
+            const levelEl = document.getElementById(`terminal-weapon-${key}-level`);
+            if (levelEl) levelEl.textContent = `LV ${level}/${cfg.maxLevel}`;
+
+            const descEl = document.getElementById(`terminal-weapon-${key}-desc`);
+            if (descEl) {
+                descEl.textContent = maxed
+                    ? `MAX TIER — ${cfg.desc[cfg.desc.length - 1]}`
+                    : `NEXT: ${cfg.desc[level]}`;
+            }
+
+            const costEl = document.getElementById(`terminal-weapon-${key}-cost`);
+            if (costEl) {
+                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ${nextCost.tech} TECH / ${nextCost.coin} COIN`;
+            }
+
+            const btn = document.getElementById(`terminal-btn-weapon-${key}`);
+            if (!btn) continue;
+            btn.disabled = maxed || !canAfford;
+            btn.textContent = maxed ? 'MAXED' : 'UPGRADE';
+            btn.classList.toggle('btn-state--online', maxed);
+            btn.classList.toggle('btn-state--available', !maxed && canAfford);
+            btn.classList.toggle('btn-state--insufficient', !maxed && !canAfford);
+
+            if (btn.dataset.listenerAttached === 'true') continue;
+            btn.dataset.listenerAttached = 'true';
+            btn.addEventListener('click', () => this.attemptWeaponUpgrade(this.activeInteractiveConsole ?? ship, key));
+        }
+    }
+
+    attemptWeaponUpgrade(ship, key) {
+        const success = this.bank.upgradeWeapon(key);
+        if (success) {
+            window.AudioManager?.play('class_lock', { volume: 0.55 });
+            this.syncPersistentUpgrades();
+            this.emitWeaponClipState();
+        } else {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+        }
+        this.renderConsoleBanking(ship);
+    }
+
     updateGoalModuleVisualState(unlocks = this.unlocks) {
         const safeUnlocks = unlocks ?? {};
         const hullUnlocked = Boolean(safeUnlocks.hullExpansion);
@@ -2893,6 +2952,7 @@ export class ThreeGame {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
         this.renderTier2Section(ship, bankState);
+        this.renderWeaponsSection(ship, bankState);
 
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {

@@ -668,6 +668,51 @@
             </div>
           </div>
 
+          <!-- Weapon skill tree — visible once the O₂ generator is repaired -->
+          <div id="weapons-section" class="upgrade-goals-section terminal-tone--tier2 weapons-matrix-section hidden">
+            <div class="terminal-section-title">COMBAT MATRIX</div>
+
+            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="ammoCapacity">
+              <div class="action-card-header">
+                <span class="action-title">MAGAZINE CAPACITY</span>
+                <span class="action-cost" id="terminal-weapon-ammoCapacity-level">LV 0/3</span>
+              </div>
+              <p class="action-desc" id="terminal-weapon-ammoCapacity-desc">NEXT: Clip +2 rounds</p>
+              <p class="action-desc action-desc--cost" id="terminal-weapon-ammoCapacity-cost">COST: 30 TECH / 10 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-weapon-ammoCapacity">UPGRADE</button>
+            </div>
+
+            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="shotSpeed">
+              <div class="action-card-header">
+                <span class="action-title">PROJECTILE VELOCITY</span>
+                <span class="action-cost" id="terminal-weapon-shotSpeed-level">LV 0/3</span>
+              </div>
+              <p class="action-desc" id="terminal-weapon-shotSpeed-desc">NEXT: Shot speed +1</p>
+              <p class="action-desc action-desc--cost" id="terminal-weapon-shotSpeed-cost">COST: 25 TECH / 8 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-weapon-shotSpeed">UPGRADE</button>
+            </div>
+
+            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="shotDamage">
+              <div class="action-card-header">
+                <span class="action-title">BALLISTIC PAYLOAD</span>
+                <span class="action-cost" id="terminal-weapon-shotDamage-level">LV 0/2</span>
+              </div>
+              <p class="action-desc" id="terminal-weapon-shotDamage-desc">NEXT: +1 shot damage</p>
+              <p class="action-desc action-desc--cost" id="terminal-weapon-shotDamage-cost">COST: 80 TECH / 25 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-weapon-shotDamage">UPGRADE</button>
+            </div>
+
+            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="shotAmount">
+              <div class="action-card-header">
+                <span class="action-title">BURST INJECTORS</span>
+                <span class="action-cost" id="terminal-weapon-shotAmount-level">LV 0/2</span>
+              </div>
+              <p class="action-desc" id="terminal-weapon-shotAmount-desc">NEXT: Double-shot spread</p>
+              <p class="action-desc action-desc--cost" id="terminal-weapon-shotAmount-cost">COST: 120 TECH / 50 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-weapon-shotAmount">UPGRADE</button>
+            </div>
+          </div>
+
         </div>
 
         <div class="terminal-footer">
