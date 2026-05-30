@@ -100,6 +100,13 @@
           <h1 class="title-small">HUNKER BUNKER</h1>
           <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
         </div>
+        <div class="menu-header-actions">
+          <div class="daily-ops-container">
+            <div class="daily-ops-status" id="daily-ops-status"></div>
+            <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
+          </div>
+          <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+        </div>
       </div>
 
       <div class="main-layout">
@@ -165,9 +172,6 @@
       <div class="action-row">
         <div class="action-row__left">
           <button class="start-btn" id="start-game">INITIALIZE</button>
-          <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
-          <div class="daily-ops-status" id="daily-ops-status"></div>
-          <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
         </div>
         <div class="action-row__center">
           <div class="hero-stats-compact" id="hero-stats-row">
@@ -344,7 +348,7 @@
             </div>
           </div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--value-only">
             <span class="game-over-stat-label">ITEMS RECOVERED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-items"></div></div>
@@ -352,7 +356,7 @@
             </div>
           </div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--value-only">
             <span class="game-over-stat-label">O₂ GENERATOR</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-generator"></div></div>
@@ -360,7 +364,7 @@
             </div>
           </div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--value-only">
             <span class="game-over-stat-label">THREATS ELIMINATED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-kills"></div></div>

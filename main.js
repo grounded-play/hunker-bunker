@@ -645,6 +645,13 @@ function showBiomePrompt(message = '') {
     }, BIOME_PROMPT_DURATION_MS);
 }
 
+if (biomeHudPromptEl) {
+    biomeHudPromptEl.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        hideBiomePrompt();
+    });
+}
+
 function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
     const label = typeof detail?.label === 'string' && detail.label.trim()
         ? detail.label.trim()
@@ -803,10 +810,7 @@ function generateDeathReport(stats, reason) {
     };
     const cause = causeMap[reason] ?? '> CAUSE: EXOSUIT FAILURE — UNKNOWN EVENT';
     return [
-        `> LAST KNOWN POSITION: ${biome}`,
-        `> DISTANCE FROM BASE: ${Math.round(depth)}u`,
-        `> SALVAGE RECOVERED: ${stats.totalPickups ?? 0} ITEMS`,
-        `> THREATS NEUTRALIZED: ${stats.snailsKilled ?? 0}`,
+        `> LAST POS: ${biome} // DIST: ${Math.round(depth)}u // SALVAGE: ${stats.totalPickups ?? 0} // THREATS: ${stats.snailsKilled ?? 0}`,
         cause
     ].join('\n');
 }
@@ -916,7 +920,6 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // World seed display
     const seedRow = document.getElementById('go-seed-row');
     const seedVal = document.getElementById('go-seed-val');
-    const currentSeed = window.game?.globalSeedOffset ?? 0;
     if (seedRow) seedRow.classList.toggle('hidden', !_isDailyOpsRun);
     if (seedVal && _isDailyOpsRun) seedVal.textContent = `DAILY-${getTodayDateString()}`;
 
@@ -1057,12 +1060,15 @@ window.addEventListener('player-respawned', () => {
 
 window.addEventListener('mission-objective-complete', (event) => {
     const type = event?.detail?.type ?? '';
+    const uplinkReady = Boolean(event?.detail?.uplinkReady);
     const messages = {
         retrieval: 'OBJECTIVE SECURED — RETURN TO SHIP',
         survey:    'SURVEY COMPLETE — RETURN TO SHIP',
         elimination: 'TARGETS ELIMINATED — RETURN TO SHIP'
     };
-    const msg = messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP';
+    const msg = uplinkReady
+        ? (messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP')
+        : 'OBJECTIVE COMPLETE — UPLINK LOCKED // MAX ALL SYSTEMS TO EXTRACT';
     showBiomePrompt(msg);
     AudioManager.play('ui_boot', { volume: 0.45, playbackRate: 0.88, bus: 'sfx' });
 });
@@ -1281,7 +1287,7 @@ function fireMothershipReactiveLine(trigger) {
         first_cryo:       'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.',
         first_bio:        'ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.',
         hp_critical:      'DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.',
-        objective_found:  'UPLINK: OBJECTIVE CONFIRMED. RETURN TO SHIP IMMEDIATELY.',
+        objective_found:  'UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION.',
         first_deposit:    'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.',
         lore_found:       'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.',
         sentinel_spotted: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.',
@@ -1337,6 +1343,23 @@ function showMissionProgressHUD(text) {
 function hideMissionProgressHUD() {
     const hud = document.getElementById('mission-progress-hud');
     if (hud) hud.classList.add('hidden');
+}
+
+const missionProgressHud = document.getElementById('mission-progress-hud');
+if (missionProgressHud) {
+    missionProgressHud.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        hideMissionProgressHUD();
+    });
+}
+
+const tutorialPrompt = document.getElementById('tutorial-prompt');
+if (tutorialPrompt) {
+    tutorialPrompt.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        tutorialPrompt.classList.remove('is-visible', 'is-exiting');
+        tutorialPrompt.classList.add('hidden');
+    });
 }
 
 window.addEventListener('mission-kill-progress', (event) => {
@@ -1467,7 +1490,6 @@ function stopO2Alarm() {
 
 // ── Reactive Music State ──────────────────────────────────────
 let _musicTension = 'exploring';
-let _musicTensionUpdateTimer = 0;
 
 function updateMusicTension() {
     const hp = window.game?.playerVitals?.hp ?? 99;
@@ -1547,6 +1569,7 @@ if (gameOverTryAgain) {
         hideGameOverScreen();
         triggerDoorTransition(
             () => {
+                window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: false,
                     skipEffects: false,
@@ -1587,6 +1610,7 @@ if (gameOverMainMenu) {
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
                 if (menu) menu.classList.remove('hidden');
+                window.game?.setPerformanceProfile?.('menu');
 
                 const gameContainer = document.getElementById('game-container');
                 const mapBox = document.querySelector('.map-box');
@@ -1922,6 +1946,10 @@ async function runMissionIntroSequence() {
             window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
             if (currentMission.type === 'elimination' && currentMission.targetKills > 0) {
                 window.setTimeout(() => showMissionProgressHUD(`ELIMINATE: 0 / ${currentMission.targetKills}`), 600);
+            } else if (currentMission.type === 'retrieval') {
+                window.setTimeout(() => showMissionProgressHUD('RETRIEVE: TECH CACHE — SCAN AREA'), 600);
+            } else if (currentMission.type === 'survey') {
+                window.setTimeout(() => showMissionProgressHUD(`SURVEY: REACH ${currentMission.targetDepth}u DEPTH`), 600);
             }
         }
     } finally {
@@ -1939,6 +1967,7 @@ if (playBtn) {
                 if (splash) splash.classList.add('hidden');
                 if (menu) {
                     menu.classList.remove('hidden');
+                    window.game?.setPerformanceProfile?.('menu');
                     queueGameLayoutRefresh();
                 }
             },
@@ -1956,6 +1985,7 @@ if (startBtn) {
         triggerDoorTransition(
             () => {
                 if (menu) menu.classList.add('hidden');
+                window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: true,
                     skipEffects: true,
@@ -1993,6 +2023,7 @@ if (dailyOpsBtn) {
         triggerDoorTransition(
             () => {
                 if (menu) menu.classList.add('hidden');
+                window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: false,
                     skipEffects: true,
@@ -2189,6 +2220,25 @@ if (confirmYes) {
             deathSequenceTimer = null;
         }
         missionFlowRunning = false;
+
+        // If aborting a daily ops run, finalize the daily attempt so it counts as completed and resets seed.
+        if (_isDailyOpsRun) {
+            _isDailyOpsRun = false;
+            if (window.game) window.game.globalSeedOffset = 0;
+            const stats = window.game?.getRunStats?.() ?? { distanceTravelled: 0, totalPickups: 0, generatorLevel: 0 };
+            const score = window.game?.calculateRunScore?.(stats, { status: 'aborted' }, runStartTime) ?? 0;
+            const grade = window.game?.getRunRating?.(score)?.grade ?? 'D';
+            saveDailyOpsRecord({
+                attempted: true,
+                completed: true,
+                date: getTodayDateString(),
+                score,
+                grade,
+                isVictory: false
+            });
+            updateDailyOpsUI();
+        }
+
         resetRunToStartingState({
             resetBank: false,
             skipEffects: true,
@@ -2203,6 +2253,7 @@ if (confirmYes) {
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
                 if (menu) menu.classList.remove('hidden');
+                window.game?.setPerformanceProfile?.('menu');
 
                 const gameContainer = document.getElementById('game-container');
                 const mapBox = document.querySelector('.map-box');
@@ -2560,6 +2611,20 @@ function syncHeroPreview(type) {
     if (previewName) previewName.textContent = data.name;
     previewFrameIndex = 0;
     void renderPreviewFrame(type, previewFrameIndex);
+
+    // Update custom properties on preview stage wrapper for matching class glow colors
+    const stage = document.querySelector('.char-preview-stage');
+    if (stage) {
+        const glowColors = {
+            'SCOUT': { border: 'rgba(125, 255, 90, 0.28)', bg: 'rgba(125, 255, 90, 0.16)', shadow: 'rgba(125, 255, 90, 0.18)' },
+            'TANK': { border: 'rgba(255, 183, 0, 0.28)', bg: 'rgba(255, 183, 0, 0.16)', shadow: 'rgba(255, 183, 0, 0.18)' },
+            'ENGINEER': { border: 'rgba(0, 229, 255, 0.28)', bg: 'rgba(0, 229, 255, 0.16)', shadow: 'rgba(0, 229, 255, 0.18)' }
+        };
+        const colors = glowColors[type] || glowColors['SCOUT'];
+        stage.style.setProperty('--preview-glow-border', colors.border);
+        stage.style.setProperty('--preview-glow-bg', colors.bg);
+        stage.style.setProperty('--preview-glow-shadow', colors.shadow);
+    }
 }
 
 function startHeroPreviewAnimation() {
@@ -2886,7 +2951,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load audio manifest
     const manifest = {
-        images: ['/door.png', '/scout_ship.png', '/tank_ship.png', '/engineer_ship.png'],
+        images: [
+            '/door.png',
+            '/menu_bg.png',
+            '/ship_wreckage.png',
+            '/scout_ship.png',
+            '/tank_ship.png',
+            '/engineer_ship.png',
+            '/console.png',
+            '/module_o2_generator.png',
+            '/module_hull_matrix.png',
+            '/module_radar_dish.png',
+            '/module_reactor_compressor.png',
+            '/scout_walk.png',
+            '/tank_walk.png',
+            '/engineer_walk.png',
+            '/cybersnail.png',
+            '/cryosnail.png',
+            '/sporesnail.png',
+            '/boss_cybersnail.png',
+            '/boss_cryosnail.png',
+            '/boss_sporesnail.png',
+            '/bunker_base_metal.png',
+            '/bunker_grunge_rust.png',
+            '/bunker_tech_scratches.png',
+            '/bunker_wall_metal.png',
+            '/bunker_wall_grunge.png',
+            '/cryo_base_frost.png',
+            '/cryo_grunge_rime.png',
+            '/cryo_wall_conduit.png',
+            '/bio_base_growth.png',
+            '/bio_grunge_spores.png',
+            '/bio_wall_veins.png',
+            '/ice_base_rock.png',
+            '/ice_grunge_snow.png',
+            '/ice_wall_glacier.png',
+            '/bunker_junk.png',
+            '/bunker_junk_uncommon.png',
+            '/bunker_junk_rare.png',
+            '/bunker_junk_legendary.png',
+            '/bio_spores.png',
+            '/bio_spores_blue.png',
+            '/bio_spores_amber.png',
+            '/scatter_gravel.png',
+            '/scatter_coolant_puddle.png',
+            '/scatter_ice_stalagmite.png',
+            '/scatter_cryo_icicle.png',
+            '/scatter_bio_pod.png',
+            '/scatter_slime_puddle.png'
+        ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
@@ -2926,6 +3039,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'class_lock4', url: '/audio/vg2/class_lock4.wav' }
         ]
     };
+    manifest.images = Array.from(new Set(manifest.images));
 
     // Clicks for generic buttons
     document.querySelectorAll('button, .toggle').forEach(el => {
@@ -2972,6 +3086,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
     }
+    window.game?.setPerformanceProfile?.('menu');
     setSnailSpawnState(false, { purgeExisting: true });
     const initialBiomeState = window.game?.getBiomeState?.();
     if (initialBiomeState) {

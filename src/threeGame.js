@@ -365,14 +365,6 @@ const CRAWLER_ATTACK_RADIUS = 0.72;
 const CRAWLER_ATTACK_COOLDOWN = 1.5;
 const CRAWLER_TINT = 0x44ff88;
 
-const ROOM_TEMPLATES = Object.freeze({
-    ARMORY:         'armory',
-    OPS_CENTER:     'ops_center',
-    AGENT_WRECKAGE: 'agent_wreckage',
-    STASIS_BAY:     'stasis_bay',
-    THE_NEST:       'the_nest'
-});
-
 const ROOM_TEMPLATE_CONFIGS = Object.freeze({
     armory: Object.freeze({
         lightColor: 0xff2222, lightIntensity: 1.5,
@@ -437,7 +429,8 @@ export class ThreeGame {
         this.playerType = playerType;
         this.chunkSize = 19;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
-        this.visibleChunkRadius = 1;
+        this.defaultVisibleChunkRadius = 1;
+        this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         this.wallHeight = 2.8;
         this.playerRadius = 0.66;
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
@@ -551,10 +544,14 @@ export class ThreeGame {
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 0, 0);
 
+        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 1.0);
+        this.gameplayPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+        this.performanceProfile = 'menu';
+
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.type = THREE.PCFShadowMap;
         this.container.replaceChildren(this.renderer.domElement);
 
         const textureLoader = new THREE.TextureLoader();
@@ -2208,6 +2205,104 @@ export class ThreeGame {
         this.renderer.setSize(width, height, false);
     }
 
+    setPerformanceProfile(profile = 'menu') {
+        const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
+        if (this.performanceProfile === nextProfile) return;
+        this.performanceProfile = nextProfile;
+        this.visibleChunkRadius = nextProfile === 'gameplay'
+            ? this.defaultVisibleChunkRadius
+            : 0;
+        if (nextProfile === 'gameplay') {
+            this.virtualInput.x = 0;
+            this.virtualInput.z = 0;
+            this._menuShowcaseTimer = 0;
+            this._menuShowcaseShotTimer = 0;
+        } else if (nextProfile === 'menu') {
+            // Teleport player immediately to the isolated menu showroom spawn coordinate
+            const spawn = this.getSpawnTile();
+            if (this.player) {
+                this.player.position.set(spawn.x, 0, spawn.y);
+                this.playerGlow.position.set(spawn.x, 1.6, spawn.y);
+                if (this.playerMarker) {
+                    this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
+                }
+            }
+            this.clearLoadedChunksForRunReset();
+            this.syncVisibleChunks(true);
+        }
+        const targetPixelRatio = nextProfile === 'gameplay'
+            ? this.gameplayPixelRatio
+            : this.menuPixelRatio;
+        if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
+            this.renderer.setPixelRatio(targetPixelRatio);
+        }
+        this.resize();
+    }
+
+    updateMenuShowcase(delta) {
+        if (this.performanceProfile !== 'menu' || !this.player || this.isPlayerDead) return;
+
+        this.keys.up = false;
+        this.keys.down = false;
+        this.keys.left = false;
+        this.keys.right = false;
+
+        const sideDuration = 1.65;
+        this._menuShowcaseTimer = (this._menuShowcaseTimer ?? 0) + delta;
+        const phaseFloat = this._menuShowcaseTimer / sideDuration;
+        const phase = Math.floor(phaseFloat) % 4;
+        const phaseProgress = phaseFloat - Math.floor(phaseFloat);
+
+        const moveDirs = [
+            { x: 1, z: 0 },
+            { x: 0, z: 1 },
+            { x: -1, z: 0 },
+            { x: 0, z: -1 }
+        ];
+        const shootDirs = [
+            { x: 0, z: -1 },
+            { x: 1, z: 0 },
+            { x: 0, z: 1 },
+            { x: -1, z: 0 }
+        ];
+
+        const moveDir = moveDirs[phase];
+        const shootDir = shootDirs[phase];
+        this.virtualInput.x = moveDir.x;
+        this.virtualInput.z = moveDir.z;
+        this.hasActiveAim = true;
+        this.aimDirX = shootDir.x;
+        this.aimDirZ = shootDir.z;
+        this.aimFacingRow = this.getFacingRow(shootDir.x, shootDir.z);
+
+        const burstActive = phaseProgress >= 0.22 && phaseProgress <= 0.4;
+        if (burstActive) {
+            this._abilityMoveSpeedMult = Math.max(this._abilityMoveSpeedMult ?? 1, 2.5);
+            if (Math.random() < 0.28) {
+                this._spawnSprintTrail();
+            }
+        }
+
+        this._menuShowcaseShotTimer = (this._menuShowcaseShotTimer ?? 0) - delta;
+        if (this._menuShowcaseShotTimer <= 0) {
+            this._menuShowcaseShotTimer = 0.34 + Math.random() * 0.14;
+            const spread = (Math.random() - 0.5) * 0.14;
+            const cos = Math.cos(spread);
+            const sin = Math.sin(spread);
+            const vx = (shootDir.x * cos) - (shootDir.z * sin);
+            const vz = (shootDir.x * sin) + (shootDir.z * cos);
+            this.spawnProjectile({
+                x: this.player.position.x + vx * 0.56,
+                z: this.player.position.z + vz * 0.56,
+                vx: vx * PROJECTILE_SPEED,
+                vz: vz * PROJECTILE_SPEED,
+                ttl: Math.min(PROJECTILE_TTL, 0.95),
+                damage: PROJECTILE_DAMAGE,
+                radius: PROJECTILE_RADIUS
+            });
+        }
+    }
+
     render() {
         const now = performance.now();
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
@@ -2230,6 +2325,7 @@ export class ThreeGame {
         }
 
         this.updateClassAbility(delta);
+        this.updateMenuShowcase(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
         this.updateWeaponState(delta);
@@ -2247,7 +2343,7 @@ export class ThreeGame {
     }
 
     updateLoreTerminals() {
-        if (!this.player || this.isPlayerDead) {
+        if (this.performanceProfile === 'menu' || !this.player || this.isPlayerDead) {
             window.dispatchEvent(new CustomEvent('lore-terminal-clear'));
             return;
         }
@@ -2292,6 +2388,14 @@ export class ThreeGame {
     }
 
     updateConsoles(delta, now) {
+        if (this.performanceProfile === 'menu') {
+            const promptEl = document.getElementById('console-hud-prompt');
+            if (promptEl) {
+                promptEl.classList.add('hidden');
+                promptEl.classList.remove('visible');
+            }
+            return;
+        }
         if (!this.crashedShips || !this.player) return;
 
         const hudActive = !document.getElementById('ui')?.classList.contains('hidden');
@@ -2433,6 +2537,22 @@ export class ThreeGame {
             nextUpgrade,
             radius: currentUpgrade?.radius ?? 0,
             refillRate: currentUpgrade?.refillRate ?? 0
+        };
+    }
+
+    getMothershipUplinkReadiness(bankState = this.bank.getState()) {
+        const unlocks = bankState?.unlocks ?? {};
+        const tier2Unlocks = bankState?.tier2Unlocks ?? {};
+        const generatorState = this.getO2GeneratorState(bankState);
+        const coreSystemsReady = GOAL_CARD_CONFIGS.every((cfg) => Boolean(unlocks[cfg.goalKey]));
+        const tier2SystemsReady = TIER2_UPGRADE_ORDER.every((key) => Boolean(tier2Unlocks[key]));
+        const generatorMaxed = Boolean(generatorState.maxed);
+
+        return {
+            ready: coreSystemsReady && tier2SystemsReady && generatorMaxed,
+            coreSystemsReady,
+            tier2SystemsReady,
+            generatorMaxed
         };
     }
 
@@ -2778,6 +2898,7 @@ export class ThreeGame {
         const hp = this.playerVitals?.hp ?? 3;
         const unlocks = bankState?.unlocks ?? {};
         const depthTier = this.currentDepthTier ?? 0;
+        const uplink = this.getMothershipUplinkReadiness(bankState);
 
         if (this.isPlayerDead) {
             return 'CRITICAL: EXOSUIT LIFE SUPPORT FAILURE. EMERGENCY REVIVAL PROTOCOL INITIATED.';
@@ -2799,6 +2920,13 @@ export class ThreeGame {
 
         if (hp <= 1) {
             return 'WARNING: EXOSUIT HULL BREACH CRITICAL. SEEK MEDICAL SUPPLIES OR RETURN TO BASE.';
+        }
+
+        if (this.missionState?.status === 'objective_complete') {
+            if (!uplink.ready) {
+                return 'OBJECTIVE SECURED. UPLINK LOCKED UNTIL ALL SYSTEMS ARE MAXED.';
+            }
+            return 'OBJECTIVE SECURED. HOLD POSITION AT SHIP TO EXECUTE LAUNCH.';
         }
 
         if (biomeKey === BIOME_KEYS.BIO) {
@@ -3846,7 +3974,9 @@ export class ThreeGame {
             if (this.footstepTimer >= stepInterval) {
                 this.footstepTimer = 0;
                 const footRate = 1.6 + Math.random() * 0.3;
-                window.AudioManager?.play('amb_metal_stress', { volume: 0.055, playbackRate: footRate });
+                if (this.performanceProfile !== 'menu') {
+                    window.AudioManager?.play('amb_metal_stress', { volume: 0.055, playbackRate: footRate });
+                }
             }
         } else {
             this.footstepTimer = 0;
@@ -3856,12 +3986,23 @@ export class ThreeGame {
         if (this.missionState?.type === 'survey' && this.missionState.status === 'active') {
             if (this.getActiveO2GeneratorDistance() >= this.missionState.targetDepth) {
                 this.missionState.status = 'objective_complete';
-                window.dispatchEvent(new CustomEvent('mission-objective-complete', { detail: { type: 'survey' } }));
+                const uplink = this.getMothershipUplinkReadiness();
+                window.dispatchEvent(new CustomEvent('mission-objective-complete', {
+                    detail: { type: 'survey', uplinkReady: uplink.ready, uplink }
+                }));
             }
         }
 
         // Extraction: countdown timer when objective is complete and player is near ship
         if (this.missionState?.status === 'objective_complete' && !this.isPlayerDead) {
+            const uplink = this.getMothershipUplinkReadiness();
+            if (!uplink.ready) {
+                this.missionState.extractionTimer = 0;
+                window.dispatchEvent(new CustomEvent('extraction-progress', {
+                    detail: { progress: 0, active: false }
+                }));
+                return;
+            }
             const distToShip = this.getActiveO2GeneratorDistance();
             if (distToShip < 3.5) {
                 this.missionState.extractionTimer = (this.missionState.extractionTimer ?? 0) + delta;
@@ -4169,7 +4310,9 @@ export class ThreeGame {
             if (column !== this.lastAnimationColumn) {
                 this.lastAnimationColumn = column;
                 if (column === 1 || column === 3) {
-                    window.AudioManager?.playProceduralFootstep(this.playerType);
+                    if (this.performanceProfile !== 'menu') {
+                        window.AudioManager?.playProceduralFootstep(this.playerType);
+                    }
                 }
             }
             return;
@@ -5092,6 +5235,9 @@ export class ThreeGame {
     }
 
     createChunkScatterPlacements(chunkX, chunkY, grid) {
+        if (this.performanceProfile === 'menu') {
+            return [];
+        }
         const random = this.createSeededRandom(this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71));
         const spawn = this.getSpawnTile();
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
@@ -6289,7 +6435,10 @@ export class ThreeGame {
                         if (this.missionState?.type === 'retrieval' && this.missionState.status === 'active') {
                             if (pickupType === 'weapon' && rarity === 'legendary') {
                                 this.missionState.status = 'objective_complete';
-                                window.dispatchEvent(new CustomEvent('mission-objective-complete', { detail: { type: 'retrieval' } }));
+                                const uplink = this.getMothershipUplinkReadiness();
+                                window.dispatchEvent(new CustomEvent('mission-objective-complete', {
+                                    detail: { type: 'retrieval', uplinkReady: uplink.ready, uplink }
+                                }));
                             }
                         }
 
@@ -6472,7 +6621,10 @@ export class ThreeGame {
             }));
             if (this.missionState.killCount >= this.missionState.targetKills) {
                 this.missionState.status = 'objective_complete';
-                window.dispatchEvent(new CustomEvent('mission-objective-complete', { detail: { type: 'elimination' } }));
+                const uplink = this.getMothershipUplinkReadiness();
+                window.dispatchEvent(new CustomEvent('mission-objective-complete', {
+                    detail: { type: 'elimination', uplinkReady: uplink.ready, uplink }
+                }));
             }
         }
 
@@ -7754,6 +7906,9 @@ export class ThreeGame {
     }
 
     buildChunk(chunkX, chunkY) {
+        if (this.performanceProfile === 'menu') {
+            return Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('.'));
+        }
         const grid = Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('#'));
         const random = this.createSeededRandom(this.hashTile(chunkX + 1000, chunkY - 1000) + 101);
         const centerCell = Math.floor(this.chunkCellCount / 2);
@@ -7939,6 +8094,13 @@ export class ThreeGame {
 
     getSpawnTile() {
         const centerCell = Math.floor(this.chunkCellCount / 2);
+        if (this.performanceProfile === 'menu') {
+            // Spawn in chunk (100, 100) to keep the showcase completely blank
+            return {
+                x: 100 * this.chunkSize + centerCell * 2 + 1,
+                y: 100 * this.chunkSize + centerCell * 2 + 1
+            };
+        }
         return {
             x: centerCell * 2 + 1,
             y: centerCell * 2 + 1
