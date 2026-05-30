@@ -7603,6 +7603,20 @@ export class ThreeGame {
     getOrCreateChunk(chunkX, chunkY) {
         const key = `${chunkX},${chunkY}`;
         if (!this.chunkCache.has(key)) {
+            // Evict oldest cache entries if over limit (prevents memory growth in long sessions)
+            const MAX_CHUNK_CACHE = 50;
+            if (this.chunkCache.size >= MAX_CHUNK_CACHE) {
+                const toEvict = Math.ceil(this.chunkCache.size - MAX_CHUNK_CACHE + 5);
+                let evicted = 0;
+                for (const oldKey of this.chunkCache.keys()) {
+                    if (this.chunkMeshes.has(oldKey)) continue; // don't evict visible chunks
+                    this.chunkCache.delete(oldKey);
+                    this._chunkRoomTypeCache?.delete(oldKey);
+                    this._chunkTemplateCache?.delete(oldKey);
+                    evicted++;
+                    if (evicted >= toEvict) break;
+                }
+            }
             const grid = this.buildChunk(chunkX, chunkY);
             this.chunkCache.set(key, grid);
             if (!this._chunkRoomTypeCache) this._chunkRoomTypeCache = new Map();
