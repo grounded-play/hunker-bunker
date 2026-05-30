@@ -109,6 +109,9 @@ let pickupComboCount = 0;
 let pickupComboTimer = null;
 const PICKUP_COMBO_WINDOW_MS = 1400;
 const PICKUP_COMBO_THRESHOLD = 3;
+let runStartTime = Date.now();
+let currentMission = null;
+const _mothershipFiredTriggers = new Set();
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -462,6 +465,13 @@ window.addEventListener('combat-no-ammo', () => {
 window.addEventListener('combat-no-fire-zone', () => {
     flashWeaponError();
 });
+window.addEventListener('enemy-killed', (event) => {
+    const total = event?.detail?.totalKills ?? 0;
+    const type = event?.detail?.type ?? '';
+    if (total === 1) fireMothershipReactiveLine('first_kill');
+    if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
+});
+
 window.addEventListener('enemy-hit', (event) => {
     const type = event?.detail?.type || 'cybersnail';
     const isBoss = type.startsWith('boss_');
@@ -598,8 +608,10 @@ window.addEventListener('biome-changed', (event) => {
     }
     if (biomeKey === 'cryo') {
         AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
+        fireMothershipReactiveLine('first_cryo');
     } else if (biomeKey === 'bio') {
         AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
+        fireMothershipReactiveLine('first_bio');
     }
 });
 renderBunkerLevel(0);
@@ -670,43 +682,145 @@ function updateHeroStats(type) {
 }
 
 // ---- Game Over Screen ----
-function showGameOverScreen(stats) {
-    const distancePct = Math.min(100, (stats.distanceTravelled / 500) * 100);
-    const itemsPct    = Math.min(100, (stats.totalPickups / 50) * 100);
-    const genPct      = Math.min(100, (stats.generatorLevel / 3) * 100);
-    const kills       = stats.snailsKilled ?? 0;
-    const killsPct    = Math.min(100, (kills / 10) * 100);
+function assignMission(bankState) {
+    const unlocks = bankState?.unlocks ?? {};
+    const totalUnlocks = Object.values(unlocks).filter(Boolean).length;
+    if (totalUnlocks === 0) {
+        return { type: 'retrieval', label: 'RETRIEVE: PRIORITY TECH CACHE', targetKills: 0, targetDepth: 0 };
+    } else if (totalUnlocks < 3) {
+        return { type: 'survey', label: 'SURVEY: CRYO SECTOR BOUNDARY', targetKills: 0, targetDepth: 65 };
+    }
+    const idx = (totalUnlocks + Math.floor(Date.now() / 86400000)) % 3;
+    const missions = [
+        { type: 'retrieval', label: 'RETRIEVE: HIGH-VALUE TECH ASSET', targetKills: 0, targetDepth: 0 },
+        { type: 'survey', label: 'SURVEY: DEEP SECTOR RECON', targetKills: 0, targetDepth: 145 },
+        { type: 'elimination', label: 'ELIMINATE: BIO-ENTITY CLUSTER', targetKills: 6, targetDepth: 0 }
+    ];
+    return missions[idx];
+}
+
+function generateDeathReport(stats, reason) {
+    const biome = stats.biomeLabel ?? 'ACTIVE SECTOR';
+    const depth = stats.distanceTravelled ?? 0;
+    const causeMap = {
+        'o2-depletion':       '> CAUSE: EXOSUIT ATMOSPHERIC FAILURE — O₂ RESERVES EXHAUSTED',
+        'snail':              '> CAUSE: BIO-ENTITY CONTACT — CYBERSNAIL MELEE IMPACT',
+        'cybersnail':         '> CAUSE: BIO-ENTITY CONTACT — CYBERSNAIL MELEE IMPACT',
+        'cryosnail':          '> CAUSE: BIO-ENTITY CONTACT — CRYOSNAIL IMPACT',
+        'sporesnail':         '> CAUSE: BIO-ENTITY CONTACT — SPORESNAIL IMPACT',
+        'enemy-projectile':   '> CAUSE: HOSTILE PROJECTILE IMPACT',
+        'sentinel':           '> CAUSE: HOSTILE PROJECTILE — SENTINEL FIRE',
+        'ship-destroyed':     '> CAUSE: SHIP STRUCTURAL FAILURE — HULL INTEGRITY ZERO',
+        'frost-shockwave':    '> CAUSE: CRYO HAZARD — THERMAL SHOCKWAVE IMPACT',
+        'poison':             '> CAUSE: BIO-TOXIN EXPOSURE — SUIT INTEGRITY FAILURE',
+    };
+    const cause = causeMap[reason] ?? '> CAUSE: EXOSUIT FAILURE — UNKNOWN EVENT';
+    return [
+        `> LAST KNOWN POSITION: ${biome}`,
+        `> DISTANCE FROM BASE: ${Math.round(depth)}u`,
+        `> SALVAGE RECOVERED: ${stats.totalPickups ?? 0} ITEMS`,
+        `> THREATS NEUTRALIZED: ${stats.snailsKilled ?? 0}`,
+        cause
+    ].join('\n');
+}
+
+function formatRunTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' } = {}) {
+    const elapsedMs    = Date.now() - runStartTime;
+    const elapsedMin   = elapsedMs / 60000;
+    const distancePct  = Math.min(100, (stats.distanceTravelled / 500) * 100);
+    const itemsPct     = Math.min(100, (stats.totalPickups / 50) * 100);
+    const genPct       = Math.min(100, (stats.generatorLevel / 3) * 100);
+    const kills        = stats.snailsKilled ?? 0;
+    const killsPct     = Math.min(100, (kills / 10) * 100);
+    const timePct      = Math.min(100, (elapsedMin / 20) * 100);
 
     const distBar  = document.getElementById('go-bar-distance');
     const itemBar  = document.getElementById('go-bar-items');
     const genBar   = document.getElementById('go-bar-generator');
     const killsBar = document.getElementById('go-bar-kills');
+    const timeBar  = document.getElementById('go-bar-time');
 
     if (distBar)  distBar.style.width  = '0%';
     if (itemBar)  itemBar.style.width  = '0%';
     if (genBar)   genBar.style.width   = '0%';
     if (killsBar) killsBar.style.width = '0%';
+    if (timeBar)  timeBar.style.width  = '0%';
 
     const distVal  = document.getElementById('go-val-distance');
     const itemVal  = document.getElementById('go-val-items');
     const genVal   = document.getElementById('go-val-generator');
     const killsVal = document.getElementById('go-val-kills');
+    const timeVal  = document.getElementById('go-val-time');
 
     if (distVal)  distVal.textContent  = `${stats.distanceTravelled}u`;
     if (itemVal)  itemVal.textContent  = String(stats.totalPickups);
     if (genVal)   genVal.textContent   = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
     if (killsVal) killsVal.textContent = kills > 0 ? String(kills) : 'NONE';
+    if (timeVal)  timeVal.textContent  = formatRunTime(elapsedMs);
 
-    // Update subtitle to reflect deepest biome + snail kills
+    // Title / subtitle
+    const title = document.querySelector('.game-over-title');
     const subtitle = document.querySelector('.game-over-subtitle');
+    if (title) title.textContent = isVictory ? 'EXTRACTION COMPLETE' : 'EXOSUIT FAILURE';
     if (subtitle) {
-        const biome = stats.biomeLabel ?? 'ACTIVE SECTOR';
-        const killText = kills > 0 ? ` ${kills} THREAT${kills > 1 ? 'S' : ''} NEUTRALIZED.` : '';
-        subtitle.textContent = `> DEEPEST ZONE: ${biome}.${killText} TELEMETRY RECOVERED.`;
+        const report = isVictory
+            ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
+            : generateDeathReport(stats, deathReason);
+        subtitle.textContent = '';
+        let charIdx = 0;
+        const chars = report.split('');
+        const typewriteReport = () => {
+            if (charIdx < chars.length && subtitle) {
+                subtitle.textContent += chars[charIdx++];
+                setTimeout(typewriteReport, 12);
+            }
+        };
+        setTimeout(typewriteReport, 300);
     }
 
+    // Score + rating
+    const score = window.game?.calculateRunScore?.(stats, { status: stats.missionStatus }, runStartTime) ?? 0;
+    const rating = window.game?.getRunRating?.(score) ?? { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
+
+    const scoreVal = document.getElementById('go-score-val');
+    const ratingBadge = document.getElementById('go-rating-badge');
+    const ratingLabel = document.getElementById('go-rating-label');
+    const newBest = document.getElementById('go-new-best');
+
+    if (scoreVal) scoreVal.textContent = String(score);
+    if (ratingBadge) {
+        ratingBadge.textContent = rating.grade;
+        ratingBadge.className = `go-rating-badge go-rating-badge--${rating.grade.toLowerCase()}`;
+    }
+    if (ratingLabel) ratingLabel.textContent = rating.label;
+
+    // Personal best
+    const bestKey = `hb_best_score_${window.game?.playerType ?? 'SCOUT'}`;
+    const prevBest = Number(localStorage.getItem(bestKey) ?? 0);
+    const isNewBest = score > prevBest;
+    if (isNewBest) localStorage.setItem(bestKey, String(score));
+    if (newBest) newBest.classList.toggle('hidden', !isNewBest);
+
+    // Archive progress
+    const archiveRow = document.getElementById('go-archive-row');
+    const archiveText = document.getElementById('go-archive-text');
+    const mem = getWorldMemory();
+    const logsFound = mem.logsFound?.length ?? 0;
+    if (archiveRow) archiveRow.classList.toggle('hidden', logsFound === 0);
+    if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/27`;
+
     const modal = document.getElementById('game-over-modal');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.toggle('game-over-modal--victory', isVictory);
+    }
 
     // Stagger bar animations for a readout effect
     requestAnimationFrame(() => {
@@ -714,6 +828,7 @@ function showGameOverScreen(stats) {
         setTimeout(() => { if (itemBar)  itemBar.style.width  = `${itemsPct}%`;    }, 340);
         setTimeout(() => { if (genBar)   genBar.style.width   = `${genPct}%`;      }, 560);
         setTimeout(() => { if (killsBar) killsBar.style.width = `${killsPct}%`;    }, 760);
+        setTimeout(() => { if (timeBar)  timeBar.style.width  = `${timePct}%`;     }, 960);
     });
 }
 
@@ -732,8 +847,13 @@ function resetRunToStartingState({
         bankManager.reset();
     }
 
+    runStartTime = Date.now();
+    currentMission = assignMission(bankManager.getState());
+    _mothershipFiredTriggers.clear();
+
     resetPickupCounter();
     window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
+    window.game?.initMission?.(currentMission);
     setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
     window.game?.setInputEnabled?.(false);
     renderBunkerLevel(0);
@@ -741,11 +861,13 @@ function resetRunToStartingState({
     hideBiomePrompt();
 }
 
-function runDeathSequence() {
+function runDeathSequence(event) {
     if (deathSequenceTimer) return;
 
+    const deathReason = event?.detail?.reason ?? 'hazard';
     window.game?.setInputEnabled?.(false);
     hideBiomePrompt();
+    hideExtractionRing();
     if (biomePromptTimer) {
         clearTimeout(biomePromptTimer);
         biomePromptTimer = null;
@@ -762,7 +884,7 @@ function runDeathSequence() {
             totalPickups: 0,
             generatorLevel: 0
         };
-        showGameOverScreen(stats);
+        showGameOverScreen(stats, { isVictory: false, deathReason });
         resetRunToStartingState({
             resetBank: false,
             skipEffects: true,
@@ -786,9 +908,259 @@ window.addEventListener('player-death', runDeathSequence);
 window.addEventListener('player-respawned', () => {
     clearTimedClass('death', 'player-dead-flash');
     stopO2Alarm();
+    hideExtractionRing();
     lastReportedDepthTier = 0;
+    syncAbilityPanelLabel();
+    const bar = document.getElementById('ability-bar');
+    if (bar) bar.style.transform = 'scaleX(1)';
+    const touchBtn = document.getElementById('touch-ability-btn');
+    if (touchBtn) {
+        touchBtn.style.opacity = '1';
+        touchBtn.style.pointerEvents = 'auto';
+    }
     window.game?.setInputEnabled?.(true);
 });
+
+window.addEventListener('mission-objective-complete', (event) => {
+    const type = event?.detail?.type ?? '';
+    const messages = {
+        retrieval: 'OBJECTIVE SECURED — RETURN TO SHIP',
+        survey:    'SURVEY COMPLETE — RETURN TO SHIP',
+        elimination: 'TARGETS ELIMINATED — RETURN TO SHIP'
+    };
+    const msg = messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP';
+    showBiomePrompt(msg);
+    AudioManager.play('ui_boot', { volume: 0.45, playbackRate: 0.88, bus: 'sfx' });
+});
+
+window.addEventListener('extraction-progress', (event) => {
+    const { progress = 0, active = false } = event?.detail ?? {};
+    updateExtractionRing(progress, active);
+});
+
+window.addEventListener('player-extracted', (event) => {
+    hideExtractionRing();
+    window.game?.setInputEnabled?.(false);
+    hideBiomePrompt();
+
+    const stats = event?.detail?.runStats ?? window.game?.getRunStats?.() ?? {};
+    AudioManager.play('ui_boot', { volume: 0.6, playbackRate: 0.72, bus: 'sfx' });
+
+    window.setTimeout(() => {
+        showGameOverScreen(stats, { isVictory: true });
+        resetRunToStartingState({
+            resetBank: false,
+            skipEffects: true,
+            snailSpawnEnabled: false,
+            purgeSnails: true
+        });
+        window.game?.setInputEnabled?.(false);
+    }, 600);
+});
+
+// ── Lore Terminal System ──────────────────────────────────────
+const WORLD_MEMORY_KEY = 'hb_world_memory_v1';
+
+function getWorldMemory() {
+    try {
+        return JSON.parse(localStorage.getItem(WORLD_MEMORY_KEY) ?? 'null') ?? { logsFound: [], biomesMapped: [] };
+    } catch { return { logsFound: [], biomesMapped: [] }; }
+}
+
+function saveWorldMemory(mem) {
+    try { localStorage.setItem(WORLD_MEMORY_KEY, JSON.stringify(mem)); } catch { /* ignore */ }
+}
+
+function markLogFound(loreKey) {
+    const mem = getWorldMemory();
+    if (!mem.logsFound.includes(loreKey)) {
+        mem.logsFound.push(loreKey);
+        saveWorldMemory(mem);
+        return true; // newly discovered
+    }
+    return false;
+}
+
+let lorePendingKey = null;
+let lorePendingText = null;
+
+window.addEventListener('lore-terminal-nearby', (event) => {
+    lorePendingKey = event?.detail?.loreKey ?? null;
+    lorePendingText = event?.detail?.loreText ?? null;
+    const prompt = document.getElementById('lore-hud-prompt');
+    if (prompt) prompt.classList.remove('hidden');
+});
+
+window.addEventListener('lore-terminal-clear', () => {
+    lorePendingKey = null;
+    lorePendingText = null;
+    const prompt = document.getElementById('lore-hud-prompt');
+    if (prompt) prompt.classList.add('hidden');
+});
+
+window.addEventListener('lore-terminal-read', (event) => {
+    const { loreKey, loreText } = event?.detail ?? {};
+    if (!loreKey || !loreText) return;
+
+    const loreModal = document.getElementById('lore-modal');
+    const loreKeyEl = document.getElementById('lore-modal-key');
+    const loreTextEl = document.getElementById('lore-modal-text');
+    if (!loreModal) return;
+
+    if (loreKeyEl) loreKeyEl.textContent = `LOG-${loreKey}`;
+    if (loreTextEl) loreTextEl.textContent = '';
+
+    loreModal.classList.remove('hidden');
+    window.game?.setInputEnabled?.(false);
+
+    // Typewrite the log text
+    let charIdx = 0;
+    const chars = loreText.split('');
+    const tick = () => {
+        if (!loreTextEl || loreModal.classList.contains('hidden')) return;
+        if (charIdx < chars.length) {
+            loreTextEl.textContent += chars[charIdx++];
+            setTimeout(tick, 18);
+        }
+    };
+    tick();
+
+    // Track discovery
+    const isNew = markLogFound(loreKey);
+    if (isNew) {
+        fireMothershipReactiveLine('lore_found');
+    }
+});
+
+const closeLoreModal = document.getElementById('close-lore-modal');
+if (closeLoreModal) {
+    closeLoreModal.addEventListener('click', () => {
+        document.getElementById('lore-modal')?.classList.add('hidden');
+        window.game?.setInputEnabled?.(true);
+    });
+}
+
+// ── Reactive Mothership ───────────────────────────────────────
+function fireMothershipReactiveLine(trigger) {
+    if (_mothershipFiredTriggers.has(trigger)) return;
+    _mothershipFiredTriggers.add(trigger);
+    const lines = {
+        first_kill:       'AGENT — FIRST THREAT NEUTRALIZED. PROCEED.',
+        first_cryo:       'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.',
+        first_bio:        'ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.',
+        hp_critical:      'DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.',
+        objective_found:  'UPLINK: OBJECTIVE CONFIRMED. RETURN TO SHIP IMMEDIATELY.',
+        first_deposit:    'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.',
+        lore_found:       'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.',
+        sentinel_spotted: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.',
+    };
+    const text = lines[trigger];
+    if (text) showBiomePrompt(`> MOTHERSHIP: ${text}`);
+}
+
+window.addEventListener('pickup-collected', (event) => {
+    if (event?.detail?.type === 'weapon') {
+        if (!_mothershipFiredTriggers.has('first_deposit')) {
+            // first_deposit fires on first console deposit; track separately
+        }
+    }
+});
+
+window.addEventListener('player-damaged', (event) => {
+    const hp = event?.detail?.hp ?? 99;
+    if (hp <= 1) fireMothershipReactiveLine('hp_critical');
+});
+
+window.addEventListener('mission-objective-complete', () => {
+    fireMothershipReactiveLine('objective_found');
+});
+
+window.addEventListener('sentinel-fired', () => {
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) {
+        viewport.classList.add('sentinel-warning-flash');
+        setTimeout(() => viewport.classList.remove('sentinel-warning-flash'), 280);
+    }
+});
+
+window.addEventListener('mission-kill-progress', (event) => {
+    const { count = 0, target = 0 } = event?.detail ?? {};
+    const missionEl = document.getElementById('mission-status-text');
+    if (missionEl) missionEl.textContent = `ELIMINATE: ${count}/${target}`;
+});
+
+document.getElementById('class-ability-panel')?.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    window.game?.triggerClassAbility?.();
+});
+
+window.addEventListener('class-ability-activated', (event) => {
+    const panel = document.getElementById('class-ability-panel');
+    if (panel) panel.classList.add('class-ability-panel--active');
+    const { ability } = event?.detail ?? {};
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) {
+        viewport.classList.add(`ability-active-${ability}`);
+    }
+});
+
+window.addEventListener('class-ability-ended', (event) => {
+    const panel = document.getElementById('class-ability-panel');
+    if (panel) {
+        panel.classList.remove('class-ability-panel--active');
+        panel.classList.add('class-ability-panel--ready');
+        setTimeout(() => panel.classList.remove('class-ability-panel--ready'), 1100);
+    }
+    const { ability } = event?.detail ?? {};
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) viewport.classList.remove(`ability-active-${ability}`);
+});
+
+window.addEventListener('ability-cooldown-tick', (event) => {
+    const { remaining = 0, max = 1, active = false } = event?.detail ?? {};
+    const bar = document.getElementById('ability-bar');
+    if (bar) {
+        const fillPct = active ? 1 : 1 - (remaining / max);
+        bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    }
+    const touchBtn = document.getElementById('touch-ability-btn');
+    if (touchBtn) {
+        if (remaining > 0) {
+            touchBtn.style.opacity = '0.35';
+            touchBtn.style.pointerEvents = 'none';
+        } else {
+            touchBtn.style.opacity = '1';
+            touchBtn.style.pointerEvents = 'auto';
+        }
+    }
+});
+
+function syncAbilityPanelLabel() {
+    const nameEl = document.getElementById('ability-name');
+    if (!nameEl) return;
+    const playerType = window.game?.playerType ?? 'SCOUT';
+    const labels = { SCOUT: 'SPRINT BURST', TANK: 'FORTIFY', ENGINEER: 'FIELD OVERCLOCK' };
+    nameEl.textContent = labels[playerType] ?? 'ABILITY';
+}
+
+function updateExtractionRing(progress, active) {
+    const ring = document.getElementById('extraction-progress-ring');
+    if (!ring) return;
+    ring.classList.toggle('hidden', !active && progress <= 0);
+
+    const fillEl = document.getElementById('extraction-ring-fill');
+    if (fillEl) {
+        const circumference = 2 * Math.PI * 16;
+        const offset = circumference * (1 - progress);
+        fillEl.style.strokeDasharray = String(circumference);
+        fillEl.style.strokeDashoffset = String(offset);
+    }
+}
+
+function hideExtractionRing() {
+    const ring = document.getElementById('extraction-progress-ring');
+    if (ring) ring.classList.add('hidden');
+}
 
 function startO2Alarm() {
     if (o2AlarmActive) return;
@@ -931,12 +1303,25 @@ function syncTouchMoveControlVisibility() {
         label.classList.toggle('hidden', !showJoystick);
     }
 
+    // Always show ability button when HUD is active
+    const abilityBtn = document.getElementById('touch-ability-btn');
+    if (abilityBtn) abilityBtn.classList.toggle('hidden', !isHUD);
+
     if (!isHUD || !showJoystick) {
         activeTouchPointerId = null;
         touchMoveControl.classList.remove('active');
         touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
         window.game?.setVirtualInput?.(0, 0);
     }
+}
+
+// Wire touch ability button
+const touchAbilityBtn = document.getElementById('touch-ability-btn');
+if (touchAbilityBtn) {
+    touchAbilityBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        window.game?.triggerClassAbility?.();
+    });
 }
 
 function formatTouchCompassDistance(distance) {
@@ -1179,6 +1564,11 @@ async function runMissionIntroSequence() {
             });
         } else {
             await runDoorTransitionAsync();
+        }
+
+        // Show mission briefing after door transition
+        if (currentMission?.label) {
+            window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
         }
     } finally {
         document.body.classList.remove('mission-intro-active');
@@ -2153,11 +2543,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncTouchMoveControlVisibility();
 
     if (!window.game) {
-        window.game = new ThreeGame({
-            parent: 'game-container',
-            playerType: initialType,
-            bankManager
-        });
+        try {
+            window.game = new ThreeGame({
+                parent: 'game-container',
+                playerType: initialType,
+                bankManager
+            });
+        } catch (err) {
+            console.error('[ThreeGame init failed]', err);
+            const loadingScreen = document.getElementById('loading-screen');
+            const loaderTitle = document.querySelector('.loader-title');
+            const loaderStatusEl = document.querySelector('.loader-status');
+            if (loaderTitle) loaderTitle.textContent = 'SYSTEM INITIALIZATION FAILED';
+            if (loaderStatusEl) loaderStatusEl.textContent = err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable';
+            if (loadingScreen) loadingScreen.classList.remove('hidden');
+            return;
+        }
     }
     setSnailSpawnState(false, { purgeExisting: true });
     const initialBiomeState = window.game?.getBiomeState?.();

@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'hb_bank';
+const BANK_SCHEMA_VERSION = 1;
 
 export const GOAL_ORDER = Object.freeze([
     'o2Bubble',
@@ -51,6 +52,7 @@ function clampCount(value) {
 
 function createDefaultState() {
     return {
+        schemaVersion: BANK_SCHEMA_VERSION,
         med: 0,
         ammo: 0,
         tech: 0,
@@ -63,6 +65,17 @@ function createDefaultState() {
             reactorCompressor: false
         }
     };
+}
+
+function migrateBank(raw) {
+    if (!raw || typeof raw !== 'object') return raw;
+    const version = raw.schemaVersion ?? 0;
+    if (version < 1) {
+        // v0 → v1: add schemaVersion field; all unlocks were present before
+        raw.schemaVersion = 1;
+    }
+    // Future: if (version < 2) { add tier 2 keys with false defaults }
+    return raw;
 }
 
 function deriveLegacyO2GeneratorLevel(unlocks) {
@@ -91,6 +104,7 @@ function syncLegacyUnlocksFromGeneratorLevel(state) {
 function toSerializableState(raw) {
     const base = createDefaultState();
     if (!raw || typeof raw !== 'object') return base;
+    base.schemaVersion = BANK_SCHEMA_VERSION;
 
     base.med = clampCount(raw.med);
     base.ammo = clampCount(raw.ammo);
@@ -117,6 +131,7 @@ function toSerializableState(raw) {
 
 function cloneState(state) {
     return {
+        schemaVersion: state.schemaVersion ?? BANK_SCHEMA_VERSION,
         med: state.med,
         ammo: state.ammo,
         tech: state.tech,
@@ -167,7 +182,7 @@ export class BankManager {
                 return this.getState();
             }
 
-            const parsed = JSON.parse(raw);
+            const parsed = migrateBank(JSON.parse(raw));
             this.state = toSerializableState(parsed);
             return this.getState();
         } catch {
