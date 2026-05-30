@@ -927,6 +927,16 @@ body {
   color: var(--accent-primary);
 }
 
+.char-best-score {
+  font-size: var(--font-xs);
+  color: rgba(255, 204, 0, 0.75);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+  display: block;
+  min-height: 1em;
+}
+
 /* --- Initialization Anchor --- */
 /* ---- Hero Stats Compact (action-row panel, matches module box theme) ---- */
 .hero-stats-compact {

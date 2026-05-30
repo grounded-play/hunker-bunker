@@ -124,6 +124,15 @@ const bankManager = new BankManager();
 
 window.bankManager = bankManager;
 
+function refreshCharBestScores() {
+    for (const cls of ['SCOUT', 'TANK', 'ENGINEER']) {
+        const el = document.getElementById(`char-best-${cls}`);
+        if (!el) continue;
+        const best = Number(localStorage.getItem(`hb_best_score_${cls}`) ?? 0);
+        el.textContent = best > 0 ? `BEST: ${best} PTS` : '';
+    }
+}
+
 function recomputePickupTotal() {
     pickupCounterState.total = Math.max(
         0,
@@ -836,7 +845,10 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const bestKey = `hb_best_score_${window.game?.playerType ?? 'SCOUT'}`;
     const prevBest = Number(localStorage.getItem(bestKey) ?? 0);
     const isNewBest = score > prevBest;
-    if (isNewBest) localStorage.setItem(bestKey, String(score));
+    if (isNewBest) {
+        localStorage.setItem(bestKey, String(score));
+        refreshCharBestScores();
+    }
     if (newBest) newBest.classList.toggle('hidden', !isNewBest);
 
     // Archive progress
@@ -915,7 +927,14 @@ function runDeathSequence(event) {
             totalPickups: 0,
             generatorLevel: 0
         };
+        // Check achievements and show unlock notification if new
+        const { newUnlocks } = checkAchievements(stats);
         showGameOverScreen(stats, { isVictory: false, deathReason });
+        if (newUnlocks.length > 0) {
+            setTimeout(() => {
+                showBiomePrompt(`> ACHIEVEMENT: ${newUnlocks[0]}`);
+            }, 2200);
+        }
         resetRunToStartingState({
             resetBank: false,
             skipEffects: true,
@@ -984,6 +1003,52 @@ window.addEventListener('player-extracted', (event) => {
         window.game?.setInputEnabled?.(false);
     }, 600);
 });
+
+// ── Achievement / Unlock System ───────────────────────────────
+const ACHIEVEMENT_KEY = 'hb_achievements_v1';
+
+function getAchievements() {
+    try {
+        return JSON.parse(localStorage.getItem(ACHIEVEMENT_KEY) ?? 'null') ?? {
+            totalDeaths: 0,
+            totalKills: 0,
+            maxKillsOneRun: 0,
+            deepTierReachedAlive: false,
+            unlockedHardened: false
+        };
+    } catch { return { totalDeaths: 0, totalKills: 0, maxKillsOneRun: 0, deepTierReachedAlive: false, unlockedHardened: false }; }
+}
+
+function saveAchievements(ach) {
+    try { localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(ach)); } catch { /* ignore */ }
+}
+
+function checkAchievements(runStats) {
+    const ach = getAchievements();
+    const newUnlocks = [];
+
+    // Track deaths
+    ach.totalDeaths = (ach.totalDeaths ?? 0) + 1;
+    if (ach.totalDeaths >= 5 && !ach.unlockedHardened) {
+        ach.unlockedHardened = true;
+        newUnlocks.push('HARDENED MODE UNLOCKED — Die 5 times to prove dedication.');
+    }
+
+    // Track kills
+    const kills = runStats?.snailsKilled ?? 0;
+    ach.totalKills = (ach.totalKills ?? 0) + kills;
+    ach.maxKillsOneRun = Math.max(ach.maxKillsOneRun ?? 0, kills);
+
+    // Track deep tier
+    const depthTier = runStats?.depthTier ?? 0;
+    if (depthTier >= 2 && !ach.deepTierReachedAlive) {
+        ach.deepTierReachedAlive = true;
+        newUnlocks.push('DEEP SECTOR MAPPED — Advanced sentinels now active in future runs.');
+    }
+
+    saveAchievements(ach);
+    return { ach, newUnlocks };
+}
 
 // ── Lore Terminal System ──────────────────────────────────────
 const WORLD_MEMORY_KEY = 'hb_world_memory_v1';
@@ -2519,6 +2584,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     installAudioMixerControls();
     setAudioMixerOpen(false);
     loadAudioMixSettings();
+    refreshCharBestScores();
 
     const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
     if (storedTouchControls !== null) {
