@@ -365,6 +365,49 @@ const CRAWLER_ATTACK_RADIUS = 0.72;
 const CRAWLER_ATTACK_COOLDOWN = 1.5;
 const CRAWLER_TINT = 0x44ff88;
 
+const ROOM_TEMPLATES = Object.freeze({
+    ARMORY:         'armory',
+    OPS_CENTER:     'ops_center',
+    AGENT_WRECKAGE: 'agent_wreckage',
+    STASIS_BAY:     'stasis_bay',
+    THE_NEST:       'the_nest'
+});
+
+const ROOM_TEMPLATE_CONFIGS = Object.freeze({
+    armory: Object.freeze({
+        lightColor: 0xff2222, lightIntensity: 1.5,
+        pickupBias: { ammo: 3, weapon: 1 }, legendaryBoost: 0.08,
+        forceSentinel: true, noExtraEnemies: false,
+        label: 'ARMORY'
+    }),
+    ops_center: Object.freeze({
+        lightColor: 0x3366ff, lightIntensity: 1.2,
+        pickupBias: { weapon: 3 }, legendaryBoost: 0.05,
+        forceLore: true, noEnemies: true,
+        label: 'OPS CENTER'
+    }),
+    agent_wreckage: Object.freeze({
+        lightColor: 0xff8800, lightIntensity: 1.3,
+        pickupBias: { weapon: 2, coin: 1 }, legendaryBoost: 0.30,
+        noEnemies: true, forceWreckage: true,
+        label: 'AGENT WRECKAGE'
+    }),
+    stasis_bay: Object.freeze({
+        biomeRequired: 'cryo',
+        lightColor: 0x88ffff, lightIntensity: 1.3,
+        pickupBias: { health: 3 }, legendaryBoost: 0.06,
+        noEnemies: false, extraIcicles: true,
+        label: 'STASIS BAY'
+    }),
+    the_nest: Object.freeze({
+        biomeRequired: 'bio',
+        lightColor: 0x33ff66, lightIntensity: 1.6,
+        pickupBias: { weapon: 2, ammo: 1 }, legendaryBoost: 0.12,
+        forceEnragedSnails: 2,
+        label: 'THE NEST'
+    })
+});
+
 function classifyChunkCells(grid, chunkSize) {
     const roomTypes = Array.from({ length: chunkSize }, () => Array(chunkSize).fill(null));
     for (let y = 0; y < chunkSize; y++) {
@@ -408,6 +451,7 @@ export class ThreeGame {
         this.chunkCache = new Map();
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
+        this._chunkTemplateCache = new Map();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this.maxChunkMountsPerFrame = 2;
@@ -3293,6 +3337,7 @@ export class ThreeGame {
         this.chunkMeshes.clear();
         this.chunkCache.clear();
         this._chunkRoomTypeCache?.clear();
+        this._chunkTemplateCache?.clear();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys.clear();
         this.wallMeshes = [];
@@ -3731,6 +3776,14 @@ export class ThreeGame {
             setTimeout(() => {
                 window.AudioManager?.play(pick, { volume: vol, playbackRate: 0.82 + Math.random() * 0.36, bus: 'world' });
             }, 200 + Math.random() * 400);
+        }
+        // Fire special room discovery event
+        const template = this.getChunkTemplate(chunkX, chunkY);
+        if (template) {
+            const cfg = ROOM_TEMPLATE_CONFIGS[template];
+            window.dispatchEvent(new CustomEvent('special-room-discovered', {
+                detail: { template, label: cfg?.label ?? template.toUpperCase() }
+            }));
         }
     }
 
@@ -4548,26 +4601,41 @@ export class ThreeGame {
 
         // Add subtle reward-cache glow lights in dead-end rooms
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
+        const chunkTemplate = this.getChunkTemplate(chunkX, chunkY);
+        const templateCfg = chunkTemplate ? ROOM_TEMPLATE_CONFIGS[chunkTemplate] : null;
         if (roomTypes) {
             const biomeKey = this.getBiomeKeyForWorldPosition(
                 chunkX * this.chunkSize + this.chunkSize * 0.5,
                 chunkY * this.chunkSize + this.chunkSize * 0.5
             );
-            const lightColor = biomeKey === 'cryo' ? 0x88aaff : biomeKey === 'bio' ? 0x66cc88 : 0xffcc66;
+            const defaultLightColor = biomeKey === 'cryo' ? 0x88aaff : biomeKey === 'bio' ? 0x66cc88 : 0xffcc66;
             const deadEndLights = [];
+            let chamberCenter = null;
             for (let localY = 1; localY < this.chunkSize - 1; localY++) {
                 for (let localX = 1; localX < this.chunkSize - 1; localX++) {
-                    if (roomTypes[localY][localX] === ROOM_TYPES.DEAD_END) {
+                    const rt = roomTypes[localY][localX];
+                    if (rt === ROOM_TYPES.DEAD_END) {
                         const wx = chunkX * this.chunkSize + localX;
                         const wz = chunkY * this.chunkSize + localY;
                         deadEndLights.push({ wx, wz });
+                    } else if (rt === ROOM_TYPES.CHAMBER && !chamberCenter) {
+                        chamberCenter = {
+                            wx: chunkX * this.chunkSize + localX,
+                            wz: chunkY * this.chunkSize + localY
+                        };
                     }
                 }
             }
             for (const { wx, wz } of deadEndLights.slice(0, 2)) {
-                const deLight = new THREE.PointLight(lightColor, 1.1, 5, 2);
+                const deLight = new THREE.PointLight(defaultLightColor, 1.1, 5, 2);
                 deLight.position.set(wx, 1.4, wz);
                 group.add(deLight);
+            }
+            // Template-specific chamber light
+            if (templateCfg && chamberCenter) {
+                const tLight = new THREE.PointLight(templateCfg.lightColor, templateCfg.lightIntensity, 8, 2);
+                tLight.position.set(chamberCenter.wx, 1.8, chamberCenter.wz);
+                group.add(tLight);
             }
         }
 
@@ -4749,6 +4817,25 @@ export class ThreeGame {
             if (!point) break;
             placements.push(this.buildPickupPlacement(point, random, depthLootConfig.legendaryBoost));
             straysPlaced += 1;
+        }
+
+        // Template-based extra pickups for authored rooms
+        const chunkTemplate2 = this.getChunkTemplate(chunkX, chunkY);
+        const templateCfg2 = chunkTemplate2 ? ROOM_TEMPLATE_CONFIGS[chunkTemplate2] : null;
+        if (templateCfg2?.pickupBias) {
+            const chamberCandidates = candidates.filter((c) => c.roomType === ROOM_TYPES.CHAMBER);
+            const legendaryBoostOverride = depthLootConfig.legendaryBoost + (templateCfg2.legendaryBoost ?? 0);
+            for (const [pType, count] of Object.entries(templateCfg2.pickupBias)) {
+                for (let i = 0; i < count; i++) {
+                    const src = chamberCandidates[Math.floor(random() * Math.max(1, chamberCandidates.length))];
+                    if (!src) continue;
+                    const nearKey = `${src.localX},${src.localY}:tmpl_${i}`;
+                    if (occupied.has(nearKey)) continue;
+                    occupied.add(nearKey);
+                    const base = this.buildPickupPlacement(src, random, legendaryBoostOverride);
+                    placements.push({ ...base, type: pType });
+                }
+            }
         }
 
         // Dead-end reward rooms: guaranteed extra pickups at any dead-end tiles in this chunk.
@@ -5073,6 +5160,9 @@ export class ThreeGame {
         const finalPlacements = [];
         const junkPlacementAnchors = [];
         const chunkBiomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
+        const chunkTemplate = this.getChunkTemplate(chunkX, chunkY);
+        const templateCfg = chunkTemplate ? ROOM_TEMPLATE_CONFIGS[chunkTemplate] : null;
+        const templateNoEnemies = Boolean(templateCfg?.noEnemies);
         
         // Spawn boss if conditions match!
         const distance = Math.hypot(chunkCenterX, chunkCenterZ);
@@ -5141,16 +5231,17 @@ export class ThreeGame {
             const pRoomType = roomTypes?.[localPZ]?.[localPX] ?? null;
             const isDeadEnd = pRoomType === ROOM_TYPES.DEAD_END;
             const isChamber = pRoomType === ROOM_TYPES.CHAMBER;
-            const canSpawnSnail = distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount && !isDeadEnd;
-            const canSpawnSentinel = depthTierForScatter >= 2 && isChamber && !hasSentinelThisChunk && distFromSpawn > 20;
-            const canSpawnCrawler = depthTierForScatter >= 3 && chunkBiomeKey === BIOME_KEYS.BIO && crawlerCount < 2 && distFromSpawn > 20 && !isDeadEnd;
-            const loreChance = depthTierForScatter >= 2 ? 0.12 : 0.07;
+            const canSpawnSnail = !templateNoEnemies && distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount && !isDeadEnd;
+            const sentinelForced = templateCfg?.forceSentinel && isChamber && !hasSentinelThisChunk && distFromSpawn > 20;
+            const canSpawnSentinel = !templateNoEnemies && (sentinelForced || (depthTierForScatter >= 2 && isChamber && !hasSentinelThisChunk && distFromSpawn > 20));
+            const canSpawnCrawler = !templateNoEnemies && depthTierForScatter >= 3 && chunkBiomeKey === BIOME_KEYS.BIO && crawlerCount < 2 && distFromSpawn > 20 && !isDeadEnd;
+            const loreChance = (templateCfg?.forceLore && !hasLoreTerminalThisChunk && isDeadEnd) ? 1.0 : (depthTierForScatter >= 2 ? 0.12 : 0.07);
             const canSpawnLore = isDeadEnd && !hasLoreTerminalThisChunk && distFromSpawn > 10;
             let type;
             let scaleMultiplier;
             let elevation;
             let opacity;
-            if (canSpawnSentinel && roll < 0.18) {
+            if (canSpawnSentinel && (sentinelForced || roll < 0.18)) {
                 type = 'sentinel';
                 scaleMultiplier = 1.0;
                 elevation = 0.09;
@@ -5235,11 +5326,20 @@ export class ThreeGame {
             // Subtle rotation (0 to 2pi)
             const rotation = type === 'cybersnail' ? 0 : random() * Math.PI * 2;
 
+            // Template overrides: THE_NEST forces enrage; AGENT_WRECKAGE adds wreckage scatter
+            let finalType = type;
+            if (templateCfg?.forceEnragedSnails && (type === 'sporesnail' || type === 'cybersnail') && snailCount <= (templateCfg.forceEnragedSnails ?? 0)) {
+                finalType = chunkBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : type;
+            }
+            if (templateCfg?.forceWreckage && type !== 'sentinel' && type !== 'lore_terminal' && !this.isEnemyType(type) && random() < 0.3) {
+                finalType = 'ship_wreckage';
+            }
+
             finalPlacements.push({
                 x: p.x,
                 z: p.z,
-                type,
-                scatterKey: `${chunkX},${chunkY}:${finalPlacements.length}:${type}`,
+                type: finalType,
+                scatterKey: `${chunkX},${chunkY}:${finalPlacements.length}:${finalType}`,
                 scale,
                 rotation,
                 tiltX,
@@ -5248,8 +5348,8 @@ export class ThreeGame {
                 groupType: p.groupType,
                 phase: random() * Math.PI * 2,
                 opacity,
-                biomeTint: type === 'cybersnail' ? (SNAIL_BIOME_TINTS[chunkBiomeKey] ?? 0xffffff) : undefined,
-                spawnedEnraged: type === 'cybersnail' && depthTierForScatter >= 3
+                biomeTint: (finalType === 'cybersnail' || finalType === 'sporesnail' || finalType === 'cryosnail') ? (SNAIL_BIOME_TINTS[chunkBiomeKey] ?? 0xffffff) : undefined,
+                spawnedEnraged: (finalType === 'cybersnail' || finalType === 'sporesnail') && (depthTierForScatter >= 3 || Boolean(templateCfg?.forceEnragedSnails))
             });
         }
 
@@ -7453,6 +7553,51 @@ export class ThreeGame {
             this.getOrCreateChunk(chunkX, chunkY);
         }
         return this._chunkRoomTypeCache?.get(key) ?? null;
+    }
+
+    getChunkTemplate(chunkX, chunkY) {
+        const key = `${chunkX},${chunkY}`;
+        if (this._chunkTemplateCache.has(key)) return this._chunkTemplateCache.get(key);
+
+        const depthTier = this.getDepthTier(chunkX, chunkY);
+        if (depthTier < 1) {
+            this._chunkTemplateCache.set(key, null);
+            return null;
+        }
+
+        // Check if chunk has at least one chamber cell
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
+        if (!roomTypes) { this._chunkTemplateCache.set(key, null); return null; }
+        let hasChamber = false;
+        for (let y = 0; y < this.chunkSize && !hasChamber; y++) {
+            for (let x = 0; x < this.chunkSize && !hasChamber; x++) {
+                if (roomTypes[y][x] === ROOM_TYPES.CHAMBER) hasChamber = true;
+            }
+        }
+        if (!hasChamber) { this._chunkTemplateCache.set(key, null); return null; }
+
+        // 7% chance per eligible chunk — seeded
+        const rng = this.createSeededRandom(this.hashTile(chunkX * 997 + 13, chunkY * 1009 + 7));
+        if (rng() > 0.07) { this._chunkTemplateCache.set(key, null); return null; }
+
+        const biomeKey = this.getBiomeKeyForWorldPosition(
+            chunkX * this.chunkSize + this.chunkSize * 0.5,
+            chunkY * this.chunkSize + this.chunkSize * 0.5
+        );
+
+        // Filter candidate templates by biome requirement and depth
+        const candidates = Object.entries(ROOM_TEMPLATE_CONFIGS).filter(([, cfg]) => {
+            if (cfg.biomeRequired && cfg.biomeRequired !== biomeKey) return false;
+            if (cfg === ROOM_TEMPLATE_CONFIGS.the_nest && depthTier < 2) return false;
+            if (cfg.biomeRequired === 'cryo' && biomeKey !== 'cryo') return false;
+            if (cfg.biomeRequired === 'bio' && biomeKey !== 'bio') return false;
+            return true;
+        });
+        if (candidates.length === 0) { this._chunkTemplateCache.set(key, null); return null; }
+
+        const pick = candidates[Math.floor(rng() * candidates.length)];
+        this._chunkTemplateCache.set(key, pick[0]);
+        return pick[0];
     }
 
     getOrCreateChunk(chunkX, chunkY) {

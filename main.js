@@ -1044,6 +1044,8 @@ function fireMothershipReactiveLine(trigger) {
         lore_found:       'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.',
         sentinel_spotted: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.',
         crawler_detected:  'ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.',
+        armory_found:      'UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE.',
+        the_nest:          'WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION.',
     };
     const text = lines[trigger];
     if (text) showBiomePrompt(`> MOTHERSHIP: ${text}`);
@@ -1055,6 +1057,15 @@ window.addEventListener('pickup-collected', (event) => {
             // first_deposit fires on first console deposit; track separately
         }
     }
+});
+
+window.addEventListener('special-room-discovered', (event) => {
+    const label = event?.detail?.label ?? 'SPECIAL ROOM';
+    const template = event?.detail?.template ?? '';
+    showBiomePrompt(`> SECTOR DATA: ${label} DETECTED`);
+    window.AudioManager?.play('ui_boot', { volume: 0.3, playbackRate: 0.82, bus: 'sfx' });
+    if (template === 'the_nest') fireMothershipReactiveLine('the_nest');
+    if (template === 'armory') fireMothershipReactiveLine('armory_found');
 });
 
 window.addEventListener('player-damaged', (event) => {
