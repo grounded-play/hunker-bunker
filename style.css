@@ -1202,6 +1202,57 @@ body {
   }
 }
 
+@media (max-height: 520px) {
+  .game-over-content {
+    width: min(calc(var(--vu) * 126), 96%) !important;
+    max-height: calc(100dvh - 12px);
+    padding: clamp(10px, calc(var(--vu) * 2.1), 16px) !important;
+    gap: clamp(4px, calc(var(--vu) * 0.9), 10px);
+  }
+
+  .game-over-title {
+    font-size: clamp(18px, calc(var(--vu) * 4.2), 34px);
+    letter-spacing: 2px;
+  }
+
+  .game-over-subtitle {
+    font-size: clamp(8px, calc(var(--vu) * 1.02), 10px);
+    letter-spacing: 0.09em;
+    line-height: 1.28;
+    white-space: pre-line;
+  }
+
+  .game-over-stat-block {
+    gap: calc(var(--vu) * 0.45);
+    padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.2);
+  }
+
+  .game-over-stat-label {
+    font-size: clamp(8px, calc(var(--vu) * 0.95), 10px);
+    letter-spacing: 0.09em;
+  }
+
+  .game-over-stat-value {
+    font-size: clamp(13px, calc(var(--vu) * 1.8), 18px);
+    min-width: calc(var(--vu) * 8);
+  }
+
+  .go-score-val {
+    font-size: clamp(16px, calc(var(--vu) * 2.7), 28px);
+  }
+
+  .go-rating-badge {
+    min-width: clamp(22px, calc(var(--vu) * 3.2), 34px);
+    height: clamp(22px, calc(var(--vu) * 3.2), 34px);
+    font-size: clamp(13px, calc(var(--vu) * 2.3), 22px);
+  }
+
+  .game-over-actions {
+    gap: calc(var(--vu) * 1.2);
+    padding-top: calc(var(--vu) * 1.5);
+  }
+}
+
 .action-row {
   display: flex;
   justify-content: center;      /* mirrors module-row centering */
@@ -2829,7 +2880,7 @@ body.vitals-critical #game-viewport::after {
   }
 
   .pickup-counter-panel {
-    top: calc(env(safe-area-inset-top, 0px) + clamp(74px, 12vh, 116px));
+    top: calc(env(safe-area-inset-top, 0px) + clamp(102px, 17vh, 146px));
     left: calc(var(--vu) * 3.2);
     width: clamp(96px, 19vw, 116px);
     padding: clamp(8px, calc(var(--vu) * 1.9), 14px) clamp(6px, calc(var(--vu) * 1.1), 8px);
@@ -2913,7 +2964,7 @@ body.vitals-critical #game-viewport::after {
   }
 
   .level-indicator {
-    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.5));
+    top: calc(env(safe-area-inset-top, 0px) + clamp(42px, 7vh, 64px));
     left: calc(var(--vu) * 3);
     font-size: clamp(10px, calc(var(--vu) * 1.55), 13px);
     padding: clamp(4px, calc(var(--vu) * 0.62), 7px) clamp(7px, calc(var(--vu) * 1.05), 10px);
@@ -2994,7 +3045,19 @@ body.vitals-critical #game-viewport::after {
   }
 
   .pickup-counter-panel {
-    top: calc(env(safe-area-inset-top, 0px) + clamp(70px, 13vh, 106px));
+    top: calc(env(safe-area-inset-top, 0px) + clamp(88px, 16vh, 130px));
+  }
+
+  .level-indicator {
+    top: calc(env(safe-area-inset-top, 0px) + clamp(34px, 6.4vh, 50px));
+    left: calc(var(--vu) * 2.4);
+    border-left-width: 2px;
+    padding: clamp(3px, calc(var(--vu) * 0.5), 5px) clamp(5px, calc(var(--vu) * 0.72), 8px);
+  }
+
+  .level-indicator__title,
+  .level-indicator__biome {
+    display: none;
   }
 
   .vitals-panel--topbar {
@@ -3011,6 +3074,18 @@ body.vitals-critical #game-viewport::after {
 
   .vitals-panel__o2-pct {
     min-width: 2.2ch;
+  }
+
+  .class-ability-panel {
+    max-width: clamp(76px, calc(var(--vu) * 13), 116px);
+    padding: clamp(2px, calc(var(--vu) * 0.4), 4px) clamp(4px, calc(var(--vu) * 0.7), 6px);
+    gap: clamp(2px, calc(var(--vu) * 0.4), 4px);
+  }
+
+  .class-ability-panel__name {
+    max-width: clamp(34px, calc(var(--vu) * 6.3), 58px);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .biome-hud-prompt {
@@ -3049,6 +3124,25 @@ body.vitals-critical #game-viewport::after {
   top: calc(var(--vu) * 4) !important;
   right: calc(var(--vu) * 4) !important;
   left: auto !important;
+}
+
+#game-container.fullscreen-mode ~ #touch-ability-btn {
+  right: clamp(20px, calc(var(--vu) * 3.2), 56px);
+  bottom: clamp(16px, calc(var(--vu) * 2.8), 44px);
+}
+
+@media (max-width: 900px), (pointer: coarse) {
+  #game-container.fullscreen-mode ~ #touch-ability-btn {
+    right: calc(var(--vu) * 2.8);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(12px, calc(var(--vu) * 2.1), 18px));
+  }
+}
+
+@media (max-width: 620px) {
+  #game-container.fullscreen-mode ~ #touch-ability-btn {
+    right: calc(var(--vu) * 2.3);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(10px, calc(var(--vu) * 1.8), 14px));
+  }
 }
 
 /* --- In-Universe Tactical Cursor & Hover React --- */
@@ -3291,6 +3385,7 @@ html.custom-cursor-enabled #confirm-no {
 
 body.mission-intro-active #ui,
 body.mission-intro-active #touch-move-control,
+body.mission-intro-active #touch-ability-btn,
 body.mission-intro-active #console-hud-prompt {
   display: none !important;
 }
@@ -3537,14 +3632,38 @@ body.mission-intro-active #game-container {
 
 .mothership-dialogue-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   border: 1px solid rgba(var(--terminal-glow-rgb), 0.16);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.015);
-  padding: calc(var(--vu) * 2.2) calc(var(--vu) * 2.4);
+  padding: calc(var(--vu) * 2.2) calc(var(--vu) * 2.2) calc(var(--vu) * 2.4) calc(var(--vu) * 2.4);
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 1.2);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--terminal-glow-rgb), 0.45) rgba(var(--terminal-glow-rgb), 0.08);
+}
+
+.mothership-dialogue-body::-webkit-scrollbar {
+  width: 14px;
+}
+
+.mothership-dialogue-body::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 10px 0;
+}
+
+.mothership-dialogue-body::-webkit-scrollbar-thumb {
+  border: 5px solid transparent;
+  background-clip: padding-box;
+  background-color: rgba(var(--terminal-glow-rgb), 0.35);
+  border-radius: 999px;
+  transition: background-color 0.2s;
+}
+
+.mothership-dialogue-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--terminal-glow-rgb), 0.75);
 }
 
 .mothership-line {
@@ -4664,26 +4783,79 @@ body.mission-intro-active #game-container {
 
 /* ── Touch Ability Button ──────────────────────────────────── */
 .touch-ability-btn {
+  --ability-cooldown-progress: 1;
   position: absolute;
   bottom: calc(var(--vu) * 5.5);
   right: calc(var(--vu) * 2.5);
   width: clamp(36px, calc(var(--vu) * 7), 58px);
   height: clamp(36px, calc(var(--vu) * 7), 58px);
   border-radius: 50%;
-  border: 2px solid rgba(255, 159, 28, 0.6);
-  background: rgba(11, 13, 15, 0.82);
+  border: 1.5px solid rgba(255, 159, 28, 0.65);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 208, 138, 0.22), rgba(11, 13, 15, 0.95) 62%),
+    rgba(11, 13, 15, 0.88);
   color: #ff9f1c;
-  font-size: clamp(11px, calc(var(--vu) * 1.9), 20px);
-  font-weight: 900;
-  letter-spacing: 0.05em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1px, calc(var(--vu) * 0.18), 3px);
+  cursor: pointer;
+  touch-action: none;
+  pointer-events: auto;
+  z-index: 12020;
+  overflow: hidden;
+  box-shadow:
+    0 0 12px rgba(255, 159, 28, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.touch-ability-btn::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from -90deg,
+      rgba(255, 159, 28, 0.95) calc(var(--ability-cooldown-progress) * 1turn),
+      rgba(255, 159, 28, 0.16) 0turn
+    );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+.touch-ability-btn__label {
+  position: relative;
+  z-index: 1;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  touch-action: none;
-  z-index: 120;
-  box-shadow: 0 0 10px rgba(255, 159, 28, 0.2);
-  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+
+.touch-ability-btn .run-icon {
+  width: clamp(12px, calc(var(--vu) * 2), 20px);
+  height: clamp(14px, calc(var(--vu) * 2.5), 24px);
+  display: block;
+}
+
+.touch-ability-btn__cooldown {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(7px, calc(var(--vu) * 0.95), 10px);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  color: rgba(255, 159, 28, 0.92);
+  text-transform: uppercase;
+}
+
+.touch-ability-btn.is-cooling .touch-ability-btn__cooldown {
+  color: rgba(255, 211, 140, 0.92);
 }
 
 .touch-ability-btn:active {

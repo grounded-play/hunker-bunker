@@ -151,6 +151,12 @@ export class DialogueManager {
         requestAnimationFrame(() => {
             if (!this.isDialogueRunActive(runId)) return;
             this.choicesEl.classList.add('is-visible');
+            // Choices reduce available text height; re-pin to newest line.
+            this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+            window.setTimeout(() => {
+                if (!this.isDialogueRunActive(runId)) return;
+                this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+            }, 40);
         });
         window.AudioManager?.play('class_lock', { volume: 0.4 });
 

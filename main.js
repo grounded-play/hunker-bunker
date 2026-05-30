@@ -913,11 +913,7 @@ window.addEventListener('player-respawned', () => {
     syncAbilityPanelLabel();
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
-    const touchBtn = document.getElementById('touch-ability-btn');
-    if (touchBtn) {
-        touchBtn.style.opacity = '1';
-        touchBtn.style.pointerEvents = 'auto';
-    }
+    updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
     window.game?.setInputEnabled?.(true);
 });
 
@@ -1087,6 +1083,33 @@ document.getElementById('class-ability-panel')?.addEventListener('pointerdown', 
     window.game?.triggerClassAbility?.();
 });
 
+function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false } = {}) {
+    const touchBtn = document.getElementById('touch-ability-btn');
+    if (!touchBtn) return;
+
+    const clampedMax = Math.max(0.001, Number(max) || 0.001);
+    const clampedRemaining = Math.max(0, Number(remaining) || 0);
+    const cooldownProgress = active
+        ? 1
+        : Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
+
+    touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
+    touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
+
+    if (clampedRemaining > 0) {
+        touchBtn.style.pointerEvents = 'none';
+        touchBtn.style.opacity = '0.8';
+    } else {
+        touchBtn.style.pointerEvents = 'auto';
+        touchBtn.style.opacity = '1';
+    }
+
+    const cooldownEl = document.getElementById('touch-ability-cooldown');
+    if (cooldownEl) {
+        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : 'READY';
+    }
+}
+
 window.addEventListener('class-ability-activated', (event) => {
     const panel = document.getElementById('class-ability-panel');
     if (panel) panel.classList.add('class-ability-panel--active');
@@ -1113,19 +1136,10 @@ window.addEventListener('ability-cooldown-tick', (event) => {
     const { remaining = 0, max = 1, active = false } = event?.detail ?? {};
     const bar = document.getElementById('ability-bar');
     if (bar) {
-        const fillPct = active ? 1 : 1 - (remaining / max);
+        const fillPct = active ? 1 : 1 - (remaining / Math.max(0.001, max));
         bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
     }
-    const touchBtn = document.getElementById('touch-ability-btn');
-    if (touchBtn) {
-        if (remaining > 0) {
-            touchBtn.style.opacity = '0.35';
-            touchBtn.style.pointerEvents = 'none';
-        } else {
-            touchBtn.style.opacity = '1';
-            touchBtn.style.pointerEvents = 'auto';
-        }
-    }
+    updateTouchAbilityButtonState({ remaining, max, active });
 });
 
 function syncAbilityPanelLabel() {
@@ -1282,7 +1296,11 @@ function syncTouchSettingsVisibility() {
 function syncTouchMoveControlVisibility() {
     if (!touchMoveControl) return;
 
-    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const isHUD = !ui?.classList.contains('hidden');
+    const isMenuHidden = menu?.classList.contains('hidden') ?? true;
+    const inMissionIntro = document.body.classList.contains('mission-intro-active');
     // Keep touchMoveControl container visible on the HUD so the compass is always visible
     touchMoveControl.classList.toggle('hidden', !isHUD);
 
@@ -1296,9 +1314,13 @@ function syncTouchMoveControlVisibility() {
         label.classList.toggle('hidden', !showJoystick);
     }
 
-    // Always show ability button when HUD is active
+    // Show on desktop HUD always; on touch devices, mirror joystick visibility.
     const abilityBtn = document.getElementById('touch-ability-btn');
-    if (abilityBtn) abilityBtn.classList.toggle('hidden', !isHUD);
+    if (abilityBtn) {
+        const touchDevice = document.body.classList.contains('touch-device');
+        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && (!touchDevice || showJoystick);
+        abilityBtn.classList.toggle('hidden', !showAbilityBtn);
+    }
 
     if (!isHUD || !showJoystick) {
         activeTouchPointerId = null;

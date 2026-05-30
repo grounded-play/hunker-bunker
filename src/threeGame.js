@@ -3466,38 +3466,40 @@ export class ThreeGame {
         this._abilityO2DrainMult = 1.0;
         this._abilityRefillMult = 1.0;
 
-        if (!this.classAbility.active) return;
-
-        this.classAbility.activeTimer += delta;
-        if (this.classAbility.activeTimer >= this.classAbility.activeDuration) {
-            this.classAbility.active = false;
-            window.dispatchEvent(new CustomEvent('class-ability-ended', {
-                detail: { ability: CLASS_STATS[this.playerType]?.abilityKey }
-            }));
-            return;
-        }
-
         const abilityKey = CLASS_STATS[this.playerType]?.abilityKey;
-        if (abilityKey === 'sprint') {
-            this._abilityMoveSpeedMult = 3.0;
-            // Spawn trail particle every ~6 frames
-            if (this.player && Math.random() < 0.45) {
-                this._spawnSprintTrail();
+        if (this.classAbility.active) {
+            this.classAbility.activeTimer += delta;
+            if (this.classAbility.activeTimer >= this.classAbility.activeDuration) {
+                this.classAbility.active = false;
+                window.dispatchEvent(new CustomEvent('class-ability-ended', {
+                    detail: { ability: CLASS_STATS[this.playerType]?.abilityKey }
+                }));
+            } else if (abilityKey === 'sprint') {
+                this._abilityMoveSpeedMult = 3.0;
+                this._abilityO2DrainMult = 2.0;
+                // Spawn trail particle every ~6 frames
+                if (this.player && Math.random() < 0.45) {
+                    this._spawnSprintTrail();
+                }
+            } else if (abilityKey === 'fortify') {
+                this._abilityImmune = true;
+                this._abilityMoveSpeedMult = 0;
+            } else if (abilityKey === 'overclock') {
+                this._abilityO2DrainMult = 0.5;
+                this._abilityRefillMult = 3.0;
             }
-        } else if (abilityKey === 'fortify') {
-            this._abilityImmune = true;
-            this._abilityMoveSpeedMult = 0;
-        } else if (abilityKey === 'overclock') {
-            this._abilityO2DrainMult = 0.5;
-            this._abilityRefillMult = 3.0;
         }
 
+        const activeProgress = this.classAbility.active
+            ? (this.classAbility.activeTimer / this.classAbility.activeDuration)
+            : 0;
         window.dispatchEvent(new CustomEvent('ability-cooldown-tick', {
             detail: {
                 remaining: this.classAbility.cooldownRemaining,
                 max: this.classAbility.cooldownMax,
                 active: this.classAbility.active,
-                activeProgress: this.classAbility.activeTimer / this.classAbility.activeDuration
+                activeProgress,
+                ability: abilityKey
             }
         }));
     }
