@@ -3879,6 +3879,32 @@ body.mission-intro-active #game-container {
   }
 }
 
+.mission-progress-hud {
+  position: absolute;
+  top: calc(var(--vu) * 30);
+  right: calc(var(--vu) * 4);
+  border: 1px solid rgba(255, 200, 50, 0.45);
+  border-radius: 6px;
+  background: rgba(8, 13, 18, 0.85);
+  box-shadow: 0 0 12px rgba(255, 180, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+  padding: calc(var(--vu) * 0.9) calc(var(--vu) * 1.8);
+  z-index: 12070;
+  font-size: var(--font-xs);
+  color: rgba(255, 200, 50, 0.9);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+.mission-progress-hud.hidden { display: none !important; }
+
+.mission-progress-hud__icon {
+  color: rgba(255, 200, 50, 0.6);
+  font-size: calc(var(--vu) * 1.2);
+}
+
 .biome-hud-prompt {
   position: absolute;
   top: calc(var(--vu) * 20);

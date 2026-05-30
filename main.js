@@ -1244,10 +1244,27 @@ window.addEventListener('sentinel-fired', () => {
     }
 });
 
+function showMissionProgressHUD(text) {
+    const hud = document.getElementById('mission-progress-hud');
+    const textEl = document.getElementById('mission-progress-text');
+    if (textEl) textEl.textContent = text;
+    if (hud) hud.classList.remove('hidden');
+}
+
+function hideMissionProgressHUD() {
+    const hud = document.getElementById('mission-progress-hud');
+    if (hud) hud.classList.add('hidden');
+}
+
 window.addEventListener('mission-kill-progress', (event) => {
     const { count = 0, target = 0 } = event?.detail ?? {};
     const missionEl = document.getElementById('mission-status-text');
     if (missionEl) missionEl.textContent = `ELIMINATE: ${count}/${target}`;
+    showMissionProgressHUD(`ELIMINATE: ${count} / ${target}`);
+});
+
+window.addEventListener('mission-objective-complete', () => {
+    hideMissionProgressHUD();
 });
 
 document.getElementById('class-ability-panel')?.addEventListener('pointerdown', (e) => {
@@ -1788,6 +1805,9 @@ async function runMissionIntroSequence() {
         // Show mission briefing after door transition
         if (currentMission?.label) {
             window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
+            if (currentMission.type === 'elimination' && currentMission.targetKills > 0) {
+                window.setTimeout(() => showMissionProgressHUD(`ELIMINATE: 0 / ${currentMission.targetKills}`), 600);
+            }
         }
     } finally {
         document.body.classList.remove('mission-intro-active');
@@ -2039,6 +2059,7 @@ if (confirmYes) {
         document.body.classList.remove('mission-intro-active');
         document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode');
         _distressModeActive = false;
+        hideMissionProgressHUD();
         hideBiomePrompt();
         if (biomePromptTimer) {
             clearTimeout(biomePromptTimer);
