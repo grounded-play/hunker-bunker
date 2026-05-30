@@ -1024,6 +1024,8 @@ window.addEventListener('player-respawned', () => {
     lastReportedDepthTier = 0;
     syncAbilityPanelLabel();
     _distressModeActive = false;
+    _musicTension = 'exploring';
+    window.AudioManager?.setMusicTension?.('exploring');
     document.body.classList.remove('distress-mode', 'vitals-critical');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
@@ -1441,6 +1443,29 @@ function stopO2Alarm() {
     }
 }
 
+// ── Reactive Music State ──────────────────────────────────────
+let _musicTension = 'exploring';
+let _musicTensionUpdateTimer = 0;
+
+function updateMusicTension() {
+    const hp = window.game?.playerVitals?.hp ?? 99;
+    const o2 = window.game?.playerVitals?.o2 ?? 100;
+    let next = 'exploring';
+
+    // Safe: near ship, full health, good O2
+    if (hp >= 3 && o2 > 50) {
+        const dist = window.game?.getActiveO2GeneratorDistance?.() ?? Infinity;
+        if (dist < 4) next = 'safe';
+    }
+    // Threatened: low hp or distress
+    if (hp <= 1 || o2 < 15 || _distressModeActive) next = 'threatened';
+
+    if (next !== _musicTension) {
+        _musicTension = next;
+        window.AudioManager?.setMusicTension?.(next);
+    }
+}
+
 let _distressModeActive = false;
 function updateDistressMode(o2, hp) {
     const shouldBeDistress = hp <= 1 && o2 < 15 && !window.game?.isPlayerDead;
@@ -1468,12 +1493,14 @@ window.addEventListener('player-o2-changed', (event) => {
     // Low O2 general vignette (not full distress)
     document.body.classList.toggle('vitals-critical', o2 < 25 && !_distressModeActive);
     updateDistressMode(o2, hp);
+    updateMusicTension();
 });
 
 window.addEventListener('player-damaged', (event) => {
     const hp = event?.detail?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
     updateDistressMode(o2, hp);
+    updateMusicTension();
 });
 
 window.addEventListener('health-restored', () => {

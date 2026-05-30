@@ -566,6 +566,19 @@ export class AudioManager {
         popOsc.stop(now + popDuration + 0.01);
     }
 
+    static setMusicTension(level = 'exploring') {
+        if (!this.isUnlocked) return;
+        const targets = {
+            safe:      { music: 0.03, world: 0.6, ambientRate: 0.7 },
+            exploring: { music: 0.05, world: 1.0, ambientRate: 1.0 },
+            threatened: { music: 0.09, world: 1.3, ambientRate: 1.4 }
+        };
+        const cfg = targets[level] ?? targets.exploring;
+        const t = audioCtx.currentTime + 1.2; // 1.2s crossfade
+        this.musicGain.gain.linearRampToValueAtTime(cfg.music * this.masterVolume, t);
+        this.worldGain.gain.linearRampToValueAtTime(cfg.world * this.masterVolume, t);
+    }
+
     static startAmbience() {
         if (this.ambientSource) return; // Already playing
 
