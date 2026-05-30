@@ -961,6 +961,8 @@ window.addEventListener('player-respawned', () => {
     hideExtractionRing();
     lastReportedDepthTier = 0;
     syncAbilityPanelLabel();
+    _distressModeActive = false;
+    document.body.classList.remove('distress-mode', 'vitals-critical');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
     updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
@@ -1301,13 +1303,45 @@ function stopO2Alarm() {
     }
 }
 
+let _distressModeActive = false;
+function updateDistressMode(o2, hp) {
+    const shouldBeDistress = hp <= 1 && o2 < 15 && !window.game?.isPlayerDead;
+    if (shouldBeDistress && !_distressModeActive) {
+        _distressModeActive = true;
+        document.body.classList.add('distress-mode');
+        document.body.classList.add('vitals-critical');
+        fireMothershipReactiveLine('hp_critical');
+        window.AudioManager?.play('ui_error', { volume: 0.55, playbackRate: 0.48, bus: 'sfx' });
+    } else if (!shouldBeDistress && _distressModeActive) {
+        _distressModeActive = false;
+        document.body.classList.remove('distress-mode');
+        document.body.classList.remove('vitals-critical');
+    }
+}
+
 window.addEventListener('player-o2-changed', (event) => {
     const o2 = event?.detail?.o2 ?? 100;
+    const hp = window.game?.playerVitals?.hp ?? 99;
     if (o2 <= 10 && !o2AlarmActive) {
         startO2Alarm();
     } else if (o2 > 10 && o2AlarmActive) {
         stopO2Alarm();
     }
+    // Low O2 general vignette (not full distress)
+    document.body.classList.toggle('vitals-critical', o2 < 25 && !_distressModeActive);
+    updateDistressMode(o2, hp);
+});
+
+window.addEventListener('player-damaged', (event) => {
+    const hp = event?.detail?.hp ?? 99;
+    const o2 = window.game?.playerVitals?.o2 ?? 100;
+    updateDistressMode(o2, hp);
+});
+
+window.addEventListener('health-restored', () => {
+    const hp = window.game?.playerVitals?.hp ?? 99;
+    const o2 = window.game?.playerVitals?.o2 ?? 100;
+    updateDistressMode(o2, hp);
 });
 
 // Game over button handlers
@@ -1905,7 +1939,8 @@ if (confirmYes) {
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
         document.body.classList.remove('mission-intro-active');
-        document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical');
+        document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode');
+        _distressModeActive = false;
         hideBiomePrompt();
         if (biomePromptTimer) {
             clearTimeout(biomePromptTimer);

@@ -2759,6 +2759,27 @@ body.vitals-critical #game-viewport::after {
   }
 }
 
+/* DISTRESS MODE — HP ≤ 1 AND O2 < 15% */
+body.distress-mode #game-viewport {
+  filter: saturate(0.35) contrast(1.12);
+  transition: filter 0.6s ease-in-out;
+}
+
+body.distress-mode #game-viewport::after {
+  background: radial-gradient(circle at center, rgba(0,0,0,0.04) 30%, rgba(200, 0, 0, 0.5) 100%);
+  animation: distress-pulse 0.6s ease-in-out infinite;
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9400;
+}
+
+@keyframes distress-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1.0; }
+}
+
 .pickup-counter-panel__title {
   color: rgba(255, 198, 96, 0.96);
   font-weight: 900;
