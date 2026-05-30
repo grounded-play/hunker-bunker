@@ -2213,6 +2213,22 @@ export class ThreeGame {
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
 
+        // Adaptive quality: if FPS drops below 45 for 5s, reduce chunk radius
+        if (delta > 0) {
+            const fps = 1 / delta;
+            if (fps < 45) {
+                this._lowFpsTimer = (this._lowFpsTimer ?? 0) + delta;
+                if (this._lowFpsTimer >= 5 && this.visibleChunkRadius > 0) {
+                    this.visibleChunkRadius = 0;
+                }
+            } else {
+                this._lowFpsTimer = 0;
+                if (this.visibleChunkRadius === 0 && fps > 55) {
+                    this.visibleChunkRadius = 1; // restore if performance recovers
+                }
+            }
+        }
+
         this.updateClassAbility(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
