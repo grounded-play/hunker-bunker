@@ -487,8 +487,38 @@ window.addEventListener('enemy-hit', (event) => {
 window.addEventListener('weapon-clip-updated', (event) => {
     renderWeaponClipState(event?.detail ?? {});
 });
+let _lastShipHp = null;
 window.addEventListener('ship-health-changed', (event) => {
-    renderShipHealth(event?.detail ?? {});
+    const detail = event?.detail ?? {};
+    renderShipHealth(detail);
+
+    const hp = Number.isFinite(detail.hp) ? detail.hp : null;
+    const maxHp = Number.isFinite(detail.maxHp) ? Math.max(1, detail.maxHp) : 1;
+    if (hp !== null && _lastShipHp !== null && hp < _lastShipHp) {
+        // Hull breach — visual flash + audio
+        const pct = (hp / maxHp) * 100;
+        const severity = pct <= 25 ? 'critical' : pct <= 55 ? 'damaged' : 'hit';
+
+        if (shipHpBar) {
+            shipHpBar.classList.add('ship-hp-bar--hit');
+            setTimeout(() => shipHpBar?.classList.remove('ship-hp-bar--hit'), 280);
+        }
+
+        window.AudioManager?.play('ui_error', {
+            volume: severity === 'critical' ? 0.65 : 0.42,
+            playbackRate: severity === 'critical' ? 0.58 : 0.72,
+            bus: 'sfx'
+        });
+        window.AudioManager?.play('door_slam_vertical', { volume: 0.18, playbackRate: 0.48, bus: 'sfx' });
+
+        const msg = severity === 'critical'
+            ? '> SHIP: HULL INTEGRITY CRITICAL — IMMEDIATE EVAC REQUIRED'
+            : severity === 'damaged'
+            ? '> SHIP: HULL BREACH DETECTED — STRUCTURAL DAMAGE'
+            : '> SHIP: HULL IMPACT REGISTERED';
+        showBiomePrompt(msg);
+    }
+    _lastShipHp = hp;
 });
 
 function bindReloadTrigger(element, label) {

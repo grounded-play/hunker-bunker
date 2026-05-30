@@ -2426,6 +2426,16 @@ body:not(.touch-device) .touch-move-control {
   transition: width 0.18s ease-out, background-color 0.22s ease-out;
 }
 
+.ship-hp-bar--hit {
+  animation: ship-hull-breach 0.28s ease-out forwards;
+}
+
+@keyframes ship-hull-breach {
+  0%   { filter: brightness(4) saturate(0); box-shadow: 0 0 18px rgba(255,80,80,0.9); }
+  40%  { filter: brightness(2.5) saturate(0.4); box-shadow: 0 0 12px rgba(255,120,60,0.7); }
+  100% { filter: brightness(1) saturate(1); box-shadow: none; }
+}
+
 .ship-status-panel__value {
   min-width: 3.4ch;
   text-align: right;
