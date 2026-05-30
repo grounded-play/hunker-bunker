@@ -1301,6 +1301,32 @@ body {
   z-index: 21;
 }
 
+.start-btn--daily {
+  background: rgba(0, 160, 80, 0.08) !important;
+  border-color: rgba(0, 255, 120, 0.35) !important;
+  color: rgba(0, 255, 120, 0.9) !important;
+  margin-top: calc(var(--vu) * 0.8);
+  font-size: calc(var(--vu) * 1.3) !important;
+}
+
+.start-btn--daily:hover {
+  background: rgba(0, 160, 80, 0.18) !important;
+  border-color: rgba(0, 255, 120, 0.7) !important;
+}
+
+.start-btn--daily:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.daily-ops-status {
+  font-size: var(--font-xs);
+  color: rgba(0, 255, 120, 0.65);
+  margin-top: calc(var(--vu) * 0.5);
+  min-height: 1.2em;
+  text-align: center;
+}
+
 
 /* --- Tactical Diagnostic Overlays --- */
 #calibration-overlay,

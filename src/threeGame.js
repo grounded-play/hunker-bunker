@@ -452,6 +452,7 @@ export class ThreeGame {
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
+        this.globalSeedOffset = 0;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this.maxChunkMountsPerFrame = 2;
@@ -7934,7 +7935,7 @@ export class ThreeGame {
     }
 
     hashTile(x, y) {
-        const seed = Math.imul(x, 73856093) ^ Math.imul(y, 19349663);
+        const seed = Math.imul(x, 73856093) ^ Math.imul(y, 19349663) ^ (this.globalSeedOffset | 0);
         return Math.abs(seed);
     }
 

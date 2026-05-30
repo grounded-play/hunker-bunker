@@ -124,6 +124,53 @@ const bankManager = new BankManager();
 
 window.bankManager = bankManager;
 
+// ── Daily Ops System ──────────────────────────────────────────
+const DAILY_OPS_KEY_PREFIX = 'hb_daily_v1_';
+
+function getTodayDateString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function getDailySeedInt() {
+    const str = getTodayDateString();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = Math.imul(hash * 31 + str.charCodeAt(i), 1);
+        hash ^= hash >>> 16;
+    }
+    return Math.abs(hash) || 12345;
+}
+
+function getDailyOpsRecord() {
+    const key = DAILY_OPS_KEY_PREFIX + getTodayDateString();
+    try { return JSON.parse(localStorage.getItem(key) ?? 'null') ?? null; } catch { return null; }
+}
+
+function saveDailyOpsRecord(record) {
+    const key = DAILY_OPS_KEY_PREFIX + getTodayDateString();
+    try { localStorage.setItem(key, JSON.stringify(record)); } catch { /* ignore */ }
+}
+
+function updateDailyOpsUI() {
+    const btn = document.getElementById('daily-ops-btn');
+    const statusEl = document.getElementById('daily-ops-status');
+    const record = getDailyOpsRecord();
+    if (btn) btn.disabled = Boolean(record?.completed);
+    if (statusEl) {
+        if (record?.completed) {
+            const g = record.grade ?? 'D';
+            statusEl.textContent = `TODAY: ${record.score} PTS (${g})`;
+        } else if (record?.attempted) {
+            statusEl.textContent = 'ATTEMPT IN PROGRESS';
+        } else {
+            statusEl.textContent = 'ATTEMPT AVAILABLE';
+        }
+    }
+}
+
+let _isDailyOpsRun = false;
+
 function refreshCharBestScores() {
     for (const cls of ['SCOUT', 'TANK', 'ENGINEER']) {
         const el = document.getElementById(`char-best-${cls}`);
@@ -850,6 +897,21 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         refreshCharBestScores();
     }
     if (newBest) newBest.classList.toggle('hidden', !isNewBest);
+
+    // Daily Ops result save
+    if (_isDailyOpsRun) {
+        _isDailyOpsRun = false;
+        if (window.game) window.game.globalSeedOffset = 0;
+        saveDailyOpsRecord({
+            attempted: true,
+            completed: true,
+            date: getTodayDateString(),
+            score,
+            grade: rating.grade,
+            isVictory
+        });
+        updateDailyOpsUI();
+    }
 
     // Archive progress
     const archiveRow = document.getElementById('go-archive-row');
@@ -1784,6 +1846,42 @@ if (startBtn) {
     });
 }
 
+// Daily Ops button
+const dailyOpsBtn = document.getElementById('daily-ops-btn');
+if (dailyOpsBtn) {
+    dailyOpsBtn.addEventListener('click', () => {
+        const record = getDailyOpsRecord();
+        if (record?.completed) return;
+        saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
+        _isDailyOpsRun = true;
+        if (window.game) window.game.globalSeedOffset = getDailySeedInt();
+        triggerDoorTransition(
+            () => {
+                if (menu) menu.classList.add('hidden');
+                resetRunToStartingState({
+                    resetBank: false,
+                    skipEffects: true,
+                    snailSpawnEnabled: true,
+                    purgeSnails: false
+                });
+                document.getElementById('ui')?.classList.remove('hidden');
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
+                const gameContainer = document.getElementById('game-container');
+                const viewport = document.getElementById('game-viewport');
+                if (gameContainer && viewport) {
+                    viewport.insertBefore(gameContainer, document.getElementById('ui'));
+                    gameContainer.classList.add('fullscreen-mode');
+                    queueGameLayoutRefresh();
+                }
+            },
+            () => {
+                void runMissionIntroSequence();
+            }
+        );
+    });
+}
+
 // Settings Handlers
 if (splashDebugToggle) {
     splashDebugToggle.addEventListener('change', (e) => {
@@ -2620,6 +2718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setAudioMixerOpen(false);
     loadAudioMixSettings();
     refreshCharBestScores();
+    updateDailyOpsUI();
 
     const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
     if (storedTouchControls !== null) {
