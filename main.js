@@ -529,6 +529,13 @@ window.addEventListener('enemy-killed', (event) => {
     if (total === 1) fireMothershipReactiveLine('first_kill');
     if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
     if (type === 'crawler') fireMothershipReactiveLine('crawler_detected');
+    if (typeof type === 'string' && type.startsWith('boss_')) fireMothershipReactiveLine('first_boss');
+    // Escalation beat: once the agent racks up kills, 0047 takes notice.
+    if (total >= 25) fireMothershipReactiveLine('specimen_notices');
+});
+
+window.addEventListener('weapon-upgraded', () => {
+    fireMothershipReactiveLine('weapon_calibrated');
 });
 
 window.addEventListener('enemy-hit', (event) => {
@@ -1316,6 +1323,9 @@ function fireMothershipReactiveLine(trigger) {
         crawler_detected:  'ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.',
         armory_found:      'UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE.',
         the_nest:          'WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION.',
+        weapon_calibrated: 'NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.',
+        first_boss:        'CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.',
+        specimen_notices:  '[UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.',
     };
     const text = lines[trigger];
     if (text) showBiomePrompt(`> MOTHERSHIP: ${text}`);

@@ -125,7 +125,9 @@ const LORE_LOGS = {
         { key: 'A09', text: '[CORRUPTED]\n...THE THING IN BAY...\n...NOT SPECIMEN 00...\n...IT KNEW THE CODE...\n[END]' },
         { key: 'A10', text: 'Armory secure. 40 units of ammo reserve. 12 medical kits.\nLeave them. The agents will need them.\nThis is not abandonment. This is preparation.\n— Unknown author' },
         { key: 'A11', text: 'If you can read this — the evacuation is complete.\nThe bunker is sealed. The Mothership will not acknowledge your transmissions.\nUse the console. Bank what you find. Build what you can.\n— Former Chief Engineer Yuki Tanaka' },
-        { key: 'A12', text: '[FINAL ACTIVE SECTOR LOG]\nThree agents. One mission. One that lives is enough.\nThe Mothership gets what it paid for.\nWe get silence.\n— Director Chen, last recorded transmission.' }
+        { key: 'A12', text: '[FINAL ACTIVE SECTOR LOG]\nThree agents. One mission. One that lives is enough.\nThe Mothership gets what it paid for.\nWe get silence.\n— Director Chen, last recorded transmission.' },
+        { key: 'A13', text: 'ARMORY REQUISITION — COMBAT MATRIX\nWe left the calibration benches running. Magazine extenders,\nvelocity coils, payload cores, burst injectors — all keyed to\nthe ship consoles. Salvage the tech, the bench builds the rest.\nWhoever comes after us: take the guns. We won\'t need them.' },
+        { key: 'A14', text: 'NOTE CLIPPED TO THE WEAPONS BENCH:\nThe Mothership rationed our ammunition on purpose.\nA garrison that can\'t fight back can\'t refuse an order.\nSo we built our own upgrades from scrap. Off the books.\nIf you\'re reading this, the bench is yours. Use it. — Q.M. Vasquez' }
     ],
     cryo: [
         { key: 'C01', text: 'Stasis bay operational. Temperature stable at -196°C.\n847 units in suspension. Bio-preservation rate: 99.4%.\nUnit 0047 in isolation pod. Do not wake. Do not transport.' },
@@ -157,6 +159,9 @@ export const MOTHERSHIP_REACTIVE_LINES = [
     { trigger: 'first_deposit',    text: 'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.' },
     { trigger: 'lore_found',       text: 'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.' },
     { trigger: 'sentinel_spotted', text: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.' },
+    { trigger: 'weapon_calibrated', text: 'NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.' },
+    { trigger: 'first_boss',       text: 'CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.' },
+    { trigger: 'specimen_notices', text: '[UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.' },
 ];
 
 const SENTINEL_MAX_HP = 3;
