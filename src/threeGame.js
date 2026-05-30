@@ -29,9 +29,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, abilityKey: 'sprint',   abilityLabel: 'SPRINT BURST',    abilityCooldown: 8,  abilityDuration: 1.5 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, abilityKey: 'fortify',  abilityLabel: 'FORTIFY',         abilityCooldown: 14, abilityDuration: 2.5 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, abilityKey: 'overclock',abilityLabel: 'FIELD OVERCLOCK', abilityCooldown: 18, abilityDuration: 6.0 }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',   abilityLabel: 'SPRINT BURST',    abilityCooldown: 8,  abilityDuration: 1.5 },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'fortify',  abilityLabel: 'FORTIFY',         abilityCooldown: 14, abilityDuration: 2.5 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'overclock',abilityLabel: 'FIELD OVERCLOCK', abilityCooldown: 18, abilityDuration: 6.0 }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -97,6 +97,16 @@ const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
+
+// --- Sprint 10 combat tuning / feature flags ---
+const FEATURE_WALL_DECALS = true;
+const FEATURE_MULTISHOT = true;
+const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
+const MULTISHOT_SPREADS = Object.freeze([[], [-0.085, 0.085], [-0.15, 0.0, 0.15]]);
+const WALL_DECAL_CAP = 24;
+const PHYS_PARTICLE_GRAVITY = 7.0;   // units/s²
+const PHYS_PARTICLE_DRAG = 2.2;      // exponential drag coefficient (per second)
+const PHYS_PARTICLE_BOUNCE = -0.45;  // floor restitution
 const SHIP_MAX_HP = 24;
 const SHIP_NO_FIRE_RADIUS = 2.4;
 const SHIP_HIT_RADIUS_MULT = 0.78;
@@ -4474,20 +4484,43 @@ export class ThreeGame {
         this.weaponFireCooldown = WEAPON_FIRE_COOLDOWN;
         this.emitWeaponClipState();
 
-        this.spawnProjectile({
-            x: this.player.position.x + normX * 0.62,
-            z: this.player.position.z + normZ * 0.62,
-            vx: normX * PROJECTILE_SPEED,
-            vz: normZ * PROJECTILE_SPEED,
-            ttl: PROJECTILE_TTL,
-            damage: PROJECTILE_DAMAGE,
-            radius: PROJECTILE_RADIUS
-        });
+        this.spawnPlayerShot(normX, normZ);
 
         window.AudioManager?.play('ui_scan_ping', { volume: 0.34, playbackRate: 1.42 });
 
         if (this.weaponClipAmmo <= 0) {
             this.requestReload();
+        }
+    }
+
+    spawnPlayerShot(normX, normZ) {
+        const classDamage = CLASS_STATS[this.playerType]?.projectileDamage ?? PROJECTILE_DAMAGE;
+        const bonuses = this.weaponUpgradeBonuses ?? null;
+        const damage = classDamage + (bonuses?.shotDamage ?? 0);
+        const speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
+        const shotAmount = FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0;
+        const spreads = MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
+
+        const fireOne = (dx, dz) => {
+            this.spawnProjectile({
+                x: this.player.position.x + dx * 0.62,
+                z: this.player.position.z + dz * 0.62,
+                vx: dx * speed,
+                vz: dz * speed,
+                ttl: PROJECTILE_TTL,
+                damage,
+                radius: PROJECTILE_RADIUS
+            });
+        };
+
+        if (!spreads || spreads.length === 0) {
+            fireOne(normX, normZ);
+            return;
+        }
+        for (const angle of spreads) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            fireOne((normX * cos) - (normZ * sin), (normX * sin) + (normZ * cos));
         }
     }
 
@@ -4542,14 +4575,27 @@ export class ThreeGame {
 
     checkProjectileWallHit(projectile) {
         const speed = Math.hypot(projectile.vx, projectile.vz);
-        if (speed <= 0.0001) return false;
+        if (speed <= 0.0001) return null;
         this._projRaycaster.set(
             new THREE.Vector3(projectile.mesh.position.x, 0.45, projectile.mesh.position.z),
             new THREE.Vector3(projectile.vx / speed, 0, projectile.vz / speed)
         );
         this._projRaycaster.far = Math.max(0.08, speed * 0.045);
         const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
-        return hits.length > 0;
+        if (!hits.length) return null;
+        const hit = hits[0];
+        // World-space face normal (geometry normals are in local space).
+        let nx = -projectile.vx / speed;
+        let nz = -projectile.vz / speed;
+        if (hit.face && hit.object) {
+            const worldNormal = hit.face.normal.clone()
+                .transformDirection(hit.object.matrixWorld);
+            if (Number.isFinite(worldNormal.x) && Number.isFinite(worldNormal.z)) {
+                nx = worldNormal.x;
+                nz = worldNormal.z;
+            }
+        }
+        return { point: hit.point, normalX: nx, normalZ: nz };
     }
 
     checkProjectilePlayerHit(projectile) {
@@ -4586,7 +4632,9 @@ export class ThreeGame {
                 projectile.mesh.position.z - sprite.position.z
             );
             const hitRadius = sprite.userData.isBoss ? (SNAIL_HIT_RADIUS * 2.8) : SNAIL_HIT_RADIUS;
-            if (dist <= hitRadius + (projectile.radius ?? PROJECTILE_RADIUS)) {
+            // Forgiving hitbox: pad player shots so grazing the visual edge still registers.
+            const hitboxPadding = projectile.isEnemy ? 0 : PLAYER_HITBOX_PADDING;
+            if (dist <= hitRadius + (projectile.radius ?? PROJECTILE_RADIUS) + hitboxPadding) {
                 return sprite;
             }
         }
@@ -4632,6 +4680,120 @@ export class ThreeGame {
         this.transientEffects.push(effect);
     }
 
+    // Ballistic debris: small boxes flung outward with gravity, drag, and a floor bounce.
+    // Registered as a plain-object transient effect so it reuses updateTransientEffects().
+    spawnPhysicalBurst(x, z, { color = 0xffe08f, count = 6, upward = 0.18, spread = 1.4 } = {}) {
+        if (!this.scene) return;
+        // Respect the adaptive-quality degrade signal.
+        let n = this.visibleChunkRadius === 0 ? Math.max(2, Math.floor(count * 0.5)) : count;
+        const group = new THREE.Group();
+        const geo = new THREE.BoxGeometry(0.045, 0.045, 0.045);
+        const particles = [];
+        for (let i = 0; i < n; i++) {
+            const mat = new THREE.MeshBasicMaterial({
+                color,
+                transparent: true,
+                opacity: 0.95,
+                depthWrite: false
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set((Math.random() - 0.5) * 0.06, 0.3 + Math.random() * 0.12, (Math.random() - 0.5) * 0.06);
+            mesh.renderOrder = 28;
+            group.add(mesh);
+            const angle = Math.random() * Math.PI * 2;
+            const sp = (0.6 + Math.random() * 1.4) * spread;
+            particles.push({
+                mesh,
+                vx: Math.cos(angle) * sp,
+                vy: upward * 5 + Math.random() * 1.2,
+                vz: Math.sin(angle) * sp
+            });
+        }
+        group.position.set(x, 0, z);
+        this.scene.add(group);
+
+        const duration = 0.7;
+        this.transientEffects.push({
+            mesh: group,
+            age: 0,
+            duration,
+            update(delta) {
+                this.age += delta;
+                const t = Math.min(this.age / duration, 1);
+                const dragMul = Math.exp(-PHYS_PARTICLE_DRAG * delta);
+                for (const p of particles) {
+                    p.vy -= PHYS_PARTICLE_GRAVITY * delta;
+                    p.vx *= dragMul;
+                    p.vz *= dragMul;
+                    p.mesh.position.x += p.vx * delta;
+                    p.mesh.position.y += p.vy * delta;
+                    p.mesh.position.z += p.vz * delta;
+                    if (p.mesh.position.y <= 0.02) {
+                        p.mesh.position.y = 0.02;
+                        p.vy *= PHYS_PARTICLE_BOUNCE;
+                        p.vx *= 0.8;
+                        p.vz *= 0.8;
+                    }
+                    p.mesh.material.opacity = Math.max(0, 0.95 * (1 - t));
+                }
+            },
+            dispose() {
+                geo.dispose();
+                for (const p of particles) p.mesh.material.dispose();
+            }
+        });
+    }
+
+    // Fading scorch decal flush against a wall face. Capped + recycled to protect frame time.
+    spawnWallDecal(x, z, normalX, normalZ) {
+        if (!this.scene) return;
+        const len = Math.hypot(normalX, normalZ) || 1;
+        const nx = normalX / len;
+        const nz = normalZ / len;
+
+        const geo = new THREE.PlaneGeometry(0.3, 0.3);
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0x0e0a07,
+            transparent: true,
+            opacity: 0.78,
+            depthWrite: false,
+            depthTest: true
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        // Offset slightly off the face to avoid z-fighting; sit at mid-wall height.
+        mesh.position.set(x + nx * 0.02, 0.45, z + nz * 0.02);
+        mesh.rotation.y = Math.atan2(nx, nz);
+        mesh.renderOrder = 5;
+        this.scene.add(mesh);
+
+        const duration = 5.0;
+        const effect = {
+            mesh,
+            age: 0,
+            maxAge: duration,
+            update(delta) {
+                this.age += delta;
+                const t = Math.min(this.age / duration, 1);
+                mat.opacity = 0.78 * (1 - t * t);
+            },
+            dispose() {
+                geo.dispose();
+                mat.dispose();
+            }
+        };
+
+        this._wallDecals = this._wallDecals ?? [];
+        this._wallDecals.push(effect);
+        this.transientEffects.push(effect);
+
+        // Recycle the oldest decal if we exceed the cap.
+        while (this._wallDecals.length > WALL_DECAL_CAP) {
+            const oldest = this._wallDecals.shift();
+            if (!oldest) break;
+            oldest.age = oldest.maxAge; // flag for removal next frame
+        }
+    }
+
     updateProjectiles(delta) {
         if (!this.activeProjectiles.length) return;
         const toRemove = new Set();
@@ -4646,8 +4808,16 @@ export class ThreeGame {
             projectile.mesh.position.x += projectile.vx * delta;
             projectile.mesh.position.z += projectile.vz * delta;
 
-            if (this.checkProjectileWallHit(projectile)) {
-                this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+            const wallHit = this.checkProjectileWallHit(projectile);
+            if (wallHit) {
+                const hx = wallHit.point?.x ?? projectile.mesh.position.x;
+                const hz = wallHit.point?.z ?? projectile.mesh.position.z;
+                this.spawnProjectileImpactEffect(hx, hz);
+                const sparkColor = projectile.isEnemy ? 0xff6a4a : 0xffd27a;
+                this.spawnPhysicalBurst(hx, hz, { color: sparkColor, count: 5, upward: 0.16 });
+                if (FEATURE_WALL_DECALS) {
+                    this.spawnWallDecal(hx, hz, wallHit.normalX, wallHit.normalZ);
+                }
                 toRemove.add(projectile);
                 continue;
             }
@@ -6640,6 +6810,13 @@ export class ThreeGame {
             this.spawnSnailDrops(sprite);
         }
         this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, 'bunker_junk_uncommon');
+        const burstColor = sprite.userData.isBoss ? 0xff6688 : 0x86d36a;
+        this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, {
+            color: burstColor,
+            count: sprite.userData.isBoss ? 14 : 8,
+            upward: 0.22,
+            spread: sprite.userData.isBoss ? 2.0 : 1.5
+        });
         window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
         window.AudioManager?.play('ui_error', { volume: 0.2, playbackRate: 0.72 });
         window.dispatchEvent(new CustomEvent('enemy-killed', {
