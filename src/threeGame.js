@@ -29,9 +29,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0  }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, abilityKey: 'sprint',   abilityLabel: 'SPRINT BURST',    abilityCooldown: 8,  abilityDuration: 1.5 },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, abilityKey: 'fortify',  abilityLabel: 'FORTIFY',         abilityCooldown: 14, abilityDuration: 2.5 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, abilityKey: 'overclock',abilityLabel: 'FIELD OVERCLOCK', abilityCooldown: 18, abilityDuration: 6.0 }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -100,6 +100,60 @@ const PROJECTILE_DAMAGE = 1;
 const SHIP_MAX_HP = 24;
 const SHIP_NO_FIRE_RADIUS = 2.4;
 const SHIP_HIT_RADIUS_MULT = 0.78;
+const LORE_LOGS = {
+    active: [
+        { key: 'A01', text: 'PRIORITY: RESTRICTED\nPersonnel count: 312. Deployment: Sub-level 1 through 9.\nMission status: CLASSIFIED. Authorization: DIRECTOR CHEN, OVERSEER RANK.' },
+        { key: 'A02', text: 'Cryogenic transfer complete. 847 units preserved in long-term stasis.\nNotes: Units 802-847 classified. Manifests sealed. Do not approach Bay C.' },
+        { key: 'A03', text: 'Atmospheric readings stable. O₂ generator nominal.\nSnail-variant bio-entities adapting to hull material. Pest control authorized.' },
+        { key: 'A04', text: 'Communication with Mothership limited to quarterly uplink. By design.\nThey don\'t want to know what we found. But they want what we found.' },
+        { key: 'A05', text: 'Agent roster — OPERATION SHARD:\nSCOUT TEAM: Sgt. A. Henderson. Lt. J. Park. Pvt. M. Reyes.\nMission: RETRIEVAL. Target: Bay C Specimen 0047.\nDo not allow them to open the stasis pods. Tell them it\'s samples.' },
+        { key: 'A06', text: 'Bay C alarm triggered. Manual override engaged. Who authorized override?\nPerimeter sensors show movement in corridor 9-F. Cameras offline.\nRecommend: code red lock — Director Chen APPROVED.' },
+        { key: 'A07', text: 'O₂ generator in sector 4 is offline. Reserves depleted.\nPersonnel evacuating sub-levels 4 through 9.\nAnyone still in those levels — I\'m sorry.' },
+        { key: 'A08', text: 'Three ships inbound. SCOUT ALPHA, BRAVO, CHARLIE.\nThey don\'t know what they\'re walking into. Orders are orders.\nUplink will cut when they enter atmosphere.\n— Director Chen' },
+        { key: 'A09', text: '[CORRUPTED]\n...THE THING IN BAY...\n...NOT SPECIMEN 00...\n...IT KNEW THE CODE...\n[END]' },
+        { key: 'A10', text: 'Armory secure. 40 units of ammo reserve. 12 medical kits.\nLeave them. The agents will need them.\nThis is not abandonment. This is preparation.\n— Unknown author' },
+        { key: 'A11', text: 'If you can read this — the evacuation is complete.\nThe bunker is sealed. The Mothership will not acknowledge your transmissions.\nUse the console. Bank what you find. Build what you can.\n— Former Chief Engineer Yuki Tanaka' },
+        { key: 'A12', text: '[FINAL ACTIVE SECTOR LOG]\nThree agents. One mission. One that lives is enough.\nThe Mothership gets what it paid for.\nWe get silence.\n— Director Chen, last recorded transmission.' }
+    ],
+    cryo: [
+        { key: 'C01', text: 'Stasis bay operational. Temperature stable at -196°C.\n847 units in suspension. Bio-preservation rate: 99.4%.\nUnit 0047 in isolation pod. Do not wake. Do not transport.' },
+        { key: 'C02', text: 'Coolant system failure in Bay C.\nEstimated repair time: 72 hours.\nWe have 12 hours before temperature rises.\nIce will form throughout the sector. This is acceptable.' },
+        { key: 'C03', text: 'Something is wrong with Pod 312.\nThe readings show... movement inside.\nNot the tremors we expect in suspension — voluntary movement.\n— Cryo Tech Okonkwo' },
+        { key: 'C04', text: 'Pod 312 has been opened. From the inside.\nInitiating full sector lockdown.\nAll personnel evacuate Bay C immediately.\n— AUTOMATED BUNKER ALERT' },
+        { key: 'C05', text: 'I can hear it moving in the corridor.\nThe thermal cameras show something approximately 1.2 meters.\nIt\'s not the stasis unit. The stasis unit was 0047.\nThis is something else. Something it made.' },
+        { key: 'C06', text: 'Crawlers. That\'s what we\'re calling them.\nFast. Very fast. One hit and you\'re down.\nThey don\'t attack the Snails. They work together.\n— Cryo Tech Okonkwo (last entry)' },
+        { key: 'C07', text: 'Bay C is sealed. Airtight. The Crawlers are inside.\nThe cold won\'t kill them. We tried.\nThey\'re still moving. Whatever 0047 is, it doesn\'t need warmth.' },
+        { key: 'C08', text: 'The coolant puddles are spreading.\nI used to think the ice was the disaster.\nNow I think the ice is the least of our problems.' },
+        { key: 'C09', text: 'Stasis Pod 0047 — still sealed. Still active.\nWhatever it is, it hasn\'t tried to leave.\nBut the Crawlers have.' },
+        { key: 'C10', text: 'Message from maintenance:\n"We found where the Crawlers are going. They\'re building something\nin the Bio sector. We don\'t know what. We\'re not going back to look."' },
+        { key: 'C11', text: 'To my sister:\nI don\'t think I\'m making it out of here.\nThe Mothership knows what\'s happening. They always know.\nDon\'t let them tell you it was an accident.\n— Pvt. M. Reyes' },
+        { key: 'C12', text: '[CRYO SECTOR FINAL LOG]\nTemperature stabilizing at -40°C. Sector partially frozen.\n0047 remains in isolation. Still active.\nThe Crawlers are building something in the fungal growth of Bio sector.\nWhatever it is, it will be ready before the agents arrive.' }
+    ],
+    bio: [
+        { key: 'B01', text: 'I\'ve been watching what the Crawlers are building.\nIt\'s not a nest. It\'s not a hive.\nIt\'s an antenna.\nThey\'re trying to contact something.\n— Unknown researcher, last known survivor' },
+        { key: 'B02', text: '0047 is the mind. The Crawlers are the hands.\nThe antenna is the voice.\nWhen it finishes, something will answer.\nWe have three days. Maybe four.\nThe agents are already in the atmosphere.' },
+        { key: 'B03', text: 'TO WHOEVER FINDS THIS:\n\nYou were not sent here to rescue us.\nThe Mothership has known about 0047 for eleven years.\nThey wanted to study it. We were the researchers.\nWhen things went wrong, they needed it contained.\nYou are the containment.\n\nThree ships. One carries the tracking signal.\nOne carries the relay.\nOne carries the weapon.\n\nThe Mothership doesn\'t care which of you survives.\nThey only care that the signal reaches 0047.\n\nBurn it all down if you can.\nGet out before the antenna finishes.\nWhatever you do — don\'t let 0047 answer.\n\n— Director Chen, sealed personal terminal.\n   Authenticated: 2047-08-14 23:44:07' }
+    ]
+};
+
+export const MOTHERSHIP_REACTIVE_LINES = [
+    { trigger: 'first_kill',       text: 'AGENT — FIRST THREAT NEUTRALIZED. PROCEED.' },
+    { trigger: 'first_cryo',       text: 'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.' },
+    { trigger: 'first_bio',        text: 'ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.' },
+    { trigger: 'hp_critical',      text: 'DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.' },
+    { trigger: 'objective_found',  text: 'UPLINK: OBJECTIVE CONFIRMED. RETURN TO SHIP IMMEDIATELY.' },
+    { trigger: 'first_deposit',    text: 'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.' },
+    { trigger: 'lore_found',       text: 'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.' },
+    { trigger: 'sentinel_spotted', text: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.' },
+];
+
+const SENTINEL_MAX_HP = 3;
+const SENTINEL_FIRE_COOLDOWN = 2.5;
+const SENTINEL_DETECT_RADIUS = 12;
+const SENTINEL_PROJECTILE_SPEED = 5.0;
+const SENTINEL_TECH_DROP = 3;
+const SENTINEL_COIN_DROP = 1;
+
 const SNAIL_MAX_HP = 2;
 const SNAIL_MOVE_SPEED = 1.2;
 const SNAIL_ENRAGED_MOVE_SPEED = 2.1;
@@ -222,8 +276,9 @@ const BIOME_TERRAIN_TEXTURE_PATHS = Object.freeze({
     })
 });
 const CRYO_SCATTER_VARIANTS = [
-    { type: 'scatter_coolant_puddle', weight: 0.62 },
-    { type: 'scatter_ice_stalagmite', weight: 0.38 }
+    { type: 'scatter_coolant_puddle', weight: 0.42 },
+    { type: 'scatter_ice_stalagmite', weight: 0.32 },
+    { type: 'scatter_cryo_icicle', weight: 0.26 }
 ];
 const BIO_SCATTER_VARIANTS = [
     { type: 'scatter_bio_pod', weight: 0.42 },
@@ -279,6 +334,47 @@ function getDepthLootConfig(depthTier) {
     return DEPTH_TIER_LOOT_CONFIG[index];
 }
 
+const ENGINEER_CONSOLE_DISCOUNT = 0.80;
+
+const ROOM_TYPES = Object.freeze({
+    DEAD_END: 'dead_end',
+    CORRIDOR: 'corridor',
+    JUNCTION: 'junction',
+    CHAMBER:  'chamber'
+});
+
+const SNAIL_DEPTH_SPAWN = Object.freeze([
+    Object.freeze({ maxCount: 0, chance: 0 }),
+    Object.freeze({ maxCount: 1, chance: 0.08 }),
+    Object.freeze({ maxCount: 2, chance: 0.12 }),
+    Object.freeze({ maxCount: 3, chance: 0.16 })
+]);
+
+const SNAIL_BIOME_TINTS = Object.freeze({
+    active: 0xffffff,
+    cryo:   0x88ccff,
+    bio:    0x88ff88
+});
+
+function classifyChunkCells(grid, chunkSize) {
+    const roomTypes = Array.from({ length: chunkSize }, () => Array(chunkSize).fill(null));
+    for (let y = 0; y < chunkSize; y++) {
+        for (let x = 0; x < chunkSize; x++) {
+            if (grid[y][x] === '#') continue;
+            let floorNeighbors = 0;
+            if (y > 0 && grid[y - 1][x] !== '#') floorNeighbors++;
+            if (y < chunkSize - 1 && grid[y + 1][x] !== '#') floorNeighbors++;
+            if (x > 0 && grid[y][x - 1] !== '#') floorNeighbors++;
+            if (x < chunkSize - 1 && grid[y][x + 1] !== '#') floorNeighbors++;
+            if (floorNeighbors <= 1) roomTypes[y][x] = ROOM_TYPES.DEAD_END;
+            else if (floorNeighbors === 2) roomTypes[y][x] = ROOM_TYPES.CORRIDOR;
+            else if (floorNeighbors === 3) roomTypes[y][x] = ROOM_TYPES.JUNCTION;
+            else roomTypes[y][x] = ROOM_TYPES.CHAMBER;
+        }
+    }
+    return roomTypes;
+}
+
 export class ThreeGame {
     constructor({ parent, playerType = 'SCOUT', bankManager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -295,6 +391,7 @@ export class ThreeGame {
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = _initialStats.moveSpeed;
         this.o2DrainMult = _initialStats.o2DrainMult;
+        this.pickupMagnetRadius = _initialStats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
         this.cameraLift = 10;
         this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
         this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
@@ -347,6 +444,12 @@ export class ThreeGame {
         this.weaponFireCooldown = 0;
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
+        this.footstepTimer = 0;
+        this.snailsKilledThisRun = 0;
+        this._threatAudioTimer = 0;
+        this._cameraShakeTimer = 0;
+        this._cameraShakeIntensity = 0;
+        this.visitedChunks = new Set();
         this.totalDistanceTravelled = 0;
         this.maxDepthTierReached = 0;
         this.currentDepthTier = 0;
@@ -372,6 +475,15 @@ export class ThreeGame {
         this.o2BubbleObjects = null;
         this.goalModuleMaterials = null;
         this.snailsEnabled = false;
+        this.playerSlowTimer = 0;
+        this.playerPoisonTimer = 0;
+        this.playerPoisonTickTimer = 0;
+        this.killedBosses = new Set();
+        this.activeBoss = null;
+        this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
+        this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
+        this.hadNearDeath = false;
+        this._initClassAbility();
 
         this.scale = {
             refresh: () => this.resize()
@@ -708,6 +820,11 @@ export class ThreeGame {
         // so their background does not render as a dark rectangle.
         this.scatterTextures = {
             cybersnail: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
+            cryosnail: this.loadKeyedSpriteTexture('/cryosnail.png', 14),
+            sporesnail: this.loadKeyedSpriteTexture('/sporesnail.png', 14),
+            boss_cybersnail: this.loadKeyedSpriteTexture('/boss_cybersnail.png', 14),
+            boss_cryosnail: this.loadKeyedSpriteTexture('/boss_cryosnail.png', 14),
+            boss_sporesnail: this.loadKeyedSpriteTexture('/boss_sporesnail.png', 14),
             bunker_junk: this.loadScatterTexture('/bunker_junk.png', textureLoader),
             bunker_junk_uncommon: this.loadScatterTexture('/bunker_junk_uncommon.png', textureLoader),
             bunker_junk_rare: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
@@ -720,12 +837,72 @@ export class ThreeGame {
             scatter_bio_pod: this.loadScatterTexture('/scatter_bio_pod.png', textureLoader),
             scatter_slime_puddle: this.loadScatterTexture('/scatter_slime_puddle.png', textureLoader),
             scatter_gravel: this.loadScatterTexture('/scatter_gravel.png', textureLoader),
-            ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader)
+            scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
+            ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
+            lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader)
         };
 
         this.scatterMaterials = {
+            sentinel: new THREE.SpriteMaterial({
+                map: this.scatterTextures.cybersnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xffdd44)
+            }),
+            lore_terminal: new THREE.SpriteMaterial({
+                map: this.scatterTextures.lore_terminal,
+                transparent: true,
+                alphaTest: 0.04,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xffaa44)
+            }),
             cybersnail: new THREE.SpriteMaterial({
                 map: this.scatterTextures.cybersnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            cryosnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.cryosnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            sporesnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.sporesnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_cybersnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_cybersnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_cryosnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_cryosnail,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_sporesnail: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_sporesnail,
                 transparent: true,
                 alphaTest: 0.06,
                 depthWrite: false,
@@ -822,6 +999,14 @@ export class ThreeGame {
             }),
             scatter_gravel: new THREE.SpriteMaterial({
                 map: this.scatterTextures.scatter_gravel,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_cryo_icicle: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_cryo_icicle,
                 transparent: true,
                 alphaTest: 0.001,
                 depthWrite: false,
@@ -1301,6 +1486,15 @@ export class ThreeGame {
             if (!this.inputEnabled) return;
             if (event.code === 'KeyE') {
                 this.interactWithConsole();
+                this.interactWithLoreTerminal();
+            }
+            if (event.code === 'KeyR') {
+                event.preventDefault();
+                this.requestReload({ manual: true });
+            }
+            if (event.code === 'KeyF') {
+                event.preventDefault();
+                this.triggerClassAbility();
             }
             this.setKeyState(event.code, true);
         };
@@ -1476,7 +1670,7 @@ export class ThreeGame {
     removeActiveSnails() {
         const survivors = [];
         for (const sprite of this.scatterSprites) {
-            if (sprite?.userData?.type !== 'cybersnail') {
+            if (!this.isEnemyType(sprite?.userData?.type)) {
                 survivors.push(sprite);
                 continue;
             }
@@ -1591,6 +1785,8 @@ export class ThreeGame {
         const stats = CLASS_STATS[type] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = stats.moveSpeed;
         this.o2DrainMult = stats.o2DrainMult;
+        this.pickupMagnetRadius = stats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
+        this._initClassAbility();
         this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
         this.playerMaterial.color.setHex(color);
@@ -1953,6 +2149,7 @@ export class ThreeGame {
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
 
+        this.updateClassAbility(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
         this.updateWeaponState(delta);
@@ -1964,8 +2161,54 @@ export class ThreeGame {
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
         this.updateConsoles(delta, now);
+        this.updateLoreTerminals();
         this.updateVitals(delta);
         this.renderer.render(this.scene, this.camera);
+    }
+
+    updateLoreTerminals() {
+        if (!this.player || this.isPlayerDead) {
+            window.dispatchEvent(new CustomEvent('lore-terminal-clear'));
+            return;
+        }
+        let nearest = null;
+        let nearestDist = Infinity;
+        for (const sprite of this.scatterSprites) {
+            if (sprite.userData.type !== 'lore_terminal') continue;
+            const dist = Math.hypot(
+                this.player.position.x - sprite.position.x,
+                this.player.position.z - sprite.position.z
+            );
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearest = sprite;
+            }
+        }
+        if (nearest && nearestDist < 2.2) {
+            window.dispatchEvent(new CustomEvent('lore-terminal-nearby', {
+                detail: { loreKey: nearest.userData.loreKey, loreText: nearest.userData.loreText }
+            }));
+        } else {
+            window.dispatchEvent(new CustomEvent('lore-terminal-clear'));
+        }
+    }
+
+    interactWithLoreTerminal() {
+        if (!this.player) return;
+        for (const sprite of this.scatterSprites) {
+            if (sprite.userData.type !== 'lore_terminal') continue;
+            const dist = Math.hypot(
+                this.player.position.x - sprite.position.x,
+                this.player.position.z - sprite.position.z
+            );
+            if (dist < 2.2) {
+                window.dispatchEvent(new CustomEvent('lore-terminal-read', {
+                    detail: { loreKey: sprite.userData.loreKey, loreText: sprite.userData.loreText }
+                }));
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 0.65, bus: 'sfx' });
+                return;
+            }
+        }
     }
 
     updateConsoles(delta, now) {
@@ -2091,7 +2334,7 @@ export class ThreeGame {
             ammo,
             weapon,
             coin,
-            total: health + ammo + weapon + coin
+            total: health + weapon + coin
         };
     }
 
@@ -2110,6 +2353,17 @@ export class ThreeGame {
             nextUpgrade,
             radius: currentUpgrade?.radius ?? 0,
             refillRate: currentUpgrade?.refillRate ?? 0
+        };
+    }
+
+    getEffectiveCost(cost = {}) {
+        if (this.playerType !== 'ENGINEER') return cost;
+        const discount = ENGINEER_CONSOLE_DISCOUNT;
+        return {
+            med:  Number.isFinite(cost.med)  ? Math.max(1, Math.ceil(cost.med  * discount)) : 0,
+            ammo: Number.isFinite(cost.ammo) ? Math.max(1, Math.ceil(cost.ammo * discount)) : 0,
+            tech: Number.isFinite(cost.tech) ? Math.max(1, Math.ceil(cost.tech * discount)) : 0,
+            coin: Number.isFinite(cost.coin) ? Math.max(1, Math.ceil(cost.coin * discount)) : 0
         };
     }
 
@@ -2145,11 +2399,12 @@ export class ThreeGame {
             };
         }
 
-        const affordable = this.bank.canAfford(generatorState.nextUpgrade.cost);
+        const effectiveCost = this.getEffectiveCost(generatorState.nextUpgrade.cost);
+        const affordable = this.bank.canAfford(effectiveCost);
         if (!affordable) {
             return {
                 stateClass: 'btn-state--insufficient',
-                label: `NEED ${this.formatResourceCost(generatorState.nextUpgrade.cost)}`,
+                label: `NEED ${this.formatResourceCost(effectiveCost)}`,
                 enabled: false
             };
         }
@@ -2194,12 +2449,14 @@ export class ThreeGame {
     }
 
     renderGoalCard(ship, bankState, cardConfig) {
-        const cost = this.bank.getGoalCost(cardConfig.goalKey) ?? {};
+        const rawCost = this.bank.getGoalCost(cardConfig.goalKey) ?? {};
+        const cost = this.getEffectiveCost(rawCost);
         const unlocked = Boolean(bankState?.unlocks?.[cardConfig.goalKey]);
         const prereqMet = cardConfig.prereqKey
             ? Boolean(bankState?.unlocks?.[cardConfig.prereqKey])
             : true;
         const affordable = this.bank.canAfford(cost);
+        const isDiscounted = this.playerType === 'ENGINEER';
 
         const statusEl = document.getElementById(cardConfig.statusId);
         if (statusEl) {
@@ -2216,7 +2473,8 @@ export class ThreeGame {
 
         const costEl = document.getElementById(cardConfig.costId);
         if (costEl) {
-            costEl.textContent = `COST: ${this.formatResourceCost(cost)}`;
+            const discountTag = isDiscounted ? ' [ENG -20%]' : '';
+            costEl.textContent = `COST: ${this.formatResourceCost(cost)}${discountTag}`;
         }
 
         const button = document.getElementById(cardConfig.buttonId);
@@ -2272,15 +2530,14 @@ export class ThreeGame {
         };
 
         setText('terminal-session-med', inventory.health);
-        setText('terminal-session-ammo', inventory.ammo);
         setText('terminal-session-tech', inventory.weapon);
         setText('terminal-session-coin', inventory.coin);
+        const depositableTotal = (inventory.health ?? 0) + (inventory.weapon ?? 0) + (inventory.coin ?? 0);
         setText('terminal-bank-med', bankState.med);
-        setText('terminal-bank-ammo', bankState.ammo);
         setText('terminal-bank-tech', bankState.tech);
         setText('terminal-bank-coin', bankState.coin);
-        const totalBanked = (bankState.med ?? 0) + (bankState.ammo ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
-        setText('terminal-summary-run', inventory.total);
+        const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
+        setText('terminal-summary-run', depositableTotal);
         setText('terminal-summary-bank', totalBanked);
         setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
         setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
@@ -2289,7 +2546,7 @@ export class ThreeGame {
 
         const hint = document.getElementById('terminal-bank-hint');
         if (hint) {
-            if (inventory.total > 0) {
+            if (depositableTotal > 0) {
                 hint.textContent = 'DEPOSIT READY. RESOURCE TRANSFER CHANNEL OPEN.';
             } else {
                 hint.textContent = 'DEPOSIT RESOURCES TO FUND O₂ REPAIRS.';
@@ -2336,9 +2593,13 @@ export class ThreeGame {
 
         const costEl = document.getElementById('terminal-o2-generator-cost');
         if (costEl) {
-            costEl.textContent = generatorState.nextUpgrade
-                ? `NEXT COST: ${this.formatResourceCost(generatorState.nextUpgrade.cost)}`
-                : 'NEXT COST: NONE';
+            if (generatorState.nextUpgrade) {
+                const effectiveCost = this.getEffectiveCost(generatorState.nextUpgrade.cost);
+                const discountTag = this.playerType === 'ENGINEER' ? ' [ENG -20%]' : '';
+                costEl.textContent = `NEXT COST: ${this.formatResourceCost(effectiveCost)}${discountTag}`;
+            } else {
+                costEl.textContent = 'NEXT COST: NONE';
+            }
         }
 
         const fieldEl = document.getElementById('terminal-o2-generator-field');
@@ -2374,37 +2635,132 @@ export class ThreeGame {
 
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {
-            if (this.isPlayerDead) {
-                ticker.textContent = 'WARNING: EXOSUIT LIFE SUPPORT FAILURE DETECTED.';
-            } else if (this.playerVitals.o2 <= O2_DANGER_THRESHOLD) {
-                ticker.textContent = 'WARNING: O₂ LEVELS CRITICAL. RETURN TO SHIP IMMEDIATELY.';
-            } else if (!generatorState.isOnline) {
-                ticker.textContent = 'ALERT: O₂ GENERATOR OFFLINE. REPAIR IS STRONGLY ADVISED.';
-            } else if (!generatorState.maxed) {
-                ticker.textContent = `O₂ FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. PAY TO EXPAND RANGE.`;
-            } else if (ship) {
-                ticker.textContent = `${ship.type} BASE LINK STABLE. O₂ FIELD OPERATING AT MAXIMUM RANGE.`;
+            this._tickerRefreshTimer = (this._tickerRefreshTimer ?? 0) + 0.12;
+            const shouldCycle = this._tickerRefreshTimer >= 6.0;
+            if (shouldCycle) this._tickerRefreshTimer = 0;
+            const message = this._buildTerminalTickerMessage(ship, bankState, generatorState, shouldCycle);
+            if (ticker.textContent !== message) {
+                ticker.textContent = message;
             }
         }
     }
 
+    _buildTerminalTickerMessage(ship, bankState, generatorState, shouldCycle = false) {
+        const biomeKey = this.currentBiomeKey ?? BIOME_KEYS.ACTIVE;
+        const o2 = this.playerVitals?.o2 ?? 100;
+        const hp = this.playerVitals?.hp ?? 3;
+        const unlocks = bankState?.unlocks ?? {};
+        const depthTier = this.currentDepthTier ?? 0;
+
+        if (this.isPlayerDead) {
+            return 'CRITICAL: EXOSUIT LIFE SUPPORT FAILURE. EMERGENCY REVIVAL PROTOCOL INITIATED.';
+        }
+
+        if (o2 <= 0) {
+            return 'CRITICAL: O₂ RESERVES EXHAUSTED. SUIT INTEGRITY COMPROMISED. IMMEDIATE RETURN REQUIRED.';
+        }
+
+        if (o2 <= O2_DANGER_THRESHOLD) {
+            const pct = Math.round(o2);
+            return `WARNING: O₂ AT ${pct}%. EXOSUIT FILTERS FAILING. RETURN TO SHIP IMMEDIATELY.`;
+        }
+
+        if (!generatorState.isOnline) {
+            const techNeeded = generatorState.nextUpgrade?.cost?.tech ?? 10;
+            return `ALERT: O₂ GENERATOR OFFLINE. DEPOSIT ${techNeeded} TECH TO INITIATE FIELD REPAIR.`;
+        }
+
+        if (hp <= 1) {
+            return 'WARNING: EXOSUIT HULL BREACH CRITICAL. SEEK MEDICAL SUPPLIES OR RETURN TO BASE.';
+        }
+
+        if (biomeKey === BIOME_KEYS.BIO) {
+            const pool = [
+                'CONTAMINATION ALERT: BIOHAZARD SPORE DENSITY CRITICAL. SUIT DECON FILTERS OVERLOADED.',
+                'BIO SECTOR: ALIEN ORGANISM GROWTH DETECTED. PROCEED WITH EXTREME CAUTION.',
+                `BIO SECTOR DEPTH ${depthTier}. LOOT DENSITY ELEVATED. OXYGEN DEMAND +30%.`
+            ];
+            if (!Number.isFinite(this._tickerBioIndex)) this._tickerBioIndex = 0;
+            const msg = pool[this._tickerBioIndex % pool.length];
+            if (shouldCycle) this._tickerBioIndex = (this._tickerBioIndex + 1) % pool.length;
+            return msg;
+        }
+
+        if (biomeKey === BIOME_KEYS.CRYO) {
+            const pool = [
+                'THERMAL WARNING: CRYO SECTOR DETECTED. SUIT INSULATION LOAD ELEVATED BY 15%.',
+                'CRYO SECTOR: RUPTURED COOLANT LINES DETECTED. FROZEN DEBRIS DENSITY HIGH.',
+                `CRYO SECTOR DEPTH ${depthTier}. LOOT DENSITY ELEVATED. THERMAL DRAIN ACTIVE.`
+            ];
+            if (!Number.isFinite(this._tickerCryoIndex)) this._tickerCryoIndex = 0;
+            const msg = pool[this._tickerCryoIndex % pool.length];
+            if (shouldCycle) this._tickerCryoIndex = (this._tickerCryoIndex + 1) % pool.length;
+            return msg;
+        }
+
+        if (generatorState.maxed) {
+            if (unlocks.reactorCompressor) {
+                return `ALL SYSTEMS NOMINAL. O₂ FIELD AT MAX RANGE [${generatorState.radius.toFixed(1)}u]. REACTOR EFFICIENCY OPTIMAL.`;
+            }
+            return `O₂ FIELD MAXED [${generatorState.radius.toFixed(1)}u]. REACTOR COMPRESSOR UPGRADE RECOMMENDED.`;
+        }
+
+        if (unlocks.hullExpansion) {
+            return `HULL MATRIX ACTIVE. STRUCTURAL INTEGRITY ENHANCED. O₂ FIELD RADIUS ${generatorState.radius.toFixed(1)}u.`;
+        }
+
+        const fallback = [
+            'BUNKER PERIMETER SCAN NOMINAL. TACTICAL NETWORK UPLINK STABLE.',
+            'RESOURCE CACHES DETECTED WITHIN OPERATIONAL RANGE. CONTINUE EXTRACTION.',
+            `MOTHERSHIP MONITORING ACTIVE. DEPTH TIER: ${DEPTH_TIER_NAMES[depthTier] ?? 'SURFACE'}. STAY VIGILANT.`,
+            `O₂ FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. REFILL RATE: ${generatorState.refillRate?.toFixed(1) ?? '0.0'}%/s.`
+        ];
+        if (!Number.isFinite(this._tickerFallbackIndex)) this._tickerFallbackIndex = 0;
+        const msg = fallback[this._tickerFallbackIndex % fallback.length];
+        if (shouldCycle) this._tickerFallbackIndex = (this._tickerFallbackIndex + 1) % fallback.length;
+        return msg;
+    }
+
     handleDepositAll(ship) {
         const inventory = this.getSessionInventory();
-        if (inventory.total <= 0) {
+        const depositPayload = {
+            med: Math.max(0, Math.floor(inventory.health ?? 0)),
+            tech: Math.max(0, Math.floor(inventory.weapon ?? 0)),
+            coin: Math.max(0, Math.floor(inventory.coin ?? 0))
+        };
+        const depositableTotal = depositPayload.med + depositPayload.tech + depositPayload.coin;
+
+        if (depositableTotal <= 0) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
             return;
         }
 
-        this.bank.deposit(inventory);
-        window.resetPickupCounter?.();
+        this.bank.deposit(depositPayload);
+        this.runDepositedResources.tech = (this.runDepositedResources.tech ?? 0) + depositPayload.tech;
+        this.runDepositedResources.med = (this.runDepositedResources.med ?? 0) + depositPayload.med;
+        this.runDepositedResources.coin = (this.runDepositedResources.coin ?? 0) + depositPayload.coin;
+        window.consumeSessionInventoryForDeposit?.({
+            health: depositPayload.med,
+            weapon: depositPayload.tech,
+            coin: depositPayload.coin
+        });
         window.AudioManager?.play('ui_click', { volume: 0.62 });
         this.renderConsoleBanking(ship);
     }
 
     attemptGoalUnlock(ship, cardConfig) {
-        const cost = this.bank.getGoalCost(cardConfig.goalKey);
-        if (!cost || !this.bank.canUnlock(cardConfig.goalKey)) {
+        const rawCost = this.bank.getGoalCost(cardConfig.goalKey);
+        if (!rawCost) {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+        const cost = this.getEffectiveCost(rawCost);
+        const prereqKey = cardConfig.prereqKey;
+        const prereqMet = !prereqKey || Boolean(this.bank.getState()?.unlocks?.[prereqKey]);
+        const alreadyUnlocked = Boolean(this.bank.getState()?.unlocks?.[cardConfig.goalKey]);
+        if (alreadyUnlocked || !prereqMet || !this.bank.canAfford(cost)) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
             return;
@@ -2431,7 +2787,25 @@ export class ThreeGame {
     }
 
     attemptO2GeneratorUpgrade(ship) {
-        const upgrade = this.bank.upgradeO2Generator();
+        const generatorState = this.getO2GeneratorState();
+        const nextUpgrade = generatorState.nextUpgrade;
+        let upgrade;
+        if (nextUpgrade && this.playerType === 'ENGINEER') {
+            const discountedCost = this.getEffectiveCost(nextUpgrade.cost);
+            if (!this.bank.canAfford(discountedCost)) {
+                window.AudioManager?.play('ui_error', { volume: 0.58 });
+                this.renderConsoleBanking(ship);
+                return;
+            }
+            if (!this.bank.spend(discountedCost)) {
+                window.AudioManager?.play('ui_error', { volume: 0.58 });
+                this.renderConsoleBanking(ship);
+                return;
+            }
+            upgrade = this.bank.markO2GeneratorLevelOnly(nextUpgrade.level);
+        } else {
+            upgrade = this.bank.upgradeO2Generator();
+        }
         if (!upgrade) {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
             this.renderConsoleBanking(ship);
@@ -2692,11 +3066,16 @@ export class ThreeGame {
     }
 
     emitWeaponClipState() {
+        const reloadProgress = this.weaponReloading
+            ? Math.max(0, Math.min(1, 1 - (this.weaponReloadTimer / WEAPON_RELOAD_DURATION)))
+            : 0;
         window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
             detail: {
                 clip: this.weaponClipAmmo,
                 maxClip: WEAPON_CLIP_SIZE,
-                reloading: this.weaponReloading
+                cache: this.getAvailableAmmo(),
+                reloading: this.weaponReloading,
+                reloadProgress
             }
         }));
     }
@@ -2754,6 +3133,7 @@ export class ThreeGame {
         const prevHp = Number.isFinite(ship.hp) ? ship.hp : ship.maxHp;
         ship.hp = Math.max(0, prevHp - Math.max(0, amount));
         if (ship.hp === prevHp) return;
+        if (reason !== 'friendly-fire') this.triggerCameraShake(0.12, 0.25);
 
         if (ship.type === this.playerType) {
             this.emitShipHealthState(ship);
@@ -2837,10 +3217,13 @@ export class ThreeGame {
 
     takeDamage(amount = 1, reason = 'hazard') {
         if (this.isPlayerDead) return;
+        if (this._abilityImmune) return;
+        if (this.missionState?.status === 'inactive') return;
         const previousHp = this.playerVitals.hp;
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - Math.max(0, amount));
         if (this.playerVitals.hp === previousHp) return;
 
+        this.triggerCameraShake(0.22, 0.4);
         this.emitHealthState();
         window.dispatchEvent(new CustomEvent('player-damaged', {
             detail: {
@@ -2850,6 +3233,10 @@ export class ThreeGame {
                 reason
             }
         }));
+
+        if (this.playerVitals.hp === 1) {
+            this.hadNearDeath = true;
+        }
 
         if (this.playerVitals.hp <= 0) {
             this.handleDeath(reason);
@@ -2885,6 +3272,8 @@ export class ThreeGame {
         }
 
         this.chunkMeshes.clear();
+        this.chunkCache.clear();
+        this._chunkRoomTypeCache?.clear();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys.clear();
         this.wallMeshes = [];
@@ -2916,6 +3305,12 @@ export class ThreeGame {
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;
+            this.snailsKilledThisRun = 0;
+            this.visitedChunks = new Set();
+            this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
+            this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
+            this.hadNearDeath = false;
+            this._initClassAbility();
             if (this.crashedShips) {
                 for (const ship of this.crashedShips) {
                     ship.hp = ship.maxHp;
@@ -2923,6 +3318,14 @@ export class ThreeGame {
             }
             window.resetPickupCounter?.();
             this.depletedGearPileKeys.clear();
+            this.killedBosses.clear();
+            this.playerSlowTimer = 0;
+            this.playerPoisonTimer = 0;
+            this.playerPoisonTickTimer = 0;
+            const bossPanel = document.getElementById('boss-status-panel');
+            if (bossPanel) {
+                bossPanel.classList.add('hidden');
+            }
             this.clearLoadedChunksForRunReset();
             this.syncVisibleChunks(true);
             this.emitDepthTierChanged(0);
@@ -2946,24 +3349,209 @@ export class ThreeGame {
         }));
     }
 
+    initMission(mission) {
+        if (!mission) return;
+        this.missionState = {
+            type: mission.type,
+            label: mission.label ?? '',
+            status: 'active',
+            extractionTimer: 0,
+            killCount: 0,
+            targetKills: mission.targetKills ?? 0,
+            targetDepth: mission.targetDepth ?? 0
+        };
+    }
+
+    handleExtraction() {
+        if (this.missionState?.status === 'extracted') return;
+        if (this.missionState) this.missionState.status = 'extracted';
+        this.inputEnabled = false;
+
+        const inventory = this.getSessionInventory();
+        const depositPayload = {
+            med: Math.max(0, Math.floor(inventory.health ?? 0)),
+            tech: Math.max(0, Math.floor(inventory.weapon ?? 0)),
+            coin: Math.max(0, Math.floor(inventory.coin ?? 0))
+        };
+        if (depositPayload.med + depositPayload.tech + depositPayload.coin > 0) {
+            this.bank.deposit(depositPayload);
+            this.runDepositedResources.tech += depositPayload.tech;
+            this.runDepositedResources.med += depositPayload.med;
+            this.runDepositedResources.coin += depositPayload.coin;
+            window.consumeSessionInventoryForDeposit?.(depositPayload);
+        }
+
+        window.dispatchEvent(new CustomEvent('player-extracted', {
+            detail: {
+                runStats: this.getRunStats(),
+                missionState: { ...this.missionState },
+                runDepositedResources: { ...this.runDepositedResources }
+            }
+        }));
+    }
+
+    calculateRunScore(runStats, missionState, startTime) {
+        const elapsedMinutes = (Date.now() - startTime) / 60000;
+        let score = 0;
+
+        if (missionState?.status === 'extracted') score += 500;
+        score += Math.floor((runStats.depthTier ?? 0) * (runStats.distanceTravelled ?? 0) * 0.08);
+
+        const r = this.runDepositedResources;
+        score += ((r.tech ?? 0) * 10) + ((r.coin ?? 0) * 5) + ((r.med ?? 0) * 3);
+        score += (runStats.snailsKilled ?? 0) * 40;
+
+        if (missionState?.status === 'extracted') {
+            score += 200;
+            if (this.playerVitals.hp >= this.playerVitals.maxHp) score += 100;
+        }
+
+        if (elapsedMinutes < 15) {
+            score += Math.max(0, Math.min(300, Math.floor((15 - elapsedMinutes) * 50)));
+        }
+        if (this.hadNearDeath) score += 100;
+
+        return Math.floor(score);
+    }
+
+    getRunRating(score) {
+        if (score >= 2000) return { grade: 'S', label: 'EXEMPLARY FIELD PERFORMANCE' };
+        if (score >= 1500) return { grade: 'A', label: 'MISSION SUCCESSFUL' };
+        if (score >= 1000) return { grade: 'B', label: 'PARTIAL SUCCESS' };
+        if (score >= 500)  return { grade: 'C', label: 'MISSION FAILED — DATA RECOVERED' };
+        return { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
+    }
+
+    _initClassAbility() {
+        const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
+        this.classAbility = {
+            cooldownMax: stats.abilityCooldown,
+            cooldownRemaining: 0,
+            active: false,
+            activeTimer: 0,
+            activeDuration: stats.abilityDuration
+        };
+        this._abilityMoveSpeedMult = 1.0;
+        this._abilityImmune = false;
+        this._abilityO2DrainMult = 1.0;
+        this._abilityRefillMult = 1.0;
+    }
+
+    triggerClassAbility() {
+        if (!this.inputEnabled || this.isPlayerDead) return;
+        if (this.classAbility.cooldownRemaining > 0) {
+            window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.4, bus: 'sfx' });
+            return;
+        }
+        this.classAbility.active = true;
+        this.classAbility.activeTimer = 0;
+        this.classAbility.cooldownRemaining = this.classAbility.cooldownMax;
+
+        const abilityKey = CLASS_STATS[this.playerType]?.abilityKey ?? 'sprint';
+        window.dispatchEvent(new CustomEvent('class-ability-activated', {
+            detail: { ability: abilityKey, playerType: this.playerType }
+        }));
+        window.AudioManager?.play('ui_boot', { volume: 0.42, playbackRate: abilityKey === 'fortify' ? 0.72 : 1.15, bus: 'sfx' });
+    }
+
+    updateClassAbility(delta) {
+        // Tick cooldown
+        if (this.classAbility.cooldownRemaining > 0) {
+            this.classAbility.cooldownRemaining = Math.max(0, this.classAbility.cooldownRemaining - delta);
+        }
+
+        // Reset per-frame multipliers
+        this._abilityMoveSpeedMult = 1.0;
+        this._abilityImmune = false;
+        this._abilityO2DrainMult = 1.0;
+        this._abilityRefillMult = 1.0;
+
+        const abilityKey = CLASS_STATS[this.playerType]?.abilityKey;
+        if (this.classAbility.active) {
+            this.classAbility.activeTimer += delta;
+            if (this.classAbility.activeTimer >= this.classAbility.activeDuration) {
+                this.classAbility.active = false;
+                window.dispatchEvent(new CustomEvent('class-ability-ended', {
+                    detail: { ability: CLASS_STATS[this.playerType]?.abilityKey }
+                }));
+            } else if (abilityKey === 'sprint') {
+                this._abilityMoveSpeedMult = 3.0;
+                this._abilityO2DrainMult = 2.0;
+                // Spawn trail particle every ~6 frames
+                if (this.player && Math.random() < 0.45) {
+                    this._spawnSprintTrail();
+                }
+            } else if (abilityKey === 'fortify') {
+                this._abilityImmune = true;
+                this._abilityMoveSpeedMult = 0;
+            } else if (abilityKey === 'overclock') {
+                this._abilityO2DrainMult = 0.5;
+                this._abilityRefillMult = 3.0;
+            }
+        }
+
+        const activeProgress = this.classAbility.active
+            ? (this.classAbility.activeTimer / this.classAbility.activeDuration)
+            : 0;
+        window.dispatchEvent(new CustomEvent('ability-cooldown-tick', {
+            detail: {
+                remaining: this.classAbility.cooldownRemaining,
+                max: this.classAbility.cooldownMax,
+                active: this.classAbility.active,
+                activeProgress,
+                ability: abilityKey
+            }
+        }));
+    }
+
+    _spawnSprintTrail() {
+        const color = PLAYER_COLORS[this.playerType] ?? 0x7dff5a;
+        const geo = new THREE.CircleGeometry(0.06 + Math.random() * 0.05, 6);
+        const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.rotation.x = -Math.PI / 2;
+        const ox = (Math.random() - 0.5) * 0.35;
+        const oz = (Math.random() - 0.5) * 0.35;
+        mesh.position.set(this.player.position.x + ox, 0.03, this.player.position.z + oz);
+        this.scene.add(mesh);
+        this.transientEffects.push({
+            mesh,
+            age: 0,
+            maxAge: 0.28,
+            update(dt) {
+                this.age += dt;
+                const t = this.age / this.maxAge;
+                mesh.material.opacity = 0.55 * (1 - t);
+                mesh.scale.setScalar(1 + t * 0.6);
+            },
+            dispose() { mesh.material.dispose(); mesh.geometry.dispose(); }
+        });
+    }
+
     updateVitals(delta) {
         if (!this.player || this.isPlayerDead) return;
+        if (this.missionState?.status === 'inactive') return;
 
         const previousO2 = this.playerVitals.o2;
         const generatorState = this.getO2GeneratorState();
         const inBubble = generatorState.isOnline && this.getActiveO2GeneratorDistance() <= generatorState.radius;
         const reactorUpgrade = this.hasUpgrade('reactorCompressor');
 
+        if (inBubble && !this._wasInBubble) {
+            window.AudioManager?.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.72, bus: 'sfx' });
+        }
+        this._wasInBubble = inBubble;
+
         if (inBubble) {
-            const refillRate = reactorUpgrade
-                ? generatorState.refillRate * 1.2
-                : generatorState.refillRate;
+            const refillRate = (reactorUpgrade ? generatorState.refillRate * 1.2 : generatorState.refillRate)
+                * (this._abilityRefillMult ?? 1.0);
             this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
             let drainRate = O2_DRAIN_RATE_PCT_PER_SEC
                 * (this.o2DrainMult ?? 1.0)
-                * (this.currentBiomeO2DrainMult ?? 1.0);
+                * (this.currentBiomeO2DrainMult ?? 1.0)
+                * (this._abilityO2DrainMult ?? 1.0);
             if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
                 drainRate *= O2_DRAIN_RATE_DANGER_MULT;
             }
@@ -3010,20 +3598,45 @@ export class ThreeGame {
             return;
         }
 
+        // Handle slow and poison status effects
+        if (this.playerSlowTimer > 0) {
+            this.playerSlowTimer = Math.max(0, this.playerSlowTimer - delta);
+            if (this.playerSprite?.material?.color) {
+                this.playerSprite.material.color.setHex(0x88ccff); // blue frost tint
+            }
+        } else if (this.playerPoisonTimer > 0) {
+            this.playerPoisonTimer = Math.max(0, this.playerPoisonTimer - delta);
+            this.playerPoisonTickTimer += delta;
+            if (this.playerPoisonTickTimer >= 1.2) {
+                this.playerPoisonTickTimer = 0;
+                this.takeDamage(1, 'poison');
+            }
+            if (this.playerSprite?.material?.color) {
+                this.playerSprite.material.color.setHex(0x88ff88); // green poison tint
+            }
+        } else if (this.playerSprite?.material?.color && this.playerSprite.material.color.getHex() !== 0xffffff) {
+            this.playerSprite.material.color.setHex(0xffffff);
+        }
+
         const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
         const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
         const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
         const moveAxisX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
         const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
-        const isMoving = Boolean(moveAxisX || moveAxisZ);
+        const fortifyActive = this.classAbility?.active && CLASS_STATS[this.playerType]?.abilityKey === 'fortify';
+        const isMoving = Boolean(moveAxisX || moveAxisZ) && !fortifyActive;
         this.isMoving = isMoving;
 
         if (isMoving) {
             const prevX = this.player.position.x;
             const prevZ = this.player.position.z;
 
-            const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(this.moveSpeed * delta);
+            let speed = this.moveSpeed * (this._abilityMoveSpeedMult ?? 1.0);
+            if (this.playerSlowTimer > 0 && !(this._abilityMoveSpeedMult > 1)) {
+                speed *= 0.55;
+            }
+            const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(speed * delta);
             const current = this.player.position.clone();
             const nextX = new THREE.Vector3(current.x + moveVector.x, current.y, current.z);
             const nextZ = new THREE.Vector3(current.x, current.y, current.z + moveVector.z);
@@ -3044,6 +3657,62 @@ export class ThreeGame {
         this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
         this.playerGlow.position.set(this.player.position.x, 1.6, this.player.position.z);
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
+
+        if (isMoving) {
+            this.footstepTimer += delta;
+            const stepInterval = 0.38 + (this.moveSpeed > 4 ? -0.08 : this.moveSpeed < 3 ? 0.08 : 0);
+            if (this.footstepTimer >= stepInterval) {
+                this.footstepTimer = 0;
+                const footRate = 1.6 + Math.random() * 0.3;
+                window.AudioManager?.play('amb_metal_stress', { volume: 0.055, playbackRate: footRate });
+            }
+        } else {
+            this.footstepTimer = 0;
+        }
+
+        // Survey mission: complete when player reaches target depth from ship
+        if (this.missionState?.type === 'survey' && this.missionState.status === 'active') {
+            if (this.getActiveO2GeneratorDistance() >= this.missionState.targetDepth) {
+                this.missionState.status = 'objective_complete';
+                window.dispatchEvent(new CustomEvent('mission-objective-complete', { detail: { type: 'survey' } }));
+            }
+        }
+
+        // Extraction: countdown timer when objective is complete and player is near ship
+        if (this.missionState?.status === 'objective_complete' && !this.isPlayerDead) {
+            const distToShip = this.getActiveO2GeneratorDistance();
+            if (distToShip < 3.5) {
+                this.missionState.extractionTimer = (this.missionState.extractionTimer ?? 0) + delta;
+                if (this.missionState.extractionTimer >= 10) {
+                    this.handleExtraction();
+                    return;
+                }
+                window.dispatchEvent(new CustomEvent('extraction-progress', {
+                    detail: { progress: Math.min(1, this.missionState.extractionTimer / 10), active: true }
+                }));
+            } else {
+                this.missionState.extractionTimer = Math.max(0, (this.missionState.extractionTimer ?? 0) - delta * 2);
+                window.dispatchEvent(new CustomEvent('extraction-progress', {
+                    detail: { progress: Math.min(1, this.missionState.extractionTimer / 10), active: false }
+                }));
+            }
+        }
+    }
+
+    onNewChunkDiscovered(chunkX, chunkY) {
+        const biomeKey = this.getBiomeKeyForWorldPosition(
+            chunkX * this.chunkSize + this.chunkSize * 0.5,
+            chunkY * this.chunkSize + this.chunkSize * 0.5
+        );
+        const depthTier = getDepthTier(chunkX, chunkY);
+        if (depthTier >= 1) {
+            const drips = ['amb_drip1', 'amb_drip2', 'amb_drip3', 'amb_drip4'];
+            const pick = drips[Math.floor(Math.random() * drips.length)];
+            const vol = 0.08 + depthTier * 0.04 + (biomeKey === 'cryo' ? 0.05 : 0);
+            setTimeout(() => {
+                window.AudioManager?.play(pick, { volume: vol, playbackRate: 0.82 + Math.random() * 0.36, bus: 'world' });
+            }, 200 + Math.random() * 400);
+        }
     }
 
     getDepthTier(chunkX, chunkY) {
@@ -3257,7 +3926,7 @@ export class ThreeGame {
 
     getRunStats() {
         const bankState = this.bank.getState();
-        const totalBanked = (bankState.med ?? 0) + (bankState.ammo ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
+        const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
         return {
             distanceTravelled: Math.round(this.totalDistanceTravelled),
             totalPickups: totalBanked,
@@ -3265,7 +3934,12 @@ export class ThreeGame {
             depthTier: this.maxDepthTierReached,
             depthTierName: this.getDepthTierName(this.maxDepthTierReached),
             biomeKey: this.currentBiomeKey,
-            biomeLabel: this.getBiomeLabel(this.currentBiomeKey)
+            biomeLabel: this.getBiomeLabel(this.currentBiomeKey),
+            snailsKilled: this.snailsKilledThisRun ?? 0,
+            missionType: this.missionState?.type ?? null,
+            missionStatus: this.missionState?.status ?? 'inactive',
+            missionLabel: this.missionState?.label ?? '',
+            hadNearDeath: this.hadNearDeath
         };
     }
 
@@ -3362,32 +4036,71 @@ export class ThreeGame {
         }
 
         if (!this.weaponReloading) return;
+        const previousTimer = this.weaponReloadTimer;
         this.weaponReloadTimer = Math.max(0, this.weaponReloadTimer - delta);
+        if (this.weaponReloadTimer !== previousTimer) {
+            this.emitWeaponClipState();
+        }
         if (this.weaponReloadTimer > 0) return;
 
         this.weaponReloading = false;
-        const availableAmmo = Number.isFinite(window.pickupCounterState?.ammo)
-            ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
-            : 0;
-        this.weaponClipAmmo = Math.min(WEAPON_CLIP_SIZE, availableAmmo);
+        const availableAmmo = this.getAvailableAmmo();
+        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const ammoLoaded = Math.min(missingAmmo, availableAmmo);
+        if (ammoLoaded > 0) {
+            this.weaponClipAmmo += ammoLoaded;
+            window.dispatchEvent(new CustomEvent('player-consume-ammo-cache', { detail: { amount: ammoLoaded } }));
+        }
         this.emitWeaponClipState();
         window.AudioManager?.play('ui_click', { volume: 0.28, playbackRate: 1.18 });
     }
 
+    getAvailableAmmo() {
+        return Number.isFinite(window.pickupCounterState?.ammo)
+            ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
+            : 0;
+    }
+
     startReload() {
-        if (this.weaponReloading) return;
+        if (this.weaponReloading) return false;
+        const availableAmmo = this.getAvailableAmmo();
+        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const refillAmount = Math.min(missingAmmo, availableAmmo);
+        if (refillAmount <= 0) return false;
         this.weaponReloading = true;
         this.weaponReloadTimer = WEAPON_RELOAD_DURATION;
         this.emitWeaponClipState();
         window.AudioManager?.play('door_gears_spin', { volume: 0.22, playbackRate: 1.22 });
+        return true;
+    }
+
+    requestReload({ manual = false } = {}) {
+        if (!this.inputEnabled || this.isPlayerDead) return false;
+        if (this.weaponReloading) return false;
+
+        const availableAmmo = this.getAvailableAmmo();
+        if (availableAmmo < 1) {
+            if (manual) {
+                window.AudioManager?.play('ui_error', { volume: 0.45 });
+                window.dispatchEvent(new CustomEvent('combat-no-ammo'));
+            }
+            return false;
+        }
+
+        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const refillAmount = Math.min(missingAmmo, availableAmmo);
+        if (refillAmount <= 0) {
+            if (manual) {
+                window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.05 });
+            }
+            return false;
+        }
+
+        return this.startReload();
     }
 
     tryFireWeapon(clientX, clientY) {
         if (!this.inputEnabled || this.isPlayerDead) return;
-
-        const availableAmmo = Number.isFinite(window.pickupCounterState?.ammo)
-            ? Math.max(0, Math.floor(window.pickupCounterState.ammo))
-            : 0;
 
         if (this.isInsideNoFireZone()) {
             window.AudioManager?.play('ui_error', { volume: 0.42 });
@@ -3403,18 +4116,13 @@ export class ThreeGame {
             return;
         }
         if (this.weaponClipAmmo <= 0) {
+            const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
                 window.AudioManager?.play('ui_error', { volume: 0.45 });
                 window.dispatchEvent(new CustomEvent('combat-no-ammo'));
                 return;
             }
-            this.startReload();
-            return;
-        }
-
-        if (availableAmmo < 1) {
-            window.AudioManager?.play('ui_error', { volume: 0.45 });
-            window.dispatchEvent(new CustomEvent('combat-no-ammo'));
+            this.requestReload();
             return;
         }
 
@@ -3429,7 +4137,6 @@ export class ThreeGame {
         const normZ = this.aimDirZ;
         if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return;
 
-        window.dispatchEvent(new CustomEvent('player-spend-ammo', { detail: { amount: 1 } }));
         this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         this.weaponFireCooldown = WEAPON_FIRE_COOLDOWN;
         this.emitWeaponClipState();
@@ -3447,7 +4154,7 @@ export class ThreeGame {
         window.AudioManager?.play('ui_scan_ping', { volume: 0.34, playbackRate: 1.42 });
 
         if (this.weaponClipAmmo <= 0) {
-            this.startReload();
+            this.requestReload();
         }
     }
 
@@ -3458,27 +4165,45 @@ export class ThreeGame {
         vz,
         ttl = PROJECTILE_TTL,
         damage = PROJECTILE_DAMAGE,
-        radius = PROJECTILE_RADIUS
+        radius = PROJECTILE_RADIUS,
+        isEnemy = false,
+        options = {}
     }) {
-        const mesh = new THREE.Mesh(
+        const group = new THREE.Group();
+        const coreColor = options.color ?? (isEnemy ? 0xff4a4a : 0xffe08f);
+        const glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : 0xffaa22);
+
+        const core = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 8, 8),
             new THREE.MeshBasicMaterial({
-                color: 0xffe08f,
+                color: coreColor,
                 transparent: true,
                 opacity: 0.95
             })
         );
-        mesh.position.set(x, 0.42, z);
-        mesh.renderOrder = 25;
-        this.scene.add(mesh);
+        const glow = new THREE.Mesh(
+            new THREE.SphereGeometry(radius * 2.8, 6, 6),
+            new THREE.MeshBasicMaterial({
+                color: glowColor,
+                transparent: true,
+                opacity: 0.28,
+                depthWrite: false
+            })
+        );
+        core.renderOrder = 25;
+        glow.renderOrder = 24;
+        group.add(core, glow);
+        group.position.set(x, 0.42, z);
+        this.scene.add(group);
 
         this.activeProjectiles.push({
-            mesh,
+            mesh: group,
             vx,
             vz,
             ttl,
             damage,
-            radius
+            radius,
+            isEnemy
         });
     }
 
@@ -3492,6 +4217,15 @@ export class ThreeGame {
         this._projRaycaster.far = Math.max(0.08, speed * 0.045);
         const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
         return hits.length > 0;
+    }
+
+    checkProjectilePlayerHit(projectile) {
+        if (!this.player || this.isPlayerDead) return false;
+        const dist = Math.hypot(
+            projectile.mesh.position.x - this.player.position.x,
+            projectile.mesh.position.z - this.player.position.z
+        );
+        return dist <= this.playerRadius + (projectile.radius ?? PROJECTILE_RADIUS);
     }
 
     checkProjectileShipHit(projectile) {
@@ -3512,13 +4246,14 @@ export class ThreeGame {
     checkProjectileSnailHit(projectile) {
         for (const sprite of this.scatterSprites) {
             if (!sprite?.parent) continue;
-            if (sprite.userData?.type !== 'cybersnail') continue;
+            if (!this.isEnemyType(sprite.userData?.type)) continue;
             if (sprite.userData?.burstTriggered) continue;
             const dist = Math.hypot(
                 projectile.mesh.position.x - sprite.position.x,
                 projectile.mesh.position.z - sprite.position.z
             );
-            if (dist <= SNAIL_HIT_RADIUS + (projectile.radius ?? PROJECTILE_RADIUS)) {
+            const hitRadius = sprite.userData.isBoss ? (SNAIL_HIT_RADIUS * 2.8) : SNAIL_HIT_RADIUS;
+            if (dist <= hitRadius + (projectile.radius ?? PROJECTILE_RADIUS)) {
                 return sprite;
             }
         }
@@ -3526,9 +4261,42 @@ export class ThreeGame {
     }
 
     destroyProjectile(projectile) {
-        projectile?.mesh?.parent?.remove(projectile.mesh);
-        projectile?.mesh?.material?.dispose?.();
-        projectile?.mesh?.geometry?.dispose?.();
+        if (!projectile?.mesh) return;
+        projectile.mesh.parent?.remove(projectile.mesh);
+        projectile.mesh.traverse?.((child) => {
+            child.material?.dispose?.();
+            child.geometry?.dispose?.();
+        });
+    }
+
+    spawnProjectileImpactEffect(x, z) {
+        const effect = new THREE.Group();
+        for (let i = 0; i < 4; i++) {
+            const spark = new THREE.Mesh(
+                new THREE.CircleGeometry(0.04 + Math.random() * 0.04, 5),
+                new THREE.MeshBasicMaterial({
+                    color: 0xffe08f,
+                    transparent: true,
+                    opacity: 0.9,
+                    depthWrite: false
+                })
+            );
+            spark.rotation.x = -Math.PI / 2;
+            spark.position.set((Math.random() - 0.5) * 0.1, 0.05 + Math.random() * 0.06, (Math.random() - 0.5) * 0.1);
+            spark.renderOrder = 30;
+            spark.userData = {
+                vx: (Math.random() - 0.5) * 0.6,
+                vz: (Math.random() - 0.5) * 0.6,
+                vy: 0.18 + Math.random() * 0.14,
+                growth: 0,
+                isSpark: true
+            };
+            effect.add(spark);
+        }
+        effect.position.set(x, 0, z);
+        effect.userData = { age: 0, duration: 0.18 };
+        this.scene.add(effect);
+        this.transientEffects.push(effect);
     }
 
     updateProjectiles(delta) {
@@ -3546,21 +4314,38 @@ export class ThreeGame {
             projectile.mesh.position.z += projectile.vz * delta;
 
             if (this.checkProjectileWallHit(projectile)) {
+                this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
                 toRemove.add(projectile);
                 continue;
             }
 
-            const snail = this.checkProjectileSnailHit(projectile);
-            if (snail) {
-                this.damageSnail(snail, projectile.damage);
-                toRemove.add(projectile);
-                continue;
-            }
+            if (projectile.isEnemy) {
+                if (this.checkProjectilePlayerHit(projectile)) {
+                    this.takeDamage(projectile.damage, 'enemy-projectile');
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                    toRemove.add(projectile);
+                    continue;
+                }
+                const ship = this.checkProjectileShipHit(projectile);
+                if (ship) {
+                    this.damageShip(ship, projectile.damage, 'boss-projectile');
+                    toRemove.add(projectile);
+                    continue;
+                }
+            } else {
+                const snail = this.checkProjectileSnailHit(projectile);
+                if (snail) {
+                    this.damageSnail(snail, projectile.damage);
+                    toRemove.add(projectile);
+                    continue;
+                }
 
-            const ship = this.checkProjectileShipHit(projectile);
-            if (ship) {
-                this.damageShip(ship, projectile.damage, 'friendly-fire');
-                toRemove.add(projectile);
+                const ship = this.checkProjectileShipHit(projectile);
+                if (ship) {
+                    this.damageShip(ship, projectile.damage, 'friendly-fire');
+                    toRemove.add(projectile);
+                    continue;
+                }
             }
         }
 
@@ -3579,11 +4364,24 @@ export class ThreeGame {
     updateCamera(delta) {
         const target = new THREE.Vector3(
             this.player.position.x + this.cameraOffset.x,
-            this.cameraOffset.y,
+            this.player.position.y + this.cameraOffset.y,
             this.player.position.z + this.cameraOffset.z
         );
         this.camera.position.lerp(target, 1 - Math.exp(-delta * 7));
-        this.camera.lookAt(this.player.position.x, 0.4, this.player.position.z);
+
+        if (this._cameraShakeTimer > 0) {
+            this._cameraShakeTimer -= delta;
+            const intensity = this._cameraShakeIntensity * Math.max(0, this._cameraShakeTimer / 0.35);
+            this.camera.position.x += (Math.random() - 0.5) * intensity;
+            this.camera.position.z += (Math.random() - 0.5) * intensity;
+        }
+
+        this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
+    }
+
+    triggerCameraShake(intensity = 0.18, duration = 0.35) {
+        this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, intensity);
+        this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
     }
 
     syncVisibleChunks(force = false) {
@@ -3599,8 +4397,13 @@ export class ThreeGame {
             for (let chunkX = centerChunkX - this.visibleChunkRadius; chunkX <= centerChunkX + this.visibleChunkRadius; chunkX++) {
                 const key = `${chunkX},${chunkY}`;
                 needed.add(key);
+                const isNewChunk = !this.chunkMeshes.has(key) && !this.visitedChunks.has(key);
                 if (force || !this.chunkMeshes.has(key)) {
                     this.queueChunkMount(chunkX, chunkY, centerChunkX, centerChunkY);
+                }
+                if (isNewChunk && !force) {
+                    this.visitedChunks.add(key);
+                    this.onNewChunkDiscovered(chunkX, chunkY);
                 }
             }
         }
@@ -3716,6 +4519,39 @@ export class ThreeGame {
             }
         }
 
+        const pickupPlacements = this.createChunkPickupPlacements(chunkX, chunkY, grid);
+        for (const placement of pickupPlacements) {
+            const pickup = this.createPickupInstance(placement);
+            if (pickup) {
+                group.add(pickup);
+            }
+        }
+
+        // Add subtle reward-cache glow lights in dead-end rooms
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
+        if (roomTypes) {
+            const biomeKey = this.getBiomeKeyForWorldPosition(
+                chunkX * this.chunkSize + this.chunkSize * 0.5,
+                chunkY * this.chunkSize + this.chunkSize * 0.5
+            );
+            const lightColor = biomeKey === 'cryo' ? 0x88aaff : biomeKey === 'bio' ? 0x66cc88 : 0xffcc66;
+            const deadEndLights = [];
+            for (let localY = 1; localY < this.chunkSize - 1; localY++) {
+                for (let localX = 1; localX < this.chunkSize - 1; localX++) {
+                    if (roomTypes[localY][localX] === ROOM_TYPES.DEAD_END) {
+                        const wx = chunkX * this.chunkSize + localX;
+                        const wz = chunkY * this.chunkSize + localY;
+                        deadEndLights.push({ wx, wz });
+                    }
+                }
+            }
+            for (const { wx, wz } of deadEndLights.slice(0, 2)) {
+                const deLight = new THREE.PointLight(lightColor, 1.1, 5, 2);
+                deLight.position.set(wx, 1.4, wz);
+                group.add(deLight);
+            }
+        }
+
         this.chunkGroups.add(group);
         this.chunkMeshes.set(`${chunkX},${chunkY}`, group);
     }
@@ -3806,6 +4642,7 @@ export class ThreeGame {
         const depthTier = this.getDepthTier(chunkX, chunkY);
         const depthLootConfig = getDepthLootConfig(depthTier);
         const spawn = this.getSpawnTile();
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const candidates = [];
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
@@ -3820,11 +4657,13 @@ export class ThreeGame {
 
                 if (distToSpawn <= 6.0) continue;
 
+                const roomType = roomTypes?.[localY]?.[localX] ?? ROOM_TYPES.CORRIDOR;
                 candidates.push({
                     localX,
                     localY,
                     worldX,
                     worldZ,
+                    roomType,
                     edgeDistance: Math.min(localX, localY, this.chunkSize - 1 - localX, this.chunkSize - 1 - localY)
                 });
             }
@@ -3891,6 +4730,21 @@ export class ThreeGame {
             if (!point) break;
             placements.push(this.buildPickupPlacement(point, random, depthLootConfig.legendaryBoost));
             straysPlaced += 1;
+        }
+
+        // Dead-end reward rooms: guaranteed extra pickups at any dead-end tiles in this chunk.
+        // Dead ends are branching paths worth exploring — payoff the player for detouring.
+        const deadEndCandidates = candidates.filter((c) => c.roomType === ROOM_TYPES.DEAD_END);
+        for (const de of deadEndCandidates) {
+            const key = `${de.localX},${de.localY}`;
+            if (occupied.has(key)) continue;
+            const extraCount = 2 + Math.floor(random() * 2);
+            for (let i = 0; i < extraCount; i++) {
+                const nearKey = `${de.localX + Math.round((random() - 0.5))},${de.localY + Math.round((random() - 0.5))}`;
+                if (occupied.has(nearKey)) continue;
+                occupied.add(nearKey);
+                placements.push(this.buildPickupPlacement(de, random, depthLootConfig.legendaryBoost + 0.08));
+            }
         }
 
         return placements;
@@ -3991,7 +4845,7 @@ export class ThreeGame {
     }
 
     buildPickupPlacement(candidate, random, legendaryBoost = 0) {
-        const type = this.choosePickupType(random);
+        const type = this.choosePickupTypeForRoom(random, candidate.roomType);
         const rarity = this.chooseLootRarity(random, legendaryBoost);
         const scale = type === 'weapon'
             ? 0.9 + random() * 0.3
@@ -4016,6 +4870,7 @@ export class ThreeGame {
     createChunkScatterPlacements(chunkX, chunkY, grid) {
         const random = this.createSeededRandom(this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71));
         const spawn = this.getSpawnTile();
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const candidates = [];
 
         // Find walkable candidates in this chunk
@@ -4198,7 +5053,62 @@ export class ThreeGame {
         // 6. Build the final micro-varied placement properties
         const finalPlacements = [];
         const junkPlacementAnchors = [];
+        const chunkBiomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
+        
+        // Spawn boss if conditions match!
+        const distance = Math.hypot(chunkCenterX, chunkCenterZ);
+        let spawnBossType = null;
+        const generatorLevel = this.bank ? this.bank.getO2GeneratorLevel() : 0;
+
+        if (chunkBiomeKey === BIOME_KEYS.ACTIVE && distance >= 50 && distance <= 60 && generatorLevel >= 1) {
+            if (!this.killedBosses.has('active') && !this.scatterSprites.some(s => s.userData.isBoss && s.userData.biome === 'active')) {
+                spawnBossType = 'boss_cybersnail';
+            }
+        } else if (chunkBiomeKey === BIOME_KEYS.CRYO && distance >= 120 && distance <= 140 && generatorLevel >= 2) {
+            if (!this.killedBosses.has('cryo') && !this.scatterSprites.some(s => s.userData.isBoss && s.userData.biome === 'cryo')) {
+                spawnBossType = 'boss_cryosnail';
+            }
+        } else if (chunkBiomeKey === BIOME_KEYS.BIO && distance >= 220 && distance <= 250 && generatorLevel >= 3) {
+            if (!this.killedBosses.has('bio') && !this.scatterSprites.some(s => s.userData.isBoss && s.userData.biome === 'bio')) {
+                spawnBossType = 'boss_sporesnail';
+            }
+        }
+
+        if (spawnBossType && candidates.length > 0) {
+            let bestIndex = 0;
+            let minCenterDist = Infinity;
+            for (let i = 0; i < candidates.length; i++) {
+                const c = candidates[i];
+                const d = Math.hypot(c.localX - this.chunkSize/2, c.localY - this.chunkSize/2);
+                if (d < minCenterDist) {
+                    minCenterDist = d;
+                    bestIndex = i;
+                }
+            }
+            const bossCand = candidates.splice(bestIndex, 1)[0];
+            finalPlacements.push({
+                x: bossCand.worldX,
+                z: bossCand.worldZ,
+                type: spawnBossType,
+                scatterKey: `${chunkX},${chunkY}:boss:${spawnBossType}`,
+                scale: spawnBossType === 'boss_cybersnail' ? 3.2 : spawnBossType === 'boss_cryosnail' ? 3.8 : 4.4,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'boss',
+                phase: 0,
+                opacity: 1,
+                biomeTint: spawnBossType === 'boss_cryosnail' ? 0x88ccff : spawnBossType === 'boss_sporesnail' ? 0x88ff88 : 0xffffff,
+                isBoss: true
+            });
+        }
+
         let snailCount = 0;
+        let hasSentinelThisChunk = false;
+        let hasLoreTerminalThisChunk = false;
+        const depthTierForScatter = this.getDepthTier(chunkX, chunkY);
+        const snailSpawnConfig = SNAIL_DEPTH_SPAWN[Math.min(depthTierForScatter, SNAIL_DEPTH_SPAWN.length - 1)];
         for (const p of placements) {
             // Re-verify after relaxation that it's still walkable
             if (!isWalkable(p.x, p.z)) continue;
@@ -4206,13 +5116,39 @@ export class ThreeGame {
             // Determine asset type based on weighted roll.
             const roll = random();
             const distFromSpawn = Math.hypot(p.x - spawn.x, p.z - spawn.y);
-            const canSpawnSnail = distFromSpawn > 14 && snailCount < 1;
+            const localPX = Math.round(p.x - chunkX * this.chunkSize);
+            const localPZ = Math.round(p.z - chunkY * this.chunkSize);
+            const pRoomType = roomTypes?.[localPZ]?.[localPX] ?? null;
+            const isDeadEnd = pRoomType === ROOM_TYPES.DEAD_END;
+            const isChamber = pRoomType === ROOM_TYPES.CHAMBER;
+            const canSpawnSnail = distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount && !isDeadEnd;
+            const canSpawnSentinel = depthTierForScatter >= 2 && isChamber && !hasSentinelThisChunk && distFromSpawn > 20;
+            const loreChance = depthTierForScatter >= 2 ? 0.12 : 0.07;
+            const canSpawnLore = isDeadEnd && !hasLoreTerminalThisChunk && distFromSpawn > 10;
             let type;
             let scaleMultiplier;
             let elevation;
             let opacity;
-            if (canSpawnSnail && roll < 0.08) {
-                type = 'cybersnail';
+            if (canSpawnSentinel && roll < 0.18) {
+                type = 'sentinel';
+                scaleMultiplier = 1.0;
+                elevation = 0.09;
+                opacity = 1;
+                hasSentinelThisChunk = true;
+            } else if (canSpawnLore && roll > (1 - loreChance)) {
+                type = 'lore_terminal';
+                scaleMultiplier = 0.7;
+                elevation = 0.09;
+                opacity = 1;
+                hasLoreTerminalThisChunk = true;
+            } else if (canSpawnSnail && roll < snailSpawnConfig.chance) {
+                if (chunkBiomeKey === BIOME_KEYS.BIO) {
+                    type = 'sporesnail';
+                } else if (chunkBiomeKey === BIOME_KEYS.CRYO) {
+                    type = 'cryosnail';
+                } else {
+                    type = 'cybersnail';
+                }
                 scaleMultiplier = 1.05 + random() * 0.26;
                 elevation = 0.09 + random() * 0.05;
                 opacity = 1;
@@ -4284,7 +5220,9 @@ export class ThreeGame {
                 elevation,
                 groupType: p.groupType,
                 phase: random() * Math.PI * 2,
-                opacity
+                opacity,
+                biomeTint: type === 'cybersnail' ? (SNAIL_BIOME_TINTS[chunkBiomeKey] ?? 0xffffff) : undefined,
+                spawnedEnraged: type === 'cybersnail' && depthTierForScatter >= 3
             });
         }
 
@@ -4330,6 +5268,7 @@ export class ThreeGame {
     createScatterInstance(placement) {
         const scaleX = placement.scale;
         const scaleY = placement.scale * (1.0 + placement.tiltX);
+        const anchoredY = placement.elevation;
 
         if (placement.type.startsWith('bunker_junk')) {
             const spriteMaterial = this.scatterMaterials[placement.type];
@@ -4341,7 +5280,7 @@ export class ThreeGame {
 
             const sprite = new THREE.Sprite(clonedMat);
             sprite.center.set(0.5, 0);
-            sprite.position.set(placement.x, placement.elevation, placement.z);
+            sprite.position.set(placement.x, anchoredY, placement.z);
             sprite.scale.set(scaleX, scaleY, 1);
             sprite.frustumCulled = false;
             sprite.renderOrder = 4;
@@ -4350,7 +5289,8 @@ export class ThreeGame {
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
-                baseY: placement.elevation,
+                baseY: anchoredY,
+                elevationOffset: placement.elevation,
                 baseScaleX: scaleX,
                 baseScaleY: scaleY,
                 burstTriggered: false,
@@ -4361,37 +5301,125 @@ export class ThreeGame {
             return sprite;
         }
 
-        if (placement.type === 'cybersnail') {
-            if (!this.snailsEnabled) return null;
-            const snailMaterial = this.scatterMaterials.cybersnail;
-            if (!snailMaterial) return null;
-            const clonedMat = snailMaterial.clone();
-            clonedMat.rotation = 0;
-            clonedMat.alphaTest = 0.06;
-            clonedMat.color.setHex(0xffffff);
-
+        if (placement.type === 'lore_terminal') {
+            const mat = this.scatterMaterials.lore_terminal;
+            if (!mat) return null;
+            const clonedMat = mat.clone();
+            clonedMat.alphaTest = 0.04;
             const sprite = new THREE.Sprite(clonedMat);
             sprite.center.set(0.5, 0);
-            sprite.position.set(placement.x, placement.elevation, placement.z);
+            sprite.position.set(placement.x, anchoredY, placement.z);
             sprite.frustumCulled = false;
-            sprite.renderOrder = 6;
-            sprite.scale.set(scaleX, scaleY, 1);
+            sprite.renderOrder = 4;
+            sprite.scale.set(scaleX * 0.8, scaleY * 0.8, 1);
+
+            // Assign a log entry from the biome pool
+            const biomeKey = this.getBiomeKeyForWorldPosition(placement.x, placement.z);
+            const pool = LORE_LOGS[biomeKey] ?? LORE_LOGS.active;
+            const logIndex = Math.floor(placement.phase * pool.length) % pool.length;
+            const logEntry = pool[logIndex];
+
             sprite.userData = {
                 isScatter: true,
+                type: 'lore_terminal',
+                scatterKey: placement.scatterKey,
+                baseY: anchoredY,
+                loreKey: logEntry.key,
+                loreText: logEntry.text,
+                baseOpacity: 1,
+                phase: placement.phase ?? 0
+            };
+            return sprite;
+        }
+
+        if (this.isSentinel(placement.type)) {
+            const mat = this.scatterMaterials.sentinel;
+            if (!mat) return null;
+            const clonedMat = mat.clone();
+            clonedMat.alphaTest = 0.06;
+            const sprite = new THREE.Sprite(clonedMat);
+            sprite.center.set(0.5, 0);
+            sprite.position.set(placement.x, anchoredY, placement.z);
+            sprite.frustumCulled = false;
+            sprite.renderOrder = 6;
+            sprite.scale.set(scaleX * 1.1, scaleY * 1.1, 1);
+            sprite.userData = {
+                isScatter: true,
+                isEnemy: true,
+                isBoss: false,
+                type: 'sentinel',
+                scatterKey: placement.scatterKey,
+                baseY: anchoredY,
+                burstTriggered: false,
+                burstTimer: 0,
+                hp: SENTINEL_MAX_HP,
+                maxHp: SENTINEL_MAX_HP,
+                fireCooldown: SENTINEL_FIRE_COOLDOWN * (0.5 + Math.random() * 0.8),
+                detectRadius: SENTINEL_DETECT_RADIUS,
+                active: false,
+                biomeTint: 0xffdd44
+            };
+            return sprite;
+        }
+
+        if (this.isEnemyType(placement.type)) {
+            if (!this.snailsEnabled) return null;
+            const mat = this.scatterMaterials[placement.type];
+            if (!mat) return null;
+            const clonedMat = mat.clone();
+            clonedMat.rotation = 0;
+            clonedMat.alphaTest = 0.06;
+            const tintColor = placement.biomeTint ?? 0xffffff;
+            clonedMat.color.setHex(tintColor);
+
+            const isBoss = placement.isBoss || placement.type.startsWith('boss_');
+            const isPreEnraged = Boolean(placement.spawnedEnraged) || isBoss;
+            const sprite = new THREE.Sprite(clonedMat);
+            sprite.center.set(0.5, 0);
+            sprite.position.set(placement.x, anchoredY, placement.z);
+            sprite.frustumCulled = false;
+            sprite.renderOrder = isBoss ? 8 : 6;
+            sprite.scale.set(scaleX, scaleY, 1);
+
+            let maxHp = SNAIL_MAX_HP;
+            let speed = SNAIL_MOVE_SPEED;
+            if (placement.type === 'cryosnail') {
+                maxHp = 4;
+                speed = 0.9;
+            } else if (placement.type === 'sporesnail') {
+                maxHp = 3;
+                speed = 1.4;
+            } else if (placement.type === 'boss_cybersnail') {
+                maxHp = 20;
+                speed = 1.5;
+            } else if (placement.type === 'boss_cryosnail') {
+                maxHp = 40;
+                speed = 1.1;
+            } else if (placement.type === 'boss_sporesnail') {
+                maxHp = 75;
+                speed = 1.3;
+            }
+
+            sprite.userData = {
+                isScatter: true,
+                isEnemy: true,
+                isBoss: isBoss,
+                biome: placement.type.includes('cryo') ? 'cryo' : placement.type.includes('spore') ? 'bio' : 'active',
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
-                baseY: placement.elevation,
+                baseY: anchoredY,
+                elevationOffset: placement.elevation,
                 baseScaleX: scaleX,
                 baseScaleY: scaleY,
                 burstTriggered: false,
                 burstTimer: 0,
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1,
-                hp: SNAIL_MAX_HP,
-                maxHp: SNAIL_MAX_HP,
-                speed: SNAIL_MOVE_SPEED,
-                enraged: false,
+                hp: maxHp,
+                maxHp: maxHp,
+                speed: speed,
+                enraged: isPreEnraged,
                 facingSign: 1,
                 pathNodes: null,
                 pathIndex: 0,
@@ -4400,8 +5428,14 @@ export class ThreeGame {
                 pathRetargetTimer: 0,
                 aiMode: 'hunt',
                 targetType: 'ship',
-                attackCooldown: 0
+                attackCooldown: 0,
+                bossAttackTimer: 0,
+                sporeEmitTimer: 0,
+                biomeTint: tintColor
             };
+            if (isPreEnraged && !isBoss) {
+                clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
+            }
             return sprite;
         }
 
@@ -4414,7 +5448,7 @@ export class ThreeGame {
 
         const sprite = new THREE.Sprite(clonedMat);
         sprite.center.set(0.5, 0);
-        sprite.position.set(placement.x, placement.elevation, placement.z);
+        sprite.position.set(placement.x, anchoredY, placement.z);
         sprite.frustumCulled = false;
         sprite.renderOrder = 3;
         sprite.scale.set(scaleX, scaleY, 1);
@@ -4423,7 +5457,8 @@ export class ThreeGame {
             type: placement.type,
             scatterKey: placement.scatterKey,
             groupType: placement.groupType,
-            baseY: placement.elevation,
+            baseY: anchoredY,
+            elevationOffset: placement.elevation,
             baseScaleX: scaleX,
             baseScaleY: scaleY,
             burstTriggered: false,
@@ -4646,9 +5681,46 @@ export class ThreeGame {
         return PICKUP_TYPES[PICKUP_TYPES.length - 1].type;
     }
 
+    choosePickupTypeForRoom(random, roomType) {
+        const ROOM_PICKUP_BIAS = {
+            [ROOM_TYPES.DEAD_END]: [
+                { type: 'health', weight: 0.20 },
+                { type: 'ammo',   weight: 0.20 },
+                { type: 'weapon', weight: 0.34 },
+                { type: 'coin',   weight: 0.26 }
+            ],
+            [ROOM_TYPES.CORRIDOR]: [
+                { type: 'health', weight: 0.28 },
+                { type: 'ammo',   weight: 0.52 },
+                { type: 'weapon', weight: 0.12 },
+                { type: 'coin',   weight: 0.08 }
+            ],
+            [ROOM_TYPES.CHAMBER]: [
+                { type: 'health', weight: 0.32 },
+                { type: 'ammo',   weight: 0.30 },
+                { type: 'weapon', weight: 0.24 },
+                { type: 'coin',   weight: 0.14 }
+            ]
+        };
+        const weights = ROOM_PICKUP_BIAS[roomType] ?? PICKUP_TYPES;
+        const totalWeight = weights.reduce((s, e) => s + e.weight, 0);
+        let roll = random() * totalWeight;
+        for (const entry of weights) {
+            roll -= entry.weight;
+            if (roll <= 0) return entry.type;
+        }
+        return weights[weights.length - 1].type;
+    }
+
     createPickupInstance(placement) {
         const root = new THREE.Group();
         const body = new THREE.Group();
+        const startX = (placement.ejectStartX ?? placement.worldX) + placement.offsetX;
+        const startZ = (placement.ejectStartZ ?? placement.worldZ) + placement.offsetZ;
+        const targetX = placement.ejectTargetX ?? placement.worldX + placement.offsetX;
+        const targetZ = placement.ejectTargetZ ?? placement.worldZ + placement.offsetZ;
+        const startY = placement.elevation;
+        const baseY = placement.elevation;
         const burst = new THREE.Mesh(
             new THREE.RingGeometry(0.12, 0.24, 20),
             new THREE.MeshBasicMaterial({
@@ -4670,7 +5742,7 @@ export class ThreeGame {
             type: placement.type,
             state: placement.ejectStartX !== undefined ? 'ejecting' : 'idle',
             bobOffset: placement.bobOffset,
-            baseY: placement.elevation,
+            baseY,
             scale: placement.scale,
             rarity: placement.rarity ?? LOOT_RARITIES[0],
             burst,
@@ -4678,8 +5750,8 @@ export class ThreeGame {
             collectLock: placement.collectLock ?? 0,
             ejectTimer: 0,
             ejectDuration: 0.24 + Math.random() * 0.1,
-            ejectTargetX: placement.ejectTargetX ?? placement.worldX + placement.offsetX,
-            ejectTargetZ: placement.ejectTargetZ ?? placement.worldZ + placement.offsetZ
+            ejectTargetX: targetX,
+            ejectTargetZ: targetZ
         };
 
         if (placement.type === 'health') {
@@ -4728,9 +5800,9 @@ export class ThreeGame {
         body.add(burst);
 
         root.position.set(
-            (placement.ejectStartX ?? placement.worldX) + placement.offsetX,
-            placement.elevation,
-            (placement.ejectStartZ ?? placement.worldZ) + placement.offsetZ
+            startX,
+            startY,
+            startZ
         );
         root.add(body);
         return root;
@@ -4888,9 +5960,9 @@ export class ThreeGame {
             } else if (!isCollecting && planarDistance <= PICKUP_COLLECT_RADIUS) {
                 pickup.userData.state = 'collecting';
                 pickup.userData.collectTimer = 0;
-            } else if (pickup.userData.state === 'idle' && planarDistance <= PICKUP_MAGNET_RADIUS) {
+            } else if (pickup.userData.state === 'idle' && planarDistance <= this.pickupMagnetRadius) {
                 pickup.userData.state = 'magnetized';
-            } else if (pickup.userData.state === 'magnetized' && planarDistance > PICKUP_MAGNET_RADIUS * 1.35) {
+            } else if (pickup.userData.state === 'magnetized' && planarDistance > this.pickupMagnetRadius * 1.35) {
                 pickup.userData.state = 'idle';
             }
 
@@ -4927,6 +5999,15 @@ export class ThreeGame {
                         pickup.userData.collectedReported = true;
                         const pickupType = pickup.userData.type ?? 'unknown';
                         const rarity = pickup.userData.rarity?.key ?? null;
+
+                        // Retrieval mission: first legendary weapon collected completes objective
+                        if (this.missionState?.type === 'retrieval' && this.missionState.status === 'active') {
+                            if (pickupType === 'weapon' && rarity === 'legendary') {
+                                this.missionState.status = 'objective_complete';
+                                window.dispatchEvent(new CustomEvent('mission-objective-complete', { detail: { type: 'retrieval' } }));
+                            }
+                        }
+
                         if (pickupType === 'health' && this.playerVitals.hp < this.playerVitals.maxHp) {
                             this.healPlayer(1);
                             window.AudioManager?.playProceduralLoot('health', rarity);
@@ -4946,7 +6027,7 @@ export class ThreeGame {
             }
 
             if (pickup.userData.state === 'magnetized' && planarDistance > 0.001) {
-                const magnetStrength = 2.8 + (1 - Math.min(planarDistance / PICKUP_MAGNET_RADIUS, 1)) * 6.2;
+                const magnetStrength = 2.8 + (1 - Math.min(planarDistance / this.pickupMagnetRadius, 1)) * 6.2;
                 const moveStep = Math.min(delta * magnetStrength, planarDistance);
                 pickup.position.x += (toPlayerX / planarDistance) * moveStep;
                 pickup.position.z += (toPlayerZ / planarDistance) * moveStep;
@@ -4994,7 +6075,10 @@ export class ThreeGame {
     }
 
     createSnailDropPlacement(originX, originZ, targetX, targetZ, type = 'weapon') {
-        const rarity = LOOT_RARITIES.find((entry) => entry.key === 'uncommon') ?? LOOT_RARITIES[0];
+        const depthLootConfig = this.getDepthLootConfigForWorldPosition(originX, originZ);
+        const rarity = this.chooseLootRarity(() => Math.random(), depthLootConfig.legendaryBoost + 0.08)
+            ?? LOOT_RARITIES.find((entry) => entry.key === 'uncommon')
+            ?? LOOT_RARITIES[0];
         return {
             worldX: targetX,
             worldZ: targetZ,
@@ -5022,12 +6106,24 @@ export class ThreeGame {
         if (!parent) return;
         const x = sprite.position.x;
         const z = sprite.position.z;
-        const dropTypes = ['weapon', 'weapon', 'ammo'];
-        let placed = 0;
+        const isBoss = Boolean(sprite.userData.isBoss);
 
+        let dropTypes;
+        if (isBoss) {
+            // Boss drops: lots of coins, health, ammo, and weapons!
+            dropTypes = ['weapon', 'weapon', 'weapon', 'ammo', 'ammo', 'health', 'health', 'coin', 'coin', 'coin', 'coin'];
+        } else {
+            const depthLootConfig = this.getDepthLootConfigForWorldPosition(x, z);
+            const depthTier = Math.floor(depthLootConfig.pickupMultiplier);
+            const wasEnraged = Boolean(sprite.userData.enraged);
+            const baseDrops = wasEnraged ? ['weapon', 'weapon', 'ammo', 'coin'] : ['weapon', 'weapon', 'ammo'];
+            dropTypes = depthTier >= 2 ? [...baseDrops, 'ammo'] : baseDrops;
+        }
+
+        let placed = 0;
         for (const type of dropTypes) {
             const angle = Math.random() * Math.PI * 2;
-            const radius = 0.45 + Math.random() * 0.32;
+            const radius = isBoss ? 0.8 + Math.random() * 0.9 : 0.45 + Math.random() * 0.32;
             const targetX = x + Math.cos(angle) * radius;
             const targetZ = z + Math.sin(angle) * radius;
             if (this.getTileType(Math.round(targetX), Math.round(targetZ)) === '#') {
@@ -5049,24 +6145,28 @@ export class ThreeGame {
     }
 
     damageSnail(sprite, amount = 1) {
-        if (!sprite?.userData || sprite.userData.type !== 'cybersnail' || sprite.userData.burstTriggered) return;
-        const previousHp = Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : SNAIL_MAX_HP;
+        if (!sprite?.userData || !this.isEnemyType(sprite.userData.type) || sprite.userData.burstTriggered) return;
+        const previousHp = Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : (sprite.userData.maxHp ?? SNAIL_MAX_HP);
         const damage = Math.max(0, amount);
         if (damage <= 0) return;
         sprite.userData.hp = Math.max(0, previousHp - damage);
         if (sprite.userData.hp === previousHp) return;
 
-        if (sprite.userData.hp === 1 && !sprite.userData.enraged) {
+        const isBoss = Boolean(sprite.userData.isBoss);
+        if (!isBoss && sprite.userData.hp === 1 && !sprite.userData.enraged) {
             sprite.userData.enraged = true;
             sprite.userData.speed = SNAIL_ENRAGED_MOVE_SPEED;
             sprite.userData.attackCooldown = Math.min(sprite.userData.attackCooldown ?? 0, 0.2);
             sprite.material?.color?.setHex(SNAIL_ENRAGED_TINT);
+            window.AudioManager?.play('amb_metal_stress', { volume: 0.38, playbackRate: 1.55 });
         }
 
         if (sprite.userData.hp > 0) {
+            window.AudioManager?.play('ui_scan_ping', { volume: 0.26, playbackRate: 0.65 });
+            this._flashSnailHit(sprite);
             window.dispatchEvent(new CustomEvent('enemy-hit', {
                 detail: {
-                    type: 'cybersnail',
+                    type: sprite.userData.type,
                     hp: sprite.userData.hp,
                     maxHp: sprite.userData.maxHp ?? SNAIL_MAX_HP,
                     enraged: Boolean(sprite.userData.enraged)
@@ -5077,9 +6177,45 @@ export class ThreeGame {
 
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
-        this.spawnSnailDrops(sprite);
+        this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
+
+        if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
+            this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
+            window.dispatchEvent(new CustomEvent('mission-kill-progress', {
+                detail: { count: this.missionState.killCount, target: this.missionState.targetKills }
+            }));
+            if (this.missionState.killCount >= this.missionState.targetKills) {
+                this.missionState.status = 'objective_complete';
+                window.dispatchEvent(new CustomEvent('mission-objective-complete', { detail: { type: 'elimination' } }));
+            }
+        }
+
+        if (isBoss) {
+            this.killedBosses.add(sprite.userData.biome);
+        }
+
+        if (this.isSentinel(sprite.userData.type)) {
+            this.spawnSentinelDrops(sprite);
+        } else {
+            this.spawnSnailDrops(sprite);
+        }
         this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, 'bunker_junk_uncommon');
         window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
+        window.AudioManager?.play('ui_error', { volume: 0.2, playbackRate: 0.72 });
+        window.dispatchEvent(new CustomEvent('enemy-killed', {
+            detail: { type: sprite.userData.type, totalKills: this.snailsKilledThisRun }
+        }));
+    }
+
+    _flashSnailHit(sprite) {
+        if (!sprite?.material?.color) return;
+        const originalColor = sprite.userData.enraged ? SNAIL_ENRAGED_TINT : (sprite.userData.biomeTint ?? 0xffffff);
+        sprite.material.color.setHex(0xffffff);
+        setTimeout(() => {
+            if (sprite?.material?.color && !sprite.userData.burstTriggered) {
+                sprite.material.color.setHex(originalColor);
+            }
+        }, 80);
     }
 
     isSnailTileWalkable(tileX, tileZ) {
@@ -5275,6 +6411,101 @@ export class ThreeGame {
         });
     }
 
+    updateSentinelBehavior(sprite, delta) {
+        const data = sprite.userData;
+        if (!this.player) return;
+
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const distToPlayer = Math.hypot(dx, dz);
+
+        if (distToPlayer > data.detectRadius) {
+            data.active = false;
+            sprite.material.color.setHex(0xffdd44);
+            return;
+        }
+
+        if (!data.active) {
+            data.active = true;
+            sprite.material.color.setHex(0xffffff);
+            window.AudioManager?.play('ui_scan_ping', { volume: 0.28, playbackRate: 0.4, bus: 'sfx' });
+        }
+
+        data.fireCooldown = Math.max(0, (data.fireCooldown ?? SENTINEL_FIRE_COOLDOWN) - delta);
+
+        if (data.fireCooldown <= 0) {
+            data.fireCooldown = SENTINEL_FIRE_COOLDOWN;
+            this.fireSentinelProjectile(sprite);
+        }
+
+        // Warning flash when about to fire
+        if (data.fireCooldown < 0.4) {
+            const flash = Math.sin(Date.now() * 0.025) > 0;
+            sprite.material.color.setHex(flash ? 0xffffff : 0xff8800);
+        } else {
+            sprite.material.color.setHex(0xffcc00);
+        }
+    }
+
+    fireSentinelProjectile(sprite) {
+        if (!this.player) return;
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 0.001) return;
+
+        const speed = SENTINEL_PROJECTILE_SPEED;
+        this.spawnProjectile({
+            x: sprite.position.x,
+            z: sprite.position.z,
+            vx: (dx / dist) * speed,
+            vz: (dz / dist) * speed,
+            ttl: 2.5,
+            damage: 1,
+            radius: 0.22,
+            isEnemy: true,
+            options: { color: 0xffcc00, glowColor: 0xff8800 }
+        });
+        window.AudioManager?.play('ui_error', { volume: 0.18, playbackRate: 0.52, bus: 'sfx' });
+
+        // Yellow flash on HUD when sentinel fires
+        window.dispatchEvent(new CustomEvent('sentinel-fired', { detail: { x: sprite.position.x, z: sprite.position.z } }));
+    }
+
+    spawnSentinelDrops(sprite) {
+        const x = sprite.position.x;
+        const z = sprite.position.z;
+        for (let i = 0; i < SENTINEL_TECH_DROP; i++) {
+            const angle = (i / SENTINEL_TECH_DROP) * Math.PI * 2;
+            const r = 0.4 + Math.random() * 0.4;
+            const placement = this.createSnailDropPlacement(x, z, x + Math.cos(angle) * r, z + Math.sin(angle) * r, 'weapon');
+            if (placement) {
+                const pickup = this.createPickupInstance(placement);
+                if (pickup) {
+                    this.scene.add(pickup);
+                    this.pickupMeshes.push(pickup);
+                }
+            }
+        }
+        // Coin drop(s)
+        for (let i = 0; i < SENTINEL_COIN_DROP; i++) {
+            const coinPlacement = this.createSnailDropPlacement(
+                x,
+                z,
+                x + (Math.random() - 0.5),
+                z + (Math.random() - 0.5),
+                'coin'
+            );
+            if (coinPlacement) {
+                const coinPickup = this.createPickupInstance(coinPlacement);
+                if (coinPickup) {
+                    this.scene.add(coinPickup);
+                    this.pickupMeshes.push(coinPickup);
+                }
+            }
+        }
+    }
+
     updateSnailBehavior(sprite, delta, activeShip) {
         const data = sprite.userData;
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
@@ -5295,6 +6526,7 @@ export class ThreeGame {
         const shouldRepath = targetChanged || noPath || data.pathRetargetTimer <= 0;
 
         if (shouldRepath) {
+            const previousMode = data.aiMode;
             const pathNodes = this.findSnailPath(startTileX, startTileZ, goalTileX, goalTileZ, SNAIL_PATH_NODE_BUDGET);
             data.pathNodes = pathNodes;
             data.pathIndex = pathNodes.length > 1 ? 1 : 0;
@@ -5302,6 +6534,9 @@ export class ThreeGame {
             data.pathGoalTileZ = goalTileZ;
             data.aiMode = target.mode;
             data.targetType = target.type;
+            if (previousMode !== 'hunt' && target.mode === 'hunt' && target.type === 'player') {
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.2, playbackRate: 0.55, bus: 'sfx' });
+            }
             data.pathRetargetTimer = target.mode === 'hunt'
                 ? SNAIL_PATH_RECALC_MIN + Math.random() * (SNAIL_PATH_RECALC_MAX - SNAIL_PATH_RECALC_MIN)
                 : SNAIL_WANDER_RECALC_MIN + Math.random() * (SNAIL_WANDER_RECALC_MAX - SNAIL_WANDER_RECALC_MIN);
@@ -5354,28 +6589,253 @@ export class ThreeGame {
         }
 
         const distanceToTarget = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
-        if (distanceToTarget <= SNAIL_ATTACK_RADIUS && data.attackCooldown <= 0) {
+
+        // Boss special attacks logic
+        if (data.isBoss && data.aiMode === 'hunt') {
+            data.bossAttackTimer = (data.bossAttackTimer ?? 0) - delta;
+            if (data.bossAttackTimer <= 0) {
+                // Determine attack based on type
+                if (data.type === 'boss_cybersnail' && target.type === 'player' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 4.5;
+                    const angleToPlayer = Math.atan2(target.z - sprite.position.z, target.x - sprite.position.x);
+                    for (let i = -1; i <= 1; i++) {
+                        const spreadAngle = angleToPlayer + i * 0.22;
+                        const vx = Math.cos(spreadAngle) * 7.5;
+                        const vz = Math.sin(spreadAngle) * 7.5;
+                        this.spawnProjectile({
+                            x: sprite.position.x,
+                            z: sprite.position.z,
+                            vx,
+                            vz,
+                            ttl: 2.0,
+                            damage: 1,
+                            radius: 0.22,
+                            isEnemy: true
+                        });
+                    }
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.45 });
+                } else if (data.type === 'boss_cryosnail' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 5.5;
+                    this.spawnFrostShockwaveEffect(sprite.position.x, sprite.position.z, 4.5);
+                    if (this.player && !this.isPlayerDead) {
+                        const d = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
+                        if (d <= 4.5) {
+                            this.takeDamage(1, 'frost-shockwave');
+                            this.playerSlowTimer = 3.0; // slowed for 3 seconds
+                        }
+                    }
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.45, playbackRate: 0.38 });
+                } else if (data.type === 'boss_sporesnail' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 6.5;
+                    const parent = sprite.parent;
+                    if (parent) {
+                        const spawnOffset = [
+                            [1.2, 1.2], [-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2]
+                        ];
+                        let spawnedCount = 0;
+                        for (const [dx, dz] of spawnOffset) {
+                            const tx = sprite.position.x + dx;
+                            const tz = sprite.position.z + dz;
+                            if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                                const placement = {
+                                    x: tx,
+                                    z: tz,
+                                    type: 'sporesnail',
+                                    scatterKey: `${sprite.userData.scatterKey}:minion:${Date.now()}:${spawnedCount}`,
+                                    scale: 0.9 + Math.random() * 0.2,
+                                    rotation: 0,
+                                    tiltX: 0,
+                                    tiltZ: 0,
+                                    elevation: 0.09,
+                                    groupType: 'minion',
+                                    phase: Math.random() * Math.PI,
+                                    opacity: 1,
+                                    biomeTint: 0x88ff88
+                                };
+                                const minion = this.createScatterInstance(placement);
+                                if (minion) {
+                                    parent.add(minion);
+                                    this.scatterSprites.push(minion);
+                                    this.spawnGearPoofEffect(tx, tz, 'bio_spores');
+                                    spawnedCount++;
+                                    if (spawnedCount >= 2) break;
+                                }
+                            }
+                        }
+                        window.AudioManager?.play('amb_metal_stress', { volume: 0.5, playbackRate: 0.5 });
+                    }
+                }
+            }
+        }
+
+        const attackRadius = SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
+        if (distanceToTarget <= attackRadius && data.attackCooldown <= 0) {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
+            const damage = data.isBoss ? 2 : 1;
             if (target.type === 'player') {
-                this.takeDamage(1, 'snail');
+                this.takeDamage(damage, data.type);
+                if (data.type === 'cryosnail') {
+                    this.playerSlowTimer = 2.5; // Cryosnail slows player on hit
+                }
             } else if (activeShip) {
-                this.damageShip(activeShip, 1, 'snail');
+                this.damageShip(activeShip, damage, data.type);
             }
             window.AudioManager?.play('amb_metal_stress', { volume: 0.24, playbackRate: 1.1 });
         }
     }
 
+    isEnemyType(type) {
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel'].includes(type);
+    }
+
+    isSentinel(type) {
+        return type === 'sentinel';
+    }
+
+    spawnFrostShockwaveEffect(x, z, maxRadius = 4.5) {
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.1, 0.25, 32),
+            new THREE.MeshBasicMaterial({
+                color: 0x88ccff,
+                transparent: true,
+                opacity: 0.8,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(x, 0.08, z);
+        this.scene.add(ring);
+        
+        const duration = 0.6;
+        this.transientEffects.push({
+            mesh: ring,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = age / duration;
+                const r = t * maxRadius;
+                ring.geometry.dispose();
+                ring.geometry = new THREE.RingGeometry(Math.max(0.1, r - 0.25), r + 0.05, 32);
+                ring.material.opacity = 0.8 * (1 - t);
+            }
+        });
+    }
+
+    spawnToxicSporePuddle(x, z, isLarge = false) {
+        const mat = this.scatterMaterials.scatter_slime_puddle.clone();
+        mat.color.setHex(0x55ff55); // neon toxic green
+        mat.opacity = 0.85;
+        
+        const sprite = new THREE.Sprite(mat);
+        sprite.center.set(0.5, 0.5);
+        sprite.position.set(x, 0.06, z);
+        const size = isLarge ? 2.2 : 0.85;
+        sprite.scale.set(size, size, 1);
+        this.scene.add(sprite);
+        
+        const duration = isLarge ? 6.5 : 4.0;
+        this.transientEffects.push({
+            mesh: sprite,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = age / duration;
+                sprite.material.opacity = 0.85 * (1 - t);
+                
+                // Deal damage if player walks in it
+                if (this.player && !this.isPlayerDead && age % 0.4 < dt) {
+                    const d = Math.hypot(this.player.position.x - x, this.player.position.z - z);
+                    const damageRadius = isLarge ? 1.1 : 0.45;
+                    if (d <= damageRadius) {
+                        this.playerPoisonTimer = 3.0; // poisoned for 3 seconds
+                    }
+                }
+            }
+        });
+    }
+
     updateScatter(delta, now) {
         const time = now * 0.001;
         const activeShip = this.getActiveShip();
+
+        // Update Boss HUD status bar
+        let nearestBoss = null;
+        let minBossDist = Infinity;
+        if (this.player && !this.isPlayerDead) {
+            for (const child of this.scatterSprites) {
+                if (child.userData?.isBoss && !child.userData?.burstTriggered) {
+                    const dist = Math.hypot(this.player.position.x - child.position.x, this.player.position.z - child.position.z);
+                    if (dist < minBossDist) {
+                        minBossDist = dist;
+                        nearestBoss = child;
+                    }
+                }
+            }
+        }
         
+        const bossPanel = document.getElementById('boss-status-panel');
+        if (nearestBoss && minBossDist < 16.0) {
+            this.activeBoss = nearestBoss;
+            if (bossPanel) {
+                bossPanel.classList.remove('hidden');
+                const nameEl = document.getElementById('boss-name');
+                const hpBar = document.getElementById('boss-hp-bar');
+                const hpText = document.getElementById('boss-hp-text');
+                
+                if (nameEl) {
+                    if (nearestBoss.userData.type === 'boss_cybersnail') {
+                        nameEl.textContent = 'CYBER-SHELL TITAN';
+                    } else if (nearestBoss.userData.type === 'boss_cryosnail') {
+                        nameEl.textContent = 'CRYO-GOLIATH SNAIL';
+                    } else if (nearestBoss.userData.type === 'boss_sporesnail') {
+                        nameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
+                    } else {
+                        nameEl.textContent = 'ELITE THREAT';
+                    }
+                }
+                
+                const hp = nearestBoss.userData.hp ?? 0;
+                const maxHp = nearestBoss.userData.maxHp ?? 10;
+                const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+                
+                if (hpBar) hpBar.style.width = `${pct}%`;
+                if (hpText) hpText.textContent = `${hp} / ${maxHp}`;
+            }
+        } else {
+            this.activeBoss = null;
+            if (bossPanel) {
+                bossPanel.classList.add('hidden');
+            }
+        }
+
+        this._threatAudioTimer = (this._threatAudioTimer ?? 0) - delta;
+        if (this._threatAudioTimer <= 0 && this.player && !this.isPlayerDead) {
+            let nearestHuntingSnail = Infinity;
+            for (const child of this.scatterSprites) {
+                if (!this.isEnemyType(child.userData?.type)) continue;
+                if (child.userData?.burstTriggered) continue;
+                if (child.userData?.aiMode !== 'hunt') continue;
+                const dist = Math.hypot(this.player.position.x - child.position.x, this.player.position.z - child.position.z);
+                if (dist < nearestHuntingSnail) nearestHuntingSnail = dist;
+            }
+            if (nearestHuntingSnail < 5.5) {
+                window.AudioManager?.play('amb_metal_stress', { volume: 0.08 + (1 - nearestHuntingSnail / 5.5) * 0.06, playbackRate: 1.25, bus: 'sfx' });
+                this._threatAudioTimer = 1.8;
+            } else {
+                this._threatAudioTimer = 0.5;
+            }
+        }
+
         for (const child of this.scatterSprites) {
+            const baseY = child.userData.elevationOffset ?? 0;
+            child.userData.baseY = baseY;
             if (child.userData.type.startsWith('bio_spores')) {
                 const phase = child.userData.phase;
                 const drift = Math.sin(time * 0.75 + phase) * 0.16;
                 const pulse = 0.92 + Math.sin(time * 1.15 + phase * 1.3) * 0.16;
                 const shimmer = 0.72 + Math.sin(time * 1.6 + phase) * 0.28;
-                child.position.y = child.userData.baseY + drift;
+                child.position.y = baseY + drift;
                 child.scale.set(
                     child.userData.baseScaleX * pulse,
                     child.userData.baseScaleY * pulse,
@@ -5383,17 +6843,36 @@ export class ThreeGame {
                 );
                 child.material.opacity = child.userData.baseOpacity * shimmer;
             } else if (child.userData.type.startsWith('bunker_junk')) {
-                child.position.y = child.userData.baseY;
+                child.position.y = baseY;
                 child.scale.set(
                     child.userData.baseScaleX,
                     child.userData.baseScaleY,
                     1
                 );
                 child.material.opacity = child.userData.baseOpacity;
-            } else if (child.userData.type === 'cybersnail') {
-                child.position.y = child.userData.baseY + Math.sin(time * 4 + child.userData.phase) * 0.04;
+            } else if (child.userData.type === 'lore_terminal') {
+                const phase = child.userData.phase ?? 0;
+                child.position.y = baseY + Math.sin(time * 1.4 + phase) * 0.05;
+                child.material.opacity = 0.7 + Math.sin(time * 2.1 + phase) * 0.3;
+            } else if (this.isSentinel(child.userData.type)) {
+                child.position.y = baseY;
+                if (!child.userData.burstTriggered) {
+                    this.updateSentinelBehavior(child, delta);
+                }
+            } else if (this.isEnemyType(child.userData.type)) {
+                child.position.y = baseY + Math.sin(time * 4 + child.userData.phase) * 0.04;
                 child.material.opacity = child.userData.baseOpacity;
                 this.updateSnailBehavior(child, delta, activeShip);
+
+                // Sporesnail leaves slime puddles
+                if (child.userData.type === 'sporesnail' || child.userData.type === 'boss_sporesnail') {
+                    child.userData.sporeEmitTimer = (child.userData.sporeEmitTimer ?? 0) + delta;
+                    const interval = child.userData.isBoss ? 1.2 : 2.4;
+                    if (child.userData.sporeEmitTimer >= interval && !child.userData.burstTriggered) {
+                        child.userData.sporeEmitTimer = 0;
+                        this.spawnToxicSporePuddle(child.position.x, child.position.z, child.userData.isBoss);
+                    }
+                }
             }
 
             if (child.userData.burstTriggered) {
@@ -5416,7 +6895,7 @@ export class ThreeGame {
                         this.scatterSprites = this.scatterSprites.filter((sprite) => sprite !== child);
                         continue;
                     }
-                } else if (child.userData.type === 'cybersnail') {
+                } else if (this.isEnemyType(child.userData.type)) {
                     const fadeDuration = 0.22;
                     const fadeT = Math.min(child.userData.burstTimer / fadeDuration, 1);
                     const burstScale = 1 + Math.sin(Math.min(child.userData.burstTimer * 11, Math.PI)) * 0.24;
@@ -5603,6 +7082,19 @@ export class ThreeGame {
         const removals = [];
 
         for (const effect of this.transientEffects) {
+            if (typeof effect.update === 'function') {
+                // plain-object effects (footstep dots, ring waves, spore puddles)
+                if (effect.update.length >= 2) {
+                    effect.age += delta;
+                    effect.update(delta, effect.age);
+                } else {
+                    effect.update(delta);
+                }
+                const maxAge = effect.duration ?? effect.maxAge ?? Infinity;
+                if (effect.age >= maxAge) removals.push(effect);
+                continue;
+            }
+
             effect.userData.age += delta;
             const t = Math.min(effect.userData.age / effect.userData.duration, 1);
 
@@ -5630,11 +7122,21 @@ export class ThreeGame {
         }
 
         for (const effect of removals) {
-            effect.traverse((child) => {
-                child.material?.dispose?.();
-                child.geometry?.dispose?.();
-            });
-            this.scene.remove(effect);
+            if (typeof effect.update === 'function') {
+                if (typeof effect.dispose === 'function') {
+                    effect.dispose();
+                } else {
+                    effect.mesh?.material?.dispose?.();
+                    effect.mesh?.geometry?.dispose?.();
+                }
+                this.scene.remove(effect.mesh);
+            } else {
+                effect.traverse((child) => {
+                    child.material?.dispose?.();
+                    child.geometry?.dispose?.();
+                });
+                this.scene.remove(effect);
+            }
         }
 
         this.transientEffects = this.transientEffects.filter((effect) => !removals.includes(effect));
@@ -5766,14 +7268,24 @@ export class ThreeGame {
         const chunkY = Math.floor(worldY / this.chunkSize);
         const localX = worldX - chunkX * this.chunkSize;
         const localY = worldY - chunkY * this.chunkSize;
-        const chunk = this.getOrCreateChunk(chunkX, chunkY);
-        return chunk[localY][localX];
+        return this.getOrCreateChunk(chunkX, chunkY)[localY][localX];
+    }
+
+    getRoomTypeGrid(chunkX, chunkY) {
+        const key = `${chunkX},${chunkY}`;
+        if (!this.chunkCache.has(key)) {
+            this.getOrCreateChunk(chunkX, chunkY);
+        }
+        return this._chunkRoomTypeCache?.get(key) ?? null;
     }
 
     getOrCreateChunk(chunkX, chunkY) {
         const key = `${chunkX},${chunkY}`;
         if (!this.chunkCache.has(key)) {
-            this.chunkCache.set(key, this.buildChunk(chunkX, chunkY));
+            const grid = this.buildChunk(chunkX, chunkY);
+            this.chunkCache.set(key, grid);
+            if (!this._chunkRoomTypeCache) this._chunkRoomTypeCache = new Map();
+            this._chunkRoomTypeCache.set(key, classifyChunkCells(grid, this.chunkSize));
         }
         return this.chunkCache.get(key);
     }

@@ -23,6 +23,7 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         expect(bank.getState()).toEqual({
+            schemaVersion: 1,
             med: 0,
             ammo: 0,
             tech: 0,

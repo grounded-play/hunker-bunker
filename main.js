@@ -41,16 +41,15 @@ const bunkerLevelNum = document.getElementById('level-num');
 const biomeLabelEl = document.getElementById('biome-label');
 const biomeHudPromptEl = document.getElementById('biome-hud-prompt');
 const biomeHudTextEl = document.getElementById('biome-hud-text');
-const ammoRow = document.getElementById('pickup-row-ammo');
 const weaponStatusPanel = document.getElementById('weapon-status-panel');
 const weaponClipCurrent = document.getElementById('weapon-clip-current');
 const weaponClipMax = document.getElementById('weapon-clip-max');
-const weaponReloadLabel = document.getElementById('weapon-reload-label');
+const weaponAmmoCache = document.getElementById('weapon-ammo-cache');
+const weaponReloadBar = document.getElementById('weapon-reload-bar');
 const shipHpBar = document.getElementById('ship-hp-bar');
 const shipHpText = document.getElementById('ship-hp-text');
 const pickupCountByType = {
     health: document.getElementById('pickup-count-health'),
-    ammo: document.getElementById('pickup-count-ammo'),
     weapon: document.getElementById('pickup-count-weapon'),
     coin: document.getElementById('pickup-count-coin')
 };
@@ -70,6 +69,11 @@ const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS'])
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
 const BIOME_PROMPT_DURATION_MS = 2800;
 const STARTING_RUN_AMMO = 18;
+const CLASS_AMMO_CAPACITY = Object.freeze({
+    SCOUT: 24,
+    TANK: 30,
+    ENGINEER: 21
+});
 
 const state = {
     settings: {
@@ -97,9 +101,17 @@ let dialogueManager = null;
 let missionFlowRunning = false;
 let deathSequenceTimer = null;
 let damageFlashTimer = null;
-let ammoFlashTimer = null;
 let weaponErrorTimer = null;
 let biomePromptTimer = null;
+let o2AlarmTimer = null;
+let o2AlarmActive = false;
+let pickupComboCount = 0;
+let pickupComboTimer = null;
+const PICKUP_COMBO_WINDOW_MS = 1400;
+const PICKUP_COMBO_THRESHOLD = 3;
+let runStartTime = Date.now();
+let currentMission = null;
+const _mothershipFiredTriggers = new Set();
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -107,6 +119,7 @@ const pickupCounterState = {
     weapon: 0,
     coin: 0
 };
+let activeAmmoCapacity = CLASS_AMMO_CAPACITY.SCOUT;
 const bankManager = new BankManager();
 
 window.bankManager = bankManager;
@@ -115,7 +128,6 @@ function recomputePickupTotal() {
     pickupCounterState.total = Math.max(
         0,
         (pickupCounterState.health ?? 0)
-        + (pickupCounterState.ammo ?? 0)
         + (pickupCounterState.weapon ?? 0)
         + (pickupCounterState.coin ?? 0)
     );
@@ -130,6 +142,23 @@ function renderPickupCounter() {
         if (!el) continue;
         el.textContent = String(pickupCounterState[type] ?? 0);
     }
+
+    if (weaponAmmoCache) {
+        weaponAmmoCache.textContent = `CACHE ${pickupCounterState.ammo}/${activeAmmoCapacity}`;
+    }
+}
+
+function getAmmoCapacityForClass(type = 'SCOUT') {
+    return CLASS_AMMO_CAPACITY[type] ?? CLASS_AMMO_CAPACITY.SCOUT;
+}
+
+function setActiveAmmoCapacity(type = 'SCOUT', { clampExisting = false } = {}) {
+    activeAmmoCapacity = getAmmoCapacityForClass(type);
+    if (clampExisting) {
+        pickupCounterState.ammo = Math.min(pickupCounterState.ammo, activeAmmoCapacity);
+        recomputePickupTotal();
+    }
+    renderPickupCounter();
 }
 
 function clampAudioMixValue(value) {
@@ -266,9 +295,10 @@ function installAudioMixerControls() {
     });
 }
 
-function resetPickupCounter() {
+function resetPickupCounter(playerType = (window.game?.playerType || 'SCOUT')) {
+    setActiveAmmoCapacity(playerType, { clampExisting: false });
     pickupCounterState.health = 0;
-    pickupCounterState.ammo = STARTING_RUN_AMMO;
+    pickupCounterState.ammo = Math.min(STARTING_RUN_AMMO, activeAmmoCapacity);
     pickupCounterState.weapon = 0;
     pickupCounterState.coin = 0;
     recomputePickupTotal();
@@ -281,24 +311,79 @@ function getSessionInventorySnapshot() {
         ammo: pickupCounterState.ammo,
         weapon: pickupCounterState.weapon,
         coin: pickupCounterState.coin,
-        total: pickupCounterState.total
+        total: (pickupCounterState.health ?? 0)
+            + (pickupCounterState.weapon ?? 0)
+            + (pickupCounterState.coin ?? 0)
     };
+}
+
+function consumeSessionInventoryForDeposit(inventory = {}) {
+    const health = Number.isFinite(inventory.health) ? Math.max(0, Math.floor(inventory.health)) : 0;
+    const weapon = Number.isFinite(inventory.weapon) ? Math.max(0, Math.floor(inventory.weapon)) : 0;
+    const coin = Number.isFinite(inventory.coin) ? Math.max(0, Math.floor(inventory.coin)) : 0;
+
+    pickupCounterState.health = Math.max(0, pickupCounterState.health - health);
+    pickupCounterState.weapon = Math.max(0, pickupCounterState.weapon - weapon);
+    pickupCounterState.coin = Math.max(0, pickupCounterState.coin - coin);
+    recomputePickupTotal();
+    renderPickupCounter();
 }
 
 function trackPickupCollected(event) {
     const type = event?.detail?.type;
     if (!type || !(type in pickupCounterState)) return;
 
-    pickupCounterState[type] += 1;
+    const previousValue = pickupCounterState[type] ?? 0;
+    if (type === 'ammo') {
+        pickupCounterState.ammo = Math.min(activeAmmoCapacity, previousValue + 1);
+    } else {
+        pickupCounterState[type] = previousValue + 1;
+    }
+
+    const gainedValue = pickupCounterState[type] > previousValue;
     recomputePickupTotal();
     renderPickupCounter();
+    if (!gainedValue) {
+        if (type === 'ammo') {
+            flashWeaponError();
+        }
+        return;
+    }
 
     // Play dynamic procedurally synthesized loot sound
     const rarity = event?.detail?.rarity;
     AudioManager.playProceduralLoot(type, rarity);
+
+    // Rare+ loot flash
+    if (rarity === 'legendary') {
+        AudioManager.play('ui_boot', { volume: 0.32, playbackRate: 1.22, bus: 'sfx' });
+        const viewport = document.getElementById('game-viewport');
+        if (viewport) {
+            viewport.classList.add('pickup-legendary-flash');
+            setTimeout(() => viewport.classList.remove('pickup-legendary-flash'), 500);
+        }
+    } else if (rarity === 'rare') {
+        AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 1.35, bus: 'sfx' });
+    }
+
+    // Pickup combo tracking
+    pickupComboCount += 1;
+    if (pickupComboTimer) clearTimeout(pickupComboTimer);
+    if (pickupComboCount >= PICKUP_COMBO_THRESHOLD) {
+        AudioManager.play('ui_scan_ping', { volume: 0.28, playbackRate: 1.65 + Math.min(pickupComboCount - PICKUP_COMBO_THRESHOLD, 4) * 0.08, bus: 'sfx' });
+        const lootPanel = document.getElementById('pickup-counter-panel');
+        if (lootPanel) {
+            lootPanel.classList.add('pickup-counter-panel--combo');
+            setTimeout(() => lootPanel.classList.remove('pickup-counter-panel--combo'), 380);
+        }
+    }
+    pickupComboTimer = setTimeout(() => {
+        pickupComboCount = 0;
+        pickupComboTimer = null;
+    }, PICKUP_COMBO_WINDOW_MS);
 }
 
-function spendSessionAmmo(amount = 1) {
+function consumeSessionAmmoCache(amount = 1) {
     const spend = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
     if (spend <= 0) return;
     pickupCounterState.ammo = Math.max(0, pickupCounterState.ammo - spend);
@@ -306,23 +391,14 @@ function spendSessionAmmo(amount = 1) {
     renderPickupCounter();
 }
 
-function flashAmmoCounterError() {
-    if (!ammoRow) return;
-    ammoRow.classList.add('counter-flash--error');
-    if (ammoFlashTimer) {
-        clearTimeout(ammoFlashTimer);
-        ammoFlashTimer = null;
-    }
-    ammoFlashTimer = window.setTimeout(() => {
-        ammoRow.classList.remove('counter-flash--error');
-        ammoFlashTimer = null;
-    }, 620);
-}
-
 function renderWeaponClipState(detail = {}) {
     const clip = Number.isFinite(detail.clip) ? Math.max(0, Math.floor(detail.clip)) : 0;
     const maxClip = Number.isFinite(detail.maxClip) ? Math.max(1, Math.floor(detail.maxClip)) : 6;
+    const cache = Number.isFinite(detail.cache) ? Math.max(0, Math.floor(detail.cache)) : pickupCounterState.ammo;
     const reloading = Boolean(detail.reloading);
+    const reloadProgress = Number.isFinite(detail.reloadProgress)
+        ? Math.max(0, Math.min(1, detail.reloadProgress))
+        : 0;
 
     if (weaponClipCurrent) {
         weaponClipCurrent.textContent = String(clip);
@@ -330,11 +406,15 @@ function renderWeaponClipState(detail = {}) {
     if (weaponClipMax) {
         weaponClipMax.textContent = String(maxClip);
     }
-    if (weaponReloadLabel) {
-        weaponReloadLabel.classList.toggle('hidden', !reloading);
+    if (weaponAmmoCache) {
+        weaponAmmoCache.textContent = `CACHE ${cache}/${activeAmmoCapacity}`;
+    }
+    if (weaponReloadBar) {
+        weaponReloadBar.style.transform = `scaleX(${reloading ? reloadProgress : 0})`;
     }
     if (weaponStatusPanel) {
         weaponStatusPanel.classList.toggle('is-reloading', reloading);
+        weaponStatusPanel.setAttribute('aria-busy', reloading ? 'true' : 'false');
     }
 }
 
@@ -349,6 +429,10 @@ function flashWeaponError() {
         weaponStatusPanel.classList.remove('is-error');
         weaponErrorTimer = null;
     }, 740);
+}
+
+function requestWeaponReload() {
+    window.game?.requestReload?.({ manual: true, fromUI: true });
 }
 
 function renderShipHealth(detail = {}) {
@@ -372,15 +456,32 @@ function renderShipHealth(detail = {}) {
 }
 
 window.addEventListener('pickup-collected', trackPickupCollected);
-window.addEventListener('player-spend-ammo', (event) => {
-    spendSessionAmmo(event?.detail?.amount ?? 1);
+window.addEventListener('player-consume-ammo-cache', (event) => {
+    consumeSessionAmmoCache(event?.detail?.amount ?? 1);
 });
 window.addEventListener('combat-no-ammo', () => {
-    flashAmmoCounterError();
     flashWeaponError();
 });
 window.addEventListener('combat-no-fire-zone', () => {
     flashWeaponError();
+});
+window.addEventListener('enemy-killed', (event) => {
+    const total = event?.detail?.totalKills ?? 0;
+    const type = event?.detail?.type ?? '';
+    if (total === 1) fireMothershipReactiveLine('first_kill');
+    if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
+});
+
+window.addEventListener('enemy-hit', (event) => {
+    const type = event?.detail?.type || 'cybersnail';
+    const isBoss = type.startsWith('boss_');
+    const enraged = Boolean(event?.detail?.enraged);
+    if (isBoss) {
+        window.game?.triggerCameraShake?.(0.12, 0.25);
+        AudioManager.play('ui_error', { volume: 0.22, playbackRate: 0.58, bus: 'sfx' });
+    } else if (enraged) {
+        AudioManager.play('ui_scan_ping', { volume: 0.18, playbackRate: 1.85, bus: 'sfx' });
+    }
 });
 window.addEventListener('weapon-clip-updated', (event) => {
     renderWeaponClipState(event?.detail ?? {});
@@ -388,12 +489,33 @@ window.addEventListener('weapon-clip-updated', (event) => {
 window.addEventListener('ship-health-changed', (event) => {
     renderShipHealth(event?.detail ?? {});
 });
+
+function bindReloadTrigger(element, label) {
+    if (!element) return;
+    element.setAttribute('role', 'button');
+    element.setAttribute('tabindex', '0');
+    element.setAttribute('aria-label', label);
+    element.addEventListener('click', (event) => {
+        event.preventDefault();
+        requestWeaponReload();
+    });
+    element.addEventListener('keydown', (event) => {
+        if (event.code !== 'Enter' && event.code !== 'Space') return;
+        event.preventDefault();
+        requestWeaponReload();
+    });
+}
+
+bindReloadTrigger(weaponStatusPanel, 'Reload sidearm');
+
 renderPickupCounter();
-renderWeaponClipState({ clip: 6, maxClip: 6, reloading: false });
+renderWeaponClipState({ clip: 6, maxClip: 6, cache: pickupCounterState.ammo, reloading: false });
 renderShipHealth({ hp: 1, maxHp: 1 });
 window.pickupCounterState = pickupCounterState;
 window.resetPickupCounter = resetPickupCounter;
 window.getPickupCounterState = getSessionInventorySnapshot;
+window.consumeSessionInventoryForDeposit = consumeSessionInventoryForDeposit;
+window.getClassAmmoCapacity = () => activeAmmoCapacity;
 window.vitalsHUD = new VitalsHUD();
 
 function renderBunkerLevel(tier = 0) {
@@ -458,12 +580,39 @@ function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
     }
 }
 
+let lastReportedDepthTier = 0;
 window.addEventListener('depth-tier-changed', (event) => {
-    renderBunkerLevel(event?.detail?.tier ?? 0);
+    const tier = event?.detail?.tier ?? 0;
+    renderBunkerLevel(tier);
+    if (tier > lastReportedDepthTier && tier > 0) {
+        lastReportedDepthTier = tier;
+        const label = event?.detail?.label ?? `DEPTH ${tier}`;
+        AudioManager.play('ui_boot', { volume: 0.28, playbackRate: 0.78 + tier * 0.06, bus: 'sfx' });
+        showBiomePrompt(`> DEPTH TIER: ${label} — HAZARD ASSESSMENT ELEVATED`);
+    }
 });
+const BIOME_HUD_COLORS = {
+    active: { label: 'rgba(173, 225, 255, 0.98)', glow: 'rgba(94, 178, 255, 0.33)' },
+    cryo:   { label: 'rgba(148, 204, 255, 0.98)', glow: 'rgba(68, 158, 240, 0.45)' },
+    bio:    { label: 'rgba(144, 220, 140, 0.98)', glow: 'rgba(60, 160, 80, 0.40)'  }
+};
 window.addEventListener('biome-changed', (event) => {
     renderBiomeStatus(event?.detail ?? {}, { showPrompt: true });
     renderBunkerLevel(window.game?.maxDepthTierReached ?? Number(bunkerLevelNum?.textContent ?? 0));
+    const biomeKey = event?.detail?.key ?? 'active';
+    const biomeCols = BIOME_HUD_COLORS[biomeKey] ?? BIOME_HUD_COLORS.active;
+    const hud = document.getElementById('ui');
+    if (hud) {
+        hud.style.setProperty('--biome-label-color', biomeCols.label);
+        hud.style.setProperty('--biome-label-glow', biomeCols.glow);
+    }
+    if (biomeKey === 'cryo') {
+        AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
+        fireMothershipReactiveLine('first_cryo');
+    } else if (biomeKey === 'bio') {
+        AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
+        fireMothershipReactiveLine('first_bio');
+    }
 });
 renderBunkerLevel(0);
 renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
@@ -495,9 +644,9 @@ function triggerDamageFlash() {
 
 // ---- Hero select stat pips ----
 const HERO_DISPLAY_STATS = {
-    SCOUT:    { spdPips: 5, o2Pips: 2, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW'    },
-    TANK:     { spdPips: 2, o2Pips: 5, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH'   },
-    ENGINEER: { spdPips: 4, o2Pips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL' }
+    SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE'  },
+    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT' },
+    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'MED'   }
 };
 const HERO_STAT_TOTAL = 5;
 
@@ -522,43 +671,164 @@ function updateHeroStats(type) {
 
     renderPips('hero-stat-spd', stats.spdPips);
     renderPips('hero-stat-o2', stats.o2Pips);
+    renderPips('hero-stat-loot', stats.lootPips);
 
-    const spdVal = document.getElementById('hero-stat-spd-val');
-    const o2Val  = document.getElementById('hero-stat-o2-val');
-    if (spdVal) spdVal.textContent = stats.spdLabel;
-    if (o2Val)  o2Val.textContent  = stats.o2Label;
+    const spdVal  = document.getElementById('hero-stat-spd-val');
+    const o2Val   = document.getElementById('hero-stat-o2-val');
+    const lootVal = document.getElementById('hero-stat-loot-val');
+    if (spdVal)  spdVal.textContent  = stats.spdLabel;
+    if (o2Val)   o2Val.textContent   = stats.o2Label;
+    if (lootVal) lootVal.textContent = stats.lootLabel;
 }
 
 // ---- Game Over Screen ----
-function showGameOverScreen(stats) {
-    const distancePct = Math.min(100, (stats.distanceTravelled / 500) * 100);
-    const itemsPct    = Math.min(100, (stats.totalPickups / 50) * 100);
-    const genPct      = Math.min(100, (stats.generatorLevel / 3) * 100);
+function assignMission(bankState) {
+    const unlocks = bankState?.unlocks ?? {};
+    const totalUnlocks = Object.values(unlocks).filter(Boolean).length;
+    if (totalUnlocks === 0) {
+        return { type: 'retrieval', label: 'RETRIEVE: PRIORITY TECH CACHE', targetKills: 0, targetDepth: 0 };
+    } else if (totalUnlocks < 3) {
+        return { type: 'survey', label: 'SURVEY: CRYO SECTOR BOUNDARY', targetKills: 0, targetDepth: 65 };
+    }
+    const idx = (totalUnlocks + Math.floor(Date.now() / 86400000)) % 3;
+    const missions = [
+        { type: 'retrieval', label: 'RETRIEVE: HIGH-VALUE TECH ASSET', targetKills: 0, targetDepth: 0 },
+        { type: 'survey', label: 'SURVEY: DEEP SECTOR RECON', targetKills: 0, targetDepth: 145 },
+        { type: 'elimination', label: 'ELIMINATE: BIO-ENTITY CLUSTER', targetKills: 6, targetDepth: 0 }
+    ];
+    return missions[idx];
+}
 
-    const distBar = document.getElementById('go-bar-distance');
-    const itemBar = document.getElementById('go-bar-items');
-    const genBar  = document.getElementById('go-bar-generator');
+function generateDeathReport(stats, reason) {
+    const biome = stats.biomeLabel ?? 'ACTIVE SECTOR';
+    const depth = stats.distanceTravelled ?? 0;
+    const causeMap = {
+        'o2-depletion':       '> CAUSE: EXOSUIT ATMOSPHERIC FAILURE — O₂ RESERVES EXHAUSTED',
+        'snail':              '> CAUSE: BIO-ENTITY CONTACT — CYBERSNAIL MELEE IMPACT',
+        'cybersnail':         '> CAUSE: BIO-ENTITY CONTACT — CYBERSNAIL MELEE IMPACT',
+        'cryosnail':          '> CAUSE: BIO-ENTITY CONTACT — CRYOSNAIL IMPACT',
+        'sporesnail':         '> CAUSE: BIO-ENTITY CONTACT — SPORESNAIL IMPACT',
+        'enemy-projectile':   '> CAUSE: HOSTILE PROJECTILE IMPACT',
+        'sentinel':           '> CAUSE: HOSTILE PROJECTILE — SENTINEL FIRE',
+        'ship-destroyed':     '> CAUSE: SHIP STRUCTURAL FAILURE — HULL INTEGRITY ZERO',
+        'frost-shockwave':    '> CAUSE: CRYO HAZARD — THERMAL SHOCKWAVE IMPACT',
+        'poison':             '> CAUSE: BIO-TOXIN EXPOSURE — SUIT INTEGRITY FAILURE',
+    };
+    const cause = causeMap[reason] ?? '> CAUSE: EXOSUIT FAILURE — UNKNOWN EVENT';
+    return [
+        `> LAST KNOWN POSITION: ${biome}`,
+        `> DISTANCE FROM BASE: ${Math.round(depth)}u`,
+        `> SALVAGE RECOVERED: ${stats.totalPickups ?? 0} ITEMS`,
+        `> THREATS NEUTRALIZED: ${stats.snailsKilled ?? 0}`,
+        cause
+    ].join('\n');
+}
 
-    if (distBar) distBar.style.width = '0%';
-    if (itemBar) itemBar.style.width = '0%';
-    if (genBar)  genBar.style.width  = '0%';
+function formatRunTime(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
 
-    const distVal = document.getElementById('go-val-distance');
-    const itemVal = document.getElementById('go-val-items');
-    const genVal  = document.getElementById('go-val-generator');
+function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' } = {}) {
+    const elapsedMs    = Date.now() - runStartTime;
+    const elapsedMin   = elapsedMs / 60000;
+    const distancePct  = Math.min(100, (stats.distanceTravelled / 500) * 100);
+    const itemsPct     = Math.min(100, (stats.totalPickups / 50) * 100);
+    const genPct       = Math.min(100, (stats.generatorLevel / 3) * 100);
+    const kills        = stats.snailsKilled ?? 0;
+    const killsPct     = Math.min(100, (kills / 10) * 100);
+    const timePct      = Math.min(100, (elapsedMin / 20) * 100);
 
-    if (distVal) distVal.textContent = `${stats.distanceTravelled}u`;
-    if (itemVal) itemVal.textContent = String(stats.totalPickups);
-    if (genVal)  genVal.textContent  = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
+    const distBar  = document.getElementById('go-bar-distance');
+    const itemBar  = document.getElementById('go-bar-items');
+    const genBar   = document.getElementById('go-bar-generator');
+    const killsBar = document.getElementById('go-bar-kills');
+    const timeBar  = document.getElementById('go-bar-time');
+
+    if (distBar)  distBar.style.width  = '0%';
+    if (itemBar)  itemBar.style.width  = '0%';
+    if (genBar)   genBar.style.width   = '0%';
+    if (killsBar) killsBar.style.width = '0%';
+    if (timeBar)  timeBar.style.width  = '0%';
+
+    const distVal  = document.getElementById('go-val-distance');
+    const itemVal  = document.getElementById('go-val-items');
+    const genVal   = document.getElementById('go-val-generator');
+    const killsVal = document.getElementById('go-val-kills');
+    const timeVal  = document.getElementById('go-val-time');
+
+    if (distVal)  distVal.textContent  = `${stats.distanceTravelled}u`;
+    if (itemVal)  itemVal.textContent  = String(stats.totalPickups);
+    if (genVal)   genVal.textContent   = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
+    if (killsVal) killsVal.textContent = kills > 0 ? String(kills) : 'NONE';
+    if (timeVal)  timeVal.textContent  = formatRunTime(elapsedMs);
+
+    // Title / subtitle
+    const title = document.querySelector('.game-over-title');
+    const subtitle = document.querySelector('.game-over-subtitle');
+    if (title) title.textContent = isVictory ? 'EXTRACTION COMPLETE' : 'EXOSUIT FAILURE';
+    if (subtitle) {
+        const report = isVictory
+            ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
+            : generateDeathReport(stats, deathReason);
+        subtitle.textContent = '';
+        let charIdx = 0;
+        const chars = report.split('');
+        const typewriteReport = () => {
+            if (charIdx < chars.length && subtitle) {
+                subtitle.textContent += chars[charIdx++];
+                setTimeout(typewriteReport, 12);
+            }
+        };
+        setTimeout(typewriteReport, 300);
+    }
+
+    // Score + rating
+    const score = window.game?.calculateRunScore?.(stats, { status: stats.missionStatus }, runStartTime) ?? 0;
+    const rating = window.game?.getRunRating?.(score) ?? { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
+
+    const scoreVal = document.getElementById('go-score-val');
+    const ratingBadge = document.getElementById('go-rating-badge');
+    const ratingLabel = document.getElementById('go-rating-label');
+    const newBest = document.getElementById('go-new-best');
+
+    if (scoreVal) scoreVal.textContent = String(score);
+    if (ratingBadge) {
+        ratingBadge.textContent = rating.grade;
+        ratingBadge.className = `go-rating-badge go-rating-badge--${rating.grade.toLowerCase()}`;
+    }
+    if (ratingLabel) ratingLabel.textContent = rating.label;
+
+    // Personal best
+    const bestKey = `hb_best_score_${window.game?.playerType ?? 'SCOUT'}`;
+    const prevBest = Number(localStorage.getItem(bestKey) ?? 0);
+    const isNewBest = score > prevBest;
+    if (isNewBest) localStorage.setItem(bestKey, String(score));
+    if (newBest) newBest.classList.toggle('hidden', !isNewBest);
+
+    // Archive progress
+    const archiveRow = document.getElementById('go-archive-row');
+    const archiveText = document.getElementById('go-archive-text');
+    const mem = getWorldMemory();
+    const logsFound = mem.logsFound?.length ?? 0;
+    if (archiveRow) archiveRow.classList.toggle('hidden', logsFound === 0);
+    if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/27`;
 
     const modal = document.getElementById('game-over-modal');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.toggle('game-over-modal--victory', isVictory);
+    }
 
     // Stagger bar animations for a readout effect
     requestAnimationFrame(() => {
-        setTimeout(() => { if (distBar) distBar.style.width = `${distancePct}%`; }, 120);
-        setTimeout(() => { if (itemBar) itemBar.style.width = `${itemsPct}%`;    }, 340);
-        setTimeout(() => { if (genBar)  genBar.style.width  = `${genPct}%`;      }, 560);
+        setTimeout(() => { if (distBar)  distBar.style.width  = `${distancePct}%`; }, 120);
+        setTimeout(() => { if (itemBar)  itemBar.style.width  = `${itemsPct}%`;    }, 340);
+        setTimeout(() => { if (genBar)   genBar.style.width   = `${genPct}%`;      }, 560);
+        setTimeout(() => { if (killsBar) killsBar.style.width = `${killsPct}%`;    }, 760);
+        setTimeout(() => { if (timeBar)  timeBar.style.width  = `${timePct}%`;     }, 960);
     });
 }
 
@@ -577,8 +847,13 @@ function resetRunToStartingState({
         bankManager.reset();
     }
 
+    runStartTime = Date.now();
+    currentMission = assignMission(bankManager.getState());
+    _mothershipFiredTriggers.clear();
+
     resetPickupCounter();
     window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
+    window.game?.initMission?.(currentMission);
     setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
     window.game?.setInputEnabled?.(false);
     renderBunkerLevel(0);
@@ -586,11 +861,13 @@ function resetRunToStartingState({
     hideBiomePrompt();
 }
 
-function runDeathSequence() {
+function runDeathSequence(event) {
     if (deathSequenceTimer) return;
 
+    const deathReason = event?.detail?.reason ?? 'hazard';
     window.game?.setInputEnabled?.(false);
     hideBiomePrompt();
+    hideExtractionRing();
     if (biomePromptTimer) {
         clearTimeout(biomePromptTimer);
         biomePromptTimer = null;
@@ -607,7 +884,7 @@ function runDeathSequence() {
             totalPickups: 0,
             generatorLevel: 0
         };
-        showGameOverScreen(stats);
+        showGameOverScreen(stats, { isVictory: false, deathReason });
         resetRunToStartingState({
             resetBank: false,
             skipEffects: true,
@@ -619,10 +896,310 @@ function runDeathSequence() {
 }
 
 window.addEventListener('player-damaged', triggerDamageFlash);
+window.addEventListener('health-restored', () => {
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) {
+        viewport.classList.add('heal-flash');
+        setTimeout(() => viewport.classList.remove('heal-flash'), 500);
+    }
+    AudioManager.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.1, bus: 'sfx' });
+});
 window.addEventListener('player-death', runDeathSequence);
 window.addEventListener('player-respawned', () => {
     clearTimedClass('death', 'player-dead-flash');
+    stopO2Alarm();
+    hideExtractionRing();
+    lastReportedDepthTier = 0;
+    syncAbilityPanelLabel();
+    const bar = document.getElementById('ability-bar');
+    if (bar) bar.style.transform = 'scaleX(1)';
+    updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
     window.game?.setInputEnabled?.(true);
+});
+
+window.addEventListener('mission-objective-complete', (event) => {
+    const type = event?.detail?.type ?? '';
+    const messages = {
+        retrieval: 'OBJECTIVE SECURED — RETURN TO SHIP',
+        survey:    'SURVEY COMPLETE — RETURN TO SHIP',
+        elimination: 'TARGETS ELIMINATED — RETURN TO SHIP'
+    };
+    const msg = messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP';
+    showBiomePrompt(msg);
+    AudioManager.play('ui_boot', { volume: 0.45, playbackRate: 0.88, bus: 'sfx' });
+});
+
+window.addEventListener('extraction-progress', (event) => {
+    const { progress = 0, active = false } = event?.detail ?? {};
+    updateExtractionRing(progress, active);
+});
+
+window.addEventListener('player-extracted', (event) => {
+    hideExtractionRing();
+    window.game?.setInputEnabled?.(false);
+    hideBiomePrompt();
+
+    const stats = event?.detail?.runStats ?? window.game?.getRunStats?.() ?? {};
+    AudioManager.play('ui_boot', { volume: 0.6, playbackRate: 0.72, bus: 'sfx' });
+
+    window.setTimeout(() => {
+        showGameOverScreen(stats, { isVictory: true });
+        resetRunToStartingState({
+            resetBank: false,
+            skipEffects: true,
+            snailSpawnEnabled: false,
+            purgeSnails: true
+        });
+        window.game?.setInputEnabled?.(false);
+    }, 600);
+});
+
+// ── Lore Terminal System ──────────────────────────────────────
+const WORLD_MEMORY_KEY = 'hb_world_memory_v1';
+
+function getWorldMemory() {
+    try {
+        return JSON.parse(localStorage.getItem(WORLD_MEMORY_KEY) ?? 'null') ?? { logsFound: [], biomesMapped: [] };
+    } catch { return { logsFound: [], biomesMapped: [] }; }
+}
+
+function saveWorldMemory(mem) {
+    try { localStorage.setItem(WORLD_MEMORY_KEY, JSON.stringify(mem)); } catch { /* ignore */ }
+}
+
+function markLogFound(loreKey) {
+    const mem = getWorldMemory();
+    if (!mem.logsFound.includes(loreKey)) {
+        mem.logsFound.push(loreKey);
+        saveWorldMemory(mem);
+        return true; // newly discovered
+    }
+    return false;
+}
+
+window.addEventListener('lore-terminal-nearby', () => {
+    const prompt = document.getElementById('lore-hud-prompt');
+    if (prompt) prompt.classList.remove('hidden');
+});
+
+window.addEventListener('lore-terminal-clear', () => {
+    const prompt = document.getElementById('lore-hud-prompt');
+    if (prompt) prompt.classList.add('hidden');
+});
+
+window.addEventListener('lore-terminal-read', (event) => {
+    const { loreKey, loreText } = event?.detail ?? {};
+    if (!loreKey || !loreText) return;
+
+    const loreModal = document.getElementById('lore-modal');
+    const loreKeyEl = document.getElementById('lore-modal-key');
+    const loreTextEl = document.getElementById('lore-modal-text');
+    if (!loreModal) return;
+
+    if (loreKeyEl) loreKeyEl.textContent = `LOG-${loreKey}`;
+    if (loreTextEl) loreTextEl.textContent = '';
+
+    loreModal.classList.remove('hidden');
+    window.game?.setInputEnabled?.(false);
+
+    // Typewrite the log text
+    let charIdx = 0;
+    const chars = loreText.split('');
+    const tick = () => {
+        if (!loreTextEl || loreModal.classList.contains('hidden')) return;
+        if (charIdx < chars.length) {
+            loreTextEl.textContent += chars[charIdx++];
+            setTimeout(tick, 18);
+        }
+    };
+    tick();
+
+    // Track discovery
+    const isNew = markLogFound(loreKey);
+    if (isNew) {
+        fireMothershipReactiveLine('lore_found');
+    }
+});
+
+const closeLoreModal = document.getElementById('close-lore-modal');
+if (closeLoreModal) {
+    closeLoreModal.addEventListener('click', () => {
+        document.getElementById('lore-modal')?.classList.add('hidden');
+        window.game?.setInputEnabled?.(true);
+    });
+}
+
+// ── Reactive Mothership ───────────────────────────────────────
+function fireMothershipReactiveLine(trigger) {
+    if (_mothershipFiredTriggers.has(trigger)) return;
+    _mothershipFiredTriggers.add(trigger);
+    const lines = {
+        first_kill:       'AGENT — FIRST THREAT NEUTRALIZED. PROCEED.',
+        first_cryo:       'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.',
+        first_bio:        'ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.',
+        hp_critical:      'DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.',
+        objective_found:  'UPLINK: OBJECTIVE CONFIRMED. RETURN TO SHIP IMMEDIATELY.',
+        first_deposit:    'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.',
+        lore_found:       'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.',
+        sentinel_spotted: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.',
+    };
+    const text = lines[trigger];
+    if (text) showBiomePrompt(`> MOTHERSHIP: ${text}`);
+}
+
+window.addEventListener('pickup-collected', (event) => {
+    if (event?.detail?.type === 'weapon') {
+        if (!_mothershipFiredTriggers.has('first_deposit')) {
+            // first_deposit fires on first console deposit; track separately
+        }
+    }
+});
+
+window.addEventListener('player-damaged', (event) => {
+    const hp = event?.detail?.hp ?? 99;
+    if (hp <= 1) fireMothershipReactiveLine('hp_critical');
+});
+
+window.addEventListener('mission-objective-complete', () => {
+    fireMothershipReactiveLine('objective_found');
+});
+
+window.addEventListener('sentinel-fired', () => {
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) {
+        viewport.classList.add('sentinel-warning-flash');
+        setTimeout(() => viewport.classList.remove('sentinel-warning-flash'), 280);
+    }
+});
+
+window.addEventListener('mission-kill-progress', (event) => {
+    const { count = 0, target = 0 } = event?.detail ?? {};
+    const missionEl = document.getElementById('mission-status-text');
+    if (missionEl) missionEl.textContent = `ELIMINATE: ${count}/${target}`;
+});
+
+document.getElementById('class-ability-panel')?.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    window.game?.triggerClassAbility?.();
+});
+
+function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false } = {}) {
+    const touchBtn = document.getElementById('touch-ability-btn');
+    if (!touchBtn) return;
+
+    const clampedMax = Math.max(0.001, Number(max) || 0.001);
+    const clampedRemaining = Math.max(0, Number(remaining) || 0);
+    const cooldownProgress = active
+        ? 1
+        : Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
+
+    touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
+    touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
+
+    if (clampedRemaining > 0) {
+        touchBtn.style.pointerEvents = 'none';
+        touchBtn.style.opacity = '0.8';
+    } else {
+        touchBtn.style.pointerEvents = 'auto';
+        touchBtn.style.opacity = '1';
+    }
+
+    const cooldownEl = document.getElementById('touch-ability-cooldown');
+    if (cooldownEl) {
+        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : 'READY';
+    }
+}
+
+window.addEventListener('class-ability-activated', (event) => {
+    const panel = document.getElementById('class-ability-panel');
+    if (panel) panel.classList.add('class-ability-panel--active');
+    const { ability } = event?.detail ?? {};
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) {
+        viewport.classList.add(`ability-active-${ability}`);
+    }
+});
+
+window.addEventListener('class-ability-ended', (event) => {
+    const panel = document.getElementById('class-ability-panel');
+    if (panel) {
+        panel.classList.remove('class-ability-panel--active');
+        panel.classList.add('class-ability-panel--ready');
+        setTimeout(() => panel.classList.remove('class-ability-panel--ready'), 1100);
+    }
+    const { ability } = event?.detail ?? {};
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) viewport.classList.remove(`ability-active-${ability}`);
+});
+
+window.addEventListener('ability-cooldown-tick', (event) => {
+    const { remaining = 0, max = 1, active = false } = event?.detail ?? {};
+    const bar = document.getElementById('ability-bar');
+    if (bar) {
+        const fillPct = active ? 1 : 1 - (remaining / Math.max(0.001, max));
+        bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    }
+    updateTouchAbilityButtonState({ remaining, max, active });
+});
+
+function syncAbilityPanelLabel() {
+    const nameEl = document.getElementById('ability-name');
+    if (!nameEl) return;
+    const playerType = window.game?.playerType ?? 'SCOUT';
+    const labels = { SCOUT: 'SPRINT BURST', TANK: 'FORTIFY', ENGINEER: 'FIELD OVERCLOCK' };
+    nameEl.textContent = labels[playerType] ?? 'ABILITY';
+}
+
+function updateExtractionRing(progress, active) {
+    const ring = document.getElementById('extraction-progress-ring');
+    if (!ring) return;
+    ring.classList.toggle('hidden', !active && progress <= 0);
+
+    const fillEl = document.getElementById('extraction-ring-fill');
+    if (fillEl) {
+        const circumference = 2 * Math.PI * 16;
+        const offset = circumference * (1 - progress);
+        fillEl.style.strokeDasharray = String(circumference);
+        fillEl.style.strokeDashoffset = String(offset);
+    }
+}
+
+function hideExtractionRing() {
+    const ring = document.getElementById('extraction-progress-ring');
+    if (ring) ring.classList.add('hidden');
+}
+
+function startO2Alarm() {
+    if (o2AlarmActive) return;
+    o2AlarmActive = true;
+    const tick = () => {
+        if (!o2AlarmActive) return;
+        const currentO2 = window.game?.playerVitals?.o2 ?? 100;
+        if (currentO2 > 10) {
+            o2AlarmActive = false;
+            return;
+        }
+        AudioManager.play('ui_error', { volume: 0.18, playbackRate: 0.72, bus: 'sfx' });
+        o2AlarmTimer = window.setTimeout(tick, 2800);
+    };
+    tick();
+}
+
+function stopO2Alarm() {
+    o2AlarmActive = false;
+    if (o2AlarmTimer) {
+        clearTimeout(o2AlarmTimer);
+        o2AlarmTimer = null;
+    }
+}
+
+window.addEventListener('player-o2-changed', (event) => {
+    const o2 = event?.detail?.o2 ?? 100;
+    if (o2 <= 10 && !o2AlarmActive) {
+        startO2Alarm();
+    } else if (o2 > 10 && o2AlarmActive) {
+        stopO2Alarm();
+    }
 });
 
 // Game over button handlers
@@ -719,7 +1296,11 @@ function syncTouchSettingsVisibility() {
 function syncTouchMoveControlVisibility() {
     if (!touchMoveControl) return;
 
-    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const isHUD = !ui?.classList.contains('hidden');
+    const isMenuHidden = menu?.classList.contains('hidden') ?? true;
+    const inMissionIntro = document.body.classList.contains('mission-intro-active');
     // Keep touchMoveControl container visible on the HUD so the compass is always visible
     touchMoveControl.classList.toggle('hidden', !isHUD);
 
@@ -733,12 +1314,29 @@ function syncTouchMoveControlVisibility() {
         label.classList.toggle('hidden', !showJoystick);
     }
 
+    // Show on desktop HUD always; on touch devices, mirror joystick visibility.
+    const abilityBtn = document.getElementById('touch-ability-btn');
+    if (abilityBtn) {
+        const touchDevice = document.body.classList.contains('touch-device');
+        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && (!touchDevice || showJoystick);
+        abilityBtn.classList.toggle('hidden', !showAbilityBtn);
+    }
+
     if (!isHUD || !showJoystick) {
         activeTouchPointerId = null;
         touchMoveControl.classList.remove('active');
         touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
         window.game?.setVirtualInput?.(0, 0);
     }
+}
+
+// Wire touch ability button
+const touchAbilityBtn = document.getElementById('touch-ability-btn');
+if (touchAbilityBtn) {
+    touchAbilityBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        window.game?.triggerClassAbility?.();
+    });
 }
 
 function formatTouchCompassDistance(distance) {
@@ -981,6 +1579,11 @@ async function runMissionIntroSequence() {
             });
         } else {
             await runDoorTransitionAsync();
+        }
+
+        // Show mission briefing after door transition
+        if (currentMission?.label) {
+            window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
         }
     } finally {
         document.body.classList.remove('mission-intro-active');
@@ -1658,6 +2261,7 @@ charCards.forEach(card => {
         if (heroData[type]) {
             triggerHeroPreviewSwap(type);
             updateHeroStats(type);
+            setActiveAmmoCapacity(type, { clampExisting: true });
 
             if (window.game?.updatePlayerType) {
                 const gameContainer = document.getElementById('game-container');
@@ -1940,8 +2544,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
-    if (initialSelected && heroData[initialSelected.getAttribute('data-type')]) {
-        const initialType = initialSelected.getAttribute('data-type');
+    const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
+    setActiveAmmoCapacity(initialType, { clampExisting: true });
+    if (initialSelected && heroData[initialType]) {
         syncHeroPreview(initialType);
         updateHeroStats(initialType);
     }
@@ -1953,12 +2558,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncTouchMoveControlVisibility();
 
     if (!window.game) {
-        const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
-        window.game = new ThreeGame({
-            parent: 'game-container',
-            playerType: initialType,
-            bankManager
-        });
+        try {
+            window.game = new ThreeGame({
+                parent: 'game-container',
+                playerType: initialType,
+                bankManager
+            });
+        } catch (err) {
+            console.error('[ThreeGame init failed]', err);
+            const loadingScreen = document.getElementById('loading-screen');
+            const loaderTitle = document.querySelector('.loader-title');
+            const loaderStatusEl = document.querySelector('.loader-status');
+            if (loaderTitle) loaderTitle.textContent = 'SYSTEM INITIALIZATION FAILED';
+            if (loaderStatusEl) loaderStatusEl.textContent = err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable';
+            if (loadingScreen) loadingScreen.classList.remove('hidden');
+            return;
+        }
     }
     setSnailSpawnState(false, { purgeExisting: true });
     const initialBiomeState = window.game?.getBiomeState?.();
