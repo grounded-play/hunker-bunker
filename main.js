@@ -981,19 +981,12 @@ function markLogFound(loreKey) {
     return false;
 }
 
-let lorePendingKey = null;
-let lorePendingText = null;
-
-window.addEventListener('lore-terminal-nearby', (event) => {
-    lorePendingKey = event?.detail?.loreKey ?? null;
-    lorePendingText = event?.detail?.loreText ?? null;
+window.addEventListener('lore-terminal-nearby', () => {
     const prompt = document.getElementById('lore-hud-prompt');
     if (prompt) prompt.classList.remove('hidden');
 });
 
 window.addEventListener('lore-terminal-clear', () => {
-    lorePendingKey = null;
-    lorePendingText = null;
     const prompt = document.getElementById('lore-hud-prompt');
     if (prompt) prompt.classList.add('hidden');
 });

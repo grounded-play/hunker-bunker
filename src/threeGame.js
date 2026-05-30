@@ -136,7 +136,7 @@ const LORE_LOGS = {
     ]
 };
 
-const MOTHERSHIP_REACTIVE_LINES = [
+export const MOTHERSHIP_REACTIVE_LINES = [
     { trigger: 'first_kill',       text: 'AGENT — FIRST THREAT NEUTRALIZED. PROCEED.' },
     { trigger: 'first_cryo',       text: 'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.' },
     { trigger: 'first_bio',        text: 'ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.' },
