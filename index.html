@@ -100,6 +100,13 @@
           <h1 class="title-small">HUNKER BUNKER</h1>
           <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
         </div>
+        <div class="menu-header-actions">
+          <div class="daily-ops-container">
+            <div class="daily-ops-status" id="daily-ops-status"></div>
+            <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
+          </div>
+          <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+        </div>
       </div>
 
       <div class="main-layout">
@@ -135,6 +142,7 @@
                 <div class="char-info">
                   <span class="char-name">SCOUT</span>
                   <span class="char-desc">FAST / AGILE</span>
+                  <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
                 <div class="char-icon">◈</div>
               </div>
@@ -142,6 +150,7 @@
                 <div class="char-info">
                   <span class="char-name">TANK</span>
                   <span class="char-desc">HEAVY / ARMORED</span>
+                  <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
                 <div class="char-icon">⬢</div>
               </div>
@@ -149,6 +158,7 @@
                 <div class="char-info">
                   <span class="char-name">ENGINEER</span>
                   <span class="char-desc">UTILITY / TECH</span>
+                  <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
                 <div class="char-icon">⬣</div>
               </div>
@@ -187,6 +197,19 @@
             <div class="module-scanline"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Bunker Archive Modal -->
+    <div id="archive-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content archive-modal-content">
+        <button class="close-modal" id="close-archive-modal">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="archive-header">
+          <div class="archive-title">◈ BUNKER ARCHIVE</div>
+          <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
+        </div>
+        <div id="archive-log-list" class="archive-log-list"></div>
       </div>
     </div>
 
@@ -325,7 +348,7 @@
             </div>
           </div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--value-only">
             <span class="game-over-stat-label">ITEMS RECOVERED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-items"></div></div>
@@ -333,7 +356,7 @@
             </div>
           </div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--value-only">
             <span class="game-over-stat-label">O₂ GENERATOR</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-generator"></div></div>
@@ -341,7 +364,7 @@
             </div>
           </div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--value-only">
             <span class="game-over-stat-label">THREATS ELIMINATED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-kills"></div></div>
@@ -374,6 +397,10 @@
             <span id="go-rating-label" class="go-rating-label">AGENT LOST — MINIMAL TELEMETRY</span>
           </div>
           <div id="mission-status-text" class="go-mission-status"></div>
+          <div id="go-seed-row" class="go-seed-row hidden">
+            <span class="go-seed-label">WORLD SEED:</span>
+            <span id="go-seed-val" class="go-seed-val">0</span>
+          </div>
           <div id="go-archive-row" class="go-archive-row hidden">
             <span class="go-archive-icon">◈</span>
             <span id="go-archive-text" class="go-archive-text">LOGS RECOVERED: 0/27</span>
@@ -462,6 +489,10 @@
     <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
       <span class="biome-hud-prompt__icon">ZONE</span>
       <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
+    </div>
+    <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
+      <span class="mission-progress-hud__icon">◈</span>
+      <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
     </div>
 
     <!-- Holographic Retro Terminal Console Modal -->
@@ -599,6 +630,41 @@
               <p class="action-desc">Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.</p>
               <p class="action-desc action-desc--cost" id="terminal-reactor-cost">COST: 300 TECH / 100 COIN</p>
               <button class="terminal-action-btn btn-state--locked" id="terminal-btn-reactor" disabled>LOCKED</button>
+            </div>
+          </div>
+
+          <!-- Tier 2 upgrades — visible only after Goal 4 complete -->
+          <div id="tier2-section" class="upgrade-goals-section terminal-tone--tier2 hidden">
+            <div class="terminal-section-title">ADVANCED SYSTEMS</div>
+
+            <div class="action-card action-card--tier2" data-tier2-card="suitThermal">
+              <div class="action-card-header">
+                <span class="action-title">SUIT THERMAL COATING</span>
+                <span class="action-cost" id="terminal-tier2-suitThermal-status">AVAILABLE</span>
+              </div>
+              <p class="action-desc">Reduces O₂ drain in CRYO sector by 50%.</p>
+              <p class="action-desc action-desc--cost" id="terminal-tier2-suitThermal-cost">COST: 80 TECH / 15 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-tier2-suitThermal">INSTALL</button>
+            </div>
+
+            <div class="action-card action-card--tier2" data-tier2-card="deconFilters">
+              <div class="action-card-header">
+                <span class="action-title">DECONTAMINATION FILTERS</span>
+                <span class="action-cost" id="terminal-tier2-deconFilters-status">AVAILABLE</span>
+              </div>
+              <p class="action-desc">Reduces O₂ drain in BIO sector by 50%.</p>
+              <p class="action-desc action-desc--cost" id="terminal-tier2-deconFilters-cost">COST: 100 TECH / 20 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-tier2-deconFilters">INSTALL</button>
+            </div>
+
+            <div class="action-card action-card--tier2" data-tier2-card="stimCache">
+              <div class="action-card-header">
+                <span class="action-title">EMERGENCY STIM CACHE</span>
+                <span class="action-cost" id="terminal-tier2-stimCache-status">AVAILABLE</span>
+              </div>
+              <p class="action-desc">Each run starts with a STIM PACK — press [F] for 3s immunity (if ability ready).</p>
+              <p class="action-desc action-desc--cost" id="terminal-tier2-stimCache-cost">COST: 60 TECH / 25 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-tier2-stimCache">INSTALL</button>
             </div>
           </div>
 

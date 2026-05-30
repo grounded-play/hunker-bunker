@@ -170,14 +170,23 @@ export class AudioManager {
         if (options.loop) source.loop = true;
 
         source.connect(gainNode);
-        
+
+        // Optional stereo panning
+        let lastNode = gainNode;
+        if (options.pan !== undefined && Number.isFinite(options.pan)) {
+            const panner = audioCtx.createStereoPanner();
+            panner.pan.value = Math.max(-1, Math.min(1, options.pan));
+            gainNode.connect(panner);
+            lastNode = panner;
+        }
+
         // Connect to appropriate bus
         if (bus === 'world') {
-            gainNode.connect(this.sfxGain); // Route environment/world sounds to SFX/VFX
+            lastNode.connect(this.sfxGain); // Route environment/world sounds to SFX/VFX
         } else if (bus === 'music') {
-            gainNode.connect(this.musicGain);
+            lastNode.connect(this.musicGain);
         } else {
-            gainNode.connect(this.sfxGain);
+            lastNode.connect(this.sfxGain);
         }
 
         source.start(0);
@@ -555,6 +564,19 @@ export class AudioManager {
         
         popOsc.start(now);
         popOsc.stop(now + popDuration + 0.01);
+    }
+
+    static setMusicTension(level = 'exploring') {
+        if (!this.isUnlocked) return;
+        const targets = {
+            safe:      { music: 0.03, world: 0.6, ambientRate: 0.7 },
+            exploring: { music: 0.05, world: 1.0, ambientRate: 1.0 },
+            threatened: { music: 0.09, world: 1.3, ambientRate: 1.4 }
+        };
+        const cfg = targets[level] ?? targets.exploring;
+        const t = audioCtx.currentTime + 1.2; // 1.2s crossfade
+        this.musicGain.gain.linearRampToValueAtTime(cfg.music * this.masterVolume, t);
+        this.worldGain.gain.linearRampToValueAtTime(cfg.world * this.masterVolume, t);
     }
 
     static startAmbience() {

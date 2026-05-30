@@ -96,6 +96,10 @@ export class DialogueManager {
         this.closeBtn?.addEventListener('click', () => {
             this.requestSkip();
         });
+        this.tutorialPromptEl?.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            this.hideTutorialPrompt();
+        });
     }
 
     async openMothershipDialogue({ playerType = 'SCOUT' } = {}) {

@@ -99,10 +99,12 @@ let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 let cutsceneManager = null;
 let dialogueManager = null;
 let missionFlowRunning = false;
+let isResettingRun = false;
 let deathSequenceTimer = null;
 let damageFlashTimer = null;
 let weaponErrorTimer = null;
 let biomePromptTimer = null;
+let missionProgressHUDTimer = null;
 let o2AlarmTimer = null;
 let o2AlarmActive = false;
 let pickupComboCount = 0;
@@ -123,6 +125,62 @@ let activeAmmoCapacity = CLASS_AMMO_CAPACITY.SCOUT;
 const bankManager = new BankManager();
 
 window.bankManager = bankManager;
+
+// ── Daily Ops System ──────────────────────────────────────────
+const DAILY_OPS_KEY_PREFIX = 'hb_daily_v1_';
+
+function getTodayDateString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function getDailySeedInt() {
+    const str = getTodayDateString();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = Math.imul(hash * 31 + str.charCodeAt(i), 1);
+        hash ^= hash >>> 16;
+    }
+    return Math.abs(hash) || 12345;
+}
+
+function getDailyOpsRecord() {
+    const key = DAILY_OPS_KEY_PREFIX + getTodayDateString();
+    try { return JSON.parse(localStorage.getItem(key) ?? 'null') ?? null; } catch { return null; }
+}
+
+function saveDailyOpsRecord(record) {
+    const key = DAILY_OPS_KEY_PREFIX + getTodayDateString();
+    try { localStorage.setItem(key, JSON.stringify(record)); } catch { /* ignore */ }
+}
+
+function updateDailyOpsUI() {
+    const btn = document.getElementById('daily-ops-btn');
+    const statusEl = document.getElementById('daily-ops-status');
+    const record = getDailyOpsRecord();
+    if (btn) btn.disabled = Boolean(record?.completed);
+    if (statusEl) {
+        if (record?.completed) {
+            const g = record.grade ?? 'D';
+            statusEl.textContent = `TODAY: ${record.score} PTS (${g})`;
+        } else if (record?.attempted) {
+            statusEl.textContent = 'ATTEMPT IN PROGRESS';
+        } else {
+            statusEl.textContent = 'ATTEMPT AVAILABLE';
+        }
+    }
+}
+
+let _isDailyOpsRun = false;
+
+function refreshCharBestScores() {
+    for (const cls of ['SCOUT', 'TANK', 'ENGINEER']) {
+        const el = document.getElementById(`char-best-${cls}`);
+        if (!el) continue;
+        const best = Number(localStorage.getItem(`hb_best_score_${cls}`) ?? 0);
+        el.textContent = best > 0 ? `BEST: ${best} PTS` : '';
+    }
+}
 
 function recomputePickupTotal() {
     pickupCounterState.total = Math.max(
@@ -470,6 +528,7 @@ window.addEventListener('enemy-killed', (event) => {
     const type = event?.detail?.type ?? '';
     if (total === 1) fireMothershipReactiveLine('first_kill');
     if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
+    if (type === 'crawler') fireMothershipReactiveLine('crawler_detected');
 });
 
 window.addEventListener('enemy-hit', (event) => {
@@ -486,8 +545,38 @@ window.addEventListener('enemy-hit', (event) => {
 window.addEventListener('weapon-clip-updated', (event) => {
     renderWeaponClipState(event?.detail ?? {});
 });
+let _lastShipHp = null;
 window.addEventListener('ship-health-changed', (event) => {
-    renderShipHealth(event?.detail ?? {});
+    const detail = event?.detail ?? {};
+    renderShipHealth(detail);
+
+    const hp = Number.isFinite(detail.hp) ? detail.hp : null;
+    const maxHp = Number.isFinite(detail.maxHp) ? Math.max(1, detail.maxHp) : 1;
+    if (hp !== null && _lastShipHp !== null && hp < _lastShipHp) {
+        // Hull breach — visual flash + audio
+        const pct = (hp / maxHp) * 100;
+        const severity = pct <= 25 ? 'critical' : pct <= 55 ? 'damaged' : 'hit';
+
+        if (shipHpBar) {
+            shipHpBar.classList.add('ship-hp-bar--hit');
+            setTimeout(() => shipHpBar?.classList.remove('ship-hp-bar--hit'), 280);
+        }
+
+        window.AudioManager?.play('ui_error', {
+            volume: severity === 'critical' ? 0.65 : 0.42,
+            playbackRate: severity === 'critical' ? 0.58 : 0.72,
+            bus: 'sfx'
+        });
+        window.AudioManager?.play('door_slam_vertical', { volume: 0.18, playbackRate: 0.48, bus: 'sfx' });
+
+        const msg = severity === 'critical'
+            ? '> SHIP: HULL INTEGRITY CRITICAL — IMMEDIATE EVAC REQUIRED'
+            : severity === 'damaged'
+            ? '> SHIP: HULL BREACH DETECTED — STRUCTURAL DAMAGE'
+            : '> SHIP: HULL IMPACT REGISTERED';
+        showBiomePrompt(msg);
+    }
+    _lastShipHp = hp;
 });
 
 function bindReloadTrigger(element, label) {
@@ -542,6 +631,18 @@ function hideBiomePrompt() {
 
 function showBiomePrompt(message = '') {
     if (!biomeHudPromptEl || !biomeHudTextEl) return;
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (!isGameplayActive || isResettingRun) return;
+
     biomeHudTextEl.textContent = message;
     biomeHudPromptEl.classList.remove('hidden');
     requestAnimationFrame(() => {
@@ -556,6 +657,13 @@ function showBiomePrompt(message = '') {
     biomePromptTimer = window.setTimeout(() => {
         hideBiomePrompt();
     }, BIOME_PROMPT_DURATION_MS);
+}
+
+if (biomeHudPromptEl) {
+    biomeHudPromptEl.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        hideBiomePrompt();
+    });
 }
 
 function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
@@ -597,7 +705,7 @@ const BIOME_HUD_COLORS = {
     bio:    { label: 'rgba(144, 220, 140, 0.98)', glow: 'rgba(60, 160, 80, 0.40)'  }
 };
 window.addEventListener('biome-changed', (event) => {
-    renderBiomeStatus(event?.detail ?? {}, { showPrompt: true });
+    renderBiomeStatus(event?.detail ?? {}, { showPrompt: !isResettingRun });
     renderBunkerLevel(window.game?.maxDepthTierReached ?? Number(bunkerLevelNum?.textContent ?? 0));
     const biomeKey = event?.detail?.key ?? 'active';
     const biomeCols = BIOME_HUD_COLORS[biomeKey] ?? BIOME_HUD_COLORS.active;
@@ -606,12 +714,14 @@ window.addEventListener('biome-changed', (event) => {
         hud.style.setProperty('--biome-label-color', biomeCols.label);
         hud.style.setProperty('--biome-label-glow', biomeCols.glow);
     }
-    if (biomeKey === 'cryo') {
-        AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
-        fireMothershipReactiveLine('first_cryo');
-    } else if (biomeKey === 'bio') {
-        AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
-        fireMothershipReactiveLine('first_bio');
+    if (!isResettingRun) {
+        if (biomeKey === 'cryo') {
+            AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
+            fireMothershipReactiveLine('first_cryo');
+        } else if (biomeKey === 'bio') {
+            AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
+            fireMothershipReactiveLine('first_bio');
+        }
     }
 });
 renderBunkerLevel(0);
@@ -716,10 +826,7 @@ function generateDeathReport(stats, reason) {
     };
     const cause = causeMap[reason] ?? '> CAUSE: EXOSUIT FAILURE — UNKNOWN EVENT';
     return [
-        `> LAST KNOWN POSITION: ${biome}`,
-        `> DISTANCE FROM BASE: ${Math.round(depth)}u`,
-        `> SALVAGE RECOVERED: ${stats.totalPickups ?? 0} ITEMS`,
-        `> THREATS NEUTRALIZED: ${stats.snailsKilled ?? 0}`,
+        `> LAST POS: ${biome} // DIST: ${Math.round(depth)}u // SALVAGE: ${stats.totalPickups ?? 0} // THREATS: ${stats.snailsKilled ?? 0}`,
         cause
     ].join('\n');
 }
@@ -794,7 +901,22 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const ratingLabel = document.getElementById('go-rating-label');
     const newBest = document.getElementById('go-new-best');
 
-    if (scoreVal) scoreVal.textContent = String(score);
+    if (scoreVal) {
+        // Animated score roll
+        scoreVal.textContent = '0';
+        const duration = 1200;
+        const startTime = performance.now();
+        const rollScore = () => {
+            const elapsed = performance.now() - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease out cubic
+            const current = Math.floor(eased * score);
+            if (scoreVal) scoreVal.textContent = String(current);
+            if (progress < 1) requestAnimationFrame(rollScore);
+            else if (scoreVal) scoreVal.textContent = String(score);
+        };
+        setTimeout(() => requestAnimationFrame(rollScore), 800);
+    }
     if (ratingBadge) {
         ratingBadge.textContent = rating.grade;
         ratingBadge.className = `go-rating-badge go-rating-badge--${rating.grade.toLowerCase()}`;
@@ -805,8 +927,32 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const bestKey = `hb_best_score_${window.game?.playerType ?? 'SCOUT'}`;
     const prevBest = Number(localStorage.getItem(bestKey) ?? 0);
     const isNewBest = score > prevBest;
-    if (isNewBest) localStorage.setItem(bestKey, String(score));
+    if (isNewBest) {
+        localStorage.setItem(bestKey, String(score));
+        refreshCharBestScores();
+    }
     if (newBest) newBest.classList.toggle('hidden', !isNewBest);
+
+    // World seed display
+    const seedRow = document.getElementById('go-seed-row');
+    const seedVal = document.getElementById('go-seed-val');
+    if (seedRow) seedRow.classList.toggle('hidden', !_isDailyOpsRun);
+    if (seedVal && _isDailyOpsRun) seedVal.textContent = `DAILY-${getTodayDateString()}`;
+
+    // Daily Ops result save
+    if (_isDailyOpsRun) {
+        _isDailyOpsRun = false;
+        if (window.game) window.game.globalSeedOffset = 0;
+        saveDailyOpsRecord({
+            attempted: true,
+            completed: true,
+            date: getTodayDateString(),
+            score,
+            grade: rating.grade,
+            isVictory
+        });
+        updateDailyOpsUI();
+    }
 
     // Archive progress
     const archiveRow = document.getElementById('go-archive-row');
@@ -843,22 +989,28 @@ function resetRunToStartingState({
     snailSpawnEnabled = false,
     purgeSnails = true
 } = {}) {
-    if (resetBank) {
-        bankManager.reset();
+    isResettingRun = true;
+    try {
+        if (resetBank) {
+            bankManager.reset();
+        }
+
+        runStartTime = Date.now();
+        currentMission = assignMission(bankManager.getState());
+        _mothershipFiredTriggers.clear();
+
+        resetPickupCounter();
+        window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
+        window.game?.initMission?.(currentMission);
+        setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
+        window.game?.setInputEnabled?.(false);
+        renderBunkerLevel(0);
+        renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
+        hideBiomePrompt();
+        hideMissionProgressHUD();
+    } finally {
+        isResettingRun = false;
     }
-
-    runStartTime = Date.now();
-    currentMission = assignMission(bankManager.getState());
-    _mothershipFiredTriggers.clear();
-
-    resetPickupCounter();
-    window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
-    window.game?.initMission?.(currentMission);
-    setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
-    window.game?.setInputEnabled?.(false);
-    renderBunkerLevel(0);
-    renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
-    hideBiomePrompt();
 }
 
 function runDeathSequence(event) {
@@ -884,7 +1036,14 @@ function runDeathSequence(event) {
             totalPickups: 0,
             generatorLevel: 0
         };
+        // Check achievements and show unlock notification if new
+        const { newUnlocks } = checkAchievements(stats);
         showGameOverScreen(stats, { isVictory: false, deathReason });
+        if (newUnlocks.length > 0) {
+            setTimeout(() => {
+                showBiomePrompt(`> ACHIEVEMENT: ${newUnlocks[0]}`);
+            }, 2200);
+        }
         resetRunToStartingState({
             resetBank: false,
             skipEffects: true,
@@ -911,6 +1070,10 @@ window.addEventListener('player-respawned', () => {
     hideExtractionRing();
     lastReportedDepthTier = 0;
     syncAbilityPanelLabel();
+    _distressModeActive = false;
+    _musicTension = 'exploring';
+    window.AudioManager?.setMusicTension?.('exploring');
+    document.body.classList.remove('distress-mode', 'vitals-critical', 'player-poisoned', 'player-damage-flash', 'mission-intro-active');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
     updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
@@ -919,12 +1082,15 @@ window.addEventListener('player-respawned', () => {
 
 window.addEventListener('mission-objective-complete', (event) => {
     const type = event?.detail?.type ?? '';
+    const uplinkReady = Boolean(event?.detail?.uplinkReady);
     const messages = {
         retrieval: 'OBJECTIVE SECURED — RETURN TO SHIP',
         survey:    'SURVEY COMPLETE — RETURN TO SHIP',
         elimination: 'TARGETS ELIMINATED — RETURN TO SHIP'
     };
-    const msg = messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP';
+    const msg = uplinkReady
+        ? (messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP')
+        : 'OBJECTIVE COMPLETE — UPLINK LOCKED // MAX ALL SYSTEMS TO EXTRACT';
     showBiomePrompt(msg);
     AudioManager.play('ui_boot', { volume: 0.45, playbackRate: 0.88, bus: 'sfx' });
 });
@@ -953,6 +1119,111 @@ window.addEventListener('player-extracted', (event) => {
         window.game?.setInputEnabled?.(false);
     }, 600);
 });
+
+// ── Bunker Archive ────────────────────────────────────────────
+const ALL_LORE_KEYS = [
+    'A01','A02','A03','A04','A05','A06','A07','A08','A09','A10','A11','A12',
+    'C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12',
+    'B01','B02','B03'
+];
+
+function buildArchiveModal() {
+    const listEl = document.getElementById('archive-log-list');
+    const summaryEl = document.getElementById('archive-summary');
+    if (!listEl) return;
+
+    const mem = getWorldMemory();
+    const found = new Set(mem.logsFound ?? []);
+    listEl.innerHTML = '';
+
+    // Group by sector
+    const sections = [
+        { prefix: 'A', label: 'ACTIVE SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('A')) },
+        { prefix: 'C', label: 'CRYO SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('C')) },
+        { prefix: 'B', label: 'BIO SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('B')) }
+    ];
+
+    for (const section of sections) {
+        const sectionLabel = document.createElement('div');
+        sectionLabel.className = 'archive-section-label';
+        sectionLabel.textContent = section.label;
+        listEl.appendChild(sectionLabel);
+
+        for (const key of section.keys) {
+            const isFound = found.has(key);
+            const entry = document.createElement('div');
+            entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
+
+            const keyEl = document.createElement('div');
+            keyEl.className = 'archive-log-key';
+            keyEl.textContent = `LOG-${key}`;
+
+            const textEl = document.createElement('div');
+            textEl.className = `archive-log-text ${isFound ? '' : 'archive-log-text--locked'}`;
+
+            if (isFound) {
+                const loreText = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
+                textEl.textContent = loreText;
+            } else {
+                textEl.textContent = '[ENCRYPTED — RECOVER FROM FIELD TERMINAL]';
+            }
+
+            entry.appendChild(keyEl);
+            entry.appendChild(textEl);
+            listEl.appendChild(entry);
+        }
+    }
+
+    if (summaryEl) {
+        summaryEl.textContent = `LOGS RECOVERED: ${found.size} / ${ALL_LORE_KEYS.length}`;
+    }
+}
+
+// ── Achievement / Unlock System ───────────────────────────────
+const ACHIEVEMENT_KEY = 'hb_achievements_v1';
+
+function getAchievements() {
+    try {
+        return JSON.parse(localStorage.getItem(ACHIEVEMENT_KEY) ?? 'null') ?? {
+            totalDeaths: 0,
+            totalKills: 0,
+            maxKillsOneRun: 0,
+            deepTierReachedAlive: false,
+            unlockedHardened: false
+        };
+    } catch { return { totalDeaths: 0, totalKills: 0, maxKillsOneRun: 0, deepTierReachedAlive: false, unlockedHardened: false }; }
+}
+
+function saveAchievements(ach) {
+    try { localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(ach)); } catch { /* ignore */ }
+}
+
+function checkAchievements(runStats) {
+    const ach = getAchievements();
+    const newUnlocks = [];
+
+    // Track deaths
+    ach.totalDeaths = (ach.totalDeaths ?? 0) + 1;
+    if (ach.totalDeaths >= 5 && !ach.unlockedHardened) {
+        ach.unlockedHardened = true;
+        newUnlocks.push('HARDENED MODE UNLOCKED — Die 5 times to prove dedication.');
+    }
+
+    // Track kills
+    const kills = runStats?.snailsKilled ?? 0;
+    ach.totalKills = (ach.totalKills ?? 0) + kills;
+    ach.maxKillsOneRun = Math.max(ach.maxKillsOneRun ?? 0, kills);
+
+    // Track deep tier
+    const depthTier = runStats?.depthTier ?? 0;
+    if (depthTier >= 2 && !ach.deepTierReachedAlive) {
+        ach.deepTierReachedAlive = true;
+        newUnlocks.push('DEEP SECTOR MAPPED — Advanced sentinels now active in future runs.');
+    }
+
+    saveAchievements(ach);
+    return { ach, newUnlocks };
+}
 
 // ── Lore Terminal System ──────────────────────────────────────
 const WORLD_MEMORY_KEY = 'hb_world_memory_v1';
@@ -1038,10 +1309,13 @@ function fireMothershipReactiveLine(trigger) {
         first_cryo:       'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.',
         first_bio:        'ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.',
         hp_critical:      'DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.',
-        objective_found:  'UPLINK: OBJECTIVE CONFIRMED. RETURN TO SHIP IMMEDIATELY.',
+        objective_found:  'UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION.',
         first_deposit:    'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.',
         lore_found:       'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.',
         sentinel_spotted: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.',
+        crawler_detected:  'ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.',
+        armory_found:      'UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE.',
+        the_nest:          'WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION.',
     };
     const text = lines[trigger];
     if (text) showBiomePrompt(`> MOTHERSHIP: ${text}`);
@@ -1053,6 +1327,15 @@ window.addEventListener('pickup-collected', (event) => {
             // first_deposit fires on first console deposit; track separately
         }
     }
+});
+
+window.addEventListener('special-room-discovered', (event) => {
+    const label = event?.detail?.label ?? 'SPECIAL ROOM';
+    const template = event?.detail?.template ?? '';
+    showBiomePrompt(`> SECTOR DATA: ${label} DETECTED`);
+    window.AudioManager?.play('ui_boot', { volume: 0.3, playbackRate: 0.82, bus: 'sfx' });
+    if (template === 'the_nest') fireMothershipReactiveLine('the_nest');
+    if (template === 'armory') fireMothershipReactiveLine('armory_found');
 });
 
 window.addEventListener('player-damaged', (event) => {
@@ -1072,10 +1355,60 @@ window.addEventListener('sentinel-fired', () => {
     }
 });
 
+function showMissionProgressHUD(text) {
+    const hud = document.getElementById('mission-progress-hud');
+    const textEl = document.getElementById('mission-progress-text');
+    if (textEl) textEl.textContent = text;
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (isGameplayActive && !isResettingRun && hud) {
+        hud.classList.remove('hidden');
+    }
+}
+
+function hideMissionProgressHUD() {
+    if (missionProgressHUDTimer) {
+        clearTimeout(missionProgressHUDTimer);
+        missionProgressHUDTimer = null;
+    }
+    const hud = document.getElementById('mission-progress-hud');
+    if (hud) hud.classList.add('hidden');
+}
+
+const missionProgressHud = document.getElementById('mission-progress-hud');
+if (missionProgressHud) {
+    missionProgressHud.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        hideMissionProgressHUD();
+    });
+}
+
+const tutorialPrompt = document.getElementById('tutorial-prompt');
+if (tutorialPrompt) {
+    tutorialPrompt.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        tutorialPrompt.classList.remove('is-visible', 'is-exiting');
+        tutorialPrompt.classList.add('hidden');
+    });
+}
+
 window.addEventListener('mission-kill-progress', (event) => {
     const { count = 0, target = 0 } = event?.detail ?? {};
     const missionEl = document.getElementById('mission-status-text');
     if (missionEl) missionEl.textContent = `ELIMINATE: ${count}/${target}`;
+    showMissionProgressHUD(`ELIMINATE: ${count} / ${target}`);
+});
+
+window.addEventListener('mission-objective-complete', () => {
+    hideMissionProgressHUD();
 });
 
 document.getElementById('class-ability-panel')?.addEventListener('pointerdown', (e) => {
@@ -1193,13 +1526,76 @@ function stopO2Alarm() {
     }
 }
 
+// ── Reactive Music State ──────────────────────────────────────
+let _musicTension = 'exploring';
+
+function updateMusicTension() {
+    const hp = window.game?.playerVitals?.hp ?? 99;
+    const o2 = window.game?.playerVitals?.o2 ?? 100;
+    let next = 'exploring';
+
+    // Safe: near ship, full health, good O2
+    if (hp >= 3 && o2 > 50) {
+        const dist = window.game?.getActiveO2GeneratorDistance?.() ?? Infinity;
+        if (dist < 4) next = 'safe';
+    }
+    // Threatened: low hp or distress
+    if (hp <= 1 || o2 < 15 || _distressModeActive) next = 'threatened';
+
+    if (next !== _musicTension) {
+        _musicTension = next;
+        window.AudioManager?.setMusicTension?.(next);
+    }
+}
+
+let _distressModeActive = false;
+function updateDistressMode(o2, hp) {
+    const shouldBeDistress = hp <= 1 && o2 < 15 && !window.game?.isPlayerDead;
+    if (shouldBeDistress && !_distressModeActive) {
+        _distressModeActive = true;
+        document.body.classList.add('distress-mode');
+        document.body.classList.add('vitals-critical');
+        fireMothershipReactiveLine('hp_critical');
+        window.AudioManager?.play('ui_error', { volume: 0.55, playbackRate: 0.48, bus: 'sfx' });
+    } else if (!shouldBeDistress && _distressModeActive) {
+        _distressModeActive = false;
+        document.body.classList.remove('distress-mode');
+        document.body.classList.remove('vitals-critical');
+    }
+}
+
 window.addEventListener('player-o2-changed', (event) => {
     const o2 = event?.detail?.o2 ?? 100;
+    const hp = window.game?.playerVitals?.hp ?? 99;
     if (o2 <= 10 && !o2AlarmActive) {
         startO2Alarm();
     } else if (o2 > 10 && o2AlarmActive) {
         stopO2Alarm();
     }
+    // Low O2 general vignette (not full distress)
+    document.body.classList.toggle('vitals-critical', o2 < 25 && !_distressModeActive);
+    updateDistressMode(o2, hp);
+    updateMusicTension();
+});
+
+window.addEventListener('player-damaged', (event) => {
+    const hp = event?.detail?.hp ?? 99;
+    const o2 = window.game?.playerVitals?.o2 ?? 100;
+    updateDistressMode(o2, hp);
+    updateMusicTension();
+});
+
+window.addEventListener('player-poisoned', () => {
+    document.body.classList.add('player-poisoned');
+});
+window.addEventListener('player-poison-cleared', () => {
+    document.body.classList.remove('player-poisoned');
+});
+
+window.addEventListener('health-restored', () => {
+    const hp = window.game?.playerVitals?.hp ?? 99;
+    const o2 = window.game?.playerVitals?.o2 ?? 100;
+    updateDistressMode(o2, hp);
 });
 
 // Game over button handlers
@@ -1211,6 +1607,7 @@ if (gameOverTryAgain) {
         hideGameOverScreen();
         triggerDoorTransition(
             () => {
+                window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: false,
                     skipEffects: false,
@@ -1251,6 +1648,7 @@ if (gameOverMainMenu) {
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
                 if (menu) menu.classList.remove('hidden');
+                window.game?.setPerformanceProfile?.('menu');
 
                 const gameContainer = document.getElementById('game-container');
                 const mapBox = document.querySelector('.map-box');
@@ -1584,6 +1982,25 @@ async function runMissionIntroSequence() {
         // Show mission briefing after door transition
         if (currentMission?.label) {
             window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
+            if (missionProgressHUDTimer) {
+                clearTimeout(missionProgressHUDTimer);
+            }
+            if (currentMission.type === 'elimination' && currentMission.targetKills > 0) {
+                missionProgressHUDTimer = window.setTimeout(() => {
+                    showMissionProgressHUD(`ELIMINATE: 0 / ${currentMission.targetKills}`);
+                    missionProgressHUDTimer = null;
+                }, 600);
+            } else if (currentMission.type === 'retrieval') {
+                missionProgressHUDTimer = window.setTimeout(() => {
+                    showMissionProgressHUD('RETRIEVE: TECH CACHE — SCAN AREA');
+                    missionProgressHUDTimer = null;
+                }, 600);
+            } else if (currentMission.type === 'survey') {
+                missionProgressHUDTimer = window.setTimeout(() => {
+                    showMissionProgressHUD(`SURVEY: REACH ${currentMission.targetDepth}u DEPTH`);
+                    missionProgressHUDTimer = null;
+                }, 600);
+            }
         }
     } finally {
         document.body.classList.remove('mission-intro-active');
@@ -1600,6 +2017,7 @@ if (playBtn) {
                 if (splash) splash.classList.add('hidden');
                 if (menu) {
                     menu.classList.remove('hidden');
+                    window.game?.setPerformanceProfile?.('menu');
                     queueGameLayoutRefresh();
                 }
             },
@@ -1617,6 +2035,7 @@ if (startBtn) {
         triggerDoorTransition(
             () => {
                 if (menu) menu.classList.add('hidden');
+                window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: true,
                     skipEffects: true,
@@ -1627,6 +2046,43 @@ if (startBtn) {
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
 
+                const gameContainer = document.getElementById('game-container');
+                const viewport = document.getElementById('game-viewport');
+                if (gameContainer && viewport) {
+                    viewport.insertBefore(gameContainer, document.getElementById('ui'));
+                    gameContainer.classList.add('fullscreen-mode');
+                    queueGameLayoutRefresh();
+                }
+            },
+            () => {
+                void runMissionIntroSequence();
+            }
+        );
+    });
+}
+
+// Daily Ops button
+const dailyOpsBtn = document.getElementById('daily-ops-btn');
+if (dailyOpsBtn) {
+    dailyOpsBtn.addEventListener('click', () => {
+        const record = getDailyOpsRecord();
+        if (record?.completed) return;
+        saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
+        _isDailyOpsRun = true;
+        if (window.game) window.game.globalSeedOffset = getDailySeedInt();
+        triggerDoorTransition(
+            () => {
+                if (menu) menu.classList.add('hidden');
+                window.game?.setPerformanceProfile?.('gameplay');
+                resetRunToStartingState({
+                    resetBank: false,
+                    skipEffects: true,
+                    snailSpawnEnabled: true,
+                    purgeSnails: false
+                });
+                document.getElementById('ui')?.classList.remove('hidden');
+                syncTouchSettingsVisibility();
+                syncTouchMoveControlVisibility();
                 const gameContainer = document.getElementById('game-container');
                 const viewport = document.getElementById('game-viewport');
                 if (gameContainer && viewport) {
@@ -1797,7 +2253,9 @@ if (confirmYes) {
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
         document.body.classList.remove('mission-intro-active');
-        document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical');
+        document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode', 'player-poisoned');
+        _distressModeActive = false;
+        hideMissionProgressHUD();
         hideBiomePrompt();
         if (biomePromptTimer) {
             clearTimeout(biomePromptTimer);
@@ -1812,6 +2270,25 @@ if (confirmYes) {
             deathSequenceTimer = null;
         }
         missionFlowRunning = false;
+
+        // If aborting a daily ops run, finalize the daily attempt so it counts as completed and resets seed.
+        if (_isDailyOpsRun) {
+            _isDailyOpsRun = false;
+            if (window.game) window.game.globalSeedOffset = 0;
+            const stats = window.game?.getRunStats?.() ?? { distanceTravelled: 0, totalPickups: 0, generatorLevel: 0 };
+            const score = window.game?.calculateRunScore?.(stats, { status: 'aborted' }, runStartTime) ?? 0;
+            const grade = window.game?.getRunRating?.(score)?.grade ?? 'D';
+            saveDailyOpsRecord({
+                attempted: true,
+                completed: true,
+                date: getTodayDateString(),
+                score,
+                grade,
+                isVictory: false
+            });
+            updateDailyOpsUI();
+        }
+
         resetRunToStartingState({
             resetBank: false,
             skipEffects: true,
@@ -1826,6 +2303,7 @@ if (confirmYes) {
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
                 if (menu) menu.classList.remove('hidden');
+                window.game?.setPerformanceProfile?.('menu');
 
                 const gameContainer = document.getElementById('game-container');
                 const mapBox = document.querySelector('.map-box');
@@ -1914,6 +2392,24 @@ const setupClickOutside = (modalId, closeAction) => {
 setupClickOutside('about-modal', () => {
     const aboutModal = document.getElementById('about-modal');
     if (aboutModal) aboutModal.classList.add('hidden');
+});
+
+// Archive modal
+document.getElementById('archive-btn')?.addEventListener('click', () => {
+    buildArchiveModal();
+    const modal = document.getElementById('archive-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+});
+document.getElementById('close-archive-modal')?.addEventListener('click', () => {
+    const modal = document.getElementById('archive-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+});
+setupClickOutside('archive-modal', () => {
+    const modal = document.getElementById('archive-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
 });
 
 setupClickOutside('settings-popup', () => {
@@ -2165,6 +2661,20 @@ function syncHeroPreview(type) {
     if (previewName) previewName.textContent = data.name;
     previewFrameIndex = 0;
     void renderPreviewFrame(type, previewFrameIndex);
+
+    // Update custom properties on preview stage wrapper for matching class glow colors
+    const stage = document.querySelector('.char-preview-stage');
+    if (stage) {
+        const glowColors = {
+            'SCOUT': { border: 'rgba(125, 255, 90, 0.28)', bg: 'rgba(125, 255, 90, 0.16)', shadow: 'rgba(125, 255, 90, 0.18)' },
+            'TANK': { border: 'rgba(255, 183, 0, 0.28)', bg: 'rgba(255, 183, 0, 0.16)', shadow: 'rgba(255, 183, 0, 0.18)' },
+            'ENGINEER': { border: 'rgba(0, 229, 255, 0.28)', bg: 'rgba(0, 229, 255, 0.16)', shadow: 'rgba(0, 229, 255, 0.18)' }
+        };
+        const colors = glowColors[type] || glowColors['SCOUT'];
+        stage.style.setProperty('--preview-glow-border', colors.border);
+        stage.style.setProperty('--preview-glow-bg', colors.bg);
+        stage.style.setProperty('--preview-glow-shadow', colors.shadow);
+    }
 }
 
 function startHeroPreviewAnimation() {
@@ -2476,6 +2986,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     installAudioMixerControls();
     setAudioMixerOpen(false);
     loadAudioMixSettings();
+    refreshCharBestScores();
+    updateDailyOpsUI();
 
     const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
     if (storedTouchControls !== null) {
@@ -2489,7 +3001,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load audio manifest
     const manifest = {
-        images: ['/door.png', '/scout_ship.png', '/tank_ship.png', '/engineer_ship.png'],
+        images: [
+            '/door.png',
+            '/menu_bg.png',
+            '/ship_wreckage.png',
+            '/scout_ship.png',
+            '/tank_ship.png',
+            '/engineer_ship.png',
+            '/console.png',
+            '/module_o2_generator.png',
+            '/module_hull_matrix.png',
+            '/module_radar_dish.png',
+            '/module_reactor_compressor.png',
+            '/scout_walk.png',
+            '/tank_walk.png',
+            '/engineer_walk.png',
+            '/cybersnail.png',
+            '/cryosnail.png',
+            '/sporesnail.png',
+            '/boss_cybersnail.png',
+            '/boss_cryosnail.png',
+            '/boss_sporesnail.png',
+            '/bunker_base_metal.png',
+            '/bunker_grunge_rust.png',
+            '/bunker_tech_scratches.png',
+            '/bunker_wall_metal.png',
+            '/bunker_wall_grunge.png',
+            '/cryo_base_frost.png',
+            '/cryo_grunge_rime.png',
+            '/cryo_wall_conduit.png',
+            '/bio_base_growth.png',
+            '/bio_grunge_spores.png',
+            '/bio_wall_veins.png',
+            '/ice_base_rock.png',
+            '/ice_grunge_snow.png',
+            '/ice_wall_glacier.png',
+            '/bunker_junk.png',
+            '/bunker_junk_uncommon.png',
+            '/bunker_junk_rare.png',
+            '/bunker_junk_legendary.png',
+            '/bio_spores.png',
+            '/bio_spores_blue.png',
+            '/bio_spores_amber.png',
+            '/scatter_gravel.png',
+            '/scatter_coolant_puddle.png',
+            '/scatter_ice_stalagmite.png',
+            '/scatter_cryo_icicle.png',
+            '/scatter_bio_pod.png',
+            '/scatter_slime_puddle.png'
+        ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
@@ -2529,6 +3089,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'class_lock4', url: '/audio/vg2/class_lock4.wav' }
         ]
     };
+    manifest.images = Array.from(new Set(manifest.images));
 
     // Clicks for generic buttons
     document.querySelectorAll('button, .toggle').forEach(el => {
@@ -2575,6 +3136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
     }
+    window.game?.setPerformanceProfile?.('menu');
     setSnailSpawnState(false, { purgeExisting: true });
     const initialBiomeState = window.game?.getBiomeState?.();
     if (initialBiomeState) {

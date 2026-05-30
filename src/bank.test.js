@@ -23,7 +23,7 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         expect(bank.getState()).toEqual({
-            schemaVersion: 1,
+            schemaVersion: 2,
             med: 0,
             ammo: 0,
             tech: 0,
@@ -34,6 +34,11 @@ describe('BankManager', () => {
                 hullExpansion: false,
                 radarNode: false,
                 reactorCompressor: false
+            },
+            tier2Unlocks: {
+                suitThermal: false,
+                deconFilters: false,
+                stimCache: false
             }
         });
     });
