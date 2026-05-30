@@ -167,6 +167,7 @@
           <button class="start-btn" id="start-game">INITIALIZE</button>
           <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
           <div class="daily-ops-status" id="daily-ops-status"></div>
+          <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
         </div>
         <div class="action-row__center">
           <div class="hero-stats-compact" id="hero-stats-row">
@@ -192,6 +193,19 @@
             <div class="module-scanline"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Bunker Archive Modal -->
+    <div id="archive-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content archive-modal-content">
+        <button class="close-modal" id="close-archive-modal">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="archive-header">
+          <div class="archive-title">◈ BUNKER ARCHIVE</div>
+          <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
+        </div>
+        <div id="archive-log-list" class="archive-log-list"></div>
       </div>
     </div>
 

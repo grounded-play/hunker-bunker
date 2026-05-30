@@ -3566,6 +3566,14 @@ export class ThreeGame {
         return { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
     }
 
+    getLoreText(key) {
+        for (const pool of Object.values(LORE_LOGS)) {
+            const entry = pool.find((e) => e.key === key);
+            if (entry) return entry.text;
+        }
+        return null;
+    }
+
     _initClassAbility() {
         const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.classAbility = {

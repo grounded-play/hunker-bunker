@@ -4058,6 +4058,105 @@ body.mission-intro-active #game-container {
 }
 
 /* Holographic Terminal Modal */
+.start-btn--archive {
+  background: rgba(0, 200, 180, 0.06) !important;
+  border-color: rgba(0, 200, 180, 0.35) !important;
+  color: rgba(0, 200, 180, 0.85) !important;
+  margin-top: calc(var(--vu) * 0.6);
+  font-size: calc(var(--vu) * 1.2) !important;
+}
+
+.start-btn--archive:hover {
+  background: rgba(0, 200, 180, 0.15) !important;
+  border-color: rgba(0, 200, 180, 0.7) !important;
+}
+
+.archive-modal-content {
+  background: rgba(6, 10, 14, 0.97) !important;
+  border: 1.5px solid rgba(0, 200, 180, 0.5) !important;
+  box-shadow: 0 0 30px rgba(0, 200, 180, 0.15) !important;
+  width: min(calc(var(--vu) * 120), 92vw) !important;
+  max-height: 85vh !important;
+  border-radius: 12px;
+  padding: calc(var(--vu) * 3) !important;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.8);
+  overflow: hidden;
+  position: relative;
+}
+
+.archive-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(0, 200, 180, 0.2);
+  padding-bottom: calc(var(--vu) * 1);
+}
+
+.archive-title {
+  font-size: clamp(14px, calc(var(--vu) * 2.2), 20px);
+  font-weight: 900;
+  color: rgba(0, 200, 180, 0.95);
+  letter-spacing: 0.1em;
+}
+
+.archive-summary {
+  font-size: var(--font-xs);
+  color: rgba(0, 200, 180, 0.6);
+}
+
+.archive-log-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.2);
+  padding-right: calc(var(--vu) * 0.5);
+}
+
+.archive-log-entry {
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.5);
+  background: rgba(0, 200, 180, 0.04);
+  border: 1px solid rgba(0, 200, 180, 0.12);
+  border-radius: 6px;
+}
+
+.archive-log-entry--undiscovered {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
+  opacity: 0.4;
+}
+
+.archive-log-key {
+  font-size: var(--font-xs);
+  color: rgba(0, 200, 180, 0.7);
+  font-weight: 700;
+  margin-bottom: calc(var(--vu) * 0.5);
+}
+
+.archive-log-text {
+  font-size: var(--font-xs);
+  color: rgba(218, 248, 255, 0.85);
+  white-space: pre-line;
+  line-height: 1.5;
+}
+
+.archive-log-text--locked {
+  color: rgba(255, 255, 255, 0.25);
+  font-style: italic;
+}
+
+.archive-section-label {
+  font-size: var(--font-xs);
+  font-weight: 900;
+  color: rgba(0, 200, 180, 0.5);
+  letter-spacing: 0.12em;
+  margin-top: calc(var(--vu) * 0.8);
+  padding-bottom: calc(var(--vu) * 0.4);
+  border-bottom: 1px solid rgba(0, 200, 180, 0.1);
+}
+
 .console-terminal-content {
   --terminal-glow: #7dff5a; /* Default green */
   --terminal-glow-rgb: 125, 255, 90;

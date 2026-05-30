@@ -1068,6 +1068,65 @@ window.addEventListener('player-extracted', (event) => {
     }, 600);
 });
 
+// ── Bunker Archive ────────────────────────────────────────────
+const ALL_LORE_KEYS = [
+    'A01','A02','A03','A04','A05','A06','A07','A08','A09','A10','A11','A12',
+    'C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12',
+    'B01','B02','B03'
+];
+
+function buildArchiveModal() {
+    const listEl = document.getElementById('archive-log-list');
+    const summaryEl = document.getElementById('archive-summary');
+    if (!listEl) return;
+
+    const mem = getWorldMemory();
+    const found = new Set(mem.logsFound ?? []);
+    listEl.innerHTML = '';
+
+    // Group by sector
+    const sections = [
+        { prefix: 'A', label: 'ACTIVE SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('A')) },
+        { prefix: 'C', label: 'CRYO SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('C')) },
+        { prefix: 'B', label: 'BIO SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('B')) }
+    ];
+
+    for (const section of sections) {
+        const sectionLabel = document.createElement('div');
+        sectionLabel.className = 'archive-section-label';
+        sectionLabel.textContent = section.label;
+        listEl.appendChild(sectionLabel);
+
+        for (const key of section.keys) {
+            const isFound = found.has(key);
+            const entry = document.createElement('div');
+            entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
+
+            const keyEl = document.createElement('div');
+            keyEl.className = 'archive-log-key';
+            keyEl.textContent = `LOG-${key}`;
+
+            const textEl = document.createElement('div');
+            textEl.className = `archive-log-text ${isFound ? '' : 'archive-log-text--locked'}`;
+
+            if (isFound) {
+                const loreText = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
+                textEl.textContent = loreText;
+            } else {
+                textEl.textContent = '[ENCRYPTED — RECOVER FROM FIELD TERMINAL]';
+            }
+
+            entry.appendChild(keyEl);
+            entry.appendChild(textEl);
+            listEl.appendChild(entry);
+        }
+    }
+
+    if (summaryEl) {
+        summaryEl.textContent = `LOGS RECOVERED: ${found.size} / ${ALL_LORE_KEYS.length}`;
+    }
+}
+
 // ── Achievement / Unlock System ───────────────────────────────
 const ACHIEVEMENT_KEY = 'hb_achievements_v1';
 
@@ -2176,6 +2235,24 @@ const setupClickOutside = (modalId, closeAction) => {
 setupClickOutside('about-modal', () => {
     const aboutModal = document.getElementById('about-modal');
     if (aboutModal) aboutModal.classList.add('hidden');
+});
+
+// Archive modal
+document.getElementById('archive-btn')?.addEventListener('click', () => {
+    buildArchiveModal();
+    const modal = document.getElementById('archive-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+});
+document.getElementById('close-archive-modal')?.addEventListener('click', () => {
+    const modal = document.getElementById('archive-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+});
+setupClickOutside('archive-modal', () => {
+    const modal = document.getElementById('archive-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
 });
 
 setupClickOutside('settings-popup', () => {
