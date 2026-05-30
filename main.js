@@ -470,6 +470,7 @@ window.addEventListener('enemy-killed', (event) => {
     const type = event?.detail?.type ?? '';
     if (total === 1) fireMothershipReactiveLine('first_kill');
     if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
+    if (type === 'crawler') fireMothershipReactiveLine('crawler_detected');
 });
 
 window.addEventListener('enemy-hit', (event) => {
@@ -1042,6 +1043,7 @@ function fireMothershipReactiveLine(trigger) {
         first_deposit:    'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.',
         lore_found:       'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.',
         sentinel_spotted: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.',
+        crawler_detected:  'ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.',
     };
     const text = lines[trigger];
     if (text) showBiomePrompt(`> MOTHERSHIP: ${text}`);

@@ -356,6 +356,15 @@ const SNAIL_BIOME_TINTS = Object.freeze({
     bio:    0x88ff88
 });
 
+const CRAWLER_MAX_HP = 1;
+const CRAWLER_DETECT_RADIUS = 7.0;
+const CRAWLER_WINDUP_DURATION = 0.35;
+const CRAWLER_CHARGE_SPEED = 7.0;
+const CRAWLER_CHARGE_MAX_DURATION = 1.0;
+const CRAWLER_ATTACK_RADIUS = 0.72;
+const CRAWLER_ATTACK_COOLDOWN = 1.5;
+const CRAWLER_TINT = 0x44ff88;
+
 function classifyChunkCells(grid, chunkSize) {
     const roomTypes = Array.from({ length: chunkSize }, () => Array(chunkSize).fill(null));
     for (let y = 0; y < chunkSize; y++) {
@@ -822,6 +831,7 @@ export class ThreeGame {
             cybersnail: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
             cryosnail: this.loadKeyedSpriteTexture('/cryosnail.png', 14),
             sporesnail: this.loadKeyedSpriteTexture('/sporesnail.png', 14),
+            crawler: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
             boss_cybersnail: this.loadKeyedSpriteTexture('/boss_cybersnail.png', 14),
             boss_cryosnail: this.loadKeyedSpriteTexture('/boss_cryosnail.png', 14),
             boss_sporesnail: this.loadKeyedSpriteTexture('/boss_sporesnail.png', 14),
@@ -884,6 +894,15 @@ export class ThreeGame {
                 depthWrite: false,
                 depthTest: true,
                 fog: false
+            }),
+            crawler: new THREE.SpriteMaterial({
+                map: this.scatterTextures.crawler,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(CRAWLER_TINT)
             }),
             boss_cybersnail: new THREE.SpriteMaterial({
                 map: this.scatterTextures.boss_cybersnail,
@@ -5105,6 +5124,7 @@ export class ThreeGame {
         }
 
         let snailCount = 0;
+        let crawlerCount = 0;
         let hasSentinelThisChunk = false;
         let hasLoreTerminalThisChunk = false;
         const depthTierForScatter = this.getDepthTier(chunkX, chunkY);
@@ -5123,6 +5143,7 @@ export class ThreeGame {
             const isChamber = pRoomType === ROOM_TYPES.CHAMBER;
             const canSpawnSnail = distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount && !isDeadEnd;
             const canSpawnSentinel = depthTierForScatter >= 2 && isChamber && !hasSentinelThisChunk && distFromSpawn > 20;
+            const canSpawnCrawler = depthTierForScatter >= 3 && chunkBiomeKey === BIOME_KEYS.BIO && crawlerCount < 2 && distFromSpawn > 20 && !isDeadEnd;
             const loreChance = depthTierForScatter >= 2 ? 0.12 : 0.07;
             const canSpawnLore = isDeadEnd && !hasLoreTerminalThisChunk && distFromSpawn > 10;
             let type;
@@ -5135,6 +5156,12 @@ export class ThreeGame {
                 elevation = 0.09;
                 opacity = 1;
                 hasSentinelThisChunk = true;
+            } else if (canSpawnCrawler && roll < 0.22) {
+                type = 'crawler';
+                scaleMultiplier = 0.72 + random() * 0.18;
+                elevation = 0.09;
+                opacity = 1;
+                crawlerCount += 1;
             } else if (canSpawnLore && roll > (1 - loreChance)) {
                 type = 'lore_terminal';
                 scaleMultiplier = 0.7;
@@ -5328,6 +5355,46 @@ export class ThreeGame {
                 loreText: logEntry.text,
                 baseOpacity: 1,
                 phase: placement.phase ?? 0
+            };
+            return sprite;
+        }
+
+        if (this.isCrawler(placement.type)) {
+            const mat = this.scatterMaterials.crawler;
+            if (!mat) return null;
+            const clonedMat = mat.clone();
+            clonedMat.alphaTest = 0.06;
+            const sx = scaleX * 0.72;
+            const sy = scaleY * 0.72;
+            const sprite = new THREE.Sprite(clonedMat);
+            sprite.center.set(0.5, 0);
+            sprite.position.set(placement.x, anchoredY, placement.z);
+            sprite.frustumCulled = false;
+            sprite.renderOrder = 6;
+            sprite.scale.set(sx, sy, 1);
+            sprite.userData = {
+                isScatter: true,
+                isEnemy: true,
+                isBoss: false,
+                type: 'crawler',
+                scatterKey: placement.scatterKey,
+                baseY: anchoredY,
+                burstTriggered: false,
+                burstTimer: 0,
+                hp: CRAWLER_MAX_HP,
+                maxHp: CRAWLER_MAX_HP,
+                baseScaleX: sx,
+                baseScaleY: sy,
+                baseOpacity: 1,
+                facingSign: 1,
+                phase: Math.random() * Math.PI * 2,
+                biomeTint: CRAWLER_TINT,
+                crawlerState: 'idle',
+                windupTimer: 0,
+                chargeTimer: 0,
+                chargeDirX: 0,
+                chargeDirZ: 0,
+                attackCooldown: 0
             };
             return sprite;
         }
@@ -6153,7 +6220,8 @@ export class ThreeGame {
         if (sprite.userData.hp === previousHp) return;
 
         const isBoss = Boolean(sprite.userData.isBoss);
-        if (!isBoss && sprite.userData.hp === 1 && !sprite.userData.enraged) {
+        const isCrawler = this.isCrawler(sprite.userData.type);
+        if (!isBoss && !isCrawler && sprite.userData.hp === 1 && !sprite.userData.enraged) {
             sprite.userData.enraged = true;
             sprite.userData.speed = SNAIL_ENRAGED_MOVE_SPEED;
             sprite.userData.attackCooldown = Math.min(sprite.userData.attackCooldown ?? 0, 0.2);
@@ -6196,6 +6264,8 @@ export class ThreeGame {
 
         if (this.isSentinel(sprite.userData.type)) {
             this.spawnSentinelDrops(sprite);
+        } else if (this.isCrawler(sprite.userData.type)) {
+            this.spawnCrawlerDrops(sprite);
         } else {
             this.spawnSnailDrops(sprite);
         }
@@ -6472,6 +6542,102 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('sentinel-fired', { detail: { x: sprite.position.x, z: sprite.position.z } }));
     }
 
+    updateCrawlerBehavior(sprite, delta) {
+        const data = sprite.userData;
+        if (!this.player) return;
+
+        if (data.attackCooldown > 0) {
+            data.attackCooldown = Math.max(0, data.attackCooldown - delta);
+        }
+
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const distToPlayer = Math.hypot(dx, dz);
+
+        if (data.crawlerState === 'idle') {
+            if (!this.isPlayerDead && distToPlayer <= CRAWLER_DETECT_RADIUS) {
+                data.crawlerState = 'alert';
+                data.windupTimer = 0;
+                sprite.material.color.setHex(0xffffff);
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.38, playbackRate: 2.2, bus: 'sfx' });
+                window.dispatchEvent(new CustomEvent('crawler-detected', {}));
+            }
+        } else if (data.crawlerState === 'alert') {
+            data.windupTimer += delta;
+            // Rapid shake during windup
+            sprite.position.x += (Math.random() - 0.5) * 0.05;
+            sprite.position.z += (Math.random() - 0.5) * 0.05;
+
+            if (distToPlayer > CRAWLER_DETECT_RADIUS * 1.6 || this.isPlayerDead) {
+                data.crawlerState = 'idle';
+                sprite.material.color.setHex(CRAWLER_TINT);
+            } else if (data.windupTimer >= CRAWLER_WINDUP_DURATION) {
+                const dist = distToPlayer;
+                if (dist < 0.001) { data.crawlerState = 'idle'; return; }
+                data.chargeDirX = dx / dist;
+                data.chargeDirZ = dz / dist;
+                data.chargeTimer = 0;
+                data.crawlerState = 'charging';
+                sprite.material.color.setHex(CRAWLER_TINT);
+                window.AudioManager?.play('amb_metal_stress', { volume: 0.45, playbackRate: 2.6, bus: 'sfx' });
+            }
+        } else if (data.crawlerState === 'charging') {
+            data.chargeTimer += delta;
+
+            const moveX = data.chargeDirX * CRAWLER_CHARGE_SPEED * delta;
+            const moveZ = data.chargeDirZ * CRAWLER_CHARGE_SPEED * delta;
+            const nextX = sprite.position.x + moveX;
+            const nextZ = sprite.position.z + moveZ;
+            const wallHit = this.getTileType(Math.round(nextX), Math.round(nextZ)) === '#';
+
+            if (wallHit || data.chargeTimer >= CRAWLER_CHARGE_MAX_DURATION) {
+                data.crawlerState = 'idle';
+                data.attackCooldown = CRAWLER_ATTACK_COOLDOWN;
+                sprite.material.color.setHex(CRAWLER_TINT);
+                return;
+            }
+
+            sprite.position.x = nextX;
+            sprite.position.z = nextZ;
+
+            // Update facing
+            const absX = Math.abs(sprite.scale.x);
+            sprite.scale.x = data.chargeDirX < 0 ? -absX : absX;
+
+            // Player hit check
+            const newDist = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
+            if (!this.isPlayerDead && newDist <= CRAWLER_ATTACK_RADIUS && data.attackCooldown <= 0) {
+                data.attackCooldown = CRAWLER_ATTACK_COOLDOWN;
+                data.crawlerState = 'idle';
+                window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'crawler' } }));
+                window.AudioManager?.play('ui_error', { volume: 0.5, playbackRate: 1.3, bus: 'sfx' });
+            }
+        }
+    }
+
+    spawnCrawlerDrops(sprite) {
+        const parent = sprite?.parent;
+        if (!parent) return;
+        const x = sprite.position.x;
+        const z = sprite.position.z;
+        const dropTypes = ['ammo'];
+        if (Math.random() < 0.25) dropTypes.push('health');
+
+        for (const type of dropTypes) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 0.35 + Math.random() * 0.28;
+            const targetX = x + Math.cos(angle) * radius;
+            const targetZ = z + Math.sin(angle) * radius;
+            if (this.getTileType(Math.round(targetX), Math.round(targetZ)) === '#') continue;
+            const placement = this.createSnailDropPlacement(x, z, targetX, targetZ, type);
+            const pickup = this.createPickupInstance(placement);
+            if (pickup) {
+                parent.add(pickup);
+                this.pickupMeshes.push(pickup);
+            }
+        }
+    }
+
     spawnSentinelDrops(sprite) {
         const x = sprite.position.x;
         const z = sprite.position.z;
@@ -6685,11 +6851,15 @@ export class ThreeGame {
     }
 
     isEnemyType(type) {
-        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel'].includes(type);
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler'].includes(type);
     }
 
     isSentinel(type) {
         return type === 'sentinel';
+    }
+
+    isCrawler(type) {
+        return type === 'crawler';
     }
 
     spawnFrostShockwaveEffect(x, z, maxRadius = 4.5) {
@@ -6854,6 +7024,12 @@ export class ThreeGame {
                 const phase = child.userData.phase ?? 0;
                 child.position.y = baseY + Math.sin(time * 1.4 + phase) * 0.05;
                 child.material.opacity = 0.7 + Math.sin(time * 2.1 + phase) * 0.3;
+            } else if (this.isCrawler(child.userData.type)) {
+                child.position.y = baseY + Math.sin(time * 6 + child.userData.phase) * 0.03;
+                child.material.opacity = child.userData.baseOpacity;
+                if (!child.userData.burstTriggered) {
+                    this.updateCrawlerBehavior(child, delta);
+                }
             } else if (this.isSentinel(child.userData.type)) {
                 child.position.y = baseY;
                 if (!child.userData.burstTriggered) {
