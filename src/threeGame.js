@@ -110,6 +110,17 @@ const MILESTONE_BOSS_FOR_GOAL = Object.freeze({
     radarNode: 'boss_sporesnail',
     reactorCompressor: 'boss_sporesnail'
 });
+
+// Fixed world build-site coordinates the yellow scanner arrow guides toward
+// (Note 4). Ordered by progression; a site is "built" once its goalKey is
+// unlocked, advancing the arrow to the next unbuilt site. Headings push the
+// player outward through ACTIVE -> CRYO -> BIO sectors.
+const BUILD_SITES = Object.freeze([
+    Object.freeze({ goalKey: 'o2Bubble', x: 2, z: 11, biome: 'active', label: 'O₂ BUBBLE SITE' }),
+    Object.freeze({ goalKey: 'hullExpansion', x: -6, z: 42, biome: 'active', label: 'HULL BAY SITE' }),
+    Object.freeze({ goalKey: 'radarNode', x: 9, z: 98, biome: 'cryo', label: 'SCANNER MAST SITE' }),
+    Object.freeze({ goalKey: 'reactorCompressor', x: -8, z: 176, biome: 'bio', label: 'REACTOR SITE' })
+]);
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
 const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
 const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
@@ -2397,6 +2408,7 @@ export class ThreeGame {
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
+        this.updateBuildSiteBeacon(now);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
         this.updateConsoles(delta, now);
@@ -3316,6 +3328,43 @@ export class ThreeGame {
         return this.crashedShips?.find((ship) => ship.type === this.playerType) ?? null;
     }
 
+    // Render a pulsing holographic beacon at the active build site so the yellow
+    // scanner arrow (Note 4) has a visible referent in the world.
+    updateBuildSiteBeacon(now = performance.now()) {
+        const site = this.getNextBuildSite();
+        if (!site) {
+            if (this.buildSiteBeacon) this.buildSiteBeacon.visible = false;
+            return;
+        }
+
+        if (!this.buildSiteBeacon) {
+            const group = new THREE.Group();
+            const beam = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.36, 0.36, 8, 12, 1, true),
+                new THREE.MeshBasicMaterial({ color: 0xffd24a, transparent: true, opacity: 0.3, depthWrite: false, fog: false, side: THREE.DoubleSide })
+            );
+            beam.position.y = 4;
+            group.add(beam);
+            const core = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.08, 0.08, 8.6, 8),
+                new THREE.MeshBasicMaterial({ color: 0xffe98a, transparent: true, opacity: 0.85, depthWrite: false, fog: false })
+            );
+            core.position.y = 4.3;
+            group.add(core);
+            const light = new THREE.PointLight(0xffd24a, 1.5, 9, 2);
+            light.position.y = 2.2;
+            group.add(light);
+            this.scene.add(group);
+            this.buildSiteBeacon = group;
+            this.buildSiteBeaconBeam = beam;
+        }
+
+        this.buildSiteBeacon.visible = true;
+        this.buildSiteBeacon.position.set(site.x, 0, site.z);
+        const pulse = 0.24 + Math.sin(now * 0.003) * 0.12;
+        if (this.buildSiteBeaconBeam) this.buildSiteBeaconBeam.material.opacity = pulse;
+    }
+
     getActiveO2GeneratorPosition() {
         const activeShip = this.getActiveShip();
         if (!activeShip) return null;
@@ -3560,14 +3609,52 @@ export class ThreeGame {
         };
     }
 
+    // First build site whose corresponding goal is not yet unlocked, or null
+    // when every site has been built.
+    getNextBuildSite() {
+        for (const site of BUILD_SITES) {
+            if (!this.hasUpgrade(site.goalKey)) return site;
+        }
+        return null;
+    }
+
+    // Convert a world-space delta into the screen-planar bearing used by the
+    // HUD compass arrows.
+    planarAngleTo(dx, dz, distance) {
+        if (!(distance > 0.0001)) return 0;
+        const screenX = (dx * this.cameraPlanarRight.x) + (dz * this.cameraPlanarRight.y);
+        const screenY = (dx * this.cameraPlanarForward.x) + (dz * this.cameraPlanarForward.y);
+        return THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY));
+    }
+
     getRadarCompassState() {
-        if (!this.player || !this.hasUpgrade('radarNode')) {
+        if (!this.player) {
+            return { active: false, angle: 0, distance: 0 };
+        }
+
+        // Primary mode: guide toward the next "to-develop" build site. Available
+        // by default (not gated by the radar upgrade).
+        const site = this.getNextBuildSite();
+        if (site) {
+            const dx = site.x - this.player.position.x;
+            const dz = site.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            return {
+                active: true,
+                mode: 'build',
+                label: site.label,
+                angle: this.planarAngleTo(dx, dz, distance),
+                distance
+            };
+        }
+
+        // Fallback mode (all sites built): nearest pickup, gated by radarNode.
+        if (!this.hasUpgrade('radarNode')) {
             return { active: false, angle: 0, distance: 0 };
         }
 
         let nearest = null;
         let nearestDistance = Infinity;
-
         for (const pickup of this.pickupMeshes) {
             if (!pickup?.parent || pickup.userData?.collectedReported) continue;
 
@@ -3584,15 +3671,10 @@ export class ThreeGame {
             return { active: false, angle: 0, distance: 0 };
         }
 
-        const screenX = (nearest.dx * this.cameraPlanarRight.x) + (nearest.dz * this.cameraPlanarRight.y);
-        const screenY = (nearest.dx * this.cameraPlanarForward.x) + (nearest.dz * this.cameraPlanarForward.y);
-        const angle = nearest.distance > 0.0001
-            ? THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY))
-            : 0;
-
         return {
             active: true,
-            angle,
+            mode: 'pickup',
+            angle: this.planarAngleTo(nearest.dx, nearest.dz, nearest.distance),
             distance: nearest.distance
         };
     }
