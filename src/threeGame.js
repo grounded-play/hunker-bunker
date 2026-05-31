@@ -103,6 +103,19 @@ const FEATURE_WALL_DECALS = true;
 const FEATURE_MULTISHOT = true;
 // Spawn a themed retaliation boss after each console build milestone (Note 6).
 const FEATURE_MILESTONE_BOSSES = true;
+// Weather system (Note 9): hard particle cap + per-state profiles. Profiles set
+// active particle count (<= cap), point size/color/opacity, fall/drift velocity
+// ranges, and a fog-far multiplier for reduced visibility.
+const FEATURE_WEATHER = true;
+const WEATHER_PARTICLE_CAP = 240;
+const WEATHER_FIELD_RADIUS = 20;   // half-extent of the box that follows the player
+const WEATHER_FIELD_HEIGHT = 9;
+const WEATHER_PROFILES = Object.freeze({
+    clear:       { count: 0,   size: 0.1,  color: 0xffffff, opacity: 0,    fall: [0, 0],       drift: 0,    fogFarMult: 1.0 },
+    snow:        { count: 220, size: 0.17, color: 0xcfe4ff, opacity: 0.85, fall: [1.2, 2.1],    drift: 0.6,  fogFarMult: 0.88 },
+    spore_drift: { count: 150, size: 0.15, color: 0x9dff7a, opacity: 0.7,  fall: [0.25, 0.75],  drift: 1.1,  fogFarMult: 0.9 },
+    fog_gust:    { count: 70,  size: 0.62, color: 0xb8c4d0, opacity: 0.2,  fall: [0.1, 0.45],   drift: 1.6,  fogFarMult: 0.66 }
+});
 // Goal key -> retaliation boss spawned when that build completes.
 const MILESTONE_BOSS_FOR_GOAL = Object.freeze({
     o2Bubble: 'boss_cybersnail',
@@ -496,6 +509,21 @@ export class ThreeGame {
         this.keys = { up: false, down: false, left: false, right: false };
         this.virtualInput = { x: 0, z: 0 };
         this.inputEnabled = true;
+        // Day/night cycle (Note 8): timeOfDay 0..1 (0/1 = midnight, 0.5 = noon).
+        // Start mid-morning; advances only during active gameplay.
+        this.timeOfDay = 0.28;
+        this.dayCycleSeconds = 150;
+        // Weather (Note 9): pooled Points field, biome/time-biased state machine.
+        this.weather = {
+            state: 'clear',
+            changeTimer: 6,
+            count: 0,
+            points: null,
+            geometry: null,
+            positions: null,
+            velocities: null,
+            fogFarMult: 1
+        };
         this.isMoving = false;
         this.animationTimer = 0;
         this.currentFacingRow = 0;
@@ -1227,6 +1255,16 @@ export class ThreeGame {
         playerGlow.position.set(0, 1.6, 0);
         this.playerGlow = playerGlow;
         this.scene.add(playerGlow);
+
+        // Base intensities/fog distances captured so the day/night cycle (Note 8)
+        // can modulate them multiplicatively without clobbering biome color work.
+        this.baseLightIntensity = {
+            ambient: ambientLight.intensity,
+            directional: directionalLight.intensity,
+            fill: fillLight.intensity,
+            playerGlow: playerGlow.intensity
+        };
+        this.baseFogRange = { near: this.scene.fog?.near ?? 10, far: this.scene.fog?.far ?? 28 };
     }
 
     setupWorld() {
@@ -2411,6 +2449,8 @@ export class ThreeGame {
         this.updateMenuShowcase(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
+        this.updateWeather(delta);
+        this.updateDayNightCycle(delta);
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
@@ -4504,6 +4544,164 @@ export class ThreeGame {
             this.currentBiomeKey = nextBiomeKey;
             this.emitBiomeChanged(nextBiomeKey, distanceFromAnchor);
         }
+    }
+
+    // Day/night cycle (Note 8). Orthographic framing => no skybox; mood reads
+    // through light intensity and fog. Modulates intensities multiplicatively and
+    // tightens fog at night, layered on top of the biome color work so biome
+    // identity is preserved. Advances only while gameplay input is enabled, so
+    // menus/cutscenes/terminals effectively pause the clock (ask A6).
+    getDayFactor() {
+        // 0 at midnight, 1 at noon, smooth cosine.
+        return 0.5 - 0.5 * Math.cos(this.timeOfDay * Math.PI * 2);
+    }
+
+    updateDayNightCycle(delta) {
+        if (!this.baseLightIntensity || !this.scene?.fog) return;
+        if (this.inputEnabled && !this.isPlayerDead) {
+            this.timeOfDay = (this.timeOfDay + delta / this.dayCycleSeconds) % 1;
+        }
+
+        const day = this.getDayFactor();
+        const lerp = THREE.MathUtils.lerp;
+        // Night floors keep the scene readable but tense/dim.
+        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.4, 1.0, day);
+        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.18, 1.0, day);
+        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.45, 1.05, day);
+        // Player's own glow matters more in the dark.
+        if (this.playerGlow) {
+            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.5, 1.0, day);
+        }
+
+        // Fog closes in at night for a claustrophobic mood (color stays under
+        // biome control; only the range is touched here).
+        this.scene.fog.near = lerp(this.baseFogRange.near * 0.6, this.baseFogRange.near, day);
+        this.scene.fog.far = lerp(this.baseFogRange.far * 0.62, this.baseFogRange.far, day);
+
+        // Weather can further reduce visibility (applied multiplicatively; day/night
+        // resets fog each frame so this never accumulates).
+        const wMult = this.weather?.fogFarMult ?? 1;
+        if (wMult !== 1) {
+            this.scene.fog.far *= wMult;
+            this.scene.fog.near *= Math.max(0.7, wMult);
+        }
+    }
+
+    // ── Weather (Note 9) ──────────────────────────────────────────
+    ensureWeatherField() {
+        if (this.weather.points) return;
+        const positions = new Float32Array(WEATHER_PARTICLE_CAP * 3);
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setDrawRange(0, 0);
+        const material = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.16,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            fog: false
+        });
+        const points = new THREE.Points(geometry, material);
+        points.frustumCulled = false;
+        points.renderOrder = 7;
+        this.scene.add(points);
+        this.weather.points = points;
+        this.weather.geometry = geometry;
+        this.weather.positions = positions;
+        this.weather.velocities = new Float32Array(WEATHER_PARTICLE_CAP * 3);
+    }
+
+    weatherSpawnXZ() {
+        const px = this.player?.position.x ?? 0;
+        const pz = this.player?.position.z ?? 0;
+        return {
+            x: px + (Math.random() - 0.5) * 2 * WEATHER_FIELD_RADIUS,
+            z: pz + (Math.random() - 0.5) * 2 * WEATHER_FIELD_RADIUS
+        };
+    }
+
+    setWeatherState(state) {
+        const profile = WEATHER_PROFILES[state] ?? WEATHER_PROFILES.clear;
+        this.weather.state = state;
+        this.weather.count = Math.min(WEATHER_PARTICLE_CAP, profile.count);
+        this.weather.fogFarMult = profile.fogFarMult;
+
+        this.ensureWeatherField();
+        const { points, geometry, positions, velocities, count } = this.weather;
+        points.material.color.setHex(profile.color);
+        points.material.size = profile.size;
+        points.material.opacity = profile.opacity;
+        points.visible = count > 0;
+        geometry.setDrawRange(0, count);
+
+        // Seed particle positions across the full field height so weather doesn't
+        // visibly "pour in" from the top on a state change.
+        for (let i = 0; i < count; i++) {
+            const o = i * 3;
+            const { x, z } = this.weatherSpawnXZ();
+            positions[o] = x;
+            positions[o + 1] = Math.random() * WEATHER_FIELD_HEIGHT;
+            positions[o + 2] = z;
+            const fall = profile.fall[0] + Math.random() * (profile.fall[1] - profile.fall[0]);
+            velocities[o] = (Math.random() - 0.5) * profile.drift;
+            velocities[o + 1] = -fall;
+            velocities[o + 2] = (Math.random() - 0.5) * profile.drift;
+        }
+        geometry.attributes.position.needsUpdate = true;
+    }
+
+    pickWeatherState() {
+        const biome = this.currentBiomeKey;
+        const day = this.getDayFactor();
+        const r = Math.random();
+        let next = 'clear';
+        if (biome === BIOME_KEYS.CRYO) {
+            next = r < 0.55 ? 'snow' : r < 0.78 ? 'fog_gust' : 'clear';
+        } else if (biome === BIOME_KEYS.BIO) {
+            next = r < 0.5 ? 'spore_drift' : r < 0.72 ? 'fog_gust' : 'clear';
+        } else {
+            next = r < 0.22 ? 'fog_gust' : 'clear';
+        }
+        // Night raises the odds of weather rolling in.
+        if (next === 'clear' && day < 0.4 && Math.random() < 0.4) next = 'fog_gust';
+        return next;
+    }
+
+    updateWeather(delta) {
+        if (!FEATURE_WEATHER) return;
+
+        this.weather.changeTimer -= delta;
+        if (this.weather.changeTimer <= 0) {
+            this.setWeatherState(this.pickWeatherState());
+            this.weather.changeTimer = 18 + Math.random() * 22;
+        }
+
+        const { count } = this.weather;
+        if (!count || !this.weather.points) return;
+
+        const { positions, velocities, geometry } = this.weather;
+        const px = this.player?.position.x ?? 0;
+        const pz = this.player?.position.z ?? 0;
+        for (let i = 0; i < count; i++) {
+            const o = i * 3;
+            positions[o] += velocities[o] * delta;
+            positions[o + 1] += velocities[o + 1] * delta;
+            positions[o + 2] += velocities[o + 2] * delta;
+
+            // Recycle particles that hit the ground or drift out of the field
+            // box (which is recentered on the player every frame).
+            const outOfRange = Math.abs(positions[o] - px) > WEATHER_FIELD_RADIUS
+                || Math.abs(positions[o + 2] - pz) > WEATHER_FIELD_RADIUS;
+            if (positions[o + 1] <= 0.05 || outOfRange) {
+                const { x, z } = this.weatherSpawnXZ();
+                positions[o] = x;
+                positions[o + 1] = WEATHER_FIELD_HEIGHT - Math.random() * 1.5;
+                positions[o + 2] = z;
+            }
+        }
+        geometry.attributes.position.needsUpdate = true;
     }
 
     emitDepthTierChanged(depthTier = this.maxDepthTierReached) {
