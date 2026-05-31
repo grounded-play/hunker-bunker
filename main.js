@@ -3226,6 +3226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     window.game?.setPerformanceProfile?.('menu');
+    window.game?.setLoadingPaused?.(true);
     setSnailSpawnState(false, { purgeExisting: true });
     const initialBiomeState = window.game?.getBiomeState?.();
     if (initialBiomeState) {
@@ -3251,7 +3252,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         await AudioManager.unlock();
 
         triggerDoorTransition(
-            () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
+            () => {
+                if (loadingScreen) loadingScreen.classList.add('hidden');
+                window.game?.setLoadingPaused?.(false);
+            },
             null
         );
     }, { once: true });

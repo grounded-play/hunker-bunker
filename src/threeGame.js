@@ -37,6 +37,9 @@ const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
+const MENU_SHOWROOM_FLOOR_SIZE = 96;
+const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
+const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
 const PICKUP_DISTRIBUTION = {
     clustered: 0.7,
     transitional: 0.2,
@@ -655,6 +658,7 @@ export class ThreeGame {
         this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 1.0);
         this.gameplayPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         this.performanceProfile = 'menu';
+        this.loadingPaused = false;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         this.renderer.setPixelRatio(this.menuPixelRatio);
@@ -1310,6 +1314,42 @@ export class ThreeGame {
         this.baseFogRange = { near: this.scene.fog?.near ?? 10, far: this.scene.fog?.far ?? 28 };
     }
 
+    createMenuGridTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#101316';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const drawGrid = (step, color, width) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            for (let x = 0; x <= canvas.width; x += step) {
+                ctx.moveTo(x + 0.5, 0);
+                ctx.lineTo(x + 0.5, canvas.height);
+            }
+            for (let y = 0; y <= canvas.height; y += step) {
+                ctx.moveTo(0, y + 0.5);
+                ctx.lineTo(canvas.width, y + 0.5);
+            }
+            ctx.stroke();
+        };
+
+        drawGrid(16, 'rgba(106, 231, 255, 0.16)', 1);
+        drawGrid(64, 'rgba(185, 247, 255, 0.3)', 1.5);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(8, 8);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = Math.min(this.maxTextureAnisotropy ?? 1, 4);
+        return texture;
+    }
+
     setupWorld() {
         const baseFloor = new THREE.Mesh(
             new THREE.CircleGeometry(18, 48),
@@ -1324,6 +1364,30 @@ export class ThreeGame {
         baseFloor.receiveShadow = true;
         this.scene.add(baseFloor);
 
+        const spawn = this.getSpawnTile();
+        this.menuGridTexture = this.createMenuGridTexture();
+        this.menuShowroomFloor = new THREE.Mesh(
+            new THREE.PlaneGeometry(MENU_SHOWROOM_FLOOR_SIZE, MENU_SHOWROOM_FLOOR_SIZE),
+            new THREE.MeshBasicMaterial({
+                map: this.menuGridTexture,
+                color: 0xd5d9dc,
+                transparent: true,
+                opacity: 0.92,
+                depthWrite: true,
+                depthTest: true
+            })
+        );
+        this.menuShowroomFloor.rotation.x = -Math.PI / 2;
+        this.menuShowroomFloor.position.set(
+            spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
+            -0.06,
+            spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
+        );
+        this.menuShowroomFloor.receiveShadow = true;
+        this.menuShowroomFloor.visible = this.performanceProfile === 'menu';
+        this.scene.add(this.menuShowroomFloor);
+
+        this.chunkGroups.visible = this.performanceProfile === 'gameplay';
         this.scene.add(this.chunkGroups);
         this.setupCrashedShips();
     }
@@ -2369,6 +2433,25 @@ export class ThreeGame {
         this.renderer.setSize(width, height, false);
     }
 
+    setLoadingPaused(paused = false) {
+        this.loadingPaused = Boolean(paused);
+        this.lastTime = performance.now();
+        if (!this.loadingPaused && this.performanceProfile === 'menu') {
+            this.positionMenuShowroomFloor();
+            this.snapCameraToPlayer();
+        }
+    }
+
+    positionMenuShowroomFloor() {
+        if (!this.menuShowroomFloor) return;
+        const spawn = this.getSpawnTile();
+        this.menuShowroomFloor.position.set(
+            spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
+            -0.06,
+            spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
+        );
+    }
+
     setPerformanceProfile(profile = 'menu') {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
@@ -2390,10 +2473,17 @@ export class ThreeGame {
                 if (this.playerMarker) {
                     this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
                 }
+                this.positionMenuShowroomFloor();
+                this.snapCameraToPlayer();
             }
             this.clearLoadedChunksForRunReset();
-            this.syncVisibleChunks(true);
             window.AudioManager?.stopAmbience?.();
+        }
+        if (this.menuShowroomFloor) {
+            this.menuShowroomFloor.visible = nextProfile === 'menu';
+        }
+        if (this.chunkGroups) {
+            this.chunkGroups.visible = nextProfile === 'gameplay';
         }
         const targetPixelRatio = nextProfile === 'gameplay'
             ? this.gameplayPixelRatio
@@ -2473,8 +2563,24 @@ export class ThreeGame {
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
 
+        if (this.loadingPaused) {
+            return;
+        }
+
+        if (this.performanceProfile === 'menu') {
+            this.updateMenuShowcase(delta);
+            this.updatePlayer(delta);
+            this.updateWeaponState(delta);
+            this.updateProjectiles(delta);
+            this.updateCamera(delta);
+            this.updateTransientEffects(delta, now);
+            this.updateHiddenPlayerMarker(now);
+            this.renderer.render(this.scene, this.camera);
+            return;
+        }
+
         // Adaptive quality: if FPS drops below 45 for 5s, reduce chunk radius (only active during gameplay)
-        if (this.performanceProfile === 'gameplay' && delta > 0) {
+        if (delta > 0) {
             const fps = 1 / delta;
             if (fps < 45) {
                 this._lowFpsTimer = (this._lowFpsTimer ?? 0) + delta;
@@ -2490,7 +2596,6 @@ export class ThreeGame {
         }
 
         this.updateClassAbility(delta);
-        this.updateMenuShowcase(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
         this.updateWeather(delta);
@@ -4667,8 +4772,10 @@ export class ThreeGame {
 
         // Fog eases in slightly at night (color stays under biome control; only
         // the range is touched here).
-        this.scene.fog.near = lerp(this.baseFogRange.near * 0.95, this.baseFogRange.near, dayBlend);
-        this.scene.fog.far = lerp(this.baseFogRange.far * 0.94, this.baseFogRange.far, dayBlend);
+        // Keep the depth fog gentle so it reads as faint atmosphere rather than a
+        // screen-spanning band; the radial overlay below is what limits visibility.
+        this.scene.fog.near = lerp(this.baseFogRange.near * 1.4, this.baseFogRange.near * 1.7, dayBlend);
+        this.scene.fog.far = lerp(this.baseFogRange.far * 1.9, this.baseFogRange.far * 2.3, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
@@ -4677,6 +4784,42 @@ export class ThreeGame {
             this.scene.fog.far *= wMult;
             this.scene.fog.near *= Math.max(0.7, wMult);
         }
+
+        // Radial darkness around the player. Darkest at night and in heavy weather.
+        const weatherDark = (1 - wMult) * 0.6;
+        const darkAlpha = THREE.MathUtils.clamp(lerp(0.5, 0.08, dayBlend) + weatherDark, 0, 0.85);
+        this.updatePlayerDarkness(darkAlpha);
+    }
+
+    // Positions and tints the radial "fog of war" overlay so the murk forms a
+    // circle around the player sprite instead of a camera-depth band.
+    updatePlayerDarkness(alpha) {
+        const overlay = this.darknessOverlay;
+        if (!overlay || !this.player || !this.camera) return;
+        const w = this.container.clientWidth || 1;
+        const h = this.container.clientHeight || 1;
+
+        // Project the player sprite anchor to screen pixels.
+        this._darknessCenter.set(
+            this.player.position.x,
+            this.player.position.y + 0.4,
+            this.player.position.z
+        ).project(this.camera);
+        const cx = (this._darknessCenter.x * 0.5 + 0.5) * w;
+        const cy = (-this._darknessCenter.y * 0.5 + 0.5) * h;
+
+        const fog = this.scene.fog?.color;
+        const r = fog ? Math.round(fog.r * 255) : 8;
+        const g = fog ? Math.round(fog.g * 255) : 10;
+        const b = fog ? Math.round(fog.b * 255) : 14;
+        const radius = Math.max(w, h) * 0.62;
+
+        overlay.style.background =
+            `radial-gradient(circle ${radius.toFixed(0)}px at ${cx.toFixed(0)}px ${cy.toFixed(0)}px,` +
+            `rgba(${r},${g},${b},0) 0%,` +
+            `rgba(${r},${g},${b},0) 30%,` +
+            `rgba(${r},${g},${b},${alpha.toFixed(3)}) 100%)`;
+        overlay.style.opacity = alpha > 0.02 ? '1' : '0';
     }
 
     // ── Weather (Note 9) ──────────────────────────────────────────
@@ -5657,12 +5800,28 @@ export class ThreeGame {
         this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
     }
 
+    snapCameraToPlayer() {
+        if (!this.player || !this.camera) return;
+        this.camera.position.set(
+            this.player.position.x + this.cameraOffset.x,
+            this.player.position.y + this.cameraOffset.y,
+            this.player.position.z + this.cameraOffset.z
+        );
+        this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
+    }
+
     triggerCameraShake(intensity = 0.18, duration = 0.35) {
         this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, intensity);
         this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
     }
 
     syncVisibleChunks(force = false) {
+        if (this.performanceProfile === 'menu') {
+            this.clearLoadedChunksForRunReset();
+            if (this.chunkGroups) this.chunkGroups.visible = false;
+            return;
+        }
+
         const centerChunkX = Math.floor(this.player.position.x / this.chunkSize);
         const centerChunkY = Math.floor(this.player.position.z / this.chunkSize);
         this.updateDepthTierProgress(centerChunkX, centerChunkY);
@@ -9209,6 +9368,9 @@ export class ThreeGame {
         });
         this.floorMaterial?.dispose?.();
         this.wallMaterial?.dispose?.();
+        this.menuShowroomFloor?.geometry?.dispose?.();
+        this.menuShowroomFloor?.material?.dispose?.();
+        this.menuGridTexture?.dispose?.();
         Object.values(this.scatterMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterPlaneMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterTextures ?? {}).forEach((texture) => texture.dispose?.());
