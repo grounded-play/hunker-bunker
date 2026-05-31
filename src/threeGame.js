@@ -118,7 +118,7 @@ const MILESTONE_BOSS_FOR_GOAL = Object.freeze({
 const BUILD_SITES = Object.freeze([
     Object.freeze({ goalKey: 'o2Bubble', x: 2, z: 11, biome: 'active', label: 'O₂ BUBBLE SITE' }),
     Object.freeze({ goalKey: 'hullExpansion', x: -6, z: 42, biome: 'active', label: 'HULL BAY SITE' }),
-    Object.freeze({ goalKey: 'radarNode', x: 9, z: 98, biome: 'cryo', label: 'SCANNER MAST SITE' }),
+    Object.freeze({ goalKey: 'radarNode', x: 9, z: 98, biome: 'cryo', label: 'SCANNER MAST SITE', animated: true }),
     Object.freeze({ goalKey: 'reactorCompressor', x: -8, z: 176, biome: 'bio', label: 'REACTOR SITE' })
 ]);
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
@@ -936,6 +936,15 @@ export class ThreeGame {
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
             lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader)
         };
+
+        // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
+        // Dedicated texture so UV frame-stepping is isolated; LinearFilter (no
+        // mipmaps) avoids bleeding across the frame seam.
+        this.buildStructureTexture = this.loadScatterTexture('/build_structure_anim.png', textureLoader);
+        this.buildStructureTexture.minFilter = THREE.LinearFilter;
+        this.buildStructureTexture.generateMipmaps = false;
+        this.buildStructureTexture.repeat.set(SPRITE_FRAME_REPEAT * 2, SPRITE_FRAME_REPEAT * 2); // 0.5, 0.5
+        this.buildStructureTexture.offset.set(0, SPRITE_FRAME_REPEAT * 2);
 
         this.scatterMaterials = {
             sentinel: new THREE.SpriteMaterial({
@@ -3363,6 +3372,39 @@ export class ThreeGame {
         this.buildSiteBeacon.position.set(site.x, 0, site.z);
         const pulse = 0.24 + Math.sin(now * 0.003) * 0.12;
         if (this.buildSiteBeaconBeam) this.buildSiteBeaconBeam.material.opacity = pulse;
+
+        // Build #3: render its 4-frame (2x2) animated structure sprite in place
+        // at the site, UV-stepping through the sheet (Note 7).
+        if (site.animated && this.buildStructureTexture) {
+            if (!this.buildStructureSprite) {
+                const mat = new THREE.SpriteMaterial({
+                    map: this.buildStructureTexture,
+                    transparent: true,
+                    alphaTest: 0.04,
+                    depthWrite: false,
+                    depthTest: true,
+                    fog: false
+                });
+                const sprite = new THREE.Sprite(mat);
+                sprite.center.set(0.5, 0);
+                sprite.scale.set(4.4, 4.4, 1);
+                sprite.renderOrder = 5;
+                this.scene.add(sprite);
+                this.buildStructureSprite = sprite;
+            }
+            this.buildStructureSprite.visible = true;
+            this.buildStructureSprite.position.set(site.x, 0.1, site.z);
+            // frameIndex = floor(timer * speed) % 4, mapped to a 2x2 grid.
+            const frame = Math.floor(now * 0.006) % 4;
+            const col = frame % 2;
+            const row = Math.floor(frame / 2);
+            this.buildStructureTexture.offset.set(
+                col * (SPRITE_FRAME_REPEAT * 2),
+                (1 - row) * (SPRITE_FRAME_REPEAT * 2)
+            );
+        } else if (this.buildStructureSprite) {
+            this.buildStructureSprite.visible = false;
+        }
     }
 
     getActiveO2GeneratorPosition() {

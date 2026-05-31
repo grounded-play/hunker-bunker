@@ -3092,7 +3092,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/scatter_cryo_shards.png',
             '/scatter_bio_moss.png',
             '/scatter_bio_pod.png',
-            '/scatter_slime_puddle.png'
+            '/scatter_slime_puddle.png',
+            '/build_structure_anim.png'
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
