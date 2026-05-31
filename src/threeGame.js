@@ -562,6 +562,7 @@ export class ThreeGame {
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
         this.snailsKilledThisRun = 0;
+        this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
         this._cameraShakeTimer = 0;
         this._cameraShakeIntensity = 0;
@@ -2451,6 +2452,7 @@ export class ThreeGame {
         this.updateBiomeEnvironment({ delta });
         this.updateWeather(delta);
         this.updateDayNightCycle(delta);
+        this.updateTerminalClockTick(now);
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
@@ -2978,6 +2980,7 @@ export class ThreeGame {
         setText('terminal-summary-bank', totalBanked);
         setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
         setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
+        this.updateTerminalClock();
         const heartsFromMed = Math.floor(bankState.med / 10);
         setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
 
@@ -3385,45 +3388,14 @@ export class ThreeGame {
         return this.crashedShips?.find((ship) => ship.type === this.playerType) ?? null;
     }
 
-    // Render a pulsing holographic beacon at the active build site so the yellow
-    // scanner arrow (Note 4) has a visible referent in the world.
+    // Render the in-world build-site visual. Only build #3 has a physical
+    // animated structure (Note 7); the other sites are abstract scanner targets.
     updateBuildSiteBeacon(now = performance.now()) {
         const site = this.getNextBuildSite();
-        if (!site) {
-            if (this.buildSiteBeacon) this.buildSiteBeacon.visible = false;
-            return;
-        }
-
-        if (!this.buildSiteBeacon) {
-            const group = new THREE.Group();
-            const beam = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.36, 0.36, 8, 12, 1, true),
-                new THREE.MeshBasicMaterial({ color: 0xffd24a, transparent: true, opacity: 0.3, depthWrite: false, fog: false, side: THREE.DoubleSide })
-            );
-            beam.position.y = 4;
-            group.add(beam);
-            const core = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.08, 0.08, 8.6, 8),
-                new THREE.MeshBasicMaterial({ color: 0xffe98a, transparent: true, opacity: 0.85, depthWrite: false, fog: false })
-            );
-            core.position.y = 4.3;
-            group.add(core);
-            const light = new THREE.PointLight(0xffd24a, 1.5, 9, 2);
-            light.position.y = 2.2;
-            group.add(light);
-            this.scene.add(group);
-            this.buildSiteBeacon = group;
-            this.buildSiteBeaconBeam = beam;
-        }
-
-        this.buildSiteBeacon.visible = true;
-        this.buildSiteBeacon.position.set(site.x, 0, site.z);
-        const pulse = 0.24 + Math.sin(now * 0.003) * 0.12;
-        if (this.buildSiteBeaconBeam) this.buildSiteBeaconBeam.material.opacity = pulse;
 
         // Build #3: render its 4-frame (2x2) animated structure sprite in place
         // at the site, UV-stepping through the sheet (Note 7).
-        if (site.animated && this.buildStructureTexture) {
+        if (site && site.animated && this.buildStructureTexture) {
             if (!this.buildStructureSprite) {
                 const mat = new THREE.SpriteMaterial({
                     map: this.buildStructureTexture,
@@ -3718,12 +3690,14 @@ export class ThreeGame {
     }
 
     getRadarCompassState() {
-        if (!this.player) {
+        // The yellow scanner arrow only appears once the SCANNER/RADAR upgrade is
+        // unlocked. Until then there is no arrow at all.
+        if (!this.player || !this.hasUpgrade('radarNode')) {
             return { active: false, angle: 0, distance: 0 };
         }
 
-        // Primary mode: guide toward the next "to-develop" build site. Available
-        // by default (not gated by the radar upgrade).
+        // Once unlocked: guide toward the next "to-develop" build site, falling
+        // back to nearest pickup when every site is built.
         const site = this.getNextBuildSite();
         if (site) {
             const dx = site.x - this.player.position.x;
@@ -3738,11 +3712,7 @@ export class ThreeGame {
             };
         }
 
-        // Fallback mode (all sites built): nearest pickup, gated by radarNode.
-        if (!this.hasUpgrade('radarNode')) {
-            return { active: false, angle: 0, distance: 0 };
-        }
-
+        // Fallback mode (all sites built): nearest pickup.
         let nearest = null;
         let nearestDistance = Infinity;
         for (const pickup of this.pickupMeshes) {
@@ -3873,6 +3843,7 @@ export class ThreeGame {
         this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
 
         if (resetRunState) {
+            this.runStartTime = Date.now();
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;
@@ -4556,6 +4527,43 @@ export class ThreeGame {
         return 0.5 - 0.5 * Math.cos(this.timeOfDay * Math.PI * 2);
     }
 
+    // "HH:MM · DAY|NIGHT" string for the terminal clock readout (Note 8 display).
+    getTimeOfDayLabel() {
+        const totalMinutes = Math.floor((this.timeOfDay % 1) * 24 * 60);
+        const hh = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+        const mm = String(totalMinutes % 60).padStart(2, '0');
+        const phase = this.getDayFactor() >= 0.5 ? 'DAY' : 'NIGHT';
+        return `${hh}:${mm} · ${phase}`;
+    }
+
+    // Seconds survived this run (since the last run reset).
+    getRunElapsedSeconds() {
+        return Math.max(0, Math.floor((Date.now() - (this.runStartTime ?? Date.now())) / 1000));
+    }
+
+    // Live-tick the terminal clock (~1/sec) while the terminal modal is open.
+    updateTerminalClockTick(now = performance.now()) {
+        const modal = document.getElementById('console-terminal-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+        if (now - (this._lastTerminalClockTick ?? 0) < 500) return;
+        this._lastTerminalClockTick = now;
+        this.updateTerminalClock();
+    }
+
+    // Refresh the terminal's TIME OF DAY / SURVIVED readouts. Called on terminal
+    // render and, while the terminal is open, ticked live from the render loop.
+    updateTerminalClock() {
+        const todEl = document.getElementById('terminal-time-of-day');
+        if (todEl) todEl.textContent = this.getTimeOfDayLabel();
+        const survEl = document.getElementById('terminal-time-survived');
+        if (survEl) {
+            const secs = this.getRunElapsedSeconds();
+            const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+            const ss = String(secs % 60).padStart(2, '0');
+            survEl.textContent = `${mm}:${ss}`;
+        }
+    }
+
     updateDayNightCycle(delta) {
         if (!this.baseLightIntensity || !this.scene?.fog) return;
         if (this.inputEnabled && !this.isPlayerDead) {
@@ -4564,19 +4572,20 @@ export class ThreeGame {
 
         const day = this.getDayFactor();
         const lerp = THREE.MathUtils.lerp;
-        // Night floors keep the scene readable but tense/dim.
-        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.4, 1.0, day);
-        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.18, 1.0, day);
-        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.45, 1.05, day);
-        // Player's own glow matters more in the dark.
+        // Gentle day/night: night stays clearly readable, just a touch dimmer and
+        // cooler so the swing isn't jarring.
+        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.7, 1.0, day);
+        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.52, 1.0, day);
+        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, day);
+        // Player's own glow matters a little more in the dark.
         if (this.playerGlow) {
-            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.5, 1.0, day);
+            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.22, 1.0, day);
         }
 
-        // Fog closes in at night for a claustrophobic mood (color stays under
-        // biome control; only the range is touched here).
-        this.scene.fog.near = lerp(this.baseFogRange.near * 0.6, this.baseFogRange.near, day);
-        this.scene.fog.far = lerp(this.baseFogRange.far * 0.62, this.baseFogRange.far, day);
+        // Fog eases in slightly at night (color stays under biome control; only
+        // the range is touched here).
+        this.scene.fog.near = lerp(this.baseFogRange.near * 0.84, this.baseFogRange.near, day);
+        this.scene.fog.far = lerp(this.baseFogRange.far * 0.82, this.baseFogRange.far, day);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).

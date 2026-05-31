@@ -4285,94 +4285,163 @@ body.mission-intro-active #game-container {
   }
 }
 
-/* Holographic Terminal Modal */
+/* Archive UI */
 .start-btn--archive {
-  background: rgba(0, 200, 180, 0.06) !important;
-  border-color: rgba(0, 200, 180, 0.35) !important;
-  color: rgba(0, 200, 180, 0.85) !important;
+  background: linear-gradient(180deg, rgba(255, 159, 28, 0.14) 0%, rgba(255, 159, 28, 0.06) 100%) !important;
+  border: 1px solid rgba(255, 159, 28, 0.46) !important;
+  color: #ffd79a !important;
+  box-shadow:
+    0 4px 0 rgba(136, 82, 18, 0.88),
+    inset 0 0 0 1px rgba(255, 220, 170, 0.1) !important;
   margin-top: calc(var(--vu) * 0.6);
   font-size: calc(var(--vu) * 1.2) !important;
 }
 
 .start-btn--archive:hover {
-  background: rgba(0, 200, 180, 0.15) !important;
-  border-color: rgba(0, 200, 180, 0.7) !important;
+  background: linear-gradient(180deg, rgba(255, 159, 28, 0.25) 0%, rgba(255, 159, 28, 0.12) 100%) !important;
+  border-color: rgba(255, 193, 96, 0.8) !important;
+  color: #ffefcc !important;
 }
 
 .archive-modal-content {
-  background: rgba(6, 10, 14, 0.97) !important;
-  border: 1.5px solid rgba(0, 200, 180, 0.5) !important;
-  box-shadow: 0 0 30px rgba(0, 200, 180, 0.15) !important;
-  width: min(calc(var(--vu) * 120), 92vw) !important;
-  max-height: 85vh !important;
+  --archive-glow-rgb: 255, 159, 28;
+  background:
+    linear-gradient(180deg, rgba(255, 159, 28, 0.07) 0%, rgba(255, 159, 28, 0) 24%),
+    radial-gradient(circle at 86% -18%, rgba(46, 196, 182, 0.1), transparent 45%),
+    rgba(8, 10, 12, 0.97) !important;
+  border: 1.5px solid rgba(var(--archive-glow-rgb), 0.52) !important;
+  box-shadow:
+    0 0 34px rgba(var(--archive-glow-rgb), 0.2),
+    0 0 60px rgba(46, 196, 182, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+  width: min(calc(var(--vu) * 112), 94%) !important;
+  max-height: min(87vh, calc(var(--vu) * 86)) !important;
   border-radius: 12px;
-  padding: calc(var(--vu) * 3) !important;
+  padding: calc(var(--vu) * 3.2) !important;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1.8);
+  gap: calc(var(--vu) * 1.5);
   overflow: hidden;
   position: relative;
+}
+
+.archive-modal-content::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border: 1px solid rgba(255, 224, 181, 0.06);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.archive-modal-content > * {
+  position: relative;
+  z-index: 2;
+}
+
+.archive-modal-content .close-modal {
+  border-color: rgba(var(--archive-glow-rgb), 0.48);
+  background: rgba(var(--archive-glow-rgb), 0.08);
+  color: rgba(255, 225, 177, 0.95);
+}
+
+.archive-modal-content .close-modal:hover {
+  border-color: rgba(var(--archive-glow-rgb), 0.82);
+  background: rgba(var(--archive-glow-rgb), 0.2);
+  color: #fff1da;
 }
 
 .archive-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  border-bottom: 1px solid rgba(0, 200, 180, 0.2);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 1.2);
+  border-bottom: 1px solid rgba(var(--archive-glow-rgb), 0.24);
+  padding-right: calc(var(--vu) * 8);
   padding-bottom: calc(var(--vu) * 1);
 }
 
 .archive-title {
   font-size: clamp(14px, calc(var(--vu) * 2.2), 20px);
   font-weight: 900;
-  color: rgba(0, 200, 180, 0.95);
-  letter-spacing: 0.1em;
+  color: #ffd79a;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(var(--archive-glow-rgb), 0.28);
 }
 
 .archive-summary {
   font-size: var(--font-xs);
-  color: rgba(0, 200, 180, 0.6);
-  margin-right: calc(var(--vu) * 8);
+  color: rgba(255, 208, 138, 0.75);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .archive-log-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1.2);
-  padding-right: calc(var(--vu) * 0.5);
+  gap: calc(var(--vu) * 1.05);
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--archive-glow-rgb), 0.54) rgba(var(--archive-glow-rgb), 0.12);
+}
+
+.archive-log-list::-webkit-scrollbar {
+  width: 13px;
+}
+
+.archive-log-list::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 8px 0;
+}
+
+.archive-log-list::-webkit-scrollbar-thumb {
+  border: 4px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: rgba(var(--archive-glow-rgb), 0.42);
+}
+
+.archive-log-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--archive-glow-rgb), 0.78);
 }
 
 .archive-log-entry {
-  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.5);
-  background: rgba(0, 200, 180, 0.04);
-  border: 1px solid rgba(0, 200, 180, 0.12);
+  padding: calc(var(--vu) * 1.1) calc(var(--vu) * 1.45);
+  background: rgba(var(--archive-glow-rgb), 0.05);
+  border: 1px solid rgba(var(--archive-glow-rgb), 0.22);
+  border-left: 2px solid rgba(var(--archive-glow-rgb), 0.48);
   border-radius: 6px;
 }
 
 .archive-log-entry--undiscovered {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.06);
-  opacity: 0.4;
+  background: rgba(148, 163, 184, 0.06);
+  border-color: rgba(148, 163, 184, 0.18);
+  border-left-color: rgba(148, 163, 184, 0.3);
+  opacity: 0.58;
 }
 
 .archive-log-key {
   font-size: var(--font-xs);
-  color: rgba(0, 200, 180, 0.7);
-  font-weight: 700;
+  color: rgba(255, 191, 106, 0.85);
+  font-weight: 800;
+  letter-spacing: 0.08em;
   margin-bottom: calc(var(--vu) * 0.5);
 }
 
 .archive-log-text {
   font-size: var(--font-xs);
-  color: rgba(218, 248, 255, 0.85);
+  color: rgba(232, 239, 247, 0.9);
   white-space: pre-line;
-  line-height: 1.5;
+  line-height: 1.52;
 }
 
 .archive-log-text--locked {
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(198, 210, 224, 0.52);
   font-style: italic;
 }
 
@@ -4399,11 +4468,22 @@ body.mission-intro-active #game-container {
 .archive-section-label {
   font-size: var(--font-xs);
   font-weight: 900;
-  color: rgba(0, 200, 180, 0.5);
+  color: rgba(255, 187, 96, 0.6);
   letter-spacing: 0.12em;
   margin-top: calc(var(--vu) * 0.8);
   padding-bottom: calc(var(--vu) * 0.4);
-  border-bottom: 1px solid rgba(0, 200, 180, 0.1);
+  border-bottom: 1px solid rgba(var(--archive-glow-rgb), 0.18);
+}
+
+@media (max-width: 860px) {
+  .archive-modal-content {
+    width: min(calc(var(--vu) * 118), 96%) !important;
+    padding: calc(var(--vu) * 2.6) !important;
+  }
+
+  .archive-header {
+    padding-right: calc(var(--vu) * 9);
+  }
 }
 
 .console-terminal-content {
@@ -4520,6 +4600,41 @@ body.mission-intro-active #game-container {
   text-shadow: 0 0 4px var(--terminal-glow);
   box-shadow: 0 0 8px rgba(var(--terminal-glow-rgb), 0.15);
   margin-right: calc(var(--vu) * 8);
+}
+
+.terminal-clock-row {
+  display: flex;
+  gap: calc(var(--vu) * 1.2);
+  align-items: center;
+}
+
+.terminal-clock-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  background: rgba(var(--terminal-glow-rgb), 0.08);
+  border: 1px solid rgba(var(--terminal-glow-rgb), 0.45);
+  border-radius: 4px;
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 1.2);
+}
+
+.terminal-clock-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu) * 1.05);
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  color: rgba(var(--terminal-glow-rgb), 0.75);
+  text-transform: uppercase;
+}
+
+.terminal-clock-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu) * 2.1);
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--terminal-glow);
+  text-shadow: 0 0 5px rgba(var(--terminal-glow-rgb), 0.5);
 }
 
 .terminal-layout {
