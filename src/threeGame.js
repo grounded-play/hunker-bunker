@@ -664,7 +664,19 @@ export class ThreeGame {
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
-        this.container.replaceChildren(this.renderer.domElement);
+        this.darknessOverlay = document.createElement('div');
+        Object.assign(this.darknessOverlay.style, {
+            position: 'absolute',
+            inset: '0',
+            pointerEvents: 'none',
+            opacity: '0',
+            transition: 'opacity 450ms ease',
+            mixBlendMode: 'multiply',
+            zIndex: '2'
+        });
+        this._darknessCenter = new THREE.Vector3();
+        this.container.style.position = this.container.style.position || 'relative';
+        this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay);
 
         const textureLoader = new THREE.TextureLoader();
         this.textureLoader = textureLoader;
@@ -2511,6 +2523,9 @@ export class ThreeGame {
         if (this.menuShowroomFloor) {
             this.menuShowroomFloor.visible = nextProfile === 'menu';
         }
+        if (nextProfile === 'menu' && this.darknessOverlay) {
+            this.darknessOverlay.style.opacity = '0';
+        }
         if (this.chunkGroups) {
             this.chunkGroups.visible = nextProfile === 'gameplay';
         }
@@ -2593,10 +2608,12 @@ export class ThreeGame {
         this.lastTime = now;
 
         if (this.loadingPaused) {
+            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
             return;
         }
 
         if (this.performanceProfile === 'menu') {
+            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
             this.updateMenuShowcase(delta);
             this.updatePlayer(delta);
             this.updateWeaponState(delta);
@@ -4780,7 +4797,7 @@ export class ThreeGame {
 
     updateDayNightCycle(delta) {
         if (!this.baseLightIntensity || !this.scene?.fog) return;
-        if (this.inputEnabled && !this.isPlayerDead) {
+        if (this.isGameplayInputActive()) {
             this.timeOfDay = (this.timeOfDay + delta / this.dayCycleSeconds) % 1;
         }
 
@@ -4788,9 +4805,9 @@ export class ThreeGame {
         const lerp = THREE.MathUtils.lerp;
         // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
         const dayBlend = THREE.MathUtils.smoothstep(day, 0.1, 0.9);
-        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.86, 1.0, dayBlend);
-        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.74, 1.0, dayBlend);
-        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.9, 1.02, dayBlend);
+        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.62, 1.0, dayBlend);
+        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.45, 1.0, dayBlend);
+        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, dayBlend);
         const weatherLightMult = this.weather?.lightMult ?? 1;
         if (weatherLightMult !== 1) {
             this.ambientLight.intensity *= weatherLightMult;
@@ -4804,12 +4821,10 @@ export class ThreeGame {
             this.playerGlow.decay = lerp(1.55, 2.0, dayBlend);
         }
 
-        // Fog eases in slightly at night (color stays under biome control; only
-        // the range is touched here).
-        // Keep the depth fog gentle so it reads as faint atmosphere rather than a
-        // screen-spanning band; the radial overlay below is what limits visibility.
-        this.scene.fog.near = lerp(this.baseFogRange.near * 1.4, this.baseFogRange.near * 1.7, dayBlend);
-        this.scene.fog.far = lerp(this.baseFogRange.far * 1.9, this.baseFogRange.far * 2.3, dayBlend);
+        // Fog eases in at night (color stays under biome control; only the range
+        // is touched here). Keep the far plane close enough to remain visible.
+        this.scene.fog.near = lerp(this.baseFogRange.near * 0.75, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = lerp(this.baseFogRange.far * 0.72, this.baseFogRange.far * 1.25, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
@@ -4821,7 +4836,7 @@ export class ThreeGame {
 
         // Radial darkness around the player. Darkest at night and in heavy weather.
         const weatherDark = (1 - wMult) * 0.6;
-        const darkAlpha = THREE.MathUtils.clamp(lerp(0.5, 0.08, dayBlend) + weatherDark, 0, 0.85);
+        const darkAlpha = THREE.MathUtils.clamp(lerp(0.56, 0.03, dayBlend) + weatherDark, 0, 0.85);
         this.updatePlayerDarkness(darkAlpha);
     }
 
@@ -9400,6 +9415,7 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
+        this.darknessOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
         Object.values(this.biomeTerrainTextures ?? {}).forEach((textureSet) => {

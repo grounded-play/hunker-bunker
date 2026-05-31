@@ -118,7 +118,7 @@ body {
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   font-family: monospace;
-  font-size: 14px;
+  font-size: var(--font-xs);
   width: 28px;
   height: 28px;
   border-radius: 4px;
@@ -1032,13 +1032,17 @@ body {
 }
 
 .char-best-score {
+  font-family: 'Outfit', sans-serif;
   font-size: var(--font-xs);
-  color: rgba(255, 204, 0, 0.75);
+  color: var(--accent-primary);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-  margin-top: 2px;
+  letter-spacing: 0.06em;
+  margin-top: 6px;
   display: block;
   min-height: 1em;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 159, 28, 0.35);
+  text-transform: uppercase;
 }
 
 /* --- Initialization Anchor --- */
@@ -2189,7 +2193,7 @@ input:checked+.slider:before {
 }
 
 .lock-icon {
-  font-size: 60px;
+  font-size: var(--font-xl);
   margin-bottom: 20px;
   animation: rotate-hint 2s infinite ease-in-out;
 }
@@ -4110,18 +4114,21 @@ body.mission-intro-active #game-container {
   position: absolute;
   top: calc(var(--vu) * 30);
   right: calc(var(--vu) * 4);
-  border: 1px solid rgba(255, 200, 50, 0.45);
-  border-radius: 6px;
-  background: rgba(8, 13, 18, 0.85);
-  box-shadow: 0 0 12px rgba(255, 180, 0, 0.1);
+  border: 1.5px solid rgba(255, 200, 50, 0.75);
+  border-radius: 8px;
+  background: rgba(11, 13, 15, 0.92);
+  box-shadow:
+    0 0 18px rgba(255, 180, 0, 0.18),
+    inset 0 0 8px rgba(255, 180, 0, 0.08);
   display: flex;
   align-items: center;
-  gap: calc(var(--vu) * 1.2);
-  padding: calc(var(--vu) * 0.9) calc(var(--vu) * 1.8);
+  gap: calc(var(--vu) * 1.5);
+  padding: calc(var(--vu) * 1.1) calc(var(--vu) * 2.2);
   z-index: 12070;
+  font-family: 'Outfit', sans-serif;
   font-size: var(--font-xs);
-  color: rgba(255, 200, 50, 0.9);
-  letter-spacing: 0.06em;
+  color: rgba(255, 200, 50, 0.95);
+  letter-spacing: 1.2px;
   pointer-events: auto;
   cursor: pointer;
 }
@@ -4129,8 +4136,26 @@ body.mission-intro-active #game-container {
 .mission-progress-hud.hidden { display: none !important; }
 
 .mission-progress-hud__icon {
-  color: rgba(255, 200, 50, 0.6);
-  font-size: calc(var(--vu) * 1.2);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-xs);
+  font-weight: 900;
+  color: rgba(255, 200, 50, 0.95);
+  border: 1px solid rgba(255, 200, 50, 0.45);
+  border-radius: 4px;
+  min-width: calc(var(--vu) * 7.3);
+  text-align: center;
+  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 0.9);
+  letter-spacing: 1px;
+}
+
+.mission-progress-hud__text {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #fff;
+  text-transform: uppercase;
+  line-height: 1.35;
 }
 
 .biome-hud-prompt {
@@ -4166,7 +4191,7 @@ body.mission-intro-active #game-container {
 
 .biome-hud-prompt__icon {
   font-family: 'Outfit', sans-serif;
-  font-size: calc(var(--vu) * 1.85);
+  font-size: var(--font-xs);
   font-weight: 900;
   letter-spacing: 1px;
   border: 1px solid rgba(158, 224, 255, 0.75);
@@ -4891,7 +4916,7 @@ body.mission-intro-active #game-container {
 }
 
 .telemetry-label {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 900;
   color: rgba(255, 255, 255, 0.4);
   letter-spacing: 1.5px;
@@ -4930,7 +4955,7 @@ body.mission-intro-active #game-container {
 }
 
 .telemetry-value-sub {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 700;
   color: var(--terminal-glow);
   letter-spacing: 1px;
@@ -4961,7 +4986,7 @@ body.mission-intro-active #game-container {
 }
 
 .terminal-section-title {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 900;
   color: rgba(var(--terminal-glow-rgb), 0.95);
   letter-spacing: 1.5px;
@@ -5170,7 +5195,7 @@ body.mission-intro-active #game-container {
 }
 
 .action-cost {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 900;
   color: var(--accent-primary);
   letter-spacing: 1px;
@@ -5273,7 +5298,7 @@ body.mission-intro-active #game-container {
 }
 
 .telemetry-ticker {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 900;
   color: var(--terminal-glow);
   letter-spacing: 1.5px;

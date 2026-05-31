@@ -178,7 +178,8 @@ function refreshCharBestScores() {
         const el = document.getElementById(`char-best-${cls}`);
         if (!el) continue;
         const best = Number(localStorage.getItem(`hb_best_score_${cls}`) ?? 0);
-        el.textContent = best > 0 ? `BEST: ${best} PTS` : '';
+        const formattedScore = String(best).padStart(4, '0');
+        el.textContent = `◈ BEST: ${formattedScore} PTS`;
     }
 }
 
