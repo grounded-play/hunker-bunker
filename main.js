@@ -2596,9 +2596,12 @@ const previewSprite = document.getElementById('char-preview-sprite');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
 const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
-const PREVIEW_FRAME_COUNT = 4;
+const PREVIEW_SPRITE_COLUMNS = 4;
+const PREVIEW_SPRITE_ROWS = 4;
+const PREVIEW_WALK_FRAME_COUNT = 2;
 const PREVIEW_FRAME_MS = 140;
-const PREVIEW_FRONT_ROW = 0;
+const PREVIEW_FRONT_ROW = 3;
+const PREVIEW_FRONT_BASE_COLUMN = 0;
 const PREVIEW_DOOR_CLOSE_MS = 360;
 const PREVIEW_DOOR_HOLD_MS = 220;
 const PREVIEW_DOOR_OPEN_MS = 520;
@@ -2610,9 +2613,9 @@ let activePreviewType = 'SCOUT';
 const previewSpriteImages = new Map();
 
 const heroData = {
-    'SCOUT': { icon: '◈', name: 'SCOUT', sprite: '/scout_walk.png' },
-    'TANK': { icon: '⬢', name: 'TANK', sprite: '/tank_walk.png' },
-    'ENGINEER': { icon: '⬣', name: 'ENGINEER', sprite: '/engineer_walk.png' }
+    'SCOUT': { icon: '◈', name: 'SCOUT', sprite: '/Scout.full.jpeg' },
+    'TANK': { icon: '⬢', name: 'TANK', sprite: '/Tank.full.jpeg' },
+    'ENGINEER': { icon: '⬣', name: 'ENGINEER', sprite: '/Eng.Full.jpeg' }
 };
 
 function getPreviewSpriteImage(path) {
@@ -2668,9 +2671,10 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
     const image = await getPreviewSpriteImage(data.sprite).catch(() => null);
     if (!image || !heroData[type] || heroData[type].sprite !== data.sprite) return;
 
-    const frameWidth = Math.floor(image.width / PREVIEW_FRAME_COUNT);
-    const frameHeight = Math.floor(image.height / PREVIEW_FRAME_COUNT);
-    const sourceX = frameIndex * frameWidth;
+    const frameWidth = Math.floor(image.width / PREVIEW_SPRITE_COLUMNS);
+    const frameHeight = Math.floor(image.height / PREVIEW_SPRITE_ROWS);
+    const walkFrame = ((frameIndex % PREVIEW_WALK_FRAME_COUNT) + PREVIEW_WALK_FRAME_COUNT) % PREVIEW_WALK_FRAME_COUNT;
+    const sourceX = (PREVIEW_FRONT_BASE_COLUMN + walkFrame) * frameWidth;
     const sourceY = PREVIEW_FRONT_ROW * frameHeight;
 
     if (previewSprite.width !== frameWidth || previewSprite.height !== frameHeight) {
@@ -2723,7 +2727,7 @@ function startHeroPreviewAnimation() {
     if (!previewSprite || previewAnimationTimer !== null) return;
 
     previewAnimationTimer = window.setInterval(() => {
-        previewFrameIndex = (previewFrameIndex + 1) % PREVIEW_FRAME_COUNT;
+        previewFrameIndex = (previewFrameIndex + 1) % PREVIEW_WALK_FRAME_COUNT;
         void renderPreviewFrame(activePreviewType, previewFrameIndex);
     }, PREVIEW_FRAME_MS);
 }
@@ -3055,9 +3059,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/module_hull_matrix.png',
             '/module_radar_dish.png',
             '/module_reactor_compressor.png',
-            '/scout_walk.png',
-            '/tank_walk.png',
-            '/engineer_walk.png',
+            '/Scout.full.jpeg',
+            '/Tank.full.jpeg',
+            '/Eng.Full.jpeg',
             '/cybersnail.png',
             '/cryosnail.png',
             '/sporesnail.png',

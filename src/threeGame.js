@@ -9,13 +9,33 @@ const PLAYER_COLORS = {
 };
 
 const PLAYER_SPRITESHEET_PATHS = {
-    SCOUT: '/scout_walk.png',
-    TANK: '/tank_walk.png',
-    ENGINEER: '/engineer_walk.png'
+    SCOUT: '/Scout.full.jpeg',
+    TANK: '/Tank.full.jpeg',
+    ENGINEER: '/Eng.Full.jpeg'
 };
 
-const SPRITE_GRID_SIZE = 4;
-const SPRITE_FRAME_REPEAT = 1 / SPRITE_GRID_SIZE;
+const PLAYER_SPRITE_COLUMNS = 4;
+const PLAYER_SPRITE_ROWS = 4;
+const PLAYER_WALK_FRAME_COUNT = 2;
+const PLAYER_SPRITE_FRAME_REPEAT_X = 1 / PLAYER_SPRITE_COLUMNS;
+const PLAYER_SPRITE_FRAME_REPEAT_Y = 1 / PLAYER_SPRITE_ROWS;
+// Packed 8-direction sheet: each entry defines a direction cell pair
+// (row + baseColumn), where frame 0/1 are baseColumn/baseColumn+1.
+// Octant order from atan2(axisZ, axisX):
+// +X, +X+Z, +Z, -X+Z, -X, -X-Z, -Z, +X-Z
+const PLAYER_SPRITE_DIRECTION_CELLS = Object.freeze([
+    Object.freeze({ row: 1, baseColumn: 2 }),
+    Object.freeze({ row: 3, baseColumn: 2 }),
+    Object.freeze({ row: 3, baseColumn: 0 }),
+    Object.freeze({ row: 2, baseColumn: 2 }),
+    Object.freeze({ row: 2, baseColumn: 0 }),
+    Object.freeze({ row: 1, baseColumn: 0 }),
+    Object.freeze({ row: 0, baseColumn: 2 }),
+    Object.freeze({ row: 0, baseColumn: 0 })
+]);
+const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
+const BUILD_STRUCTURE_GRID_SIZE = 2;
+const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
 const PICKUP_DISTRIBUTION = {
     clustered: 0.7,
@@ -103,7 +123,7 @@ const FEATURE_WALL_DECALS = true;
 const FEATURE_MULTISHOT = true;
 // Shifts the player glow's floor pool away from the camera (up on screen) so the
 // lit circle centers on the standing sprite rather than pooling at its feet.
-const PLAYER_GLOW_SCREEN_OFFSET = 2.6;
+const PLAYER_GLOW_SCREEN_OFFSET = 1.35;
 // Spawn a themed retaliation boss after each console build milestone (Note 6).
 const FEATURE_MILESTONE_BOSSES = true;
 // Weather system (Note 9): hard particle cap + per-state profiles. Profiles set
@@ -529,7 +549,7 @@ export class ThreeGame {
         };
         this.isMoving = false;
         this.animationTimer = 0;
-        this.currentFacingRow = 0;
+        this.currentFacingRow = PLAYER_DEFAULT_DIRECTION_INDEX;
         this.playerSpriteScale = 1.6;
         this.playerHeight = 0.06;
         this.playerSpriteLead = 0.18;
@@ -545,7 +565,7 @@ export class ThreeGame {
         };
         this.aimDirX = 1;
         this.aimDirZ = 0;
-        this.aimFacingRow = 2;
+        this.aimFacingRow = PLAYER_DEFAULT_DIRECTION_INDEX;
         this.aimWorldPoint = null;
         this.hasActiveAim = false;
         this.mouseAimActive = false;
@@ -651,8 +671,12 @@ export class ThreeGame {
             texture.wrapT = THREE.RepeatWrapping;
             texture.magFilter = THREE.NearestFilter;
             texture.minFilter = THREE.NearestFilter;
-            texture.repeat.set(SPRITE_FRAME_REPEAT, SPRITE_FRAME_REPEAT);
-            texture.offset.set(0, (SPRITE_GRID_SIZE - 1) * SPRITE_FRAME_REPEAT);
+            texture.repeat.set(PLAYER_SPRITE_FRAME_REPEAT_X, PLAYER_SPRITE_FRAME_REPEAT_Y);
+            const defaultDirection = PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
+            texture.offset.set(
+                defaultDirection.baseColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
+                (PLAYER_SPRITE_ROWS - 1 - defaultDirection.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
+            );
         });
 
         this.floorMaterial = new THREE.MeshStandardMaterial({
@@ -975,8 +999,8 @@ export class ThreeGame {
         this.buildStructureTexture = this.loadScatterTexture('/build_structure_anim.png', textureLoader);
         this.buildStructureTexture.minFilter = THREE.LinearFilter;
         this.buildStructureTexture.generateMipmaps = false;
-        this.buildStructureTexture.repeat.set(SPRITE_FRAME_REPEAT * 2, SPRITE_FRAME_REPEAT * 2); // 0.5, 0.5
-        this.buildStructureTexture.offset.set(0, SPRITE_FRAME_REPEAT * 2);
+        this.buildStructureTexture.repeat.set(BUILD_STRUCTURE_FRAME_REPEAT, BUILD_STRUCTURE_FRAME_REPEAT);
+        this.buildStructureTexture.offset.set(0, BUILD_STRUCTURE_FRAME_REPEAT);
 
         this.scatterMaterials = {
             sentinel: new THREE.SpriteMaterial({
@@ -3422,8 +3446,8 @@ export class ThreeGame {
             const col = frame % 2;
             const row = Math.floor(frame / 2);
             this.buildStructureTexture.offset.set(
-                col * (SPRITE_FRAME_REPEAT * 2),
-                (1 - row) * (SPRITE_FRAME_REPEAT * 2)
+                col * BUILD_STRUCTURE_FRAME_REPEAT,
+                (1 - row) * BUILD_STRUCTURE_FRAME_REPEAT
             );
         } else if (this.buildStructureSprite) {
             this.buildStructureSprite.visible = false;
@@ -4583,20 +4607,22 @@ export class ThreeGame {
 
         const day = this.getDayFactor();
         const lerp = THREE.MathUtils.lerp;
-        // Gentle day/night: night stays clearly readable, just a touch dimmer and
-        // cooler so the swing isn't jarring.
-        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.7, 1.0, day);
-        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.52, 1.0, day);
-        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, day);
+        // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
+        const dayBlend = THREE.MathUtils.smoothstep(day, 0.1, 0.9);
+        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.86, 1.0, dayBlend);
+        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.74, 1.0, dayBlend);
+        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.9, 1.02, dayBlend);
         // Player's own glow matters a little more in the dark.
         if (this.playerGlow) {
-            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.22, 1.0, day);
+            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.32, 1.0, dayBlend);
+            this.playerGlow.distance = lerp(10.4, 8.4, dayBlend);
+            this.playerGlow.decay = lerp(1.55, 2.0, dayBlend);
         }
 
         // Fog eases in slightly at night (color stays under biome control; only
         // the range is touched here).
-        this.scene.fog.near = lerp(this.baseFogRange.near * 0.84, this.baseFogRange.near, day);
-        this.scene.fog.far = lerp(this.baseFogRange.far * 0.82, this.baseFogRange.far, day);
+        this.scene.fog.near = lerp(this.baseFogRange.near * 0.95, this.baseFogRange.near, dayBlend);
+        this.scene.fog.far = lerp(this.baseFogRange.far * 0.94, this.baseFogRange.far, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
@@ -4676,7 +4702,7 @@ export class ThreeGame {
         const biome = this.currentBiomeKey;
         const day = this.getDayFactor();
         const r = Math.random();
-        let next = 'clear';
+        let next;
         if (biome === BIOME_KEYS.CRYO) {
             next = r < 0.55 ? 'snow' : r < 0.78 ? 'fog_gust' : 'clear';
         } else if (biome === BIOME_KEYS.BIO) {
@@ -4795,7 +4821,7 @@ export class ThreeGame {
         if (isMoving) {
             this.currentFacingRow = this.getFacingRow(axisX, axisZ);
             this.animationTimer += delta * SPRITE_ANIMATION_SPEED;
-            const column = Math.floor(this.animationTimer) % SPRITE_GRID_SIZE;
+            const column = Math.floor(this.animationTimer) % PLAYER_WALK_FRAME_COUNT;
             this.updatePlayerSpriteFrame(column, this.currentFacingRow);
 
             if (this.lastAnimationColumn === undefined) {
@@ -4803,7 +4829,7 @@ export class ThreeGame {
             }
             if (column !== this.lastAnimationColumn) {
                 this.lastAnimationColumn = column;
-                if (column === 1 || column === 3) {
+                if (column === 1) {
                     if (this.performanceProfile !== 'menu') {
                         window.AudioManager?.playProceduralFootstep(this.playerType);
                     }
@@ -4822,25 +4848,18 @@ export class ThreeGame {
 
     getFacingRow(axisX, axisZ) {
         const angle = Math.atan2(axisZ, axisX);
-
-        if (angle > -Math.PI / 4 && angle <= Math.PI / 4) {
-            return 2;
-        }
-
-        if (angle > Math.PI / 4 && angle <= (3 * Math.PI) / 4) {
-            return 0;
-        }
-
-        if (angle > (-3 * Math.PI) / 4 && angle <= -Math.PI / 4) {
-            return 3;
-        }
-
-        return 1;
+        const octant = Math.round(angle / (Math.PI / 4));
+        return (octant + PLAYER_SPRITE_DIRECTION_CELLS.length) % PLAYER_SPRITE_DIRECTION_CELLS.length;
     }
 
     updatePlayerSpriteFrame(column, row) {
         const texture = this.playerTextures[this.playerType] ?? this.playerTextures.SCOUT;
-        texture.offset.set(column * SPRITE_FRAME_REPEAT, (SPRITE_GRID_SIZE - 1 - row) * SPRITE_FRAME_REPEAT);
+        const directionCell = PLAYER_SPRITE_DIRECTION_CELLS[row] ?? PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
+        const frameColumn = directionCell.baseColumn + (column % PLAYER_WALK_FRAME_COUNT);
+        texture.offset.set(
+            frameColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
+            (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
+        );
     }
 
     updateWeaponState(delta) {
