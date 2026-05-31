@@ -101,6 +101,9 @@ const PROJECTILE_DAMAGE = 1;
 // --- Sprint 10 combat tuning / feature flags ---
 const FEATURE_WALL_DECALS = true;
 const FEATURE_MULTISHOT = true;
+// Shifts the player glow's floor pool away from the camera (up on screen) so the
+// lit circle centers on the standing sprite rather than pooling at its feet.
+const PLAYER_GLOW_SCREEN_OFFSET = 2.6;
 // Spawn a themed retaliation boss after each console build milestone (Note 6).
 const FEATURE_MILESTONE_BOSSES = true;
 // Weather system (Note 9): hard particle cap + per-state profiles. Profiles set
@@ -4252,7 +4255,15 @@ export class ThreeGame {
         }
 
         this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
-        this.playerGlow.position.set(this.player.position.x, 1.6, this.player.position.z);
+        // Push the glow's floor pool "into" the screen (away from the camera) so
+        // the lit/clear circle sits on the standing sprite instead of pooling at
+        // the feet below it — most noticeable at night. cameraPlanarForward is the
+        // camera's horizontal look direction; +forward = up on screen.
+        this.playerGlow.position.set(
+            this.player.position.x + this.cameraPlanarForward.x * PLAYER_GLOW_SCREEN_OFFSET,
+            1.6,
+            this.player.position.z + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
+        );
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
 
         if (isMoving) {
