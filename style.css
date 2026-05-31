@@ -202,10 +202,18 @@ body {
 }
 
 .loader-status {
+  font-family: 'Space Mono', monospace;
   font-size: var(--font-xs);
-  color: var(--text-muted);
+  color: var(--accent-secondary);
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  text-align: center;
+  min-height: calc(var(--vu) * 12.5);
+  margin-top: calc(var(--vu) * 2.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: calc(var(--vu) * 0.4);
 }
 
 /* --- Tactical Door Transition --- */

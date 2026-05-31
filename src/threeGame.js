@@ -37,6 +37,8 @@ const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
+const SUIT_LIGHT_BASE_INTENSITY = 2.1;
+const SUIT_LIGHT_BASE_DISTANCE = 7.2;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -1310,7 +1312,7 @@ export class ThreeGame {
         this.scene.add(directionalLight);
         this.directionalLight = directionalLight;
 
-        const playerGlow = new THREE.PointLight(PLAYER_COLORS[this.playerType] ?? 0xffffff, 2.4, 8, 2);
+        const playerGlow = new THREE.PointLight(PLAYER_COLORS[this.playerType] ?? 0xffffff, 3.8, 11.5, 1.65);
         playerGlow.position.set(0, 1.6, 0);
         this.playerGlow = playerGlow;
         this.scene.add(playerGlow);
@@ -1700,6 +1702,15 @@ export class ThreeGame {
         this.playerSprite.scale.set(this.playerSpriteScale, this.playerSpriteScale, 1);
         this.playerSprite.renderOrder = 5;
         this.player.add(this.playerSprite);
+
+        this.suitFillLight = new THREE.PointLight(
+            PLAYER_COLORS[this.playerType] ?? 0xffffff,
+            SUIT_LIGHT_BASE_INTENSITY,
+            SUIT_LIGHT_BASE_DISTANCE,
+            1.25
+        );
+        this.suitFillLight.position.set(this.playerSpriteLead * 0.65, 1.0, this.playerSpriteLead * 0.65);
+        this.player.add(this.suitFillLight);
 
         this.playerMarker = this.createHiddenPlayerMarker();
         this.playerMarker.visible = false;
@@ -2121,6 +2132,9 @@ export class ThreeGame {
         this.playerMaterial.color.setHex(color);
         this.playerMaterial.emissive.setHex(color);
         this.playerGlow.color.setHex(color);
+        if (this.suitFillLight?.color) {
+            this.suitFillLight.color.setHex(color);
+        }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
 
         this.updateCrashedShipsVisibility(true);
@@ -2620,6 +2634,14 @@ export class ThreeGame {
             this.updateProjectiles(delta);
             this.updateCamera(delta);
             this.updateTransientEffects(delta, now);
+            this.updateHiddenPlayerMarker(now);
+            this.renderer.render(this.scene, this.camera);
+            return;
+        }
+
+        if (this.hasBlockingGameplayOverlay()) {
+            this.clearGameplayInputState();
+            this.updateCamera(delta);
             this.updateHiddenPlayerMarker(now);
             this.renderer.render(this.scene, this.camera);
             return;
@@ -4816,9 +4838,15 @@ export class ThreeGame {
         }
         // Player's own glow matters a little more in the dark.
         if (this.playerGlow) {
-            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.32, 1.0, dayBlend);
-            this.playerGlow.distance = lerp(10.4, 8.4, dayBlend);
-            this.playerGlow.decay = lerp(1.55, 2.0, dayBlend);
+            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.55, 1.12, dayBlend);
+            this.playerGlow.distance = lerp(13.5, 10.8, dayBlend);
+            this.playerGlow.decay = lerp(1.35, 1.7, dayBlend);
+        }
+        if (this.suitFillLight) {
+            const movePulse = this.isMoving ? 0.14 * (0.5 + 0.5 * Math.sin(performance.now() * 0.011)) : 0;
+            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.28, 0.74, dayBlend) * (1 + movePulse);
+            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.18, 0.92, dayBlend);
+            this.suitFillLight.decay = lerp(1.08, 1.32, dayBlend);
         }
 
         // Fog eases in at night (color stays under biome control; only the range
@@ -4836,7 +4864,7 @@ export class ThreeGame {
 
         // Radial darkness around the player. Darkest at night and in heavy weather.
         const weatherDark = (1 - wMult) * 0.6;
-        const darkAlpha = THREE.MathUtils.clamp(lerp(0.56, 0.03, dayBlend) + weatherDark, 0, 0.85);
+        const darkAlpha = THREE.MathUtils.clamp(lerp(0.44, 0.02, dayBlend) + weatherDark, 0, 0.72);
         this.updatePlayerDarkness(darkAlpha);
     }
 
@@ -4866,7 +4894,7 @@ export class ThreeGame {
         overlay.style.background =
             `radial-gradient(circle ${radius.toFixed(0)}px at ${cx.toFixed(0)}px ${cy.toFixed(0)}px,` +
             `rgba(${r},${g},${b},0) 0%,` +
-            `rgba(${r},${g},${b},0) 30%,` +
+            `rgba(${r},${g},${b},0) 38%,` +
             `rgba(${r},${g},${b},${alpha.toFixed(3)}) 100%)`;
         overlay.style.opacity = alpha > 0.02 ? '1' : '0';
     }
@@ -5968,6 +5996,27 @@ export class ThreeGame {
             this.mountChunk(next.chunkX, next.chunkY);
             mounted += 1;
         }
+    }
+
+    async prepareVisibleChunksForGameplay({ batchSize = 3, onProgress = null } = {}) {
+        if (this.performanceProfile !== 'gameplay' || !this.player) return;
+
+        this.syncVisibleChunks(true);
+        const initialPending = this.pendingChunkMounts.length;
+        let mounted = 0;
+        onProgress?.(initialPending === 0 ? 1 : 0);
+
+        while (this.pendingChunkMounts.length > 0) {
+            const before = this.pendingChunkMounts.length;
+            this.processPendingChunkMounts(batchSize);
+            mounted += Math.max(0, before - this.pendingChunkMounts.length);
+            const total = Math.max(1, initialPending);
+            onProgress?.(Math.min(1, mounted / total));
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+
+        this.syncVisibleChunks(true);
+        onProgress?.(1);
     }
 
     mountChunk(chunkX, chunkY) {

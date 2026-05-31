@@ -9,6 +9,7 @@ const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
 const transitionOverlay = document.getElementById('transition-overlay');
+const loaderTitle = document.querySelector('.loader-title');
 const loaderBar = document.querySelector('.loader-bar');
 const loaderStatus = document.querySelector('.loader-status');
 
@@ -2014,6 +2015,44 @@ function runDoorTransitionAsync() {
     });
 }
 
+function showRunLoadingScreen(status = 'PREPARING DROP ZONE', progress = 0) {
+    if (loaderTitle) loaderTitle.textContent = 'PREPARING DROP ZONE';
+    if (loaderStatus) loaderStatus.textContent = status;
+    if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    loadingScreen?.classList.remove('hidden');
+}
+
+function hideRunLoadingScreen() {
+    loadingScreen?.classList.add('hidden');
+}
+
+async function prepareGameplayForDialogue() {
+    const game = window.game;
+    if (!game?.prepareVisibleChunksForGameplay) return;
+
+    showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
+    game.setLoadingPaused?.(true);
+    try {
+        await game.prepareVisibleChunksForGameplay({
+            batchSize: 3,
+            onProgress: (progress) => {
+                const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
+                showRunLoadingScreen(`MAPPING STARTING SECTOR... ${pct}%`, pct);
+            }
+        });
+        showRunLoadingScreen('DROP ZONE READY', 100);
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
+    } finally {
+        game.setLoadingPaused?.(false);
+        hideRunLoadingScreen();
+    }
+}
+
+async function prepareRunThenMissionIntro() {
+    await prepareGameplayForDialogue();
+    await runMissionIntroSequence();
+}
+
 function setSnailSpawnState(enabled, { purgeExisting = false } = {}) {
     window.game?.setSnailsEnabled?.(Boolean(enabled), { removeExisting: purgeExisting });
 }
@@ -2133,7 +2172,7 @@ if (startBtn) {
                 }
             },
             () => {
-                void runMissionIntroSequence();
+                void prepareRunThenMissionIntro();
             }
         );
     });
@@ -2170,7 +2209,7 @@ if (dailyOpsBtn) {
                 }
             },
             () => {
-                void runMissionIntroSequence();
+                void prepareRunThenMissionIntro();
             }
         );
     });
@@ -3236,17 +3275,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.game?.emitVitalsState?.();
     ensureMissionManagers();
 
+    const maxLogs = 5;
+    const logs = ['CONNECTING TO TACTICAL NETWORK...'];
+
     await AudioManager.loadAssets(manifest, (progress, itemName) => {
         if (loaderBar) loaderBar.style.width = `${progress}%`;
         if (loaderStatus && itemName) {
             const parts = itemName.split('/');
             const filename = parts[parts.length - 1];
-            loaderStatus.textContent = `LOADING ASSET: ${filename.toUpperCase()}`;
+            logs.push(`LOADING ASSET: ${filename.toUpperCase()}`);
+            if (logs.length > maxLogs) {
+                logs.shift();
+            }
+            loaderStatus.innerHTML = logs.map((log, idx) => {
+                const distance = logs.length - 1 - idx;
+                const opacities = [1.0, 0.65, 0.4, 0.2, 0.08];
+                const opacity = opacities[distance] ?? 0.05;
+                return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.15s ease;">${log}</div>`;
+            }).join('');
         }
     });
 
     if (loaderBar) loaderBar.style.width = `100%`;
-    if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
+    if (loaderStatus) {
+        loaderStatus.style.opacity = 0;
+        setTimeout(() => {
+            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK ANYWHERE TO INITIALIZE ]</div>`;
+            loaderStatus.style.opacity = 1;
+        }, 220);
+    }
 
     document.body.addEventListener('click', async () => {
         if (AudioManager.isUnlocked) return;
