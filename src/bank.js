@@ -95,12 +95,15 @@ export const TIER2_UPGRADE_ORDER = Object.freeze([
 ]);
 
 export const TIER2_UPGRADE_CONFIGS = Object.freeze({
+    // Reframed as the "Space Heater" cold-mitigation build (Note 5). Available
+    // early (after the O₂ bubble) so players can push into CRYO; the storage key
+    // stays `suitThermal` to preserve save compatibility (no schema bump).
     suitThermal: Object.freeze({
         key: 'suitThermal',
-        label: 'SUIT THERMAL COATING',
-        desc: 'Reduces O₂ drain in CRYO sector by 50%.',
-        cost: Object.freeze({ tech: 80, coin: 15 }),
-        prereq: 'reactorCompressor'
+        label: 'SPACE HEATER',
+        desc: 'Deploys a thermal heater that nearly eliminates O₂ drain in the CRYO sector.',
+        cost: Object.freeze({ tech: 60, coin: 12 }),
+        prereq: 'o2Bubble'
     }),
     deconFilters: Object.freeze({
         key: 'deconFilters',

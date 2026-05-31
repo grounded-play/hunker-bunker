@@ -2781,21 +2781,29 @@ export class ThreeGame {
     }
 
     renderTier2Section(ship, bankState) {
-        const allGoalsDone = Boolean(bankState?.unlocks?.reactorCompressor);
+        // Section opens once the O₂ bubble is built so the Space Heater (Note 5)
+        // is an early cold-mitigation build. Cards whose own prereq isn't met yet
+        // (e.g. endgame filters/stim) still appear but read LOCKED.
+        const unlocks = bankState?.unlocks ?? {};
+        const sectionAvailable = Boolean(unlocks.o2Bubble);
         const section = document.getElementById('tier2-section');
-        if (section) section.classList.toggle('hidden', !allGoalsDone);
-        if (!allGoalsDone) return;
+        if (section) section.classList.toggle('hidden', !sectionAvailable);
+        if (!sectionAvailable) return;
 
         const tier2Unlocks = bankState?.tier2Unlocks ?? {};
         for (const key of TIER2_UPGRADE_ORDER) {
             const cfg = TIER2_UPGRADE_CONFIGS[key];
             if (!cfg) continue;
             const alreadyUnlocked = Boolean(tier2Unlocks[key]);
+            const prereqMet = !cfg.prereq || Boolean(unlocks[cfg.prereq]);
             const canAfford = this.bank.canAfford(cfg.cost);
+            const buildable = !alreadyUnlocked && prereqMet && canAfford;
 
             const statusEl = document.getElementById(`terminal-tier2-${key}-status`);
             if (statusEl) {
-                statusEl.textContent = alreadyUnlocked ? 'INSTALLED' : canAfford ? 'READY' : 'RESOURCE DEFICIT';
+                statusEl.textContent = alreadyUnlocked ? 'INSTALLED'
+                    : !prereqMet ? 'LOCKED'
+                    : canAfford ? 'READY' : 'RESOURCE DEFICIT';
             }
             const costEl = document.getElementById(`terminal-tier2-${key}-cost`);
             if (costEl) {
@@ -2803,11 +2811,11 @@ export class ThreeGame {
             }
             const btn = document.getElementById(`terminal-btn-tier2-${key}`);
             if (!btn) continue;
-            btn.disabled = alreadyUnlocked || !canAfford;
-            btn.textContent = alreadyUnlocked ? 'INSTALLED' : 'INSTALL';
+            btn.disabled = !buildable;
+            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : 'INSTALL';
             btn.classList.toggle('btn-state--online', alreadyUnlocked);
-            btn.classList.toggle('btn-state--available', !alreadyUnlocked && canAfford);
-            btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && !canAfford);
+            btn.classList.toggle('btn-state--available', buildable);
+            btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && (!prereqMet || !canAfford));
 
             if (btn.dataset.listenerAttached === 'true') continue;
             btn.dataset.listenerAttached = 'true';
@@ -4123,8 +4131,9 @@ export class ThreeGame {
             }
             // Tier 2 biome O2 drain reductions
             const t2Unlocks = this.bank?.getState?.()?.tier2Unlocks ?? {};
+            // Space Heater (key kept as suitThermal): near-eliminates CRYO drain.
             if (t2Unlocks.suitThermal && this.currentBiomeKey === BIOME_KEYS.CRYO) {
-                drainRate *= 0.5;
+                drainRate *= 0.2;
             }
             if (t2Unlocks.deconFilters && this.currentBiomeKey === BIOME_KEYS.BIO) {
                 drainRate *= 0.5;
