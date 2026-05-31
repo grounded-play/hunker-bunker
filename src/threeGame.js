@@ -2393,6 +2393,7 @@ export class ThreeGame {
             }
             this.clearLoadedChunksForRunReset();
             this.syncVisibleChunks(true);
+            window.AudioManager?.stopAmbience?.();
         }
         const targetPixelRatio = nextProfile === 'gameplay'
             ? this.gameplayPixelRatio
@@ -2472,8 +2473,8 @@ export class ThreeGame {
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
 
-        // Adaptive quality: if FPS drops below 45 for 5s, reduce chunk radius
-        if (delta > 0) {
+        // Adaptive quality: if FPS drops below 45 for 5s, reduce chunk radius (only active during gameplay)
+        if (this.performanceProfile === 'gameplay' && delta > 0) {
             const fps = 1 / delta;
             if (fps < 45) {
                 this._lowFpsTimer = (this._lowFpsTimer ?? 0) + delta;
@@ -2483,7 +2484,7 @@ export class ThreeGame {
             } else {
                 this._lowFpsTimer = 0;
                 if (this.visibleChunkRadius === 0 && fps > 55) {
-                    this.visibleChunkRadius = 1; // restore if performance recovers
+                    this.visibleChunkRadius = this.defaultVisibleChunkRadius; // restore if performance recovers
                 }
             }
         }
@@ -4906,22 +4907,31 @@ export class ThreeGame {
             const footprintZone = { x, z, radius: puddleRadius, active: true };
             this.dynamicPuddles.push(footprintZone);
 
-            const mat = baseMaterial.clone();
+            const mat = new THREE.MeshBasicMaterial({
+                map: baseMaterial.map,
+                color: 0x8a8d8f,
+                transparent: true,
+                alphaTest: 0.001,
+                opacity: 0.24 + Math.random() * 0.16,
+                depthWrite: false,
+                depthTest: true,
+                side: THREE.DoubleSide,
+                fog: false
+            });
             if (this.currentBiomeKey === BIOME_KEYS.BIO) {
-                mat.color.setHex(0x87b89d);
+                mat.color.setHex(0x7f8d84);
             } else if (this.currentBiomeKey === BIOME_KEYS.CRYO) {
-                mat.color.setHex(0x9ec2de);
+                mat.color.setHex(0x8b9398);
             } else {
-                mat.color.setHex(0x7f9db9);
+                mat.color.setHex(0x85888a);
             }
-            mat.opacity = 0.28 + Math.random() * 0.22;
-            mat.rotation = Math.random() * Math.PI * 2;
 
-            const sprite = new THREE.Sprite(mat);
-            sprite.center.set(0.5, 0.5);
-            sprite.position.set(x, 0.042, z);
+            const sprite = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+            sprite.rotation.x = -Math.PI / 2;
+            sprite.rotation.z = Math.random() * Math.PI * 2;
+            sprite.position.set(x, 0.046, z);
             const size = puddleRadius * (2.6 + Math.random() * 1.1);
-            sprite.scale.set(size, size, 1);
+            sprite.scale.set(size * (1.08 + Math.random() * 0.18), size * (0.82 + Math.random() * 0.16), 1);
             sprite.renderOrder = 3;
             this.scene.add(sprite);
 
@@ -4941,6 +4951,7 @@ export class ThreeGame {
                     const idx = this.dynamicPuddles.indexOf(footprintZone);
                     if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
                     this.weather.activeRainPuddles = Math.max(0, (this.weather.activeRainPuddles ?? 1) - 1);
+                    sprite.geometry.dispose();
                     mat.dispose();
                 }
             });

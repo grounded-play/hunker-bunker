@@ -52,7 +52,6 @@ export class AudioManager {
                 await audioCtx.resume();
             }
             this.isUnlocked = true;
-            this.startAmbience();
         }
     }
 
@@ -637,7 +636,7 @@ export class AudioManager {
             g.cancelScheduledValues(now);
             g.setValueAtTime(g.value, now);
             g.linearRampToValueAtTime(0.0001, now + fade);
-            try { previous.source.stop(now + fade + 0.05); } catch (e) { /* already stopped */ }
+            try { previous.source.stop(now + fade + 0.05); } catch (err) { void err; }
         }
 
         // Start the new track silent and fade it up.
@@ -678,6 +677,22 @@ export class AudioManager {
                     playbackRate: 0.8 + (Math.random() * 0.4) // randomize pitch slightly
                 });
             }, 5000); // Check every 5 seconds
+        }
+    }
+
+    static stopAmbience() {
+        if (this.ambientSource) {
+            try { this.ambientSource.stop(); } catch (err) { void err; }
+            this.ambientSource = null;
+        }
+        if (this.activeMusic && this.activeMusic.source) {
+            try { this.activeMusic.source.stop(); } catch (err) { void err; }
+            this.activeMusic = null;
+            this.musicSource = null;
+        }
+        if (this.randInterval) {
+            clearInterval(this.randInterval);
+            this.randInterval = null;
         }
     }
 }

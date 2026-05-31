@@ -847,7 +847,39 @@ function formatRunTime(ms) {
     return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function clearAllTimers() {
+    if (biomePromptTimer) { clearTimeout(biomePromptTimer); biomePromptTimer = null; }
+    if (damageFlashTimer) { clearTimeout(damageFlashTimer); damageFlashTimer = null; }
+    if (deathSequenceTimer) { clearTimeout(deathSequenceTimer); deathSequenceTimer = null; }
+    if (missionProgressHUDTimer) { clearTimeout(missionProgressHUDTimer); missionProgressHUDTimer = null; }
+    if (o2AlarmTimer) { clearTimeout(o2AlarmTimer); o2AlarmTimer = null; }
+    if (pickupComboTimer) { clearTimeout(pickupComboTimer); pickupComboTimer = null; }
+    if (weaponErrorTimer) { clearTimeout(weaponErrorTimer); weaponErrorTimer = null; }
+}
+
 function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' } = {}) {
+    // ── Resets & State Cleanups on Game Over ──
+    dialogueManager?.cancelDialogue();
+    dialogueManager?.cancelTutorial();
+    cutsceneManager?.finishActiveRun(true);
+    clearAllTimers();
+
+    document.getElementById('ui')?.classList.add('hidden');
+    document.getElementById('console-terminal-modal')?.classList.add('hidden');
+    document.getElementById('lore-modal')?.classList.add('hidden');
+    document.getElementById('mothership-dialogue')?.classList.add('hidden');
+    document.getElementById('settings-popup')?.classList.add('hidden');
+    document.getElementById('audio-mixer-popup')?.classList.add('hidden');
+    document.getElementById('tutorial-prompt')?.classList.add('hidden');
+    document.getElementById('biome-hud-prompt')?.classList.add('hidden');
+    document.getElementById('mission-progress-hud')?.classList.add('hidden');
+    document.getElementById('console-hud-prompt')?.classList.add('hidden');
+    document.getElementById('lore-hud-prompt')?.classList.add('hidden');
+
+    document.body.classList.remove('mission-intro-active', 'player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode', 'player-poisoned');
+    _distressModeActive = false;
+    missionFlowRunning = false;
+
     const elapsedMs    = Date.now() - runStartTime;
     const elapsedMin   = elapsedMs / 60000;
     const distancePct  = Math.min(100, (stats.distanceTravelled / 500) * 100);
@@ -2044,6 +2076,9 @@ async function runMissionIntroSequence() {
                 }, 600);
             }
         }
+
+        // Start gameplay background music and loop ambience now that intro sequences are finished
+        window.AudioManager?.startAmbience?.();
     } finally {
         document.body.classList.remove('mission-intro-active');
         game?.setInputEnabled?.(true);
