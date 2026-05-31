@@ -18,21 +18,32 @@ export class AudioManager {
     static sfxGain = audioCtx.createGain();
     static worldGain = audioCtx.createGain();
     static musicGain = audioCtx.createGain();
+    // Tension multiplier sits between the music sources and the user music
+    // slider (musicGain) so runtime intensity and the user mix no longer fight.
+    static musicTensionGain = audioCtx.createGain();
 
     static isUnlocked = false;
     static randInterval = null;
+
+    // Active looping music track + the context it represents (for crossfading).
+    static activeMusic = null;
+    static _pendingMusicContext = null;
+    static _musicFadeSeconds = 1.6;
 
     static init() {
         this.masterGain.connect(audioCtx.destination);
         this.sfxGain.connect(this.masterGain);
         this.worldGain.connect(this.masterGain);
         this.musicGain.connect(this.masterGain);
-        
+        this.musicTensionGain.connect(this.musicGain);
+
         // Base volume mix
         this.masterGain.gain.value = 1.0;
         this.sfxGain.gain.value = 1.0;
         this.worldGain.gain.value = 1.0;
         this.musicGain.gain.value = 1.0;
+        // Start mid-tension so music is clearly audible from the first frame.
+        this.musicTensionGain.gain.value = 0.6;
     }
 
     static async unlock() {
@@ -182,9 +193,9 @@ export class AudioManager {
 
         // Connect to appropriate bus
         if (bus === 'world') {
-            lastNode.connect(this.sfxGain); // Route environment/world sounds to SFX/VFX
+            lastNode.connect(this.worldGain); // Environment/ambient loops use the world bus
         } else if (bus === 'music') {
-            lastNode.connect(this.musicGain);
+            lastNode.connect(this.musicTensionGain); // Music routes through the tension multiplier
         } else {
             lastNode.connect(this.sfxGain);
         }
@@ -568,15 +579,77 @@ export class AudioManager {
 
     static setMusicTension(level = 'exploring') {
         if (!this.isUnlocked) return;
+        // Tension is a 0..1 multiplier on the music bus; the user music slider
+        // (musicGain) and master (masterGain) are applied separately downstream,
+        // so we no longer attenuate twice or fight the mixer. Baselines are
+        // rebalanced so music is clearly present throughout a run.
         const targets = {
-            safe:      { music: 0.03, world: 0.6, ambientRate: 0.7 },
-            exploring: { music: 0.05, world: 1.0, ambientRate: 1.0 },
-            threatened: { music: 0.09, world: 1.3, ambientRate: 1.4 }
+            safe:       { music: 0.5,  world: 0.6 },
+            exploring:  { music: 0.62, world: 1.0 },
+            threatened: { music: 0.78, world: 1.25 },
+            boss:       { music: 0.85, world: 1.3 }
         };
         const cfg = targets[level] ?? targets.exploring;
         const t = audioCtx.currentTime + 1.2; // 1.2s crossfade
-        this.musicGain.gain.linearRampToValueAtTime(cfg.music * this.masterVolume, t);
-        this.worldGain.gain.linearRampToValueAtTime(cfg.world * this.masterVolume, t);
+        this.musicTensionGain.gain.linearRampToValueAtTime(cfg.music, t);
+        this.worldGain.gain.linearRampToValueAtTime(cfg.world, t);
+    }
+
+    // Map a gameplay context to a track key; falls back to the legacy single
+    // track when the contextual stems are not present in the loaded buffers.
+    static MUSIC_CONTEXT_TRACKS = {
+        safe_ship:    'music_safe_ship',
+        cryo_explore: 'music_cryo_explore',
+        bio_explore:  'music_bio_explore',
+        combat:       'music_combat_threatened'
+    };
+
+    static resolveMusicTrackKey(context) {
+        const mapped = this.MUSIC_CONTEXT_TRACKS[context];
+        if (mapped && this.buffers[mapped]) return mapped;
+        return this.buffers.mainbg_music ? 'mainbg_music' : mapped;
+    }
+
+    // Crossfade the looping background track for the given gameplay context so
+    // music is always present and only the tone changes on biome/threat shifts.
+    static setMusicContext(context = 'safe_ship') {
+        if (!this.isUnlocked) {
+            this._pendingMusicContext = context; // applied on unlock/startAmbience
+            return;
+        }
+        const bufferKey = this.resolveMusicTrackKey(context);
+        if (!bufferKey || !this.buffers[bufferKey]) return;
+
+        // Already on the right context, or two contexts share the fallback track.
+        if (this.activeMusic && this.activeMusic.context === context) return;
+        if (this.activeMusic && this.activeMusic.bufferKey === bufferKey) {
+            this.activeMusic.context = context;
+            return;
+        }
+
+        const fade = this._musicFadeSeconds;
+        const now = audioCtx.currentTime;
+
+        // Fade out and retire the previous track.
+        const previous = this.activeMusic;
+        if (previous?.gainNode && previous?.source) {
+            const g = previous.gainNode.gain;
+            g.cancelScheduledValues(now);
+            g.setValueAtTime(g.value, now);
+            g.linearRampToValueAtTime(0.0001, now + fade);
+            try { previous.source.stop(now + fade + 0.05); } catch (e) { /* already stopped */ }
+        }
+
+        // Start the new track silent and fade it up.
+        const started = this.play(bufferKey, { volume: 0.0001, loop: true, bus: 'music', varyPitch: false });
+        if (!started) return;
+        const ng = started.gainNode.gain;
+        ng.cancelScheduledValues(now);
+        ng.setValueAtTime(0.0001, now);
+        ng.linearRampToValueAtTime(1.0, now + fade);
+
+        this.activeMusic = { source: started.source, gainNode: started.gainNode, bufferKey, context };
+        this.musicSource = started.source; // keep legacy reference current
     }
 
     static startAmbience() {
@@ -586,9 +659,10 @@ export class AudioManager {
         const drone = this.play('amb_bunker_loop', { volume: 0.005, loop: true, bus: 'world', varyPitch: false });
         if (drone) this.ambientSource = drone.source;
 
-        // Play Music
-        const music = this.play('mainbg_music', { volume: 0.05, loop: true, bus: 'music', varyPitch: false });
-        if (music) this.musicSource = music.source;
+        // Start contextual background music (crossfade-managed). Honour any
+        // context requested before the audio graph was unlocked.
+        this.setMusicContext(this._pendingMusicContext ?? 'safe_ship');
+        this._pendingMusicContext = null;
 
         // Start random ambient pings (drips, metal stress)
         if (!this.randInterval) {

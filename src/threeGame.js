@@ -293,16 +293,18 @@ const BIOME_TERRAIN_TEXTURE_PATHS = Object.freeze({
     })
 });
 const CRYO_SCATTER_VARIANTS = [
-    { type: 'scatter_coolant_puddle', weight: 0.42 },
-    { type: 'scatter_ice_stalagmite', weight: 0.32 },
-    { type: 'scatter_cryo_icicle', weight: 0.26 }
+    { type: 'scatter_coolant_puddle', weight: 0.34 },
+    { type: 'scatter_ice_stalagmite', weight: 0.26 },
+    { type: 'scatter_cryo_icicle', weight: 0.22 },
+    { type: 'scatter_cryo_shards', weight: 0.18 }
 ];
 const BIO_SCATTER_VARIANTS = [
-    { type: 'scatter_bio_pod', weight: 0.42 },
-    { type: 'scatter_slime_puddle', weight: 0.3 },
-    { type: 'bio_spores', weight: 0.16 },
-    { type: 'bio_spores_blue', weight: 0.06 },
-    { type: 'bio_spores_amber', weight: 0.06 }
+    { type: 'scatter_bio_pod', weight: 0.34 },
+    { type: 'scatter_bio_moss', weight: 0.2 },
+    { type: 'scatter_slime_puddle', weight: 0.24 },
+    { type: 'bio_spores', weight: 0.14 },
+    { type: 'bio_spores_blue', weight: 0.04 },
+    { type: 'bio_spores_amber', weight: 0.04 }
 ];
 const ACTIVE_SCATTER_VARIANTS = [
     { type: 'scatter_gravel', weight: 0.38 },
@@ -909,6 +911,8 @@ export class ThreeGame {
             scatter_slime_puddle: this.loadScatterTexture('/scatter_slime_puddle.png', textureLoader),
             scatter_gravel: this.loadScatterTexture('/scatter_gravel.png', textureLoader),
             scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
+            scatter_cryo_shards: this.loadScatterTexture('/scatter_cryo_shards.png', textureLoader),
+            scatter_bio_moss: this.loadScatterTexture('/scatter_bio_moss.png', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
             lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader)
         };
@@ -1087,6 +1091,22 @@ export class ThreeGame {
             }),
             scatter_cryo_icicle: new THREE.SpriteMaterial({
                 map: this.scatterTextures.scatter_cryo_icicle,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_cryo_shards: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_cryo_shards,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_bio_moss: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_bio_moss,
                 transparent: true,
                 alphaTest: 0.001,
                 depthWrite: false,
@@ -5802,7 +5822,8 @@ export class ThreeGame {
                 opacity = 1;
             } else {
                 type = this.chooseWeightedType(biomeVariants, random);
-                const isGroundCover = type.includes('puddle') || type === 'scatter_gravel';
+                const isGroundCover = type.includes('puddle') || type === 'scatter_gravel'
+                    || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss';
                 const isTallScatter = type === 'scatter_ice_stalagmite' || type === 'scatter_bio_pod';
                 const isWreckage = type === 'ship_wreckage';
                 if (isWreckage) {
@@ -7236,9 +7257,8 @@ export class ThreeGame {
             sprite.position.x = nextX;
             sprite.position.z = nextZ;
 
-            // Update facing
-            const absX = Math.abs(sprite.scale.x);
-            sprite.scale.x = data.chargeDirX < 0 ? -absX : absX;
+            // Update facing from charge direction via shared helper
+            this.faceSpriteFromDir(sprite, data.chargeDirX);
 
             // Player hit check
             const newDist = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
@@ -7306,6 +7326,27 @@ export class ThreeGame {
                 }
             }
         }
+    }
+
+    // Shared billboard facing helper: flip sprite scale.x toward the travel
+    // direction. Uses the live move vector (dirX) every frame; when X motion is
+    // negligible (Z-dominant travel) it falls back to the bearing toward the
+    // target so sprites never keep stale "backward" facing. Preserves last sign
+    // when both inputs are inside the deadzone to avoid jitter.
+    faceSpriteFromDir(sprite, dirX, fallbackX = 0) {
+        const data = sprite.userData;
+        const DEADZONE = 0.02;
+        if (dirX <= -DEADZONE) {
+            data.facingSign = -1;
+        } else if (dirX >= DEADZONE) {
+            data.facingSign = 1;
+        } else if (fallbackX <= -DEADZONE) {
+            data.facingSign = -1;
+        } else if (fallbackX >= DEADZONE) {
+            data.facingSign = 1;
+        }
+        const facingSign = data.facingSign === -1 ? -1 : 1;
+        sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
     }
 
     updateSnailBehavior(sprite, delta, activeShip) {
@@ -7380,14 +7421,9 @@ export class ThreeGame {
                 data.pathNodes = null;
             }
 
-            const xTurnThreshold = 0.08;
-            if (dirX <= -xTurnThreshold) {
-                data.facingSign = -1;
-            } else if (dirX >= xTurnThreshold) {
-                data.facingSign = 1;
-            }
-            const facingSign = data.facingSign === -1 ? -1 : 1;
-            sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
+            // Face the travel direction every frame; fall back to bearing toward
+            // the target when movement is Z-dominant so snails never slide backward.
+            this.faceSpriteFromDir(sprite, dirX, toGoalX);
         }
 
         const distanceToTarget = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);

@@ -730,6 +730,8 @@ window.addEventListener('biome-changed', (event) => {
             fireMothershipReactiveLine('first_bio');
         }
     }
+    // Crossfade music to the new biome's exploration stem.
+    updateMusicTension();
 });
 renderBunkerLevel(0);
 renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
@@ -1078,8 +1080,8 @@ window.addEventListener('player-respawned', () => {
     lastReportedDepthTier = 0;
     syncAbilityPanelLabel();
     _distressModeActive = false;
-    _musicTension = 'exploring';
-    window.AudioManager?.setMusicTension?.('exploring');
+    // Recompute music from live state instead of forcing 'exploring'.
+    updateMusicTension();
     document.body.classList.remove('distress-mode', 'vitals-critical', 'player-poisoned', 'player-damage-flash', 'mission-intro-active');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
@@ -1538,25 +1540,54 @@ function stopO2Alarm() {
 
 // ── Reactive Music State ──────────────────────────────────────
 let _musicTension = 'exploring';
+let _musicContext = 'safe_ship';
 
 function updateMusicTension() {
     const hp = window.game?.playerVitals?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
-    let next = 'exploring';
+    const biome = window.game?.currentBiomeKey ?? 'active';
+    const bossActive = !!window.game?.activeBoss;
 
+    // ── Tension intensity (drives music-bus loudness) ──
+    let nextTension = 'exploring';
     // Safe: near ship, full health, good O2
     if (hp >= 3 && o2 > 50) {
         const dist = window.game?.getActiveO2GeneratorDistance?.() ?? Infinity;
-        if (dist < 4) next = 'safe';
+        if (dist < 4) nextTension = 'safe';
     }
-    // Threatened: low hp or distress
-    if (hp <= 1 || o2 < 15 || _distressModeActive) next = 'threatened';
+    if (bossActive) nextTension = 'boss';
+    // Threatened: low hp or distress (overrides boss-tier loudness for survival cues)
+    if (hp <= 1 || o2 < 15 || _distressModeActive) nextTension = 'threatened';
 
-    if (next !== _musicTension) {
-        _musicTension = next;
-        window.AudioManager?.setMusicTension?.(next);
+    // ── Track context (drives which stem plays) ──
+    let nextContext;
+    if (bossActive || _distressModeActive) {
+        nextContext = 'combat';
+    } else if (nextTension === 'safe') {
+        nextContext = 'safe_ship';
+    } else if (biome === 'cryo') {
+        nextContext = 'cryo_explore';
+    } else if (biome === 'bio') {
+        nextContext = 'bio_explore';
+    } else {
+        nextContext = 'safe_ship'; // shipyard / active sector default theme
+    }
+
+    if (nextTension !== _musicTension) {
+        _musicTension = nextTension;
+        window.AudioManager?.setMusicTension?.(nextTension);
+    }
+    if (nextContext !== _musicContext) {
+        _musicContext = nextContext;
+        window.AudioManager?.setMusicContext?.(nextContext);
     }
 }
+
+// Poll for state changes that fire no vitals event (boss appearing/leaving,
+// biome drift) so music context/tension stay in sync throughout a run.
+setInterval(() => {
+    if (window.AudioManager?.isUnlocked) updateMusicTension();
+}, 1000);
 
 let _distressModeActive = false;
 function updateDistressMode(o2, hp) {
@@ -1606,6 +1637,7 @@ window.addEventListener('health-restored', () => {
     const hp = window.game?.playerVitals?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
     updateDistressMode(o2, hp);
+    updateMusicTension();
 });
 
 // Game over button handlers
@@ -3057,12 +3089,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/scatter_coolant_puddle.png',
             '/scatter_ice_stalagmite.png',
             '/scatter_cryo_icicle.png',
+            '/scatter_cryo_shards.png',
+            '/scatter_bio_moss.png',
             '/scatter_bio_pod.png',
             '/scatter_slime_puddle.png'
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
+            // Contextual music stems (crossfaded by biome/threat in audio.js)
+            { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3' },
+            { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3' },
+            { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3' },
+            { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3' },
             { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
             { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
             { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
