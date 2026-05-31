@@ -121,9 +121,9 @@ const PROJECTILE_DAMAGE = 1;
 // --- Sprint 10 combat tuning / feature flags ---
 const FEATURE_WALL_DECALS = true;
 const FEATURE_MULTISHOT = true;
-// Shifts the player glow's floor pool away from the camera (up on screen) so the
-// lit circle centers on the standing sprite rather than pooling at its feet.
-const PLAYER_GLOW_SCREEN_OFFSET = 1.35;
+// Anchor glow to the visible sprite and nudge slightly up-screen so the clear
+// pool reads around the body in the isometric camera.
+const PLAYER_GLOW_SCREEN_OFFSET = 0.28;
 // Spawn a themed retaliation boss after each console build milestone (Note 6).
 const FEATURE_MILESTONE_BOSSES = true;
 // Weather system (Note 9): hard particle cap + per-state profiles. Profiles set
@@ -133,11 +133,19 @@ const FEATURE_WEATHER = true;
 const WEATHER_PARTICLE_CAP = 240;
 const WEATHER_FIELD_RADIUS = 20;   // half-extent of the box that follows the player
 const WEATHER_FIELD_HEIGHT = 9;
+const WEATHER_FORCED_STATE = 'rainstorm';
+const RAIN_PUDDLE_MAX_COUNT = 32;
+const RAIN_PUDDLE_SPAWN_MIN = 0.45;
+const RAIN_PUDDLE_SPAWN_MAX = 0.95;
+const RAIN_SPLASH_COOLDOWN = 0.03;
+const RAIN_SPLASH_IMPACT_CHANCE = 0.6;
+const WET_FOOTPRINT_TRAIL_SECONDS = 5.2;
 const WEATHER_PROFILES = Object.freeze({
     clear:       { count: 0,   size: 0.1,  color: 0xffffff, opacity: 0,    fall: [0, 0],       drift: 0,    fogFarMult: 1.0 },
     snow:        { count: 220, size: 0.17, color: 0xcfe4ff, opacity: 0.85, fall: [1.2, 2.1],    drift: 0.6,  fogFarMult: 0.88 },
     spore_drift: { count: 150, size: 0.15, color: 0x9dff7a, opacity: 0.7,  fall: [0.25, 0.75],  drift: 1.1,  fogFarMult: 0.9 },
-    fog_gust:    { count: 70,  size: 0.62, color: 0xb8c4d0, opacity: 0.2,  fall: [0.1, 0.45],   drift: 1.6,  fogFarMult: 0.66 }
+    fog_gust:    { count: 70,  size: 0.62, color: 0xb8c4d0, opacity: 0.2,  fall: [0.1, 0.45],   drift: 1.6,  fogFarMult: 0.66 },
+    rainstorm:   { count: 240, size: 0.11, color: 0xa8c5df, opacity: 0.84, fall: [8.7, 13.6],   drift: 1.55, fogFarMult: 0.78, lightMult: 0.9 }
 });
 // Goal key -> retaliation boss spawned when that build completes.
 const MILESTONE_BOSS_FOR_GOAL = Object.freeze({
@@ -545,8 +553,15 @@ export class ThreeGame {
             geometry: null,
             positions: null,
             velocities: null,
-            fogFarMult: 1
+            fogFarMult: 1,
+            lightMult: 1,
+            splashCooldown: 0,
+            puddleTimer: 0.35,
+            activeRainPuddles: 0
         };
+        this.dynamicPuddles = [];
+        this.wetFootprintTrailTime = 0;
+        this.wetFootstepSide = 1;
         this.isMoving = false;
         this.animationTimer = 0;
         this.currentFacingRow = PLAYER_DEFAULT_DIRECTION_INDEX;
@@ -4250,6 +4265,8 @@ export class ThreeGame {
         const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
         const fortifyActive = this.classAbility?.active && CLASS_STATS[this.playerType]?.abilityKey === 'fortify';
         const isMoving = Boolean(moveAxisX || moveAxisZ) && !fortifyActive;
+        let moveDirX = this.aimDirX || 1;
+        let moveDirZ = this.aimDirZ || 0;
         this.isMoving = isMoving;
 
         if (isMoving) {
@@ -4275,20 +4292,32 @@ export class ThreeGame {
 
             const dx = this.player.position.x - prevX;
             const dz = this.player.position.z - prevZ;
+            const movedDist = Math.hypot(dx, dz);
+            if (movedDist > 0.0001) {
+                moveDirX = dx / movedDist;
+                moveDirZ = dz / movedDist;
+            }
             this.totalDistanceTravelled += Math.sqrt(dx * dx + dz * dz);
+        } else if (this.hasActiveAim) {
+            moveDirX = this.aimDirX || 1;
+            moveDirZ = this.aimDirZ || 0;
         }
 
         this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
-        // Push the glow's floor pool "into" the screen (away from the camera) so
-        // the lit/clear circle sits on the standing sprite instead of pooling at
-        // the feet below it — most noticeable at night. cameraPlanarForward is the
-        // camera's horizontal look direction; +forward = up on screen.
+        // Keep night visibility centered on the player sprite under isometric camera.
+        const spriteAnchorX = this.player.position.x + (this.playerSprite?.position.x ?? 0);
+        const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position.z ?? 0);
         this.playerGlow.position.set(
-            this.player.position.x + this.cameraPlanarForward.x * PLAYER_GLOW_SCREEN_OFFSET,
+            spriteAnchorX + this.cameraPlanarForward.x * PLAYER_GLOW_SCREEN_OFFSET,
             1.6,
-            this.player.position.z + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
+            spriteAnchorZ + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
         );
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
+        if (this.isPositionInPuddle(this.player.position.x, this.player.position.z)) {
+            this.wetFootprintTrailTime = WET_FOOTPRINT_TRAIL_SECONDS;
+        } else {
+            this.wetFootprintTrailTime = Math.max(0, this.wetFootprintTrailTime - delta);
+        }
 
         if (isMoving) {
             this.footstepTimer += delta;
@@ -4298,6 +4327,16 @@ export class ThreeGame {
                 const footRate = 1.6 + Math.random() * 0.3;
                 if (this.performanceProfile !== 'menu') {
                     window.AudioManager?.play('amb_metal_stress', { volume: 0.055, playbackRate: footRate });
+                    if (this.wetFootprintTrailTime > 0.04) {
+                        this.spawnWetFootprint(this.player.position.x, this.player.position.z, moveDirX, moveDirZ);
+                    }
+                    if (this.isRainWeatherActive()) {
+                        this.spawnRainSplash(
+                            this.player.position.x + (Math.random() - 0.5) * 0.24,
+                            this.player.position.z + (Math.random() - 0.5) * 0.24,
+                            1.15
+                        );
+                    }
                 }
             }
         } else {
@@ -4612,6 +4651,12 @@ export class ThreeGame {
         this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.86, 1.0, dayBlend);
         this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.74, 1.0, dayBlend);
         this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.9, 1.02, dayBlend);
+        const weatherLightMult = this.weather?.lightMult ?? 1;
+        if (weatherLightMult !== 1) {
+            this.ambientLight.intensity *= weatherLightMult;
+            this.directionalLight.intensity *= Math.max(0.6, weatherLightMult - 0.05);
+            this.fillLight.intensity *= Math.min(1, weatherLightMult + 0.06);
+        }
         // Player's own glow matters a little more in the dark.
         if (this.playerGlow) {
             this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.32, 1.0, dayBlend);
@@ -4673,6 +4718,7 @@ export class ThreeGame {
         this.weather.state = state;
         this.weather.count = Math.min(WEATHER_PARTICLE_CAP, profile.count);
         this.weather.fogFarMult = profile.fogFarMult;
+        this.weather.lightMult = profile.lightMult ?? 1;
 
         this.ensureWeatherField();
         const { points, geometry, positions, velocities, count } = this.weather;
@@ -4699,29 +4745,22 @@ export class ThreeGame {
     }
 
     pickWeatherState() {
-        const biome = this.currentBiomeKey;
-        const day = this.getDayFactor();
-        const r = Math.random();
-        let next;
-        if (biome === BIOME_KEYS.CRYO) {
-            next = r < 0.55 ? 'snow' : r < 0.78 ? 'fog_gust' : 'clear';
-        } else if (biome === BIOME_KEYS.BIO) {
-            next = r < 0.5 ? 'spore_drift' : r < 0.72 ? 'fog_gust' : 'clear';
-        } else {
-            next = r < 0.22 ? 'fog_gust' : 'clear';
-        }
-        // Night raises the odds of weather rolling in.
-        if (next === 'clear' && day < 0.4 && Math.random() < 0.4) next = 'fog_gust';
-        return next;
+        return WEATHER_FORCED_STATE;
     }
 
     updateWeather(delta) {
         if (!FEATURE_WEATHER) return;
-
-        this.weather.changeTimer -= delta;
-        if (this.weather.changeTimer <= 0) {
-            this.setWeatherState(this.pickWeatherState());
-            this.weather.changeTimer = 18 + Math.random() * 22;
+        const forcedState = this.pickWeatherState();
+        if (this.weather.state !== forcedState || !this.weather.points) {
+            this.setWeatherState(forcedState);
+        }
+        this.weather.splashCooldown = Math.max(0, (this.weather.splashCooldown ?? 0) - delta);
+        if (this.performanceProfile !== 'menu') {
+            this.weather.puddleTimer -= delta;
+            if (this.weather.puddleTimer <= 0) {
+                this.spawnRainPuddleNearPlayer();
+                this.weather.puddleTimer = RAIN_PUDDLE_SPAWN_MIN + Math.random() * (RAIN_PUDDLE_SPAWN_MAX - RAIN_PUDDLE_SPAWN_MIN);
+            }
         }
 
         const { count } = this.weather;
@@ -4741,6 +4780,17 @@ export class ThreeGame {
             const outOfRange = Math.abs(positions[o] - px) > WEATHER_FIELD_RADIUS
                 || Math.abs(positions[o + 2] - pz) > WEATHER_FIELD_RADIUS;
             if (positions[o + 1] <= 0.05 || outOfRange) {
+                if (
+                    positions[o + 1] <= 0.05
+                    && this.weather.splashCooldown <= 0
+                    && this.weather.state === WEATHER_FORCED_STATE
+                    && Math.abs(positions[o] - px) <= 8
+                    && Math.abs(positions[o + 2] - pz) <= 8
+                    && Math.random() < RAIN_SPLASH_IMPACT_CHANCE
+                ) {
+                    this.spawnRainSplash(positions[o], positions[o + 2], 0.68 + Math.random() * 0.38);
+                    this.weather.splashCooldown = RAIN_SPLASH_COOLDOWN;
+                }
                 const { x, z } = this.weatherSpawnXZ();
                 positions[o] = x;
                 positions[o + 1] = WEATHER_FIELD_HEIGHT - Math.random() * 1.5;
@@ -4748,6 +4798,217 @@ export class ThreeGame {
             }
         }
         geometry.attributes.position.needsUpdate = true;
+    }
+
+    isRainWeatherActive() {
+        return FEATURE_WEATHER && this.weather?.state === WEATHER_FORCED_STATE;
+    }
+
+    spawnRainSplash(x, z, scaleBoost = 1) {
+        if (!this.scene) return;
+        const splash = new THREE.Group();
+        splash.position.set(x, 0, z);
+        splash.renderOrder = 20;
+
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.06, 0.13, 16),
+            new THREE.MeshBasicMaterial({
+                color: 0xb7d4eb,
+                transparent: true,
+                opacity: 0.52,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.042;
+        ring.renderOrder = 20;
+        splash.add(ring);
+
+        const dropletGeo = new THREE.CircleGeometry(0.024, 10);
+        const droplets = [];
+        const dropletCount = 3 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < dropletCount; i++) {
+            const droplet = new THREE.Mesh(
+                dropletGeo,
+                new THREE.MeshBasicMaterial({
+                    color: 0xcde6f8,
+                    transparent: true,
+                    opacity: 0.6,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                })
+            );
+            droplet.rotation.x = -Math.PI / 2;
+            droplet.position.set((Math.random() - 0.5) * 0.04, 0.046 + Math.random() * 0.012, (Math.random() - 0.5) * 0.04);
+            splash.add(droplet);
+            const ang = Math.random() * Math.PI * 2;
+            const speed = (0.2 + Math.random() * 0.3) * scaleBoost;
+            droplets.push({
+                mesh: droplet,
+                vx: Math.cos(ang) * speed,
+                vz: Math.sin(ang) * speed,
+                vy: 0.28 + Math.random() * 0.2
+            });
+        }
+        this.scene.add(splash);
+
+        const duration = 0.3 + Math.random() * 0.16;
+        const peakScale = 1 + (2.05 * scaleBoost);
+        const baseOpacity = 0.5 + Math.random() * 0.12;
+        this.transientEffects.push({
+            mesh: splash,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = Math.min(age / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 2);
+                const scale = 0.72 + peakScale * eased;
+                ring.scale.set(scale, scale, 1);
+                ring.material.opacity = baseOpacity * (1 - t);
+
+                for (const droplet of droplets) {
+                    droplet.vy = Math.max(-0.32, droplet.vy - 4.2 * dt);
+                    droplet.mesh.position.x += droplet.vx * dt;
+                    droplet.mesh.position.z += droplet.vz * dt;
+                    droplet.mesh.position.y = Math.max(0.04, droplet.mesh.position.y + droplet.vy * dt);
+                    droplet.mesh.material.opacity = 0.6 * (1 - t);
+                }
+            },
+            dispose: () => {
+                ring.geometry.dispose();
+                ring.material.dispose();
+                dropletGeo.dispose();
+                for (const droplet of droplets) {
+                    droplet.mesh.material.dispose();
+                }
+            }
+        });
+    }
+
+    spawnRainPuddleNearPlayer() {
+        if (!this.player || !this.scene || !this.isRainWeatherActive()) return;
+        if ((this.weather.activeRainPuddles ?? 0) >= RAIN_PUDDLE_MAX_COUNT) return;
+
+        const baseMaterial = this.currentBiomeKey === BIOME_KEYS.BIO
+            ? this.scatterMaterials?.scatter_slime_puddle
+            : this.scatterMaterials?.scatter_coolant_puddle;
+        if (!baseMaterial) return;
+
+        for (let attempt = 0; attempt < 8; attempt++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 1.25 + Math.random() * 7.6;
+            const x = this.player.position.x + Math.cos(angle) * radius;
+            const z = this.player.position.z + Math.sin(angle) * radius;
+            if (!this.canOccupyPosition(x, z)) continue;
+
+            const puddleRadius = 0.36 + Math.random() * 0.46;
+            const footprintZone = { x, z, radius: puddleRadius, active: true };
+            this.dynamicPuddles.push(footprintZone);
+
+            const mat = baseMaterial.clone();
+            if (this.currentBiomeKey === BIOME_KEYS.BIO) {
+                mat.color.setHex(0x87b89d);
+            } else if (this.currentBiomeKey === BIOME_KEYS.CRYO) {
+                mat.color.setHex(0x9ec2de);
+            } else {
+                mat.color.setHex(0x7f9db9);
+            }
+            mat.opacity = 0.28 + Math.random() * 0.22;
+            mat.rotation = Math.random() * Math.PI * 2;
+
+            const sprite = new THREE.Sprite(mat);
+            sprite.center.set(0.5, 0.5);
+            sprite.position.set(x, 0.042, z);
+            const size = puddleRadius * (2.6 + Math.random() * 1.1);
+            sprite.scale.set(size, size, 1);
+            sprite.renderOrder = 3;
+            this.scene.add(sprite);
+
+            const duration = 13 + Math.random() * 11;
+            const baseOpacity = mat.opacity;
+            this.weather.activeRainPuddles = (this.weather.activeRainPuddles ?? 0) + 1;
+            this.transientEffects.push({
+                mesh: sprite,
+                age: 0,
+                duration,
+                update: (_dt, age) => {
+                    const t = Math.min(age / duration, 1);
+                    sprite.material.opacity = baseOpacity * (1 - t * 0.85);
+                },
+                dispose: () => {
+                    footprintZone.active = false;
+                    const idx = this.dynamicPuddles.indexOf(footprintZone);
+                    if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
+                    this.weather.activeRainPuddles = Math.max(0, (this.weather.activeRainPuddles ?? 1) - 1);
+                    mat.dispose();
+                }
+            });
+            return;
+        }
+    }
+
+    isPositionInPuddle(x, z) {
+        for (const sprite of this.scatterSprites) {
+            const type = sprite?.userData?.type;
+            if (typeof type !== 'string' || !type.includes('puddle')) continue;
+            const radius = Math.max(
+                0.42,
+                Math.max(sprite.userData.baseScaleX ?? sprite.scale.x ?? 0.5, sprite.userData.baseScaleY ?? sprite.scale.y ?? 0.5) * 0.42
+            );
+            if (Math.hypot(x - sprite.position.x, z - sprite.position.z) <= radius) {
+                return true;
+            }
+        }
+        for (const puddle of this.dynamicPuddles) {
+            if (!puddle?.active) continue;
+            if (Math.hypot(x - puddle.x, z - puddle.z) <= puddle.radius) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    spawnWetFootprint(x, z, dirX, dirZ) {
+        if (!this.scene) return;
+        const len = Math.hypot(dirX, dirZ) || 1;
+        const fx = dirX / len;
+        const fz = dirZ / len;
+        const side = this.wetFootstepSide || 1;
+        this.wetFootstepSide = -side;
+        const px = -fz;
+        const pz = fx;
+
+        const footprint = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.11, 0.2),
+            new THREE.MeshBasicMaterial({
+                color: 0x567590,
+                transparent: true,
+                opacity: 0.42,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            })
+        );
+        footprint.rotation.x = -Math.PI / 2;
+        footprint.rotation.z = Math.atan2(fx, fz);
+        footprint.position.set(
+            x - fx * 0.2 + px * side * 0.11,
+            0.041,
+            z - fz * 0.2 + pz * side * 0.11
+        );
+        footprint.renderOrder = 19;
+        this.scene.add(footprint);
+
+        const duration = 2.7 + Math.random() * 1.7;
+        this.transientEffects.push({
+            mesh: footprint,
+            age: 0,
+            duration,
+            update: (_dt, age) => {
+                const t = Math.min(age / duration, 1);
+                footprint.material.opacity = 0.42 * (1 - t * t);
+            }
+        });
     }
 
     emitDepthTierChanged(depthTier = this.maxDepthTierReached) {
@@ -8041,6 +8302,9 @@ export class ThreeGame {
         const mat = this.scatterMaterials.scatter_slime_puddle.clone();
         mat.color.setHex(0x55ff55); // neon toxic green
         mat.opacity = 0.85;
+        const damageRadius = isLarge ? 1.1 : 0.45;
+        const footprintZone = { x, z, radius: damageRadius, active: true };
+        this.dynamicPuddles.push(footprintZone);
         
         const sprite = new THREE.Sprite(mat);
         sprite.center.set(0.5, 0.5);
@@ -8061,11 +8325,16 @@ export class ThreeGame {
                 // Deal damage if player walks in it
                 if (this.player && !this.isPlayerDead && age % 0.4 < dt) {
                     const d = Math.hypot(this.player.position.x - x, this.player.position.z - z);
-                    const damageRadius = isLarge ? 1.1 : 0.45;
                     if (d <= damageRadius) {
                         this.playerPoisonTimer = 3.0; // poisoned for 3 seconds
                     }
                 }
+            },
+            dispose: () => {
+                footprintZone.active = false;
+                const idx = this.dynamicPuddles.indexOf(footprintZone);
+                if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
+                mat.dispose();
             }
         });
     }
