@@ -101,6 +101,15 @@ const PROJECTILE_DAMAGE = 1;
 // --- Sprint 10 combat tuning / feature flags ---
 const FEATURE_WALL_DECALS = true;
 const FEATURE_MULTISHOT = true;
+// Spawn a themed retaliation boss after each console build milestone (Note 6).
+const FEATURE_MILESTONE_BOSSES = true;
+// Goal key -> retaliation boss spawned when that build completes.
+const MILESTONE_BOSS_FOR_GOAL = Object.freeze({
+    o2Bubble: 'boss_cybersnail',
+    hullExpansion: 'boss_cryosnail',
+    radarNode: 'boss_sporesnail',
+    reactorCompressor: 'boss_sporesnail'
+});
 const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
 const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
 const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
@@ -1657,6 +1666,21 @@ export class ThreeGame {
 
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
+
+        // Milestone retaliation boss: each completed console build provokes a
+        // themed boss that heads for the ship (Note 6). Additive — ambient
+        // biome bosses are untouched.
+        if (FEATURE_MILESTONE_BOSSES) {
+            this._onGoalUnlocked = (event) => {
+                const goalKey = event?.detail?.goalKey;
+                const bossType = MILESTONE_BOSS_FOR_GOAL[goalKey];
+                if (!bossType) return;
+                // Brief delay so the unlock confirmation reads before the counterattack.
+                setTimeout(() => this.spawnMilestoneBoss(bossType), 1800);
+            };
+            window.addEventListener('goal-unlocked', this._onGoalUnlocked);
+        }
+
         this.consolePromptEl = document.getElementById('console-hud-prompt');
         this.consolePromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
@@ -6969,6 +6993,74 @@ export class ThreeGame {
         return null;
     }
 
+    // Spawn a single milestone "retaliation" boss near the player that beelines
+    // for the ship. Driven by the bank's `goal-unlocked` event (see init wiring).
+    spawnMilestoneBoss(bossType) {
+        if (!this.player || !this.snailsEnabled) return null;
+        if (!this.scatterMaterials[bossType]) return null;
+        // Never stack the same milestone boss.
+        if (this.scatterSprites.some((s) => s.userData?.isMilestone && s.userData?.type === bossType && !s.userData?.burstTriggered)) {
+            return null;
+        }
+
+        const baseX = this.player.position.x;
+        const baseZ = this.player.position.z;
+        let spawnX = null;
+        let spawnZ = null;
+        for (const dist of [11, 9, 13, 7, 15]) {
+            const startA = Math.random() * Math.PI * 2;
+            for (let a = 0; a < 12; a++) {
+                const ang = startA + (a / 12) * Math.PI * 2;
+                const tx = baseX + Math.cos(ang) * dist;
+                const tz = baseZ + Math.sin(ang) * dist;
+                if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                    spawnX = tx;
+                    spawnZ = tz;
+                    break;
+                }
+            }
+            if (spawnX !== null) break;
+        }
+        if (spawnX === null) return null;
+
+        const tint = bossType === 'boss_cryosnail' ? 0x88ccff
+            : bossType === 'boss_sporesnail' ? 0x88ff88 : 0xffffff;
+        const placement = {
+            x: spawnX,
+            z: spawnZ,
+            type: bossType,
+            scatterKey: `milestone:${bossType}:${Date.now()}`,
+            scale: bossType === 'boss_cybersnail' ? 3.2 : bossType === 'boss_cryosnail' ? 3.8 : 4.4,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'boss',
+            phase: 0,
+            opacity: 1,
+            biomeTint: tint,
+            isBoss: true
+        };
+        const boss = this.createScatterInstance(placement);
+        if (!boss) return null;
+        boss.userData.isMilestone = true;
+        boss.userData.prioritizeShip = true;
+        boss.userData.targetType = 'ship';
+
+        // Parent to the player's (loaded) chunk group so the boss persists in
+        // scatterSprites across chunk syncs. Chunk groups use world coords.
+        const chunkX = Math.floor(baseX / this.chunkSize);
+        const chunkY = Math.floor(baseZ / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`);
+        if (!group) return null;
+        group.add(boss);
+        this.scatterSprites.push(boss);
+
+        window.AudioManager?.play('amb_metal_stress', { volume: 0.6, playbackRate: 0.42, bus: 'sfx' });
+        window.dispatchEvent(new CustomEvent('milestone-boss-spawned', { detail: { type: bossType } }));
+        return boss;
+    }
+
     selectSnailTarget(sprite, activeShip) {
         const targets = [];
         if (this.player && !this.isPlayerDead) {
@@ -6990,6 +7082,17 @@ export class ThreeGame {
         for (const target of targets) {
             target.distance = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
         }
+
+        // Milestone retaliation bosses bee-line for the ship until the player
+        // physically gets in their face, then they defend themselves.
+        if (sprite.userData.prioritizeShip) {
+            const shipTarget = targets.find((t) => t.type === 'ship');
+            const playerTarget = targets.find((t) => t.type === 'player');
+            if (shipTarget && (!playerTarget || playerTarget.distance > 3.5)) {
+                return { ...shipTarget, mode: 'hunt', goalX: shipTarget.x, goalZ: shipTarget.z };
+            }
+        }
+
         targets.sort((a, b) => a.distance - b.distance);
         const nearest = targets[0];
 
