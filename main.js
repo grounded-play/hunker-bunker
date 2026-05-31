@@ -3255,6 +3255,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             () => {
                 if (loadingScreen) loadingScreen.classList.add('hidden');
                 window.game?.setLoadingPaused?.(false);
+                AudioManager.startMenuMusic();
             },
             null
         );

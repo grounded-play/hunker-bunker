@@ -680,6 +680,15 @@ export class AudioManager {
         }
     }
 
+    static startMenuMusic() {
+        if (!this.isUnlocked) {
+            this._pendingMusicContext = 'safe_ship';
+            return;
+        }
+        this.setMusicTension('safe');
+        this.setMusicContext('safe_ship');
+    }
+
     static stopAmbience() {
         if (this.ambientSource) {
             try { this.ambientSource.stop(); } catch (err) { void err; }

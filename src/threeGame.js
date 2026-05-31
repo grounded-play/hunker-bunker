@@ -1757,7 +1757,10 @@ export class ThreeGame {
 
     setupInput() {
         this.handleKeyDown = (event) => {
-            if (!this.inputEnabled) return;
+            if (!this.isGameplayInputActive()) {
+                this.setKeyState(event.code, false);
+                return;
+            }
             if (event.code === 'KeyE') {
                 this.interactWithConsole();
                 this.interactWithLoreTerminal();
@@ -1775,6 +1778,7 @@ export class ThreeGame {
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
         this.handlePromptTap = (event) => {
             event.preventDefault();
+            if (!this.isGameplayInputActive()) return;
             this.interactWithConsole();
         };
 
@@ -1791,7 +1795,7 @@ export class ThreeGame {
                 this.lastMouseClientY = event.clientY;
             }
 
-            if (!this.inputEnabled || this.isPlayerDead) return;
+            if (!this.isGameplayInputActive()) return;
             const pointerType = this._canvasPointerType;
             const isTouchPointer = pointerType !== 'mouse';
             if (isTouchPointer && this.isInTouchMoveControlBounds(event.clientX, event.clientY)) {
@@ -1810,7 +1814,7 @@ export class ThreeGame {
         };
 
         this.handleCanvasPointerMove = (event) => {
-            if (!this.inputEnabled || this.isPlayerDead) return;
+            if (!this.isGameplayInputActive()) return;
             const pointerType = event.pointerType || this._canvasPointerType || 'mouse';
             if (pointerType !== 'mouse') return;
             this.lastMouseClientX = event.clientX;
@@ -1822,7 +1826,7 @@ export class ThreeGame {
         };
 
         this.handleCanvasTap = (event) => {
-            if (!this.inputEnabled || this.isPlayerDead) return;
+            if (!this.isGameplayInputActive()) return;
             const dx = event.clientX - this._canvasTapStartX;
             const dy = event.clientY - this._canvasTapStartY;
             const wasTap = Math.sqrt(dx * dx + dy * dy) < 14;
@@ -1899,7 +1903,7 @@ export class ThreeGame {
     }
 
     setKeyState(code, pressed) {
-        if (!this.inputEnabled && pressed) return;
+        if (!this.isGameplayInputActive() && pressed) return;
         if (code === 'ArrowUp' || code === 'KeyW') this.keys.up = pressed;
         if (code === 'ArrowDown' || code === 'KeyS') this.keys.down = pressed;
         if (code === 'ArrowLeft' || code === 'KeyA') this.keys.left = pressed;
@@ -1907,7 +1911,7 @@ export class ThreeGame {
     }
 
     setVirtualInput(x = 0, z = 0) {
-        if (!this.inputEnabled) {
+        if (!this.isGameplayInputActive()) {
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             return;
@@ -1916,13 +1920,27 @@ export class ThreeGame {
         this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
     }
 
-    setInputEnabled(enabled = true) {
-        this.inputEnabled = Boolean(enabled);
+    isGameplayInputActive() {
+        return this.performanceProfile === 'gameplay'
+            && this.inputEnabled
+            && !this.isPlayerDead
+            && !this.loadingPaused
+            && !this.hasBlockingGameplayOverlay();
+    }
 
-        if (this.inputEnabled) {
-            return;
-        }
+    hasBlockingGameplayOverlay() {
+        const isVisible = (id) => {
+            const el = document.getElementById(id);
+            return Boolean(el && !el.classList.contains('hidden'));
+        };
+        return document.body.classList.contains('mission-intro-active')
+            || isVisible('console-terminal-modal')
+            || isVisible('game-over-modal')
+            || isVisible('mothership-dialogue')
+            || isVisible('confirm-modal');
+    }
 
+    clearGameplayInputState() {
         this.keys.up = false;
         this.keys.down = false;
         this.keys.left = false;
@@ -1935,6 +1953,16 @@ export class ThreeGame {
         this._aimResetTimer = 0;
         this.lastMouseClientX = null;
         this.lastMouseClientY = null;
+    }
+
+    setInputEnabled(enabled = true) {
+        this.inputEnabled = Boolean(enabled);
+
+        if (this.inputEnabled) {
+            return;
+        }
+
+        this.clearGameplayInputState();
 
         this.activeInteractiveConsole = null;
         const promptEl = document.getElementById('console-hud-prompt');
@@ -2478,6 +2506,7 @@ export class ThreeGame {
             }
             this.clearLoadedChunksForRunReset();
             window.AudioManager?.stopAmbience?.();
+            window.AudioManager?.startMenuMusic?.();
         }
         if (this.menuShowroomFloor) {
             this.menuShowroomFloor.visible = nextProfile === 'menu';
@@ -2644,6 +2673,7 @@ export class ThreeGame {
     }
 
     interactWithLoreTerminal() {
+        if (!this.isGameplayInputActive()) return;
         if (!this.player) return;
         for (const sprite of this.scatterSprites) {
             if (sprite.userData.type !== 'lore_terminal') continue;
@@ -2747,13 +2777,14 @@ export class ThreeGame {
     }
 
     interactWithConsole() {
+        if (!this.isGameplayInputActive()) return;
         if (!this.activeInteractiveConsole) return;
         this.openConsoleModal(this.activeInteractiveConsole);
     }
 
     tryInteractWithConsolePointer(clientX, clientY) {
         const ship = this.activeInteractiveConsole;
-        if (!ship || !this.inputEnabled) return false;
+        if (!ship || !this.isGameplayInputActive()) return false;
 
         const modal = document.getElementById('console-terminal-modal');
         if (modal && !modal.classList.contains('hidden')) {
@@ -4168,7 +4199,7 @@ export class ThreeGame {
     }
 
     triggerClassAbility() {
-        if (!this.inputEnabled || this.isPlayerDead) return;
+        if (!this.isGameplayInputActive()) return;
         if (this.classAbility.cooldownRemaining > 0) {
             window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.4, bus: 'sfx' });
             return;
@@ -4335,6 +4366,9 @@ export class ThreeGame {
         if (this.isPlayerDead) {
             this.isMoving = false;
             return;
+        }
+        if (this.performanceProfile === 'gameplay' && !this.isGameplayInputActive()) {
+            this.clearGameplayInputState();
         }
 
         // Handle slow and poison status effects
@@ -5047,26 +5081,26 @@ export class ThreeGame {
             if (!this.canOccupyPosition(x, z)) continue;
 
             const puddleRadius = 0.36 + Math.random() * 0.46;
-            const footprintZone = { x, z, radius: puddleRadius, active: true };
+            const footprintZone = { x, z, radius: puddleRadius * 0.42, active: true };
             this.dynamicPuddles.push(footprintZone);
 
             const mat = new THREE.MeshBasicMaterial({
                 map: baseMaterial.map,
-                color: 0x8a8d8f,
+                color: 0x777a76,
                 transparent: true,
                 alphaTest: 0.001,
-                opacity: 0.24 + Math.random() * 0.16,
+                opacity: 0.2 + Math.random() * 0.13,
                 depthWrite: false,
                 depthTest: true,
                 side: THREE.DoubleSide,
                 fog: false
             });
             if (this.currentBiomeKey === BIOME_KEYS.BIO) {
-                mat.color.setHex(0x7f8d84);
+                mat.color.setHex(0x707a70);
             } else if (this.currentBiomeKey === BIOME_KEYS.CRYO) {
-                mat.color.setHex(0x8b9398);
+                mat.color.setHex(0x7b7f80);
             } else {
-                mat.color.setHex(0x85888a);
+                mat.color.setHex(0x737674);
             }
 
             const sprite = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
@@ -5074,7 +5108,9 @@ export class ThreeGame {
             sprite.rotation.z = Math.random() * Math.PI * 2;
             sprite.position.set(x, 0.046, z);
             const size = puddleRadius * (2.6 + Math.random() * 1.1);
-            sprite.scale.set(size * (1.08 + Math.random() * 0.18), size * (0.82 + Math.random() * 0.16), 1);
+            const targetScaleX = size * (1.08 + Math.random() * 0.18);
+            const targetScaleY = size * (0.82 + Math.random() * 0.16);
+            sprite.scale.set(targetScaleX * 0.34, targetScaleY * 0.34, 1);
             sprite.renderOrder = 3;
             this.scene.add(sprite);
 
@@ -5087,6 +5123,9 @@ export class ThreeGame {
                 duration,
                 update: (_dt, age) => {
                     const t = Math.min(age / duration, 1);
+                    const grow = 0.34 + 0.66 * (1 - Math.pow(1 - Math.min(t * 2.2, 1), 3));
+                    sprite.scale.set(targetScaleX * grow, targetScaleY * grow, 1);
+                    footprintZone.radius = puddleRadius * (0.42 + 0.58 * grow);
                     sprite.material.opacity = baseOpacity * (1 - t * 0.85);
                 },
                 dispose: () => {
@@ -5136,9 +5175,9 @@ export class ThreeGame {
         const footprint = new THREE.Mesh(
             new THREE.PlaneGeometry(0.11, 0.2),
             new THREE.MeshBasicMaterial({
-                color: 0x567590,
+                color: 0x5f6764,
                 transparent: true,
-                opacity: 0.42,
+                opacity: 0.38,
                 depthWrite: false,
                 side: THREE.DoubleSide
             })
@@ -5160,7 +5199,7 @@ export class ThreeGame {
             duration,
             update: (_dt, age) => {
                 const t = Math.min(age / duration, 1);
-                footprint.material.opacity = 0.42 * (1 - t * t);
+                footprint.material.opacity = 0.38 * (1 - t * t);
             }
         });
     }
@@ -5336,7 +5375,7 @@ export class ThreeGame {
     }
 
     requestReload({ manual = false } = {}) {
-        if (!this.inputEnabled || this.isPlayerDead) return false;
+        if (!this.isGameplayInputActive()) return false;
         if (this.weaponReloading) return false;
 
         const availableAmmo = this.getAvailableAmmo();
@@ -5361,7 +5400,7 @@ export class ThreeGame {
     }
 
     tryFireWeapon(clientX, clientY) {
-        if (!this.inputEnabled || this.isPlayerDead) return;
+        if (!this.isGameplayInputActive()) return;
 
         if (this.isInsideNoFireZone()) {
             window.AudioManager?.play('ui_error', { volume: 0.42 });
