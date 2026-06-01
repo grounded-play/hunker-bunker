@@ -16,6 +16,8 @@ const loaderStatus = document.querySelector('.loader-status');
 const splashDebugToggle = document.getElementById('splash-debug-toggle');
 const splashFsToggle = document.getElementById('splash-fs-toggle');
 const mainDebugToggle = document.getElementById('main-debug-toggle');
+const splashNightVisionToggle = document.getElementById('splash-nightvision-toggle');
+const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
 const touchMoveControl = document.getElementById('touch-move-control');
@@ -66,6 +68,27 @@ const DEFAULT_AUDIO_MIX = Object.freeze({
     music: 1,
     vfx: 1
 });
+const KEY_BINDINGS_STORAGE_KEY = 'hunker_key_bindings';
+// Each action has a [primary, secondary] slot. WASD + arrow keys are equivalent
+// out of the box. threeGame.js reads window.state.settings.keyBindings.
+const DEFAULT_KEY_BINDINGS = Object.freeze({
+    moveUp: ['KeyW', 'ArrowUp'],
+    moveDown: ['KeyS', 'ArrowDown'],
+    moveLeft: ['KeyA', 'ArrowLeft'],
+    moveRight: ['KeyD', 'ArrowRight'],
+    interact: ['KeyE', null],
+    reload: ['KeyR', null],
+    ability: ['KeyF', null]
+});
+const CONTROL_ACTIONS = Object.freeze([
+    { id: 'moveUp', label: 'MOVE UP' },
+    { id: 'moveDown', label: 'MOVE DOWN' },
+    { id: 'moveLeft', label: 'MOVE LEFT' },
+    { id: 'moveRight', label: 'MOVE RIGHT' },
+    { id: 'interact', label: 'INTERACT' },
+    { id: 'reload', label: 'RELOAD' },
+    { id: 'ability', label: 'CLASS ABILITY' }
+]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
 const BIOME_PROMPT_DURATION_MS = 2800;
@@ -81,11 +104,15 @@ const state = {
         debug: false,
         audioMix: { ...DEFAULT_AUDIO_MIX },
         fullscreen: false,
-        touchControls: false
+        touchControls: false,
+        nightVision: false,
+        keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
     gameInitialized: false
 };
+// Exposed so threeGame.js can read live key bindings without a circular import.
+window.state = state;
 
 const gearSpinState = {
     rotation: 0,
@@ -352,6 +379,128 @@ function installAudioMixerControls() {
         };
         slider.addEventListener('input', updateChannel);
         slider.addEventListener('change', updateChannel);
+    });
+}
+
+// ── Desktop control remapping ────────────────────────────────────────────────
+function cloneKeyBindings(bindings) {
+    const out = {};
+    for (const action of Object.keys(DEFAULT_KEY_BINDINGS)) {
+        const slots = bindings?.[action] ?? DEFAULT_KEY_BINDINGS[action];
+        out[action] = [slots?.[0] ?? null, slots?.[1] ?? null];
+    }
+    return out;
+}
+
+function keyCodeLabel(code) {
+    if (!code) return '—';
+    if (code.startsWith('Key')) return code.slice(3);
+    if (code.startsWith('Digit')) return code.slice(5);
+    if (code.startsWith('Arrow')) return code.slice(5).toUpperCase();
+    const named = {
+        Space: 'SPACE', Escape: 'ESC', Enter: 'ENTER', Tab: 'TAB', Backquote: '`',
+        ShiftLeft: 'L-SHIFT', ShiftRight: 'R-SHIFT', ControlLeft: 'L-CTRL',
+        ControlRight: 'R-CTRL', AltLeft: 'L-ALT', AltRight: 'R-ALT'
+    };
+    return named[code] ?? code.toUpperCase();
+}
+
+function loadKeyBindings() {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(KEY_BINDINGS_STORAGE_KEY) ?? 'null'); } catch { /* ignore */ }
+    state.settings.keyBindings = cloneKeyBindings(stored ?? DEFAULT_KEY_BINDINGS);
+}
+
+function saveKeyBindings(bindings) {
+    state.settings.keyBindings = cloneKeyBindings(bindings);
+    try {
+        localStorage.setItem(KEY_BINDINGS_STORAGE_KEY, JSON.stringify(state.settings.keyBindings));
+    } catch { /* ignore */ }
+}
+
+function setupControlsModal() {
+    const popup = document.getElementById('controls-popup');
+    const list = document.getElementById('controls-list');
+    const openBtn = document.getElementById('open-controls');
+    const closeBtn = document.getElementById('close-controls');
+    const saveBtn = document.getElementById('save-controls');
+    const resetBtn = document.getElementById('reset-controls');
+    if (!popup || !list) return;
+
+    let draft = cloneKeyBindings(state.settings.keyBindings);
+    let listening = null; // { action, slot, btn }
+
+    const stopListening = () => {
+        if (listening?.btn) listening.btn.classList.remove('listening');
+        listening = null;
+    };
+
+    const renderRows = () => {
+        list.innerHTML = '';
+        for (const action of CONTROL_ACTIONS) {
+            const row = document.createElement('div');
+            row.className = 'control-row';
+            const label = document.createElement('span');
+            label.className = 'control-row__label';
+            label.textContent = action.label;
+            row.appendChild(label);
+            for (let slot = 0; slot < 2; slot++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'control-key-btn';
+                btn.textContent = keyCodeLabel(draft[action.id]?.[slot]);
+                btn.addEventListener('click', () => {
+                    stopListening();
+                    listening = { action: action.id, slot, btn };
+                    btn.classList.add('listening');
+                    btn.textContent = '...';
+                });
+                row.appendChild(btn);
+            }
+            list.appendChild(row);
+        }
+    };
+
+    // Capture-phase so the remap keystroke never reaches the game's handlers.
+    const onKeyDown = (event) => {
+        if (!listening) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (event.code !== 'Escape') {
+            // Clear this code from every other slot so it isn't double-bound.
+            for (const a of Object.keys(draft)) {
+                draft[a] = draft[a].map((c) => (c === event.code ? null : c));
+            }
+            draft[listening.action][listening.slot] = event.code;
+        }
+        stopListening();
+        renderRows();
+    };
+
+    const open = () => {
+        draft = cloneKeyBindings(state.settings.keyBindings);
+        renderRows();
+        popup.classList.remove('hidden');
+        window.addEventListener('keydown', onKeyDown, true);
+    };
+    const close = () => {
+        stopListening();
+        window.removeEventListener('keydown', onKeyDown, true);
+        popup.classList.add('hidden');
+    };
+
+    openBtn?.addEventListener('click', open);
+    closeBtn?.addEventListener('click', close);
+    popup.addEventListener('click', (event) => { if (event.target === popup) close(); });
+    resetBtn?.addEventListener('click', () => {
+        draft = cloneKeyBindings(DEFAULT_KEY_BINDINGS);
+        stopListening();
+        renderRows();
+    });
+    saveBtn?.addEventListener('click', () => {
+        saveKeyBindings(draft);
+        AudioManager.play('ui_click', { volume: 0.5 });
+        close();
     });
 }
 
@@ -1474,6 +1623,7 @@ function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false 
 
     touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
     touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
+    touchBtn.classList.toggle('is-ready', clampedRemaining <= 0 && !active);
 
     if (clampedRemaining > 0) {
         touchBtn.style.pointerEvents = 'none';
@@ -1485,7 +1635,7 @@ function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false 
 
     const cooldownEl = document.getElementById('touch-ability-cooldown');
     if (cooldownEl) {
-        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : 'READY';
+        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : '';
     }
 }
 
@@ -1524,9 +1674,7 @@ window.addEventListener('ability-cooldown-tick', (event) => {
 function syncAbilityPanelLabel() {
     const nameEl = document.getElementById('ability-name');
     if (!nameEl) return;
-    const playerType = window.game?.playerType ?? 'SCOUT';
-    const labels = { SCOUT: 'SPRINT BURST', TANK: 'FORTIFY', ENGINEER: 'FIELD OVERCLOCK' };
-    nameEl.textContent = labels[playerType] ?? 'ABILITY';
+    nameEl.textContent = 'SPRINT BURST';
 }
 
 function updateExtractionRing(progress, active) {
@@ -1788,11 +1936,11 @@ function syncTouchMoveControlVisibility() {
         label.classList.toggle('hidden', !showJoystick);
     }
 
-    // Show on desktop HUD always; on touch devices, mirror joystick visibility.
+    // The floating sprint button is part of the mobile UI, so it tracks the
+    // touch move pad: when the pad is disabled the button disappears too.
     const abilityBtn = document.getElementById('touch-ability-btn');
     if (abilityBtn) {
-        const touchDevice = document.body.classList.contains('touch-device');
-        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && (!touchDevice || showJoystick);
+        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick;
         abilityBtn.classList.toggle('hidden', !showAbilityBtn);
     }
 
@@ -2170,6 +2318,13 @@ if (startBtn) {
                     gameContainer.classList.add('fullscreen-mode');
                     queueGameLayoutRefresh();
                 }
+
+                // Raise the loading screen while the doors are still shut so they
+                // open onto the loader — not a half-built world. The world build
+                // + shader warm-up runs in prepareRunThenMissionIntro and only
+                // hides this once the drop zone is ready, so the cutscene plays
+                // over a finished scene with no frame loss.
+                showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
             },
             () => {
                 void prepareRunThenMissionIntro();
@@ -2207,6 +2362,13 @@ if (dailyOpsBtn) {
                     gameContainer.classList.add('fullscreen-mode');
                     queueGameLayoutRefresh();
                 }
+
+                // Raise the loading screen while the doors are still shut so they
+                // open onto the loader — not a half-built world. The world build
+                // + shader warm-up runs in prepareRunThenMissionIntro and only
+                // hides this once the drop zone is ready, so the cutscene plays
+                // over a finished scene with no frame loss.
+                showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
             },
             () => {
                 void prepareRunThenMissionIntro();
@@ -2221,6 +2383,17 @@ if (splashDebugToggle) {
         state.settings.debug = e.target.checked;
         setDebugMode(state.settings.debug);
         if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
+    });
+}
+
+if (splashNightVisionToggle) {
+    splashNightVisionToggle.addEventListener('change', (e) => {
+        state.settings.nightVision = e.target.checked;
+        localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
+        if (mainNightVisionToggle) mainNightVisionToggle.checked = state.settings.nightVision;
+        if (window.game) {
+            window.game.nightVision = state.settings.nightVision;
+        }
     });
 }
 
@@ -2254,21 +2427,40 @@ function setDebugMode(active) {
 }
 
 // FPS Counter (Debug Tool)
-let lastTime = performance.now();
-let frames = 0;
 const fpsDisplay = document.getElementById('fps-counter');
+let fpsFrames = 0;
+let fpsLastTime = performance.now();
+let fpsRafId = null;
 
-function updateFPS() {
-    frames++;
-    const now = performance.now();
-    if (now - lastTime >= 1000) {
-        if (fpsDisplay) fpsDisplay.textContent = `FPS: ${frames}`;
-        frames = 0;
-        lastTime = now;
+function sampleFPS() {
+    if (!document.body.classList.contains('show-debug')) {
+        fpsRafId = null;
+        return;
     }
-    requestAnimationFrame(updateFPS);
+    fpsFrames++;
+    fpsRafId = requestAnimationFrame(sampleFPS);
 }
-requestAnimationFrame(updateFPS);
+
+if (fpsDisplay) {
+    setInterval(() => {
+        if (!document.body.classList.contains('show-debug')) {
+            fpsFrames = 0;
+            fpsLastTime = performance.now();
+            return;
+        }
+        if (fpsRafId === null) {
+            fpsFrames = 0;
+            fpsLastTime = performance.now();
+            fpsRafId = requestAnimationFrame(sampleFPS);
+            return;
+        }
+        const now = performance.now();
+        const elapsedSeconds = Math.max((now - fpsLastTime) / 1000, 0.001);
+        fpsDisplay.textContent = `FPS: ${Math.round(fpsFrames / elapsedSeconds)}`;
+        fpsFrames = 0;
+        fpsLastTime = now;
+    }, 1000);
+}
 
 function updateGearSpin(now) {
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
@@ -2337,6 +2529,7 @@ if (settingsBtns.length > 0 && settingsPopup) {
             if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
             if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
             if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
+            if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
             syncAudioMixerUI(state.settings.audioMix);
             setAudioMixerOpen(false);
         });
@@ -2553,6 +2746,17 @@ if (mainDebugToggle) {
         state.settings.debug = e.target.checked;
         setDebugMode(state.settings.debug);
         if (splashDebugToggle) splashDebugToggle.checked = state.settings.debug;
+    });
+}
+
+if (mainNightVisionToggle) {
+    mainNightVisionToggle.addEventListener('change', (e) => {
+        state.settings.nightVision = e.target.checked;
+        localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
+        if (splashNightVisionToggle) splashNightVisionToggle.checked = state.settings.nightVision;
+        if (window.game) {
+            window.game.nightVision = state.settings.nightVision;
+        }
     });
 }
 
@@ -3107,6 +3311,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     installAudioMixerControls();
     setAudioMixerOpen(false);
     loadAudioMixSettings();
+    loadKeyBindings();
+    setupControlsModal();
     refreshCharBestScores();
     updateDailyOpsUI();
 
@@ -3118,6 +3324,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (mainTouchToggle) {
         mainTouchToggle.checked = !!state.settings.touchControls;
+    }
+
+    const storedNightVision = localStorage.getItem('hunker_nightvision_enabled');
+    if (storedNightVision !== null) {
+        state.settings.nightVision = storedNightVision === 'true';
+    } else {
+        state.settings.nightVision = false;
+    }
+    if (splashNightVisionToggle) {
+        splashNightVisionToggle.checked = !!state.settings.nightVision;
+    }
+    if (mainNightVisionToggle) {
+        mainNightVisionToggle.checked = !!state.settings.nightVision;
     }
 
     // Load audio manifest
@@ -3178,10 +3397,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
             // Contextual music stems (crossfaded by biome/threat in audio.js)
-            { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3' },
-            { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3' },
-            { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3' },
-            { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3' },
+            { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
             { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
             { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
             { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
@@ -3254,6 +3473,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 playerType: initialType,
                 bankManager
             });
+            window.game.nightVision = state.settings.nightVision;
         } catch (err) {
             console.error('[ThreeGame init failed]', err);
             const loadingScreen = document.getElementById('loading-screen');

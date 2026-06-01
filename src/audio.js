@@ -122,18 +122,36 @@ export class AudioManager {
         // Load Audio
         const audioPromises = manifest.audio.map(async item => {
             try {
-                const response = await fetch(item.url);
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                const audioBuffer = await this.decodeAudioAsset(item.url);
                 this.buffers[item.key] = audioBuffer;
                 updateProgress(item.url);
             } catch (e) {
-                console.warn(`Failed to load audio: ${item.url}`, e);
+                if (item.fallbackUrl) {
+                    try {
+                        const fallbackBuffer = await this.decodeAudioAsset(item.fallbackUrl);
+                        this.buffers[item.key] = fallbackBuffer;
+                        updateProgress(item.url);
+                        return;
+                    } catch (fallbackError) {
+                        console.warn(`Failed to load audio: ${item.url}; fallback also failed: ${item.fallbackUrl}`, fallbackError);
+                    }
+                } else {
+                    console.warn(`Failed to load audio: ${item.url}`, e);
+                }
                 updateProgress(item.url);
             }
         });
 
         await Promise.all([...imagePromises, ...audioPromises]);
+    }
+
+    static async decodeAudioAsset(url) {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} while loading ${url}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        return audioCtx.decodeAudioData(arrayBuffer);
     }
 
     static play(key, options = {}) {
