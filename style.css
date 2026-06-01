@@ -3178,7 +3178,7 @@ body.distress-mode #game-viewport::after {
     --touch-compass-size: calc(var(--touch-pad-size) * 0.8);
     --touch-compass-text-size: clamp(9px, 1.6vmin, 12px);
     --touch-pad-gap: clamp(4px, 0.7vmin, 8px);
-    --touch-pad-offset-x: calc(env(safe-area-inset-left, 0px) + clamp(10px, 2vmin, 18px));
+    --touch-pad-offset-x: calc(env(safe-area-inset-left, 0px) + clamp(0px, 1.1vmin, 8px));
     --touch-pad-offset-y: calc(env(safe-area-inset-bottom, 0px) + clamp(10px, 2vmin, 18px));
     --touch-pad-label-size: clamp(11px, 1.9vmin, 16px);
   }
