@@ -16,6 +16,8 @@ const loaderStatus = document.querySelector('.loader-status');
 const splashDebugToggle = document.getElementById('splash-debug-toggle');
 const splashFsToggle = document.getElementById('splash-fs-toggle');
 const mainDebugToggle = document.getElementById('main-debug-toggle');
+const splashNightVisionToggle = document.getElementById('splash-nightvision-toggle');
+const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
 const touchMoveControl = document.getElementById('touch-move-control');
@@ -81,7 +83,8 @@ const state = {
         debug: false,
         audioMix: { ...DEFAULT_AUDIO_MIX },
         fullscreen: false,
-        touchControls: false
+        touchControls: false,
+        nightVision: false
     },
     onlineCount: 1,
     gameInitialized: false
@@ -1474,6 +1477,7 @@ function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false 
 
     touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
     touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
+    touchBtn.classList.toggle('is-ready', clampedRemaining <= 0 && !active);
 
     if (clampedRemaining > 0) {
         touchBtn.style.pointerEvents = 'none';
@@ -1485,7 +1489,7 @@ function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false 
 
     const cooldownEl = document.getElementById('touch-ability-cooldown');
     if (cooldownEl) {
-        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : 'READY';
+        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : '';
     }
 }
 
@@ -1524,9 +1528,7 @@ window.addEventListener('ability-cooldown-tick', (event) => {
 function syncAbilityPanelLabel() {
     const nameEl = document.getElementById('ability-name');
     if (!nameEl) return;
-    const playerType = window.game?.playerType ?? 'SCOUT';
-    const labels = { SCOUT: 'SPRINT BURST', TANK: 'FORTIFY', ENGINEER: 'FIELD OVERCLOCK' };
-    nameEl.textContent = labels[playerType] ?? 'ABILITY';
+    nameEl.textContent = 'SPRINT BURST';
 }
 
 function updateExtractionRing(progress, active) {
@@ -2238,6 +2240,17 @@ if (splashDebugToggle) {
     });
 }
 
+if (splashNightVisionToggle) {
+    splashNightVisionToggle.addEventListener('change', (e) => {
+        state.settings.nightVision = e.target.checked;
+        localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
+        if (mainNightVisionToggle) mainNightVisionToggle.checked = state.settings.nightVision;
+        if (window.game) {
+            window.game.nightVision = state.settings.nightVision;
+        }
+    });
+}
+
 if (splashFsToggle) {
     splashFsToggle.addEventListener('change', (e) => {
         state.settings.fullscreen = e.target.checked;
@@ -2370,6 +2383,7 @@ if (settingsBtns.length > 0 && settingsPopup) {
             if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
             if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
             if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
+            if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
             syncAudioMixerUI(state.settings.audioMix);
             setAudioMixerOpen(false);
         });
@@ -2586,6 +2600,17 @@ if (mainDebugToggle) {
         state.settings.debug = e.target.checked;
         setDebugMode(state.settings.debug);
         if (splashDebugToggle) splashDebugToggle.checked = state.settings.debug;
+    });
+}
+
+if (mainNightVisionToggle) {
+    mainNightVisionToggle.addEventListener('change', (e) => {
+        state.settings.nightVision = e.target.checked;
+        localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
+        if (splashNightVisionToggle) splashNightVisionToggle.checked = state.settings.nightVision;
+        if (window.game) {
+            window.game.nightVision = state.settings.nightVision;
+        }
     });
 }
 
@@ -3153,6 +3178,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         mainTouchToggle.checked = !!state.settings.touchControls;
     }
 
+    const storedNightVision = localStorage.getItem('hunker_nightvision_enabled');
+    if (storedNightVision !== null) {
+        state.settings.nightVision = storedNightVision === 'true';
+    } else {
+        state.settings.nightVision = false;
+    }
+    if (splashNightVisionToggle) {
+        splashNightVisionToggle.checked = !!state.settings.nightVision;
+    }
+    if (mainNightVisionToggle) {
+        mainNightVisionToggle.checked = !!state.settings.nightVision;
+    }
+
     // Load audio manifest
     const manifest = {
         images: [
@@ -3287,6 +3325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 playerType: initialType,
                 bankManager
             });
+            window.game.nightVision = state.settings.nightVision;
         } catch (err) {
             console.error('[ThreeGame init failed]', err);
             const loadingScreen = document.getElementById('loading-screen');

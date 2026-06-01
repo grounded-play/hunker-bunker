@@ -35,6 +35,11 @@ const PLAYER_SPRITE_DIRECTION_CELLS = Object.freeze([
 ]);
 const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
 const TANK_FLIPPED_DIRECTION_INDICES = new Set([4]);
+// Twin-stick paper-doll: the body sprite is cut at the waist into two stacked
+// billboards. The bottom (legs) follows movement input; the top (torso/head)
+// rotates independently to track the aim/mouse. This is the fraction of the
+// frame height that belongs to the legs.
+const PLAYER_SPRITE_WAIST_SPLIT = 0.5;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
@@ -69,9 +74,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',   abilityLabel: 'SPRINT BURST',    abilityCooldown: 8,  abilityDuration: 1.5 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'fortify',  abilityLabel: 'FORTIFY',         abilityCooldown: 14, abilityDuration: 2.5 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'overclock',abilityLabel: 'FIELD OVERCLOCK', abilityCooldown: 18, abilityDuration: 6.0 }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -144,6 +149,9 @@ const FEATURE_MULTISHOT = true;
 // Anchor glow to the visible sprite and nudge slightly up-screen so the clear
 // pool reads around the body in the isometric camera.
 const PLAYER_GLOW_SCREEN_OFFSET = 0.28;
+const FOG_OF_WAR_CLEAR_RADIUS = 6.2;
+const FOG_OF_WAR_FADE_RADIUS = 4.2;
+const FOG_OF_WAR_MIN_VISIBILITY = 0.14;
 // Spawn a themed retaliation boss after each console build milestone (Note 6).
 const FEATURE_MILESTONE_BOSSES = true;
 // Weather system (Note 9): hard particle cap + per-state profiles. Profiles set
@@ -661,6 +669,7 @@ export class ThreeGame {
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
         this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
         this.hadNearDeath = false;
+        this.nightVision = false;
         this._initClassAbility();
 
         this.scale = {
@@ -729,6 +738,21 @@ export class ThreeGame {
                 (PLAYER_SPRITE_ROWS - 1 - defaultDirection.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
             );
         });
+
+        // Independent clones for the upper-body billboard. They share the source
+        // image but carry their own offset/repeat so the torso can aim one way
+        // while the legs walk another.
+        this.playerTorsoTextures = Object.fromEntries(
+            Object.entries(this.playerTextures).map(([type, texture]) => {
+                const torso = texture.clone();
+                torso.wrapS = THREE.RepeatWrapping;
+                torso.wrapT = THREE.RepeatWrapping;
+                torso.magFilter = THREE.NearestFilter;
+                torso.minFilter = THREE.NearestFilter;
+                torso.needsUpdate = true;
+                return [type, torso];
+            })
+        );
 
         this.floorMaterial = new THREE.MeshStandardMaterial({
             color: 0xffffff,
@@ -988,7 +1012,32 @@ export class ThreeGame {
                     transparent: true,
                     alphaTest: 0.12,
                     depthWrite: false,
-                    depthTest: true
+                    depthTest: true,
+                    fog: false
+                });
+                material.onBeforeCompile = (shader) => {
+                    shader.fragmentShader = shader.fragmentShader.replace(
+                        '#include <map_fragment>',
+                        `
+                        #ifdef USE_MAP
+                            vec4 mapTexel = texture2D( map, vMapUv );
+                            diffuseColor *= mapTexel;
+                        #endif
+                        `
+                    );
+                };
+                return [type, material];
+            })
+        );
+        this.playerTorsoMaterials = Object.fromEntries(
+            Object.entries(this.playerTorsoTextures).map(([type, texture]) => {
+                const material = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    alphaTest: 0.12,
+                    depthWrite: false,
+                    depthTest: true,
+                    fog: false
                 });
                 material.onBeforeCompile = (shader) => {
                     shader.fragmentShader = shader.fragmentShader.replace(
@@ -1296,6 +1345,12 @@ export class ThreeGame {
                 fog: false
             })
         };
+        for (const material of [
+            ...Object.values(this.scatterMaterials),
+            ...Object.values(this.scatterPlaneMaterials)
+        ]) {
+            material.fog = true;
+        }
 
         this.setupLighting();
         this.setupWorld();
@@ -1712,14 +1767,32 @@ export class ThreeGame {
         this.playerShadow.scale.set(1, 1, 0.7);
         this.player.add(this.playerShadow);
 
+        // Bottom half (legs) — follows movement input. Anchored at the feet and
+        // only as tall as the waist split; shows the lower portion of the frame.
+        const legsHeight = this.playerSpriteScale * PLAYER_SPRITE_WAIST_SPLIT;
+        const torsoHeight = this.playerSpriteScale * (1 - PLAYER_SPRITE_WAIST_SPLIT);
         this.playerSprite = new THREE.Sprite(this.playerMaterials[this.playerType] ?? this.playerMaterials.SCOUT);
         this.playerSprite.center.set(0.5, 0);
         this.playerSprite.position.x = this.playerSpriteLead;
         this.playerSprite.position.y = this.playerHeight;
         this.playerSprite.position.z = this.playerSpriteLead;
-        this.playerSprite.scale.set(this.playerSpriteScale, this.playerSpriteScale, 1);
+        this.playerSprite.scale.set(this.playerSpriteScale, legsHeight, 1);
         this.playerSprite.renderOrder = 5;
         this.player.add(this.playerSprite);
+
+        // Top half (torso/head) — aims independently at the mouse. Stacked
+        // directly on top of the legs so the two read as one body.
+        this.playerTorsoSprite = new THREE.Sprite(this.playerTorsoMaterials[this.playerType] ?? this.playerTorsoMaterials.SCOUT);
+        this.playerTorsoSprite.center.set(0.5, 0);
+        this.playerTorsoSprite.position.x = this.playerSpriteLead;
+        this.playerTorsoSprite.position.y = this.playerHeight + legsHeight;
+        this.playerTorsoSprite.position.z = this.playerSpriteLead;
+        this.playerTorsoSprite.scale.set(this.playerSpriteScale, torsoHeight, 1);
+        this.playerTorsoSprite.renderOrder = 6;
+        this.player.add(this.playerTorsoSprite);
+
+        // Legs face movement, torso faces aim — tracked separately.
+        this.torsoFacingRow = this.currentFacingRow;
 
         this.suitFillLight = new THREE.PointLight(
             PLAYER_COLORS[this.playerType] ?? 0xffffff,
@@ -2368,6 +2441,10 @@ export class ThreeGame {
         this._initClassAbility();
         this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
+        if (this.playerTorsoSprite) {
+            this.playerTorsoSprite.material = this.playerTorsoMaterials[type] ?? this.playerTorsoMaterials.SCOUT;
+            this.playerTorsoSprite.material.needsUpdate = true;
+        }
         this.playerMaterial.color.setHex(color);
         this.playerMaterial.emissive.setHex(color);
         this.playerGlow.color.setHex(color);
@@ -2470,7 +2547,11 @@ export class ThreeGame {
 
         this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
-        this.updatePlayerSpriteFrame(0, this.currentFacingRow);
+        if (this.playerTorsoSprite) {
+            this.playerTorsoSprite.material = this.playerTorsoMaterials[type] ?? this.playerTorsoMaterials.SCOUT;
+            this.playerTorsoSprite.material.needsUpdate = true;
+        }
+        this.updatePlayerSpriteFrame(0, this.currentFacingRow, this.torsoFacingRow);
     }
 
     createPlayerSpriteTexture(type, path, _textureLoader) {
@@ -3881,7 +3962,7 @@ export class ThreeGame {
                     alphaTest: 0.04,
                     depthWrite: false,
                     depthTest: true,
-                    fog: false
+                    fog: true
                 });
                 const sprite = new THREE.Sprite(mat);
                 sprite.center.set(0.5, 0);
@@ -4674,9 +4755,7 @@ export class ThreeGame {
         // Handle slow and poison status effects
         if (this.playerSlowTimer > 0) {
             this.playerSlowTimer = Math.max(0, this.playerSlowTimer - delta);
-            if (this.playerSprite?.material?.color) {
-                this.playerSprite.material.color.setHex(0x88ccff); // blue frost tint
-            }
+            this.tintPlayerSprites(0x88ccff); // blue frost tint
         } else if (this.playerPoisonTimer > 0) {
             const wasPoisoned = this.playerPoisonTimer > 0;
             this.playerPoisonTimer = Math.max(0, this.playerPoisonTimer - delta);
@@ -4685,16 +4764,14 @@ export class ThreeGame {
                 this.playerPoisonTickTimer = 0;
                 this.takeDamage(1, 'poison');
             }
-            if (this.playerSprite?.material?.color) {
-                this.playerSprite.material.color.setHex(0x88ff88); // green poison tint
-            }
+            this.tintPlayerSprites(0x88ff88); // green poison tint
             if (wasPoisoned && this.playerPoisonTimer <= 0) {
                 window.dispatchEvent(new CustomEvent('player-poison-cleared'));
             } else if (wasPoisoned) {
                 window.dispatchEvent(new CustomEvent('player-poisoned', { detail: { timeLeft: this.playerPoisonTimer } }));
             }
         } else if (this.playerSprite?.material?.color && this.playerSprite.material.color.getHex() !== 0xffffff) {
-            this.playerSprite.material.color.setHex(0xffffff);
+            this.tintPlayerSprites(0xffffff);
         }
 
         const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
@@ -4743,7 +4820,7 @@ export class ThreeGame {
             moveDirZ = this.aimDirZ || 0;
         }
 
-        this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
+        this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving, moveDirX, moveDirZ);
         // Keep night visibility centered on the player sprite under isometric camera.
         const spriteAnchorX = this.player.position.x + (this.playerSprite?.position.x ?? 0);
         const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position.z ?? 0);
@@ -4752,9 +4829,28 @@ export class ThreeGame {
             1.6,
             spriteAnchorZ + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
         );
+        // Beam always points where you're shooting; once aim releases it swings
+        // cleanly back to the actual travel heading (or holds the last facing
+        // when standing still). The smoothing lives in updatePlayerForwardLight.
         const spriteFacing = this.getWorldDirectionForFacingRow(this.currentFacingRow);
-        const lightDirX = this.hasActiveAim ? (this.aimDirX || spriteFacing.x) : spriteFacing.x;
-        const lightDirZ = this.hasActiveAim ? (this.aimDirZ || spriteFacing.z) : spriteFacing.z;
+        // Treat the aim as valid only when the vector isn't degenerate — testing
+        // each component with `||` would wrongly discard a legitimate 0 (e.g. a
+        // straight cardinal shot like {0,-1}), which left the demo beam pointing
+        // the wrong way.
+        const aimValid = this.hasActiveAim
+            && (Math.abs(this.aimDirX) > 1e-4 || Math.abs(this.aimDirZ) > 1e-4);
+        let lightDirX;
+        let lightDirZ;
+        if (aimValid) {
+            lightDirX = this.aimDirX;
+            lightDirZ = this.aimDirZ;
+        } else if (isMoving) {
+            lightDirX = moveDirX;
+            lightDirZ = moveDirZ;
+        } else {
+            lightDirX = spriteFacing.x;
+            lightDirZ = spriteFacing.z;
+        }
         this.updatePlayerForwardLight(delta, { directionX: lightDirX, directionZ: lightDirZ });
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
         if (this.isPositionInPuddle(this.player.position.x, this.player.position.z)) {
@@ -5091,11 +5187,11 @@ export class ThreeGame {
         const day = this.getDayFactor();
         const lerp = THREE.MathUtils.lerp;
         // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
-        const dayBlend = THREE.MathUtils.smoothstep(day, 0.1, 0.9);
+        const dayBlend = this.nightVision ? 1.0 : THREE.MathUtils.smoothstep(day, 0.1, 0.9);
         this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.62, 1.0, dayBlend);
         this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.45, 1.0, dayBlend);
         this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, dayBlend);
-        const weatherLightMult = this.weather?.lightMult ?? 1;
+        const weatherLightMult = this.nightVision ? 1.0 : (this.weather?.lightMult ?? 1);
         if (weatherLightMult !== 1) {
             this.ambientLight.intensity *= weatherLightMult;
             this.directionalLight.intensity *= Math.max(0.6, weatherLightMult - 0.05);
@@ -5103,8 +5199,8 @@ export class ThreeGame {
         }
         // Player's own glow matters a little more in the dark.
         if (this.playerGlow) {
-            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.55, 1.12, dayBlend);
-            this.playerGlow.distance = lerp(13.5, 10.8, dayBlend);
+            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(2.6, 1.12, dayBlend);
+            this.playerGlow.distance = lerp(16.5, 10.8, dayBlend);
             this.playerGlow.decay = lerp(1.35, 1.7, dayBlend);
         }
         if (this.suitFillLight) {
@@ -5123,7 +5219,7 @@ export class ThreeGame {
             this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(1.15, 0.42, dayBlend);
         }
         if (this.playerLightPool?.material) {
-            this.playerLightPool.material.opacity = SUIT_LOCAL_LIGHT_POOL_OPACITY * lerp(1.2, 0.48, dayBlend);
+            this.playerLightPool.material.opacity = SUIT_LOCAL_LIGHT_POOL_OPACITY * lerp(1.85, 0.48, dayBlend);
         }
         if (this.playerEmitterGlow?.material) {
             this.playerEmitterGlow.material.opacity = 0.58 * lerp(1.16, 0.46, dayBlend);
@@ -5131,20 +5227,20 @@ export class ThreeGame {
 
         // Fog eases in at night (color stays under biome control; only the range
         // is touched here). Keep the far plane close enough to remain visible.
-        this.scene.fog.near = lerp(this.baseFogRange.near * 0.75, this.baseFogRange.near * 1.05, dayBlend);
-        this.scene.fog.far = lerp(this.baseFogRange.far * 0.72, this.baseFogRange.far * 1.25, dayBlend);
+        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.75, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.72, this.baseFogRange.far * 1.25, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
-        const wMult = this.weather?.fogFarMult ?? 1;
+        const wMult = this.nightVision ? 1 : (this.weather?.fogFarMult ?? 1);
         if (wMult !== 1) {
             this.scene.fog.far *= wMult;
             this.scene.fog.near *= Math.max(0.7, wMult);
         }
 
         // Radial darkness around the player. Darkest at night and in heavy weather.
-        const weatherDark = (1 - wMult) * 0.6;
-        const darkAlpha = THREE.MathUtils.clamp(lerp(0.44, 0.02, dayBlend) + weatherDark, 0, 0.72);
+        const weatherDark = this.nightVision ? 0 : ((1 - wMult) * 0.6);
+        const darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.44, 0.02, dayBlend) + weatherDark, 0, 0.72);
         this.updatePlayerDarkness(darkAlpha);
     }
 
@@ -5161,7 +5257,7 @@ export class ThreeGame {
             this._playerForwardDirTarget.set(targetX, targetZ);
         }
 
-        const blend = immediate ? 1 : THREE.MathUtils.clamp(delta * 12, 0.08, 0.5);
+        const blend = immediate ? 1 : THREE.MathUtils.clamp(delta * 16, 0.1, 0.6);
         this.playerForwardDir.lerp(this._playerForwardDirTarget, blend);
         const length = this.playerForwardDir.length();
         if (length <= 0.0001) {
@@ -5219,6 +5315,7 @@ export class ThreeGame {
                 const angle = rimAngles[i];
                 const vi = (i + 1) * 3;
                 array[vi] = Math.sin(angle) * SUIT_CONE_VISUAL_DISTANCE;
+                array[vi + 1] = 0;
                 array[vi + 2] = Math.cos(angle) * SUIT_CONE_VISUAL_DISTANCE;
             }
             attr.needsUpdate = true;
@@ -5245,6 +5342,7 @@ export class ThreeGame {
             // Rim stays in the cone's local frame (apex forward = +Z); the mesh
             // rotation already orients it, so only the local angle is used here.
             array[vi] = Math.sin(angle) * dist;
+            array[vi + 1] = hit ? (this.wallHeight - 0.2) : 0;
             array[vi + 2] = Math.cos(angle) * dist;
         }
         attr.needsUpdate = true;
@@ -5281,6 +5379,77 @@ export class ThreeGame {
             `rgba(${r},${g},${b},${(alpha * 0.22).toFixed(3)}) 62%,` +
             `rgba(${r},${g},${b},${alpha.toFixed(3)}) 100%)`;
         overlay.style.opacity = alpha > 0.02 ? '1' : '0';
+    }
+
+    hasWallBetween(x1, z1, x2, z2) {
+        if (this.wallMeshes.length === 0) return false;
+
+        const origin = new THREE.Vector3(x1, SUIT_LIGHT_EMITTER_HEIGHT, z1);
+        const target = new THREE.Vector3(x2, SUIT_LIGHT_EMITTER_HEIGHT, z2);
+        const direction = target.clone().sub(origin);
+        const distance = direction.length();
+        if (distance <= 0.1) return false;
+
+        direction.normalize();
+        this._lightOcclusionRaycaster.set(origin, direction);
+        this._lightOcclusionRaycaster.far = distance;
+
+        const hits = this._lightOcclusionRaycaster.intersectObjects(this.wallMeshes, false);
+        return hits.length > 0;
+    }
+
+    getFogOfWarVisibility(x, z) {
+        if (!this.player || this.nightVision) return 1;
+        const distance = Math.hypot(x - this.player.position.x, z - this.player.position.z);
+        if (distance <= 0.001) return 1;
+
+        // 1. Ambient radial visibility around player
+        const fadeStart = FOG_OF_WAR_CLEAR_RADIUS;
+        const fadeEnd = FOG_OF_WAR_CLEAR_RADIUS + FOG_OF_WAR_FADE_RADIUS;
+        let ambientVis = FOG_OF_WAR_MIN_VISIBILITY;
+        if (distance <= fadeStart) {
+            ambientVis = 1;
+        } else if (distance < fadeEnd) {
+            const t = (distance - fadeStart) / Math.max(0.001, fadeEnd - fadeStart);
+            ambientVis = THREE.MathUtils.lerp(1, FOG_OF_WAR_MIN_VISIBILITY, t * t * (3 - 2 * t));
+        }
+
+        // 2. Flashlight cone visibility
+        let flashlightVis = 0;
+        if (distance <= SUIT_CONE_LIGHT_DISTANCE) {
+            const dx = x - this.player.position.x;
+            const dz = z - this.player.position.z;
+            const dot = (dx * this.playerForwardDir.x + dz * this.playerForwardDir.y) / distance;
+            const cosLimit = Math.cos(SUIT_CONE_LIGHT_ANGLE);
+            if (dot >= cosLimit) {
+                // Check if blocked by walls
+                if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
+                    const edgeFade = THREE.MathUtils.smoothstep(dot, cosLimit, cosLimit + 0.12);
+                    const distanceFade = 1.0 - THREE.MathUtils.smoothstep(distance, SUIT_CONE_LIGHT_DISTANCE * 0.72, SUIT_CONE_LIGHT_DISTANCE);
+                    flashlightVis = edgeFade * distanceFade;
+                }
+            }
+        }
+
+        return Math.min(1, Math.max(ambientVis, flashlightVis));
+    }
+
+    applyFogOfWarOpacity(object, visibility, { captureCurrent = false } = {}) {
+        object?.traverse?.((child) => {
+            const material = child.material;
+            if (!material) return;
+            const materials = Array.isArray(material) ? material : [material];
+            for (const mat of materials) {
+                if (!mat) continue;
+                const previousVisibility = mat.userData.fogVisibility ?? 1;
+                const baseOpacity = captureCurrent
+                    ? (mat.opacity ?? 1)
+                    : (mat.opacity ?? 1) / Math.max(0.001, previousVisibility);
+                mat.transparent = true;
+                mat.opacity = baseOpacity * visibility;
+                mat.userData.fogVisibility = visibility;
+            }
+        });
     }
 
     // ── Weather (Note 9) ──────────────────────────────────────────
@@ -5520,7 +5689,7 @@ export class ThreeGame {
                 depthWrite: false,
                 depthTest: true,
                 side: THREE.DoubleSide,
-                fog: false
+                fog: true
             });
             if (this.currentBiomeKey === BIOME_KEYS.BIO) {
                 mat.color.setHex(0x707a70);
@@ -5698,12 +5867,37 @@ export class ThreeGame {
         };
     }
 
-    updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving) {
+    updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving, moveDirX = 0, moveDirZ = 0) {
+        const aiming = this.hasActiveAim;
+        // Upper body tracks the aim whenever the player is aiming.
+        if (aiming) {
+            this.torsoFacingRow = this.aimFacingRow;
+        }
+
         if (isMoving) {
-            this.currentFacingRow = this.getFacingRow(axisX, axisZ);
-            this.animationTimer += delta * SPRITE_ANIMATION_SPEED;
-            const column = Math.floor(this.animationTimer) % PLAYER_WALK_FRAME_COUNT;
-            this.updatePlayerSpriteFrame(column, this.currentFacingRow);
+            // Back-pedalling = moving roughly opposite to where the shot points,
+            // in any direction (down vs up, left vs right). In that case the legs
+            // face the aim and the walk cycle runs in reverse, so it reads as
+            // running backwards. Otherwise the legs face the travel heading and
+            // step forward normally.
+            let backpedal = false;
+            if (aiming) {
+                const aimLen = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
+                const dot = (moveDirX * this.aimDirX + moveDirZ * this.aimDirZ) / aimLen;
+                backpedal = dot < -0.3;
+            }
+            this.currentFacingRow = backpedal
+                ? this.aimFacingRow
+                : this.getFacingRow(axisX, axisZ);
+            if (!aiming) {
+                this.torsoFacingRow = this.currentFacingRow;
+            }
+
+            const dir = backpedal ? -1 : 1;
+            this.animationTimer += delta * SPRITE_ANIMATION_SPEED * dir;
+            const frames = PLAYER_WALK_FRAME_COUNT;
+            const column = ((Math.floor(this.animationTimer) % frames) + frames) % frames;
+            this.updatePlayerSpriteFrame(column, this.currentFacingRow, this.torsoFacingRow);
 
             if (this.lastAnimationColumn === undefined) {
                 this.lastAnimationColumn = -1;
@@ -5721,10 +5915,15 @@ export class ThreeGame {
 
         this.animationTimer = 0;
         this.lastAnimationColumn = -1;
-        if (this.hasActiveAim) {
+        if (aiming) {
+            // Standing still and aiming: the whole body turns to face the shot.
             this.currentFacingRow = this.aimFacingRow;
+            this.torsoFacingRow = this.aimFacingRow;
+        } else {
+            // Idle without aim: the torso settles back in line with the body.
+            this.torsoFacingRow = this.currentFacingRow;
         }
-        this.updatePlayerSpriteFrame(0, this.currentFacingRow);
+        this.updatePlayerSpriteFrame(0, this.currentFacingRow, this.torsoFacingRow);
     }
 
     getFacingRow(axisX, axisZ) {
@@ -5733,18 +5932,44 @@ export class ThreeGame {
         return (octant + PLAYER_SPRITE_DIRECTION_CELLS.length) % PLAYER_SPRITE_DIRECTION_CELLS.length;
     }
 
-    updatePlayerSpriteFrame(column, row) {
-        const texture = this.playerTextures[this.playerType] ?? this.playerTextures.SCOUT;
+    // Keeps the legs and torso billboards visually identical under status tints.
+    tintPlayerSprites(hex) {
+        if (this.playerSprite?.material?.color) {
+            this.playerSprite.material.color.setHex(hex);
+        }
+        if (this.playerTorsoSprite?.material?.color) {
+            this.playerTorsoSprite.material.color.setHex(hex);
+        }
+    }
+
+    updatePlayerSpriteFrame(column, legsRow, torsoRow = legsRow) {
+        const legsTexture = this.playerTextures[this.playerType] ?? this.playerTextures.SCOUT;
+        this.setSpriteHalfFrame(legsTexture, column, legsRow, 'bottom');
+        const torsoTexture = this.playerTorsoTextures?.[this.playerType] ?? this.playerTorsoTextures?.SCOUT;
+        if (torsoTexture) {
+            this.setSpriteHalfFrame(torsoTexture, column, torsoRow, 'top');
+        }
+    }
+
+    // Points a texture at one vertical half of a single direction/walk frame.
+    // `half` is 'bottom' (legs) or 'top' (torso) of the waist split.
+    setSpriteHalfFrame(texture, column, row, half) {
         const directionCell = PLAYER_SPRITE_DIRECTION_CELLS[row] ?? PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
         const frameColumn = directionCell.baseColumn + (column % PLAYER_WALK_FRAME_COUNT);
         const shouldFlipX = this.playerType === 'TANK' && TANK_FLIPPED_DIRECTION_INDICES.has(row);
+        const frameBaseY = (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y;
+        const isTop = half === 'top';
+        // Texture V increases upward, so the torso band sits above the leg band.
+        const bandFraction = isTop ? (1 - PLAYER_SPRITE_WAIST_SPLIT) : PLAYER_SPRITE_WAIST_SPLIT;
+        const bandHeight = PLAYER_SPRITE_FRAME_REPEAT_Y * bandFraction;
+        const bandOffsetY = frameBaseY + (isTop ? PLAYER_SPRITE_FRAME_REPEAT_Y * PLAYER_SPRITE_WAIST_SPLIT : 0);
         texture.repeat.set(
             PLAYER_SPRITE_FRAME_REPEAT_X * (shouldFlipX ? -1 : 1),
-            PLAYER_SPRITE_FRAME_REPEAT_Y
+            bandHeight
         );
         texture.offset.set(
             (frameColumn + (shouldFlipX ? 1 : 0)) * PLAYER_SPRITE_FRAME_REPEAT_X,
-            (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
+            bandOffsetY
         );
     }
 
@@ -7859,7 +8084,47 @@ export class ThreeGame {
             startZ
         );
         root.add(body);
+        root.userData.fogMaterials = this.cloneMaterialsForFogOfWar(root);
         return root;
+    }
+
+    cloneMaterialsForFogOfWar(root) {
+        const materials = new Set();
+        root.traverse((child) => {
+            if (!child.material) return;
+            if (Array.isArray(child.material)) {
+                child.material = child.material.map((mat) => {
+                    const clone = mat.clone();
+                    clone.transparent = true;
+                    clone.userData.fogBaseOpacity = clone.opacity ?? 1;
+                    materials.add(clone);
+                    return clone;
+                });
+                return;
+            }
+            child.material = child.material.clone();
+            child.material.transparent = true;
+            child.material.userData.fogBaseOpacity = child.material.opacity ?? 1;
+            materials.add(child.material);
+        });
+        return materials;
+    }
+
+    resetPickupCoreOpacityForFog(pickup) {
+        const dynamicObjects = new Set([
+            pickup.userData.shadow,
+            pickup.userData.glow,
+            pickup.userData.burst
+        ]);
+        pickup.userData.body?.traverse?.((child) => {
+            if (dynamicObjects.has(child) || !child.material) return;
+            const materials = Array.isArray(child.material) ? child.material : [child.material];
+            for (const mat of materials) {
+                if (mat?.userData.fogBaseOpacity !== undefined) {
+                    mat.opacity = mat.userData.fogBaseOpacity;
+                }
+            }
+        });
     }
 
     createHealthPickupMesh() {
@@ -8006,6 +8271,12 @@ export class ThreeGame {
                     pickup.position.y = pickup.userData.baseY;
                 }
 
+                this.resetPickupCoreOpacityForFog(pickup);
+                this.applyFogOfWarOpacity(
+                    pickup,
+                    this.getFogOfWarVisibility(pickup.position.x, pickup.position.z),
+                    { captureCurrent: true }
+                );
                 continue;
             }
 
@@ -8080,6 +8351,12 @@ export class ThreeGame {
                     removals.push(pickup);
                 }
 
+                this.resetPickupCoreOpacityForFog(pickup);
+                this.applyFogOfWarOpacity(
+                    pickup,
+                    this.getFogOfWarVisibility(pickup.position.x, pickup.position.z),
+                    { captureCurrent: true }
+                );
                 continue;
             }
 
@@ -8118,6 +8395,10 @@ export class ThreeGame {
                 burst.material.opacity = 0;
                 burst.scale.setScalar(0.2);
             }
+
+            const fogVisibility = this.getFogOfWarVisibility(pickup.position.x, pickup.position.z);
+            this.resetPickupCoreOpacityForFog(pickup);
+            this.applyFogOfWarOpacity(pickup, fogVisibility, { captureCurrent: true });
         }
 
         for (const pickup of removals) {
@@ -8127,6 +8408,7 @@ export class ThreeGame {
             pickup.userData.glow?.geometry?.dispose?.();
             pickup.userData.burst?.material?.dispose?.();
             pickup.userData.burst?.geometry?.dispose?.();
+            pickup.userData.fogMaterials?.forEach((material) => material.dispose?.());
             pickup.parent?.remove(pickup);
         }
     }
@@ -9112,6 +9394,9 @@ export class ThreeGame {
         for (const child of this.scatterSprites) {
             const baseY = child.userData.elevationOffset ?? 0;
             child.userData.baseY = baseY;
+            if (!child.userData.burstTriggered && child.material) {
+                child.material.opacity = child.userData.baseOpacity ?? 1;
+            }
             if (child.userData.type.startsWith('bio_spores')) {
                 const phase = child.userData.phase;
                 const drift = Math.sin(time * 0.75 + phase) * 0.16;
@@ -9204,6 +9489,9 @@ export class ThreeGame {
                     }
                 }
             }
+
+            const fogVisibility = this.getFogOfWarVisibility(child.position.x, child.position.z);
+            this.applyFogOfWarOpacity(child, fogVisibility, { captureCurrent: true });
 
             if (
                 child.userData.type.startsWith('bunker_junk') &&
@@ -9385,6 +9673,13 @@ export class ThreeGame {
                 } else {
                     effect.update(delta);
                 }
+                if (effect.mesh) {
+                    this.applyFogOfWarOpacity(
+                        effect.mesh,
+                        this.getFogOfWarVisibility(effect.mesh.position.x, effect.mesh.position.z),
+                        { captureCurrent: true }
+                    );
+                }
                 const maxAge = effect.duration ?? effect.maxAge ?? Infinity;
                 if (effect.age >= maxAge) removals.push(effect);
                 continue;
@@ -9410,6 +9705,12 @@ export class ThreeGame {
                     child.material.opacity = (1 - t) * 0.45;
                 }
             }
+
+            this.applyFogOfWarOpacity(
+                effect,
+                this.getFogOfWarVisibility(effect.position.x, effect.position.z),
+                { captureCurrent: true }
+            );
 
             if (t >= 1) {
                 removals.push(effect);
@@ -9882,6 +10183,8 @@ export class ThreeGame {
         this.darknessOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
+        Object.values(this.playerTorsoMaterials ?? {}).forEach((material) => material.dispose());
+        Object.values(this.playerTorsoTextures ?? {}).forEach((texture) => texture.dispose());
         Object.values(this.biomeTerrainTextures ?? {}).forEach((textureSet) => {
             Object.values(textureSet ?? {}).forEach((texture) => texture?.dispose?.());
         });
