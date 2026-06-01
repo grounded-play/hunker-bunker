@@ -252,6 +252,15 @@ export class DialogueManager {
         if (!this.activeTutorialRunId) return;
         this.activeTutorialRunId = 0;
         this.hideTutorialPrompt();
+
+        // Clean up any potential focus pulses
+        document.getElementById('vitals-panel')?.classList.remove('tutorial-focus-pulse');
+        document.getElementById('pickup-counter-panel')?.classList.remove('tutorial-focus-pulse');
+        document.getElementById('weapon-status-panel')?.classList.remove('tutorial-focus-pulse');
+        document.querySelector('.touch-move-control__compass-face')?.classList.remove('tutorial-focus-pulse');
+        document.getElementById('console-hud-prompt')?.classList.remove('tutorial-focus-pulse');
+        document.getElementById('terminal-deposit-all')?.classList.remove('tutorial-focus-pulse');
+        document.getElementById('o2-generator-section')?.classList.remove('tutorial-focus-pulse');
     }
 
     async closeDialogue(runId) {

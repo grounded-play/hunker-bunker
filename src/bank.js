@@ -1,5 +1,49 @@
 const STORAGE_KEY = 'hb_bank';
-const BANK_SCHEMA_VERSION = 2;
+const BANK_SCHEMA_VERSION = 3;
+
+// Weapon skill tree ("COMBAT MATRIX"). Levels are 0..maxLevel; costs[level] is the
+// price to advance FROM that level. Effects are applied in threeGame at run init.
+export const WEAPON_UPGRADE_ORDER = Object.freeze([
+    'ammoCapacity',
+    'shotSpeed',
+    'shotDamage',
+    'shotAmount'
+]);
+
+export const WEAPON_UPGRADES_CONFIG = Object.freeze({
+    ammoCapacity: Object.freeze({
+        key: 'ammoCapacity',
+        label: 'MAGAZINE CAPACITY',
+        maxLevel: 3,
+        desc: Object.freeze(['Clip +2 rounds', 'Clip +4 rounds', 'Clip +6 rounds']),
+        costs: Object.freeze([{ tech: 30, coin: 10 }, { tech: 60, coin: 20 }, { tech: 100, coin: 35 }])
+    }),
+    shotSpeed: Object.freeze({
+        key: 'shotSpeed',
+        label: 'PROJECTILE VELOCITY',
+        maxLevel: 3,
+        desc: Object.freeze(['Shot speed +1', 'Shot speed +2', 'Shot speed +3']),
+        costs: Object.freeze([{ tech: 25, coin: 8 }, { tech: 50, coin: 15 }, { tech: 90, coin: 30 }])
+    }),
+    shotDamage: Object.freeze({
+        key: 'shotDamage',
+        label: 'BALLISTIC PAYLOAD',
+        maxLevel: 2,
+        desc: Object.freeze(['+1 shot damage', '+2 shot damage']),
+        costs: Object.freeze([{ tech: 80, coin: 25 }, { tech: 160, coin: 60 }])
+    }),
+    shotAmount: Object.freeze({
+        key: 'shotAmount',
+        label: 'BURST INJECTORS',
+        maxLevel: 2,
+        desc: Object.freeze(['Double-shot spread', 'Triple-shot spread']),
+        costs: Object.freeze([{ tech: 120, coin: 50 }, { tech: 250, coin: 100 }])
+    })
+});
+
+function createDefaultWeaponUpgrades() {
+    return { ammoCapacity: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0 };
+}
 
 export const GOAL_ORDER = Object.freeze([
     'o2Bubble',
@@ -51,12 +95,15 @@ export const TIER2_UPGRADE_ORDER = Object.freeze([
 ]);
 
 export const TIER2_UPGRADE_CONFIGS = Object.freeze({
+    // Reframed as the "Space Heater" cold-mitigation build (Note 5). Available
+    // early (after the O₂ bubble) so players can push into CRYO; the storage key
+    // stays `suitThermal` to preserve save compatibility (no schema bump).
     suitThermal: Object.freeze({
         key: 'suitThermal',
-        label: 'SUIT THERMAL COATING',
-        desc: 'Reduces O₂ drain in CRYO sector by 50%.',
-        cost: Object.freeze({ tech: 80, coin: 15 }),
-        prereq: 'reactorCompressor'
+        label: 'SPACE HEATER',
+        desc: 'Deploys a thermal heater that nearly eliminates O₂ drain in the CRYO sector.',
+        cost: Object.freeze({ tech: 60, coin: 12 }),
+        prereq: 'o2Bubble'
     }),
     deconFilters: Object.freeze({
         key: 'deconFilters',
@@ -98,7 +145,8 @@ function createDefaultState() {
             suitThermal: false,
             deconFilters: false,
             stimCache: false
-        }
+        },
+        weaponUpgrades: createDefaultWeaponUpgrades()
     };
 }
 
@@ -114,6 +162,13 @@ function migrateBank(raw) {
             raw.tier2Unlocks = { suitThermal: false, deconFilters: false, stimCache: false };
         }
         raw.schemaVersion = 2;
+    }
+    if (version < 3) {
+        // v2 → v3: add weaponUpgrades object with zero defaults
+        if (!raw.weaponUpgrades || typeof raw.weaponUpgrades !== 'object') {
+            raw.weaponUpgrades = createDefaultWeaponUpgrades();
+        }
+        raw.schemaVersion = 3;
     }
     return raw;
 }
@@ -174,6 +229,14 @@ function toSerializableState(raw) {
         }
     }
 
+    // Weapon upgrades (clamped 0..maxLevel per key)
+    if (raw.weaponUpgrades && typeof raw.weaponUpgrades === 'object') {
+        for (const key of WEAPON_UPGRADE_ORDER) {
+            const max = WEAPON_UPGRADES_CONFIG[key].maxLevel;
+            base.weaponUpgrades[key] = Math.min(max, clampCount(raw.weaponUpgrades[key]));
+        }
+    }
+
     return base;
 }
 
@@ -190,6 +253,9 @@ function cloneState(state) {
         },
         tier2Unlocks: {
             ...(state.tier2Unlocks ?? { suitThermal: false, deconFilters: false, stimCache: false })
+        },
+        weaponUpgrades: {
+            ...(state.weaponUpgrades ?? createDefaultWeaponUpgrades())
         }
     };
 }
@@ -410,6 +476,46 @@ export class BankManager {
         this.state.tier2Unlocks[key] = true;
         this.save();
         emit('tier2-unlocked', { key, unlocks: this.getTier2Unlocks(), bank: this.getState() });
+        return true;
+    }
+
+    getWeaponUpgrades() {
+        return { ...(this.state.weaponUpgrades ?? createDefaultWeaponUpgrades()) };
+    }
+
+    getWeaponUpgradeLevel(key) {
+        return clampCount(this.state.weaponUpgrades?.[key]);
+    }
+
+    getWeaponUpgradeNextCost(key) {
+        const cfg = WEAPON_UPGRADES_CONFIG[key];
+        if (!cfg) return null;
+        const level = this.getWeaponUpgradeLevel(key);
+        if (level >= cfg.maxLevel) return null;
+        return cfg.costs[level] ?? null;
+    }
+
+    canUpgradeWeapon(key) {
+        const cost = this.getWeaponUpgradeNextCost(key);
+        if (!cost) return false;
+        return this.canAfford(cost);
+    }
+
+    upgradeWeapon(key) {
+        const cfg = WEAPON_UPGRADES_CONFIG[key];
+        if (!cfg) return false;
+        const cost = this.getWeaponUpgradeNextCost(key);
+        if (!cost) return false;
+        if (!this.spend(cost)) return false;
+        if (!this.state.weaponUpgrades) this.state.weaponUpgrades = createDefaultWeaponUpgrades();
+        this.state.weaponUpgrades[key] = this.getWeaponUpgradeLevel(key) + 1;
+        this.save();
+        emit('weapon-upgraded', {
+            key,
+            level: this.state.weaponUpgrades[key],
+            weaponUpgrades: this.getWeaponUpgrades(),
+            bank: this.getState()
+        });
         return true;
     }
 

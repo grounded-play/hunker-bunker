@@ -118,7 +118,7 @@ body {
   border: 1px solid var(--border-subtle);
   color: var(--text-muted);
   font-family: monospace;
-  font-size: 14px;
+  font-size: var(--font-xs);
   width: 28px;
   height: 28px;
   border-radius: 4px;
@@ -202,10 +202,18 @@ body {
 }
 
 .loader-status {
+  font-family: 'Space Mono', monospace;
   font-size: var(--font-xs);
-  color: var(--text-muted);
+  color: var(--accent-secondary);
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  text-align: center;
+  min-height: calc(var(--vu) * 12.5);
+  margin-top: calc(var(--vu) * 2.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: calc(var(--vu) * 0.4);
 }
 
 /* --- Tactical Door Transition --- */
@@ -1032,13 +1040,17 @@ body {
 }
 
 .char-best-score {
+  font-family: 'Outfit', sans-serif;
   font-size: var(--font-xs);
-  color: rgba(255, 204, 0, 0.75);
+  color: var(--accent-primary);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-  margin-top: 2px;
+  letter-spacing: 0.06em;
+  margin-top: 6px;
   display: block;
   min-height: 1em;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 159, 28, 0.35);
+  text-transform: uppercase;
 }
 
 /* --- Initialization Anchor --- */
@@ -2189,7 +2201,7 @@ input:checked+.slider:before {
 }
 
 .lock-icon {
-  font-size: 60px;
+  font-size: var(--font-xl);
   margin-bottom: 20px;
   animation: rotate-hint 2s infinite ease-in-out;
 }
@@ -3166,7 +3178,7 @@ body.distress-mode #game-viewport::after {
     --touch-compass-size: calc(var(--touch-pad-size) * 0.8);
     --touch-compass-text-size: clamp(9px, 1.6vmin, 12px);
     --touch-pad-gap: clamp(4px, 0.7vmin, 8px);
-    --touch-pad-offset-x: calc(env(safe-area-inset-left, 0px) + clamp(10px, 2vmin, 18px));
+    --touch-pad-offset-x: calc(env(safe-area-inset-left, 0px) + clamp(0px, 1.1vmin, 8px));
     --touch-pad-offset-y: calc(env(safe-area-inset-bottom, 0px) + clamp(10px, 2vmin, 18px));
     --touch-pad-label-size: clamp(11px, 1.9vmin, 16px);
   }
@@ -4110,18 +4122,21 @@ body.mission-intro-active #game-container {
   position: absolute;
   top: calc(var(--vu) * 30);
   right: calc(var(--vu) * 4);
-  border: 1px solid rgba(255, 200, 50, 0.45);
-  border-radius: 6px;
-  background: rgba(8, 13, 18, 0.85);
-  box-shadow: 0 0 12px rgba(255, 180, 0, 0.1);
+  border: 1.5px solid rgba(255, 200, 50, 0.75);
+  border-radius: 8px;
+  background: rgba(11, 13, 15, 0.92);
+  box-shadow:
+    0 0 18px rgba(255, 180, 0, 0.18),
+    inset 0 0 8px rgba(255, 180, 0, 0.08);
   display: flex;
   align-items: center;
-  gap: calc(var(--vu) * 1.2);
-  padding: calc(var(--vu) * 0.9) calc(var(--vu) * 1.8);
+  gap: calc(var(--vu) * 1.5);
+  padding: calc(var(--vu) * 1.1) calc(var(--vu) * 2.2);
   z-index: 12070;
+  font-family: 'Outfit', sans-serif;
   font-size: var(--font-xs);
-  color: rgba(255, 200, 50, 0.9);
-  letter-spacing: 0.06em;
+  color: rgba(255, 200, 50, 0.95);
+  letter-spacing: 1.2px;
   pointer-events: auto;
   cursor: pointer;
 }
@@ -4129,8 +4144,26 @@ body.mission-intro-active #game-container {
 .mission-progress-hud.hidden { display: none !important; }
 
 .mission-progress-hud__icon {
-  color: rgba(255, 200, 50, 0.6);
-  font-size: calc(var(--vu) * 1.2);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-xs);
+  font-weight: 900;
+  color: rgba(255, 200, 50, 0.95);
+  border: 1px solid rgba(255, 200, 50, 0.45);
+  border-radius: 4px;
+  min-width: calc(var(--vu) * 7.3);
+  text-align: center;
+  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 0.9);
+  letter-spacing: 1px;
+}
+
+.mission-progress-hud__text {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #fff;
+  text-transform: uppercase;
+  line-height: 1.35;
 }
 
 .biome-hud-prompt {
@@ -4166,7 +4199,7 @@ body.mission-intro-active #game-container {
 
 .biome-hud-prompt__icon {
   font-family: 'Outfit', sans-serif;
-  font-size: calc(var(--vu) * 1.85);
+  font-size: var(--font-xs);
   font-weight: 900;
   letter-spacing: 1px;
   border: 1px solid rgba(158, 224, 255, 0.75);
@@ -4285,94 +4318,218 @@ body.mission-intro-active #game-container {
   }
 }
 
-/* Holographic Terminal Modal */
+/* Archive UI */
 .start-btn--archive {
-  background: rgba(0, 200, 180, 0.06) !important;
-  border-color: rgba(0, 200, 180, 0.35) !important;
-  color: rgba(0, 200, 180, 0.85) !important;
+  background: linear-gradient(180deg, rgba(255, 159, 28, 0.14) 0%, rgba(255, 159, 28, 0.06) 100%) !important;
+  border: 1px solid rgba(255, 159, 28, 0.46) !important;
+  color: #ffd79a !important;
+  box-shadow:
+    0 4px 0 rgba(136, 82, 18, 0.88),
+    inset 0 0 0 1px rgba(255, 220, 170, 0.1) !important;
   margin-top: calc(var(--vu) * 0.6);
   font-size: calc(var(--vu) * 1.2) !important;
 }
 
 .start-btn--archive:hover {
-  background: rgba(0, 200, 180, 0.15) !important;
-  border-color: rgba(0, 200, 180, 0.7) !important;
+  background: linear-gradient(180deg, rgba(255, 159, 28, 0.25) 0%, rgba(255, 159, 28, 0.12) 100%) !important;
+  border-color: rgba(255, 193, 96, 0.8) !important;
+  color: #ffefcc !important;
 }
 
 .archive-modal-content {
-  background: rgba(6, 10, 14, 0.97) !important;
-  border: 1.5px solid rgba(0, 200, 180, 0.5) !important;
-  box-shadow: 0 0 30px rgba(0, 200, 180, 0.15) !important;
-  width: min(calc(var(--vu) * 120), 92vw) !important;
-  max-height: 85vh !important;
+  --archive-glow-rgb: 255, 159, 28;
+  background:
+    linear-gradient(180deg, rgba(255, 159, 28, 0.07) 0%, rgba(255, 159, 28, 0) 24%),
+    radial-gradient(circle at 86% -18%, rgba(46, 196, 182, 0.1), transparent 45%),
+    rgba(8, 10, 12, 0.97) !important;
+  border: 1.5px solid rgba(var(--archive-glow-rgb), 0.52) !important;
+  box-shadow:
+    0 0 34px rgba(var(--archive-glow-rgb), 0.2),
+    0 0 60px rgba(46, 196, 182, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04) !important;
+  width: min(calc(var(--vu) * 112), calc(100% - clamp(18px, 2.6vw, 34px))) !important;
+  height: min(calc(var(--vu) * 86), calc(100% - clamp(24px, 4vh, 52px))) !important;
+  max-height: calc(100% - clamp(24px, 4vh, 52px)) !important;
   border-radius: 12px;
-  padding: calc(var(--vu) * 3) !important;
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--vu) * 1.8);
+  padding: calc(var(--vu) * 1.05) calc(var(--vu) * 3.2) calc(var(--vu) * 3.2) !important;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: calc(var(--vu) * 1.4);
   overflow: hidden;
   position: relative;
+  min-height: 0;
+}
+
+.archive-modal-content::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border: 1px solid rgba(255, 224, 181, 0.06);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.archive-modal-content > * {
+  position: relative;
+  z-index: 2;
+}
+
+.archive-modal-content .close-modal {
+  border-color: rgba(var(--archive-glow-rgb), 0.48);
+  background: rgba(var(--archive-glow-rgb), 0.08);
+  color: rgba(255, 225, 177, 0.95);
+}
+
+.archive-modal-content .close-modal:hover {
+  border-color: rgba(var(--archive-glow-rgb), 0.82);
+  background: rgba(var(--archive-glow-rgb), 0.2);
+  color: #fff1da;
+}
+
+#close-archive-modal {
+  top: calc(var(--vu) * 1.15);
+  right: calc(var(--vu) * 1.35);
+  left: auto;
+  width: calc(var(--vu) * 5.4);
+  height: calc(var(--vu) * 5.4);
+  z-index: 8;
 }
 
 .archive-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  border-bottom: 1px solid rgba(0, 200, 180, 0.2);
-  padding-bottom: calc(var(--vu) * 1);
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  gap: calc(var(--vu) * 2.1);
+  border: 1px solid rgba(var(--archive-glow-rgb), 0.22);
+  border-bottom-color: rgba(var(--archive-glow-rgb), 0.38);
+  border-radius: 7px;
+  padding-top: calc(var(--vu) * 0.95);
+  padding-left: calc(var(--vu) * 2.1);
+  padding-right: calc(var(--vu) * 8.35);
+  padding-bottom: calc(var(--vu) * 1.7);
+  min-height: calc(var(--vu) * 9.8);
+  position: relative;
+  z-index: 6;
+  background:
+    linear-gradient(180deg, rgba(34, 25, 14, 0.92) 0%, rgba(16, 20, 25, 0.95) 100%),
+    rgba(11, 14, 17, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 223, 175, 0.07),
+    0 0 24px rgba(var(--archive-glow-rgb), 0.08);
 }
 
 .archive-title {
-  font-size: clamp(14px, calc(var(--vu) * 2.2), 20px);
+  font-size: clamp(16px, calc(var(--vu) * 2.4), 22px);
   font-weight: 900;
-  color: rgba(0, 200, 180, 0.95);
-  letter-spacing: 0.1em;
+  color: #ffe1af;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 16px rgba(var(--archive-glow-rgb), 0.34),
+    0 0 2px rgba(255, 236, 202, 0.36);
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .archive-summary {
-  font-size: var(--font-xs);
-  color: rgba(0, 200, 180, 0.6);
-  margin-right: calc(var(--vu) * 8);
+  font-size: clamp(10px, calc(var(--vu) * 1.5), 16px);
+  color: rgba(255, 220, 164, 0.88);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-left: auto;
+  padding-left: calc(var(--vu) * 1.2);
+  text-align: right;
+  line-height: 1.1;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .archive-log-list {
-  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1.2);
-  padding-right: calc(var(--vu) * 0.5);
+  gap: calc(var(--vu) * 1.05);
+  padding-right: 8px;
+  min-height: 0;
+  max-height: 100%;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  margin-top: calc(var(--vu) * 1.85);
+  padding-top: calc(var(--vu) * 0.35);
+  position: relative;
+  z-index: 2;
+}
+
+/* Firefox/standards scrollbar fallback */
+@supports not selector(::-webkit-scrollbar) {
+  .archive-log-list {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--archive-glow-rgb), 0.54) rgba(var(--archive-glow-rgb), 0.12);
+  }
+}
+
+/* Chromium/WebKit: keep in-game styled thumb/track */
+@supports selector(::-webkit-scrollbar) {
+  .archive-log-list {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+
+  .archive-log-list::-webkit-scrollbar {
+    width: 13px;
+  }
+
+  .archive-log-list::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 8px 0;
+  }
+
+  .archive-log-list::-webkit-scrollbar-thumb {
+    border: 4px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+    background-color: rgba(var(--archive-glow-rgb), 0.42);
+  }
+
+  .archive-log-list::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--archive-glow-rgb), 0.78);
+  }
 }
 
 .archive-log-entry {
-  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.5);
-  background: rgba(0, 200, 180, 0.04);
-  border: 1px solid rgba(0, 200, 180, 0.12);
+  padding: calc(var(--vu) * 1.1) calc(var(--vu) * 1.45);
+  background: rgba(var(--archive-glow-rgb), 0.05);
+  border: 1px solid rgba(var(--archive-glow-rgb), 0.22);
+  border-left: 2px solid rgba(var(--archive-glow-rgb), 0.48);
   border-radius: 6px;
 }
 
 .archive-log-entry--undiscovered {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.06);
-  opacity: 0.4;
+  background: rgba(148, 163, 184, 0.06);
+  border-color: rgba(148, 163, 184, 0.18);
+  border-left-color: rgba(148, 163, 184, 0.3);
+  opacity: 0.58;
 }
 
 .archive-log-key {
   font-size: var(--font-xs);
-  color: rgba(0, 200, 180, 0.7);
-  font-weight: 700;
+  color: rgba(255, 191, 106, 0.85);
+  font-weight: 800;
+  letter-spacing: 0.08em;
   margin-bottom: calc(var(--vu) * 0.5);
 }
 
 .archive-log-text {
   font-size: var(--font-xs);
-  color: rgba(218, 248, 255, 0.85);
+  color: rgba(232, 239, 247, 0.9);
   white-space: pre-line;
-  line-height: 1.5;
+  line-height: 1.52;
 }
 
 .archive-log-text--locked {
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(198, 210, 224, 0.52);
   font-style: italic;
 }
 
@@ -4397,13 +4554,49 @@ body.mission-intro-active #game-container {
 }
 
 .archive-section-label {
-  font-size: var(--font-xs);
+  font-size: calc(var(--font-xs) * 0.86);
   font-weight: 900;
-  color: rgba(0, 200, 180, 0.5);
+  color: rgba(255, 187, 96, 0.52);
   letter-spacing: 0.12em;
-  margin-top: calc(var(--vu) * 0.8);
+  margin-top: calc(var(--vu) * 1);
   padding-bottom: calc(var(--vu) * 0.4);
-  border-bottom: 1px solid rgba(0, 200, 180, 0.1);
+  border-bottom: 1px solid rgba(var(--archive-glow-rgb), 0.18);
+}
+
+.archive-log-list > .archive-section-label:first-child {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .archive-modal-content {
+    width: min(calc(var(--vu) * 118), calc(100% - 12px)) !important;
+    height: min(calc(var(--vu) * 88), calc(100% - 14px)) !important;
+    max-height: calc(100% - 14px) !important;
+    padding: calc(var(--vu) * 0.9) calc(var(--vu) * 2.6) calc(var(--vu) * 2.6) !important;
+  }
+
+  .archive-header {
+    padding-left: calc(var(--vu) * 2.1);
+    padding-right: calc(var(--vu) * 8.9);
+    padding-top: calc(var(--vu) * 1.0);
+    padding-bottom: calc(var(--vu) * 1.65);
+    min-height: calc(var(--vu) * 9.6);
+    gap: calc(var(--vu) * 1.2);
+  }
+
+  #close-archive-modal {
+    top: calc(var(--vu) * 1.0);
+    right: calc(var(--vu) * 1.25);
+    left: auto;
+  }
+
+  .archive-title {
+    font-size: clamp(14px, calc(var(--vu) * 2.25), 20px);
+  }
+
+  .archive-summary {
+    font-size: clamp(9px, calc(var(--vu) * 1.32), 13px);
+  }
 }
 
 .console-terminal-content {
@@ -4520,6 +4713,41 @@ body.mission-intro-active #game-container {
   text-shadow: 0 0 4px var(--terminal-glow);
   box-shadow: 0 0 8px rgba(var(--terminal-glow-rgb), 0.15);
   margin-right: calc(var(--vu) * 8);
+}
+
+.terminal-clock-row {
+  display: flex;
+  gap: calc(var(--vu) * 1.2);
+  align-items: center;
+}
+
+.terminal-clock-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.05;
+  background: rgba(var(--terminal-glow-rgb), 0.08);
+  border: 1px solid rgba(var(--terminal-glow-rgb), 0.45);
+  border-radius: 4px;
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 1.2);
+}
+
+.terminal-clock-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu) * 1.05);
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  color: rgba(var(--terminal-glow-rgb), 0.75);
+  text-transform: uppercase;
+}
+
+.terminal-clock-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu) * 2.1);
+  font-weight: 900;
+  letter-spacing: 1px;
+  color: var(--terminal-glow);
+  text-shadow: 0 0 5px rgba(var(--terminal-glow-rgb), 0.5);
 }
 
 .terminal-layout {
@@ -4696,7 +4924,7 @@ body.mission-intro-active #game-container {
 }
 
 .telemetry-label {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 900;
   color: rgba(255, 255, 255, 0.4);
   letter-spacing: 1.5px;
@@ -4735,7 +4963,7 @@ body.mission-intro-active #game-container {
 }
 
 .telemetry-value-sub {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 700;
   color: var(--terminal-glow);
   letter-spacing: 1px;
@@ -4766,7 +4994,7 @@ body.mission-intro-active #game-container {
 }
 
 .terminal-section-title {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 900;
   color: rgba(var(--terminal-glow-rgb), 0.95);
   letter-spacing: 1.5px;
@@ -4892,6 +5120,32 @@ body.mission-intro-active #game-container {
   box-shadow: 0 0 12px rgba(180, 120, 255, 0.12);
 }
 
+/* COMBAT MATRIX (weapon skill tree) — scoped combat-red accent, additive only. */
+.weapons-matrix-section {
+  --section-rgb: 255, 110, 80;
+  border-left-color: rgba(255, 110, 80, 0.4);
+}
+
+.weapons-matrix-section .terminal-section-title {
+  color: rgba(255, 130, 95, 0.96);
+  text-shadow: 0 0 8px rgba(255, 110, 80, 0.25);
+}
+
+.action-card--weapon {
+  border-color: rgba(255, 110, 80, 0.22);
+}
+
+.action-card--weapon:hover {
+  border-color: rgba(255, 110, 80, 0.55);
+  box-shadow: 0 0 12px rgba(255, 110, 80, 0.12);
+}
+
+.action-card--weapon .action-cost {
+  border-color: rgba(255, 110, 80, 0.42);
+  color: rgba(255, 150, 120, 1);
+  background: rgba(255, 110, 80, 0.16);
+}
+
 .terminal-tone--bank .action-cost,
 .terminal-tone--medkit .action-cost,
 .terminal-tone--generator .action-cost,
@@ -4949,7 +5203,7 @@ body.mission-intro-active #game-container {
 }
 
 .action-cost {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 900;
   color: var(--accent-primary);
   letter-spacing: 1px;
@@ -5052,7 +5306,7 @@ body.mission-intro-active #game-container {
 }
 
 .telemetry-ticker {
-  font-size: 10px;
+  font-size: var(--font-xs);
   font-weight: 900;
   color: var(--terminal-glow);
   letter-spacing: 1.5px;

@@ -23,7 +23,7 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         expect(bank.getState()).toEqual({
-            schemaVersion: 2,
+            schemaVersion: 3,
             med: 0,
             ammo: 0,
             tech: 0,
@@ -39,6 +39,12 @@ describe('BankManager', () => {
                 suitThermal: false,
                 deconFilters: false,
                 stimCache: false
+            },
+            weaponUpgrades: {
+                ammoCapacity: 0,
+                shotSpeed: 0,
+                shotDamage: 0,
+                shotAmount: 0
             }
         });
     });
@@ -137,5 +143,53 @@ describe('BankManager', () => {
             coin: 2,
             o2GeneratorLevel: 0
         });
+    });
+
+    it('migrates a v2 save to v3 without resetting and adds weaponUpgrades', () => {
+        const storage = createMemoryStorage();
+        storage.setItem('hb_bank', JSON.stringify({
+            schemaVersion: 2,
+            med: 5, ammo: 3, tech: 40, coin: 12,
+            o2GeneratorLevel: 1,
+            unlocks: { o2Bubble: true, hullExpansion: false, radarNode: false, reactorCompressor: false },
+            tier2Unlocks: { suitThermal: false, deconFilters: false, stimCache: false }
+        }));
+
+        const bank = new BankManager({ storage });
+        const state = bank.getState();
+        expect(state.schemaVersion).toBe(3);
+        expect(state.tech).toBe(40); // preserved, not reset
+        expect(state.weaponUpgrades).toEqual({
+            ammoCapacity: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0
+        });
+    });
+
+    it('purchases weapon upgrades, enforces cost + max level, and persists', () => {
+        const storage = createMemoryStorage();
+        const bank = new BankManager({ storage });
+
+        // Too poor to start.
+        expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(false);
+        expect(bank.upgradeWeapon('ammoCapacity')).toBe(false);
+
+        bank.deposit({ tech: 9999, coin: 9999 });
+
+        // ammoCapacity has maxLevel 3 — buy all three.
+        for (let i = 1; i <= 3; i++) {
+            expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(true);
+            expect(bank.upgradeWeapon('ammoCapacity')).toBe(true);
+            expect(bank.getWeaponUpgradeLevel('ammoCapacity')).toBe(i);
+        }
+        // Maxed out.
+        expect(bank.getWeaponUpgradeNextCost('ammoCapacity')).toBeNull();
+        expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(false);
+        expect(bank.upgradeWeapon('ammoCapacity')).toBe(false);
+
+        // Unknown key is rejected.
+        expect(bank.upgradeWeapon('nonexistent')).toBe(false);
+
+        // Persists across reload.
+        const reloaded = new BankManager({ storage });
+        expect(reloaded.getWeaponUpgradeLevel('ammoCapacity')).toBe(3);
     });
 });

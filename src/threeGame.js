@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 
 const PLAYER_COLORS = {
@@ -9,14 +9,39 @@ const PLAYER_COLORS = {
 };
 
 const PLAYER_SPRITESHEET_PATHS = {
-    SCOUT: '/scout_walk.png',
-    TANK: '/tank_walk.png',
-    ENGINEER: '/engineer_walk.png'
+    SCOUT: '/Scout.full.jpeg',
+    TANK: '/Tank.full.jpeg',
+    ENGINEER: '/Eng.Full.jpeg'
 };
 
-const SPRITE_GRID_SIZE = 4;
-const SPRITE_FRAME_REPEAT = 1 / SPRITE_GRID_SIZE;
+const PLAYER_SPRITE_COLUMNS = 4;
+const PLAYER_SPRITE_ROWS = 4;
+const PLAYER_WALK_FRAME_COUNT = 2;
+const PLAYER_SPRITE_FRAME_REPEAT_X = 1 / PLAYER_SPRITE_COLUMNS;
+const PLAYER_SPRITE_FRAME_REPEAT_Y = 1 / PLAYER_SPRITE_ROWS;
+// Packed 8-direction sheet: each entry defines a direction cell pair
+// (row + baseColumn), where frame 0/1 are baseColumn/baseColumn+1.
+// Octant order from atan2(axisZ, axisX):
+// +X, +X+Z, +Z, -X+Z, -X, -X-Z, -Z, +X-Z
+const PLAYER_SPRITE_DIRECTION_CELLS = Object.freeze([
+    Object.freeze({ row: 1, baseColumn: 2 }),
+    Object.freeze({ row: 3, baseColumn: 2 }),
+    Object.freeze({ row: 3, baseColumn: 0 }),
+    Object.freeze({ row: 2, baseColumn: 2 }),
+    Object.freeze({ row: 2, baseColumn: 0 }),
+    Object.freeze({ row: 1, baseColumn: 0 }),
+    Object.freeze({ row: 0, baseColumn: 2 }),
+    Object.freeze({ row: 0, baseColumn: 0 })
+]);
+const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
+const BUILD_STRUCTURE_GRID_SIZE = 2;
+const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
+const SUIT_LIGHT_BASE_INTENSITY = 2.1;
+const SUIT_LIGHT_BASE_DISTANCE = 7.2;
+const MENU_SHOWROOM_FLOOR_SIZE = 96;
+const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
+const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
 const PICKUP_DISTRIBUTION = {
     clustered: 0.7,
     transitional: 0.2,
@@ -29,9 +54,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, abilityKey: 'sprint',   abilityLabel: 'SPRINT BURST',    abilityCooldown: 8,  abilityDuration: 1.5 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, abilityKey: 'fortify',  abilityLabel: 'FORTIFY',         abilityCooldown: 14, abilityDuration: 2.5 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, abilityKey: 'overclock',abilityLabel: 'FIELD OVERCLOCK', abilityCooldown: 18, abilityDuration: 6.0 }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',   abilityLabel: 'SPRINT BURST',    abilityCooldown: 8,  abilityDuration: 1.5 },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'fortify',  abilityLabel: 'FORTIFY',         abilityCooldown: 14, abilityDuration: 2.5 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'overclock',abilityLabel: 'FIELD OVERCLOCK', abilityCooldown: 18, abilityDuration: 6.0 }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -97,6 +122,62 @@ const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
+
+// --- Sprint 10 combat tuning / feature flags ---
+const FEATURE_WALL_DECALS = true;
+const FEATURE_MULTISHOT = true;
+// Anchor glow to the visible sprite and nudge slightly up-screen so the clear
+// pool reads around the body in the isometric camera.
+const PLAYER_GLOW_SCREEN_OFFSET = 0.28;
+// Spawn a themed retaliation boss after each console build milestone (Note 6).
+const FEATURE_MILESTONE_BOSSES = true;
+// Weather system (Note 9): hard particle cap + per-state profiles. Profiles set
+// active particle count (<= cap), point size/color/opacity, fall/drift velocity
+// ranges, and a fog-far multiplier for reduced visibility.
+const FEATURE_WEATHER = true;
+const WEATHER_PARTICLE_CAP = 240;
+const WEATHER_FIELD_RADIUS = 20;   // half-extent of the box that follows the player
+const WEATHER_FIELD_HEIGHT = 9;
+const WEATHER_FORCED_STATE = 'rainstorm';
+const RAIN_PUDDLE_MAX_COUNT = 32;
+const RAIN_PUDDLE_SPAWN_MIN = 0.45;
+const RAIN_PUDDLE_SPAWN_MAX = 0.95;
+const RAIN_SPLASH_COOLDOWN = 0.03;
+const RAIN_SPLASH_IMPACT_CHANCE = 0.6;
+const WET_FOOTPRINT_TRAIL_SECONDS = 5.2;
+const WEATHER_PROFILES = Object.freeze({
+    clear:       { count: 0,   size: 0.1,  color: 0xffffff, opacity: 0,    fall: [0, 0],       drift: 0,    fogFarMult: 1.0 },
+    snow:        { count: 220, size: 0.17, color: 0xcfe4ff, opacity: 0.85, fall: [1.2, 2.1],    drift: 0.6,  fogFarMult: 0.88 },
+    spore_drift: { count: 150, size: 0.15, color: 0x9dff7a, opacity: 0.7,  fall: [0.25, 0.75],  drift: 1.1,  fogFarMult: 0.9 },
+    fog_gust:    { count: 70,  size: 0.62, color: 0xb8c4d0, opacity: 0.2,  fall: [0.1, 0.45],   drift: 1.6,  fogFarMult: 0.66 },
+    rainstorm:   { count: 240, size: 0.11, color: 0xa8c5df, opacity: 0.84, fall: [8.7, 13.6],   drift: 1.55, fogFarMult: 0.78, lightMult: 0.9 }
+});
+// Goal key -> retaliation boss spawned when that build completes.
+const MILESTONE_BOSS_FOR_GOAL = Object.freeze({
+    o2Bubble: 'boss_cybersnail',
+    hullExpansion: 'boss_cryosnail',
+    radarNode: 'boss_sporesnail',
+    reactorCompressor: 'boss_sporesnail'
+});
+
+// Fixed world build-site coordinates the yellow scanner arrow guides toward
+// (Note 4). Ordered by progression; a site is "built" once its goalKey is
+// unlocked, advancing the arrow to the next unbuilt site. Headings push the
+// player outward through ACTIVE -> CRYO -> BIO sectors.
+const BUILD_SITES = Object.freeze([
+    Object.freeze({ goalKey: 'o2Bubble', x: 2, z: 11, biome: 'active', label: 'O₂ BUBBLE SITE' }),
+    Object.freeze({ goalKey: 'hullExpansion', x: -6, z: 42, biome: 'active', label: 'HULL BAY SITE' }),
+    Object.freeze({ goalKey: 'radarNode', x: 9, z: 98, biome: 'cryo', label: 'SCANNER MAST SITE', animated: true }),
+    Object.freeze({ goalKey: 'reactorCompressor', x: -8, z: 176, biome: 'bio', label: 'REACTOR SITE' })
+]);
+const PLAYER_HITBOX_PADDING = 0.18;     // forgiving hitbox for player shots only
+const WEAPON_CLIP_PER_CAPACITY = 2;     // +clip rounds per ammoCapacity tier
+const WEAPON_SPEED_PER_TIER = 2.5;      // +projectile speed per shotSpeed tier
+const MULTISHOT_SPREADS = Object.freeze([[], [-0.085, 0.085], [-0.15, 0.0, 0.15]]);
+const WALL_DECAL_CAP = 24;
+const PHYS_PARTICLE_GRAVITY = 7.0;   // units/s²
+const PHYS_PARTICLE_DRAG = 2.2;      // exponential drag coefficient (per second)
+const PHYS_PARTICLE_BOUNCE = -0.45;  // floor restitution
 const SHIP_MAX_HP = 24;
 const SHIP_NO_FIRE_RADIUS = 2.4;
 const SHIP_HIT_RADIUS_MULT = 0.78;
@@ -113,7 +194,9 @@ const LORE_LOGS = {
         { key: 'A09', text: '[CORRUPTED]\n...THE THING IN BAY...\n...NOT SPECIMEN 00...\n...IT KNEW THE CODE...\n[END]' },
         { key: 'A10', text: 'Armory secure. 40 units of ammo reserve. 12 medical kits.\nLeave them. The agents will need them.\nThis is not abandonment. This is preparation.\n— Unknown author' },
         { key: 'A11', text: 'If you can read this — the evacuation is complete.\nThe bunker is sealed. The Mothership will not acknowledge your transmissions.\nUse the console. Bank what you find. Build what you can.\n— Former Chief Engineer Yuki Tanaka' },
-        { key: 'A12', text: '[FINAL ACTIVE SECTOR LOG]\nThree agents. One mission. One that lives is enough.\nThe Mothership gets what it paid for.\nWe get silence.\n— Director Chen, last recorded transmission.' }
+        { key: 'A12', text: '[FINAL ACTIVE SECTOR LOG]\nThree agents. One mission. One that lives is enough.\nThe Mothership gets what it paid for.\nWe get silence.\n— Director Chen, last recorded transmission.' },
+        { key: 'A13', text: 'ARMORY REQUISITION — COMBAT MATRIX\nWe left the calibration benches running. Magazine extenders,\nvelocity coils, payload cores, burst injectors — all keyed to\nthe ship consoles. Salvage the tech, the bench builds the rest.\nWhoever comes after us: take the guns. We won\'t need them.' },
+        { key: 'A14', text: 'NOTE CLIPPED TO THE WEAPONS BENCH:\nThe Mothership rationed our ammunition on purpose.\nA garrison that can\'t fight back can\'t refuse an order.\nSo we built our own upgrades from scrap. Off the books.\nIf you\'re reading this, the bench is yours. Use it. — Q.M. Vasquez' }
     ],
     cryo: [
         { key: 'C01', text: 'Stasis bay operational. Temperature stable at -196°C.\n847 units in suspension. Bio-preservation rate: 99.4%.\nUnit 0047 in isolation pod. Do not wake. Do not transport.' },
@@ -145,6 +228,9 @@ export const MOTHERSHIP_REACTIVE_LINES = [
     { trigger: 'first_deposit',    text: 'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.' },
     { trigger: 'lore_found',       text: 'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.' },
     { trigger: 'sentinel_spotted', text: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.' },
+    { trigger: 'weapon_calibrated', text: 'NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.' },
+    { trigger: 'first_boss',       text: 'CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.' },
+    { trigger: 'specimen_notices', text: '[UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.' },
 ];
 
 const SENTINEL_MAX_HP = 3;
@@ -276,16 +362,18 @@ const BIOME_TERRAIN_TEXTURE_PATHS = Object.freeze({
     })
 });
 const CRYO_SCATTER_VARIANTS = [
-    { type: 'scatter_coolant_puddle', weight: 0.42 },
-    { type: 'scatter_ice_stalagmite', weight: 0.32 },
-    { type: 'scatter_cryo_icicle', weight: 0.26 }
+    { type: 'scatter_coolant_puddle', weight: 0.34 },
+    { type: 'scatter_ice_stalagmite', weight: 0.26 },
+    { type: 'scatter_cryo_icicle', weight: 0.22 },
+    { type: 'scatter_cryo_shards', weight: 0.18 }
 ];
 const BIO_SCATTER_VARIANTS = [
-    { type: 'scatter_bio_pod', weight: 0.42 },
-    { type: 'scatter_slime_puddle', weight: 0.3 },
-    { type: 'bio_spores', weight: 0.16 },
-    { type: 'bio_spores_blue', weight: 0.06 },
-    { type: 'bio_spores_amber', weight: 0.06 }
+    { type: 'scatter_bio_pod', weight: 0.34 },
+    { type: 'scatter_bio_moss', weight: 0.2 },
+    { type: 'scatter_slime_puddle', weight: 0.24 },
+    { type: 'bio_spores', weight: 0.14 },
+    { type: 'bio_spores_blue', weight: 0.04 },
+    { type: 'bio_spores_amber', weight: 0.04 }
 ];
 const ACTIVE_SCATTER_VARIANTS = [
     { type: 'scatter_gravel', weight: 0.38 },
@@ -457,9 +545,31 @@ export class ThreeGame {
         this.keys = { up: false, down: false, left: false, right: false };
         this.virtualInput = { x: 0, z: 0 };
         this.inputEnabled = true;
+        // Day/night cycle (Note 8): timeOfDay 0..1 (0/1 = midnight, 0.5 = noon).
+        // Start mid-morning; advances only during active gameplay.
+        this.timeOfDay = 0.28;
+        this.dayCycleSeconds = 150;
+        // Weather (Note 9): pooled Points field, biome/time-biased state machine.
+        this.weather = {
+            state: 'clear',
+            changeTimer: 6,
+            count: 0,
+            points: null,
+            geometry: null,
+            positions: null,
+            velocities: null,
+            fogFarMult: 1,
+            lightMult: 1,
+            splashCooldown: 0,
+            puddleTimer: 0.35,
+            activeRainPuddles: 0
+        };
+        this.dynamicPuddles = [];
+        this.wetFootprintTrailTime = 0;
+        this.wetFootstepSide = 1;
         this.isMoving = false;
         this.animationTimer = 0;
-        this.currentFacingRow = 0;
+        this.currentFacingRow = PLAYER_DEFAULT_DIRECTION_INDEX;
         this.playerSpriteScale = 1.6;
         this.playerHeight = 0.06;
         this.playerSpriteLead = 0.18;
@@ -475,7 +585,7 @@ export class ThreeGame {
         };
         this.aimDirX = 1;
         this.aimDirZ = 0;
-        this.aimFacingRow = 2;
+        this.aimFacingRow = PLAYER_DEFAULT_DIRECTION_INDEX;
         this.aimWorldPoint = null;
         this.hasActiveAim = false;
         this.mouseAimActive = false;
@@ -485,7 +595,9 @@ export class ThreeGame {
         this._aimRaycaster = new THREE.Raycaster();
         this._projRaycaster = new THREE.Raycaster();
         this.activeProjectiles = [];
-        this.weaponClipAmmo = WEAPON_CLIP_SIZE;
+        this.weaponClipSize = WEAPON_CLIP_SIZE;
+        this.weaponUpgradeBonuses = { shotDamage: 0, speedAdd: 0, shotAmount: 0 };
+        this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponFireCooldown = 0;
@@ -493,6 +605,7 @@ export class ThreeGame {
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
         this.snailsKilledThisRun = 0;
+        this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
         this._cameraShakeTimer = 0;
         this._cameraShakeIntensity = 0;
@@ -547,12 +660,25 @@ export class ThreeGame {
         this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 1.0);
         this.gameplayPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         this.performanceProfile = 'menu';
+        this.loadingPaused = false;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
-        this.container.replaceChildren(this.renderer.domElement);
+        this.darknessOverlay = document.createElement('div');
+        Object.assign(this.darknessOverlay.style, {
+            position: 'absolute',
+            inset: '0',
+            pointerEvents: 'none',
+            opacity: '0',
+            transition: 'opacity 450ms ease',
+            mixBlendMode: 'multiply',
+            zIndex: '2'
+        });
+        this._darknessCenter = new THREE.Vector3();
+        this.container.style.position = this.container.style.position || 'relative';
+        this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay);
 
         const textureLoader = new THREE.TextureLoader();
         this.textureLoader = textureLoader;
@@ -578,8 +704,12 @@ export class ThreeGame {
             texture.wrapT = THREE.RepeatWrapping;
             texture.magFilter = THREE.NearestFilter;
             texture.minFilter = THREE.NearestFilter;
-            texture.repeat.set(SPRITE_FRAME_REPEAT, SPRITE_FRAME_REPEAT);
-            texture.offset.set(0, (SPRITE_GRID_SIZE - 1) * SPRITE_FRAME_REPEAT);
+            texture.repeat.set(PLAYER_SPRITE_FRAME_REPEAT_X, PLAYER_SPRITE_FRAME_REPEAT_Y);
+            const defaultDirection = PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
+            texture.offset.set(
+                defaultDirection.baseColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
+                (PLAYER_SPRITE_ROWS - 1 - defaultDirection.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
+            );
         });
 
         this.floorMaterial = new THREE.MeshStandardMaterial({
@@ -890,9 +1020,20 @@ export class ThreeGame {
             scatter_slime_puddle: this.loadScatterTexture('/scatter_slime_puddle.png', textureLoader),
             scatter_gravel: this.loadScatterTexture('/scatter_gravel.png', textureLoader),
             scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
+            scatter_cryo_shards: this.loadScatterTexture('/scatter_cryo_shards.png', textureLoader),
+            scatter_bio_moss: this.loadScatterTexture('/scatter_bio_moss.png', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
             lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader)
         };
+
+        // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
+        // Dedicated texture so UV frame-stepping is isolated; LinearFilter (no
+        // mipmaps) avoids bleeding across the frame seam.
+        this.buildStructureTexture = this.loadScatterTexture('/build_structure_anim.png', textureLoader);
+        this.buildStructureTexture.minFilter = THREE.LinearFilter;
+        this.buildStructureTexture.generateMipmaps = false;
+        this.buildStructureTexture.repeat.set(BUILD_STRUCTURE_FRAME_REPEAT, BUILD_STRUCTURE_FRAME_REPEAT);
+        this.buildStructureTexture.offset.set(0, BUILD_STRUCTURE_FRAME_REPEAT);
 
         this.scatterMaterials = {
             sentinel: new THREE.SpriteMaterial({
@@ -1074,6 +1215,22 @@ export class ThreeGame {
                 depthTest: true,
                 fog: false
             }),
+            scatter_cryo_shards: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_cryo_shards,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_bio_moss: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_bio_moss,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
             ship_wreckage: new THREE.SpriteMaterial({
                 map: this.scatterTextures.ship_wreckage,
                 transparent: true,
@@ -1155,10 +1312,56 @@ export class ThreeGame {
         this.scene.add(directionalLight);
         this.directionalLight = directionalLight;
 
-        const playerGlow = new THREE.PointLight(PLAYER_COLORS[this.playerType] ?? 0xffffff, 2.4, 8, 2);
+        const playerGlow = new THREE.PointLight(PLAYER_COLORS[this.playerType] ?? 0xffffff, 3.8, 11.5, 1.65);
         playerGlow.position.set(0, 1.6, 0);
         this.playerGlow = playerGlow;
         this.scene.add(playerGlow);
+
+        // Base intensities/fog distances captured so the day/night cycle (Note 8)
+        // can modulate them multiplicatively without clobbering biome color work.
+        this.baseLightIntensity = {
+            ambient: ambientLight.intensity,
+            directional: directionalLight.intensity,
+            fill: fillLight.intensity,
+            playerGlow: playerGlow.intensity
+        };
+        this.baseFogRange = { near: this.scene.fog?.near ?? 10, far: this.scene.fog?.far ?? 28 };
+    }
+
+    createMenuGridTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#101316';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const drawGrid = (step, color, width) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            for (let x = 0; x <= canvas.width; x += step) {
+                ctx.moveTo(x + 0.5, 0);
+                ctx.lineTo(x + 0.5, canvas.height);
+            }
+            for (let y = 0; y <= canvas.height; y += step) {
+                ctx.moveTo(0, y + 0.5);
+                ctx.lineTo(canvas.width, y + 0.5);
+            }
+            ctx.stroke();
+        };
+
+        drawGrid(16, 'rgba(106, 231, 255, 0.16)', 1);
+        drawGrid(64, 'rgba(185, 247, 255, 0.3)', 1.5);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(8, 8);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = Math.min(this.maxTextureAnisotropy ?? 1, 4);
+        return texture;
     }
 
     setupWorld() {
@@ -1175,6 +1378,30 @@ export class ThreeGame {
         baseFloor.receiveShadow = true;
         this.scene.add(baseFloor);
 
+        const spawn = this.getSpawnTile();
+        this.menuGridTexture = this.createMenuGridTexture();
+        this.menuShowroomFloor = new THREE.Mesh(
+            new THREE.PlaneGeometry(MENU_SHOWROOM_FLOOR_SIZE, MENU_SHOWROOM_FLOOR_SIZE),
+            new THREE.MeshBasicMaterial({
+                map: this.menuGridTexture,
+                color: 0xd5d9dc,
+                transparent: true,
+                opacity: 0.92,
+                depthWrite: true,
+                depthTest: true
+            })
+        );
+        this.menuShowroomFloor.rotation.x = -Math.PI / 2;
+        this.menuShowroomFloor.position.set(
+            spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
+            -0.06,
+            spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
+        );
+        this.menuShowroomFloor.receiveShadow = true;
+        this.menuShowroomFloor.visible = this.performanceProfile === 'menu';
+        this.scene.add(this.menuShowroomFloor);
+
+        this.chunkGroups.visible = this.performanceProfile === 'gameplay';
         this.scene.add(this.chunkGroups);
         this.setupCrashedShips();
     }
@@ -1476,6 +1703,15 @@ export class ThreeGame {
         this.playerSprite.renderOrder = 5;
         this.player.add(this.playerSprite);
 
+        this.suitFillLight = new THREE.PointLight(
+            PLAYER_COLORS[this.playerType] ?? 0xffffff,
+            SUIT_LIGHT_BASE_INTENSITY,
+            SUIT_LIGHT_BASE_DISTANCE,
+            1.25
+        );
+        this.suitFillLight.position.set(this.playerSpriteLead * 0.65, 1.0, this.playerSpriteLead * 0.65);
+        this.player.add(this.suitFillLight);
+
         this.playerMarker = this.createHiddenPlayerMarker();
         this.playerMarker.visible = false;
         this.scene.add(this.playerMarker);
@@ -1544,7 +1780,10 @@ export class ThreeGame {
 
     setupInput() {
         this.handleKeyDown = (event) => {
-            if (!this.inputEnabled) return;
+            if (!this.isGameplayInputActive()) {
+                this.setKeyState(event.code, false);
+                return;
+            }
             if (event.code === 'KeyE') {
                 this.interactWithConsole();
                 this.interactWithLoreTerminal();
@@ -1562,6 +1801,7 @@ export class ThreeGame {
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
         this.handlePromptTap = (event) => {
             event.preventDefault();
+            if (!this.isGameplayInputActive()) return;
             this.interactWithConsole();
         };
 
@@ -1578,7 +1818,7 @@ export class ThreeGame {
                 this.lastMouseClientY = event.clientY;
             }
 
-            if (!this.inputEnabled || this.isPlayerDead) return;
+            if (!this.isGameplayInputActive()) return;
             const pointerType = this._canvasPointerType;
             const isTouchPointer = pointerType !== 'mouse';
             if (isTouchPointer && this.isInTouchMoveControlBounds(event.clientX, event.clientY)) {
@@ -1597,7 +1837,7 @@ export class ThreeGame {
         };
 
         this.handleCanvasPointerMove = (event) => {
-            if (!this.inputEnabled || this.isPlayerDead) return;
+            if (!this.isGameplayInputActive()) return;
             const pointerType = event.pointerType || this._canvasPointerType || 'mouse';
             if (pointerType !== 'mouse') return;
             this.lastMouseClientX = event.clientX;
@@ -1609,7 +1849,7 @@ export class ThreeGame {
         };
 
         this.handleCanvasTap = (event) => {
-            if (!this.inputEnabled || this.isPlayerDead) return;
+            if (!this.isGameplayInputActive()) return;
             const dx = event.clientX - this._canvasTapStartX;
             const dy = event.clientY - this._canvasTapStartY;
             const wasTap = Math.sqrt(dx * dx + dy * dy) < 14;
@@ -1618,6 +1858,21 @@ export class ThreeGame {
 
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
+
+        // Milestone retaliation boss: each completed console build provokes a
+        // themed boss that heads for the ship (Note 6). Additive — ambient
+        // biome bosses are untouched.
+        if (FEATURE_MILESTONE_BOSSES) {
+            this._onGoalUnlocked = (event) => {
+                const goalKey = event?.detail?.goalKey;
+                const bossType = MILESTONE_BOSS_FOR_GOAL[goalKey];
+                if (!bossType) return;
+                // Brief delay so the unlock confirmation reads before the counterattack.
+                setTimeout(() => this.spawnMilestoneBoss(bossType), 1800);
+            };
+            window.addEventListener('goal-unlocked', this._onGoalUnlocked);
+        }
+
         this.consolePromptEl = document.getElementById('console-hud-prompt');
         this.consolePromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
@@ -1671,7 +1926,7 @@ export class ThreeGame {
     }
 
     setKeyState(code, pressed) {
-        if (!this.inputEnabled && pressed) return;
+        if (!this.isGameplayInputActive() && pressed) return;
         if (code === 'ArrowUp' || code === 'KeyW') this.keys.up = pressed;
         if (code === 'ArrowDown' || code === 'KeyS') this.keys.down = pressed;
         if (code === 'ArrowLeft' || code === 'KeyA') this.keys.left = pressed;
@@ -1679,7 +1934,7 @@ export class ThreeGame {
     }
 
     setVirtualInput(x = 0, z = 0) {
-        if (!this.inputEnabled) {
+        if (!this.isGameplayInputActive()) {
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             return;
@@ -1688,13 +1943,27 @@ export class ThreeGame {
         this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
     }
 
-    setInputEnabled(enabled = true) {
-        this.inputEnabled = Boolean(enabled);
+    isGameplayInputActive() {
+        return this.performanceProfile === 'gameplay'
+            && this.inputEnabled
+            && !this.isPlayerDead
+            && !this.loadingPaused
+            && !this.hasBlockingGameplayOverlay();
+    }
 
-        if (this.inputEnabled) {
-            return;
-        }
+    hasBlockingGameplayOverlay() {
+        const isVisible = (id) => {
+            const el = document.getElementById(id);
+            return Boolean(el && !el.classList.contains('hidden'));
+        };
+        return document.body.classList.contains('mission-intro-active')
+            || isVisible('console-terminal-modal')
+            || isVisible('game-over-modal')
+            || isVisible('mothership-dialogue')
+            || isVisible('confirm-modal');
+    }
 
+    clearGameplayInputState() {
         this.keys.up = false;
         this.keys.down = false;
         this.keys.left = false;
@@ -1707,6 +1976,16 @@ export class ThreeGame {
         this._aimResetTimer = 0;
         this.lastMouseClientX = null;
         this.lastMouseClientY = null;
+    }
+
+    setInputEnabled(enabled = true) {
+        this.inputEnabled = Boolean(enabled);
+
+        if (this.inputEnabled) {
+            return;
+        }
+
+        this.clearGameplayInputState();
 
         this.activeInteractiveConsole = null;
         const promptEl = document.getElementById('console-hud-prompt');
@@ -1853,6 +2132,9 @@ export class ThreeGame {
         this.playerMaterial.color.setHex(color);
         this.playerMaterial.emissive.setHex(color);
         this.playerGlow.color.setHex(color);
+        if (this.suitFillLight?.color) {
+            this.suitFillLight.color.setHex(color);
+        }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
 
         this.updateCrashedShipsVisibility(true);
@@ -2205,6 +2487,25 @@ export class ThreeGame {
         this.renderer.setSize(width, height, false);
     }
 
+    setLoadingPaused(paused = false) {
+        this.loadingPaused = Boolean(paused);
+        this.lastTime = performance.now();
+        if (!this.loadingPaused && this.performanceProfile === 'menu') {
+            this.positionMenuShowroomFloor();
+            this.snapCameraToPlayer();
+        }
+    }
+
+    positionMenuShowroomFloor() {
+        if (!this.menuShowroomFloor) return;
+        const spawn = this.getSpawnTile();
+        this.menuShowroomFloor.position.set(
+            spawn.x + MENU_SHOWROOM_FLOOR_OFFSET_X,
+            -0.06,
+            spawn.y + MENU_SHOWROOM_FLOOR_OFFSET_Z
+        );
+    }
+
     setPerformanceProfile(profile = 'menu') {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
@@ -2226,9 +2527,21 @@ export class ThreeGame {
                 if (this.playerMarker) {
                     this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
                 }
+                this.positionMenuShowroomFloor();
+                this.snapCameraToPlayer();
             }
             this.clearLoadedChunksForRunReset();
-            this.syncVisibleChunks(true);
+            window.AudioManager?.stopAmbience?.();
+            window.AudioManager?.startMenuMusic?.();
+        }
+        if (this.menuShowroomFloor) {
+            this.menuShowroomFloor.visible = nextProfile === 'menu';
+        }
+        if (nextProfile === 'menu' && this.darknessOverlay) {
+            this.darknessOverlay.style.opacity = '0';
+        }
+        if (this.chunkGroups) {
+            this.chunkGroups.visible = nextProfile === 'gameplay';
         }
         const targetPixelRatio = nextProfile === 'gameplay'
             ? this.gameplayPixelRatio
@@ -2308,7 +2621,33 @@ export class ThreeGame {
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
 
-        // Adaptive quality: if FPS drops below 45 for 5s, reduce chunk radius
+        if (this.loadingPaused) {
+            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
+            return;
+        }
+
+        if (this.performanceProfile === 'menu') {
+            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
+            this.updateMenuShowcase(delta);
+            this.updatePlayer(delta);
+            this.updateWeaponState(delta);
+            this.updateProjectiles(delta);
+            this.updateCamera(delta);
+            this.updateTransientEffects(delta, now);
+            this.updateHiddenPlayerMarker(now);
+            this.renderer.render(this.scene, this.camera);
+            return;
+        }
+
+        if (this.hasBlockingGameplayOverlay()) {
+            this.clearGameplayInputState();
+            this.updateCamera(delta);
+            this.updateHiddenPlayerMarker(now);
+            this.renderer.render(this.scene, this.camera);
+            return;
+        }
+
+        // Adaptive quality: if FPS drops below 45 for 5s, reduce chunk radius (only active during gameplay)
         if (delta > 0) {
             const fps = 1 / delta;
             if (fps < 45) {
@@ -2319,21 +2658,24 @@ export class ThreeGame {
             } else {
                 this._lowFpsTimer = 0;
                 if (this.visibleChunkRadius === 0 && fps > 55) {
-                    this.visibleChunkRadius = 1; // restore if performance recovers
+                    this.visibleChunkRadius = this.defaultVisibleChunkRadius; // restore if performance recovers
                 }
             }
         }
 
         this.updateClassAbility(delta);
-        this.updateMenuShowcase(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
+        this.updateWeather(delta);
+        this.updateDayNightCycle(delta);
+        this.updateTerminalClockTick(now);
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
+        this.updateBuildSiteBeacon(now);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
         this.updateConsoles(delta, now);
@@ -2370,6 +2712,7 @@ export class ThreeGame {
     }
 
     interactWithLoreTerminal() {
+        if (!this.isGameplayInputActive()) return;
         if (!this.player) return;
         for (const sprite of this.scatterSprites) {
             if (sprite.userData.type !== 'lore_terminal') continue;
@@ -2473,13 +2816,14 @@ export class ThreeGame {
     }
 
     interactWithConsole() {
+        if (!this.isGameplayInputActive()) return;
         if (!this.activeInteractiveConsole) return;
         this.openConsoleModal(this.activeInteractiveConsole);
     }
 
     tryInteractWithConsolePointer(clientX, clientY) {
         const ship = this.activeInteractiveConsole;
-        if (!ship || !this.inputEnabled) return false;
+        if (!ship || !this.isGameplayInputActive()) return false;
 
         const modal = document.getElementById('console-terminal-modal');
         if (modal && !modal.classList.contains('hidden')) {
@@ -2697,21 +3041,29 @@ export class ThreeGame {
     }
 
     renderTier2Section(ship, bankState) {
-        const allGoalsDone = Boolean(bankState?.unlocks?.reactorCompressor);
+        // Section opens once the O₂ bubble is built so the Space Heater (Note 5)
+        // is an early cold-mitigation build. Cards whose own prereq isn't met yet
+        // (e.g. endgame filters/stim) still appear but read LOCKED.
+        const unlocks = bankState?.unlocks ?? {};
+        const sectionAvailable = Boolean(unlocks.o2Bubble);
         const section = document.getElementById('tier2-section');
-        if (section) section.classList.toggle('hidden', !allGoalsDone);
-        if (!allGoalsDone) return;
+        if (section) section.classList.toggle('hidden', !sectionAvailable);
+        if (!sectionAvailable) return;
 
         const tier2Unlocks = bankState?.tier2Unlocks ?? {};
         for (const key of TIER2_UPGRADE_ORDER) {
             const cfg = TIER2_UPGRADE_CONFIGS[key];
             if (!cfg) continue;
             const alreadyUnlocked = Boolean(tier2Unlocks[key]);
+            const prereqMet = !cfg.prereq || Boolean(unlocks[cfg.prereq]);
             const canAfford = this.bank.canAfford(cfg.cost);
+            const buildable = !alreadyUnlocked && prereqMet && canAfford;
 
             const statusEl = document.getElementById(`terminal-tier2-${key}-status`);
             if (statusEl) {
-                statusEl.textContent = alreadyUnlocked ? 'INSTALLED' : canAfford ? 'READY' : 'RESOURCE DEFICIT';
+                statusEl.textContent = alreadyUnlocked ? 'INSTALLED'
+                    : !prereqMet ? 'LOCKED'
+                    : canAfford ? 'READY' : 'RESOURCE DEFICIT';
             }
             const costEl = document.getElementById(`terminal-tier2-${key}-cost`);
             if (costEl) {
@@ -2719,11 +3071,11 @@ export class ThreeGame {
             }
             const btn = document.getElementById(`terminal-btn-tier2-${key}`);
             if (!btn) continue;
-            btn.disabled = alreadyUnlocked || !canAfford;
-            btn.textContent = alreadyUnlocked ? 'INSTALLED' : 'INSTALL';
+            btn.disabled = !buildable;
+            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : 'INSTALL';
             btn.classList.toggle('btn-state--online', alreadyUnlocked);
-            btn.classList.toggle('btn-state--available', !alreadyUnlocked && canAfford);
-            btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && !canAfford);
+            btn.classList.toggle('btn-state--available', buildable);
+            btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && (!prereqMet || !canAfford));
 
             if (btn.dataset.listenerAttached === 'true') continue;
             btn.dataset.listenerAttached = 'true';
@@ -2736,6 +3088,65 @@ export class ThreeGame {
         if (success) {
             window.AudioManager?.play('class_lock', { volume: 0.55 });
             this.syncPersistentUpgrades();
+        } else {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+        }
+        this.renderConsoleBanking(ship);
+    }
+
+    // COMBAT MATRIX skill tree. Mirrors renderTier2Section: reuses the same action-card
+    // markup + btn-state classes. Gated on the O2 generator being repaired so weapon
+    // progression is available early-game (unlike end-game tier2 systems).
+    renderWeaponsSection(ship, bankState) {
+        const available = (bankState?.o2GeneratorLevel ?? 0) >= 1;
+        const section = document.getElementById('weapons-section');
+        if (section) section.classList.toggle('hidden', !available);
+        if (!available) return;
+
+        const levels = bankState?.weaponUpgrades ?? {};
+        for (const key of WEAPON_UPGRADE_ORDER) {
+            const cfg = WEAPON_UPGRADES_CONFIG[key];
+            if (!cfg) continue;
+            const level = Math.max(0, Math.floor(levels[key] ?? 0));
+            const maxed = level >= cfg.maxLevel;
+            const nextCost = maxed ? null : cfg.costs[level];
+            const canAfford = nextCost ? this.bank.canAfford(nextCost) : false;
+
+            const levelEl = document.getElementById(`terminal-weapon-${key}-level`);
+            if (levelEl) levelEl.textContent = `LV ${level}/${cfg.maxLevel}`;
+
+            const descEl = document.getElementById(`terminal-weapon-${key}-desc`);
+            if (descEl) {
+                descEl.textContent = maxed
+                    ? `MAX TIER — ${cfg.desc[cfg.desc.length - 1]}`
+                    : `NEXT: ${cfg.desc[level]}`;
+            }
+
+            const costEl = document.getElementById(`terminal-weapon-${key}-cost`);
+            if (costEl) {
+                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ${nextCost.tech} TECH / ${nextCost.coin} COIN`;
+            }
+
+            const btn = document.getElementById(`terminal-btn-weapon-${key}`);
+            if (!btn) continue;
+            btn.disabled = maxed || !canAfford;
+            btn.textContent = maxed ? 'MAXED' : 'UPGRADE';
+            btn.classList.toggle('btn-state--online', maxed);
+            btn.classList.toggle('btn-state--available', !maxed && canAfford);
+            btn.classList.toggle('btn-state--insufficient', !maxed && !canAfford);
+
+            if (btn.dataset.listenerAttached === 'true') continue;
+            btn.dataset.listenerAttached = 'true';
+            btn.addEventListener('click', () => this.attemptWeaponUpgrade(this.activeInteractiveConsole ?? ship, key));
+        }
+    }
+
+    attemptWeaponUpgrade(ship, key) {
+        const success = this.bank.upgradeWeapon(key);
+        if (success) {
+            window.AudioManager?.play('class_lock', { volume: 0.55 });
+            this.syncPersistentUpgrades();
+            this.emitWeaponClipState();
         } else {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
         }
@@ -2787,6 +3198,7 @@ export class ThreeGame {
         setText('terminal-summary-bank', totalBanked);
         setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
         setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
+        this.updateTerminalClock();
         const heartsFromMed = Math.floor(bankState.med / 10);
         setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
 
@@ -2879,6 +3291,7 @@ export class ThreeGame {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
         this.renderTier2Section(ship, bankState);
+        this.renderWeaponsSection(ship, bankState);
 
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {
@@ -3161,8 +3574,28 @@ export class ThreeGame {
         this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
         this.playerVitals.maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
+        this.applyWeaponUpgrades();
         this.updateGoalModuleVisualState(this.unlocks);
         this.ensureO2BubbleVisualState();
+    }
+
+    // Translate persisted weapon-upgrade levels into the live combat tuning used by
+    // spawnPlayerShot() and the reload/clip logic. Called whenever upgrades change.
+    applyWeaponUpgrades() {
+        const levels = this.bank?.getWeaponUpgrades?.() ?? {};
+        const ammoCapacity = Math.max(0, Math.floor(levels.ammoCapacity ?? 0));
+        const shotSpeed = Math.max(0, Math.floor(levels.shotSpeed ?? 0));
+        const shotDamage = Math.max(0, Math.floor(levels.shotDamage ?? 0));
+        const shotAmount = Math.max(0, Math.floor(levels.shotAmount ?? 0));
+
+        this.weaponClipSize = WEAPON_CLIP_SIZE + ammoCapacity * WEAPON_CLIP_PER_CAPACITY;
+        this.weaponUpgradeBonuses = {
+            shotDamage,
+            speedAdd: shotSpeed * WEAPON_SPEED_PER_TIER,
+            shotAmount
+        };
+        // Never leave more rounds chambered than the (possibly shrunk) clip allows.
+        this.weaponClipAmmo = Math.min(this.weaponClipAmmo, this.weaponClipSize);
     }
 
     hasUpgrade(goalKey) {
@@ -3171,6 +3604,45 @@ export class ThreeGame {
 
     getActiveShip() {
         return this.crashedShips?.find((ship) => ship.type === this.playerType) ?? null;
+    }
+
+    // Render the in-world build-site visual. Only build #3 has a physical
+    // animated structure (Note 7); the other sites are abstract scanner targets.
+    updateBuildSiteBeacon(now = performance.now()) {
+        const site = this.getNextBuildSite();
+
+        // Build #3: render its 4-frame (2x2) animated structure sprite in place
+        // at the site, UV-stepping through the sheet (Note 7).
+        if (site && site.animated && this.buildStructureTexture) {
+            if (!this.buildStructureSprite) {
+                const mat = new THREE.SpriteMaterial({
+                    map: this.buildStructureTexture,
+                    transparent: true,
+                    alphaTest: 0.04,
+                    depthWrite: false,
+                    depthTest: true,
+                    fog: false
+                });
+                const sprite = new THREE.Sprite(mat);
+                sprite.center.set(0.5, 0);
+                sprite.scale.set(4.4, 4.4, 1);
+                sprite.renderOrder = 5;
+                this.scene.add(sprite);
+                this.buildStructureSprite = sprite;
+            }
+            this.buildStructureSprite.visible = true;
+            this.buildStructureSprite.position.set(site.x, 0.1, site.z);
+            // frameIndex = floor(timer * speed) % 4, mapped to a 2x2 grid.
+            const frame = Math.floor(now * 0.006) % 4;
+            const col = frame % 2;
+            const row = Math.floor(frame / 2);
+            this.buildStructureTexture.offset.set(
+                col * BUILD_STRUCTURE_FRAME_REPEAT,
+                (1 - row) * BUILD_STRUCTURE_FRAME_REPEAT
+            );
+        } else if (this.buildStructureSprite) {
+            this.buildStructureSprite.visible = false;
+        }
     }
 
     getActiveO2GeneratorPosition() {
@@ -3327,7 +3799,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
             detail: {
                 clip: this.weaponClipAmmo,
-                maxClip: WEAPON_CLIP_SIZE,
+                maxClip: this.weaponClipSize,
                 cache: this.getAvailableAmmo(),
                 reloading: this.weaponReloading,
                 reloadProgress
@@ -3353,7 +3825,7 @@ export class ThreeGame {
             projectile?.mesh?.material?.dispose?.();
             projectile?.mesh?.geometry?.dispose?.();
         }
-        this.weaponClipAmmo = WEAPON_CLIP_SIZE;
+        this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
         this.weaponFireCooldown = 0;
@@ -3417,14 +3889,50 @@ export class ThreeGame {
         };
     }
 
+    // First build site whose corresponding goal is not yet unlocked, or null
+    // when every site has been built.
+    getNextBuildSite() {
+        for (const site of BUILD_SITES) {
+            if (!this.hasUpgrade(site.goalKey)) return site;
+        }
+        return null;
+    }
+
+    // Convert a world-space delta into the screen-planar bearing used by the
+    // HUD compass arrows.
+    planarAngleTo(dx, dz, distance) {
+        if (!(distance > 0.0001)) return 0;
+        const screenX = (dx * this.cameraPlanarRight.x) + (dz * this.cameraPlanarRight.y);
+        const screenY = (dx * this.cameraPlanarForward.x) + (dz * this.cameraPlanarForward.y);
+        return THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY));
+    }
+
     getRadarCompassState() {
+        // The yellow scanner arrow only appears once the SCANNER/RADAR upgrade is
+        // unlocked. Until then there is no arrow at all.
         if (!this.player || !this.hasUpgrade('radarNode')) {
             return { active: false, angle: 0, distance: 0 };
         }
 
+        // Once unlocked: guide toward the next "to-develop" build site, falling
+        // back to nearest pickup when every site is built.
+        const site = this.getNextBuildSite();
+        if (site) {
+            const dx = site.x - this.player.position.x;
+            const dz = site.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            return {
+                active: true,
+                mode: 'build',
+                label: site.label,
+                angle: this.planarAngleTo(dx, dz, distance),
+                distance
+            };
+        }
+
+        // Fallback mode (all sites built): nearest pickup.
         let nearest = null;
         let nearestDistance = Infinity;
-
         for (const pickup of this.pickupMeshes) {
             if (!pickup?.parent || pickup.userData?.collectedReported) continue;
 
@@ -3441,15 +3949,10 @@ export class ThreeGame {
             return { active: false, angle: 0, distance: 0 };
         }
 
-        const screenX = (nearest.dx * this.cameraPlanarRight.x) + (nearest.dz * this.cameraPlanarRight.y);
-        const screenY = (nearest.dx * this.cameraPlanarForward.x) + (nearest.dz * this.cameraPlanarForward.y);
-        const angle = nearest.distance > 0.0001
-            ? THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY))
-            : 0;
-
         return {
             active: true,
-            angle,
+            mode: 'pickup',
+            angle: this.planarAngleTo(nearest.dx, nearest.dz, nearest.distance),
             distance: nearest.distance
         };
     }
@@ -3558,6 +4061,7 @@ export class ThreeGame {
         this.playerMarker.position.set(spawn.x, this.playerMarkerHeight, spawn.y);
 
         if (resetRunState) {
+            this.runStartTime = Date.now();
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
             this.currentDepthTier = 0;
@@ -3734,7 +4238,7 @@ export class ThreeGame {
     }
 
     triggerClassAbility() {
-        if (!this.inputEnabled || this.isPlayerDead) return;
+        if (!this.isGameplayInputActive()) return;
         if (this.classAbility.cooldownRemaining > 0) {
             window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.4, bus: 'sfx' });
             return;
@@ -3856,8 +4360,9 @@ export class ThreeGame {
             }
             // Tier 2 biome O2 drain reductions
             const t2Unlocks = this.bank?.getState?.()?.tier2Unlocks ?? {};
+            // Space Heater (key kept as suitThermal): near-eliminates CRYO drain.
             if (t2Unlocks.suitThermal && this.currentBiomeKey === BIOME_KEYS.CRYO) {
-                drainRate *= 0.5;
+                drainRate *= 0.2;
             }
             if (t2Unlocks.deconFilters && this.currentBiomeKey === BIOME_KEYS.BIO) {
                 drainRate *= 0.5;
@@ -3901,6 +4406,9 @@ export class ThreeGame {
             this.isMoving = false;
             return;
         }
+        if (this.performanceProfile === 'gameplay' && !this.isGameplayInputActive()) {
+            this.clearGameplayInputState();
+        }
 
         // Handle slow and poison status effects
         if (this.playerSlowTimer > 0) {
@@ -3936,6 +4444,8 @@ export class ThreeGame {
         const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
         const fortifyActive = this.classAbility?.active && CLASS_STATS[this.playerType]?.abilityKey === 'fortify';
         const isMoving = Boolean(moveAxisX || moveAxisZ) && !fortifyActive;
+        let moveDirX = this.aimDirX || 1;
+        let moveDirZ = this.aimDirZ || 0;
         this.isMoving = isMoving;
 
         if (isMoving) {
@@ -3961,12 +4471,32 @@ export class ThreeGame {
 
             const dx = this.player.position.x - prevX;
             const dz = this.player.position.z - prevZ;
+            const movedDist = Math.hypot(dx, dz);
+            if (movedDist > 0.0001) {
+                moveDirX = dx / movedDist;
+                moveDirZ = dz / movedDist;
+            }
             this.totalDistanceTravelled += Math.sqrt(dx * dx + dz * dz);
+        } else if (this.hasActiveAim) {
+            moveDirX = this.aimDirX || 1;
+            moveDirZ = this.aimDirZ || 0;
         }
 
         this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving);
-        this.playerGlow.position.set(this.player.position.x, 1.6, this.player.position.z);
+        // Keep night visibility centered on the player sprite under isometric camera.
+        const spriteAnchorX = this.player.position.x + (this.playerSprite?.position.x ?? 0);
+        const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position.z ?? 0);
+        this.playerGlow.position.set(
+            spriteAnchorX + this.cameraPlanarForward.x * PLAYER_GLOW_SCREEN_OFFSET,
+            1.6,
+            spriteAnchorZ + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
+        );
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
+        if (this.isPositionInPuddle(this.player.position.x, this.player.position.z)) {
+            this.wetFootprintTrailTime = WET_FOOTPRINT_TRAIL_SECONDS;
+        } else {
+            this.wetFootprintTrailTime = Math.max(0, this.wetFootprintTrailTime - delta);
+        }
 
         if (isMoving) {
             this.footstepTimer += delta;
@@ -3976,6 +4506,16 @@ export class ThreeGame {
                 const footRate = 1.6 + Math.random() * 0.3;
                 if (this.performanceProfile !== 'menu') {
                     window.AudioManager?.play('amb_metal_stress', { volume: 0.055, playbackRate: footRate });
+                    if (this.wetFootprintTrailTime > 0.04) {
+                        this.spawnWetFootprint(this.player.position.x, this.player.position.z, moveDirX, moveDirZ);
+                    }
+                    if (this.isRainWeatherActive()) {
+                        this.spawnRainSplash(
+                            this.player.position.x + (Math.random() - 0.5) * 0.24,
+                            this.player.position.z + (Math.random() - 0.5) * 0.24,
+                            1.15
+                        );
+                    }
                 }
             }
         } else {
@@ -4230,6 +4770,483 @@ export class ThreeGame {
         }
     }
 
+    // Day/night cycle (Note 8). Orthographic framing => no skybox; mood reads
+    // through light intensity and fog. Modulates intensities multiplicatively and
+    // tightens fog at night, layered on top of the biome color work so biome
+    // identity is preserved. Advances only while gameplay input is enabled, so
+    // menus/cutscenes/terminals effectively pause the clock (ask A6).
+    getDayFactor() {
+        // 0 at midnight, 1 at noon, smooth cosine.
+        return 0.5 - 0.5 * Math.cos(this.timeOfDay * Math.PI * 2);
+    }
+
+    // "HH:MM · DAY|NIGHT" string for the terminal clock readout (Note 8 display).
+    getTimeOfDayLabel() {
+        const totalMinutes = Math.floor((this.timeOfDay % 1) * 24 * 60);
+        const hh = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+        const mm = String(totalMinutes % 60).padStart(2, '0');
+        const phase = this.getDayFactor() >= 0.5 ? 'DAY' : 'NIGHT';
+        return `${hh}:${mm} · ${phase}`;
+    }
+
+    // Seconds survived this run (since the last run reset).
+    getRunElapsedSeconds() {
+        return Math.max(0, Math.floor((Date.now() - (this.runStartTime ?? Date.now())) / 1000));
+    }
+
+    // Live-tick the terminal clock (~1/sec) while the terminal modal is open.
+    updateTerminalClockTick(now = performance.now()) {
+        const modal = document.getElementById('console-terminal-modal');
+        if (!modal || modal.classList.contains('hidden')) return;
+        if (now - (this._lastTerminalClockTick ?? 0) < 500) return;
+        this._lastTerminalClockTick = now;
+        this.updateTerminalClock();
+    }
+
+    // Refresh the terminal's TIME OF DAY / SURVIVED readouts. Called on terminal
+    // render and, while the terminal is open, ticked live from the render loop.
+    updateTerminalClock() {
+        const todEl = document.getElementById('terminal-time-of-day');
+        if (todEl) todEl.textContent = this.getTimeOfDayLabel();
+        const survEl = document.getElementById('terminal-time-survived');
+        if (survEl) {
+            const secs = this.getRunElapsedSeconds();
+            const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+            const ss = String(secs % 60).padStart(2, '0');
+            survEl.textContent = `${mm}:${ss}`;
+        }
+    }
+
+    updateDayNightCycle(delta) {
+        if (!this.baseLightIntensity || !this.scene?.fog) return;
+        if (this.isGameplayInputActive()) {
+            this.timeOfDay = (this.timeOfDay + delta / this.dayCycleSeconds) % 1;
+        }
+
+        const day = this.getDayFactor();
+        const lerp = THREE.MathUtils.lerp;
+        // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
+        const dayBlend = THREE.MathUtils.smoothstep(day, 0.1, 0.9);
+        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.62, 1.0, dayBlend);
+        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.45, 1.0, dayBlend);
+        this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, dayBlend);
+        const weatherLightMult = this.weather?.lightMult ?? 1;
+        if (weatherLightMult !== 1) {
+            this.ambientLight.intensity *= weatherLightMult;
+            this.directionalLight.intensity *= Math.max(0.6, weatherLightMult - 0.05);
+            this.fillLight.intensity *= Math.min(1, weatherLightMult + 0.06);
+        }
+        // Player's own glow matters a little more in the dark.
+        if (this.playerGlow) {
+            this.playerGlow.intensity = this.baseLightIntensity.playerGlow * lerp(1.55, 1.12, dayBlend);
+            this.playerGlow.distance = lerp(13.5, 10.8, dayBlend);
+            this.playerGlow.decay = lerp(1.35, 1.7, dayBlend);
+        }
+        if (this.suitFillLight) {
+            const movePulse = this.isMoving ? 0.14 * (0.5 + 0.5 * Math.sin(performance.now() * 0.011)) : 0;
+            this.suitFillLight.intensity = SUIT_LIGHT_BASE_INTENSITY * lerp(1.28, 0.74, dayBlend) * (1 + movePulse);
+            this.suitFillLight.distance = SUIT_LIGHT_BASE_DISTANCE * lerp(1.18, 0.92, dayBlend);
+            this.suitFillLight.decay = lerp(1.08, 1.32, dayBlend);
+        }
+
+        // Fog eases in at night (color stays under biome control; only the range
+        // is touched here). Keep the far plane close enough to remain visible.
+        this.scene.fog.near = lerp(this.baseFogRange.near * 0.75, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = lerp(this.baseFogRange.far * 0.72, this.baseFogRange.far * 1.25, dayBlend);
+
+        // Weather can further reduce visibility (applied multiplicatively; day/night
+        // resets fog each frame so this never accumulates).
+        const wMult = this.weather?.fogFarMult ?? 1;
+        if (wMult !== 1) {
+            this.scene.fog.far *= wMult;
+            this.scene.fog.near *= Math.max(0.7, wMult);
+        }
+
+        // Radial darkness around the player. Darkest at night and in heavy weather.
+        const weatherDark = (1 - wMult) * 0.6;
+        const darkAlpha = THREE.MathUtils.clamp(lerp(0.44, 0.02, dayBlend) + weatherDark, 0, 0.72);
+        this.updatePlayerDarkness(darkAlpha);
+    }
+
+    // Positions and tints the radial "fog of war" overlay so the murk forms a
+    // circle around the player sprite instead of a camera-depth band.
+    updatePlayerDarkness(alpha) {
+        const overlay = this.darknessOverlay;
+        if (!overlay || !this.player || !this.camera) return;
+        const w = this.container.clientWidth || 1;
+        const h = this.container.clientHeight || 1;
+
+        // Project the player sprite anchor to screen pixels.
+        this._darknessCenter.set(
+            this.player.position.x,
+            this.player.position.y + 0.4,
+            this.player.position.z
+        ).project(this.camera);
+        const cx = (this._darknessCenter.x * 0.5 + 0.5) * w;
+        const cy = (-this._darknessCenter.y * 0.5 + 0.5) * h;
+
+        const fog = this.scene.fog?.color;
+        const r = fog ? Math.round(fog.r * 255) : 8;
+        const g = fog ? Math.round(fog.g * 255) : 10;
+        const b = fog ? Math.round(fog.b * 255) : 14;
+        const radius = Math.max(w, h) * 0.62;
+
+        overlay.style.background =
+            `radial-gradient(circle ${radius.toFixed(0)}px at ${cx.toFixed(0)}px ${cy.toFixed(0)}px,` +
+            `rgba(${r},${g},${b},0) 0%,` +
+            `rgba(${r},${g},${b},0) 38%,` +
+            `rgba(${r},${g},${b},${alpha.toFixed(3)}) 100%)`;
+        overlay.style.opacity = alpha > 0.02 ? '1' : '0';
+    }
+
+    // ── Weather (Note 9) ──────────────────────────────────────────
+    ensureWeatherField() {
+        if (this.weather.points) return;
+        const positions = new Float32Array(WEATHER_PARTICLE_CAP * 3);
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setDrawRange(0, 0);
+        const material = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.16,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            fog: false
+        });
+        const points = new THREE.Points(geometry, material);
+        points.frustumCulled = false;
+        points.renderOrder = 7;
+        this.scene.add(points);
+        this.weather.points = points;
+        this.weather.geometry = geometry;
+        this.weather.positions = positions;
+        this.weather.velocities = new Float32Array(WEATHER_PARTICLE_CAP * 3);
+    }
+
+    weatherSpawnXZ() {
+        const px = this.player?.position.x ?? 0;
+        const pz = this.player?.position.z ?? 0;
+        return {
+            x: px + (Math.random() - 0.5) * 2 * WEATHER_FIELD_RADIUS,
+            z: pz + (Math.random() - 0.5) * 2 * WEATHER_FIELD_RADIUS
+        };
+    }
+
+    setWeatherState(state) {
+        const profile = WEATHER_PROFILES[state] ?? WEATHER_PROFILES.clear;
+        this.weather.state = state;
+        this.weather.count = Math.min(WEATHER_PARTICLE_CAP, profile.count);
+        this.weather.fogFarMult = profile.fogFarMult;
+        this.weather.lightMult = profile.lightMult ?? 1;
+
+        this.ensureWeatherField();
+        const { points, geometry, positions, velocities, count } = this.weather;
+        points.material.color.setHex(profile.color);
+        points.material.size = profile.size;
+        points.material.opacity = profile.opacity;
+        points.visible = count > 0;
+        geometry.setDrawRange(0, count);
+
+        // Seed particle positions across the full field height so weather doesn't
+        // visibly "pour in" from the top on a state change.
+        for (let i = 0; i < count; i++) {
+            const o = i * 3;
+            const { x, z } = this.weatherSpawnXZ();
+            positions[o] = x;
+            positions[o + 1] = Math.random() * WEATHER_FIELD_HEIGHT;
+            positions[o + 2] = z;
+            const fall = profile.fall[0] + Math.random() * (profile.fall[1] - profile.fall[0]);
+            velocities[o] = (Math.random() - 0.5) * profile.drift;
+            velocities[o + 1] = -fall;
+            velocities[o + 2] = (Math.random() - 0.5) * profile.drift;
+        }
+        geometry.attributes.position.needsUpdate = true;
+    }
+
+    pickWeatherState() {
+        return WEATHER_FORCED_STATE;
+    }
+
+    updateWeather(delta) {
+        if (!FEATURE_WEATHER) return;
+        const forcedState = this.pickWeatherState();
+        if (this.weather.state !== forcedState || !this.weather.points) {
+            this.setWeatherState(forcedState);
+        }
+        this.weather.splashCooldown = Math.max(0, (this.weather.splashCooldown ?? 0) - delta);
+        if (this.performanceProfile !== 'menu') {
+            this.weather.puddleTimer -= delta;
+            if (this.weather.puddleTimer <= 0) {
+                this.spawnRainPuddleNearPlayer();
+                this.weather.puddleTimer = RAIN_PUDDLE_SPAWN_MIN + Math.random() * (RAIN_PUDDLE_SPAWN_MAX - RAIN_PUDDLE_SPAWN_MIN);
+            }
+        }
+
+        const { count } = this.weather;
+        if (!count || !this.weather.points) return;
+
+        const { positions, velocities, geometry } = this.weather;
+        const px = this.player?.position.x ?? 0;
+        const pz = this.player?.position.z ?? 0;
+        for (let i = 0; i < count; i++) {
+            const o = i * 3;
+            positions[o] += velocities[o] * delta;
+            positions[o + 1] += velocities[o + 1] * delta;
+            positions[o + 2] += velocities[o + 2] * delta;
+
+            // Recycle particles that hit the ground or drift out of the field
+            // box (which is recentered on the player every frame).
+            const outOfRange = Math.abs(positions[o] - px) > WEATHER_FIELD_RADIUS
+                || Math.abs(positions[o + 2] - pz) > WEATHER_FIELD_RADIUS;
+            if (positions[o + 1] <= 0.05 || outOfRange) {
+                if (
+                    positions[o + 1] <= 0.05
+                    && this.weather.splashCooldown <= 0
+                    && this.weather.state === WEATHER_FORCED_STATE
+                    && Math.abs(positions[o] - px) <= 8
+                    && Math.abs(positions[o + 2] - pz) <= 8
+                    && Math.random() < RAIN_SPLASH_IMPACT_CHANCE
+                ) {
+                    this.spawnRainSplash(positions[o], positions[o + 2], 0.68 + Math.random() * 0.38);
+                    this.weather.splashCooldown = RAIN_SPLASH_COOLDOWN;
+                }
+                const { x, z } = this.weatherSpawnXZ();
+                positions[o] = x;
+                positions[o + 1] = WEATHER_FIELD_HEIGHT - Math.random() * 1.5;
+                positions[o + 2] = z;
+            }
+        }
+        geometry.attributes.position.needsUpdate = true;
+    }
+
+    isRainWeatherActive() {
+        return FEATURE_WEATHER && this.weather?.state === WEATHER_FORCED_STATE;
+    }
+
+    spawnRainSplash(x, z, scaleBoost = 1) {
+        if (!this.scene) return;
+        const splash = new THREE.Group();
+        splash.position.set(x, 0, z);
+        splash.renderOrder = 20;
+
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.06, 0.13, 16),
+            new THREE.MeshBasicMaterial({
+                color: 0xb7d4eb,
+                transparent: true,
+                opacity: 0.52,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.042;
+        ring.renderOrder = 20;
+        splash.add(ring);
+
+        const dropletGeo = new THREE.CircleGeometry(0.024, 10);
+        const droplets = [];
+        const dropletCount = 3 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < dropletCount; i++) {
+            const droplet = new THREE.Mesh(
+                dropletGeo,
+                new THREE.MeshBasicMaterial({
+                    color: 0xcde6f8,
+                    transparent: true,
+                    opacity: 0.6,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                })
+            );
+            droplet.rotation.x = -Math.PI / 2;
+            droplet.position.set((Math.random() - 0.5) * 0.04, 0.046 + Math.random() * 0.012, (Math.random() - 0.5) * 0.04);
+            splash.add(droplet);
+            const ang = Math.random() * Math.PI * 2;
+            const speed = (0.2 + Math.random() * 0.3) * scaleBoost;
+            droplets.push({
+                mesh: droplet,
+                vx: Math.cos(ang) * speed,
+                vz: Math.sin(ang) * speed,
+                vy: 0.28 + Math.random() * 0.2
+            });
+        }
+        this.scene.add(splash);
+
+        const duration = 0.3 + Math.random() * 0.16;
+        const peakScale = 1 + (2.05 * scaleBoost);
+        const baseOpacity = 0.5 + Math.random() * 0.12;
+        this.transientEffects.push({
+            mesh: splash,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = Math.min(age / duration, 1);
+                const eased = 1 - Math.pow(1 - t, 2);
+                const scale = 0.72 + peakScale * eased;
+                ring.scale.set(scale, scale, 1);
+                ring.material.opacity = baseOpacity * (1 - t);
+
+                for (const droplet of droplets) {
+                    droplet.vy = Math.max(-0.32, droplet.vy - 4.2 * dt);
+                    droplet.mesh.position.x += droplet.vx * dt;
+                    droplet.mesh.position.z += droplet.vz * dt;
+                    droplet.mesh.position.y = Math.max(0.04, droplet.mesh.position.y + droplet.vy * dt);
+                    droplet.mesh.material.opacity = 0.6 * (1 - t);
+                }
+            },
+            dispose: () => {
+                ring.geometry.dispose();
+                ring.material.dispose();
+                dropletGeo.dispose();
+                for (const droplet of droplets) {
+                    droplet.mesh.material.dispose();
+                }
+            }
+        });
+    }
+
+    spawnRainPuddleNearPlayer() {
+        if (!this.player || !this.scene || !this.isRainWeatherActive()) return;
+        if ((this.weather.activeRainPuddles ?? 0) >= RAIN_PUDDLE_MAX_COUNT) return;
+
+        const baseMaterial = this.currentBiomeKey === BIOME_KEYS.BIO
+            ? this.scatterMaterials?.scatter_slime_puddle
+            : this.scatterMaterials?.scatter_coolant_puddle;
+        if (!baseMaterial) return;
+
+        for (let attempt = 0; attempt < 8; attempt++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 1.25 + Math.random() * 7.6;
+            const x = this.player.position.x + Math.cos(angle) * radius;
+            const z = this.player.position.z + Math.sin(angle) * radius;
+            if (!this.canOccupyPosition(x, z)) continue;
+
+            const puddleRadius = 0.36 + Math.random() * 0.46;
+            const footprintZone = { x, z, radius: puddleRadius * 0.42, active: true };
+            this.dynamicPuddles.push(footprintZone);
+
+            const mat = new THREE.MeshBasicMaterial({
+                map: baseMaterial.map,
+                color: 0x777a76,
+                transparent: true,
+                alphaTest: 0.001,
+                opacity: 0.2 + Math.random() * 0.13,
+                depthWrite: false,
+                depthTest: true,
+                side: THREE.DoubleSide,
+                fog: false
+            });
+            if (this.currentBiomeKey === BIOME_KEYS.BIO) {
+                mat.color.setHex(0x707a70);
+            } else if (this.currentBiomeKey === BIOME_KEYS.CRYO) {
+                mat.color.setHex(0x7b7f80);
+            } else {
+                mat.color.setHex(0x737674);
+            }
+
+            const sprite = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+            sprite.rotation.x = -Math.PI / 2;
+            sprite.rotation.z = Math.random() * Math.PI * 2;
+            sprite.position.set(x, 0.046, z);
+            const size = puddleRadius * (2.6 + Math.random() * 1.1);
+            const targetScaleX = size * (1.08 + Math.random() * 0.18);
+            const targetScaleY = size * (0.82 + Math.random() * 0.16);
+            sprite.scale.set(targetScaleX * 0.34, targetScaleY * 0.34, 1);
+            sprite.renderOrder = 3;
+            this.scene.add(sprite);
+
+            const duration = 13 + Math.random() * 11;
+            const baseOpacity = mat.opacity;
+            this.weather.activeRainPuddles = (this.weather.activeRainPuddles ?? 0) + 1;
+            this.transientEffects.push({
+                mesh: sprite,
+                age: 0,
+                duration,
+                update: (_dt, age) => {
+                    const t = Math.min(age / duration, 1);
+                    const grow = 0.34 + 0.66 * (1 - Math.pow(1 - Math.min(t * 2.2, 1), 3));
+                    sprite.scale.set(targetScaleX * grow, targetScaleY * grow, 1);
+                    footprintZone.radius = puddleRadius * (0.42 + 0.58 * grow);
+                    sprite.material.opacity = baseOpacity * (1 - t * 0.85);
+                },
+                dispose: () => {
+                    footprintZone.active = false;
+                    const idx = this.dynamicPuddles.indexOf(footprintZone);
+                    if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
+                    this.weather.activeRainPuddles = Math.max(0, (this.weather.activeRainPuddles ?? 1) - 1);
+                    sprite.geometry.dispose();
+                    mat.dispose();
+                }
+            });
+            return;
+        }
+    }
+
+    isPositionInPuddle(x, z) {
+        for (const sprite of this.scatterSprites) {
+            const type = sprite?.userData?.type;
+            if (typeof type !== 'string' || !type.includes('puddle')) continue;
+            const radius = Math.max(
+                0.42,
+                Math.max(sprite.userData.baseScaleX ?? sprite.scale.x ?? 0.5, sprite.userData.baseScaleY ?? sprite.scale.y ?? 0.5) * 0.42
+            );
+            if (Math.hypot(x - sprite.position.x, z - sprite.position.z) <= radius) {
+                return true;
+            }
+        }
+        for (const puddle of this.dynamicPuddles) {
+            if (!puddle?.active) continue;
+            if (Math.hypot(x - puddle.x, z - puddle.z) <= puddle.radius) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    spawnWetFootprint(x, z, dirX, dirZ) {
+        if (!this.scene) return;
+        const len = Math.hypot(dirX, dirZ) || 1;
+        const fx = dirX / len;
+        const fz = dirZ / len;
+        const side = this.wetFootstepSide || 1;
+        this.wetFootstepSide = -side;
+        const px = -fz;
+        const pz = fx;
+
+        const footprint = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.11, 0.2),
+            new THREE.MeshBasicMaterial({
+                color: 0x5f6764,
+                transparent: true,
+                opacity: 0.38,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            })
+        );
+        footprint.rotation.x = -Math.PI / 2;
+        footprint.rotation.z = Math.atan2(fx, fz);
+        footprint.position.set(
+            x - fx * 0.2 + px * side * 0.11,
+            0.041,
+            z - fz * 0.2 + pz * side * 0.11
+        );
+        footprint.renderOrder = 19;
+        this.scene.add(footprint);
+
+        const duration = 2.7 + Math.random() * 1.7;
+        this.transientEffects.push({
+            mesh: footprint,
+            age: 0,
+            duration,
+            update: (_dt, age) => {
+                const t = Math.min(age / duration, 1);
+                footprint.material.opacity = 0.38 * (1 - t * t);
+            }
+        });
+    }
+
     emitDepthTierChanged(depthTier = this.maxDepthTierReached) {
         const tier = Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, Math.floor(depthTier)));
         window.dispatchEvent(new CustomEvent('depth-tier-changed', {
@@ -4301,7 +5318,7 @@ export class ThreeGame {
         if (isMoving) {
             this.currentFacingRow = this.getFacingRow(axisX, axisZ);
             this.animationTimer += delta * SPRITE_ANIMATION_SPEED;
-            const column = Math.floor(this.animationTimer) % SPRITE_GRID_SIZE;
+            const column = Math.floor(this.animationTimer) % PLAYER_WALK_FRAME_COUNT;
             this.updatePlayerSpriteFrame(column, this.currentFacingRow);
 
             if (this.lastAnimationColumn === undefined) {
@@ -4309,7 +5326,7 @@ export class ThreeGame {
             }
             if (column !== this.lastAnimationColumn) {
                 this.lastAnimationColumn = column;
-                if (column === 1 || column === 3) {
+                if (column === 1) {
                     if (this.performanceProfile !== 'menu') {
                         window.AudioManager?.playProceduralFootstep(this.playerType);
                     }
@@ -4328,25 +5345,18 @@ export class ThreeGame {
 
     getFacingRow(axisX, axisZ) {
         const angle = Math.atan2(axisZ, axisX);
-
-        if (angle > -Math.PI / 4 && angle <= Math.PI / 4) {
-            return 2;
-        }
-
-        if (angle > Math.PI / 4 && angle <= (3 * Math.PI) / 4) {
-            return 0;
-        }
-
-        if (angle > (-3 * Math.PI) / 4 && angle <= -Math.PI / 4) {
-            return 3;
-        }
-
-        return 1;
+        const octant = Math.round(angle / (Math.PI / 4));
+        return (octant + PLAYER_SPRITE_DIRECTION_CELLS.length) % PLAYER_SPRITE_DIRECTION_CELLS.length;
     }
 
     updatePlayerSpriteFrame(column, row) {
         const texture = this.playerTextures[this.playerType] ?? this.playerTextures.SCOUT;
-        texture.offset.set(column * SPRITE_FRAME_REPEAT, (SPRITE_GRID_SIZE - 1 - row) * SPRITE_FRAME_REPEAT);
+        const directionCell = PLAYER_SPRITE_DIRECTION_CELLS[row] ?? PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
+        const frameColumn = directionCell.baseColumn + (column % PLAYER_WALK_FRAME_COUNT);
+        texture.offset.set(
+            frameColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
+            (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
+        );
     }
 
     updateWeaponState(delta) {
@@ -4378,7 +5388,7 @@ export class ThreeGame {
 
         this.weaponReloading = false;
         const availableAmmo = this.getAvailableAmmo();
-        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const ammoLoaded = Math.min(missingAmmo, availableAmmo);
         if (ammoLoaded > 0) {
             this.weaponClipAmmo += ammoLoaded;
@@ -4397,7 +5407,7 @@ export class ThreeGame {
     startReload() {
         if (this.weaponReloading) return false;
         const availableAmmo = this.getAvailableAmmo();
-        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const refillAmount = Math.min(missingAmmo, availableAmmo);
         if (refillAmount <= 0) return false;
         this.weaponReloading = true;
@@ -4408,7 +5418,7 @@ export class ThreeGame {
     }
 
     requestReload({ manual = false } = {}) {
-        if (!this.inputEnabled || this.isPlayerDead) return false;
+        if (!this.isGameplayInputActive()) return false;
         if (this.weaponReloading) return false;
 
         const availableAmmo = this.getAvailableAmmo();
@@ -4420,7 +5430,7 @@ export class ThreeGame {
             return false;
         }
 
-        const missingAmmo = Math.max(0, WEAPON_CLIP_SIZE - this.weaponClipAmmo);
+        const missingAmmo = Math.max(0, this.weaponClipSize - this.weaponClipAmmo);
         const refillAmount = Math.min(missingAmmo, availableAmmo);
         if (refillAmount <= 0) {
             if (manual) {
@@ -4433,7 +5443,7 @@ export class ThreeGame {
     }
 
     tryFireWeapon(clientX, clientY) {
-        if (!this.inputEnabled || this.isPlayerDead) return;
+        if (!this.isGameplayInputActive()) return;
 
         if (this.isInsideNoFireZone()) {
             window.AudioManager?.play('ui_error', { volume: 0.42 });
@@ -4474,20 +5484,43 @@ export class ThreeGame {
         this.weaponFireCooldown = WEAPON_FIRE_COOLDOWN;
         this.emitWeaponClipState();
 
-        this.spawnProjectile({
-            x: this.player.position.x + normX * 0.62,
-            z: this.player.position.z + normZ * 0.62,
-            vx: normX * PROJECTILE_SPEED,
-            vz: normZ * PROJECTILE_SPEED,
-            ttl: PROJECTILE_TTL,
-            damage: PROJECTILE_DAMAGE,
-            radius: PROJECTILE_RADIUS
-        });
+        this.spawnPlayerShot(normX, normZ);
 
         window.AudioManager?.play('ui_scan_ping', { volume: 0.34, playbackRate: 1.42 });
 
         if (this.weaponClipAmmo <= 0) {
             this.requestReload();
+        }
+    }
+
+    spawnPlayerShot(normX, normZ) {
+        const classDamage = CLASS_STATS[this.playerType]?.projectileDamage ?? PROJECTILE_DAMAGE;
+        const bonuses = this.weaponUpgradeBonuses ?? null;
+        const damage = classDamage + (bonuses?.shotDamage ?? 0);
+        const speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
+        const shotAmount = FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0;
+        const spreads = MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
+
+        const fireOne = (dx, dz) => {
+            this.spawnProjectile({
+                x: this.player.position.x + dx * 0.62,
+                z: this.player.position.z + dz * 0.62,
+                vx: dx * speed,
+                vz: dz * speed,
+                ttl: PROJECTILE_TTL,
+                damage,
+                radius: PROJECTILE_RADIUS
+            });
+        };
+
+        if (!spreads || spreads.length === 0) {
+            fireOne(normX, normZ);
+            return;
+        }
+        for (const angle of spreads) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            fireOne((normX * cos) - (normZ * sin), (normX * sin) + (normZ * cos));
         }
     }
 
@@ -4542,14 +5575,27 @@ export class ThreeGame {
 
     checkProjectileWallHit(projectile) {
         const speed = Math.hypot(projectile.vx, projectile.vz);
-        if (speed <= 0.0001) return false;
+        if (speed <= 0.0001) return null;
         this._projRaycaster.set(
             new THREE.Vector3(projectile.mesh.position.x, 0.45, projectile.mesh.position.z),
             new THREE.Vector3(projectile.vx / speed, 0, projectile.vz / speed)
         );
         this._projRaycaster.far = Math.max(0.08, speed * 0.045);
         const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
-        return hits.length > 0;
+        if (!hits.length) return null;
+        const hit = hits[0];
+        // World-space face normal (geometry normals are in local space).
+        let nx = -projectile.vx / speed;
+        let nz = -projectile.vz / speed;
+        if (hit.face && hit.object) {
+            const worldNormal = hit.face.normal.clone()
+                .transformDirection(hit.object.matrixWorld);
+            if (Number.isFinite(worldNormal.x) && Number.isFinite(worldNormal.z)) {
+                nx = worldNormal.x;
+                nz = worldNormal.z;
+            }
+        }
+        return { point: hit.point, normalX: nx, normalZ: nz };
     }
 
     checkProjectilePlayerHit(projectile) {
@@ -4586,7 +5632,9 @@ export class ThreeGame {
                 projectile.mesh.position.z - sprite.position.z
             );
             const hitRadius = sprite.userData.isBoss ? (SNAIL_HIT_RADIUS * 2.8) : SNAIL_HIT_RADIUS;
-            if (dist <= hitRadius + (projectile.radius ?? PROJECTILE_RADIUS)) {
+            // Forgiving hitbox: pad player shots so grazing the visual edge still registers.
+            const hitboxPadding = projectile.isEnemy ? 0 : PLAYER_HITBOX_PADDING;
+            if (dist <= hitRadius + (projectile.radius ?? PROJECTILE_RADIUS) + hitboxPadding) {
                 return sprite;
             }
         }
@@ -4632,6 +5680,120 @@ export class ThreeGame {
         this.transientEffects.push(effect);
     }
 
+    // Ballistic debris: small boxes flung outward with gravity, drag, and a floor bounce.
+    // Registered as a plain-object transient effect so it reuses updateTransientEffects().
+    spawnPhysicalBurst(x, z, { color = 0xffe08f, count = 6, upward = 0.18, spread = 1.4 } = {}) {
+        if (!this.scene) return;
+        // Respect the adaptive-quality degrade signal.
+        let n = this.visibleChunkRadius === 0 ? Math.max(2, Math.floor(count * 0.5)) : count;
+        const group = new THREE.Group();
+        const geo = new THREE.BoxGeometry(0.045, 0.045, 0.045);
+        const particles = [];
+        for (let i = 0; i < n; i++) {
+            const mat = new THREE.MeshBasicMaterial({
+                color,
+                transparent: true,
+                opacity: 0.95,
+                depthWrite: false
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set((Math.random() - 0.5) * 0.06, 0.3 + Math.random() * 0.12, (Math.random() - 0.5) * 0.06);
+            mesh.renderOrder = 28;
+            group.add(mesh);
+            const angle = Math.random() * Math.PI * 2;
+            const sp = (0.6 + Math.random() * 1.4) * spread;
+            particles.push({
+                mesh,
+                vx: Math.cos(angle) * sp,
+                vy: upward * 5 + Math.random() * 1.2,
+                vz: Math.sin(angle) * sp
+            });
+        }
+        group.position.set(x, 0, z);
+        this.scene.add(group);
+
+        const duration = 0.7;
+        this.transientEffects.push({
+            mesh: group,
+            age: 0,
+            duration,
+            update(delta) {
+                this.age += delta;
+                const t = Math.min(this.age / duration, 1);
+                const dragMul = Math.exp(-PHYS_PARTICLE_DRAG * delta);
+                for (const p of particles) {
+                    p.vy -= PHYS_PARTICLE_GRAVITY * delta;
+                    p.vx *= dragMul;
+                    p.vz *= dragMul;
+                    p.mesh.position.x += p.vx * delta;
+                    p.mesh.position.y += p.vy * delta;
+                    p.mesh.position.z += p.vz * delta;
+                    if (p.mesh.position.y <= 0.02) {
+                        p.mesh.position.y = 0.02;
+                        p.vy *= PHYS_PARTICLE_BOUNCE;
+                        p.vx *= 0.8;
+                        p.vz *= 0.8;
+                    }
+                    p.mesh.material.opacity = Math.max(0, 0.95 * (1 - t));
+                }
+            },
+            dispose() {
+                geo.dispose();
+                for (const p of particles) p.mesh.material.dispose();
+            }
+        });
+    }
+
+    // Fading scorch decal flush against a wall face. Capped + recycled to protect frame time.
+    spawnWallDecal(x, z, normalX, normalZ) {
+        if (!this.scene) return;
+        const len = Math.hypot(normalX, normalZ) || 1;
+        const nx = normalX / len;
+        const nz = normalZ / len;
+
+        const geo = new THREE.PlaneGeometry(0.3, 0.3);
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0x0e0a07,
+            transparent: true,
+            opacity: 0.78,
+            depthWrite: false,
+            depthTest: true
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        // Offset slightly off the face to avoid z-fighting; sit at mid-wall height.
+        mesh.position.set(x + nx * 0.02, 0.45, z + nz * 0.02);
+        mesh.rotation.y = Math.atan2(nx, nz);
+        mesh.renderOrder = 5;
+        this.scene.add(mesh);
+
+        const duration = 5.0;
+        const effect = {
+            mesh,
+            age: 0,
+            maxAge: duration,
+            update(delta) {
+                this.age += delta;
+                const t = Math.min(this.age / duration, 1);
+                mat.opacity = 0.78 * (1 - t * t);
+            },
+            dispose() {
+                geo.dispose();
+                mat.dispose();
+            }
+        };
+
+        this._wallDecals = this._wallDecals ?? [];
+        this._wallDecals.push(effect);
+        this.transientEffects.push(effect);
+
+        // Recycle the oldest decal if we exceed the cap.
+        while (this._wallDecals.length > WALL_DECAL_CAP) {
+            const oldest = this._wallDecals.shift();
+            if (!oldest) break;
+            oldest.age = oldest.maxAge; // flag for removal next frame
+        }
+    }
+
     updateProjectiles(delta) {
         if (!this.activeProjectiles.length) return;
         const toRemove = new Set();
@@ -4646,8 +5808,16 @@ export class ThreeGame {
             projectile.mesh.position.x += projectile.vx * delta;
             projectile.mesh.position.z += projectile.vz * delta;
 
-            if (this.checkProjectileWallHit(projectile)) {
-                this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+            const wallHit = this.checkProjectileWallHit(projectile);
+            if (wallHit) {
+                const hx = wallHit.point?.x ?? projectile.mesh.position.x;
+                const hz = wallHit.point?.z ?? projectile.mesh.position.z;
+                this.spawnProjectileImpactEffect(hx, hz);
+                const sparkColor = projectile.isEnemy ? 0xff6a4a : 0xffd27a;
+                this.spawnPhysicalBurst(hx, hz, { color: sparkColor, count: 5, upward: 0.16 });
+                if (FEATURE_WALL_DECALS) {
+                    this.spawnWallDecal(hx, hz, wallHit.normalX, wallHit.normalZ);
+                }
                 toRemove.add(projectile);
                 continue;
             }
@@ -4712,12 +5882,28 @@ export class ThreeGame {
         this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
     }
 
+    snapCameraToPlayer() {
+        if (!this.player || !this.camera) return;
+        this.camera.position.set(
+            this.player.position.x + this.cameraOffset.x,
+            this.player.position.y + this.cameraOffset.y,
+            this.player.position.z + this.cameraOffset.z
+        );
+        this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
+    }
+
     triggerCameraShake(intensity = 0.18, duration = 0.35) {
         this._cameraShakeIntensity = Math.max(this._cameraShakeIntensity, intensity);
         this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
     }
 
     syncVisibleChunks(force = false) {
+        if (this.performanceProfile === 'menu') {
+            this.clearLoadedChunksForRunReset();
+            if (this.chunkGroups) this.chunkGroups.visible = false;
+            return;
+        }
+
         const centerChunkX = Math.floor(this.player.position.x / this.chunkSize);
         const centerChunkY = Math.floor(this.player.position.z / this.chunkSize);
         this.updateDepthTierProgress(centerChunkX, centerChunkY);
@@ -4810,6 +5996,27 @@ export class ThreeGame {
             this.mountChunk(next.chunkX, next.chunkY);
             mounted += 1;
         }
+    }
+
+    async prepareVisibleChunksForGameplay({ batchSize = 3, onProgress = null } = {}) {
+        if (this.performanceProfile !== 'gameplay' || !this.player) return;
+
+        this.syncVisibleChunks(true);
+        const initialPending = this.pendingChunkMounts.length;
+        let mounted = 0;
+        onProgress?.(initialPending === 0 ? 1 : 0);
+
+        while (this.pendingChunkMounts.length > 0) {
+            const before = this.pendingChunkMounts.length;
+            this.processPendingChunkMounts(batchSize);
+            mounted += Math.max(0, before - this.pendingChunkMounts.length);
+            const total = Math.max(1, initialPending);
+            onProgress?.(Math.min(1, mounted / total));
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+
+        this.syncVisibleChunks(true);
+        onProgress?.(1);
     }
 
     mountChunk(chunkX, chunkY) {
@@ -5543,7 +6750,8 @@ export class ThreeGame {
                 opacity = 1;
             } else {
                 type = this.chooseWeightedType(biomeVariants, random);
-                const isGroundCover = type.includes('puddle') || type === 'scatter_gravel';
+                const isGroundCover = type.includes('puddle') || type === 'scatter_gravel'
+                    || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss';
                 const isTallScatter = type === 'scatter_ice_stalagmite' || type === 'scatter_bio_pod';
                 const isWreckage = type === 'ship_wreckage';
                 if (isWreckage) {
@@ -6640,6 +7848,13 @@ export class ThreeGame {
             this.spawnSnailDrops(sprite);
         }
         this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, 'bunker_junk_uncommon');
+        const burstColor = sprite.userData.isBoss ? 0xff6688 : 0x86d36a;
+        this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, {
+            color: burstColor,
+            count: sprite.userData.isBoss ? 14 : 8,
+            upward: 0.22,
+            spread: sprite.userData.isBoss ? 2.0 : 1.5
+        });
         window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
         window.AudioManager?.play('ui_error', { volume: 0.2, playbackRate: 0.72 });
         window.dispatchEvent(new CustomEvent('enemy-killed', {
@@ -6682,6 +7897,74 @@ export class ThreeGame {
         return null;
     }
 
+    // Spawn a single milestone "retaliation" boss near the player that beelines
+    // for the ship. Driven by the bank's `goal-unlocked` event (see init wiring).
+    spawnMilestoneBoss(bossType) {
+        if (!this.player || !this.snailsEnabled) return null;
+        if (!this.scatterMaterials[bossType]) return null;
+        // Never stack the same milestone boss.
+        if (this.scatterSprites.some((s) => s.userData?.isMilestone && s.userData?.type === bossType && !s.userData?.burstTriggered)) {
+            return null;
+        }
+
+        const baseX = this.player.position.x;
+        const baseZ = this.player.position.z;
+        let spawnX = null;
+        let spawnZ = null;
+        for (const dist of [11, 9, 13, 7, 15]) {
+            const startA = Math.random() * Math.PI * 2;
+            for (let a = 0; a < 12; a++) {
+                const ang = startA + (a / 12) * Math.PI * 2;
+                const tx = baseX + Math.cos(ang) * dist;
+                const tz = baseZ + Math.sin(ang) * dist;
+                if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                    spawnX = tx;
+                    spawnZ = tz;
+                    break;
+                }
+            }
+            if (spawnX !== null) break;
+        }
+        if (spawnX === null) return null;
+
+        const tint = bossType === 'boss_cryosnail' ? 0x88ccff
+            : bossType === 'boss_sporesnail' ? 0x88ff88 : 0xffffff;
+        const placement = {
+            x: spawnX,
+            z: spawnZ,
+            type: bossType,
+            scatterKey: `milestone:${bossType}:${Date.now()}`,
+            scale: bossType === 'boss_cybersnail' ? 3.2 : bossType === 'boss_cryosnail' ? 3.8 : 4.4,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'boss',
+            phase: 0,
+            opacity: 1,
+            biomeTint: tint,
+            isBoss: true
+        };
+        const boss = this.createScatterInstance(placement);
+        if (!boss) return null;
+        boss.userData.isMilestone = true;
+        boss.userData.prioritizeShip = true;
+        boss.userData.targetType = 'ship';
+
+        // Parent to the player's (loaded) chunk group so the boss persists in
+        // scatterSprites across chunk syncs. Chunk groups use world coords.
+        const chunkX = Math.floor(baseX / this.chunkSize);
+        const chunkY = Math.floor(baseZ / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`);
+        if (!group) return null;
+        group.add(boss);
+        this.scatterSprites.push(boss);
+
+        window.AudioManager?.play('amb_metal_stress', { volume: 0.6, playbackRate: 0.42, bus: 'sfx' });
+        window.dispatchEvent(new CustomEvent('milestone-boss-spawned', { detail: { type: bossType } }));
+        return boss;
+    }
+
     selectSnailTarget(sprite, activeShip) {
         const targets = [];
         if (this.player && !this.isPlayerDead) {
@@ -6703,6 +7986,17 @@ export class ThreeGame {
         for (const target of targets) {
             target.distance = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
         }
+
+        // Milestone retaliation bosses bee-line for the ship until the player
+        // physically gets in their face, then they defend themselves.
+        if (sprite.userData.prioritizeShip) {
+            const shipTarget = targets.find((t) => t.type === 'ship');
+            const playerTarget = targets.find((t) => t.type === 'player');
+            if (shipTarget && (!playerTarget || playerTarget.distance > 3.5)) {
+                return { ...shipTarget, mode: 'hunt', goalX: shipTarget.x, goalZ: shipTarget.z };
+            }
+        }
+
         targets.sort((a, b) => a.distance - b.distance);
         const nearest = targets[0];
 
@@ -6970,9 +8264,8 @@ export class ThreeGame {
             sprite.position.x = nextX;
             sprite.position.z = nextZ;
 
-            // Update facing
-            const absX = Math.abs(sprite.scale.x);
-            sprite.scale.x = data.chargeDirX < 0 ? -absX : absX;
+            // Update facing from charge direction via shared helper
+            this.faceSpriteFromDir(sprite, data.chargeDirX);
 
             // Player hit check
             const newDist = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
@@ -7040,6 +8333,27 @@ export class ThreeGame {
                 }
             }
         }
+    }
+
+    // Shared billboard facing helper: flip sprite scale.x toward the travel
+    // direction. Uses the live move vector (dirX) every frame; when X motion is
+    // negligible (Z-dominant travel) it falls back to the bearing toward the
+    // target so sprites never keep stale "backward" facing. Preserves last sign
+    // when both inputs are inside the deadzone to avoid jitter.
+    faceSpriteFromDir(sprite, dirX, fallbackX = 0) {
+        const data = sprite.userData;
+        const DEADZONE = 0.02;
+        if (dirX <= -DEADZONE) {
+            data.facingSign = -1;
+        } else if (dirX >= DEADZONE) {
+            data.facingSign = 1;
+        } else if (fallbackX <= -DEADZONE) {
+            data.facingSign = -1;
+        } else if (fallbackX >= DEADZONE) {
+            data.facingSign = 1;
+        }
+        const facingSign = data.facingSign === -1 ? -1 : 1;
+        sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
     }
 
     updateSnailBehavior(sprite, delta, activeShip) {
@@ -7114,14 +8428,9 @@ export class ThreeGame {
                 data.pathNodes = null;
             }
 
-            const xTurnThreshold = 0.08;
-            if (dirX <= -xTurnThreshold) {
-                data.facingSign = -1;
-            } else if (dirX >= xTurnThreshold) {
-                data.facingSign = 1;
-            }
-            const facingSign = data.facingSign === -1 ? -1 : 1;
-            sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
+            // Face the travel direction every frame; fall back to bearing toward
+            // the target when movement is Z-dominant so snails never slide backward.
+            this.faceSpriteFromDir(sprite, dirX, toGoalX);
         }
 
         const distanceToTarget = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
@@ -7266,6 +8575,9 @@ export class ThreeGame {
         const mat = this.scatterMaterials.scatter_slime_puddle.clone();
         mat.color.setHex(0x55ff55); // neon toxic green
         mat.opacity = 0.85;
+        const damageRadius = isLarge ? 1.1 : 0.45;
+        const footprintZone = { x, z, radius: damageRadius, active: true };
+        this.dynamicPuddles.push(footprintZone);
         
         const sprite = new THREE.Sprite(mat);
         sprite.center.set(0.5, 0.5);
@@ -7286,11 +8598,16 @@ export class ThreeGame {
                 // Deal damage if player walks in it
                 if (this.player && !this.isPlayerDead && age % 0.4 < dt) {
                     const d = Math.hypot(this.player.position.x - x, this.player.position.z - z);
-                    const damageRadius = isLarge ? 1.1 : 0.45;
                     if (d <= damageRadius) {
                         this.playerPoisonTimer = 3.0; // poisoned for 3 seconds
                     }
                 }
+            },
+            dispose: () => {
+                footprintZone.active = false;
+                const idx = this.dynamicPuddles.indexOf(footprintZone);
+                if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
+                mat.dispose();
             }
         });
     }
@@ -7504,6 +8821,13 @@ export class ThreeGame {
         }
 
         this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, sprite.userData.type);
+        const junkColors = this.getJunkVariantEffectColors(sprite.userData.type);
+        this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, {
+            color: junkColors.glowColor,
+            count: 7,
+            upward: 0.2,
+            spread: 1.6
+        });
         window.AudioManager?.playProceduralJunkBurst(sprite.userData.type);
 
         for (const target of this.createJunkBurstTargets(sprite.position.x, sprite.position.z, random)) {
@@ -8140,6 +9464,7 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
+        this.darknessOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
         Object.values(this.biomeTerrainTextures ?? {}).forEach((textureSet) => {
@@ -8147,6 +9472,9 @@ export class ThreeGame {
         });
         this.floorMaterial?.dispose?.();
         this.wallMaterial?.dispose?.();
+        this.menuShowroomFloor?.geometry?.dispose?.();
+        this.menuShowroomFloor?.material?.dispose?.();
+        this.menuGridTexture?.dispose?.();
         Object.values(this.scatterMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterPlaneMaterials ?? {}).forEach((material) => material.dispose?.());
         Object.values(this.scatterTextures ?? {}).forEach((texture) => texture.dispose?.());

@@ -9,6 +9,7 @@ const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
 const transitionOverlay = document.getElementById('transition-overlay');
+const loaderTitle = document.querySelector('.loader-title');
 const loaderBar = document.querySelector('.loader-bar');
 const loaderStatus = document.querySelector('.loader-status');
 
@@ -178,7 +179,8 @@ function refreshCharBestScores() {
         const el = document.getElementById(`char-best-${cls}`);
         if (!el) continue;
         const best = Number(localStorage.getItem(`hb_best_score_${cls}`) ?? 0);
-        el.textContent = best > 0 ? `BEST: ${best} PTS` : '';
+        const formattedScore = String(best).padStart(4, '0');
+        el.textContent = `◈ BEST: ${formattedScore} PTS`;
     }
 }
 
@@ -529,6 +531,13 @@ window.addEventListener('enemy-killed', (event) => {
     if (total === 1) fireMothershipReactiveLine('first_kill');
     if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
     if (type === 'crawler') fireMothershipReactiveLine('crawler_detected');
+    if (typeof type === 'string' && type.startsWith('boss_')) fireMothershipReactiveLine('first_boss');
+    // Escalation beat: once the agent racks up kills, 0047 takes notice.
+    if (total >= 25) fireMothershipReactiveLine('specimen_notices');
+});
+
+window.addEventListener('weapon-upgraded', () => {
+    fireMothershipReactiveLine('weapon_calibrated');
 });
 
 window.addEventListener('enemy-hit', (event) => {
@@ -723,6 +732,8 @@ window.addEventListener('biome-changed', (event) => {
             fireMothershipReactiveLine('first_bio');
         }
     }
+    // Crossfade music to the new biome's exploration stem.
+    updateMusicTension();
 });
 renderBunkerLevel(0);
 renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
@@ -838,7 +849,39 @@ function formatRunTime(ms) {
     return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function clearAllTimers() {
+    if (biomePromptTimer) { clearTimeout(biomePromptTimer); biomePromptTimer = null; }
+    if (damageFlashTimer) { clearTimeout(damageFlashTimer); damageFlashTimer = null; }
+    if (deathSequenceTimer) { clearTimeout(deathSequenceTimer); deathSequenceTimer = null; }
+    if (missionProgressHUDTimer) { clearTimeout(missionProgressHUDTimer); missionProgressHUDTimer = null; }
+    if (o2AlarmTimer) { clearTimeout(o2AlarmTimer); o2AlarmTimer = null; }
+    if (pickupComboTimer) { clearTimeout(pickupComboTimer); pickupComboTimer = null; }
+    if (weaponErrorTimer) { clearTimeout(weaponErrorTimer); weaponErrorTimer = null; }
+}
+
 function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' } = {}) {
+    // ── Resets & State Cleanups on Game Over ──
+    dialogueManager?.cancelDialogue();
+    dialogueManager?.cancelTutorial();
+    cutsceneManager?.finishActiveRun(true);
+    clearAllTimers();
+
+    document.getElementById('ui')?.classList.add('hidden');
+    document.getElementById('console-terminal-modal')?.classList.add('hidden');
+    document.getElementById('lore-modal')?.classList.add('hidden');
+    document.getElementById('mothership-dialogue')?.classList.add('hidden');
+    document.getElementById('settings-popup')?.classList.add('hidden');
+    document.getElementById('audio-mixer-popup')?.classList.add('hidden');
+    document.getElementById('tutorial-prompt')?.classList.add('hidden');
+    document.getElementById('biome-hud-prompt')?.classList.add('hidden');
+    document.getElementById('mission-progress-hud')?.classList.add('hidden');
+    document.getElementById('console-hud-prompt')?.classList.add('hidden');
+    document.getElementById('lore-hud-prompt')?.classList.add('hidden');
+
+    document.body.classList.remove('mission-intro-active', 'player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode', 'player-poisoned');
+    _distressModeActive = false;
+    missionFlowRunning = false;
+
     const elapsedMs    = Date.now() - runStartTime;
     const elapsedMin   = elapsedMs / 60000;
     const distancePct  = Math.min(100, (stats.distanceTravelled / 500) * 100);
@@ -1071,8 +1114,8 @@ window.addEventListener('player-respawned', () => {
     lastReportedDepthTier = 0;
     syncAbilityPanelLabel();
     _distressModeActive = false;
-    _musicTension = 'exploring';
-    window.AudioManager?.setMusicTension?.('exploring');
+    // Recompute music from live state instead of forcing 'exploring'.
+    updateMusicTension();
     document.body.classList.remove('distress-mode', 'vitals-critical', 'player-poisoned', 'player-damage-flash', 'mission-intro-active');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
@@ -1316,6 +1359,9 @@ function fireMothershipReactiveLine(trigger) {
         crawler_detected:  'ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.',
         armory_found:      'UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE.',
         the_nest:          'WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION.',
+        weapon_calibrated: 'NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.',
+        first_boss:        'CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.',
+        specimen_notices:  '[UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.',
     };
     const text = lines[trigger];
     if (text) showBiomePrompt(`> MOTHERSHIP: ${text}`);
@@ -1528,25 +1574,54 @@ function stopO2Alarm() {
 
 // ── Reactive Music State ──────────────────────────────────────
 let _musicTension = 'exploring';
+let _musicContext = 'safe_ship';
 
 function updateMusicTension() {
     const hp = window.game?.playerVitals?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
-    let next = 'exploring';
+    const biome = window.game?.currentBiomeKey ?? 'active';
+    const bossActive = !!window.game?.activeBoss;
 
+    // ── Tension intensity (drives music-bus loudness) ──
+    let nextTension = 'exploring';
     // Safe: near ship, full health, good O2
     if (hp >= 3 && o2 > 50) {
         const dist = window.game?.getActiveO2GeneratorDistance?.() ?? Infinity;
-        if (dist < 4) next = 'safe';
+        if (dist < 4) nextTension = 'safe';
     }
-    // Threatened: low hp or distress
-    if (hp <= 1 || o2 < 15 || _distressModeActive) next = 'threatened';
+    if (bossActive) nextTension = 'boss';
+    // Threatened: low hp or distress (overrides boss-tier loudness for survival cues)
+    if (hp <= 1 || o2 < 15 || _distressModeActive) nextTension = 'threatened';
 
-    if (next !== _musicTension) {
-        _musicTension = next;
-        window.AudioManager?.setMusicTension?.(next);
+    // ── Track context (drives which stem plays) ──
+    let nextContext;
+    if (bossActive || _distressModeActive) {
+        nextContext = 'combat';
+    } else if (nextTension === 'safe') {
+        nextContext = 'safe_ship';
+    } else if (biome === 'cryo') {
+        nextContext = 'cryo_explore';
+    } else if (biome === 'bio') {
+        nextContext = 'bio_explore';
+    } else {
+        nextContext = 'safe_ship'; // shipyard / active sector default theme
+    }
+
+    if (nextTension !== _musicTension) {
+        _musicTension = nextTension;
+        window.AudioManager?.setMusicTension?.(nextTension);
+    }
+    if (nextContext !== _musicContext) {
+        _musicContext = nextContext;
+        window.AudioManager?.setMusicContext?.(nextContext);
     }
 }
+
+// Poll for state changes that fire no vitals event (boss appearing/leaving,
+// biome drift) so music context/tension stay in sync throughout a run.
+setInterval(() => {
+    if (window.AudioManager?.isUnlocked) updateMusicTension();
+}, 1000);
 
 let _distressModeActive = false;
 function updateDistressMode(o2, hp) {
@@ -1596,6 +1671,7 @@ window.addEventListener('health-restored', () => {
     const hp = window.game?.playerVitals?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
     updateDistressMode(o2, hp);
+    updateMusicTension();
 });
 
 // Game over button handlers
@@ -1939,6 +2015,44 @@ function runDoorTransitionAsync() {
     });
 }
 
+function showRunLoadingScreen(status = 'PREPARING DROP ZONE', progress = 0) {
+    if (loaderTitle) loaderTitle.textContent = 'PREPARING DROP ZONE';
+    if (loaderStatus) loaderStatus.textContent = status;
+    if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    loadingScreen?.classList.remove('hidden');
+}
+
+function hideRunLoadingScreen() {
+    loadingScreen?.classList.add('hidden');
+}
+
+async function prepareGameplayForDialogue() {
+    const game = window.game;
+    if (!game?.prepareVisibleChunksForGameplay) return;
+
+    showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
+    game.setLoadingPaused?.(true);
+    try {
+        await game.prepareVisibleChunksForGameplay({
+            batchSize: 3,
+            onProgress: (progress) => {
+                const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
+                showRunLoadingScreen(`MAPPING STARTING SECTOR... ${pct}%`, pct);
+            }
+        });
+        showRunLoadingScreen('DROP ZONE READY', 100);
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
+    } finally {
+        game.setLoadingPaused?.(false);
+        hideRunLoadingScreen();
+    }
+}
+
+async function prepareRunThenMissionIntro() {
+    await prepareGameplayForDialogue();
+    await runMissionIntroSequence();
+}
+
 function setSnailSpawnState(enabled, { purgeExisting = false } = {}) {
     window.game?.setSnailsEnabled?.(Boolean(enabled), { removeExisting: purgeExisting });
 }
@@ -2002,6 +2116,9 @@ async function runMissionIntroSequence() {
                 }, 600);
             }
         }
+
+        // Start gameplay background music and loop ambience now that intro sequences are finished
+        window.AudioManager?.startAmbience?.();
     } finally {
         document.body.classList.remove('mission-intro-active');
         game?.setInputEnabled?.(true);
@@ -2055,7 +2172,7 @@ if (startBtn) {
                 }
             },
             () => {
-                void runMissionIntroSequence();
+                void prepareRunThenMissionIntro();
             }
         );
     });
@@ -2092,7 +2209,7 @@ if (dailyOpsBtn) {
                 }
             },
             () => {
-                void runMissionIntroSequence();
+                void prepareRunThenMissionIntro();
             }
         );
     });
@@ -2554,9 +2671,12 @@ const previewSprite = document.getElementById('char-preview-sprite');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
 const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
-const PREVIEW_FRAME_COUNT = 4;
+const PREVIEW_SPRITE_COLUMNS = 4;
+const PREVIEW_SPRITE_ROWS = 4;
+const PREVIEW_WALK_FRAME_COUNT = 2;
 const PREVIEW_FRAME_MS = 140;
-const PREVIEW_FRONT_ROW = 0;
+const PREVIEW_FRONT_ROW = 3;
+const PREVIEW_FRONT_BASE_COLUMN = 0;
 const PREVIEW_DOOR_CLOSE_MS = 360;
 const PREVIEW_DOOR_HOLD_MS = 220;
 const PREVIEW_DOOR_OPEN_MS = 520;
@@ -2568,9 +2688,9 @@ let activePreviewType = 'SCOUT';
 const previewSpriteImages = new Map();
 
 const heroData = {
-    'SCOUT': { icon: '◈', name: 'SCOUT', sprite: '/scout_walk.png' },
-    'TANK': { icon: '⬢', name: 'TANK', sprite: '/tank_walk.png' },
-    'ENGINEER': { icon: '⬣', name: 'ENGINEER', sprite: '/engineer_walk.png' }
+    'SCOUT': { icon: '◈', name: 'SCOUT', sprite: '/Scout.full.jpeg' },
+    'TANK': { icon: '⬢', name: 'TANK', sprite: '/Tank.full.jpeg' },
+    'ENGINEER': { icon: '⬣', name: 'ENGINEER', sprite: '/Eng.Full.jpeg' }
 };
 
 function getPreviewSpriteImage(path) {
@@ -2626,9 +2746,10 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
     const image = await getPreviewSpriteImage(data.sprite).catch(() => null);
     if (!image || !heroData[type] || heroData[type].sprite !== data.sprite) return;
 
-    const frameWidth = Math.floor(image.width / PREVIEW_FRAME_COUNT);
-    const frameHeight = Math.floor(image.height / PREVIEW_FRAME_COUNT);
-    const sourceX = frameIndex * frameWidth;
+    const frameWidth = Math.floor(image.width / PREVIEW_SPRITE_COLUMNS);
+    const frameHeight = Math.floor(image.height / PREVIEW_SPRITE_ROWS);
+    const walkFrame = ((frameIndex % PREVIEW_WALK_FRAME_COUNT) + PREVIEW_WALK_FRAME_COUNT) % PREVIEW_WALK_FRAME_COUNT;
+    const sourceX = (PREVIEW_FRONT_BASE_COLUMN + walkFrame) * frameWidth;
     const sourceY = PREVIEW_FRONT_ROW * frameHeight;
 
     if (previewSprite.width !== frameWidth || previewSprite.height !== frameHeight) {
@@ -2681,7 +2802,7 @@ function startHeroPreviewAnimation() {
     if (!previewSprite || previewAnimationTimer !== null) return;
 
     previewAnimationTimer = window.setInterval(() => {
-        previewFrameIndex = (previewFrameIndex + 1) % PREVIEW_FRAME_COUNT;
+        previewFrameIndex = (previewFrameIndex + 1) % PREVIEW_WALK_FRAME_COUNT;
         void renderPreviewFrame(activePreviewType, previewFrameIndex);
     }, PREVIEW_FRAME_MS);
 }
@@ -3013,9 +3134,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/module_hull_matrix.png',
             '/module_radar_dish.png',
             '/module_reactor_compressor.png',
-            '/scout_walk.png',
-            '/tank_walk.png',
-            '/engineer_walk.png',
+            '/Scout.full.jpeg',
+            '/Tank.full.jpeg',
+            '/Eng.Full.jpeg',
             '/cybersnail.png',
             '/cryosnail.png',
             '/sporesnail.png',
@@ -3047,12 +3168,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/scatter_coolant_puddle.png',
             '/scatter_ice_stalagmite.png',
             '/scatter_cryo_icicle.png',
+            '/scatter_cryo_shards.png',
+            '/scatter_bio_moss.png',
             '/scatter_bio_pod.png',
-            '/scatter_slime_puddle.png'
+            '/scatter_slime_puddle.png',
+            '/build_structure_anim.png'
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
+            // Contextual music stems (crossfaded by biome/threat in audio.js)
+            { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3' },
+            { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3' },
+            { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3' },
+            { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3' },
             { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
             { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
             { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
@@ -3137,6 +3266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     window.game?.setPerformanceProfile?.('menu');
+    window.game?.setLoadingPaused?.(true);
     setSnailSpawnState(false, { purgeExisting: true });
     const initialBiomeState = window.game?.getBiomeState?.();
     if (initialBiomeState) {
@@ -3145,24 +3275,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.game?.emitVitalsState?.();
     ensureMissionManagers();
 
+    const maxLogs = 5;
+    const logs = ['CONNECTING TO TACTICAL NETWORK...'];
+
     await AudioManager.loadAssets(manifest, (progress, itemName) => {
         if (loaderBar) loaderBar.style.width = `${progress}%`;
         if (loaderStatus && itemName) {
             const parts = itemName.split('/');
             const filename = parts[parts.length - 1];
-            loaderStatus.textContent = `LOADING ASSET: ${filename.toUpperCase()}`;
+            logs.push(`LOADING ASSET: ${filename.toUpperCase()}`);
+            if (logs.length > maxLogs) {
+                logs.shift();
+            }
+            loaderStatus.innerHTML = logs.map((log, idx) => {
+                const distance = logs.length - 1 - idx;
+                const opacities = [1.0, 0.65, 0.4, 0.2, 0.08];
+                const opacity = opacities[distance] ?? 0.05;
+                return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.15s ease;">${log}</div>`;
+            }).join('');
         }
     });
 
     if (loaderBar) loaderBar.style.width = `100%`;
-    if (loaderStatus) loaderStatus.textContent = "[ CLICK ANYWHERE TO INITIALIZE ]";
+    if (loaderStatus) {
+        loaderStatus.style.opacity = 0;
+        setTimeout(() => {
+            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK ANYWHERE TO INITIALIZE ]</div>`;
+            loaderStatus.style.opacity = 1;
+        }, 220);
+    }
 
     document.body.addEventListener('click', async () => {
         if (AudioManager.isUnlocked) return;
         await AudioManager.unlock();
 
         triggerDoorTransition(
-            () => { if (loadingScreen) loadingScreen.classList.add('hidden'); },
+            () => {
+                if (loadingScreen) loadingScreen.classList.add('hidden');
+                window.game?.setLoadingPaused?.(false);
+                AudioManager.startMenuMusic();
+            },
             null
         );
     }, { once: true });
