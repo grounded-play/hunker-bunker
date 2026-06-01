@@ -2086,6 +2086,119 @@ input:checked+.slider:before {
   background: linear-gradient(90deg, rgba(255, 159, 28, 0.2), rgba(46, 196, 182, 0.42));
 }
 
+/* --- DESKTOP CONTROLS REMAP MODAL --- */
+.controls-modal {
+  z-index: 13020;
+  background: rgba(2, 5, 8, 0.72);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.controls-panel {
+  width: min(calc(var(--vu) * 80), 94%);
+  border: 1px solid var(--accent-primary);
+  padding: calc(var(--vu) * 5) calc(var(--vu) * 3.5) calc(var(--vu) * 4);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.6);
+}
+
+.controls-close {
+  top: calc(var(--vu) * 2.4);
+  right: calc(var(--vu) * 2.4);
+}
+
+.controls-hint {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--font-sm) * 0.8);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 243, 220, 0.6);
+  text-align: center;
+}
+
+.controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.1);
+  max-height: min(calc(var(--vu) * 46), 52vh);
+  overflow-y: auto;
+  padding-right: calc(var(--vu) * 0.8);
+}
+
+.control-row {
+  display: grid;
+  grid-template-columns: minmax(calc(var(--vu) * 16), 1fr) minmax(calc(var(--vu) * 13), auto) minmax(calc(var(--vu) * 13), auto);
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+}
+
+.control-row__label {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 243, 220, 0.92);
+}
+
+.control-key-btn {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--font-sm) * 0.82);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: calc(var(--vu) * 0.7) calc(var(--vu) * 1.1);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  min-width: calc(var(--vu) * 12);
+}
+
+.control-key-btn:hover {
+  border-color: var(--accent-primary);
+  color: #ffd89f;
+}
+
+.control-key-btn.listening {
+  border-color: var(--accent-primary);
+  color: #0a0f15;
+  background: var(--accent-primary);
+  animation: control-listen-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes control-listen-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 159, 28, 0.5); }
+  50% { box-shadow: 0 0 0 calc(var(--vu) * 0.8) rgba(255, 159, 28, 0); }
+}
+
+.controls-actions {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--vu) * 1.6);
+  margin-top: calc(var(--vu) * 1.4);
+  padding-top: calc(var(--vu) * 1.3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.settings-action-btn--reset {
+  min-width: calc(var(--vu) * 16);
+  background: rgba(255, 74, 74, 0.12);
+  border-color: rgba(255, 74, 74, 0.6);
+  color: #ff9a9a;
+  box-shadow: none;
+}
+
+.settings-action-btn--reset:hover {
+  background: rgba(255, 74, 74, 0.22);
+  border-color: #ff6b6b;
+  color: #ffd0d0;
+}
+
 /* --- TACTICAL BUTTON REINFORCEMENTS --- */
 .splash-btn,
 .start-btn,

@@ -268,8 +268,25 @@ const SNAIL_MOVE_SPEED = 1.2;
 const SNAIL_ENRAGED_MOVE_SPEED = 2.1;
 const SNAIL_ENRAGED_TINT = 0xff4a4a;
 const SNAIL_HIT_RADIUS = 0.62;
+// Fallback control scheme. Live bindings come from window.state.settings.keyBindings
+// (set by main.js); this is used when that isn't present (e.g. unit tests).
+const DEFAULT_KEY_BINDINGS = Object.freeze({
+    moveUp: ['KeyW', 'ArrowUp'],
+    moveDown: ['KeyS', 'ArrowDown'],
+    moveLeft: ['KeyA', 'ArrowLeft'],
+    moveRight: ['KeyD', 'ArrowRight'],
+    interact: ['KeyE', null],
+    reload: ['KeyR', null],
+    ability: ['KeyF', null]
+});
+
 const SNAIL_ATTACK_RADIUS = 1.1;
 const SNAIL_ATTACK_COOLDOWN = 1.1;
+// On a contact hit, shove the player and the snail apart so the snail can't
+// just sit on the player. The snail also briefly recoils (stops advancing).
+const SNAIL_HIT_PLAYER_KNOCKBACK = 0.72;
+const SNAIL_HIT_SELF_KNOCKBACK = 0.6;
+const SNAIL_HIT_RECOIL_TIME = 0.35;
 const SNAIL_PATH_RECALC_MIN = 0.24;
 const SNAIL_PATH_RECALC_MAX = 0.5;
 const SNAIL_WANDER_RECALC_MIN = 0.9;
@@ -2096,15 +2113,15 @@ export class ThreeGame {
                 this.setKeyState(event.code, false);
                 return;
             }
-            if (event.code === 'KeyE') {
+            if (this.codeMatchesAction(event.code, 'interact')) {
                 this.interactWithConsole();
                 this.interactWithLoreTerminal();
             }
-            if (event.code === 'KeyR') {
+            if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
                 this.requestReload({ manual: true });
             }
-            if (event.code === 'KeyF') {
+            if (this.codeMatchesAction(event.code, 'ability')) {
                 event.preventDefault();
                 this.triggerClassAbility();
             }
@@ -2239,10 +2256,18 @@ export class ThreeGame {
 
     setKeyState(code, pressed) {
         if (!this.isGameplayInputActive() && pressed) return;
-        if (code === 'ArrowUp' || code === 'KeyW') this.keys.up = pressed;
-        if (code === 'ArrowDown' || code === 'KeyS') this.keys.down = pressed;
-        if (code === 'ArrowLeft' || code === 'KeyA') this.keys.left = pressed;
-        if (code === 'ArrowRight' || code === 'KeyD') this.keys.right = pressed;
+        if (this.codeMatchesAction(code, 'moveUp')) this.keys.up = pressed;
+        if (this.codeMatchesAction(code, 'moveDown')) this.keys.down = pressed;
+        if (this.codeMatchesAction(code, 'moveLeft')) this.keys.left = pressed;
+        if (this.codeMatchesAction(code, 'moveRight')) this.keys.right = pressed;
+    }
+
+    // Resolves the active key bindings (user-remapped or default) and reports
+    // whether a key code is bound to a given action's primary/secondary slot.
+    codeMatchesAction(code, action) {
+        const bindings = (typeof window !== 'undefined' && window.state?.settings?.keyBindings) || DEFAULT_KEY_BINDINGS;
+        const slots = bindings[action] ?? DEFAULT_KEY_BINDINGS[action] ?? [];
+        return slots.includes(code);
     }
 
     setVirtualInput(x = 0, z = 0) {
@@ -9061,10 +9086,52 @@ export class ThreeGame {
         sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
     }
 
+    // Shoves the player and the snail apart on a contact hit and gives the
+    // snail a short recoil, so enemies bump the player back instead of camping
+    // on top of them. Movement is collision-checked per axis.
+    applySnailContactKnockback(sprite, data) {
+        if (!this.player) return;
+        let dx = this.player.position.x - sprite.position.x;
+        let dz = this.player.position.z - sprite.position.z;
+        let len = Math.hypot(dx, dz);
+        if (len < 1e-4) {
+            // Perfectly overlapping — pick a random direction so they still split.
+            const angle = Math.random() * Math.PI * 2;
+            dx = Math.cos(angle);
+            dz = Math.sin(angle);
+            len = 1;
+        }
+        dx /= len;
+        dz /= len;
+
+        // Push the player away from the snail, sliding per axis so walls block it.
+        const pKx = dx * SNAIL_HIT_PLAYER_KNOCKBACK;
+        const pKz = dz * SNAIL_HIT_PLAYER_KNOCKBACK;
+        if (this.canOccupyPosition(this.player.position.x + pKx, this.player.position.z)) {
+            this.player.position.x += pKx;
+        }
+        if (this.canOccupyPosition(this.player.position.x, this.player.position.z + pKz)) {
+            this.player.position.z += pKz;
+        }
+
+        // Push the snail back the opposite way if its destination tile is open.
+        const selfKnock = SNAIL_HIT_SELF_KNOCKBACK * (data.isBoss ? 0.45 : 1);
+        const sx = sprite.position.x - dx * selfKnock;
+        const sz = sprite.position.z - dz * selfKnock;
+        if (this.isSnailTileWalkable(Math.round(sx), Math.round(sz))) {
+            sprite.position.x = sx;
+            sprite.position.z = sz;
+        }
+        data.knockbackTimer = SNAIL_HIT_RECOIL_TIME;
+        data.pathNodes = null;
+        data.pathRetargetTimer = 0;
+    }
+
     updateSnailBehavior(sprite, delta, activeShip) {
         const data = sprite.userData;
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
+        data.knockbackTimer = Math.max(0, (data.knockbackTimer ?? 0) - delta);
 
         const target = this.selectSnailTarget(sprite, activeShip);
         if (!target) return;
@@ -9118,7 +9185,9 @@ export class ThreeGame {
         const toGoalX = moveTargetX - sprite.position.x;
         const toGoalZ = moveTargetZ - sprite.position.z;
         const moveDistance = Math.hypot(toGoalX, toGoalZ);
-        if (moveDistance > 0.001) {
+        // Skip advancing while recoiling from a contact hit so the shove reads
+        // before the snail closes back in.
+        if (moveDistance > 0.001 && data.knockbackTimer <= 0) {
             const dirX = toGoalX / moveDistance;
             const dirZ = toGoalZ / moveDistance;
             const step = Math.min(moveDistance, (data.speed ?? SNAIL_MOVE_SPEED) * delta);
@@ -9224,6 +9293,7 @@ export class ThreeGame {
             const damage = data.isBoss ? 2 : 1;
             if (target.type === 'player') {
                 this.takeDamage(damage, data.type);
+                this.applySnailContactKnockback(sprite, data);
                 if (data.type === 'cryosnail') {
                     this.playerSlowTimer = 2.5; // Cryosnail slows player on hit
                 }

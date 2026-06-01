@@ -799,6 +799,10 @@
           <span>AUDIO MIXER</span>
           <button type="button" class="calibrate-btn settings-action-btn" id="open-audio-mixer">OPEN</button>
         </div>
+        <div class="setting-item setting-item--action">
+          <span>DESKTOP CONTROLS</span>
+          <button type="button" class="calibrate-btn settings-action-btn" id="open-controls">REMAP</button>
+        </div>
         <div class="setting-item hidden" id="touch-controls-setting">
           <span>TOUCH MOVE PAD</span>
           <label class="toggle"><input type="checkbox" id="main-touch-toggle"> <span class="slider"></span></label>
@@ -835,7 +839,20 @@
         </div>
       </div>
     </div>
-    
+
+    <div id="controls-popup" class="modal controls-modal hidden">
+      <div class="modal-content controls-panel">
+        <button class="close-modal controls-close" id="close-controls">×</button>
+        <h2 class="modal-title">DESKTOP CONTROLS</h2>
+        <p class="controls-hint">Click a slot, then press a key to bind it. ESC cancels.</p>
+        <div class="controls-list" id="controls-list"></div>
+        <div class="controls-actions">
+          <button type="button" class="settings-action-btn settings-action-btn--reset" id="reset-controls">RESET</button>
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="save-controls">SAVE SETTINGS</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Orientation Lock Overlay -->
     <div id="orientation-lock">
       <div class="lock-content">

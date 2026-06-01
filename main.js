@@ -68,6 +68,27 @@ const DEFAULT_AUDIO_MIX = Object.freeze({
     music: 1,
     vfx: 1
 });
+const KEY_BINDINGS_STORAGE_KEY = 'hunker_key_bindings';
+// Each action has a [primary, secondary] slot. WASD + arrow keys are equivalent
+// out of the box. threeGame.js reads window.state.settings.keyBindings.
+const DEFAULT_KEY_BINDINGS = Object.freeze({
+    moveUp: ['KeyW', 'ArrowUp'],
+    moveDown: ['KeyS', 'ArrowDown'],
+    moveLeft: ['KeyA', 'ArrowLeft'],
+    moveRight: ['KeyD', 'ArrowRight'],
+    interact: ['KeyE', null],
+    reload: ['KeyR', null],
+    ability: ['KeyF', null]
+});
+const CONTROL_ACTIONS = Object.freeze([
+    { id: 'moveUp', label: 'MOVE UP' },
+    { id: 'moveDown', label: 'MOVE DOWN' },
+    { id: 'moveLeft', label: 'MOVE LEFT' },
+    { id: 'moveRight', label: 'MOVE RIGHT' },
+    { id: 'interact', label: 'INTERACT' },
+    { id: 'reload', label: 'RELOAD' },
+    { id: 'ability', label: 'CLASS ABILITY' }
+]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
 const BIOME_PROMPT_DURATION_MS = 2800;
@@ -84,11 +105,14 @@ const state = {
         audioMix: { ...DEFAULT_AUDIO_MIX },
         fullscreen: false,
         touchControls: false,
-        nightVision: false
+        nightVision: false,
+        keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
     gameInitialized: false
 };
+// Exposed so threeGame.js can read live key bindings without a circular import.
+window.state = state;
 
 const gearSpinState = {
     rotation: 0,
@@ -355,6 +379,128 @@ function installAudioMixerControls() {
         };
         slider.addEventListener('input', updateChannel);
         slider.addEventListener('change', updateChannel);
+    });
+}
+
+// ── Desktop control remapping ────────────────────────────────────────────────
+function cloneKeyBindings(bindings) {
+    const out = {};
+    for (const action of Object.keys(DEFAULT_KEY_BINDINGS)) {
+        const slots = bindings?.[action] ?? DEFAULT_KEY_BINDINGS[action];
+        out[action] = [slots?.[0] ?? null, slots?.[1] ?? null];
+    }
+    return out;
+}
+
+function keyCodeLabel(code) {
+    if (!code) return '—';
+    if (code.startsWith('Key')) return code.slice(3);
+    if (code.startsWith('Digit')) return code.slice(5);
+    if (code.startsWith('Arrow')) return code.slice(5).toUpperCase();
+    const named = {
+        Space: 'SPACE', Escape: 'ESC', Enter: 'ENTER', Tab: 'TAB', Backquote: '`',
+        ShiftLeft: 'L-SHIFT', ShiftRight: 'R-SHIFT', ControlLeft: 'L-CTRL',
+        ControlRight: 'R-CTRL', AltLeft: 'L-ALT', AltRight: 'R-ALT'
+    };
+    return named[code] ?? code.toUpperCase();
+}
+
+function loadKeyBindings() {
+    let stored = null;
+    try { stored = JSON.parse(localStorage.getItem(KEY_BINDINGS_STORAGE_KEY) ?? 'null'); } catch { /* ignore */ }
+    state.settings.keyBindings = cloneKeyBindings(stored ?? DEFAULT_KEY_BINDINGS);
+}
+
+function saveKeyBindings(bindings) {
+    state.settings.keyBindings = cloneKeyBindings(bindings);
+    try {
+        localStorage.setItem(KEY_BINDINGS_STORAGE_KEY, JSON.stringify(state.settings.keyBindings));
+    } catch { /* ignore */ }
+}
+
+function setupControlsModal() {
+    const popup = document.getElementById('controls-popup');
+    const list = document.getElementById('controls-list');
+    const openBtn = document.getElementById('open-controls');
+    const closeBtn = document.getElementById('close-controls');
+    const saveBtn = document.getElementById('save-controls');
+    const resetBtn = document.getElementById('reset-controls');
+    if (!popup || !list) return;
+
+    let draft = cloneKeyBindings(state.settings.keyBindings);
+    let listening = null; // { action, slot, btn }
+
+    const stopListening = () => {
+        if (listening?.btn) listening.btn.classList.remove('listening');
+        listening = null;
+    };
+
+    const renderRows = () => {
+        list.innerHTML = '';
+        for (const action of CONTROL_ACTIONS) {
+            const row = document.createElement('div');
+            row.className = 'control-row';
+            const label = document.createElement('span');
+            label.className = 'control-row__label';
+            label.textContent = action.label;
+            row.appendChild(label);
+            for (let slot = 0; slot < 2; slot++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'control-key-btn';
+                btn.textContent = keyCodeLabel(draft[action.id]?.[slot]);
+                btn.addEventListener('click', () => {
+                    stopListening();
+                    listening = { action: action.id, slot, btn };
+                    btn.classList.add('listening');
+                    btn.textContent = '...';
+                });
+                row.appendChild(btn);
+            }
+            list.appendChild(row);
+        }
+    };
+
+    // Capture-phase so the remap keystroke never reaches the game's handlers.
+    const onKeyDown = (event) => {
+        if (!listening) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (event.code !== 'Escape') {
+            // Clear this code from every other slot so it isn't double-bound.
+            for (const a of Object.keys(draft)) {
+                draft[a] = draft[a].map((c) => (c === event.code ? null : c));
+            }
+            draft[listening.action][listening.slot] = event.code;
+        }
+        stopListening();
+        renderRows();
+    };
+
+    const open = () => {
+        draft = cloneKeyBindings(state.settings.keyBindings);
+        renderRows();
+        popup.classList.remove('hidden');
+        window.addEventListener('keydown', onKeyDown, true);
+    };
+    const close = () => {
+        stopListening();
+        window.removeEventListener('keydown', onKeyDown, true);
+        popup.classList.add('hidden');
+    };
+
+    openBtn?.addEventListener('click', open);
+    closeBtn?.addEventListener('click', close);
+    popup.addEventListener('click', (event) => { if (event.target === popup) close(); });
+    resetBtn?.addEventListener('click', () => {
+        draft = cloneKeyBindings(DEFAULT_KEY_BINDINGS);
+        stopListening();
+        renderRows();
+    });
+    saveBtn?.addEventListener('click', () => {
+        saveKeyBindings(draft);
+        AudioManager.play('ui_click', { volume: 0.5 });
+        close();
     });
 }
 
@@ -1790,11 +1936,11 @@ function syncTouchMoveControlVisibility() {
         label.classList.toggle('hidden', !showJoystick);
     }
 
-    // Show on desktop HUD always; on touch devices, mirror joystick visibility.
+    // The floating sprint button is part of the mobile UI, so it tracks the
+    // touch move pad: when the pad is disabled the button disappears too.
     const abilityBtn = document.getElementById('touch-ability-btn');
     if (abilityBtn) {
-        const touchDevice = document.body.classList.contains('touch-device');
-        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && (!touchDevice || showJoystick);
+        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick;
         abilityBtn.classList.toggle('hidden', !showAbilityBtn);
     }
 
@@ -3165,6 +3311,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     installAudioMixerControls();
     setAudioMixerOpen(false);
     loadAudioMixSettings();
+    loadKeyBindings();
+    setupControlsModal();
     refreshCharBestScores();
     updateDailyOpsUI();
 
