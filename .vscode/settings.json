@@ -1,0 +1,7 @@
+{
+  "console-ninja.toolsToEnableSupportAutomaticallyFor": {
+    "vite": false
+  },
+  "console-ninja.output.showNetworkRequests": false,
+  "console-ninja.showWelcomeMessageInTools": false
+}

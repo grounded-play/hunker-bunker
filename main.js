@@ -2170,6 +2170,13 @@ if (startBtn) {
                     gameContainer.classList.add('fullscreen-mode');
                     queueGameLayoutRefresh();
                 }
+
+                // Raise the loading screen while the doors are still shut so they
+                // open onto the loader — not a half-built world. The world build
+                // + shader warm-up runs in prepareRunThenMissionIntro and only
+                // hides this once the drop zone is ready, so the cutscene plays
+                // over a finished scene with no frame loss.
+                showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
             },
             () => {
                 void prepareRunThenMissionIntro();
@@ -2207,6 +2214,13 @@ if (dailyOpsBtn) {
                     gameContainer.classList.add('fullscreen-mode');
                     queueGameLayoutRefresh();
                 }
+
+                // Raise the loading screen while the doors are still shut so they
+                // open onto the loader — not a half-built world. The world build
+                // + shader warm-up runs in prepareRunThenMissionIntro and only
+                // hides this once the drop zone is ready, so the cutscene plays
+                // over a finished scene with no frame loss.
+                showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
             },
             () => {
                 void prepareRunThenMissionIntro();
@@ -2254,21 +2268,40 @@ function setDebugMode(active) {
 }
 
 // FPS Counter (Debug Tool)
-let lastTime = performance.now();
-let frames = 0;
 const fpsDisplay = document.getElementById('fps-counter');
+let fpsFrames = 0;
+let fpsLastTime = performance.now();
+let fpsRafId = null;
 
-function updateFPS() {
-    frames++;
-    const now = performance.now();
-    if (now - lastTime >= 1000) {
-        if (fpsDisplay) fpsDisplay.textContent = `FPS: ${frames}`;
-        frames = 0;
-        lastTime = now;
+function sampleFPS() {
+    if (!document.body.classList.contains('show-debug')) {
+        fpsRafId = null;
+        return;
     }
-    requestAnimationFrame(updateFPS);
+    fpsFrames++;
+    fpsRafId = requestAnimationFrame(sampleFPS);
 }
-requestAnimationFrame(updateFPS);
+
+if (fpsDisplay) {
+    setInterval(() => {
+        if (!document.body.classList.contains('show-debug')) {
+            fpsFrames = 0;
+            fpsLastTime = performance.now();
+            return;
+        }
+        if (fpsRafId === null) {
+            fpsFrames = 0;
+            fpsLastTime = performance.now();
+            fpsRafId = requestAnimationFrame(sampleFPS);
+            return;
+        }
+        const now = performance.now();
+        const elapsedSeconds = Math.max((now - fpsLastTime) / 1000, 0.001);
+        fpsDisplay.textContent = `FPS: ${Math.round(fpsFrames / elapsedSeconds)}`;
+        fpsFrames = 0;
+        fpsLastTime = now;
+    }, 1000);
+}
 
 function updateGearSpin(now) {
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
@@ -3178,10 +3211,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
             // Contextual music stems (crossfaded by biome/threat in audio.js)
-            { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3' },
-            { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3' },
-            { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3' },
-            { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3' },
+            { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
             { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
             { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
             { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },

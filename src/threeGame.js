@@ -45,6 +45,10 @@ const SUIT_CONE_LIGHT_DISTANCE = 12.2;
 const SUIT_CONE_LIGHT_ANGLE = Math.PI * 0.32;
 const SUIT_CONE_VISUAL_DISTANCE = 10.2;
 const SUIT_CONE_VISUAL_WIDTH = 9.4;
+// The visible beam is a fan of this many radial segments; each segment is
+// raycast against the walls every frame so the beam is occluded per-direction
+// (wrapping corners, carving shadow wedges) instead of uniformly shrinking.
+const SUIT_CONE_SEGMENTS = 22;
 const SUIT_CONE_VISUAL_OPACITY = 0.24;
 const SUIT_LOCAL_LIGHT_POOL_RADIUS = 2.25;
 const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.2;
@@ -1843,20 +1847,49 @@ export class ThreeGame {
     }
 
     createForwardConeGeometry() {
-        const halfWidth = SUIT_CONE_VISUAL_WIDTH * 0.5;
+        // Fan of triangles sharing the apex (emitter) so each rim vertex can be
+        // pushed in/out independently. The half-angle is derived from the old
+        // flat-triangle proportions so the unobstructed beam keeps its shape.
+        const halfAngle = Math.atan2(SUIT_CONE_VISUAL_WIDTH * 0.5, SUIT_CONE_VISUAL_DISTANCE);
+        const segments = SUIT_CONE_SEGMENTS;
+        const rimCount = segments + 1;
+
+        const positions = new Float32Array((rimCount + 1) * 3); // apex + rim verts
+        const uvs = new Float32Array((rimCount + 1) * 2);
+        const indices = [];
+
+        // Apex (vertex 0) at the emitter origin.
+        uvs[0] = 0.5;
+        uvs[1] = 0;
+
+        const rimAngles = new Float32Array(rimCount);
+        for (let i = 0; i < rimCount; i++) {
+            const t = i / segments;
+            const angle = -halfAngle + (2 * halfAngle) * t;
+            rimAngles[i] = angle;
+            const vi = i + 1; // rim verts start after the apex
+            positions[vi * 3] = Math.sin(angle) * SUIT_CONE_VISUAL_DISTANCE;
+            positions[vi * 3 + 1] = 0;
+            positions[vi * 3 + 2] = Math.cos(angle) * SUIT_CONE_VISUAL_DISTANCE;
+            uvs[vi * 2] = t;
+            uvs[vi * 2 + 1] = 1;
+        }
+        for (let i = 0; i < segments; i++) {
+            indices.push(0, i + 1, i + 2);
+        }
+
         const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute([
-            0, 0, 0,
-            -halfWidth, 0, SUIT_CONE_VISUAL_DISTANCE,
-            halfWidth, 0, SUIT_CONE_VISUAL_DISTANCE
-        ], 3));
-        geometry.setAttribute('uv', new THREE.Float32BufferAttribute([
-            0.5, 0,
-            0, 1,
-            1, 1
-        ], 2));
-        geometry.setIndex([0, 1, 2]);
+        const positionAttr = new THREE.BufferAttribute(positions, 3);
+        positionAttr.setUsage(THREE.DynamicDrawUsage);
+        geometry.setAttribute('position', positionAttr);
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        geometry.setIndex(indices);
         geometry.computeVertexNormals();
+
+        // Cached for the per-frame occlusion update.
+        this._coneRimAngles = rimAngles;
+        this._coneRimCount = rimCount;
+        this._conePositionAttr = positionAttr;
         return geometry;
     }
 
@@ -1898,6 +1931,9 @@ export class ThreeGame {
         );
         this.playerForwardCone.position.y = 0.072;
         this.playerForwardCone.renderOrder = 3;
+        // Rim vertices are rewritten each frame, so skip frustum culling (its
+        // bounding sphere would otherwise go stale and pop the beam out of view).
+        this.playerForwardCone.frustumCulled = false;
         this.scene.add(this.playerForwardCone);
 
         this.playerEmitterGlow = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -2472,7 +2508,6 @@ export class ThreeGame {
 
             this.playerMaterials?.[type] && (this.playerMaterials[type].needsUpdate = true);
             this.refreshActivePlayerSprite(type);
-            console.info(`[ThreeGame] Loaded and green-keyed player sprite ${type} from ${path} (${image.width}x${image.height})`);
         };
 
         image.onerror = (error) => {
@@ -5145,15 +5180,14 @@ export class ThreeGame {
         if (this.playerEmitterGlow) {
             this.playerEmitterGlow.position.set(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ);
         }
-        const visibleDistance = this.getPlayerLightVisibleDistance(originX, originZ, dirX, dirZ);
-        const coneScale = THREE.MathUtils.clamp(visibleDistance / SUIT_CONE_VISUAL_DISTANCE, 0.08, 1);
+        const facingAngle = Math.atan2(dirX, dirZ);
         this.playerForwardCone.position.set(
             originX,
             0.074,
             originZ
         );
-        this.playerForwardCone.rotation.y = Math.atan2(dirX, dirZ);
-        this.playerForwardCone.scale.set(coneScale, 1, coneScale);
+        this.playerForwardCone.rotation.y = facingAngle;
+        this.updatePlayerConeOcclusion(originX, originZ, facingAngle);
 
         this.playerForwardSpotLight.position.set(
             originX,
@@ -5167,20 +5201,53 @@ export class ThreeGame {
         );
     }
 
-    getPlayerLightVisibleDistance(originX, originZ, dirX, dirZ) {
-        if (this.performanceProfile !== 'gameplay' || !this.wallMeshes?.length) {
-            return SUIT_CONE_VISUAL_DISTANCE;
+    // Pushes each rim vertex of the beam fan out to the wall it hits, so the
+    // visible cone is carved per-direction by the geometry around it. Light is
+    // blocked behind walls and pours through gaps, rather than the whole beam
+    // collapsing to the nearest center-ray obstacle.
+    updatePlayerConeOcclusion(originX, originZ, facingAngle) {
+        const attr = this._conePositionAttr;
+        const rimAngles = this._coneRimAngles;
+        if (!attr || !rimAngles) return;
+
+        const array = attr.array;
+        const haveWalls = this.performanceProfile === 'gameplay' && this.wallMeshes?.length > 0;
+
+        if (!haveWalls) {
+            // Menu / no geometry: restore the full unobstructed fan.
+            for (let i = 0; i < rimAngles.length; i++) {
+                const angle = rimAngles[i];
+                const vi = (i + 1) * 3;
+                array[vi] = Math.sin(angle) * SUIT_CONE_VISUAL_DISTANCE;
+                array[vi + 2] = Math.cos(angle) * SUIT_CONE_VISUAL_DISTANCE;
+            }
+            attr.needsUpdate = true;
+            return;
         }
 
-        this._lightOcclusionRaycaster.set(
-            new THREE.Vector3(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ),
-            new THREE.Vector3(dirX, 0, dirZ).normalize()
-        );
-        this._lightOcclusionRaycaster.near = 0.05;
-        this._lightOcclusionRaycaster.far = SUIT_CONE_VISUAL_DISTANCE;
-        const hit = this._lightOcclusionRaycaster.intersectObjects(this.wallMeshes, false)[0];
-        if (!hit) return SUIT_CONE_VISUAL_DISTANCE;
-        return Math.max(0.4, hit.distance - SUIT_LIGHT_WALL_PADDING);
+        const raycaster = this._lightOcclusionRaycaster;
+        raycaster.near = 0.05;
+        raycaster.far = SUIT_CONE_VISUAL_DISTANCE;
+        this._coneRayOrigin = this._coneRayOrigin ?? new THREE.Vector3();
+        this._coneRayDir = this._coneRayDir ?? new THREE.Vector3();
+        this._coneRayOrigin.set(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ);
+
+        for (let i = 0; i < rimAngles.length; i++) {
+            const angle = rimAngles[i];
+            const worldAngle = facingAngle + angle;
+            this._coneRayDir.set(Math.sin(worldAngle), 0, Math.cos(worldAngle));
+            raycaster.set(this._coneRayOrigin, this._coneRayDir);
+            const hit = raycaster.intersectObjects(this.wallMeshes, false)[0];
+            const dist = hit
+                ? Math.max(0.4, hit.distance - SUIT_LIGHT_WALL_PADDING)
+                : SUIT_CONE_VISUAL_DISTANCE;
+            const vi = (i + 1) * 3;
+            // Rim stays in the cone's local frame (apex forward = +Z); the mesh
+            // rotation already orients it, so only the local angle is used here.
+            array[vi] = Math.sin(angle) * dist;
+            array[vi + 2] = Math.cos(angle) * dist;
+        }
+        attr.needsUpdate = true;
     }
 
     // Positions and tints the radial "fog of war" overlay so the murk forms a
@@ -6349,6 +6416,21 @@ export class ThreeGame {
         }
 
         this.syncVisibleChunks(true);
+
+        // Warm up the GPU before the cutscene: compile every material's shader
+        // program and prime the shadow map now, while the loader still covers
+        // the screen. Otherwise these one-time costs land on the first rendered
+        // frames and stutter the cutscene.
+        if (this.renderer && this.camera) {
+            try {
+                this.renderer.compile(this.scene, this.camera);
+            } catch {
+                // compile() is best-effort; never block the drop on it.
+            }
+            this.renderer.shadowMap.needsUpdate = true;
+            this.renderer.render(this.scene, this.camera);
+        }
+
         onProgress?.(1);
     }
 
