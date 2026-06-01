@@ -34,6 +34,7 @@ const PLAYER_SPRITE_DIRECTION_CELLS = Object.freeze([
     Object.freeze({ row: 0, baseColumn: 0 })
 ]);
 const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
+const TANK_FLIPPED_DIRECTION_INDICES = new Set([4]);
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
@@ -5353,8 +5354,13 @@ export class ThreeGame {
         const texture = this.playerTextures[this.playerType] ?? this.playerTextures.SCOUT;
         const directionCell = PLAYER_SPRITE_DIRECTION_CELLS[row] ?? PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
         const frameColumn = directionCell.baseColumn + (column % PLAYER_WALK_FRAME_COUNT);
+        const shouldFlipX = this.playerType === 'TANK' && TANK_FLIPPED_DIRECTION_INDICES.has(row);
+        texture.repeat.set(
+            PLAYER_SPRITE_FRAME_REPEAT_X * (shouldFlipX ? -1 : 1),
+            PLAYER_SPRITE_FRAME_REPEAT_Y
+        );
         texture.offset.set(
-            frameColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
+            (frameColumn + (shouldFlipX ? 1 : 0)) * PLAYER_SPRITE_FRAME_REPEAT_X,
             (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
         );
     }
