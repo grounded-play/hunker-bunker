@@ -40,11 +40,12 @@ const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
 const SUIT_LIGHT_BASE_INTENSITY = 2.1;
 const SUIT_LIGHT_BASE_DISTANCE = 7.2;
-const SUIT_CONE_LIGHT_DISTANCE = 10.5;
-const SUIT_CONE_LIGHT_ANGLE = Math.PI * 0.22;
-const SUIT_CONE_VISUAL_DISTANCE = 8.8;
-const SUIT_CONE_VISUAL_WIDTH = 6.4;
-const SUIT_CONE_VISUAL_OPACITY = 0.34;
+const SUIT_CONE_LIGHT_COLOR = 0xf2efe2;
+const SUIT_CONE_LIGHT_DISTANCE = 12.2;
+const SUIT_CONE_LIGHT_ANGLE = Math.PI * 0.32;
+const SUIT_CONE_VISUAL_DISTANCE = 10.2;
+const SUIT_CONE_VISUAL_WIDTH = 9.4;
+const SUIT_CONE_VISUAL_OPACITY = 0.28;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -1751,11 +1752,13 @@ export class ThreeGame {
         const r = Math.round(color.r * 255);
         const g = Math.round(color.g * 255);
         const b = Math.round(color.b * 255);
+        const neutral = { r: 242, g: 239, b: 226 };
 
         const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-        gradient.addColorStop(0, `rgba(${r},${g},${b},0.42)`);
-        gradient.addColorStop(0.38, `rgba(${r},${g},${b},0.24)`);
-        gradient.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        gradient.addColorStop(0, `rgba(${neutral.r},${neutral.g},${neutral.b},0.34)`);
+        gradient.addColorStop(0.34, `rgba(${neutral.r},${neutral.g},${neutral.b},0.2)`);
+        gradient.addColorStop(0.78, `rgba(${neutral.r},${neutral.g},${neutral.b},0.07)`);
+        gradient.addColorStop(1, `rgba(${neutral.r},${neutral.g},${neutral.b},0)`);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
@@ -1768,6 +1771,15 @@ export class ThreeGame {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        const classEdge = ctx.createLinearGradient(0, canvas.height, canvas.width, canvas.height);
+        classEdge.addColorStop(0, `rgba(${r},${g},${b},0.12)`);
+        classEdge.addColorStop(0.28, `rgba(${r},${g},${b},0.02)`);
+        classEdge.addColorStop(0.5, 'rgba(255,255,255,0)');
+        classEdge.addColorStop(0.72, `rgba(${r},${g},${b},0.02)`);
+        classEdge.addColorStop(1, `rgba(${r},${g},${b},0.12)`);
+        ctx.fillStyle = classEdge;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
         const centerGlow = ctx.createRadialGradient(
             canvas.width * 0.5,
             canvas.height * 0.48,
@@ -1776,7 +1788,7 @@ export class ThreeGame {
             canvas.height * 0.48,
             canvas.width * 0.48
         );
-        centerGlow.addColorStop(0, `rgba(255,255,255,0.2)`);
+        centerGlow.addColorStop(0, 'rgba(255,255,255,0.16)');
         centerGlow.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = centerGlow;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1812,7 +1824,7 @@ export class ThreeGame {
         this.playerForwardLightTarget = new THREE.Object3D();
         this.scene.add(this.playerForwardLightTarget);
         this.playerForwardSpotLight = new THREE.SpotLight(
-            color,
+            SUIT_CONE_LIGHT_COLOR,
             3.1,
             SUIT_CONE_LIGHT_DISTANCE,
             SUIT_CONE_LIGHT_ANGLE,
@@ -2229,7 +2241,7 @@ export class ThreeGame {
             this.suitFillLight.color.setHex(color);
         }
         if (this.playerForwardSpotLight?.color) {
-            this.playerForwardSpotLight.color.setHex(color);
+            this.playerForwardSpotLight.color.setHex(SUIT_CONE_LIGHT_COLOR);
         }
         if (this.playerForwardCone?.material) {
             this.playerConeTexture?.dispose?.();
@@ -4595,8 +4607,9 @@ export class ThreeGame {
             1.6,
             spriteAnchorZ + this.cameraPlanarForward.y * PLAYER_GLOW_SCREEN_OFFSET
         );
-        const lightDirX = this.hasActiveAim ? (this.aimDirX || moveDirX) : moveDirX;
-        const lightDirZ = this.hasActiveAim ? (this.aimDirZ || moveDirZ) : moveDirZ;
+        const spriteFacing = this.getWorldDirectionForFacingRow(this.currentFacingRow);
+        const lightDirX = this.hasActiveAim ? (this.aimDirX || spriteFacing.x) : spriteFacing.x;
+        const lightDirZ = this.hasActiveAim ? (this.aimDirZ || spriteFacing.z) : spriteFacing.z;
         this.updatePlayerForwardLight(delta, { directionX: lightDirX, directionZ: lightDirZ });
         this.playerMarker.position.set(this.player.position.x, this.playerMarkerHeight, this.player.position.z);
         if (this.isPositionInPuddle(this.player.position.x, this.player.position.z)) {
@@ -4987,8 +5000,9 @@ export class ThreeGame {
     updatePlayerForwardLight(delta = 0.016, { immediate = false, directionX = null, directionZ = null } = {}) {
         if (!this.player || !this.playerForwardCone || !this.playerForwardSpotLight || !this.playerForwardLightTarget) return;
 
-        let targetX = Number.isFinite(directionX) ? directionX : this.playerForwardDir.x;
-        let targetZ = Number.isFinite(directionZ) ? directionZ : this.playerForwardDir.y;
+        const fallbackDirection = this.getWorldDirectionForFacingRow?.(this.currentFacingRow) ?? { x: this.playerForwardDir.x, z: this.playerForwardDir.y };
+        let targetX = Number.isFinite(directionX) ? directionX : fallbackDirection.x;
+        let targetZ = Number.isFinite(directionZ) ? directionZ : fallbackDirection.z;
         const targetLength = Math.hypot(targetX, targetZ);
         if (targetLength > 0.0001) {
             targetX /= targetLength;
@@ -5007,25 +5021,25 @@ export class ThreeGame {
 
         const dirX = this.playerForwardDir.x;
         const dirZ = this.playerForwardDir.y;
-        const spriteAnchorX = this.player.position.x + (this.playerSprite?.position.x ?? 0);
-        const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position.z ?? 0);
-        const coneCenterDistance = (SUIT_CONE_VISUAL_DISTANCE * 0.5) + 0.28;
+        const originX = this.player.position.x;
+        const originZ = this.player.position.z;
+        const coneCenterDistance = SUIT_CONE_VISUAL_DISTANCE * 0.5;
         this.playerForwardCone.position.set(
-            spriteAnchorX + dirX * coneCenterDistance,
+            originX + dirX * coneCenterDistance,
             0.074,
-            spriteAnchorZ + dirZ * coneCenterDistance
+            originZ + dirZ * coneCenterDistance
         );
         this.playerForwardCone.rotation.y = Math.atan2(-dirX, -dirZ);
 
         this.playerForwardSpotLight.position.set(
-            spriteAnchorX + dirX * 0.2,
+            originX,
             1.24,
-            spriteAnchorZ + dirZ * 0.2
+            originZ
         );
         this.playerForwardLightTarget.position.set(
-            spriteAnchorX + dirX * SUIT_CONE_LIGHT_DISTANCE,
+            originX + dirX * SUIT_CONE_LIGHT_DISTANCE,
             0.22,
-            spriteAnchorZ + dirZ * SUIT_CONE_LIGHT_DISTANCE
+            originZ + dirZ * SUIT_CONE_LIGHT_DISTANCE
         );
     }
 
@@ -5037,7 +5051,7 @@ export class ThreeGame {
         const w = this.container.clientWidth || 1;
         const h = this.container.clientHeight || 1;
 
-        // Project the player sprite anchor to screen pixels.
+        // Project the player anchor to screen pixels.
         this._darknessCenter.set(
             this.player.position.x,
             this.player.position.y + 0.4,
@@ -5050,12 +5064,14 @@ export class ThreeGame {
         const r = fog ? Math.round(fog.r * 255) : 8;
         const g = fog ? Math.round(fog.g * 255) : 10;
         const b = fog ? Math.round(fog.b * 255) : 14;
-        const radius = Math.max(w, h) * 0.62;
+        const radius = Math.max(w, h) * 0.68;
+        const clearRadius = Math.max(170, Math.min(w, h) * 0.28);
 
         overlay.style.background =
             `radial-gradient(circle ${radius.toFixed(0)}px at ${cx.toFixed(0)}px ${cy.toFixed(0)}px,` +
-            `rgba(${r},${g},${b},0) 0%,` +
-            `rgba(${r},${g},${b},0) 38%,` +
+            `rgba(${r},${g},${b},0) 0px,` +
+            `rgba(${r},${g},${b},0) ${clearRadius.toFixed(0)}px,` +
+            `rgba(${r},${g},${b},${(alpha * 0.22).toFixed(3)}) 62%,` +
             `rgba(${r},${g},${b},${alpha.toFixed(3)}) 100%)`;
         overlay.style.opacity = alpha > 0.02 ? '1' : '0';
     }
@@ -5523,6 +5539,17 @@ export class ThreeGame {
             (frameColumn + (shouldFlipX ? 1 : 0)) * PLAYER_SPRITE_FRAME_REPEAT_X,
             (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
         );
+    }
+
+    getWorldDirectionForFacingRow(row = this.currentFacingRow) {
+        const facingRow = Number.isInteger(row) ? row : PLAYER_DEFAULT_DIRECTION_INDEX;
+        const angle = facingRow * (Math.PI / 4);
+        const screenAxisX = Math.cos(angle);
+        const screenAxisZ = Math.sin(angle);
+        const worldX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
+        const worldZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
+        const length = Math.hypot(worldX, worldZ) || 1;
+        return { x: worldX / length, z: worldZ / length };
     }
 
     updateWeaponState(delta) {
