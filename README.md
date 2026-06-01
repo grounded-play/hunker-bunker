@@ -1,6 +1,7 @@
 # 🛡️ HUNKER BUNKER | TACTICAL COMMAND v2.0
 
 [![Presubmit CI](https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml/badge.svg)](https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status)](https://app.netlify.com/projects/hunkerbunker/deploys)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Three.js](https://img.shields.io/badge/Three.js-r184-00e5ff.svg?logo=three.js)](https://threejs.org/)
 [![Phaser](https://img.shields.io/badge/Phaser-v3.80-ff9f1c.svg?logo=phaser)](https://phaser.io/)
@@ -9,16 +10,20 @@
 
 **HUNKER BUNKER: Tactical Command v2.0** is an immersive, high-performance, retro-futuristic arcade tactics game. Built on a custom 3D WebGL engine utilizing **Three.js** and **Phaser**, players command modular tactical units through an infinite, procedurally generated network of subterranean metallic bunker corridors. 
 
+🎮 **[Play the Live Demo on Netlify!](https://hunkerbunker.netlify.app/)**
+
 Featuring an authentic retro CRT arcade aesthetic, custom triplanar shaders, co-prime texture blending, and deep ambient soundscapes, *Hunker Bunker* is engineered for visual splendor, tactile satisfaction, and high replayability.
 
 ---
 
 ## 🖥️ System Preview (Tactical Console)
 
-![Tactical Command Hero Banner](./public/hunker_bunker_hero.png)
+| Hero Select Interface | Tactical Command View |
+| :---: | :---: |
+| ![Hero Select Interface](./public/hunker_bunker_select.png) | ![Tactical Command View](./public/hunker_bunker_hero.png) |
 
 > [!NOTE]
-> *Hero image captured directly from the Tactical Diagnostic Bezel, showing the 3D Orthographic WebGL corridor maze, Radar Scan Module, and Unit Selection Matrix.*
+> *Images captured directly from the Tactical Diagnostic Bezel, showing both the tactical Hero Unit Selection Matrix console (left) and the active 3D Orthographic WebGL corridor maze (right).*
 
 ---
 
