@@ -48,6 +48,8 @@ const SUIT_CONE_VISUAL_WIDTH = 9.4;
 const SUIT_CONE_VISUAL_OPACITY = 0.24;
 const SUIT_LOCAL_LIGHT_POOL_RADIUS = 2.25;
 const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.2;
+const SUIT_LIGHT_EMITTER_HEIGHT = 1.35;
+const SUIT_LIGHT_WALL_PADDING = 0.35;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -587,6 +589,7 @@ export class ThreeGame {
         this.playerMarkerHeight = 0.05;
         this.lastTime = performance.now();
         this.raycaster = new THREE.Raycaster();
+        this._lightOcclusionRaycaster = new THREE.Raycaster();
         this.bank = bankManager instanceof BankManager ? bankManager : new BankManager();
         this.playerVitals = {
             hp: BASE_HEARTS,
@@ -1813,6 +1816,32 @@ export class ThreeGame {
         return texture;
     }
 
+    createEmitterGlowTexture(colorHex) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        const classColor = new THREE.Color(colorHex);
+        const neutral = new THREE.Color(SUIT_CONE_LIGHT_COLOR);
+        neutral.lerp(classColor, 0.12);
+        const r = Math.round(neutral.r * 255);
+        const g = Math.round(neutral.g * 255);
+        const b = Math.round(neutral.b * 255);
+
+        const glow = ctx.createRadialGradient(64, 64, 2, 64, 64, 62);
+        glow.addColorStop(0, `rgba(255,255,255,0.9)`);
+        glow.addColorStop(0.18, `rgba(${r},${g},${b},0.55)`);
+        glow.addColorStop(0.58, `rgba(${r},${g},${b},0.15)`);
+        glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.needsUpdate = true;
+        return texture;
+    }
+
     createForwardConeGeometry() {
         const halfWidth = SUIT_CONE_VISUAL_WIDTH * 0.5;
         const geometry = new THREE.BufferGeometry();
@@ -1835,6 +1864,7 @@ export class ThreeGame {
         const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
         this.playerConeTexture = this.createLightConeTexture(color);
         this.playerLightPoolTexture = this.createLightPoolTexture(color);
+        this.playerEmitterGlowTexture = this.createEmitterGlowTexture(color);
         this.playerLightPool = new THREE.Mesh(
             new THREE.PlaneGeometry(SUIT_LOCAL_LIGHT_POOL_RADIUS * 2, SUIT_LOCAL_LIGHT_POOL_RADIUS * 2),
             new THREE.MeshBasicMaterial({
@@ -1870,6 +1900,20 @@ export class ThreeGame {
         this.playerForwardCone.renderOrder = 3;
         this.scene.add(this.playerForwardCone);
 
+        this.playerEmitterGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: this.playerEmitterGlowTexture,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.58,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            depthTest: true,
+            fog: false
+        }));
+        this.playerEmitterGlow.scale.set(0.72, 0.72, 1);
+        this.playerEmitterGlow.renderOrder = 8;
+        this.scene.add(this.playerEmitterGlow);
+
         this.playerForwardLightTarget = new THREE.Object3D();
         this.scene.add(this.playerForwardLightTarget);
         this.playerForwardSpotLight = new THREE.SpotLight(
@@ -1880,7 +1924,7 @@ export class ThreeGame {
             0.78,
             1.25
         );
-        this.playerForwardSpotLight.position.set(0, 1.18, 0);
+        this.playerForwardSpotLight.position.set(0, SUIT_LIGHT_EMITTER_HEIGHT, 0);
         this.playerForwardSpotLight.target = this.playerForwardLightTarget;
         this.playerForwardSpotLight.castShadow = true;
         this.playerForwardSpotLight.shadow.mapSize.set(1024, 1024);
@@ -2308,6 +2352,12 @@ export class ThreeGame {
             this.playerLightPoolTexture = this.createLightPoolTexture(color);
             this.playerLightPool.material.map = this.playerLightPoolTexture;
             this.playerLightPool.material.needsUpdate = true;
+        }
+        if (this.playerEmitterGlow?.material) {
+            this.playerEmitterGlowTexture?.dispose?.();
+            this.playerEmitterGlowTexture = this.createEmitterGlowTexture(color);
+            this.playerEmitterGlow.material.map = this.playerEmitterGlowTexture;
+            this.playerEmitterGlow.material.needsUpdate = true;
         }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
 
@@ -5040,6 +5090,9 @@ export class ThreeGame {
         if (this.playerLightPool?.material) {
             this.playerLightPool.material.opacity = SUIT_LOCAL_LIGHT_POOL_OPACITY * lerp(1.2, 0.48, dayBlend);
         }
+        if (this.playerEmitterGlow?.material) {
+            this.playerEmitterGlow.material.opacity = 0.58 * lerp(1.16, 0.46, dayBlend);
+        }
 
         // Fog eases in at night (color stays under biome control; only the range
         // is touched here). Keep the far plane close enough to remain visible.
@@ -5089,23 +5142,45 @@ export class ThreeGame {
         if (this.playerLightPool) {
             this.playerLightPool.position.set(originX, 0.071, originZ);
         }
+        if (this.playerEmitterGlow) {
+            this.playerEmitterGlow.position.set(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ);
+        }
+        const visibleDistance = this.getPlayerLightVisibleDistance(originX, originZ, dirX, dirZ);
+        const coneScale = THREE.MathUtils.clamp(visibleDistance / SUIT_CONE_VISUAL_DISTANCE, 0.08, 1);
         this.playerForwardCone.position.set(
             originX,
             0.074,
             originZ
         );
         this.playerForwardCone.rotation.y = Math.atan2(dirX, dirZ);
+        this.playerForwardCone.scale.set(coneScale, 1, coneScale);
 
         this.playerForwardSpotLight.position.set(
             originX,
-            1.24,
+            SUIT_LIGHT_EMITTER_HEIGHT,
             originZ
         );
         this.playerForwardLightTarget.position.set(
             originX + dirX * SUIT_CONE_LIGHT_DISTANCE,
-            0.22,
+            0.28,
             originZ + dirZ * SUIT_CONE_LIGHT_DISTANCE
         );
+    }
+
+    getPlayerLightVisibleDistance(originX, originZ, dirX, dirZ) {
+        if (this.performanceProfile !== 'gameplay' || !this.wallMeshes?.length) {
+            return SUIT_CONE_VISUAL_DISTANCE;
+        }
+
+        this._lightOcclusionRaycaster.set(
+            new THREE.Vector3(originX, SUIT_LIGHT_EMITTER_HEIGHT, originZ),
+            new THREE.Vector3(dirX, 0, dirZ).normalize()
+        );
+        this._lightOcclusionRaycaster.near = 0.05;
+        this._lightOcclusionRaycaster.far = SUIT_CONE_VISUAL_DISTANCE;
+        const hit = this._lightOcclusionRaycaster.intersectObjects(this.wallMeshes, false)[0];
+        if (!hit) return SUIT_CONE_VISUAL_DISTANCE;
+        return Math.max(0.4, hit.distance - SUIT_LIGHT_WALL_PADDING);
     }
 
     // Positions and tints the radial "fog of war" overlay so the murk forms a
@@ -9744,11 +9819,16 @@ export class ThreeGame {
         this.playerLightPool?.geometry?.dispose?.();
         this.playerLightPool?.material?.dispose?.();
         this.playerLightPoolTexture?.dispose?.();
+        this.playerEmitterGlow?.material?.dispose?.();
+        this.playerEmitterGlowTexture?.dispose?.();
         if (this.playerForwardCone) {
             this.scene.remove(this.playerForwardCone);
         }
         if (this.playerLightPool) {
             this.scene.remove(this.playerLightPool);
+        }
+        if (this.playerEmitterGlow) {
+            this.scene.remove(this.playerEmitterGlow);
         }
         if (this.playerForwardSpotLight) {
             this.scene.remove(this.playerForwardSpotLight);
