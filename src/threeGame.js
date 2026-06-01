@@ -5356,10 +5356,11 @@ export class ThreeGame {
         const w = this.container.clientWidth || 1;
         const h = this.container.clientHeight || 1;
 
-        // Project the player anchor to screen pixels.
+        // Project the player's torso to screen pixels. The camera looks at this
+        // anchor, so the bubble lands on the player and tracks them as they move.
         this._darknessCenter.set(
             this.player.position.x,
-            this.player.position.y + 0.4,
+            this.player.position.y + 0.7,
             this.player.position.z
         ).project(this.camera);
         const cx = (this._darknessCenter.x * 0.5 + 0.5) * w;
@@ -5369,15 +5370,22 @@ export class ThreeGame {
         const r = fog ? Math.round(fog.r * 255) : 8;
         const g = fog ? Math.round(fog.g * 255) : 10;
         const b = fog ? Math.round(fog.b * 255) : 14;
-        const radius = Math.max(w, h) * 0.68;
-        const clearRadius = Math.max(170, Math.min(w, h) * 0.28);
+
+        // A tight circle of clarity around the player that ramps to fully dark
+        // well within the viewport, so every edge — including the bottom — goes
+        // dark instead of leaving a permanently-lit band. The final stop colour
+        // continues past darkRadius, so the screen corners stay solid.
+        const minDim = Math.min(w, h);
+        const clearRadius = Math.max(96, minDim * 0.16);
+        const darkRadius = clearRadius + minDim * 0.30;
+        const midRadius = clearRadius + (darkRadius - clearRadius) * 0.5;
 
         overlay.style.background =
-            `radial-gradient(circle ${radius.toFixed(0)}px at ${cx.toFixed(0)}px ${cy.toFixed(0)}px,` +
+            `radial-gradient(circle at ${cx.toFixed(0)}px ${cy.toFixed(0)}px,` +
             `rgba(${r},${g},${b},0) 0px,` +
             `rgba(${r},${g},${b},0) ${clearRadius.toFixed(0)}px,` +
-            `rgba(${r},${g},${b},${(alpha * 0.22).toFixed(3)}) 62%,` +
-            `rgba(${r},${g},${b},${alpha.toFixed(3)}) 100%)`;
+            `rgba(${r},${g},${b},${(alpha * 0.5).toFixed(3)}) ${midRadius.toFixed(0)}px,` +
+            `rgba(${r},${g},${b},${alpha.toFixed(3)}) ${darkRadius.toFixed(0)}px)`;
         overlay.style.opacity = alpha > 0.02 ? '1' : '0';
     }
 
