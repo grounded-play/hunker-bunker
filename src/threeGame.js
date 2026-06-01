@@ -45,7 +45,9 @@ const SUIT_CONE_LIGHT_DISTANCE = 12.2;
 const SUIT_CONE_LIGHT_ANGLE = Math.PI * 0.32;
 const SUIT_CONE_VISUAL_DISTANCE = 10.2;
 const SUIT_CONE_VISUAL_WIDTH = 9.4;
-const SUIT_CONE_VISUAL_OPACITY = 0.28;
+const SUIT_CONE_VISUAL_OPACITY = 0.24;
+const SUIT_LOCAL_LIGHT_POOL_RADIUS = 2.25;
+const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.2;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -1754,45 +1756,31 @@ export class ThreeGame {
         const b = Math.round(color.b * 255);
         const neutral = { r: 242, g: 239, b: 226 };
 
-        const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
-        gradient.addColorStop(0, `rgba(${neutral.r},${neutral.g},${neutral.b},0.34)`);
-        gradient.addColorStop(0.34, `rgba(${neutral.r},${neutral.g},${neutral.b},0.2)`);
-        gradient.addColorStop(0.78, `rgba(${neutral.r},${neutral.g},${neutral.b},0.07)`);
-        gradient.addColorStop(1, `rgba(${neutral.r},${neutral.g},${neutral.b},0)`);
+        const image = ctx.createImageData(canvas.width, canvas.height);
+        const smoothstep = (edge0, edge1, value) => {
+            const t = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)));
+            return t * t * (3 - 2 * t);
+        };
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(canvas.width * 0.5, canvas.height);
-        ctx.lineTo(canvas.width, 0);
-        ctx.quadraticCurveTo(canvas.width * 0.5, canvas.height * 0.08, 0, 0);
-        ctx.closePath();
-        ctx.clip();
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < canvas.height; y++) {
+            const travel = 1 - (y / (canvas.height - 1));
+            const halfWidth = 0.018 + Math.pow(travel, 0.92) * 0.47;
+            const lengthFade = Math.pow(1 - travel, 0.18) * (1 - smoothstep(0.76, 1, travel));
+            for (let x = 0; x < canvas.width; x++) {
+                const centeredX = Math.abs((x / (canvas.width - 1)) - 0.5);
+                const edge = 1 - smoothstep(halfWidth * 0.58, halfWidth, centeredX);
+                const core = 1 - smoothstep(0, halfWidth * 0.45, centeredX);
+                const classTint = Math.max(0, edge - core) * 0.18;
+                const alpha = Math.max(0, Math.min(1, (edge * 0.42 + core * 0.16) * lengthFade));
+                const idx = (y * canvas.width + x) * 4;
+                image.data[idx] = Math.round(neutral.r * (1 - classTint) + r * classTint);
+                image.data[idx + 1] = Math.round(neutral.g * (1 - classTint) + g * classTint);
+                image.data[idx + 2] = Math.round(neutral.b * (1 - classTint) + b * classTint);
+                image.data[idx + 3] = Math.round(alpha * 255);
+            }
+        }
 
-        const classEdge = ctx.createLinearGradient(0, canvas.height, canvas.width, canvas.height);
-        classEdge.addColorStop(0, `rgba(${r},${g},${b},0.12)`);
-        classEdge.addColorStop(0.28, `rgba(${r},${g},${b},0.02)`);
-        classEdge.addColorStop(0.5, 'rgba(255,255,255,0)');
-        classEdge.addColorStop(0.72, `rgba(${r},${g},${b},0.02)`);
-        classEdge.addColorStop(1, `rgba(${r},${g},${b},0.12)`);
-        ctx.fillStyle = classEdge;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        const centerGlow = ctx.createRadialGradient(
-            canvas.width * 0.5,
-            canvas.height * 0.48,
-            8,
-            canvas.width * 0.5,
-            canvas.height * 0.48,
-            canvas.width * 0.48
-        );
-        centerGlow.addColorStop(0, 'rgba(255,255,255,0.16)');
-        centerGlow.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = centerGlow;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.restore();
+        ctx.putImageData(image, 0, 0);
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -1800,11 +1788,73 @@ export class ThreeGame {
         return texture;
     }
 
+    createLightPoolTexture(colorHex) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        const classColor = new THREE.Color(colorHex);
+        const neutral = new THREE.Color(SUIT_CONE_LIGHT_COLOR);
+        neutral.lerp(classColor, 0.08);
+        const r = Math.round(neutral.r * 255);
+        const g = Math.round(neutral.g * 255);
+        const b = Math.round(neutral.b * 255);
+
+        const glow = ctx.createRadialGradient(128, 128, 6, 128, 128, 126);
+        glow.addColorStop(0, `rgba(${r},${g},${b},0.5)`);
+        glow.addColorStop(0.42, `rgba(${r},${g},${b},0.18)`);
+        glow.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    createForwardConeGeometry() {
+        const halfWidth = SUIT_CONE_VISUAL_WIDTH * 0.5;
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+            0, 0, 0,
+            -halfWidth, 0, SUIT_CONE_VISUAL_DISTANCE,
+            halfWidth, 0, SUIT_CONE_VISUAL_DISTANCE
+        ], 3));
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute([
+            0.5, 0,
+            0, 1,
+            1, 1
+        ], 2));
+        geometry.setIndex([0, 1, 2]);
+        geometry.computeVertexNormals();
+        return geometry;
+    }
+
     setupPlayerForwardLight() {
         const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
         this.playerConeTexture = this.createLightConeTexture(color);
+        this.playerLightPoolTexture = this.createLightPoolTexture(color);
+        this.playerLightPool = new THREE.Mesh(
+            new THREE.PlaneGeometry(SUIT_LOCAL_LIGHT_POOL_RADIUS * 2, SUIT_LOCAL_LIGHT_POOL_RADIUS * 2),
+            new THREE.MeshBasicMaterial({
+                map: this.playerLightPoolTexture,
+                color: 0xffffff,
+                transparent: true,
+                opacity: SUIT_LOCAL_LIGHT_POOL_OPACITY,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            })
+        );
+        this.playerLightPool.rotation.x = -Math.PI / 2;
+        this.playerLightPool.position.y = 0.071;
+        this.playerLightPool.renderOrder = 2;
+        this.scene.add(this.playerLightPool);
+
         this.playerForwardCone = new THREE.Mesh(
-            new THREE.PlaneGeometry(SUIT_CONE_VISUAL_WIDTH, SUIT_CONE_VISUAL_DISTANCE),
+            this.createForwardConeGeometry(),
             new THREE.MeshBasicMaterial({
                 map: this.playerConeTexture,
                 color: 0xffffff,
@@ -1816,7 +1866,6 @@ export class ThreeGame {
                 fog: false
             })
         );
-        this.playerForwardCone.rotation.x = -Math.PI / 2;
         this.playerForwardCone.position.y = 0.072;
         this.playerForwardCone.renderOrder = 3;
         this.scene.add(this.playerForwardCone);
@@ -1833,6 +1882,11 @@ export class ThreeGame {
         );
         this.playerForwardSpotLight.position.set(0, 1.18, 0);
         this.playerForwardSpotLight.target = this.playerForwardLightTarget;
+        this.playerForwardSpotLight.castShadow = true;
+        this.playerForwardSpotLight.shadow.mapSize.set(1024, 1024);
+        this.playerForwardSpotLight.shadow.camera.near = 0.1;
+        this.playerForwardSpotLight.shadow.camera.far = SUIT_CONE_LIGHT_DISTANCE + 3;
+        this.playerForwardSpotLight.shadow.bias = -0.0008;
         this.scene.add(this.playerForwardSpotLight);
     }
 
@@ -2248,6 +2302,12 @@ export class ThreeGame {
             this.playerConeTexture = this.createLightConeTexture(color);
             this.playerForwardCone.material.map = this.playerConeTexture;
             this.playerForwardCone.material.needsUpdate = true;
+        }
+        if (this.playerLightPool?.material) {
+            this.playerLightPoolTexture?.dispose?.();
+            this.playerLightPoolTexture = this.createLightPoolTexture(color);
+            this.playerLightPool.material.map = this.playerLightPoolTexture;
+            this.playerLightPool.material.needsUpdate = true;
         }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
 
@@ -4977,6 +5037,9 @@ export class ThreeGame {
         if (this.playerForwardCone?.material) {
             this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(1.15, 0.42, dayBlend);
         }
+        if (this.playerLightPool?.material) {
+            this.playerLightPool.material.opacity = SUIT_LOCAL_LIGHT_POOL_OPACITY * lerp(1.2, 0.48, dayBlend);
+        }
 
         // Fog eases in at night (color stays under biome control; only the range
         // is touched here). Keep the far plane close enough to remain visible.
@@ -5023,13 +5086,15 @@ export class ThreeGame {
         const dirZ = this.playerForwardDir.y;
         const originX = this.player.position.x;
         const originZ = this.player.position.z;
-        const coneCenterDistance = SUIT_CONE_VISUAL_DISTANCE * 0.5;
+        if (this.playerLightPool) {
+            this.playerLightPool.position.set(originX, 0.071, originZ);
+        }
         this.playerForwardCone.position.set(
-            originX + dirX * coneCenterDistance,
+            originX,
             0.074,
-            originZ + dirZ * coneCenterDistance
+            originZ
         );
-        this.playerForwardCone.rotation.y = Math.atan2(-dirX, -dirZ);
+        this.playerForwardCone.rotation.y = Math.atan2(dirX, dirZ);
 
         this.playerForwardSpotLight.position.set(
             originX,
@@ -9676,8 +9741,14 @@ export class ThreeGame {
         this.playerForwardCone?.geometry?.dispose?.();
         this.playerForwardCone?.material?.dispose?.();
         this.playerConeTexture?.dispose?.();
+        this.playerLightPool?.geometry?.dispose?.();
+        this.playerLightPool?.material?.dispose?.();
+        this.playerLightPoolTexture?.dispose?.();
         if (this.playerForwardCone) {
             this.scene.remove(this.playerForwardCone);
+        }
+        if (this.playerLightPool) {
+            this.scene.remove(this.playerLightPool);
         }
         if (this.playerForwardSpotLight) {
             this.scene.remove(this.playerForwardSpotLight);
