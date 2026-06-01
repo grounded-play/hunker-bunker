@@ -16,6 +16,11 @@ coverage
 # Claude work notes (local only)
 .claude-work/
 
+# Lighthouse
+.lighthouseci/
+# Local Chrome binary downloaded via @puppeteer/browsers for local Lighthouse runs
+chrome/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -10,10 +10,13 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "lighthouse:setup": "npx -y @puppeteer/browsers install chrome@stable",
+    "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@lhci/cli": "^0.15.1",
     "@types/three": "^0.184.1",
     "@vitest/coverage-v8": "^4.1.7",
     "eslint": "^10.4.0",
