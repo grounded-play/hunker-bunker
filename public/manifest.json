@@ -1,0 +1,27 @@
+{
+  "short_name": "Hunker Bunker",
+  "name": "HUNKER BUNKER | TACTICAL COMMAND",
+  "description": "An immersive retro-futuristic arcade tactics game. Command modular units through an infinite procedural subterranean corridor network.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#000f08",
+  "theme_color": "#00ff66",
+  "display": "standalone",
+  "orientation": "landscape"
+}
