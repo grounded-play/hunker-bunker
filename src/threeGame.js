@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG } from './bank.js';
 import { MarkovGenerator } from './generator.js';
+import { BaseLights } from './baseLights.js';
+import { FabricationFoundry } from './foundry.js';
 
 const PLAYER_COLORS = {
     SCOUT: 0x7dff5a,
@@ -696,6 +698,14 @@ export class ThreeGame {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0b0d0f);
         this.scene.fog = new THREE.Fog(0x0b0d0f, 10, 28);
+
+        // Base flood-lights: dormant until the O2 station powers the grid (Beat 2).
+        this.baseLights = new BaseLights(this.scene);
+
+        // Fabrication Foundry: in-world structure that powers up with the base
+        // and opens the Fabrication Bay when reached (Beat 4).
+        this.foundry = new FabricationFoundry(this.scene);
+        this._foundryPromptActive = false;
 
         this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
         this.camera.position.copy(this.cameraOffset);
@@ -2116,6 +2126,7 @@ export class ThreeGame {
             if (this.codeMatchesAction(event.code, 'interact')) {
                 this.interactWithConsole();
                 this.interactWithLoreTerminal();
+                this.interactWithFoundry();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
@@ -2132,6 +2143,7 @@ export class ThreeGame {
             event.preventDefault();
             if (!this.isGameplayInputActive()) return;
             this.interactWithConsole();
+            this.interactWithFoundry();
         };
 
         // Pointer/tap state for canvas input.
@@ -2201,6 +2213,18 @@ export class ThreeGame {
             };
             window.addEventListener('goal-unlocked', this._onGoalUnlocked);
         }
+
+        // Beats 2 & 4: bringing the O2 station online ignites the base flood-light
+        // grid and powers up the Fabrication Foundry. The first generator repair
+        // (level 0 -> 1) is the trigger; the animated sweep then settles into idle
+        // flicker. Idempotent.
+        this._onO2BaseLights = (event) => {
+            if ((event?.detail?.level ?? 0) >= 1) {
+                this.igniteBaseLights();
+                this.revealFoundry();
+            }
+        };
+        window.addEventListener('o2-generator-upgraded', this._onO2BaseLights);
 
         this.consolePromptEl = document.getElementById('console-hud-prompt');
         this.consolePromptEl?.addEventListener('pointerup', this.handlePromptTap);
@@ -3049,6 +3073,9 @@ export class ThreeGame {
         this.updateConsoles(delta, now);
         this.updateLoreTerminals();
         this.updateVitals(delta);
+        this.baseLights?.update(delta);
+        this.foundry?.update(delta);
+        this.updateFoundryPrompt();
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -4027,6 +4054,55 @@ export class ThreeGame {
         return { x, z };
     }
 
+    // Ignite the base flood-light grid around the active ship/base (Beat 2).
+    // Animated sweep by default; instant when restoring an already-online base.
+    igniteBaseLights({ instant = false } = {}) {
+        if (!this.baseLights) return;
+        const ship = this.getActiveShip();
+        const cx = Number.isFinite(ship?.tileX) ? ship.tileX : 9;
+        const cz = Number.isFinite(ship?.tileZ) ? ship.tileZ : 9;
+        if (instant) this.baseLights.igniteInstant(cx, cz);
+        else this.baseLights.ignite(cx, cz);
+    }
+
+    // Reveal/power-up the Fabrication Foundry in the base clearing (Beat 4).
+    revealFoundry({ instant = false } = {}) {
+        if (!this.foundry) return;
+        const ship = this.getActiveShip();
+        const cx = Number.isFinite(ship?.tileX) ? ship.tileX : 9;
+        const cz = Number.isFinite(ship?.tileZ) ? ship.tileZ : 9;
+        if (instant) this.foundry.revealInstant(cx, cz);
+        else this.foundry.reveal(cx, cz);
+    }
+
+    // Proximity prompt for the Foundry (mirrors the lore-terminal prompt flow).
+    // Reuses the console HUD prompt; dispatches show/hide events main.js listens for.
+    updateFoundryPrompt() {
+        if (!this.foundry?.isRevealed || !this.player || this.isPlayerDead) {
+            if (this._foundryPromptActive) {
+                this._foundryPromptActive = false;
+                window.dispatchEvent(new CustomEvent('foundry-prompt-clear'));
+            }
+            return;
+        }
+        const inRange = this.foundry.isWithinInteractRange(this.player.position.x, this.player.position.z);
+        if (inRange && !this._foundryPromptActive) {
+            this._foundryPromptActive = true;
+            window.dispatchEvent(new CustomEvent('foundry-prompt-nearby'));
+        } else if (!inRange && this._foundryPromptActive) {
+            this._foundryPromptActive = false;
+            window.dispatchEvent(new CustomEvent('foundry-prompt-clear'));
+        }
+    }
+
+    // Interact (E / tap) when standing at the Foundry -> open the Fabrication Bay.
+    interactWithFoundry() {
+        if (!this.isGameplayInputActive() || !this.player || !this.foundry?.isRevealed) return false;
+        if (!this.foundry.isWithinInteractRange(this.player.position.x, this.player.position.z)) return false;
+        window.dispatchEvent(new CustomEvent('open-fabrication-bay'));
+        return true;
+    }
+
     getActiveO2GeneratorDistance() {
         if (!this.player) return Infinity;
         const generatorPos = this.getActiveO2GeneratorPosition();
@@ -4121,6 +4197,16 @@ export class ThreeGame {
         this.o2BubbleObjects.ring.position.set(generatorPos.x, 0.035, generatorPos.z);
         this.o2BubbleObjects.light.visible = true;
         this.o2BubbleObjects.ring.visible = true;
+
+        // Returning to an already-online base: snap the flood-light grid and the
+        // Foundry on with no theatrics. The animated versions only play on the live
+        // first repair, which fires via the o2-generator-upgraded event before this.
+        if (this.baseLights && !this.baseLights.isIgnited) {
+            this.igniteBaseLights({ instant: true });
+        }
+        if (this.foundry && !this.foundry.isRevealed) {
+            this.revealFoundry({ instant: true });
+        }
     }
 
     resetVitalsForRun({ emit = true } = {}) {
@@ -4276,9 +4362,32 @@ export class ThreeGame {
     }
 
     getRadarCompassState() {
+        if (!this.player) {
+            return { active: false, angle: 0, distance: 0 };
+        }
+
+        // Beat 4 objective: once the Foundry is powered, the compass points to it
+        // until the player reaches it — regardless of the radar upgrade, since
+        // this is a story objective, not a scanner perk.
+        if (this.foundry?.isRevealed) {
+            const fp = this.foundry.getPosition();
+            const fdx = fp.x - this.player.position.x;
+            const fdz = fp.z - this.player.position.z;
+            const fdist = Math.hypot(fdx, fdz);
+            if (fdist > 2.0) {
+                return {
+                    active: true,
+                    mode: 'foundry',
+                    label: 'FABRICATION BAY',
+                    angle: this.planarAngleTo(fdx, fdz, fdist),
+                    distance: fdist
+                };
+            }
+        }
+
         // The yellow scanner arrow only appears once the SCANNER/RADAR upgrade is
         // unlocked. Until then there is no arrow at all.
-        if (!this.player || !this.hasUpgrade('radarNode')) {
+        if (!this.hasUpgrade('radarNode')) {
             return { active: false, angle: 0, distance: 0 };
         }
 

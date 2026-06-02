@@ -1,5 +1,8 @@
 import { AudioManager } from './src/audio.js';
 import { BankManager } from './src/bank.js';
+import { FabricatorManager, FAB_RECIPES } from './src/fabricator.js';
+import { ProfileManager, exportSaveCode, importSaveCode } from './src/profile.js';
+import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -213,6 +216,15 @@ let activeAmmoCapacity = CLASS_AMMO_CAPACITY.SCOUT;
 const bankManager = new BankManager();
 
 window.bankManager = bankManager;
+
+const fabricator = new FabricatorManager();
+window.fabricator = fabricator;
+
+const profile = new ProfileManager();
+window.profile = profile;
+
+const loadout = new LoadoutManager();
+window.loadout = loadout;
 
 // ── Daily Ops System ──────────────────────────────────────────
 const DAILY_OPS_KEY_PREFIX = 'hb_daily_v1_';
@@ -1379,6 +1391,19 @@ const ALL_LORE_KEYS = [
     'B01','B02','B03'
 ];
 
+// Recovered-survivor portraits for log authors. Reused from the mothership
+// project's generated character art (resized to lean webp avatars). Mapped
+// deterministically per log key so each fragment keeps a stable "author" face.
+const LORE_PORTRAIT_COUNT = 12;
+function lorePortraitIndex(key) {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    return h % LORE_PORTRAIT_COUNT;
+}
+function lorePortraitSrc(key) {
+    return `/lore_portraits/survivor_${String(lorePortraitIndex(key)).padStart(2, '0')}.webp`;
+}
+
 function buildArchiveModal() {
     const listEl = document.getElementById('archive-log-list');
     const summaryEl = document.getElementById('archive-summary');
@@ -1406,6 +1431,24 @@ function buildArchiveModal() {
             const entry = document.createElement('div');
             entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
 
+            const avatar = document.createElement('div');
+            avatar.className = 'archive-log-avatar';
+            if (isFound) {
+                const img = document.createElement('img');
+                img.className = 'archive-log-avatar__img';
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                img.alt = '';
+                img.src = lorePortraitSrc(key);
+                avatar.appendChild(img);
+            } else {
+                avatar.classList.add('archive-log-avatar--locked');
+                avatar.textContent = '?';
+            }
+
+            const body = document.createElement('div');
+            body.className = 'archive-log-body';
+
             const keyEl = document.createElement('div');
             keyEl.className = 'archive-log-key';
             keyEl.textContent = `LOG-${key}`;
@@ -1420,8 +1463,10 @@ function buildArchiveModal() {
                 textEl.textContent = '[ENCRYPTED — RECOVER FROM FIELD TERMINAL]';
             }
 
-            entry.appendChild(keyEl);
-            entry.appendChild(textEl);
+            body.appendChild(keyEl);
+            body.appendChild(textEl);
+            entry.appendChild(avatar);
+            entry.appendChild(body);
             listEl.appendChild(entry);
         }
     }
@@ -2778,6 +2823,258 @@ setupClickOutside('archive-modal', () => {
     const modal = document.getElementById('archive-modal');
     if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
 });
+
+// ── Fabrication Bay ───────────────────────────────────────────
+// Spend banked salvage to print gear (recipe art reused from mothership's item
+// cards). The Bay button unlocks once the O2 station powers the base (Beat 4 /
+// .claude_work/01-feature-port-from-mothership.md §A).
+function fabCostMarkup(cost) {
+    const parts = [];
+    if (cost.tech) parts.push(`<span class="fab-cost-chip">⬢ ${cost.tech}</span>`);
+    if (cost.coin) parts.push(`<span class="fab-cost-chip">◎ ${cost.coin}</span>`);
+    if (cost.med) parts.push(`<span class="fab-cost-chip">✚ ${cost.med}</span>`);
+    return parts.join('');
+}
+
+function renderFabricationModal() {
+    const grid = document.getElementById('fab-recipe-grid');
+    if (!grid) return;
+    const bank = bankManager.getState();
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setTxt('fab-bank-tech', bank.tech ?? 0);
+    setTxt('fab-bank-coin', bank.coin ?? 0);
+    setTxt('fab-bank-med', bank.med ?? 0);
+
+    grid.innerHTML = '';
+    for (const recipe of FAB_RECIPES) {
+        const fabricated = fabricator.isFabricated(recipe.id);
+        const printing = fabricator.isPrinting(recipe.id);
+        const affordable = fabricator.canFabricate(recipe.id, bankManager);
+        const pct = Math.round(fabricator.getPrintProgress(recipe.id) * 100);
+
+        const card = document.createElement('div');
+        card.className = ['fab-card', fabricated ? 'fab-card--done' : '', printing ? 'fab-card--printing' : ''].filter(Boolean).join(' ');
+
+        const art = document.createElement('div');
+        art.className = 'fab-card__art';
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
+        art.appendChild(img);
+        if (printing) {
+            const bar = document.createElement('div');
+            bar.className = 'fab-card__progress';
+            bar.innerHTML = `<div class="fab-card__progress-fill" style="width:${pct}%"></div>`;
+            art.appendChild(bar);
+        }
+        card.appendChild(art);
+
+        const name = document.createElement('div');
+        name.className = 'fab-card__name';
+        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`;
+        card.appendChild(name);
+
+        const blurb = document.createElement('div');
+        blurb.className = 'fab-card__blurb';
+        blurb.textContent = recipe.blurb;
+        card.appendChild(blurb);
+
+        const cost = document.createElement('div');
+        cost.className = 'fab-card__cost';
+        cost.innerHTML = fabCostMarkup(recipe.cost);
+        card.appendChild(cost);
+
+        const btn = document.createElement('button');
+        btn.className = 'fab-card__btn';
+        if (fabricated) {
+            btn.textContent = '✓ FABRICATED'; btn.disabled = true; btn.classList.add('fab-card__btn--done');
+        } else if (printing) {
+            btn.textContent = `PRINTING ${pct}%`; btn.disabled = true;
+        } else if (!affordable) {
+            btn.textContent = 'INSUFFICIENT SALVAGE'; btn.disabled = true; btn.classList.add('fab-card__btn--locked');
+        } else {
+            btn.textContent = 'FABRICATE';
+            btn.addEventListener('click', () => {
+                if (fabricator.startPrint(recipe.id, bankManager)) {
+                    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                    renderFabricationModal();
+                    startFabTicker();
+                } else {
+                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                }
+            });
+        }
+        card.appendChild(btn);
+        grid.appendChild(card);
+    }
+    setTxt('fab-summary', `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`);
+}
+
+let fabTicker = null;
+function startFabTicker() {
+    if (fabTicker) return;
+    fabTicker = setInterval(() => {
+        fabricator.tickPrints();
+        renderFabricationModal();
+        if (!FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) stopFabTicker();
+    }, 500);
+}
+function stopFabTicker() { if (fabTicker) { clearInterval(fabTicker); fabTicker = null; } }
+
+function openFabricationModal() {
+    fabricator.tickPrints();
+    renderFabricationModal();
+    const modal = document.getElementById('fabrication-modal');
+    if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+    if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
+}
+function closeFabricationModal() {
+    const modal = document.getElementById('fabrication-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    stopFabTicker();
+}
+
+function refreshFabAccess() {
+    const btn = document.getElementById('fabrication-btn');
+    if (!btn) return;
+    const online = (bankManager.getState().o2GeneratorLevel ?? 0) >= 1;
+    btn.classList.toggle('hidden', !online);
+}
+
+document.getElementById('fabrication-btn')?.addEventListener('click', openFabricationModal);
+document.getElementById('close-fabrication-modal')?.addEventListener('click', closeFabricationModal);
+setupClickOutside('fabrication-modal', closeFabricationModal);
+window.addEventListener('o2-generator-upgraded', refreshFabAccess);
+refreshFabAccess();
+
+// In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
+window.addEventListener('open-fabrication-bay', openFabricationModal);
+window.addEventListener('foundry-prompt-nearby', () => {
+    document.getElementById('foundry-hud-prompt')?.classList.remove('hidden');
+});
+window.addEventListener('foundry-prompt-clear', () => {
+    document.getElementById('foundry-hud-prompt')?.classList.add('hidden');
+});
+
+// ── Operator profile + portable save codes (no backend; doc 01.B.1) ──
+const callsignInput = document.getElementById('operator-callsign');
+if (callsignInput) {
+    callsignInput.value = profile.getCallsign();
+    const commitCallsign = () => { callsignInput.value = profile.setCallsign(callsignInput.value); };
+    callsignInput.addEventListener('change', commitCallsign);
+    callsignInput.addEventListener('blur', commitCallsign);
+}
+
+document.getElementById('export-save')?.addEventListener('click', async () => {
+    const code = exportSaveCode();
+    if (!code) { window.AudioManager?.play?.('ui_error', { volume: 0.5 }); return; }
+    let copied = false;
+    try {
+        await navigator.clipboard?.writeText(code);
+        copied = true;
+    } catch { /* clipboard blocked — fall back to manual copy */ }
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    window.prompt(
+        copied
+            ? 'SAVE CODE COPIED TO CLIPBOARD. Keep it somewhere safe — paste it into IMPORT on another device.'
+            : 'COPY THIS SAVE CODE and keep it safe — paste it into IMPORT on another device.',
+        code
+    );
+});
+
+document.getElementById('import-save')?.addEventListener('click', () => {
+    const code = window.prompt('Paste a HUNKER BUNKER save code to restore progress.\nWARNING: this overwrites current progress on this device.');
+    if (code == null) return;
+    const written = importSaveCode(code);
+    if (written < 0) {
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        window.alert('That save code was not valid.');
+        return;
+    }
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    window.alert(`Restored ${written} save record(s). Reloading…`);
+    window.location.reload();
+});
+
+// ── Operator roster / loadout console (doc 01.C) ──────────────
+// Equip a fabricated weapon as the active sidearm; the choice surfaces on the
+// in-game weapon panel and persists.
+function syncEquippedWeaponLabel() {
+    const titleEl = document.querySelector('#weapon-status-panel .weapon-status-panel__title');
+    if (titleEl) titleEl.textContent = loadout.getEquippedLabel(fabricator);
+}
+
+function renderRosterModal() {
+    const grid = document.getElementById('roster-weapon-grid');
+    if (!grid) return;
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setTxt('roster-callsign', profile.getCallsign());
+    setTxt('roster-id', profile.getProfileId());
+
+    const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
+    const fabbed = weapons.filter((r) => fabricator.isFabricated(r.id)).length;
+    setTxt('roster-fab-count', `ARSENAL: ${fabbed} / ${weapons.length} WEAPONS FABRICATED`);
+
+    const equippedId = loadout.getEquippedId();
+    grid.innerHTML = '';
+    for (const recipe of weapons) {
+        const fabricated = fabricator.isFabricated(recipe.id);
+        const equipped = fabricated && equippedId === recipe.id;
+
+        const card = document.createElement('div');
+        card.className = ['roster-weapon', fabricated ? '' : 'roster-weapon--locked', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
+
+        const art = document.createElement('div');
+        art.className = 'roster-weapon__art';
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
+        art.appendChild(img);
+        card.appendChild(art);
+
+        const name = document.createElement('div');
+        name.className = 'roster-weapon__name';
+        name.textContent = fabricated ? recipe.name : '???';
+        card.appendChild(name);
+
+        const btn = document.createElement('button');
+        btn.className = 'roster-weapon__btn';
+        if (!fabricated) {
+            btn.textContent = 'NOT FABRICATED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--locked');
+        } else if (equipped) {
+            btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
+        } else {
+            btn.textContent = 'EQUIP';
+            btn.addEventListener('click', () => {
+                if (loadout.equip(recipe.id, fabricator)) {
+                    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                    syncEquippedWeaponLabel();
+                    renderRosterModal();
+                } else {
+                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                }
+            });
+        }
+        card.appendChild(btn);
+        grid.appendChild(card);
+    }
+}
+
+document.getElementById('roster-btn')?.addEventListener('click', () => {
+    renderRosterModal();
+    const modal = document.getElementById('roster-modal');
+    if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+});
+document.getElementById('close-roster-modal')?.addEventListener('click', () => {
+    const modal = document.getElementById('roster-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+});
+setupClickOutside('roster-modal', () => {
+    const modal = document.getElementById('roster-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+});
+// Reflect a previously-equipped weapon on the HUD as soon as the page loads,
+// and keep it correct after a fresh fabrication completes.
+syncEquippedWeaponLabel();
+window.addEventListener('fabrication-complete', syncEquippedWeaponLabel);
 
 setupClickOutside('settings-popup', () => {
     const settingsPopup = document.getElementById('settings-popup');
