@@ -2174,6 +2174,12 @@ function installTouchMoveControl() {
 function syncStageMetrics() {
     if (!gameViewport) return;
 
+    // Set actual window dimensions as CSS variables to override standard dvh/vw on mobile fullscreen
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    document.documentElement.style.setProperty('--vw-actual', `${width}px`);
+    document.documentElement.style.setProperty('--vh-actual', `${height}px`);
+
     const rect = gameViewport.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 

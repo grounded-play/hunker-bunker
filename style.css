@@ -62,10 +62,11 @@ body {
   font-family: 'Outfit', sans-serif;
   overflow: hidden;
   height: 100vh;
-  height: 100dvh;
+  height: var(--vh-actual, 100dvh);
   min-height: 100vh;
-  min-height: 100dvh;
+  min-height: var(--vh-actual, 100dvh);
   width: 100vw;
+  width: var(--vw-actual, 100vw);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,8 +87,8 @@ body {
   --game-right-gutter: clamp(18px, 2.5vw, 56px);
   --game-top-gutter: clamp(54px, 8vh, 86px);
   --game-bottom-gutter: clamp(20px, 4vh, 48px);
-  width: min(100vw, calc(100dvh * 177 / 100));
-  height: min(100dvh, calc(100vw * 100 / 177));
+  width: min(var(--vw-actual, 100vw), calc(var(--vh-actual, 100dvh) * 177 / 100));
+  height: min(var(--vh-actual, 100dvh), calc(var(--vw-actual, 100vw) * 100 / 177));
   background: var(--bg-dark);
   position: relative;
   overflow: hidden;
@@ -3280,7 +3281,7 @@ body.distress-mode #game-viewport::after {
 
 @media (max-width: 900px), (pointer: coarse) {
   .hud-header {
-    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.5));
+    top: calc(var(--vu) * 1.5);
     left: calc(var(--vu) * 3);
     right: calc(var(--vu) * 3);
   }
@@ -3301,16 +3302,16 @@ body.distress-mode #game-viewport::after {
     --touch-compass-size: calc(var(--touch-pad-size) * 0.8);
     --touch-compass-text-size: clamp(9px, 1.6vmin, 12px);
     --touch-pad-gap: clamp(4px, 0.7vmin, 8px);
-    --touch-pad-offset-y: calc(env(safe-area-inset-bottom, 0px) + clamp(10px, 2vmin, 18px));
+    --touch-pad-offset-y: clamp(10px, 2vmin, 18px);
     --touch-pad-label-size: clamp(11px, 1.9vmin, 16px);
-    left: env(safe-area-inset-left, 0px);
-    width: var(--game-left-lane);
+    left: calc(var(--vu) * 3);
+    width: clamp(78px, 15.5vw, 96px);
     transform: none;
   }
 
   .pickup-counter-panel {
-    top: calc(env(safe-area-inset-top, 0px) + clamp(86px, 14.5vh, 124px));
-    left: calc(env(safe-area-inset-left, 0px) + clamp(8px, 2vw, 16px));
+    top: clamp(86px, 14.5vh, 124px);
+    left: calc(var(--vu) * 3);
     width: clamp(78px, 15.5vw, 96px);
     padding: clamp(7px, calc(var(--vu) * 1.45), 11px) clamp(5px, calc(var(--vu) * 0.9), 7px);
     font-size: clamp(10px, calc(var(--vu) * 1.6), 13px);
@@ -3393,7 +3394,7 @@ body.distress-mode #game-viewport::after {
   }
 
   .level-indicator {
-    top: calc(env(safe-area-inset-top, 0px) + clamp(34px, 5.8vh, 52px));
+    top: clamp(34px, 5.8vh, 52px);
     left: calc(var(--vu) * 3);
     font-size: clamp(10px, calc(var(--vu) * 1.55), 13px);
     padding: clamp(4px, calc(var(--vu) * 0.62), 7px) clamp(7px, calc(var(--vu) * 1.05), 10px);
@@ -3436,11 +3437,21 @@ body.distress-mode #game-viewport::after {
   .pickup-counter-panel__row--total span:last-child {
     font-size: clamp(14px, calc(var(--vu) * 2.05), 18px);
   }
+
+  #game-container.fullscreen-mode ~ #ui .pickup-counter-panel {
+    left: calc(var(--vu) * 3);
+    width: clamp(78px, 15.5vw, 96px);
+  }
+
+  #game-container.fullscreen-mode ~ #touch-move-control {
+    left: calc(var(--vu) * 3);
+    width: clamp(78px, 15.5vw, 96px);
+  }
 }
 
 @media (max-width: 620px) {
   .hud-header {
-    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.1));
+    top: calc(var(--vu) * 1.1);
     left: calc(var(--vu) * 2.4);
     right: calc(var(--vu) * 2.4);
     grid-template-columns: 1fr auto;
@@ -3450,15 +3461,15 @@ body.distress-mode #game-viewport::after {
     padding-right: calc(var(--vu) * 8.4);
   }
 
-  .weapon-status-panel__title,
-  .ship-status-panel__title {
-    display: none;
-  }
-
   .weapon-status-panel,
   .ship-status-panel {
     padding: clamp(3px, calc(var(--vu) * 0.5), 5px) clamp(5px, calc(var(--vu) * 0.72), 8px);
     gap: clamp(3px, calc(var(--vu) * 0.4), 5px);
+  }
+
+  .weapon-status-panel__title,
+  .ship-status-panel__title {
+    display: none;
   }
 
   .ship-status-panel__track {
@@ -3474,13 +3485,18 @@ body.distress-mode #game-viewport::after {
   }
 
   .pickup-counter-panel {
-    top: calc(env(safe-area-inset-top, 0px) + clamp(74px, 13.5vh, 108px));
-    left: calc(env(safe-area-inset-left, 0px) + clamp(6px, 1.8vw, 11px));
+    top: clamp(74px, 13.5vh, 108px);
+    left: calc(var(--vu) * 2.4);
+    width: clamp(72px, 14.5vw, 86px);
+  }
+
+  .touch-move-control {
+    left: calc(var(--vu) * 2.4);
     width: clamp(72px, 14.5vw, 86px);
   }
 
   .level-indicator {
-    top: calc(env(safe-area-inset-top, 0px) + clamp(28px, 5vh, 40px));
+    top: clamp(28px, 5vh, 40px);
     left: calc(var(--vu) * 2.4);
     border-left-width: 2px;
     padding: clamp(3px, calc(var(--vu) * 0.5), 5px) clamp(5px, calc(var(--vu) * 0.72), 8px);
@@ -3535,7 +3551,7 @@ body.distress-mode #game-viewport::after {
 
 @media (max-width: 900px), (pointer: coarse) {
   #game-container.fullscreen-mode ~ #ui .hud-header {
-    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.5));
+    top: calc(var(--vu) * 1.5);
     left: calc(var(--vu) * 3);
     right: calc(var(--vu) * 3);
     padding-right: calc(var(--vu) * 9.4);
@@ -3544,10 +3560,20 @@ body.distress-mode #game-viewport::after {
 
 @media (max-width: 620px) {
   #game-container.fullscreen-mode ~ #ui .hud-header {
-    top: calc(env(safe-area-inset-top, 0px) + calc(var(--vu) * 1.1));
+    top: calc(var(--vu) * 1.1);
     left: calc(var(--vu) * 2.4);
     right: calc(var(--vu) * 2.4);
     padding-right: calc(var(--vu) * 8.4);
+  }
+}
+
+
+
+@media (max-width: 620px) {
+  #game-container.fullscreen-mode ~ #ui .pickup-counter-panel,
+  #game-container.fullscreen-mode ~ #touch-move-control {
+    left: calc(var(--vu) * 2.4);
+    width: clamp(72px, 14.5vw, 86px);
   }
 }
 
@@ -3565,14 +3591,14 @@ body.distress-mode #game-viewport::after {
 @media (max-width: 900px), (pointer: coarse) {
   #game-container.fullscreen-mode ~ #touch-ability-btn {
     right: calc(var(--vu) * 2.8);
-    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(12px, calc(var(--vu) * 2.1), 18px));
+    bottom: clamp(12px, calc(var(--vu) * 2.1), 18px);
   }
 }
 
 @media (max-width: 620px) {
   #game-container.fullscreen-mode ~ #touch-ability-btn {
     right: calc(var(--vu) * 2.3);
-    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(10px, calc(var(--vu) * 1.8), 14px));
+    bottom: clamp(10px, calc(var(--vu) * 1.8), 14px);
   }
 }
 
