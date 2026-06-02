@@ -2293,7 +2293,9 @@ export class ThreeGame {
             const el = document.getElementById(id);
             return Boolean(el && !el.classList.contains('hidden'));
         };
-        return document.body.classList.contains('mission-intro-active')
+        return document.body.classList.contains('orientation-locked')
+            || window.HunkerOrientationLock?.isLocked?.()
+            || document.body.classList.contains('mission-intro-active')
             || isVisible('console-terminal-modal')
             || isVisible('game-over-modal')
             || isVisible('mothership-dialogue')

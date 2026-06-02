@@ -29,6 +29,7 @@ const touchCompassRadarArrow = touchCompass?.querySelector('#touch-compass-radar
 const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
+const orientationLock = document.getElementById('orientation-lock');
 const openAudioMixerBtn = document.getElementById('open-audio-mixer');
 const audioMixerPopup = document.getElementById('audio-mixer-popup');
 const closeAudioMixerBtn = document.getElementById('close-audio-mixer');
@@ -128,6 +129,65 @@ let cutsceneManager = null;
 let dialogueManager = null;
 let missionFlowRunning = false;
 let isResettingRun = false;
+
+function isPortraitOrientationLocked() {
+    return window.matchMedia('(orientation: portrait)').matches;
+}
+
+function clearTouchInputState() {
+    activeTouchPointerId = null;
+    touchMoveControl?.classList.remove('active');
+    touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
+    window.game?.setVirtualInput?.(0, 0);
+}
+
+function syncOrientationLockState() {
+    const locked = isPortraitOrientationLocked();
+    document.body.classList.toggle('orientation-locked', locked);
+    orientationLock?.setAttribute('aria-hidden', locked ? 'false' : 'true');
+
+    if (locked) {
+        clearTouchInputState();
+        window.game?.setVirtualInput?.(0, 0);
+    }
+}
+
+function installOrientationInputLock() {
+    if (!orientationLock) return;
+
+    window.HunkerOrientationLock = {
+        isLocked: isPortraitOrientationLocked
+    };
+
+    const blockInteraction = (event) => {
+        if (!isPortraitOrientationLocked()) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation?.();
+    };
+
+    [
+        'pointerdown',
+        'pointermove',
+        'pointerup',
+        'pointercancel',
+        'mousedown',
+        'mouseup',
+        'click',
+        'dblclick',
+        'touchstart',
+        'touchmove',
+        'touchend',
+        'touchcancel'
+    ].forEach((eventName) => {
+        document.addEventListener(eventName, blockInteraction, true);
+    });
+
+    syncOrientationLockState();
+    window.addEventListener('resize', syncOrientationLockState);
+    window.addEventListener('orientationchange', syncOrientationLockState);
+}
 let deathSequenceTimer = null;
 let damageFlashTimer = null;
 let weaponErrorTimer = null;
@@ -1945,10 +2005,7 @@ function syncTouchMoveControlVisibility() {
     }
 
     if (!isHUD || !showJoystick) {
-        activeTouchPointerId = null;
-        touchMoveControl.classList.remove('active');
-        touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
-        window.game?.setVirtualInput?.(0, 0);
+        clearTouchInputState();
     }
 }
 
@@ -3298,6 +3355,7 @@ function initTacticalCursor() {
 document.addEventListener('DOMContentLoaded', async () => {
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     initTacticalCursor();
+    installOrientationInputLock();
     installStageLayoutSync();
     setTouchDeviceMode();
     installTouchMoveControl();
@@ -3339,11 +3397,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         mainNightVisionToggle.checked = !!state.settings.nightVision;
     }
 
-    // Load audio manifest
+    // Load audio manifest (Critical elements only for splash & menu)
     const manifest = {
         images: [
-            '/door.png',
-            '/menu_bg.png',
+            '/bg.webp',
+            '/door.webp',
+            '/menu_bg.webp',
             '/ship_wreckage.png',
             '/scout_ship.png',
             '/tank_ship.png',
@@ -3355,59 +3414,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/module_reactor_compressor.png',
             '/Scout.full.jpeg',
             '/Tank.full.jpeg',
-            '/Eng.Full.jpeg',
-            '/cybersnail.png',
-            '/cryosnail.png',
-            '/sporesnail.png',
-            '/boss_cybersnail.png',
-            '/boss_cryosnail.png',
-            '/boss_sporesnail.png',
-            '/bunker_base_metal.png',
-            '/bunker_grunge_rust.png',
-            '/bunker_tech_scratches.png',
-            '/bunker_wall_metal.png',
-            '/bunker_wall_grunge.png',
-            '/cryo_base_frost.png',
-            '/cryo_grunge_rime.png',
-            '/cryo_wall_conduit.png',
-            '/bio_base_growth.png',
-            '/bio_grunge_spores.png',
-            '/bio_wall_veins.png',
-            '/ice_base_rock.png',
-            '/ice_grunge_snow.png',
-            '/ice_wall_glacier.png',
-            '/bunker_junk.png',
-            '/bunker_junk_uncommon.png',
-            '/bunker_junk_rare.png',
-            '/bunker_junk_legendary.png',
-            '/bio_spores.png',
-            '/bio_spores_blue.png',
-            '/bio_spores_amber.png',
-            '/scatter_gravel.png',
-            '/scatter_coolant_puddle.png',
-            '/scatter_ice_stalagmite.png',
-            '/scatter_cryo_icicle.png',
-            '/scatter_cryo_shards.png',
-            '/scatter_bio_moss.png',
-            '/scatter_bio_pod.png',
-            '/scatter_slime_puddle.png',
-            '/build_structure_anim.png'
+            '/Eng.Full.jpeg'
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
-            // Contextual music stems (crossfaded by biome/threat in audio.js)
-            { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-            { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-            { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-            { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-            { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
-            { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
-            { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
-            { key: 'amb_drip4', url: '/audio/vg2/amb_drip4.wav' },
-            { key: 'amb_metal_stress1', url: '/audio/vg2/amb_metal_stress1.wav' },
-            { key: 'amb_metal_stress2', url: '/audio/vg2/amb_metal_stress2.wav' },
-            { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' },
             { key: 'door_slam_vertical1', url: '/audio/vg2/door_slam_vertical1.wav' },
             { key: 'door_slam_vertical2', url: '/audio/vg2/door_slam_vertical2.wav' },
             { key: 'door_slam_vertical3', url: '/audio/vg2/door_slam_vertical3.wav' },
@@ -3449,8 +3460,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    const { ThreeGame } = await import('./src/threeGame.js');
-
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
     const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
@@ -3466,34 +3475,111 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncTouchSettingsVisibility();
     syncTouchMoveControlVisibility();
 
-    if (!window.game) {
-        try {
-            window.game = new ThreeGame({
-                parent: 'game-container',
-                playerType: initialType,
-                bankManager
+    let gameInitPromise = null;
+
+    async function initializeGame(targetType) {
+        if (window.game) return window.game;
+        if (gameInitPromise) return gameInitPromise;
+
+        gameInitPromise = (async () => {
+            const gameplayManifest = {
+                images: [
+                    '/cybersnail.png',
+                    '/cryosnail.png',
+                    '/sporesnail.png',
+                    '/boss_cybersnail.png',
+                    '/boss_cryosnail.png',
+                    '/boss_sporesnail.png',
+                    '/bunker_base_metal.png',
+                    '/bunker_grunge_rust.png',
+                    '/bunker_tech_scratches.png',
+                    '/bunker_wall_metal.png',
+                    '/bunker_wall_grunge.png',
+                    '/cryo_base_frost.png',
+                    '/cryo_grunge_rime.png',
+                    '/cryo_wall_conduit.png',
+                    '/bio_base_growth.png',
+                    '/bio_grunge_spores.png',
+                    '/bio_wall_veins.png',
+                    '/ice_base_rock.png',
+                    '/ice_grunge_snow.png',
+                    '/ice_wall_glacier.png',
+                    '/bunker_junk.png',
+                    '/bunker_junk_uncommon.png',
+                    '/bunker_junk_rare.png',
+                    '/bunker_junk_legendary.png',
+                    '/bio_spores.png',
+                    '/bio_spores_blue.png',
+                    '/bio_spores_amber.png',
+                    '/scatter_gravel.png',
+                    '/scatter_coolant_puddle.png',
+                    '/scatter_ice_stalagmite.png',
+                    '/scatter_cryo_icicle.png',
+                    '/scatter_cryo_shards.png',
+                    '/scatter_bio_moss.png',
+                    '/scatter_bio_pod.png',
+                    '/scatter_slime_puddle.png',
+                    '/build_structure_anim.png'
+                ],
+                audio: [
+                    { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
+                    { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
+                    { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
+                    { key: 'amb_drip4', url: '/audio/vg2/amb_drip4.wav' },
+                    { key: 'amb_metal_stress1', url: '/audio/vg2/amb_metal_stress1.wav' },
+                    { key: 'amb_metal_stress2', url: '/audio/vg2/amb_metal_stress2.wav' },
+                    { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' }
+                ]
+            };
+
+            await AudioManager.loadAssets(gameplayManifest, (progress, itemName) => {
+                if (loaderStatus && itemName) {
+                    const parts = itemName.split('/');
+                    const filename = parts[parts.length - 1];
+                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> LOADING GAMEPLAY: ${filename.toUpperCase()}</span></div>`;
+                }
             });
-            window.game.nightVision = state.settings.nightVision;
-        } catch (err) {
-            console.error('[ThreeGame init failed]', err);
-            const loadingScreen = document.getElementById('loading-screen');
-            const loaderTitle = document.querySelector('.loader-title');
-            const loaderStatusEl = document.querySelector('.loader-status');
-            if (loaderTitle) loaderTitle.textContent = 'SYSTEM INITIALIZATION FAILED';
-            if (loaderStatusEl) loaderStatusEl.textContent = err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable';
-            if (loadingScreen) loadingScreen.classList.remove('hidden');
-            return;
-        }
+
+            const { ThreeGame } = await import('./src/threeGame.js');
+            try {
+                window.game = new ThreeGame({
+                    parent: 'game-container',
+                    playerType: targetType,
+                    bankManager
+                });
+                window.game.nightVision = state.settings.nightVision;
+            } catch (err) {
+                console.error('[ThreeGame init failed]', err);
+                const loaderTitle = document.querySelector('.loader-title');
+                const loaderStatusEl = document.querySelector('.loader-status');
+                if (loaderTitle) loaderTitle.textContent = 'SYSTEM INITIALIZATION FAILED';
+                if (loaderStatusEl) {
+                    loaderStatusEl.innerHTML = `<div style="color: var(--accent-secondary); font-size: var(--font-xs);">${err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable'}</div>`;
+                }
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) loadingScreen.classList.remove('hidden');
+                throw err;
+            }
+
+            window.game?.setPerformanceProfile?.('menu');
+            window.game?.setLoadingPaused?.(true);
+            setSnailSpawnState(false, { purgeExisting: true });
+            const initialBiomeState = window.game?.getBiomeState?.();
+            if (initialBiomeState) {
+                renderBiomeStatus(initialBiomeState, { showPrompt: false });
+            }
+            window.game?.emitVitalsState?.();
+            ensureMissionManagers();
+
+            return window.game;
+        })();
+
+        return gameInitPromise;
     }
-    window.game?.setPerformanceProfile?.('menu');
-    window.game?.setLoadingPaused?.(true);
-    setSnailSpawnState(false, { purgeExisting: true });
-    const initialBiomeState = window.game?.getBiomeState?.();
-    if (initialBiomeState) {
-        renderBiomeStatus(initialBiomeState, { showPrompt: false });
-    }
-    window.game?.emitVitalsState?.();
-    ensureMissionManagers();
 
     const maxLogs = 5;
     const logs = ['CONNECTING TO TACTICAL NETWORK...'];
@@ -3525,19 +3611,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 220);
     }
 
+    let clickInitializing = false;
     document.body.addEventListener('click', async () => {
-        if (AudioManager.isUnlocked) return;
-        await AudioManager.unlock();
+        if (clickInitializing) return;
+        if (AudioManager.isUnlocked && window.game) return;
+
+        clickInitializing = true;
+
+        if (loaderStatus) {
+            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE...</div>`;
+        }
+
+        try {
+            await AudioManager.unlock();
+            const initialSelected = document.querySelector('.char-card.selected');
+            const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
+            await initializeGame(initialType);
+        } catch (err) {
+            console.error('Initialization failed:', err);
+            clickInitializing = false;
+            if (loaderStatus) {
+                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK ANYWHERE TO RETRY INITIALIZATION ]</div>`;
+            }
+            return;
+        }
 
         triggerDoorTransition(
             () => {
                 if (loadingScreen) loadingScreen.classList.add('hidden');
+                if (splash) splash.classList.remove('hidden');
                 window.game?.setLoadingPaused?.(false);
                 AudioManager.startMenuMusic();
             },
             null
         );
-    }, { once: true });
+    });
 });
 
 setDebugMode(false);

@@ -79,6 +79,13 @@ body {
   --font-md: calc(var(--vu) * 4);
   --font-sm: calc(var(--vu) * 2.5);
   --font-xs: calc(var(--vu) * 1.8);
+  /* Reserved layout lanes around the play canvas. Defined here (shared
+     ancestor) so both #game-container and the left-lane HUD/touch controls
+     read the same lane width and stay aligned. */
+  --game-left-lane: clamp(132px, 13vw, 230px);
+  --game-right-gutter: clamp(18px, 2.5vw, 56px);
+  --game-top-gutter: clamp(54px, 8vh, 86px);
+  --game-bottom-gutter: clamp(20px, 4vh, 48px);
   width: min(100vw, calc(100dvh * 177 / 100));
   height: min(100dvh, calc(100vw * 100 / 177));
   background: var(--bg-dark);
@@ -264,7 +271,7 @@ body {
 
 .door {
   position: absolute;
-  background-image: url('/door.png');
+  background-image: url('/door.webp');
   background-repeat: no-repeat;
   /* border: 4px solid #1a1c1e; */
   /* Removed central borders */
@@ -458,7 +465,7 @@ body {
 #splash {
   position: absolute;
   inset: 0;
-  background: var(--bg-dark) url('/bg.png') center 85% / cover no-repeat;
+  background: var(--bg-dark) url('/bg.webp') center 85% / cover no-repeat;
   z-index: 9000;
   display: flex;
   flex-direction: column;
@@ -544,7 +551,7 @@ body {
   left: calc(var(--vu) * 4);
   right: calc(var(--vu) * 4);
   bottom: calc(var(--vu) * 4);
-  background: var(--bg-dark) url('/menu_bg.png') center/100% 100% no-repeat;
+  background: var(--bg-dark) url('/menu_bg.webp') center/100% 100% no-repeat;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: var(--gutter);
@@ -759,10 +766,7 @@ body {
 }
 
 #game-container.fullscreen-mode {
-  --game-left-lane: clamp(132px, 13vw, 230px);
-  --game-right-gutter: clamp(18px, 2.5vw, 56px);
-  --game-top-gutter: clamp(54px, 8vh, 86px);
-  --game-bottom-gutter: clamp(20px, 4vh, 48px);
+  /* Lane/gutter vars inherited from #game-viewport (single source of truth). */
   --game-usable-width: calc(100% - var(--game-left-lane) - var(--game-right-gutter));
   --game-usable-height: calc(100% - var(--game-top-gutter) - var(--game-bottom-gutter));
   position: absolute;
@@ -869,7 +873,7 @@ body {
 
 .char-preview-door__panel {
   position: absolute;
-  background-image: url('/door.png');
+  background-image: url('/door.webp');
   background-repeat: no-repeat;
   background-size: calc(var(--vu) * 52) calc(var(--vu) * 52);
   box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.72);
@@ -2293,6 +2297,8 @@ input:checked+.slider:before {
   justify-content: center;
   padding: 40px;
   text-align: center;
+  pointer-events: auto;
+  touch-action: none;
 }
 
 /* Show only in portrait mode */
@@ -3279,22 +3285,27 @@ body.distress-mode #game-viewport::after {
     right: calc(var(--vu) * 3);
   }
 
-  #game-container.fullscreen-mode {
+  #game-viewport {
     --game-left-lane: clamp(92px, 18vw, 126px);
     --game-right-gutter: clamp(8px, 2vw, 20px);
     --game-top-gutter: clamp(42px, 7.5vh, 62px);
     --game-bottom-gutter: clamp(8px, 3.5vh, 18px);
   }
 
+  /* Touch joystick lives in the reserved left lane, centered below the LOOT
+     panel. Filling the lane width (+ capping the pad to fit it) guarantees the
+     control can never spill over into the play canvas, which starts exactly at
+     --game-left-lane. */
   .touch-move-control {
-    --touch-pad-size: clamp(70px, 15vmin, 98px);
+    --touch-pad-size: clamp(56px, 14vmin, calc(var(--game-left-lane) - 18px));
     --touch-compass-size: calc(var(--touch-pad-size) * 0.8);
     --touch-compass-text-size: clamp(9px, 1.6vmin, 12px);
     --touch-pad-gap: clamp(4px, 0.7vmin, 8px);
-    --touch-pad-offset-x: calc(env(safe-area-inset-left, 0px) + clamp(46px, 9vw, 63px));
     --touch-pad-offset-y: calc(env(safe-area-inset-bottom, 0px) + clamp(10px, 2vmin, 18px));
     --touch-pad-label-size: clamp(11px, 1.9vmin, 16px);
-    transform: translateX(-50%);
+    left: env(safe-area-inset-left, 0px);
+    width: var(--game-left-lane);
+    transform: none;
   }
 
   .pickup-counter-panel {
