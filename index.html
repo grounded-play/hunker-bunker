@@ -61,7 +61,7 @@
     <!-- Door Transition Overlay is at the bottom now -->
 
     <!-- Splash Screen (Monolithic) -->
-    <div id="splash">
+    <div id="splash" class="hidden">
       <div class="splash-content">
         <div class="splash-title">HUNKER BUNKER</div>
         <div class="splash-subtitle">TACTICAL COMMAND v2.0</div>
@@ -132,6 +132,8 @@
             <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
           </div>
           <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+          <button class="start-btn start-btn--fab hidden" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+          <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
         </div>
       </div>
 
@@ -236,6 +238,44 @@
           <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
         </div>
         <div id="archive-log-list" class="archive-log-list"></div>
+      </div>
+    </div>
+
+    <!-- Operator Roster Modal -->
+    <div id="roster-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content roster-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="roster-header">
+          <button class="close-modal" id="close-roster-modal">×</button>
+          <div class="roster-title">▣ OPERATOR ROSTER</div>
+          <div class="roster-id-row">
+            <span class="roster-callsign" id="roster-callsign">AGENT</span>
+            <span class="roster-id" id="roster-id">op-—</span>
+          </div>
+          <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
+        </div>
+        <div class="roster-section-label">EQUIPPED SIDEARM</div>
+        <div id="roster-weapon-grid" class="roster-weapon-grid"></div>
+        <div class="roster-hint" id="roster-hint">Fabricate weapons in the FAB BAY to equip them here.</div>
+      </div>
+    </div>
+
+    <!-- Fabrication Bay Modal -->
+    <div id="fabrication-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content fab-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="fab-header">
+          <button class="close-modal" id="close-fabrication-modal">×</button>
+          <div class="fab-title">◇ FABRICATION BAY</div>
+          <div class="fab-subtitle">PRINT GEAR FROM SALVAGE</div>
+          <div id="fab-summary" class="fab-summary">SCHEMATICS FABRICATED: 0 / 8</div>
+        </div>
+        <div class="fab-bank-row" id="fab-bank-row">
+          <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span>TECH <b id="fab-bank-tech">0</b></span>
+          <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span>COIN <b id="fab-bank-coin">0</b></span>
+          <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span>MED <b id="fab-bank-med">0</b></span>
+        </div>
+        <div id="fab-recipe-grid" class="fab-recipe-grid"></div>
       </div>
     </div>
 
@@ -495,6 +535,12 @@
     <div id="lore-hud-prompt" class="lore-hud-prompt hidden">
       <span class="prompt-key">E</span>
       <span class="prompt-text">READ LOG</span>
+    </div>
+
+    <!-- Fabrication Foundry interact prompt -->
+    <div id="foundry-hud-prompt" class="lore-hud-prompt foundry-hud-prompt hidden">
+      <span class="prompt-key">E</span>
+      <span class="prompt-text">OPEN FAB BAY</span>
     </div>
 
     <!-- Lore Terminal Modal -->
@@ -806,6 +852,17 @@
         <div class="setting-item hidden" id="touch-controls-setting">
           <span>TOUCH MOVE PAD</span>
           <label class="toggle"><input type="checkbox" id="main-touch-toggle"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item setting-item--operator">
+          <span>OPERATOR CALLSIGN</span>
+          <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
+        </div>
+        <div class="setting-item setting-item--action">
+          <span>SAVE DATA</span>
+          <span class="operator-save-actions">
+            <button type="button" class="calibrate-btn settings-action-btn" id="export-save" title="Copy a portable save code">EXPORT</button>
+            <button type="button" class="calibrate-btn settings-action-btn" id="import-save" title="Restore from a save code">IMPORT</button>
+          </span>
         </div>
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">

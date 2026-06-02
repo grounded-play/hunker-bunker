@@ -1,5 +1,8 @@
 import { AudioManager } from './src/audio.js';
 import { BankManager } from './src/bank.js';
+import { FabricatorManager, FAB_RECIPES } from './src/fabricator.js';
+import { ProfileManager, exportSaveCode, importSaveCode } from './src/profile.js';
+import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -29,6 +32,7 @@ const touchCompassRadarArrow = touchCompass?.querySelector('#touch-compass-radar
 const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
+const orientationLock = document.getElementById('orientation-lock');
 const openAudioMixerBtn = document.getElementById('open-audio-mixer');
 const audioMixerPopup = document.getElementById('audio-mixer-popup');
 const closeAudioMixerBtn = document.getElementById('close-audio-mixer');
@@ -128,6 +132,65 @@ let cutsceneManager = null;
 let dialogueManager = null;
 let missionFlowRunning = false;
 let isResettingRun = false;
+
+function isPortraitOrientationLocked() {
+    return window.matchMedia('(orientation: portrait)').matches;
+}
+
+function clearTouchInputState() {
+    activeTouchPointerId = null;
+    touchMoveControl?.classList.remove('active');
+    touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
+    window.game?.setVirtualInput?.(0, 0);
+}
+
+function syncOrientationLockState() {
+    const locked = isPortraitOrientationLocked();
+    document.body.classList.toggle('orientation-locked', locked);
+    orientationLock?.setAttribute('aria-hidden', locked ? 'false' : 'true');
+
+    if (locked) {
+        clearTouchInputState();
+        window.game?.setVirtualInput?.(0, 0);
+    }
+}
+
+function installOrientationInputLock() {
+    if (!orientationLock) return;
+
+    window.HunkerOrientationLock = {
+        isLocked: isPortraitOrientationLocked
+    };
+
+    const blockInteraction = (event) => {
+        if (!isPortraitOrientationLocked()) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation?.();
+    };
+
+    [
+        'pointerdown',
+        'pointermove',
+        'pointerup',
+        'pointercancel',
+        'mousedown',
+        'mouseup',
+        'click',
+        'dblclick',
+        'touchstart',
+        'touchmove',
+        'touchend',
+        'touchcancel'
+    ].forEach((eventName) => {
+        document.addEventListener(eventName, blockInteraction, true);
+    });
+
+    syncOrientationLockState();
+    window.addEventListener('resize', syncOrientationLockState);
+    window.addEventListener('orientationchange', syncOrientationLockState);
+}
 let deathSequenceTimer = null;
 let damageFlashTimer = null;
 let weaponErrorTimer = null;
@@ -153,6 +216,15 @@ let activeAmmoCapacity = CLASS_AMMO_CAPACITY.SCOUT;
 const bankManager = new BankManager();
 
 window.bankManager = bankManager;
+
+const fabricator = new FabricatorManager();
+window.fabricator = fabricator;
+
+const profile = new ProfileManager();
+window.profile = profile;
+
+const loadout = new LoadoutManager();
+window.loadout = loadout;
 
 // ── Daily Ops System ──────────────────────────────────────────
 const DAILY_OPS_KEY_PREFIX = 'hb_daily_v1_';
@@ -1319,6 +1391,19 @@ const ALL_LORE_KEYS = [
     'B01','B02','B03'
 ];
 
+// Recovered-survivor portraits for log authors. Reused from the mothership
+// project's generated character art (resized to lean webp avatars). Mapped
+// deterministically per log key so each fragment keeps a stable "author" face.
+const LORE_PORTRAIT_COUNT = 12;
+function lorePortraitIndex(key) {
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    return h % LORE_PORTRAIT_COUNT;
+}
+function lorePortraitSrc(key) {
+    return `/lore_portraits/survivor_${String(lorePortraitIndex(key)).padStart(2, '0')}.webp`;
+}
+
 function buildArchiveModal() {
     const listEl = document.getElementById('archive-log-list');
     const summaryEl = document.getElementById('archive-summary');
@@ -1346,6 +1431,24 @@ function buildArchiveModal() {
             const entry = document.createElement('div');
             entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
 
+            const avatar = document.createElement('div');
+            avatar.className = 'archive-log-avatar';
+            if (isFound) {
+                const img = document.createElement('img');
+                img.className = 'archive-log-avatar__img';
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                img.alt = '';
+                img.src = lorePortraitSrc(key);
+                avatar.appendChild(img);
+            } else {
+                avatar.classList.add('archive-log-avatar--locked');
+                avatar.textContent = '?';
+            }
+
+            const body = document.createElement('div');
+            body.className = 'archive-log-body';
+
             const keyEl = document.createElement('div');
             keyEl.className = 'archive-log-key';
             keyEl.textContent = `LOG-${key}`;
@@ -1360,8 +1463,10 @@ function buildArchiveModal() {
                 textEl.textContent = '[ENCRYPTED — RECOVER FROM FIELD TERMINAL]';
             }
 
-            entry.appendChild(keyEl);
-            entry.appendChild(textEl);
+            body.appendChild(keyEl);
+            body.appendChild(textEl);
+            entry.appendChild(avatar);
+            entry.appendChild(body);
             listEl.appendChild(entry);
         }
     }
@@ -1945,10 +2050,7 @@ function syncTouchMoveControlVisibility() {
     }
 
     if (!isHUD || !showJoystick) {
-        activeTouchPointerId = null;
-        touchMoveControl.classList.remove('active');
-        touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
-        window.game?.setVirtualInput?.(0, 0);
+        clearTouchInputState();
     }
 }
 
@@ -2722,6 +2824,258 @@ setupClickOutside('archive-modal', () => {
     if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
 });
 
+// ── Fabrication Bay ───────────────────────────────────────────
+// Spend banked salvage to print gear (recipe art reused from mothership's item
+// cards). The Bay button unlocks once the O2 station powers the base (Beat 4 /
+// .claude_work/01-feature-port-from-mothership.md §A).
+function fabCostMarkup(cost) {
+    const parts = [];
+    if (cost.tech) parts.push(`<span class="fab-cost-chip">⬢ ${cost.tech}</span>`);
+    if (cost.coin) parts.push(`<span class="fab-cost-chip">◎ ${cost.coin}</span>`);
+    if (cost.med) parts.push(`<span class="fab-cost-chip">✚ ${cost.med}</span>`);
+    return parts.join('');
+}
+
+function renderFabricationModal() {
+    const grid = document.getElementById('fab-recipe-grid');
+    if (!grid) return;
+    const bank = bankManager.getState();
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setTxt('fab-bank-tech', bank.tech ?? 0);
+    setTxt('fab-bank-coin', bank.coin ?? 0);
+    setTxt('fab-bank-med', bank.med ?? 0);
+
+    grid.innerHTML = '';
+    for (const recipe of FAB_RECIPES) {
+        const fabricated = fabricator.isFabricated(recipe.id);
+        const printing = fabricator.isPrinting(recipe.id);
+        const affordable = fabricator.canFabricate(recipe.id, bankManager);
+        const pct = Math.round(fabricator.getPrintProgress(recipe.id) * 100);
+
+        const card = document.createElement('div');
+        card.className = ['fab-card', fabricated ? 'fab-card--done' : '', printing ? 'fab-card--printing' : ''].filter(Boolean).join(' ');
+
+        const art = document.createElement('div');
+        art.className = 'fab-card__art';
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
+        art.appendChild(img);
+        if (printing) {
+            const bar = document.createElement('div');
+            bar.className = 'fab-card__progress';
+            bar.innerHTML = `<div class="fab-card__progress-fill" style="width:${pct}%"></div>`;
+            art.appendChild(bar);
+        }
+        card.appendChild(art);
+
+        const name = document.createElement('div');
+        name.className = 'fab-card__name';
+        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`;
+        card.appendChild(name);
+
+        const blurb = document.createElement('div');
+        blurb.className = 'fab-card__blurb';
+        blurb.textContent = recipe.blurb;
+        card.appendChild(blurb);
+
+        const cost = document.createElement('div');
+        cost.className = 'fab-card__cost';
+        cost.innerHTML = fabCostMarkup(recipe.cost);
+        card.appendChild(cost);
+
+        const btn = document.createElement('button');
+        btn.className = 'fab-card__btn';
+        if (fabricated) {
+            btn.textContent = '✓ FABRICATED'; btn.disabled = true; btn.classList.add('fab-card__btn--done');
+        } else if (printing) {
+            btn.textContent = `PRINTING ${pct}%`; btn.disabled = true;
+        } else if (!affordable) {
+            btn.textContent = 'INSUFFICIENT SALVAGE'; btn.disabled = true; btn.classList.add('fab-card__btn--locked');
+        } else {
+            btn.textContent = 'FABRICATE';
+            btn.addEventListener('click', () => {
+                if (fabricator.startPrint(recipe.id, bankManager)) {
+                    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                    renderFabricationModal();
+                    startFabTicker();
+                } else {
+                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                }
+            });
+        }
+        card.appendChild(btn);
+        grid.appendChild(card);
+    }
+    setTxt('fab-summary', `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`);
+}
+
+let fabTicker = null;
+function startFabTicker() {
+    if (fabTicker) return;
+    fabTicker = setInterval(() => {
+        fabricator.tickPrints();
+        renderFabricationModal();
+        if (!FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) stopFabTicker();
+    }, 500);
+}
+function stopFabTicker() { if (fabTicker) { clearInterval(fabTicker); fabTicker = null; } }
+
+function openFabricationModal() {
+    fabricator.tickPrints();
+    renderFabricationModal();
+    const modal = document.getElementById('fabrication-modal');
+    if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+    if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
+}
+function closeFabricationModal() {
+    const modal = document.getElementById('fabrication-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    stopFabTicker();
+}
+
+function refreshFabAccess() {
+    const btn = document.getElementById('fabrication-btn');
+    if (!btn) return;
+    const online = (bankManager.getState().o2GeneratorLevel ?? 0) >= 1;
+    btn.classList.toggle('hidden', !online);
+}
+
+document.getElementById('fabrication-btn')?.addEventListener('click', openFabricationModal);
+document.getElementById('close-fabrication-modal')?.addEventListener('click', closeFabricationModal);
+setupClickOutside('fabrication-modal', closeFabricationModal);
+window.addEventListener('o2-generator-upgraded', refreshFabAccess);
+refreshFabAccess();
+
+// In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
+window.addEventListener('open-fabrication-bay', openFabricationModal);
+window.addEventListener('foundry-prompt-nearby', () => {
+    document.getElementById('foundry-hud-prompt')?.classList.remove('hidden');
+});
+window.addEventListener('foundry-prompt-clear', () => {
+    document.getElementById('foundry-hud-prompt')?.classList.add('hidden');
+});
+
+// ── Operator profile + portable save codes (no backend; doc 01.B.1) ──
+const callsignInput = document.getElementById('operator-callsign');
+if (callsignInput) {
+    callsignInput.value = profile.getCallsign();
+    const commitCallsign = () => { callsignInput.value = profile.setCallsign(callsignInput.value); };
+    callsignInput.addEventListener('change', commitCallsign);
+    callsignInput.addEventListener('blur', commitCallsign);
+}
+
+document.getElementById('export-save')?.addEventListener('click', async () => {
+    const code = exportSaveCode();
+    if (!code) { window.AudioManager?.play?.('ui_error', { volume: 0.5 }); return; }
+    let copied = false;
+    try {
+        await navigator.clipboard?.writeText(code);
+        copied = true;
+    } catch { /* clipboard blocked — fall back to manual copy */ }
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    window.prompt(
+        copied
+            ? 'SAVE CODE COPIED TO CLIPBOARD. Keep it somewhere safe — paste it into IMPORT on another device.'
+            : 'COPY THIS SAVE CODE and keep it safe — paste it into IMPORT on another device.',
+        code
+    );
+});
+
+document.getElementById('import-save')?.addEventListener('click', () => {
+    const code = window.prompt('Paste a HUNKER BUNKER save code to restore progress.\nWARNING: this overwrites current progress on this device.');
+    if (code == null) return;
+    const written = importSaveCode(code);
+    if (written < 0) {
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        window.alert('That save code was not valid.');
+        return;
+    }
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    window.alert(`Restored ${written} save record(s). Reloading…`);
+    window.location.reload();
+});
+
+// ── Operator roster / loadout console (doc 01.C) ──────────────
+// Equip a fabricated weapon as the active sidearm; the choice surfaces on the
+// in-game weapon panel and persists.
+function syncEquippedWeaponLabel() {
+    const titleEl = document.querySelector('#weapon-status-panel .weapon-status-panel__title');
+    if (titleEl) titleEl.textContent = loadout.getEquippedLabel(fabricator);
+}
+
+function renderRosterModal() {
+    const grid = document.getElementById('roster-weapon-grid');
+    if (!grid) return;
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setTxt('roster-callsign', profile.getCallsign());
+    setTxt('roster-id', profile.getProfileId());
+
+    const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
+    const fabbed = weapons.filter((r) => fabricator.isFabricated(r.id)).length;
+    setTxt('roster-fab-count', `ARSENAL: ${fabbed} / ${weapons.length} WEAPONS FABRICATED`);
+
+    const equippedId = loadout.getEquippedId();
+    grid.innerHTML = '';
+    for (const recipe of weapons) {
+        const fabricated = fabricator.isFabricated(recipe.id);
+        const equipped = fabricated && equippedId === recipe.id;
+
+        const card = document.createElement('div');
+        card.className = ['roster-weapon', fabricated ? '' : 'roster-weapon--locked', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
+
+        const art = document.createElement('div');
+        art.className = 'roster-weapon__art';
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
+        art.appendChild(img);
+        card.appendChild(art);
+
+        const name = document.createElement('div');
+        name.className = 'roster-weapon__name';
+        name.textContent = fabricated ? recipe.name : '???';
+        card.appendChild(name);
+
+        const btn = document.createElement('button');
+        btn.className = 'roster-weapon__btn';
+        if (!fabricated) {
+            btn.textContent = 'NOT FABRICATED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--locked');
+        } else if (equipped) {
+            btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
+        } else {
+            btn.textContent = 'EQUIP';
+            btn.addEventListener('click', () => {
+                if (loadout.equip(recipe.id, fabricator)) {
+                    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                    syncEquippedWeaponLabel();
+                    renderRosterModal();
+                } else {
+                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                }
+            });
+        }
+        card.appendChild(btn);
+        grid.appendChild(card);
+    }
+}
+
+document.getElementById('roster-btn')?.addEventListener('click', () => {
+    renderRosterModal();
+    const modal = document.getElementById('roster-modal');
+    if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+});
+document.getElementById('close-roster-modal')?.addEventListener('click', () => {
+    const modal = document.getElementById('roster-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+});
+setupClickOutside('roster-modal', () => {
+    const modal = document.getElementById('roster-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+});
+// Reflect a previously-equipped weapon on the HUD as soon as the page loads,
+// and keep it correct after a fresh fabrication completes.
+syncEquippedWeaponLabel();
+window.addEventListener('fabrication-complete', syncEquippedWeaponLabel);
+
 setupClickOutside('settings-popup', () => {
     const settingsPopup = document.getElementById('settings-popup');
     if (settingsPopup) {
@@ -3298,6 +3652,7 @@ function initTacticalCursor() {
 document.addEventListener('DOMContentLoaded', async () => {
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     initTacticalCursor();
+    installOrientationInputLock();
     installStageLayoutSync();
     setTouchDeviceMode();
     installTouchMoveControl();
@@ -3339,11 +3694,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         mainNightVisionToggle.checked = !!state.settings.nightVision;
     }
 
-    // Load audio manifest
+    // Load audio manifest (Critical elements only for splash & menu)
     const manifest = {
         images: [
-            '/door.png',
-            '/menu_bg.png',
+            '/bg.webp',
+            '/door.webp',
+            '/menu_bg.webp',
             '/ship_wreckage.png',
             '/scout_ship.png',
             '/tank_ship.png',
@@ -3355,59 +3711,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/module_reactor_compressor.png',
             '/Scout.full.jpeg',
             '/Tank.full.jpeg',
-            '/Eng.Full.jpeg',
-            '/cybersnail.png',
-            '/cryosnail.png',
-            '/sporesnail.png',
-            '/boss_cybersnail.png',
-            '/boss_cryosnail.png',
-            '/boss_sporesnail.png',
-            '/bunker_base_metal.png',
-            '/bunker_grunge_rust.png',
-            '/bunker_tech_scratches.png',
-            '/bunker_wall_metal.png',
-            '/bunker_wall_grunge.png',
-            '/cryo_base_frost.png',
-            '/cryo_grunge_rime.png',
-            '/cryo_wall_conduit.png',
-            '/bio_base_growth.png',
-            '/bio_grunge_spores.png',
-            '/bio_wall_veins.png',
-            '/ice_base_rock.png',
-            '/ice_grunge_snow.png',
-            '/ice_wall_glacier.png',
-            '/bunker_junk.png',
-            '/bunker_junk_uncommon.png',
-            '/bunker_junk_rare.png',
-            '/bunker_junk_legendary.png',
-            '/bio_spores.png',
-            '/bio_spores_blue.png',
-            '/bio_spores_amber.png',
-            '/scatter_gravel.png',
-            '/scatter_coolant_puddle.png',
-            '/scatter_ice_stalagmite.png',
-            '/scatter_cryo_icicle.png',
-            '/scatter_cryo_shards.png',
-            '/scatter_bio_moss.png',
-            '/scatter_bio_pod.png',
-            '/scatter_slime_puddle.png',
-            '/build_structure_anim.png'
+            '/Eng.Full.jpeg'
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
             { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
-            // Contextual music stems (crossfaded by biome/threat in audio.js)
-            { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-            { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-            { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-            { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-            { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
-            { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
-            { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
-            { key: 'amb_drip4', url: '/audio/vg2/amb_drip4.wav' },
-            { key: 'amb_metal_stress1', url: '/audio/vg2/amb_metal_stress1.wav' },
-            { key: 'amb_metal_stress2', url: '/audio/vg2/amb_metal_stress2.wav' },
-            { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' },
             { key: 'door_slam_vertical1', url: '/audio/vg2/door_slam_vertical1.wav' },
             { key: 'door_slam_vertical2', url: '/audio/vg2/door_slam_vertical2.wav' },
             { key: 'door_slam_vertical3', url: '/audio/vg2/door_slam_vertical3.wav' },
@@ -3449,8 +3757,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    const { ThreeGame } = await import('./src/threeGame.js');
-
     // Initialize preview with first selected
     const initialSelected = document.querySelector('.char-card.selected');
     const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
@@ -3466,34 +3772,111 @@ document.addEventListener('DOMContentLoaded', async () => {
     syncTouchSettingsVisibility();
     syncTouchMoveControlVisibility();
 
-    if (!window.game) {
-        try {
-            window.game = new ThreeGame({
-                parent: 'game-container',
-                playerType: initialType,
-                bankManager
+    let gameInitPromise = null;
+
+    async function initializeGame(targetType) {
+        if (window.game) return window.game;
+        if (gameInitPromise) return gameInitPromise;
+
+        gameInitPromise = (async () => {
+            const gameplayManifest = {
+                images: [
+                    '/cybersnail.png',
+                    '/cryosnail.png',
+                    '/sporesnail.png',
+                    '/boss_cybersnail.png',
+                    '/boss_cryosnail.png',
+                    '/boss_sporesnail.png',
+                    '/bunker_base_metal.png',
+                    '/bunker_grunge_rust.png',
+                    '/bunker_tech_scratches.png',
+                    '/bunker_wall_metal.png',
+                    '/bunker_wall_grunge.png',
+                    '/cryo_base_frost.png',
+                    '/cryo_grunge_rime.png',
+                    '/cryo_wall_conduit.png',
+                    '/bio_base_growth.png',
+                    '/bio_grunge_spores.png',
+                    '/bio_wall_veins.png',
+                    '/ice_base_rock.png',
+                    '/ice_grunge_snow.png',
+                    '/ice_wall_glacier.png',
+                    '/bunker_junk.png',
+                    '/bunker_junk_uncommon.png',
+                    '/bunker_junk_rare.png',
+                    '/bunker_junk_legendary.png',
+                    '/bio_spores.png',
+                    '/bio_spores_blue.png',
+                    '/bio_spores_amber.png',
+                    '/scatter_gravel.png',
+                    '/scatter_coolant_puddle.png',
+                    '/scatter_ice_stalagmite.png',
+                    '/scatter_cryo_icicle.png',
+                    '/scatter_cryo_shards.png',
+                    '/scatter_bio_moss.png',
+                    '/scatter_bio_pod.png',
+                    '/scatter_slime_puddle.png',
+                    '/build_structure_anim.png'
+                ],
+                audio: [
+                    { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
+                    { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
+                    { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
+                    { key: 'amb_drip4', url: '/audio/vg2/amb_drip4.wav' },
+                    { key: 'amb_metal_stress1', url: '/audio/vg2/amb_metal_stress1.wav' },
+                    { key: 'amb_metal_stress2', url: '/audio/vg2/amb_metal_stress2.wav' },
+                    { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' }
+                ]
+            };
+
+            await AudioManager.loadAssets(gameplayManifest, (progress, itemName) => {
+                if (loaderStatus && itemName) {
+                    const parts = itemName.split('/');
+                    const filename = parts[parts.length - 1];
+                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> LOADING GAMEPLAY: ${filename.toUpperCase()}</span></div>`;
+                }
             });
-            window.game.nightVision = state.settings.nightVision;
-        } catch (err) {
-            console.error('[ThreeGame init failed]', err);
-            const loadingScreen = document.getElementById('loading-screen');
-            const loaderTitle = document.querySelector('.loader-title');
-            const loaderStatusEl = document.querySelector('.loader-status');
-            if (loaderTitle) loaderTitle.textContent = 'SYSTEM INITIALIZATION FAILED';
-            if (loaderStatusEl) loaderStatusEl.textContent = err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable';
-            if (loadingScreen) loadingScreen.classList.remove('hidden');
-            return;
-        }
+
+            const { ThreeGame } = await import('./src/threeGame.js');
+            try {
+                window.game = new ThreeGame({
+                    parent: 'game-container',
+                    playerType: targetType,
+                    bankManager
+                });
+                window.game.nightVision = state.settings.nightVision;
+            } catch (err) {
+                console.error('[ThreeGame init failed]', err);
+                const loaderTitle = document.querySelector('.loader-title');
+                const loaderStatusEl = document.querySelector('.loader-status');
+                if (loaderTitle) loaderTitle.textContent = 'SYSTEM INITIALIZATION FAILED';
+                if (loaderStatusEl) {
+                    loaderStatusEl.innerHTML = `<div style="color: var(--accent-secondary); font-size: var(--font-xs);">${err?.message ?? 'UNKNOWN ERROR — WebGL may be unavailable'}</div>`;
+                }
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) loadingScreen.classList.remove('hidden');
+                throw err;
+            }
+
+            window.game?.setPerformanceProfile?.('menu');
+            window.game?.setLoadingPaused?.(true);
+            setSnailSpawnState(false, { purgeExisting: true });
+            const initialBiomeState = window.game?.getBiomeState?.();
+            if (initialBiomeState) {
+                renderBiomeStatus(initialBiomeState, { showPrompt: false });
+            }
+            window.game?.emitVitalsState?.();
+            ensureMissionManagers();
+
+            return window.game;
+        })();
+
+        return gameInitPromise;
     }
-    window.game?.setPerformanceProfile?.('menu');
-    window.game?.setLoadingPaused?.(true);
-    setSnailSpawnState(false, { purgeExisting: true });
-    const initialBiomeState = window.game?.getBiomeState?.();
-    if (initialBiomeState) {
-        renderBiomeStatus(initialBiomeState, { showPrompt: false });
-    }
-    window.game?.emitVitalsState?.();
-    ensureMissionManagers();
 
     const maxLogs = 5;
     const logs = ['CONNECTING TO TACTICAL NETWORK...'];
@@ -3525,19 +3908,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 220);
     }
 
+    let clickInitializing = false;
     document.body.addEventListener('click', async () => {
-        if (AudioManager.isUnlocked) return;
-        await AudioManager.unlock();
+        if (clickInitializing) return;
+        if (AudioManager.isUnlocked && window.game) return;
+
+        clickInitializing = true;
+
+        if (loaderStatus) {
+            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE...</div>`;
+        }
+
+        try {
+            await AudioManager.unlock();
+            const initialSelected = document.querySelector('.char-card.selected');
+            const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
+            await initializeGame(initialType);
+        } catch (err) {
+            console.error('Initialization failed:', err);
+            clickInitializing = false;
+            if (loaderStatus) {
+                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK ANYWHERE TO RETRY INITIALIZATION ]</div>`;
+            }
+            return;
+        }
 
         triggerDoorTransition(
             () => {
                 if (loadingScreen) loadingScreen.classList.add('hidden');
+                if (splash) splash.classList.remove('hidden');
                 window.game?.setLoadingPaused?.(false);
                 AudioManager.startMenuMusic();
             },
             null
         );
-    }, { once: true });
+    });
 });
 
 setDebugMode(false);
