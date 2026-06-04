@@ -272,7 +272,7 @@ body {
 
 .door {
   position: absolute;
-  background-image: url('/door.webp');
+  background-image: var(--door-bg-image, url('/door.webp'));
   background-repeat: no-repeat;
   /* border: 4px solid #1a1c1e; */
   /* Removed central borders */
@@ -874,7 +874,7 @@ body {
 
 .char-preview-door__panel {
   position: absolute;
-  background-image: url('/door.webp');
+  background-image: var(--door-bg-image, url('/door.webp'));
   background-repeat: no-repeat;
   background-size: calc(var(--vu) * 52) calc(var(--vu) * 52);
   box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.72);

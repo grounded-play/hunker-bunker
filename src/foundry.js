@@ -6,18 +6,13 @@ import * as THREE from 'three';
 // clearing. The player walks to it (the radar compass points the way) and
 // interacts to open the Fabrication Bay (src/fabricator.js).
 //
-// Placement note: HB's world is a procedural maze, so a free-standing structure
-// at an arbitrary coordinate risks spawning inside a wall. We therefore anchor
-// the Foundry to the open base clearing, offset from the active ship (the same
-// safe region the crashed ships + consoles already occupy). Final visual
-// placement is a tuning pass best done in an interactive playtest.
+// Placement note: HB's world is a procedural maze, so threeGame samples a
+// walkable far-site and passes the chosen world coordinates in here.
 
-// Offset (world units) from the active ship/base center.
-const FOUNDRY_OFFSET = Object.freeze({ x: 5.0, z: -1.5 });
 const INTERACT_RADIUS = 2.0;
 
 export function foundryWorldPosition(baseX, baseZ) {
-    return { x: baseX + FOUNDRY_OFFSET.x, z: baseZ + FOUNDRY_OFFSET.z };
+    return { x: baseX, z: baseZ };
 }
 
 export class FabricationFoundry {
@@ -33,7 +28,11 @@ export class FabricationFoundry {
     }
 
     build(baseX, baseZ) {
-        if (this.built) return;
+        if (this.built) {
+            this.pos = foundryWorldPosition(baseX, baseZ);
+            if (this.group) this.group.position.set(this.pos.x, 0, this.pos.z);
+            return;
+        }
         this.pos = foundryWorldPosition(baseX, baseZ);
 
         const group = new THREE.Group();
@@ -110,4 +109,4 @@ export class FabricationFoundry {
     }
 }
 
-export { INTERACT_RADIUS, FOUNDRY_OFFSET };
+export { INTERACT_RADIUS };

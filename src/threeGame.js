@@ -48,19 +48,23 @@ const SPRITE_ANIMATION_SPEED = 12;
 const SUIT_LIGHT_BASE_INTENSITY = 2.1;
 const SUIT_LIGHT_BASE_DISTANCE = 7.2;
 const SUIT_CONE_LIGHT_COLOR = 0xf2efe2;
-const SUIT_CONE_LIGHT_DISTANCE = 12.2;
+const SUIT_CONE_LIGHT_DISTANCE = 13.8;
 const SUIT_CONE_LIGHT_ANGLE = Math.PI * 0.32;
-const SUIT_CONE_VISUAL_DISTANCE = 10.2;
-const SUIT_CONE_VISUAL_WIDTH = 9.4;
+const SUIT_CONE_VISUAL_DISTANCE = 12.4;
+const SUIT_CONE_VISUAL_WIDTH = 10.6;
 // The visible beam is a fan of this many radial segments; each segment is
 // raycast against the walls every frame so the beam is occluded per-direction
 // (wrapping corners, carving shadow wedges) instead of uniformly shrinking.
 const SUIT_CONE_SEGMENTS = 22;
-const SUIT_CONE_VISUAL_OPACITY = 0.24;
-const SUIT_LOCAL_LIGHT_POOL_RADIUS = 2.25;
-const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.2;
+const SUIT_CONE_VISUAL_OPACITY = 0.36;
+const SUIT_LOCAL_LIGHT_POOL_RADIUS = 2.85;
+const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.34;
 const SUIT_LIGHT_EMITTER_HEIGHT = 1.35;
 const SUIT_LIGHT_WALL_PADDING = 0.35;
+const O2_SAFE_LIGHT_COLOR = 0xb9fbff;
+const O2_SAFE_FILL_OPACITY = 0.16;
+const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
+const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -2054,11 +2058,11 @@ export class ThreeGame {
         this.scene.add(this.playerForwardLightTarget);
         this.playerForwardSpotLight = new THREE.SpotLight(
             SUIT_CONE_LIGHT_COLOR,
-            3.1,
+            5.8,
             SUIT_CONE_LIGHT_DISTANCE,
             SUIT_CONE_LIGHT_ANGLE,
-            0.78,
-            1.25
+            0.68,
+            1.05
         );
         this.playerForwardSpotLight.position.set(0, SUIT_LIGHT_EMITTER_HEIGHT, 0);
         this.playerForwardSpotLight.target = this.playerForwardLightTarget;
@@ -2208,8 +2212,9 @@ export class ThreeGame {
                 const goalKey = event?.detail?.goalKey;
                 const bossType = MILESTONE_BOSS_FOR_GOAL[goalKey];
                 if (!bossType) return;
+                if (goalKey === 'o2Bubble') return;
                 // Brief delay so the unlock confirmation reads before the counterattack.
-                setTimeout(() => this.spawnMilestoneBoss(bossType), 1800);
+                setTimeout(() => this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey }), 1800);
             };
             window.addEventListener('goal-unlocked', this._onGoalUnlocked);
         }
@@ -2221,7 +2226,14 @@ export class ThreeGame {
         this._onO2BaseLights = (event) => {
             if ((event?.detail?.level ?? 0) >= 1) {
                 this.igniteBaseLights();
-                this.revealFoundry();
+                if (!this._o2MilestoneBossQueued) {
+                    this._o2MilestoneBossQueued = true;
+                    const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
+                    window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+                        detail: { type: bossType, goalKey: 'o2Bubble' }
+                    }));
+                    setTimeout(() => this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' }), 1800);
+                }
             }
         };
         window.addEventListener('o2-generator-upgraded', this._onO2BaseLights);
@@ -4065,14 +4077,42 @@ export class ThreeGame {
         else this.baseLights.ignite(cx, cz);
     }
 
-    // Reveal/power-up the Fabrication Foundry in the base clearing (Beat 4).
-    revealFoundry({ instant = false } = {}) {
+    chooseFoundryDiscoveryPosition() {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom(this.hashTile(
+            Math.round(anchor.x * 31 + Date.now() % 997),
+            Math.round(anchor.z * 37 + this.snailsKilledThisRun * 101)
+        ));
+        const preferredAngles = [Math.PI * 0.15, Math.PI * 0.85, Math.PI * 1.35, Math.PI * 1.75];
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const ringT = random();
+            const dist = THREE.MathUtils.lerp(FOUNDRY_DISCOVERY_MIN_DISTANCE, FOUNDRY_DISCOVERY_MAX_DISTANCE, ringT);
+            const baseAngle = preferredAngles[attempt % preferredAngles.length];
+            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.55;
+            const x = anchor.x + Math.cos(angle) * dist;
+            const z = anchor.z + Math.sin(angle) * dist;
+            const tileX = Math.round(x);
+            const tileZ = Math.round(z);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+
+        return { x: anchor.x + FOUNDRY_DISCOVERY_MIN_DISTANCE, z: anchor.z };
+    }
+
+    // Reveal/power-up the Fabrication Foundry after the O2 counterattack.
+    revealFoundry({ instant = false, randomEdge = false } = {}) {
         if (!this.foundry) return;
+        const site = randomEdge ? this.chooseFoundryDiscoveryPosition() : this.foundry.getPosition();
         const ship = this.getActiveShip();
-        const cx = Number.isFinite(ship?.tileX) ? ship.tileX : 9;
-        const cz = Number.isFinite(ship?.tileZ) ? ship.tileZ : 9;
+        const cx = Number.isFinite(site?.x) ? site.x : (Number.isFinite(ship?.tileX) ? ship.tileX : 9);
+        const cz = Number.isFinite(site?.z) ? site.z : (Number.isFinite(ship?.tileZ) ? ship.tileZ : 9);
         if (instant) this.foundry.revealInstant(cx, cz);
         else this.foundry.reveal(cx, cz);
+        window.dispatchEvent(new CustomEvent('foundry-discovered', {
+            detail: { x: cx, z: cz, distance: this.player ? Math.round(Math.hypot(this.player.position.x - cx, this.player.position.z - cz)) : null }
+        }));
     }
 
     // Proximity prompt for the Foundry (mirrors the lore-terminal prompt flow).
@@ -4116,29 +4156,46 @@ export class ThreeGame {
     createO2BubbleObjects() {
         if (this.o2BubbleObjects) return;
 
-        const light = new THREE.PointLight(0x8af1ff, 0.62, 6, 2);
+        const light = new THREE.PointLight(O2_SAFE_LIGHT_COLOR, 1.45, 9, 1.45);
         const ringInnerRadius = Math.max(0.2, O2_GENERATOR_RING_BASE_RADIUS - (O2_GENERATOR_RING_BAND_THICKNESS * 0.5));
         const ringOuterRadius = O2_GENERATOR_RING_BASE_RADIUS + (O2_GENERATOR_RING_BAND_THICKNESS * 0.5);
+        const fill = new THREE.Mesh(
+            new THREE.CircleGeometry(O2_GENERATOR_RING_BASE_RADIUS, 72),
+            new THREE.MeshBasicMaterial({
+                color: O2_SAFE_LIGHT_COLOR,
+                transparent: true,
+                opacity: O2_SAFE_FILL_OPACITY,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                fog: false
+            })
+        );
         const ring = new THREE.Mesh(
             new THREE.RingGeometry(ringInnerRadius, ringOuterRadius, 72),
             new THREE.MeshBasicMaterial({
-                color: 0x91f2ff,
+                color: O2_SAFE_LIGHT_COLOR,
                 transparent: true,
                 opacity: 0.24,
                 side: THREE.DoubleSide,
-                depthWrite: false
+                depthWrite: false,
+                fog: false
             })
         );
 
+        fill.rotation.x = -Math.PI / 2;
+        fill.position.y = 0.034;
+        fill.visible = false;
         ring.rotation.x = -Math.PI / 2;
         ring.position.y = 0.035;
         ring.visible = false;
         light.visible = false;
 
         this.scene.add(light);
+        this.scene.add(fill);
         this.scene.add(ring);
 
-        this.o2BubbleObjects = { light, ring };
+        this.o2BubbleObjects = { light, fill, ring };
     }
 
     ensureO2BubbleVisualState() {
@@ -4186,16 +4243,20 @@ export class ThreeGame {
 
         if (!enabled) {
             this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.fill.visible = false;
             this.o2BubbleObjects.ring.visible = false;
             return;
         }
 
         const ringScale = Math.max(0.01, generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS);
         this.o2BubbleObjects.ring.scale.set(ringScale, ringScale, 1);
-        this.o2BubbleObjects.light.position.set(generatorPos.x, 0.68, generatorPos.z);
-        this.o2BubbleObjects.light.distance = Math.max(6, generatorState.radius * 2.15);
+        this.o2BubbleObjects.fill.scale.set(ringScale, ringScale, 1);
+        this.o2BubbleObjects.light.position.set(generatorPos.x, 0.9, generatorPos.z);
+        this.o2BubbleObjects.light.distance = Math.max(10, generatorState.radius * 2.45);
         this.o2BubbleObjects.ring.position.set(generatorPos.x, 0.035, generatorPos.z);
+        this.o2BubbleObjects.fill.position.set(generatorPos.x, 0.034, generatorPos.z);
         this.o2BubbleObjects.light.visible = true;
+        this.o2BubbleObjects.fill.visible = true;
         this.o2BubbleObjects.ring.visible = true;
 
         // Returning to an already-online base: snap the flood-light grid and the
@@ -4203,9 +4264,6 @@ export class ThreeGame {
         // first repair, which fires via the o2-generator-upgraded event before this.
         if (this.baseLights && !this.baseLights.isIgnited) {
             this.igniteBaseLights({ instant: true });
-        }
-        if (this.foundry && !this.foundry.isRevealed) {
-            this.revealFoundry({ instant: true });
         }
     }
 
@@ -4865,7 +4923,9 @@ export class ThreeGame {
             const opacity = 0.16 + Math.sin(t * 2.6) * 0.06;
             this.o2BubbleObjects.ring.scale.set(pulse, pulse, 1);
             this.o2BubbleObjects.ring.material.opacity = opacity;
-            this.o2BubbleObjects.light.intensity = 0.5 + Math.sin(t * 2.4) * 0.1;
+            this.o2BubbleObjects.fill.scale.set(pulse, pulse, 1);
+            this.o2BubbleObjects.fill.material.opacity = O2_SAFE_FILL_OPACITY + Math.sin(t * 2.1) * 0.035;
+            this.o2BubbleObjects.light.intensity = 1.35 + Math.sin(t * 2.4) * 0.18;
         }
 
         this.o2DispatchTimer += delta;
@@ -5347,7 +5407,7 @@ export class ThreeGame {
         }
         if (this.playerForwardSpotLight) {
             const pulse = this.isMoving ? 0.08 * (0.5 + 0.5 * Math.sin(performance.now() * 0.013)) : 0;
-            this.playerForwardSpotLight.intensity = 3.1 * lerp(1.4, 0.72, dayBlend) * (1 + pulse);
+            this.playerForwardSpotLight.intensity = 5.8 * lerp(1.5, 0.82, dayBlend) * (1 + pulse);
             this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.15, 0.88, dayBlend);
             this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.08, 0.92, dayBlend);
         }
@@ -5376,7 +5436,11 @@ export class ThreeGame {
 
         // Radial darkness around the player. Darkest at night and in heavy weather.
         const weatherDark = this.nightVision ? 0 : ((1 - wMult) * 0.6);
-        const darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.44, 0.02, dayBlend) + weatherDark, 0, 0.72);
+        let darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.44, 0.02, dayBlend) + weatherDark, 0, 0.72);
+        const generatorState = this.getO2GeneratorState?.();
+        if (generatorState?.isOnline && this.getActiveO2GeneratorDistance() <= generatorState.radius) {
+            darkAlpha *= 0.18;
+        }
         this.updatePlayerDarkness(darkAlpha);
     }
 
@@ -5544,6 +5608,12 @@ export class ThreeGame {
 
     getFogOfWarVisibility(x, z) {
         if (!this.player || this.nightVision) return 1;
+        const generatorState = this.getO2GeneratorState?.();
+        const generatorPos = this.getActiveO2GeneratorPosition?.();
+        if (generatorState?.isOnline && generatorPos) {
+            const o2Dist = Math.hypot(x - generatorPos.x, z - generatorPos.z);
+            if (o2Dist <= generatorState.radius) return 1;
+        }
         const distance = Math.hypot(x - this.player.position.x, z - this.player.position.z);
         if (distance <= 0.001) return 1;
 
@@ -8679,6 +8749,9 @@ export class ThreeGame {
 
         if (isBoss) {
             this.killedBosses.add(sprite.userData.biome);
+            if (sprite.userData.isMilestone && sprite.userData.sourceGoalKey === 'o2Bubble') {
+                this.revealFoundry({ randomEdge: true });
+            }
         }
 
         if (this.isSentinel(sprite.userData.type)) {
@@ -8699,7 +8772,13 @@ export class ThreeGame {
         window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
         window.AudioManager?.play('ui_error', { volume: 0.2, playbackRate: 0.72 });
         window.dispatchEvent(new CustomEvent('enemy-killed', {
-            detail: { type: sprite.userData.type, totalKills: this.snailsKilledThisRun }
+            detail: {
+                type: sprite.userData.type,
+                totalKills: this.snailsKilledThisRun,
+                isBoss,
+                isMilestone: Boolean(sprite.userData.isMilestone),
+                sourceGoalKey: sprite.userData.sourceGoalKey ?? null
+            }
         }));
     }
 
@@ -8740,7 +8819,7 @@ export class ThreeGame {
 
     // Spawn a single milestone "retaliation" boss near the player that beelines
     // for the ship. Driven by the bank's `goal-unlocked` event (see init wiring).
-    spawnMilestoneBoss(bossType) {
+    spawnMilestoneBoss(bossType, { sourceGoalKey = null } = {}) {
         if (!this.player || !this.snailsEnabled) return null;
         if (!this.scatterMaterials[bossType]) return null;
         // Never stack the same milestone boss.
@@ -8789,6 +8868,7 @@ export class ThreeGame {
         const boss = this.createScatterInstance(placement);
         if (!boss) return null;
         boss.userData.isMilestone = true;
+        boss.userData.sourceGoalKey = sourceGoalKey;
         boss.userData.prioritizeShip = true;
         boss.userData.targetType = 'ship';
 
@@ -10425,7 +10505,10 @@ export class ThreeGame {
         if (this.o2BubbleObjects) {
             this.o2BubbleObjects.ring?.material?.dispose?.();
             this.o2BubbleObjects.ring?.geometry?.dispose?.();
+            this.o2BubbleObjects.fill?.material?.dispose?.();
+            this.o2BubbleObjects.fill?.geometry?.dispose?.();
             this.scene.remove(this.o2BubbleObjects.ring);
+            this.scene.remove(this.o2BubbleObjects.fill);
             this.scene.remove(this.o2BubbleObjects.light);
             this.o2BubbleObjects = null;
         }

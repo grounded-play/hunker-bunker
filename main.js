@@ -1302,19 +1302,25 @@ function runDeathSequence(event) {
         };
         // Check achievements and show unlock notification if new
         const { newUnlocks } = checkAchievements(stats);
-        showGameOverScreen(stats, { isVictory: false, deathReason });
-        if (newUnlocks.length > 0) {
-            setTimeout(() => {
-                showBiomePrompt(`> ACHIEVEMENT: ${newUnlocks[0]}`);
-            }, 2200);
-        }
-        resetRunToStartingState({
-            resetBank: false,
-            skipEffects: true,
-            snailSpawnEnabled: false,
-            purgeSnails: true
-        });
-        window.game?.setInputEnabled?.(false);
+        triggerDoorTransition(
+            () => {
+                showGameOverScreen(stats, { isVictory: false, deathReason });
+                if (newUnlocks.length > 0) {
+                    setTimeout(() => {
+                        showBiomePrompt(`> ACHIEVEMENT: ${newUnlocks[0]}`);
+                    }, 2200);
+                }
+                resetRunToStartingState({
+                    resetBank: false,
+                    skipEffects: true,
+                    snailSpawnEnabled: false,
+                    purgeSnails: true
+                });
+                window.game?.setInputEnabled?.(false);
+            },
+            null,
+            'lose'
+        );
     }, 900);
 }
 
@@ -1373,14 +1379,20 @@ window.addEventListener('player-extracted', (event) => {
     AudioManager.play('ui_boot', { volume: 0.6, playbackRate: 0.72, bus: 'sfx' });
 
     window.setTimeout(() => {
-        showGameOverScreen(stats, { isVictory: true });
-        resetRunToStartingState({
-            resetBank: false,
-            skipEffects: true,
-            snailSpawnEnabled: false,
-            purgeSnails: true
-        });
-        window.game?.setInputEnabled?.(false);
+        triggerDoorTransition(
+            () => {
+                showGameOverScreen(stats, { isVictory: true });
+                resetRunToStartingState({
+                    resetBank: false,
+                    skipEffects: true,
+                    snailSpawnEnabled: false,
+                    purgeSnails: true
+                });
+                window.game?.setInputEnabled?.(false);
+            },
+            null,
+            'win'
+        );
     }, 600);
 });
 
@@ -1950,6 +1962,7 @@ if (gameOverTryAgain) {
             () => {
                 window.game?.setInputEnabled?.(true);
             }
+            // Defaults to the currently selected class door
         );
     });
 }
@@ -1987,7 +2000,8 @@ if (gameOverMainMenu) {
                     queueGameLayoutRefresh();
                 }
             },
-            null
+            null,
+            'base'
         );
     });
 }
@@ -2282,6 +2296,24 @@ function hideRunLoadingScreen() {
     loadingScreen?.classList.add('hidden');
 }
 
+let tacticalOverlayTimer = null;
+function showTacticalOverlay({ title = 'SYSTEM UPDATE', status = '', progress = 100, duration = 1600 } = {}) {
+    if (tacticalOverlayTimer) {
+        clearTimeout(tacticalOverlayTimer);
+        tacticalOverlayTimer = null;
+    }
+    if (loaderTitle) loaderTitle.textContent = title;
+    if (loaderStatus) loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1.2s infinite ease-in-out;">${status}</div>`;
+    if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    loadingScreen?.classList.remove('hidden');
+    if (duration > 0) {
+        tacticalOverlayTimer = setTimeout(() => {
+            loadingScreen?.classList.add('hidden');
+            tacticalOverlayTimer = null;
+        }, duration);
+    }
+}
+
 async function prepareGameplayForDialogue() {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;
@@ -2398,7 +2430,8 @@ if (playBtn) {
                 if (state.settings.fullscreen) {
                     document.documentElement.requestFullscreen().catch(() => { });
                 }
-            }
+            },
+            'base'
         );
     });
 }
@@ -2437,6 +2470,7 @@ if (startBtn) {
             () => {
                 void prepareRunThenMissionIntro();
             }
+            // Defaults to active class door
         );
     });
 }
@@ -2481,6 +2515,7 @@ if (dailyOpsBtn) {
             () => {
                 void prepareRunThenMissionIntro();
             }
+            // Defaults to active class door
         );
     });
 }
@@ -2731,7 +2766,8 @@ if (confirmYes) {
                     queueGameLayoutRefresh();
                 }
             },
-            null
+            null,
+            'base'
         );
     });
 }
@@ -2865,6 +2901,7 @@ function renderFabricationModal() {
         art.className = 'fab-card__art';
         const img = document.createElement('img');
         img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
+        img.addEventListener('error', () => { img.src = '/bunker_junk_rare.png'; }, { once: true });
         art.appendChild(img);
         if (printing) {
             const bar = document.createElement('div');
@@ -2898,9 +2935,10 @@ function renderFabricationModal() {
         } else if (!affordable) {
             btn.textContent = 'INSUFFICIENT SALVAGE'; btn.disabled = true; btn.classList.add('fab-card__btn--locked');
         } else {
-            btn.textContent = 'FABRICATE';
+            btn.textContent = 'ROLL FABRICATOR';
             btn.addEventListener('click', () => {
-                if (fabricator.startPrint(recipe.id, bankManager)) {
+                const rolled = fabricator.startRandomPrint(bankManager);
+                if (rolled) {
                     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
                     renderFabricationModal();
                     startFabTicker();
@@ -2954,6 +2992,33 @@ refreshFabAccess();
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
+window.addEventListener('o2-bubble-activated', (event) => {
+    if ((event?.detail?.level ?? 0) !== 1) return;
+    showTacticalOverlay({
+        title: 'O₂ FIELD ONLINE',
+        status: '> SAFE FIELD STABILIZED<br>> BASE LIGHT GRID IGNITING',
+        progress: 100,
+        duration: 1500
+    });
+});
+window.addEventListener('milestone-boss-warning', () => {
+    showTacticalOverlay({
+        title: 'PERIMETER BREACH',
+        status: '> LARGE HOSTILE SIGNATURE CLOSING ON THE SHIP<br>> HOLD THE BASE UNTIL CONTACT IS CLEAR',
+        progress: 100,
+        duration: 2200
+    });
+});
+window.addEventListener('foundry-discovered', (event) => {
+    const distance = event?.detail?.distance;
+    const rangeText = Number.isFinite(distance) ? ` // ${distance}u` : '';
+    showTacticalOverlay({
+        title: 'FABRICATOR SIGNAL FOUND',
+        status: `> FABRICATION FOUNDRY BROADCAST LOCKED${rangeText}<br>> FOLLOW THE FIELD COMPASS`,
+        progress: 100,
+        duration: 2200
+    });
+});
 window.addEventListener('foundry-prompt-nearby', () => {
     document.getElementById('foundry-hud-prompt')?.classList.remove('hidden');
 });
@@ -3033,6 +3098,7 @@ function renderRosterModal() {
         art.className = 'roster-weapon__art';
         const img = document.createElement('img');
         img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
+        img.addEventListener('error', () => { img.src = '/bunker_junk_rare.png'; }, { once: true });
         art.appendChild(img);
         card.appendChild(art);
 
@@ -3144,13 +3210,37 @@ if (mainTouchToggle) {
     });
 }
 
-function triggerDoorTransition(onClosed, onOpened) {
+function getDoorImage(key) {
+    const CLASS_DOORS = {
+        'SCOUT': '/door_bio.png',
+        'TANK': '/door_nuclear.png',
+        'ENGINEER': '/door_cryo.png'
+    };
+    const SPECIAL_DOORS = {
+        'base': '/door.webp',
+        'win': '/door_alien.png',
+        'lose': '/door_rust.png'
+    };
+    if (key === 'win') return SPECIAL_DOORS.win;
+    if (key === 'lose') return SPECIAL_DOORS.lose;
+    if (key === 'base') return SPECIAL_DOORS.base;
+    if (CLASS_DOORS[key]) return CLASS_DOORS[key];
+    
+    // Automatically determine door image based on active/preview class
+    const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
+    return CLASS_DOORS[activeClass] || SPECIAL_DOORS.base;
+}
+
+function triggerDoorTransition(onClosed, onOpened, doorKey) {
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
     if (!overlay) {
         if (onClosed) onClosed();
         if (onOpened) onOpened();
         return;
     }
+
+    const doorImg = getDoorImage(doorKey);
+    overlay.style.setProperty('--door-bg-image', `url('${doorImg}')`);
 
     // 1. Prepare for vertical close
     overlay.classList.add('visible');
@@ -3386,6 +3476,9 @@ function triggerHeroPreviewSwap(type) {
     }
 
     const targetType = pendingPreviewType;
+    const doorImg = getDoorImage(targetType);
+    previewDoor.style.setProperty('--door-bg-image', `url('${doorImg}')`);
+
     previewDoor.classList.remove('opening', 'ready-to-open');
     previewDoor.classList.add('active', 'closing');
     AudioManager.play('door_slam_vertical', { volume: 0.2 });

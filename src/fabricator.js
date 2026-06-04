@@ -93,6 +93,17 @@ export class FabricatorManager {
         return bank ? bank.canAfford(recipe.cost) : true;
     }
 
+    getRandomFabricationCandidates(bank) {
+        return FAB_RECIPES.filter((recipe) => this.canFabricate(recipe.id, bank));
+    }
+
+    startRandomPrint(bank, random = Math.random) {
+        const candidates = this.getRandomFabricationCandidates(bank);
+        if (!candidates.length) return null;
+        const index = Math.max(0, Math.min(candidates.length - 1, Math.floor(random() * candidates.length)));
+        return this.startPrint(candidates[index].id, bank);
+    }
+
     // Spend salvage and queue the print. Returns the recipe on success, else null.
     startPrint(id, bank) {
         const recipe = getRecipe(id);

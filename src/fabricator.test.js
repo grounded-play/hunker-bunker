@@ -85,6 +85,18 @@ describe('FabricatorManager', () => {
         expect(fab.startPrint('scatter_rep', bank)).toBeNull();
     });
 
+    it('can start a random affordable unfinished print', () => {
+        const rolled = fab.startRandomPrint(bank, () => 0.999);
+        expect(rolled).toBe(FAB_RECIPES[FAB_RECIPES.length - 1]);
+        expect(fab.isPrinting(rolled.id)).toBe(true);
+    });
+
+    it('random print returns null when no candidates are affordable', () => {
+        const poor = makeBank({ tech: 0, coin: 0, med: 0 });
+        expect(fab.getRandomFabricationCandidates(poor)).toEqual([]);
+        expect(fab.startRandomPrint(poor, () => 0)).toBeNull();
+    });
+
     it('persists prints and fabricated state across reloads', () => {
         fab.startPrint('neon_smg', bank);
         // New manager over the same storage + clock = a "reload".

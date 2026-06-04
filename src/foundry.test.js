@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { FabricationFoundry, foundryWorldPosition, FOUNDRY_OFFSET, INTERACT_RADIUS } from './foundry.js';
+import { FabricationFoundry, foundryWorldPosition, INTERACT_RADIUS } from './foundry.js';
 
 describe('FabricationFoundry', () => {
-    it('computes a base-relative world position', () => {
-        expect(foundryWorldPosition(9, 9)).toEqual({ x: 9 + FOUNDRY_OFFSET.x, z: 9 + FOUNDRY_OFFSET.z });
+    it('computes an explicit discovered world position', () => {
+        expect(foundryWorldPosition(9, 9)).toEqual({ x: 9, z: 9 });
     });
 
     it('stays hidden until revealed', () => {
