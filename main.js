@@ -873,7 +873,16 @@ function hideBiomePrompt() {
 }
 
 function showRadioTransmission(rawText) {
-    if (isResettingRun) return;
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (!isGameplayActive || isResettingRun) return;
 
     let sender;
     let text = rawText;

@@ -4443,10 +4443,10 @@ body.mission-intro-active #game-container {
 /* ── Radio Transmission CRT Prompt ─────────────────────────── */
 .radio-transmission-prompt {
   position: absolute;
-  top: calc(var(--vu) * 12);
-  left: 50%;
-  transform: translateX(-50%) translateY(-20px);
-  width: clamp(280px, 80%, 480px);
+  top: calc(var(--vu) * 20);
+  right: calc(var(--vu) * 4);
+  transform: translateX(20px);
+  width: clamp(280px, 40vw, 420px);
   background: rgba(10, 15, 20, 0.94);
   border: 1.5px solid #00d2ff;
   border-radius: 4px;
@@ -4465,7 +4465,7 @@ body.mission-intro-active #game-container {
 
 .radio-transmission-prompt.visible {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateX(0);
 }
 
 .radio-transmission-prompt.hidden {
