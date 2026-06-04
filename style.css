@@ -865,6 +865,7 @@ body {
   z-index: 3;
   pointer-events: none;
   overflow: hidden;
+  border-radius: inherit;
   opacity: 0;
 }
 

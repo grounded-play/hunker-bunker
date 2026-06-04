@@ -13,16 +13,38 @@ describe('BaseLights', () => {
         lights.build(9, 9);
 
         expect(lights.fixtures.length).toBe(8);
-        // All start off: zero intensity, hidden.
+        // All start dark: zero intensity. Fixtures are kept `visible` (with no
+        // contribution) so the scene light COUNT is stable and the lit-material
+        // shader recompile is paid once at build, not as each fixture wakes.
         for (const f of lights.fixtures) {
             expect(f.light.intensity).toBe(0);
-            expect(f.light.visible).toBe(false);
+            expect(f.light.visible).toBe(true);
         }
         // Fixtures sit on a ring around the center.
         for (const f of lights.fixtures) {
             const dx = f.light.position.x - 9;
             const dz = f.light.position.z - 9;
-            expect(Math.hypot(dx, dz)).toBeCloseTo(3.6, 1);
+            expect(Math.hypot(dx, dz)).toBeCloseTo(3.9, 1);
+        }
+    });
+
+    it('recenters existing fixtures without rebuilding them', () => {
+        const scene = makeScene();
+        const lights = new BaseLights(scene);
+        lights.build(9, 9);
+        const fixtureRefs = lights.fixtures.map((f) => f.light);
+
+        lights.recenter(12, 6);
+
+        expect(lights.centerX).toBe(12);
+        expect(lights.centerZ).toBe(6);
+        expect(lights.fixtures.map((f) => f.light)).toEqual(fixtureRefs);
+        for (const f of lights.fixtures) {
+            const dx = f.light.position.x - 12;
+            const dz = f.light.position.z - 6;
+            expect(Math.hypot(dx, dz)).toBeCloseTo(3.9, 1);
+            expect(f.bulb.position.x).toBe(f.light.position.x);
+            expect(f.bulb.position.z).toBe(f.light.position.z);
         }
     });
 

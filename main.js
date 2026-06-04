@@ -3338,7 +3338,7 @@ let previewFrameIndex = 0;
 let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
-let activePreviewType = 'SCOUT';
+let activePreviewType = 'TANK';
 const previewSpriteImages = new Map();
 
 const heroData = {
@@ -4039,7 +4039,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.game?.setLoadingPaused?.(false);
                 AudioManager.startMenuMusic();
             },
-            null
+            null,
+            'base'
         );
     });
 });

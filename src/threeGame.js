@@ -56,7 +56,7 @@ const SUIT_CONE_VISUAL_WIDTH = 10.6;
 // raycast against the walls every frame so the beam is occluded per-direction
 // (wrapping corners, carving shadow wedges) instead of uniformly shrinking.
 const SUIT_CONE_SEGMENTS = 22;
-const SUIT_CONE_VISUAL_OPACITY = 0.36;
+const SUIT_CONE_VISUAL_OPACITY = 0.13;
 const SUIT_LOCAL_LIGHT_POOL_RADIUS = 2.85;
 const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.34;
 const SUIT_LIGHT_EMITTER_HEIGHT = 1.35;
@@ -554,7 +554,7 @@ function classifyChunkCells(grid, chunkSize) {
 }
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'SCOUT', bankManager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', bankManager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -724,7 +724,7 @@ export class ThreeGame {
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
-        this.darknessOverlay = document.createElement('div');
+        this.darknessOverlay = document.createElement('canvas');
         Object.assign(this.darknessOverlay.style, {
             position: 'absolute',
             inset: '0',
@@ -734,7 +734,10 @@ export class ThreeGame {
             mixBlendMode: 'multiply',
             zIndex: '2'
         });
+        this.darknessOverlayContext = this.darknessOverlay.getContext('2d', { alpha: true });
         this._darknessCenter = new THREE.Vector3();
+        this._darknessConePoint = new THREE.Vector3();
+        this._darknessConeScreenPoints = [];
         this.container.style.position = this.container.style.position || 'relative';
         this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay);
 
@@ -1881,8 +1884,8 @@ export class ThreeGame {
                 const centeredX = Math.abs((x / (canvas.width - 1)) - 0.5);
                 const edge = 1 - smoothstep(halfWidth * 0.58, halfWidth, centeredX);
                 const core = 1 - smoothstep(0, halfWidth * 0.45, centeredX);
-                const classTint = Math.max(0, edge - core) * 0.18;
-                const alpha = Math.max(0, Math.min(1, (edge * 0.42 + core * 0.16) * lengthFade));
+                const classTint = Math.max(0, edge - core) * 0.1;
+                const alpha = Math.max(0, Math.min(1, (edge * 0.16 + core * 0.035) * lengthFade));
                 const idx = (y * canvas.width + x) * 4;
                 image.data[idx] = Math.round(neutral.r * (1 - classTint) + r * classTint);
                 image.data[idx + 1] = Math.round(neutral.g * (1 - classTint) + g * classTint);
@@ -2224,17 +2227,29 @@ export class ThreeGame {
         // (level 0 -> 1) is the trigger; the animated sweep then settles into idle
         // flicker. Idempotent.
         this._onO2BaseLights = (event) => {
-            if ((event?.detail?.level ?? 0) >= 1) {
+            if ((event?.detail?.level ?? 0) < 1) return;
+            if (this._o2MilestoneBossQueued) {
+                // Later O2 upgrades: grid is already lit (idempotent), no new boss.
                 this.igniteBaseLights();
-                if (!this._o2MilestoneBossQueued) {
-                    this._o2MilestoneBossQueued = true;
-                    const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
-                    window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                        detail: { type: bossType, goalKey: 'o2Bubble' }
-                    }));
-                    setTimeout(() => this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' }), 1800);
-                }
+                return;
             }
+            this._o2MilestoneBossQueued = true;
+            const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
+            // Raise the full-screen warning overlay FIRST. Igniting the 8-light base
+            // grid forces a one-time shader recompile of every lit material (a big
+            // frame hitch), so we run that — plus the boss spawn and an explicit
+            // renderer warm-up — a beat later, behind the overlay, so the stutter is
+            // hidden by the "cut" instead of jolting live gameplay.
+            window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+                detail: { type: bossType, goalKey: 'o2Bubble' }
+            }));
+            setTimeout(() => {
+                this.igniteBaseLights();
+                this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
+                // Pay the recompile/upload cost now, while the overlay still covers
+                // the screen, so the next live frame is already warm.
+                try { this.renderer?.compile?.(this.scene, this.camera); } catch { /* best effort */ }
+            }, 450);
         };
         window.addEventListener('o2-generator-upgraded', this._onO2BaseLights);
 
@@ -4071,8 +4086,9 @@ export class ThreeGame {
     igniteBaseLights({ instant = false } = {}) {
         if (!this.baseLights) return;
         const ship = this.getActiveShip();
-        const cx = Number.isFinite(ship?.tileX) ? ship.tileX : 9;
-        const cz = Number.isFinite(ship?.tileZ) ? ship.tileZ : 9;
+        if (!Number.isFinite(ship?.tileX) || !Number.isFinite(ship?.tileZ)) return;
+        const cx = ship.tileX;
+        const cz = ship.tileZ;
         if (instant) this.baseLights.igniteInstant(cx, cz);
         else this.baseLights.ignite(cx, cz);
     }
@@ -5384,8 +5400,8 @@ export class ThreeGame {
         const lerp = THREE.MathUtils.lerp;
         // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
         const dayBlend = this.nightVision ? 1.0 : THREE.MathUtils.smoothstep(day, 0.1, 0.9);
-        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.62, 1.0, dayBlend);
-        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.45, 1.0, dayBlend);
+        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.72, 1.0, dayBlend);
+        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.55, 1.0, dayBlend);
         this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, dayBlend);
         const weatherLightMult = this.nightVision ? 1.0 : (this.weather?.lightMult ?? 1);
         if (weatherLightMult !== 1) {
@@ -5407,12 +5423,12 @@ export class ThreeGame {
         }
         if (this.playerForwardSpotLight) {
             const pulse = this.isMoving ? 0.08 * (0.5 + 0.5 * Math.sin(performance.now() * 0.013)) : 0;
-            this.playerForwardSpotLight.intensity = 5.8 * lerp(1.5, 0.82, dayBlend) * (1 + pulse);
-            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.15, 0.88, dayBlend);
+            this.playerForwardSpotLight.intensity = 5.8 * lerp(2.25, 0.82, dayBlend) * (1 + pulse);
+            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.32, 0.88, dayBlend);
             this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.08, 0.92, dayBlend);
         }
         if (this.playerForwardCone?.material) {
-            this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(1.15, 0.42, dayBlend);
+            this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(0.72, 0.28, dayBlend);
         }
         if (this.playerLightPool?.material) {
             this.playerLightPool.material.opacity = SUIT_LOCAL_LIGHT_POOL_OPACITY * lerp(1.85, 0.48, dayBlend);
@@ -5423,8 +5439,8 @@ export class ThreeGame {
 
         // Fog eases in at night (color stays under biome control; only the range
         // is touched here). Keep the far plane close enough to remain visible.
-        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.75, this.baseFogRange.near * 1.05, dayBlend);
-        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.72, this.baseFogRange.far * 1.25, dayBlend);
+        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 1.0, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 1.08, this.baseFogRange.far * 1.25, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
@@ -5436,7 +5452,7 @@ export class ThreeGame {
 
         // Radial darkness around the player. Darkest at night and in heavy weather.
         const weatherDark = this.nightVision ? 0 : ((1 - wMult) * 0.6);
-        let darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.44, 0.02, dayBlend) + weatherDark, 0, 0.72);
+        let darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.30, 0.02, dayBlend) + weatherDark, 0, 0.55);
         const generatorState = this.getO2GeneratorState?.();
         if (generatorState?.isOnline && this.getActiveO2GeneratorDistance() <= generatorState.radius) {
             darkAlpha *= 0.18;
@@ -5552,9 +5568,25 @@ export class ThreeGame {
     // circle around the player sprite instead of a camera-depth band.
     updatePlayerDarkness(alpha) {
         const overlay = this.darknessOverlay;
-        if (!overlay || !this.player || !this.camera) return;
+        const ctx = this.darknessOverlayContext;
+        if (!overlay || !ctx || !this.player || !this.camera) return;
         const w = this.container.clientWidth || 1;
         const h = this.container.clientHeight || 1;
+        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        const targetW = Math.max(1, Math.round(w * dpr));
+        const targetH = Math.max(1, Math.round(h * dpr));
+        if (overlay.width !== targetW || overlay.height !== targetH) {
+            overlay.width = targetW;
+            overlay.height = targetH;
+            overlay.style.width = `${w}px`;
+            overlay.style.height = `${h}px`;
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        if (alpha <= 0.02) {
+            overlay.style.opacity = '0';
+            return;
+        }
 
         // Project the player's torso to screen pixels. The camera looks at this
         // anchor, so the bubble lands on the player and tracks them as they move.
@@ -5576,17 +5608,68 @@ export class ThreeGame {
         // dark instead of leaving a permanently-lit band. The final stop colour
         // continues past darkRadius, so the screen corners stay solid.
         const minDim = Math.min(w, h);
-        const clearRadius = Math.max(96, minDim * 0.16);
-        const darkRadius = clearRadius + minDim * 0.30;
+        const clearRadius = Math.max(154, minDim * 0.24);
+        const darkRadius = clearRadius + minDim * 0.34;
         const midRadius = clearRadius + (darkRadius - clearRadius) * 0.5;
 
-        overlay.style.background =
-            `radial-gradient(circle at ${cx.toFixed(0)}px ${cy.toFixed(0)}px,` +
-            `rgba(${r},${g},${b},0) 0px,` +
-            `rgba(${r},${g},${b},0) ${clearRadius.toFixed(0)}px,` +
-            `rgba(${r},${g},${b},${(alpha * 0.5).toFixed(3)}) ${midRadius.toFixed(0)}px,` +
-            `rgba(${r},${g},${b},${alpha.toFixed(3)}) ${darkRadius.toFixed(0)}px)`;
-        overlay.style.opacity = alpha > 0.02 ? '1' : '0';
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.globalCompositeOperation = 'destination-out';
+        const playerClear = ctx.createRadialGradient(cx, cy, 0, cx, cy, darkRadius);
+        const clearStop = THREE.MathUtils.clamp(clearRadius / darkRadius, 0, 0.96);
+        const midStop = THREE.MathUtils.clamp(midRadius / darkRadius, clearStop + 0.01, 0.98);
+        playerClear.addColorStop(0, 'rgba(0, 0, 0, 1)');
+        playerClear.addColorStop(clearStop, 'rgba(0, 0, 0, 1)');
+        playerClear.addColorStop(midStop, 'rgba(0, 0, 0, 0.5)');
+        playerClear.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = playerClear;
+        ctx.beginPath();
+        ctx.arc(cx, cy, darkRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        this.carveFlashlightDarkness(ctx, w, h);
+        ctx.globalCompositeOperation = 'source-over';
+        overlay.style.opacity = '1';
+    }
+
+    carveFlashlightDarkness(ctx, w, h) {
+        const cone = this.playerForwardCone;
+        const attr = this._conePositionAttr;
+        if (
+            this.nightVision ||
+            !cone ||
+            !attr ||
+            !this.camera ||
+            !this.playerForwardSpotLight ||
+            this.playerForwardSpotLight.intensity <= 0.01
+        ) {
+            return;
+        }
+
+        cone.updateMatrixWorld(true);
+        const points = this._darknessConeScreenPoints;
+        points.length = 0;
+        for (let i = 0; i < attr.count; i++) {
+            this._darknessConePoint.fromBufferAttribute(attr, i);
+            cone.localToWorld(this._darknessConePoint);
+            this._darknessConePoint.project(this.camera);
+            points.push({
+                x: (this._darknessConePoint.x * 0.5 + 0.5) * w,
+                y: (-this._darknessConePoint.y * 0.5 + 0.5) * h
+            });
+        }
+        if (points.length < 3) return;
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+        ctx.fill();
     }
 
     hasWallBetween(x1, z1, x2, z2) {
@@ -8872,6 +8955,15 @@ export class ThreeGame {
         boss.userData.prioritizeShip = true;
         boss.userData.targetType = 'ship';
 
+        // The O2-generator retaliation is the arc's FIRST boss — an introductory
+        // fight. Quarter the normal cybersnail HP (20 -> 5) and flag it so the
+        // attack logic fires a single slow shot instead of the 3-round spread.
+        if (sourceGoalKey === 'o2Bubble') {
+            boss.userData.easyTier = true;
+            boss.userData.maxHp = 5;
+            boss.userData.hp = 5;
+        }
+
         // Parent to the player's (loaded) chunk group so the boss persists in
         // scatterSprites across chunk syncs. Chunk groups use world coords.
         const chunkX = Math.floor(baseX / this.chunkSize);
@@ -9406,9 +9498,13 @@ export class ThreeGame {
             if (data.bossAttackTimer <= 0) {
                 // Determine attack based on type
                 if (data.type === 'boss_cybersnail' && target.type === 'player' && distanceToTarget <= 12) {
-                    data.bossAttackTimer = 4.5;
+                    // Easy-tier (first O2 boss): one slow shot. Full bosses fire a
+                    // tighter-timed 3-round spread.
+                    const easy = data.easyTier;
+                    data.bossAttackTimer = easy ? 7.0 : 4.5;
                     const angleToPlayer = Math.atan2(target.z - sprite.position.z, target.x - sprite.position.x);
-                    for (let i = -1; i <= 1; i++) {
+                    const spreadSteps = easy ? [0] : [-1, 0, 1];
+                    for (const i of spreadSteps) {
                         const spreadAngle = angleToPlayer + i * 0.22;
                         const vx = Math.cos(spreadAngle) * 7.5;
                         const vz = Math.sin(spreadAngle) * 7.5;

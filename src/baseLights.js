@@ -10,11 +10,11 @@ import * as THREE from 'three';
 // .claude_work/02-gameplay-arc-o2-lights-boss-printer.md (Beat 2).
 
 const FIXTURE_COUNT = 8;
-const RING_RADIUS = 3.6;          // world units around the base center
+const RING_RADIUS = 3.9;          // world units around the base center
 const FIXTURE_HEIGHT = 0.95;
 const FIXTURE_COLOR = 0x9ad8ff;   // cool industrial cyan-white
-const FIXTURE_MAX_INTENSITY = 1.35;
-const FIXTURE_DISTANCE = 5.2;
+const FIXTURE_MAX_INTENSITY = 2.25;
+const FIXTURE_DISTANCE = 7.4;
 const FIXTURE_DECAY = 2;
 const STAGGER_DELAY = 0.32;       // seconds between each fixture igniting
 const IGNITE_DURATION = 0.55;     // ramp + flicker time per fixture
@@ -42,7 +42,11 @@ export class BaseLights {
 
             const light = new THREE.PointLight(FIXTURE_COLOR, 0, FIXTURE_DISTANCE, FIXTURE_DECAY);
             light.position.set(x, FIXTURE_HEIGHT, z);
-            light.visible = false;
+            // Visible from build (intensity 0 = no contribution yet). Keeping the
+            // scene's light COUNT stable means the one-time lit-material shader
+            // recompile is paid once when the grid is built — not incrementally as
+            // each fixture wakes — avoiding a stuttering hitch across the sweep.
+            light.visible = true;
 
             // Small emissive lamp housing so the source reads as a fixture.
             const bulb = new THREE.Mesh(
@@ -65,9 +69,27 @@ export class BaseLights {
         this.built = true;
     }
 
+    recenter(centerX, centerZ) {
+        if (!this.built) {
+            this.build(centerX, centerZ);
+            return;
+        }
+        if (this.centerX === centerX && this.centerZ === centerZ) return;
+        this.centerX = centerX;
+        this.centerZ = centerZ;
+        for (let i = 0; i < this.fixtures.length; i++) {
+            const angle = (i / FIXTURE_COUNT) * Math.PI * 2;
+            const x = centerX + Math.cos(angle) * RING_RADIUS;
+            const z = centerZ + Math.sin(angle) * RING_RADIUS;
+            this.fixtures[i].light.position.set(x, FIXTURE_HEIGHT, z);
+            this.fixtures[i].bulb.position.set(x, FIXTURE_HEIGHT, z);
+        }
+    }
+
     // Start the staggered wake-up sweep.
     ignite(centerX, centerZ) {
         if (!this.built) this.build(centerX, centerZ);
+        else this.recenter(centerX, centerZ);
         if (this.ignited) return;
         this.ignited = true;
         this.elapsed = 0;
@@ -77,6 +99,7 @@ export class BaseLights {
     // online — no theatrics, lights are just on).
     igniteInstant(centerX, centerZ) {
         if (!this.built) this.build(centerX, centerZ);
+        else this.recenter(centerX, centerZ);
         this.ignited = true;
         this.elapsed = (FIXTURE_COUNT * STAGGER_DELAY) + IGNITE_DURATION + 1;
         for (const f of this.fixtures) {

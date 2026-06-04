@@ -24,7 +24,7 @@ export class GameScene extends window.Phaser.Scene {
     }
 
     init(data) {
-        this.playerType = data.playerType || 'SCOUT';
+        this.playerType = data.playerType || 'TANK';
     }
 
     create() {
