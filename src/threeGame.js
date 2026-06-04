@@ -554,13 +554,19 @@ function classifyChunkCells(grid, chunkSize) {
 }
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', bankManager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
         }
 
         this.playerType = playerType;
+        this.dialogueManager = dialogueManager;
+        this.o2StartupSequenceActive = false;
+        this.o2StartupTime = 0;
+        this.o2StartupPhase = 'popup';
+        this._pendingO2BossType = null;
+
         this.chunkSize = 19;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
         this.defaultVisibleChunkRadius = 1;
@@ -2235,21 +2241,12 @@ export class ThreeGame {
             }
             this._o2MilestoneBossQueued = true;
             const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
-            // Raise the full-screen warning overlay FIRST. Igniting the 8-light base
-            // grid forces a one-time shader recompile of every lit material (a big
-            // frame hitch), so we run that — plus the boss spawn and an explicit
-            // renderer warm-up — a beat later, behind the overlay, so the stutter is
-            // hidden by the "cut" instead of jolting live gameplay.
-            window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                detail: { type: bossType, goalKey: 'o2Bubble' }
-            }));
             setTimeout(() => {
-                this.igniteBaseLights();
-                this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
-                // Pay the recompile/upload cost now, while the overlay still covers
-                // the screen, so the next live frame is already warm.
                 try { this.renderer?.compile?.(this.scene, this.camera); } catch { /* best effort */ }
             }, 450);
+            setTimeout(() => {
+                this.startO2StartupSequence(bossType);
+            }, 2300);
         };
         window.addEventListener('o2-generator-upgraded', this._onO2BaseLights);
 
@@ -3100,6 +3097,7 @@ export class ThreeGame {
         this.updateConsoles(delta, now);
         this.updateLoreTerminals();
         this.updateVitals(delta);
+        this.updateO2StartupSequence(delta);
         this.baseLights?.update(delta);
         this.foundry?.update(delta);
         this.updateFoundryPrompt();
@@ -4096,6 +4094,123 @@ export class ThreeGame {
         else this.baseLights.ignite(cx, cz, radius, color);
     }
 
+    startO2StartupSequence(bossType) {
+        this.createO2BubbleObjects();
+        if (this.o2BubbleObjects) {
+            this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.fill.visible = false;
+            this.o2BubbleObjects.ring.visible = false;
+        }
+
+        const ship = this.getActiveShip();
+        if (ship) {
+            if (ship.o2ModuleSprite) {
+                ship.o2ModuleSprite.visible = true;
+                ship.o2ModuleSprite.scale.set(0, 0, 1);
+                ship.o2ModuleSprite.position.y = 0.09 - 1.5;
+            }
+            if (ship.o2ModuleShadow) {
+                ship.o2ModuleShadow.visible = true;
+                ship.o2ModuleShadow.scale.set(0, 0, 1);
+            }
+        }
+
+        this.closeConsoleModal();
+        this.setInputEnabled(false);
+
+        this._pendingO2BossType = bossType;
+        this.o2StartupSequenceActive = true;
+        this.o2StartupPhase = 'popup';
+        this.o2StartupTime = 0;
+    }
+
+    updateO2StartupSequence(delta) {
+        if (!this.o2StartupSequenceActive) return;
+        this.o2StartupTime += delta;
+        const ship = this.getActiveShip();
+
+        if (this.o2StartupPhase === 'popup') {
+            const duration = 1.2; // seconds
+            const progress = Math.min(1, this.o2StartupTime / duration);
+            if (ship) {
+                if (ship.o2ModuleSprite) {
+                    ship.o2ModuleSprite.visible = true;
+                    ship.o2ModuleSprite.scale.set(1.58 * progress, 1.58 * progress, 1);
+                    ship.o2ModuleSprite.position.y = 0.09 - 1.5 * (1 - progress);
+                }
+                if (ship.o2ModuleShadow) {
+                    ship.o2ModuleShadow.visible = true;
+                    ship.o2ModuleShadow.scale.set(progress, progress, 1);
+                }
+            }
+            if (progress >= 1) {
+                this.o2StartupPhase = 'bubble';
+                this.o2StartupTime = 0;
+                if (this.baseLights) {
+                    const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+                    const generatorState = this.getO2GeneratorState();
+                    this.baseLights.ignite(ship?.tileX ?? 0, ship?.tileZ ?? 0, generatorState.radius, color);
+                }
+                window.AudioManager?.play?.('ui_boot1', { volume: 0.6 });
+            }
+        } else if (this.o2StartupPhase === 'bubble') {
+            const duration = 1.8; // seconds
+            const progress = Math.min(1, this.o2StartupTime / duration);
+            const generatorState = this.getO2GeneratorState();
+            const targetBubbleScale = generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS;
+            const currentBubbleScale = targetBubbleScale * progress;
+
+            if (this.o2BubbleObjects) {
+                this.o2BubbleObjects.light.visible = true;
+                this.o2BubbleObjects.fill.visible = true;
+                this.o2BubbleObjects.ring.visible = true;
+
+                const t = performance.now() * 0.001;
+                const pulse = currentBubbleScale * (0.97 + Math.sin(t * 2.2) * 0.06);
+                const opacity = (0.16 + Math.sin(t * 2.6) * 0.06) * progress;
+
+                this.o2BubbleObjects.ring.scale.set(pulse, pulse, 1);
+                this.o2BubbleObjects.ring.material.opacity = opacity;
+                this.o2BubbleObjects.fill.scale.set(pulse, pulse, 1);
+                this.o2BubbleObjects.fill.material.opacity = (O2_SAFE_FILL_OPACITY + Math.sin(t * 2.1) * 0.035) * progress;
+                this.o2BubbleObjects.light.intensity = (1.35 + Math.sin(t * 2.4) * 0.18) * progress;
+
+                const generatorPos = this.getActiveO2GeneratorPosition();
+                if (generatorPos) {
+                    this.o2BubbleObjects.light.position.set(generatorPos.x, 0.9, generatorPos.z);
+                    this.o2BubbleObjects.light.distance = Math.max(10, generatorState.radius * 2.45);
+                    this.o2BubbleObjects.ring.position.set(generatorPos.x, 0.035, generatorPos.z);
+                    this.o2BubbleObjects.fill.position.set(generatorPos.x, 0.034, generatorPos.z);
+                }
+            }
+
+            if (progress >= 1) {
+                this.o2StartupPhase = 'dialogue';
+                this.o2StartupTime = 0;
+                this.o2StartupSequenceActive = false; // end 3D animation phase
+                this.triggerO2ClassDialogue(this._pendingO2BossType);
+            }
+        }
+    }
+
+    async triggerO2ClassDialogue(bossType) {
+        if (this.dialogueManager) {
+            await this.dialogueManager.openO2MilestoneDialogue({ playerType: this.playerType });
+        }
+
+        // Post-dialogue actions:
+        // 1. Send the boss
+        this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
+
+        // 2. Play warning alert overlay
+        window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+            detail: { type: bossType, goalKey: 'o2Bubble' }
+        }));
+
+        // 3. Re-enable input
+        this.setInputEnabled(true);
+    }
+
     chooseFoundryDiscoveryPosition() {
         const anchor = this.getBiomeAnchorPosition();
         const random = this.createSeededRandom(this.hashTile(
@@ -4218,6 +4333,7 @@ export class ThreeGame {
     }
 
     ensureO2BubbleVisualState() {
+        if (this.o2StartupSequenceActive) return;
         this.createO2BubbleObjects();
         const generatorState = this.getO2GeneratorState();
         const generatorPos = this.getActiveO2GeneratorPosition();
@@ -4947,7 +5063,7 @@ export class ThreeGame {
             }
         }
 
-        if (this.o2BubbleObjects?.ring?.visible) {
+        if (this.o2BubbleObjects?.ring?.visible && !this.o2StartupSequenceActive) {
             const t = performance.now() * 0.001;
             const ringBaseScale = Math.max(0.01, generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS);
             const pulse = ringBaseScale * (0.97 + Math.sin(t * 2.2) * 0.06);
@@ -5452,17 +5568,19 @@ export class ThreeGame {
             this.playerEmitterGlow.material.opacity = 0.58 * lerp(1.16, 0.46, dayBlend);
         }
 
-        // Fog eases in at night (color stays under biome control; only the range
-        // is touched here). Keep the far plane close enough to remain visible.
-        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 1.0, this.baseFogRange.near * 1.05, dayBlend);
-        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 1.08, this.baseFogRange.far * 1.25, dayBlend);
+        // Keep night visibility screen-radial. Three.js fog is camera-depth
+        // based in this isometric view, which makes the top of the canvas darker
+        // than the bottom and makes "up-screen" flashlight aim feel weaker.
+        // The darkness canvas owns night falloff; fog stays mostly atmospheric.
+        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 4.0, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 12.0, this.baseFogRange.far * 1.25, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
         const wMult = this.nightVision ? 1 : (this.weather?.fogFarMult ?? 1);
         if (wMult !== 1) {
-            this.scene.fog.far *= wMult;
-            this.scene.fog.near *= Math.max(0.7, wMult);
+            this.scene.fog.far *= Math.max(0.72, wMult);
+            this.scene.fog.near *= Math.max(0.9, wMult);
         }
 
         // Radial darkness around the player. Darkest at night and in heavy weather.

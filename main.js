@@ -2996,9 +2996,9 @@ window.addEventListener('o2-bubble-activated', (event) => {
     if ((event?.detail?.level ?? 0) !== 1) return;
     showTacticalOverlay({
         title: 'O₂ FIELD ONLINE',
-        status: '> SAFE FIELD STABILIZED<br>> BASE LIGHT GRID IGNITING',
+        status: '> REPAIR SEQUENCE COMPLETE<br>> INITIALIZING SYSTEM REBOOT',
         progress: 100,
-        duration: 1500
+        duration: 2200
     });
 });
 window.addEventListener('milestone-boss-warning', () => {
@@ -3945,7 +3945,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.game = new ThreeGame({
                     parent: 'game-container',
                     playerType: targetType,
-                    bankManager
+                    bankManager,
+                    dialogueManager
                 });
                 window.game.nightVision = state.settings.nightVision;
             } catch (err) {

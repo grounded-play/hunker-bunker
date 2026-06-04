@@ -27,6 +27,27 @@ const CHOICE_REPLY = {
     tutorial: 'CONFIRMED. DISPLAYING OPERATIONAL BRIEFING NOW.'
 };
 
+const O2_MILESTONE_LINES = {
+    SCOUT: [
+        { text: "SYSTEM: O₂ FIELD LIFE SUPPORT AT 100%. BASE CONSOLE STABILIZED.", pauseMs: 400 },
+        { text: "MOTHERSHIP: AGENT. SCAN DETECTS A POWERED FABRICATION FOUNDRY IN SECTOR 9." },
+        { text: "MOTHERSHIP: COARDS UPLOADED TO THE COMPASS. GO AND LOCATE THAT FOUNDRY FOR GEAR PRINTING." },
+        { text: "WARNING: RADAR WARNING! A RETALIATION BOSS SIGNATURE IS CLOSING ON THE BASE." }
+    ],
+    TANK: [
+        { text: "SYSTEM: O₂ FIELD ACTIVE. STABILIZER SHIELD ENGAGED.", pauseMs: 400 },
+        { text: "MOTHERSHIP: TANK UNIT. LONG-RANGE SCANNER HAS RETRIEVED FABRICATOR SIGNAL COARDS." },
+        { text: "MOTHERSHIP: WE NEED THAT PRINTING STATION OPERATIONAL. LOCATE THE FOUNDRY IMMEDIATELY." },
+        { text: "ALERT: DEFENSIVE GRID WARNING! A HUGE CYBERSNAIL BOSS RETALIATION IS ON APPROACH." }
+    ],
+    ENGINEER: [
+        { text: "SYSTEM: O₂ GRID ONLINE. POWER DISTRIBUTED TO BASE FIXTURES.", pauseMs: 400 },
+        { text: "MOTHERSHIP: ENGINEER. AN ACTIVE FABRICATOR SIGNAL HAS BEEN INTERCEPTED NEARBY." },
+        { text: "MOTHERSHIP: FAB BAY ACCESSIBLE VIA IN-WORLD FOUNDRY. FOLLOW THE RADAR COMPASS EDGE." },
+        { text: "CAUTION: MILESTONE PROVOKED! A RETALIATION BOSS HAS INITIATED A COUNTERATTACK." }
+    ]
+};
+
 export class DialogueManager {
     constructor({
         dialogId = 'mothership-dialogue',
@@ -175,6 +196,89 @@ export class DialogueManager {
 
         await this.closeDialogue(runId);
         return choice;
+    }
+
+    async openO2MilestoneDialogue({ playerType = 'SCOUT' } = {}) {
+        if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) {
+            return;
+        }
+
+        this.cancelDialogue();
+
+        const runId = ++this.dialogueRunId;
+        this.activeDialogueRunId = runId;
+
+        this.applyClassTheme(playerType);
+        this.bodyEl.replaceChildren();
+        this.choicesEl.classList.add('hidden');
+        this.choicesEl.classList.remove('is-visible');
+
+        this.dialogEl.classList.remove('hidden');
+        this.dialogEl.classList.remove('is-revealed');
+        this.dialogEl.setAttribute('aria-hidden', 'false');
+        this.panelEl.classList.remove('is-closing');
+
+        requestAnimationFrame(() => {
+            if (this.activeDialogueRunId !== runId) return;
+            this.panelEl.classList.add('is-open');
+            window.setTimeout(() => {
+                if (this.activeDialogueRunId !== runId) return;
+                this.dialogEl.classList.add('is-revealed');
+            }, 220);
+        });
+
+        this.setInputEnabled?.(false);
+        window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
+        window.addEventListener('keydown', this.handleDialogueKey);
+
+        const lines = O2_MILESTONE_LINES[playerType] ?? O2_MILESTONE_LINES.SCOUT;
+
+        for (const line of lines) {
+            await this.typeLine(runId, line.text);
+            if (!this.isDialogueRunActive(runId)) return;
+
+            const pauseMs = line.pauseMs ?? DIALOGUE_LINE_GAP_MS;
+            await this.sleep(runId, pauseMs);
+            if (!this.isDialogueRunActive(runId)) return;
+        }
+
+        // Configure choices to show a single button
+        const skipLabel = this.skipBtn?.querySelector('.choice-card__label');
+        const skipHint = this.skipBtn?.querySelector('.choice-card__hint');
+        const origLabel = skipLabel ? skipLabel.textContent : '';
+        const origHint = skipHint ? skipHint.textContent : '';
+
+        if (skipLabel) skipLabel.textContent = "[A] ACKNOWLEDGED. GET READY.";
+        if (skipHint) skipHint.textContent = "CLOSE AND DEFEND BASE";
+
+        // Hide tutorial button for this dialogue
+        if (this.tutorialBtn) this.tutorialBtn.classList.add('hidden');
+
+        this.choicesEl.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            if (!this.isDialogueRunActive(runId)) return;
+            this.choicesEl.classList.add('is-visible');
+            this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+            window.setTimeout(() => {
+                if (!this.isDialogueRunActive(runId)) return;
+                this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+            }, 40);
+        });
+        window.AudioManager?.play('class_lock', { volume: 0.4 });
+
+        await new Promise((resolve) => {
+            this.activeChoiceResolver = resolve;
+        });
+
+        // Restore original labels
+        if (skipLabel) skipLabel.textContent = origLabel;
+        if (skipHint) skipHint.textContent = origHint;
+        if (this.tutorialBtn) this.tutorialBtn.classList.remove('hidden');
+
+        if (!this.isDialogueRunActive(runId)) return;
+
+        window.AudioManager?.play('ui_click', { volume: 0.6 });
+        await this.closeDialogue(runId);
     }
 
     async startTutorialSequence({ game, touchControlsEnabled = false } = {}) {
