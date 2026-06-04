@@ -1,6 +1,6 @@
 import { AudioManager } from './src/audio.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
-import { FabricatorManager, FAB_RECIPES } from './src/fabricator.js';
+import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST } from './src/fabricator.js';
 import { ProfileManager, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -2980,20 +2980,35 @@ function renderFabricationModal() {
     setTxt('fab-bank-coin', bank.coin ?? 0);
     setTxt('fab-bank-med', bank.med ?? 0);
 
+    const rollPanel = document.getElementById('fab-roll-panel');
     grid.innerHTML = '';
     if (renderFoundryActivationPanel(grid, bank)) {
+        rollPanel?.classList.add('hidden');
         setTxt('fab-summary', `FOUNDRY ACTIVATION: ${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
         return;
     }
 
+    // Bay is online → show the gamba roll panel and sync the roll button.
+    rollPanel?.classList.remove('hidden');
+    const rollBtn = document.getElementById('fab-roll-btn');
+    if (rollBtn && !fabRollSpinning) {
+        const canRoll = fabricator.canRoll(bankManager);
+        rollBtn.disabled = !canRoll;
+        rollBtn.classList.toggle('fab-roll-btn--locked', !canRoll);
+        rollBtn.innerHTML = canRoll
+            ? `ROLL FABRICATOR &nbsp;·&nbsp; ${fabCostMarkup(FAB_SPIN_COST)}`
+            : `INSUFFICIENT SALVAGE &nbsp;·&nbsp; ${fabCostText(FAB_SPIN_COST, bank, { showHaveNeed: true })}`;
+    }
+
     for (const recipe of FAB_RECIPES) {
         const fabricated = fabricator.isFabricated(recipe.id);
-        const printing = fabricator.isPrinting(recipe.id);
-        const affordable = fabricator.canFabricate(recipe.id, bankManager);
-        const pct = Math.round(fabricator.getPrintProgress(recipe.id) * 100);
 
+        // Collection card: display-only. Owned schematics are revealed; unowned
+        // show as locked silhouettes you can still win from a roll. Rarity tints
+        // the border so the collection reads at a glance.
+        const rarity = (recipe.rarity ?? 'COMMON').toLowerCase();
         const card = document.createElement('div');
-        card.className = ['fab-card', fabricated ? 'fab-card--done' : '', printing ? 'fab-card--printing' : ''].filter(Boolean).join(' ');
+        card.className = ['fab-card', `fab-card--${rarity}`, fabricated ? 'fab-card--done' : 'fab-card--locked'].filter(Boolean).join(' ');
 
         const art = document.createElement('div');
         art.className = 'fab-card__art';
@@ -3001,51 +3016,24 @@ function renderFabricationModal() {
         img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
         img.addEventListener('error', () => { img.src = '/bunker_junk_rare.png'; }, { once: true });
         art.appendChild(img);
-        if (printing) {
-            const bar = document.createElement('div');
-            bar.className = 'fab-card__progress';
-            bar.innerHTML = `<div class="fab-card__progress-fill" style="width:${pct}%"></div>`;
-            art.appendChild(bar);
-        }
+        const rarityTag = document.createElement('span');
+        rarityTag.className = 'fab-card__rarity';
+        rarityTag.textContent = recipe.rarity ?? 'COMMON';
+        art.appendChild(rarityTag);
         card.appendChild(art);
 
         const name = document.createElement('div');
         name.className = 'fab-card__name';
-        name.innerHTML = `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`;
+        name.innerHTML = fabricated
+            ? `<span class="fab-card__klass">${recipe.klass}</span>${recipe.name}`
+            : `<span class="fab-card__klass">${recipe.klass}</span>??? LOCKED`;
         card.appendChild(name);
 
-        const blurb = document.createElement('div');
-        blurb.className = 'fab-card__blurb';
-        blurb.textContent = recipe.blurb;
-        card.appendChild(blurb);
+        const status = document.createElement('div');
+        status.className = 'fab-card__status';
+        status.textContent = fabricated ? '✓ FABRICATED' : 'NOT YET FABRICATED';
+        card.appendChild(status);
 
-        const cost = document.createElement('div');
-        cost.className = 'fab-card__cost';
-        cost.innerHTML = fabCostMarkup(recipe.cost);
-        card.appendChild(cost);
-
-        const btn = document.createElement('button');
-        btn.className = 'fab-card__btn';
-        if (fabricated) {
-            btn.textContent = '✓ FABRICATED'; btn.disabled = true; btn.classList.add('fab-card__btn--done');
-        } else if (printing) {
-            btn.textContent = `PRINTING ${pct}%`; btn.disabled = true;
-        } else if (!affordable) {
-            btn.textContent = 'INSUFFICIENT SALVAGE'; btn.disabled = true; btn.classList.add('fab-card__btn--locked');
-        } else {
-            btn.textContent = 'ROLL FABRICATOR';
-            btn.addEventListener('click', () => {
-                const rolled = fabricator.startRandomPrint(bankManager);
-                if (rolled) {
-                    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-                    renderFabricationModal();
-                    startFabTicker();
-                } else {
-                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-                }
-            });
-        }
-        card.appendChild(btn);
         grid.appendChild(card);
     }
     setTxt('fab-summary', `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`);
@@ -3061,6 +3049,68 @@ function startFabTicker() {
     }, 500);
 }
 function stopFabTicker() { if (fabTicker) { clearInterval(fabTicker); fabTicker = null; } }
+
+// ── Fabricator gamba reveal (T7) ──────────────────────────────
+const RARITY_TILES = ['COMMON', 'COMMON', 'RARE', 'COMMON', 'RARE', 'EPIC', 'RARE', 'COMMON', 'EPIC', 'LEGENDARY'];
+let fabRollSpinning = false;
+
+function runFabricatorRoll() {
+    if (fabRollSpinning) return;
+    const result = fabricator.rollFabrication(bankManager);
+    if (!result) { window.AudioManager?.play?.('ui_error', { volume: 0.5 }); return; }
+
+    fabRollSpinning = true;
+    const reveal = document.getElementById('fab-reveal');
+    const strip = document.getElementById('fab-reveal-strip');
+    const cardEl = document.getElementById('fab-reveal-card');
+    const rollBtn = document.getElementById('fab-roll-btn');
+    if (rollBtn) { rollBtn.disabled = true; rollBtn.textContent = 'FABRICATING…'; }
+    window.AudioManager?.play?.('door_gears_spin', { volume: 0.4 });
+
+    // Build a long strip of rarity tiles; the winner lands under the marker.
+    const TILE = 92; // px (matches CSS tile width + gap)
+    const WIN_INDEX = 28;
+    const tiles = [];
+    for (let i = 0; i < 34; i++) {
+        tiles.push(i === WIN_INDEX ? result.rarity : RARITY_TILES[Math.floor(Math.random() * RARITY_TILES.length)]);
+    }
+    if (strip) {
+        strip.innerHTML = tiles.map((r) => `<div class="fab-tile fab-tile--${r.toLowerCase()}">${r}</div>`).join('');
+        strip.style.transition = 'none';
+        strip.style.transform = 'translateX(0)';
+    }
+    if (reveal) reveal.dataset.state = 'spinning';
+    if (cardEl) cardEl.innerHTML = '';
+
+    // Kick the animation on the next frame so the transition applies.
+    requestAnimationFrame(() => {
+        if (!strip) return;
+        const wrap = document.getElementById('fab-reveal-strip-wrap');
+        const center = (wrap?.clientWidth ?? 320) / 2;
+        const target = -(WIN_INDEX * TILE) + center - TILE / 2;
+        strip.style.transition = 'transform 3.2s cubic-bezier(0.12, 0.8, 0.18, 1)';
+        strip.style.transform = `translateX(${target}px)`;
+    });
+
+    setTimeout(() => {
+        const r = result.rarity;
+        const rec = result.recipe;
+        if (reveal) reveal.dataset.state = 'revealed';
+        if (cardEl) {
+            cardEl.className = `fab-reveal__card fab-reveal__card--${r.toLowerCase()}`;
+            cardEl.innerHTML =
+                `<img class="fab-reveal__art" src="${rec.art}" alt="${rec.name}" onerror="this.src='/bunker_junk_rare.png'">` +
+                `<div class="fab-reveal__rarity">${r}${result.duplicate ? ' · DUPLICATE' : ''}</div>` +
+                `<div class="fab-reveal__name">${rec.name}</div>` +
+                `<div class="fab-reveal__klass">${rec.klass}${result.duplicate ? ' · ALREADY OWNED' : ' · SCHEMATIC UNLOCKED'}</div>`;
+        }
+        window.AudioManager?.playProceduralLoot?.('weapon', r.toLowerCase());
+        fabRollSpinning = false;
+        renderFabricationModal();
+    }, 3300);
+}
+
+document.getElementById('fab-roll-btn')?.addEventListener('click', runFabricatorRoll);
 
 function openFabricationModal() {
     fabricator.tickPrints();

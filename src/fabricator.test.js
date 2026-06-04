@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { FabricatorManager, FAB_RECIPES, getRecipe } from './fabricator.js';
+import { FabricatorManager, FAB_RECIPES, getRecipe, rollRarity, FAB_SPIN_COST, getRecipesByRarity } from './fabricator.js';
 
 function makeStorage() {
     const map = new Map();
@@ -95,6 +95,39 @@ describe('FabricatorManager', () => {
         const poor = makeBank({ tech: 0, coin: 0, med: 0 });
         expect(fab.getRandomFabricationCandidates(poor)).toEqual([]);
         expect(fab.startRandomPrint(poor, () => 0)).toBeNull();
+    });
+
+    it('every recipe has a valid rarity tier', () => {
+        const tiers = new Set(['COMMON', 'RARE', 'EPIC', 'LEGENDARY']);
+        for (const r of FAB_RECIPES) expect(tiers.has(r.rarity)).toBe(true);
+        // At least one of each of the lower tiers exists so rolls have a pool.
+        expect(getRecipesByRarity('COMMON').length).toBeGreaterThan(0);
+        expect(getRecipesByRarity('RARE').length).toBeGreaterThan(0);
+    });
+
+    it('rollRarity maps the weighted bands deterministically (40/40/17/3)', () => {
+        expect(rollRarity(() => 0.0)).toBe('COMMON');     // 0.00 < 0.40
+        expect(rollRarity(() => 0.39)).toBe('COMMON');
+        expect(rollRarity(() => 0.50)).toBe('RARE');      // 0.40..0.80
+        expect(rollRarity(() => 0.79)).toBe('RARE');
+        expect(rollRarity(() => 0.90)).toBe('EPIC');      // 0.80..0.97
+        expect(rollRarity(() => 0.99)).toBe('LEGENDARY'); // 0.97..1.00
+    });
+
+    it('rollFabrication spends the spin cost and reveals an owned schematic', () => {
+        const before = { ...bank.bal };
+        const result = fab.rollFabrication(bank, () => 0); // COMMON tier, first of pool
+        expect(result).not.toBeNull();
+        expect(result.rarity).toBe('COMMON');
+        expect(bank.bal.tech).toBe(before.tech - FAB_SPIN_COST.tech);
+        expect(bank.bal.coin).toBe(before.coin - FAB_SPIN_COST.coin);
+        expect(fab.isFabricated(result.recipe.id)).toBe(true);
+    });
+
+    it('rollFabrication returns null and spends nothing when broke', () => {
+        const poor = makeBank({ tech: 0, coin: 0, med: 0 });
+        expect(fab.rollFabrication(poor, () => 0)).toBeNull();
+        expect(fab.getFabricatedCount()).toBe(0);
     });
 
     it('persists prints and fabricated state across reloads', () => {

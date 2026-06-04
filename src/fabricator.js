@@ -14,15 +14,41 @@ const STORAGE_KEY = 'hb_fabricator_v1';
 // Recipes — each maps to a curated schematic card. Costs draw on the same
 // salvage currencies the loot HUD tracks (tech / coin / med).
 export const FAB_RECIPES = Object.freeze([
-    { id: 'mk1_sidearm',   name: 'MARK-I SIDEARM',    klass: 'WEAPON', art: '/schematics/schematic_00.webp', cost: { tech: 8,  coin: 4,  med: 0 }, printSeconds: 6,  blurb: 'Reliable fallback pistol. First print off the line.' },
-    { id: 'pulse_carbine', name: 'PULSE CARBINE',      klass: 'WEAPON', art: '/schematics/schematic_01.webp', cost: { tech: 14, coin: 8,  med: 0 }, printSeconds: 10, blurb: 'Mid-range energy carbine with a tight spread.' },
-    { id: 'scatter_rep',   name: 'SCATTER REPEATER',   klass: 'WEAPON', art: '/schematics/schematic_02.webp', cost: { tech: 12, coin: 6,  med: 0 }, printSeconds: 9,  blurb: 'Close-quarters spread weapon. Brutal in corridors.' },
-    { id: 'rail_marksman', name: 'RAIL MARKSMAN',      klass: 'WEAPON', art: '/schematics/schematic_03.webp', cost: { tech: 20, coin: 12, med: 0 }, printSeconds: 16, blurb: 'Long-line railgun. Punches through armor.' },
-    { id: 'neon_smg',      name: 'NEON SMG',           klass: 'WEAPON', art: '/schematics/schematic_04.webp', cost: { tech: 16, coin: 10, med: 0 }, printSeconds: 12, blurb: 'High fire-rate SMG. Loud, fast, pink.' },
-    { id: 'cryo_lance',    name: 'CRYO LANCE',         klass: 'WEAPON', art: '/schematics/schematic_05.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 14, blurb: 'Freezing lance. Slows whatever it hits.' },
-    { id: 'salvage_drill', name: 'SALVAGE DRILL',      klass: 'TOOL',   art: '/schematics/schematic_06.webp', cost: { tech: 10, coin: 14, med: 0 }, printSeconds: 11, blurb: 'Powered drill. Cracks junk piles wide open.' },
-    { id: 'exo_plating',   name: 'EXOSUIT PLATING',    klass: 'MODULE', art: '/schematics/schematic_07.webp', cost: { tech: 22, coin: 16, med: 6 }, printSeconds: 20, blurb: 'Layered hull plating. Hardens the exosuit shell.' }
+    { id: 'mk1_sidearm',   name: 'MARK-I SIDEARM',    klass: 'WEAPON', rarity: 'COMMON',    art: '/schematics/schematic_00.webp', cost: { tech: 8,  coin: 4,  med: 0 }, printSeconds: 6,  blurb: 'Reliable fallback pistol. First print off the line.' },
+    { id: 'pulse_carbine', name: 'PULSE CARBINE',      klass: 'WEAPON', rarity: 'RARE',      art: '/schematics/schematic_01.webp', cost: { tech: 14, coin: 8,  med: 0 }, printSeconds: 10, blurb: 'Mid-range energy carbine with a tight spread.' },
+    { id: 'scatter_rep',   name: 'SCATTER REPEATER',   klass: 'WEAPON', rarity: 'COMMON',    art: '/schematics/schematic_02.webp', cost: { tech: 12, coin: 6,  med: 0 }, printSeconds: 9,  blurb: 'Close-quarters spread weapon. Brutal in corridors.' },
+    { id: 'rail_marksman', name: 'RAIL MARKSMAN',      klass: 'WEAPON', rarity: 'EPIC',      art: '/schematics/schematic_03.webp', cost: { tech: 20, coin: 12, med: 0 }, printSeconds: 16, blurb: 'Long-line railgun. Punches through armor.' },
+    { id: 'neon_smg',      name: 'NEON SMG',           klass: 'WEAPON', rarity: 'RARE',      art: '/schematics/schematic_04.webp', cost: { tech: 16, coin: 10, med: 0 }, printSeconds: 12, blurb: 'High fire-rate SMG. Loud, fast, pink.' },
+    { id: 'cryo_lance',    name: 'CRYO LANCE',         klass: 'WEAPON', rarity: 'EPIC',      art: '/schematics/schematic_05.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 14, blurb: 'Freezing lance. Slows whatever it hits.' },
+    { id: 'salvage_drill', name: 'SALVAGE DRILL',      klass: 'TOOL',   rarity: 'COMMON',    art: '/schematics/schematic_06.webp', cost: { tech: 10, coin: 14, med: 0 }, printSeconds: 11, blurb: 'Powered drill. Cracks junk piles wide open.' },
+    { id: 'exo_plating',   name: 'EXOSUIT PLATING',    klass: 'MODULE', rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 22, coin: 16, med: 6 }, printSeconds: 20, blurb: 'Layered hull plating. Hardens the exosuit shell.' }
 ]);
+
+// Flat "spin" cost for a fabricator roll (mothership's gamba metaphor, in HB
+// salvage). Rolling gambles this cost for a rarity-weighted schematic reveal.
+export const FAB_SPIN_COST = Object.freeze({ tech: 10, coin: 8, med: 0 });
+
+// Rarity weights mirror mothership's gamba table (api/gamba rollRarity).
+export const RARITY_WEIGHTS = Object.freeze([
+    { rarity: 'COMMON',    weight: 0.40 },
+    { rarity: 'RARE',      weight: 0.40 },
+    { rarity: 'EPIC',      weight: 0.17 },
+    { rarity: 'LEGENDARY', weight: 0.03 }
+]);
+
+// Roll a rarity tier from the weighted table. `random` is injectable for tests.
+export function rollRarity(random = Math.random) {
+    let roll = random() * RARITY_WEIGHTS.reduce((s, r) => s + r.weight, 0);
+    for (const { rarity, weight } of RARITY_WEIGHTS) {
+        if (roll < weight) return rarity;
+        roll -= weight;
+    }
+    return RARITY_WEIGHTS[RARITY_WEIGHTS.length - 1].rarity;
+}
+
+export function getRecipesByRarity(rarity) {
+    return FAB_RECIPES.filter((r) => r.rarity === rarity);
+}
 
 export function getRecipe(id) {
     return FAB_RECIPES.find((r) => r.id === id) ?? null;
@@ -102,6 +128,43 @@ export class FabricatorManager {
         if (!candidates.length) return null;
         const index = Math.max(0, Math.min(candidates.length - 1, Math.floor(random() * candidates.length)));
         return this.startPrint(candidates[index].id, bank);
+    }
+
+    // True when the player can afford a fabricator roll.
+    canRoll(bank) {
+        return bank ? bank.canAfford(FAB_SPIN_COST) : false;
+    }
+
+    // The gamba: spend the flat spin cost, roll a rarity, and reveal a schematic
+    // from that tier (preferring ones not yet owned). Marks it fabricated instantly
+    // — the spin animation IS the wait. Returns { rarity, recipe, duplicate } or null.
+    rollFabrication(bank, random = Math.random) {
+        if (!this.canRoll(bank)) return null;
+        if (!bank.spend(FAB_SPIN_COST)) return null;
+
+        let rarity = rollRarity(random);
+        // Prefer an un-owned recipe at the rolled rarity; if that tier is fully
+        // owned, slide to any un-owned recipe; only repeat once everything is owned.
+        let pool = getRecipesByRarity(rarity).filter((r) => !this.isFabricated(r.id));
+        if (!pool.length) {
+            pool = FAB_RECIPES.filter((r) => !this.isFabricated(r.id));
+        }
+        let duplicate = false;
+        if (!pool.length) {
+            pool = getRecipesByRarity(rarity);
+            duplicate = true;
+        }
+        const recipe = pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
+        rarity = recipe.rarity;
+
+        if (!duplicate) {
+            delete this.state.prints[recipe.id];
+            this.state.fabricated[recipe.id] = true;
+            this.save();
+            emit('fabrication-complete', { id: recipe.id, recipe, rarity });
+        }
+        emit('fabrication-rolled', { id: recipe.id, recipe, rarity, duplicate });
+        return { rarity, recipe, duplicate };
     }
 
     // Spend salvage and queue the print. Returns the recipe on success, else null.

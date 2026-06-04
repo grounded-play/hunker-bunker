@@ -281,6 +281,18 @@
           <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span>COIN <b id="fab-bank-coin">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span>MED <b id="fab-bank-med">0</b></span>
         </div>
+        <!-- Gamba roll panel: spend a flat cost for a rarity-weighted reveal -->
+        <div id="fab-roll-panel" class="fab-roll-panel hidden">
+          <div id="fab-reveal" class="fab-reveal" data-state="idle">
+            <div class="fab-reveal__idle" id="fab-reveal-idle">INSERT SALVAGE TO FABRICATE</div>
+            <div class="fab-reveal__strip-wrap" id="fab-reveal-strip-wrap" aria-hidden="true">
+              <div class="fab-reveal__marker"></div>
+              <div class="fab-reveal__strip" id="fab-reveal-strip"></div>
+            </div>
+            <div class="fab-reveal__card" id="fab-reveal-card"></div>
+          </div>
+          <button class="fab-roll-btn" id="fab-roll-btn">ROLL FABRICATOR</button>
+        </div>
         <div id="fab-recipe-grid" class="fab-recipe-grid"></div>
       </div>
     </div>
