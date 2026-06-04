@@ -3127,7 +3127,50 @@ export class ThreeGame {
         this.baseLights?.update(delta);
         this.foundry?.update(delta);
         this.updateFoundryPrompt();
+        this.updateLoopStep();
         this.renderer.render(this.scene, this.camera);
+    }
+
+    // Derive the single "next action" for the persistent loop-state HUD (T1).
+    // Priority follows the arc spine, falling back to the mission/explore goal so
+    // a fresh player always knows the next step from the HUD alone.
+    getLoopStep() {
+        if (!this.player || this.isPlayerDead) return null;
+        const mission = this.missionState;
+        if (mission?.status === 'extracted') return { key: 'done', label: 'EXTRACTION COMPLETE' };
+
+        // Dead-suit recovery (T9) outranks everything when a box is in this sector.
+        if (this._blackBoxMarkerActive) return { key: 'blackbox', label: 'RECOVER BLACK BOX' };
+
+        const o2 = this.getO2GeneratorState();
+        const bossAlive = this.scatterSprites?.some(
+            (s) => s.userData?.isMilestone && !s.userData?.burstTriggered
+        );
+        if (bossAlive) return { key: 'defend', label: 'DEFEND THE BASE' };
+
+        const foundryRevealed = this.foundry?.isRevealed;
+        if (foundryRevealed) {
+            const atFoundry = this.foundry.isWithinInteractRange(
+                this.player.position.x,
+                this.player.position.z
+            );
+            return atFoundry
+                ? { key: 'fabricate', label: 'ACTIVATE FAB BAY  [E]' }
+                : { key: 'foundry', label: 'FOLLOW FOUNDRY SIGNAL' };
+        }
+
+        if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
+        if (!o2?.isOnline) return { key: 'o2', label: 'REPAIR O2 AT THE SHIP' };
+        if (mission?.type && mission.label) return { key: 'objective', label: mission.label };
+        return { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
+    }
+
+    updateLoopStep() {
+        const step = this.getLoopStep();
+        const key = step?.key ?? null;
+        if (key === this._lastLoopStepKey) return;
+        this._lastLoopStepKey = key;
+        window.dispatchEvent(new CustomEvent('loop-step-changed', { detail: step }));
     }
 
     updateLoreTerminals() {
@@ -4977,6 +5020,7 @@ export class ThreeGame {
             this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
             this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
             this.hadNearDeath = false;
+            this._lastLoopStepKey = null; // force the loop-state HUD to re-emit
             this._initClassAbility();
             if (this.crashedShips) {
                 for (const ship of this.crashedShips) {

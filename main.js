@@ -1703,6 +1703,31 @@ if (missionProgressHud) {
     });
 }
 
+// Persistent loop-state cue (T1): always shows the next action while in a run.
+window.addEventListener('loop-step-changed', (event) => {
+    const hud = document.getElementById('loop-step-hud');
+    const textEl = document.getElementById('loop-step-text');
+    if (!hud) return;
+    const step = event?.detail;
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (!step?.label || !isGameplayActive || isResettingRun) {
+        hud.classList.add('hidden');
+        return;
+    }
+    if (textEl) textEl.textContent = step.label;
+    hud.dataset.step = step.key ?? '';
+    hud.classList.remove('hidden');
+});
+
 const tutorialPrompt = document.getElementById('tutorial-prompt');
 if (tutorialPrompt) {
     tutorialPrompt.addEventListener('pointerdown', (event) => {

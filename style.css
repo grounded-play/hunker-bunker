@@ -4310,6 +4310,52 @@ body.mission-intro-active #game-container {
 
 .mission-progress-hud.hidden { display: none !important; }
 
+/* Persistent loop-state cue (T1): top-center, cyan, distinct from the amber
+   mission HUD. Always shows the player's next step. */
+.loop-step-hud {
+  position: absolute;
+  top: calc(var(--vu) * 4);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+  padding: calc(var(--vu) * 0.9) calc(var(--vu) * 2.4);
+  border: 1.5px solid rgba(0, 229, 255, 0.7);
+  border-radius: 999px;
+  background: rgba(8, 14, 18, 0.92);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.18), inset 0 0 8px rgba(0, 229, 255, 0.08);
+  z-index: 12060;
+  pointer-events: none;
+  font-family: 'Outfit', sans-serif;
+  max-width: 86vw;
+}
+
+.loop-step-hud.hidden { display: none !important; }
+
+.loop-step-hud__chevron {
+  color: rgba(0, 229, 255, 0.95);
+  font-weight: 900;
+  font-size: var(--font-sm);
+  animation: loop-step-pulse 1.4s ease-in-out infinite;
+}
+
+.loop-step-hud__text {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: #d6f7ff;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes loop-step-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 .mission-progress-hud__icon {
   font-family: 'Outfit', sans-serif;
   font-size: var(--font-xs);
