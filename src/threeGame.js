@@ -4089,8 +4089,11 @@ export class ThreeGame {
         if (!Number.isFinite(ship?.tileX) || !Number.isFinite(ship?.tileZ)) return;
         const cx = ship.tileX;
         const cz = ship.tileZ;
-        if (instant) this.baseLights.igniteInstant(cx, cz);
-        else this.baseLights.ignite(cx, cz);
+        const generatorState = this.getO2GeneratorState();
+        const radius = generatorState.isOnline ? generatorState.radius : 3.9;
+        const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+        if (instant) this.baseLights.igniteInstant(cx, cz, radius, color);
+        else this.baseLights.ignite(cx, cz, radius, color);
     }
 
     chooseFoundryDiscoveryPosition() {
@@ -4261,6 +4264,9 @@ export class ThreeGame {
             this.o2BubbleObjects.light.visible = false;
             this.o2BubbleObjects.fill.visible = false;
             this.o2BubbleObjects.ring.visible = false;
+            if (this.baseLights) {
+                this.baseLights.dispose();
+            }
             return;
         }
 
@@ -4278,8 +4284,17 @@ export class ThreeGame {
         // Returning to an already-online base: snap the flood-light grid and the
         // Foundry on with no theatrics. The animated versions only play on the live
         // first repair, which fires via the o2-generator-upgraded event before this.
-        if (this.baseLights && !this.baseLights.isIgnited) {
-            this.igniteBaseLights({ instant: true });
+        if (this.baseLights) {
+            const ship = this.getActiveShip();
+            if (ship && Number.isFinite(ship.tileX) && Number.isFinite(ship.tileZ)) {
+                const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+                if (!this.baseLights.isIgnited) {
+                    this.igniteBaseLights({ instant: true });
+                } else {
+                    this.baseLights.recenter(ship.tileX, ship.tileZ, generatorState.radius);
+                    this.baseLights.setColor(color);
+                }
+            }
         }
     }
 
