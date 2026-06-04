@@ -106,6 +106,12 @@
             CINEMA CLUB</a>
         </div>
 
+        <div style="margin-bottom: 20px;">
+          <span style="font-size: var(--font-xs); color: var(--text-muted); display: block; margin-bottom: 5px;">Source Code</span>
+          <a href="https://github.com/grounded-play/hunker-bunker" target="_blank" rel="noopener noreferrer"
+            style="color: var(--accent-primary); text-decoration: underline; font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px;">GITHUB REPOSITORY</a>
+        </div>
+
         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
           <span
             style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 5px; color: var(--text-main);">THANK
@@ -543,6 +549,12 @@
       <span class="prompt-text">OPEN FAB BAY</span>
     </div>
 
+    <!-- O2 Generator Prompt -->
+    <div id="o2-generator-hud-prompt" class="lore-hud-prompt o2-generator-hud-prompt hidden">
+      <span class="prompt-key">E</span>
+      <span class="prompt-text">UPGRADE O₂ GENERATOR</span>
+    </div>
+
     <!-- Lore Terminal Modal -->
     <div id="lore-modal" class="modal hidden" aria-live="polite">
       <div class="modal-content lore-modal-content">
@@ -636,8 +648,7 @@
                 </div>
               </div>
               <div class="terminal-bank-actions">
-                <button class="terminal-action-btn" id="terminal-deposit-all">DEPOSIT RUN LOOT</button>
-                <div class="terminal-bank-hint" id="terminal-bank-hint">DEPOSIT RESOURCES TO FUND O₂ REPAIRS.</div>
+                <div class="terminal-bank-hint" id="terminal-bank-hint">RUN LOOT AUTOMATICALLY SECURED AND BANKED.</div>
               </div>
             </div>
 
@@ -795,6 +806,33 @@
           <div class="telemetry-ticker" id="terminal-status-ticker">WARNING: RADIATION LEVELS DETECTED OUTSIDE SHIP ENCLOSURE. DOCK SECURE.</div>
         </div>
         </div><!-- /.terminal-body -->
+      </div>
+    </div>
+
+    <!-- In-world O2 Generator Upgrade Modal -->
+    <div id="o2-generator-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content o2-generator-modal-content">
+        <button class="close-modal" id="close-o2-generator-modal" aria-label="Close O2 generator">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+        <div class="terminal-header">
+          <div class="terminal-title">O₂ GENERATOR MODULE</div>
+          <div class="terminal-class-badge" id="o2-generator-modal-badge">FIELD STABILIZER</div>
+        </div>
+        <div class="terminal-body">
+          <div class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
+            <div class="action-card action-card--generator" data-goal-card="o2GeneratorWorld">
+              <div class="action-card-header">
+                <span class="action-title">SAFE FIELD OUTPUT</span>
+                <span class="action-cost" id="o2-generator-modal-status">ONLINE // LVL 1</span>
+              </div>
+              <p class="action-desc" id="o2-generator-modal-cost">NEXT COST: --</p>
+              <p class="action-desc" id="o2-generator-modal-field">FIELD RADIUS -- // REFILL --</p>
+              <p class="action-desc action-desc--hint" id="o2-generator-modal-hint">UPGRADES EXPAND THE BLUE O₂ FIELD.</p>
+              <button class="terminal-action-btn" id="o2-generator-modal-btn">UPGRADE FIELD RADIUS</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

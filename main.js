@@ -1,5 +1,5 @@
 import { AudioManager } from './src/audio.js';
-import { BankManager } from './src/bank.js';
+import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { FabricatorManager, FAB_RECIPES } from './src/fabricator.js';
 import { ProfileManager, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
@@ -2305,10 +2305,12 @@ function showTacticalOverlay({ title = 'SYSTEM UPDATE', status = '', progress = 
     if (loaderTitle) loaderTitle.textContent = title;
     if (loaderStatus) loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1.2s infinite ease-in-out;">${status}</div>`;
     if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    loadingScreen?.classList.add('tactical-mode');
     loadingScreen?.classList.remove('hidden');
     if (duration > 0) {
         tacticalOverlayTimer = setTimeout(() => {
             loadingScreen?.classList.add('hidden');
+            loadingScreen?.classList.remove('tactical-mode');
             tacticalOverlayTimer = null;
         }, duration);
     }
@@ -2878,6 +2880,69 @@ function fabCostMarkup(cost) {
     return parts.join('');
 }
 
+function getBankResourceAmount(bank, key) {
+    const value = Number(bank?.[key]);
+    return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+function fabCostText(cost, bank = bankManager.getState(), { showHaveNeed = false } = {}) {
+    const parts = [];
+    for (const [key, label] of [['tech', 'TECH'], ['coin', 'COIN'], ['med', 'MED']]) {
+        const need = Number(cost?.[key] ?? 0);
+        if (!Number.isFinite(need) || need <= 0) continue;
+        const normalizedNeed = Math.floor(need);
+        const have = getBankResourceAmount(bank, key);
+        parts.push(showHaveNeed ? `${label} ${have}/${normalizedNeed}` : `${normalizedNeed} ${label}`);
+    }
+    return parts.length ? parts.join(' / ') : 'NO COST';
+}
+
+function fabMissingResourceText(cost, bank = bankManager.getState()) {
+    const missing = [];
+    for (const [key, label] of [['tech', 'TECH'], ['coin', 'COIN'], ['med', 'MED']]) {
+        const need = Number(cost?.[key] ?? 0);
+        if (!Number.isFinite(need) || need <= 0) continue;
+        const delta = Math.max(0, Math.floor(need) - getBankResourceAmount(bank, key));
+        if (delta > 0) missing.push(`${delta} ${label}`);
+    }
+    return missing.length ? `NEED ${missing.join(' / ')}` : '';
+}
+
+function renderFoundryActivationPanel(grid, bank) {
+    const activated = bankManager.isFoundryActivated();
+    if (activated) return false;
+
+    const canActivate = bankManager.canActivateFoundry();
+    const missingText = fabMissingResourceText(FOUNDRY_ACTIVATION_COST, bank);
+    const panel = document.createElement('div');
+    panel.className = 'fab-activation-panel';
+    panel.innerHTML = `
+        <div class="fab-activation-panel__kicker">FOUNDRY LINK REQUIRED</div>
+        <div class="fab-activation-panel__title">ACTIVATE FABRICATION BAY</div>
+        <div class="fab-activation-panel__desc">Bring the in-world Foundry online before printing schematics.</div>
+        <div class="fab-activation-panel__cost">${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !canActivate })}</div>
+        <div class="fab-activation-panel__hint">${canActivate ? 'READY TO ACTIVATE' : missingText}</div>
+    `;
+    const btn = document.createElement('button');
+    btn.className = 'fab-card__btn';
+    btn.disabled = !canActivate;
+    btn.textContent = canActivate ? 'ACTIVATE FOUNDRY' : missingText;
+    if (!canActivate) btn.classList.add('fab-card__btn--locked');
+    btn.addEventListener('click', () => {
+        if (bankManager.activateFoundry()) {
+            window.AudioManager?.play?.('class_lock', { volume: 0.55 });
+            renderFabricationModal();
+            refreshFabAccess();
+        } else {
+            window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+            renderFabricationModal();
+        }
+    });
+    panel.appendChild(btn);
+    grid.appendChild(panel);
+    return true;
+}
+
 function renderFabricationModal() {
     const grid = document.getElementById('fab-recipe-grid');
     if (!grid) return;
@@ -2888,6 +2953,11 @@ function renderFabricationModal() {
     setTxt('fab-bank-med', bank.med ?? 0);
 
     grid.innerHTML = '';
+    if (renderFoundryActivationPanel(grid, bank)) {
+        setTxt('fab-summary', `FOUNDRY ACTIVATION: ${fabCostText(FOUNDRY_ACTIVATION_COST, bank, { showHaveNeed: !bankManager.canActivateFoundry() })}`);
+        return;
+    }
+
     for (const recipe of FAB_RECIPES) {
         const fabricated = fabricator.isFabricated(recipe.id);
         const printing = fabricator.isPrinting(recipe.id);
@@ -2982,6 +3052,7 @@ function refreshFabAccess() {
     if (!btn) return;
     const online = (bankManager.getState().o2GeneratorLevel ?? 0) >= 1;
     btn.classList.toggle('hidden', !online);
+    btn.textContent = bankManager.isFoundryActivated() ? '◇ FAB BAY' : '◇ ACTIVATE FAB';
 }
 
 document.getElementById('fabrication-btn')?.addEventListener('click', openFabricationModal);
@@ -3002,12 +3073,7 @@ window.addEventListener('o2-bubble-activated', (event) => {
     });
 });
 window.addEventListener('milestone-boss-warning', () => {
-    showTacticalOverlay({
-        title: 'PERIMETER BREACH',
-        status: '> LARGE HOSTILE SIGNATURE CLOSING ON THE SHIP<br>> HOLD THE BASE UNTIL CONTACT IS CLEAR',
-        progress: 100,
-        duration: 2200
-    });
+    showBiomePrompt('> ALERT: PERIMETER BREACH — LARGE HOSTILE SIGNATURE CLOSING <');
 });
 window.addEventListener('foundry-discovered', (event) => {
     const distance = event?.detail?.distance;
@@ -3020,7 +3086,10 @@ window.addEventListener('foundry-discovered', (event) => {
     });
 });
 window.addEventListener('foundry-prompt-nearby', () => {
-    document.getElementById('foundry-hud-prompt')?.classList.remove('hidden');
+    const prompt = document.getElementById('foundry-hud-prompt');
+    const text = prompt?.querySelector('.prompt-text');
+    if (text) text.textContent = bankManager.isFoundryActivated() ? 'OPEN FAB BAY' : 'ACTIVATE FAB BAY';
+    prompt?.classList.remove('hidden');
 });
 window.addEventListener('foundry-prompt-clear', () => {
     document.getElementById('foundry-hud-prompt')?.classList.add('hidden');
@@ -3793,11 +3862,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         mainNightVisionToggle.checked = !!state.settings.nightVision;
     }
 
+    function getLoadingMessageForAsset(itemName) {
+        const name = itemName.toLowerCase();
+        
+        // Doors
+        if (name.includes('door_bio')) return 'CALIBRATING BIOMETRIC AIRLOCK GATEWAY';
+        if (name.includes('door_nuclear')) return 'SHIELDING REACTOR PILE COOLANT BULKHEAD';
+        if (name.includes('door_cryo')) return 'STABILIZING THERMAL SUPERCONDUCTOR SHIELD';
+        if (name.includes('door_alien')) return 'DECRYPTING XENO-TECHNOLOGY SECURITY CODES';
+        if (name.includes('door_rust')) return 'SEALING CORROSION-DECAYED OUTBOARD PORTS';
+        if (name.includes('door')) return 'ENGAGING SECTOR TRANSIT DOORWAY HYDRAULICS';
+        
+        // Snails / Enemies
+        if (name.includes('boss_cybersnail')) return 'PINPOINTING GIGAWATT GOLIATH RADAR PROFILE';
+        if (name.includes('boss_cryosnail')) return 'WARNING: DETECTING SEVERE LOCAL TEMPERATURE DROP';
+        if (name.includes('boss_sporesnail')) return 'DANGER: BIO-ORGANIC HULL CONTAGION CRITICAL';
+        if (name.includes('cybersnail')) return 'IDENTIFYING CORRIDOR CORROSIVE ANOMALIES';
+        if (name.includes('cryosnail')) return 'MEASURING GELID EXOSUIT DRAIN INDEX';
+        if (name.includes('sporesnail')) return 'MONITORING SUBTERRANEAN BIO-KINETIC PATHOGENS';
+        
+        // Biome Textures
+        if (name.includes('bunker_base') || name.includes('bunker_wall') || name.includes('bunker_grunge')) return 'MAPPING SECURE METAL-STRUCT CORRIDORS';
+        if (name.includes('cryo_base') || name.includes('cryo_grunge') || name.includes('cryo_wall')) return 'STABILIZING CRYOGENIC COOLANT PIPELINES';
+        if (name.includes('bio_base') || name.includes('bio_grunge') || name.includes('bio_wall')) return 'ISOLATING SPORE-INFESTED BIOSPHERES';
+        if (name.includes('ice_base') || name.includes('ice_grunge') || name.includes('ice_wall')) return 'SURVEYING GEOTHERMAL GLACIAL CAVERNS';
+        
+        // Junk / Salvage
+        if (name.includes('bunker_junk_legendary')) return 'DETECTING GOLD-SIGNATURE CORE CACHE';
+        if (name.includes('bunker_junk_rare')) return 'RADAR RESOLVING UNUSUAL HIGH-VALUE LOBES';
+        if (name.includes('bunker_junk_uncommon')) return 'FILTERING DUST SIGNALS FROM RECLAIMABLE METAL';
+        if (name.includes('bunker_junk')) return 'SCANNING RECLAIMABLE SALVAGE DEBRIS';
+        
+        // Modules
+        if (name.includes('module_o2')) return 'PREHEATING OXYGEN GENERATOR MIXER VALVE';
+        if (name.includes('module_hull')) return 'TUNING DEFENSIVE MATRIX CELL POLARITY';
+        if (name.includes('module_radar')) return 'ALIGNING HIGH-GAIN RADOME EM ANTENNA';
+        if (name.includes('module_reactor')) return 'VENTING COMPRESSOR LIQUID NITROGEN COOLER';
+        
+        // Hero portraits
+        if (name.includes('scout.full') || name.includes('scout_ship')) return 'ESTABLISHING FAST RECON SCOUT DATA-LINK';
+        if (name.includes('tank.full') || name.includes('tank_ship')) return 'BOOTING HEAVY EXOSUIT STRENGTH BUFFERS';
+        if (name.includes('eng.full') || name.includes('engineer_ship')) return 'UPLOADING NANOBOT FABRICATOR SUB-ROUTINES';
+        
+        // Audio / Backgrounds
+        if (name.includes('.mp3') || name.includes('.wav')) return 'STABILIZING TACTICAL AUDIO MATRIX FEED';
+        if (name.includes('bg.webp') || name.includes('menu_bg')) return 'BUFFERING INTERACTIVE DISPLAY SCHEMATICS';
+        if (name.includes('scatter_')) return 'CALIBRATING DEBRIS DEFLECTION ASSIST';
+        
+        return 'SYNCHRONIZING TACTICAL DATA FILE';
+    }
+
     // Load audio manifest (Critical elements only for splash & menu)
     const manifest = {
         images: [
             '/bg.webp',
             '/door.webp',
+            '/door_bio.png',
+            '/door_nuclear.png',
+            '/door_cryo.png',
+            '/door_alien.png',
+            '/door_rust.png',
             '/menu_bg.webp',
             '/ship_wreckage.png',
             '/scout_ship.png',
@@ -3934,9 +4058,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             await AudioManager.loadAssets(gameplayManifest, (progress, itemName) => {
                 if (loaderStatus && itemName) {
-                    const parts = itemName.split('/');
-                    const filename = parts[parts.length - 1];
-                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> LOADING GAMEPLAY: ${filename.toUpperCase()}</span></div>`;
+                    const msg = getLoadingMessageForAsset(itemName);
+                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
                 }
             });
 
@@ -3984,9 +4107,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await AudioManager.loadAssets(manifest, (progress, itemName) => {
         if (loaderBar) loaderBar.style.width = `${progress}%`;
         if (loaderStatus && itemName) {
-            const parts = itemName.split('/');
-            const filename = parts[parts.length - 1];
-            logs.push(`LOADING ASSET: ${filename.toUpperCase()}`);
+            const msg = getLoadingMessageForAsset(itemName);
+            logs.push(`> ${msg}...`);
             if (logs.length > maxLogs) {
                 logs.shift();
             }

@@ -224,6 +224,13 @@ body {
   gap: calc(var(--vu) * 0.4);
 }
 
+#loading-screen.tactical-mode {
+  background: rgba(11, 13, 15, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+
 /* --- Tactical Door Transition --- */
 #transition-overlay {
   --gear-focus-x: calc(var(--vu) * 141);
@@ -1815,6 +1822,12 @@ input:checked+.slider:before {
   padding: calc(var(--vu) * 6);
   width: calc(var(--vu) * 80);
   max-width: 90%;
+  /* Never exceed the padded modal area. Without this a tall modal spills off
+     the top/bottom edges (the parent .modal is centered + overflow:hidden),
+     hiding the close button; scroll within the modal instead. */
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   border-radius: 12px;
   box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
@@ -4513,7 +4526,15 @@ body.mission-intro-active #game-container {
   max-width: min(94vw, calc(var(--vu) * 150));
   width: min(94vw, calc(var(--vu) * 150));
   border-color: rgba(var(--fab-glow-rgb), 0.4) !important;
+  /* Pin the header (and its close button) and let the recipe grid own the
+     scroll, instead of letting the whole modal scroll past the X. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+
+.fab-header,
+.fab-bank-row { flex: 0 0 auto; }
 
 .fab-header {
   position: relative;
@@ -4569,8 +4590,59 @@ body.mission-intro-active #game-container {
   grid-template-columns: repeat(auto-fill, minmax(calc(var(--vu) * 26), 1fr));
   gap: calc(var(--vu) * 1.6);
   overflow-y: auto;
+  /* Flex within the modal column; min-height:0 lets it shrink so it scrolls
+     rather than forcing the modal taller than the viewport. */
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: 62vh;
   padding-right: calc(var(--vu) * 0.6);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--fab-glow-rgb), 0.5) transparent;
+}
+
+.fab-recipe-grid::-webkit-scrollbar { width: calc(var(--vu) * 1); }
+.fab-recipe-grid::-webkit-scrollbar-track { background: transparent; }
+.fab-recipe-grid::-webkit-scrollbar-thumb {
+  background: rgba(var(--fab-glow-rgb), 0.5);
+  border-radius: 4px;
+}
+
+.fab-activation-panel {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vu) * 1);
+  padding: calc(var(--vu) * 2.2);
+  min-height: calc(var(--vu) * 24);
+  justify-content: center;
+  text-align: center;
+  background: rgba(var(--fab-glow-rgb), 0.06);
+  border: 1px solid rgba(var(--fab-glow-rgb), 0.32);
+  border-radius: 8px;
+}
+
+.fab-activation-panel__kicker,
+.fab-activation-panel__hint {
+  font-size: var(--font-xs);
+  letter-spacing: 0.12em;
+  color: rgba(184, 244, 255, 0.72);
+}
+
+.fab-activation-panel__title {
+  font-size: var(--font-lg);
+  font-weight: 900;
+  color: #b8f4ff;
+}
+
+.fab-activation-panel__desc,
+.fab-activation-panel__cost {
+  font-size: var(--font-sm);
+  color: rgba(232, 239, 247, 0.84);
+}
+
+.fab-activation-panel__cost {
+  color: #f5d28b;
 }
 
 .fab-card {
@@ -4727,7 +4799,15 @@ body.mission-intro-active #game-container {
   max-width: min(94vw, calc(var(--vu) * 130));
   width: min(94vw, calc(var(--vu) * 130));
   border-color: rgba(var(--roster-glow-rgb), 0.4) !important;
+  /* Pin the header (and its close button); the weapon grid owns the scroll. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+
+.roster-header,
+.roster-section-label,
+.roster-hint { flex: 0 0 auto; }
 
 .roster-header { position: relative; text-align: center; margin-bottom: calc(var(--vu) * 2); }
 
@@ -4776,8 +4856,19 @@ body.mission-intro-active #game-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(calc(var(--vu) * 22), 1fr));
   gap: calc(var(--vu) * 1.4);
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: 56vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--roster-glow-rgb), 0.5) transparent;
+}
+
+.roster-weapon-grid::-webkit-scrollbar { width: calc(var(--vu) * 1); }
+.roster-weapon-grid::-webkit-scrollbar-track { background: transparent; }
+.roster-weapon-grid::-webkit-scrollbar-thumb {
+  background: rgba(var(--roster-glow-rgb), 0.5);
+  border-radius: 4px;
 }
 
 .roster-weapon {
@@ -4839,12 +4930,76 @@ body.mission-intro-active #game-container {
   text-align: center;
 }
 
-/* Foundry interact prompt — cyan accent, lifted above the lore prompt slot. */
+/* Foundry interact prompt — cyan accent, positioned in top-right corner. */
 .foundry-hud-prompt {
-  bottom: clamp(52px, calc(var(--vu) * 10), 110px);
-  border-color: rgba(0, 229, 255, 0.55) !important;
+  position: absolute !important;
+  top: calc(var(--vu) * 12) !important;
+  right: calc(var(--vu) * 4) !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(11, 13, 15, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.55) !important;
+  border-radius: 8px !important;
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 3) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: calc(var(--vu) * 2) !important;
+  z-index: 9999 !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.28), inset 0 0 8px rgba(0, 229, 255, 0.05) !important;
+  animation: prompt-float 2.5s infinite ease-in-out !important;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
   color: #8ef0ff !important;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.28) !important;
+}
+.foundry-hud-prompt.hidden {
+  display: none !important;
+}
+.foundry-hud-prompt.visible {
+  display: flex !important;
+  opacity: 1;
+}
+
+.o2-generator-hud-prompt {
+  position: absolute !important;
+  top: calc(var(--vu) * 12) !important;
+  right: calc(var(--vu) * 4) !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(11, 13, 15, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.5px solid rgba(92, 214, 255, 0.6) !important;
+  border-radius: 8px !important;
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 3) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: calc(var(--vu) * 2) !important;
+  z-index: 9999 !important;
+  box-shadow: 0 0 14px rgba(92, 214, 255, 0.3), inset 0 0 8px rgba(92, 214, 255, 0.05) !important;
+  animation: prompt-float 2.5s infinite ease-in-out !important;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  color: #b8f6ff !important;
+}
+.o2-generator-hud-prompt.hidden {
+  display: none !important;
+}
+.o2-generator-hud-prompt.visible {
+  display: flex !important;
+  opacity: 1;
+}
+
+.o2-generator-modal-content {
+  width: min(calc(var(--vu) * 92), calc(100% - clamp(18px, 4vw, 48px))) !important;
+  max-width: 720px;
 }
 
 .archive-modal-content {
@@ -5994,7 +6149,7 @@ body.mission-intro-active #game-container {
 
 /* ── Lore Terminal Prompt ──────────────────────────────────── */
 .lore-hud-prompt {
-  position: fixed;
+  position: absolute;
   bottom: clamp(12px, calc(var(--vu) * 4.5), 60px);
   left: 50%;
   transform: translateX(-50%);

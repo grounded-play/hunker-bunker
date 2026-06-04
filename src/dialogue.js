@@ -600,18 +600,9 @@ export class DialogueManager {
     async tutorialStepDeposit(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '⤴',
-            text: 'USE DEPOSIT ALL TO TRANSFER RUN RESOURCES INTO YOUR PERSISTENT BANK.'
+            text: 'RUN LOOT HAS BEEN AUTOMATICALLY SECURED AND BANKED.'
         });
-
-        const depositBtn = document.getElementById('terminal-deposit-all');
-        depositBtn?.classList.add('tutorial-focus-pulse');
-
-        const deposited = await this.waitForWindowEvent(runId, 'bank-deposited', 18000);
-        if (!deposited) {
-            await this.sleep(runId, 1800);
-        }
-
-        depositBtn?.classList.remove('tutorial-focus-pulse');
+        await this.sleep(runId, 2600);
         this.hideTutorialPrompt(runId);
     }
 

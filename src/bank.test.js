@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { BankManager, GOAL_COSTS, O2_GENERATOR_UPGRADES } from './bank.js';
+import { BankManager, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES } from './bank.js';
 
 function createMemoryStorage() {
     const memory = new Map();
@@ -23,12 +23,13 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         expect(bank.getState()).toEqual({
-            schemaVersion: 3,
+            schemaVersion: 4,
             med: 0,
             ammo: 0,
             tech: 0,
             coin: 0,
             o2GeneratorLevel: 0,
+            foundryActivated: false,
             unlocks: {
                 o2Bubble: false,
                 hullExpansion: false,
@@ -145,7 +146,7 @@ describe('BankManager', () => {
         });
     });
 
-    it('migrates a v2 save to v3 without resetting and adds weaponUpgrades', () => {
+    it('migrates a v2 save to v4 without resetting and adds newer fields', () => {
         const storage = createMemoryStorage();
         storage.setItem('hb_bank', JSON.stringify({
             schemaVersion: 2,
@@ -157,11 +158,36 @@ describe('BankManager', () => {
 
         const bank = new BankManager({ storage });
         const state = bank.getState();
-        expect(state.schemaVersion).toBe(3);
+        expect(state.schemaVersion).toBe(4);
         expect(state.tech).toBe(40); // preserved, not reset
         expect(state.weaponUpgrades).toEqual({
             ammoCapacity: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0
         });
+        expect(state.foundryActivated).toBe(false);
+    });
+
+    it('activates the foundry once using the activation cost and persists', () => {
+        const storage = createMemoryStorage();
+        const bank = new BankManager({ storage });
+
+        expect(bank.isFoundryActivated()).toBe(false);
+        expect(bank.canActivateFoundry()).toBe(false);
+        expect(bank.activateFoundry()).toBe(false);
+
+        bank.deposit(FOUNDRY_ACTIVATION_COST);
+        expect(bank.canActivateFoundry()).toBe(true);
+        expect(bank.activateFoundry()).toBe(true);
+        expect(bank.isFoundryActivated()).toBe(true);
+        expect(bank.getState()).toMatchObject({
+            med: 0,
+            tech: 0,
+            coin: 0,
+            foundryActivated: true
+        });
+
+        expect(bank.activateFoundry()).toBe(true);
+        const reloaded = new BankManager({ storage });
+        expect(reloaded.isFoundryActivated()).toBe(true);
     });
 
     it('purchases weapon upgrades, enforces cost + max level, and persists', () => {

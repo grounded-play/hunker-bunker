@@ -1,5 +1,7 @@
 const STORAGE_KEY = 'hb_bank';
-const BANK_SCHEMA_VERSION = 3;
+const BANK_SCHEMA_VERSION = 4;
+
+export const FOUNDRY_ACTIVATION_COST = Object.freeze({ tech: 25, coin: 10, med: 5 });
 
 // Weapon skill tree ("COMBAT MATRIX"). Levels are 0..maxLevel; costs[level] is the
 // price to advance FROM that level. Effects are applied in threeGame at run init.
@@ -135,6 +137,7 @@ function createDefaultState() {
         tech: 0,
         coin: 0,
         o2GeneratorLevel: 0,
+        foundryActivated: false,
         unlocks: {
             o2Bubble: false,
             hullExpansion: false,
@@ -169,6 +172,11 @@ function migrateBank(raw) {
             raw.weaponUpgrades = createDefaultWeaponUpgrades();
         }
         raw.schemaVersion = 3;
+    }
+    if (version < 4) {
+        // v3 → v4: add the persistent in-world Foundry activation flag.
+        raw.foundryActivated = Boolean(raw.foundryActivated);
+        raw.schemaVersion = 4;
     }
     return raw;
 }
@@ -205,6 +213,7 @@ function toSerializableState(raw) {
     base.ammo = clampCount(raw.ammo);
     base.tech = clampCount(raw.tech);
     base.coin = clampCount(raw.coin);
+    base.foundryActivated = Boolean(raw.foundryActivated);
 
     let derivedLevel = 0;
     if (raw.unlocks && typeof raw.unlocks === 'object') {
@@ -248,6 +257,7 @@ function cloneState(state) {
         tech: state.tech,
         coin: state.coin,
         o2GeneratorLevel: state.o2GeneratorLevel,
+        foundryActivated: Boolean(state.foundryActivated),
         unlocks: {
             ...state.unlocks
         },
@@ -407,6 +417,24 @@ export class BankManager {
         this.save();
         emit('o2-generator-upgraded', { level: upgrade.level, upgrade, bank: this.getState() });
         return upgrade;
+    }
+
+    isFoundryActivated() {
+        return Boolean(this.state.foundryActivated);
+    }
+
+    canActivateFoundry() {
+        if (this.isFoundryActivated()) return false;
+        return this.canAfford(FOUNDRY_ACTIVATION_COST);
+    }
+
+    activateFoundry() {
+        if (this.isFoundryActivated()) return true;
+        if (!this.spend(FOUNDRY_ACTIVATION_COST)) return false;
+        this.state.foundryActivated = true;
+        this.save();
+        emit('foundry-activated', { bank: this.getState() });
+        return true;
     }
 
     getGoalCost(goalKey) {

@@ -2138,6 +2138,7 @@ export class ThreeGame {
             }
             if (this.codeMatchesAction(event.code, 'interact')) {
                 this.interactWithConsole();
+                this.interactWithO2Generator();
                 this.interactWithLoreTerminal();
                 this.interactWithFoundry();
             }
@@ -2156,6 +2157,7 @@ export class ThreeGame {
             event.preventDefault();
             if (!this.isGameplayInputActive()) return;
             this.interactWithConsole();
+            this.interactWithO2Generator();
             this.interactWithFoundry();
         };
 
@@ -2180,6 +2182,12 @@ export class ThreeGame {
             }
 
             if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithO2Pointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithFoundryPointer(event.clientX, event.clientY)) {
                 return;
             }
 
@@ -2243,15 +2251,19 @@ export class ThreeGame {
             const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
             setTimeout(() => {
                 try { this.renderer?.compile?.(this.scene, this.camera); } catch { /* best effort */ }
-            }, 450);
+            }, 50);
             setTimeout(() => {
                 this.startO2StartupSequence(bossType);
-            }, 2300);
+            }, 100);
         };
         window.addEventListener('o2-generator-upgraded', this._onO2BaseLights);
 
         this.consolePromptEl = document.getElementById('console-hud-prompt');
         this.consolePromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+        this.o2PromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.foundryPromptEl = document.getElementById('foundry-hud-prompt');
+        this.foundryPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
@@ -2345,6 +2357,7 @@ export class ThreeGame {
             || window.HunkerOrientationLock?.isLocked?.()
             || document.body.classList.contains('mission-intro-active')
             || isVisible('console-terminal-modal')
+            || isVisible('o2-generator-modal')
             || isVisible('game-over-modal')
             || isVisible('mothership-dialogue')
             || isVisible('confirm-modal');
@@ -2375,15 +2388,25 @@ export class ThreeGame {
         this.clearGameplayInputState();
 
         this.activeInteractiveConsole = null;
+        this.activeInteractiveO2Generator = null;
         const promptEl = document.getElementById('console-hud-prompt');
         if (promptEl) {
             promptEl.classList.add('hidden');
             promptEl.classList.remove('visible');
         }
+        const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+        if (o2PromptEl) {
+            o2PromptEl.classList.add('hidden');
+            o2PromptEl.classList.remove('visible');
+        }
 
         const modal = document.getElementById('console-terminal-modal');
         if (modal && !modal.classList.contains('hidden')) {
             modal.classList.add('hidden');
+        }
+        const o2Modal = document.getElementById('o2-generator-modal');
+        if (o2Modal && !o2Modal.classList.contains('hidden')) {
+            o2Modal.classList.add('hidden');
         }
     }
 
@@ -3152,10 +3175,16 @@ export class ThreeGame {
 
     updateConsoles(delta, now) {
         if (this.performanceProfile === 'menu') {
+            this.activeInteractiveO2Generator = null;
             const promptEl = document.getElementById('console-hud-prompt');
             if (promptEl) {
                 promptEl.classList.add('hidden');
                 promptEl.classList.remove('visible');
+            }
+            const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+            if (o2PromptEl) {
+                o2PromptEl.classList.add('hidden');
+                o2PromptEl.classList.remove('visible');
             }
             return;
         }
@@ -3164,16 +3193,28 @@ export class ThreeGame {
         const hudActive = !document.getElementById('ui')?.classList.contains('hidden');
         if (!this.inputEnabled || !hudActive) {
             this.activeInteractiveConsole = null;
+            this.activeInteractiveO2Generator = null;
             const promptEl = document.getElementById('console-hud-prompt');
             if (promptEl) {
                 promptEl.classList.add('hidden');
                 promptEl.classList.remove('visible');
+            }
+            const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+            if (o2PromptEl) {
+                o2PromptEl.classList.add('hidden');
+                o2PromptEl.classList.remove('visible');
             }
             return;
         }
 
         let nearestConsole = null;
         let minDistance = Infinity;
+        const generatorState = this.getO2GeneratorState();
+        const generatorPos = this.getActiveO2GeneratorPosition();
+        const o2InRange = generatorState.isOnline
+            && generatorPos
+            && Math.hypot(this.player.position.x - generatorPos.x, this.player.position.z - generatorPos.z) < 2.8;
+        this.activeInteractiveO2Generator = o2InRange ? this.getActiveShip() : null;
 
         for (const ship of this.crashedShips) {
             if (!ship.isVisible) continue;
@@ -3233,12 +3274,43 @@ export class ThreeGame {
                 this.closeConsoleModal();
             }
         }
+
+        const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+        if (o2PromptEl) {
+            if (o2InRange) {
+                const actionText = o2PromptEl.querySelector('.prompt-text');
+                const promptKey = o2PromptEl.querySelector('.prompt-key');
+                const touchMoveControl = document.getElementById('touch-move-control');
+                const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
+                const shouldUseTapLabel = Boolean(touchMoveVisible);
+                if (actionText) actionText.textContent = `${shouldUseTapLabel ? 'TAP TO UPGRADE' : 'PRESS E TO UPGRADE'} O₂ GENERATOR`;
+                if (promptKey) {
+                    promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'E';
+                    promptKey.classList.toggle('prompt-key--tap', shouldUseTapLabel);
+                }
+                o2PromptEl.classList.add('visible');
+                o2PromptEl.classList.remove('hidden');
+            } else {
+                o2PromptEl.classList.add('hidden');
+                o2PromptEl.classList.remove('visible');
+                const modal = document.getElementById('o2-generator-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    this.closeO2GeneratorModal();
+                }
+            }
+        }
     }
 
     interactWithConsole() {
         if (!this.isGameplayInputActive()) return;
         if (!this.activeInteractiveConsole) return;
         this.openConsoleModal(this.activeInteractiveConsole);
+    }
+
+    interactWithO2Generator() {
+        if (!this.isGameplayInputActive()) return;
+        if (!this.activeInteractiveO2Generator) return;
+        this.openO2GeneratorModal(this.activeInteractiveO2Generator);
     }
 
     tryInteractWithConsolePointer(clientX, clientY) {
@@ -3264,6 +3336,37 @@ export class ThreeGame {
         }
 
         return false;
+    }
+
+    tryInteractWithO2Pointer(clientX, clientY) {
+        const ship = this.activeInteractiveO2Generator;
+        if (!ship || !this.isGameplayInputActive()) return false;
+
+        const modal = document.getElementById('o2-generator-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            return false;
+        }
+
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+        const generatorPos = this.getActiveO2GeneratorPosition();
+        if (!generatorPos) return false;
+
+        const dist = Math.hypot(worldPoint.x - generatorPos.x, worldPoint.z - generatorPos.z);
+        if (dist <= 1.35) {
+            this.openO2GeneratorModal(ship);
+            return true;
+        }
+
+        return false;
+    }
+
+    tryInteractWithFoundryPointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.foundry?.isRevealed) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+        if (!this.foundry.isWithinInteractRange(worldPoint.x, worldPoint.z)) return false;
+        return this.interactWithFoundry();
     }
 
     getSessionInventory() {
@@ -3331,26 +3434,54 @@ export class ThreeGame {
         };
     }
 
-    formatResourceCost(cost = {}) {
-        const rows = [];
-        const med = Number.isFinite(cost.med) ? Math.max(0, Math.floor(cost.med)) : 0;
-        const ammo = Number.isFinite(cost.ammo) ? Math.max(0, Math.floor(cost.ammo)) : 0;
-        const tech = Number.isFinite(cost.tech) ? Math.max(0, Math.floor(cost.tech)) : 0;
-        const coin = Number.isFinite(cost.coin) ? Math.max(0, Math.floor(cost.coin)) : 0;
+    getResourceAmount(source = {}, key) {
+        const value = Number(source?.[key]);
+        return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+    }
 
-        if (tech > 0) rows.push(`${tech} TECH`);
-        if (med > 0) rows.push(`${med} MED`);
-        if (ammo > 0) rows.push(`${ammo} AMMO`);
-        if (coin > 0) rows.push(`${coin} COIN`);
+    getResourceCostBreakdown(cost = {}, bankState = this.bank.getState()) {
+        return ['tech', 'med', 'ammo', 'coin']
+            .map((key) => {
+                const need = this.getResourceAmount(cost, key);
+                if (need <= 0) return null;
+                const have = this.getResourceAmount(bankState, key);
+                return {
+                    key,
+                    label: key.toUpperCase(),
+                    have,
+                    need,
+                    missing: Math.max(0, need - have)
+                };
+            })
+            .filter(Boolean);
+    }
+
+    getMissingResourceText(cost = {}, bankState = this.bank.getState()) {
+        const missing = this.getResourceCostBreakdown(cost, bankState)
+            .filter((entry) => entry.missing > 0)
+            .map((entry) => `${entry.missing} ${entry.label}`);
+        return missing.length > 0 ? `NEED ${missing.join(' / ')}` : '';
+    }
+
+    formatResourceCost(cost = {}, { bankState = null, showHaveNeed = false } = {}) {
+        const rows = [];
+        const breakdown = this.getResourceCostBreakdown(cost, bankState ?? this.bank.getState());
+        for (const entry of breakdown) {
+            rows.push(showHaveNeed
+                ? `${entry.label} ${entry.have}/${entry.need}`
+                : `${entry.need} ${entry.label}`);
+        }
 
         return rows.length > 0 ? rows.join(' / ') : 'NO COST';
     }
 
     getO2GeneratorButtonState(generatorState) {
+        const bankState = this.bank.getState();
         if (generatorState.maxed) {
             return {
                 stateClass: 'btn-state--online',
                 label: 'FIELD AT MAX RANGE',
+                hint: 'O2 GENERATOR OUTPUT IS MAXED.',
                 enabled: false
             };
         }
@@ -3359,6 +3490,7 @@ export class ThreeGame {
             return {
                 stateClass: 'btn-state--locked',
                 label: 'NO UPGRADE PATH',
+                hint: 'NO O2 UPGRADE PATH AVAILABLE.',
                 enabled: false
             };
         }
@@ -3368,7 +3500,8 @@ export class ThreeGame {
         if (!affordable) {
             return {
                 stateClass: 'btn-state--insufficient',
-                label: `NEED ${this.formatResourceCost(effectiveCost)}`,
+                label: this.getMissingResourceText(effectiveCost, bankState),
+                hint: this.getMissingResourceText(effectiveCost, bankState),
                 enabled: false
             };
         }
@@ -3376,6 +3509,7 @@ export class ThreeGame {
         return {
             stateClass: 'btn-state--available',
             label: generatorState.level === 0 ? 'REPAIR GENERATOR' : 'UPGRADE FIELD RADIUS',
+            hint: generatorState.level === 0 ? 'REPAIR READY.' : 'FIELD UPGRADE READY.',
             enabled: true
         };
     }
@@ -3400,7 +3534,7 @@ export class ThreeGame {
         if (!affordable) {
             return {
                 stateClass: 'btn-state--insufficient',
-                label: 'INSUFFICIENT RESOURCES',
+                label: 'RESOURCE DEFICIT',
                 enabled: false
             };
         }
@@ -3438,7 +3572,8 @@ export class ThreeGame {
         const costEl = document.getElementById(cardConfig.costId);
         if (costEl) {
             const discountTag = isDiscounted ? ' [ENG -20%]' : '';
-            costEl.textContent = `COST: ${this.formatResourceCost(cost)}${discountTag}`;
+            const missingText = affordable ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
+            costEl.textContent = `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !affordable })}${discountTag}${missingText}`;
         }
 
         const button = document.getElementById(cardConfig.buttonId);
@@ -3476,7 +3611,8 @@ export class ThreeGame {
             if (!cfg) continue;
             const alreadyUnlocked = Boolean(tier2Unlocks[key]);
             const prereqMet = !cfg.prereq || Boolean(unlocks[cfg.prereq]);
-            const canAfford = this.bank.canAfford(cfg.cost);
+            const cost = cfg.cost;
+            const canAfford = this.bank.canAfford(cost);
             const buildable = !alreadyUnlocked && prereqMet && canAfford;
 
             const statusEl = document.getElementById(`terminal-tier2-${key}-status`);
@@ -3487,12 +3623,13 @@ export class ThreeGame {
             }
             const costEl = document.getElementById(`terminal-tier2-${key}-cost`);
             if (costEl) {
-                costEl.textContent = alreadyUnlocked ? '' : `COST: ${cfg.cost.tech} TECH / ${cfg.cost.coin} COIN`;
+                const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
+                costEl.textContent = alreadyUnlocked ? '' : `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !canAfford })}${missingText}`;
             }
             const btn = document.getElementById(`terminal-btn-tier2-${key}`);
             if (!btn) continue;
             btn.disabled = !buildable;
-            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : 'INSTALL';
+            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : canAfford ? 'INSTALL' : this.getMissingResourceText(cost, bankState);
             btn.classList.toggle('btn-state--online', alreadyUnlocked);
             btn.classList.toggle('btn-state--available', buildable);
             btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && (!prereqMet || !canAfford));
@@ -3530,7 +3667,8 @@ export class ThreeGame {
             const level = Math.max(0, Math.floor(levels[key] ?? 0));
             const maxed = level >= cfg.maxLevel;
             const nextCost = maxed ? null : cfg.costs[level];
-            const canAfford = nextCost ? this.bank.canAfford(nextCost) : false;
+            const cost = nextCost ?? null;
+            const canAfford = cost ? this.bank.canAfford(cost) : false;
 
             const levelEl = document.getElementById(`terminal-weapon-${key}-level`);
             if (levelEl) levelEl.textContent = `LV ${level}/${cfg.maxLevel}`;
@@ -3544,13 +3682,14 @@ export class ThreeGame {
 
             const costEl = document.getElementById(`terminal-weapon-${key}-cost`);
             if (costEl) {
-                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ${nextCost.tech} TECH / ${nextCost.coin} COIN`;
+                const missingText = canAfford || !cost ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
+                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !canAfford })}${missingText}`;
             }
 
             const btn = document.getElementById(`terminal-btn-weapon-${key}`);
             if (!btn) continue;
             btn.disabled = maxed || !canAfford;
-            btn.textContent = maxed ? 'MAXED' : 'UPGRADE';
+            btn.textContent = maxed ? 'MAXED' : canAfford ? 'UPGRADE' : this.getMissingResourceText(cost, bankState);
             btn.classList.toggle('btn-state--online', maxed);
             btn.classList.toggle('btn-state--available', !maxed && canAfford);
             btn.classList.toggle('btn-state--insufficient', !maxed && !canAfford);
@@ -3663,6 +3802,10 @@ export class ThreeGame {
         }
 
         const statusEl = document.getElementById('terminal-o2-generator-status');
+        const o2Section = document.getElementById('o2-generator-section');
+        if (o2Section) {
+            o2Section.classList.toggle('hidden', generatorState.isOnline);
+        }
         if (statusEl) {
             statusEl.textContent = generatorState.isOnline
                 ? `ONLINE // LVL ${generatorState.level}`
@@ -3674,7 +3817,9 @@ export class ThreeGame {
             if (generatorState.nextUpgrade) {
                 const effectiveCost = this.getEffectiveCost(generatorState.nextUpgrade.cost);
                 const discountTag = this.playerType === 'ENGINEER' ? ' [ENG -20%]' : '';
-                costEl.textContent = `NEXT COST: ${this.formatResourceCost(effectiveCost)}${discountTag}`;
+                const canAfford = this.bank.canAfford(effectiveCost);
+                const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(effectiveCost, bankState)}`;
+                costEl.textContent = `NEXT COST: ${this.formatResourceCost(effectiveCost, { bankState, showHaveNeed: !canAfford })}${discountTag}${missingText}`;
             } else {
                 costEl.textContent = 'NEXT COST: NONE';
             }
@@ -3692,7 +3837,9 @@ export class ThreeGame {
             if (generatorState.maxed) {
                 generatorHint.textContent = 'O₂ GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.';
             } else if (!generatorState.isOnline) {
-                generatorHint.textContent = 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.';
+                const effectiveCost = generatorState.nextUpgrade ? this.getEffectiveCost(generatorState.nextUpgrade.cost) : {};
+                const missingText = this.getMissingResourceText(effectiveCost, bankState);
+                generatorHint.textContent = missingText || 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.';
             } else {
                 generatorHint.textContent = 'UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT.';
             }
@@ -3809,7 +3956,7 @@ export class ThreeGame {
         return msg;
     }
 
-    handleDepositAll(ship) {
+    handleDepositAll(ship, { silentIfEmpty = false, quiet = false } = {}) {
         const inventory = this.getSessionInventory();
         const depositPayload = {
             med: Math.max(0, Math.floor(inventory.health ?? 0)),
@@ -3819,7 +3966,9 @@ export class ThreeGame {
         const depositableTotal = depositPayload.med + depositPayload.tech + depositPayload.coin;
 
         if (depositableTotal <= 0) {
-            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            if (!silentIfEmpty) {
+                window.AudioManager?.play('ui_error', { volume: 0.58 });
+            }
             this.renderConsoleBanking(ship);
             return;
         }
@@ -3833,7 +3982,9 @@ export class ThreeGame {
             weapon: depositPayload.tech,
             coin: depositPayload.coin
         });
-        window.AudioManager?.play('ui_click', { volume: 0.62 });
+        if (!quiet) {
+            window.AudioManager?.play('ui_click', { volume: 0.62 });
+        }
         this.renderConsoleBanking(ship);
     }
 
@@ -3872,6 +4023,7 @@ export class ThreeGame {
         this.emitVitalsState();
         window.AudioManager?.play('class_lock', { volume: 0.55 });
         this.renderConsoleBanking(ship);
+        this.renderO2GeneratorModal(ship);
     }
 
     attemptO2GeneratorUpgrade(ship) {
@@ -3912,6 +4064,7 @@ export class ThreeGame {
         }));
         window.AudioManager?.play('class_lock', { volume: 0.55 });
         this.renderConsoleBanking(ship);
+        this.renderO2GeneratorModal(ship);
     }
 
     attemptMedConversion(ship) {
@@ -3955,6 +4108,7 @@ export class ThreeGame {
         }
 
         this.syncPersistentUpgrades();
+        this.handleDepositAll(ship, { silentIfEmpty: true, quiet: true });
         this.renderConsoleBanking(ship);
 
         const depositBtn = document.getElementById('terminal-deposit-all');
@@ -3986,6 +4140,73 @@ export class ThreeGame {
         if (modal) {
             window.AudioManager?.play('ui_click', { volume: 0.5 });
             modal.classList.add('hidden');
+        }
+    }
+
+    renderO2GeneratorModal(ship = this.getActiveShip()) {
+        const bankState = this.bank.getState();
+        const generatorState = this.getO2GeneratorState(bankState);
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(value);
+        };
+        const badge = document.getElementById('o2-generator-modal-badge');
+        if (badge) {
+            badge.textContent = `${ship?.type ?? this.playerType} FIELD STABILIZER`;
+        }
+        setText('o2-generator-modal-status', generatorState.isOnline
+            ? `ONLINE // LVL ${generatorState.level}`
+            : 'OFFLINE // REPAIR REQUIRED');
+        setText('o2-generator-modal-field', generatorState.isOnline
+            ? `FIELD RADIUS ${generatorState.radius.toFixed(1)}u // REFILL ${generatorState.refillRate.toFixed(1)}%/s`
+            : 'FIELD RADIUS 0.0u // REFILL OFFLINE');
+
+        const buttonState = this.getO2GeneratorButtonState(generatorState);
+        const effectiveCost = generatorState.nextUpgrade
+            ? this.getEffectiveCost(generatorState.nextUpgrade.cost)
+            : null;
+        if (effectiveCost) {
+            const canAfford = this.bank.canAfford(effectiveCost);
+            const discountTag = this.playerType === 'ENGINEER' ? ' [ENG -20%]' : '';
+            const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(effectiveCost, bankState)}`;
+            setText('o2-generator-modal-cost', `NEXT COST: ${this.formatResourceCost(effectiveCost, { bankState, showHaveNeed: !canAfford })}${discountTag}${missingText}`);
+        } else {
+            setText('o2-generator-modal-cost', 'NEXT COST: NONE');
+        }
+        setText('o2-generator-modal-hint', generatorState.maxed
+            ? 'O2 GENERATOR OUTPUT IS MAXED.'
+            : buttonState.hint || 'UPGRADES EXPAND THE BLUE O2 FIELD.');
+
+        const btn = document.getElementById('o2-generator-modal-btn');
+        if (btn) {
+            btn.textContent = buttonState.label;
+            btn.disabled = !buttonState.enabled;
+            btn.classList.remove('btn-state--online', 'btn-state--locked', 'btn-state--insufficient', 'btn-state--available');
+            btn.classList.add(buttonState.stateClass);
+            btn.onclick = () => this.attemptO2GeneratorUpgrade(ship ?? this.getActiveShip());
+        }
+    }
+
+    openO2GeneratorModal(ship = this.getActiveShip()) {
+        const modal = document.getElementById('o2-generator-modal');
+        if (!modal) return;
+        this.syncPersistentUpgrades();
+        this.renderO2GeneratorModal(ship);
+        const closeBtn = document.getElementById('close-o2-generator-modal');
+        if (closeBtn) {
+            closeBtn.onclick = () => this.closeO2GeneratorModal();
+        }
+        window.AudioManager?.play('ui_scan_ping', { volume: 0.55 });
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    closeO2GeneratorModal() {
+        const modal = document.getElementById('o2-generator-modal');
+        if (modal) {
+            window.AudioManager?.play('ui_click', { volume: 0.45 });
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
         }
     }
 
@@ -5767,6 +5988,15 @@ export class ThreeGame {
         overlay.style.opacity = '1';
     }
 
+    buildFlashlightScreenPath(ctx, points) {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.closePath();
+    }
+
     carveFlashlightDarkness(ctx, w, h) {
         const cone = this.playerForwardCone;
         const attr = this._conePositionAttr;
@@ -5795,14 +6025,13 @@ export class ThreeGame {
         }
         if (points.length < 3) return;
 
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 1; i < points.length; i++) {
-            ctx.lineTo(points[i].x, points[i].y);
-        }
-        ctx.closePath();
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.filter = `blur(${THREE.MathUtils.clamp(Math.min(w, h) * 0.014, 7, 13).toFixed(1)}px)`;
+        this.buildFlashlightScreenPath(ctx, points);
         ctx.fillStyle = 'rgba(0, 0, 0, 1)';
         ctx.fill();
+        ctx.restore();
     }
 
     hasWallBetween(x1, z1, x2, z2) {
@@ -10675,6 +10904,8 @@ export class ThreeGame {
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.o2PromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.foundryPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
