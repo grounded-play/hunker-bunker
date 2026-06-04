@@ -375,6 +375,13 @@
               <div class="class-ability-panel__bar" id="ability-bar"></div>
             </div>
           </div>
+          <div id="radar-scan-panel" class="class-ability-panel" aria-live="polite" role="button" tabindex="-1" title="Radar Scan [Q]" style="border-color: rgba(0, 210, 255, 0.22);">
+            <span class="class-ability-panel__key" aria-hidden="true"><svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-dasharray="3,3" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /><line x1="12" y1="2" x2="12" y2="12" /></svg></span>
+            <span class="class-ability-panel__name" id="scan-name" style="color: #00d2ff;">RADAR SCAN</span>
+            <div class="class-ability-panel__bar-track" aria-hidden="true" style="background: rgba(0, 210, 255, 0.12);">
+              <div class="class-ability-panel__bar" id="scan-bar" style="background: #00d2ff; box-shadow: 0 0 5px rgba(0, 210, 255, 0.5);"></div>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Settings gear: pinned to top-right corner, never part of any flex layout -->
@@ -464,7 +471,8 @@
             </div>
           </div>
 
-          <div class="game-over-bank-note">◈ BANKED RESOURCES PRESERVED</div>
+          <div class="game-over-bank-note" id="go-bank-note">BANKED RESOURCES PRESERVED</div>
+          <div class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
         </div>
 
         <div class="game-over-score-section">
@@ -543,28 +551,46 @@
       <span class="touch-ability-btn__cooldown" id="touch-ability-cooldown">READY</span>
     </button>
 
+    <!-- Touch Scan Button -->
+    <button id="touch-scan-btn" class="touch-ability-btn hidden" aria-label="Trigger radar scan">
+      <span class="touch-ability-btn__label" id="touch-scan-label" aria-hidden="true">
+        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" stroke-dasharray="3,3" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+          <line x1="12" y1="2" x2="12" y2="12" />
+        </svg>
+      </span>
+      <span class="touch-ability-btn__cooldown" id="touch-scan-cooldown">READY</span>
+    </button>
+
     <!-- Interactive Console HUD Floating Prompt -->
     <div id="console-hud-prompt" class="hidden">
-      <span class="prompt-key">E</span>
+      <span class="prompt-key">PRESS E</span>
       <span class="prompt-text">ACCESS BASE SHOP</span>
     </div>
 
     <!-- Lore Terminal Prompt -->
     <div id="lore-hud-prompt" class="lore-hud-prompt hidden">
-      <span class="prompt-key">E</span>
+      <span class="prompt-key">PRESS E</span>
       <span class="prompt-text">READ LOG</span>
     </div>
 
     <!-- Fabrication Foundry interact prompt -->
     <div id="foundry-hud-prompt" class="lore-hud-prompt foundry-hud-prompt hidden">
-      <span class="prompt-key">E</span>
+      <span class="prompt-key">PRESS E</span>
       <span class="prompt-text">OPEN FAB BAY</span>
     </div>
 
     <!-- O2 Generator Prompt -->
     <div id="o2-generator-hud-prompt" class="lore-hud-prompt o2-generator-hud-prompt hidden">
-      <span class="prompt-key">E</span>
+      <span class="prompt-key">PRESS E</span>
       <span class="prompt-text">UPGRADE O₂ GENERATOR</span>
+    </div>
+
+    <div id="black-box-hud-prompt" class="lore-hud-prompt black-box-hud-prompt hidden">
+      <span class="prompt-key">PRESS E</span>
+      <span class="prompt-text">RECOVER BLACK BOX</span>
     </div>
 
     <!-- Lore Terminal Modal -->
@@ -585,6 +611,22 @@
     <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
       <span class="biome-hud-prompt__icon">ZONE</span>
       <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
+    </div>
+
+    <!-- Radio Transmission CRT Prompt -->
+    <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
+      <div class="radio-transmission-prompt__avatar">
+        <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" alt="Sender Portrait" />
+        <div class="radio-transmission-prompt__scanline"></div>
+      </div>
+      <div class="radio-transmission-prompt__body">
+        <div class="radio-transmission-prompt__header">
+          <span class="radio-transmission-prompt__signal-icon">⚡</span>
+          <span id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
+          <span class="radio-transmission-prompt__status">ONLINE</span>
+        </div>
+        <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
+      </div>
     </div>
     <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
       <span class="mission-progress-hud__icon">◈</span>
@@ -680,6 +722,19 @@
                 <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
                 <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
               </div>
+            </div>
+          </div>
+
+          <div id="terminal-event-section" class="upgrade-goals-section terminal-tone--event hidden">
+            <div class="terminal-section-title">FIELD TERMINAL EVENT</div>
+            <div class="action-card action-card--terminal-event">
+              <div class="action-card-header">
+                <span class="action-title" id="terminal-event-title">SYSTEM OFFER</span>
+                <span class="action-cost" id="terminal-event-status">CHOICE REQUIRED</span>
+              </div>
+              <p class="action-desc" id="terminal-event-body">A bunker subsystem is requesting operator input.</p>
+              <div id="terminal-event-choices" class="terminal-event-choices"></div>
+              <p class="action-desc action-desc--hint" id="terminal-event-result"></p>
             </div>
           </div>
 
@@ -875,6 +930,32 @@
             <span class="choice-card__label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
             <span class="choice-card__hint">START TUTORIAL</span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="elevator-choice-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content elevator-choice-content">
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+        <div class="terminal-header">
+          <div class="terminal-title">ELEVATOR ARRIVAL</div>
+          <div class="terminal-class-badge">EXTRACT OR DESCEND</div>
+        </div>
+        <div class="terminal-body">
+          <div class="upgrade-goals-section terminal-tone--event">
+            <div class="action-card action-card--terminal-event">
+              <div class="action-card-header">
+                <span class="action-title">THE DOORS ARE OPEN</span>
+                <span class="action-cost">CHOICE REQUIRED</span>
+              </div>
+              <p class="action-desc">The lift can carry the operator back to orbit or down into a deeper sector.</p>
+              <div class="terminal-event-choices">
+                <button class="terminal-action-btn terminal-event-choice btn-state--available" id="elevator-choice-extract">EXTRACT UP</button>
+                <button class="terminal-action-btn terminal-event-choice btn-state--available" id="elevator-choice-descend">DESCEND DEEPER</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

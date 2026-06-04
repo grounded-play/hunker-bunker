@@ -6,6 +6,9 @@ import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
+import { blackBoxStore } from './src/blackBox.js';
+import { pickRunModifier } from './src/data/runModifiers.js';
+import { getDialogueLine } from './src/data/dialogueLines.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
@@ -46,8 +49,6 @@ const audioVfxValue = document.getElementById('audio-vfx-value');
 const pickupCountTotal = document.getElementById('pickup-count-total');
 const bunkerLevelNum = document.getElementById('level-num');
 const biomeLabelEl = document.getElementById('biome-label');
-const biomeHudPromptEl = document.getElementById('biome-hud-prompt');
-const biomeHudTextEl = document.getElementById('biome-hud-text');
 const weaponStatusPanel = document.getElementById('weapon-status-panel');
 const weaponClipCurrent = document.getElementById('weapon-clip-current');
 const weaponClipMax = document.getElementById('weapon-clip-max');
@@ -82,7 +83,8 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveRight: ['KeyD', 'ArrowRight'],
     interact: ['KeyE', null],
     reload: ['KeyR', null],
-    ability: ['KeyF', null]
+    ability: ['KeyF', null],
+    scan: ['KeyQ', null]
 });
 const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveUp', label: 'MOVE UP' },
@@ -91,11 +93,11 @@ const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveRight', label: 'MOVE RIGHT' },
     { id: 'interact', label: 'INTERACT' },
     { id: 'reload', label: 'RELOAD' },
-    { id: 'ability', label: 'CLASS ABILITY' }
+    { id: 'ability', label: 'CLASS ABILITY' },
+    { id: 'scan', label: 'RADAR SCAN' }
 ]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
-const BIOME_PROMPT_DURATION_MS = 2800;
 const STARTING_RUN_AMMO = 18;
 const CLASS_AMMO_CAPACITY = Object.freeze({
     SCOUT: 24,
@@ -204,6 +206,7 @@ const PICKUP_COMBO_WINDOW_MS = 1400;
 const PICKUP_COMBO_THRESHOLD = 3;
 let runStartTime = Date.now();
 let currentMission = null;
+let currentRunModifier = null;
 const _mothershipFiredTriggers = new Set();
 const pickupCounterState = {
     total: 0,
@@ -850,51 +853,132 @@ function renderBunkerLevel(tier = 0) {
 }
 
 function hideBiomePrompt() {
-    if (!biomeHudPromptEl) return;
-    if (biomePromptTimer) {
-        clearTimeout(biomePromptTimer);
-        biomePromptTimer = null;
+    const radioPrompt = document.getElementById('radio-transmission-prompt');
+    if (radioPrompt) {
+        radioPrompt.classList.remove('visible');
+        setTimeout(() => {
+            if (!radioPrompt.classList.contains('visible')) {
+                radioPrompt.classList.add('hidden');
+            }
+        }, 300);
     }
-    biomeHudPromptEl.classList.remove('visible');
-    biomeHudPromptEl.classList.add('hidden');
+    if (window.radioTypewriterInterval) {
+        clearInterval(window.radioTypewriterInterval);
+        window.radioTypewriterInterval = null;
+    }
+    if (window.radioPromptTimer) {
+        clearTimeout(window.radioPromptTimer);
+        window.radioPromptTimer = null;
+    }
+}
+
+function showRadioTransmission(rawText) {
+    if (isResettingRun) return;
+
+    let sender;
+    let text = rawText;
+    let portrait;
+
+    const activeClass = window.game?.playerType || 'SCOUT';
+
+    if (rawText.startsWith('> MOTHERSHIP:')) {
+        sender = "MOTHERSHIP COMMAND";
+        text = rawText.replace('> MOTHERSHIP:', '').trim();
+        portrait = "/lore_portraits/survivor_00.webp";
+    } else if (rawText.startsWith('> BUNKER:')) {
+        sender = "BUNKER AUTO-ANNOUNCER";
+        text = rawText.replace('> BUNKER:', '').trim();
+        portrait = "/lore_portraits/survivor_08.webp";
+    } else if (rawText.startsWith('> SCOUT:')) {
+        sender = "SCOUT OPERATOR";
+        text = rawText.replace('> SCOUT:', '').trim();
+        portrait = "/lore_portraits/survivor_01.webp";
+    } else if (rawText.startsWith('> TANK:')) {
+        sender = "TANK OPERATOR";
+        text = rawText.replace('> TANK:', '').trim();
+        portrait = "/lore_portraits/survivor_02.webp";
+    } else if (rawText.startsWith('> ENGINEER:')) {
+        sender = "ENGINEER OPERATOR";
+        text = rawText.replace('> ENGINEER:', '').trim();
+        portrait = "/lore_portraits/survivor_03.webp";
+    } else if (rawText.startsWith('> SYSTEM:') || rawText.startsWith('SYSTEM:')) {
+        sender = "EXOSUIT OS";
+        text = rawText.replace('> SYSTEM:', '').replace('SYSTEM:', '').trim();
+        portrait = "/lore_portraits/survivor_04.webp";
+    } else {
+        if (activeClass === 'SCOUT') {
+            sender = "SCOUT OPERATOR";
+            portrait = "/lore_portraits/survivor_01.webp";
+        } else if (activeClass === 'TANK') {
+            sender = "TANK OPERATOR";
+            portrait = "/lore_portraits/survivor_02.webp";
+        } else if (activeClass === 'ENGINEER') {
+            sender = "ENGINEER OPERATOR";
+            portrait = "/lore_portraits/survivor_03.webp";
+        } else {
+            sender = "EXOSUIT OS";
+            portrait = "/lore_portraits/survivor_04.webp";
+        }
+    }
+
+    const radioPrompt = document.getElementById('radio-transmission-prompt');
+    const avatarImg = document.getElementById('radio-avatar-img');
+    const senderName = document.getElementById('radio-sender-name');
+    const messageText = document.getElementById('radio-message-text');
+
+    if (!radioPrompt || !avatarImg || !senderName || !messageText) return;
+
+    if (window.radioTypewriterInterval) {
+        clearInterval(window.radioTypewriterInterval);
+        window.radioTypewriterInterval = null;
+    }
+
+    avatarImg.src = portrait;
+    senderName.textContent = sender;
+    messageText.textContent = '';
+
+    radioPrompt.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        radioPrompt.classList.add('visible');
+    });
+
+    let charIndex = 0;
+    const intervalMs = 12;
+
+    window.radioTypewriterInterval = setInterval(() => {
+        if (charIndex < text.length) {
+            messageText.textContent += text[charIndex];
+            charIndex++;
+            window.game?.audioManager?.play?.('ui_scan_ping', { volume: 0.08, playbackRate: 2.2, bus: 'sfx' });
+        } else {
+            clearInterval(window.radioTypewriterInterval);
+            window.radioTypewriterInterval = null;
+        }
+    }, intervalMs);
+
+    if (window.radioPromptTimer) {
+        clearTimeout(window.radioPromptTimer);
+    }
+
+    const duration = Math.max(4500, text.length * 55);
+    window.radioPromptTimer = setTimeout(() => {
+        radioPrompt.classList.remove('visible');
+        setTimeout(() => {
+            if (!radioPrompt.classList.contains('visible')) {
+                radioPrompt.classList.add('hidden');
+            }
+        }, 300);
+    }, duration);
 }
 
 function showBiomePrompt(message = '') {
-    if (!biomeHudPromptEl || !biomeHudTextEl) return;
-
-    const ui = document.getElementById('ui');
-    const menu = document.getElementById('menu');
-    const gameOverModal = document.getElementById('game-over-modal');
-    const splash = document.getElementById('splash');
-    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
-                             (!menu || menu.classList.contains('hidden')) &&
-                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
-                             (!splash || splash.classList.contains('hidden'));
-
-    if (!isGameplayActive || isResettingRun) return;
-
-    biomeHudTextEl.textContent = message;
-    biomeHudPromptEl.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        biomeHudPromptEl.classList.add('visible');
-    });
-
-    if (biomePromptTimer) {
-        clearTimeout(biomePromptTimer);
-        biomePromptTimer = null;
-    }
-
-    biomePromptTimer = window.setTimeout(() => {
-        hideBiomePrompt();
-    }, BIOME_PROMPT_DURATION_MS);
+    showRadioTransmission(message);
 }
 
-if (biomeHudPromptEl) {
-    biomeHudPromptEl.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        hideBiomePrompt();
-    });
-}
+document.getElementById('radio-transmission-prompt')?.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    hideBiomePrompt();
+});
 
 function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
     const label = typeof detail?.label === 'string' && detail.label.trim()
@@ -1044,6 +1128,11 @@ function assignMission(bankState) {
 function generateDeathReport(stats, reason) {
     const biome = stats.biomeLabel ?? 'ACTIVE SECTOR';
     const depth = stats.distanceTravelled ?? 0;
+    const box = blackBoxStore.load();
+    const salvage = box.active ? box.salvage : null;
+    const recoverable = salvage
+        ? ` // RECOVERABLE: ${salvage.tech ?? 0} TECH / ${salvage.coin ?? 0} COIN / ${salvage.med ?? 0} MED`
+        : '';
     const causeMap = {
         'o2-depletion':       '> CAUSE: EXOSUIT ATMOSPHERIC FAILURE — O₂ RESERVES EXHAUSTED',
         'snail':              '> CAUSE: BIO-ENTITY CONTACT — CYBERSNAIL MELEE IMPACT',
@@ -1058,7 +1147,7 @@ function generateDeathReport(stats, reason) {
     };
     const cause = causeMap[reason] ?? '> CAUSE: EXOSUIT FAILURE — UNKNOWN EVENT';
     return [
-        `> LAST POS: ${biome} // DIST: ${Math.round(depth)}u // SALVAGE: ${stats.totalPickups ?? 0} // THREATS: ${stats.snailsKilled ?? 0}`,
+        `> LAST POS: ${biome} // DIST: ${Math.round(depth)}u // BANKED: ${stats.totalPickups ?? 0}${recoverable} // THREATS: ${stats.snailsKilled ?? 0}`,
         cause
     ].join('\n');
 }
@@ -1135,6 +1224,22 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     if (genVal)   genVal.textContent   = stats.generatorLevel > 0 ? `LVL ${stats.generatorLevel}` : 'OFFLINE';
     if (killsVal) killsVal.textContent = kills > 0 ? String(kills) : 'NONE';
     if (timeVal)  timeVal.textContent  = formatRunTime(elapsedMs);
+
+    const bankNote = document.getElementById('go-bank-note');
+    const recoverableNote = document.getElementById('go-recoverable-note');
+    const box = blackBoxStore.load();
+    const banked = stats.totalPickups ?? 0;
+    if (bankNote) {
+        bankNote.textContent = isVictory
+            ? `BANKED THIS RUN: ${banked} TOTAL STORED`
+            : `BANKED BEFORE FAILURE: ${banked} TOTAL STORED`;
+    }
+    if (recoverableNote) {
+        const s = box.active ? box.salvage : null;
+        recoverableNote.textContent = s
+            ? `BLACK BOX RECOVERABLE: ${s.tech ?? 0} TECH / ${s.coin ?? 0} COIN / ${s.med ?? 0} MED`
+            : 'BLACK BOX: NO RECOVERABLE SALVAGE';
+    }
 
     // Title / subtitle
     const title = document.querySelector('.game-over-title');
@@ -1261,11 +1366,13 @@ function resetRunToStartingState({
 
         runStartTime = Date.now();
         currentMission = assignMission(bankManager.getState());
+        currentRunModifier = pickRunModifier();
         _mothershipFiredTriggers.clear();
 
         resetPickupCounter();
         window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
         window.game?.initMission?.(currentMission);
+        if (window.game) window.game.currentRunModifier = currentRunModifier;
         setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
         window.game?.setInputEnabled?.(false);
         renderBunkerLevel(0);
@@ -1347,6 +1454,9 @@ window.addEventListener('player-respawned', () => {
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
     updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
+    const scanBar = document.getElementById('scan-bar');
+    if (scanBar) scanBar.style.transform = 'scaleX(1)';
+    updateTouchScanButtonState({ remaining: 0, max: 1 });
     window.game?.setInputEnabled?.(true);
 });
 
@@ -1362,12 +1472,75 @@ window.addEventListener('mission-objective-complete', (event) => {
         ? (messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP')
         : 'OBJECTIVE COMPLETE — UPLINK LOCKED // MAX ALL SYSTEMS TO EXTRACT';
     showBiomePrompt(msg);
+    const line = getDialogueLine('extraction');
+    if (line) window.setTimeout(() => showBiomePrompt(`> BUNKER: ${line}`), 900);
     AudioManager.play('ui_boot', { volume: 0.45, playbackRate: 0.88, bus: 'sfx' });
+});
+
+window.addEventListener('goal-unlocked', () => {
+    const line = getDialogueLine('majorUpgrade');
+    if (line) showBiomePrompt(`> BUNKER: ${line}`);
+});
+
+window.addEventListener('o2-generator-upgraded', () => {
+    const line = getDialogueLine('majorUpgrade');
+    if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
 
 window.addEventListener('extraction-progress', (event) => {
     const { progress = 0, active = false } = event?.detail ?? {};
     updateExtractionRing(progress, active);
+});
+
+window.addEventListener('elevator-sequence-started', () => {
+    showTacticalOverlay({
+        title: 'ELEVATOR DOWN',
+        status: '> ARRIVAL TIMER: 90 SECONDS<br>> LIGHTING GRID FAILING<br>> DEFEND THE WRECK',
+        progress: 100,
+        duration: 2600
+    });
+});
+
+window.addEventListener('elevator-progress', (event) => {
+    const remaining = event?.detail?.secondsRemaining ?? 90;
+    showMissionProgressHUD(`ELEVATOR ARRIVAL: ${remaining}s`);
+});
+
+window.addEventListener('elevator-choice-ready', () => {
+    hideExtractionRing();
+    hideMissionProgressHUD();
+    showTacticalOverlay({
+        title: 'ELEVATOR ARRIVED',
+        status: '> DOORS OPEN<br>> SELECT EXTRACTION VECTOR',
+        progress: 100,
+        duration: 1800
+    });
+    const modal = document.getElementById('elevator-choice-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+    window.game?.setInputEnabled?.(false);
+});
+
+function closeElevatorChoiceModal() {
+    const modal = document.getElementById('elevator-choice-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+document.getElementById('elevator-choice-extract')?.addEventListener('click', () => {
+    closeElevatorChoiceModal();
+    window.game?.resolveElevatorChoice?.('extract');
+});
+
+document.getElementById('elevator-choice-descend')?.addEventListener('click', () => {
+    closeElevatorChoiceModal();
+    window.game?.setInputEnabled?.(true);
+    window.game?.resolveElevatorChoice?.('descend');
+    showBiomePrompt('> ELEVATOR: DESCENT COMPLETE — NEW SECTOR PRESSURE RISING');
 });
 
 window.addEventListener('player-extracted', (event) => {
@@ -1559,6 +1732,14 @@ function markLogFound(loreKey) {
 
 window.addEventListener('lore-terminal-nearby', () => {
     const prompt = document.getElementById('lore-hud-prompt');
+    const key = prompt?.querySelector('.prompt-key');
+    const text = prompt?.querySelector('.prompt-text');
+    const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
+    if (key) {
+        key.textContent = touchMoveVisible ? 'TAP' : 'PRESS E';
+        key.classList.toggle('prompt-key--tap', Boolean(touchMoveVisible));
+    }
+    if (text) text.textContent = 'READ LOG';
     if (prompt) prompt.classList.remove('hidden');
 });
 
@@ -1659,6 +1840,35 @@ window.addEventListener('mission-objective-complete', () => {
     fireMothershipReactiveLine('objective_found');
 });
 
+window.addEventListener('bunker-line', (event) => {
+    const text = event?.detail?.text;
+    if (text) showBiomePrompt(`> BUNKER: ${text}`);
+});
+
+window.addEventListener('black-box-marker-active', () => {
+    showBiomePrompt('> BLACK BOX SIGNAL DETECTED — COMPASS RETARGETED');
+});
+
+window.addEventListener('black-box-prompt-nearby', () => {
+    const prompt = document.getElementById('black-box-hud-prompt');
+    const key = prompt?.querySelector('.prompt-key');
+    const text = prompt?.querySelector('.prompt-text');
+    const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
+    if (key) {
+        key.textContent = touchMoveVisible ? 'TAP' : 'PRESS E';
+        key.classList.toggle('prompt-key--tap', Boolean(touchMoveVisible));
+    }
+    if (text) text.textContent = 'RECOVER BLACK BOX';
+    prompt?.classList.remove('hidden');
+    prompt?.classList.add('visible');
+});
+
+window.addEventListener('black-box-prompt-clear', () => {
+    const prompt = document.getElementById('black-box-hud-prompt');
+    prompt?.classList.add('hidden');
+    prompt?.classList.remove('visible');
+});
+
 window.addEventListener('sentinel-fired', () => {
     const viewport = document.getElementById('game-viewport');
     if (viewport) {
@@ -1753,6 +1963,11 @@ document.getElementById('class-ability-panel')?.addEventListener('pointerdown', 
     window.game?.triggerClassAbility?.();
 });
 
+document.getElementById('radar-scan-panel')?.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    window.game?.triggerRadarScan?.();
+});
+
 function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false } = {}) {
     const touchBtn = document.getElementById('touch-ability-btn');
     if (!touchBtn) return;
@@ -1812,6 +2027,50 @@ window.addEventListener('ability-cooldown-tick', (event) => {
     }
     updateTouchAbilityButtonState({ remaining, max, active });
 });
+
+window.addEventListener('scan-cooldown-tick', (event) => {
+    const { remaining = 0, max = 1 } = event?.detail ?? {};
+    const bar = document.getElementById('scan-bar');
+    const panel = document.getElementById('radar-scan-panel');
+    const fillPct = 1 - (remaining / Math.max(0.001, max));
+    
+    if (bar) {
+        bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    }
+    
+    if (panel) {
+        panel.classList.toggle('class-ability-panel--ready', remaining <= 0);
+        panel.classList.toggle('class-ability-panel--active', remaining > 0);
+    }
+
+    updateTouchScanButtonState({ remaining, max });
+});
+
+function updateTouchScanButtonState({ remaining = 0, max = 1 } = {}) {
+    const touchBtn = document.getElementById('touch-scan-btn');
+    if (!touchBtn) return;
+
+    const clampedMax = Math.max(0.001, Number(max) || 0.001);
+    const clampedRemaining = Math.max(0, Number(remaining) || 0);
+    const cooldownProgress = Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
+
+    touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
+    touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
+    touchBtn.classList.toggle('is-ready', clampedRemaining <= 0);
+
+    if (clampedRemaining > 0) {
+        touchBtn.style.pointerEvents = 'none';
+        touchBtn.style.opacity = '0.8';
+    } else {
+        touchBtn.style.pointerEvents = 'auto';
+        touchBtn.style.opacity = '1';
+    }
+
+    const cooldownEl = document.getElementById('touch-scan-cooldown');
+    if (cooldownEl) {
+        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : '';
+    }
+}
 
 function syncAbilityPanelLabel() {
     const info = window.game?.getClassAbilityInfo?.();
@@ -1917,6 +2176,7 @@ setInterval(() => {
 }, 1000);
 
 let _distressModeActive = false;
+let _lastLowO2LineAt = 0;
 function updateDistressMode(o2, hp) {
     const shouldBeDistress = hp <= 1 && o2 < 15 && !window.game?.isPlayerDead;
     if (shouldBeDistress && !_distressModeActive) {
@@ -1942,6 +2202,11 @@ window.addEventListener('player-o2-changed', (event) => {
     }
     // Low O2 general vignette (not full distress)
     document.body.classList.toggle('vitals-critical', o2 < 25 && !_distressModeActive);
+    if (o2 < 25 && Date.now() - _lastLowO2LineAt > 45000) {
+        _lastLowO2LineAt = Date.now();
+        const line = getDialogueLine('lowO2');
+        if (line) showBiomePrompt(`> BUNKER: ${line}`);
+    }
     updateDistressMode(o2, hp);
     updateMusicTension();
 });
@@ -2091,6 +2356,12 @@ function syncTouchMoveControlVisibility() {
         abilityBtn.classList.toggle('hidden', !showAbilityBtn);
     }
 
+    const scanBtn = document.getElementById('touch-scan-btn');
+    if (scanBtn) {
+        const showScanBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick;
+        scanBtn.classList.toggle('hidden', !showScanBtn);
+    }
+
     if (!isHUD || !showJoystick) {
         clearTouchInputState();
     }
@@ -2102,6 +2373,14 @@ if (touchAbilityBtn) {
     touchAbilityBtn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         window.game?.triggerClassAbility?.();
+    });
+}
+
+const touchScanBtn = document.getElementById('touch-scan-btn');
+if (touchScanBtn) {
+    touchScanBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        window.game?.triggerRadarScan?.();
     });
 }
 
@@ -2414,6 +2693,9 @@ async function runMissionIntroSequence() {
         // Show mission briefing after door transition
         if (currentMission?.label) {
             window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
+            if (currentRunModifier?.title) {
+                window.setTimeout(() => showBiomePrompt(`RUN MODIFIER: ${currentRunModifier.title} — ${currentRunModifier.description}`), 1400);
+            }
             if (missionProgressHUDTimer) {
                 clearTimeout(missionProgressHUDTimer);
             }
@@ -3165,7 +3447,13 @@ window.addEventListener('foundry-discovered', (event) => {
 });
 window.addEventListener('foundry-prompt-nearby', () => {
     const prompt = document.getElementById('foundry-hud-prompt');
+    const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
+    const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
+    if (key) {
+        key.textContent = touchMoveVisible ? 'TAP' : 'PRESS E';
+        key.classList.toggle('prompt-key--tap', Boolean(touchMoveVisible));
+    }
     if (text) text.textContent = bankManager.isFoundryActivated() ? 'OPEN FAB BAY' : 'ACTIVATE FAB BAY';
     prompt?.classList.remove('hidden');
 });

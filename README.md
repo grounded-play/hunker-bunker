@@ -16,6 +16,21 @@ Featuring an authentic retro CRT arcade aesthetic, custom triplanar shaders, co-
 
 ---
 
+## Current Prototype Status
+
+| Area | Status | Notes |
+| :--- | :--- | :--- |
+| Readable extraction loop | Implemented | Persistent next-action HUD, extraction progress, run report, and black-box recovery cues are active. |
+| Class differentiation | Implemented | Scout uses Sprint Burst, Tank uses Brace, Engineer uses Reroute plus terminal verification. |
+| Fabricator reveal | Implemented | Fixed-cost rarity roll with deterministic rarity helpers, animated strip, and reward card reveal. |
+| Terminal choice events | Implemented | Data-driven terminal events live in `src/data/terminalEvents.js`; lore terminals remain separate. |
+| Failure as fiction | Prototype | Single active black box, permanent death archive, recovery marker, and corrupted-operator gate are implemented. |
+| Run modifiers | Prototype | One modifier is selected and shown per deployment; deeper mechanical effects remain roadmap. |
+| Multiplayer relay | Open prototype | Optional Socket.io relay runs on port `3001`; full multiplayer game loop remains experimental. |
+| Pattern-rewrite generator | Implemented | Markov-style rewrite pass is active for chunk shaping and still a major tuning surface. |
+
+---
+
 ## 🖥️ System Preview (Tactical Console)
 
 | Hero Select Interface | Tactical Command View |

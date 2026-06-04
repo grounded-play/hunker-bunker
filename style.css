@@ -1228,7 +1228,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: clamp(5px, calc(var(--vu) * 1.0), 14px);
-  max-height: min(85vh, calc(100dvh - 32px)) !important;
+  max-height: 92% !important;
   overflow-y: auto;
   overflow-x: hidden;
   /* Custom scrollbar compatibility for Firefox */
@@ -1360,6 +1360,13 @@ body {
   margin-top: clamp(4px, calc(var(--vu) * 0.7), 10px);
 }
 
+.game-over-bank-note--recoverable {
+  color: rgba(255, 179, 71, 0.72);
+  border-top: 0;
+  margin-top: 0;
+  padding-top: clamp(3px, calc(var(--vu) * 0.5), 8px);
+}
+
 .game-over-actions {
   display: flex;
   gap: clamp(8px, calc(var(--vu) * 1.4), 16px);
@@ -1429,7 +1436,7 @@ body {
 @media (max-height: 520px) {
   .game-over-content {
     width: min(calc(var(--vu) * 126), 96%) !important;
-    max-height: calc(100dvh - 12px) !important;
+    max-height: calc(100% - 24px) !important;
     padding: clamp(10px, calc(var(--vu) * 2.1), 16px) !important;
     gap: clamp(4px, calc(var(--vu) * 0.9), 10px);
   }
@@ -4433,6 +4440,133 @@ body.mission-intro-active #game-container {
   line-height: 1.35;
 }
 
+/* ── Radio Transmission CRT Prompt ─────────────────────────── */
+.radio-transmission-prompt {
+  position: absolute;
+  top: calc(var(--vu) * 12);
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  width: clamp(280px, 80%, 480px);
+  background: rgba(10, 15, 20, 0.94);
+  border: 1.5px solid #00d2ff;
+  border-radius: 4px;
+  box-shadow: 
+    0 0 16px rgba(0, 210, 255, 0.35),
+    inset 0 0 8px rgba(0, 210, 255, 0.15);
+  display: flex;
+  padding: 12px;
+  gap: 12px;
+  z-index: 12080;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
+}
+
+.radio-transmission-prompt.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.radio-transmission-prompt.hidden {
+  display: none !important;
+}
+
+.radio-transmission-prompt__avatar {
+  position: relative;
+  width: clamp(48px, 12vw, 72px);
+  height: clamp(48px, 12vw, 72px);
+  border: 1px solid rgba(0, 210, 255, 0.42);
+  border-radius: 2px;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+}
+
+.radio-transmission-prompt__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: contrast(1.1) brightness(0.9) saturate(1.1);
+}
+
+.radio-transmission-prompt__scanline {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  animation: crt-scanline-flicker 0.15s infinite;
+}
+
+.radio-transmission-prompt__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.radio-transmission-prompt__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.radio-transmission-prompt__signal-icon {
+  color: #00d2ff;
+  font-size: 11px;
+  animation: radio-signal-blink 1s infinite alternate;
+}
+
+.radio-transmission-prompt__sender {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #00d2ff;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.radio-transmission-prompt__status {
+  font-size: 8px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-left: auto;
+  border: 0.5px solid rgba(16, 185, 129, 0.3);
+}
+
+.radio-transmission-prompt__message {
+  font-size: clamp(10px, 1.4vw, 13px);
+  line-height: 1.45;
+  color: #e2e8f0;
+  font-family: monospace;
+  white-space: pre-wrap;
+  min-height: 2.8em;
+  overflow-y: auto;
+  max-height: 6em;
+}
+
+@keyframes crt-scanline-flicker {
+  0% { opacity: 0.95; }
+  50% { opacity: 1.0; }
+  100% { opacity: 0.95; }
+}
+
+@keyframes radio-signal-blink {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
 @media (max-width: 860px) {
   .mothership-dialogue-choices {
     grid-template-columns: 1fr;
@@ -5193,6 +5327,39 @@ body.mission-intro-active #game-container {
   display: none !important;
 }
 .o2-generator-hud-prompt.visible {
+  display: flex !important;
+  opacity: 1;
+}
+
+.black-box-hud-prompt {
+  position: absolute !important;
+  top: calc(var(--vu) * 12) !important;
+  right: calc(var(--vu) * 4) !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(24, 4, 8, 0.92) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.5px solid rgba(255, 68, 88, 0.68) !important;
+  border-radius: 8px !important;
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 3) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: calc(var(--vu) * 2) !important;
+  z-index: 9999 !important;
+  box-shadow: 0 0 14px rgba(255, 51, 68, 0.34), inset 0 0 8px rgba(255, 51, 68, 0.08) !important;
+  animation: prompt-float 2.5s infinite ease-in-out !important;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  color: #ffb8c2 !important;
+}
+.black-box-hud-prompt.hidden {
+  display: none !important;
+}
+.black-box-hud-prompt.visible {
   display: flex !important;
   opacity: 1;
 }
@@ -5990,6 +6157,14 @@ body.mission-intro-active #game-container {
   --section-rgb: 181, 126, 255;
 }
 
+.terminal-tone--event {
+  --section-rgb: 255, 179, 71;
+  border-color: rgba(var(--section-rgb), 0.34);
+  background:
+    linear-gradient(165deg, rgba(var(--section-rgb), 0.08), rgba(8, 10, 12, 0.92) 55%),
+    rgba(255, 255, 255, 0.01);
+}
+
 .terminal-tone--bank,
 .terminal-tone--medkit,
 .terminal-tone--generator,
@@ -6003,9 +6178,23 @@ body.mission-intro-active #game-container {
 .terminal-tone--bank .terminal-section-title,
 .terminal-tone--medkit .terminal-section-title,
 .terminal-tone--generator .terminal-section-title,
-.terminal-tone--goal .terminal-section-title {
+.terminal-tone--goal .terminal-section-title,
+.terminal-tone--event .terminal-section-title {
   color: rgba(var(--section-rgb), 0.96);
   text-shadow: 0 0 8px rgba(var(--section-rgb), 0.25);
+}
+
+.terminal-event-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: calc(var(--vu) * 1);
+  margin-top: calc(var(--vu) * 1.2);
+}
+
+.terminal-event-choice {
+  min-height: calc(var(--vu) * 5.6);
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .terminal-tone--tier2 {
@@ -6057,7 +6246,8 @@ body.mission-intro-active #game-container {
 .terminal-tone--bank .action-cost,
 .terminal-tone--medkit .action-cost,
 .terminal-tone--generator .action-cost,
-.terminal-tone--goal .action-cost {
+.terminal-tone--goal .action-cost,
+.terminal-tone--event .action-cost {
   border-color: rgba(var(--section-rgb), 0.42);
   color: rgba(var(--section-rgb), 1);
   background: rgba(var(--section-rgb), 0.16);
@@ -6594,6 +6784,116 @@ body.mission-intro-active #game-container {
 @keyframes ability-ready-pulse {
   0%, 100% { box-shadow: 0 0 5px rgba(255, 159, 28, 0.5); }
   50%       { box-shadow: 0 0 14px rgba(255, 159, 28, 0.95); }
+}
+
+#radar-scan-panel:active {
+  background: rgba(0, 210, 255, 0.18);
+  border-color: rgba(0, 210, 255, 0.55) !important;
+}
+
+#radar-scan-panel.class-ability-panel--ready .class-ability-panel__bar {
+  background: #00d2ff;
+  animation: scan-ready-pulse 0.5s ease-in-out 2;
+}
+
+@keyframes scan-ready-pulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(0, 210, 255, 0.5); }
+  50%       { box-shadow: 0 0 14px rgba(0, 210, 255, 0.95); }
+}
+
+/* ── Touch Radar Scan Button ───────────────────────────────── */
+#touch-scan-btn {
+  --ability-cooldown-progress: 1;
+  position: absolute;
+  bottom: calc(var(--vu) * 13.5);
+  right: calc(var(--vu) * 2.5);
+  width: clamp(36px, calc(var(--vu) * 7), 58px);
+  height: clamp(36px, calc(var(--vu) * 7), 58px);
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 210, 255, 0.65);
+  background:
+    radial-gradient(circle at 30% 28%, rgba(138, 237, 255, 0.22), rgba(11, 13, 15, 0.95) 62%),
+    rgba(11, 13, 15, 0.88);
+  color: #00d2ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(1px, calc(var(--vu) * 0.18), 3px);
+  cursor: pointer;
+  touch-action: none;
+  pointer-events: auto;
+  z-index: 12020;
+  overflow: hidden;
+  box-shadow:
+    0 0 12px rgba(0, 210, 255, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: background 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+#touch-scan-btn::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from -90deg,
+      rgba(0, 210, 255, 0.95) calc(var(--ability-cooldown-progress) * 1turn),
+      rgba(0, 210, 255, 0.16) 0turn
+    );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  pointer-events: none;
+  opacity: 0.92;
+}
+
+#touch-scan-btn::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 13%;
+  width: clamp(5px, calc(var(--vu) * 0.9), 8px);
+  height: clamp(5px, calc(var(--vu) * 0.9), 8px);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: rgba(11, 48, 60, 0.88);
+  border: 1px solid rgba(0, 210, 255, 0.28);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+}
+
+#touch-scan-btn.is-ready::after {
+  background: #7adeff;
+  border-color: rgba(176, 237, 255, 0.92);
+  box-shadow:
+    0 0 7px rgba(0, 210, 255, 0.95),
+    0 0 16px rgba(0, 210, 255, 0.58),
+    inset 0 0 3px rgba(255, 255, 255, 0.65);
+}
+
+#touch-scan-btn:active {
+  background: rgba(0, 210, 255, 0.18);
+  border-color: rgba(0, 210, 255, 0.85);
+}
+
+#game-container.fullscreen-mode ~ #touch-scan-btn {
+  right: clamp(20px, calc(var(--vu) * 3.2), 56px);
+  bottom: clamp(66px, calc(var(--vu) * 9.8), 114px);
+}
+
+@media (max-width: 900px), (pointer: coarse) {
+  #game-container.fullscreen-mode ~ #touch-scan-btn {
+    right: calc(var(--vu) * 2.8);
+    bottom: clamp(62px, calc(var(--vu) * 9.1), 88px);
+  }
+}
+
+@media (max-width: 620px) {
+  #game-container.fullscreen-mode ~ #touch-scan-btn {
+    right: calc(var(--vu) * 2.3);
+    bottom: clamp(60px, calc(var(--vu) * 8.8), 84px);
+  }
 }
 
 /* ── Extraction Progress Ring ──────────────────────────────── */
