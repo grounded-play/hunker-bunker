@@ -4321,7 +4321,7 @@ body.mission-intro-active #game-container {
    mission HUD. Always shows the player's next step. */
 .loop-step-hud {
   position: absolute;
-  top: calc(var(--vu) * 4);
+  bottom: calc(var(--vu) * 11);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -4337,6 +4337,260 @@ body.mission-intro-active #game-container {
   font-family: 'Outfit', sans-serif;
   max-width: 86vw;
 }
+
+.hud-right-sidebar {
+  position: absolute;
+  top: calc(var(--vu) * 11);
+  right: calc(var(--vu) * 4);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1.5);
+  align-items: flex-end;
+  pointer-events: none;
+  z-index: 12080;
+}
+
+.hud-right-sidebar > * {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  pointer-events: auto;
+}
+
+/* --- Visual Skill Tree Tabbed Layout --- */
+.terminal-tab-content.hidden {
+  display: none !important;
+}
+
+.terminal-tabs {
+  display: flex;
+  gap: calc(var(--vu) * 1);
+  border-bottom: 2px solid rgba(255, 159, 28, 0.3);
+  margin-bottom: calc(var(--vu) * 1.5);
+  padding-bottom: calc(var(--vu) * 0.4);
+}
+
+.terminal-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(255, 159, 28, 0.6);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: var(--font-xs);
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.8);
+  cursor: pointer;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.terminal-tab-btn:hover {
+  color: var(--accent-primary);
+  background: rgba(255, 159, 28, 0.08);
+}
+
+.terminal-tab-btn.active {
+  color: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+  background: rgba(255, 159, 28, 0.15);
+  text-shadow: 0 0 6px rgba(255, 159, 28, 0.55);
+  box-shadow: 0 0 10px rgba(255, 159, 28, 0.12);
+}
+
+.terminal-layout--skills {
+  flex-direction: column;
+  display: flex;
+  gap: calc(var(--vu) * 1.5);
+}
+
+.skills-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.5);
+  background: rgba(255, 159, 28, 0.06);
+  border: 1px solid rgba(255, 159, 28, 0.25);
+  border-radius: 4px;
+}
+
+.skills-unlocked-count {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: var(--font-xs);
+  color: var(--accent-primary);
+  text-shadow: 0 0 4px rgba(255, 159, 28, 0.4);
+}
+
+.skills-info-hint {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: var(--font-xxs);
+  color: rgba(255, 159, 28, 0.65);
+  letter-spacing: 0.5px;
+}
+
+.skills-tree-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: calc(var(--vu) * 1);
+}
+
+.skills-tree-grid {
+  display: grid;
+  grid-template-rows: repeat(7, auto);
+  grid-template-columns: repeat(5, 1fr);
+  gap: calc(var(--vu) * 1.1) calc(var(--vu) * 1.1);
+  justify-items: center;
+  align-items: center;
+}
+
+/* Connection lines */
+.skill-line-cell {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skill-line-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Skill node card styling */
+.skill-node-card {
+  width: 90%;
+  background: rgba(11, 13, 15, 0.95);
+  border: 1.5px solid rgba(255, 159, 28, 0.4);
+  border-radius: 6px;
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 1.5);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.5);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.22s ease-in-out;
+}
+
+.skill-node-card:hover:not(.node-state--locked) {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.22);
+}
+
+.skill-node-card.node-state--unlocked {
+  border-color: #38bdf8;
+  background: rgba(8, 20, 28, 0.88);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.16);
+}
+
+.skill-node-card.node-state--unlocked .skill-node-header {
+  color: #38bdf8;
+}
+
+.skill-node-card.node-state--available {
+  border-color: var(--accent-primary);
+  background: rgba(255, 159, 28, 0.08);
+}
+
+.skill-node-card.node-state--locked {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(15, 17, 19, 0.85);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.skill-node-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: var(--font-xxs);
+  color: rgba(255, 159, 28, 0.9);
+  letter-spacing: 0.8px;
+}
+
+.skill-node-status {
+  font-weight: 900;
+}
+
+.skill-node-desc {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: var(--font-xxxs);
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.35;
+}
+
+.skill-node-cost {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: var(--font-xxxs);
+  color: rgba(255, 159, 28, 0.65);
+}
+
+.skill-node-btn {
+  margin-top: calc(var(--vu) * 0.4);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-xxxs);
+  font-weight: 900;
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 0.9);
+  border: 1px solid rgba(255, 159, 28, 0.5);
+  background: rgba(255, 159, 28, 0.12);
+  color: var(--accent-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.skill-node-btn:hover {
+  background: var(--accent-primary);
+  color: #0b0d0f;
+}
+
+.skill-node-card.node-state--unlocked .skill-node-btn {
+  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  cursor: default;
+}
+
+.skill-node-card.node-state--locked .skill-node-btn {
+  display: none;
+}
+
+/* Exosuit Special locked style */
+.class-ability-panel.class-ability-panel--locked {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  background: rgba(20, 10, 10, 0.85) !important;
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.class-ability-panel.class-ability-panel--locked .class-ability-panel__key {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #ef4444 !important;
+}
+
+.class-ability-panel.class-ability-panel--locked .class-ability-panel__name {
+  color: #f87171 !important;
+}
+
+.class-ability-panel.class-ability-panel--locked .class-ability-panel__bar {
+  background: #ef4444 !important;
+}
+
+/* Mobile Touch Sprint Button active highlight */
+.touch-ability-btn.touch-sprint-btn.sprint-active {
+  background: rgba(0, 229, 255, 0.28) !important;
+  border-color: rgba(0, 229, 255, 0.85) !important;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.42) !important;
+}
+
+.touch-ability-btn.touch-sprint-btn.sprint-active .touch-ability-btn__label {
+  color: #00e5ff !important;
+}
+
 
 .loop-step-hud.hidden { display: none !important; }
 

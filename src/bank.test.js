@@ -23,7 +23,7 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         expect(bank.getState()).toEqual({
-            schemaVersion: 4,
+            schemaVersion: 5,
             med: 0,
             ammo: 0,
             tech: 0,
@@ -46,7 +46,8 @@ describe('BankManager', () => {
                 shotSpeed: 0,
                 shotDamage: 0,
                 shotAmount: 0
-            }
+            },
+            unlockedSkills: []
         });
     });
 
@@ -146,7 +147,7 @@ describe('BankManager', () => {
         });
     });
 
-    it('migrates a v2 save to v4 without resetting and adds newer fields', () => {
+    it('migrates a v2 save to v5 without resetting and adds newer fields', () => {
         const storage = createMemoryStorage();
         storage.setItem('hb_bank', JSON.stringify({
             schemaVersion: 2,
@@ -158,12 +159,13 @@ describe('BankManager', () => {
 
         const bank = new BankManager({ storage });
         const state = bank.getState();
-        expect(state.schemaVersion).toBe(4);
+        expect(state.schemaVersion).toBe(5);
         expect(state.tech).toBe(40); // preserved, not reset
         expect(state.weaponUpgrades).toEqual({
             ammoCapacity: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0
         });
         expect(state.foundryActivated).toBe(false);
+        expect(state.unlockedSkills).toEqual([]);
     });
 
     it('activates the foundry once using the activation cost and persists', () => {
@@ -217,5 +219,32 @@ describe('BankManager', () => {
         // Persists across reload.
         const reloaded = new BankManager({ storage });
         expect(reloaded.getWeaponUpgradeLevel('ammoCapacity')).toBe(3);
+    });
+
+    it('enforces class skill tree prerequisite checks and unlock logic', () => {
+        const storage = createMemoryStorage();
+        const bank = new BankManager({ storage });
+
+        // Scout tree has scout_magnet_1 (no prereqs) and scout_speed_1 (prereq: scout_magnet_1)
+        expect(bank.isSkillUnlocked('scout_magnet_1')).toBe(false);
+        expect(bank.canUnlockSkill('scout_magnet_1', 'SCOUT')).toBe(false); // No funds
+
+        bank.deposit({ tech: 100, coin: 100, med: 100 });
+        expect(bank.canUnlockSkill('scout_magnet_1', 'SCOUT')).toBe(true);
+        expect(bank.canUnlockSkill('scout_speed_1', 'SCOUT')).toBe(false); // Locked by prereq
+
+        // Unlock first node
+        expect(bank.unlockSkill('scout_magnet_1', 'SCOUT')).toBe(true);
+        expect(bank.isSkillUnlocked('scout_magnet_1')).toBe(true);
+
+        // Now the child node is available
+        expect(bank.canUnlockSkill('scout_speed_1', 'SCOUT')).toBe(true);
+        expect(bank.unlockSkill('scout_speed_1', 'SCOUT')).toBe(true);
+        expect(bank.isSkillUnlocked('scout_speed_1')).toBe(true);
+
+        // Persist across reload
+        const reloaded = new BankManager({ storage });
+        expect(reloaded.isSkillUnlocked('scout_magnet_1')).toBe(true);
+        expect(reloaded.isSkillUnlocked('scout_speed_1')).toBe(true);
     });
 });

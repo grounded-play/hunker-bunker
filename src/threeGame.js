@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
@@ -290,7 +290,8 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     interact: ['KeyE', null],
     reload: ['KeyR', null],
     ability: ['KeyF', null],
-    scan: ['KeyQ', null]
+    scan: ['KeyQ', null],
+    sprint: ['ShiftLeft', 'ShiftRight']
 });
 
 const SNAIL_ATTACK_RADIUS = 1.1;
@@ -614,7 +615,7 @@ export class ThreeGame {
         this.activeRadarScans = [];
         this.radarScanCooldownMax = 4.0;
         this.radarScanCooldownRemaining = 0;
-        this.keys = { up: false, down: false, left: false, right: false };
+        this.keys = { up: false, down: false, left: false, right: false, shift: false };
         this.virtualInput = { x: 0, z: 0 };
         this.inputEnabled = true;
         // Day/night cycle (Note 8): timeOfDay 0..1 (0/1 = midnight, 0.5 = noon).
@@ -2360,6 +2361,7 @@ export class ThreeGame {
         if (this.codeMatchesAction(code, 'moveDown')) this.keys.down = pressed;
         if (this.codeMatchesAction(code, 'moveLeft')) this.keys.left = pressed;
         if (this.codeMatchesAction(code, 'moveRight')) this.keys.right = pressed;
+        if (this.codeMatchesAction(code, 'sprint')) this.keys.shift = pressed;
     }
 
     // Resolves the active key bindings (user-remapped or default) and reports
@@ -2408,6 +2410,7 @@ export class ThreeGame {
         this.keys.down = false;
         this.keys.left = false;
         this.keys.right = false;
+        this.keys.shift = false;
         this.virtualInput.x = 0;
         this.virtualInput.z = 0;
         this.isMoving = false;
@@ -2573,9 +2576,23 @@ export class ThreeGame {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
         const stats = CLASS_STATS[type] ?? CLASS_STATS.ENGINEER;
-        this.moveSpeed = stats.moveSpeed;
+        
+        let speed = stats.moveSpeed;
+        if (type === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_speed_1')) {
+            speed *= 1.15;
+        }
+        this.moveSpeed = speed;
+
         this.o2DrainMult = stats.o2DrainMult;
-        this.pickupMagnetRadius = stats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
+
+        let baseMagnet = stats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
+        if (type === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_magnet_1')) {
+            baseMagnet = 5.5;
+        } else if (type === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_magnet_1')) {
+            baseMagnet = 5.0;
+        }
+        this.pickupMagnetRadius = baseMagnet;
+
         this._initClassAbility();
         this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
@@ -3038,6 +3055,7 @@ export class ThreeGame {
         this.keys.down = false;
         this.keys.left = false;
         this.keys.right = false;
+        this.keys.shift = false;
 
         const sideDuration = 1.65;
         this._menuShowcaseTimer = (this._menuShowcaseTimer ?? 0) + delta;
@@ -3211,7 +3229,7 @@ export class ThreeGame {
 
         if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
         if (!o2?.isOnline) return { key: 'o2', label: 'REPAIR O2 AT THE SHIP' };
-        if (mission?.type && mission.label) return { key: 'objective', label: mission.label };
+        if (mission?.type && mission.label) return { key: 'objective', label: 'SECURE ACTIVE OBJECTIVE' };
         return { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
     }
 
@@ -3225,33 +3243,138 @@ export class ThreeGame {
 
     createBlackBoxMarker(state) {
         const marker = new THREE.Group();
+
+        // 1. Red neon pulse ring under the corpse
         const ring = new THREE.Mesh(
-            new THREE.RingGeometry(0.45, 0.62, 32),
+            new THREE.RingGeometry(0.55, 0.72, 32),
             new THREE.MeshBasicMaterial({
                 color: 0xff3344,
                 transparent: true,
-                opacity: 0.75,
+                opacity: 0.65,
                 side: THREE.DoubleSide,
                 depthWrite: false
             })
         );
         ring.rotation.x = -Math.PI / 2;
         ring.position.y = 0.04;
+        ring.userData.blackBoxOwnedMaterial = true;
         marker.add(ring);
 
-        const suitMaterial = (this.playerMaterials?.[state.classType] ?? this.playerMaterials?.SCOUT)?.clone?.()
-            ?? new THREE.SpriteMaterial({ color: 0xff3344, transparent: true, opacity: 0.85 });
-        suitMaterial.color = new THREE.Color(0xff3344);
-        suitMaterial.opacity = 0.86;
-        suitMaterial.transparent = true;
-        const suit = new THREE.Sprite(suitMaterial);
-        suit.scale.set(1.15, 1.15, 1);
-        suit.position.y = 0.78;
-        suit.userData.blackBoxOwnedMaterial = true;
-        marker.add(suit);
+        // 2. Body corpse geometry group
+        const bodyGroup = new THREE.Group();
+        
+        const suitColors = {
+            SCOUT: 0xd4af37,     // scout gold/yellow
+            TANK: 0x990000,      // tank heavy red
+            ENGINEER: 0x0055ff   // engineer tech blue
+        };
+        const suitColor = suitColors[state.classType] ?? 0xd4af37;
+        const torsoMat = new THREE.MeshStandardMaterial({
+            color: suitColor,
+            metalness: 0.7,
+            roughness: 0.5
+        });
+        
+        // Torso
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 0.4), torsoMat);
+        torso.position.set(0, 0.11, 0);
+        torso.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(torso);
 
-        const beacon = new THREE.PointLight(0xff3344, 1.6, 6);
+        // Helmet/Head
+        const visorColors = {
+            SCOUT: 0x00ffcc,
+            TANK: 0xffaa00,
+            ENGINEER: 0x00e5ff
+        };
+        const visorColor = visorColors[state.classType] ?? 0x00ffcc;
+        const headGroup = new THREE.Group();
+        
+        const helmet = new THREE.Mesh(
+            new THREE.SphereGeometry(0.18, 12, 12),
+            new THREE.MeshStandardMaterial({ color: 0x22252a, metalness: 0.8, roughness: 0.3 })
+        );
+        helmet.position.set(0, 0.14, 0);
+        helmet.userData.blackBoxOwnedMaterial = true;
+        headGroup.add(helmet);
+        
+        const visor = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.06, 0.18),
+            new THREE.MeshBasicMaterial({ color: visorColor, transparent: true, opacity: 0.6 })
+        );
+        visor.position.set(0.1, 0.15, 0);
+        visor.userData.blackBoxOwnedMaterial = true;
+        headGroup.add(visor);
+
+        headGroup.position.set(-0.4, 0, 0);
+        bodyGroup.add(headGroup);
+
+        // Limbs
+        const boneMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.8 });
+        
+        // Left Leg
+        const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.38, 6), torsoMat);
+        legL.rotation.z = Math.PI / 2 + 0.25;
+        legL.position.set(0.42, 0.08, -0.12);
+        legL.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(legL);
+
+        // Right Leg
+        const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.38, 6), torsoMat);
+        legR.rotation.z = Math.PI / 2 - 0.25;
+        legR.position.set(0.42, 0.08, 0.12);
+        legR.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(legR);
+
+        // Left Arm
+        const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.32, 6), torsoMat);
+        armL.rotation.y = 0.5;
+        armL.rotation.z = Math.PI / 4;
+        armL.position.set(-0.15, 0.09, -0.22);
+        armL.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(armL);
+
+        // Right Arm
+        const armR = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.32, 6), torsoMat);
+        armR.rotation.y = -0.5;
+        armR.rotation.z = Math.PI / 4;
+        armR.position.set(-0.15, 0.09, 0.22);
+        armR.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(armR);
+
+        // Scattered Bone Fragments
+        const bone1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 6), boneMat);
+        bone1.rotation.y = 1.1;
+        bone1.position.set(0.1, 0.04, -0.26);
+        bone1.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(bone1);
+
+        const bone2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 6), boneMat);
+        bone2.rotation.y = -0.8;
+        bone2.position.set(-0.25, 0.04, 0.26);
+        bone2.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(bone2);
+
+        marker.add(bodyGroup);
+
+        // 3. The actual Black Box item next to the corpse
+        const blackBoxGeo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
+        const blackBoxMat = new THREE.MeshStandardMaterial({
+            color: 0xff3344,
+            emissive: 0xff1122,
+            roughness: 0.2,
+            metalness: 0.8
+        });
+        const blackBoxMesh = new THREE.Mesh(blackBoxGeo, blackBoxMat);
+        blackBoxMesh.position.set(0, 0.08, 0.25);
+        blackBoxMesh.rotation.y = 0.45;
+        blackBoxMesh.userData.blackBoxOwnedMaterial = true;
+        marker.add(blackBoxMesh);
+
+        // 4. Point light beacon
+        const beacon = new THREE.PointLight(0xff3344, 1.8, 6.0, 1.5);
         beacon.position.y = 1.0;
+        beacon.userData.blackBoxOwnedMaterial = true;
         marker.add(beacon);
 
         marker.position.set(state.x, 0, state.z);
@@ -3403,7 +3526,11 @@ export class ThreeGame {
         });
         this.clearBlackBoxMarker();
         this._blackBoxState = blackBoxStore.load();
-        this.showBunkerLine(getDialogueLine('blackBoxRecovery') ?? 'BLACK BOX RECOVERED. SALVAGE BANKED.');
+        
+        // Alert and trigger patrol spawn
+        this.showBunkerLine('MOTHERSHIP: CAUTION. RECOVERY SIGNATURE TRACKED. PATROLS INBOUND.');
+        this.spawnPatrolNearPlayer();
+        
         window.AudioManager?.play('class_lock', { volume: 0.56, playbackRate: 0.76, bus: 'sfx' });
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
         return true;
@@ -4564,6 +4691,37 @@ export class ThreeGame {
             medkitBtn.onclick = () => this.attemptMedConversion(ship);
         }
 
+        // Setup Tab Navigation
+        const tabBase = document.getElementById('terminal-tab-base');
+        const tabSkills = document.getElementById('terminal-tab-skills');
+        const contentBase = document.getElementById('terminal-tab-base-content');
+        const contentSkills = document.getElementById('terminal-tab-skills-content');
+
+        if (tabBase && tabSkills && contentBase && contentSkills) {
+            // Default to Base System Tab
+            tabBase.classList.add('active');
+            tabSkills.classList.remove('active');
+            contentBase.classList.remove('hidden');
+            contentSkills.classList.add('hidden');
+
+            tabBase.onclick = () => {
+                tabBase.classList.add('active');
+                tabSkills.classList.remove('active');
+                contentBase.classList.remove('hidden');
+                contentSkills.classList.add('hidden');
+                window.AudioManager?.play('ui_click', { volume: 0.5 });
+            };
+
+            tabSkills.onclick = () => {
+                tabSkills.classList.add('active');
+                tabBase.classList.remove('active');
+                contentSkills.classList.remove('hidden');
+                contentBase.classList.add('hidden');
+                window.AudioManager?.play('ui_click', { volume: 0.5 });
+                this.renderSkillsTree(ship);
+            };
+        }
+
         // Hook up Close button
         const closeBtn = document.getElementById('close-console-terminal');
         if (closeBtn) {
@@ -4578,6 +4736,145 @@ export class ThreeGame {
         if (modal) {
             window.AudioManager?.play('ui_click', { volume: 0.5 });
             modal.classList.add('hidden');
+        }
+    }
+
+    getConnectorLine(row, col, playerType) {
+        let parentUnlocked = false;
+        let type = ''; // 'down-left' or 'down-right'
+        
+        const tree = CLASS_SKILL_TREES[playerType] || [];
+
+        if (row === 2) {
+            // Parent is node at (1,3)
+            const parent = tree.find(n => n.row === 1 && n.col === 3);
+            parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
+            if (col === 2) type = 'down-left';
+            else if (col === 4) type = 'down-right';
+        } else if (row === 4) {
+            if (col === 2) {
+                // Parent is (3,1)
+                const parent = tree.find(n => n.row === 3 && n.col === 1);
+                parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
+                type = 'down-right';
+            } else if (col === 4) {
+                // Parent is (3,5)
+                const parent = tree.find(n => n.row === 3 && n.col === 5);
+                parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
+                type = 'down-left';
+            }
+        } else if (row === 6) {
+            // Parent is (5,3)
+            const parent = tree.find(n => n.row === 5 && n.col === 3);
+            parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
+            if (col === 2) type = 'down-left';
+            else if (col === 4) type = 'down-right';
+        }
+        
+        if (!type) return '';
+        
+        const strokeColor = parentUnlocked ? '#38bdf8' : 'rgba(255, 159, 28, 0.25)';
+        const strokeWidth = parentUnlocked ? 2.5 : 1.5;
+        
+        const lineSvg = type === 'down-left'
+            ? `<svg class="skill-line-svg"><line x1="100%" y1="0%" x2="0%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`
+            : `<svg class="skill-line-svg"><line x1="0%" y1="0%" x2="100%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`;
+        
+        return `<div class="skill-line-cell">${lineSvg}</div>`;
+    }
+
+    renderSkillsTree(ship) {
+        const gridContainer = document.getElementById('skills-tree-grid');
+        const countEl = document.getElementById('skills-unlocked-count');
+        if (!gridContainer) return;
+
+        gridContainer.innerHTML = '';
+
+        const playerClass = ship.type;
+        const tree = CLASS_SKILL_TREES[playerClass] || [];
+        const unlockedCount = tree.filter(node => this.bank.isSkillUnlocked(node.id)).length;
+        if (countEl) {
+            countEl.textContent = `UNLOCKED SKILLS: ${unlockedCount}/${tree.length}`;
+        }
+
+        for (let row = 1; row <= 7; row++) {
+            for (let col = 1; col <= 5; col++) {
+                const node = tree.find(n => n.row === row && n.col === col);
+                if (node) {
+                    const isUnlocked = this.bank.isSkillUnlocked(node.id);
+                    const isAvailable = !isUnlocked && this.bank.canUnlockSkill(node.id, playerClass);
+                    const state = isUnlocked ? 'unlocked' : (isAvailable ? 'available' : 'locked');
+
+                    const card = document.createElement('div');
+                    card.className = `skill-node-card node-state--${state}`;
+                    card.style.gridRow = String(row);
+                    card.style.gridColumn = String(col);
+
+                    const header = document.createElement('div');
+                    header.className = 'skill-node-header';
+                    const label = document.createElement('span');
+                    label.textContent = node.label;
+                    const status = document.createElement('span');
+                    status.className = 'skill-node-status';
+                    status.textContent = isUnlocked ? '[UNLOCKED]' : (isAvailable ? '[AVAILABLE]' : '[LOCKED]');
+                    header.appendChild(label);
+                    header.appendChild(status);
+                    card.appendChild(header);
+
+                    const desc = document.createElement('div');
+                    desc.className = 'skill-node-desc';
+                    desc.textContent = node.desc;
+                    card.appendChild(desc);
+
+                    const costArr = [];
+                    if (node.cost.tech) costArr.push(`${node.cost.tech} TECH`);
+                    if (node.cost.coin) costArr.push(`${node.cost.coin} COIN`);
+                    if (node.cost.med) costArr.push(`${node.cost.med} MED`);
+                    const costText = costArr.join(' / ');
+
+                    const costEl = document.createElement('div');
+                    costEl.className = 'skill-node-cost';
+                    costEl.textContent = isUnlocked ? 'COMPLETED' : `COST: ${costText}`;
+                    card.appendChild(costEl);
+
+                    if (isAvailable) {
+                        const buyBtn = document.createElement('button');
+                        buyBtn.className = 'skill-node-btn';
+                        buyBtn.textContent = 'UNLOCK';
+                        buyBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            const success = this.bank.unlockSkill(node.id, playerClass);
+                            if (success) {
+                                window.AudioManager?.play('ui_upgrade_weapon', { volume: 0.6 });
+                                this.syncPersistentUpgrades();
+                                this.updatePlayerType(this.playerType);
+                                if (window.syncAbilityPanelLabel) window.syncAbilityPanelLabel();
+                                this.renderSkillsTree(ship);
+                                this.renderConsoleBanking(ship);
+                            } else {
+                                window.AudioManager?.play('ui_error', { volume: 0.5 });
+                            }
+                        };
+                        card.appendChild(buyBtn);
+                    }
+
+                    gridContainer.appendChild(card);
+                } else {
+                    const connectorHtml = this.getConnectorLine(row, col, playerClass);
+                    if (connectorHtml) {
+                        const wrapper = document.createElement('div');
+                        wrapper.style.gridRow = String(row);
+                        wrapper.style.gridColumn = String(col);
+                        wrapper.innerHTML = connectorHtml;
+                        gridContainer.appendChild(wrapper.firstChild);
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.style.gridRow = String(row);
+                        empty.style.gridColumn = String(col);
+                        gridContainer.appendChild(empty);
+                    }
+                }
+            }
         }
     }
 
@@ -4651,7 +4948,11 @@ export class ThreeGame {
     syncPersistentUpgrades() {
         this.unlocks = this.bank.getUnlocks();
         this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
-        this.playerVitals.maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
+        let maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
+        if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_plating_1')) {
+            maxHp += 1;
+        }
+        this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
         this.updateGoalModuleVisualState(this.unlocks);
@@ -4667,9 +4968,19 @@ export class ThreeGame {
         const shotDamage = Math.max(0, Math.floor(levels.shotDamage ?? 0));
         const shotAmount = Math.max(0, Math.floor(levels.shotAmount ?? 0));
 
-        this.weaponClipSize = WEAPON_CLIP_SIZE + ammoCapacity * WEAPON_CLIP_PER_CAPACITY;
+        let baseClipSize = WEAPON_CLIP_SIZE + ammoCapacity * WEAPON_CLIP_PER_CAPACITY;
+        if (this.playerType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_ammo_1')) {
+            baseClipSize += 3;
+        }
+        this.weaponClipSize = baseClipSize;
+
+        let extraDamage = shotDamage;
+        if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_damage_1')) {
+            extraDamage += 1;
+        }
+
         this.weaponUpgradeBonuses = {
-            shotDamage,
+            shotDamage: extraDamage,
             speedAdd: shotSpeed * WEAPON_SPEED_PER_TIER,
             shotAmount
         };
@@ -4873,8 +5184,8 @@ export class ThreeGame {
     chooseFoundryDiscoveryPosition() {
         const anchor = this.getBiomeAnchorPosition();
         const random = this.createSeededRandom(this.hashTile(
-            Math.round(anchor.x * 31 + Date.now() % 997),
-            Math.round(anchor.z * 37 + this.snailsKilledThisRun * 101)
+            Math.round(anchor.x),
+            Math.round(anchor.z)
         ));
         const preferredAngles = [Math.PI * 0.15, Math.PI * 0.85, Math.PI * 1.35, Math.PI * 1.75];
         for (let attempt = 0; attempt < 96; attempt += 1) {
@@ -4897,7 +5208,7 @@ export class ThreeGame {
     // Reveal/power-up the Fabrication Foundry after the O2 counterattack.
     revealFoundry({ instant = false, randomEdge = false } = {}) {
         if (!this.foundry) return;
-        const site = randomEdge ? this.chooseFoundryDiscoveryPosition() : this.foundry.getPosition();
+        const site = (randomEdge || !this.foundry.built) ? this.chooseFoundryDiscoveryPosition() : this.foundry.getPosition();
         const ship = this.getActiveShip();
         const cx = Number.isFinite(site?.x) ? site.x : (Number.isFinite(ship?.tileX) ? ship.tileX : 9);
         const cz = Number.isFinite(site?.z) ? site.z : (Number.isFinite(ship?.tileZ) ? ship.tileZ : 9);
@@ -5059,6 +5370,7 @@ export class ThreeGame {
         // Returning to an already-online base: snap the flood-light grid and the
         // Foundry on with no theatrics. The animated versions only play on the live
         // first repair, which fires via the o2-generator-upgraded event before this.
+        this.revealFoundry({ instant: true });
         if (this.baseLights) {
             const ship = this.getActiveShip();
             if (ship && Number.isFinite(ship.tileX) && Number.isFinite(ship.tileZ)) {
@@ -5427,6 +5739,7 @@ export class ThreeGame {
         this.keys.down = false;
         this.keys.left = false;
         this.keys.right = false;
+        this.keys.shift = false;
         this.virtualInput.x = 0;
         this.virtualInput.z = 0;
         this.isMoving = false;
@@ -5617,12 +5930,28 @@ export class ThreeGame {
 
     _initClassAbility() {
         const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
+        let cooldownMax = stats.abilityCooldown;
+        let activeDuration = stats.abilityDuration;
+
+        if (this.playerType === 'SCOUT' && this.bank) {
+            if (this.bank.isSkillUnlocked('scout_special_upgrade_1')) {
+                activeDuration += 1.0;
+            }
+            if (this.bank.isSkillUnlocked('scout_special_upgrade_2')) {
+                cooldownMax -= 2.0;
+            }
+        } else if (this.playerType === 'TANK' && this.bank) {
+            if (this.bank.isSkillUnlocked('tank_special_upgrade_1')) {
+                activeDuration += 1.5;
+            }
+        }
+
         this.classAbility = {
-            cooldownMax: stats.abilityCooldown,
+            cooldownMax: cooldownMax,
             cooldownRemaining: 0,
             active: false,
             activeTimer: 0,
-            activeDuration: stats.abilityDuration
+            activeDuration: activeDuration
         };
         this._abilityMoveSpeedMult = 1.0;
         this._abilityImmune = false;
@@ -5630,8 +5959,25 @@ export class ThreeGame {
         this._abilityRefillMult = 1.0;
     }
 
+    isSpecialAbilityUnlocked() {
+        if (!this.bank) return true;
+        const keys = {
+            SCOUT: 'scout_special_unlock',
+            TANK: 'tank_special_unlock',
+            ENGINEER: 'engineer_special_unlock'
+        };
+        const nodeKey = keys[this.playerType];
+        if (!nodeKey) return true;
+        return this.bank.isSkillUnlocked(nodeKey);
+    }
+
     triggerClassAbility() {
         if (!this.isGameplayInputActive()) return;
+        if (!this.isSpecialAbilityUnlocked()) {
+            window.AudioManager?.play('ui_error', { volume: 0.32, playbackRate: 0.9, bus: 'sfx' });
+            this.showBunkerLine('MOTHERSHIP: EXOSUIT SPECIAL OFFLINE. UNLOCK IN SKILL TREE [TAB].');
+            return;
+        }
         if (this.classAbility.cooldownRemaining > 0) {
             window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.4, bus: 'sfx' });
             return;
@@ -5716,6 +6062,45 @@ export class ThreeGame {
         }
     }
 
+    spawnRadarPingHighlight(target, colorHex = 0x00d2ff) {
+        if (!target) return;
+        const geom = new THREE.RingGeometry(0.12, 0.22, 4);
+        const mat = new THREE.MeshBasicMaterial({
+            color: colorHex,
+            transparent: true,
+            opacity: 0.95,
+            depthTest: false,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.rotation.x = -Math.PI / 4;
+        mesh.rotation.z = Math.PI / 4;
+        mesh.position.y = 1.1;
+        mesh.renderOrder = 9999;
+        this.scene.add(mesh);
+
+        this.transientEffects.push({
+            mesh,
+            age: 0,
+            duration: 5.0,
+            update: (dt, age) => {
+                if (target && target.parent) {
+                    mesh.position.x = target.position.x;
+                    mesh.position.z = target.position.z;
+                }
+                mesh.position.y = 1.1 + Math.sin(age * 6.5) * 0.08;
+                mesh.rotation.y += 0.04;
+                const t = age / 5.0;
+                mat.opacity = 0.95 * (1 - t * t);
+            },
+            dispose: () => {
+                geom.dispose();
+                mat.dispose();
+            }
+        });
+    }
+
     triggerRadarScan() {
         if (!this.isGameplayInputActive()) return;
         if (this.radarScanCooldownRemaining > 0) {
@@ -5724,17 +6109,24 @@ export class ThreeGame {
         }
         if (!this.player) return;
 
-        this.radarScanCooldownRemaining = this.radarScanCooldownMax;
+        let cdMax = 4.0;
+        if (this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_special_upgrade_2') && this.classAbility.active) {
+            cdMax *= 0.5;
+        }
+        this.radarScanCooldownRemaining = cdMax;
 
         const px = this.player.position.x;
         const pz = this.player.position.z;
+
+        const upgrade1 = this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_radar_1');
+        const maxRadius = 18.0 * (upgrade1 ? 1.3 : 1.0);
 
         if (!this.activeRadarScans) this.activeRadarScans = [];
         this.activeRadarScans.push({
             x: px,
             z: pz,
             currentRadius: 0.1,
-            maxRadius: 18.0,
+            maxRadius: maxRadius,
             age: 0,
             duration: 1.2
         });
@@ -5758,15 +6150,57 @@ export class ThreeGame {
         scanGroup.add(ringMesh);
         this.scene.add(scanGroup);
 
+        const pingedIds = new Set();
+
         this.transientEffects.push({
             mesh: scanGroup,
             age: 0,
             duration: 1.2,
             update: (dt, age) => {
                 const t = age / 1.2;
-                const currentRadius = t * 18.0;
+                const currentRadius = t * maxRadius;
                 ringMesh.scale.set(currentRadius, currentRadius, 1);
                 ringMat.opacity = 0.8 * (1 - t * t);
+
+                for (const sprite of this.scatterSprites) {
+                    if (!sprite || !sprite.userData || pingedIds.has(sprite.uuid)) continue;
+                    const isEnemy = this.isEnemyType(sprite.userData.type);
+                    const isBB = sprite.userData.isBlackBoxMarker;
+                    const isTerminal = sprite.userData.type === 'lore_terminal';
+                    if (!isEnemy && !isBB && !isTerminal) continue;
+
+                    const dx = sprite.position.x - px;
+                    const dz = sprite.position.z - pz;
+                    const d = Math.hypot(dx, dz);
+                    if (d <= currentRadius) {
+                        pingedIds.add(sprite.uuid);
+                        this.spawnRadarPingHighlight(sprite, 0x00d2ff);
+                    }
+                }
+
+                for (const pickup of this.pickupMeshes) {
+                    if (!pickup || pingedIds.has(pickup.uuid)) continue;
+                    const dx = pickup.position.x - px;
+                    const dz = pickup.position.z - pz;
+                    const d = Math.hypot(dx, dz);
+                    if (d <= currentRadius) {
+                        pingedIds.add(pickup.uuid);
+                        this.spawnRadarPingHighlight(pickup, 0x38bdf8);
+                    }
+                }
+
+                if (this.foundry && this.foundry.built && !pingedIds.has('foundry')) {
+                    const fPos = this.foundry.getPosition();
+                    if (fPos) {
+                        const dx = fPos.x - px;
+                        const dz = fPos.z - pz;
+                        const d = Math.hypot(dx, dz);
+                        if (d <= currentRadius) {
+                            pingedIds.add('foundry');
+                            this.spawnRadarPingHighlight(this.foundry.group, 0x00d2ff);
+                        }
+                    }
+                }
             },
             dispose: () => {
                 ringGeo.dispose();
@@ -5816,8 +6250,11 @@ export class ThreeGame {
         this._wasInBubble = inBubble;
 
         if (inBubble) {
-            const refillRate = (reactorUpgrade ? generatorState.refillRate * 1.2 : generatorState.refillRate)
+            let refillRate = (reactorUpgrade ? generatorState.refillRate * 1.2 : generatorState.refillRate)
                 * (this._abilityRefillMult ?? 1.0);
+            if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_special_upgrade_2') && this.classAbility.active) {
+                refillRate *= 1.20;
+            }
             this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
@@ -5825,6 +6262,14 @@ export class ThreeGame {
                 * (this.o2DrainMult ?? 1.0)
                 * (this.currentBiomeO2DrainMult ?? 1.0)
                 * (this._abilityO2DrainMult ?? 1.0);
+            if (this.keys.shift && this.isMoving && !this.classAbility.active) {
+                drainRate *= 1.6;
+            }
+            if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_o2_efficiency')) {
+                drainRate *= 0.85;
+            } else if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_battery_1')) {
+                drainRate *= 0.90;
+            }
             if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
                 drainRate *= O2_DRAIN_RATE_DANGER_MULT;
             }
@@ -5924,6 +6369,9 @@ export class ThreeGame {
             const prevZ = this.player.position.z;
 
             let speed = this.moveSpeed * (this._abilityMoveSpeedMult ?? 1.0);
+            if (this.keys.shift && !this.classAbility.active) {
+                speed *= 1.45;
+            }
             if (this.playerSlowTimer > 0 && !(this._abilityMoveSpeedMult > 1)) {
                 speed *= 0.55;
             }
@@ -6750,7 +7198,7 @@ export class ThreeGame {
         });
         const points = new THREE.Points(geometry, material);
         points.frustumCulled = false;
-        points.renderOrder = 4;
+        points.renderOrder = 1;
         this.scene.add(points);
         this.weather.points = points;
         this.weather.geometry = geometry;
@@ -6862,7 +7310,7 @@ export class ThreeGame {
         if (!this.scene) return;
         const splash = new THREE.Group();
         splash.position.set(x, 0, z);
-        splash.renderOrder = 4;
+        splash.renderOrder = 1;
 
         const ring = new THREE.Mesh(
             new THREE.RingGeometry(0.06, 0.13, 16),
@@ -6876,7 +7324,7 @@ export class ThreeGame {
         );
         ring.rotation.x = -Math.PI / 2;
         ring.position.y = 0.042;
-        ring.renderOrder = 4;
+        ring.renderOrder = 1;
         splash.add(ring);
 
         const dropletGeo = new THREE.CircleGeometry(0.024, 10);
@@ -6895,7 +7343,7 @@ export class ThreeGame {
             );
             droplet.rotation.x = -Math.PI / 2;
             droplet.position.set((Math.random() - 0.5) * 0.04, 0.046 + Math.random() * 0.012, (Math.random() - 0.5) * 0.04);
-            droplet.renderOrder = 4;
+            droplet.renderOrder = 1;
             splash.add(droplet);
             const ang = Math.random() * Math.PI * 2;
             const speed = (0.2 + Math.random() * 0.3) * scaleBoost;
@@ -7387,7 +7835,11 @@ export class ThreeGame {
         if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return;
 
         this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
-        this.weaponFireCooldown = WEAPON_FIRE_COOLDOWN;
+        let fireCd = WEAPON_FIRE_COOLDOWN;
+        if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
+            fireCd /= 1.20;
+        }
+        this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
 
         this.spawnPlayerShot(normX, normZ);
@@ -7403,7 +7855,10 @@ export class ThreeGame {
         const classDamage = CLASS_STATS[this.playerType]?.projectileDamage ?? PROJECTILE_DAMAGE;
         const bonuses = this.weaponUpgradeBonuses ?? null;
         const damage = classDamage + (bonuses?.shotDamage ?? 0);
-        const speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
+        let speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
+        if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
+            speed *= 1.20;
+        }
         const shotAmount = FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0;
         const spreads = MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
 

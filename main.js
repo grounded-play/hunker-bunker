@@ -84,7 +84,8 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     interact: ['KeyE', null],
     reload: ['KeyR', null],
     ability: ['KeyF', null],
-    scan: ['KeyQ', null]
+    scan: ['KeyQ', null],
+    sprint: ['ShiftLeft', 'ShiftRight']
 });
 const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveUp', label: 'MOVE UP' },
@@ -94,7 +95,8 @@ const CONTROL_ACTIONS = Object.freeze([
     { id: 'interact', label: 'INTERACT' },
     { id: 'reload', label: 'RELOAD' },
     { id: 'ability', label: 'CLASS ABILITY' },
-    { id: 'scan', label: 'RADAR SCAN' }
+    { id: 'scan', label: 'RADAR SCAN' },
+    { id: 'sprint', label: 'SPRINT (HOLD)' }
 ]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
@@ -144,6 +146,13 @@ function clearTouchInputState() {
     touchMoveControl?.classList.remove('active');
     touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
     window.game?.setVirtualInput?.(0, 0);
+    if (window.game?.keys) window.game.keys.shift = false;
+    const touchSprintBtn = document.getElementById('touch-sprint-btn');
+    if (touchSprintBtn) {
+        touchSprintBtn.classList.remove('sprint-active');
+        const label = touchSprintBtn.querySelector('#touch-sprint-cooldown');
+        if (label) label.textContent = 'WALK';
+    }
 }
 
 function syncOrientationLockState() {
@@ -762,6 +771,14 @@ window.addEventListener('enemy-killed', (event) => {
 
 window.addEventListener('weapon-upgraded', () => {
     fireMothershipReactiveLine('weapon_calibrated');
+});
+
+window.addEventListener('skill-unlocked', () => {
+    syncAbilityPanelLabel();
+});
+
+window.addEventListener('bank-updated', () => {
+    syncAbilityPanelLabel();
 });
 
 window.addEventListener('enemy-hit', (event) => {
@@ -2087,8 +2104,17 @@ function syncAbilityPanelLabel() {
     const nameEl = document.getElementById('ability-name');
     if (nameEl) nameEl.textContent = label;
     const panel = document.getElementById('class-ability-panel');
-    if (panel) panel.title = `${label} [F]`;
+    if (panel) {
+        panel.title = `${label} [F]`;
+        const unlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
+        panel.classList.toggle('class-ability-panel--locked', !unlocked);
+        if (!unlocked) {
+            panel.title = `${label} [LOCKED — TAB SKILLS]`;
+            if (nameEl) nameEl.textContent = `${label} (LOCKED)`;
+        }
+    }
 }
+window.syncAbilityPanelLabel = syncAbilityPanelLabel;
 
 function updateExtractionRing(progress, active) {
     const ring = document.getElementById('extraction-progress-ring');
@@ -2359,6 +2385,12 @@ function syncTouchMoveControlVisibility() {
 
     // The floating sprint button is part of the mobile UI, so it tracks the
     // touch move pad: when the pad is disabled the button disappears too.
+    const sprintBtn = document.getElementById('touch-sprint-btn');
+    if (sprintBtn) {
+        const showSprintBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick;
+        sprintBtn.classList.toggle('hidden', !showSprintBtn);
+    }
+
     const abilityBtn = document.getElementById('touch-ability-btn');
     if (abilityBtn) {
         const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick;
@@ -2374,6 +2406,26 @@ function syncTouchMoveControlVisibility() {
     if (!isHUD || !showJoystick) {
         clearTouchInputState();
     }
+}
+
+// Wire touch sprint button
+const touchSprintBtn = document.getElementById('touch-sprint-btn');
+if (touchSprintBtn) {
+    touchSprintBtn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (!window.game) return;
+        
+        const active = !window.game.keys.shift;
+        window.game.keys.shift = active;
+        
+        touchSprintBtn.classList.toggle('sprint-active', active);
+        const label = touchSprintBtn.querySelector('#touch-sprint-cooldown');
+        if (label) {
+            label.textContent = active ? 'SPRINT' : 'WALK';
+        }
+        
+        window.AudioManager?.play('ui_click', { volume: 0.5, playbackRate: active ? 1.2 : 0.95 });
+    });
 }
 
 // Wire touch ability button

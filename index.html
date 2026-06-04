@@ -536,6 +536,16 @@
       <div class="touch-move-control__label">MOVE</div>
     </div>
 
+    <!-- Touch Sprint Button -->
+    <button id="touch-sprint-btn" class="touch-ability-btn touch-sprint-btn hidden" aria-label="Toggle sprint">
+      <span class="touch-ability-btn__label" aria-hidden="true">
+        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      </span>
+      <span class="touch-ability-btn__cooldown" id="touch-sprint-cooldown">WALK</span>
+    </button>
+
     <!-- Touch Ability Button -->
     <button id="touch-ability-btn" class="touch-ability-btn hidden" aria-label="Use class ability">
       <span class="touch-ability-btn__label" id="touch-ability-label" aria-hidden="true">
@@ -564,11 +574,7 @@
       <span class="touch-ability-btn__cooldown" id="touch-scan-cooldown">READY</span>
     </button>
 
-    <!-- Interactive Console HUD Floating Prompt -->
-    <div id="console-hud-prompt" class="hidden">
-      <span class="prompt-key">PRESS E</span>
-      <span class="prompt-text">ACCESS BASE SHOP</span>
-    </div>
+
 
     <!-- Lore Terminal Prompt -->
     <div id="lore-hud-prompt" class="lore-hud-prompt hidden">
@@ -613,24 +619,35 @@
       <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
     </div>
 
-    <!-- Radio Transmission CRT Prompt -->
-    <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
-      <div class="radio-transmission-prompt__avatar">
-        <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" alt="Sender Portrait" />
-        <div class="radio-transmission-prompt__scanline"></div>
+    <!-- Right sidebar layout container for notifications/prompts -->
+    <div class="hud-right-sidebar">
+      <!-- Interactive Console HUD Floating Prompt -->
+      <div id="console-hud-prompt" class="hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">ACCESS BASE SHOP</span>
       </div>
-      <div class="radio-transmission-prompt__body">
-        <div class="radio-transmission-prompt__header">
-          <span class="radio-transmission-prompt__signal-icon">⚡</span>
-          <span id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
-          <span class="radio-transmission-prompt__status">ONLINE</span>
+
+      <!-- Radio Transmission CRT Prompt -->
+      <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
+        <div class="radio-transmission-prompt__avatar">
+          <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" alt="Sender Portrait" />
+          <div class="radio-transmission-prompt__scanline"></div>
         </div>
-        <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
+        <div class="radio-transmission-prompt__body">
+          <div class="radio-transmission-prompt__header">
+            <span class="radio-transmission-prompt__signal-icon">⚡</span>
+            <span id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
+            <span class="radio-transmission-prompt__status">ONLINE</span>
+          </div>
+          <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
+        </div>
       </div>
-    </div>
-    <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
-      <span class="mission-progress-hud__icon">◈</span>
-      <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
+
+      <!-- Mission Progress HUD -->
+      <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
+        <span class="mission-progress-hud__icon">◈</span>
+        <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
+      </div>
     </div>
     <!-- Persistent loop-state cue: always shows the next thing to do -->
     <div id="loop-step-hud" class="loop-step-hud hidden" aria-live="polite">
@@ -655,7 +672,15 @@
         </div>
 
         <div class="terminal-body">
-        <div class="terminal-layout terminal-layout--shop">
+          <!-- Terminal Tabs Header -->
+          <div class="terminal-tabs">
+            <button id="terminal-tab-base" class="terminal-tab-btn active">◇ BASE SYSTEM</button>
+            <button id="terminal-tab-skills" class="terminal-tab-btn">◇ CLASS SKILLS</button>
+          </div>
+
+          <!-- Base Systems Tab Content -->
+          <div id="terminal-tab-base-content" class="terminal-tab-content">
+            <div class="terminal-layout terminal-layout--shop">
 
           <div class="terminal-shop-toprow">
             <!-- Bank balance: compact resource grid + deposit -->
@@ -869,10 +894,25 @@
               <p class="action-desc" id="terminal-weapon-shotAmount-desc">NEXT: Double-shot spread</p>
               <p class="action-desc action-desc--cost" id="terminal-weapon-shotAmount-cost">COST: 120 TECH / 50 COIN</p>
               <button class="terminal-action-btn" id="terminal-btn-weapon-shotAmount">UPGRADE</button>
-            </div>
           </div>
 
         </div>
+        </div><!-- /#terminal-tab-base-content -->
+
+        <!-- Class Skills Tab Content -->
+        <div id="terminal-tab-skills-content" class="terminal-tab-content hidden">
+          <div class="terminal-layout terminal-layout--skills">
+            <div class="skills-header">
+              <span class="skills-unlocked-count" id="skills-unlocked-count">UNLOCKED SKILLS: 0/6</span>
+              <span class="skills-info-hint">SELECT A NODE TO VIEW DATA AND PURCHASE WITH BANKED RESOURCE MATRIX</span>
+            </div>
+            <div class="skills-tree-container">
+              <div class="skills-tree-grid" id="skills-tree-grid">
+                <!-- Skill nodes generated dynamically by class -->
+              </div>
+            </div>
+          </div>
+        </div><!-- /#terminal-tab-skills-content -->
 
         <div class="terminal-footer">
           <div class="telemetry-ticker" id="terminal-status-ticker">WARNING: RADIATION LEVELS DETECTED OUTSIDE SHIP ENCLOSURE. DOCK SECURE.</div>
