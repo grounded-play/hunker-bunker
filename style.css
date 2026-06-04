@@ -7237,17 +7237,21 @@ body.mission-intro-active #game-container {
 /* ── Game Over: Score + Rating ─────────────────────────────── */
 .game-over-score-section {
   border-top: 1px solid rgba(255, 159, 28, 0.18);
-  margin-top: clamp(4px, calc(var(--vu) * 0.7), 10px);
-  padding-top: clamp(4px, calc(var(--vu) * 0.7), 10px);
-  display: flex;
-  flex-direction: column;
-  gap: clamp(2px, calc(var(--vu) * 0.45), 7px);
+  margin-top: clamp(2px, calc(var(--vu) * 0.4), 6px);
+  padding-top: clamp(4px, calc(var(--vu) * 0.65), 8px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(5px, calc(var(--vu) * 0.75), 10px) clamp(10px, calc(var(--vu) * 1.5), 18px);
 }
 
 .go-score-row {
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-width: 0;
 }
 
 .go-score-label {
@@ -7294,18 +7298,21 @@ body.mission-intro-active #game-container {
 }
 
 .go-rating-row {
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   align-items: center;
   gap: clamp(5px, calc(var(--vu) * 0.8), 10px);
+  min-width: 0;
 }
 
 .go-rating-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: clamp(24px, calc(var(--vu) * 3.3), 42px);
-  height: clamp(24px, calc(var(--vu) * 3.3), 42px);
-  font-size: clamp(14px, calc(var(--vu) * 2.5), 30px);
+  min-width: clamp(24px, calc(var(--vu) * 3.0), 36px);
+  height: clamp(24px, calc(var(--vu) * 3.0), 36px);
+  font-size: clamp(14px, calc(var(--vu) * 2.2), 26px);
   font-weight: 900;
   border: 2px solid currentColor;
   border-radius: 4px;
@@ -7323,23 +7330,28 @@ body.mission-intro-active #game-container {
   letter-spacing: 0.09em;
   color: #94a3b8;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .go-mission-status {
+  grid-column: 1 / -1;
   font-size: clamp(7px, calc(var(--vu) * 1.0), 11px);
   font-weight: 700;
   letter-spacing: 0.1em;
   color: #ffb700;
   text-transform: uppercase;
-  min-height: 1em;
+  min-height: 0;
 }
 
 /* ── Archive Row ────────────────────────────────────────────── */
 .go-archive-row {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding-top: clamp(4px, calc(var(--vu) * 0.7), 9px);
+  padding-top: clamp(3px, calc(var(--vu) * 0.45), 6px);
   border-top: 1px solid rgba(255, 159, 28, 0.1);
 }
 
