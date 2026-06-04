@@ -128,7 +128,7 @@ graph TD
   ```bash
   npm run server
   ```
-  *Runs the Socket.io node server at `http://localhost:3000` to handle peer synchronization.*
+  *Runs the Socket.io node server at `http://localhost:3001` to handle peer synchronization.*
 
 ### Running Diagnostics & Tests
 * **Run Unit Tests (Vitest)**:

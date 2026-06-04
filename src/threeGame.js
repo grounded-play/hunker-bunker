@@ -80,9 +80,12 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 }
+    // Each class now has a distinct ability (the engine already implements the
+    // three behaviours in updateClassAbility): SCOUT sprints, TANK braces
+    // (immune + rooted), ENGINEER reroutes (slows O2 drain + boosts refill).
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'fortify',   abilityLabel: 'BRACE',        abilityCooldown: 12, abilityDuration: 3.0 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'overclock', abilityLabel: 'REROUTE',      abilityCooldown: 14, abilityDuration: 4.0 }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -5124,6 +5127,12 @@ export class ThreeGame {
             if (entry) return entry.text;
         }
         return null;
+    }
+
+    // Ability key + display label for the active class (drives the HUD panel).
+    getClassAbilityInfo() {
+        const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
+        return { key: stats.abilityKey, label: stats.abilityLabel };
     }
 
     _initClassAbility() {

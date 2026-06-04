@@ -1789,9 +1789,12 @@ window.addEventListener('ability-cooldown-tick', (event) => {
 });
 
 function syncAbilityPanelLabel() {
+    const info = window.game?.getClassAbilityInfo?.();
+    const label = info?.label ?? 'SPRINT BURST';
     const nameEl = document.getElementById('ability-name');
-    if (!nameEl) return;
-    nameEl.textContent = 'SPRINT BURST';
+    if (nameEl) nameEl.textContent = label;
+    const panel = document.getElementById('class-ability-panel');
+    if (panel) panel.title = `${label} [F]`;
 }
 
 function updateExtractionRing(progress, active) {
