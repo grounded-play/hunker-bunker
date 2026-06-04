@@ -431,7 +431,7 @@
         <div class="game-over-report">
           <div class="game-over-section-label">MISSION REPORT</div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--meter">
             <span class="game-over-stat-label">DISTANCE COVERED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-distance"></div></div>
@@ -463,7 +463,7 @@
             </div>
           </div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--value-only">
             <span class="game-over-stat-label">TIME ELAPSED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-time"></div></div>
@@ -619,8 +619,8 @@
       <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
     </div>
 
-    <!-- Right sidebar layout container for notifications/prompts -->
-    <div class="hud-right-sidebar">
+    <!-- Left sidebar layout container for notifications/prompts -->
+    <div class="hud-left-sidebar">
       <!-- Interactive Console HUD Floating Prompt -->
       <div id="console-hud-prompt" class="hidden">
         <span class="prompt-key">PRESS E</span>

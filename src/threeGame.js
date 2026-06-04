@@ -6262,9 +6262,6 @@ export class ThreeGame {
                 * (this.o2DrainMult ?? 1.0)
                 * (this.currentBiomeO2DrainMult ?? 1.0)
                 * (this._abilityO2DrainMult ?? 1.0);
-            if (this.keys.shift && this.isMoving && !this.classAbility.active) {
-                drainRate *= 1.6;
-            }
             if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_o2_efficiency')) {
                 drainRate *= 0.85;
             } else if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_battery_1')) {
