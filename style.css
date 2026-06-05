@@ -3976,7 +3976,18 @@ body.mission-intro-active .hud-notification-stack,
 body.mission-intro-active #loop-step-hud,
 body.mission-intro-active .lore-hud-prompt,
 body.mission-intro-active .biome-hud-prompt,
-body.mission-intro-active #tutorial-prompt {
+body.mission-intro-active #tutorial-prompt,
+body.hud-hidden #ui,
+body.hud-hidden #touch-move-control,
+body.hud-hidden #touch-ability-btn,
+body.hud-hidden #touch-sprint-btn,
+body.hud-hidden #touch-scan-btn,
+body.hud-hidden #console-hud-prompt,
+body.hud-hidden .hud-notification-stack,
+body.hud-hidden #loop-step-hud,
+body.hud-hidden .lore-hud-prompt,
+body.hud-hidden .biome-hud-prompt,
+body.hud-hidden #tutorial-prompt {
   display: none !important;
 }
 

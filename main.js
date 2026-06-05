@@ -2877,14 +2877,6 @@ function ensureMissionManagers() {
     }
 }
 
-function runDoorTransitionAsync() {
-    return new Promise((resolve) => {
-        triggerDoorTransition(
-            null,
-            () => resolve()
-        );
-    });
-}
 
 function showRunLoadingScreen(status = 'PREPARING DROP ZONE', progress = 0) {
     clearLoaderBriefingMode();
@@ -3001,7 +2993,22 @@ async function runMissionIntroSequence() {
                 touchControlsEnabled: Boolean(state.settings.touchControls)
             });
         } else {
-            await runDoorTransitionAsync();
+            document.body.classList.add('hud-hidden');
+            await new Promise((resolve) => {
+                triggerDoorTransition(
+                    // onClosed: reveal game viewport behind the closed doors
+                    () => {
+                        document.body.classList.remove('mission-intro-active');
+                    },
+                    // onOpened: resolve transition promise
+                    () => {
+                        resolve();
+                    }
+                );
+            });
+            // Wait for doors to finish opening before revealing the HUD
+            await new Promise((r) => window.setTimeout(r, 1000));
+            document.body.classList.remove('hud-hidden');
         }
 
         // Show mission briefing after door transition
@@ -3035,6 +3042,7 @@ async function runMissionIntroSequence() {
         window.AudioManager?.startAmbience?.();
     } finally {
         document.body.classList.remove('mission-intro-active');
+        document.body.classList.remove('hud-hidden');
         game?.setInputEnabled?.(true);
         missionFlowRunning = false;
     }
