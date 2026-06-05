@@ -2398,6 +2398,10 @@ input:checked+.slider:before {
   touch-action: none;
 }
 
+body.orientation-locked #orientation-lock {
+  display: flex;
+}
+
 /* Show only in portrait mode */
 @media (orientation: portrait) {
   #orientation-lock {

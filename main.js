@@ -188,7 +188,10 @@ let missionFlowRunning = false;
 let isResettingRun = false;
 
 function isPortraitOrientationLocked() {
-    return window.matchMedia('(orientation: portrait)').matches;
+    const visualWidth = window.visualViewport?.width ?? window.innerWidth;
+    const visualHeight = window.visualViewport?.height ?? window.innerHeight;
+    return window.matchMedia('(orientation: portrait)').matches
+        || visualHeight > visualWidth;
 }
 
 function clearTouchInputState() {
@@ -220,6 +223,7 @@ function syncOrientationLockState() {
     if (locked) {
         clearTouchInputState();
         window.game?.setVirtualInput?.(0, 0);
+        window.game?.clearGameplayInputState?.();
     }
 }
 
@@ -258,6 +262,7 @@ function installOrientationInputLock() {
     syncOrientationLockState();
     window.addEventListener('resize', syncOrientationLockState);
     window.addEventListener('orientationchange', syncOrientationLockState);
+    window.visualViewport?.addEventListener('resize', syncOrientationLockState);
 }
 let deathSequenceTimer = null;
 let damageFlashTimer = null;

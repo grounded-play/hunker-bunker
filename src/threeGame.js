@@ -2421,14 +2421,18 @@ export class ThreeGame {
             const el = document.getElementById(id);
             return Boolean(el && !el.classList.contains('hidden'));
         };
-        return document.body.classList.contains('orientation-locked')
-            || window.HunkerOrientationLock?.isLocked?.()
+        return this.isOrientationLocked()
             || document.body.classList.contains('mission-intro-active')
             || isVisible('console-terminal-modal')
             || isVisible('o2-generator-modal')
             || isVisible('game-over-modal')
             || isVisible('mothership-dialogue')
             || isVisible('confirm-modal');
+    }
+
+    isOrientationLocked() {
+        return document.body.classList.contains('orientation-locked')
+            || Boolean(window.HunkerOrientationLock?.isLocked?.());
     }
 
     clearGameplayInputState() {
@@ -3152,6 +3156,14 @@ export class ThreeGame {
 
         if (this.loadingPaused) {
             if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
+            return;
+        }
+
+        if (this.isOrientationLocked()) {
+            this.clearGameplayInputState();
+            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
+            this.updateHiddenPlayerMarker(now);
+            this.renderer.render(this.scene, this.camera);
             return;
         }
 

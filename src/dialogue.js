@@ -476,7 +476,17 @@ export class DialogueManager {
             const nextText = line.slice(0, index + 1);
             row.textContent = `> ${nextText}█`;
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
-            window.AudioManager?.play('ui_typing', { volume: 0.08, varyPitch: true });
+            const isSpace = (line[index] === ' ');
+            const isStart = (index === 0);
+            const playChance = isSpace || isStart || (Math.random() < 0.22);
+            if (playChance) {
+                const randomPitch = 0.55 + Math.random() * 0.95; // 0.55 to 1.5
+                window.AudioManager?.play('ui_typing', {
+                    volume: 0.1,
+                    playbackRate: randomPitch,
+                    varyPitch: false
+                });
+            }
             await this.sleep(runId, DIALOGUE_CHAR_INTERVAL_MS);
         }
 
