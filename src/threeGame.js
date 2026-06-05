@@ -581,6 +581,11 @@ export class ThreeGame {
         this.wallHeight = 2.8;
         this.wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
         this.floorGeometry = new THREE.PlaneGeometry(1, 1);
+        // One merged floor plane per chunk instead of chunkSize² unit tiles. The
+        // floor shader blends by world position (vWorldPos), so a single plane is
+        // visually identical while removing ~360 meshes per chunk — the dominant
+        // cause of the chunk-load frame stutter.
+        this.chunkFloorGeometry = new THREE.PlaneGeometry(this.chunkSize, this.chunkSize);
         this.pillarGeometry = new THREE.CylinderGeometry(0.16, 0.16, this.wallHeight, 8);
         this.bracketGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.12);
         this.ventGeometry = new THREE.BoxGeometry(0.48, 0.48, 0.06);
@@ -8428,16 +8433,10 @@ export class ThreeGame {
             this.pendingChunkMountKeys.delete(key);
         }
 
-        this.sirenLights = [];
         for (const group of this.chunkMeshes.values()) {
             for (const child of group.children) {
                 if (child.userData.isWall) {
                     this.wallMeshes.push(child);
-                    child.traverse((subchild) => {
-                        if (subchild.userData?.isSirenLight) {
-                            this.sirenLights.push(subchild);
-                        }
-                    });
                 }
                 if (child.userData.isPickup) {
                     this.pickupMeshes.push(child);
@@ -8519,16 +8518,22 @@ export class ThreeGame {
         const grid = this.getOrCreateChunk(chunkX, chunkY);
         const group = new THREE.Group();
 
+        // Single merged floor for the whole chunk (see chunkFloorGeometry note).
+        const chunkCenter = (this.chunkSize - 1) / 2;
+        const chunkFloor = new THREE.Mesh(this.chunkFloorGeometry, this.floorMaterial);
+        chunkFloor.rotation.x = -Math.PI / 2;
+        chunkFloor.position.set(
+            chunkX * this.chunkSize + chunkCenter,
+            0,
+            chunkY * this.chunkSize + chunkCenter
+        );
+        chunkFloor.receiveShadow = true;
+        group.add(chunkFloor);
+
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
-
-                const floor = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
-                floor.rotation.x = -Math.PI / 2;
-                floor.position.set(worldX, 0, worldZ);
-                floor.receiveShadow = true;
-                group.add(floor);
 
                 if (grid[localY][localX] !== '#') continue;
 
@@ -8561,18 +8566,13 @@ export class ThreeGame {
                     sirenBase.position.y = this.wallHeight / 2 + 0.05;
                     wall.add(sirenBase);
 
+                    // Emissive dome only — NO per-wall PointLight. Dozens of dynamic
+                    // lights per chunk forced a full shader recompile on every mount
+                    // (the chunk-load stall) and crushed forward rendering. The shared
+                    // dome material pulses instead (see the siren animation loop).
                     const sirenDome = new THREE.Mesh(this.sirenDomeGeometry, this.sirenDomeMaterial);
                     sirenDome.position.y = this.wallHeight / 2 + 0.14;
                     wall.add(sirenDome);
-
-                    const sirenLight = new THREE.PointLight(0xff2222, 1.2, 5, 1.8);
-                    sirenLight.position.set(0, this.wallHeight / 2 + 0.22, 0);
-                    sirenLight.userData = {
-                        isSirenLight: true,
-                        speed: 5.0 + wallTypeRng() * 4.0,
-                        phase: wallTypeRng() * Math.PI * 2
-                    };
-                    wall.add(sirenLight);
                 } else if (wallTypeRoll < 0.35) {
                     // Damaged Wall (ruins with rubble debris)
                     const shortHeightMult = 0.45 + wallTypeRng() * 0.25;
@@ -11644,14 +11644,12 @@ export class ThreeGame {
             }
         }
 
-        // Animate siren/warning lights
-        if (this.sirenLights) {
-            for (const light of this.sirenLights) {
-                if (light.userData) {
-                    const phase = time * light.userData.speed + light.userData.phase;
-                    light.intensity = 0.4 + Math.sin(phase) * 0.9;
-                }
-            }
+        // Pulse the shared hazard-siren dome material (one update for every siren,
+        // instead of dozens of per-wall dynamic PointLights).
+        if (this.sirenDomeMaterial) {
+            const pulse = 0.5 + 0.5 * Math.sin(time * 6.0);
+            const r = 0.55 + 0.45 * pulse;
+            this.sirenDomeMaterial.color.setRGB(r, 0.12 * pulse, 0.12 * pulse);
         }
     }
 
@@ -12373,6 +12371,7 @@ export class ThreeGame {
         this.wallMaterial?.dispose?.();
         this.wallGeometry?.dispose();
         this.floorGeometry?.dispose();
+        this.chunkFloorGeometry?.dispose();
         this.pillarGeometry?.dispose();
         this.bracketGeometry?.dispose();
         this.ventGeometry?.dispose();
