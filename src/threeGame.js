@@ -589,6 +589,13 @@ export class ThreeGame {
         this.ventMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1d20 });
         this.pipeMaterial = new THREE.MeshBasicMaterial({ color: 0x24282c });
 
+        // Pre-allocated geometries/materials to optimize runtime chunk loading (avoid stutters)
+        this.sirenBaseGeometry = new THREE.CylinderGeometry(0.12, 0.14, 0.1, 8);
+        this.sirenDomeGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.12, 8);
+        this.sirenBaseMaterial = new THREE.MeshBasicMaterial({ color: 0x111111 });
+        this.sirenDomeMaterial = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+        this.rubbleGeometry = new THREE.DodecahedronGeometry(1.0, 0);
+
         this.playerRadius = 0.66;
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = _initialStats.moveSpeed;
@@ -8550,15 +8557,11 @@ export class ThreeGame {
                     wall.userData.isWall = true;
                     group.add(wall);
 
-                    const baseGeom = new THREE.CylinderGeometry(0.12, 0.14, 0.1, 8);
-                    const baseMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-                    const sirenBase = new THREE.Mesh(baseGeom, baseMat);
+                    const sirenBase = new THREE.Mesh(this.sirenBaseGeometry, this.sirenBaseMaterial);
                     sirenBase.position.y = this.wallHeight / 2 + 0.05;
                     wall.add(sirenBase);
 
-                    const domeGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.12, 8);
-                    const domeMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
-                    const sirenDome = new THREE.Mesh(domeGeom, domeMat);
+                    const sirenDome = new THREE.Mesh(this.sirenDomeGeometry, this.sirenDomeMaterial);
                     sirenDome.position.y = this.wallHeight / 2 + 0.14;
                     wall.add(sirenDome);
 
@@ -8574,10 +8577,11 @@ export class ThreeGame {
                     // Damaged Wall (ruins with rubble debris)
                     const shortHeightMult = 0.45 + wallTypeRng() * 0.25;
                     const damagedHeight = this.wallHeight * shortHeightMult;
-                    const damagedGeometry = new THREE.BoxGeometry(1, damagedHeight, 1);
                     
-                    const wall = new THREE.Mesh(damagedGeometry, this.wallMaterial);
+                    const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
                     wall.position.set(worldX, damagedHeight / 2, worldZ);
+                    // Scale the Y height dynamically on the reused geometry
+                    wall.scale.set(1, shortHeightMult, 1);
                     
                     wall.rotation.x = (wallTypeRng() - 0.5) * 0.15;
                     wall.rotation.z = (wallTypeRng() - 0.5) * 0.15;
@@ -8590,8 +8594,9 @@ export class ThreeGame {
                     const rubbleCount = 2 + Math.floor(wallTypeRng() * 3);
                     for (let i = 0; i < rubbleCount; i++) {
                         const size = 0.05 + wallTypeRng() * 0.07;
-                        const rubbleGeom = new THREE.DodecahedronGeometry(size, 0);
-                        const rubble = new THREE.Mesh(rubbleGeom, this.wallMaterial);
+                        const rubble = new THREE.Mesh(this.rubbleGeometry, this.wallMaterial);
+                        // Scale the reused unit dodecahedron geometry
+                        rubble.scale.set(size, size, size);
                         
                         const rx = (wallTypeRng() - 0.5) * 0.72;
                         const rz = (wallTypeRng() - 0.5) * 0.72;
@@ -12374,6 +12379,11 @@ export class ThreeGame {
         this.pipeGeometry?.dispose();
         this.ventMaterial?.dispose();
         this.pipeMaterial?.dispose();
+        this.sirenBaseGeometry?.dispose();
+        this.sirenDomeGeometry?.dispose();
+        this.sirenBaseMaterial?.dispose();
+        this.sirenDomeMaterial?.dispose();
+        this.rubbleGeometry?.dispose();
         this.menuShowroomFloor?.geometry?.dispose?.();
         this.menuShowroomFloor?.material?.dispose?.();
         this.menuGridTexture?.dispose?.();
