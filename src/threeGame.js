@@ -3299,15 +3299,29 @@ export class ThreeGame {
     updateRunModifierEffects(delta) {
         const id = this.currentRunModifier?.id;
         if (!id || !this.isGameplayInputActive() || this.isPlayerDead) return;
+        const generatorState = this.getO2GeneratorState?.();
+        const inField = Boolean(generatorState?.isOnline)
+            && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
         if (id === 'rolling_blackout') {
             // Lighting faults pulse in short waves while outside the safe field.
             this._blackoutWaveTimer = (this._blackoutWaveTimer ?? 0) + delta;
-            const generatorState = this.getO2GeneratorState?.();
-            const inField = generatorState?.isOnline
-                && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
             if (!inField && this._blackoutWaveTimer >= 14 && performance.now() >= (this._lightsOutUntil ?? 0)) {
                 this._blackoutWaveTimer = 0;
                 this.triggerLightsOut(3);
+            }
+        } else if (id === 'bad_map_data') {
+            // Compass telemetry jitters periodically.
+            this._badMapTimer = (this._badMapTimer ?? 0) + delta;
+            if (!inField && this._badMapTimer >= 20 && performance.now() >= (this._compassCorruptUntil ?? 0)) {
+                this._badMapTimer = 0;
+                this.corruptCompass(6);
+            }
+        } else if (id === 'unstable_doors') {
+            // Old seals slam — a false movement ping (audio only) to fray nerves.
+            this._unstableDoorTimer = (this._unstableDoorTimer ?? 0) + delta;
+            if (!inField && this._unstableDoorTimer >= 11) {
+                this._unstableDoorTimer = 0;
+                window.AudioManager?.play?.('door_slam_vertical', { volume: 0.18, playbackRate: 0.7, bus: 'sfx' });
             }
         }
     }
