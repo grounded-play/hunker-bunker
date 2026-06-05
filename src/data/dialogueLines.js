@@ -40,6 +40,17 @@ export const DIALOGUE_LINES = Object.freeze({
         'Hardware authorization accepted. Please continue funding your own rescue.',
         'Generator output improved. Breathing zone expanded by popular demand.',
         'Combat matrix updated. Hostiles will be informed by impact.'
+    ]),
+    // The bunker's ambient "I am watching you" commentary — fired by the Director.
+    director: Object.freeze([
+        'Movement logged. Facilities has dispatched a welcome committee.',
+        'Unauthorized exploration detected. Adjusting corridor enthusiasm.',
+        'Your curiosity exceeds your clearance. Compensating accordingly.',
+        'Power rerouted to a department that resents you.',
+        'The structure notes your depth and disapproves.',
+        'Please remain calm while the corridor selects a new destination.',
+        'Productivity is being monitored. So is everything else.',
+        'A maintenance event has been scheduled around your location.'
     ])
 });
 

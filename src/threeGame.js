@@ -6,6 +6,7 @@ import { FabricationFoundry } from './foundry.js';
 import { blackBoxStore } from './blackBox.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine } from './data/dialogueLines.js';
+import { BunkerDirector } from './director.js';
 
 const PLAYER_COLORS = {
     SCOUT: 0x7dff5a,
@@ -757,6 +758,9 @@ export class ThreeGame {
         this._blackBoxMarkerPromptActive = false;
         this._blackBoxState = blackBoxStore.load();
         this._corruptedOperatorSpawnedForTimestamp = 0;
+        // The Bunker Director: one pressure brain that reacts to the player's
+        // greed/struggle by pulling existing levers (doc 11 §4.A).
+        this.bunkerDirector = new BunkerDirector();
 
         this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
         this.camera.position.copy(this.cameraOffset);
@@ -3241,8 +3245,71 @@ export class ThreeGame {
         this.foundry?.update(delta);
         this.updateFoundryPrompt();
         this.updateBlackBoxMarker(delta);
+        this.updateRunModifierEffects(delta);
+        this.updateBunkerDirector(delta);
         this.updateLoopStep();
         this.renderer.render(this.scene, this.camera);
+    }
+
+    // Feed the Director a run-state snapshot and execute whatever lever it pulls.
+    updateBunkerDirector(delta) {
+        if (!this.bunkerDirector || !this.player || this.isPlayerDead || !this.snailsEnabled) return;
+        if (!this.isGameplayInputActive()) return;
+        const generatorState = this.getO2GeneratorState?.();
+        const inSafeField = Boolean(generatorState?.isOnline)
+            && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
+        const snapshot = {
+            hpFrac: (this.playerVitals?.hp ?? 1) / Math.max(1, this.playerVitals?.maxHp ?? 1),
+            o2Frac: (this.playerVitals?.o2 ?? 100) / 100,
+            depth: this.getActiveO2GeneratorDistance?.() ?? 0,
+            inSafeField,
+            patrolBias: this.currentRunModifier?.id === 'patrol_surge'
+        };
+        const action = this.bunkerDirector.tick(delta, snapshot);
+        if (action) this.executeDirectorAction(action);
+    }
+
+    executeDirectorAction(action) {
+        switch (action) {
+            case 'patrol':
+                this.showBunkerLine(getDialogueLine('director') ?? 'A maintenance event has been scheduled around your location.');
+                this.spawnPatrolNearPlayer();
+                break;
+            case 'lightsout':
+                this.triggerLightsOut(6);
+                break;
+            case 'corrupt':
+                this.corruptCompass(18);
+                this.showBunkerLine('Navigation telemetry has been reclassified as suggestion.');
+                break;
+            case 'mercy':
+                this.grantSalvageCache({ tech: 6, coin: 4 });
+                this.showBunkerLine('Hardship subsidy released. Do not mistake this for compassion.');
+                break;
+            case 'taunt':
+                this.showBunkerLine(getDialogueLine('director') ?? '');
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Per-run modifier mechanical effects (doc 11 §2). Data lives in runModifiers.js;
+    // the picked modifier is set on this.currentRunModifier from main.js at deploy.
+    updateRunModifierEffects(delta) {
+        const id = this.currentRunModifier?.id;
+        if (!id || !this.isGameplayInputActive() || this.isPlayerDead) return;
+        if (id === 'rolling_blackout') {
+            // Lighting faults pulse in short waves while outside the safe field.
+            this._blackoutWaveTimer = (this._blackoutWaveTimer ?? 0) + delta;
+            const generatorState = this.getO2GeneratorState?.();
+            const inField = generatorState?.isOnline
+                && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
+            if (!inField && this._blackoutWaveTimer >= 14 && performance.now() >= (this._lightsOutUntil ?? 0)) {
+                this._blackoutWaveTimer = 0;
+                this.triggerLightsOut(3);
+            }
+        }
     }
 
     // Derive the single "next action" for the persistent loop-state HUD (T1).
@@ -5706,6 +5773,8 @@ export class ThreeGame {
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - Math.max(0, amount));
         if (this.playerVitals.hp === previousHp) return;
 
+        // The Director eases off right after the player is hurt.
+        this.bunkerDirector?.notifyThreat();
         this.triggerCameraShake(0.22, 0.4);
         this.emitHealthState();
         window.dispatchEvent(new CustomEvent('player-damaged', {
@@ -5825,6 +5894,8 @@ export class ThreeGame {
             this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
             this.hadNearDeath = false;
             this._lastLoopStepKey = null; // force the loop-state HUD to re-emit
+            this.bunkerDirector?.reset();
+            this._blackoutWaveTimer = 0;
             this._terminalEvent = null;
             this._terminalEventResolvedIds.clear();
             this.foundry?.reset?.();
@@ -6315,7 +6386,9 @@ export class ThreeGame {
             let drainRate = O2_DRAIN_RATE_PCT_PER_SEC
                 * (this.o2DrainMult ?? 1.0)
                 * (this.currentBiomeO2DrainMult ?? 1.0)
-                * (this._abilityO2DrainMult ?? 1.0);
+                * (this._abilityO2DrainMult ?? 1.0)
+                // THIN AIR run modifier: reserves are poor beyond the ship field.
+                * (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0);
             if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_o2_efficiency')) {
                 drainRate *= 0.85;
             } else if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_battery_1')) {
