@@ -3931,8 +3931,8 @@ export class ThreeGame {
     }
 
     triggerLightsOut(seconds = 8) {
+        // Held for `seconds` by the dayBlend override in updateDayNightCycle.
         this._lightsOutUntil = Math.max(this._lightsOutUntil, performance.now() + seconds * 1000);
-        this.timeOfDay = 0;
         this.showBunkerLine('LIGHTING BREAKER TRIPPED. PLEASE ENJOY THE DARKNESS RESPONSIBLY.');
     }
 
@@ -6887,7 +6887,12 @@ export class ThreeGame {
         const day = this.getDayFactor();
         const lerp = THREE.MathUtils.lerp;
         // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
-        const dayBlend = this.nightVision ? 1.0 : THREE.MathUtils.smoothstep(day, 0.1, 0.9);
+        let dayBlend = this.nightVision ? 1.0 : THREE.MathUtils.smoothstep(day, 0.1, 0.9);
+        // Terminal "lights-out" downside (triggerLightsOut): hold full darkness for
+        // the event's duration via the normal lighting pipeline, then release.
+        if (!this.nightVision && performance.now() < (this._lightsOutUntil ?? 0)) {
+            dayBlend = 0;
+        }
         this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.72, 1.0, dayBlend);
         this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.55, 1.0, dayBlend);
         this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, dayBlend);
