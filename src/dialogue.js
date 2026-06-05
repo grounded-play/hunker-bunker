@@ -84,6 +84,7 @@ export class DialogueManager {
 
         this.tutorialRunId = 0;
         this.activeTutorialRunId = 0;
+        this.activeTutorialPromptCard = null;
 
         this.handleDialogueKey = (event) => {
             if (!this.activeDialogueRunId) return;
@@ -281,6 +282,53 @@ export class DialogueManager {
         await this.closeDialogue(runId);
     }
 
+    async openBriefTransmission({ playerType = 'SCOUT', lines = [], holdMs = 900 } = {}) {
+        if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) return;
+        if (this.activeDialogueRunId) return;
+
+        const normalizedLines = lines
+            .map((line) => String(line ?? '').trim())
+            .filter(Boolean);
+        if (!normalizedLines.length) return;
+
+        this.cancelDialogue();
+
+        const runId = ++this.dialogueRunId;
+        this.activeDialogueRunId = runId;
+
+        this.applyClassTheme(playerType);
+        this.bodyEl.replaceChildren();
+        this.choicesEl.classList.add('hidden');
+        this.choicesEl.classList.remove('is-visible');
+
+        this.dialogEl.classList.remove('hidden');
+        this.dialogEl.classList.remove('is-revealed');
+        this.dialogEl.setAttribute('aria-hidden', 'false');
+        this.panelEl.classList.remove('is-closing');
+
+        requestAnimationFrame(() => {
+            if (this.activeDialogueRunId !== runId) return;
+            this.panelEl.classList.add('is-open');
+            window.setTimeout(() => {
+                if (this.activeDialogueRunId !== runId) return;
+                this.dialogEl.classList.add('is-revealed');
+            }, 160);
+        });
+
+        this.setInputEnabled?.(false);
+        window.AudioManager?.play('door_slide_horiz', { volume: 0.42 });
+
+        for (const line of normalizedLines) {
+            await this.typeLine(runId, line);
+            if (!this.isDialogueRunActive(runId)) return;
+            await this.sleep(runId, 320);
+        }
+
+        await this.sleep(runId, holdMs);
+        await this.closeDialogue(runId);
+        this.setInputEnabled?.(true);
+    }
+
     async startTutorialSequence({ game, touchControlsEnabled = false } = {}) {
         if (!game || !this.tutorialPromptEl) {
             return;
@@ -356,6 +404,9 @@ export class DialogueManager {
         if (!this.activeTutorialRunId) return;
         this.activeTutorialRunId = 0;
         this.hideTutorialPrompt();
+        document.querySelectorAll('.tutorial-prompt[data-tutorial-stack-card="true"]').forEach((prompt) => {
+            this.dismissTutorialCard(prompt);
+        });
 
         // Clean up any potential focus pulses
         document.getElementById('vitals-panel')?.classList.remove('tutorial-focus-pulse');
@@ -635,32 +686,67 @@ export class DialogueManager {
         if (!this.tutorialPromptEl) return;
         if (!this.isTutorialRunActive(runId)) return;
 
-        if (this.tutorialPromptIconEl) {
-            this.tutorialPromptIconEl.textContent = icon;
-            this.tutorialPromptIconEl.classList.toggle('hidden', !icon);
+        const stack = document.querySelector('.hud-notification-stack');
+        const prompt = this.tutorialPromptEl.cloneNode(true);
+        prompt.removeAttribute('id');
+        prompt.dataset.tutorialStackCard = 'true';
+        prompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 45)));
+        prompt.dataset.removeDelayMs = '220';
+        prompt.classList.add('hud-stack-card');
+        prompt.classList.add('hidden');
+        prompt.classList.remove('is-visible', 'is-exiting');
+        const promptIcon = prompt.querySelector('.tutorial-prompt__icon');
+        const promptText = prompt.querySelector('.tutorial-prompt__text');
+        if (promptIcon) {
+            promptIcon.removeAttribute('id');
+            promptIcon.textContent = icon;
+            promptIcon.classList.toggle('hidden', !icon);
         }
-        if (this.tutorialPromptTextEl) {
-            this.tutorialPromptTextEl.textContent = text;
+        if (promptText) {
+            promptText.removeAttribute('id');
+            promptText.textContent = text;
         }
+        prompt.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            this.dismissTutorialCard(prompt);
+        });
 
-        this.tutorialPromptEl.classList.remove('hidden', 'is-exiting');
+        this.activeTutorialPromptCard = prompt;
+        stack?.append(prompt);
+        window.updateHudNotificationDeck?.();
+
+        prompt.classList.remove('hidden', 'is-exiting');
         requestAnimationFrame(() => {
             if (!this.isTutorialRunActive(runId)) return;
-            this.tutorialPromptEl.classList.add('is-visible');
+            prompt.classList.add('is-visible');
+            window.updateHudNotificationDeck?.();
         });
+
+        const visibleCards = Array.from(document.querySelectorAll('.hud-stack-card:not(.hidden)'))
+            .filter((card) => card.dataset.dismissing !== 'true');
+        for (const oldCard of visibleCards.slice(5)) {
+            this.dismissTutorialCard(oldCard);
+        }
+        window.updateHudNotificationDeck?.();
     }
 
     hideTutorialPrompt(runId = this.activeTutorialRunId) {
-        if (!this.tutorialPromptEl) return;
         if (runId && !this.isTutorialRunActive(runId) && runId !== this.activeTutorialRunId) return;
 
-        this.tutorialPromptEl.classList.remove('is-visible');
-        this.tutorialPromptEl.classList.add('is-exiting');
-        window.setTimeout(() => {
-            if (this.tutorialPromptEl.classList.contains('is-visible')) return;
-            this.tutorialPromptEl.classList.add('hidden');
-            this.tutorialPromptEl.classList.remove('is-exiting');
-        }, 220);
+        this.dismissTutorialCard(this.activeTutorialPromptCard);
+        this.activeTutorialPromptCard = null;
+    }
+
+    dismissTutorialCard(prompt) {
+        if (!prompt || prompt.dataset.dismissing === 'true') return;
+        if (typeof window.dismissHudNotificationCard === 'function') {
+            window.dismissHudNotificationCard(prompt);
+            return;
+        }
+        prompt.dataset.dismissing = 'true';
+        prompt.classList.remove('is-visible');
+        prompt.classList.add('is-exiting');
+        window.setTimeout(() => prompt.remove(), 220);
     }
 
     waitUntil(runId, predicate, { timeoutMs = 10000, intervalMs = 100 } = {}) {

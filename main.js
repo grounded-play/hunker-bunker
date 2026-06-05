@@ -144,9 +144,9 @@ const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveRight', label: 'MOVE RIGHT' },
     { id: 'interact', label: 'INTERACT' },
     { id: 'reload', label: 'RELOAD' },
-    { id: 'ability', label: 'CLASS ABILITY' },
+    { id: 'ability', label: 'EXOSUIT ACTION' },
     { id: 'scan', label: 'RADAR SCAN' },
-    { id: 'sprint', label: 'SPRINT (HOLD)' }
+    { id: 'sprint', label: 'SPRINT BURST' }
 ]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
@@ -201,8 +201,15 @@ function clearTouchInputState() {
     if (touchSprintBtn) {
         touchSprintBtn.classList.remove('sprint-active');
         const label = touchSprintBtn.querySelector('#touch-sprint-cooldown');
-        if (label) label.textContent = 'WALK';
+        if (label) label.textContent = 'READY';
     }
+}
+
+function clearTouchMoveInputState() {
+    activeTouchPointerId = null;
+    touchMoveControl?.classList.remove('active');
+    touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
+    window.game?.setVirtualInput?.(0, 0);
 }
 
 function syncOrientationLockState() {
@@ -811,10 +818,20 @@ window.addEventListener('combat-no-fire-zone', () => {
 window.addEventListener('enemy-killed', (event) => {
     const total = event?.detail?.totalKills ?? 0;
     const type = event?.detail?.type ?? '';
-    if (total === 1) fireMothershipReactiveLine('first_kill');
+    const isBoss = Boolean(event?.detail?.isBoss);
+    if (total === 1 && !isBoss) fireMothershipReactiveLine('first_kill');
     if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
     if (type === 'crawler') fireMothershipReactiveLine('crawler_detected');
-    if (typeof type === 'string' && type.startsWith('boss_')) fireMothershipReactiveLine('first_boss');
+    if (isBoss || (typeof type === 'string' && type.startsWith('boss_'))) {
+        void dialogueManager?.openBriefTransmission?.({
+            playerType: window.game?.playerType || getSelectedHeroType(),
+            lines: [
+                'MOTHERSHIP: APEX BIO-ENTITY DOWN.',
+                'SIGNAL ATTENUATION CONFIRMED. FIELD PATH IS CLEAR.'
+            ],
+            holdMs: 1100
+        });
+    }
     // Escalation beat: once the agent racks up kills, 0047 takes notice.
     if (total >= 25) fireMothershipReactiveLine('specimen_notices');
 });
@@ -922,15 +939,8 @@ function renderBunkerLevel(tier = 0) {
 }
 
 function hideBiomePrompt() {
-    const radioPrompt = document.getElementById('radio-transmission-prompt');
-    if (radioPrompt) {
-        radioPrompt.classList.remove('visible');
-        setTimeout(() => {
-            if (!radioPrompt.classList.contains('visible')) {
-                radioPrompt.classList.add('hidden');
-            }
-        }, 300);
-    }
+    const prompts = document.querySelectorAll('.radio-transmission-prompt:not(#radio-transmission-prompt)');
+    for (const radioPrompt of prompts) dismissRadioPrompt(radioPrompt);
     if (window.radioTypewriterInterval) {
         clearInterval(window.radioTypewriterInterval);
         window.radioTypewriterInterval = null;
@@ -939,6 +949,127 @@ function hideBiomePrompt() {
         clearTimeout(window.radioPromptTimer);
         window.radioPromptTimer = null;
     }
+}
+
+function parseRadioTransmission(rawText = '') {
+    let sender;
+    let text = String(rawText ?? '');
+    let portrait;
+    const activeClass = window.game?.playerType || 'SCOUT';
+
+    if (text.startsWith('> MOTHERSHIP:')) {
+        sender = "MOTHERSHIP COMMAND";
+        text = text.replace('> MOTHERSHIP:', '').trim();
+        portrait = "/lore_portraits/survivor_00.webp";
+    } else if (text.startsWith('> BUNKER:')) {
+        sender = "BUNKER AUTO-ANNOUNCER";
+        text = text.replace('> BUNKER:', '').trim();
+        portrait = "/lore_portraits/survivor_08.webp";
+    } else if (text.startsWith('> SCOUT:')) {
+        sender = "SCOUT OPERATOR";
+        text = text.replace('> SCOUT:', '').trim();
+        portrait = "/lore_portraits/survivor_01.webp";
+    } else if (text.startsWith('> TANK:')) {
+        sender = "TANK OPERATOR";
+        text = text.replace('> TANK:', '').trim();
+        portrait = "/lore_portraits/survivor_02.webp";
+    } else if (text.startsWith('> ENGINEER:')) {
+        sender = "ENGINEER OPERATOR";
+        text = text.replace('> ENGINEER:', '').trim();
+        portrait = "/lore_portraits/survivor_03.webp";
+    } else if (text.startsWith('> SYSTEM:') || text.startsWith('SYSTEM:')) {
+        sender = "EXOSUIT OS";
+        text = text.replace('> SYSTEM:', '').replace('SYSTEM:', '').trim();
+        portrait = "/lore_portraits/survivor_04.webp";
+    } else if (activeClass === 'SCOUT') {
+        sender = "SCOUT OPERATOR";
+        portrait = "/lore_portraits/survivor_01.webp";
+    } else if (activeClass === 'TANK') {
+        sender = "TANK OPERATOR";
+        portrait = "/lore_portraits/survivor_02.webp";
+    } else if (activeClass === 'ENGINEER') {
+        sender = "ENGINEER OPERATOR";
+        portrait = "/lore_portraits/survivor_03.webp";
+    } else {
+        sender = "EXOSUIT OS";
+        portrait = "/lore_portraits/survivor_04.webp";
+    }
+
+    return { sender, text, portrait };
+}
+
+let hudNotificationTopTimer = null;
+let hudNotificationTopCard = null;
+
+function getHudNotificationCards() {
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) return [];
+    return Array.from(stack.querySelectorAll('.hud-stack-card:not(.hidden)'))
+        .filter((card) => card.dataset.dismissing !== 'true');
+}
+
+function scheduleTopHudNotificationTimer() {
+    const [topCard] = getHudNotificationCards();
+    if (hudNotificationTopCard === topCard && hudNotificationTopTimer) return;
+    if (hudNotificationTopTimer) {
+        window.clearTimeout(hudNotificationTopTimer);
+        hudNotificationTopTimer = null;
+    }
+    hudNotificationTopCard = topCard ?? null;
+    if (!topCard) return;
+
+    const duration = Math.max(1200, Number(topCard.dataset.autoDismissMs) || 4200);
+    hudNotificationTopTimer = window.setTimeout(() => {
+        hudNotificationTopTimer = null;
+        hudNotificationTopCard = null;
+        dismissHudNotificationCard(topCard);
+    }, duration);
+}
+
+function updateHudNotificationDeck() {
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) return;
+    const cards = getHudNotificationCards();
+    const hasCards = cards.length > 0;
+    cards.forEach((card, index) => {
+        card.style.setProperty('--deck-index', String(index));
+        card.style.zIndex = String(12090 - index);
+        card.classList.toggle('is-top-card', index === 0);
+    });
+    stack.classList.toggle('has-decked-cards', hasCards);
+    document.querySelector('.hud-mission-stack')?.classList.toggle('is-below-notifications', hasCards);
+    scheduleTopHudNotificationTimer();
+}
+window.updateHudNotificationDeck = updateHudNotificationDeck;
+
+function dismissHudNotificationCard(card) {
+    if (!card || card.dataset.dismissing === 'true') return;
+    if (card === hudNotificationTopCard && hudNotificationTopTimer) {
+        window.clearTimeout(hudNotificationTopTimer);
+        hudNotificationTopTimer = null;
+        hudNotificationTopCard = null;
+    }
+    card.dataset.dismissing = 'true';
+    card.classList.remove('visible', 'is-visible', 'is-top-card');
+    card.classList.add('is-exiting');
+    updateHudNotificationDeck();
+    const removeDelay = Number(card.dataset.removeDelayMs) || 300;
+    window.setTimeout(() => {
+        card.remove();
+        updateHudNotificationDeck();
+    }, removeDelay);
+}
+window.dismissHudNotificationCard = dismissHudNotificationCard;
+
+function dismissRadioPrompt(radioPrompt) {
+    dismissHudNotificationCard(radioPrompt);
+}
+
+function trimRadioCopy(text) {
+    return String(text ?? '')
+        .replace(/\s+/g, ' ')
+        .replace(/^>+\s*/, '')
+        .trim();
 }
 
 function showRadioTransmission(rawText) {
@@ -954,100 +1085,58 @@ function showRadioTransmission(rawText) {
 
     if (!isGameplayActive || isResettingRun) return;
 
-    let sender;
-    let text = rawText;
-    let portrait;
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) return;
+    const { sender, portrait, text: parsedText } = parseRadioTransmission(rawText);
+    const text = trimRadioCopy(parsedText);
+    if (!text) return;
 
-    const activeClass = window.game?.playerType || 'SCOUT';
+    const radioPrompt = document.createElement('div');
+    radioPrompt.className = 'radio-transmission-prompt hud-stack-card hidden';
+    radioPrompt.setAttribute('aria-live', 'polite');
+    radioPrompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 42)));
+    radioPrompt.dataset.removeDelayMs = '300';
+    radioPrompt.innerHTML = `
+        <div class="radio-transmission-prompt__avatar">
+          <img src="${portrait}" alt="Sender Portrait" />
+          <div class="radio-transmission-prompt__scanline"></div>
+        </div>
+        <div class="radio-transmission-prompt__body">
+          <div class="radio-transmission-prompt__header">
+            <span class="radio-transmission-prompt__signal-icon">⚡</span>
+            <span class="radio-transmission-prompt__sender"></span>
+            <span class="radio-transmission-prompt__status">ONLINE</span>
+          </div>
+          <div class="radio-transmission-prompt__message"></div>
+        </div>
+    `;
 
-    if (rawText.startsWith('> MOTHERSHIP:')) {
-        sender = "MOTHERSHIP COMMAND";
-        text = rawText.replace('> MOTHERSHIP:', '').trim();
-        portrait = "/lore_portraits/survivor_00.webp";
-    } else if (rawText.startsWith('> BUNKER:')) {
-        sender = "BUNKER AUTO-ANNOUNCER";
-        text = rawText.replace('> BUNKER:', '').trim();
-        portrait = "/lore_portraits/survivor_08.webp";
-    } else if (rawText.startsWith('> SCOUT:')) {
-        sender = "SCOUT OPERATOR";
-        text = rawText.replace('> SCOUT:', '').trim();
-        portrait = "/lore_portraits/survivor_01.webp";
-    } else if (rawText.startsWith('> TANK:')) {
-        sender = "TANK OPERATOR";
-        text = rawText.replace('> TANK:', '').trim();
-        portrait = "/lore_portraits/survivor_02.webp";
-    } else if (rawText.startsWith('> ENGINEER:')) {
-        sender = "ENGINEER OPERATOR";
-        text = rawText.replace('> ENGINEER:', '').trim();
-        portrait = "/lore_portraits/survivor_03.webp";
-    } else if (rawText.startsWith('> SYSTEM:') || rawText.startsWith('SYSTEM:')) {
-        sender = "EXOSUIT OS";
-        text = rawText.replace('> SYSTEM:', '').replace('SYSTEM:', '').trim();
-        portrait = "/lore_portraits/survivor_04.webp";
-    } else {
-        if (activeClass === 'SCOUT') {
-            sender = "SCOUT OPERATOR";
-            portrait = "/lore_portraits/survivor_01.webp";
-        } else if (activeClass === 'TANK') {
-            sender = "TANK OPERATOR";
-            portrait = "/lore_portraits/survivor_02.webp";
-        } else if (activeClass === 'ENGINEER') {
-            sender = "ENGINEER OPERATOR";
-            portrait = "/lore_portraits/survivor_03.webp";
-        } else {
-            sender = "EXOSUIT OS";
-            portrait = "/lore_portraits/survivor_04.webp";
-        }
-    }
-
-    const radioPrompt = document.getElementById('radio-transmission-prompt');
-    const avatarImg = document.getElementById('radio-avatar-img');
-    const senderName = document.getElementById('radio-sender-name');
-    const messageText = document.getElementById('radio-message-text');
-
-    if (!radioPrompt || !avatarImg || !senderName || !messageText) return;
-
-    if (window.radioTypewriterInterval) {
-        clearInterval(window.radioTypewriterInterval);
-        window.radioTypewriterInterval = null;
-    }
-
-    avatarImg.src = portrait;
+    const senderName = radioPrompt.querySelector('.radio-transmission-prompt__sender');
+    const messageText = radioPrompt.querySelector('.radio-transmission-prompt__message');
     senderName.textContent = sender;
-    messageText.textContent = '';
+    messageText.textContent = text;
+    radioPrompt.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        dismissRadioPrompt(radioPrompt);
+    });
+
+    const templatePrompt = document.getElementById('radio-transmission-prompt');
+    templatePrompt?.classList.add('hidden');
+    stack.append(radioPrompt);
+    updateHudNotificationDeck();
 
     radioPrompt.classList.remove('hidden');
     requestAnimationFrame(() => {
         radioPrompt.classList.add('visible');
+        updateHudNotificationDeck();
     });
 
-    let charIndex = 0;
-    const intervalMs = 12;
-
-    window.radioTypewriterInterval = setInterval(() => {
-        if (charIndex < text.length) {
-            messageText.textContent += text[charIndex];
-            charIndex++;
-            window.game?.audioManager?.play?.('ui_scan_ping', { volume: 0.08, playbackRate: 2.2, bus: 'sfx' });
-        } else {
-            clearInterval(window.radioTypewriterInterval);
-            window.radioTypewriterInterval = null;
-        }
-    }, intervalMs);
-
-    if (window.radioPromptTimer) {
-        clearTimeout(window.radioPromptTimer);
+    const visibleCards = Array.from(stack.querySelectorAll('.hud-stack-card:not(.hidden)'))
+        .filter((card) => card.dataset.dismissing !== 'true');
+    for (const oldCard of visibleCards.slice(5)) {
+        dismissRadioPrompt(oldCard);
     }
-
-    const duration = Math.max(4500, text.length * 55);
-    window.radioPromptTimer = setTimeout(() => {
-        radioPrompt.classList.remove('visible');
-        setTimeout(() => {
-            if (!radioPrompt.classList.contains('visible')) {
-                radioPrompt.classList.add('hidden');
-            }
-        }, 300);
-    }, duration);
+    updateHudNotificationDeck();
 }
 
 function showBiomePrompt(message = '') {
@@ -1089,7 +1178,7 @@ window.addEventListener('depth-tier-changed', (event) => {
         lastReportedDepthTier = tier;
         const label = event?.detail?.label ?? `DEPTH ${tier}`;
         AudioManager.play('ui_boot', { volume: 0.28, playbackRate: 0.78 + tier * 0.06, bus: 'sfx' });
-        showBiomePrompt(`> DEPTH TIER: ${label} — HAZARD ASSESSMENT ELEVATED`);
+        showBiomePrompt(`> DEPTH: ${label}`);
     }
 });
 const BIOME_HUD_COLORS = {
@@ -1438,6 +1527,12 @@ function resetRunToStartingState({
     try {
         if (resetBank) {
             bankManager.reset();
+            fabricator.reset();
+            loadout.reset();
+            stopFabTicker();
+            refreshFabAccess();
+            syncEquippedWeaponLabel();
+            renderRosterModal();
         }
 
         runStartTime = Date.now();
@@ -1530,6 +1625,7 @@ window.addEventListener('player-respawned', () => {
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
     updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
+    updateTouchSprintButtonState({ remaining: 0, max: 1, active: false, activeProgress: 0, ability: 'sprint' });
     const scanBar = document.getElementById('scan-bar');
     if (scanBar) scanBar.style.transform = 'scaleX(1)';
     updateTouchScanButtonState({ remaining: 0, max: 1 });
@@ -1810,10 +1906,10 @@ window.addEventListener('lore-terminal-nearby', () => {
     const prompt = document.getElementById('lore-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
+    const touchPrompt = isTouchDevice();
     if (key) {
-        key.textContent = touchMoveVisible ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', Boolean(touchMoveVisible));
+        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
+        key.classList.toggle('prompt-key--tap', touchPrompt);
     }
     if (text) text.textContent = 'READ LOG';
     if (prompt) prompt.classList.remove('hidden');
@@ -1901,7 +1997,12 @@ window.addEventListener('pickup-collected', (event) => {
 window.addEventListener('special-room-discovered', (event) => {
     const label = event?.detail?.label ?? 'SPECIAL ROOM';
     const template = event?.detail?.template ?? '';
-    showBiomePrompt(`> SECTOR DATA: ${label} DETECTED`);
+    const roomMessages = {
+        armory: `> SCAN: ${label} — WEAPON CACHE`,
+        the_nest: `> ALERT: ${label} — HIGH THREAT`,
+        agent_wreckage: `> SCAN: ${label} — RECOVERY SIGNAL`
+    };
+    if (roomMessages[template]) showBiomePrompt(roomMessages[template]);
     window.AudioManager?.play('ui_boot', { volume: 0.3, playbackRate: 0.82, bus: 'sfx' });
     if (template === 'the_nest') fireMothershipReactiveLine('the_nest');
     if (template === 'armory') fireMothershipReactiveLine('armory_found');
@@ -1930,10 +2031,10 @@ window.addEventListener('black-box-prompt-nearby', () => {
     const prompt = document.getElementById('black-box-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
+    const touchPrompt = isTouchDevice();
     if (key) {
-        key.textContent = touchMoveVisible ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', Boolean(touchMoveVisible));
+        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
+        key.classList.toggle('prompt-key--tap', touchPrompt);
     }
     if (text) text.textContent = 'RECOVER BLACK BOX';
     prompt?.classList.remove('hidden');
@@ -2074,6 +2175,29 @@ function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false 
     }
 }
 
+function updateTouchSprintButtonState({ remaining = 0, max = 1, active = false, activeProgress = 0, ability = '' } = {}) {
+    const sprintBtn = document.getElementById('touch-sprint-btn');
+    if (!sprintBtn) return;
+    const isSprintAbility = ability === 'sprint';
+    const clampedMax = Math.max(0.001, Number(max) || 0.001);
+    const clampedRemaining = Math.max(0, Number(remaining) || 0);
+    const clampedActiveProgress = Math.max(0, Math.min(1, Number(activeProgress) || 0));
+    const sprintActive = isSprintAbility && Boolean(active);
+    const cooldownProgress = sprintActive
+        ? Math.max(0, 1 - clampedActiveProgress)
+        : Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
+    sprintBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
+    sprintBtn.classList.toggle('sprint-active', sprintActive);
+    sprintBtn.classList.toggle('is-cooling', isSprintAbility && clampedRemaining > 0 && !sprintActive);
+    sprintBtn.classList.toggle('is-ready', isSprintAbility && clampedRemaining <= 0 && !sprintActive);
+    sprintBtn.style.pointerEvents = (isSprintAbility && clampedRemaining > 0 && !sprintActive) ? 'none' : 'auto';
+    sprintBtn.style.opacity = (isSprintAbility && clampedRemaining > 0 && !sprintActive) ? '0.8' : '1';
+    const label = sprintBtn.querySelector('#touch-sprint-cooldown');
+    if (label) {
+        label.textContent = sprintActive ? 'BURST' : (isSprintAbility && clampedRemaining > 0) ? `${Math.ceil(clampedRemaining)}s` : 'READY';
+    }
+}
+
 window.addEventListener('class-ability-activated', (event) => {
     const panel = document.getElementById('class-ability-panel');
     if (panel) panel.classList.add('class-ability-panel--active');
@@ -2088,8 +2212,6 @@ window.addEventListener('class-ability-ended', (event) => {
     const panel = document.getElementById('class-ability-panel');
     if (panel) {
         panel.classList.remove('class-ability-panel--active');
-        panel.classList.add('class-ability-panel--ready');
-        setTimeout(() => panel.classList.remove('class-ability-panel--ready'), 1100);
     }
     const { ability } = event?.detail ?? {};
     const viewport = document.getElementById('game-viewport');
@@ -2097,13 +2219,25 @@ window.addEventListener('class-ability-ended', (event) => {
 });
 
 window.addEventListener('ability-cooldown-tick', (event) => {
-    const { remaining = 0, max = 1, active = false } = event?.detail ?? {};
+    const { remaining = 0, max = 1, active = false, activeProgress = 0, ability = '' } = event?.detail ?? {};
     const bar = document.getElementById('ability-bar');
+    const panel = document.getElementById('class-ability-panel');
+    const clampedMax = Math.max(0.001, Number(max) || 0.001);
+    const clampedRemaining = Math.max(0, Number(remaining) || 0);
+    const clampedActiveProgress = Math.max(0, Math.min(1, Number(activeProgress) || 0));
     if (bar) {
-        const fillPct = active ? 1 : 1 - (remaining / Math.max(0.001, max));
+        const fillPct = active
+            ? 1 - clampedActiveProgress
+            : 1 - (clampedRemaining / clampedMax);
         bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
     }
+    if (panel) {
+        panel.classList.toggle('class-ability-panel--active', active);
+        panel.classList.toggle('class-ability-panel--cooling', !active && clampedRemaining > 0);
+        panel.classList.toggle('class-ability-panel--ready', !active && clampedRemaining <= 0);
+    }
     updateTouchAbilityButtonState({ remaining, max, active });
+    updateTouchSprintButtonState({ remaining, max, active, activeProgress, ability });
 });
 
 window.addEventListener('scan-cooldown-tick', (event) => {
@@ -2436,29 +2570,30 @@ function syncTouchMoveControlVisibility() {
         label.classList.toggle('hidden', !showJoystick);
     }
 
-    // The floating sprint button is part of the mobile UI, so it tracks the
-    // touch move pad: when the pad is disabled the button disappears too.
     const sprintBtn = document.getElementById('touch-sprint-btn');
     if (sprintBtn) {
-        const showSprintBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick;
+        const showSprintBtn = isHUD && isMenuHidden && !inMissionIntro;
         sprintBtn.classList.toggle('hidden', !showSprintBtn);
     }
 
     const abilityBtn = document.getElementById('touch-ability-btn');
     if (abilityBtn) {
+        const abilityInfo = window.game?.getClassAbilityInfo?.();
         const specialUnlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
-        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick && specialUnlocked;
+        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick && specialUnlocked && abilityInfo?.key !== 'sprint';
         abilityBtn.classList.toggle('hidden', !showAbilityBtn);
     }
 
     const scanBtn = document.getElementById('touch-scan-btn');
     if (scanBtn) {
-        const showScanBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick;
+        const showScanBtn = isHUD && isMenuHidden && !inMissionIntro;
         scanBtn.classList.toggle('hidden', !showScanBtn);
     }
 
-    if (!isHUD || !showJoystick) {
+    if (!isHUD) {
         clearTouchInputState();
+    } else if (!showJoystick) {
+        clearTouchMoveInputState();
     }
 }
 
@@ -2469,17 +2604,19 @@ if (touchSprintBtn) {
         e.preventDefault();
         if (!window.game) return;
         
-        const active = !window.game.keys.shift;
-        window.game.setVirtualInputSprint?.(active);
+        const triggered = window.game.setVirtualInputSprint?.(true);
         
-        const sprintActive = Boolean(window.game.keys?.shift);
-        touchSprintBtn.classList.toggle('sprint-active', sprintActive);
-        const label = touchSprintBtn.querySelector('#touch-sprint-cooldown');
-        if (label) {
-            label.textContent = sprintActive ? 'SPRINT' : 'WALK';
-        }
+        updateTouchSprintButtonState({
+            remaining: window.game.classAbility?.cooldownRemaining ?? 0,
+            max: window.game.classAbility?.cooldownMax ?? 1,
+            active: window.game.classAbility?.active ?? false,
+            activeProgress: window.game.classAbility?.active
+                ? ((window.game.classAbility?.activeTimer ?? 0) / Math.max(0.001, window.game.classAbility?.activeDuration ?? 1))
+                : 0,
+            ability: window.game.getClassAbilityInfo?.().key
+        });
         
-        window.AudioManager?.play('ui_click', { volume: 0.5, playbackRate: sprintActive ? 1.2 : 0.95 });
+        window.AudioManager?.play(triggered ? 'ui_click' : 'ui_error', { volume: 0.5, playbackRate: triggered ? 1.2 : 0.95 });
     });
 }
 
@@ -2830,7 +2967,7 @@ async function runMissionIntroSequence() {
         if (currentMission?.label) {
             window.setTimeout(() => showBiomePrompt(`MISSION: ${currentMission.label}`), 400);
             if (currentRunModifier?.title) {
-                window.setTimeout(() => showBiomePrompt(`RUN MODIFIER: ${currentRunModifier.title} — ${currentRunModifier.description}`), 1400);
+                window.setTimeout(() => showBiomePrompt(`MODIFIER: ${currentRunModifier.title}`), 1400);
             }
             if (missionProgressHUDTimer) {
                 clearTimeout(missionProgressHUDTimer);
@@ -3114,7 +3251,7 @@ if (settingsBtns.length > 0 && settingsPopup) {
     settingsBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             // Only show Abort Mission if we are actually in the tactical HUD
-            const isHUD = !document.getElementById('ui').classList.contains('hidden');
+            const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
             if (abortBtn) {
                 if (isHUD) abortBtn.classList.remove('hidden');
                 else abortBtn.classList.add('hidden');
@@ -3594,16 +3731,18 @@ window.addEventListener('foundry-prompt-nearby', () => {
     const prompt = document.getElementById('foundry-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
+    const touchPrompt = isTouchDevice();
     if (key) {
-        key.textContent = touchMoveVisible ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', Boolean(touchMoveVisible));
+        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
+        key.classList.toggle('prompt-key--tap', touchPrompt);
     }
     if (text) text.textContent = bankManager.isFoundryActivated() ? 'OPEN FAB BAY' : 'ACTIVATE FAB BAY';
     prompt?.classList.remove('hidden');
 });
 window.addEventListener('foundry-prompt-clear', () => {
-    document.getElementById('foundry-hud-prompt')?.classList.add('hidden');
+    const prompt = document.getElementById('foundry-hud-prompt');
+    prompt?.classList.add('hidden');
+    prompt?.classList.remove('visible');
 });
 
 // ── Operator profile + portable save codes (no backend; doc 01.B.1) ──

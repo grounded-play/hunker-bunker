@@ -1635,7 +1635,7 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 10000;
+  z-index: 15900;
   display: none;
   /* Hidden by default */
 }
@@ -1759,6 +1759,7 @@ body {
   position: absolute;
   bottom: calc(var(--vu) * 4);
   left: calc(var(--vu) * 4);
+  z-index: 15901;
   background: rgba(0, 0, 0, 0.5);
   padding: calc(var(--vu) * 2);
   border: 1px solid var(--border-subtle);
@@ -1889,6 +1890,12 @@ input:checked+.slider:before {
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  z-index: 16000;
+}
+
+#audio-mixer-popup,
+#controls-popup {
+  z-index: 16010;
 }
 
 .modal-content {
@@ -3935,6 +3942,7 @@ html.custom-cursor-enabled #confirm-no {
   opacity: 0;
 }
 
+body.mission-intro-active #ui,
 body.mission-intro-active #touch-move-control,
 body.mission-intro-active #touch-ability-btn,
 body.mission-intro-active #touch-sprint-btn,
@@ -4149,7 +4157,7 @@ body.mission-intro-active #game-container {
 
 /* --- Mothership Dialogue + Tutorial --- */
 #mothership-dialogue {
-  z-index: 12480;
+  z-index: 17000;
   background: #000;
   transition: background-color 520ms ease-out;
 }
@@ -4309,10 +4317,7 @@ body.mission-intro-active #game-container {
 .tutorial-prompt {
   --tutorial-glow: var(--accent-primary);
   --tutorial-glow-rgb: 255, 159, 28;
-  position: absolute;
-  top: calc(var(--vu) * 13);
-  right: calc(var(--vu) * 4);
-  max-width: min(calc(var(--vu) * 62), 46vw);
+  width: 100%;
   background: rgba(11, 13, 15, 0.92);
   border: 1.5px solid var(--tutorial-glow);
   border-radius: 8px;
@@ -4338,6 +4343,10 @@ body.mission-intro-active #game-container {
 .tutorial-prompt.is-exiting {
   opacity: 0;
   transform: translateX(calc(var(--vu) * 6));
+}
+
+.tutorial-prompt.hidden {
+  display: none !important;
 }
 
 .tutorial-prompt__icon {
@@ -4428,22 +4437,59 @@ body.mission-intro-active #game-container {
   position: absolute;
   top: calc(var(--vu) * 13);
   right: calc(var(--vu) * 4);
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--vu) * 1.1);
-  align-items: flex-end;
+  display: block;
   pointer-events: none;
   z-index: 12080;
   width: min(calc(var(--vu) * 66), 44vw);
+  min-height: calc(var(--vu) * 22);
 }
 
 .hud-notification-stack > * {
-  position: relative !important;
-  top: auto !important;
+  --deck-index: 0;
+  position: absolute !important;
+  top: calc(var(--deck-index) * var(--vu) * 0.85) !important;
   left: auto !important;
-  right: auto !important;
+  right: calc(var(--deck-index) * var(--vu) * 1.05) !important;
   pointer-events: auto;
   max-width: 100%;
+  filter: brightness(calc(1 - (var(--deck-index) * 0.045)));
+}
+
+.hud-notification-stack > .hud-stack-card {
+  width: calc(100% - (var(--deck-index) * var(--vu) * 1.4));
+}
+
+.hud-notification-stack > .hud-stack-card:not(:first-child) {
+  cursor: pointer;
+}
+
+.hud-mission-stack {
+  position: absolute;
+  top: calc(var(--vu) * 13);
+  right: calc(var(--vu) * 4);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: calc(var(--vu) * 1.2);
+  pointer-events: none;
+  z-index: 12065;
+  width: min(calc(var(--vu) * 66), 44vw);
+  transition: top 220ms ease;
+}
+
+.hud-mission-stack.is-below-notifications {
+  top: calc(var(--vu) * 38);
+}
+
+.hud-mission-stack > * {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  width: 100%;
+  max-width: 100%;
+  pointer-events: auto;
 }
 
 /* --- Visual Skill Tree Tabbed Layout --- */
@@ -5708,6 +5754,36 @@ body.mission-intro-active #game-container {
   display: none !important;
 }
 .black-box-hud-prompt.visible {
+  display: flex !important;
+  opacity: 1;
+}
+
+.hud-mission-stack > .hud-action-prompt,
+.hud-mission-stack > .black-box-hud-prompt {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  z-index: auto !important;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.hud-mission-stack > .hud-action-prompt.hidden,
+.hud-mission-stack > .black-box-hud-prompt.hidden {
+  display: none !important;
+}
+
+.hud-mission-stack > .hud-action-prompt.visible,
+.hud-mission-stack > .black-box-hud-prompt.visible {
   display: flex !important;
   opacity: 1;
 }
@@ -7122,6 +7198,11 @@ body.mission-intro-active #game-container {
 .class-ability-panel--active .class-ability-panel__bar {
   background: #fff;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+}
+
+.class-ability-panel--cooling .class-ability-panel__bar {
+  background: #c2553d;
+  box-shadow: 0 0 7px rgba(194, 85, 61, 0.58);
 }
 
 .class-ability-panel--ready .class-ability-panel__bar {

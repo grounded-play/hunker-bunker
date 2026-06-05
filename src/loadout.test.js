@@ -67,4 +67,14 @@ describe('LoadoutManager', () => {
         expect(lo.equip(null)).toBe(true);
         expect(lo.getEquippedId()).toBeNull();
     });
+
+    it('resets persisted equipment back to the default sidearm', () => {
+        const lo = new LoadoutManager({ storage });
+        lo.equip('neon_smg', fakeFab('neon_smg'));
+        lo.reset();
+
+        const reloaded = new LoadoutManager({ storage });
+        expect(reloaded.getEquippedId()).toBeNull();
+        expect(reloaded.getEquippedLabel(fakeFab('neon_smg'))).toBe(DEFAULT_WEAPON_LABEL);
+    });
 });

@@ -302,32 +302,6 @@
       </div>
     </div>
 
-    <!-- Diagnostic Grid Overlays -->
-    <div id="calibration-overlay">
-      <div class="grid-line-v line-third-v1"></div>
-      <div class="grid-line-v line-third-v2"></div>
-      <div class="grid-line-h line-third-h1"></div>
-      <div class="grid-line-h line-third-h2"></div>
-
-      <!-- Center Axes -->
-      <div class="grid-line-v line-center-v"></div>
-      <div class="grid-line-h line-center-h"></div>
-
-      <!-- Diagonals -->
-      <div class="grid-line-diag line-diag-1"></div>
-      <div class="grid-line-diag line-diag-2"></div>
-
-    </div>
-
-    <!-- Typography Diagnostic (Base Underlay) -->
-    <div class="diag-typography">
-      <div class="typo-sample scale-xl">XL: 18</div>
-      <div class="typo-sample scale-lg">LG: 06</div>
-      <div class="typo-sample scale-md">MD: 04</div>
-      <div class="typo-sample scale-sm">SM: 02.5</div>
-      <div class="typo-sample scale-xs">XS: 01.8</div>
-    </div>
-
     <!-- Live HUD (Post-Initialization) -->
     <div id="ui" class="hidden">
       <div class="level-indicator">
@@ -542,13 +516,13 @@
     </div>
 
     <!-- Touch Sprint Button -->
-    <button id="touch-sprint-btn" class="touch-ability-btn touch-sprint-btn hidden" aria-label="Toggle sprint">
+    <button id="touch-sprint-btn" class="touch-ability-btn touch-sprint-btn hidden" aria-label="Trigger sprint burst">
       <span class="touch-ability-btn__label" aria-hidden="true">
         <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
       </span>
-      <span class="touch-ability-btn__cooldown" id="touch-sprint-cooldown">WALK</span>
+      <span class="touch-ability-btn__cooldown" id="touch-sprint-cooldown">READY</span>
     </button>
 
     <!-- Touch Ability Button -->
@@ -587,23 +561,6 @@
       <span class="prompt-text">READ LOG</span>
     </div>
 
-    <!-- Fabrication Foundry interact prompt -->
-    <div id="foundry-hud-prompt" class="lore-hud-prompt foundry-hud-prompt hidden">
-      <span class="prompt-key">PRESS E</span>
-      <span class="prompt-text">OPEN FAB BAY</span>
-    </div>
-
-    <!-- O2 Generator Prompt -->
-    <div id="o2-generator-hud-prompt" class="lore-hud-prompt o2-generator-hud-prompt hidden">
-      <span class="prompt-key">PRESS E</span>
-      <span class="prompt-text">UPGRADE O₂ GENERATOR</span>
-    </div>
-
-    <div id="black-box-hud-prompt" class="lore-hud-prompt black-box-hud-prompt hidden">
-      <span class="prompt-key">PRESS E</span>
-      <span class="prompt-text">RECOVER BLACK BOX</span>
-    </div>
-
     <!-- Lore Terminal Modal -->
     <div id="lore-modal" class="modal hidden" aria-live="polite">
       <div class="modal-content lore-modal-content">
@@ -626,12 +583,6 @@
 
     <!-- Right-side layout container for notifications/prompts -->
     <div class="hud-notification-stack">
-      <!-- Interactive Console HUD Floating Prompt -->
-      <div id="console-hud-prompt" class="hidden">
-        <span class="prompt-key">PRESS E</span>
-        <span class="prompt-text">ACCESS BASE SHOP</span>
-      </div>
-
       <!-- Radio Transmission CRT Prompt -->
       <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
         <div class="radio-transmission-prompt__avatar">
@@ -647,13 +598,36 @@
           <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
         </div>
       </div>
+    </div>
 
-      <!-- Mission Progress HUD -->
+    <!-- Mission/action prompts sit below the popup deck -->
+    <div class="hud-mission-stack">
+      <div id="console-hud-prompt" class="hud-action-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">ACCESS BASE SHOP</span>
+      </div>
+
+      <div id="o2-generator-hud-prompt" class="lore-hud-prompt hud-action-prompt o2-generator-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">UPGRADE O₂ GENERATOR</span>
+      </div>
+
+      <div id="foundry-hud-prompt" class="lore-hud-prompt hud-action-prompt foundry-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">OPEN FAB BAY</span>
+      </div>
+
+      <div id="black-box-hud-prompt" class="lore-hud-prompt black-box-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">RECOVER BLACK BOX</span>
+      </div>
+
       <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
         <span class="mission-progress-hud__icon">◈</span>
         <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
       </div>
     </div>
+
     <!-- Persistent loop-state cue: always shows the next thing to do -->
     <div id="loop-step-hud" class="loop-step-hud hidden" aria-live="polite">
       <span class="loop-step-hud__chevron" aria-hidden="true">▸</span>
@@ -953,32 +927,6 @@
       </div>
     </div>
 
-    <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
-      <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
-        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue">×</button>
-        <div class="terminal-scanline"></div>
-        <div class="terminal-flicker"></div>
-
-        <div class="terminal-header">
-          <div class="terminal-title">MOTHERSHIP UPLINK CHANNEL 7</div>
-          <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
-        </div>
-
-        <div id="mothership-dialogue-body" class="mothership-dialogue-body" aria-live="polite"></div>
-
-        <div id="mothership-dialogue-choices" class="mothership-dialogue-choices hidden">
-          <button id="mothership-choice-skip" class="choice-card">
-            <span class="choice-card__label">[A] UNDERSTOOD. MOVING OUT.</span>
-            <span class="choice-card__hint">SKIP TUTORIAL</span>
-          </button>
-          <button id="mothership-choice-tutorial" class="choice-card">
-            <span class="choice-card__label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
-            <span class="choice-card__hint">START TUTORIAL</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
     <div id="elevator-choice-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content elevator-choice-content">
         <div class="terminal-scanline"></div>
@@ -1003,6 +951,61 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Orientation Lock Overlay -->
+    <div id="orientation-lock">
+      <div class="lock-content">
+        <div class="lock-icon">🔄</div>
+        <div class="lock-title">SYSTEM ERROR: PORTRAIT DETECTED</div>
+        <div class="lock-msg">PLEASE ROTATE DEVICE TO LANDSCAPE FOR TACTICAL DEPLOYMENT</div>
+        <div class="lock-scanner"></div>
+      </div>
+    </div>
+
+    <!-- Tactical Confirmation Modal -->
+    <div id="confirm-modal" class="modal critical-modal hidden">
+      <div class="modal-content confirm-modal-content">
+        <h2 class="modal-title confirm-title">CRITICAL ALERT</h2>
+        <p class="confirm-copy">
+          ABORT MISSION AND RETURN TO COMMAND?<br>
+          UNSAVED TACTICAL PROGRESS WILL BE LOST.
+        </p>
+        <div class="confirm-actions">
+          <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>
+          <button class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- Diagnostic Grid Overlays -->
+    <div id="calibration-overlay">
+      <div class="grid-line-v line-third-v1"></div>
+      <div class="grid-line-v line-third-v2"></div>
+      <div class="grid-line-h line-third-h1"></div>
+      <div class="grid-line-h line-third-h2"></div>
+
+      <div class="grid-line-v line-center-v"></div>
+      <div class="grid-line-h line-center-h"></div>
+
+      <div class="grid-line-diag line-diag-1"></div>
+      <div class="grid-line-diag line-diag-2"></div>
+    </div>
+
+    <div id="debug-overlay">
+      <div class="guide-gutter"></div>
+      <div class="guide-diagonals"></div>
+      <div class="guide-thirds"></div>
+      <div class="guide-center"></div>
+    </div>
+
+    <div class="diag-typography">
+      <div class="typo-sample scale-xl">XL: 18</div>
+      <div class="typo-sample scale-lg">LG: 06</div>
+      <div class="typo-sample scale-md">MD: 04</div>
+      <div class="typo-sample scale-sm">SM: 02.5</div>
+      <div class="typo-sample scale-xs">XS: 01.8</div>
     </div>
 
     <!-- Settings Modal -->
@@ -1091,38 +1094,31 @@
       </div>
     </div>
 
-    <!-- Orientation Lock Overlay -->
-    <div id="orientation-lock">
-      <div class="lock-content">
-        <div class="lock-icon">🔄</div>
-        <div class="lock-title">SYSTEM ERROR: PORTRAIT DETECTED</div>
-        <div class="lock-msg">PLEASE ROTATE DEVICE TO LANDSCAPE FOR TACTICAL DEPLOYMENT</div>
-        <div class="lock-scanner"></div>
-      </div>
-    </div>
+    <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
+        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
 
-    <!-- Tactical Telemetry -->
-    <div id="debug-overlay">
-      <div class="guide-gutter"></div>
-      <div class="guide-diagonals"></div>
-      <div class="guide-thirds"></div>
-      <div class="guide-center"></div>
-    </div>
-    <!-- Tactical Confirmation Modal -->
-    <div id="confirm-modal" class="modal critical-modal hidden">
-      <div class="modal-content confirm-modal-content">
-        <h2 class="modal-title confirm-title">CRITICAL ALERT</h2>
-        <p class="confirm-copy">
-          ABORT MISSION AND RETURN TO COMMAND?<br>
-          UNSAVED TACTICAL PROGRESS WILL BE LOST.
-        </p>
-        <div class="confirm-actions">
-          <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>
-          <button class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
+        <div class="terminal-header">
+          <div class="terminal-title">MOTHERSHIP UPLINK CHANNEL 7</div>
+          <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
+        </div>
+
+        <div id="mothership-dialogue-body" class="mothership-dialogue-body" aria-live="polite"></div>
+
+        <div id="mothership-dialogue-choices" class="mothership-dialogue-choices hidden">
+          <button id="mothership-choice-skip" class="choice-card">
+            <span class="choice-card__label">[A] UNDERSTOOD. MOVING OUT.</span>
+            <span class="choice-card__hint">SKIP TUTORIAL</span>
+          </button>
+          <button id="mothership-choice-tutorial" class="choice-card">
+            <span class="choice-card__label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
+            <span class="choice-card__hint">START TUTORIAL</span>
+          </button>
         </div>
       </div>
     </div>
-  </div>
 
     <!-- Door Transition Overlay (Top Layer) -->
     <div id="transition-overlay">

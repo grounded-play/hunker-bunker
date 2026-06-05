@@ -65,6 +65,11 @@ export class LoadoutManager {
         if (fabricator && !fabricator.isFabricated(id)) return DEFAULT_WEAPON_LABEL;
         return recipe.name;
     }
+
+    reset() {
+        this.state = { equippedWeaponId: null };
+        this.save();
+    }
 }
 
 export { DEFAULT_WEAPON_LABEL };

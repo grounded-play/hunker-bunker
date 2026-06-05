@@ -83,12 +83,11 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    // Each class now has a distinct ability (the engine already implements the
-    // three behaviours in updateClassAbility): SCOUT sprints, TANK braces
-    // (immune + rooted), ENGINEER reroutes (slows O2 drain + boosts refill).
+    // Sprint is a base exosuit action for every class. Class specials are not
+    // active in the current loop yet, so this HUD/ability path stays universal.
     SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'fortify',   abilityLabel: 'BRACE',        abilityCooldown: 12, abilityDuration: 3.0 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'overclock', abilityLabel: 'REROUTE',      abilityCooldown: 14, abilityDuration: 4.0 }
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -2361,7 +2360,10 @@ export class ThreeGame {
         if (this.codeMatchesAction(code, 'moveDown')) this.keys.down = pressed;
         if (this.codeMatchesAction(code, 'moveLeft')) this.keys.left = pressed;
         if (this.codeMatchesAction(code, 'moveRight')) this.keys.right = pressed;
-        if (this.codeMatchesAction(code, 'sprint')) this.keys.shift = pressed;
+        if (this.codeMatchesAction(code, 'sprint')) {
+            if (pressed) this.triggerSprintBurst();
+            this.keys.shift = false;
+        }
     }
 
     // Resolves the active key bindings (user-remapped or default) and reports
@@ -2383,7 +2385,17 @@ export class ThreeGame {
     }
 
     setVirtualInputSprint(active = false) {
-        this.keys.shift = this.isGameplayInputActive() && Boolean(active);
+        if (active) return this.triggerSprintBurst();
+        this.keys.shift = false;
+        return false;
+    }
+
+    triggerSprintBurst() {
+        if (!this.isGameplayInputActive()) return false;
+        const wasActive = Boolean(this.classAbility?.active);
+        const cooldownBefore = this.classAbility?.cooldownRemaining ?? 0;
+        this.triggerClassAbility();
+        return !wasActive && cooldownBefore <= 0 && Boolean(this.classAbility?.active);
     }
 
     isGameplayInputActive() {
@@ -3588,6 +3600,12 @@ export class ThreeGame {
         }
     }
 
+    shouldUseTapPromptLabel() {
+        if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+        const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+        return coarsePointer || navigator.maxTouchPoints > 0 || ('ontouchstart' in window);
+    }
+
     updateConsoles(delta, now) {
         if (this.performanceProfile === 'menu') {
             this.activeInteractiveO2Generator = null;
@@ -3663,9 +3681,7 @@ export class ThreeGame {
             if (promptEl) {
                 const actionText = promptEl.querySelector('.prompt-text');
                 const promptKey = promptEl.querySelector('.prompt-key');
-                const touchMoveControl = document.getElementById('touch-move-control');
-                const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
-                const shouldUseTapLabel = Boolean(touchMoveVisible);
+                const shouldUseTapLabel = this.shouldUseTapPromptLabel();
                 if (actionText) {
                     actionText.textContent = `ACCESS ${nearestConsole.type} BASE SHOP`;
                 }
@@ -3695,9 +3711,7 @@ export class ThreeGame {
             if (o2InRange) {
                 const actionText = o2PromptEl.querySelector('.prompt-text');
                 const promptKey = o2PromptEl.querySelector('.prompt-key');
-                const touchMoveControl = document.getElementById('touch-move-control');
-                const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
-                const shouldUseTapLabel = Boolean(touchMoveVisible);
+                const shouldUseTapLabel = this.shouldUseTapPromptLabel();
                 if (actionText) actionText.textContent = 'UPGRADE O₂ GENERATOR';
                 if (promptKey) {
                     promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'PRESS E';
@@ -5941,16 +5955,12 @@ export class ThreeGame {
         let cooldownMax = stats.abilityCooldown;
         let activeDuration = stats.abilityDuration;
 
-        if (this.playerType === 'SCOUT' && this.bank) {
+        if (this.bank) {
             if (this.bank.isSkillUnlocked('scout_special_upgrade_1')) {
                 activeDuration += 1.0;
             }
             if (this.bank.isSkillUnlocked('scout_special_upgrade_2')) {
                 cooldownMax -= 2.0;
-            }
-        } else if (this.playerType === 'TANK' && this.bank) {
-            if (this.bank.isSkillUnlocked('tank_special_upgrade_1')) {
-                activeDuration += 1.5;
             }
         }
 
@@ -5968,15 +5978,7 @@ export class ThreeGame {
     }
 
     isSpecialAbilityUnlocked() {
-        if (!this.bank) return true;
-        const keys = {
-            SCOUT: 'scout_special_unlock',
-            TANK: 'tank_special_unlock',
-            ENGINEER: 'engineer_special_unlock'
-        };
-        const nodeKey = keys[this.playerType];
-        if (!nodeKey) return true;
-        return this.bank.isSkillUnlocked(nodeKey);
+        return true;
     }
 
     triggerClassAbility() {
@@ -6023,7 +6025,7 @@ export class ThreeGame {
                 }));
             } else if (abilityKey === 'sprint') {
                 this._abilityMoveSpeedMult = 3.0;
-                this._abilityO2DrainMult = 2.0;
+                this._abilityO2DrainMult = 4.0;
                 // Spawn trail particle every ~6 frames
                 if (this.player && Math.random() < 0.45) {
                     this._spawnSprintTrail();
@@ -6374,9 +6376,6 @@ export class ThreeGame {
             const prevZ = this.player.position.z;
 
             let speed = this.moveSpeed * (this._abilityMoveSpeedMult ?? 1.0);
-            if (this.keys.shift && !this.classAbility.active) {
-                speed *= 1.45;
-            }
             if (this.playerSlowTimer > 0 && !(this._abilityMoveSpeedMult > 1)) {
                 speed *= 0.55;
             }
