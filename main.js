@@ -2598,8 +2598,11 @@ function syncTouchMoveControlVisibility() {
     const isHUD = !ui?.classList.contains('hidden');
     const isMenuHidden = menu?.classList.contains('hidden') ?? true;
     const inMissionIntro = document.body.classList.contains('mission-intro-active');
-    // Keep touchMoveControl container visible on the HUD so the compass is always visible
-    touchMoveControl.classList.toggle('hidden', !isHUD || !touchUiEnabled);
+    const showHudTouchReadouts = isHUD && isMenuHidden && !inMissionIntro;
+
+    // Keep the container visible for the compass; the toggle only gates the
+    // lower-left movement joystick itself.
+    touchMoveControl.classList.toggle('hidden', !showHudTouchReadouts);
 
     // Show/hide the joystick ring and label based on the touchControls setting
     const showJoystick = touchUiEnabled && state.settings.touchControls;
@@ -2613,22 +2616,20 @@ function syncTouchMoveControlVisibility() {
 
     const sprintBtn = document.getElementById('touch-sprint-btn');
     if (sprintBtn) {
-        const showSprintBtn = touchUiEnabled && isHUD && isMenuHidden && !inMissionIntro;
-        sprintBtn.classList.toggle('hidden', !showSprintBtn);
+        sprintBtn.classList.toggle('hidden', !showHudTouchReadouts);
     }
 
     const abilityBtn = document.getElementById('touch-ability-btn');
     if (abilityBtn) {
         const abilityInfo = window.game?.getClassAbilityInfo?.();
         const specialUnlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
-        const showAbilityBtn = touchUiEnabled && isHUD && isMenuHidden && !inMissionIntro && showJoystick && specialUnlocked && abilityInfo?.key !== 'sprint';
+        const showAbilityBtn = showHudTouchReadouts && specialUnlocked && abilityInfo?.key !== 'sprint';
         abilityBtn.classList.toggle('hidden', !showAbilityBtn);
     }
 
     const scanBtn = document.getElementById('touch-scan-btn');
     if (scanBtn) {
-        const showScanBtn = touchUiEnabled && isHUD && isMenuHidden && !inMissionIntro;
-        scanBtn.classList.toggle('hidden', !showScanBtn);
+        scanBtn.classList.toggle('hidden', !showHudTouchReadouts);
     }
 
     if (!isHUD) {
@@ -2827,6 +2828,14 @@ function queueGameLayoutRefresh(frameCount = 3) {
     requestAnimationFrame(step);
 }
 
+async function settleGameLayoutForWarmup() {
+    syncStageMetrics();
+    window.game?.scale?.refresh?.();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    syncStageMetrics();
+    window.game?.scale?.refresh?.();
+}
+
 function installStageLayoutSync() {
     syncStageMetrics();
 
@@ -2878,16 +2887,23 @@ function ensureMissionManagers() {
 }
 
 
-function showRunLoadingScreen(status = 'PREPARING DROP ZONE', progress = 0) {
+function showRunLoadingScreen(status = 'SYNCHRONIZING DROP VECTOR', progress = 0, { overDoor = false } = {}) {
     clearLoaderBriefingMode();
-    if (loaderTitle) loaderTitle.textContent = 'PREPARING DROP ZONE';
+    if (loaderTitle) loaderTitle.textContent = 'MOTHERSHIP DEPLOYMENT TELEMETRY';
     if (loaderStatus) loaderStatus.textContent = status;
     if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+    loadingScreen?.classList.toggle('over-door-loader', Boolean(overDoor));
+    loadingScreen?.classList.remove('is-fading');
     loadingScreen?.classList.remove('hidden');
 }
 
-function hideRunLoadingScreen() {
+async function hideRunLoadingScreen({ fade = false } = {}) {
+    if (fade && loadingScreen && !loadingScreen.classList.contains('hidden')) {
+        loadingScreen.classList.add('is-fading');
+        await new Promise((resolve) => window.setTimeout(resolve, 360));
+    }
     loadingScreen?.classList.add('hidden');
+    loadingScreen?.classList.remove('over-door-loader', 'is-fading');
     clearLoaderBriefingMode();
 }
 
@@ -2929,31 +2945,27 @@ function showTacticalOverlay({
     }
 }
 
-async function prepareGameplayForDialogue() {
+async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;
 
-    showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
+    showRunLoadingScreen('DOWNLOADING SECTOR CORRIDOR TOPOGRAPHY...', 0, { overDoor: loaderOverDoor });
     game.setLoadingPaused?.(true);
     try {
+        await settleGameLayoutForWarmup();
         await game.prepareVisibleChunksForGameplay({
             batchSize: 3,
             onProgress: (progress) => {
                 const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
-                showRunLoadingScreen(`MAPPING STARTING SECTOR... ${pct}%`, pct);
+                showRunLoadingScreen(`DOWNLOADING SECTOR CORRIDOR TOPOGRAPHY... ${pct}%`, pct, { overDoor: loaderOverDoor });
             }
         });
-        showRunLoadingScreen('DROP ZONE READY', 100);
-        await new Promise((resolve) => window.setTimeout(resolve, 120));
+        showRunLoadingScreen('DEPLOYMENT SYNC COMPLETE', 100, { overDoor: loaderOverDoor });
+        await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));
     } finally {
         game.setLoadingPaused?.(false);
-        hideRunLoadingScreen();
+        await hideRunLoadingScreen({ fade: loaderOverDoor });
     }
-}
-
-async function prepareRunThenMissionIntro() {
-    await prepareGameplayForDialogue();
-    await runMissionIntroSequence();
 }
 
 function setSnailSpawnState(enabled, { purgeExisting = false } = {}) {
@@ -3097,16 +3109,15 @@ if (startBtn) {
                     queueGameLayoutRefresh();
                 }
 
-                // Raise the loading screen while the doors are still shut so they
-                // open onto the loader — not a half-built world. The world build
-                // + shader warm-up runs in prepareRunThenMissionIntro and only
-                // hides this once the drop zone is ready, so the cutscene plays
-                // over a finished scene with no frame loss.
-                showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
+                // Keep the doors closed while the world build + shader warm-up
+                // runs, with the progress readout mounted over the door face.
+                return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
-                void prepareRunThenMissionIntro();
-            }
+                void runMissionIntroSequence();
+            },
+            undefined,
+            { waitForClosedWork: true, openingHoldMs: 160 }
             // Defaults to active class door
         );
     });
@@ -3144,16 +3155,15 @@ if (dailyOpsBtn) {
                     queueGameLayoutRefresh();
                 }
 
-                // Raise the loading screen while the doors are still shut so they
-                // open onto the loader — not a half-built world. The world build
-                // + shader warm-up runs in prepareRunThenMissionIntro and only
-                // hides this once the drop zone is ready, so the cutscene plays
-                // over a finished scene with no frame loss.
-                showRunLoadingScreen('MAPPING STARTING SECTOR...', 0);
+                // Keep the doors closed while the world build + shader warm-up
+                // runs, with the progress readout mounted over the door face.
+                return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
-                void prepareRunThenMissionIntro();
-            }
+                void runMissionIntroSequence();
+            },
+            undefined,
+            { waitForClosedWork: true, openingHoldMs: 160 }
             // Defaults to active class door
         );
     });
@@ -3999,10 +4009,14 @@ function getDoorImage(key) {
     return CLASS_DOORS[activeClass] || SPECIAL_DOORS.base;
 }
 
-function triggerDoorTransition(onClosed, onOpened, doorKey) {
+function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
+    const {
+        waitForClosedWork = false,
+        openingHoldMs = 300
+    } = options;
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
     if (!overlay) {
-        if (onClosed) onClosed();
+        if (onClosed) void onClosed();
         if (onOpened) onOpened();
         return;
     }
@@ -4028,28 +4042,39 @@ function triggerDoorTransition(onClosed, onOpened, doorKey) {
     // 3. Once closed, swap content and prepare horizontal open
     setTimeout(() => {
         spawnSmoke(0, 0, 30, true); // Slam smoke
-        if (onClosed) onClosed();
+        const closedWork = onClosed ? onClosed() : null;
 
-        // Swap classes
-        overlay.classList.remove('closing-v', 'active');
-        overlay.classList.add('opening-h');
+        const openDoors = () => {
+            // Swap classes
+            overlay.classList.remove('closing-v', 'active');
+            overlay.classList.add('opening-h');
 
-        // Force reflow
-        void overlay.offsetWidth;
+            // Force reflow
+            void overlay.offsetWidth;
 
-        // 4. Start opening after a small "hold" gap
-        setTimeout(() => {
-            spawnSmoke(0, 0, 30, false); // Separation smoke
-            overlay.classList.add('active');
-            AudioManager.play('door_slide_horiz', { volume: 0.4 });
-            AudioManager.play('door_gears_spin', { volume: 0.25 });
-            if (onOpened) onOpened();
-        }, 300);
+            // 4. Start opening after a small "hold" gap
+            setTimeout(() => {
+                spawnSmoke(0, 0, 30, false); // Separation smoke
+                overlay.classList.add('active');
+                AudioManager.play('door_slide_horiz', { volume: 0.4 });
+                AudioManager.play('door_gears_spin', { volume: 0.25 });
+                if (onOpened) onOpened();
+            }, openingHoldMs);
 
-        // 5. Cleanup
-        setTimeout(() => {
-            overlay.classList.remove('visible', 'opening-h', 'active');
-        }, 1200);
+            // 5. Cleanup
+            setTimeout(() => {
+                overlay.classList.remove('visible', 'opening-h', 'active');
+            }, openingHoldMs + 900);
+        };
+
+        if (waitForClosedWork) {
+            Promise.resolve(closedWork).then(openDoors).catch((error) => {
+                console.error('Door transition closed-state work failed:', error);
+                openDoors();
+            });
+        } else {
+            openDoors();
+        }
     }, 900);
 }
 
@@ -4790,7 +4815,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await AudioManager.loadAssets(gameplayManifest, (progress, itemName) => {
                 if (loaderStatus && itemName) {
                     const msg = getLoadingMessageForAsset(itemName);
-                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
+                    loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> INITIALIZING TACTICAL EXOSUIT CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
                 }
             });
 

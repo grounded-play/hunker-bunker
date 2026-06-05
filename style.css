@@ -280,6 +280,59 @@ body {
   -webkit-backdrop-filter: blur(5px);
 }
 
+#loading-screen.over-door-loader {
+  z-index: 15250;
+  background: transparent;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 320ms ease-out;
+}
+
+#loading-screen.over-door-loader.is-fading {
+  opacity: 0;
+}
+
+#loading-screen.over-door-loader .loader-content {
+  width: min(calc(var(--vu) * 70), 72vw);
+  padding: calc(var(--vu) * 2.4) calc(var(--vu) * 3);
+  background:
+    linear-gradient(180deg, rgba(5, 12, 14, 0.62), rgba(3, 7, 9, 0.32)),
+    repeating-linear-gradient(90deg, rgba(111, 213, 214, 0.08) 0 1px, transparent 1px 18px);
+  border: 1px solid rgba(111, 213, 214, 0.44);
+  box-shadow:
+    0 0 calc(var(--vu) * 2.4) rgba(111, 213, 214, 0.18),
+    inset 0 0 calc(var(--vu) * 1.2) rgba(111, 213, 214, 0.08);
+}
+
+#loading-screen.over-door-loader .loader-title {
+  margin-bottom: calc(var(--vu) * 1.8);
+  font-size: var(--font-sm);
+  text-shadow: 0 0 calc(var(--vu) * 1.2) rgba(111, 213, 214, 0.48);
+}
+
+#loading-screen.over-door-loader .loader-bar-container {
+  height: calc(var(--vu) * 1.1);
+  margin-bottom: calc(var(--vu) * 1.2);
+  background: rgba(1, 4, 6, 0.62);
+  border-color: rgba(111, 213, 214, 0.5);
+}
+
+#loading-screen.over-door-loader .loader-status {
+  min-height: auto;
+  margin-top: calc(var(--vu) * 0.9);
+  color: rgba(183, 247, 255, 0.92);
+}
+
+@media (max-width: 720px) {
+  #loading-screen.over-door-loader .loader-content {
+    width: min(calc(var(--vu) * 88), 88vw);
+  }
+
+  #loading-screen.over-door-loader .loader-title {
+    font-size: var(--font-xs);
+  }
+}
+
 
 /* --- Tactical Door Transition --- */
 #transition-overlay {
@@ -2667,13 +2720,6 @@ body.orientation-locked #orientation-lock {
   text-shadow:
     0 0 calc(var(--touch-pad-label-size) * 0.7) rgba(255, 159, 28, 0.8),
     0 0 calc(var(--touch-pad-label-size) * 1.4) rgba(255, 159, 28, 0.45);
-}
-
-body:not(.touch-controls-enabled) .touch-move-control,
-body:not(.touch-controls-enabled) #touch-sprint-btn,
-body:not(.touch-controls-enabled) #touch-ability-btn,
-body:not(.touch-controls-enabled) #touch-scan-btn {
-  display: none !important;
 }
 
 .hud-header {
