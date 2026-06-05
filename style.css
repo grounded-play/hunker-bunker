@@ -182,6 +182,42 @@ body {
   width: calc(var(--vu) * 80);
 }
 
+#loading-screen.briefing-mode .loader-content {
+  width: min(calc(var(--vu) * 96), 86%);
+}
+
+.loader-briefing-avatar {
+  position: relative;
+  width: calc(var(--vu) * 16);
+  height: calc(var(--vu) * 16);
+  margin-bottom: calc(var(--vu) * 2.2);
+  border: 1.5px solid rgba(111, 213, 214, 0.78);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(5, 13, 16, 0.92);
+  box-shadow: 0 0 calc(var(--vu) * 2.4) rgba(111, 213, 214, 0.22);
+}
+
+.loader-briefing-avatar.hidden {
+  display: none;
+}
+
+.loader-briefing-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  filter: saturate(0.82) contrast(1.12);
+}
+
+.loader-briefing-avatar__scanline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(111, 213, 214, 0.18) 48%, transparent 100%);
+  animation: radio-scanline 2.4s linear infinite;
+}
+
 .loader-title {
   font-size: var(--font-md);
   font-weight: 900;
@@ -207,6 +243,20 @@ body {
   background: var(--accent-primary);
   box-shadow: 0 0 20px var(--accent-primary);
   transition: width 0.3s ease;
+}
+
+.loader-briefing-speaker {
+  font-family: 'Outfit', sans-serif;
+  color: var(--accent-secondary);
+  font-size: var(--font-xs);
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: calc(var(--vu) * 1.1);
+}
+
+.loader-briefing-speaker.hidden {
+  display: none;
 }
 
 .loader-status {
@@ -3885,18 +3935,21 @@ html.custom-cursor-enabled #confirm-no {
   opacity: 0;
 }
 
-body.mission-intro-active #ui,
 body.mission-intro-active #touch-move-control,
 body.mission-intro-active #touch-ability-btn,
 body.mission-intro-active #touch-sprint-btn,
 body.mission-intro-active #touch-scan-btn,
 body.mission-intro-active #console-hud-prompt,
-body.mission-intro-active .hud-left-sidebar,
+body.mission-intro-active .hud-notification-stack,
 body.mission-intro-active #loop-step-hud,
 body.mission-intro-active .lore-hud-prompt,
 body.mission-intro-active .biome-hud-prompt,
 body.mission-intro-active #tutorial-prompt {
   display: none !important;
+}
+
+body.mission-intro-active #mothership-dialogue:not(.hidden) {
+  display: flex !important;
 }
 
 body.mission-intro-active #game-viewport {
@@ -4327,6 +4380,8 @@ body.mission-intro-active #game-container {
   position: absolute;
   top: calc(var(--vu) * 30);
   right: calc(var(--vu) * 4);
+  width: 100%;
+  justify-content: flex-start;
   border: 1.5px solid rgba(255, 200, 50, 0.75);
   border-radius: 8px;
   background: rgba(11, 13, 15, 0.92);
@@ -4369,24 +4424,26 @@ body.mission-intro-active #game-container {
   max-width: 86vw;
 }
 
-.hud-left-sidebar {
+.hud-notification-stack {
   position: absolute;
-  top: calc(var(--vu) * 11);
-  left: calc(var(--vu) * 4);
+  top: calc(var(--vu) * 13);
+  right: calc(var(--vu) * 4);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1.5);
-  align-items: flex-start;
+  gap: calc(var(--vu) * 1.1);
+  align-items: flex-end;
   pointer-events: none;
   z-index: 12080;
+  width: min(calc(var(--vu) * 66), 44vw);
 }
 
-.hud-left-sidebar > * {
+.hud-notification-stack > * {
   position: relative !important;
   top: auto !important;
   left: auto !important;
   right: auto !important;
   pointer-events: auto;
+  max-width: 100%;
 }
 
 /* --- Visual Skill Tree Tabbed Layout --- */
@@ -4730,9 +4787,9 @@ body.mission-intro-active #game-container {
 .radio-transmission-prompt {
   position: absolute;
   top: calc(var(--vu) * 20);
-  left: calc(var(--vu) * 4);
-  transform: translateX(-20px);
-  width: clamp(280px, 40vw, 420px);
+  right: calc(var(--vu) * 4);
+  transform: translateX(calc(var(--vu) * 4));
+  width: 100%;
   background: rgba(10, 15, 20, 0.94);
   border: 1.5px solid #00d2ff;
   border-radius: 4px;
@@ -4851,6 +4908,11 @@ body.mission-intro-active #game-container {
 @keyframes radio-signal-blink {
   0% { opacity: 0.3; }
   100% { opacity: 1; }
+}
+
+@keyframes radio-scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
 }
 
 @media (max-width: 860px) {

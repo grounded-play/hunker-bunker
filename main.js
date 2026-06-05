@@ -18,6 +18,9 @@ const transitionOverlay = document.getElementById('transition-overlay');
 const loaderTitle = document.querySelector('.loader-title');
 const loaderBar = document.querySelector('.loader-bar');
 const loaderStatus = document.querySelector('.loader-status');
+const loaderBriefingAvatar = document.getElementById('loader-briefing-avatar');
+const loaderBriefingAvatarImg = document.getElementById('loader-briefing-avatar-img');
+const loaderBriefingSpeaker = document.getElementById('loader-briefing-speaker');
 
 const splashDebugToggle = document.getElementById('splash-debug-toggle');
 const splashFsToggle = document.getElementById('splash-fs-toggle');
@@ -87,6 +90,53 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     scan: ['KeyQ', null],
     sprint: ['ShiftLeft', 'ShiftRight']
 });
+
+let appPhase = 'loading';
+
+function isGameplayPhase() {
+    return appPhase === 'gameplay';
+}
+
+function clearLoaderBriefingMode() {
+    loadingScreen?.classList.remove('briefing-mode', 'tactical-mode');
+    loaderBriefingAvatar?.classList.add('hidden');
+    loaderBriefingSpeaker?.classList.add('hidden');
+}
+
+function hideAllGameplayPrompts() {
+    const promptIds = [
+        'tutorial-prompt',
+        'biome-hud-prompt',
+        'mission-progress-hud',
+        'console-hud-prompt',
+        'lore-hud-prompt',
+        'foundry-hud-prompt',
+        'o2-generator-hud-prompt',
+        'black-box-hud-prompt',
+        'radio-transmission-prompt'
+    ];
+    for (const id of promptIds) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.classList.add('hidden');
+        el.classList.remove('visible', 'is-visible', 'is-exiting');
+    }
+}
+
+function setAppPhase(phase) {
+    appPhase = phase;
+    if (!isGameplayPhase()) {
+        if (tacticalOverlayTimer) {
+            clearTimeout(tacticalOverlayTimer);
+            tacticalOverlayTimer = null;
+        }
+        hideAllGameplayPrompts();
+        hideMissionProgressHUD();
+        hideBiomePrompt();
+        clearLoaderBriefingMode();
+        window.game?.setInputEnabled?.(false);
+    }
+}
 const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveUp', label: 'MOVE UP' },
     { id: 'moveDown', label: 'MOVE DOWN' },
@@ -146,7 +196,7 @@ function clearTouchInputState() {
     touchMoveControl?.classList.remove('active');
     touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
     window.game?.setVirtualInput?.(0, 0);
-    if (window.game?.keys) window.game.keys.shift = false;
+    window.game?.setVirtualInputSprint?.(false);
     const touchSprintBtn = document.getElementById('touch-sprint-btn');
     if (touchSprintBtn) {
         touchSprintBtn.classList.remove('sprint-active');
@@ -775,10 +825,12 @@ window.addEventListener('weapon-upgraded', () => {
 
 window.addEventListener('skill-unlocked', () => {
     syncAbilityPanelLabel();
+    syncTouchMoveControlVisibility();
 });
 
 window.addEventListener('bank-updated', () => {
     syncAbilityPanelLabel();
+    syncTouchMoveControlVisibility();
 });
 
 window.addEventListener('enemy-hit', (event) => {
@@ -890,6 +942,7 @@ function hideBiomePrompt() {
 }
 
 function showRadioTransmission(rawText) {
+    if (!isGameplayPhase()) return;
     const ui = document.getElementById('ui');
     const menu = document.getElementById('menu');
     const gameOverModal = document.getElementById('game-over-modal');
@@ -1016,7 +1069,7 @@ function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
         biomeLabelEl.setAttribute('aria-label', `CURRENT BIOME ${label}`);
     }
 
-    const hudVisible = !document.getElementById('ui')?.classList.contains('hidden');
+    const hudVisible = isGameplayPhase() && !document.getElementById('ui')?.classList.contains('hidden');
     if (!hudVisible) {
         hideBiomePrompt();
     }
@@ -1197,6 +1250,7 @@ function clearAllTimers() {
 
 function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' } = {}) {
     // ── Resets & State Cleanups on Game Over ──
+    setAppPhase('gameover');
     dialogueManager?.cancelDialogue();
     dialogueManager?.cancelTutorial();
     cutsceneManager?.finishActiveRun(true);
@@ -1208,11 +1262,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     document.getElementById('mothership-dialogue')?.classList.add('hidden');
     document.getElementById('settings-popup')?.classList.add('hidden');
     document.getElementById('audio-mixer-popup')?.classList.add('hidden');
-    document.getElementById('tutorial-prompt')?.classList.add('hidden');
-    document.getElementById('biome-hud-prompt')?.classList.add('hidden');
-    document.getElementById('mission-progress-hud')?.classList.add('hidden');
-    document.getElementById('console-hud-prompt')?.classList.add('hidden');
-    document.getElementById('lore-hud-prompt')?.classList.add('hidden');
+    hideAllGameplayPrompts();
 
     document.body.classList.remove('mission-intro-active', 'player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode', 'player-poisoned');
     _distressModeActive = false;
@@ -1876,6 +1926,7 @@ window.addEventListener('black-box-marker-active', () => {
 });
 
 window.addEventListener('black-box-prompt-nearby', () => {
+    if (!isGameplayPhase()) return;
     const prompt = document.getElementById('black-box-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
@@ -1904,6 +1955,7 @@ window.addEventListener('sentinel-fired', () => {
 });
 
 function showMissionProgressHUD(text) {
+    if (!isGameplayPhase()) return;
     const hud = document.getElementById('mission-progress-hud');
     const textEl = document.getElementById('mission-progress-text');
     if (textEl) textEl.textContent = text;
@@ -1955,7 +2007,7 @@ window.addEventListener('loop-step-changed', (event) => {
                              (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
                              (!splash || splash.classList.contains('hidden'));
 
-    if (!step?.label || !isGameplayActive || isResettingRun) {
+    if (!step?.label || !isGameplayPhase() || !isGameplayActive || isResettingRun) {
         hud.classList.add('hidden');
         return;
     }
@@ -2107,6 +2159,7 @@ function syncAbilityPanelLabel() {
     if (panel) {
         panel.title = `${label} [F]`;
         const unlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
+        panel.classList.toggle('hidden', !unlocked);
         panel.classList.toggle('class-ability-panel--locked', !unlocked);
         if (!unlocked) {
             panel.title = `${label} [LOCKED — TAB SKILLS]`;
@@ -2393,7 +2446,8 @@ function syncTouchMoveControlVisibility() {
 
     const abilityBtn = document.getElementById('touch-ability-btn');
     if (abilityBtn) {
-        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick;
+        const specialUnlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
+        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick && specialUnlocked;
         abilityBtn.classList.toggle('hidden', !showAbilityBtn);
     }
 
@@ -2416,15 +2470,16 @@ if (touchSprintBtn) {
         if (!window.game) return;
         
         const active = !window.game.keys.shift;
-        window.game.keys.shift = active;
+        window.game.setVirtualInputSprint?.(active);
         
-        touchSprintBtn.classList.toggle('sprint-active', active);
+        const sprintActive = Boolean(window.game.keys?.shift);
+        touchSprintBtn.classList.toggle('sprint-active', sprintActive);
         const label = touchSprintBtn.querySelector('#touch-sprint-cooldown');
         if (label) {
-            label.textContent = active ? 'SPRINT' : 'WALK';
+            label.textContent = sprintActive ? 'SPRINT' : 'WALK';
         }
         
-        window.AudioManager?.play('ui_click', { volume: 0.5, playbackRate: active ? 1.2 : 0.95 });
+        window.AudioManager?.play('ui_click', { volume: 0.5, playbackRate: sprintActive ? 1.2 : 0.95 });
     });
 }
 
@@ -2654,6 +2709,7 @@ function runDoorTransitionAsync() {
 }
 
 function showRunLoadingScreen(status = 'PREPARING DROP ZONE', progress = 0) {
+    clearLoaderBriefingMode();
     if (loaderTitle) loaderTitle.textContent = 'PREPARING DROP ZONE';
     if (loaderStatus) loaderStatus.textContent = status;
     if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
@@ -2662,10 +2718,20 @@ function showRunLoadingScreen(status = 'PREPARING DROP ZONE', progress = 0) {
 
 function hideRunLoadingScreen() {
     loadingScreen?.classList.add('hidden');
+    clearLoaderBriefingMode();
 }
 
 let tacticalOverlayTimer = null;
-function showTacticalOverlay({ title = 'SYSTEM UPDATE', status = '', progress = 100, duration = 1600 } = {}) {
+function showTacticalOverlay({
+    title = 'SYSTEM UPDATE',
+    status = '',
+    progress = 100,
+    duration = 1600,
+    speaker = '',
+    avatar = '',
+    allowInMenus = false
+} = {}) {
+    if (!allowInMenus && !isGameplayPhase()) return;
     if (tacticalOverlayTimer) {
         clearTimeout(tacticalOverlayTimer);
         tacticalOverlayTimer = null;
@@ -2674,11 +2740,20 @@ function showTacticalOverlay({ title = 'SYSTEM UPDATE', status = '', progress = 
     if (loaderStatus) loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1.2s infinite ease-in-out;">${status}</div>`;
     if (loaderBar) loaderBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
     loadingScreen?.classList.add('tactical-mode');
+    loadingScreen?.classList.toggle('briefing-mode', Boolean(speaker || avatar));
+    if (loaderBriefingSpeaker) {
+        loaderBriefingSpeaker.textContent = speaker;
+        loaderBriefingSpeaker.classList.toggle('hidden', !speaker);
+    }
+    if (loaderBriefingAvatarImg && avatar) {
+        loaderBriefingAvatarImg.src = avatar;
+    }
+    loaderBriefingAvatar?.classList.toggle('hidden', !avatar);
     loadingScreen?.classList.remove('hidden');
     if (duration > 0) {
         tacticalOverlayTimer = setTimeout(() => {
             loadingScreen?.classList.add('hidden');
-            loadingScreen?.classList.remove('tactical-mode');
+            clearLoaderBriefingMode();
             tacticalOverlayTimer = null;
         }, duration);
     }
@@ -2794,6 +2869,7 @@ if (playBtn) {
             () => {
                 if (splash) splash.classList.add('hidden');
                 if (menu) {
+                    setAppPhase('menu');
                     menu.classList.remove('hidden');
                     window.game?.setPerformanceProfile?.('menu');
                     queueGameLayoutRefresh();
@@ -2814,7 +2890,9 @@ if (startBtn) {
         triggerDoorTransition(
             () => {
                 if (menu) menu.classList.add('hidden');
+                setAppPhase('gameplay');
                 window.game?.setPerformanceProfile?.('gameplay');
+                window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
                 resetRunToStartingState({
                     resetBank: true,
                     skipEffects: true,
@@ -2860,7 +2938,9 @@ if (dailyOpsBtn) {
         triggerDoorTransition(
             () => {
                 if (menu) menu.classList.add('hidden');
+                setAppPhase('gameplay');
                 window.game?.setPerformanceProfile?.('gameplay');
+                window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
                 resetRunToStartingState({
                     resetBank: false,
                     skipEffects: true,
@@ -3497,16 +3577,20 @@ window.addEventListener('milestone-boss-warning', () => {
     showBiomePrompt('> ALERT: PERIMETER BREACH — LARGE HOSTILE SIGNATURE CLOSING <');
 });
 window.addEventListener('foundry-discovered', (event) => {
+    if (!isGameplayPhase()) return;
     const distance = event?.detail?.distance;
     const rangeText = Number.isFinite(distance) ? ` // ${distance}u` : '';
     showTacticalOverlay({
         title: 'FABRICATOR SIGNAL FOUND',
         status: `> FABRICATION FOUNDRY BROADCAST LOCKED${rangeText}<br>> FOLLOW THE FIELD COMPASS`,
         progress: 100,
-        duration: 2200
+        duration: 2600,
+        speaker: 'ENGINEER OPERATOR',
+        avatar: '/lore_portraits/survivor_03.webp'
     });
 });
 window.addEventListener('foundry-prompt-nearby', () => {
+    if (!isGameplayPhase()) return;
     const prompt = document.getElementById('foundry-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
@@ -4048,6 +4132,13 @@ charCards.forEach(card => {
             setActiveAmmoCapacity(type, { clampExisting: true });
 
             if (window.game?.updatePlayerType) {
+                if (!isGameplayPhase()) {
+                    hideAllGameplayPrompts();
+                    hideRunLoadingScreen();
+                    window.game.updatePlayerType(type, { poof: false, emitWorldEvents: false });
+                    return;
+                }
+
                 const gameContainer = document.getElementById('game-container');
                 spawnSectorScanSmoke(gameContainer, 25);
                 AudioManager.play('amb_metal_stress1', { volume: 0.4 });
@@ -4514,6 +4605,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             window.game?.setPerformanceProfile?.('menu');
             window.game?.setLoadingPaused?.(true);
+            resetRunToStartingState({
+                resetBank: false,
+                skipEffects: true,
+                snailSpawnEnabled: false,
+                purgeSnails: true
+            });
             setSnailSpawnState(false, { purgeExisting: true });
             const initialBiomeState = window.game?.getBiomeState?.();
             if (initialBiomeState) {
@@ -4586,6 +4683,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             () => {
                 if (loadingScreen) loadingScreen.classList.add('hidden');
                 if (splash) splash.classList.remove('hidden');
+                setAppPhase('splash');
                 window.game?.setLoadingPaused?.(false);
                 AudioManager.startMenuMusic();
             },

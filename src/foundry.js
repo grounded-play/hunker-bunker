@@ -84,6 +84,14 @@ export class FabricationFoundry {
         if (this.light) this.light.intensity = 1.1;
     }
 
+    reset() {
+        this.revealed = false;
+        this.elapsed = 0;
+        if (this.group) this.group.visible = false;
+        if (this.panelMat) this.panelMat.opacity = 0;
+        if (this.light) this.light.intensity = 0;
+    }
+
     get isRevealed() { return this.revealed; }
 
     getPosition() { return this.built ? { ...this.pos } : null; }

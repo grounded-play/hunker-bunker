@@ -50,10 +50,15 @@
     <!-- Loading Screen (Pre-Splash) -->
     <div id="loading-screen">
       <div class="loader-content">
+        <div class="loader-briefing-avatar hidden" id="loader-briefing-avatar">
+          <img id="loader-briefing-avatar-img" src="/lore_portraits/survivor_08.webp" alt="" />
+          <div class="loader-briefing-avatar__scanline"></div>
+        </div>
         <div class="loader-title">INITIALIZING SYSTEMS</div>
         <div class="loader-bar-container">
           <div class="loader-bar"></div>
         </div>
+        <div class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
         <div class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
       </div>
     </div>
@@ -619,8 +624,8 @@
       <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
     </div>
 
-    <!-- Left sidebar layout container for notifications/prompts -->
-    <div class="hud-left-sidebar">
+    <!-- Right-side layout container for notifications/prompts -->
+    <div class="hud-notification-stack">
       <!-- Interactive Console HUD Floating Prompt -->
       <div id="console-hud-prompt" class="hidden">
         <span class="prompt-key">PRESS E</span>
@@ -1119,19 +1124,21 @@
     </div>
   </div>
 
-  <!-- Door Transition Overlay (Top Layer) -->
-  <div id="transition-overlay">
-    <div id="door-top" class="door"></div>
-    <div id="door-bottom" class="door"></div>
-    <div id="door-left" class="door"></div>
-    <div id="door-right" class="door"></div>
+    <!-- Door Transition Overlay (Top Layer) -->
+    <div id="transition-overlay">
+      <div id="door-top" class="door"></div>
+      <div id="door-bottom" class="door"></div>
+      <div id="door-left" class="door"></div>
+      <div id="door-right" class="door"></div>
 
-    <div class="shared-gear focus-top-right">
-      <div class="gear-stack">
-        <div class="gear-layer gear-base"></div>
-        <div class="gear-layer gear-ridge"></div>
+      <div class="shared-gear focus-top-right">
+        <div class="gear-stack">
+          <div class="gear-layer gear-base"></div>
+          <div class="gear-layer gear-ridge"></div>
+        </div>
       </div>
     </div>
+
   </div>
 
   <script type="module" src="/main.js?v=1243"></script>

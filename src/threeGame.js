@@ -2382,6 +2382,10 @@ export class ThreeGame {
         this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
     }
 
+    setVirtualInputSprint(active = false) {
+        this.keys.shift = this.isGameplayInputActive() && Boolean(active);
+    }
+
     isGameplayInputActive() {
         return this.performanceProfile === 'gameplay'
             && this.inputEnabled
@@ -2572,7 +2576,7 @@ export class ThreeGame {
         };
     }
 
-    updatePlayerType(type) {
+    updatePlayerType(type, { poof = true, emitWorldEvents = true } = {}) {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
         const stats = CLASS_STATS[type] ?? CLASS_STATS.ENGINEER;
@@ -2629,9 +2633,11 @@ export class ThreeGame {
         }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
 
-        this.updateCrashedShipsVisibility(true);
+        this.updateCrashedShipsVisibility(poof);
         this.ensureO2BubbleVisualState();
-        this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
+        if (emitWorldEvents) {
+            this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
+        }
         this.emitVitalsState();
         this.emitShipHealthState();
     }
@@ -5222,7 +5228,7 @@ export class ThreeGame {
     // Proximity prompt for the Foundry (mirrors the lore-terminal prompt flow).
     // Reuses the console HUD prompt; dispatches show/hide events main.js listens for.
     updateFoundryPrompt() {
-        if (!this.foundry?.isRevealed || !this.player || this.isPlayerDead) {
+        if (!this.isGameplayInputActive() || !this.foundry?.isRevealed || !this.player || this.isPlayerDead) {
             if (this._foundryPromptActive) {
                 this._foundryPromptActive = false;
                 window.dispatchEvent(new CustomEvent('foundry-prompt-clear'));
@@ -5763,6 +5769,8 @@ export class ThreeGame {
             this._lastLoopStepKey = null; // force the loop-state HUD to re-emit
             this._terminalEvent = null;
             this._terminalEventResolvedIds.clear();
+            this.foundry?.reset?.();
+            this._foundryPromptActive = false;
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
             this._initClassAbility();
