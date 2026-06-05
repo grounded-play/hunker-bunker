@@ -1319,6 +1319,20 @@ function assignMission(bankState) {
     return missions[idx];
 }
 
+// Surface a prior contractor's black box at the base/menu so failure is a
+// visible thread between runs, not just an in-run marker (doc 11 §4.D).
+const DEPTH_TIER_LABELS = ['SURFACE', 'SHALLOWS', 'MIDWORKS', 'DEEPWORKS', 'THE UNDERSTRUCTURE'];
+function refreshLastContractor() {
+    const el = document.getElementById('last-contractor');
+    if (!el) return;
+    const box = blackBoxStore.load();
+    if (!box?.active) { el.classList.add('hidden'); return; }
+    const cls = (box.classType ?? 'OPERATOR').toUpperCase();
+    const tier = DEPTH_TIER_LABELS[Math.max(0, Math.min(DEPTH_TIER_LABELS.length - 1, box.depth ?? 0))];
+    el.textContent = `⚑ LAST CONTRACTOR: ${cls} lost in ${tier} — BLACK BOX SIGNAL ACTIVE. Recover it on your next descent.`;
+    el.classList.remove('hidden');
+}
+
 function generateDeathReport(stats, reason) {
     const biome = stats.biomeLabel ?? 'ACTIVE SECTOR';
     const depth = stats.distanceTravelled ?? 0;
@@ -1432,6 +1446,8 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
             ? `BLACK BOX RECOVERABLE: ${s.tech ?? 0} TECH / ${s.coin ?? 0} COIN / ${s.med ?? 0} MED`
             : 'BLACK BOX: NO RECOVERABLE SALVAGE';
     }
+    // Update the base banner so the menu reflects this death when the player returns.
+    refreshLastContractor();
 
     // Title / subtitle
     const title = document.querySelector('.game-over-title');
@@ -3757,6 +3773,11 @@ document.getElementById('close-fabrication-modal')?.addEventListener('click', cl
 setupClickOutside('fabrication-modal', closeFabricationModal);
 window.addEventListener('o2-generator-upgraded', refreshFabAccess);
 refreshFabAccess();
+
+// Base death-thread banner (doc 11 §4.D): show a prior contractor's black box at
+// the menu, and clear it once recovered in-run.
+refreshLastContractor();
+window.addEventListener('black-box-recovered', refreshLastContractor);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
