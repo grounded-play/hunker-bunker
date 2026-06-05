@@ -1227,9 +1227,30 @@ function clearTimedClass(timerRefName, className) {
     document.body.classList.remove(className);
 }
 
-function triggerDamageFlash() {
+let playerDamageCueLastAt = 0;
+function playPlayerDamageCue(detail = {}) {
+    const now = performance.now();
+    if (now - playerDamageCueLastAt < 260) return;
+    playerDamageCueLastAt = now;
+    const hp = Number.isFinite(detail.hp) ? detail.hp : window.game?.playerVitals?.hp;
+    const critical = Number.isFinite(hp) && hp <= 1;
+    const reason = detail.reason ?? '';
+    const isEnvironmental = reason === 'o2-depletion' || reason === 'poison';
+    AudioManager.play('player_hit', {
+        volume: critical ? 0.65 : isEnvironmental ? 0.35 : 0.55,
+        playbackRate: critical ? 0.82 : isEnvironmental ? 0.95 : 1.0,
+        bus: 'sfx'
+    });
+}
+
+function playPlayerDeathCue(_reason = 'hazard') {
+    AudioManager.play('player_death', { volume: 0.75, bus: 'sfx' });
+}
+
+function triggerDamageFlash(event) {
     clearTimedClass('damage', 'player-damage-flash');
     document.body.classList.add('player-damage-flash');
+    playPlayerDamageCue(event?.detail ?? {});
     damageFlashTimer = window.setTimeout(() => {
         document.body.classList.remove('player-damage-flash');
         damageFlashTimer = null;
@@ -1501,6 +1522,8 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         modal.classList.remove('hidden');
         modal.classList.toggle('game-over-modal--victory', isVictory);
     }
+    AudioManager.stopAmbience();
+    transitionToMenuMusic();
 
     // Stagger bar animations for a readout effect
     requestAnimationFrame(() => {
@@ -1567,7 +1590,7 @@ function runDeathSequence(event) {
         biomePromptTimer = null;
     }
     document.body.classList.add('player-dead-flash');
-    AudioManager.play('ui_error', { volume: 0.7 });
+    playPlayerDeathCue(deathReason);
 
     deathSequenceTimer = window.setTimeout(() => {
         document.body.classList.remove('player-dead-flash');
@@ -2350,6 +2373,13 @@ function stopO2Alarm() {
 let _musicTension = 'exploring';
 let _musicContext = 'safe_ship';
 
+function transitionToMenuMusic() {
+    _musicTension = 'safe';
+    _musicContext = 'safe_ship';
+    window.AudioManager?.startMenuMusic?.();
+}
+window.transitionToMenuMusic = transitionToMenuMusic;
+
 function updateMusicTension() {
     const hp = window.game?.playerVitals?.hp ?? 99;
     const o2 = window.game?.playerVitals?.o2 ?? 100;
@@ -2506,6 +2536,7 @@ if (gameOverMainMenu) {
                 syncTouchMoveControlVisibility();
                 if (menu) menu.classList.remove('hidden');
                 window.game?.setPerformanceProfile?.('menu');
+                transitionToMenuMusic();
 
                 const gameContainer = document.getElementById('game-container');
                 const mapBox = document.querySelector('.map-box');
@@ -2534,6 +2565,7 @@ function isTouchDevice() {
 function setTouchDeviceMode() {
     const touchDevice = isTouchDevice();
     document.body.classList.toggle('touch-device', touchDevice);
+    document.body.classList.toggle('touch-controls-enabled', touchDevice || Boolean(state.settings.touchControls));
 
     if (mainTouchToggle) {
         mainTouchToggle.checked = !!state.settings.touchControls;
@@ -2552,16 +2584,19 @@ function syncTouchSettingsVisibility() {
 function syncTouchMoveControlVisibility() {
     if (!touchMoveControl) return;
 
+    const touchDevice = isTouchDevice();
+    const touchUiEnabled = touchDevice || Boolean(state.settings.touchControls);
+    document.body.classList.toggle('touch-controls-enabled', touchUiEnabled);
     const ui = document.getElementById('ui');
     const menu = document.getElementById('menu');
     const isHUD = !ui?.classList.contains('hidden');
     const isMenuHidden = menu?.classList.contains('hidden') ?? true;
     const inMissionIntro = document.body.classList.contains('mission-intro-active');
     // Keep touchMoveControl container visible on the HUD so the compass is always visible
-    touchMoveControl.classList.toggle('hidden', !isHUD);
+    touchMoveControl.classList.toggle('hidden', !isHUD || !touchUiEnabled);
 
     // Show/hide the joystick ring and label based on the touchControls setting
-    const showJoystick = state.settings.touchControls;
+    const showJoystick = touchUiEnabled && state.settings.touchControls;
     if (touchMoveRing) {
         touchMoveRing.classList.toggle('hidden', !showJoystick);
     }
@@ -2572,7 +2607,7 @@ function syncTouchMoveControlVisibility() {
 
     const sprintBtn = document.getElementById('touch-sprint-btn');
     if (sprintBtn) {
-        const showSprintBtn = isHUD && isMenuHidden && !inMissionIntro;
+        const showSprintBtn = touchUiEnabled && isHUD && isMenuHidden && !inMissionIntro;
         sprintBtn.classList.toggle('hidden', !showSprintBtn);
     }
 
@@ -2580,13 +2615,13 @@ function syncTouchMoveControlVisibility() {
     if (abilityBtn) {
         const abilityInfo = window.game?.getClassAbilityInfo?.();
         const specialUnlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
-        const showAbilityBtn = isHUD && isMenuHidden && !inMissionIntro && showJoystick && specialUnlocked && abilityInfo?.key !== 'sprint';
+        const showAbilityBtn = touchUiEnabled && isHUD && isMenuHidden && !inMissionIntro && showJoystick && specialUnlocked && abilityInfo?.key !== 'sprint';
         abilityBtn.classList.toggle('hidden', !showAbilityBtn);
     }
 
     const scanBtn = document.getElementById('touch-scan-btn');
     if (scanBtn) {
-        const showScanBtn = isHUD && isMenuHidden && !inMissionIntro;
+        const showScanBtn = touchUiEnabled && isHUD && isMenuHidden && !inMissionIntro;
         scanBtn.classList.toggle('hidden', !showScanBtn);
     }
 
@@ -4622,7 +4657,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             { key: 'class_lock1', url: '/audio/vg2/class_lock1.wav' },
             { key: 'class_lock2', url: '/audio/vg2/class_lock2.wav' },
             { key: 'class_lock3', url: '/audio/vg2/class_lock3.wav' },
-            { key: 'class_lock4', url: '/audio/vg2/class_lock4.wav' }
+            { key: 'class_lock4', url: '/audio/vg2/class_lock4.wav' },
+            { key: 'ui_click2', url: '/audio/vg2/ui_click_confirm2.wav' },
+            { key: 'ui_typing1', url: '/audio/vg2/ui_typing1.wav' },
+            { key: 'ui_typing2', url: '/audio/vg2/ui_typing2.wav' },
+            { key: 'ui_typing3', url: '/audio/vg2/ui_typing3.wav' },
+            { key: 'ui_typing4', url: '/audio/vg2/ui_typing4.wav' },
+            { key: 'player_hit1', url: '/audio/vg2/player_hit1.wav' },
+            { key: 'player_hit2', url: '/audio/vg2/player_hit2.wav' },
+            { key: 'player_hit3', url: '/audio/vg2/player_hit3.wav' },
+            { key: 'player_death1', url: '/audio/vg2/player_death1.wav' },
+            { key: 'ui_upgrade_weapon1', url: '/audio/vg2/ui_upgrade_weapon1.wav' }
         ]
     };
     manifest.images = Array.from(new Set(manifest.images));
@@ -4696,7 +4741,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     '/scatter_bio_moss.png',
                     '/scatter_bio_pod.png',
                     '/scatter_slime_puddle.png',
-                    '/build_structure_anim.png'
+                    '/build_structure_anim.png',
+                    '/pit_hole.png',
+                    '/decal_scars.png'
                 ],
                 audio: [
                     { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
@@ -4709,7 +4756,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'amb_drip4', url: '/audio/vg2/amb_drip4.wav' },
                     { key: 'amb_metal_stress1', url: '/audio/vg2/amb_metal_stress1.wav' },
                     { key: 'amb_metal_stress2', url: '/audio/vg2/amb_metal_stress2.wav' },
-                    { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' }
+                    { key: 'amb_metal_stress3', url: '/audio/vg2/amb_metal_stress3.wav' },
+                    { key: 'enemy_hit_soft1', url: '/audio/vg2/enemy_hit_soft1.wav' },
+                    { key: 'enemy_hit_soft2', url: '/audio/vg2/enemy_hit_soft2.wav' },
+                    { key: 'enemy_hit_soft3', url: '/audio/vg2/enemy_hit_soft3.wav' },
+                    { key: 'enemy_death_snail1', url: '/audio/vg2/enemy_death_snail1.wav' },
+                    { key: 'enemy_death_snail2', url: '/audio/vg2/enemy_death_snail2.wav' },
+                    { key: 'enemy_death_snail3', url: '/audio/vg2/enemy_death_snail3.wav' },
+                    { key: 'enemy_death_crawler1', url: '/audio/vg2/enemy_death_crawler1.wav' },
+                    { key: 'enemy_death_crawler2', url: '/audio/vg2/enemy_death_crawler2.wav' },
+                    { key: 'weapon_fire_sidearm1', url: '/audio/vg2/weapon_fire_sidearm1.wav' },
+                    { key: 'weapon_fire_sidearm2', url: '/audio/vg2/weapon_fire_sidearm2.wav' },
+                    { key: 'weapon_fire_sidearm3', url: '/audio/vg2/weapon_fire_sidearm3.wav' },
+                    { key: 'weapon_reload1', url: '/audio/vg2/weapon_reload1.wav' },
+                    { key: 'weapon_reload2', url: '/audio/vg2/weapon_reload2.wav' }
                 ]
             };
 
@@ -4824,7 +4884,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (splash) splash.classList.remove('hidden');
                 setAppPhase('splash');
                 window.game?.setLoadingPaused?.(false);
-                AudioManager.startMenuMusic();
+                transitionToMenuMusic();
             },
             null,
             'base'

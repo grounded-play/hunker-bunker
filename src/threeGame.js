@@ -605,7 +605,7 @@ export class ThreeGame {
         this.globalSeedOffset = 0;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
-        this.maxChunkMountsPerFrame = 2;
+        this.maxChunkMountsPerFrame = 1;
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
@@ -1159,7 +1159,9 @@ export class ThreeGame {
             scatter_cryo_shards: this.loadScatterTexture('/scatter_cryo_shards.png', textureLoader),
             scatter_bio_moss: this.loadScatterTexture('/scatter_bio_moss.png', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
-            lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader)
+            lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
+            pit_hole: this.loadScatterTexture('/pit_hole.png', textureLoader),
+            decal_scars: this.loadScatterTexture('/decal_scars.png', textureLoader)
         };
 
         // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
@@ -1420,6 +1422,14 @@ export class ThreeGame {
         ]) {
             material.fog = true;
         }
+
+        this.holeMaterial = new THREE.MeshBasicMaterial({
+            map: this.scatterTextures.pit_hole,
+            transparent: true,
+            depthWrite: false,
+            depthTest: true,
+            fog: true
+        });
 
         this.setupLighting();
         this.setupWorld();
@@ -3046,7 +3056,11 @@ export class ThreeGame {
             }
             this.clearLoadedChunksForRunReset();
             window.AudioManager?.stopAmbience?.();
-            window.AudioManager?.startMenuMusic?.();
+            if (typeof window.transitionToMenuMusic === 'function') {
+                window.transitionToMenuMusic();
+            } else {
+                window.AudioManager?.startMenuMusic?.();
+            }
         }
         if (this.menuShowroomFloor) {
             this.menuShowroomFloor.visible = nextProfile === 'menu';
@@ -3188,6 +3202,7 @@ export class ThreeGame {
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
+        this._lastFrameDeltaForChunkMounts = delta;
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
@@ -5763,6 +5778,11 @@ export class ThreeGame {
         this.virtualInput.x = 0;
         this.virtualInput.z = 0;
         this.isMoving = false;
+        this.isPlayerFalling = false;
+        if (this.player) {
+            this.player.scale.set(1, 1, 1);
+            this.player.rotation.set(0, 0, 0);
+        }
 
         const spawn = this.getSpawnTile();
         this.player.position.set(spawn.x, 0, spawn.y);
@@ -6333,8 +6353,37 @@ export class ThreeGame {
             this.isMoving = false;
             return;
         }
+
+        // Handle falling in hole state
+        if (this.isPlayerFalling) {
+            this.isMoving = false;
+            if (this.player) {
+                this.player.position.y -= 3.5 * delta;
+                this.player.rotation.y += 8.0 * delta;
+                const newScale = Math.max(0, this.player.scale.x - 2.5 * delta);
+                this.player.scale.set(newScale, newScale, newScale);
+                
+                if (this.player.position.y <= -2.5) {
+                    this.isPlayerFalling = false;
+                    this.takeDamage(999, 'abyss');
+                }
+            }
+            return;
+        }
+
         if (this.performanceProfile === 'gameplay' && !this.isGameplayInputActive()) {
             this.clearGameplayInputState();
+        }
+
+        // Check if player stepped on a hole
+        if (this.player && this.performanceProfile === 'gameplay') {
+            if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
+                this.isPlayerFalling = true;
+                this.setInputEnabled(false);
+                window.AudioManager?.play('amb_metal_stress', { volume: 0.8, playbackRate: 0.6 });
+                this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
+                return;
+            }
         }
 
         // Handle slow and poison status effects
@@ -7771,7 +7820,7 @@ export class ThreeGame {
         this.weaponReloading = true;
         this.weaponReloadTimer = WEAPON_RELOAD_DURATION;
         this.emitWeaponClipState();
-        window.AudioManager?.play('door_gears_spin', { volume: 0.22, playbackRate: 1.22 });
+        window.AudioManager?.play('weapon_reload', { volume: 0.52 });
         return true;
     }
 
@@ -7848,7 +7897,7 @@ export class ThreeGame {
 
         this.spawnPlayerShot(normX, normZ);
 
-        window.AudioManager?.play('ui_scan_ping', { volume: 0.34, playbackRate: 1.42 });
+        window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
 
         if (this.weaponClipAmmo <= 0) {
             this.requestReload();
@@ -8117,13 +8166,46 @@ export class ThreeGame {
         const nz = normalZ / len;
 
         const geo = new THREE.PlaneGeometry(0.3, 0.3);
-        const mat = new THREE.MeshBasicMaterial({
-            color: 0x0e0a07,
+
+        const vertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            uniform sampler2D map;
+            uniform float uCooling;
+            uniform float uOpacity;
+            varying vec2 vUv;
+            void main() {
+                vec4 texColor = texture2D(map, vUv);
+                if (texColor.a < 0.05) {
+                    discard;
+                }
+                float gray = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+                // 0.45 factor mimics a charred dark soot color
+                vec3 cooledColor = vec3(gray * 0.45);
+                vec3 finalColor = mix(texColor.rgb, cooledColor, uCooling);
+                gl_FragColor = vec4(finalColor, texColor.a * uOpacity);
+            }
+        `;
+
+        const mat = new THREE.ShaderMaterial({
+            uniforms: {
+                map: { value: this.scatterTextures.decal_scars },
+                uCooling: { value: 0.0 },
+                uOpacity: { value: 0.95 }
+            },
+            vertexShader,
+            fragmentShader,
             transparent: true,
-            opacity: 0.78,
             depthWrite: false,
             depthTest: true
         });
+
         const mesh = new THREE.Mesh(geo, mat);
         // Offset slightly off the face to avoid z-fighting; sit at mid-wall height.
         mesh.position.set(x + nx * 0.02, 0.45, z + nz * 0.02);
@@ -8139,7 +8221,10 @@ export class ThreeGame {
             update(delta) {
                 this.age += delta;
                 const t = Math.min(this.age / duration, 1);
-                mat.opacity = 0.78 * (1 - t * t);
+                // Cool down over the first 1.5 seconds of the decal's life
+                const coolProgress = Math.min(this.age / 1.5, 1.0);
+                mat.uniforms.uCooling.value = coolProgress;
+                mat.uniforms.uOpacity.value = 0.78 * (1 - t * t);
             },
             dispose() {
                 geo.dispose();
@@ -8295,7 +8380,13 @@ export class ThreeGame {
         this.pendingChunkMounts = this.pendingChunkMounts.filter((entry) => needed.has(entry.key));
         this.pendingChunkMountKeys = new Set(this.pendingChunkMounts.map((entry) => entry.key));
 
-        this.processPendingChunkMounts(force ? 1 : this.maxChunkMountsPerFrame);
+        const frameAlreadySlow = (this._lastFrameDeltaForChunkMounts ?? 0) > 0.024;
+        const chunkMountLimit = force
+            ? 1
+            : frameAlreadySlow
+                ? 0
+                : this.maxChunkMountsPerFrame;
+        this.processPendingChunkMounts(chunkMountLimit);
 
         for (const [key, group] of this.chunkMeshes.entries()) {
             if (needed.has(key)) continue;
@@ -8318,10 +8409,16 @@ export class ThreeGame {
             this.pendingChunkMountKeys.delete(key);
         }
 
+        this.sirenLights = [];
         for (const group of this.chunkMeshes.values()) {
             for (const child of group.children) {
                 if (child.userData.isWall) {
                     this.wallMeshes.push(child);
+                    child.traverse((subchild) => {
+                        if (subchild.userData?.isSirenLight) {
+                            this.sirenLights.push(subchild);
+                        }
+                    });
                 }
                 if (child.userData.isPickup) {
                     this.pickupMeshes.push(child);
@@ -8416,76 +8513,151 @@ export class ThreeGame {
 
                 if (grid[localY][localX] !== '#') continue;
 
-                const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
-                wall.position.set(worldX, this.wallHeight / 2, worldZ);
-                wall.castShadow = true;
-                wall.receiveShadow = true;
-                wall.userData.isWall = true;
-                group.add(wall);
+                const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldZ) + 999);
+                const wallTypeRoll = wallTypeRng();
 
-                // Add deterministic visual variety child meshes to walls
-                const rng = this.createSeededRandom(this.hashTile(worldX, worldZ));
-                const roll = rng();
-                if (roll < 0.12) {
-                    // Pillar (Cylinder on one of the corners/edges)
-                    const pillar = new THREE.Mesh(this.pillarGeometry, this.wallMaterial);
-                    const cx = (rng() < 0.5 ? -0.5 : 0.5);
-                    const cz = (rng() < 0.5 ? -0.5 : 0.5);
-                    pillar.position.set(cx, 0, cz);
-                    pillar.castShadow = true;
-                    pillar.receiveShadow = true;
-                    wall.add(pillar);
-                } else if (roll < 0.24) {
-                    // Thin metal support bracket panel on one of the 4 faces
-                    const bracket = new THREE.Mesh(this.bracketGeometry, this.wallMaterial);
-                    const faceRoll = Math.floor(rng() * 4);
-                    if (faceRoll === 0) { // +X face
-                        bracket.position.set(0.5, (rng() - 0.5) * 1.5, 0);
-                        bracket.rotation.y = Math.PI / 2;
-                    } else if (faceRoll === 1) { // -X face
-                        bracket.position.set(-0.5, (rng() - 0.5) * 1.5, 0);
-                        bracket.rotation.y = Math.PI / 2;
-                    } else if (faceRoll === 2) { // +Z face
-                        bracket.position.set(0, (rng() - 0.5) * 1.5, 0.5);
-                    } else { // -Z face
-                        bracket.position.set(0, (rng() - 0.5) * 1.5, -0.5);
+                if (wallTypeRoll < 0.06) {
+                    // Hole / Pit (flat on the ground)
+                    const holeMesh = new THREE.Mesh(this.floorGeometry, this.holeMaterial);
+                    holeMesh.rotation.x = -Math.PI / 2;
+                    // Various sizes scaled up based on seeded random (from 1.5 up to 4.0)
+                    const sizeFactor = wallTypeRoll / 0.06;
+                    const scale = 1.5 + sizeFactor * 2.5;
+                    holeMesh.scale.set(scale, scale, 1);
+                    // Random organic rotation around the Z axis (the tile normal)
+                    holeMesh.rotation.z = wallTypeRng() * Math.PI * 2;
+                    holeMesh.position.set(worldX, 0.005, worldZ);
+                    holeMesh.receiveShadow = true;
+                    group.add(holeMesh);
+                } else if (wallTypeRoll < 0.22) {
+                    // Hazard Wall (pulsing warning siren)
+                    const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    wall.position.set(worldX, this.wallHeight / 2, worldZ);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    wall.userData.isWall = true;
+                    group.add(wall);
+
+                    const baseGeom = new THREE.CylinderGeometry(0.12, 0.14, 0.1, 8);
+                    const baseMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+                    const sirenBase = new THREE.Mesh(baseGeom, baseMat);
+                    sirenBase.position.y = this.wallHeight / 2 + 0.05;
+                    wall.add(sirenBase);
+
+                    const domeGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.12, 8);
+                    const domeMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+                    const sirenDome = new THREE.Mesh(domeGeom, domeMat);
+                    sirenDome.position.y = this.wallHeight / 2 + 0.14;
+                    wall.add(sirenDome);
+
+                    const sirenLight = new THREE.PointLight(0xff2222, 1.2, 5, 1.8);
+                    sirenLight.position.set(0, this.wallHeight / 2 + 0.22, 0);
+                    sirenLight.userData = {
+                        isSirenLight: true,
+                        speed: 5.0 + wallTypeRng() * 4.0,
+                        phase: wallTypeRng() * Math.PI * 2
+                    };
+                    wall.add(sirenLight);
+                } else if (wallTypeRoll < 0.35) {
+                    // Damaged Wall (ruins with rubble debris)
+                    const shortHeightMult = 0.45 + wallTypeRng() * 0.25;
+                    const damagedHeight = this.wallHeight * shortHeightMult;
+                    const damagedGeometry = new THREE.BoxGeometry(1, damagedHeight, 1);
+                    
+                    const wall = new THREE.Mesh(damagedGeometry, this.wallMaterial);
+                    wall.position.set(worldX, damagedHeight / 2, worldZ);
+                    
+                    wall.rotation.x = (wallTypeRng() - 0.5) * 0.15;
+                    wall.rotation.z = (wallTypeRng() - 0.5) * 0.15;
+                    
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    wall.userData.isWall = true;
+                    group.add(wall);
+
+                    const rubbleCount = 2 + Math.floor(wallTypeRng() * 3);
+                    for (let i = 0; i < rubbleCount; i++) {
+                        const size = 0.05 + wallTypeRng() * 0.07;
+                        const rubbleGeom = new THREE.DodecahedronGeometry(size, 0);
+                        const rubble = new THREE.Mesh(rubbleGeom, this.wallMaterial);
+                        
+                        const rx = (wallTypeRng() - 0.5) * 0.72;
+                        const rz = (wallTypeRng() - 0.5) * 0.72;
+                        rubble.position.set(worldX + rx, size, worldZ + rz);
+                        rubble.rotation.set(wallTypeRng() * Math.PI, wallTypeRng() * Math.PI, 0);
+                        
+                        rubble.castShadow = true;
+                        rubble.receiveShadow = true;
+                        group.add(rubble);
                     }
-                    bracket.castShadow = true;
-                    bracket.receiveShadow = true;
-                    wall.add(bracket);
-                } else if (roll < 0.32) {
-                    // Dark vent grid box
-                    const vent = new THREE.Mesh(this.ventGeometry, this.ventMaterial);
-                    const faceRoll = Math.floor(rng() * 4);
-                    const vy = 0.4 + rng() * 0.6;
-                    if (faceRoll === 0) { // +X face
-                        vent.position.set(0.501, vy, 0);
-                        vent.rotation.y = Math.PI / 2;
-                    } else if (faceRoll === 1) { // -X face
-                        vent.position.set(-0.501, vy, 0);
-                        vent.rotation.y = Math.PI / 2;
-                    } else if (faceRoll === 2) { // +Z face
-                        vent.position.set(0, vy, 0.501);
-                    } else { // -Z face
-                        vent.position.set(0, vy, -0.501);
+                } else {
+                    // Standard Wall
+                    const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    wall.position.set(worldX, this.wallHeight / 2, worldZ);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    wall.userData.isWall = true;
+                    group.add(wall);
+
+                    const rng = this.createSeededRandom(this.hashTile(worldX, worldZ));
+                    const roll = rng();
+                    if (roll < 0.12) {
+                        const pillar = new THREE.Mesh(this.pillarGeometry, this.wallMaterial);
+                        const cx = (rng() < 0.5 ? -0.5 : 0.5);
+                        const cz = (rng() < 0.5 ? -0.5 : 0.5);
+                        pillar.position.set(cx, 0, cz);
+                        pillar.castShadow = true;
+                        pillar.receiveShadow = true;
+                        wall.add(pillar);
+                    } else if (roll < 0.24) {
+                        const bracket = new THREE.Mesh(this.bracketGeometry, this.wallMaterial);
+                        const faceRoll = Math.floor(rng() * 4);
+                        if (faceRoll === 0) {
+                            bracket.position.set(0.5, (rng() - 0.5) * 1.5, 0);
+                            bracket.rotation.y = Math.PI / 2;
+                        } else if (faceRoll === 1) {
+                            bracket.position.set(-0.5, (rng() - 0.5) * 1.5, 0);
+                            bracket.rotation.y = Math.PI / 2;
+                        } else if (faceRoll === 2) {
+                            bracket.position.set(0, (rng() - 0.5) * 1.5, 0.5);
+                        } else {
+                            bracket.position.set(0, (rng() - 0.5) * 1.5, -0.5);
+                        }
+                        bracket.castShadow = true;
+                        bracket.receiveShadow = true;
+                        wall.add(bracket);
+                    } else if (roll < 0.32) {
+                        const vent = new THREE.Mesh(this.ventGeometry, this.ventMaterial);
+                        const faceRoll = Math.floor(rng() * 4);
+                        const vy = 0.4 + rng() * 0.6;
+                        if (faceRoll === 0) {
+                            vent.position.set(0.501, vy, 0);
+                            vent.rotation.y = Math.PI / 2;
+                        } else if (faceRoll === 1) {
+                            vent.position.set(-0.501, vy, 0);
+                            vent.rotation.y = Math.PI / 2;
+                        } else if (faceRoll === 2) {
+                            vent.position.set(0, vy, 0.501);
+                        } else {
+                            vent.position.set(0, vy, -0.501);
+                        }
+                        wall.add(vent);
+                    } else if (roll < 0.38) {
+                        const pipe = new THREE.Mesh(this.pipeGeometry, this.pipeMaterial);
+                        const faceRoll = Math.floor(rng() * 4);
+                        if (faceRoll === 0) {
+                            pipe.position.set(0.42, 0, (rng() - 0.5) * 0.6);
+                        } else if (faceRoll === 1) {
+                            pipe.position.set(-0.42, 0, (rng() - 0.5) * 0.6);
+                        } else if (faceRoll === 2) {
+                            pipe.position.set((rng() - 0.5) * 0.6, 0, 0.42);
+                        } else {
+                            pipe.position.set((rng() - 0.5) * 0.6, 0, -0.42);
+                        }
+                        pipe.castShadow = true;
+                        pipe.receiveShadow = true;
+                        wall.add(pipe);
                     }
-                    wall.add(vent);
-                } else if (roll < 0.38) {
-                    // Dark conduit pipe cylinder
-                    const pipe = new THREE.Mesh(this.pipeGeometry, this.pipeMaterial);
-                    const faceRoll = Math.floor(rng() * 4);
-                    if (faceRoll === 0) { // +X side
-                        pipe.position.set(0.42, 0, (rng() - 0.5) * 0.6);
-                    } else if (faceRoll === 1) { // -X side
-                        pipe.position.set(-0.42, 0, (rng() - 0.5) * 0.6);
-                    } else if (faceRoll === 2) { // +Z side
-                        pipe.position.set((rng() - 0.5) * 0.6, 0, 0.42);
-                    } else { // -Z side
-                        pipe.position.set((rng() - 0.5) * 0.6, 0, -0.42);
-                    }
-                    pipe.castShadow = true;
-                    pipe.receiveShadow = true;
-                    wall.add(pipe);
                 }
             }
         }
@@ -10311,7 +10483,7 @@ export class ThreeGame {
         }
 
         if (sprite.userData.hp > 0) {
-            window.AudioManager?.play('ui_scan_ping', { volume: 0.26, playbackRate: 0.65 });
+            window.AudioManager?.play('enemy_hit_soft', { volume: 0.38 });
             this._flashSnailHit(sprite);
             window.dispatchEvent(new CustomEvent('enemy-hit', {
                 detail: {
@@ -10364,8 +10536,11 @@ export class ThreeGame {
             upward: 0.22,
             spread: sprite.userData.isBoss ? 2.0 : 1.5
         });
-        window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
-        window.AudioManager?.play('ui_error', { volume: 0.2, playbackRate: 0.72 });
+        if (isCrawler) {
+            window.AudioManager?.play('enemy_death_crawler', { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 });
+        } else {
+            window.AudioManager?.play('enemy_death_snail', { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 });
+        }
         window.dispatchEvent(new CustomEvent('enemy-killed', {
             detail: {
                 type: sprite.userData.type,
@@ -11451,6 +11626,16 @@ export class ThreeGame {
                 this.triggerBunkerJunkBurst(child);
             }
         }
+
+        // Animate siren/warning lights
+        if (this.sirenLights) {
+            for (const light of this.sirenLights) {
+                if (light.userData) {
+                    const phase = time * light.userData.speed + light.userData.phase;
+                    light.intensity = 0.4 + Math.sin(phase) * 0.9;
+                }
+            }
+        }
     }
 
     triggerBunkerJunkBurst(sprite) {
@@ -11763,6 +11948,7 @@ export class ThreeGame {
                 const checkY = tileY + offsetY;
 
                 if (this.getTileType(checkX, checkY) !== '#') continue;
+                if (this.isHoleTile(checkX, checkY)) continue;
                 if (this.overlapsWall(x, z, checkX, checkY)) return false;
             }
         }
@@ -11810,6 +11996,36 @@ export class ThreeGame {
         const localX = worldX - chunkX * this.chunkSize;
         const localY = worldY - chunkY * this.chunkSize;
         return this.getOrCreateChunk(chunkX, chunkY)[localY][localX];
+    }
+
+    isHoleTile(worldX, worldY) {
+        if (this.getTileType(worldX, worldY) !== '#') return false;
+        const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldY) + 999);
+        return wallTypeRng() < 0.06;
+    }
+
+    isPlayerOverAnyHole(px, pz) {
+        const cx = Math.round(px);
+        const cz = Math.round(pz);
+        const radiusToCheck = 2;
+        for (let dx = -radiusToCheck; dx <= radiusToCheck; dx++) {
+            for (let dz = -radiusToCheck; dz <= radiusToCheck; dz++) {
+                const hx = cx + dx;
+                const hz = cz + dz;
+                if (this.isHoleTile(hx, hz)) {
+                    const wallTypeRng = this.createSeededRandom(this.hashTile(hx, hz) + 999);
+                    const roll = wallTypeRng();
+                    const sizeFactor = roll / 0.06;
+                    const scale = 1.5 + sizeFactor * 2.5;
+                    const fallRadius = scale * 0.42;
+                    const dist = Math.hypot(px - hx, pz - hz);
+                    if (dist < fallRadius) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     getRoomTypeGrid(chunkX, chunkY) {

@@ -476,7 +476,7 @@ export class DialogueManager {
             const nextText = line.slice(0, index + 1);
             row.textContent = `> ${nextText}█`;
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
-            window.AudioManager?.play('ui_scan_ping', { volume: 0.08, varyPitch: true });
+            window.AudioManager?.play('ui_typing', { volume: 0.08, varyPitch: true });
             await this.sleep(runId, DIALOGUE_CHAR_INTERVAL_MS);
         }
 
