@@ -5950,6 +5950,7 @@ export class ThreeGame {
             this._lastLoopStepKey = null; // force the loop-state HUD to re-emit
             this.bunkerDirector?.reset();
             this._blackoutWaveTimer = 0;
+            this._extractionLockdownFired = false;
             this._terminalEvent = null;
             this._terminalEventResolvedIds.clear();
             this.foundry?.reset?.();
@@ -6691,6 +6692,19 @@ export class ThreeGame {
             }
             const distToShip = this.getActiveO2GeneratorDistance();
             if (distToShip < 3.5) {
+                // Greed has teeth (doc 11 §4.C): the deeper you went, the harder the
+                // bunker fights your departure. Fires once as extraction charging begins.
+                if (!this._extractionLockdownFired) {
+                    this._extractionLockdownFired = true;
+                    const depth = this.maxDepthTierReached ?? 0;
+                    if (depth >= 2) {
+                        this.showBunkerLine('DEPARTURE DETECTED. RETENTION PROTOCOL ENGAGED. PLEASE REMAIN FOR PROCESSING.');
+                        this.spawnPatrolNearPlayer();
+                        if (depth >= 3) this.corruptCompass(12);
+                    } else {
+                        this.showBunkerLine('EXTRACTION UPLINK FORMING. TRY NOT TO DIE DURING PAPERWORK.');
+                    }
+                }
                 this.missionState.extractionTimer = (this.missionState.extractionTimer ?? 0) + delta;
                 if (this.missionState.extractionTimer >= 10) {
                     this.startElevatorDownSequence();
