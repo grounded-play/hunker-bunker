@@ -10,6 +10,7 @@ import { blackBoxStore } from './src/blackBox.js';
 import { codexStore } from './src/codex.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
+import { pickMissionBriefing } from './src/data/missions.js';
 import { getDialogueLine } from './src/data/dialogueLines.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
@@ -1323,16 +1324,18 @@ function updateHeroStats(type) {
 function assignMission(bankState) {
     const unlocks = bankState?.unlocks ?? {};
     const totalUnlocks = Object.values(unlocks).filter(Boolean).length;
+    // Labels vary per type from src/data/missions.js; types/targets stay fixed so
+    // the run lifecycle is unchanged (doc 11 §2/§3.4).
     if (totalUnlocks === 0) {
-        return { type: 'retrieval', label: 'RETRIEVE: PRIORITY TECH CACHE', targetKills: 0, targetDepth: 0 };
+        return { type: 'retrieval', label: pickMissionBriefing('retrieval'), targetKills: 0, targetDepth: 0 };
     } else if (totalUnlocks < 3) {
-        return { type: 'survey', label: 'SURVEY: CRYO SECTOR BOUNDARY', targetKills: 0, targetDepth: 65 };
+        return { type: 'survey', label: pickMissionBriefing('survey'), targetKills: 0, targetDepth: 65 };
     }
     const idx = (totalUnlocks + Math.floor(Date.now() / 86400000)) % 3;
     const missions = [
-        { type: 'retrieval', label: 'RETRIEVE: HIGH-VALUE TECH ASSET', targetKills: 0, targetDepth: 0 },
-        { type: 'survey', label: 'SURVEY: DEEP SECTOR RECON', targetKills: 0, targetDepth: 145 },
-        { type: 'elimination', label: 'ELIMINATE: BIO-ENTITY CLUSTER', targetKills: 6, targetDepth: 0 }
+        { type: 'retrieval', label: pickMissionBriefing('retrieval'), targetKills: 0, targetDepth: 0 },
+        { type: 'survey', label: pickMissionBriefing('survey'), targetKills: 0, targetDepth: 145 },
+        { type: 'elimination', label: pickMissionBriefing('elimination'), targetKills: 6, targetDepth: 0 }
     ];
     return missions[idx];
 }
