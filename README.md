@@ -23,10 +23,12 @@ Featuring an authentic retro CRT arcade aesthetic, custom triplanar shaders, co-
 | Readable extraction loop | Implemented | Persistent next-action HUD, extraction progress, run report, and black-box recovery cues are active. |
 | Class differentiation | Implemented | Scout uses Sprint Burst, Tank uses Brace, Engineer uses Reroute plus terminal verification. |
 | Fabricator reveal | Implemented | Fixed-cost rarity roll with deterministic rarity helpers, animated strip, and reward card reveal. |
-| Terminal choice events | Implemented | Data-driven terminal events live in `src/data/terminalEvents.js`; lore terminals remain separate. |
-| Failure as fiction | Prototype | Single active black box, permanent death archive, recovery marker, and corrupted-operator gate are implemented. |
-| Run modifiers | Prototype | One modifier is selected and shown per deployment; deeper mechanical effects remain roadmap. |
-| Multiplayer relay | Open prototype | Optional Socket.io relay runs on port `3001`; full multiplayer game loop remains experimental. |
+| Terminal choice events | Implemented | Data-driven (`src/data/terminalEvents.js`); ~1 in 4 is a forged "mimic" that bills you in patrols unless an Engineer verifies it. Lore terminals remain separate. |
+| Bunker Director | Implemented | `src/director.js` reacts to greed/depth/struggle, pulling levers (patrols, lights-out, compass corruption, mercy salvage, taunts) on a cadence — the bunker feels watchful, not random. |
+| Field Codex | Implemented | Discover-by-encounter bestiary/lore (`src/codex.js` + `src/data/codex.js`), persistent across runs; ❑ CODEX console. |
+| Failure as fiction | Implemented | Single active black box + permanent death archive + recovery marker + corrupted-operator gate, surfaced as a "last contractor" thread at the base. |
+| Run modifiers | Implemented | One per deploy with real effects: thin air (faster O₂ drain), patrol surge, rolling blackout, map-data jitter, unstable doors. |
+| Multiplayer relay | Open prototype | Optional Socket.io relay on port `3001`; movement is validated/clamped/rate-limited and CORS is configurable via `HB_ALLOWED_ORIGINS`. Full multiplayer loop remains experimental. |
 | Pattern-rewrite generator | Implemented | Markov-style rewrite pass is active for chunk shaping and still a major tuning surface. |
 
 ---
