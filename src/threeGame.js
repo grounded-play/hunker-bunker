@@ -6,6 +6,7 @@ import { FabricationFoundry } from './foundry.js';
 import { blackBoxStore } from './blackBox.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine } from './data/dialogueLines.js';
+import { getEnemyStats } from './data/enemies.js';
 import { BunkerDirector } from './director.js';
 
 const PLAYER_COLORS = {
@@ -9798,24 +9799,10 @@ export class ThreeGame {
             sprite.renderOrder = isBoss ? 8 : 6;
             sprite.scale.set(scaleX, scaleY, 1);
 
-            let maxHp = SNAIL_MAX_HP;
-            let speed = SNAIL_MOVE_SPEED;
-            if (placement.type === 'cryosnail') {
-                maxHp = 4;
-                speed = 0.9;
-            } else if (placement.type === 'sporesnail') {
-                maxHp = 3;
-                speed = 1.4;
-            } else if (placement.type === 'boss_cybersnail') {
-                maxHp = 20;
-                speed = 1.5;
-            } else if (placement.type === 'boss_cryosnail') {
-                maxHp = 40;
-                speed = 1.1;
-            } else if (placement.type === 'boss_sporesnail') {
-                maxHp = 75;
-                speed = 1.3;
-            }
+            // Per-type HP/speed now live in src/data/enemies.js (behaviour-preserving).
+            const _enemyStats = getEnemyStats(placement.type, { maxHp: SNAIL_MAX_HP, speed: SNAIL_MOVE_SPEED });
+            let maxHp = _enemyStats.maxHp;
+            let speed = _enemyStats.speed;
             if (Number.isFinite(placement.maxHp)) {
                 maxHp = Math.max(1, Math.floor(placement.maxHp));
             }
