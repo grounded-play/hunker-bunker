@@ -32,6 +32,8 @@ export const CODEX_ENTRIES = Object.freeze([
       blurb: 'Converts salvage into gear by gambling against procurement. House edge: catastrophic.' },
     { id: 'black_box', name: 'OPERATOR BLACK BOX', category: 'INFRASTRUCTURE',
       blurb: 'A dead contractor\'s sealed telemetry. Recoverable. Billable. Faintly accusatory.' },
+    { id: 'mimic_terminal', name: 'MIMIC TERMINAL', category: 'INFRASTRUCTURE',
+      blurb: 'A forged terminal signature. Pays out, then bills you in patrols. Engineers can verify before trusting it.' },
 
     // Phenomena — discovered via the Director / hazards / set-pieces.
     { id: 'lights_out', name: 'BREAKER FAULT', category: 'PHENOMENON',

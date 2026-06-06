@@ -751,6 +751,8 @@ export class ThreeGame {
         this._foundryPromptActive = false;
         this._terminalEvent = null;
         this._terminalEventResolvedIds = new Set();
+        this._terminalEventIsMimic = false;   // forged terminal — punishes unverified trust
+        this._terminalMimicDisarmed = false;  // Engineer verify neutralizes the trap
         this._compassCorruptUntil = 0;
         this._lightsOutUntil = 0;
         this._blackBoxMarker = null;
@@ -4356,6 +4358,10 @@ export class ThreeGame {
         }
         const event = pickTerminalEvent(Math.random, { biome: this.currentBiomeKey });
         this._terminalEvent = event;
+        // ~1 in 4 terminals is a forged "mimic" that pays out then bills you in
+        // patrols — unless an Engineer verifies it first (doc 11 §2 signature fear).
+        this._terminalEventIsMimic = event ? Math.random() < 0.25 : false;
+        this._terminalMimicDisarmed = false;
         return event;
     }
 
@@ -4388,6 +4394,14 @@ export class ThreeGame {
             verifyBtn.className = 'terminal-action-btn terminal-event-choice btn-state--available';
             verifyBtn.textContent = 'ENGINEER VERIFY';
             verifyBtn.addEventListener('click', () => {
+                if (this._terminalEventIsMimic) {
+                    // Engineer detects the forgery and disarms its payback.
+                    this._terminalMimicDisarmed = true;
+                    if (resultEl) resultEl.textContent = 'WARNING: TERMINAL SIGNATURE FORGED — MIMIC NEUTRALIZED. SAFE TO PROCEED.';
+                    window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'mimic_terminal' } }));
+                    window.AudioManager?.play('ui_error', { volume: 0.32, playbackRate: 0.9, bus: 'sfx' });
+                    return;
+                }
                 const risky = event.choices.filter((choice) => choice.tone === 'risk').map((choice) => choice.label);
                 if (resultEl) resultEl.textContent = risky.length
                     ? `VERIFIED RISK: ${risky.join(' // ')}`
@@ -4419,7 +4433,16 @@ export class ThreeGame {
             result = 'TERMINAL EFFECT FAILED. SYSTEM ROLLED BACK TO IDLE.';
         }
         this._terminalEventResolvedIds.add(event.id);
-        this.showBunkerLine(getDialogueLine('terminalChoice') ?? 'TERMINAL CHOICE REGISTERED.');
+        // Mimic payback: an unverified forged terminal pays out, then bills you.
+        if (this._terminalEventIsMimic && !this._terminalMimicDisarmed) {
+            this.showBunkerLine('TERMINAL SIGNATURE FORGED. THE PAYOUT WAS REAL. SO IS THE INVOICE.');
+            this.spawnPatrolNearPlayer();
+            this.corruptCompass(15);
+            result = `${result} // MIMIC: SIGNATURE FORGED — PATROLS DISPATCHED`;
+            window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'mimic_terminal' } }));
+        } else {
+            this.showBunkerLine(getDialogueLine('terminalChoice') ?? 'TERMINAL CHOICE REGISTERED.');
+        }
         window.AudioManager?.play('ui_boot', { volume: 0.42, playbackRate: choice.tone === 'risk' ? 0.72 : 1.05, bus: 'sfx' });
         const resultEl = document.getElementById('terminal-event-result');
         if (resultEl) resultEl.textContent = result;
