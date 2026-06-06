@@ -7,6 +7,7 @@ import { blackBoxStore } from './blackBox.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
+import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { BunkerDirector } from './director.js';
 
 const PLAYER_COLORS = {
@@ -98,13 +99,8 @@ const O2_DRAIN_RATE_DANGER_MULT = 1.5;
 const O2_HEALTH_DRAIN_INTERVAL = 1;
 const BASE_HEARTS = 3;
 const UPGRADED_HEARTS = 4;
-const DEPTH_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
-const DEPTH_TIER_LOOT_CONFIG = Object.freeze([
-    Object.freeze({ pickupMultiplier: 0.8, legendaryBoost: 0 }),
-    Object.freeze({ pickupMultiplier: 1.0, legendaryBoost: 0 }),
-    Object.freeze({ pickupMultiplier: 1.3, legendaryBoost: 0.05 }),
-    Object.freeze({ pickupMultiplier: 1.7, legendaryBoost: 0.15 })
-]);
+// DEPTH_TIER_NAMES / DEPTH_TIER_LOOT_CONFIG / getDepthLootConfig now live in
+// src/data/loot.js (imported above).
 
 const O2_GENERATOR_BUTTON_ID = 'terminal-btn-o2-generator';
 const O2_GENERATOR_RING_BASE_RADIUS = 1;
@@ -470,11 +466,6 @@ function getDepthTier(chunkX, chunkY) {
     if (dist < 5) return 1;
     if (dist < 9) return 2;
     return 3;
-}
-
-function getDepthLootConfig(depthTier) {
-    const index = Math.max(0, Math.min(DEPTH_TIER_LOOT_CONFIG.length - 1, Math.floor(depthTier)));
-    return DEPTH_TIER_LOOT_CONFIG[index];
 }
 
 const ENGINEER_CONSOLE_DISCOUNT = 0.80;
