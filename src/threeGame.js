@@ -760,7 +760,7 @@ export class ThreeGame {
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 0, 0);
 
-        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 1.0);
+        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
         this.gameplayPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         this.performanceProfile = 'menu';
         this.loadingPaused = false;
@@ -11235,15 +11235,40 @@ export class ThreeGame {
             this.player.position.z += pKz;
         }
 
-        // Push the snail back the opposite way if its destination tile is open.
+        // Push the snail back the opposite way using slide velocity
         const selfKnock = SNAIL_HIT_SELF_KNOCKBACK * (data.isBoss ? 0.45 : 1);
-        const sx = sprite.position.x - dx * selfKnock;
-        const sz = sprite.position.z - dz * selfKnock;
-        if (this.isSnailTileWalkable(Math.round(sx), Math.round(sz))) {
-            sprite.position.x = sx;
-            sprite.position.z = sz;
-        }
         data.knockbackTimer = SNAIL_HIT_RECOIL_TIME;
+        const knockSpeed = selfKnock / SNAIL_HIT_RECOIL_TIME;
+        data.knockbackVx = -dx * knockSpeed;
+        data.knockbackVz = -dz * knockSpeed;
+
+        data.pathNodes = null;
+        data.pathRetargetTimer = 0;
+    }
+
+    // Bounces the snail back away from the ship on a contact hit using a smooth slide animation.
+    applySnailShipKnockback(sprite, data, activeShip) {
+        if (!activeShip) return;
+        let dx = sprite.position.x - activeShip.tileX;
+        let dz = sprite.position.z - activeShip.tileZ;
+        let len = Math.hypot(dx, dz);
+        if (len < 1e-4) {
+            // Perfectly overlapping — pick a random direction to split.
+            const angle = Math.random() * Math.PI * 2;
+            dx = Math.cos(angle);
+            dz = Math.sin(angle);
+            len = 1;
+        }
+        dx /= len;
+        dz /= len;
+
+        // Bounce back by 1.8 units (1.08 units for bosses) away from the ship center
+        const bounceDist = 1.8 * (data.isBoss ? 0.6 : 1);
+        data.knockbackTimer = 0.5; // Slide duration
+        const knockSpeed = bounceDist / data.knockbackTimer;
+        data.knockbackVx = dx * knockSpeed;
+        data.knockbackVz = dz * knockSpeed;
+
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
     }
@@ -11252,6 +11277,17 @@ export class ThreeGame {
         const data = sprite.userData;
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
+
+        if (data.knockbackTimer > 0) {
+            const kx = (data.knockbackVx ?? 0) * delta;
+            const kz = (data.knockbackVz ?? 0) * delta;
+            const nextX = sprite.position.x + kx;
+            const nextZ = sprite.position.z + kz;
+            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                sprite.position.x = nextX;
+                sprite.position.z = nextZ;
+            }
+        }
         data.knockbackTimer = Math.max(0, (data.knockbackTimer ?? 0) - delta);
 
         const target = this.selectSnailTarget(sprite, activeShip);
@@ -11424,6 +11460,10 @@ export class ThreeGame {
                 }
             } else if (activeShip) {
                 this.damageShip(activeShip, damage, data.type);
+                this.damageSnail(sprite, 1);
+                if (!sprite.userData.burstTriggered) {
+                    this.applySnailShipKnockback(sprite, data, activeShip);
+                }
             }
             window.AudioManager?.play('amb_metal_stress', { volume: 0.24, playbackRate: 1.1 });
         }

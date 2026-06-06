@@ -353,11 +353,11 @@ function updateDailyOpsUI() {
     if (statusEl) {
         if (record?.completed) {
             const g = record.grade ?? 'D';
-            statusEl.textContent = `TODAY: ${record.score} PTS (${g})`;
+            statusEl.textContent = `${record.score} PTS // ${g}`;
         } else if (record?.attempted) {
-            statusEl.textContent = 'ATTEMPT IN PROGRESS';
+            statusEl.textContent = 'IN PROGRESS';
         } else {
-            statusEl.textContent = 'ATTEMPT AVAILABLE';
+            statusEl.textContent = 'READY';
         }
     }
 }
@@ -1280,9 +1280,9 @@ function triggerDamageFlash(event) {
 
 // ---- Hero select stat pips ----
 const HERO_DISPLAY_STATS = {
-    SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE',  detail: 'LIGHT FRAME // SPRINT BURST // WIDE SALVAGE MAGNET' },
-    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BULKHEAD FRAME // BRACE MITIGATES DAMAGE // LOW O₂ DRAIN' },
-    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'MED',   detail: 'SYSTEMS FRAME // REROUTE UTILITY // 20% CONSOLE DISCOUNT' }
+    SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE',  detail: 'SPRINT BURST // WIDE SALVAGE MAGNET', demoLabel: 'SCOUT DEMO // SPRINT' },
+    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BRACE MITIGATES DAMAGE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
+    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'MED',   detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
 };
 const HERO_STAT_TOTAL = 5;
 
@@ -1318,6 +1318,9 @@ function updateHeroStats(type) {
 
     const detail = document.getElementById('hero-detail-copy');
     if (detail) detail.textContent = stats.detail;
+
+    const demoLabel = document.getElementById('class-demo-label');
+    if (demoLabel) demoLabel.textContent = stats.demoLabel;
 }
 
 // ---- Game Over Screen ----
@@ -1350,7 +1353,7 @@ function refreshLastContractor() {
     if (!box?.active) { el.classList.add('hidden'); return; }
     const cls = (box.classType ?? 'OPERATOR').toUpperCase();
     const tier = DEPTH_TIER_LABELS[Math.max(0, Math.min(DEPTH_TIER_LABELS.length - 1, box.depth ?? 0))];
-    el.textContent = `⚑ LAST CONTRACTOR: ${cls} lost in ${tier} — BLACK BOX SIGNAL ACTIVE. Recover it on your next descent.`;
+    el.textContent = `BLACK BOX // ${cls} @ ${tier} // SIGNAL ACTIVE`;
     el.classList.remove('hidden');
 }
 
@@ -1815,6 +1818,22 @@ const ALL_LORE_KEYS = [
     'B01','B02','B03'
 ];
 
+function updateMenuCommandStatuses() {
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+    const foundLogs = new Set(getWorldMemory().logsFound ?? []).size;
+    const printed = FAB_RECIPES.filter((recipe) => fabricator.isFabricated(recipe.id)).length;
+    const weapons = FAB_RECIPES.filter((recipe) => recipe.klass === 'WEAPON');
+    const armed = weapons.filter((recipe) => fabricator.isFabricated(recipe.id)).length;
+
+    setText('archive-command-status', `${foundLogs} / ${ALL_LORE_KEYS.length} LOGS`);
+    setText('codex-command-status', `${codexStore.getDiscoveredCount()} / ${CODEX_TOTAL} INTEL`);
+    setText('fab-command-status', `${printed} / ${FAB_RECIPES.length} PRINTED`);
+    setText('roster-command-status', `${armed}/${weapons.length} ARMED`);
+}
+
 // Recovered-survivor portraits for log authors. Reused from the mothership
 // project's generated character art (resized to lean webp avatars). Mapped
 // deterministically per log key so each fragment keeps a stable "author" face.
@@ -1835,6 +1854,7 @@ function buildArchiveModal() {
 
     const mem = getWorldMemory();
     const found = new Set(mem.logsFound ?? []);
+    updateMenuCommandStatuses();
     listEl.innerHTML = '';
 
     // Group by sector
@@ -2848,6 +2868,7 @@ function syncStageMetrics() {
 function refreshGameLayout() {
     syncStageMetrics();
 
+    window.game?.resize?.();
     if (window.game?.scale?.refresh) {
         requestAnimationFrame(() => {
             window.game.scale.refresh();
@@ -3584,6 +3605,7 @@ function renderFabricationModal() {
     const grid = document.getElementById('fab-recipe-grid');
     if (!grid) return;
     const bank = bankManager.getState();
+    updateMenuCommandStatuses();
     const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     setTxt('fab-bank-tech', bank.tech ?? 0);
     setTxt('fab-bank-coin', bank.coin ?? 0);
@@ -3738,8 +3760,9 @@ function refreshFabAccess() {
     const btn = document.getElementById('fabrication-btn');
     if (!btn) return;
     const online = (bankManager.getState().o2GeneratorLevel ?? 0) >= 1;
-    btn.classList.toggle('hidden', !online);
+    document.getElementById('fabrication-command')?.classList.toggle('hidden', !online);
     btn.textContent = bankManager.isFoundryActivated() ? '◇ FAB BAY' : '◇ ACTIVATE FAB';
+    updateMenuCommandStatuses();
 }
 
 document.getElementById('fabrication-btn')?.addEventListener('click', openFabricationModal);
@@ -3762,6 +3785,7 @@ function discoverCodex(id) {
         showBiomePrompt(`> CODEX UPDATED: ${entry.name}`);
         AudioManager?.play?.('ui_scan_ping', { volume: 0.34, playbackRate: 1.25 });
     }
+    updateMenuCommandStatuses();
     if (!document.getElementById('codex-modal')?.classList.contains('hidden')) renderCodexModal();
 }
 // Map existing runtime signals onto codex ids.
@@ -4167,7 +4191,6 @@ function spawnSmoke(x, y, count, isVertical = true) {
 
 // Character Selection Logic
 const charCards = document.querySelectorAll('.char-card');
-const previewIcon = document.getElementById('char-preview-icon');
 const previewSprite = document.getElementById('char-preview-sprite');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
@@ -4189,9 +4212,9 @@ let activePreviewType = 'TANK';
 const previewSpriteImages = new Map();
 
 const heroData = {
-    'SCOUT': { icon: '◈', name: 'SCOUT', sprite: '/Scout.full.jpeg' },
-    'TANK': { icon: '⬢', name: 'TANK', sprite: '/Tank.full.jpeg' },
-    'ENGINEER': { icon: '⬣', name: 'ENGINEER', sprite: '/Eng.Full.jpeg' }
+    'SCOUT': { name: 'SCOUT', sprite: '/Scout.full.jpeg' },
+    'TANK': { name: 'TANK', sprite: '/Tank.full.jpeg' },
+    'ENGINEER': { name: 'ENGINEER', sprite: '/Eng.Full.jpeg' }
 };
 
 function getPreviewSpriteImage(path) {
@@ -4279,7 +4302,6 @@ function syncHeroPreview(type) {
     if (!data) return;
 
     activePreviewType = type;
-    if (previewIcon) previewIcon.textContent = data.icon;
     if (previewName) previewName.textContent = data.name;
     previewFrameIndex = 0;
     void renderPreviewFrame(type, previewFrameIndex);
@@ -4623,6 +4645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupControlsModal();
     refreshCharBestScores();
     updateDailyOpsUI();
+    updateMenuCommandStatuses();
 
     const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
     if (storedTouchControls !== null) {

@@ -143,9 +143,9 @@
           </div>
         </div>
 
-        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle); text-align: center;">
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); text-align: center;">
           <span
-            style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 5px; color: var(--text-main);">THANK YOU FOR DEPLOYING</span>
+            style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 2px; color: var(--text-main);">THANK YOU FOR DEPLOYING</span>
           <span style="font-size: var(--font-xs); color: var(--text-muted); letter-spacing: 2px;">SYS VER: 2.1.0 // ACTIVE</span>
         </div>
       </div>
@@ -161,18 +161,28 @@
         <div class="title-group">
           <h1 class="title-small">HUNKER BUNKER</h1>
           <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
-          <!-- Death-thread to the base (doc 11 §4.D): a prior contractor's black box. -->
-          <div class="last-contractor hidden" id="last-contractor"></div>
         </div>
         <div class="menu-header-actions">
-          <div class="daily-ops-container">
-            <div class="daily-ops-status" id="daily-ops-status"></div>
+          <div class="menu-command">
             <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
+            <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
           </div>
-          <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
-          <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
-          <button class="start-btn start-btn--fab hidden" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
-          <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+          <div class="menu-command">
+            <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+            <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
+          </div>
+          <div class="menu-command">
+            <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
+            <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
+          </div>
+          <div class="menu-command menu-command--fab hidden" id="fabrication-command">
+            <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+            <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
+          </div>
+          <div class="menu-command">
+            <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+            <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
+          </div>
         </div>
       </div>
 
@@ -182,26 +192,27 @@
           <div class="module-row">
             <!-- Module 1: Sector Scan -->
             <div class="map-box">
-              <div class="map-label">SECTOR SCAN [001]</div>
+              <div class="map-label" id="class-demo-label">TANK FIELD TEST // BRACE</div>
               <div id="game-container"></div>
               <div class="module-scanline"></div>
             </div>
 
             <!-- Module 2: Hero UI -->
             <div class="preview-box">
-              <div class="char-preview-stage" aria-hidden="true">
-                <div id="char-preview-icon">⬢</div>
-                <canvas id="char-preview-sprite" width="256" height="256"></canvas>
-                <div id="char-preview-door" class="char-preview-door">
-                  <div class="char-preview-door__panel char-preview-door__panel--top"></div>
-                  <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
-                  <div class="char-preview-door__panel char-preview-door__panel--left"></div>
-                  <div class="char-preview-door__panel char-preview-door__panel--right"></div>
+              <div class="hero-identity-block">
+                <div class="char-preview-stage" aria-hidden="true">
+                  <canvas id="char-preview-sprite" width="256" height="256"></canvas>
+                  <div id="char-preview-door" class="char-preview-door">
+                    <div class="char-preview-door__panel char-preview-door__panel--top"></div>
+                    <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
+                    <div class="char-preview-door__panel char-preview-door__panel--left"></div>
+                    <div class="char-preview-door__panel char-preview-door__panel--right"></div>
+                  </div>
                 </div>
+                <div id="char-preview-name">TANK</div>
               </div>
-              <div id="char-preview-name">TANK</div>
               <div class="hero-detail-panel" id="hero-detail-panel">
-                <div class="hero-detail-panel__kicker">CONTRACTOR DOSSIER</div>
+                <div class="hero-detail-panel__kicker">FIELD LOADOUT</div>
                 <div class="hero-detail-panel__copy" id="hero-detail-copy">BULKHEAD FRAME // BRACE REDUCES INCOMING DAMAGE</div>
               </div>
               <div class="hero-stats-compact" id="hero-stats-row">
@@ -233,30 +244,30 @@
             <div class="char-selection">
               <div class="char-card" data-type="SCOUT">
                 <div class="char-info">
-                  <span class="char-kicker">CONTRACTOR CLASS</span>
+                  <span class="char-kicker">RECON FRAME</span>
                   <span class="char-name">SCOUT</span>
-                  <span class="char-desc">FAST SALVAGE // HIGH O₂ COST</span>
+                  <span class="char-desc">SPRINT BURST // WIDE MAGNET</span>
                   <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
-                <div class="char-icon">◈</div>
+                <div class="char-icon">↗</div>
               </div>
               <div class="char-card selected" data-type="TANK">
                 <div class="char-info">
-                  <span class="char-kicker">CONTRACTOR CLASS</span>
+                  <span class="char-kicker">BULWARK FRAME</span>
                   <span class="char-name">TANK</span>
-                  <span class="char-desc">ARMORED // LOW O₂ COST</span>
+                  <span class="char-desc">BRACE // LOW O₂ DRAIN</span>
                   <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
-                <div class="char-icon">⬢</div>
+                <div class="char-icon">▰</div>
               </div>
               <div class="char-card" data-type="ENGINEER">
                 <div class="char-info">
-                  <span class="char-kicker">CONTRACTOR CLASS</span>
+                  <span class="char-kicker">UTILITY FRAME</span>
                   <span class="char-name">ENGINEER</span>
-                  <span class="char-desc">SYSTEMS // BALANCED RISK</span>
+                  <span class="char-desc">REROUTE // CHEAPER CONSOLES</span>
                   <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
-                <div class="char-icon">⬣</div>
+                <div class="char-icon">⚙</div>
               </div>
             </div>
           </div>
@@ -269,6 +280,8 @@
         <div class="action-row__left">
           <button class="start-btn" id="start-game">INITIALIZE</button>
         </div>
+        <!-- Death-thread to the base (doc 11 §4.D): a prior contractor's black box. -->
+        <div class="last-contractor hidden" id="last-contractor"></div>
       </div>
     </div>
 
@@ -1000,6 +1013,8 @@
       </div>
     </div>
 
+  </div>
+
     <!-- Tactical Confirmation Modal -->
     <div id="confirm-modal" class="modal critical-modal hidden">
       <div class="modal-content confirm-modal-content">
@@ -1014,7 +1029,6 @@
         </div>
       </div>
     </div>
-  </div>
 
     <!-- Orientation Lock Overlay -->
     <div id="orientation-lock">
@@ -1057,7 +1071,7 @@
 
     <!-- Settings Modal -->
     <div id="settings-popup" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content settings-modal-content">
         <button class="close-modal" id="close-settings">×</button>
         <h2 class="modal-title">SYSTEM SETTINGS</h2>
         <div class="setting-item">
@@ -1152,7 +1166,16 @@
           <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
         </div>
 
-        <div id="mothership-dialogue-body" class="mothership-dialogue-body" aria-live="polite"></div>
+        <div class="mothership-dialogue-columns">
+          <div id="dialogue-stable-portrait" class="dialogue-stable-portrait hidden">
+            <div class="dialogue-stable-portrait__wrapper">
+              <img class="dialogue-stable-portrait__img" src="" alt="" />
+              <span class="mothership-line__scanline"></span>
+            </div>
+            <div class="dialogue-stable-portrait__name"></div>
+          </div>
+          <div id="mothership-dialogue-body" class="mothership-dialogue-body" aria-live="polite"></div>
+        </div>
 
         <div id="mothership-dialogue-choices" class="mothership-dialogue-choices hidden">
           <button id="mothership-choice-skip" class="choice-card">

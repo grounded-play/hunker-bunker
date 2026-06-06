@@ -164,6 +164,8 @@ export class DialogueManager {
             allLines.splice(allLines.length - 1, 0, classBriefing);
         }
 
+        this.determineSpeakerSetup(allLines);
+
         for (const line of allLines) {
             const resolvedLine = line.text.replace('{CLASS}', playerType);
             await this.typeLine(runId, resolvedLine);
@@ -234,6 +236,7 @@ export class DialogueManager {
         window.addEventListener('keydown', this.handleDialogueKey);
 
         const lines = O2_MILESTONE_LINES[playerType] ?? O2_MILESTONE_LINES.SCOUT;
+        this.determineSpeakerSetup(lines);
 
         for (const line of lines) {
             await this.typeLine(runId, line.text);
@@ -291,6 +294,8 @@ export class DialogueManager {
             .map((line) => String(line ?? '').trim())
             .filter(Boolean);
         if (!normalizedLines.length) return;
+
+        this.determineSpeakerSetup(normalizedLines);
 
         this.cancelDialogue();
 
@@ -398,6 +403,10 @@ export class DialogueManager {
         this.choicesEl?.classList.add('hidden');
         this.choicesEl?.classList.remove('is-visible');
 
+        const stablePortraitEl = document.getElementById('dialogue-stable-portrait');
+        if (stablePortraitEl) stablePortraitEl.classList.add('hidden');
+        this.panelEl?.classList.remove('dialogue-layout--single-speaker');
+
         this.setInputEnabled?.(false);
     }
 
@@ -437,6 +446,10 @@ export class DialogueManager {
         this.choicesEl.classList.add('hidden');
         this.choicesEl.classList.remove('is-visible');
 
+        const stablePortraitEl = document.getElementById('dialogue-stable-portrait');
+        if (stablePortraitEl) stablePortraitEl.classList.add('hidden');
+        this.panelEl.classList.remove('dialogue-layout--single-speaker');
+
         window.removeEventListener('keydown', this.handleDialogueKey);
 
         this.activeDialogueRunId = 0;
@@ -467,19 +480,28 @@ export class DialogueManager {
 
         const speaker = this.getDialogueSpeaker(line);
         const row = document.createElement('div');
-        row.className = 'mothership-line';
-        row.innerHTML = `
-            <div class="mothership-line__head" aria-hidden="true">
-                <img class="mothership-line__portrait" alt="" />
-                <span class="mothership-line__scanline"></span>
-            </div>
-            <div class="mothership-line__body">
-                <div class="mothership-line__speaker"></div>
-                <div class="mothership-line__text"></div>
-            </div>
-        `;
-        row.querySelector('.mothership-line__portrait').src = speaker.portrait;
-        row.querySelector('.mothership-line__speaker').textContent = speaker.name;
+        if (this.isSingleSpeaker) {
+            row.className = 'mothership-line mothership-line--no-portrait';
+            row.innerHTML = `
+                <div class="mothership-line__body">
+                    <div class="mothership-line__text"></div>
+                </div>
+            `;
+        } else {
+            row.className = 'mothership-line';
+            row.innerHTML = `
+                <div class="mothership-line__head" aria-hidden="true">
+                    <img class="mothership-line__portrait" alt="" />
+                    <span class="mothership-line__scanline"></span>
+                </div>
+                <div class="mothership-line__body">
+                    <div class="mothership-line__speaker"></div>
+                    <div class="mothership-line__text"></div>
+                </div>
+            `;
+            row.querySelector('.mothership-line__portrait').src = speaker.portrait;
+            row.querySelector('.mothership-line__speaker').textContent = speaker.name;
+        }
         const textEl = row.querySelector('.mothership-line__text');
         textEl.textContent = '> █';
         this.bodyEl.appendChild(row);
@@ -543,6 +565,41 @@ export class DialogueManager {
             }
         }
         return { name, portrait, cleanText };
+    }
+
+    determineSpeakerSetup(allLines) {
+        const uniqueSpeakers = new Map();
+        for (const line of allLines) {
+            const speaker = this.getDialogueSpeaker(line.text ?? line);
+            uniqueSpeakers.set(speaker.name, speaker);
+        }
+
+        const stablePortraitEl = document.getElementById('dialogue-stable-portrait');
+        const dialoguePanelEl = this.panelEl;
+
+        if (uniqueSpeakers.size === 1) {
+            this.isSingleSpeaker = true;
+            const speakerInfo = Array.from(uniqueSpeakers.values())[0];
+
+            if (stablePortraitEl) {
+                const img = stablePortraitEl.querySelector('.dialogue-stable-portrait__img');
+                if (img) img.src = speakerInfo.portrait;
+                const nameEl = stablePortraitEl.querySelector('.dialogue-stable-portrait__name');
+                if (nameEl) nameEl.textContent = speakerInfo.name;
+                stablePortraitEl.classList.remove('hidden');
+            }
+            if (dialoguePanelEl) {
+                dialoguePanelEl.classList.add('dialogue-layout--single-speaker');
+            }
+        } else {
+            this.isSingleSpeaker = false;
+            if (stablePortraitEl) {
+                stablePortraitEl.classList.add('hidden');
+            }
+            if (dialoguePanelEl) {
+                dialoguePanelEl.classList.remove('dialogue-layout--single-speaker');
+            }
+        }
     }
 
     resolveChoice(choice) {
