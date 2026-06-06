@@ -199,6 +199,32 @@
                 </div>
               </div>
               <div id="char-preview-name">TANK</div>
+              <div class="hero-detail-panel" id="hero-detail-panel">
+                <div class="hero-detail-panel__kicker">CONTRACTOR DOSSIER</div>
+                <div class="hero-detail-panel__copy" id="hero-detail-copy">BULKHEAD FRAME // BRACE REDUCES INCOMING DAMAGE</div>
+              </div>
+              <div class="hero-stats-compact" id="hero-stats-row">
+                <div
+                  class="hero-stats-compact__title"
+                  aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
+                >S.O.U.L</div>
+                <div class="hero-stat-compact-row">
+                  <span class="hero-stat-compact-label">SPEED</span>
+                  <div class="hero-stat-pips" id="hero-stat-spd"></div>
+                  <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+                </div>
+                <div class="hero-stat-compact-row">
+                  <span class="hero-stat-compact-label">O₂ USAGE</span>
+                  <div class="hero-stat-pips" id="hero-stat-o2"></div>
+                  <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+                </div>
+                <div class="hero-stat-compact-row">
+                  <span class="hero-stat-compact-label">LOOT-RANGE</span>
+                  <div class="hero-stat-pips" id="hero-stat-loot"></div>
+                  <span class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
+                </div>
+                <div class="module-scanline"></div>
+              </div>
               <div class="module-scanline"></div>
             </div>
 
@@ -206,24 +232,27 @@
             <div class="char-selection">
               <div class="char-card" data-type="SCOUT">
                 <div class="char-info">
+                  <span class="char-kicker">CONTRACTOR CLASS</span>
                   <span class="char-name">SCOUT</span>
-                  <span class="char-desc">FAST / AGILE</span>
+                  <span class="char-desc">FAST SALVAGE // HIGH O₂ COST</span>
                   <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
                 <div class="char-icon">◈</div>
               </div>
               <div class="char-card selected" data-type="TANK">
                 <div class="char-info">
+                  <span class="char-kicker">CONTRACTOR CLASS</span>
                   <span class="char-name">TANK</span>
-                  <span class="char-desc">HEAVY / ARMORED</span>
+                  <span class="char-desc">ARMORED // LOW O₂ COST</span>
                   <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
                 <div class="char-icon">⬢</div>
               </div>
               <div class="char-card" data-type="ENGINEER">
                 <div class="char-info">
+                  <span class="char-kicker">CONTRACTOR CLASS</span>
                   <span class="char-name">ENGINEER</span>
-                  <span class="char-desc">UTILITY / TECH</span>
+                  <span class="char-desc">SYSTEMS // BALANCED RISK</span>
                   <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
                 <div class="char-icon">⬣</div>
@@ -238,30 +267,6 @@
       <div class="action-row">
         <div class="action-row__left">
           <button class="start-btn" id="start-game">INITIALIZE</button>
-        </div>
-        <div class="action-row__center">
-          <div class="hero-stats-compact" id="hero-stats-row">
-            <div
-              class="hero-stats-compact__title"
-              aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
-            >S.O.U.L</div>
-            <div class="hero-stat-compact-row">
-              <span class="hero-stat-compact-label">SPEED</span>
-              <div class="hero-stat-pips" id="hero-stat-spd"></div>
-              <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
-            </div>
-            <div class="hero-stat-compact-row">
-              <span class="hero-stat-compact-label">O₂ USAGE</span>
-              <div class="hero-stat-pips" id="hero-stat-o2"></div>
-              <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
-            </div>
-            <div class="hero-stat-compact-row">
-              <span class="hero-stat-compact-label">LOOT-RANGE</span>
-              <div class="hero-stat-pips" id="hero-stat-loot"></div>
-              <span class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
-            </div>
-            <div class="module-scanline"></div>
-          </div>
         </div>
       </div>
     </div>
@@ -985,8 +990,8 @@
       <div class="modal-content confirm-modal-content">
         <h2 class="modal-title confirm-title">CRITICAL ALERT</h2>
         <p class="confirm-copy">
-          ABORT MISSION AND RETURN TO COMMAND?<br>
-          UNSAVED TACTICAL PROGRESS WILL BE LOST.
+          TERMINATE THIS CONTRACT IN PLACE?<br>
+          FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT.
         </p>
         <div class="confirm-actions">
           <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>

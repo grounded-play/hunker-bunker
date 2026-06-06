@@ -97,6 +97,20 @@ function isGameplayPhase() {
     return appPhase === 'gameplay';
 }
 
+function isGameplayHudActive() {
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    return isGameplayPhase()
+        && ui && !ui.classList.contains('hidden')
+        && (!menu || menu.classList.contains('hidden'))
+        && (!gameOverModal || gameOverModal.classList.contains('hidden'))
+        && (!splash || splash.classList.contains('hidden'))
+        && !document.body.classList.contains('mission-intro-active')
+        && !document.body.classList.contains('hud-hidden');
+}
+
 function clearLoaderBriefingMode() {
     loadingScreen?.classList.remove('briefing-mode', 'tactical-mode');
     loaderBriefingAvatar?.classList.add('hidden');
@@ -832,7 +846,7 @@ window.addEventListener('enemy-killed', (event) => {
             playerType: window.game?.playerType || getSelectedHeroType(),
             lines: [
                 'MOTHERSHIP: APEX BIO-ENTITY DOWN.',
-                'SIGNAL ATTENUATION CONFIRMED. FIELD PATH IS CLEAR.'
+                'MOTHERSHIP: SIGNAL ATTENUATION CONFIRMED. FIELD PATH IS CLEAR.'
             ],
             holdMs: 1100
         });
@@ -1010,7 +1024,13 @@ function getHudNotificationCards() {
     const stack = document.querySelector('.hud-notification-stack');
     if (!stack) return [];
     return Array.from(stack.querySelectorAll('.hud-stack-card:not(.hidden)'))
-        .filter((card) => card.dataset.dismissing !== 'true');
+        .filter((card) => card.dataset.dismissing !== 'true')
+        .sort((a, b) => {
+            const aPriority = Number(a.dataset.notificationPriority ?? 50);
+            const bPriority = Number(b.dataset.notificationPriority ?? 50);
+            if (aPriority !== bPriority) return aPriority - bPriority;
+            return 0;
+        });
 }
 
 function scheduleTopHudNotificationTimer() {
@@ -1037,6 +1057,7 @@ function updateHudNotificationDeck() {
     const cards = getHudNotificationCards();
     const hasCards = cards.length > 0;
     cards.forEach((card, index) => {
+        stack.appendChild(card);
         card.style.setProperty('--deck-index', String(index));
         card.style.zIndex = String(12090 - index);
         card.classList.toggle('is-top-card', index === 0);
@@ -1079,16 +1100,7 @@ function trimRadioCopy(text) {
 
 function showRadioTransmission(rawText) {
     if (!isGameplayPhase()) return;
-    const ui = document.getElementById('ui');
-    const menu = document.getElementById('menu');
-    const gameOverModal = document.getElementById('game-over-modal');
-    const splash = document.getElementById('splash');
-    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
-                             (!menu || menu.classList.contains('hidden')) &&
-                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
-                             (!splash || splash.classList.contains('hidden'));
-
-    if (!isGameplayActive || isResettingRun) return;
+    if (!isGameplayHudActive() || isResettingRun) return;
 
     const stack = document.querySelector('.hud-notification-stack');
     if (!stack) return;
@@ -1099,6 +1111,7 @@ function showRadioTransmission(rawText) {
     const radioPrompt = document.createElement('div');
     radioPrompt.className = 'radio-transmission-prompt hud-stack-card hidden';
     radioPrompt.setAttribute('aria-live', 'polite');
+    radioPrompt.dataset.notificationPriority = '10';
     radioPrompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 42)));
     radioPrompt.dataset.removeDelayMs = '300';
     radioPrompt.innerHTML = `
@@ -1264,9 +1277,9 @@ function triggerDamageFlash(event) {
 
 // ---- Hero select stat pips ----
 const HERO_DISPLAY_STATS = {
-    SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE'  },
-    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT' },
-    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'MED'   }
+    SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE',  detail: 'LIGHT FRAME // SPRINT BURST // WIDE SALVAGE MAGNET' },
+    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BULKHEAD FRAME // BRACE MITIGATES DAMAGE // LOW O₂ DRAIN' },
+    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'MED',   detail: 'SYSTEMS FRAME // REROUTE UTILITY // 20% CONSOLE DISCOUNT' }
 };
 const HERO_STAT_TOTAL = 5;
 
@@ -1299,6 +1312,9 @@ function updateHeroStats(type) {
     if (spdVal)  spdVal.textContent  = stats.spdLabel;
     if (o2Val)   o2Val.textContent   = stats.o2Label;
     if (lootVal) lootVal.textContent = stats.lootLabel;
+
+    const detail = document.getElementById('hero-detail-copy');
+    if (detail) detail.textContent = stats.detail;
 }
 
 // ---- Game Over Screen ----
@@ -1350,6 +1366,7 @@ function generateDeathReport(stats, reason) {
         'enemy-projectile':   '> CAUSE: HOSTILE PROJECTILE IMPACT',
         'sentinel':           '> CAUSE: HOSTILE PROJECTILE — SENTINEL FIRE',
         'ship-destroyed':     '> CAUSE: SHIP STRUCTURAL FAILURE — HULL INTEGRITY ZERO',
+        'mission-abort':      '> CAUSE: CONTRACT TERMINATED BY OPERATOR — RECOVERY BAG FILED',
         'frost-shockwave':    '> CAUSE: CRYO HAZARD — THERMAL SHOCKWAVE IMPACT',
         'poison':             '> CAUSE: BIO-TOXIN EXPOSURE — SUIT INTEGRITY FAILURE',
         'abyss':              '> CAUSE: EXOSUIT GRAVITATIONAL FAILURE — PLUMMETED INTO PIT CHASM',
@@ -2072,8 +2089,12 @@ window.addEventListener('black-box-marker-active', () => {
 });
 
 window.addEventListener('black-box-prompt-nearby', () => {
-    if (!isGameplayPhase()) return;
     const prompt = document.getElementById('black-box-hud-prompt');
+    if (!isGameplayHudActive()) {
+        prompt?.classList.add('hidden');
+        prompt?.classList.remove('visible');
+        return;
+    }
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
     const touchPrompt = isTouchDevice();
@@ -2998,6 +3019,7 @@ async function runMissionIntroSequence() {
     const playerType = getSelectedHeroType();
 
     game?.setInputEnabled?.(false);
+    hideAllGameplayPrompts();
     const consoleModal = document.getElementById('console-terminal-modal');
     if (consoleModal) {
         consoleModal.classList.add('hidden');
@@ -3371,69 +3393,16 @@ if (confirmYes) {
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
         document.body.classList.remove('mission-intro-active');
-        document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode', 'player-poisoned');
-        _distressModeActive = false;
         hideMissionProgressHUD();
         hideBiomePrompt();
-        if (biomePromptTimer) {
-            clearTimeout(biomePromptTimer);
-            biomePromptTimer = null;
+        if (!window.game?.abortMission?.()) {
+            document.body.classList.remove('player-damage-flash', 'player-dead-flash', 'vitals-critical', 'distress-mode', 'player-poisoned');
+            _distressModeActive = false;
+            showGameOverScreen(
+                window.game?.getRunStats?.() ?? { distanceTravelled: 0, totalPickups: 0, generatorLevel: 0 },
+                { isVictory: false, deathReason: 'mission-abort' }
+            );
         }
-        if (damageFlashTimer) {
-            clearTimeout(damageFlashTimer);
-            damageFlashTimer = null;
-        }
-        if (deathSequenceTimer) {
-            clearTimeout(deathSequenceTimer);
-            deathSequenceTimer = null;
-        }
-        missionFlowRunning = false;
-
-        // If aborting a daily ops run, finalize the daily attempt so it counts as completed and resets seed.
-        if (_isDailyOpsRun) {
-            _isDailyOpsRun = false;
-            if (window.game) window.game.globalSeedOffset = 0;
-            const stats = window.game?.getRunStats?.() ?? { distanceTravelled: 0, totalPickups: 0, generatorLevel: 0 };
-            const score = window.game?.calculateRunScore?.(stats, { status: 'aborted' }, runStartTime) ?? 0;
-            const grade = window.game?.getRunRating?.(score)?.grade ?? 'D';
-            saveDailyOpsRecord({
-                attempted: true,
-                completed: true,
-                date: getTodayDateString(),
-                score,
-                grade,
-                isVictory: false
-            });
-            updateDailyOpsUI();
-        }
-
-        resetRunToStartingState({
-            resetBank: false,
-            skipEffects: true,
-            snailSpawnEnabled: false,
-            purgeSnails: true
-        });
-
-        triggerDoorTransition(
-            () => {
-                if (document.getElementById('ui')) document.getElementById('ui').classList.add('hidden');
-                window.game?.setInputEnabled?.(false);
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
-                if (menu) menu.classList.remove('hidden');
-                window.game?.setPerformanceProfile?.('menu');
-
-                const gameContainer = document.getElementById('game-container');
-                const mapBox = document.querySelector('.map-box');
-                if (gameContainer && mapBox) {
-                    mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
-                    gameContainer.classList.remove('fullscreen-mode');
-                    queueGameLayoutRefresh();
-                }
-            },
-            null,
-            'base'
-        );
     });
 }
 if (closeSettings && settingsPopup) {

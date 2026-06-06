@@ -8,23 +8,23 @@ const CLASS_COLORS = {
 };
 
 const MOTHERSHIP_LINES = [
-    { text: "AGENT {CLASS}. YOU'RE ALIVE.", pauseMs: 400 },
-    { text: 'YOUR SHIP TOOK A HYPERSONIC STRIKE ON DESCENT.' },
-    { text: "YOU'VE CRASHED IN SECTOR 9. STRUCTURE UNKNOWN." },
-    { text: 'SCATTERED SUPPLY CACHES ARE DETECTABLE BY YOUR SUIT.' },
-    { text: 'SALVAGE CONSOLE IS NEAR YOUR WRECKAGE. UPLINK THERE FOR EXTRACTION.' },
-    { text: 'AWAITING YOUR RESPONSE, AGENT.' }
+    { text: "MOTHERSHIP: AGENT {CLASS}. YOU'RE ALIVE.", pauseMs: 400 },
+    { text: 'MOTHERSHIP: YOUR SHIP TOOK A HYPERSONIC STRIKE ON DESCENT.' },
+    { text: "MOTHERSHIP: YOU'VE CRASHED IN SECTOR 9. STRUCTURE UNKNOWN." },
+    { text: 'MOTHERSHIP: SCATTERED SUPPLY CACHES ARE DETECTABLE BY YOUR SUIT.' },
+    { text: 'MOTHERSHIP: SALVAGE CONSOLE IS NEAR YOUR WRECKAGE. UPLINK THERE FOR EXTRACTION.' },
+    { text: 'MOTHERSHIP: AWAITING YOUR RESPONSE, AGENT.' }
 ];
 
 const CLASS_BRIEFING_LINES = {
-    SCOUT: { text: 'NOTE: YOUR SCOUT FRAME READS ENHANCED PICKUP ACQUISITION RANGE. USE IT.' },
-    TANK:  { text: 'NOTE: YOUR TANK FRAME PROVIDES SUPERIOR EXOSUIT ENDURANCE. O₂ DRAIN IS REDUCED.' },
-    ENGINEER: { text: 'NOTE: YOUR ENGINEER FRAME GRANTS 20% CONSOLE DISCOUNT. PRIORITIZE UPGRADES EARLY.' }
+    SCOUT: { text: 'MOTHERSHIP: NOTE: YOUR SCOUT FRAME READS ENHANCED PICKUP ACQUISITION RANGE. USE IT.' },
+    TANK:  { text: 'MOTHERSHIP: NOTE: YOUR TANK FRAME PROVIDES SUPERIOR EXOSUIT ENDURANCE. O₂ DRAIN IS REDUCED.' },
+    ENGINEER: { text: 'MOTHERSHIP: NOTE: YOUR ENGINEER FRAME GRANTS 20% CONSOLE DISCOUNT. PRIORITIZE UPGRADES EARLY.' }
 };
 
 const CHOICE_REPLY = {
-    skip: 'ACKNOWLEDGED. RETURN CACHES TO THE SALVAGE CONSOLE.',
-    tutorial: 'CONFIRMED. DISPLAYING OPERATIONAL BRIEFING NOW.'
+    skip: 'MOTHERSHIP: ACKNOWLEDGED. RETURN CACHES TO THE SALVAGE CONSOLE.',
+    tutorial: 'MOTHERSHIP: CONFIRMED. DISPLAYING OPERATIONAL BRIEFING NOW.'
 };
 
 const O2_MILESTONE_LINES = {
@@ -81,6 +81,7 @@ export class DialogueManager {
         this.dialogueRunId = 0;
         this.activeDialogueRunId = 0;
         this.activeChoiceResolver = null;
+        this.currentPlayerType = 'SCOUT';
 
         this.tutorialRunId = 0;
         this.activeTutorialRunId = 0;
@@ -464,19 +465,35 @@ export class DialogueManager {
     async typeLine(runId, line) {
         if (!this.isDialogueRunActive(runId)) return;
 
+        const speaker = this.getDialogueSpeaker(line);
         const row = document.createElement('div');
         row.className = 'mothership-line';
-        row.textContent = '> █';
+        row.innerHTML = `
+            <div class="mothership-line__head" aria-hidden="true">
+                <img class="mothership-line__portrait" alt="" />
+                <span class="mothership-line__scanline"></span>
+            </div>
+            <div class="mothership-line__body">
+                <div class="mothership-line__speaker"></div>
+                <div class="mothership-line__text"></div>
+            </div>
+        `;
+        row.querySelector('.mothership-line__portrait').src = speaker.portrait;
+        row.querySelector('.mothership-line__speaker').textContent = speaker.name;
+        const textEl = row.querySelector('.mothership-line__text');
+        textEl.textContent = '> █';
         this.bodyEl.appendChild(row);
         this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
 
-        for (let index = 0; index < line.length; index++) {
+        const textToType = speaker.cleanText;
+
+        for (let index = 0; index < textToType.length; index++) {
             if (!this.isDialogueRunActive(runId)) return;
 
-            const nextText = line.slice(0, index + 1);
-            row.textContent = `> ${nextText}█`;
+            const nextText = textToType.slice(0, index + 1);
+            textEl.textContent = `> ${nextText}█`;
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
-            const isSpace = (line[index] === ' ');
+            const isSpace = (textToType[index] === ' ');
             const isStart = (index === 0);
             const playChance = isSpace || isStart || (Math.random() < 0.22);
             if (playChance) {
@@ -491,7 +508,41 @@ export class DialogueManager {
         }
 
         if (!this.isDialogueRunActive(runId)) return;
-        row.textContent = `> ${line}`;
+        textEl.textContent = `> ${textToType}`;
+    }
+
+    getDialogueSpeaker(line = '') {
+        const text = String(line ?? '').trim();
+        const playerType = this.currentPlayerType ?? 'SCOUT';
+        let cleanText = text;
+        let name;
+        let portrait;
+
+        if (/^(SYSTEM|WARNING|ALERT|CAUTION):/.test(text)) {
+            name = 'EXOSUIT OS';
+            portrait = '/lore_portraits/survivor_04.webp';
+            cleanText = text.replace(/^(SYSTEM|WARNING|ALERT|CAUTION):\s*/, '');
+        } else if (/^(BUNKER|FACILITIES):/.test(text)) {
+            name = 'BUNKER AUTO-ANNOUNCER';
+            portrait = '/lore_portraits/survivor_08.webp';
+            cleanText = text.replace(/^(BUNKER|FACILITIES):\s*/, '');
+        } else if (text.startsWith('MOTHERSHIP:')) {
+            name = 'MOTHERSHIP COMMAND';
+            portrait = '/lore_portraits/survivor_00.webp';
+            cleanText = text.replace(/^MOTHERSHIP:\s*/, '');
+        } else {
+            if (playerType === 'TANK') {
+                name = 'TANK OPERATOR LINK';
+                portrait = '/lore_portraits/survivor_02.webp';
+            } else if (playerType === 'ENGINEER') {
+                name = 'ENGINEER OPERATOR LINK';
+                portrait = '/lore_portraits/survivor_03.webp';
+            } else {
+                name = 'SCOUT OPERATOR LINK';
+                portrait = '/lore_portraits/survivor_01.webp';
+            }
+        }
+        return { name, portrait, cleanText };
     }
 
     resolveChoice(choice) {
@@ -505,6 +556,7 @@ export class DialogueManager {
 
     applyClassTheme(playerType) {
         const theme = CLASS_COLORS[playerType] ?? CLASS_COLORS.SCOUT;
+        this.currentPlayerType = playerType;
         this.panelEl.style.setProperty('--terminal-glow', theme.glow);
         this.panelEl.style.setProperty('--terminal-glow-rgb', theme.rgb);
         if (this.tutorialPromptEl) {
@@ -700,6 +752,7 @@ export class DialogueManager {
         const prompt = this.tutorialPromptEl.cloneNode(true);
         prompt.removeAttribute('id');
         prompt.dataset.tutorialStackCard = 'true';
+        prompt.dataset.notificationPriority = '0';
         prompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 45)));
         prompt.dataset.removeDelayMs = '220';
         prompt.classList.add('hud-stack-card');

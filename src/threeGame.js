@@ -3634,6 +3634,14 @@ export class ThreeGame {
             if (child.isSprite) child.material.opacity = 0.68 + Math.sin(t * 5.1) * 0.18;
         });
 
+        if (!this.isGameplayInputActive()) {
+            if (this._blackBoxMarkerPromptActive) {
+                this._blackBoxMarkerPromptActive = false;
+                window.dispatchEvent(new CustomEvent('black-box-prompt-clear'));
+            }
+            return;
+        }
+
         const dist = Math.hypot(
             this.player.position.x - this._blackBoxState.x,
             this.player.position.z - this._blackBoxState.z
@@ -5838,6 +5846,13 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('player-death', {
             detail: { reason, blackBox: blackBoxState }
         }));
+    }
+
+    abortMission() {
+        if (this.isPlayerDead || this.performanceProfile !== 'gameplay') return false;
+        this.setInputEnabled(false);
+        this.handleDeath('mission-abort');
+        return true;
     }
 
     clearLoadedChunksForRunReset() {
