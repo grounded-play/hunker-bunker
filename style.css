@@ -5335,6 +5335,22 @@ body.mission-intro-active #game-container {
   color: #ffefcc !important;
 }
 
+.start-btn--codex {
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.14) 0%, rgba(0, 229, 255, 0.06) 100%) !important;
+  border: 1px solid rgba(0, 229, 255, 0.46) !important;
+  color: #b8f4ff !important;
+  box-shadow:
+    0 4px 0 rgba(12, 90, 110, 0.88),
+    inset 0 0 0 1px rgba(184, 244, 255, 0.1) !important;
+  margin-top: calc(var(--vu) * 0.6);
+  font-size: calc(var(--vu) * 1.2) !important;
+}
+.start-btn--codex:hover {
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.25) 0%, rgba(0, 229, 255, 0.12) 100%) !important;
+  border-color: rgba(120, 240, 255, 0.85) !important;
+  color: #e6fdff !important;
+}
+
 /* ── Fabrication Bay ───────────────────────────────────────── */
 .start-btn--fab {
   background: linear-gradient(180deg, rgba(0, 229, 255, 0.14) 0%, rgba(0, 229, 255, 0.06) 100%) !important;
@@ -5794,6 +5810,61 @@ body.mission-intro-active #game-container {
 .roster-header,
 .roster-section-label,
 .roster-hint { flex: 0 0 auto; }
+
+/* ── Field Codex modal (doc 11 §3.2) — mirrors the roster/fab console look ── */
+.codex-modal-content {
+  --codex-glow-rgb: 0, 229, 255;
+  max-width: min(94vw, calc(var(--vu) * 140));
+  width: min(94vw, calc(var(--vu) * 140));
+  border-color: rgba(var(--codex-glow-rgb), 0.4) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.codex-header { position: relative; text-align: center; margin-bottom: calc(var(--vu) * 2); flex: 0 0 auto; }
+.codex-title {
+  font-size: calc(var(--vu) * 4);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #b8f4ff;
+  text-shadow: 0 0 calc(var(--vu) * 2) rgba(var(--codex-glow-rgb), 0.5);
+}
+.codex-subtitle { font-size: var(--font-xs); letter-spacing: 0.22em; color: rgba(184, 244, 255, 0.6); margin-top: calc(var(--vu) * 0.4); }
+.codex-summary { font-size: var(--font-xs); letter-spacing: 0.08em; color: rgba(184, 244, 255, 0.85); margin-top: calc(var(--vu) * 0.8); }
+.codex-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: calc(var(--vu) * 0.6);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--codex-glow-rgb), 0.5) transparent;
+}
+.codex-grid::-webkit-scrollbar { width: calc(var(--vu) * 1); }
+.codex-grid::-webkit-scrollbar-track { background: transparent; }
+.codex-grid::-webkit-scrollbar-thumb { background: rgba(var(--codex-glow-rgb), 0.5); border-radius: 4px; }
+.codex-section { margin-bottom: calc(var(--vu) * 2); }
+.codex-section-label {
+  font-size: var(--font-xs);
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: rgba(var(--codex-glow-rgb), 0.85);
+  border-bottom: 1px solid rgba(var(--codex-glow-rgb), 0.25);
+  padding-bottom: calc(var(--vu) * 0.6);
+  margin-bottom: calc(var(--vu) * 1.2);
+}
+.codex-card {
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.4);
+  margin-bottom: calc(var(--vu) * 1);
+  background: rgba(var(--codex-glow-rgb), 0.05);
+  border: 1px solid rgba(var(--codex-glow-rgb), 0.22);
+  border-left-width: 3px;
+  border-radius: 6px;
+}
+.codex-card--locked { opacity: 0.55; border-left-color: rgba(148, 163, 184, 0.5); background: rgba(148, 163, 184, 0.05); }
+.codex-card__name { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: var(--font-sm); letter-spacing: 0.08em; color: #fff; }
+.codex-card__blurb { font-size: var(--font-xs); line-height: 1.45; color: rgba(232, 239, 247, 0.8); margin-top: calc(var(--vu) * 0.5); }
+.codex-card--locked .codex-card__blurb { font-style: italic; color: rgba(148, 163, 184, 0.7); }
 
 .roster-header { position: relative; text-align: center; margin-bottom: calc(var(--vu) * 2); }
 

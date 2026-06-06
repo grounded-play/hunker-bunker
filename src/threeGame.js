@@ -4012,6 +4012,7 @@ export class ThreeGame {
 
     corruptCompass(seconds = 60) {
         this._compassCorruptUntil = Math.max(this._compassCorruptUntil, performance.now() + seconds * 1000);
+        window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'compass_corruption' } }));
     }
 
     grantSalvageCache({ tech = 0, coin = 0, med = 0 } = {}) {
@@ -4023,6 +4024,7 @@ export class ThreeGame {
         // Held for `seconds` by the dayBlend override in updateDayNightCycle.
         this._lightsOutUntil = Math.max(this._lightsOutUntil, performance.now() + seconds * 1000);
         this.showBunkerLine('LIGHTING BREAKER TRIPPED. PLEASE ENJOY THE DARKNESS RESPONSIBLY.');
+        window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'lights_out' } }));
     }
 
     getO2GeneratorState(bankState = this.bank.getState()) {

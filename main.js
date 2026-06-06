@@ -7,6 +7,8 @@ import { CutsceneManager } from './src/cutscene.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
+import { codexStore } from './src/codex.js';
+import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
 import { getDialogueLine } from './src/data/dialogueLines.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
@@ -3747,6 +3749,65 @@ refreshFabAccess();
 // the menu, and clear it once recovered in-run.
 refreshLastContractor();
 window.addEventListener('black-box-recovered', refreshLastContractor);
+
+// ── Codex (doc 11 §3.2): discover-by-encounter meta layer ─────
+function discoverCodex(id) {
+    if (!id || !getCodexEntry(id)) return;
+    const isNew = codexStore.record(id);
+    if (isNew) {
+        const entry = getCodexEntry(id);
+        showBiomePrompt(`> CODEX UPDATED: ${entry.name}`);
+        AudioManager?.play?.('ui_scan_ping', { volume: 0.34, playbackRate: 1.25 });
+    }
+    if (!document.getElementById('codex-modal')?.classList.contains('hidden')) renderCodexModal();
+}
+// Map existing runtime signals onto codex ids.
+window.addEventListener('enemy-killed', (e) => discoverCodex(e?.detail?.type));
+window.addEventListener('milestone-boss-spawned', (e) => discoverCodex(e?.detail?.type));
+window.addEventListener('lore-terminal-read', () => discoverCodex('lore_terminal'));
+window.addEventListener('o2-bubble-activated', () => discoverCodex('o2_generator'));
+window.addEventListener('foundry-discovered', () => discoverCodex('foundry'));
+window.addEventListener('black-box-recovered', () => discoverCodex('black_box'));
+window.addEventListener('elevator-sequence-started', () => discoverCodex('elevator_down'));
+window.addEventListener('codex-discover', (e) => discoverCodex(e?.detail?.id));
+
+function renderCodexModal() {
+    const grid = document.getElementById('codex-grid');
+    const summary = document.getElementById('codex-summary');
+    if (!grid) return;
+    if (summary) summary.textContent = `ENTRIES RECOVERED: ${codexStore.getDiscoveredCount()} / ${CODEX_TOTAL}`;
+    grid.innerHTML = '';
+    for (const category of CODEX_CATEGORIES) {
+        const section = document.createElement('div');
+        section.className = 'codex-section';
+        const label = document.createElement('div');
+        label.className = 'codex-section-label';
+        label.textContent = category;
+        section.appendChild(label);
+        for (const entry of CODEX_ENTRIES.filter((x) => x.category === category)) {
+            const known = codexStore.has(entry.id);
+            const card = document.createElement('div');
+            card.className = `codex-card${known ? '' : ' codex-card--locked'}`;
+            card.innerHTML = known
+                ? `<div class="codex-card__name">${entry.name}</div><div class="codex-card__blurb">${entry.blurb}</div>`
+                : `<div class="codex-card__name">??? — UNCATALOGUED</div><div class="codex-card__blurb">Encounter this in the field to recover its record.</div>`;
+            section.appendChild(card);
+        }
+        grid.appendChild(section);
+    }
+}
+function openCodexModal() {
+    renderCodexModal();
+    const modal = document.getElementById('codex-modal');
+    if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+}
+function closeCodexModal() {
+    const modal = document.getElementById('codex-modal');
+    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+}
+document.getElementById('codex-btn')?.addEventListener('click', openCodexModal);
+document.getElementById('close-codex-modal')?.addEventListener('click', closeCodexModal);
+setupClickOutside('codex-modal', closeCodexModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);

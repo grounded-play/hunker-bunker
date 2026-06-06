@@ -170,6 +170,7 @@
             <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
           </div>
           <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+          <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
           <button class="start-btn start-btn--fab hidden" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
           <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
         </div>
@@ -300,6 +301,20 @@
         <div class="roster-section-label">EQUIPPED SIDEARM</div>
         <div id="roster-weapon-grid" class="roster-weapon-grid"></div>
         <div class="roster-hint" id="roster-hint">Fabricate weapons in the FAB BAY to equip them here.</div>
+      </div>
+    </div>
+
+    <!-- Field Codex Modal (doc 11 §3.2): discover-by-encounter bestiary/lore -->
+    <div id="codex-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content codex-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="codex-header">
+          <button class="close-modal" id="close-codex-modal">×</button>
+          <div class="codex-title">❑ FIELD CODEX</div>
+          <div class="codex-subtitle">CATALOGUED BY ENCOUNTER</div>
+          <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
+        </div>
+        <div id="codex-grid" class="codex-grid"></div>
       </div>
     </div>
 
