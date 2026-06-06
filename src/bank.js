@@ -1,5 +1,163 @@
 const STORAGE_KEY = 'hb_bank';
-const BANK_SCHEMA_VERSION = 3;
+const BANK_SCHEMA_VERSION = 5;
+
+export const CLASS_SKILL_TREES = Object.freeze({
+    SCOUT: Object.freeze([
+        Object.freeze({
+            id: 'scout_magnet_1',
+            label: 'MAGNET EXPANSION I',
+            desc: 'Scavenger magnet radius increased to 5.5u.',
+            cost: Object.freeze({ tech: 20, coin: 5 }),
+            prereqs: Object.freeze([]),
+            row: 1, col: 3
+        }),
+        Object.freeze({
+            id: 'scout_speed_1',
+            label: 'TACTICAL PACE',
+            desc: 'Base movement speed increased by 15%.',
+            cost: Object.freeze({ tech: 30, coin: 10 }),
+            prereqs: Object.freeze(['scout_magnet_1']),
+            row: 3, col: 1
+        }),
+        Object.freeze({
+            id: 'scout_ammo_1',
+            label: 'POUCH CAPACITY',
+            desc: 'Max clip size increased by +3 rounds.',
+            cost: Object.freeze({ tech: 25, coin: 8 }),
+            prereqs: Object.freeze(['scout_magnet_1']),
+            row: 3, col: 5
+        }),
+        Object.freeze({
+            id: 'scout_special_unlock',
+            label: 'UNLOCK SPRINT BURST',
+            desc: 'Unlocks Class Special Ability: Sprint Burst [F]. Move 3.0x speed, 2.0x O2 drain.',
+            cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
+            prereqs: Object.freeze(['scout_speed_1', 'scout_ammo_1']),
+            prereqMode: 'any',
+            row: 5, col: 3
+        }),
+        Object.freeze({
+            id: 'scout_special_upgrade_1',
+            label: 'WINDRUNNER',
+            desc: 'Sprint Burst duration increased by +1.0s.',
+            cost: Object.freeze({ tech: 80, coin: 20 }),
+            prereqs: Object.freeze(['scout_special_unlock']),
+            row: 7, col: 1
+        }),
+        Object.freeze({
+            id: 'scout_special_upgrade_2',
+            label: 'FAST RECOVERY',
+            desc: 'Sprint Burst cooldown reduced by -2.0s.',
+            cost: Object.freeze({ tech: 80, coin: 20 }),
+            prereqs: Object.freeze(['scout_special_unlock']),
+            row: 7, col: 5
+        })
+    ]),
+    TANK: Object.freeze([
+        Object.freeze({
+            id: 'tank_plating_1',
+            label: 'REINFORCED PLATING',
+            desc: 'Increase max suit integrity by +1 heart.',
+            cost: Object.freeze({ tech: 20, coin: 5 }),
+            prereqs: Object.freeze([]),
+            row: 1, col: 3
+        }),
+        Object.freeze({
+            id: 'tank_damage_1',
+            label: 'HEAVY MUNITIONS',
+            desc: 'All weapon shots deal +1 base damage.',
+            cost: Object.freeze({ tech: 40, coin: 12 }),
+            prereqs: Object.freeze(['tank_plating_1']),
+            row: 3, col: 1
+        }),
+        Object.freeze({
+            id: 'tank_o2_efficiency',
+            label: 'EXO-SEAL EFFICIENCY',
+            desc: 'Reduce general O2 drain rate by 15%.',
+            cost: Object.freeze({ tech: 30, coin: 10 }),
+            prereqs: Object.freeze(['tank_plating_1']),
+            row: 3, col: 5
+        }),
+        Object.freeze({
+            id: 'tank_special_unlock',
+            label: 'UNLOCK BRACE',
+            desc: 'Unlocks Class Special Ability: Brace [F]. Stops movement, grants invulnerability.',
+            cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
+            prereqs: Object.freeze(['tank_damage_1', 'tank_o2_efficiency']),
+            prereqMode: 'any',
+            row: 5, col: 3
+        }),
+        Object.freeze({
+            id: 'tank_special_upgrade_1',
+            label: 'IRON WALL',
+            desc: 'Brace duration increased by +1.5s.',
+            cost: Object.freeze({ tech: 80, coin: 20 }),
+            prereqs: Object.freeze(['tank_special_unlock']),
+            row: 7, col: 1
+        }),
+        Object.freeze({
+            id: 'tank_special_upgrade_2',
+            label: 'AEGIS GENERATION',
+            desc: 'O2 refill speed inside O2 bubble increased by 20% while braced.',
+            cost: Object.freeze({ tech: 80, coin: 20 }),
+            prereqs: Object.freeze(['tank_special_unlock']),
+            row: 7, col: 5
+        })
+    ]),
+    ENGINEER: Object.freeze([
+        Object.freeze({
+            id: 'engineer_radar_1',
+            label: 'EXTENDED SCAN',
+            desc: 'Radar scan radius increased by +30% (uncovers more area).',
+            cost: Object.freeze({ tech: 20, coin: 5 }),
+            prereqs: Object.freeze([]),
+            row: 1, col: 3
+        }),
+        Object.freeze({
+            id: 'engineer_magnet_1',
+            label: 'SCRAP MAGNET',
+            desc: 'Scrap/med magnet radius increased to 5.0u.',
+            cost: Object.freeze({ tech: 25, coin: 8 }),
+            prereqs: Object.freeze(['engineer_radar_1']),
+            row: 3, col: 1
+        }),
+        Object.freeze({
+            id: 'engineer_battery_1',
+            label: 'BATTERY OVERHAUL',
+            desc: 'Reduce general O2 drain rate by 10%.',
+            cost: Object.freeze({ tech: 30, coin: 10 }),
+            prereqs: Object.freeze(['engineer_radar_1']),
+            row: 3, col: 5
+        }),
+        Object.freeze({
+            id: 'engineer_special_unlock',
+            label: 'UNLOCK REROUTE',
+            desc: 'Unlocks Class Special Ability: Reroute [F]. 0.5x O2 drain, 3x O2 refill rate.',
+            cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
+            prereqs: Object.freeze(['engineer_magnet_1', 'engineer_battery_1']),
+            prereqMode: 'any',
+            row: 5, col: 3
+        }),
+        Object.freeze({
+            id: 'engineer_special_upgrade_1',
+            label: 'SYSTEM OVERCLOCK',
+            desc: 'Reroute active ability grants +20% firing rate & projectile speed.',
+            cost: Object.freeze({ tech: 80, coin: 20 }),
+            prereqs: Object.freeze(['engineer_special_unlock']),
+            row: 7, col: 1
+        }),
+        Object.freeze({
+            id: 'engineer_special_upgrade_2',
+            label: 'SAFETY STANDARDS',
+            desc: 'Reroute active ability reduces radar scan cooldown by 50%.',
+            cost: Object.freeze({ tech: 80, coin: 20 }),
+            prereqs: Object.freeze(['engineer_special_unlock']),
+            row: 7, col: 5
+        })
+    ])
+});
+
+export const FOUNDRY_ACTIVATION_COST = Object.freeze({ tech: 25, coin: 10, med: 5 });
 
 // Weapon skill tree ("COMBAT MATRIX"). Levels are 0..maxLevel; costs[level] is the
 // price to advance FROM that level. Effects are applied in threeGame at run init.
@@ -135,6 +293,7 @@ function createDefaultState() {
         tech: 0,
         coin: 0,
         o2GeneratorLevel: 0,
+        foundryActivated: false,
         unlocks: {
             o2Bubble: false,
             hullExpansion: false,
@@ -146,7 +305,8 @@ function createDefaultState() {
             deconFilters: false,
             stimCache: false
         },
-        weaponUpgrades: createDefaultWeaponUpgrades()
+        weaponUpgrades: createDefaultWeaponUpgrades(),
+        unlockedSkills: []
     };
 }
 
@@ -169,6 +329,18 @@ function migrateBank(raw) {
             raw.weaponUpgrades = createDefaultWeaponUpgrades();
         }
         raw.schemaVersion = 3;
+    }
+    if (version < 4) {
+        // v3 → v4: add the persistent in-world Foundry activation flag.
+        raw.foundryActivated = Boolean(raw.foundryActivated);
+        raw.schemaVersion = 4;
+    }
+    if (version < 5) {
+        // v4 → v5: add the persistent classSkills / unlockedSkills list
+        if (!Array.isArray(raw.unlockedSkills)) {
+            raw.unlockedSkills = [];
+        }
+        raw.schemaVersion = 5;
     }
     return raw;
 }
@@ -205,6 +377,7 @@ function toSerializableState(raw) {
     base.ammo = clampCount(raw.ammo);
     base.tech = clampCount(raw.tech);
     base.coin = clampCount(raw.coin);
+    base.foundryActivated = Boolean(raw.foundryActivated);
 
     let derivedLevel = 0;
     if (raw.unlocks && typeof raw.unlocks === 'object') {
@@ -237,6 +410,12 @@ function toSerializableState(raw) {
         }
     }
 
+    if (raw.unlockedSkills && Array.isArray(raw.unlockedSkills)) {
+        base.unlockedSkills = [...raw.unlockedSkills];
+    } else {
+        base.unlockedSkills = [];
+    }
+
     return base;
 }
 
@@ -248,6 +427,7 @@ function cloneState(state) {
         tech: state.tech,
         coin: state.coin,
         o2GeneratorLevel: state.o2GeneratorLevel,
+        foundryActivated: Boolean(state.foundryActivated),
         unlocks: {
             ...state.unlocks
         },
@@ -256,7 +436,10 @@ function cloneState(state) {
         },
         weaponUpgrades: {
             ...(state.weaponUpgrades ?? createDefaultWeaponUpgrades())
-        }
+        },
+        unlockedSkills: [
+            ...(state.unlockedSkills ?? [])
+        ]
     };
 }
 
@@ -409,6 +592,24 @@ export class BankManager {
         return upgrade;
     }
 
+    isFoundryActivated() {
+        return Boolean(this.state.foundryActivated);
+    }
+
+    canActivateFoundry() {
+        if (this.isFoundryActivated()) return false;
+        return this.canAfford(FOUNDRY_ACTIVATION_COST);
+    }
+
+    activateFoundry() {
+        if (this.isFoundryActivated()) return true;
+        if (!this.spend(FOUNDRY_ACTIVATION_COST)) return false;
+        this.state.foundryActivated = true;
+        this.save();
+        emit('foundry-activated', { bank: this.getState() });
+        return true;
+    }
+
     getGoalCost(goalKey) {
         return GOAL_COSTS[goalKey] ?? null;
     }
@@ -517,6 +718,52 @@ export class BankManager {
             bank: this.getState()
         });
         return true;
+    }
+
+    getUnlockedSkills() {
+        return [...(this.state.unlockedSkills ?? [])];
+    }
+
+    isSkillUnlocked(key) {
+        return Array.isArray(this.state.unlockedSkills) && this.state.unlockedSkills.includes(key);
+    }
+
+    canUnlockSkill(key, playerClass) {
+        const tree = CLASS_SKILL_TREES[playerClass];
+        const node = tree?.find(n => n.id === key);
+        if (!node) return false;
+
+        // 1. Already unlocked
+        if (this.isSkillUnlocked(key)) return false;
+
+        // 2. Prereq check
+        if (node.prereqs && node.prereqs.length > 0) {
+            const unlockedCount = node.prereqs.filter(p => this.isSkillUnlocked(p)).length;
+            if (node.prereqMode === 'any') {
+                if (unlockedCount === 0) return false;
+            } else {
+                if (unlockedCount < node.prereqs.length) return false;
+            }
+        }
+
+        // 3. Cost check
+        return this.canAfford(node.cost);
+    }
+
+    unlockSkill(key, playerClass) {
+        const tree = CLASS_SKILL_TREES[playerClass];
+        const node = tree?.find(n => n.id === key);
+        if (!node || !this.canUnlockSkill(key, playerClass)) return false;
+
+        if (this.spend(node.cost)) {
+            if (!this.state.unlockedSkills) this.state.unlockedSkills = [];
+            this.state.unlockedSkills.push(key);
+            this.save();
+            emit('bank-updated', { bank: this.getState() });
+            emit('skill-unlocked', { key, playerClass });
+            return true;
+        }
+        return false;
     }
 
     reset() {

@@ -707,16 +707,31 @@ export class AudioManager {
         this.setMusicContext('safe_ship');
     }
 
-    static stopAmbience() {
+    static stopMusic({ fadeSeconds = this._musicFadeSeconds } = {}) {
+        if (!this.activeMusic?.source || !this.activeMusic?.gainNode) {
+            this.activeMusic = null;
+            this.musicSource = null;
+            return;
+        }
+
+        const now = audioCtx.currentTime;
+        const fade = Math.max(0, Number(fadeSeconds) || 0);
+        const { source, gainNode } = this.activeMusic;
+        const gain = gainNode.gain;
+        gain.cancelScheduledValues(now);
+        gain.setValueAtTime(gain.value, now);
+        gain.linearRampToValueAtTime(0.0001, now + fade);
+        try { source.stop(now + fade + 0.05); } catch (err) { void err; }
+        this.activeMusic = null;
+        this.musicSource = null;
+    }
+
+    static stopAmbience({ stopMusic = false, musicFadeSeconds = this._musicFadeSeconds } = {}) {
         if (this.ambientSource) {
             try { this.ambientSource.stop(); } catch (err) { void err; }
             this.ambientSource = null;
         }
-        if (this.activeMusic && this.activeMusic.source) {
-            try { this.activeMusic.source.stop(); } catch (err) { void err; }
-            this.activeMusic = null;
-            this.musicSource = null;
-        }
+        if (stopMusic) this.stopMusic({ fadeSeconds: musicFadeSeconds });
         if (this.randInterval) {
             clearInterval(this.randInterval);
             this.randInterval = null;

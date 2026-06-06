@@ -50,10 +50,15 @@
     <!-- Loading Screen (Pre-Splash) -->
     <div id="loading-screen">
       <div class="loader-content">
+        <div class="loader-briefing-avatar hidden" id="loader-briefing-avatar">
+          <img id="loader-briefing-avatar-img" src="/lore_portraits/survivor_08.webp" alt="" />
+          <div class="loader-briefing-avatar__scanline"></div>
+        </div>
         <div class="loader-title">INITIALIZING SYSTEMS</div>
         <div class="loader-bar-container">
           <div class="loader-bar"></div>
         </div>
+        <div class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
         <div class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
       </div>
     </div>
@@ -92,25 +97,56 @@
       </div>
     </div>
 
-    <!-- About Modal -->
+    <!-- About Modal (Credits) -->
     <div id="about-modal" class="modal hidden">
-      <div class="modal-content" style="text-align: center;">
+      <div class="modal-content credits-modal-content">
         <button class="close-modal" id="close-about">&times;</button>
-        <div class="modal-title">ABOUT</div>
+        <div class="modal-title">TACTICAL COMMAND CREDITS</div>
+        
+        <div class="credits-container">
+          <div class="credits-scroll">
+            <div class="credits-section">
+              <div class="credits-role">DEVELOPED BY</div>
+              <div class="credits-name"><a href="https://linktr.ee/Tuesday_Cinema_Club" target="_blank" rel="noopener noreferrer">TUESDAY CINEMA CLUB</a></div>
+            </div>
 
-        <div style="margin-bottom: 20px;">
-          <span style="font-size: var(--font-xs); color: var(--text-muted); display: block; margin-bottom: 5px;">Made
-            for and by the</span>
-          <a href="https://linktr.ee/Tuesday_Cinema_Club" target="_blank" rel="noopener noreferrer"
-            style="color: var(--accent-primary); text-decoration: underline; font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px;">TUESDAY
-            CINEMA CLUB</a>
+            <div class="credits-section">
+              <div class="credits-role">LEAD DESIGN & PROGRAMMING</div>
+              <div class="credits-name">Tuesday Cinema Club Team</div>
+            </div>
+
+            <div class="credits-section">
+              <div class="credits-role">GRAPHICS ENGINE</div>
+              <div class="credits-name">Three.js r184 & Phaser v3.80</div>
+            </div>
+
+            <div class="credits-section">
+              <div class="credits-role">SOUNDS & MUSIC</div>
+              <div class="credits-name">Tuesday Cinema Club Audio Collective</div>
+            </div>
+
+            <div class="credits-section">
+              <div class="credits-role">AI SYSTEM DESIGN PARTNER</div>
+              <div class="credits-name">Antigravity AI (Google DeepMind)</div>
+            </div>
+
+            <div class="credits-section">
+              <div class="credits-role">PROJECT REPOSITORY</div>
+              <div class="credits-name"><a href="https://github.com/grounded-play/hunker-bunker" target="_blank" rel="noopener noreferrer">GITHUB REPOSITORY</a></div>
+            </div>
+
+            <div class="credits-section special-thanks">
+              <div class="credits-role">SPECIAL THANKS</div>
+              <div class="credits-name">Google DeepMind Advanced Agentic Coding Team</div>
+              <div class="credits-name">Our Amazing Community & Players</div>
+            </div>
+          </div>
         </div>
 
-        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); text-align: center;">
           <span
-            style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 5px; color: var(--text-main);">THANK
-            YOU FOR PLAYING</span>
-          <span style="font-size: var(--font-xs); color: var(--text-muted); letter-spacing: 2px;">BUILD VER: 0.0.1</span>
+            style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 2px; color: var(--text-main);">THANK YOU FOR DEPLOYING</span>
+          <span style="font-size: var(--font-xs); color: var(--text-muted); letter-spacing: 2px;">SYS VER: 2.1.0 // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -127,13 +163,26 @@
           <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
         </div>
         <div class="menu-header-actions">
-          <div class="daily-ops-container">
-            <div class="daily-ops-status" id="daily-ops-status"></div>
+          <div class="menu-command">
             <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
+            <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
           </div>
-          <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
-          <button class="start-btn start-btn--fab hidden" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
-          <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+          <div class="menu-command">
+            <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+            <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
+          </div>
+          <div class="menu-command">
+            <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
+            <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
+          </div>
+          <div class="menu-command menu-command--fab hidden" id="fabrication-command">
+            <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+            <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
+          </div>
+          <div class="menu-command">
+            <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+            <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
+          </div>
         </div>
       </div>
 
@@ -143,52 +192,82 @@
           <div class="module-row">
             <!-- Module 1: Sector Scan -->
             <div class="map-box">
-              <div class="map-label">SECTOR SCAN [001]</div>
+              <div class="map-label" id="class-demo-label">TANK FIELD TEST // BRACE</div>
               <div id="game-container"></div>
               <div class="module-scanline"></div>
             </div>
 
             <!-- Module 2: Hero UI -->
             <div class="preview-box">
-              <div class="char-preview-stage" aria-hidden="true">
-                <div id="char-preview-icon">◈</div>
-                <canvas id="char-preview-sprite" width="256" height="256"></canvas>
-                <div id="char-preview-door" class="char-preview-door">
-                  <div class="char-preview-door__panel char-preview-door__panel--top"></div>
-                  <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
-                  <div class="char-preview-door__panel char-preview-door__panel--left"></div>
-                  <div class="char-preview-door__panel char-preview-door__panel--right"></div>
+              <div class="hero-identity-block">
+                <div class="char-preview-stage" aria-hidden="true">
+                  <canvas id="char-preview-sprite" width="256" height="256"></canvas>
+                  <div id="char-preview-door" class="char-preview-door">
+                    <div class="char-preview-door__panel char-preview-door__panel--top"></div>
+                    <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
+                    <div class="char-preview-door__panel char-preview-door__panel--left"></div>
+                    <div class="char-preview-door__panel char-preview-door__panel--right"></div>
+                  </div>
                 </div>
+                <div id="char-preview-name">TANK</div>
               </div>
-              <div id="char-preview-name">SCOUT</div>
+              <div class="hero-detail-panel" id="hero-detail-panel">
+                <div class="hero-detail-panel__kicker">FIELD LOADOUT</div>
+                <div class="hero-detail-panel__copy" id="hero-detail-copy">BULKHEAD FRAME // BRACE REDUCES INCOMING DAMAGE</div>
+              </div>
+              <div class="hero-stats-compact" id="hero-stats-row">
+                <div
+                  class="hero-stats-compact__title"
+                  aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
+                >S.O.U.L</div>
+                <div class="hero-stat-compact-row">
+                  <span class="hero-stat-compact-label">SPEED</span>
+                  <div class="hero-stat-pips" id="hero-stat-spd"></div>
+                  <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
+                </div>
+                <div class="hero-stat-compact-row">
+                  <span class="hero-stat-compact-label">O₂ USAGE</span>
+                  <div class="hero-stat-pips" id="hero-stat-o2"></div>
+                  <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
+                </div>
+                <div class="hero-stat-compact-row">
+                  <span class="hero-stat-compact-label">LOOT-RANGE</span>
+                  <div class="hero-stat-pips" id="hero-stat-loot"></div>
+                  <span class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
+                </div>
+                <div class="module-scanline"></div>
+              </div>
               <div class="module-scanline"></div>
             </div>
 
             <!-- Module 3: Selection Stack -->
             <div class="char-selection">
-              <div class="char-card selected" data-type="SCOUT">
+              <div class="char-card" data-type="SCOUT">
                 <div class="char-info">
+                  <span class="char-kicker">RECON FRAME</span>
                   <span class="char-name">SCOUT</span>
-                  <span class="char-desc">FAST / AGILE</span>
+                  <span class="char-desc">SPRINT BURST // WIDE MAGNET</span>
                   <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
-                <div class="char-icon">◈</div>
+                <div class="char-icon">↗</div>
               </div>
-              <div class="char-card" data-type="TANK">
+              <div class="char-card selected" data-type="TANK">
                 <div class="char-info">
+                  <span class="char-kicker">BULWARK FRAME</span>
                   <span class="char-name">TANK</span>
-                  <span class="char-desc">HEAVY / ARMORED</span>
+                  <span class="char-desc">BRACE // LOW O₂ DRAIN</span>
                   <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
-                <div class="char-icon">⬢</div>
+                <div class="char-icon">▰</div>
               </div>
               <div class="char-card" data-type="ENGINEER">
                 <div class="char-info">
+                  <span class="char-kicker">UTILITY FRAME</span>
                   <span class="char-name">ENGINEER</span>
-                  <span class="char-desc">UTILITY / TECH</span>
+                  <span class="char-desc">REROUTE // CHEAPER CONSOLES</span>
                   <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
-                <div class="char-icon">⬣</div>
+                <div class="char-icon">⚙</div>
               </div>
             </div>
           </div>
@@ -201,30 +280,8 @@
         <div class="action-row__left">
           <button class="start-btn" id="start-game">INITIALIZE</button>
         </div>
-        <div class="action-row__center">
-          <div class="hero-stats-compact" id="hero-stats-row">
-            <div
-              class="hero-stats-compact__title"
-              aria-label="S.O.U.L — Speed, O2 Usage, Loot-Range"
-            >S.O.U.L</div>
-            <div class="hero-stat-compact-row">
-              <span class="hero-stat-compact-label">SPEED</span>
-              <div class="hero-stat-pips" id="hero-stat-spd"></div>
-              <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
-            </div>
-            <div class="hero-stat-compact-row">
-              <span class="hero-stat-compact-label">O₂ USAGE</span>
-              <div class="hero-stat-pips" id="hero-stat-o2"></div>
-              <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
-            </div>
-            <div class="hero-stat-compact-row">
-              <span class="hero-stat-compact-label">LOOT-RANGE</span>
-              <div class="hero-stat-pips" id="hero-stat-loot"></div>
-              <span class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
-            </div>
-            <div class="module-scanline"></div>
-          </div>
-        </div>
+        <!-- Death-thread to the base (doc 11 §4.D): a prior contractor's black box. -->
+        <div class="last-contractor hidden" id="last-contractor"></div>
       </div>
     </div>
 
@@ -260,6 +317,20 @@
       </div>
     </div>
 
+    <!-- Field Codex Modal (doc 11 §3.2): discover-by-encounter bestiary/lore -->
+    <div id="codex-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content codex-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="codex-header">
+          <button class="close-modal" id="close-codex-modal">×</button>
+          <div class="codex-title">❑ FIELD CODEX</div>
+          <div class="codex-subtitle">CATALOGUED BY ENCOUNTER</div>
+          <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
+        </div>
+        <div id="codex-grid" class="codex-grid"></div>
+      </div>
+    </div>
+
     <!-- Fabrication Bay Modal -->
     <div id="fabrication-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content fab-modal-content">
@@ -275,34 +346,20 @@
           <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span>COIN <b id="fab-bank-coin">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span>MED <b id="fab-bank-med">0</b></span>
         </div>
+        <!-- Gamba roll panel: spend a flat cost for a rarity-weighted reveal -->
+        <div id="fab-roll-panel" class="fab-roll-panel hidden">
+          <div id="fab-reveal" class="fab-reveal" data-state="idle">
+            <div class="fab-reveal__idle" id="fab-reveal-idle">INSERT SALVAGE TO FABRICATE</div>
+            <div class="fab-reveal__strip-wrap" id="fab-reveal-strip-wrap" aria-hidden="true">
+              <div class="fab-reveal__marker"></div>
+              <div class="fab-reveal__strip" id="fab-reveal-strip"></div>
+            </div>
+            <div class="fab-reveal__card" id="fab-reveal-card"></div>
+          </div>
+          <button class="fab-roll-btn" id="fab-roll-btn">ROLL FABRICATOR</button>
+        </div>
         <div id="fab-recipe-grid" class="fab-recipe-grid"></div>
       </div>
-    </div>
-
-    <!-- Diagnostic Grid Overlays -->
-    <div id="calibration-overlay">
-      <div class="grid-line-v line-third-v1"></div>
-      <div class="grid-line-v line-third-v2"></div>
-      <div class="grid-line-h line-third-h1"></div>
-      <div class="grid-line-h line-third-h2"></div>
-
-      <!-- Center Axes -->
-      <div class="grid-line-v line-center-v"></div>
-      <div class="grid-line-h line-center-h"></div>
-
-      <!-- Diagonals -->
-      <div class="grid-line-diag line-diag-1"></div>
-      <div class="grid-line-diag line-diag-2"></div>
-
-    </div>
-
-    <!-- Typography Diagnostic (Base Underlay) -->
-    <div class="diag-typography">
-      <div class="typo-sample scale-xl">XL: 18</div>
-      <div class="typo-sample scale-lg">LG: 06</div>
-      <div class="typo-sample scale-md">MD: 04</div>
-      <div class="typo-sample scale-sm">SM: 02.5</div>
-      <div class="typo-sample scale-xs">XS: 01.8</div>
     </div>
 
     <!-- Live HUD (Post-Initialization) -->
@@ -357,6 +414,13 @@
               <div class="class-ability-panel__bar" id="ability-bar"></div>
             </div>
           </div>
+          <div id="radar-scan-panel" class="class-ability-panel" aria-live="polite" role="button" tabindex="-1" title="Radar Scan [Q]" style="border-color: rgba(0, 210, 255, 0.22);">
+            <span class="class-ability-panel__key" aria-hidden="true"><svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-dasharray="3,3" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" /><line x1="12" y1="2" x2="12" y2="12" /></svg></span>
+            <span class="class-ability-panel__name" id="scan-name" style="color: #00d2ff;">RADAR SCAN</span>
+            <div class="class-ability-panel__bar-track" aria-hidden="true" style="background: rgba(0, 210, 255, 0.12);">
+              <div class="class-ability-panel__bar" id="scan-bar" style="background: #00d2ff; box-shadow: 0 0 5px rgba(0, 210, 255, 0.5);"></div>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Settings gear: pinned to top-right corner, never part of any flex layout -->
@@ -406,7 +470,7 @@
         <div class="game-over-report">
           <div class="game-over-section-label">MISSION REPORT</div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--meter">
             <span class="game-over-stat-label">DISTANCE COVERED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-distance"></div></div>
@@ -438,7 +502,7 @@
             </div>
           </div>
 
-          <div class="game-over-stat-block">
+          <div class="game-over-stat-block game-over-stat-block--value-only">
             <span class="game-over-stat-label">TIME ELAPSED</span>
             <div class="game-over-stat-bar-row">
               <div class="game-over-stat-bar-track"><div class="game-over-stat-bar" id="go-bar-time"></div></div>
@@ -446,12 +510,13 @@
             </div>
           </div>
 
-          <div class="game-over-bank-note">◈ BANKED RESOURCES PRESERVED</div>
+          <div class="game-over-bank-note" id="go-bank-note">BANKED RESOURCES PRESERVED</div>
+          <div class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
         </div>
 
         <div class="game-over-score-section">
           <div class="go-score-row">
-            <span class="go-score-label">MISSION RATING</span>
+            <span class="go-score-label">SCORE</span>
             <div class="go-score-right">
               <span id="go-new-best" class="go-new-best hidden">NEW BEST</span>
               <span id="go-score-val" class="go-score-val">0</span>
@@ -510,6 +575,16 @@
       <div class="touch-move-control__label">MOVE</div>
     </div>
 
+    <!-- Touch Sprint Button -->
+    <button id="touch-sprint-btn" class="touch-ability-btn touch-sprint-btn hidden" aria-label="Trigger sprint burst">
+      <span class="touch-ability-btn__label" aria-hidden="true">
+        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      </span>
+      <span class="touch-ability-btn__cooldown" id="touch-sprint-cooldown">READY</span>
+    </button>
+
     <!-- Touch Ability Button -->
     <button id="touch-ability-btn" class="touch-ability-btn hidden" aria-label="Use class ability">
       <span class="touch-ability-btn__label" id="touch-ability-label" aria-hidden="true">
@@ -525,22 +600,25 @@
       <span class="touch-ability-btn__cooldown" id="touch-ability-cooldown">READY</span>
     </button>
 
-    <!-- Interactive Console HUD Floating Prompt -->
-    <div id="console-hud-prompt" class="hidden">
-      <span class="prompt-key">E</span>
-      <span class="prompt-text">ACCESS BASE SHOP</span>
-    </div>
+    <!-- Touch Scan Button -->
+    <button id="touch-scan-btn" class="touch-ability-btn hidden" aria-label="Trigger radar scan">
+      <span class="touch-ability-btn__label" id="touch-scan-label" aria-hidden="true">
+        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" stroke-dasharray="3,3" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+          <line x1="12" y1="2" x2="12" y2="12" />
+        </svg>
+      </span>
+      <span class="touch-ability-btn__cooldown" id="touch-scan-cooldown">READY</span>
+    </button>
+
+
 
     <!-- Lore Terminal Prompt -->
     <div id="lore-hud-prompt" class="lore-hud-prompt hidden">
-      <span class="prompt-key">E</span>
+      <span class="prompt-key">PRESS E</span>
       <span class="prompt-text">READ LOG</span>
-    </div>
-
-    <!-- Fabrication Foundry interact prompt -->
-    <div id="foundry-hud-prompt" class="lore-hud-prompt foundry-hud-prompt hidden">
-      <span class="prompt-key">E</span>
-      <span class="prompt-text">OPEN FAB BAY</span>
     </div>
 
     <!-- Lore Terminal Modal -->
@@ -562,9 +640,58 @@
       <span class="biome-hud-prompt__icon">ZONE</span>
       <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
     </div>
-    <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
-      <span class="mission-progress-hud__icon">◈</span>
-      <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
+
+    <!-- Right-side layout container for notifications/prompts -->
+    <div class="hud-notification-stack">
+      <!-- Radio Transmission CRT Prompt -->
+      <div id="radio-transmission-prompt" class="radio-transmission-prompt hidden" aria-live="polite">
+        <div class="radio-transmission-prompt__avatar">
+          <img id="radio-avatar-img" src="/lore_portraits/survivor_08.webp" alt="Sender Portrait" />
+          <div class="radio-transmission-prompt__scanline"></div>
+        </div>
+        <div class="radio-transmission-prompt__body">
+          <div class="radio-transmission-prompt__header">
+            <span class="radio-transmission-prompt__signal-icon">⚡</span>
+            <span id="radio-sender-name" class="radio-transmission-prompt__sender">MOTHERSHIP COMMAND</span>
+            <span class="radio-transmission-prompt__status">ONLINE</span>
+          </div>
+          <div id="radio-message-text" class="radio-transmission-prompt__message"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mission/action prompts sit below the popup deck -->
+    <div class="hud-mission-stack">
+      <div id="console-hud-prompt" class="hud-action-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">ACCESS BASE SHOP</span>
+      </div>
+
+      <div id="o2-generator-hud-prompt" class="lore-hud-prompt hud-action-prompt o2-generator-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">UPGRADE O₂ GENERATOR</span>
+      </div>
+
+      <div id="foundry-hud-prompt" class="lore-hud-prompt hud-action-prompt foundry-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">OPEN FAB BAY</span>
+      </div>
+
+      <div id="black-box-hud-prompt" class="lore-hud-prompt black-box-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">RECOVER BLACK BOX</span>
+      </div>
+
+      <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
+        <span class="mission-progress-hud__icon">◈</span>
+        <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
+      </div>
+    </div>
+
+    <!-- Persistent loop-state cue: always shows the next thing to do -->
+    <div id="loop-step-hud" class="loop-step-hud hidden" aria-live="polite">
+      <span class="loop-step-hud__chevron" aria-hidden="true">▸</span>
+      <span id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
     </div>
 
     <!-- Holographic Retro Terminal Console Modal -->
@@ -584,7 +711,15 @@
         </div>
 
         <div class="terminal-body">
-        <div class="terminal-layout terminal-layout--shop">
+          <!-- Terminal Tabs Header -->
+          <div class="terminal-tabs">
+            <button id="terminal-tab-base" class="terminal-tab-btn active">◇ BASE SYSTEM</button>
+            <button id="terminal-tab-skills" class="terminal-tab-btn">◇ CLASS SKILLS</button>
+          </div>
+
+          <!-- Base Systems Tab Content -->
+          <div id="terminal-tab-base-content" class="terminal-tab-content">
+            <div class="terminal-layout terminal-layout--shop">
 
           <div class="terminal-shop-toprow">
             <!-- Bank balance: compact resource grid + deposit -->
@@ -636,8 +771,7 @@
                 </div>
               </div>
               <div class="terminal-bank-actions">
-                <button class="terminal-action-btn" id="terminal-deposit-all">DEPOSIT RUN LOOT</button>
-                <div class="terminal-bank-hint" id="terminal-bank-hint">DEPOSIT RESOURCES TO FUND O₂ REPAIRS.</div>
+                <div class="terminal-bank-hint" id="terminal-bank-hint">RUN LOOT AUTOMATICALLY SECURED AND BANKED.</div>
               </div>
             </div>
 
@@ -652,6 +786,19 @@
                 <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
                 <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
               </div>
+            </div>
+          </div>
+
+          <div id="terminal-event-section" class="upgrade-goals-section terminal-tone--event hidden">
+            <div class="terminal-section-title">FIELD TERMINAL EVENT</div>
+            <div class="action-card action-card--terminal-event">
+              <div class="action-card-header">
+                <span class="action-title" id="terminal-event-title">SYSTEM OFFER</span>
+                <span class="action-cost" id="terminal-event-status">CHOICE REQUIRED</span>
+              </div>
+              <p class="action-desc" id="terminal-event-body">A bunker subsystem is requesting operator input.</p>
+              <div id="terminal-event-choices" class="terminal-event-choices"></div>
+              <p class="action-desc action-desc--hint" id="terminal-event-result"></p>
             </div>
           </div>
 
@@ -786,10 +933,25 @@
               <p class="action-desc" id="terminal-weapon-shotAmount-desc">NEXT: Double-shot spread</p>
               <p class="action-desc action-desc--cost" id="terminal-weapon-shotAmount-cost">COST: 120 TECH / 50 COIN</p>
               <button class="terminal-action-btn" id="terminal-btn-weapon-shotAmount">UPGRADE</button>
-            </div>
           </div>
 
         </div>
+        </div><!-- /#terminal-tab-base-content -->
+
+        <!-- Class Skills Tab Content -->
+        <div id="terminal-tab-skills-content" class="terminal-tab-content hidden">
+          <div class="terminal-layout terminal-layout--skills">
+            <div class="skills-header">
+              <span class="skills-unlocked-count" id="skills-unlocked-count">UNLOCKED SKILLS: 0/6</span>
+              <span class="skills-info-hint">SELECT A NODE TO VIEW DATA AND PURCHASE WITH BANKED RESOURCE MATRIX</span>
+            </div>
+            <div class="skills-tree-container">
+              <div class="skills-tree-grid" id="skills-tree-grid">
+                <!-- Skill nodes generated dynamically by class -->
+              </div>
+            </div>
+          </div>
+        </div><!-- /#terminal-tab-skills-content -->
 
         <div class="terminal-footer">
           <div class="telemetry-ticker" id="terminal-status-ticker">WARNING: RADIATION LEVELS DETECTED OUTSIDE SHIP ENCLOSURE. DOCK SECURE.</div>
@@ -798,35 +960,118 @@
       </div>
     </div>
 
-    <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
-      <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
-        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue">×</button>
+    <!-- In-world O2 Generator Upgrade Modal -->
+    <div id="o2-generator-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content o2-generator-modal-content">
+        <button class="close-modal" id="close-o2-generator-modal" aria-label="Close O2 generator">×</button>
         <div class="terminal-scanline"></div>
         <div class="terminal-flicker"></div>
-
         <div class="terminal-header">
-          <div class="terminal-title">MOTHERSHIP UPLINK CHANNEL 7</div>
-          <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
+          <div class="terminal-title">O₂ GENERATOR MODULE</div>
+          <div class="terminal-class-badge" id="o2-generator-modal-badge">FIELD STABILIZER</div>
         </div>
-
-        <div id="mothership-dialogue-body" class="mothership-dialogue-body" aria-live="polite"></div>
-
-        <div id="mothership-dialogue-choices" class="mothership-dialogue-choices hidden">
-          <button id="mothership-choice-skip" class="choice-card">
-            <span class="choice-card__label">[A] UNDERSTOOD. MOVING OUT.</span>
-            <span class="choice-card__hint">SKIP TUTORIAL</span>
-          </button>
-          <button id="mothership-choice-tutorial" class="choice-card">
-            <span class="choice-card__label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
-            <span class="choice-card__hint">START TUTORIAL</span>
-          </button>
+        <div class="terminal-body">
+          <div class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
+            <div class="action-card action-card--generator" data-goal-card="o2GeneratorWorld">
+              <div class="action-card-header">
+                <span class="action-title">SAFE FIELD OUTPUT</span>
+                <span class="action-cost" id="o2-generator-modal-status">ONLINE // LVL 1</span>
+              </div>
+              <p class="action-desc" id="o2-generator-modal-cost">NEXT COST: --</p>
+              <p class="action-desc" id="o2-generator-modal-field">FIELD RADIUS -- // REFILL --</p>
+              <p class="action-desc action-desc--hint" id="o2-generator-modal-hint">UPGRADES EXPAND THE BLUE O₂ FIELD.</p>
+              <button class="terminal-action-btn" id="o2-generator-modal-btn">UPGRADE FIELD RADIUS</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
+    <div id="elevator-choice-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content elevator-choice-content">
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+        <div class="terminal-header">
+          <div class="terminal-title">ELEVATOR ARRIVAL</div>
+          <div class="terminal-class-badge">EXTRACT OR DESCEND</div>
+        </div>
+        <div class="terminal-body">
+          <div class="upgrade-goals-section terminal-tone--event">
+            <div class="action-card action-card--terminal-event">
+              <div class="action-card-header">
+                <span class="action-title">THE DOORS ARE OPEN</span>
+                <span class="action-cost">CHOICE REQUIRED</span>
+              </div>
+              <p class="action-desc">The lift can carry the operator back to orbit or down into a deeper sector.</p>
+              <div class="terminal-event-choices">
+                <button class="terminal-action-btn terminal-event-choice btn-state--available" id="elevator-choice-extract">EXTRACT UP</button>
+                <button class="terminal-action-btn terminal-event-choice btn-state--available" id="elevator-choice-descend">DESCEND DEEPER</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+    <!-- Tactical Confirmation Modal -->
+    <div id="confirm-modal" class="modal critical-modal hidden">
+      <div class="modal-content confirm-modal-content">
+        <h2 class="modal-title confirm-title">CRITICAL ALERT</h2>
+        <p class="confirm-copy">
+          TERMINATE THIS CONTRACT IN PLACE?<br>
+          FACILITIES WILL BAG THE SUIT AND ARM A BLACK BOX FOR NEXT DESCENT.
+        </p>
+        <div class="confirm-actions">
+          <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>
+          <button class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orientation Lock Overlay -->
+    <div id="orientation-lock">
+      <div class="lock-content">
+        <div class="lock-icon">🔄</div>
+        <div class="lock-title">SYSTEM ERROR: PORTRAIT DETECTED</div>
+        <div class="lock-msg">PLEASE ROTATE DEVICE TO LANDSCAPE FOR TACTICAL DEPLOYMENT</div>
+        <div class="lock-scanner"></div>
+      </div>
+    </div>
+
+    <!-- Diagnostic Grid Overlays -->
+    <div id="calibration-overlay">
+      <div class="grid-line-v line-third-v1"></div>
+      <div class="grid-line-v line-third-v2"></div>
+      <div class="grid-line-h line-third-h1"></div>
+      <div class="grid-line-h line-third-h2"></div>
+
+      <div class="grid-line-v line-center-v"></div>
+      <div class="grid-line-h line-center-h"></div>
+
+      <div class="grid-line-diag line-diag-1"></div>
+      <div class="grid-line-diag line-diag-2"></div>
+    </div>
+
+    <div id="debug-overlay">
+      <div class="guide-gutter"></div>
+      <div class="guide-diagonals"></div>
+      <div class="guide-thirds"></div>
+      <div class="guide-center"></div>
+    </div>
+
+    <div class="diag-typography">
+      <div class="typo-sample scale-xl">XL: 18</div>
+      <div class="typo-sample scale-lg">LG: 06</div>
+      <div class="typo-sample scale-md">MD: 04</div>
+      <div class="typo-sample scale-sm">SM: 02.5</div>
+      <div class="typo-sample scale-xs">XS: 01.8</div>
+    </div>
+
     <!-- Settings Modal -->
     <div id="settings-popup" class="modal hidden">
-      <div class="modal-content">
+      <div class="modal-content settings-modal-content">
         <button class="close-modal" id="close-settings">×</button>
         <h2 class="modal-title">SYSTEM SETTINGS</h2>
         <div class="setting-item">
@@ -910,23 +1155,41 @@
       </div>
     </div>
 
-    <!-- Orientation Lock Overlay -->
-    <div id="orientation-lock">
-      <div class="lock-content">
-        <div class="lock-icon">🔄</div>
-        <div class="lock-title">SYSTEM ERROR: PORTRAIT DETECTED</div>
-        <div class="lock-msg">PLEASE ROTATE DEVICE TO LANDSCAPE FOR TACTICAL DEPLOYMENT</div>
-        <div class="lock-scanner"></div>
+    <div id="mothership-dialogue" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content mothership-dialogue-panel" id="mothership-dialogue-panel">
+        <button class="close-modal mothership-close-btn" id="close-mothership-dialogue" aria-label="Skip dialogue">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+
+        <div class="terminal-header">
+          <div class="terminal-title">MOTHERSHIP UPLINK CHANNEL 7</div>
+          <div class="terminal-class-badge" id="mothership-class-badge">SCOUT LINK [ENCRYPTED]</div>
+        </div>
+
+        <div class="mothership-dialogue-columns">
+          <div id="dialogue-stable-portrait" class="dialogue-stable-portrait hidden">
+            <div class="dialogue-stable-portrait__wrapper">
+              <img class="dialogue-stable-portrait__img" src="" alt="" />
+              <span class="mothership-line__scanline"></span>
+            </div>
+            <div class="dialogue-stable-portrait__name"></div>
+          </div>
+          <div id="mothership-dialogue-body" class="mothership-dialogue-body" aria-live="polite"></div>
+        </div>
+
+        <div id="mothership-dialogue-choices" class="mothership-dialogue-choices hidden">
+          <button id="mothership-choice-skip" class="choice-card">
+            <span class="choice-card__label">[A] UNDERSTOOD. MOVING OUT.</span>
+            <span class="choice-card__hint">SKIP TUTORIAL</span>
+          </button>
+          <button id="mothership-choice-tutorial" class="choice-card">
+            <span class="choice-card__label">[B] RUN ME THROUGH PROTOCOLS FIRST.</span>
+            <span class="choice-card__hint">START TUTORIAL</span>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Tactical Telemetry -->
-    <div id="debug-overlay">
-      <div class="guide-gutter"></div>
-      <div class="guide-diagonals"></div>
-      <div class="guide-thirds"></div>
-      <div class="guide-center"></div>
-    </div>
     <!-- Door Transition Overlay (Top Layer) -->
     <div id="transition-overlay">
       <div id="door-top" class="door"></div>
@@ -941,20 +1204,7 @@
         </div>
       </div>
     </div>
-    <!-- Tactical Confirmation Modal -->
-    <div id="confirm-modal" class="modal critical-modal hidden">
-      <div class="modal-content confirm-modal-content">
-        <h2 class="modal-title confirm-title">CRITICAL ALERT</h2>
-        <p class="confirm-copy">
-          ABORT MISSION AND RETURN TO COMMAND?<br>
-          UNSAVED TACTICAL PROGRESS WILL BE LOST.
-        </p>
-        <div class="confirm-actions">
-          <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>
-          <button class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
-        </div>
-      </div>
-    </div>
+
   </div>
 
   <script type="module" src="/main.js?v=1243"></script>

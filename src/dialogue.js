@@ -8,23 +8,44 @@ const CLASS_COLORS = {
 };
 
 const MOTHERSHIP_LINES = [
-    { text: "AGENT {CLASS}. YOU'RE ALIVE.", pauseMs: 400 },
-    { text: 'YOUR SHIP TOOK A HYPERSONIC STRIKE ON DESCENT.' },
-    { text: "YOU'VE CRASHED IN SECTOR 9. STRUCTURE UNKNOWN." },
-    { text: 'SCATTERED SUPPLY CACHES ARE DETECTABLE BY YOUR SUIT.' },
-    { text: 'SALVAGE CONSOLE IS NEAR YOUR WRECKAGE. UPLINK THERE FOR EXTRACTION.' },
-    { text: 'AWAITING YOUR RESPONSE, AGENT.' }
+    { text: "MOTHERSHIP: AGENT {CLASS}. YOU'RE ALIVE.", pauseMs: 400 },
+    { text: 'MOTHERSHIP: YOUR SHIP TOOK A HYPERSONIC STRIKE ON DESCENT.' },
+    { text: "MOTHERSHIP: YOU'VE CRASHED IN SECTOR 9. STRUCTURE UNKNOWN." },
+    { text: 'MOTHERSHIP: SCATTERED SUPPLY CACHES ARE DETECTABLE BY YOUR SUIT.' },
+    { text: 'MOTHERSHIP: SALVAGE CONSOLE IS NEAR YOUR WRECKAGE. UPLINK THERE FOR EXTRACTION.' },
+    { text: 'MOTHERSHIP: AWAITING YOUR RESPONSE, AGENT.' }
 ];
 
 const CLASS_BRIEFING_LINES = {
-    SCOUT: { text: 'NOTE: YOUR SCOUT FRAME READS ENHANCED PICKUP ACQUISITION RANGE. USE IT.' },
-    TANK:  { text: 'NOTE: YOUR TANK FRAME PROVIDES SUPERIOR EXOSUIT ENDURANCE. O₂ DRAIN IS REDUCED.' },
-    ENGINEER: { text: 'NOTE: YOUR ENGINEER FRAME GRANTS 20% CONSOLE DISCOUNT. PRIORITIZE UPGRADES EARLY.' }
+    SCOUT: { text: 'MOTHERSHIP: NOTE: YOUR SCOUT FRAME READS ENHANCED PICKUP ACQUISITION RANGE. USE IT.' },
+    TANK:  { text: 'MOTHERSHIP: NOTE: YOUR TANK FRAME PROVIDES SUPERIOR EXOSUIT ENDURANCE. O₂ DRAIN IS REDUCED.' },
+    ENGINEER: { text: 'MOTHERSHIP: NOTE: YOUR ENGINEER FRAME GRANTS 20% CONSOLE DISCOUNT. PRIORITIZE UPGRADES EARLY.' }
 };
 
 const CHOICE_REPLY = {
-    skip: 'ACKNOWLEDGED. RETURN CACHES TO THE SALVAGE CONSOLE.',
-    tutorial: 'CONFIRMED. DISPLAYING OPERATIONAL BRIEFING NOW.'
+    skip: 'MOTHERSHIP: ACKNOWLEDGED. RETURN CACHES TO THE SALVAGE CONSOLE.',
+    tutorial: 'MOTHERSHIP: CONFIRMED. DISPLAYING OPERATIONAL BRIEFING NOW.'
+};
+
+const O2_MILESTONE_LINES = {
+    SCOUT: [
+        { text: "SYSTEM: O₂ FIELD LIFE SUPPORT AT 100%. BASE CONSOLE STABILIZED.", pauseMs: 400 },
+        { text: "MOTHERSHIP: AGENT. SCAN DETECTS A POWERED FABRICATION FOUNDRY IN SECTOR 9." },
+        { text: "MOTHERSHIP: COARDS UPLOADED TO THE COMPASS. GO AND LOCATE THAT FOUNDRY FOR GEAR PRINTING." },
+        { text: "WARNING: RADAR WARNING! A RETALIATION BOSS SIGNATURE IS CLOSING ON THE BASE." }
+    ],
+    TANK: [
+        { text: "SYSTEM: O₂ FIELD ACTIVE. STABILIZER SHIELD ENGAGED.", pauseMs: 400 },
+        { text: "MOTHERSHIP: TANK UNIT. LONG-RANGE SCANNER HAS RETRIEVED FABRICATOR SIGNAL COARDS." },
+        { text: "MOTHERSHIP: WE NEED THAT PRINTING STATION OPERATIONAL. LOCATE THE FOUNDRY IMMEDIATELY." },
+        { text: "ALERT: DEFENSIVE GRID WARNING! A HUGE CYBERSNAIL BOSS RETALIATION IS ON APPROACH." }
+    ],
+    ENGINEER: [
+        { text: "SYSTEM: O₂ GRID ONLINE. POWER DISTRIBUTED TO BASE FIXTURES.", pauseMs: 400 },
+        { text: "MOTHERSHIP: ENGINEER. AN ACTIVE FABRICATOR SIGNAL HAS BEEN INTERCEPTED NEARBY." },
+        { text: "MOTHERSHIP: FAB BAY ACCESSIBLE VIA IN-WORLD FOUNDRY. FOLLOW THE RADAR COMPASS EDGE." },
+        { text: "CAUTION: MILESTONE PROVOKED! A RETALIATION BOSS HAS INITIATED A COUNTERATTACK." }
+    ]
 };
 
 export class DialogueManager {
@@ -60,9 +81,11 @@ export class DialogueManager {
         this.dialogueRunId = 0;
         this.activeDialogueRunId = 0;
         this.activeChoiceResolver = null;
+        this.currentPlayerType = 'SCOUT';
 
         this.tutorialRunId = 0;
         this.activeTutorialRunId = 0;
+        this.activeTutorialPromptCard = null;
 
         this.handleDialogueKey = (event) => {
             if (!this.activeDialogueRunId) return;
@@ -141,6 +164,8 @@ export class DialogueManager {
             allLines.splice(allLines.length - 1, 0, classBriefing);
         }
 
+        this.determineSpeakerSetup(allLines);
+
         for (const line of allLines) {
             const resolvedLine = line.text.replace('{CLASS}', playerType);
             await this.typeLine(runId, resolvedLine);
@@ -175,6 +200,139 @@ export class DialogueManager {
 
         await this.closeDialogue(runId);
         return choice;
+    }
+
+    async openO2MilestoneDialogue({ playerType = 'SCOUT' } = {}) {
+        if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) {
+            return;
+        }
+
+        this.cancelDialogue();
+
+        const runId = ++this.dialogueRunId;
+        this.activeDialogueRunId = runId;
+
+        this.applyClassTheme(playerType);
+        this.bodyEl.replaceChildren();
+        this.choicesEl.classList.add('hidden');
+        this.choicesEl.classList.remove('is-visible');
+
+        this.dialogEl.classList.remove('hidden');
+        this.dialogEl.classList.remove('is-revealed');
+        this.dialogEl.setAttribute('aria-hidden', 'false');
+        this.panelEl.classList.remove('is-closing');
+
+        requestAnimationFrame(() => {
+            if (this.activeDialogueRunId !== runId) return;
+            this.panelEl.classList.add('is-open');
+            window.setTimeout(() => {
+                if (this.activeDialogueRunId !== runId) return;
+                this.dialogEl.classList.add('is-revealed');
+            }, 220);
+        });
+
+        this.setInputEnabled?.(false);
+        window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
+        window.addEventListener('keydown', this.handleDialogueKey);
+
+        const lines = O2_MILESTONE_LINES[playerType] ?? O2_MILESTONE_LINES.SCOUT;
+        this.determineSpeakerSetup(lines);
+
+        for (const line of lines) {
+            await this.typeLine(runId, line.text);
+            if (!this.isDialogueRunActive(runId)) return;
+
+            const pauseMs = line.pauseMs ?? DIALOGUE_LINE_GAP_MS;
+            await this.sleep(runId, pauseMs);
+            if (!this.isDialogueRunActive(runId)) return;
+        }
+
+        // Configure choices to show a single button
+        const skipLabel = this.skipBtn?.querySelector('.choice-card__label');
+        const skipHint = this.skipBtn?.querySelector('.choice-card__hint');
+        const origLabel = skipLabel ? skipLabel.textContent : '';
+        const origHint = skipHint ? skipHint.textContent : '';
+
+        if (skipLabel) skipLabel.textContent = "[A] ACKNOWLEDGED. GET READY.";
+        if (skipHint) skipHint.textContent = "CLOSE AND DEFEND BASE";
+
+        // Hide tutorial button for this dialogue
+        if (this.tutorialBtn) this.tutorialBtn.classList.add('hidden');
+
+        this.choicesEl.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            if (!this.isDialogueRunActive(runId)) return;
+            this.choicesEl.classList.add('is-visible');
+            this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+            window.setTimeout(() => {
+                if (!this.isDialogueRunActive(runId)) return;
+                this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
+            }, 40);
+        });
+        window.AudioManager?.play('class_lock', { volume: 0.4 });
+
+        await new Promise((resolve) => {
+            this.activeChoiceResolver = resolve;
+        });
+
+        // Restore original labels
+        if (skipLabel) skipLabel.textContent = origLabel;
+        if (skipHint) skipHint.textContent = origHint;
+        if (this.tutorialBtn) this.tutorialBtn.classList.remove('hidden');
+
+        if (!this.isDialogueRunActive(runId)) return;
+
+        window.AudioManager?.play('ui_click', { volume: 0.6 });
+        await this.closeDialogue(runId);
+    }
+
+    async openBriefTransmission({ playerType = 'SCOUT', lines = [], holdMs = 900 } = {}) {
+        if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) return;
+        if (this.activeDialogueRunId) return;
+
+        const normalizedLines = lines
+            .map((line) => String(line ?? '').trim())
+            .filter(Boolean);
+        if (!normalizedLines.length) return;
+
+        this.determineSpeakerSetup(normalizedLines);
+
+        this.cancelDialogue();
+
+        const runId = ++this.dialogueRunId;
+        this.activeDialogueRunId = runId;
+
+        this.applyClassTheme(playerType);
+        this.bodyEl.replaceChildren();
+        this.choicesEl.classList.add('hidden');
+        this.choicesEl.classList.remove('is-visible');
+
+        this.dialogEl.classList.remove('hidden');
+        this.dialogEl.classList.remove('is-revealed');
+        this.dialogEl.setAttribute('aria-hidden', 'false');
+        this.panelEl.classList.remove('is-closing');
+
+        requestAnimationFrame(() => {
+            if (this.activeDialogueRunId !== runId) return;
+            this.panelEl.classList.add('is-open');
+            window.setTimeout(() => {
+                if (this.activeDialogueRunId !== runId) return;
+                this.dialogEl.classList.add('is-revealed');
+            }, 160);
+        });
+
+        this.setInputEnabled?.(false);
+        window.AudioManager?.play('door_slide_horiz', { volume: 0.42 });
+
+        for (const line of normalizedLines) {
+            await this.typeLine(runId, line);
+            if (!this.isDialogueRunActive(runId)) return;
+            await this.sleep(runId, 320);
+        }
+
+        await this.sleep(runId, holdMs);
+        await this.closeDialogue(runId);
+        this.setInputEnabled?.(true);
     }
 
     async startTutorialSequence({ game, touchControlsEnabled = false } = {}) {
@@ -245,6 +403,10 @@ export class DialogueManager {
         this.choicesEl?.classList.add('hidden');
         this.choicesEl?.classList.remove('is-visible');
 
+        const stablePortraitEl = document.getElementById('dialogue-stable-portrait');
+        if (stablePortraitEl) stablePortraitEl.classList.add('hidden');
+        this.panelEl?.classList.remove('dialogue-layout--single-speaker');
+
         this.setInputEnabled?.(false);
     }
 
@@ -252,6 +414,9 @@ export class DialogueManager {
         if (!this.activeTutorialRunId) return;
         this.activeTutorialRunId = 0;
         this.hideTutorialPrompt();
+        document.querySelectorAll('.tutorial-prompt[data-tutorial-stack-card="true"]').forEach((prompt) => {
+            this.dismissTutorialCard(prompt);
+        });
 
         // Clean up any potential focus pulses
         document.getElementById('vitals-panel')?.classList.remove('tutorial-focus-pulse');
@@ -281,6 +446,10 @@ export class DialogueManager {
         this.choicesEl.classList.add('hidden');
         this.choicesEl.classList.remove('is-visible');
 
+        const stablePortraitEl = document.getElementById('dialogue-stable-portrait');
+        if (stablePortraitEl) stablePortraitEl.classList.add('hidden');
+        this.panelEl.classList.remove('dialogue-layout--single-speaker');
+
         window.removeEventListener('keydown', this.handleDialogueKey);
 
         this.activeDialogueRunId = 0;
@@ -309,24 +478,128 @@ export class DialogueManager {
     async typeLine(runId, line) {
         if (!this.isDialogueRunActive(runId)) return;
 
+        const speaker = this.getDialogueSpeaker(line);
         const row = document.createElement('div');
-        row.className = 'mothership-line';
-        row.textContent = '> █';
+        if (this.isSingleSpeaker) {
+            row.className = 'mothership-line mothership-line--no-portrait';
+            row.innerHTML = `
+                <div class="mothership-line__body">
+                    <div class="mothership-line__text"></div>
+                </div>
+            `;
+        } else {
+            row.className = 'mothership-line';
+            row.innerHTML = `
+                <div class="mothership-line__head" aria-hidden="true">
+                    <img class="mothership-line__portrait" alt="" />
+                    <span class="mothership-line__scanline"></span>
+                </div>
+                <div class="mothership-line__body">
+                    <div class="mothership-line__speaker"></div>
+                    <div class="mothership-line__text"></div>
+                </div>
+            `;
+            row.querySelector('.mothership-line__portrait').src = speaker.portrait;
+            row.querySelector('.mothership-line__speaker').textContent = speaker.name;
+        }
+        const textEl = row.querySelector('.mothership-line__text');
+        textEl.textContent = '> █';
         this.bodyEl.appendChild(row);
         this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
 
-        for (let index = 0; index < line.length; index++) {
+        const textToType = speaker.cleanText;
+
+        for (let index = 0; index < textToType.length; index++) {
             if (!this.isDialogueRunActive(runId)) return;
 
-            const nextText = line.slice(0, index + 1);
-            row.textContent = `> ${nextText}█`;
+            const nextText = textToType.slice(0, index + 1);
+            textEl.textContent = `> ${nextText}█`;
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
-            window.AudioManager?.play('ui_scan_ping', { volume: 0.08, varyPitch: true });
+            const isSpace = (textToType[index] === ' ');
+            const isStart = (index === 0);
+            const playChance = isSpace || isStart || (Math.random() < 0.22);
+            if (playChance) {
+                const randomPitch = 0.55 + Math.random() * 0.95; // 0.55 to 1.5
+                window.AudioManager?.play('ui_typing', {
+                    volume: 0.1,
+                    playbackRate: randomPitch,
+                    varyPitch: false
+                });
+            }
             await this.sleep(runId, DIALOGUE_CHAR_INTERVAL_MS);
         }
 
         if (!this.isDialogueRunActive(runId)) return;
-        row.textContent = `> ${line}`;
+        textEl.textContent = `> ${textToType}`;
+    }
+
+    getDialogueSpeaker(line = '') {
+        const text = String(line ?? '').trim();
+        const playerType = this.currentPlayerType ?? 'SCOUT';
+        let cleanText = text;
+        let name;
+        let portrait;
+
+        if (/^(SYSTEM|WARNING|ALERT|CAUTION):/.test(text)) {
+            name = 'EXOSUIT OS';
+            portrait = '/lore_portraits/survivor_04.webp';
+            cleanText = text.replace(/^(SYSTEM|WARNING|ALERT|CAUTION):\s*/, '');
+        } else if (/^(BUNKER|FACILITIES):/.test(text)) {
+            name = 'BUNKER AUTO-ANNOUNCER';
+            portrait = '/lore_portraits/survivor_08.webp';
+            cleanText = text.replace(/^(BUNKER|FACILITIES):\s*/, '');
+        } else if (text.startsWith('MOTHERSHIP:')) {
+            name = 'MOTHERSHIP COMMAND';
+            portrait = '/lore_portraits/survivor_00.webp';
+            cleanText = text.replace(/^MOTHERSHIP:\s*/, '');
+        } else {
+            if (playerType === 'TANK') {
+                name = 'TANK OPERATOR LINK';
+                portrait = '/lore_portraits/survivor_02.webp';
+            } else if (playerType === 'ENGINEER') {
+                name = 'ENGINEER OPERATOR LINK';
+                portrait = '/lore_portraits/survivor_03.webp';
+            } else {
+                name = 'SCOUT OPERATOR LINK';
+                portrait = '/lore_portraits/survivor_01.webp';
+            }
+        }
+        return { name, portrait, cleanText };
+    }
+
+    determineSpeakerSetup(allLines) {
+        const uniqueSpeakers = new Map();
+        for (const line of allLines) {
+            const speaker = this.getDialogueSpeaker(line.text ?? line);
+            uniqueSpeakers.set(speaker.name, speaker);
+        }
+
+        const stablePortraitEl = document.getElementById('dialogue-stable-portrait');
+        const dialoguePanelEl = this.panelEl;
+
+        if (uniqueSpeakers.size === 1) {
+            this.isSingleSpeaker = true;
+            const speakerInfo = Array.from(uniqueSpeakers.values())[0];
+
+            if (stablePortraitEl) {
+                const img = stablePortraitEl.querySelector('.dialogue-stable-portrait__img');
+                if (img) img.src = speakerInfo.portrait;
+                const nameEl = stablePortraitEl.querySelector('.dialogue-stable-portrait__name');
+                if (nameEl) nameEl.textContent = speakerInfo.name;
+                stablePortraitEl.classList.remove('hidden');
+            }
+            if (dialoguePanelEl) {
+                dialoguePanelEl.classList.add('dialogue-layout--single-speaker');
+            }
+        } else {
+            this.isSingleSpeaker = false;
+            if (stablePortraitEl) {
+                stablePortraitEl.classList.add('hidden');
+            }
+            if (dialoguePanelEl) {
+                dialoguePanelEl.classList.remove('dialogue-layout--single-speaker');
+            }
+        }
     }
 
     resolveChoice(choice) {
@@ -340,6 +613,7 @@ export class DialogueManager {
 
     applyClassTheme(playerType) {
         const theme = CLASS_COLORS[playerType] ?? CLASS_COLORS.SCOUT;
+        this.currentPlayerType = playerType;
         this.panelEl.style.setProperty('--terminal-glow', theme.glow);
         this.panelEl.style.setProperty('--terminal-glow-rgb', theme.rgb);
         if (this.tutorialPromptEl) {
@@ -496,18 +770,9 @@ export class DialogueManager {
     async tutorialStepDeposit(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '⤴',
-            text: 'USE DEPOSIT ALL TO TRANSFER RUN RESOURCES INTO YOUR PERSISTENT BANK.'
+            text: 'RUN LOOT HAS BEEN AUTOMATICALLY SECURED AND BANKED.'
         });
-
-        const depositBtn = document.getElementById('terminal-deposit-all');
-        depositBtn?.classList.add('tutorial-focus-pulse');
-
-        const deposited = await this.waitForWindowEvent(runId, 'bank-deposited', 18000);
-        if (!deposited) {
-            await this.sleep(runId, 1800);
-        }
-
-        depositBtn?.classList.remove('tutorial-focus-pulse');
+        await this.sleep(runId, 2600);
         this.hideTutorialPrompt(runId);
     }
 
@@ -540,32 +805,68 @@ export class DialogueManager {
         if (!this.tutorialPromptEl) return;
         if (!this.isTutorialRunActive(runId)) return;
 
-        if (this.tutorialPromptIconEl) {
-            this.tutorialPromptIconEl.textContent = icon;
-            this.tutorialPromptIconEl.classList.toggle('hidden', !icon);
+        const stack = document.querySelector('.hud-notification-stack');
+        const prompt = this.tutorialPromptEl.cloneNode(true);
+        prompt.removeAttribute('id');
+        prompt.dataset.tutorialStackCard = 'true';
+        prompt.dataset.notificationPriority = '0';
+        prompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 45)));
+        prompt.dataset.removeDelayMs = '220';
+        prompt.classList.add('hud-stack-card');
+        prompt.classList.add('hidden');
+        prompt.classList.remove('is-visible', 'is-exiting');
+        const promptIcon = prompt.querySelector('.tutorial-prompt__icon');
+        const promptText = prompt.querySelector('.tutorial-prompt__text');
+        if (promptIcon) {
+            promptIcon.removeAttribute('id');
+            promptIcon.textContent = icon;
+            promptIcon.classList.toggle('hidden', !icon);
         }
-        if (this.tutorialPromptTextEl) {
-            this.tutorialPromptTextEl.textContent = text;
+        if (promptText) {
+            promptText.removeAttribute('id');
+            promptText.textContent = text;
         }
+        prompt.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            this.dismissTutorialCard(prompt);
+        });
 
-        this.tutorialPromptEl.classList.remove('hidden', 'is-exiting');
+        this.activeTutorialPromptCard = prompt;
+        stack?.append(prompt);
+        window.updateHudNotificationDeck?.();
+
+        prompt.classList.remove('hidden', 'is-exiting');
         requestAnimationFrame(() => {
             if (!this.isTutorialRunActive(runId)) return;
-            this.tutorialPromptEl.classList.add('is-visible');
+            prompt.classList.add('is-visible');
+            window.updateHudNotificationDeck?.();
         });
+
+        const visibleCards = Array.from(document.querySelectorAll('.hud-stack-card:not(.hidden)'))
+            .filter((card) => card.dataset.dismissing !== 'true');
+        for (const oldCard of visibleCards.slice(5)) {
+            this.dismissTutorialCard(oldCard);
+        }
+        window.updateHudNotificationDeck?.();
     }
 
     hideTutorialPrompt(runId = this.activeTutorialRunId) {
-        if (!this.tutorialPromptEl) return;
         if (runId && !this.isTutorialRunActive(runId) && runId !== this.activeTutorialRunId) return;
 
-        this.tutorialPromptEl.classList.remove('is-visible');
-        this.tutorialPromptEl.classList.add('is-exiting');
-        window.setTimeout(() => {
-            if (this.tutorialPromptEl.classList.contains('is-visible')) return;
-            this.tutorialPromptEl.classList.add('hidden');
-            this.tutorialPromptEl.classList.remove('is-exiting');
-        }, 220);
+        this.dismissTutorialCard(this.activeTutorialPromptCard);
+        this.activeTutorialPromptCard = null;
+    }
+
+    dismissTutorialCard(prompt) {
+        if (!prompt || prompt.dataset.dismissing === 'true') return;
+        if (typeof window.dismissHudNotificationCard === 'function') {
+            window.dismissHudNotificationCard(prompt);
+            return;
+        }
+        prompt.dataset.dismissing = 'true';
+        prompt.classList.remove('is-visible');
+        prompt.classList.add('is-exiting');
+        window.setTimeout(() => prompt.remove(), 220);
     }
 
     waitUntil(runId, predicate, { timeoutMs = 10000, intervalMs = 100 } = {}) {

@@ -1,8 +1,14 @@
 import * as THREE from 'three';
-import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
+import { blackBoxStore } from './blackBox.js';
+import { pickTerminalEvent } from './data/terminalEvents.js';
+import { getDialogueLine } from './data/dialogueLines.js';
+import { getEnemyStats } from './data/enemies.js';
+import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
+import { BunkerDirector } from './director.js';
 
 const PLAYER_COLORS = {
     SCOUT: 0x7dff5a,
@@ -48,19 +54,23 @@ const SPRITE_ANIMATION_SPEED = 12;
 const SUIT_LIGHT_BASE_INTENSITY = 2.1;
 const SUIT_LIGHT_BASE_DISTANCE = 7.2;
 const SUIT_CONE_LIGHT_COLOR = 0xf2efe2;
-const SUIT_CONE_LIGHT_DISTANCE = 12.2;
+const SUIT_CONE_LIGHT_DISTANCE = 13.8;
 const SUIT_CONE_LIGHT_ANGLE = Math.PI * 0.32;
-const SUIT_CONE_VISUAL_DISTANCE = 10.2;
-const SUIT_CONE_VISUAL_WIDTH = 9.4;
+const SUIT_CONE_VISUAL_DISTANCE = 12.4;
+const SUIT_CONE_VISUAL_WIDTH = 10.6;
 // The visible beam is a fan of this many radial segments; each segment is
 // raycast against the walls every frame so the beam is occluded per-direction
 // (wrapping corners, carving shadow wedges) instead of uniformly shrinking.
 const SUIT_CONE_SEGMENTS = 22;
-const SUIT_CONE_VISUAL_OPACITY = 0.24;
-const SUIT_LOCAL_LIGHT_POOL_RADIUS = 2.25;
-const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.2;
+const SUIT_CONE_VISUAL_OPACITY = 0.13;
+const SUIT_LOCAL_LIGHT_POOL_RADIUS = 2.85;
+const SUIT_LOCAL_LIGHT_POOL_OPACITY = 0.34;
 const SUIT_LIGHT_EMITTER_HEIGHT = 1.35;
 const SUIT_LIGHT_WALL_PADDING = 0.35;
+const O2_SAFE_LIGHT_COLOR = 0xb9fbff;
+const O2_SAFE_FILL_OPACITY = 0.16;
+const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
+const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -76,9 +86,11 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'sprint', abilityLabel: 'SPRINT BURST', abilityCooldown: 8, abilityDuration: 1.5 }
+    // Sprint is a base exosuit action for every class. Class specials are not
+    // active in the current loop yet, so this HUD/ability path stays universal.
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -87,13 +99,8 @@ const O2_DRAIN_RATE_DANGER_MULT = 1.5;
 const O2_HEALTH_DRAIN_INTERVAL = 1;
 const BASE_HEARTS = 3;
 const UPGRADED_HEARTS = 4;
-const DEPTH_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
-const DEPTH_TIER_LOOT_CONFIG = Object.freeze([
-    Object.freeze({ pickupMultiplier: 0.8, legendaryBoost: 0 }),
-    Object.freeze({ pickupMultiplier: 1.0, legendaryBoost: 0 }),
-    Object.freeze({ pickupMultiplier: 1.3, legendaryBoost: 0.05 }),
-    Object.freeze({ pickupMultiplier: 1.7, legendaryBoost: 0.15 })
-]);
+// DEPTH_TIER_NAMES / DEPTH_TIER_LOOT_CONFIG / getDepthLootConfig now live in
+// src/data/loot.js (imported above).
 
 const O2_GENERATOR_BUTTON_ID = 'terminal-btn-o2-generator';
 const O2_GENERATOR_RING_BASE_RADIUS = 1;
@@ -279,7 +286,9 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveRight: ['KeyD', 'ArrowRight'],
     interact: ['KeyE', null],
     reload: ['KeyR', null],
-    ability: ['KeyF', null]
+    ability: ['KeyF', null],
+    scan: ['KeyQ', null],
+    sprint: ['ShiftLeft', 'ShiftRight']
 });
 
 const SNAIL_ATTACK_RADIUS = 1.1;
@@ -459,11 +468,6 @@ function getDepthTier(chunkX, chunkY) {
     return 3;
 }
 
-function getDepthLootConfig(depthTier) {
-    const index = Math.max(0, Math.min(DEPTH_TIER_LOOT_CONFIG.length - 1, Math.floor(depthTier)));
-    return DEPTH_TIER_LOOT_CONFIG[index];
-}
-
 const ENGINEER_CONSOLE_DISCOUNT = 0.80;
 
 const ROOM_TYPES = Object.freeze({
@@ -550,18 +554,46 @@ function classifyChunkCells(grid, chunkSize) {
 }
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'SCOUT', bankManager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
         }
 
         this.playerType = playerType;
+        this.dialogueManager = dialogueManager;
+        this.o2StartupSequenceActive = false;
+        this.o2StartupTime = 0;
+        this.o2StartupPhase = 'popup';
+        this._pendingO2BossType = null;
+
         this.chunkSize = 19;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
         this.defaultVisibleChunkRadius = 1;
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         this.wallHeight = 2.8;
+        this.wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
+        this.floorGeometry = new THREE.PlaneGeometry(1, 1);
+        // One merged floor plane per chunk instead of chunkSize² unit tiles. The
+        // floor shader blends by world position (vWorldPos), so a single plane is
+        // visually identical while removing ~360 meshes per chunk — the dominant
+        // cause of the chunk-load frame stutter.
+        this.chunkFloorGeometry = new THREE.PlaneGeometry(this.chunkSize, this.chunkSize);
+        this.pillarGeometry = new THREE.CylinderGeometry(0.16, 0.16, this.wallHeight, 8);
+        this.bracketGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.12);
+        this.ventGeometry = new THREE.BoxGeometry(0.48, 0.48, 0.06);
+        this.pipeGeometry = new THREE.CylinderGeometry(0.06, 0.06, this.wallHeight, 6);
+
+        this.ventMaterial = new THREE.MeshBasicMaterial({ color: 0x1a1d20 });
+        this.pipeMaterial = new THREE.MeshBasicMaterial({ color: 0x24282c });
+
+        // Pre-allocated geometries/materials to optimize runtime chunk loading (avoid stutters)
+        this.sirenBaseGeometry = new THREE.CylinderGeometry(0.12, 0.14, 0.1, 8);
+        this.sirenDomeGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.12, 8);
+        this.sirenBaseMaterial = new THREE.MeshBasicMaterial({ color: 0x111111 });
+        this.sirenDomeMaterial = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+        this.rubbleGeometry = new THREE.DodecahedronGeometry(1.0, 0);
+
         this.playerRadius = 0.66;
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = _initialStats.moveSpeed;
@@ -578,13 +610,16 @@ export class ThreeGame {
         this.globalSeedOffset = 0;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
-        this.maxChunkMountsPerFrame = 2;
+        this.maxChunkMountsPerFrame = 1;
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
         this.depletedGearPileKeys = new Set();
         this.transientEffects = [];
-        this.keys = { up: false, down: false, left: false, right: false };
+        this.activeRadarScans = [];
+        this.radarScanCooldownMax = 4.0;
+        this.radarScanCooldownRemaining = 0;
+        this.keys = { up: false, down: false, left: false, right: false, shift: false };
         this.virtualInput = { x: 0, z: 0 };
         this.inputEnabled = true;
         // Day/night cycle (Note 8): timeOfDay 0..1 (0/1 = midnight, 0.5 = noon).
@@ -706,12 +741,26 @@ export class ThreeGame {
         // and opens the Fabrication Bay when reached (Beat 4).
         this.foundry = new FabricationFoundry(this.scene);
         this._foundryPromptActive = false;
+        this._terminalEvent = null;
+        this._terminalEventResolvedIds = new Set();
+        this._terminalEventIsMimic = false;   // forged terminal — punishes unverified trust
+        this._terminalMimicDisarmed = false;  // Engineer verify neutralizes the trap
+        this._compassCorruptUntil = 0;
+        this._lightsOutUntil = 0;
+        this._blackBoxMarker = null;
+        this._blackBoxMarkerActive = false;
+        this._blackBoxMarkerPromptActive = false;
+        this._blackBoxState = blackBoxStore.load();
+        this._corruptedOperatorSpawnedForTimestamp = 0;
+        // The Bunker Director: one pressure brain that reacts to the player's
+        // greed/struggle by pulling existing levers (doc 11 §4.A).
+        this.bunkerDirector = new BunkerDirector();
 
         this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 0, 0);
 
-        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 1.0);
+        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
         this.gameplayPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         this.performanceProfile = 'menu';
         this.loadingPaused = false;
@@ -720,7 +769,7 @@ export class ThreeGame {
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
-        this.darknessOverlay = document.createElement('div');
+        this.darknessOverlay = document.createElement('canvas');
         Object.assign(this.darknessOverlay.style, {
             position: 'absolute',
             inset: '0',
@@ -730,7 +779,10 @@ export class ThreeGame {
             mixBlendMode: 'multiply',
             zIndex: '2'
         });
+        this.darknessOverlayContext = this.darknessOverlay.getContext('2d', { alpha: true });
         this._darknessCenter = new THREE.Vector3();
+        this._darknessConePoint = new THREE.Vector3();
+        this._darknessConeScreenPoints = [];
         this.container.style.position = this.container.style.position || 'relative';
         this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay);
 
@@ -1117,7 +1169,9 @@ export class ThreeGame {
             scatter_cryo_shards: this.loadScatterTexture('/scatter_cryo_shards.png', textureLoader),
             scatter_bio_moss: this.loadScatterTexture('/scatter_bio_moss.png', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
-            lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader)
+            lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
+            pit_hole: this.loadScatterTexture('/pit_hole.png', textureLoader),
+            decal_scars: this.loadScatterTexture('/decal_scars.png', textureLoader)
         };
 
         // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
@@ -1378,6 +1432,14 @@ export class ThreeGame {
         ]) {
             material.fog = true;
         }
+
+        this.holeMaterial = new THREE.MeshBasicMaterial({
+            map: this.scatterTextures.pit_hole,
+            transparent: true,
+            depthWrite: false,
+            depthTest: true,
+            fog: true
+        });
 
         this.setupLighting();
         this.setupWorld();
@@ -1877,8 +1939,8 @@ export class ThreeGame {
                 const centeredX = Math.abs((x / (canvas.width - 1)) - 0.5);
                 const edge = 1 - smoothstep(halfWidth * 0.58, halfWidth, centeredX);
                 const core = 1 - smoothstep(0, halfWidth * 0.45, centeredX);
-                const classTint = Math.max(0, edge - core) * 0.18;
-                const alpha = Math.max(0, Math.min(1, (edge * 0.42 + core * 0.16) * lengthFade));
+                const classTint = Math.max(0, edge - core) * 0.1;
+                const alpha = Math.max(0, Math.min(1, (edge * 0.16 + core * 0.035) * lengthFade));
                 const idx = (y * canvas.width + x) * 4;
                 image.data[idx] = Math.round(neutral.r * (1 - classTint) + r * classTint);
                 image.data[idx + 1] = Math.round(neutral.g * (1 - classTint) + g * classTint);
@@ -2054,11 +2116,11 @@ export class ThreeGame {
         this.scene.add(this.playerForwardLightTarget);
         this.playerForwardSpotLight = new THREE.SpotLight(
             SUIT_CONE_LIGHT_COLOR,
-            3.1,
+            5.8,
             SUIT_CONE_LIGHT_DISTANCE,
             SUIT_CONE_LIGHT_ANGLE,
-            0.78,
-            1.25
+            0.68,
+            1.05
         );
         this.playerForwardSpotLight.position.set(0, SUIT_LIGHT_EMITTER_HEIGHT, 0);
         this.playerForwardSpotLight.target = this.playerForwardLightTarget;
@@ -2125,8 +2187,10 @@ export class ThreeGame {
             }
             if (this.codeMatchesAction(event.code, 'interact')) {
                 this.interactWithConsole();
+                this.interactWithO2Generator();
                 this.interactWithLoreTerminal();
                 this.interactWithFoundry();
+                this.interactWithBlackBox();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
@@ -2136,6 +2200,10 @@ export class ThreeGame {
                 event.preventDefault();
                 this.triggerClassAbility();
             }
+            if (this.codeMatchesAction(event.code, 'scan')) {
+                event.preventDefault();
+                this.triggerRadarScan();
+            }
             this.setKeyState(event.code, true);
         };
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
@@ -2143,7 +2211,9 @@ export class ThreeGame {
             event.preventDefault();
             if (!this.isGameplayInputActive()) return;
             this.interactWithConsole();
+            this.interactWithO2Generator();
             this.interactWithFoundry();
+            this.interactWithBlackBox();
         };
 
         // Pointer/tap state for canvas input.
@@ -2167,6 +2237,15 @@ export class ThreeGame {
             }
 
             if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithO2Pointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithFoundryPointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithBlackBoxPointer(event.clientX, event.clientY)) {
                 return;
             }
 
@@ -2208,8 +2287,9 @@ export class ThreeGame {
                 const goalKey = event?.detail?.goalKey;
                 const bossType = MILESTONE_BOSS_FOR_GOAL[goalKey];
                 if (!bossType) return;
+                if (goalKey === 'o2Bubble') return;
                 // Brief delay so the unlock confirmation reads before the counterattack.
-                setTimeout(() => this.spawnMilestoneBoss(bossType), 1800);
+                setTimeout(() => this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey }), 1800);
             };
             window.addEventListener('goal-unlocked', this._onGoalUnlocked);
         }
@@ -2219,15 +2299,31 @@ export class ThreeGame {
         // (level 0 -> 1) is the trigger; the animated sweep then settles into idle
         // flicker. Idempotent.
         this._onO2BaseLights = (event) => {
-            if ((event?.detail?.level ?? 0) >= 1) {
+            if ((event?.detail?.level ?? 0) < 1) return;
+            if (this._o2MilestoneBossQueued) {
+                // Later O2 upgrades: grid is already lit (idempotent), no new boss.
                 this.igniteBaseLights();
-                this.revealFoundry();
+                return;
             }
+            this._o2MilestoneBossQueued = true;
+            const bossType = MILESTONE_BOSS_FOR_GOAL.o2Bubble;
+            setTimeout(() => {
+                try { this.renderer?.compile?.(this.scene, this.camera); } catch { /* best effort */ }
+            }, 50);
+            setTimeout(() => {
+                this.startO2StartupSequence(bossType);
+            }, 100);
         };
         window.addEventListener('o2-generator-upgraded', this._onO2BaseLights);
 
         this.consolePromptEl = document.getElementById('console-hud-prompt');
         this.consolePromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+        this.o2PromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.foundryPromptEl = document.getElementById('foundry-hud-prompt');
+        this.foundryPromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.blackBoxPromptEl = document.getElementById('black-box-hud-prompt');
+        this.blackBoxPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
@@ -2284,6 +2380,10 @@ export class ThreeGame {
         if (this.codeMatchesAction(code, 'moveDown')) this.keys.down = pressed;
         if (this.codeMatchesAction(code, 'moveLeft')) this.keys.left = pressed;
         if (this.codeMatchesAction(code, 'moveRight')) this.keys.right = pressed;
+        if (this.codeMatchesAction(code, 'sprint')) {
+            if (pressed) this.triggerSprintBurst();
+            this.keys.shift = false;
+        }
     }
 
     // Resolves the active key bindings (user-remapped or default) and reports
@@ -2304,6 +2404,20 @@ export class ThreeGame {
         this.virtualInput.z = THREE.MathUtils.clamp(z, -1, 1);
     }
 
+    setVirtualInputSprint(active = false) {
+        if (active) return this.triggerSprintBurst();
+        this.keys.shift = false;
+        return false;
+    }
+
+    triggerSprintBurst() {
+        if (!this.isGameplayInputActive()) return false;
+        const wasActive = Boolean(this.classAbility?.active);
+        const cooldownBefore = this.classAbility?.cooldownRemaining ?? 0;
+        this.triggerClassAbility();
+        return !wasActive && cooldownBefore <= 0 && Boolean(this.classAbility?.active);
+    }
+
     isGameplayInputActive() {
         return this.performanceProfile === 'gameplay'
             && this.inputEnabled
@@ -2317,13 +2431,18 @@ export class ThreeGame {
             const el = document.getElementById(id);
             return Boolean(el && !el.classList.contains('hidden'));
         };
-        return document.body.classList.contains('orientation-locked')
-            || window.HunkerOrientationLock?.isLocked?.()
+        return this.isOrientationLocked()
             || document.body.classList.contains('mission-intro-active')
             || isVisible('console-terminal-modal')
+            || isVisible('o2-generator-modal')
             || isVisible('game-over-modal')
             || isVisible('mothership-dialogue')
             || isVisible('confirm-modal');
+    }
+
+    isOrientationLocked() {
+        return document.body.classList.contains('orientation-locked')
+            || Boolean(window.HunkerOrientationLock?.isLocked?.());
     }
 
     clearGameplayInputState() {
@@ -2331,6 +2450,7 @@ export class ThreeGame {
         this.keys.down = false;
         this.keys.left = false;
         this.keys.right = false;
+        this.keys.shift = false;
         this.virtualInput.x = 0;
         this.virtualInput.z = 0;
         this.isMoving = false;
@@ -2351,15 +2471,25 @@ export class ThreeGame {
         this.clearGameplayInputState();
 
         this.activeInteractiveConsole = null;
+        this.activeInteractiveO2Generator = null;
         const promptEl = document.getElementById('console-hud-prompt');
         if (promptEl) {
             promptEl.classList.add('hidden');
             promptEl.classList.remove('visible');
         }
+        const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+        if (o2PromptEl) {
+            o2PromptEl.classList.add('hidden');
+            o2PromptEl.classList.remove('visible');
+        }
 
         const modal = document.getElementById('console-terminal-modal');
         if (modal && !modal.classList.contains('hidden')) {
             modal.classList.add('hidden');
+        }
+        const o2Modal = document.getElementById('o2-generator-modal');
+        if (o2Modal && !o2Modal.classList.contains('hidden')) {
+            o2Modal.classList.add('hidden');
         }
     }
 
@@ -2482,13 +2612,27 @@ export class ThreeGame {
         };
     }
 
-    updatePlayerType(type) {
+    updatePlayerType(type, { poof = true, emitWorldEvents = true } = {}) {
         this.playerType = type;
         const color = PLAYER_COLORS[type] ?? 0xffffff;
         const stats = CLASS_STATS[type] ?? CLASS_STATS.ENGINEER;
-        this.moveSpeed = stats.moveSpeed;
+        
+        let speed = stats.moveSpeed;
+        if (type === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_speed_1')) {
+            speed *= 1.15;
+        }
+        this.moveSpeed = speed;
+
         this.o2DrainMult = stats.o2DrainMult;
-        this.pickupMagnetRadius = stats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
+
+        let baseMagnet = stats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
+        if (type === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_magnet_1')) {
+            baseMagnet = 5.5;
+        } else if (type === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_magnet_1')) {
+            baseMagnet = 5.0;
+        }
+        this.pickupMagnetRadius = baseMagnet;
+
         this._initClassAbility();
         this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
@@ -2525,9 +2669,11 @@ export class ThreeGame {
         }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
 
-        this.updateCrashedShipsVisibility(true);
+        this.updateCrashedShipsVisibility(poof);
         this.ensureO2BubbleVisualState();
-        this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
+        if (emitWorldEvents) {
+            this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
+        }
         this.emitVitalsState();
         this.emitShipHealthState();
     }
@@ -2924,7 +3070,11 @@ export class ThreeGame {
             }
             this.clearLoadedChunksForRunReset();
             window.AudioManager?.stopAmbience?.();
-            window.AudioManager?.startMenuMusic?.();
+            if (typeof window.transitionToMenuMusic === 'function') {
+                window.transitionToMenuMusic();
+            } else {
+                window.AudioManager?.startMenuMusic?.();
+            }
         }
         if (this.menuShowroomFloor) {
             this.menuShowroomFloor.visible = nextProfile === 'menu';
@@ -2951,6 +3101,7 @@ export class ThreeGame {
         this.keys.down = false;
         this.keys.left = false;
         this.keys.right = false;
+        this.keys.shift = false;
 
         const sideDuration = 1.65;
         this._menuShowcaseTimer = (this._menuShowcaseTimer ?? 0) + delta;
@@ -3018,6 +3169,14 @@ export class ThreeGame {
             return;
         }
 
+        if (this.isOrientationLocked()) {
+            this.clearGameplayInputState();
+            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
+            this.updateHiddenPlayerMarker(now);
+            this.renderer.render(this.scene, this.camera);
+            return;
+        }
+
         if (this.performanceProfile === 'menu') {
             if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
             this.updateMenuShowcase(delta);
@@ -3056,6 +3215,7 @@ export class ThreeGame {
         }
 
         this.updateClassAbility(delta);
+        this.updateRadarScans(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
         this.updateWeather(delta);
@@ -3064,6 +3224,7 @@ export class ThreeGame {
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
+        this._lastFrameDeltaForChunkMounts = delta;
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
@@ -3073,10 +3234,446 @@ export class ThreeGame {
         this.updateConsoles(delta, now);
         this.updateLoreTerminals();
         this.updateVitals(delta);
+        this.updateO2StartupSequence(delta);
         this.baseLights?.update(delta);
         this.foundry?.update(delta);
         this.updateFoundryPrompt();
+        this.updateBlackBoxMarker(delta);
+        this.updateRunModifierEffects(delta);
+        this.updateBunkerDirector(delta);
+        this.updateLoopStep();
         this.renderer.render(this.scene, this.camera);
+    }
+
+    // Feed the Director a run-state snapshot and execute whatever lever it pulls.
+    updateBunkerDirector(delta) {
+        if (!this.bunkerDirector || !this.player || this.isPlayerDead || !this.snailsEnabled) return;
+        if (!this.isGameplayInputActive()) return;
+        const generatorState = this.getO2GeneratorState?.();
+        const inSafeField = Boolean(generatorState?.isOnline)
+            && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
+        const snapshot = {
+            hpFrac: (this.playerVitals?.hp ?? 1) / Math.max(1, this.playerVitals?.maxHp ?? 1),
+            o2Frac: (this.playerVitals?.o2 ?? 100) / 100,
+            depth: this.getActiveO2GeneratorDistance?.() ?? 0,
+            inSafeField,
+            patrolBias: this.currentRunModifier?.id === 'patrol_surge'
+        };
+        const action = this.bunkerDirector.tick(delta, snapshot);
+        if (action) this.executeDirectorAction(action);
+    }
+
+    executeDirectorAction(action) {
+        switch (action) {
+            case 'patrol':
+                this.showBunkerLine(getDialogueLine('director') ?? 'A maintenance event has been scheduled around your location.');
+                this.spawnPatrolNearPlayer();
+                break;
+            case 'lightsout':
+                this.triggerLightsOut(6);
+                break;
+            case 'corrupt':
+                this.corruptCompass(18);
+                this.showBunkerLine('Navigation telemetry has been reclassified as suggestion.');
+                break;
+            case 'mercy':
+                this.grantSalvageCache({ tech: 6, coin: 4 });
+                this.showBunkerLine('Hardship subsidy released. Do not mistake this for compassion.');
+                break;
+            case 'taunt':
+                this.showBunkerLine(getDialogueLine('director') ?? '');
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Per-run modifier mechanical effects (doc 11 §2). Data lives in runModifiers.js;
+    // the picked modifier is set on this.currentRunModifier from main.js at deploy.
+    updateRunModifierEffects(delta) {
+        const id = this.currentRunModifier?.id;
+        if (!id || !this.isGameplayInputActive() || this.isPlayerDead) return;
+        const generatorState = this.getO2GeneratorState?.();
+        const inField = Boolean(generatorState?.isOnline)
+            && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
+        if (id === 'rolling_blackout') {
+            // Lighting faults pulse in short waves while outside the safe field.
+            this._blackoutWaveTimer = (this._blackoutWaveTimer ?? 0) + delta;
+            if (!inField && this._blackoutWaveTimer >= 14 && performance.now() >= (this._lightsOutUntil ?? 0)) {
+                this._blackoutWaveTimer = 0;
+                this.triggerLightsOut(3);
+            }
+        } else if (id === 'bad_map_data') {
+            // Compass telemetry jitters periodically.
+            this._badMapTimer = (this._badMapTimer ?? 0) + delta;
+            if (!inField && this._badMapTimer >= 20 && performance.now() >= (this._compassCorruptUntil ?? 0)) {
+                this._badMapTimer = 0;
+                this.corruptCompass(6);
+            }
+        } else if (id === 'unstable_doors') {
+            // Old seals slam — a false movement ping (audio only) to fray nerves.
+            this._unstableDoorTimer = (this._unstableDoorTimer ?? 0) + delta;
+            if (!inField && this._unstableDoorTimer >= 11) {
+                this._unstableDoorTimer = 0;
+                window.AudioManager?.play?.('door_slam_vertical', { volume: 0.18, playbackRate: 0.7, bus: 'sfx' });
+            }
+        }
+    }
+
+    // Derive the single "next action" for the persistent loop-state HUD (T1).
+    // Priority follows the arc spine, falling back to the mission/explore goal so
+    // a fresh player always knows the next step from the HUD alone.
+    getLoopStep() {
+        if (!this.player || this.isPlayerDead) return null;
+        const mission = this.missionState;
+        if (mission?.status === 'extracted') return { key: 'done', label: 'EXTRACTION COMPLETE' };
+        if (mission?.status === 'elevator_down') return { key: 'elevator', label: 'SURVIVE ELEVATOR ARRIVAL' };
+        if (mission?.status === 'elevator_ready') return { key: 'elevator-choice', label: 'CHOOSE EXTRACT OR DESCEND' };
+
+        // Dead-suit recovery (T9) outranks everything when a box is in this sector.
+        if (this._blackBoxMarkerActive) return { key: 'blackbox', label: 'RECOVER BLACK BOX' };
+
+        const o2 = this.getO2GeneratorState();
+        const bossAlive = this.scatterSprites?.some(
+            (s) => s.userData?.isMilestone && !s.userData?.burstTriggered
+        );
+        if (bossAlive) return { key: 'defend', label: 'DEFEND THE BASE' };
+
+        const inventory = this.getSessionInventory();
+        if ((inventory.total ?? 0) > 0 && !o2?.isOnline) return { key: 'bank', label: 'BANK SALVAGE' };
+
+        const foundryRevealed = this.foundry?.isRevealed;
+        if (foundryRevealed) {
+            const atFoundry = this.foundry.isWithinInteractRange(
+                this.player.position.x,
+                this.player.position.z
+            );
+            const activated = this.bank?.isFoundryActivated?.() ?? false;
+            if (activated) {
+                return atFoundry
+                    ? { key: 'fabricate', label: 'FABRICATE' }
+                    : { key: 'foundry', label: 'FOLLOW FOUNDRY SIGNAL' };
+            }
+            return atFoundry
+                ? { key: 'activate-fab', label: 'ACTIVATE FAB BAY' }
+                : { key: 'foundry', label: 'FOLLOW FOUNDRY SIGNAL' };
+        }
+
+        if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
+        if (!o2?.isOnline) return { key: 'o2', label: 'REPAIR O2 AT THE SHIP' };
+        if (mission?.type && mission.label) return { key: 'objective', label: 'SECURE ACTIVE OBJECTIVE' };
+        return { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
+    }
+
+    updateLoopStep() {
+        const step = this.getLoopStep();
+        const key = step?.key ?? null;
+        if (key === this._lastLoopStepKey) return;
+        this._lastLoopStepKey = key;
+        window.dispatchEvent(new CustomEvent('loop-step-changed', { detail: step }));
+    }
+
+    createBlackBoxMarker(state) {
+        const marker = new THREE.Group();
+
+        // 1. Red neon pulse ring under the corpse
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.55, 0.72, 32),
+            new THREE.MeshBasicMaterial({
+                color: 0xff3344,
+                transparent: true,
+                opacity: 0.65,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.04;
+        ring.userData.blackBoxOwnedMaterial = true;
+        marker.add(ring);
+
+        // 2. Body corpse geometry group
+        const bodyGroup = new THREE.Group();
+        
+        const suitColors = {
+            SCOUT: 0xd4af37,     // scout gold/yellow
+            TANK: 0x990000,      // tank heavy red
+            ENGINEER: 0x0055ff   // engineer tech blue
+        };
+        const suitColor = suitColors[state.classType] ?? 0xd4af37;
+        const torsoMat = new THREE.MeshStandardMaterial({
+            color: suitColor,
+            metalness: 0.7,
+            roughness: 0.5
+        });
+        
+        // Torso
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.22, 0.4), torsoMat);
+        torso.position.set(0, 0.11, 0);
+        torso.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(torso);
+
+        // Helmet/Head
+        const visorColors = {
+            SCOUT: 0x00ffcc,
+            TANK: 0xffaa00,
+            ENGINEER: 0x00e5ff
+        };
+        const visorColor = visorColors[state.classType] ?? 0x00ffcc;
+        const headGroup = new THREE.Group();
+        
+        const helmet = new THREE.Mesh(
+            new THREE.SphereGeometry(0.18, 12, 12),
+            new THREE.MeshStandardMaterial({ color: 0x22252a, metalness: 0.8, roughness: 0.3 })
+        );
+        helmet.position.set(0, 0.14, 0);
+        helmet.userData.blackBoxOwnedMaterial = true;
+        headGroup.add(helmet);
+        
+        const visor = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 0.06, 0.18),
+            new THREE.MeshBasicMaterial({ color: visorColor, transparent: true, opacity: 0.6 })
+        );
+        visor.position.set(0.1, 0.15, 0);
+        visor.userData.blackBoxOwnedMaterial = true;
+        headGroup.add(visor);
+
+        headGroup.position.set(-0.4, 0, 0);
+        bodyGroup.add(headGroup);
+
+        // Limbs
+        const boneMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.8 });
+        
+        // Left Leg
+        const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.38, 6), torsoMat);
+        legL.rotation.z = Math.PI / 2 + 0.25;
+        legL.position.set(0.42, 0.08, -0.12);
+        legL.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(legL);
+
+        // Right Leg
+        const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.38, 6), torsoMat);
+        legR.rotation.z = Math.PI / 2 - 0.25;
+        legR.position.set(0.42, 0.08, 0.12);
+        legR.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(legR);
+
+        // Left Arm
+        const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.32, 6), torsoMat);
+        armL.rotation.y = 0.5;
+        armL.rotation.z = Math.PI / 4;
+        armL.position.set(-0.15, 0.09, -0.22);
+        armL.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(armL);
+
+        // Right Arm
+        const armR = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.32, 6), torsoMat);
+        armR.rotation.y = -0.5;
+        armR.rotation.z = Math.PI / 4;
+        armR.position.set(-0.15, 0.09, 0.22);
+        armR.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(armR);
+
+        // Scattered Bone Fragments
+        const bone1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 6), boneMat);
+        bone1.rotation.y = 1.1;
+        bone1.position.set(0.1, 0.04, -0.26);
+        bone1.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(bone1);
+
+        const bone2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 6), boneMat);
+        bone2.rotation.y = -0.8;
+        bone2.position.set(-0.25, 0.04, 0.26);
+        bone2.userData.blackBoxOwnedMaterial = true;
+        bodyGroup.add(bone2);
+
+        marker.add(bodyGroup);
+
+        // 3. The actual Black Box item next to the corpse
+        const blackBoxGeo = new THREE.BoxGeometry(0.16, 0.16, 0.16);
+        const blackBoxMat = new THREE.MeshStandardMaterial({
+            color: 0xff3344,
+            emissive: 0xff1122,
+            roughness: 0.2,
+            metalness: 0.8
+        });
+        const blackBoxMesh = new THREE.Mesh(blackBoxGeo, blackBoxMat);
+        blackBoxMesh.position.set(0, 0.08, 0.25);
+        blackBoxMesh.rotation.y = 0.45;
+        blackBoxMesh.userData.blackBoxOwnedMaterial = true;
+        marker.add(blackBoxMesh);
+
+        // 4. Point light beacon
+        const beacon = new THREE.PointLight(0xff3344, 1.8, 6.0, 1.5);
+        beacon.position.y = 1.0;
+        beacon.userData.blackBoxOwnedMaterial = true;
+        marker.add(beacon);
+
+        marker.position.set(state.x, 0, state.z);
+        marker.userData.isBlackBoxMarker = true;
+        return marker;
+    }
+
+    ensureBlackBoxMarker() {
+        const state = blackBoxStore.load();
+        this._blackBoxState = state;
+        const shouldShow = Boolean(state.active);
+        if (!shouldShow) {
+            this.clearBlackBoxMarker();
+            return;
+        }
+        if (!this._blackBoxMarker) {
+            this._blackBoxMarker = this.createBlackBoxMarker(state);
+            this.scene.add(this._blackBoxMarker);
+            window.dispatchEvent(new CustomEvent('black-box-marker-active', {
+                detail: { active: true, state }
+            }));
+        } else {
+            this._blackBoxMarker.position.set(state.x, 0, state.z);
+        }
+        this._blackBoxMarkerActive = true;
+        this.spawnCorruptedOperatorForBlackBox(state);
+    }
+
+    spawnCorruptedOperatorForBlackBox(state) {
+        if (!state?.active || this._corruptedOperatorSpawnedForTimestamp === state.timestamp) return null;
+        if (!this.player || !this.isGameplayInputActive()) return null;
+        this.snailsEnabled = true;
+        const depth = Math.max(0, state.depth ?? 0);
+        const angle = Math.atan2((this.player.position.z - state.z), (this.player.position.x - state.x)) + 0.9;
+        const spawnX = state.x + Math.cos(angle) * 3.2;
+        const spawnZ = state.z + Math.sin(angle) * 3.2;
+        if (!this.isSnailTileWalkable(Math.round(spawnX), Math.round(spawnZ))) return null;
+
+        const ability = state.classType === 'SCOUT' ? 'BLINK'
+            : state.classType === 'TANK' ? 'CHARGE-SHIELD'
+                : 'MINE DROP';
+        const placement = {
+            x: spawnX,
+            z: spawnZ,
+            type: 'boss_cybersnail',
+            scatterKey: `corrupted-operator:${state.timestamp}`,
+            scale: 2.5 + depth * 0.35,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'boss',
+            phase: 0,
+            opacity: 1,
+            biomeTint: 0xff3344,
+            isBoss: true,
+            maxHp: 10 + depth * 8
+        };
+        const boss = this.createScatterInstance(placement);
+        if (!boss) return null;
+
+        const classMaterial = this.playerMaterials?.[state.classType]?.clone?.();
+        if (classMaterial) {
+            boss.material?.dispose?.();
+            classMaterial.color = new THREE.Color(0xff3344);
+            classMaterial.opacity = 0.9;
+            classMaterial.transparent = true;
+            boss.material = classMaterial;
+            boss.userData.blackBoxOwnedMaterial = true;
+        }
+        boss.userData.corruptedOperator = true;
+        boss.userData.corruptedClassType = state.classType;
+        boss.userData.corruptedAbility = ability;
+        boss.userData.prioritizeShip = false;
+        boss.userData.targetType = 'player';
+
+        this.scene.add(boss);
+        this.scatterSprites.push(boss);
+        this._corruptedOperatorSpawnedForTimestamp = state.timestamp;
+        this.showBunkerLine(`CORRUPTED ${state.classType} OPERATOR GUARDING BLACK BOX. TELEGRAPHED ABILITY: ${ability}.`);
+        window.dispatchEvent(new CustomEvent('milestone-boss-spawned', { detail: { type: 'corrupted_operator', classType: state.classType } }));
+        return boss;
+    }
+
+    clearBlackBoxMarker() {
+        if (this._blackBoxMarker) {
+            this.scene.remove(this._blackBoxMarker);
+            this._blackBoxMarker.traverse((child) => {
+                if (child.userData?.blackBoxOwnedMaterial) child.material?.dispose?.();
+                child.geometry?.dispose?.();
+            });
+            this._blackBoxMarker = null;
+        }
+        this._blackBoxMarkerActive = false;
+        if (this._blackBoxMarkerPromptActive) {
+            this._blackBoxMarkerPromptActive = false;
+            window.dispatchEvent(new CustomEvent('black-box-prompt-clear'));
+        }
+    }
+
+    updateBlackBoxMarker(delta) {
+        if (!this.player || this.isPlayerDead) {
+            if (this._blackBoxMarkerPromptActive) {
+                this._blackBoxMarkerPromptActive = false;
+                window.dispatchEvent(new CustomEvent('black-box-prompt-clear'));
+            }
+            return;
+        }
+        if (!this._blackBoxMarkerActive) {
+            this.ensureBlackBoxMarker();
+        }
+        if (!this._blackBoxMarkerActive || !this._blackBoxMarker) return;
+
+        const t = performance.now() * 0.004;
+        this._blackBoxMarker.rotation.y = Math.sin(t) * 0.08;
+        this._blackBoxMarker.scale.setScalar(1 + Math.sin(t * 2.1) * 0.045);
+        this._blackBoxMarker.children.forEach((child) => {
+            if (child.isPointLight) child.intensity = 1.1 + Math.sin(t * 3.4) * 0.45;
+            if (child.isSprite) child.material.opacity = 0.68 + Math.sin(t * 5.1) * 0.18;
+        });
+
+        if (!this.isGameplayInputActive()) {
+            if (this._blackBoxMarkerPromptActive) {
+                this._blackBoxMarkerPromptActive = false;
+                window.dispatchEvent(new CustomEvent('black-box-prompt-clear'));
+            }
+            return;
+        }
+
+        const dist = Math.hypot(
+            this.player.position.x - this._blackBoxState.x,
+            this.player.position.z - this._blackBoxState.z
+        );
+        const inRange = dist <= 2.2;
+        if (inRange && !this._blackBoxMarkerPromptActive) {
+            this._blackBoxMarkerPromptActive = true;
+            window.dispatchEvent(new CustomEvent('black-box-prompt-nearby'));
+        } else if (!inRange && this._blackBoxMarkerPromptActive) {
+            this._blackBoxMarkerPromptActive = false;
+            window.dispatchEvent(new CustomEvent('black-box-prompt-clear'));
+        }
+        if (delta > 0) this._lastBlackBoxDistance = dist;
+    }
+
+    interactWithBlackBox() {
+        if (!this.isGameplayInputActive() || !this._blackBoxMarkerActive || !this.player) return false;
+        const state = this._blackBoxState;
+        const dist = Math.hypot(this.player.position.x - state.x, this.player.position.z - state.z);
+        if (dist > 2.2) return false;
+        const recovered = blackBoxStore.recoverActive();
+        if (!recovered) return false;
+        const salvage = recovered.salvage ?? {};
+        this.bank.deposit({
+            tech: salvage.tech ?? 0,
+            coin: salvage.coin ?? 0,
+            med: salvage.med ?? 0
+        });
+        this.clearBlackBoxMarker();
+        this._blackBoxState = blackBoxStore.load();
+        
+        // Alert and trigger patrol spawn
+        this.showBunkerLine('MOTHERSHIP: CAUTION. RECOVERY SIGNATURE TRACKED. PATROLS INBOUND.');
+        this.spawnPatrolNearPlayer();
+        
+        window.AudioManager?.play('class_lock', { volume: 0.56, playbackRate: 0.76, bus: 'sfx' });
+        window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
+        return true;
     }
 
     updateLoreTerminals() {
@@ -3125,12 +3722,24 @@ export class ThreeGame {
         }
     }
 
+    shouldUseTapPromptLabel() {
+        if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+        const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+        return coarsePointer || navigator.maxTouchPoints > 0 || ('ontouchstart' in window);
+    }
+
     updateConsoles(delta, now) {
         if (this.performanceProfile === 'menu') {
+            this.activeInteractiveO2Generator = null;
             const promptEl = document.getElementById('console-hud-prompt');
             if (promptEl) {
                 promptEl.classList.add('hidden');
                 promptEl.classList.remove('visible');
+            }
+            const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+            if (o2PromptEl) {
+                o2PromptEl.classList.add('hidden');
+                o2PromptEl.classList.remove('visible');
             }
             return;
         }
@@ -3139,16 +3748,28 @@ export class ThreeGame {
         const hudActive = !document.getElementById('ui')?.classList.contains('hidden');
         if (!this.inputEnabled || !hudActive) {
             this.activeInteractiveConsole = null;
+            this.activeInteractiveO2Generator = null;
             const promptEl = document.getElementById('console-hud-prompt');
             if (promptEl) {
                 promptEl.classList.add('hidden');
                 promptEl.classList.remove('visible');
+            }
+            const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+            if (o2PromptEl) {
+                o2PromptEl.classList.add('hidden');
+                o2PromptEl.classList.remove('visible');
             }
             return;
         }
 
         let nearestConsole = null;
         let minDistance = Infinity;
+        const generatorState = this.getO2GeneratorState();
+        const generatorPos = this.getActiveO2GeneratorPosition();
+        const o2InRange = generatorState.isOnline
+            && generatorPos
+            && Math.hypot(this.player.position.x - generatorPos.x, this.player.position.z - generatorPos.z) < 2.8;
+        this.activeInteractiveO2Generator = o2InRange ? this.getActiveShip() : null;
 
         for (const ship of this.crashedShips) {
             if (!ship.isVisible) continue;
@@ -3182,14 +3803,12 @@ export class ThreeGame {
             if (promptEl) {
                 const actionText = promptEl.querySelector('.prompt-text');
                 const promptKey = promptEl.querySelector('.prompt-key');
-                const touchMoveControl = document.getElementById('touch-move-control');
-                const touchMoveVisible = touchMoveControl && !touchMoveControl.classList.contains('hidden');
-                const shouldUseTapLabel = Boolean(touchMoveVisible);
+                const shouldUseTapLabel = this.shouldUseTapPromptLabel();
                 if (actionText) {
-                    actionText.textContent = `${shouldUseTapLabel ? 'TAP TO ACCESS' : 'PRESS E TO ACCESS'} ${nearestConsole.type} BASE SHOP`;
+                    actionText.textContent = `ACCESS ${nearestConsole.type} BASE SHOP`;
                 }
                 if (promptKey) {
-                    promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'E';
+                    promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'PRESS E';
                     promptKey.classList.toggle('prompt-key--tap', shouldUseTapLabel);
                 }
                 promptEl.classList.add('visible');
@@ -3208,12 +3827,41 @@ export class ThreeGame {
                 this.closeConsoleModal();
             }
         }
+
+        const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
+        if (o2PromptEl) {
+            if (o2InRange) {
+                const actionText = o2PromptEl.querySelector('.prompt-text');
+                const promptKey = o2PromptEl.querySelector('.prompt-key');
+                const shouldUseTapLabel = this.shouldUseTapPromptLabel();
+                if (actionText) actionText.textContent = 'UPGRADE O₂ GENERATOR';
+                if (promptKey) {
+                    promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'PRESS E';
+                    promptKey.classList.toggle('prompt-key--tap', shouldUseTapLabel);
+                }
+                o2PromptEl.classList.add('visible');
+                o2PromptEl.classList.remove('hidden');
+            } else {
+                o2PromptEl.classList.add('hidden');
+                o2PromptEl.classList.remove('visible');
+                const modal = document.getElementById('o2-generator-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    this.closeO2GeneratorModal();
+                }
+            }
+        }
     }
 
     interactWithConsole() {
         if (!this.isGameplayInputActive()) return;
         if (!this.activeInteractiveConsole) return;
         this.openConsoleModal(this.activeInteractiveConsole);
+    }
+
+    interactWithO2Generator() {
+        if (!this.isGameplayInputActive()) return;
+        if (!this.activeInteractiveO2Generator) return;
+        this.openO2GeneratorModal(this.activeInteractiveO2Generator);
     }
 
     tryInteractWithConsolePointer(clientX, clientY) {
@@ -3241,6 +3889,47 @@ export class ThreeGame {
         return false;
     }
 
+    tryInteractWithO2Pointer(clientX, clientY) {
+        const ship = this.activeInteractiveO2Generator;
+        if (!ship || !this.isGameplayInputActive()) return false;
+
+        const modal = document.getElementById('o2-generator-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            return false;
+        }
+
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+        const generatorPos = this.getActiveO2GeneratorPosition();
+        if (!generatorPos) return false;
+
+        const dist = Math.hypot(worldPoint.x - generatorPos.x, worldPoint.z - generatorPos.z);
+        if (dist <= 1.35) {
+            this.openO2GeneratorModal(ship);
+            return true;
+        }
+
+        return false;
+    }
+
+    tryInteractWithFoundryPointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.foundry?.isRevealed) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+        if (!this.foundry.isWithinInteractRange(worldPoint.x, worldPoint.z)) return false;
+        return this.interactWithFoundry();
+    }
+
+    tryInteractWithBlackBoxPointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this._blackBoxMarkerActive) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+        const state = this._blackBoxState;
+        const dist = Math.hypot(worldPoint.x - state.x, worldPoint.z - state.z);
+        if (dist > 1.45) return false;
+        return this.interactWithBlackBox();
+    }
+
     getSessionInventory() {
         const snapshot = window.getPickupCounterState?.();
         if (!snapshot || typeof snapshot !== 'object') {
@@ -3259,6 +3948,77 @@ export class ThreeGame {
             coin,
             total: health + weapon + coin
         };
+    }
+
+    showBunkerLine(text) {
+        if (!text) return;
+        window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
+    }
+
+    adjustOxygen(amount = 0) {
+        const next = Math.max(0, Math.min(100, (this.playerVitals.o2 ?? 0) + Number(amount || 0)));
+        this.playerVitals.o2 = next;
+        this.emitO2State();
+    }
+
+    spawnPatrolNearPlayer() {
+        if (!this.player) return;
+        this.snailsEnabled = true;
+        const types = ['cybersnail', 'cybersnail', this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail'];
+        for (let i = 0; i < 3; i++) {
+            const type = types[i % types.length];
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 18 + i * 2.2;
+            const x = this.player.position.x + Math.cos(angle) * radius;
+            const z = this.player.position.z + Math.sin(angle) * radius;
+            if (!this.isSnailTileWalkable(Math.round(x), Math.round(z))) continue;
+            const placement = {
+                x,
+                z,
+                type,
+                scatterKey: `terminal-patrol:${Date.now()}:${i}`,
+                scale: 1.25,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'enemy',
+                phase: Math.random() * Math.PI * 2,
+                opacity: 1,
+                biomeTint: 0xffffff,
+                isEnemy: true
+            };
+            const sprite = this.createScatterInstance(placement);
+            if (!sprite) continue;
+            const chunkX = Math.floor(x / this.chunkSize);
+            const chunkY = Math.floor(z / this.chunkSize);
+            const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+            group.add(sprite);
+            this.scatterSprites.push(sprite);
+        }
+        window.dispatchEvent(new CustomEvent('milestone-boss-warning'));
+    }
+
+    revealNearbyExits() {
+        this.showBunkerLine('ROUTES REVEALED. COMPASS DATA IS TEMPORARILY UNTRUSTWORTHY.');
+        window.dispatchEvent(new CustomEvent('terminal-routes-revealed'));
+    }
+
+    corruptCompass(seconds = 60) {
+        this._compassCorruptUntil = Math.max(this._compassCorruptUntil, performance.now() + seconds * 1000);
+        window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'compass_corruption' } }));
+    }
+
+    grantSalvageCache({ tech = 0, coin = 0, med = 0 } = {}) {
+        this.bank.deposit({ tech, coin, med });
+        window.dispatchEvent(new CustomEvent('salvage-cache-opened', { detail: { tech, coin, med } }));
+    }
+
+    triggerLightsOut(seconds = 8) {
+        // Held for `seconds` by the dayBlend override in updateDayNightCycle.
+        this._lightsOutUntil = Math.max(this._lightsOutUntil, performance.now() + seconds * 1000);
+        this.showBunkerLine('LIGHTING BREAKER TRIPPED. PLEASE ENJOY THE DARKNESS RESPONSIBLY.');
+        window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'lights_out' } }));
     }
 
     getO2GeneratorState(bankState = this.bank.getState()) {
@@ -3306,26 +4066,54 @@ export class ThreeGame {
         };
     }
 
-    formatResourceCost(cost = {}) {
-        const rows = [];
-        const med = Number.isFinite(cost.med) ? Math.max(0, Math.floor(cost.med)) : 0;
-        const ammo = Number.isFinite(cost.ammo) ? Math.max(0, Math.floor(cost.ammo)) : 0;
-        const tech = Number.isFinite(cost.tech) ? Math.max(0, Math.floor(cost.tech)) : 0;
-        const coin = Number.isFinite(cost.coin) ? Math.max(0, Math.floor(cost.coin)) : 0;
+    getResourceAmount(source = {}, key) {
+        const value = Number(source?.[key]);
+        return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+    }
 
-        if (tech > 0) rows.push(`${tech} TECH`);
-        if (med > 0) rows.push(`${med} MED`);
-        if (ammo > 0) rows.push(`${ammo} AMMO`);
-        if (coin > 0) rows.push(`${coin} COIN`);
+    getResourceCostBreakdown(cost = {}, bankState = this.bank.getState()) {
+        return ['tech', 'med', 'ammo', 'coin']
+            .map((key) => {
+                const need = this.getResourceAmount(cost, key);
+                if (need <= 0) return null;
+                const have = this.getResourceAmount(bankState, key);
+                return {
+                    key,
+                    label: key.toUpperCase(),
+                    have,
+                    need,
+                    missing: Math.max(0, need - have)
+                };
+            })
+            .filter(Boolean);
+    }
+
+    getMissingResourceText(cost = {}, bankState = this.bank.getState()) {
+        const missing = this.getResourceCostBreakdown(cost, bankState)
+            .filter((entry) => entry.missing > 0)
+            .map((entry) => `${entry.missing} ${entry.label}`);
+        return missing.length > 0 ? `NEED ${missing.join(' / ')}` : '';
+    }
+
+    formatResourceCost(cost = {}, { bankState = null, showHaveNeed = false } = {}) {
+        const rows = [];
+        const breakdown = this.getResourceCostBreakdown(cost, bankState ?? this.bank.getState());
+        for (const entry of breakdown) {
+            rows.push(showHaveNeed
+                ? `${entry.label} ${entry.have}/${entry.need}`
+                : `${entry.need} ${entry.label}`);
+        }
 
         return rows.length > 0 ? rows.join(' / ') : 'NO COST';
     }
 
     getO2GeneratorButtonState(generatorState) {
+        const bankState = this.bank.getState();
         if (generatorState.maxed) {
             return {
                 stateClass: 'btn-state--online',
                 label: 'FIELD AT MAX RANGE',
+                hint: 'O2 GENERATOR OUTPUT IS MAXED.',
                 enabled: false
             };
         }
@@ -3334,6 +4122,7 @@ export class ThreeGame {
             return {
                 stateClass: 'btn-state--locked',
                 label: 'NO UPGRADE PATH',
+                hint: 'NO O2 UPGRADE PATH AVAILABLE.',
                 enabled: false
             };
         }
@@ -3343,7 +4132,8 @@ export class ThreeGame {
         if (!affordable) {
             return {
                 stateClass: 'btn-state--insufficient',
-                label: `NEED ${this.formatResourceCost(effectiveCost)}`,
+                label: this.getMissingResourceText(effectiveCost, bankState),
+                hint: this.getMissingResourceText(effectiveCost, bankState),
                 enabled: false
             };
         }
@@ -3351,6 +4141,7 @@ export class ThreeGame {
         return {
             stateClass: 'btn-state--available',
             label: generatorState.level === 0 ? 'REPAIR GENERATOR' : 'UPGRADE FIELD RADIUS',
+            hint: generatorState.level === 0 ? 'REPAIR READY.' : 'FIELD UPGRADE READY.',
             enabled: true
         };
     }
@@ -3375,7 +4166,7 @@ export class ThreeGame {
         if (!affordable) {
             return {
                 stateClass: 'btn-state--insufficient',
-                label: 'INSUFFICIENT RESOURCES',
+                label: 'RESOURCE DEFICIT',
                 enabled: false
             };
         }
@@ -3413,7 +4204,8 @@ export class ThreeGame {
         const costEl = document.getElementById(cardConfig.costId);
         if (costEl) {
             const discountTag = isDiscounted ? ' [ENG -20%]' : '';
-            costEl.textContent = `COST: ${this.formatResourceCost(cost)}${discountTag}`;
+            const missingText = affordable ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
+            costEl.textContent = `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !affordable })}${discountTag}${missingText}`;
         }
 
         const button = document.getElementById(cardConfig.buttonId);
@@ -3451,7 +4243,8 @@ export class ThreeGame {
             if (!cfg) continue;
             const alreadyUnlocked = Boolean(tier2Unlocks[key]);
             const prereqMet = !cfg.prereq || Boolean(unlocks[cfg.prereq]);
-            const canAfford = this.bank.canAfford(cfg.cost);
+            const cost = cfg.cost;
+            const canAfford = this.bank.canAfford(cost);
             const buildable = !alreadyUnlocked && prereqMet && canAfford;
 
             const statusEl = document.getElementById(`terminal-tier2-${key}-status`);
@@ -3462,12 +4255,13 @@ export class ThreeGame {
             }
             const costEl = document.getElementById(`terminal-tier2-${key}-cost`);
             if (costEl) {
-                costEl.textContent = alreadyUnlocked ? '' : `COST: ${cfg.cost.tech} TECH / ${cfg.cost.coin} COIN`;
+                const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
+                costEl.textContent = alreadyUnlocked ? '' : `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !canAfford })}${missingText}`;
             }
             const btn = document.getElementById(`terminal-btn-tier2-${key}`);
             if (!btn) continue;
             btn.disabled = !buildable;
-            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : 'INSTALL';
+            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : canAfford ? 'INSTALL' : this.getMissingResourceText(cost, bankState);
             btn.classList.toggle('btn-state--online', alreadyUnlocked);
             btn.classList.toggle('btn-state--available', buildable);
             btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && (!prereqMet || !canAfford));
@@ -3505,7 +4299,8 @@ export class ThreeGame {
             const level = Math.max(0, Math.floor(levels[key] ?? 0));
             const maxed = level >= cfg.maxLevel;
             const nextCost = maxed ? null : cfg.costs[level];
-            const canAfford = nextCost ? this.bank.canAfford(nextCost) : false;
+            const cost = nextCost ?? null;
+            const canAfford = cost ? this.bank.canAfford(cost) : false;
 
             const levelEl = document.getElementById(`terminal-weapon-${key}-level`);
             if (levelEl) levelEl.textContent = `LV ${level}/${cfg.maxLevel}`;
@@ -3519,13 +4314,14 @@ export class ThreeGame {
 
             const costEl = document.getElementById(`terminal-weapon-${key}-cost`);
             if (costEl) {
-                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ${nextCost.tech} TECH / ${nextCost.coin} COIN`;
+                const missingText = canAfford || !cost ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
+                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !canAfford })}${missingText}`;
             }
 
             const btn = document.getElementById(`terminal-btn-weapon-${key}`);
             if (!btn) continue;
             btn.disabled = maxed || !canAfford;
-            btn.textContent = maxed ? 'MAXED' : 'UPGRADE';
+            btn.textContent = maxed ? 'MAXED' : canAfford ? 'UPGRADE' : this.getMissingResourceText(cost, bankState);
             btn.classList.toggle('btn-state--online', maxed);
             btn.classList.toggle('btn-state--available', !maxed && canAfford);
             btn.classList.toggle('btn-state--insufficient', !maxed && !canAfford);
@@ -3546,6 +4342,103 @@ export class ThreeGame {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
         }
         this.renderConsoleBanking(ship);
+    }
+
+    getActiveTerminalEvent() {
+        if (this._terminalEvent && !this._terminalEventResolvedIds.has(this._terminalEvent.id)) {
+            return this._terminalEvent;
+        }
+        const event = pickTerminalEvent(Math.random, { biome: this.currentBiomeKey });
+        this._terminalEvent = event;
+        // ~1 in 4 terminals is a forged "mimic" that pays out then bills you in
+        // patrols — unless an Engineer verifies it first (doc 11 §2 signature fear).
+        this._terminalEventIsMimic = event ? Math.random() < 0.25 : false;
+        this._terminalMimicDisarmed = false;
+        return event;
+    }
+
+    renderTerminalEventPanel() {
+        const section = document.getElementById('terminal-event-section');
+        const title = document.getElementById('terminal-event-title');
+        const status = document.getElementById('terminal-event-status');
+        const body = document.getElementById('terminal-event-body');
+        const choicesEl = document.getElementById('terminal-event-choices');
+        const resultEl = document.getElementById('terminal-event-result');
+        if (!section || !choicesEl) return;
+
+        const event = this.getActiveTerminalEvent();
+        const resolved = Boolean(event && this._terminalEventResolvedIds.has(event.id));
+        section.classList.toggle('hidden', !event);
+        if (!event) return;
+
+        if (title) title.textContent = event.title;
+        if (status) status.textContent = resolved ? 'RESOLVED' : 'CHOICE REQUIRED';
+        if (body) body.textContent = event.body;
+        choicesEl.innerHTML = '';
+
+        if (resolved) {
+            if (resultEl) resultEl.textContent = 'TERMINAL EVENT RESOLVED. SHOP SYSTEMS REMAIN AVAILABLE.';
+            return;
+        }
+
+        if (this.playerType === 'ENGINEER') {
+            const verifyBtn = document.createElement('button');
+            verifyBtn.className = 'terminal-action-btn terminal-event-choice btn-state--available';
+            verifyBtn.textContent = 'ENGINEER VERIFY';
+            verifyBtn.addEventListener('click', () => {
+                if (this._terminalEventIsMimic) {
+                    // Engineer detects the forgery and disarms its payback.
+                    this._terminalMimicDisarmed = true;
+                    if (resultEl) resultEl.textContent = 'WARNING: TERMINAL SIGNATURE FORGED — MIMIC NEUTRALIZED. SAFE TO PROCEED.';
+                    window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'mimic_terminal' } }));
+                    window.AudioManager?.play('ui_error', { volume: 0.32, playbackRate: 0.9, bus: 'sfx' });
+                    return;
+                }
+                const risky = event.choices.filter((choice) => choice.tone === 'risk').map((choice) => choice.label);
+                if (resultEl) resultEl.textContent = risky.length
+                    ? `VERIFIED RISK: ${risky.join(' // ')}`
+                    : 'VERIFIED: NO HIDDEN RISK FLAGGED.';
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.38, playbackRate: 1.2, bus: 'sfx' });
+            });
+            choicesEl.appendChild(verifyBtn);
+        }
+
+        event.choices.forEach((choice, index) => {
+            const btn = document.createElement('button');
+            btn.className = `terminal-action-btn terminal-event-choice ${choice.tone === 'risk' ? 'btn-state--available' : 'btn-state--locked'}`;
+            btn.textContent = choice.label;
+            btn.addEventListener('click', () => this.applyTerminalChoice(event, index));
+            choicesEl.appendChild(btn);
+        });
+        if (resultEl) resultEl.textContent = '';
+    }
+
+    applyTerminalChoice(event, choiceIndex) {
+        if (!event || this._terminalEventResolvedIds.has(event.id)) return;
+        const choice = event.choices?.[choiceIndex];
+        if (!choice) return;
+        let result;
+        try {
+            result = choice.effect?.(this) ?? '';
+        } catch (err) {
+            console.warn('[terminal event effect failed]', err);
+            result = 'TERMINAL EFFECT FAILED. SYSTEM ROLLED BACK TO IDLE.';
+        }
+        this._terminalEventResolvedIds.add(event.id);
+        // Mimic payback: an unverified forged terminal pays out, then bills you.
+        if (this._terminalEventIsMimic && !this._terminalMimicDisarmed) {
+            this.showBunkerLine('TERMINAL SIGNATURE FORGED. THE PAYOUT WAS REAL. SO IS THE INVOICE.');
+            this.spawnPatrolNearPlayer();
+            this.corruptCompass(15);
+            result = `${result} // MIMIC: SIGNATURE FORGED — PATROLS DISPATCHED`;
+            window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'mimic_terminal' } }));
+        } else {
+            this.showBunkerLine(getDialogueLine('terminalChoice') ?? 'TERMINAL CHOICE REGISTERED.');
+        }
+        window.AudioManager?.play('ui_boot', { volume: 0.42, playbackRate: choice.tone === 'risk' ? 0.72 : 1.05, bus: 'sfx' });
+        const resultEl = document.getElementById('terminal-event-result');
+        if (resultEl) resultEl.textContent = result;
+        this.renderConsoleBanking(this.activeInteractiveConsole);
     }
 
     updateGoalModuleVisualState(unlocks = this.unlocks) {
@@ -3638,6 +4531,10 @@ export class ThreeGame {
         }
 
         const statusEl = document.getElementById('terminal-o2-generator-status');
+        const o2Section = document.getElementById('o2-generator-section');
+        if (o2Section) {
+            o2Section.classList.toggle('hidden', generatorState.isOnline);
+        }
         if (statusEl) {
             statusEl.textContent = generatorState.isOnline
                 ? `ONLINE // LVL ${generatorState.level}`
@@ -3649,7 +4546,9 @@ export class ThreeGame {
             if (generatorState.nextUpgrade) {
                 const effectiveCost = this.getEffectiveCost(generatorState.nextUpgrade.cost);
                 const discountTag = this.playerType === 'ENGINEER' ? ' [ENG -20%]' : '';
-                costEl.textContent = `NEXT COST: ${this.formatResourceCost(effectiveCost)}${discountTag}`;
+                const canAfford = this.bank.canAfford(effectiveCost);
+                const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(effectiveCost, bankState)}`;
+                costEl.textContent = `NEXT COST: ${this.formatResourceCost(effectiveCost, { bankState, showHaveNeed: !canAfford })}${discountTag}${missingText}`;
             } else {
                 costEl.textContent = 'NEXT COST: NONE';
             }
@@ -3667,7 +4566,9 @@ export class ThreeGame {
             if (generatorState.maxed) {
                 generatorHint.textContent = 'O₂ GENERATOR OUTPUT IS MAXED FOR THIS EXOSUIT BAY.';
             } else if (!generatorState.isOnline) {
-                generatorHint.textContent = 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.';
+                const effectiveCost = generatorState.nextUpgrade ? this.getEffectiveCost(generatorState.nextUpgrade.cost) : {};
+                const missingText = this.getMissingResourceText(effectiveCost, bankState);
+                generatorHint.textContent = missingText || 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.';
             } else {
                 generatorHint.textContent = 'UPGRADES EXPAND THE BLUE O₂ FIELD SO YOU CAN REFILL FROM FURTHER OUT.';
             }
@@ -3687,6 +4588,7 @@ export class ThreeGame {
         }
         this.renderTier2Section(ship, bankState);
         this.renderWeaponsSection(ship, bankState);
+        this.renderTerminalEventPanel();
 
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {
@@ -3784,7 +4686,7 @@ export class ThreeGame {
         return msg;
     }
 
-    handleDepositAll(ship) {
+    handleDepositAll(ship, { silentIfEmpty = false, quiet = false } = {}) {
         const inventory = this.getSessionInventory();
         const depositPayload = {
             med: Math.max(0, Math.floor(inventory.health ?? 0)),
@@ -3794,7 +4696,9 @@ export class ThreeGame {
         const depositableTotal = depositPayload.med + depositPayload.tech + depositPayload.coin;
 
         if (depositableTotal <= 0) {
-            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            if (!silentIfEmpty) {
+                window.AudioManager?.play('ui_error', { volume: 0.58 });
+            }
             this.renderConsoleBanking(ship);
             return;
         }
@@ -3808,7 +4712,9 @@ export class ThreeGame {
             weapon: depositPayload.tech,
             coin: depositPayload.coin
         });
-        window.AudioManager?.play('ui_click', { volume: 0.62 });
+        if (!quiet) {
+            window.AudioManager?.play('ui_click', { volume: 0.62 });
+        }
         this.renderConsoleBanking(ship);
     }
 
@@ -3847,6 +4753,7 @@ export class ThreeGame {
         this.emitVitalsState();
         window.AudioManager?.play('class_lock', { volume: 0.55 });
         this.renderConsoleBanking(ship);
+        this.renderO2GeneratorModal(ship);
     }
 
     attemptO2GeneratorUpgrade(ship) {
@@ -3887,6 +4794,7 @@ export class ThreeGame {
         }));
         window.AudioManager?.play('class_lock', { volume: 0.55 });
         this.renderConsoleBanking(ship);
+        this.renderO2GeneratorModal(ship);
     }
 
     attemptMedConversion(ship) {
@@ -3930,6 +4838,7 @@ export class ThreeGame {
         }
 
         this.syncPersistentUpgrades();
+        this.handleDepositAll(ship, { silentIfEmpty: true, quiet: true });
         this.renderConsoleBanking(ship);
 
         const depositBtn = document.getElementById('terminal-deposit-all');
@@ -3945,6 +4854,37 @@ export class ThreeGame {
         const medkitBtn = document.getElementById('terminal-btn-medkit');
         if (medkitBtn) {
             medkitBtn.onclick = () => this.attemptMedConversion(ship);
+        }
+
+        // Setup Tab Navigation
+        const tabBase = document.getElementById('terminal-tab-base');
+        const tabSkills = document.getElementById('terminal-tab-skills');
+        const contentBase = document.getElementById('terminal-tab-base-content');
+        const contentSkills = document.getElementById('terminal-tab-skills-content');
+
+        if (tabBase && tabSkills && contentBase && contentSkills) {
+            // Default to Base System Tab
+            tabBase.classList.add('active');
+            tabSkills.classList.remove('active');
+            contentBase.classList.remove('hidden');
+            contentSkills.classList.add('hidden');
+
+            tabBase.onclick = () => {
+                tabBase.classList.add('active');
+                tabSkills.classList.remove('active');
+                contentBase.classList.remove('hidden');
+                contentSkills.classList.add('hidden');
+                window.AudioManager?.play('ui_click', { volume: 0.5 });
+            };
+
+            tabSkills.onclick = () => {
+                tabSkills.classList.add('active');
+                tabBase.classList.remove('active');
+                contentSkills.classList.remove('hidden');
+                contentBase.classList.add('hidden');
+                window.AudioManager?.play('ui_click', { volume: 0.5 });
+                this.renderSkillsTree(ship);
+            };
         }
 
         // Hook up Close button
@@ -3964,10 +4904,220 @@ export class ThreeGame {
         }
     }
 
+    getConnectorLine(row, col, playerType) {
+        let parentUnlocked = false;
+        let type = ''; // 'down-left' or 'down-right'
+        
+        const tree = CLASS_SKILL_TREES[playerType] || [];
+
+        if (row === 2) {
+            // Parent is node at (1,3)
+            const parent = tree.find(n => n.row === 1 && n.col === 3);
+            parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
+            if (col === 2) type = 'down-left';
+            else if (col === 4) type = 'down-right';
+        } else if (row === 4) {
+            if (col === 2) {
+                // Parent is (3,1)
+                const parent = tree.find(n => n.row === 3 && n.col === 1);
+                parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
+                type = 'down-right';
+            } else if (col === 4) {
+                // Parent is (3,5)
+                const parent = tree.find(n => n.row === 3 && n.col === 5);
+                parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
+                type = 'down-left';
+            }
+        } else if (row === 6) {
+            // Parent is (5,3)
+            const parent = tree.find(n => n.row === 5 && n.col === 3);
+            parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
+            if (col === 2) type = 'down-left';
+            else if (col === 4) type = 'down-right';
+        }
+        
+        if (!type) return '';
+        
+        const strokeColor = parentUnlocked ? '#38bdf8' : 'rgba(255, 159, 28, 0.25)';
+        const strokeWidth = parentUnlocked ? 2.5 : 1.5;
+        
+        const lineSvg = type === 'down-left'
+            ? `<svg class="skill-line-svg"><line x1="100%" y1="0%" x2="0%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`
+            : `<svg class="skill-line-svg"><line x1="0%" y1="0%" x2="100%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`;
+        
+        return `<div class="skill-line-cell">${lineSvg}</div>`;
+    }
+
+    renderSkillsTree(ship) {
+        const gridContainer = document.getElementById('skills-tree-grid');
+        const countEl = document.getElementById('skills-unlocked-count');
+        if (!gridContainer) return;
+
+        gridContainer.innerHTML = '';
+
+        const playerClass = ship.type;
+        const tree = CLASS_SKILL_TREES[playerClass] || [];
+        const unlockedCount = tree.filter(node => this.bank.isSkillUnlocked(node.id)).length;
+        if (countEl) {
+            countEl.textContent = `UNLOCKED SKILLS: ${unlockedCount}/${tree.length}`;
+        }
+
+        for (let row = 1; row <= 7; row++) {
+            for (let col = 1; col <= 5; col++) {
+                const node = tree.find(n => n.row === row && n.col === col);
+                if (node) {
+                    const isUnlocked = this.bank.isSkillUnlocked(node.id);
+                    const isAvailable = !isUnlocked && this.bank.canUnlockSkill(node.id, playerClass);
+                    const state = isUnlocked ? 'unlocked' : (isAvailable ? 'available' : 'locked');
+
+                    const card = document.createElement('div');
+                    card.className = `skill-node-card node-state--${state}`;
+                    card.style.gridRow = String(row);
+                    card.style.gridColumn = String(col);
+
+                    const header = document.createElement('div');
+                    header.className = 'skill-node-header';
+                    const label = document.createElement('span');
+                    label.textContent = node.label;
+                    const status = document.createElement('span');
+                    status.className = 'skill-node-status';
+                    status.textContent = isUnlocked ? '[UNLOCKED]' : (isAvailable ? '[AVAILABLE]' : '[LOCKED]');
+                    header.appendChild(label);
+                    header.appendChild(status);
+                    card.appendChild(header);
+
+                    const desc = document.createElement('div');
+                    desc.className = 'skill-node-desc';
+                    desc.textContent = node.desc;
+                    card.appendChild(desc);
+
+                    const costArr = [];
+                    if (node.cost.tech) costArr.push(`${node.cost.tech} TECH`);
+                    if (node.cost.coin) costArr.push(`${node.cost.coin} COIN`);
+                    if (node.cost.med) costArr.push(`${node.cost.med} MED`);
+                    const costText = costArr.join(' / ');
+
+                    const costEl = document.createElement('div');
+                    costEl.className = 'skill-node-cost';
+                    costEl.textContent = isUnlocked ? 'COMPLETED' : `COST: ${costText}`;
+                    card.appendChild(costEl);
+
+                    if (isAvailable) {
+                        const buyBtn = document.createElement('button');
+                        buyBtn.className = 'skill-node-btn';
+                        buyBtn.textContent = 'UNLOCK';
+                        buyBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            const success = this.bank.unlockSkill(node.id, playerClass);
+                            if (success) {
+                                window.AudioManager?.play('ui_upgrade_weapon', { volume: 0.6 });
+                                this.syncPersistentUpgrades();
+                                this.updatePlayerType(this.playerType);
+                                if (window.syncAbilityPanelLabel) window.syncAbilityPanelLabel();
+                                this.renderSkillsTree(ship);
+                                this.renderConsoleBanking(ship);
+                            } else {
+                                window.AudioManager?.play('ui_error', { volume: 0.5 });
+                            }
+                        };
+                        card.appendChild(buyBtn);
+                    }
+
+                    gridContainer.appendChild(card);
+                } else {
+                    const connectorHtml = this.getConnectorLine(row, col, playerClass);
+                    if (connectorHtml) {
+                        const wrapper = document.createElement('div');
+                        wrapper.style.gridRow = String(row);
+                        wrapper.style.gridColumn = String(col);
+                        wrapper.innerHTML = connectorHtml;
+                        gridContainer.appendChild(wrapper.firstChild);
+                    } else {
+                        const empty = document.createElement('div');
+                        empty.style.gridRow = String(row);
+                        empty.style.gridColumn = String(col);
+                        gridContainer.appendChild(empty);
+                    }
+                }
+            }
+        }
+    }
+
+    renderO2GeneratorModal(ship = this.getActiveShip()) {
+        const bankState = this.bank.getState();
+        const generatorState = this.getO2GeneratorState(bankState);
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = String(value);
+        };
+        const badge = document.getElementById('o2-generator-modal-badge');
+        if (badge) {
+            badge.textContent = `${ship?.type ?? this.playerType} FIELD STABILIZER`;
+        }
+        setText('o2-generator-modal-status', generatorState.isOnline
+            ? `ONLINE // LVL ${generatorState.level}`
+            : 'OFFLINE // REPAIR REQUIRED');
+        setText('o2-generator-modal-field', generatorState.isOnline
+            ? `FIELD RADIUS ${generatorState.radius.toFixed(1)}u // REFILL ${generatorState.refillRate.toFixed(1)}%/s`
+            : 'FIELD RADIUS 0.0u // REFILL OFFLINE');
+
+        const buttonState = this.getO2GeneratorButtonState(generatorState);
+        const effectiveCost = generatorState.nextUpgrade
+            ? this.getEffectiveCost(generatorState.nextUpgrade.cost)
+            : null;
+        if (effectiveCost) {
+            const canAfford = this.bank.canAfford(effectiveCost);
+            const discountTag = this.playerType === 'ENGINEER' ? ' [ENG -20%]' : '';
+            const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(effectiveCost, bankState)}`;
+            setText('o2-generator-modal-cost', `NEXT COST: ${this.formatResourceCost(effectiveCost, { bankState, showHaveNeed: !canAfford })}${discountTag}${missingText}`);
+        } else {
+            setText('o2-generator-modal-cost', 'NEXT COST: NONE');
+        }
+        setText('o2-generator-modal-hint', generatorState.maxed
+            ? 'O2 GENERATOR OUTPUT IS MAXED.'
+            : buttonState.hint || 'UPGRADES EXPAND THE BLUE O2 FIELD.');
+
+        const btn = document.getElementById('o2-generator-modal-btn');
+        if (btn) {
+            btn.textContent = buttonState.label;
+            btn.disabled = !buttonState.enabled;
+            btn.classList.remove('btn-state--online', 'btn-state--locked', 'btn-state--insufficient', 'btn-state--available');
+            btn.classList.add(buttonState.stateClass);
+            btn.onclick = () => this.attemptO2GeneratorUpgrade(ship ?? this.getActiveShip());
+        }
+    }
+
+    openO2GeneratorModal(ship = this.getActiveShip()) {
+        const modal = document.getElementById('o2-generator-modal');
+        if (!modal) return;
+        this.syncPersistentUpgrades();
+        this.renderO2GeneratorModal(ship);
+        const closeBtn = document.getElementById('close-o2-generator-modal');
+        if (closeBtn) {
+            closeBtn.onclick = () => this.closeO2GeneratorModal();
+        }
+        window.AudioManager?.play('ui_scan_ping', { volume: 0.55 });
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    closeO2GeneratorModal() {
+        const modal = document.getElementById('o2-generator-modal');
+        if (modal) {
+            window.AudioManager?.play('ui_click', { volume: 0.45 });
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+    }
+
     syncPersistentUpgrades() {
         this.unlocks = this.bank.getUnlocks();
         this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
-        this.playerVitals.maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
+        let maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
+        if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_plating_1')) {
+            maxHp += 1;
+        }
+        this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
         this.updateGoalModuleVisualState(this.unlocks);
@@ -3983,9 +5133,19 @@ export class ThreeGame {
         const shotDamage = Math.max(0, Math.floor(levels.shotDamage ?? 0));
         const shotAmount = Math.max(0, Math.floor(levels.shotAmount ?? 0));
 
-        this.weaponClipSize = WEAPON_CLIP_SIZE + ammoCapacity * WEAPON_CLIP_PER_CAPACITY;
+        let baseClipSize = WEAPON_CLIP_SIZE + ammoCapacity * WEAPON_CLIP_PER_CAPACITY;
+        if (this.playerType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_ammo_1')) {
+            baseClipSize += 3;
+        }
+        this.weaponClipSize = baseClipSize;
+
+        let extraDamage = shotDamage;
+        if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_damage_1')) {
+            extraDamage += 1;
+        }
+
         this.weaponUpgradeBonuses = {
-            shotDamage,
+            shotDamage: extraDamage,
             speedAdd: shotSpeed * WEAPON_SPEED_PER_TIER,
             shotAmount
         };
@@ -4059,26 +5219,175 @@ export class ThreeGame {
     igniteBaseLights({ instant = false } = {}) {
         if (!this.baseLights) return;
         const ship = this.getActiveShip();
-        const cx = Number.isFinite(ship?.tileX) ? ship.tileX : 9;
-        const cz = Number.isFinite(ship?.tileZ) ? ship.tileZ : 9;
-        if (instant) this.baseLights.igniteInstant(cx, cz);
-        else this.baseLights.ignite(cx, cz);
+        if (!Number.isFinite(ship?.tileX) || !Number.isFinite(ship?.tileZ)) return;
+        const cx = ship.tileX;
+        const cz = ship.tileZ;
+        const generatorState = this.getO2GeneratorState();
+        const radius = generatorState.isOnline ? generatorState.radius : 3.9;
+        const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+        if (instant) this.baseLights.igniteInstant(cx, cz, radius, color);
+        else this.baseLights.ignite(cx, cz, radius, color);
     }
 
-    // Reveal/power-up the Fabrication Foundry in the base clearing (Beat 4).
-    revealFoundry({ instant = false } = {}) {
-        if (!this.foundry) return;
+    startO2StartupSequence(bossType) {
+        this.createO2BubbleObjects();
+        if (this.o2BubbleObjects) {
+            this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.fill.visible = false;
+            this.o2BubbleObjects.ring.visible = false;
+        }
+
         const ship = this.getActiveShip();
-        const cx = Number.isFinite(ship?.tileX) ? ship.tileX : 9;
-        const cz = Number.isFinite(ship?.tileZ) ? ship.tileZ : 9;
+        if (ship) {
+            if (ship.o2ModuleSprite) {
+                ship.o2ModuleSprite.visible = true;
+                ship.o2ModuleSprite.scale.set(0, 0, 1);
+                ship.o2ModuleSprite.position.y = 0.09 - 1.5;
+            }
+            if (ship.o2ModuleShadow) {
+                ship.o2ModuleShadow.visible = true;
+                ship.o2ModuleShadow.scale.set(0, 0, 1);
+            }
+        }
+
+        this.closeConsoleModal();
+        this.setInputEnabled(false);
+
+        this._pendingO2BossType = bossType;
+        this.o2StartupSequenceActive = true;
+        this.o2StartupPhase = 'popup';
+        this.o2StartupTime = 0;
+    }
+
+    updateO2StartupSequence(delta) {
+        if (!this.o2StartupSequenceActive) return;
+        this.o2StartupTime += delta;
+        const ship = this.getActiveShip();
+
+        if (this.o2StartupPhase === 'popup') {
+            const duration = 1.2; // seconds
+            const progress = Math.min(1, this.o2StartupTime / duration);
+            if (ship) {
+                if (ship.o2ModuleSprite) {
+                    ship.o2ModuleSprite.visible = true;
+                    ship.o2ModuleSprite.scale.set(1.58 * progress, 1.58 * progress, 1);
+                    ship.o2ModuleSprite.position.y = 0.09 - 1.5 * (1 - progress);
+                }
+                if (ship.o2ModuleShadow) {
+                    ship.o2ModuleShadow.visible = true;
+                    ship.o2ModuleShadow.scale.set(progress, progress, 1);
+                }
+            }
+            if (progress >= 1) {
+                this.o2StartupPhase = 'bubble';
+                this.o2StartupTime = 0;
+                if (this.baseLights) {
+                    const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+                    const generatorState = this.getO2GeneratorState();
+                    this.baseLights.ignite(ship?.tileX ?? 0, ship?.tileZ ?? 0, generatorState.radius, color);
+                }
+                window.AudioManager?.play?.('ui_boot1', { volume: 0.6 });
+            }
+        } else if (this.o2StartupPhase === 'bubble') {
+            const duration = 1.8; // seconds
+            const progress = Math.min(1, this.o2StartupTime / duration);
+            const generatorState = this.getO2GeneratorState();
+            const targetBubbleScale = generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS;
+            const currentBubbleScale = targetBubbleScale * progress;
+
+            if (this.o2BubbleObjects) {
+                this.o2BubbleObjects.light.visible = true;
+                this.o2BubbleObjects.fill.visible = true;
+                this.o2BubbleObjects.ring.visible = true;
+
+                const t = performance.now() * 0.001;
+                const pulse = currentBubbleScale * (0.97 + Math.sin(t * 2.2) * 0.06);
+                const opacity = (0.16 + Math.sin(t * 2.6) * 0.06) * progress;
+
+                this.o2BubbleObjects.ring.scale.set(pulse, pulse, 1);
+                this.o2BubbleObjects.ring.material.opacity = opacity;
+                this.o2BubbleObjects.fill.scale.set(pulse, pulse, 1);
+                this.o2BubbleObjects.fill.material.opacity = (O2_SAFE_FILL_OPACITY + Math.sin(t * 2.1) * 0.035) * progress;
+                this.o2BubbleObjects.light.intensity = (1.35 + Math.sin(t * 2.4) * 0.18) * progress;
+
+                const generatorPos = this.getActiveO2GeneratorPosition();
+                if (generatorPos) {
+                    this.o2BubbleObjects.light.position.set(generatorPos.x, 0.9, generatorPos.z);
+                    this.o2BubbleObjects.light.distance = Math.max(10, generatorState.radius * 2.45);
+                    this.o2BubbleObjects.ring.position.set(generatorPos.x, 0.035, generatorPos.z);
+                    this.o2BubbleObjects.fill.position.set(generatorPos.x, 0.034, generatorPos.z);
+                }
+            }
+
+            if (progress >= 1) {
+                this.o2StartupPhase = 'dialogue';
+                this.o2StartupTime = 0;
+                this.o2StartupSequenceActive = false; // end 3D animation phase
+                this.triggerO2ClassDialogue(this._pendingO2BossType);
+            }
+        }
+    }
+
+    async triggerO2ClassDialogue(bossType) {
+        if (this.dialogueManager) {
+            await this.dialogueManager.openO2MilestoneDialogue({ playerType: this.playerType });
+        }
+
+        // Post-dialogue actions:
+        // 1. Send the boss
+        this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
+
+        // 2. Play warning alert overlay
+        window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+            detail: { type: bossType, goalKey: 'o2Bubble' }
+        }));
+
+        // 3. Re-enable input
+        this.setInputEnabled(true);
+    }
+
+    chooseFoundryDiscoveryPosition() {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom(this.hashTile(
+            Math.round(anchor.x),
+            Math.round(anchor.z)
+        ));
+        const preferredAngles = [Math.PI * 0.15, Math.PI * 0.85, Math.PI * 1.35, Math.PI * 1.75];
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const ringT = random();
+            const dist = THREE.MathUtils.lerp(FOUNDRY_DISCOVERY_MIN_DISTANCE, FOUNDRY_DISCOVERY_MAX_DISTANCE, ringT);
+            const baseAngle = preferredAngles[attempt % preferredAngles.length];
+            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.55;
+            const x = anchor.x + Math.cos(angle) * dist;
+            const z = anchor.z + Math.sin(angle) * dist;
+            const tileX = Math.round(x);
+            const tileZ = Math.round(z);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+
+        return { x: anchor.x + FOUNDRY_DISCOVERY_MIN_DISTANCE, z: anchor.z };
+    }
+
+    // Reveal/power-up the Fabrication Foundry after the O2 counterattack.
+    revealFoundry({ instant = false, randomEdge = false } = {}) {
+        if (!this.foundry) return;
+        const site = (randomEdge || !this.foundry.built) ? this.chooseFoundryDiscoveryPosition() : this.foundry.getPosition();
+        const ship = this.getActiveShip();
+        const cx = Number.isFinite(site?.x) ? site.x : (Number.isFinite(ship?.tileX) ? ship.tileX : 9);
+        const cz = Number.isFinite(site?.z) ? site.z : (Number.isFinite(ship?.tileZ) ? ship.tileZ : 9);
         if (instant) this.foundry.revealInstant(cx, cz);
         else this.foundry.reveal(cx, cz);
+        window.dispatchEvent(new CustomEvent('foundry-discovered', {
+            detail: { x: cx, z: cz, distance: this.player ? Math.round(Math.hypot(this.player.position.x - cx, this.player.position.z - cz)) : null }
+        }));
     }
 
     // Proximity prompt for the Foundry (mirrors the lore-terminal prompt flow).
     // Reuses the console HUD prompt; dispatches show/hide events main.js listens for.
     updateFoundryPrompt() {
-        if (!this.foundry?.isRevealed || !this.player || this.isPlayerDead) {
+        if (!this.isGameplayInputActive() || !this.foundry?.isRevealed || !this.player || this.isPlayerDead) {
             if (this._foundryPromptActive) {
                 this._foundryPromptActive = false;
                 window.dispatchEvent(new CustomEvent('foundry-prompt-clear'));
@@ -4116,32 +5425,50 @@ export class ThreeGame {
     createO2BubbleObjects() {
         if (this.o2BubbleObjects) return;
 
-        const light = new THREE.PointLight(0x8af1ff, 0.62, 6, 2);
+        const light = new THREE.PointLight(O2_SAFE_LIGHT_COLOR, 1.45, 9, 1.45);
         const ringInnerRadius = Math.max(0.2, O2_GENERATOR_RING_BASE_RADIUS - (O2_GENERATOR_RING_BAND_THICKNESS * 0.5));
         const ringOuterRadius = O2_GENERATOR_RING_BASE_RADIUS + (O2_GENERATOR_RING_BAND_THICKNESS * 0.5);
+        const fill = new THREE.Mesh(
+            new THREE.CircleGeometry(O2_GENERATOR_RING_BASE_RADIUS, 72),
+            new THREE.MeshBasicMaterial({
+                color: O2_SAFE_LIGHT_COLOR,
+                transparent: true,
+                opacity: O2_SAFE_FILL_OPACITY,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide,
+                depthWrite: false,
+                fog: false
+            })
+        );
         const ring = new THREE.Mesh(
             new THREE.RingGeometry(ringInnerRadius, ringOuterRadius, 72),
             new THREE.MeshBasicMaterial({
-                color: 0x91f2ff,
+                color: O2_SAFE_LIGHT_COLOR,
                 transparent: true,
                 opacity: 0.24,
                 side: THREE.DoubleSide,
-                depthWrite: false
+                depthWrite: false,
+                fog: false
             })
         );
 
+        fill.rotation.x = -Math.PI / 2;
+        fill.position.y = 0.034;
+        fill.visible = false;
         ring.rotation.x = -Math.PI / 2;
         ring.position.y = 0.035;
         ring.visible = false;
         light.visible = false;
 
         this.scene.add(light);
+        this.scene.add(fill);
         this.scene.add(ring);
 
-        this.o2BubbleObjects = { light, ring };
+        this.o2BubbleObjects = { light, fill, ring };
     }
 
     ensureO2BubbleVisualState() {
+        if (this.o2StartupSequenceActive) return;
         this.createO2BubbleObjects();
         const generatorState = this.getO2GeneratorState();
         const generatorPos = this.getActiveO2GeneratorPosition();
@@ -4186,26 +5513,40 @@ export class ThreeGame {
 
         if (!enabled) {
             this.o2BubbleObjects.light.visible = false;
+            this.o2BubbleObjects.fill.visible = false;
             this.o2BubbleObjects.ring.visible = false;
+            if (this.baseLights) {
+                this.baseLights.dispose();
+            }
             return;
         }
 
         const ringScale = Math.max(0.01, generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS);
         this.o2BubbleObjects.ring.scale.set(ringScale, ringScale, 1);
-        this.o2BubbleObjects.light.position.set(generatorPos.x, 0.68, generatorPos.z);
-        this.o2BubbleObjects.light.distance = Math.max(6, generatorState.radius * 2.15);
+        this.o2BubbleObjects.fill.scale.set(ringScale, ringScale, 1);
+        this.o2BubbleObjects.light.position.set(generatorPos.x, 0.9, generatorPos.z);
+        this.o2BubbleObjects.light.distance = Math.max(10, generatorState.radius * 2.45);
         this.o2BubbleObjects.ring.position.set(generatorPos.x, 0.035, generatorPos.z);
+        this.o2BubbleObjects.fill.position.set(generatorPos.x, 0.034, generatorPos.z);
         this.o2BubbleObjects.light.visible = true;
+        this.o2BubbleObjects.fill.visible = true;
         this.o2BubbleObjects.ring.visible = true;
 
         // Returning to an already-online base: snap the flood-light grid and the
         // Foundry on with no theatrics. The animated versions only play on the live
         // first repair, which fires via the o2-generator-upgraded event before this.
-        if (this.baseLights && !this.baseLights.isIgnited) {
-            this.igniteBaseLights({ instant: true });
-        }
-        if (this.foundry && !this.foundry.isRevealed) {
-            this.revealFoundry({ instant: true });
+        this.revealFoundry({ instant: true });
+        if (this.baseLights) {
+            const ship = this.getActiveShip();
+            if (ship && Number.isFinite(ship.tileX) && Number.isFinite(ship.tileZ)) {
+                const color = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+                if (!this.baseLights.isIgnited) {
+                    this.igniteBaseLights({ instant: true });
+                } else {
+                    this.baseLights.recenter(ship.tileX, ship.tileZ, generatorState.radius);
+                    this.baseLights.setColor(color);
+                }
+            }
         }
     }
 
@@ -4301,12 +5642,7 @@ export class ThreeGame {
             return true;
         }
 
-        const generatorState = this.getO2GeneratorState();
-        if (!generatorState.isOnline) {
-            return false;
-        }
-
-        return this.getActiveO2GeneratorDistance() <= generatorState.radius;
+        return false;
     }
 
     damageShip(ship, amount = 1, reason = 'impact') {
@@ -4364,6 +5700,24 @@ export class ThreeGame {
     getRadarCompassState() {
         if (!this.player) {
             return { active: false, angle: 0, distance: 0 };
+        }
+
+        if (performance.now() < (this._compassCorruptUntil ?? 0)) {
+            const jitter = Math.sin(performance.now() * 0.018) * 80;
+            return { active: true, mode: 'corrupt', label: 'SIGNAL CORRUPT', angle: jitter, distance: 0 };
+        }
+
+        if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
+            const dx = this._blackBoxState.x - this.player.position.x;
+            const dz = this._blackBoxState.z - this.player.position.z;
+            const dist = Math.hypot(dx, dz);
+            return {
+                active: true,
+                mode: 'blackbox',
+                label: 'BLACK BOX',
+                angle: this.planarAngleTo(dx, dz, dist),
+                distance: dist
+            };
         }
 
         // Beat 4 objective: once the Foundry is powered, the compass points to it
@@ -4458,6 +5812,8 @@ export class ThreeGame {
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - Math.max(0, amount));
         if (this.playerVitals.hp === previousHp) return;
 
+        // The Director eases off right after the player is hurt.
+        this.bunkerDirector?.notifyThreat();
         this.triggerCameraShake(0.22, 0.4);
         this.emitHealthState();
         window.dispatchEvent(new CustomEvent('player-damaged', {
@@ -4482,9 +5838,38 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         this.isPlayerDead = true;
         this.closeConsoleModal();
+        const inventory = this.getSessionInventory();
+        const salvage = {
+            tech: inventory.weapon ?? 0,
+            coin: inventory.coin ?? 0,
+            med: inventory.health ?? 0
+        };
+        const deathLog = [
+            `${this.playerType} operator signal lost.`,
+            `Cause: ${reason}.`,
+            `Depth tier: ${this.getDepthTierName(this.maxDepthTierReached)}.`,
+            `Recoverable salvage: ${salvage.tech} TECH / ${salvage.coin} COIN / ${salvage.med} MED.`
+        ].join(' ');
+        const blackBoxState = blackBoxStore.recordDeath({
+            x: this.player?.position?.x ?? 0,
+            z: this.player?.position?.z ?? 0,
+            depth: this.maxDepthTierReached,
+            classType: this.playerType,
+            salvage,
+            cause: reason,
+            log: deathLog
+        });
+        this.showBunkerLine(getDialogueLine('death') ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.');
         window.dispatchEvent(new CustomEvent('player-death', {
-            detail: { reason }
+            detail: { reason, blackBox: blackBoxState }
         }));
+    }
+
+    abortMission() {
+        if (this.isPlayerDead || this.performanceProfile !== 'gameplay') return false;
+        this.setInputEnabled(false);
+        this.handleDeath('mission-abort');
+        return true;
     }
 
     clearLoadedChunksForRunReset() {
@@ -4528,9 +5913,15 @@ export class ThreeGame {
         this.keys.down = false;
         this.keys.left = false;
         this.keys.right = false;
+        this.keys.shift = false;
         this.virtualInput.x = 0;
         this.virtualInput.z = 0;
         this.isMoving = false;
+        this.isPlayerFalling = false;
+        if (this.player) {
+            this.player.scale.set(1, 1, 1);
+            this.player.rotation.set(0, 0, 0);
+        }
 
         const spawn = this.getSpawnTile();
         this.player.position.set(spawn.x, 0, spawn.y);
@@ -4548,6 +5939,16 @@ export class ThreeGame {
             this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
             this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
             this.hadNearDeath = false;
+            this._lastLoopStepKey = null; // force the loop-state HUD to re-emit
+            this.bunkerDirector?.reset();
+            this._blackoutWaveTimer = 0;
+            this._extractionLockdownFired = false;
+            this._terminalEvent = null;
+            this._terminalEventResolvedIds.clear();
+            this.foundry?.reset?.();
+            this._foundryPromptActive = false;
+            this.clearBlackBoxMarker();
+            this._blackBoxState = blackBoxStore.load();
             this._initClassAbility();
             if (this.crashedShips) {
                 for (const ship of this.crashedShips) {
@@ -4602,6 +6003,7 @@ export class ThreeGame {
         }
 
         this.ensureO2BubbleVisualState();
+        this.ensureBlackBoxMarker();
         this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
         if (!skipEffects) {
             this.spawnShipPoofEffect(spawn.x, spawn.y, PLAYER_COLORS[this.playerType] ?? 0xffffff);
@@ -4632,8 +6034,12 @@ export class ThreeGame {
         };
     }
 
-    handleExtraction() {
+    handleExtraction({ skipElevator = false } = {}) {
         if (this.missionState?.status === 'extracted') return;
+        if (!skipElevator && this.missionState?.status !== 'elevator_ready') {
+            this.startElevatorDownSequence();
+            return;
+        }
         if (this.missionState) this.missionState.status = 'extracted';
         this.inputEnabled = false;
 
@@ -4700,14 +6106,32 @@ export class ThreeGame {
         return null;
     }
 
+    // Ability key + display label for the active class (drives the HUD panel).
+    getClassAbilityInfo() {
+        const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
+        return { key: stats.abilityKey, label: stats.abilityLabel };
+    }
+
     _initClassAbility() {
         const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
+        let cooldownMax = stats.abilityCooldown;
+        let activeDuration = stats.abilityDuration;
+
+        if (this.bank) {
+            if (this.bank.isSkillUnlocked('scout_special_upgrade_1')) {
+                activeDuration += 1.0;
+            }
+            if (this.bank.isSkillUnlocked('scout_special_upgrade_2')) {
+                cooldownMax -= 2.0;
+            }
+        }
+
         this.classAbility = {
-            cooldownMax: stats.abilityCooldown,
+            cooldownMax: cooldownMax,
             cooldownRemaining: 0,
             active: false,
             activeTimer: 0,
-            activeDuration: stats.abilityDuration
+            activeDuration: activeDuration
         };
         this._abilityMoveSpeedMult = 1.0;
         this._abilityImmune = false;
@@ -4715,8 +6139,17 @@ export class ThreeGame {
         this._abilityRefillMult = 1.0;
     }
 
+    isSpecialAbilityUnlocked() {
+        return true;
+    }
+
     triggerClassAbility() {
         if (!this.isGameplayInputActive()) return;
+        if (!this.isSpecialAbilityUnlocked()) {
+            window.AudioManager?.play('ui_error', { volume: 0.32, playbackRate: 0.9, bus: 'sfx' });
+            this.showBunkerLine('MOTHERSHIP: EXOSUIT SPECIAL OFFLINE. UNLOCK IN SKILL TREE [TAB].');
+            return;
+        }
         if (this.classAbility.cooldownRemaining > 0) {
             window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.4, bus: 'sfx' });
             return;
@@ -4754,7 +6187,7 @@ export class ThreeGame {
                 }));
             } else if (abilityKey === 'sprint') {
                 this._abilityMoveSpeedMult = 3.0;
-                this._abilityO2DrainMult = 2.0;
+                this._abilityO2DrainMult = 4.0;
                 // Spawn trail particle every ~6 frames
                 if (this.player && Math.random() < 0.45) {
                     this._spawnSprintTrail();
@@ -4780,6 +6213,174 @@ export class ThreeGame {
                 ability: abilityKey
             }
         }));
+    }
+
+    updateRadarScans(delta) {
+        if (!this.activeRadarScans) this.activeRadarScans = [];
+        for (const scan of this.activeRadarScans) {
+            scan.age += delta;
+            scan.currentRadius = (scan.age / scan.duration) * scan.maxRadius;
+        }
+        this.activeRadarScans = this.activeRadarScans.filter(scan => scan.age < scan.duration);
+
+        if (this.radarScanCooldownRemaining > 0) {
+            this.radarScanCooldownRemaining = Math.max(0, this.radarScanCooldownRemaining - delta);
+            window.dispatchEvent(new CustomEvent('scan-cooldown-tick', {
+                detail: {
+                    remaining: this.radarScanCooldownRemaining,
+                    max: this.radarScanCooldownMax
+                }
+            }));
+        }
+    }
+
+    spawnRadarPingHighlight(target, colorHex = 0x00d2ff) {
+        if (!target) return;
+        const geom = new THREE.RingGeometry(0.12, 0.22, 4);
+        const mat = new THREE.MeshBasicMaterial({
+            color: colorHex,
+            transparent: true,
+            opacity: 0.95,
+            depthTest: false,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.rotation.x = -Math.PI / 4;
+        mesh.rotation.z = Math.PI / 4;
+        mesh.position.y = 1.1;
+        mesh.renderOrder = 9999;
+        this.scene.add(mesh);
+
+        this.transientEffects.push({
+            mesh,
+            age: 0,
+            duration: 5.0,
+            update: (dt, age) => {
+                if (target && target.parent) {
+                    mesh.position.x = target.position.x;
+                    mesh.position.z = target.position.z;
+                }
+                mesh.position.y = 1.1 + Math.sin(age * 6.5) * 0.08;
+                mesh.rotation.y += 0.04;
+                const t = age / 5.0;
+                mat.opacity = 0.95 * (1 - t * t);
+            },
+            dispose: () => {
+                geom.dispose();
+                mat.dispose();
+            }
+        });
+    }
+
+    triggerRadarScan() {
+        if (!this.isGameplayInputActive()) return;
+        if (this.radarScanCooldownRemaining > 0) {
+            window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.4, bus: 'sfx' });
+            return;
+        }
+        if (!this.player) return;
+
+        let cdMax = 4.0;
+        if (this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_special_upgrade_2') && this.classAbility.active) {
+            cdMax *= 0.5;
+        }
+        this.radarScanCooldownRemaining = cdMax;
+
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+
+        const upgrade1 = this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_radar_1');
+        const maxRadius = 18.0 * (upgrade1 ? 1.3 : 1.0);
+
+        if (!this.activeRadarScans) this.activeRadarScans = [];
+        this.activeRadarScans.push({
+            x: px,
+            z: pz,
+            currentRadius: 0.1,
+            maxRadius: maxRadius,
+            age: 0,
+            duration: 1.2
+        });
+
+        window.AudioManager?.play('ui_scan_ping', { volume: 0.55, playbackRate: 0.48, bus: 'sfx' });
+
+        const ringGeo = new THREE.RingGeometry(0.96, 1.0, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0x00d2ff,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.rotation.x = -Math.PI / 2;
+        ringMesh.position.y = 0.05;
+
+        const scanGroup = new THREE.Group();
+        scanGroup.position.set(px, 0, pz);
+        scanGroup.add(ringMesh);
+        this.scene.add(scanGroup);
+
+        const pingedIds = new Set();
+
+        this.transientEffects.push({
+            mesh: scanGroup,
+            age: 0,
+            duration: 1.2,
+            update: (dt, age) => {
+                const t = age / 1.2;
+                const currentRadius = t * maxRadius;
+                ringMesh.scale.set(currentRadius, currentRadius, 1);
+                ringMat.opacity = 0.8 * (1 - t * t);
+
+                for (const sprite of this.scatterSprites) {
+                    if (!sprite || !sprite.userData || pingedIds.has(sprite.uuid)) continue;
+                    const isEnemy = this.isEnemyType(sprite.userData.type);
+                    const isBB = sprite.userData.isBlackBoxMarker;
+                    const isTerminal = sprite.userData.type === 'lore_terminal';
+                    if (!isEnemy && !isBB && !isTerminal) continue;
+
+                    const dx = sprite.position.x - px;
+                    const dz = sprite.position.z - pz;
+                    const d = Math.hypot(dx, dz);
+                    if (d <= currentRadius) {
+                        pingedIds.add(sprite.uuid);
+                        this.spawnRadarPingHighlight(sprite, 0x00d2ff);
+                    }
+                }
+
+                for (const pickup of this.pickupMeshes) {
+                    if (!pickup || pingedIds.has(pickup.uuid)) continue;
+                    const dx = pickup.position.x - px;
+                    const dz = pickup.position.z - pz;
+                    const d = Math.hypot(dx, dz);
+                    if (d <= currentRadius) {
+                        pingedIds.add(pickup.uuid);
+                        this.spawnRadarPingHighlight(pickup, 0x38bdf8);
+                    }
+                }
+
+                if (this.foundry && this.foundry.built && !pingedIds.has('foundry')) {
+                    const fPos = this.foundry.getPosition();
+                    if (fPos) {
+                        const dx = fPos.x - px;
+                        const dz = fPos.z - pz;
+                        const d = Math.hypot(dx, dz);
+                        if (d <= currentRadius) {
+                            pingedIds.add('foundry');
+                            this.spawnRadarPingHighlight(this.foundry.group, 0x00d2ff);
+                        }
+                    }
+                }
+            },
+            dispose: () => {
+                ringGeo.dispose();
+                ringMat.dispose();
+            }
+        });
+
+        window.dispatchEvent(new CustomEvent('radar-scan-triggered'));
     }
 
     _spawnSprintTrail() {
@@ -4821,15 +6422,25 @@ export class ThreeGame {
         this._wasInBubble = inBubble;
 
         if (inBubble) {
-            const refillRate = (reactorUpgrade ? generatorState.refillRate * 1.2 : generatorState.refillRate)
+            let refillRate = (reactorUpgrade ? generatorState.refillRate * 1.2 : generatorState.refillRate)
                 * (this._abilityRefillMult ?? 1.0);
+            if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_special_upgrade_2') && this.classAbility.active) {
+                refillRate *= 1.20;
+            }
             this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
             let drainRate = O2_DRAIN_RATE_PCT_PER_SEC
                 * (this.o2DrainMult ?? 1.0)
                 * (this.currentBiomeO2DrainMult ?? 1.0)
-                * (this._abilityO2DrainMult ?? 1.0);
+                * (this._abilityO2DrainMult ?? 1.0)
+                // THIN AIR run modifier: reserves are poor beyond the ship field.
+                * (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0);
+            if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_o2_efficiency')) {
+                drainRate *= 0.85;
+            } else if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_battery_1')) {
+                drainRate *= 0.90;
+            }
             if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
                 drainRate *= O2_DRAIN_RATE_DANGER_MULT;
             }
@@ -4858,14 +6469,16 @@ export class ThreeGame {
             }
         }
 
-        if (this.o2BubbleObjects?.ring?.visible) {
+        if (this.o2BubbleObjects?.ring?.visible && !this.o2StartupSequenceActive) {
             const t = performance.now() * 0.001;
             const ringBaseScale = Math.max(0.01, generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS);
             const pulse = ringBaseScale * (0.97 + Math.sin(t * 2.2) * 0.06);
             const opacity = 0.16 + Math.sin(t * 2.6) * 0.06;
             this.o2BubbleObjects.ring.scale.set(pulse, pulse, 1);
             this.o2BubbleObjects.ring.material.opacity = opacity;
-            this.o2BubbleObjects.light.intensity = 0.5 + Math.sin(t * 2.4) * 0.1;
+            this.o2BubbleObjects.fill.scale.set(pulse, pulse, 1);
+            this.o2BubbleObjects.fill.material.opacity = O2_SAFE_FILL_OPACITY + Math.sin(t * 2.1) * 0.035;
+            this.o2BubbleObjects.light.intensity = 1.35 + Math.sin(t * 2.4) * 0.18;
         }
 
         this.o2DispatchTimer += delta;
@@ -4884,8 +6497,37 @@ export class ThreeGame {
             this.isMoving = false;
             return;
         }
+
+        // Handle falling in hole state
+        if (this.isPlayerFalling) {
+            this.isMoving = false;
+            if (this.player) {
+                this.player.position.y -= 3.5 * delta;
+                this.player.rotation.y += 8.0 * delta;
+                const newScale = Math.max(0, this.player.scale.x - 2.5 * delta);
+                this.player.scale.set(newScale, newScale, newScale);
+                
+                if (this.player.position.y <= -2.5) {
+                    this.isPlayerFalling = false;
+                    this.takeDamage(999, 'abyss');
+                }
+            }
+            return;
+        }
+
         if (this.performanceProfile === 'gameplay' && !this.isGameplayInputActive()) {
             this.clearGameplayInputState();
+        }
+
+        // Check if player stepped on a hole
+        if (this.player && this.performanceProfile === 'gameplay') {
+            if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
+                this.isPlayerFalling = true;
+                this.setInputEnabled(false);
+                window.AudioManager?.play('amb_metal_stress', { volume: 0.8, playbackRate: 0.6 });
+                this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
+                return;
+            }
         }
 
         // Handle slow and poison status effects
@@ -5042,9 +6684,22 @@ export class ThreeGame {
             }
             const distToShip = this.getActiveO2GeneratorDistance();
             if (distToShip < 3.5) {
+                // Greed has teeth (doc 11 §4.C): the deeper you went, the harder the
+                // bunker fights your departure. Fires once as extraction charging begins.
+                if (!this._extractionLockdownFired) {
+                    this._extractionLockdownFired = true;
+                    const depth = this.maxDepthTierReached ?? 0;
+                    if (depth >= 2) {
+                        this.showBunkerLine('DEPARTURE DETECTED. RETENTION PROTOCOL ENGAGED. PLEASE REMAIN FOR PROCESSING.');
+                        this.spawnPatrolNearPlayer();
+                        if (depth >= 3) this.corruptCompass(12);
+                    } else {
+                        this.showBunkerLine('EXTRACTION UPLINK FORMING. TRY NOT TO DIE DURING PAPERWORK.');
+                    }
+                }
                 this.missionState.extractionTimer = (this.missionState.extractionTimer ?? 0) + delta;
                 if (this.missionState.extractionTimer >= 10) {
-                    this.handleExtraction();
+                    this.startElevatorDownSequence();
                     return;
                 }
                 window.dispatchEvent(new CustomEvent('extraction-progress', {
@@ -5057,6 +6712,48 @@ export class ThreeGame {
                 }));
             }
         }
+
+        if (this.missionState?.status === 'elevator_down' && !this.isPlayerDead) {
+            this.missionState.elevatorTimer = (this.missionState.elevatorTimer ?? 0) + delta;
+            this.missionState.elevatorThreatTimer = (this.missionState.elevatorThreatTimer ?? 0) + delta;
+            if (this.missionState.elevatorThreatTimer >= 15) {
+                this.missionState.elevatorThreatTimer = 0;
+                this.spawnPatrolNearPlayer();
+            }
+            if (this.missionState.elevatorTimer >= 90) {
+                this.missionState.status = 'elevator_ready';
+                window.dispatchEvent(new CustomEvent('elevator-choice-ready'));
+            } else {
+                window.dispatchEvent(new CustomEvent('elevator-progress', {
+                    detail: { progress: Math.min(1, this.missionState.elevatorTimer / 90), secondsRemaining: Math.ceil(90 - this.missionState.elevatorTimer) }
+                }));
+            }
+        }
+    }
+
+    startElevatorDownSequence() {
+        if (!this.missionState || this.missionState.status === 'elevator_down' || this.missionState.status === 'elevator_ready') return;
+        this.missionState.status = 'elevator_down';
+        this.missionState.elevatorTimer = 0;
+        this.missionState.elevatorThreatTimer = 12;
+        this.triggerLightsOut(14);
+        this.showBunkerLine('ELEVATOR DOWN SEQUENCE ACCEPTED. ARRIVAL IN NINETY SECONDS. HOLD THE WRECK.');
+        window.dispatchEvent(new CustomEvent('elevator-sequence-started'));
+    }
+
+    resolveElevatorChoice(choice = 'extract') {
+        if (this.missionState?.status !== 'elevator_ready') return;
+        if (choice === 'descend') {
+            this.missionState.status = 'active';
+            this.missionState.extractionTimer = 0;
+            this.missionState.targetDepth = Math.max(this.missionState.targetDepth ?? 0, this.getActiveO2GeneratorDistance() + 90);
+            this.globalSeedOffset = (this.globalSeedOffset + 7919) | 0;
+            this.syncVisibleChunks(true);
+            this.showBunkerLine('DESCENT CONFIRMED. DEEPER SECTOR INDEX LOADED. THIS WAS A CHOICE.');
+            window.dispatchEvent(new CustomEvent('elevator-descended'));
+            return;
+        }
+        this.handleExtraction({ skipElevator: true });
     }
 
     onNewChunkDiscovered(chunkX, chunkY) {
@@ -5323,9 +7020,14 @@ export class ThreeGame {
         const day = this.getDayFactor();
         const lerp = THREE.MathUtils.lerp;
         // Extra smoothing plus tighter ranges keeps dusk/dawn transitions subtle.
-        const dayBlend = this.nightVision ? 1.0 : THREE.MathUtils.smoothstep(day, 0.1, 0.9);
-        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.62, 1.0, dayBlend);
-        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.45, 1.0, dayBlend);
+        let dayBlend = this.nightVision ? 1.0 : THREE.MathUtils.smoothstep(day, 0.1, 0.9);
+        // Terminal "lights-out" downside (triggerLightsOut): hold full darkness for
+        // the event's duration via the normal lighting pipeline, then release.
+        if (!this.nightVision && performance.now() < (this._lightsOutUntil ?? 0)) {
+            dayBlend = 0;
+        }
+        this.ambientLight.intensity = this.baseLightIntensity.ambient * lerp(0.72, 1.0, dayBlend);
+        this.directionalLight.intensity = this.baseLightIntensity.directional * lerp(0.55, 1.0, dayBlend);
         this.fillLight.intensity = this.baseLightIntensity.fill * lerp(0.72, 1.05, dayBlend);
         const weatherLightMult = this.nightVision ? 1.0 : (this.weather?.lightMult ?? 1);
         if (weatherLightMult !== 1) {
@@ -5347,12 +7049,12 @@ export class ThreeGame {
         }
         if (this.playerForwardSpotLight) {
             const pulse = this.isMoving ? 0.08 * (0.5 + 0.5 * Math.sin(performance.now() * 0.013)) : 0;
-            this.playerForwardSpotLight.intensity = 3.1 * lerp(1.4, 0.72, dayBlend) * (1 + pulse);
-            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.15, 0.88, dayBlend);
+            this.playerForwardSpotLight.intensity = 5.8 * lerp(2.25, 0.82, dayBlend) * (1 + pulse);
+            this.playerForwardSpotLight.distance = SUIT_CONE_LIGHT_DISTANCE * lerp(1.32, 0.88, dayBlend);
             this.playerForwardSpotLight.angle = SUIT_CONE_LIGHT_ANGLE * lerp(1.08, 0.92, dayBlend);
         }
         if (this.playerForwardCone?.material) {
-            this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(1.15, 0.42, dayBlend);
+            this.playerForwardCone.material.opacity = SUIT_CONE_VISUAL_OPACITY * lerp(0.72, 0.28, dayBlend);
         }
         if (this.playerLightPool?.material) {
             this.playerLightPool.material.opacity = SUIT_LOCAL_LIGHT_POOL_OPACITY * lerp(1.85, 0.48, dayBlend);
@@ -5361,22 +7063,28 @@ export class ThreeGame {
             this.playerEmitterGlow.material.opacity = 0.58 * lerp(1.16, 0.46, dayBlend);
         }
 
-        // Fog eases in at night (color stays under biome control; only the range
-        // is touched here). Keep the far plane close enough to remain visible.
-        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 0.75, this.baseFogRange.near * 1.05, dayBlend);
-        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 0.72, this.baseFogRange.far * 1.25, dayBlend);
+        // Keep night visibility screen-radial. Three.js fog is camera-depth
+        // based in this isometric view, which makes the top of the canvas darker
+        // than the bottom and makes "up-screen" flashlight aim feel weaker.
+        // The darkness canvas owns night falloff; fog stays mostly atmospheric.
+        this.scene.fog.near = this.nightVision ? 1000 : lerp(this.baseFogRange.near * 4.0, this.baseFogRange.near * 1.05, dayBlend);
+        this.scene.fog.far = this.nightVision ? 10000 : lerp(this.baseFogRange.far * 12.0, this.baseFogRange.far * 1.25, dayBlend);
 
         // Weather can further reduce visibility (applied multiplicatively; day/night
         // resets fog each frame so this never accumulates).
         const wMult = this.nightVision ? 1 : (this.weather?.fogFarMult ?? 1);
         if (wMult !== 1) {
-            this.scene.fog.far *= wMult;
-            this.scene.fog.near *= Math.max(0.7, wMult);
+            this.scene.fog.far *= Math.max(0.72, wMult);
+            this.scene.fog.near *= Math.max(0.9, wMult);
         }
 
         // Radial darkness around the player. Darkest at night and in heavy weather.
         const weatherDark = this.nightVision ? 0 : ((1 - wMult) * 0.6);
-        const darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.44, 0.02, dayBlend) + weatherDark, 0, 0.72);
+        let darkAlpha = this.nightVision ? 0 : THREE.MathUtils.clamp(lerp(0.30, 0.02, dayBlend) + weatherDark, 0, 0.55);
+        const generatorState = this.getO2GeneratorState?.();
+        if (generatorState?.isOnline && this.getActiveO2GeneratorDistance() <= generatorState.radius) {
+            darkAlpha *= 0.18;
+        }
         this.updatePlayerDarkness(darkAlpha);
     }
 
@@ -5488,9 +7196,25 @@ export class ThreeGame {
     // circle around the player sprite instead of a camera-depth band.
     updatePlayerDarkness(alpha) {
         const overlay = this.darknessOverlay;
-        if (!overlay || !this.player || !this.camera) return;
+        const ctx = this.darknessOverlayContext;
+        if (!overlay || !ctx || !this.player || !this.camera) return;
         const w = this.container.clientWidth || 1;
         const h = this.container.clientHeight || 1;
+        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        const targetW = Math.max(1, Math.round(w * dpr));
+        const targetH = Math.max(1, Math.round(h * dpr));
+        if (overlay.width !== targetW || overlay.height !== targetH) {
+            overlay.width = targetW;
+            overlay.height = targetH;
+            overlay.style.width = `${w}px`;
+            overlay.style.height = `${h}px`;
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        if (alpha <= 0.02) {
+            overlay.style.opacity = '0';
+            return;
+        }
 
         // Project the player's torso to screen pixels. The camera looks at this
         // anchor, so the bubble lands on the player and tracks them as they move.
@@ -5512,17 +7236,76 @@ export class ThreeGame {
         // dark instead of leaving a permanently-lit band. The final stop colour
         // continues past darkRadius, so the screen corners stay solid.
         const minDim = Math.min(w, h);
-        const clearRadius = Math.max(96, minDim * 0.16);
-        const darkRadius = clearRadius + minDim * 0.30;
+        const clearRadius = Math.max(154, minDim * 0.24);
+        const darkRadius = clearRadius + minDim * 0.34;
         const midRadius = clearRadius + (darkRadius - clearRadius) * 0.5;
 
-        overlay.style.background =
-            `radial-gradient(circle at ${cx.toFixed(0)}px ${cy.toFixed(0)}px,` +
-            `rgba(${r},${g},${b},0) 0px,` +
-            `rgba(${r},${g},${b},0) ${clearRadius.toFixed(0)}px,` +
-            `rgba(${r},${g},${b},${(alpha * 0.5).toFixed(3)}) ${midRadius.toFixed(0)}px,` +
-            `rgba(${r},${g},${b},${alpha.toFixed(3)}) ${darkRadius.toFixed(0)}px)`;
-        overlay.style.opacity = alpha > 0.02 ? '1' : '0';
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.globalCompositeOperation = 'destination-out';
+        const playerClear = ctx.createRadialGradient(cx, cy, 0, cx, cy, darkRadius);
+        const clearStop = THREE.MathUtils.clamp(clearRadius / darkRadius, 0, 0.96);
+        const midStop = THREE.MathUtils.clamp(midRadius / darkRadius, clearStop + 0.01, 0.98);
+        playerClear.addColorStop(0, 'rgba(0, 0, 0, 1)');
+        playerClear.addColorStop(clearStop, 'rgba(0, 0, 0, 1)');
+        playerClear.addColorStop(midStop, 'rgba(0, 0, 0, 0.5)');
+        playerClear.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = playerClear;
+        ctx.beginPath();
+        ctx.arc(cx, cy, darkRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        this.carveFlashlightDarkness(ctx, w, h);
+        ctx.globalCompositeOperation = 'source-over';
+        overlay.style.opacity = '1';
+    }
+
+    buildFlashlightScreenPath(ctx, points) {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.closePath();
+    }
+
+    carveFlashlightDarkness(ctx, w, h) {
+        const cone = this.playerForwardCone;
+        const attr = this._conePositionAttr;
+        if (
+            this.nightVision ||
+            !cone ||
+            !attr ||
+            !this.camera ||
+            !this.playerForwardSpotLight ||
+            this.playerForwardSpotLight.intensity <= 0.01
+        ) {
+            return;
+        }
+
+        cone.updateMatrixWorld(true);
+        const points = this._darknessConeScreenPoints;
+        points.length = 0;
+        for (let i = 0; i < attr.count; i++) {
+            this._darknessConePoint.fromBufferAttribute(attr, i);
+            cone.localToWorld(this._darknessConePoint);
+            this._darknessConePoint.project(this.camera);
+            points.push({
+                x: (this._darknessConePoint.x * 0.5 + 0.5) * w,
+                y: (-this._darknessConePoint.y * 0.5 + 0.5) * h
+            });
+        }
+        if (points.length < 3) return;
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.filter = `blur(${THREE.MathUtils.clamp(Math.min(w, h) * 0.014, 7, 13).toFixed(1)}px)`;
+        this.buildFlashlightScreenPath(ctx, points);
+        ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+        ctx.fill();
+        ctx.restore();
     }
 
     hasWallBetween(x1, z1, x2, z2) {
@@ -5544,6 +7327,22 @@ export class ThreeGame {
 
     getFogOfWarVisibility(x, z) {
         if (!this.player || this.nightVision) return 1;
+
+        if (this.activeRadarScans) {
+            for (const scan of this.activeRadarScans) {
+                const dist = Math.hypot(x - scan.x, z - scan.z);
+                if (dist <= scan.currentRadius) {
+                    return 1.0;
+                }
+            }
+        }
+
+        const generatorState = this.getO2GeneratorState?.();
+        const generatorPos = this.getActiveO2GeneratorPosition?.();
+        if (generatorState?.isOnline && generatorPos) {
+            const o2Dist = Math.hypot(x - generatorPos.x, z - generatorPos.z);
+            if (o2Dist <= generatorState.radius) return 1;
+        }
         const distance = Math.hypot(x - this.player.position.x, z - this.player.position.z);
         if (distance <= 0.001) return 1;
 
@@ -5614,7 +7413,7 @@ export class ThreeGame {
         });
         const points = new THREE.Points(geometry, material);
         points.frustumCulled = false;
-        points.renderOrder = 7;
+        points.renderOrder = 1;
         this.scene.add(points);
         this.weather.points = points;
         this.weather.geometry = geometry;
@@ -5726,7 +7525,7 @@ export class ThreeGame {
         if (!this.scene) return;
         const splash = new THREE.Group();
         splash.position.set(x, 0, z);
-        splash.renderOrder = 20;
+        splash.renderOrder = 1;
 
         const ring = new THREE.Mesh(
             new THREE.RingGeometry(0.06, 0.13, 16),
@@ -5740,7 +7539,7 @@ export class ThreeGame {
         );
         ring.rotation.x = -Math.PI / 2;
         ring.position.y = 0.042;
-        ring.renderOrder = 20;
+        ring.renderOrder = 1;
         splash.add(ring);
 
         const dropletGeo = new THREE.CircleGeometry(0.024, 10);
@@ -5759,6 +7558,7 @@ export class ThreeGame {
             );
             droplet.rotation.x = -Math.PI / 2;
             droplet.position.set((Math.random() - 0.5) * 0.04, 0.046 + Math.random() * 0.012, (Math.random() - 0.5) * 0.04);
+            droplet.renderOrder = 1;
             splash.add(droplet);
             const ang = Math.random() * Math.PI * 2;
             const speed = (0.2 + Math.random() * 0.3) * scaleBoost;
@@ -6182,7 +7982,7 @@ export class ThreeGame {
         this.weaponReloading = true;
         this.weaponReloadTimer = WEAPON_RELOAD_DURATION;
         this.emitWeaponClipState();
-        window.AudioManager?.play('door_gears_spin', { volume: 0.22, playbackRate: 1.22 });
+        window.AudioManager?.play('weapon_reload', { volume: 0.52 });
         return true;
     }
 
@@ -6250,12 +8050,16 @@ export class ThreeGame {
         if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return;
 
         this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
-        this.weaponFireCooldown = WEAPON_FIRE_COOLDOWN;
+        let fireCd = WEAPON_FIRE_COOLDOWN;
+        if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
+            fireCd /= 1.20;
+        }
+        this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
 
         this.spawnPlayerShot(normX, normZ);
 
-        window.AudioManager?.play('ui_scan_ping', { volume: 0.34, playbackRate: 1.42 });
+        window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
 
         if (this.weaponClipAmmo <= 0) {
             this.requestReload();
@@ -6266,7 +8070,10 @@ export class ThreeGame {
         const classDamage = CLASS_STATS[this.playerType]?.projectileDamage ?? PROJECTILE_DAMAGE;
         const bonuses = this.weaponUpgradeBonuses ?? null;
         const damage = classDamage + (bonuses?.shotDamage ?? 0);
-        const speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
+        let speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
+        if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
+            speed *= 1.20;
+        }
         const shotAmount = FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0;
         const spreads = MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
 
@@ -6521,13 +8328,46 @@ export class ThreeGame {
         const nz = normalZ / len;
 
         const geo = new THREE.PlaneGeometry(0.3, 0.3);
-        const mat = new THREE.MeshBasicMaterial({
-            color: 0x0e0a07,
+
+        const vertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            uniform sampler2D map;
+            uniform float uCooling;
+            uniform float uOpacity;
+            varying vec2 vUv;
+            void main() {
+                vec4 texColor = texture2D(map, vUv);
+                if (texColor.a < 0.05) {
+                    discard;
+                }
+                float gray = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+                // 0.45 factor mimics a charred dark soot color
+                vec3 cooledColor = vec3(gray * 0.45);
+                vec3 finalColor = mix(texColor.rgb, cooledColor, uCooling);
+                gl_FragColor = vec4(finalColor, texColor.a * uOpacity);
+            }
+        `;
+
+        const mat = new THREE.ShaderMaterial({
+            uniforms: {
+                map: { value: this.scatterTextures.decal_scars },
+                uCooling: { value: 0.0 },
+                uOpacity: { value: 0.95 }
+            },
+            vertexShader,
+            fragmentShader,
             transparent: true,
-            opacity: 0.78,
             depthWrite: false,
             depthTest: true
         });
+
         const mesh = new THREE.Mesh(geo, mat);
         // Offset slightly off the face to avoid z-fighting; sit at mid-wall height.
         mesh.position.set(x + nx * 0.02, 0.45, z + nz * 0.02);
@@ -6543,7 +8383,10 @@ export class ThreeGame {
             update(delta) {
                 this.age += delta;
                 const t = Math.min(this.age / duration, 1);
-                mat.opacity = 0.78 * (1 - t * t);
+                // Cool down over the first 1.5 seconds of the decal's life
+                const coolProgress = Math.min(this.age / 1.5, 1.0);
+                mat.uniforms.uCooling.value = coolProgress;
+                mat.uniforms.uOpacity.value = 0.78 * (1 - t * t);
             },
             dispose() {
                 geo.dispose();
@@ -6699,7 +8542,13 @@ export class ThreeGame {
         this.pendingChunkMounts = this.pendingChunkMounts.filter((entry) => needed.has(entry.key));
         this.pendingChunkMountKeys = new Set(this.pendingChunkMounts.map((entry) => entry.key));
 
-        this.processPendingChunkMounts(force ? 1 : this.maxChunkMountsPerFrame);
+        const frameAlreadySlow = (this._lastFrameDeltaForChunkMounts ?? 0) > 0.024;
+        const chunkMountLimit = force
+            ? 1
+            : frameAlreadySlow
+                ? 0
+                : this.maxChunkMountsPerFrame;
+        this.processPendingChunkMounts(chunkMountLimit);
 
         for (const [key, group] of this.chunkMeshes.entries()) {
             if (needed.has(key)) continue;
@@ -6806,28 +8655,165 @@ export class ThreeGame {
     mountChunk(chunkX, chunkY) {
         const grid = this.getOrCreateChunk(chunkX, chunkY);
         const group = new THREE.Group();
-        const wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
-        const floorGeometry = new THREE.PlaneGeometry(1, 1);
+
+        // Single merged floor for the whole chunk (see chunkFloorGeometry note).
+        const chunkCenter = (this.chunkSize - 1) / 2;
+        const chunkFloor = new THREE.Mesh(this.chunkFloorGeometry, this.floorMaterial);
+        chunkFloor.rotation.x = -Math.PI / 2;
+        chunkFloor.position.set(
+            chunkX * this.chunkSize + chunkCenter,
+            0,
+            chunkY * this.chunkSize + chunkCenter
+        );
+        chunkFloor.receiveShadow = true;
+        group.add(chunkFloor);
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
 
-                const floor = new THREE.Mesh(floorGeometry, this.floorMaterial);
-                floor.rotation.x = -Math.PI / 2;
-                floor.position.set(worldX, 0, worldZ);
-                floor.receiveShadow = true;
-                group.add(floor);
-
                 if (grid[localY][localX] !== '#') continue;
 
-                const wall = new THREE.Mesh(wallGeometry, this.wallMaterial);
-                wall.position.set(worldX, this.wallHeight / 2, worldZ);
-                wall.castShadow = true;
-                wall.receiveShadow = true;
-                wall.userData.isWall = true;
-                group.add(wall);
+                const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldZ) + 999);
+                const wallTypeRoll = wallTypeRng();
+
+                if (wallTypeRoll < 0.06) {
+                    // Hole / Pit (flat on the ground)
+                    const holeMesh = new THREE.Mesh(this.floorGeometry, this.holeMaterial);
+                    holeMesh.rotation.x = -Math.PI / 2;
+                    // Various sizes scaled up based on seeded random (from 1.5 up to 4.0)
+                    const sizeFactor = wallTypeRoll / 0.06;
+                    const scale = 1.5 + sizeFactor * 2.5;
+                    holeMesh.scale.set(scale, scale, 1);
+                    // Random organic rotation around the Z axis (the tile normal)
+                    holeMesh.rotation.z = wallTypeRng() * Math.PI * 2;
+                    holeMesh.position.set(worldX, 0.005, worldZ);
+                    holeMesh.receiveShadow = true;
+                    group.add(holeMesh);
+                } else if (wallTypeRoll < 0.22) {
+                    // Hazard Wall (pulsing warning siren)
+                    const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    wall.position.set(worldX, this.wallHeight / 2, worldZ);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    wall.userData.isWall = true;
+                    group.add(wall);
+
+                    const sirenBase = new THREE.Mesh(this.sirenBaseGeometry, this.sirenBaseMaterial);
+                    sirenBase.position.y = this.wallHeight / 2 + 0.05;
+                    wall.add(sirenBase);
+
+                    // Emissive dome only — NO per-wall PointLight. Dozens of dynamic
+                    // lights per chunk forced a full shader recompile on every mount
+                    // (the chunk-load stall) and crushed forward rendering. The shared
+                    // dome material pulses instead (see the siren animation loop).
+                    const sirenDome = new THREE.Mesh(this.sirenDomeGeometry, this.sirenDomeMaterial);
+                    sirenDome.position.y = this.wallHeight / 2 + 0.14;
+                    wall.add(sirenDome);
+                } else if (wallTypeRoll < 0.35) {
+                    // Damaged Wall (ruins with rubble debris)
+                    const shortHeightMult = 0.45 + wallTypeRng() * 0.25;
+                    const damagedHeight = this.wallHeight * shortHeightMult;
+                    
+                    const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    wall.position.set(worldX, damagedHeight / 2, worldZ);
+                    // Scale the Y height dynamically on the reused geometry
+                    wall.scale.set(1, shortHeightMult, 1);
+                    
+                    wall.rotation.x = (wallTypeRng() - 0.5) * 0.15;
+                    wall.rotation.z = (wallTypeRng() - 0.5) * 0.15;
+                    
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    wall.userData.isWall = true;
+                    group.add(wall);
+
+                    const rubbleCount = 2 + Math.floor(wallTypeRng() * 3);
+                    for (let i = 0; i < rubbleCount; i++) {
+                        const size = 0.05 + wallTypeRng() * 0.07;
+                        const rubble = new THREE.Mesh(this.rubbleGeometry, this.wallMaterial);
+                        // Scale the reused unit dodecahedron geometry
+                        rubble.scale.set(size, size, size);
+                        
+                        const rx = (wallTypeRng() - 0.5) * 0.72;
+                        const rz = (wallTypeRng() - 0.5) * 0.72;
+                        rubble.position.set(worldX + rx, size, worldZ + rz);
+                        rubble.rotation.set(wallTypeRng() * Math.PI, wallTypeRng() * Math.PI, 0);
+                        
+                        rubble.castShadow = true;
+                        rubble.receiveShadow = true;
+                        group.add(rubble);
+                    }
+                } else {
+                    // Standard Wall
+                    const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    wall.position.set(worldX, this.wallHeight / 2, worldZ);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    wall.userData.isWall = true;
+                    group.add(wall);
+
+                    const rng = this.createSeededRandom(this.hashTile(worldX, worldZ));
+                    const roll = rng();
+                    if (roll < 0.12) {
+                        const pillar = new THREE.Mesh(this.pillarGeometry, this.wallMaterial);
+                        const cx = (rng() < 0.5 ? -0.5 : 0.5);
+                        const cz = (rng() < 0.5 ? -0.5 : 0.5);
+                        pillar.position.set(cx, 0, cz);
+                        pillar.castShadow = true;
+                        pillar.receiveShadow = true;
+                        wall.add(pillar);
+                    } else if (roll < 0.24) {
+                        const bracket = new THREE.Mesh(this.bracketGeometry, this.wallMaterial);
+                        const faceRoll = Math.floor(rng() * 4);
+                        if (faceRoll === 0) {
+                            bracket.position.set(0.5, (rng() - 0.5) * 1.5, 0);
+                            bracket.rotation.y = Math.PI / 2;
+                        } else if (faceRoll === 1) {
+                            bracket.position.set(-0.5, (rng() - 0.5) * 1.5, 0);
+                            bracket.rotation.y = Math.PI / 2;
+                        } else if (faceRoll === 2) {
+                            bracket.position.set(0, (rng() - 0.5) * 1.5, 0.5);
+                        } else {
+                            bracket.position.set(0, (rng() - 0.5) * 1.5, -0.5);
+                        }
+                        bracket.castShadow = true;
+                        bracket.receiveShadow = true;
+                        wall.add(bracket);
+                    } else if (roll < 0.32) {
+                        const vent = new THREE.Mesh(this.ventGeometry, this.ventMaterial);
+                        const faceRoll = Math.floor(rng() * 4);
+                        const vy = 0.4 + rng() * 0.6;
+                        if (faceRoll === 0) {
+                            vent.position.set(0.501, vy, 0);
+                            vent.rotation.y = Math.PI / 2;
+                        } else if (faceRoll === 1) {
+                            vent.position.set(-0.501, vy, 0);
+                            vent.rotation.y = Math.PI / 2;
+                        } else if (faceRoll === 2) {
+                            vent.position.set(0, vy, 0.501);
+                        } else {
+                            vent.position.set(0, vy, -0.501);
+                        }
+                        wall.add(vent);
+                    } else if (roll < 0.38) {
+                        const pipe = new THREE.Mesh(this.pipeGeometry, this.pipeMaterial);
+                        const faceRoll = Math.floor(rng() * 4);
+                        if (faceRoll === 0) {
+                            pipe.position.set(0.42, 0, (rng() - 0.5) * 0.6);
+                        } else if (faceRoll === 1) {
+                            pipe.position.set(-0.42, 0, (rng() - 0.5) * 0.6);
+                        } else if (faceRoll === 2) {
+                            pipe.position.set((rng() - 0.5) * 0.6, 0, 0.42);
+                        } else {
+                            pipe.position.set((rng() - 0.5) * 0.6, 0, -0.42);
+                        }
+                        pipe.castShadow = true;
+                        pipe.receiveShadow = true;
+                        wall.add(pipe);
+                    }
+                }
             }
         }
 
@@ -7804,23 +9790,12 @@ export class ThreeGame {
             sprite.renderOrder = isBoss ? 8 : 6;
             sprite.scale.set(scaleX, scaleY, 1);
 
-            let maxHp = SNAIL_MAX_HP;
-            let speed = SNAIL_MOVE_SPEED;
-            if (placement.type === 'cryosnail') {
-                maxHp = 4;
-                speed = 0.9;
-            } else if (placement.type === 'sporesnail') {
-                maxHp = 3;
-                speed = 1.4;
-            } else if (placement.type === 'boss_cybersnail') {
-                maxHp = 20;
-                speed = 1.5;
-            } else if (placement.type === 'boss_cryosnail') {
-                maxHp = 40;
-                speed = 1.1;
-            } else if (placement.type === 'boss_sporesnail') {
-                maxHp = 75;
-                speed = 1.3;
+            // Per-type HP/speed now live in src/data/enemies.js (behaviour-preserving).
+            const _enemyStats = getEnemyStats(placement.type, { maxHp: SNAIL_MAX_HP, speed: SNAIL_MOVE_SPEED });
+            let maxHp = _enemyStats.maxHp;
+            let speed = _enemyStats.speed;
+            if (Number.isFinite(placement.maxHp)) {
+                maxHp = Math.max(1, Math.floor(placement.maxHp));
             }
 
             sprite.userData = {
@@ -8635,6 +10610,9 @@ export class ThreeGame {
         sprite.userData.hp = Math.max(0, previousHp - damage);
         if (sprite.userData.hp === previousHp) return;
 
+        sprite.userData.shotByPlayer = true;
+        sprite.userData.prioritizeShip = false;
+
         const isBoss = Boolean(sprite.userData.isBoss);
         const isCrawler = this.isCrawler(sprite.userData.type);
         if (!isBoss && !isCrawler && sprite.userData.hp === 1 && !sprite.userData.enraged) {
@@ -8646,7 +10624,7 @@ export class ThreeGame {
         }
 
         if (sprite.userData.hp > 0) {
-            window.AudioManager?.play('ui_scan_ping', { volume: 0.26, playbackRate: 0.65 });
+            window.AudioManager?.play('enemy_hit_soft', { volume: 0.38 });
             this._flashSnailHit(sprite);
             window.dispatchEvent(new CustomEvent('enemy-hit', {
                 detail: {
@@ -8679,6 +10657,9 @@ export class ThreeGame {
 
         if (isBoss) {
             this.killedBosses.add(sprite.userData.biome);
+            if (sprite.userData.isMilestone && sprite.userData.sourceGoalKey === 'o2Bubble') {
+                this.revealFoundry({ randomEdge: true });
+            }
         }
 
         if (this.isSentinel(sprite.userData.type)) {
@@ -8696,10 +10677,19 @@ export class ThreeGame {
             upward: 0.22,
             spread: sprite.userData.isBoss ? 2.0 : 1.5
         });
-        window.AudioManager?.play('door_slam_vertical', { volume: 0.24, playbackRate: 1.16 });
-        window.AudioManager?.play('ui_error', { volume: 0.2, playbackRate: 0.72 });
+        if (isCrawler) {
+            window.AudioManager?.play('enemy_death_crawler', { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 });
+        } else {
+            window.AudioManager?.play('enemy_death_snail', { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 });
+        }
         window.dispatchEvent(new CustomEvent('enemy-killed', {
-            detail: { type: sprite.userData.type, totalKills: this.snailsKilledThisRun }
+            detail: {
+                type: sprite.userData.type,
+                totalKills: this.snailsKilledThisRun,
+                isBoss,
+                isMilestone: Boolean(sprite.userData.isMilestone),
+                sourceGoalKey: sprite.userData.sourceGoalKey ?? null
+            }
         }));
     }
 
@@ -8740,7 +10730,7 @@ export class ThreeGame {
 
     // Spawn a single milestone "retaliation" boss near the player that beelines
     // for the ship. Driven by the bank's `goal-unlocked` event (see init wiring).
-    spawnMilestoneBoss(bossType) {
+    spawnMilestoneBoss(bossType, { sourceGoalKey = null } = {}) {
         if (!this.player || !this.snailsEnabled) return null;
         if (!this.scatterMaterials[bossType]) return null;
         // Never stack the same milestone boss.
@@ -8752,7 +10742,7 @@ export class ThreeGame {
         const baseZ = this.player.position.z;
         let spawnX = null;
         let spawnZ = null;
-        for (const dist of [11, 9, 13, 7, 15]) {
+        for (const dist of [24, 22, 26, 20, 28]) {
             const startA = Math.random() * Math.PI * 2;
             for (let a = 0; a < 12; a++) {
                 const ang = startA + (a / 12) * Math.PI * 2;
@@ -8789,8 +10779,18 @@ export class ThreeGame {
         const boss = this.createScatterInstance(placement);
         if (!boss) return null;
         boss.userData.isMilestone = true;
+        boss.userData.sourceGoalKey = sourceGoalKey;
         boss.userData.prioritizeShip = true;
         boss.userData.targetType = 'ship';
+
+        // The O2-generator retaliation is the arc's FIRST boss — an introductory
+        // fight. Quarter the normal cybersnail HP (20 -> 5) and flag it so the
+        // attack logic fires a single slow shot instead of the 3-round spread.
+        if (sourceGoalKey === 'o2Bubble') {
+            boss.userData.easyTier = true;
+            boss.userData.maxHp = 5;
+            boss.userData.hp = 5;
+        }
 
         // Parent to the player's (loaded) chunk group so the boss persists in
         // scatterSprites across chunk syncs. Chunk groups use world coords.
@@ -8826,6 +10826,16 @@ export class ThreeGame {
 
         for (const target of targets) {
             target.distance = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
+        }
+
+        if (sprite.userData.shotByPlayer) {
+            const playerTarget = targets.find(t => t.type === 'player');
+            if (playerTarget && playerTarget.distance <= 12.0) {
+                return { ...playerTarget, mode: 'hunt', goalX: playerTarget.x, goalZ: playerTarget.z };
+            } else {
+                sprite.userData.shotByPlayer = false;
+                sprite.userData.prioritizeShip = true;
+            }
         }
 
         // Milestone retaliation bosses bee-line for the ship until the player
@@ -9225,15 +11235,40 @@ export class ThreeGame {
             this.player.position.z += pKz;
         }
 
-        // Push the snail back the opposite way if its destination tile is open.
+        // Push the snail back the opposite way using slide velocity
         const selfKnock = SNAIL_HIT_SELF_KNOCKBACK * (data.isBoss ? 0.45 : 1);
-        const sx = sprite.position.x - dx * selfKnock;
-        const sz = sprite.position.z - dz * selfKnock;
-        if (this.isSnailTileWalkable(Math.round(sx), Math.round(sz))) {
-            sprite.position.x = sx;
-            sprite.position.z = sz;
-        }
         data.knockbackTimer = SNAIL_HIT_RECOIL_TIME;
+        const knockSpeed = selfKnock / SNAIL_HIT_RECOIL_TIME;
+        data.knockbackVx = -dx * knockSpeed;
+        data.knockbackVz = -dz * knockSpeed;
+
+        data.pathNodes = null;
+        data.pathRetargetTimer = 0;
+    }
+
+    // Bounces the snail back away from the ship on a contact hit using a smooth slide animation.
+    applySnailShipKnockback(sprite, data, activeShip) {
+        if (!activeShip) return;
+        let dx = sprite.position.x - activeShip.tileX;
+        let dz = sprite.position.z - activeShip.tileZ;
+        let len = Math.hypot(dx, dz);
+        if (len < 1e-4) {
+            // Perfectly overlapping — pick a random direction to split.
+            const angle = Math.random() * Math.PI * 2;
+            dx = Math.cos(angle);
+            dz = Math.sin(angle);
+            len = 1;
+        }
+        dx /= len;
+        dz /= len;
+
+        // Bounce back by 1.8 units (1.08 units for bosses) away from the ship center
+        const bounceDist = 1.8 * (data.isBoss ? 0.6 : 1);
+        data.knockbackTimer = 0.5; // Slide duration
+        const knockSpeed = bounceDist / data.knockbackTimer;
+        data.knockbackVx = dx * knockSpeed;
+        data.knockbackVz = dz * knockSpeed;
+
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
     }
@@ -9242,6 +11277,17 @@ export class ThreeGame {
         const data = sprite.userData;
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
+
+        if (data.knockbackTimer > 0) {
+            const kx = (data.knockbackVx ?? 0) * delta;
+            const kz = (data.knockbackVz ?? 0) * delta;
+            const nextX = sprite.position.x + kx;
+            const nextZ = sprite.position.z + kz;
+            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                sprite.position.x = nextX;
+                sprite.position.z = nextZ;
+            }
+        }
         data.knockbackTimer = Math.max(0, (data.knockbackTimer ?? 0) - delta);
 
         const target = this.selectSnailTarget(sprite, activeShip);
@@ -9326,9 +11372,13 @@ export class ThreeGame {
             if (data.bossAttackTimer <= 0) {
                 // Determine attack based on type
                 if (data.type === 'boss_cybersnail' && target.type === 'player' && distanceToTarget <= 12) {
-                    data.bossAttackTimer = 4.5;
+                    // Easy-tier (first O2 boss): one slow shot. Full bosses fire a
+                    // tighter-timed 3-round spread.
+                    const easy = data.easyTier;
+                    data.bossAttackTimer = easy ? 7.0 : 4.5;
                     const angleToPlayer = Math.atan2(target.z - sprite.position.z, target.x - sprite.position.x);
-                    for (let i = -1; i <= 1; i++) {
+                    const spreadSteps = easy ? [0] : [-1, 0, 1];
+                    for (const i of spreadSteps) {
                         const spreadAngle = angleToPlayer + i * 0.22;
                         const vx = Math.cos(spreadAngle) * 7.5;
                         const vz = Math.sin(spreadAngle) * 7.5;
@@ -9410,6 +11460,10 @@ export class ThreeGame {
                 }
             } else if (activeShip) {
                 this.damageShip(activeShip, damage, data.type);
+                this.damageSnail(sprite, 1);
+                if (!sprite.userData.burstTriggered) {
+                    this.applySnailShipKnockback(sprite, data, activeShip);
+                }
             }
             window.AudioManager?.play('amb_metal_stress', { volume: 0.24, playbackRate: 1.1 });
         }
@@ -9493,6 +11547,52 @@ export class ThreeGame {
                 footprintZone.active = false;
                 const idx = this.dynamicPuddles.indexOf(footprintZone);
                 if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
+                mat.dispose();
+            }
+        });
+    }
+
+    spawnVisualSnailTrail(x, z, type, isBoss) {
+        if (!this.scene) return;
+        
+        let color = 0x00d2ff;
+        let useSlimeTexture = true;
+        if (type.includes('cryo')) {
+            color = 0xa3e2ff;
+            useSlimeTexture = false;
+        } else if (type.includes('spore')) {
+            color = 0x55ff55;
+            useSlimeTexture = true;
+        }
+
+        const baseMat = useSlimeTexture 
+            ? this.scatterMaterials.scatter_slime_puddle 
+            : this.scatterMaterials.scatter_coolant_puddle;
+            
+        if (!baseMat) return;
+        const mat = baseMat.clone();
+        mat.color.setHex(color);
+        mat.opacity = 0.45;
+        
+        const sprite = new THREE.Sprite(mat);
+        sprite.center.set(0.5, 0.5);
+        sprite.position.set(x, 0.058, z);
+        const size = isBoss ? 1.15 : 0.45;
+        sprite.scale.set(size, size, 1);
+        sprite.renderOrder = 4;
+        
+        this.scene.add(sprite);
+        
+        const duration = isBoss ? 4.2 : 2.5;
+        this.transientEffects.push({
+            mesh: sprite,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = age / duration;
+                sprite.material.opacity = 0.45 * (1 - t);
+            },
+            dispose: () => {
                 mat.dispose();
             }
         });
@@ -9626,6 +11726,18 @@ export class ThreeGame {
                 child.material.opacity = child.userData.baseOpacity;
                 this.updateSnailBehavior(child, delta, activeShip);
 
+                // Distance-based trail spawning
+                if (!child.userData.burstTriggered) {
+                    const lastX = child.userData.lastTrailX ?? child.position.x;
+                    const lastZ = child.userData.lastTrailZ ?? child.position.z;
+                    const distMoved = Math.hypot(child.position.x - lastX, child.position.z - lastZ);
+                    if (distMoved >= 0.42 || child.userData.lastTrailX === undefined) {
+                        child.userData.lastTrailX = child.position.x;
+                        child.userData.lastTrailZ = child.position.z;
+                        this.spawnVisualSnailTrail(child.position.x, child.position.z, child.userData.type, child.userData.isBoss);
+                    }
+                }
+
                 // Sporesnail leaves slime puddles
                 if (child.userData.type === 'sporesnail' || child.userData.type === 'boss_sporesnail') {
                     child.userData.sporeEmitTimer = (child.userData.sporeEmitTimer ?? 0) + delta;
@@ -9694,6 +11806,14 @@ export class ThreeGame {
             ) {
                 this.triggerBunkerJunkBurst(child);
             }
+        }
+
+        // Pulse the shared hazard-siren dome material (one update for every siren,
+        // instead of dozens of per-wall dynamic PointLights).
+        if (this.sirenDomeMaterial) {
+            const pulse = 0.5 + 0.5 * Math.sin(time * 6.0);
+            const r = 0.55 + 0.45 * pulse;
+            this.sirenDomeMaterial.color.setRGB(r, 0.12 * pulse, 0.12 * pulse);
         }
     }
 
@@ -10007,6 +12127,7 @@ export class ThreeGame {
                 const checkY = tileY + offsetY;
 
                 if (this.getTileType(checkX, checkY) !== '#') continue;
+                if (this.isHoleTile(checkX, checkY)) continue;
                 if (this.overlapsWall(x, z, checkX, checkY)) return false;
             }
         }
@@ -10054,6 +12175,36 @@ export class ThreeGame {
         const localX = worldX - chunkX * this.chunkSize;
         const localY = worldY - chunkY * this.chunkSize;
         return this.getOrCreateChunk(chunkX, chunkY)[localY][localX];
+    }
+
+    isHoleTile(worldX, worldY) {
+        if (this.getTileType(worldX, worldY) !== '#') return false;
+        const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldY) + 999);
+        return wallTypeRng() < 0.06;
+    }
+
+    isPlayerOverAnyHole(px, pz) {
+        const cx = Math.round(px);
+        const cz = Math.round(pz);
+        const radiusToCheck = 2;
+        for (let dx = -radiusToCheck; dx <= radiusToCheck; dx++) {
+            for (let dz = -radiusToCheck; dz <= radiusToCheck; dz++) {
+                const hx = cx + dx;
+                const hz = cz + dz;
+                if (this.isHoleTile(hx, hz)) {
+                    const wallTypeRng = this.createSeededRandom(this.hashTile(hx, hz) + 999);
+                    const roll = wallTypeRng();
+                    const sizeFactor = roll / 0.06;
+                    const scale = 1.5 + sizeFactor * 2.5;
+                    const fallRadius = scale * 0.42;
+                    const dist = Math.hypot(px - hx, pz - hz);
+                    if (dist < fallRadius) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     getRoomTypeGrid(chunkX, chunkY) {
@@ -10366,6 +12517,9 @@ export class ThreeGame {
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.o2PromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.foundryPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.blackBoxPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
@@ -10379,6 +12533,20 @@ export class ThreeGame {
         });
         this.floorMaterial?.dispose?.();
         this.wallMaterial?.dispose?.();
+        this.wallGeometry?.dispose();
+        this.floorGeometry?.dispose();
+        this.chunkFloorGeometry?.dispose();
+        this.pillarGeometry?.dispose();
+        this.bracketGeometry?.dispose();
+        this.ventGeometry?.dispose();
+        this.pipeGeometry?.dispose();
+        this.ventMaterial?.dispose();
+        this.pipeMaterial?.dispose();
+        this.sirenBaseGeometry?.dispose();
+        this.sirenDomeGeometry?.dispose();
+        this.sirenBaseMaterial?.dispose();
+        this.sirenDomeMaterial?.dispose();
+        this.rubbleGeometry?.dispose();
         this.menuShowroomFloor?.geometry?.dispose?.();
         this.menuShowroomFloor?.material?.dispose?.();
         this.menuGridTexture?.dispose?.();
@@ -10404,6 +12572,7 @@ export class ThreeGame {
         if (this.playerEmitterGlow) {
             this.scene.remove(this.playerEmitterGlow);
         }
+        this.clearBlackBoxMarker();
         if (this.playerForwardSpotLight) {
             this.scene.remove(this.playerForwardSpotLight);
         }
@@ -10425,7 +12594,10 @@ export class ThreeGame {
         if (this.o2BubbleObjects) {
             this.o2BubbleObjects.ring?.material?.dispose?.();
             this.o2BubbleObjects.ring?.geometry?.dispose?.();
+            this.o2BubbleObjects.fill?.material?.dispose?.();
+            this.o2BubbleObjects.fill?.geometry?.dispose?.();
             this.scene.remove(this.o2BubbleObjects.ring);
+            this.scene.remove(this.o2BubbleObjects.fill);
             this.scene.remove(this.o2BubbleObjects.light);
             this.o2BubbleObjects = null;
         }

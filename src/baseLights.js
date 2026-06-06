@@ -10,11 +10,11 @@ import * as THREE from 'three';
 // .claude_work/02-gameplay-arc-o2-lights-boss-printer.md (Beat 2).
 
 const FIXTURE_COUNT = 8;
-const RING_RADIUS = 3.6;          // world units around the base center
+const RING_RADIUS = 3.9;          // world units around the base center
 const FIXTURE_HEIGHT = 0.95;
 const FIXTURE_COLOR = 0x9ad8ff;   // cool industrial cyan-white
-const FIXTURE_MAX_INTENSITY = 1.35;
-const FIXTURE_DISTANCE = 5.2;
+const FIXTURE_MAX_INTENSITY = 2.25;
+const FIXTURE_DISTANCE = 7.4;
 const FIXTURE_DECAY = 2;
 const STAGGER_DELAY = 0.32;       // seconds between each fixture igniting
 const IGNITE_DURATION = 0.55;     // ramp + flicker time per fixture
@@ -31,25 +31,32 @@ export class BaseLights {
     }
 
     // Build the dormant fixtures around a center point (the active ship/base).
-    build(centerX, centerZ) {
+    build(centerX, centerZ, radius = RING_RADIUS, colorHex = FIXTURE_COLOR) {
         if (this.built) return;
         this.centerX = centerX;
         this.centerZ = centerZ;
+        this.radius = radius;
+        this.colorHex = colorHex;
         for (let i = 0; i < FIXTURE_COUNT; i++) {
             const angle = (i / FIXTURE_COUNT) * Math.PI * 2;
-            const x = centerX + Math.cos(angle) * RING_RADIUS;
-            const z = centerZ + Math.sin(angle) * RING_RADIUS;
+            const x = centerX + Math.cos(angle) * radius;
+            const z = centerZ + Math.sin(angle) * radius;
 
-            const light = new THREE.PointLight(FIXTURE_COLOR, 0, FIXTURE_DISTANCE, FIXTURE_DECAY);
+            const light = new THREE.PointLight(colorHex, 0, FIXTURE_DISTANCE, FIXTURE_DECAY);
             light.position.set(x, FIXTURE_HEIGHT, z);
-            light.visible = false;
+            // Visible from build (intensity 0 = no contribution yet). Keeping the
+            // scene's light COUNT stable means the one-time lit-material shader
+            // recompile is paid once when the grid is built — not incrementally as
+            // each fixture wakes — avoiding a stuttering hitch across the sweep.
+            light.visible = true;
 
             // Small emissive lamp housing so the source reads as a fixture.
             const bulb = new THREE.Mesh(
                 new THREE.SphereGeometry(0.11, 10, 8),
-                new THREE.MeshBasicMaterial({ color: FIXTURE_COLOR, transparent: true, opacity: 0 })
+                new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0 })
             );
             bulb.position.set(x, FIXTURE_HEIGHT, z);
+            bulb.visible = false; // Never render bulb meshes as per "they shouldn't be visible"
 
             this.scene.add(light);
             this.scene.add(bulb);
@@ -65,9 +72,40 @@ export class BaseLights {
         this.built = true;
     }
 
+    recenter(centerX, centerZ, radius = this.radius) {
+        if (!this.built) {
+            this.build(centerX, centerZ, radius, this.colorHex);
+            return;
+        }
+        this.centerX = centerX;
+        this.centerZ = centerZ;
+        this.radius = radius;
+        for (let i = 0; i < this.fixtures.length; i++) {
+            const angle = (i / FIXTURE_COUNT) * Math.PI * 2;
+            const x = centerX + Math.cos(angle) * radius;
+            const z = centerZ + Math.sin(angle) * radius;
+            this.fixtures[i].light.position.set(x, FIXTURE_HEIGHT, z);
+            this.fixtures[i].bulb.position.set(x, FIXTURE_HEIGHT, z);
+        }
+    }
+
+    setColor(colorHex) {
+        this.colorHex = colorHex;
+        if (!this.built) return;
+        for (const f of this.fixtures) {
+            f.light.color.setHex(colorHex);
+            f.bulb.material.color.setHex(colorHex);
+        }
+    }
+
     // Start the staggered wake-up sweep.
-    ignite(centerX, centerZ) {
-        if (!this.built) this.build(centerX, centerZ);
+    ignite(centerX, centerZ, radius = RING_RADIUS, colorHex = FIXTURE_COLOR) {
+        this.colorHex = colorHex;
+        if (!this.built) this.build(centerX, centerZ, radius, colorHex);
+        else {
+            this.setColor(colorHex);
+            this.recenter(centerX, centerZ, radius);
+        }
         if (this.ignited) return;
         this.ignited = true;
         this.elapsed = 0;
@@ -75,15 +113,20 @@ export class BaseLights {
 
     // Power the whole grid on instantly (returning player whose O2 is already
     // online — no theatrics, lights are just on).
-    igniteInstant(centerX, centerZ) {
-        if (!this.built) this.build(centerX, centerZ);
+    igniteInstant(centerX, centerZ, radius = RING_RADIUS, colorHex = FIXTURE_COLOR) {
+        this.colorHex = colorHex;
+        if (!this.built) this.build(centerX, centerZ, radius, colorHex);
+        else {
+            this.setColor(colorHex);
+            this.recenter(centerX, centerZ, radius);
+        }
         this.ignited = true;
         this.elapsed = (FIXTURE_COUNT * STAGGER_DELAY) + IGNITE_DURATION + 1;
         for (const f of this.fixtures) {
             f.on = true;
             f.light.visible = true;
             f.light.intensity = FIXTURE_MAX_INTENSITY;
-            f.bulb.material.opacity = 0.85;
+            f.bulb.material.opacity = 0;
         }
     }
 
@@ -110,12 +153,12 @@ export class BaseLights {
                 const flicker = 0.55 + 0.45 * Math.abs(Math.sin((t + f.seed) * 38));
                 const intensity = FIXTURE_MAX_INTENSITY * ramp * flicker;
                 f.light.intensity = intensity;
-                f.bulb.material.opacity = Math.min(0.85, ramp * flicker);
+                f.bulb.material.opacity = 0;
             } else {
                 // Settled: gentle idle flicker so the base feels alive.
                 const idle = 1 + Math.sin((this.elapsed + f.seed) * 2.1) * 0.06;
                 f.light.intensity = FIXTURE_MAX_INTENSITY * idle;
-                f.bulb.material.opacity = 0.85;
+                f.bulb.material.opacity = 0;
             }
         }
     }
