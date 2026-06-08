@@ -1338,7 +1338,7 @@ function triggerDamageFlash(event) {
 // ---- Hero select stat pips ----
 const HERO_DISPLAY_STATS = {
     SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE',  detail: 'SPRINT BURST // WIDE SALVAGE MAGNET', demoLabel: 'SCOUT DEMO // SPRINT' },
-    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BRACE MITIGATES DAMAGE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
+    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BRACE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
     ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'NORMAL', detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
 };
 const HERO_STAT_TOTAL = 5;
@@ -1397,6 +1397,18 @@ function updateHeroStats(type) {
     const stats = HERO_DISPLAY_STATS[type];
     if (!stats) return;
 
+    // Set class colour properties on the menu container so all children can inherit/use them
+    const menuEl = document.getElementById('menu');
+    if (menuEl) {
+        menuEl.style.setProperty('--class-color', stats.color);
+        const rgbMap = {
+            '#7dff5a': '125, 255, 90',
+            '#ffb700': '255, 183, 0',
+            '#00e5ff': '0, 229, 255'
+        };
+        menuEl.style.setProperty('--class-color-rgb', rgbMap[stats.color] || '255, 159, 28');
+    }
+
     // Set class colour on the row container so all pips + value text inherit it
     const row = document.getElementById('hero-stats-row');
     if (row) row.style.setProperty('--class-pip-color', stats.color);
@@ -1412,11 +1424,13 @@ function updateHeroStats(type) {
     crossFadeStatValue(o2Val, stats.o2Label);
     crossFadeStatValue(lootVal, stats.lootLabel);
 
-    const detail = document.getElementById('hero-detail-copy');
-    if (detail) detail.textContent = stats.detail;
-
-    const demoLabel = document.getElementById('class-demo-label');
-    if (demoLabel) demoLabel.textContent = stats.demoLabel;
+    const activeEl = document.getElementById('hero-detail-active');
+    const passiveEl = document.getElementById('hero-detail-passive');
+    if (activeEl && passiveEl && stats.detail) {
+        const parts = stats.detail.split('//');
+        crossFadeStatValue(activeEl, parts[0] ? parts[0].trim() : '—');
+        crossFadeStatValue(passiveEl, parts[1] ? parts[1].trim() : '—');
+    }
 }
 
 // ---- Game Over Screen ----
@@ -1449,7 +1463,7 @@ function refreshLastContractor() {
     if (!box?.active) { el.classList.add('hidden'); return; }
     const cls = (box.classType ?? 'OPERATOR').toUpperCase();
     const tier = DEPTH_TIER_LABELS[Math.max(0, Math.min(DEPTH_TIER_LABELS.length - 1, box.depth ?? 0))];
-    el.textContent = `BLACK BOX // ${cls} @ ${tier} // SIGNAL ACTIVE`;
+    el.innerHTML = `BLACK BOX <span class="ui-separator">//</span> ${cls} @ ${tier} <span class="ui-separator">//</span> SIGNAL ACTIVE`;
     el.classList.remove('hidden');
 }
 
@@ -4628,19 +4642,25 @@ charCards.forEach(card => {
             setActiveAmmoCapacity(type, { clampExisting: true });
 
             if (window.game?.updatePlayerType) {
+                // Play swap sound and 2D DOM smoke poof in the demo container
+                const gameContainer = document.getElementById('game-container');
+                if (gameContainer) {
+                    spawnSectorScanSmoke(gameContainer, 25);
+                }
+                AudioManager.play('amb_metal_stress1', { volume: 0.4 });
+
                 if (!isGameplayPhase()) {
                     hideAllGameplayPrompts();
                     hideRunLoadingScreen();
-                    window.game.updatePlayerType(type, { poof: false, emitWorldEvents: false });
+                    setTimeout(() => {
+                        window.game.updatePlayerType(type, { poof: true, emitWorldEvents: false });
+                        AudioManager.play('class_lock', { volume: 0.5 });
+                    }, 150);
                     return;
                 }
 
-                const gameContainer = document.getElementById('game-container');
-                spawnSectorScanSmoke(gameContainer, 25);
-                AudioManager.play('amb_metal_stress1', { volume: 0.4 });
-                
                 setTimeout(() => {
-                    window.game.updatePlayerType(type);
+                    window.game.updatePlayerType(type, { poof: true, emitWorldEvents: true });
                     AudioManager.play('class_lock', { volume: 0.5 });
                 }, 150);
             }

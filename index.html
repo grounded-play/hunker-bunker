@@ -160,7 +160,6 @@
       <div class="header-bar">
         <div class="title-group">
           <h1 class="title-small">HUNKER BUNKER</h1>
-          <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
         </div>
         <div class="menu-header-actions">
           <div class="menu-command">
@@ -192,7 +191,6 @@
           <div class="module-row">
             <!-- Module 1: Sector Scan -->
             <div class="map-box">
-              <div class="map-label" id="class-demo-label">TANK FIELD TEST // BRACE</div>
               <div id="game-container"></div>
               <div class="module-scanline"></div>
             </div>
@@ -213,7 +211,8 @@
               </div>
               <div class="hero-detail-panel" id="hero-detail-panel">
                 <div class="hero-detail-panel__kicker">FIELD LOADOUT</div>
-                <div class="hero-detail-panel__copy" id="hero-detail-copy">BULKHEAD FRAME // BRACE REDUCES INCOMING DAMAGE</div>
+                <div class="hero-detail-line1" id="hero-detail-active">—</div>
+                <div class="hero-detail-line2" id="hero-detail-passive">—</div>
               </div>
               <div class="hero-stats-compact" id="hero-stats-row">
                 <div
@@ -246,7 +245,10 @@
                 <div class="char-info">
                   <span class="char-kicker">RECON FRAME</span>
                   <span class="char-name">SCOUT</span>
-                  <span class="char-desc">SPRINT BURST // WIDE MAGNET</span>
+                  <div class="char-desc-lines">
+                    <span class="char-desc-line1">SPRINT BURST</span>
+                    <span class="char-desc-line2">WIDE MAGNET</span>
+                  </div>
                   <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
                 <div class="char-icon">↗</div>
@@ -255,7 +257,10 @@
                 <div class="char-info">
                   <span class="char-kicker">BULWARK FRAME</span>
                   <span class="char-name">TANK</span>
-                  <span class="char-desc">BRACE // LOW O₂ DRAIN</span>
+                  <div class="char-desc-lines">
+                    <span class="char-desc-line1">BRACE</span>
+                    <span class="char-desc-line2">LOW O₂ DRAIN</span>
+                  </div>
                   <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
                 <div class="char-icon">▰</div>
@@ -264,7 +269,10 @@
                 <div class="char-info">
                   <span class="char-kicker">UTILITY FRAME</span>
                   <span class="char-name">ENGINEER</span>
-                  <span class="char-desc">REROUTE // CHEAPER CONSOLES</span>
+                  <div class="char-desc-lines">
+                    <span class="char-desc-line1">REROUTE</span>
+                    <span class="char-desc-line2">CHEAPER CONSOLES</span>
+                  </div>
                   <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
                 <div class="char-icon">⚙</div>
@@ -731,7 +739,10 @@
           <!-- Terminal Tabs Header -->
           <div class="terminal-tabs">
             <button id="terminal-tab-base" class="terminal-tab-btn active">◇ BASE SYSTEM</button>
-            <button id="terminal-tab-skills" class="terminal-tab-btn">◇ CLASS SKILLS</button>
+            <button id="terminal-tab-skills" class="terminal-tab-btn">
+              <span>◇ CLASS SKILLS</span>
+              <span class="terminal-tab-btn__status" id="terminal-tab-skills-status">0/6 · ◈ 0</span>
+            </button>
           </div>
 
           <!-- Base Systems Tab Content -->
@@ -744,8 +755,8 @@
               <div class="terminal-section-title">BANK BALANCE</div>
               <div class="terminal-info-grid">
                 <div class="terminal-info-chip">
-                  <span class="terminal-info-chip__label">RUN CARRY</span>
-                  <span class="terminal-info-chip__value" id="terminal-summary-run">0</span>
+                  <span class="terminal-info-chip__label">SHELLS</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-shells">◈ 0</span>
                 </div>
                 <div class="terminal-info-chip">
                   <span class="terminal-info-chip__label">BANK TOTAL</span>
@@ -787,35 +798,46 @@
                   </span>
                 </div>
               </div>
-              <div class="terminal-bank-actions">
-                <div class="terminal-bank-hint" id="terminal-bank-hint">RUN LOOT AUTOMATICALLY SECURED AND BANKED.</div>
-              </div>
-            </div>
-
-            <div id="med-conversion-section" class="upgrade-goals-section upgrade-goals-section--medkit terminal-tone--medkit">
-              <div class="terminal-section-title">FIELD MEDKIT</div>
-              <div class="action-card action-card--medkit" data-goal-card="medkit">
-                <div class="action-card-header">
-                  <span class="action-title">MED CONVERSION</span>
-                  <span class="action-cost" id="terminal-medkit-status">OFFLINE</span>
+              <div class="terminal-current-objective" id="terminal-current-objective">
+                <div class="terminal-current-objective__header">
+                  <span class="terminal-current-objective__label">CURRENT OBJECTIVE</span>
+                  <span class="terminal-current-objective__status" id="terminal-current-objective-status">ACTIVE</span>
                 </div>
-                <p class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
-                <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
-                <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
+                <span class="terminal-current-objective__title" id="terminal-current-objective-title">EXPLORE · BANK SALVAGE</span>
+                <span class="terminal-current-objective__detail" id="terminal-current-objective-detail">NO ACTIVE MISSION CONTRACT</span>
+                <div class="terminal-current-objective__footer">
+                  <span class="terminal-current-objective__directive-label">BASE PRIORITY</span>
+                  <span class="terminal-bank-hint" id="terminal-bank-hint">RUN LOOT AUTOMATICALLY SECURED AND BANKED.</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div id="terminal-event-section" class="upgrade-goals-section terminal-tone--event hidden">
-            <div class="terminal-section-title">FIELD TERMINAL EVENT</div>
-            <div class="action-card action-card--terminal-event">
-              <div class="action-card-header">
-                <span class="action-title" id="terminal-event-title">SYSTEM OFFER</span>
-                <span class="action-cost" id="terminal-event-status">CHOICE REQUIRED</span>
+            <div class="terminal-shop-right-col">
+              <div id="med-conversion-section" class="upgrade-goals-section upgrade-goals-section--medkit terminal-tone--medkit">
+                <div class="terminal-section-title">FIELD MEDKIT</div>
+                <div class="action-card action-card--medkit" data-goal-card="medkit">
+                  <div class="action-card-header">
+                    <span class="action-title">MED CONVERSION</span>
+                    <span class="action-cost" id="terminal-medkit-status">OFFLINE</span>
+                  </div>
+                  <p class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
+                  <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
+                  <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
+                </div>
               </div>
-              <p class="action-desc" id="terminal-event-body">A bunker subsystem is requesting operator input.</p>
-              <div id="terminal-event-choices" class="terminal-event-choices"></div>
-              <p class="action-desc action-desc--hint" id="terminal-event-result"></p>
+
+              <div id="terminal-event-section" class="upgrade-goals-section terminal-tone--event hidden">
+                <div class="terminal-section-title">FIELD TERMINAL EVENT</div>
+                <div class="action-card action-card--terminal-event">
+                  <div class="action-card-header">
+                    <span class="action-title" id="terminal-event-title">SYSTEM OFFER</span>
+                    <span class="action-cost" id="terminal-event-status">CHOICE REQUIRED</span>
+                  </div>
+                  <p class="action-desc" id="terminal-event-body">A bunker subsystem is requesting operator input.</p>
+                  <div id="terminal-event-choices" class="terminal-event-choices"></div>
+                  <p class="action-desc action-desc--hint" id="terminal-event-result"></p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -953,6 +975,7 @@
           </div>
 
         </div>
+        </div>
         </div><!-- /#terminal-tab-base-content -->
 
         <!-- Class Skills Tab Content -->
@@ -960,7 +983,7 @@
           <div class="terminal-layout terminal-layout--skills">
             <div class="skills-header">
               <span class="skills-unlocked-count" id="skills-unlocked-count">UNLOCKED SKILLS: 0/6</span>
-              <span class="skills-info-hint">SELECT A NODE TO VIEW DATA AND PURCHASE WITH BANKED RESOURCE MATRIX</span>
+              <span class="skills-info-hint">SELECT AN AVAILABLE NODE TO PURCHASE WITH BANKED SNAIL SHELLS</span>
             </div>
             <div class="skills-tree-container">
               <div class="skills-tree-grid" id="skills-tree-grid">
@@ -1029,8 +1052,6 @@
         </div>
       </div>
     </div>
-
-  </div>
 
     <!-- Tactical Confirmation Modal -->
     <div id="confirm-modal" class="modal critical-modal hidden">

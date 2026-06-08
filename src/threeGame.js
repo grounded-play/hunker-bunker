@@ -1514,8 +1514,8 @@ export class ThreeGame {
             ctx.stroke();
         };
 
-        drawGrid(16, 'rgba(106, 231, 255, 0.16)', 1);
-        drawGrid(64, 'rgba(185, 247, 255, 0.3)', 1.5);
+        drawGrid(16, 'rgba(255, 255, 255, 0.16)', 1);
+        drawGrid(64, 'rgba(255, 255, 255, 0.36)', 1.5);
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
@@ -1542,11 +1542,13 @@ export class ThreeGame {
 
         const spawn = this.getSpawnTile();
         this.menuGridTexture = this.createMenuGridTexture();
+        const startColorHex = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+        this.targetMenuGridColor = new THREE.Color(startColorHex);
         this.menuShowroomFloor = new THREE.Mesh(
             new THREE.PlaneGeometry(MENU_SHOWROOM_FLOOR_SIZE, MENU_SHOWROOM_FLOOR_SIZE),
             new THREE.MeshBasicMaterial({
                 map: this.menuGridTexture,
-                color: 0xd5d9dc,
+                color: this.targetMenuGridColor.clone(),
                 transparent: true,
                 opacity: 0.92,
                 depthWrite: true,
@@ -2653,6 +2655,12 @@ export class ThreeGame {
         this.playerMaterial.color.setHex(color);
         this.playerMaterial.emissive.setHex(color);
         this.playerGlow.color.setHex(color);
+        if (this.targetMenuGridColor) {
+            this.targetMenuGridColor.setHex(color);
+        }
+        if (poof && this.player) {
+            this.spawnShipPoofEffect(this.player.position.x, this.player.position.z, color);
+        }
         if (this.suitFillLight?.color) {
             this.suitFillLight.color.setHex(color);
         }
@@ -3190,6 +3198,9 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu') {
             if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
             this.updateMenuShowcase(delta);
+            if (this.menuShowroomFloor?.material?.color && this.targetMenuGridColor) {
+                this.menuShowroomFloor.material.color.lerp(this.targetMenuGridColor, delta * 5);
+            }
             this.updatePlayer(delta);
             this.updateWeaponState(delta);
             this.updateProjectiles(delta);
@@ -4418,7 +4429,7 @@ export class ThreeGame {
 
         event.choices.forEach((choice, index) => {
             const btn = document.createElement('button');
-            btn.className = `terminal-action-btn terminal-event-choice ${choice.tone === 'risk' ? 'btn-state--available' : 'btn-state--locked'}`;
+            btn.className = `terminal-action-btn terminal-event-choice ${choice.tone === 'risk' ? 'btn-state--risk' : 'btn-state--available'}`;
             btn.textContent = choice.label;
             btn.addEventListener('click', () => this.applyTerminalChoice(event, index));
             choicesEl.appendChild(btn);
@@ -4495,10 +4506,34 @@ export class ThreeGame {
         setText('terminal-bank-tech', bankState.tech);
         setText('terminal-bank-coin', bankState.coin);
         const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
-        setText('terminal-summary-run', depositableTotal);
+        setText('terminal-summary-shells', `◈ ${this.bank.getShells()}`);
         setText('terminal-summary-bank', totalBanked);
         setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
         setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
+        const playerClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
+        const skillTree = CLASS_SKILL_TREES[playerClass] ?? [];
+        const unlockedSkillCount = skillTree.filter((node) => this.bank.isSkillUnlocked(node.id)).length;
+        const purchasableSkillCount = skillTree.filter((node) => this.bank.canUnlockSkill(node.id, playerClass)).length;
+        setText(
+            'terminal-tab-skills-status',
+            `${unlockedSkillCount}/${skillTree.length} · ◈ ${this.bank.getShells()}${purchasableSkillCount > 0 ? ` · ${purchasableSkillCount} READY` : ''}`
+        );
+        const loopStep = this.getLoopStep() ?? { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
+        const mission = this.missionState;
+        const missionActive = Boolean(mission?.type && mission?.status && mission.status !== 'inactive' && mission.status !== 'extracted');
+        const objectiveDetail = missionActive && mission.label
+            ? mission.label
+            : loopStep.key === 'o2'
+                ? 'RESTORE THE SHIP O₂ FIELD TO EXTEND OPERATING RANGE'
+                : 'SECURE SALVAGE, BANK RESOURCES, AND EXPAND BASE SYSTEMS';
+        setText('terminal-current-objective-title', loopStep.label);
+        setText('terminal-current-objective-detail', objectiveDetail);
+        setText(
+            'terminal-current-objective-status',
+            mission?.status === 'objective_complete' ? 'COMPLETE'
+                : mission?.status === 'elevator_ready' ? 'CHOICE'
+                    : 'ACTIVE'
+        );
         this.updateTerminalClock();
         const heartsFromMed = Math.floor(bankState.med / 10);
         setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
@@ -4888,6 +4923,8 @@ export class ThreeGame {
                 tabSkills.classList.remove('active');
                 contentBase.classList.remove('hidden');
                 contentSkills.classList.add('hidden');
+                const body = modal.querySelector('.terminal-body');
+                if (body) body.scrollTop = 0;
                 window.AudioManager?.play('ui_click', { volume: 0.5 });
             };
 
@@ -4896,9 +4933,12 @@ export class ThreeGame {
                 tabBase.classList.remove('active');
                 contentSkills.classList.remove('hidden');
                 contentBase.classList.add('hidden');
+                const body = modal.querySelector('.terminal-body');
+                if (body) body.scrollTop = 0;
                 window.AudioManager?.play('ui_click', { volume: 0.5 });
                 this.renderSkillsTree(ship);
             };
+
         }
 
         // Hook up Close button
@@ -4969,11 +5009,22 @@ export class ThreeGame {
 
         gridContainer.innerHTML = '';
 
-        const playerClass = ship.type;
-        const tree = CLASS_SKILL_TREES[playerClass] || [];
+        const requestedClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
+        const playerClass = CLASS_SKILL_TREES[requestedClass]
+            ? requestedClass
+            : String(this.playerType ?? 'SCOUT').toUpperCase();
+        const tree = CLASS_SKILL_TREES[playerClass] ?? [];
         const unlockedCount = tree.filter(node => this.bank.isSkillUnlocked(node.id)).length;
         if (countEl) {
-            countEl.textContent = `UNLOCKED SKILLS: ${unlockedCount}/${tree.length} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+            countEl.textContent = `${playerClass} SKILLS: ${unlockedCount}/${tree.length} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+        }
+
+        if (tree.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'skills-tree-empty';
+            emptyState.textContent = 'CLASS SKILL DATA UNAVAILABLE. REOPEN THE TERMINAL TO RETRY.';
+            gridContainer.appendChild(emptyState);
+            return;
         }
 
         for (let row = 1; row <= 7; row++) {
@@ -8120,8 +8171,9 @@ export class ThreeGame {
         options = {}
     }) {
         const group = new THREE.Group();
-        const coreColor = options.color ?? (isEnemy ? 0xff4a4a : 0xffe08f);
-        const glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : 0xffaa22);
+        const classColor = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
+        const coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
+        const glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
 
         const core = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 8, 8),
