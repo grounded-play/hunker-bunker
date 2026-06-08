@@ -7126,6 +7126,55 @@ button.archive-log-entry:active {
   letter-spacing: 0.13em;
 }
 
+.terminal-objective-purchase-zone {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  margin-top: calc(var(--vu) * 0.7);
+  margin-bottom: calc(var(--vu) * 0.7);
+  padding: calc(var(--vu) * 1.1);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed rgba(var(--terminal-glow-rgb), 0.3);
+  border-radius: 6px;
+}
+
+.objective-cost-outline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 0.7);
+}
+
+.objective-cost-chip {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu) * 1.25);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: calc(var(--vu) * 0.3) calc(var(--vu) * 0.7);
+  border-radius: 4px;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+
+.objective-cost-chip.cost-met {
+  background: rgba(125, 255, 90, 0.12);
+  border-color: rgba(125, 255, 90, 0.35);
+  color: #7dff5a;
+  text-shadow: 0 0 4px rgba(125, 255, 90, 0.4);
+}
+
+.objective-cost-chip.cost-missing {
+  background: rgba(255, 110, 80, 0.12);
+  border-color: rgba(255, 110, 80, 0.35);
+  color: #ff9a82;
+  text-shadow: 0 0 4px rgba(255, 110, 80, 0.4);
+}
+
+#terminal-objective-buy-btn {
+  width: 100%;
+  padding: calc(var(--vu) * 0.8) !important;
+  font-size: calc(var(--vu) * 1.35) !important;
+}
+
 .terminal-shop-toprow {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
@@ -7184,7 +7233,7 @@ button.archive-log-entry:active {
 
 .terminal-bank-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: calc(var(--vu) * 0.85);
 }
 

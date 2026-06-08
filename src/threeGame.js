@@ -4488,6 +4488,51 @@ export class ThreeGame {
         }
     }
 
+    getActiveBaseGoal(bankState = this.bank.getState()) {
+        const o2Online = bankState.o2GeneratorLevel >= 1;
+        if (!o2Online) {
+            const nextUpgrade = this.getO2GeneratorState(bankState).nextUpgrade;
+            return {
+                key: 'o2Bubble',
+                title: 'REPAIR O₂ GENERATOR',
+                desc: 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.',
+                cost: nextUpgrade ? this.getEffectiveCost(nextUpgrade.cost) : {},
+                type: 'o2'
+            };
+        }
+        if (!bankState.unlocks.hullExpansion) {
+            return {
+                key: 'hullExpansion',
+                title: 'HULL EXPANSION MATRIX',
+                desc: 'Reinforce exterior hull. Increases max exosuit integrity to 4 hearts.',
+                cost: this.getEffectiveCost(this.bank.getGoalCost('hullExpansion') ?? {}),
+                type: 'goal',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'hullExpansion')
+            };
+        }
+        if (!bankState.unlocks.radarNode) {
+            return {
+                key: 'radarNode',
+                title: 'COMMUNICATION RADAR NODE',
+                desc: 'Establish long-range tactical feeds. Compass tracks nearest supply cache cluster.',
+                cost: this.getEffectiveCost(this.bank.getGoalCost('radarNode') ?? {}),
+                type: 'goal',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'radarNode')
+            };
+        }
+        if (!bankState.unlocks.reactorCompressor) {
+            return {
+                key: 'reactorCompressor',
+                title: 'REACTOR COMPRESSOR',
+                desc: 'Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.',
+                cost: this.getEffectiveCost(this.bank.getGoalCost('reactorCompressor') ?? {}),
+                type: 'goal',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'reactorCompressor')
+            };
+        }
+        return null;
+    }
+
     renderConsoleBanking(ship) {
         const inventory = this.getSessionInventory();
         const bankState = this.bank.getState();
@@ -4518,22 +4563,63 @@ export class ThreeGame {
             'terminal-tab-skills-status',
             `${unlockedSkillCount}/${skillTree.length} · ◈ ${this.bank.getShells()}${purchasableSkillCount > 0 ? ` · ${purchasableSkillCount} READY` : ''}`
         );
-        const loopStep = this.getLoopStep() ?? { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
-        const mission = this.missionState;
-        const missionActive = Boolean(mission?.type && mission?.status && mission.status !== 'inactive' && mission.status !== 'extracted');
-        const objectiveDetail = missionActive && mission.label
-            ? mission.label
-            : loopStep.key === 'o2'
-                ? 'RESTORE THE SHIP O₂ FIELD TO EXTEND OPERATING RANGE'
-                : 'SECURE SALVAGE, BANK RESOURCES, AND EXPAND BASE SYSTEMS';
-        setText('terminal-current-objective-title', loopStep.label);
-        setText('terminal-current-objective-detail', objectiveDetail);
-        setText(
-            'terminal-current-objective-status',
-            mission?.status === 'objective_complete' ? 'COMPLETE'
-                : mission?.status === 'elevator_ready' ? 'CHOICE'
-                    : 'ACTIVE'
-        );
+        const activeGoal = this.getActiveBaseGoal(bankState);
+        const purchaseZone = document.getElementById('terminal-objective-purchase-zone');
+        const costOutlineEl = document.getElementById('terminal-objective-cost-outline');
+        const buyBtn = document.getElementById('terminal-objective-buy-btn');
+
+        if (activeGoal && purchaseZone && costOutlineEl && buyBtn) {
+            purchaseZone.classList.remove('hidden');
+
+            setText('terminal-current-objective-title', activeGoal.title);
+            setText('terminal-current-objective-detail', activeGoal.desc);
+
+            const breakdown = this.getResourceCostBreakdown(activeGoal.cost, bankState);
+            const canAfford = this.bank.canAfford(activeGoal.cost);
+
+            costOutlineEl.innerHTML = '';
+            for (const entry of breakdown) {
+                const chip = document.createElement('span');
+                chip.className = `objective-cost-chip ${entry.have >= entry.need ? 'cost-met' : 'cost-missing'}`;
+                chip.textContent = `${entry.label}: ${entry.have}/${entry.need}`;
+                costOutlineEl.appendChild(chip);
+            }
+
+            buyBtn.disabled = !canAfford;
+            buyBtn.textContent = activeGoal.key === 'o2Bubble' ? 'REPAIR GENERATOR' : 'INITIATE BUILD';
+            buyBtn.classList.remove('btn-state--available', 'btn-state--insufficient');
+            buyBtn.classList.add(canAfford ? 'btn-state--available' : 'btn-state--insufficient');
+
+            buyBtn.onclick = () => {
+                if (activeGoal.type === 'o2') {
+                    this.attemptO2GeneratorUpgrade(ship);
+                } else if (activeGoal.type === 'goal' && activeGoal.cardConfig) {
+                    this.attemptGoalUnlock(ship, activeGoal.cardConfig);
+                }
+            };
+
+            setText('terminal-current-objective-status', canAfford ? 'READY' : 'INSUFFICIENT');
+        } else {
+            if (purchaseZone) {
+                purchaseZone.classList.add('hidden');
+            }
+            const loopStep = this.getLoopStep() ?? { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
+            const mission = this.missionState;
+            const missionActive = Boolean(mission?.type && mission?.status && mission.status !== 'inactive' && mission.status !== 'extracted');
+            const objectiveDetail = missionActive && mission.label
+                ? mission.label
+                : loopStep.key === 'o2'
+                    ? 'RESTORE THE SHIP O₂ FIELD TO EXTEND OPERATING RANGE'
+                    : 'SECURE SALVAGE, BANK RESOURCES, AND EXPAND BASE SYSTEMS';
+            setText('terminal-current-objective-title', loopStep.label);
+            setText('terminal-current-objective-detail', objectiveDetail);
+            setText(
+                'terminal-current-objective-status',
+                mission?.status === 'objective_complete' ? 'COMPLETE'
+                    : mission?.status === 'elevator_ready' ? 'CHOICE'
+                        : 'ACTIVE'
+            );
+        }
         this.updateTerminalClock();
         const heartsFromMed = Math.floor(bankState.med / 10);
         setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
@@ -4637,6 +4723,31 @@ export class ThreeGame {
         this.renderTier2Section(ship, bankState);
         this.renderWeaponsSection(ship, bankState);
         this.renderTerminalEventPanel();
+
+        // Hide active / unlocked sections below
+        const o2SectionEl = document.getElementById('o2-generator-section');
+        if (o2SectionEl) {
+            const isO2ActiveGoal = activeGoal && activeGoal.key === 'o2Bubble';
+            o2SectionEl.classList.toggle('hidden', generatorState.isOnline || isO2ActiveGoal);
+        }
+
+        const hullSection = document.getElementById('hull-expansion-section');
+        if (hullSection) {
+            const isHullActiveGoal = activeGoal && activeGoal.key === 'hullExpansion';
+            hullSection.classList.toggle('hidden', Boolean(bankState.unlocks.hullExpansion) || isHullActiveGoal);
+        }
+
+        const radarSection = document.getElementById('radar-node-section');
+        if (radarSection) {
+            const isRadarActiveGoal = activeGoal && activeGoal.key === 'radarNode';
+            radarSection.classList.toggle('hidden', Boolean(bankState.unlocks.radarNode) || isRadarActiveGoal);
+        }
+
+        const reactorSection = document.getElementById('reactor-compressor-section');
+        if (reactorSection) {
+            const isReactorActiveGoal = activeGoal && activeGoal.key === 'reactorCompressor';
+            reactorSection.classList.toggle('hidden', Boolean(bankState.unlocks.reactorCompressor) || isReactorActiveGoal);
+        }
 
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {

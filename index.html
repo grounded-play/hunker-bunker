@@ -752,7 +752,7 @@
           <div class="terminal-shop-toprow">
             <!-- Bank balance: compact resource grid + deposit -->
             <div id="terminal-bank-panel" class="terminal-shop-bank terminal-tone--bank">
-              <div class="terminal-section-title">BANK BALANCE</div>
+              <div class="terminal-section-title">CURRENT RUN STATS</div>
               <div class="terminal-info-grid">
                 <div class="terminal-info-chip">
                   <span class="terminal-info-chip__label">SHELLS</span>
@@ -774,28 +774,22 @@
               <div class="terminal-bank-grid">
                 <div class="terminal-bank-cell">
                   <span class="terminal-bank-cell__label">MED</span>
-                  <span class="terminal-bank-cell__values">
-                    <span class="terminal-bank-cell__carried" id="terminal-session-med">0</span>
-                    <span class="terminal-bank-cell__arrow">→</span>
-                    <span class="terminal-bank-cell__stored" id="terminal-bank-med">0</span>
-                  </span>
+                  <span class="terminal-bank-cell__stored" id="terminal-bank-med">0</span>
                   <span class="terminal-bank-cell__subtext" id="terminal-med-hearts">0/10 for ♥</span>
+                  <span class="terminal-bank-cell__carried" id="terminal-session-med" style="display: none;">0</span>
+                  <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
                 </div>
                 <div class="terminal-bank-cell">
                   <span class="terminal-bank-cell__label">TECH</span>
-                  <span class="terminal-bank-cell__values">
-                    <span class="terminal-bank-cell__carried" id="terminal-session-tech">0</span>
-                    <span class="terminal-bank-cell__arrow">→</span>
-                    <span class="terminal-bank-cell__stored" id="terminal-bank-tech">0</span>
-                  </span>
+                  <span class="terminal-bank-cell__stored" id="terminal-bank-tech">0</span>
+                  <span class="terminal-bank-cell__carried" id="terminal-session-tech" style="display: none;">0</span>
+                  <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
                 </div>
                 <div class="terminal-bank-cell">
                   <span class="terminal-bank-cell__label">COIN</span>
-                  <span class="terminal-bank-cell__values">
-                    <span class="terminal-bank-cell__carried" id="terminal-session-coin">0</span>
-                    <span class="terminal-bank-cell__arrow">→</span>
-                    <span class="terminal-bank-cell__stored" id="terminal-bank-coin">0</span>
-                  </span>
+                  <span class="terminal-bank-cell__stored" id="terminal-bank-coin">0</span>
+                  <span class="terminal-bank-cell__carried" id="terminal-session-coin" style="display: none;">0</span>
+                  <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
                 </div>
               </div>
               <div class="terminal-current-objective" id="terminal-current-objective">
@@ -805,6 +799,13 @@
                 </div>
                 <span class="terminal-current-objective__title" id="terminal-current-objective-title">EXPLORE · BANK SALVAGE</span>
                 <span class="terminal-current-objective__detail" id="terminal-current-objective-detail">NO ACTIVE MISSION CONTRACT</span>
+                
+                <!-- Purchase Zone for Active Base Goal -->
+                <div id="terminal-objective-purchase-zone" class="terminal-objective-purchase-zone hidden">
+                  <div class="objective-cost-outline" id="terminal-objective-cost-outline"></div>
+                  <button class="terminal-action-btn" id="terminal-objective-buy-btn">INITIATE BUILD</button>
+                </div>
+
                 <div class="terminal-current-objective__footer">
                   <span class="terminal-current-objective__directive-label">BASE PRIORITY</span>
                   <span class="terminal-bank-hint" id="terminal-bank-hint">RUN LOOT AUTOMATICALLY SECURED AND BANKED.</span>
