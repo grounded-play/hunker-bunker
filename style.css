@@ -1353,18 +1353,22 @@ body {
 .hero-stat-compact-row {
   grid-column: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns:
+    calc(var(--vu) * 7.4)
+    calc(var(--vu) * 5.6)
+    minmax(calc(var(--vu) * 6.2), 1fr);
   align-items: center;
   gap: calc(var(--vu) * 0.5);
   min-width: 0;
 }
 
 .hero-stat-compact-label {
-  font-size: var(--font-xs);
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.7);
   font-weight: 900;
   letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.38);
-  min-width: 0;
+  color: rgba(255, 255, 255, 0.52);
+  width: calc(var(--vu) * 7.4);
   line-height: 1;
   white-space: nowrap;
 }
@@ -1372,28 +1376,59 @@ body {
 .hero-stat-pips {
   display: flex;
   align-items: center;
-  gap: calc(var(--vu) * 0.32);
-  flex: 1;
+  justify-content: flex-start;
+  width: calc(var(--vu) * 5.6);
+  gap: calc(var(--vu) * 0.24);
 }
 
 .hero-stat-compact-value {
-  font-size: var(--font-xs);
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: calc(var(--vu) * 6.2);
+  padding: calc(var(--vu) * 0.22) calc(var(--vu) * 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0 49%, rgba(0, 0, 0, 0.3) 50% 52%, rgba(255, 255, 255, 0.018) 53% 100%),
+    rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7);
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.78);
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--class-pip-color, var(--accent-primary));
   text-shadow: 0 0 8px var(--class-pip-color, var(--accent-primary));
-  min-width: 0;
-  text-align: right;
+  text-align: center;
   line-height: 1;
   white-space: nowrap;
+  overflow: hidden;
+  transform-origin: center;
+  backface-visibility: hidden;
+}
+
+.hero-stat-compact-value.is-changing {
+  animation: soul-split-flap 0.28s steps(2, jump-none);
+}
+
+@keyframes soul-split-flap {
+  0% { transform: perspective(80px) rotateX(0); filter: brightness(1); }
+  45% { transform: perspective(80px) rotateX(-78deg); filter: brightness(0.55); }
+  55% { transform: perspective(80px) rotateX(78deg); filter: brightness(1.5); }
+  100% { transform: perspective(80px) rotateX(0); filter: brightness(1); }
 }
 
 .pip {
+  flex: 0 0 calc(var(--vu) * 0.82);
   width: calc(var(--vu) * 0.82);
   height: calc(var(--vu) * 0.82);
   border-radius: 50%;
   display: inline-block;
-  transition: background 0.25s, box-shadow 0.25s;
+  transition:
+    background 0.2s ease-out calc(var(--pip-index, 0) * 28ms),
+    border-color 0.2s ease-out calc(var(--pip-index, 0) * 28ms),
+    box-shadow 0.2s ease-out calc(var(--pip-index, 0) * 28ms),
+    opacity 0.14s ease-out calc(var(--pip-index, 0) * 28ms);
 }
 
 .pip--full {

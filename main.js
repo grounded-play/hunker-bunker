@@ -1339,19 +1339,58 @@ function triggerDamageFlash(event) {
 const HERO_DISPLAY_STATS = {
     SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE',  detail: 'SPRINT BURST // WIDE SALVAGE MAGNET', demoLabel: 'SCOUT DEMO // SPRINT' },
     TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BRACE MITIGATES DAMAGE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
-    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'MED',   detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
+    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'NORMAL', detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
 };
 const HERO_STAT_TOTAL = 5;
+const heroStatValueTimers = new WeakMap();
 
 function renderPips(containerId, filled) {
     const el = document.getElementById(containerId);
     if (!el) return;
-    el.replaceChildren();
-    for (let i = 0; i < HERO_STAT_TOTAL; i++) {
-        const pip = document.createElement('span');
-        pip.className = `pip ${i < filled ? 'pip--full' : 'pip--empty'}`;
-        el.appendChild(pip);
+
+    if (el.children.length !== HERO_STAT_TOTAL) {
+        el.replaceChildren();
+        for (let i = 0; i < HERO_STAT_TOTAL; i++) {
+            const pip = document.createElement('span');
+            pip.className = 'pip pip--empty';
+            pip.style.setProperty('--pip-index', i);
+            el.appendChild(pip);
+        }
     }
+
+    for (let i = 0; i < HERO_STAT_TOTAL; i++) {
+        const pip = el.children[i];
+        pip.classList.toggle('pip--full', i < filled);
+        pip.classList.toggle('pip--empty', i >= filled);
+    }
+}
+
+function crossFadeStatValue(element, text) {
+    if (!element) return;
+
+    const pendingTimers = heroStatValueTimers.get(element);
+    if (pendingTimers) {
+        window.clearTimeout(pendingTimers.swap);
+        window.clearTimeout(pendingTimers.end);
+    }
+    heroStatValueTimers.delete(element);
+
+    if (element.textContent === text) {
+        element.classList.remove('is-changing');
+        return;
+    }
+
+    element.classList.remove('is-changing');
+    void element.offsetWidth;
+    element.classList.add('is-changing');
+    const swap = window.setTimeout(() => {
+        element.textContent = text;
+    }, 140);
+    const end = window.setTimeout(() => {
+        element.classList.remove('is-changing');
+        heroStatValueTimers.delete(element);
+    }, 280);
+    heroStatValueTimers.set(element, { swap, end });
 }
 
 function updateHeroStats(type) {
@@ -1369,9 +1408,9 @@ function updateHeroStats(type) {
     const spdVal  = document.getElementById('hero-stat-spd-val');
     const o2Val   = document.getElementById('hero-stat-o2-val');
     const lootVal = document.getElementById('hero-stat-loot-val');
-    if (spdVal)  spdVal.textContent  = stats.spdLabel;
-    if (o2Val)   o2Val.textContent   = stats.o2Label;
-    if (lootVal) lootVal.textContent = stats.lootLabel;
+    crossFadeStatValue(spdVal, stats.spdLabel);
+    crossFadeStatValue(o2Val, stats.o2Label);
+    crossFadeStatValue(lootVal, stats.lootLabel);
 
     const detail = document.getElementById('hero-detail-copy');
     if (detail) detail.textContent = stats.detail;
