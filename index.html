@@ -1104,16 +1104,28 @@
         </div>
         <div class="setting-item setting-item--action">
           <span>SAVE DATA</span>
-          <span class="operator-save-actions">
-            <button type="button" class="calibrate-btn settings-action-btn" id="export-save" title="Copy a portable save code">EXPORT</button>
-            <button type="button" class="calibrate-btn settings-action-btn" id="import-save" title="Restore from a save code">IMPORT</button>
-          </span>
+          <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
         </div>
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">
           <button class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
         </div>
 
+      </div>
+    </div>
+
+    <div id="save-data-popup" class="modal audio-mixer-modal hidden">
+      <div class="modal-content audio-mixer-panel save-data-panel">
+        <button class="close-modal audio-mixer-close" id="close-save-data">×</button>
+        <h2 class="modal-title">SAVE DATA</h2>
+        <p class="save-data-hint">Export a portable save code or paste one below to restore progress. Importing overwrites current data on this device.</p>
+        <label class="save-data-code-label" for="save-data-code">PORTABLE SAVE CODE</label>
+        <textarea id="save-data-code" class="save-data-code" rows="5" placeholder="EXPORT OR PASTE SAVE CODE" autocomplete="off" spellcheck="false"></textarea>
+        <div class="save-data-status" id="save-data-status" role="status" aria-live="polite"></div>
+        <div class="audio-mixer-actions save-data-actions">
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="export-save" title="Generate and copy a portable save code">EXPORT + COPY</button>
+          <button type="button" class="settings-action-btn settings-action-btn--reset" id="import-save" title="Restore progress from the pasted save code">IMPORT DATA</button>
+        </div>
       </div>
     </div>
 

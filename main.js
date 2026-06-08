@@ -46,6 +46,11 @@ const openAudioMixerBtn = document.getElementById('open-audio-mixer');
 const audioMixerPopup = document.getElementById('audio-mixer-popup');
 const closeAudioMixerBtn = document.getElementById('close-audio-mixer');
 const saveAudioMixBtn = document.getElementById('save-audio-mix');
+const openSaveDataBtn = document.getElementById('open-save-data');
+const saveDataPopup = document.getElementById('save-data-popup');
+const closeSaveDataBtn = document.getElementById('close-save-data');
+const saveDataCode = document.getElementById('save-data-code');
+const saveDataStatus = document.getElementById('save-data-status');
 const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
 const audioVfxSlider = document.getElementById('audio-vfx-slider');
@@ -3388,6 +3393,7 @@ if (settingsBtns.length > 0 && settingsPopup) {
             if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
             syncAudioMixerUI(state.settings.audioMix);
             setAudioMixerOpen(false);
+            setSaveDataOpen(false);
         });
     });
 }
@@ -3415,6 +3421,7 @@ if (confirmYes) {
         if (confirmModal) confirmModal.classList.add('hidden');
         if (settingsPopup) settingsPopup.classList.add('hidden');
         setAudioMixerOpen(false);
+        setSaveDataOpen(false);
         cutsceneManager?.finishActiveRun(true);
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
@@ -3437,8 +3444,30 @@ if (closeSettings && settingsPopup) {
         draftAudioMix = cloneAudioMix(state.settings.audioMix);
         AudioManager.setMix(state.settings.audioMix);
         setAudioMixerOpen(false);
+        setSaveDataOpen(false);
     });
 }
+
+function setSaveDataOpen(isOpen) {
+    saveDataPopup?.classList.toggle('hidden', !isOpen);
+    if (!isOpen && saveDataStatus) {
+        saveDataStatus.textContent = '';
+        saveDataStatus.classList.remove('is-success', 'is-error');
+    }
+}
+
+function setSaveDataStatus(message, type = '') {
+    if (!saveDataStatus) return;
+    saveDataStatus.textContent = message;
+    saveDataStatus.classList.toggle('is-success', type === 'success');
+    saveDataStatus.classList.toggle('is-error', type === 'error');
+}
+
+openSaveDataBtn?.addEventListener('click', () => {
+    setSaveDataOpen(true);
+    saveDataCode?.focus();
+});
+closeSaveDataBtn?.addEventListener('click', () => setSaveDataOpen(false));
 
 // Global Escape Key Listener for Modals
 document.addEventListener('keydown', (event) => {
@@ -3465,12 +3494,20 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const saveDataPopup = document.getElementById('save-data-popup');
+        if (saveDataPopup && !saveDataPopup.classList.contains('hidden')) {
+            setSaveDataOpen(false);
+            event.preventDefault();
+            return;
+        }
+
         const settingsPopup = document.getElementById('settings-popup');
         if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
             settingsPopup.classList.add('hidden');
             draftAudioMix = cloneAudioMix(state.settings.audioMix);
             AudioManager.setMix(state.settings.audioMix);
             setAudioMixerOpen(false);
+            setSaveDataOpen(false);
             event.preventDefault();
             return;
         }
@@ -3893,33 +3930,44 @@ if (callsignInput) {
 
 document.getElementById('export-save')?.addEventListener('click', async () => {
     const code = exportSaveCode();
-    if (!code) { window.AudioManager?.play?.('ui_error', { volume: 0.5 }); return; }
+    if (!code) {
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        setSaveDataStatus('Unable to generate a save code.', 'error');
+        return;
+    }
+    if (saveDataCode) {
+        saveDataCode.value = code;
+        saveDataCode.select();
+    }
     let copied = false;
     try {
         await navigator.clipboard?.writeText(code);
         copied = true;
     } catch { /* clipboard blocked — fall back to manual copy */ }
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-    window.prompt(
-        copied
-            ? 'SAVE CODE COPIED TO CLIPBOARD. Keep it somewhere safe — paste it into IMPORT on another device.'
-            : 'COPY THIS SAVE CODE and keep it safe — paste it into IMPORT on another device.',
-        code
+    setSaveDataStatus(
+        copied ? 'Save code copied to clipboard.' : 'Save code ready. Copy it from the field above.',
+        'success'
     );
 });
 
 document.getElementById('import-save')?.addEventListener('click', () => {
-    const code = window.prompt('Paste a HUNKER BUNKER save code to restore progress.\nWARNING: this overwrites current progress on this device.');
-    if (code == null) return;
+    const code = saveDataCode?.value.trim();
+    if (!code) {
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        setSaveDataStatus('Paste a save code before importing.', 'error');
+        saveDataCode?.focus();
+        return;
+    }
     const written = importSaveCode(code);
     if (written < 0) {
         window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-        window.alert('That save code was not valid.');
+        setSaveDataStatus('That save code is not valid.', 'error');
         return;
     }
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-    window.alert(`Restored ${written} save record(s). Reloading…`);
-    window.location.reload();
+    setSaveDataStatus(`Restored ${written} save record(s). Reloading...`, 'success');
+    window.setTimeout(() => window.location.reload(), 700);
 });
 
 // ── Operator roster / loadout console (doc 01.C) ──────────────
@@ -4011,8 +4059,11 @@ setupClickOutside('settings-popup', () => {
         draftAudioMix = cloneAudioMix(state.settings.audioMix);
         AudioManager.setMix(state.settings.audioMix);
         setAudioMixerOpen(false);
+        setSaveDataOpen(false);
     }
 });
+
+setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
 
 setupClickOutside('confirm-modal', () => {
     const confirmModal = document.getElementById('confirm-modal');
