@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
@@ -2283,13 +2283,23 @@ export class ThreeGame {
         // themed boss that heads for the ship (Note 6). Additive — ambient
         // biome bosses are untouched.
         if (FEATURE_MILESTONE_BOSSES) {
-            this._onGoalUnlocked = (event) => {
+            this._onGoalUnlocked = async (event) => {
                 const goalKey = event?.detail?.goalKey;
                 const bossType = MILESTONE_BOSS_FOR_GOAL[goalKey];
                 if (!bossType) return;
                 if (goalKey === 'o2Bubble') return;
-                // Brief delay so the unlock confirmation reads before the counterattack.
-                setTimeout(() => this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey }), 1800);
+
+                this.closeConsoleModal();
+                this.setInputEnabled(false);
+                await this.dialogueManager?.openO2MilestoneDialogue({
+                    playerType: this.playerType,
+                    goalKey
+                });
+                this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
+                window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+                    detail: { type: bossType, goalKey }
+                }));
+                this.setInputEnabled(true);
             };
             window.addEventListener('goal-unlocked', this._onGoalUnlocked);
         }
@@ -4243,25 +4253,25 @@ export class ThreeGame {
             if (!cfg) continue;
             const alreadyUnlocked = Boolean(tier2Unlocks[key]);
             const prereqMet = !cfg.prereq || Boolean(unlocks[cfg.prereq]);
-            const cost = cfg.cost;
-            const canAfford = this.bank.canAfford(cost);
+            const shellPrice = shellPriceOf(cfg.cost);
+            const canAfford = this.bank.canAffordShells(shellPrice);
             const buildable = !alreadyUnlocked && prereqMet && canAfford;
 
             const statusEl = document.getElementById(`terminal-tier2-${key}-status`);
             if (statusEl) {
                 statusEl.textContent = alreadyUnlocked ? 'INSTALLED'
                     : !prereqMet ? 'LOCKED'
-                    : canAfford ? 'READY' : 'RESOURCE DEFICIT';
+                    : canAfford ? 'READY' : 'NEED SHELLS';
             }
             const costEl = document.getElementById(`terminal-tier2-${key}-cost`);
             if (costEl) {
-                const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
-                costEl.textContent = alreadyUnlocked ? '' : `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !canAfford })}${missingText}`;
+                const have = this.bank.getShells();
+                costEl.textContent = alreadyUnlocked ? '' : `COST: ◈ ${shellPrice} SHELLS${canAfford ? '' : ` // HAVE ${have}`}`;
             }
             const btn = document.getElementById(`terminal-btn-tier2-${key}`);
             if (!btn) continue;
             btn.disabled = !buildable;
-            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : canAfford ? 'INSTALL' : this.getMissingResourceText(cost, bankState);
+            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : canAfford ? 'INSTALL' : `NEED ◈ ${Math.max(0, shellPrice - this.bank.getShells())}`;
             btn.classList.toggle('btn-state--online', alreadyUnlocked);
             btn.classList.toggle('btn-state--available', buildable);
             btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && (!prereqMet || !canAfford));
@@ -4281,6 +4291,7 @@ export class ThreeGame {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
         }
         this.renderConsoleBanking(ship);
+        this.renderSkillsTree(ship);
     }
 
     // COMBAT MATRIX skill tree. Mirrors renderTier2Section: reuses the same action-card
@@ -4300,7 +4311,8 @@ export class ThreeGame {
             const maxed = level >= cfg.maxLevel;
             const nextCost = maxed ? null : cfg.costs[level];
             const cost = nextCost ?? null;
-            const canAfford = cost ? this.bank.canAfford(cost) : false;
+            const shellPrice = cost ? shellPriceOf(cost) : 0;
+            const canAfford = cost ? this.bank.canAffordShells(shellPrice) : false;
 
             const levelEl = document.getElementById(`terminal-weapon-${key}-level`);
             if (levelEl) levelEl.textContent = `LV ${level}/${cfg.maxLevel}`;
@@ -4314,14 +4326,14 @@ export class ThreeGame {
 
             const costEl = document.getElementById(`terminal-weapon-${key}-cost`);
             if (costEl) {
-                const missingText = canAfford || !cost ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
-                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !canAfford })}${missingText}`;
+                const have = this.bank.getShells();
+                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ◈ ${shellPrice} SHELLS${canAfford ? '' : ` // HAVE ${have}`}`;
             }
 
             const btn = document.getElementById(`terminal-btn-weapon-${key}`);
             if (!btn) continue;
             btn.disabled = maxed || !canAfford;
-            btn.textContent = maxed ? 'MAXED' : canAfford ? 'UPGRADE' : this.getMissingResourceText(cost, bankState);
+            btn.textContent = maxed ? 'MAXED' : canAfford ? 'UPGRADE' : `NEED ◈ ${Math.max(0, shellPrice - this.bank.getShells())}`;
             btn.classList.toggle('btn-state--online', maxed);
             btn.classList.toggle('btn-state--available', !maxed && canAfford);
             btn.classList.toggle('btn-state--insufficient', !maxed && !canAfford);
@@ -4342,6 +4354,7 @@ export class ThreeGame {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
         }
         this.renderConsoleBanking(ship);
+        this.renderSkillsTree(ship);
     }
 
     getActiveTerminalEvent() {
@@ -4677,6 +4690,7 @@ export class ThreeGame {
         const fallback = [
             'BUNKER PERIMETER SCAN NOMINAL. TACTICAL NETWORK UPLINK STABLE.',
             'RESOURCE CACHES DETECTED WITHIN OPERATIONAL RANGE. CONTINUE EXTRACTION.',
+            `BANKED SNAIL SHELLS: ◈ ${this.bank?.getShells?.() ?? 0}. USED FOR SKILLS AND MATRIX UPGRADES.`,
             `MOTHERSHIP MONITORING ACTIVE. DEPTH TIER: ${DEPTH_TIER_NAMES[depthTier] ?? 'SURFACE'}. STAY VIGILANT.`,
             `O₂ FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. REFILL RATE: ${generatorState.refillRate?.toFixed(1) ?? '0.0'}%/s.`
         ];
@@ -4959,7 +4973,7 @@ export class ThreeGame {
         const tree = CLASS_SKILL_TREES[playerClass] || [];
         const unlockedCount = tree.filter(node => this.bank.isSkillUnlocked(node.id)).length;
         if (countEl) {
-            countEl.textContent = `UNLOCKED SKILLS: ${unlockedCount}/${tree.length}`;
+            countEl.textContent = `UNLOCKED SKILLS: ${unlockedCount}/${tree.length} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
         }
 
         for (let row = 1; row <= 7; row++) {
@@ -4991,15 +5005,9 @@ export class ThreeGame {
                     desc.textContent = node.desc;
                     card.appendChild(desc);
 
-                    const costArr = [];
-                    if (node.cost.tech) costArr.push(`${node.cost.tech} TECH`);
-                    if (node.cost.coin) costArr.push(`${node.cost.coin} COIN`);
-                    if (node.cost.med) costArr.push(`${node.cost.med} MED`);
-                    const costText = costArr.join(' / ');
-
                     const costEl = document.createElement('div');
                     costEl.className = 'skill-node-cost';
-                    costEl.textContent = isUnlocked ? 'COMPLETED' : `COST: ${costText}`;
+                    costEl.textContent = isUnlocked ? 'COMPLETED' : `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`;
                     card.appendChild(costEl);
 
                     if (isAvailable) {
@@ -10640,6 +10648,7 @@ export class ThreeGame {
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
+        this.bank?.addShells?.(isBoss ? 15 : 1);
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;

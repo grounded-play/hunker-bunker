@@ -1,5 +1,12 @@
 const STORAGE_KEY = 'hb_bank';
-const BANK_SCHEMA_VERSION = 5;
+const BANK_SCHEMA_VERSION = 6;
+
+export function shellPriceOf(cost = {}) {
+    const tech = Number(cost?.tech) || 0;
+    const coin = Number(cost?.coin) || 0;
+    const med = Number(cost?.med) || 0;
+    return Math.max(1, Math.round((tech + coin * 2 + med * 3) / 12));
+}
 
 export const CLASS_SKILL_TREES = Object.freeze({
     SCOUT: Object.freeze([
@@ -306,7 +313,8 @@ function createDefaultState() {
             stimCache: false
         },
         weaponUpgrades: createDefaultWeaponUpgrades(),
-        unlockedSkills: []
+        unlockedSkills: [],
+        shells: 0
     };
 }
 
@@ -341,6 +349,10 @@ function migrateBank(raw) {
             raw.unlockedSkills = [];
         }
         raw.schemaVersion = 5;
+    }
+    if (version < 6) {
+        raw.shells = Number.isFinite(raw.shells) ? raw.shells : 0;
+        raw.schemaVersion = 6;
     }
     return raw;
 }
@@ -377,6 +389,7 @@ function toSerializableState(raw) {
     base.ammo = clampCount(raw.ammo);
     base.tech = clampCount(raw.tech);
     base.coin = clampCount(raw.coin);
+    base.shells = clampCount(raw.shells);
     base.foundryActivated = Boolean(raw.foundryActivated);
 
     let derivedLevel = 0;
@@ -439,7 +452,8 @@ function cloneState(state) {
         },
         unlockedSkills: [
             ...(state.unlockedSkills ?? [])
-        ]
+        ],
+        shells: clampCount(state.shells)
     };
 }
 
@@ -541,6 +555,34 @@ export class BankManager {
         this.state.tech -= requested.tech;
         this.state.coin -= requested.coin;
         this.save();
+        return true;
+    }
+
+    getShells() {
+        return clampCount(this.state.shells);
+    }
+
+    addShells(amount = 0) {
+        const gained = Math.max(0, Math.floor(Number(amount) || 0));
+        if (gained <= 0) return this.getShells();
+        this.state.shells = this.getShells() + gained;
+        this.save();
+        emit('shells-changed', { shells: this.state.shells, gained, bank: this.getState() });
+        emit('bank-updated', { bank: this.getState() });
+        return this.state.shells;
+    }
+
+    canAffordShells(amount = 0) {
+        return this.getShells() >= Math.max(0, Math.floor(Number(amount) || 0));
+    }
+
+    spendShells(amount = 0) {
+        const spent = Math.max(0, Math.floor(Number(amount) || 0));
+        if (!this.canAffordShells(spent)) return false;
+        this.state.shells = this.getShells() - spent;
+        this.save();
+        emit('shells-changed', { shells: this.state.shells, spent, bank: this.getState() });
+        emit('bank-updated', { bank: this.getState() });
         return true;
     }
 
@@ -665,14 +707,14 @@ export class BankManager {
         const cfg = TIER2_UPGRADE_CONFIGS[key];
         if (!cfg) return false;
         if (cfg.prereq && !this.state.unlocks?.[cfg.prereq]) return false;
-        return this.canAfford(cfg.cost);
+        return this.canAffordShells(shellPriceOf(cfg.cost));
     }
 
     unlockTier2(key) {
         if (!this.canUnlockTier2(key)) return false;
         const cfg = TIER2_UPGRADE_CONFIGS[key];
         if (!cfg) return false;
-        if (!this.spend(cfg.cost)) return false;
+        if (!this.spendShells(shellPriceOf(cfg.cost))) return false;
         if (!this.state.tier2Unlocks) this.state.tier2Unlocks = {};
         this.state.tier2Unlocks[key] = true;
         this.save();
@@ -699,7 +741,7 @@ export class BankManager {
     canUpgradeWeapon(key) {
         const cost = this.getWeaponUpgradeNextCost(key);
         if (!cost) return false;
-        return this.canAfford(cost);
+        return this.canAffordShells(shellPriceOf(cost));
     }
 
     upgradeWeapon(key) {
@@ -707,7 +749,7 @@ export class BankManager {
         if (!cfg) return false;
         const cost = this.getWeaponUpgradeNextCost(key);
         if (!cost) return false;
-        if (!this.spend(cost)) return false;
+        if (!this.spendShells(shellPriceOf(cost))) return false;
         if (!this.state.weaponUpgrades) this.state.weaponUpgrades = createDefaultWeaponUpgrades();
         this.state.weaponUpgrades[key] = this.getWeaponUpgradeLevel(key) + 1;
         this.save();
@@ -747,7 +789,7 @@ export class BankManager {
         }
 
         // 3. Cost check
-        return this.canAfford(node.cost);
+        return this.canAffordShells(shellPriceOf(node.cost));
     }
 
     unlockSkill(key, playerClass) {
@@ -755,7 +797,7 @@ export class BankManager {
         const node = tree?.find(n => n.id === key);
         if (!node || !this.canUnlockSkill(key, playerClass)) return false;
 
-        if (this.spend(node.cost)) {
+        if (this.spendShells(shellPriceOf(node.cost))) {
             if (!this.state.unlockedSkills) this.state.unlockedSkills = [];
             this.state.unlockedSkills.push(key);
             this.save();
