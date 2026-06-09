@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { BankManager, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES } from './bank.js';
+import { BankManager, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES, shellPriceOf } from './bank.js';
 
 function createMemoryStorage() {
     const memory = new Map();
@@ -23,7 +23,7 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         expect(bank.getState()).toEqual({
-            schemaVersion: 5,
+            schemaVersion: 6,
             med: 0,
             ammo: 0,
             tech: 0,
@@ -47,7 +47,8 @@ describe('BankManager', () => {
                 shotDamage: 0,
                 shotAmount: 0
             },
-            unlockedSkills: []
+            unlockedSkills: [],
+            shells: 0
         });
     });
 
@@ -147,7 +148,7 @@ describe('BankManager', () => {
         });
     });
 
-    it('migrates a v2 save to v5 without resetting and adds newer fields', () => {
+    it('migrates a v2 save to v6 without resetting and adds newer fields', () => {
         const storage = createMemoryStorage();
         storage.setItem('hb_bank', JSON.stringify({
             schemaVersion: 2,
@@ -159,13 +160,14 @@ describe('BankManager', () => {
 
         const bank = new BankManager({ storage });
         const state = bank.getState();
-        expect(state.schemaVersion).toBe(5);
+        expect(state.schemaVersion).toBe(6);
         expect(state.tech).toBe(40); // preserved, not reset
         expect(state.weaponUpgrades).toEqual({
             ammoCapacity: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0
         });
         expect(state.foundryActivated).toBe(false);
         expect(state.unlockedSkills).toEqual([]);
+        expect(state.shells).toBe(0);
     });
 
     it('activates the foundry once using the activation cost and persists', () => {
@@ -200,7 +202,7 @@ describe('BankManager', () => {
         expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(false);
         expect(bank.upgradeWeapon('ammoCapacity')).toBe(false);
 
-        bank.deposit({ tech: 9999, coin: 9999 });
+        bank.addShells(9999);
 
         // ammoCapacity has maxLevel 3 — buy all three.
         for (let i = 1; i <= 3; i++) {
@@ -227,9 +229,9 @@ describe('BankManager', () => {
 
         // Scout tree has scout_magnet_1 (no prereqs) and scout_speed_1 (prereq: scout_magnet_1)
         expect(bank.isSkillUnlocked('scout_magnet_1')).toBe(false);
-        expect(bank.canUnlockSkill('scout_magnet_1', 'SCOUT')).toBe(false); // No funds
+        expect(bank.canUnlockSkill('scout_magnet_1', 'SCOUT')).toBe(false); // No shells
 
-        bank.deposit({ tech: 100, coin: 100, med: 100 });
+        bank.addShells(100);
         expect(bank.canUnlockSkill('scout_magnet_1', 'SCOUT')).toBe(true);
         expect(bank.canUnlockSkill('scout_speed_1', 'SCOUT')).toBe(false); // Locked by prereq
 
@@ -246,5 +248,36 @@ describe('BankManager', () => {
         const reloaded = new BankManager({ storage });
         expect(reloaded.isSkillUnlocked('scout_magnet_1')).toBe(true);
         expect(reloaded.isSkillUnlocked('scout_speed_1')).toBe(true);
+    });
+
+    it('tracks and persists the snail-shell balance', () => {
+        const storage = createMemoryStorage();
+        const bank = new BankManager({ storage });
+
+        bank.addShells(16);
+        expect(bank.getShells()).toBe(16);
+        expect(bank.canAffordShells(17)).toBe(false);
+        expect(bank.spendShells(10)).toBe(true);
+        expect(bank.spendShells(99)).toBe(false);
+        expect(new BankManager({ storage }).getShells()).toBe(6);
+    });
+
+    it('derives stable shell prices from resource costs', () => {
+        expect(shellPriceOf({ tech: 20, coin: 5 })).toBe(3);
+        expect(shellPriceOf({ tech: 60, coin: 12 })).toBe(7);
+        expect(shellPriceOf({})).toBe(1);
+    });
+
+    it('buys tier2 and weapon upgrades with shells', () => {
+        const bank = new BankManager({ storage: createMemoryStorage() });
+        bank.deposit({ tech: 9999, coin: 9999, med: 9999 });
+        bank.setUnlock('o2Bubble');
+        expect(bank.canUnlockTier2('suitThermal')).toBe(false);
+        expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(false);
+
+        bank.addShells(50);
+        expect(bank.unlockTier2('suitThermal')).toBe(true);
+        expect(bank.upgradeWeapon('ammoCapacity')).toBe(true);
+        expect(bank.getShells()).toBeLessThan(50);
     });
 });

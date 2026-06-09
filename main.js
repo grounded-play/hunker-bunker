@@ -46,6 +46,11 @@ const openAudioMixerBtn = document.getElementById('open-audio-mixer');
 const audioMixerPopup = document.getElementById('audio-mixer-popup');
 const closeAudioMixerBtn = document.getElementById('close-audio-mixer');
 const saveAudioMixBtn = document.getElementById('save-audio-mix');
+const openSaveDataBtn = document.getElementById('open-save-data');
+const saveDataPopup = document.getElementById('save-data-popup');
+const closeSaveDataBtn = document.getElementById('close-save-data');
+const saveDataCode = document.getElementById('save-data-code');
+const saveDataStatus = document.getElementById('save-data-status');
 const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
 const audioVfxSlider = document.getElementById('audio-vfx-slider');
@@ -1022,6 +1027,7 @@ function parseRadioTransmission(rawText = '') {
 
 let hudNotificationTopTimer = null;
 let hudNotificationTopCard = null;
+let hudCardSeq = 0;
 
 function getHudNotificationCards() {
     const stack = document.querySelector('.hud-notification-stack');
@@ -1032,7 +1038,7 @@ function getHudNotificationCards() {
             const aPriority = Number(a.dataset.notificationPriority ?? 50);
             const bPriority = Number(b.dataset.notificationPriority ?? 50);
             if (aPriority !== bPriority) return aPriority - bPriority;
-            return 0;
+            return Number(a.dataset.seq ?? 0) - Number(b.dataset.seq ?? 0);
         });
 }
 
@@ -1101,7 +1107,58 @@ function trimRadioCopy(text) {
         .trim();
 }
 
+const RADIO_MIN_GAP_MS = 1400;
+const RADIO_MAX_QUEUED = 4;
+let radioQueue = [];
+let radioPumpTimer = null;
+let lastRadioRenderAt = 0;
+
+function normalizedRadioText(rawText) {
+    return trimRadioCopy(parseRadioTransmission(rawText).text);
+}
+
+function pumpRadioQueue() {
+    radioPumpTimer = null;
+    if (!radioQueue.length) return;
+    if (!isGameplayPhase() || !isGameplayHudActive() || isResettingRun) {
+        radioQueue = [];
+        return;
+    }
+
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const wait = Math.max(0, RADIO_MIN_GAP_MS - (now - lastRadioRenderAt));
+    if (wait > 0) {
+        radioPumpTimer = window.setTimeout(pumpRadioQueue, wait);
+        return;
+    }
+
+    const rawText = radioQueue.shift();
+    lastRadioRenderAt = now;
+    renderRadioTransmission(rawText);
+    if (radioQueue.length) {
+        radioPumpTimer = window.setTimeout(pumpRadioQueue, RADIO_MIN_GAP_MS);
+    }
+}
+
 function showRadioTransmission(rawText) {
+    if (!isGameplayPhase() || !isGameplayHudActive() || isResettingRun) return;
+    const text = normalizedRadioText(rawText);
+    if (!text) return;
+    if (radioQueue.some((queued) => normalizedRadioText(queued) === text)) return;
+
+    const stack = document.querySelector('.hud-notification-stack');
+    const alreadyVisible = stack && Array.from(stack.querySelectorAll('.radio-transmission-prompt__message'))
+        .some((element) => element.textContent === text);
+    if (alreadyVisible) return;
+
+    radioQueue.push(rawText);
+    if (radioQueue.length > RADIO_MAX_QUEUED) {
+        radioQueue.splice(0, radioQueue.length - RADIO_MAX_QUEUED);
+    }
+    if (!radioPumpTimer) pumpRadioQueue();
+}
+
+function renderRadioTransmission(rawText) {
     if (!isGameplayPhase()) return;
     if (!isGameplayHudActive() || isResettingRun) return;
 
@@ -1115,6 +1172,7 @@ function showRadioTransmission(rawText) {
     radioPrompt.className = 'radio-transmission-prompt hud-stack-card hidden';
     radioPrompt.setAttribute('aria-live', 'polite');
     radioPrompt.dataset.notificationPriority = '10';
+    radioPrompt.dataset.seq = String(hudCardSeq++);
     radioPrompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 42)));
     radioPrompt.dataset.removeDelayMs = '300';
     radioPrompt.innerHTML = `
@@ -1152,9 +1210,8 @@ function showRadioTransmission(rawText) {
         updateHudNotificationDeck();
     });
 
-    const visibleCards = Array.from(stack.querySelectorAll('.hud-stack-card:not(.hidden)'))
-        .filter((card) => card.dataset.dismissing !== 'true');
-    for (const oldCard of visibleCards.slice(5)) {
+    const visibleCards = getHudNotificationCards();
+    for (const oldCard of visibleCards.slice(3)) {
         dismissRadioPrompt(oldCard);
     }
     updateHudNotificationDeck();
@@ -1281,25 +1338,76 @@ function triggerDamageFlash(event) {
 // ---- Hero select stat pips ----
 const HERO_DISPLAY_STATS = {
     SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE',  detail: 'SPRINT BURST // WIDE SALVAGE MAGNET', demoLabel: 'SCOUT DEMO // SPRINT' },
-    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BRACE MITIGATES DAMAGE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
-    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'MED',   detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
+    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BRACE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
+    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'NORMAL', detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
 };
 const HERO_STAT_TOTAL = 5;
+const heroStatValueTimers = new WeakMap();
 
 function renderPips(containerId, filled) {
     const el = document.getElementById(containerId);
     if (!el) return;
-    el.replaceChildren();
-    for (let i = 0; i < HERO_STAT_TOTAL; i++) {
-        const pip = document.createElement('span');
-        pip.className = `pip ${i < filled ? 'pip--full' : 'pip--empty'}`;
-        el.appendChild(pip);
+
+    if (el.children.length !== HERO_STAT_TOTAL) {
+        el.replaceChildren();
+        for (let i = 0; i < HERO_STAT_TOTAL; i++) {
+            const pip = document.createElement('span');
+            pip.className = 'pip pip--empty';
+            pip.style.setProperty('--pip-index', i);
+            el.appendChild(pip);
+        }
     }
+
+    for (let i = 0; i < HERO_STAT_TOTAL; i++) {
+        const pip = el.children[i];
+        pip.classList.toggle('pip--full', i < filled);
+        pip.classList.toggle('pip--empty', i >= filled);
+    }
+}
+
+function crossFadeStatValue(element, text) {
+    if (!element) return;
+
+    const pendingTimers = heroStatValueTimers.get(element);
+    if (pendingTimers) {
+        window.clearTimeout(pendingTimers.swap);
+        window.clearTimeout(pendingTimers.end);
+    }
+    heroStatValueTimers.delete(element);
+
+    if (element.textContent === text) {
+        element.classList.remove('is-changing');
+        return;
+    }
+
+    element.classList.remove('is-changing');
+    void element.offsetWidth;
+    element.classList.add('is-changing');
+    const swap = window.setTimeout(() => {
+        element.textContent = text;
+    }, 140);
+    const end = window.setTimeout(() => {
+        element.classList.remove('is-changing');
+        heroStatValueTimers.delete(element);
+    }, 280);
+    heroStatValueTimers.set(element, { swap, end });
 }
 
 function updateHeroStats(type) {
     const stats = HERO_DISPLAY_STATS[type];
     if (!stats) return;
+
+    // Set class colour properties on the menu container so all children can inherit/use them
+    const menuEl = document.getElementById('menu');
+    if (menuEl) {
+        menuEl.style.setProperty('--class-color', stats.color);
+        const rgbMap = {
+            '#7dff5a': '125, 255, 90',
+            '#ffb700': '255, 183, 0',
+            '#00e5ff': '0, 229, 255'
+        };
+        menuEl.style.setProperty('--class-color-rgb', rgbMap[stats.color] || '255, 159, 28');
+    }
 
     // Set class colour on the row container so all pips + value text inherit it
     const row = document.getElementById('hero-stats-row');
@@ -1312,15 +1420,17 @@ function updateHeroStats(type) {
     const spdVal  = document.getElementById('hero-stat-spd-val');
     const o2Val   = document.getElementById('hero-stat-o2-val');
     const lootVal = document.getElementById('hero-stat-loot-val');
-    if (spdVal)  spdVal.textContent  = stats.spdLabel;
-    if (o2Val)   o2Val.textContent   = stats.o2Label;
-    if (lootVal) lootVal.textContent = stats.lootLabel;
+    crossFadeStatValue(spdVal, stats.spdLabel);
+    crossFadeStatValue(o2Val, stats.o2Label);
+    crossFadeStatValue(lootVal, stats.lootLabel);
 
-    const detail = document.getElementById('hero-detail-copy');
-    if (detail) detail.textContent = stats.detail;
-
-    const demoLabel = document.getElementById('class-demo-label');
-    if (demoLabel) demoLabel.textContent = stats.demoLabel;
+    const activeEl = document.getElementById('hero-detail-active');
+    const passiveEl = document.getElementById('hero-detail-passive');
+    if (activeEl && passiveEl && stats.detail) {
+        const parts = stats.detail.split('//');
+        crossFadeStatValue(activeEl, parts[0] ? parts[0].trim() : '—');
+        crossFadeStatValue(passiveEl, parts[1] ? parts[1].trim() : '—');
+    }
 }
 
 // ---- Game Over Screen ----
@@ -1353,7 +1463,7 @@ function refreshLastContractor() {
     if (!box?.active) { el.classList.add('hidden'); return; }
     const cls = (box.classType ?? 'OPERATOR').toUpperCase();
     const tier = DEPTH_TIER_LABELS[Math.max(0, Math.min(DEPTH_TIER_LABELS.length - 1, box.depth ?? 0))];
-    el.textContent = `BLACK BOX // ${cls} @ ${tier} // SIGNAL ACTIVE`;
+    el.innerHTML = `BLACK BOX <span class="ui-separator">//</span> ${cls} @ ${tier} <span class="ui-separator">//</span> SIGNAL ACTIVE`;
     el.classList.remove('hidden');
 }
 
@@ -1719,12 +1829,15 @@ window.addEventListener('mission-objective-complete', (event) => {
     AudioManager.play('ui_boot', { volume: 0.45, playbackRate: 0.88, bus: 'sfx' });
 });
 
-window.addEventListener('goal-unlocked', () => {
+window.addEventListener('goal-unlocked', (event) => {
+    const goalKey = event?.detail?.goalKey;
+    if (['o2Bubble', 'hullExpansion', 'radarNode', 'reactorCompressor'].includes(goalKey)) return;
     const line = getDialogueLine('majorUpgrade');
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
 
-window.addEventListener('o2-generator-upgraded', () => {
+window.addEventListener('o2-generator-upgraded', (event) => {
+    if (event?.detail?.level === 1) return;
     const line = getDialogueLine('majorUpgrade');
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
@@ -1847,6 +1960,28 @@ function lorePortraitSrc(key) {
     return `/lore_portraits/survivor_${String(lorePortraitIndex(key)).padStart(2, '0')}.webp`;
 }
 
+function closeArchiveLogDetail() {
+    const modal = document.getElementById('archive-log-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+function openArchiveLogDetail(key) {
+    const modal = document.getElementById('archive-log-detail-modal');
+    const keyEl = document.getElementById('archive-log-detail-key');
+    const textEl = document.getElementById('archive-log-detail-text');
+    const portraitEl = document.getElementById('archive-log-detail-portrait');
+    if (!modal) return;
+
+    if (keyEl) keyEl.textContent = `LOG-${key}`;
+    if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
+    if (portraitEl) portraitEl.src = lorePortraitSrc(key);
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+}
+
 function buildArchiveModal() {
     const listEl = document.getElementById('archive-log-list');
     const summaryEl = document.getElementById('archive-summary');
@@ -1865,15 +2000,26 @@ function buildArchiveModal() {
     ];
 
     for (const section of sections) {
+        const sectionEl = document.createElement('section');
+        sectionEl.className = 'archive-section';
+
         const sectionLabel = document.createElement('div');
         sectionLabel.className = 'archive-section-label';
         sectionLabel.textContent = section.label;
-        listEl.appendChild(sectionLabel);
+        sectionEl.appendChild(sectionLabel);
+
+        const grid = document.createElement('div');
+        grid.className = 'archive-log-grid';
 
         for (const key of section.keys) {
             const isFound = found.has(key);
-            const entry = document.createElement('div');
+            const entry = document.createElement(isFound ? 'button' : 'div');
             entry.className = `archive-log-entry ${isFound ? '' : 'archive-log-entry--undiscovered'}`;
+            if (isFound) {
+                entry.type = 'button';
+                entry.setAttribute('aria-label', `Open recovered log ${key}`);
+                entry.addEventListener('click', () => openArchiveLogDetail(key));
+            }
 
             const avatar = document.createElement('div');
             avatar.className = 'archive-log-avatar';
@@ -1887,7 +2033,10 @@ function buildArchiveModal() {
                 avatar.appendChild(img);
             } else {
                 avatar.classList.add('archive-log-avatar--locked');
-                avatar.textContent = '?';
+                const lock = document.createElement('span');
+                lock.className = 'archive-lock-icon';
+                lock.setAttribute('aria-hidden', 'true');
+                avatar.appendChild(lock);
             }
 
             const body = document.createElement('div');
@@ -1901,18 +2050,20 @@ function buildArchiveModal() {
             textEl.className = `archive-log-text ${isFound ? '' : 'archive-log-text--locked'}`;
 
             if (isFound) {
-                const loreText = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
-                textEl.textContent = loreText;
+                textEl.textContent = 'RECOVERED // OPEN RECORD';
             } else {
-                textEl.textContent = '[ENCRYPTED — RECOVER FROM FIELD TERMINAL]';
+                textEl.textContent = 'ENCRYPTED // LOCKED';
             }
 
             body.appendChild(keyEl);
             body.appendChild(textEl);
             entry.appendChild(avatar);
             entry.appendChild(body);
-            listEl.appendChild(entry);
+            grid.appendChild(entry);
         }
+
+        sectionEl.appendChild(grid);
+        listEl.appendChild(sectionEl);
     }
 
     if (summaryEl) {
@@ -3388,6 +3539,7 @@ if (settingsBtns.length > 0 && settingsPopup) {
             if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
             syncAudioMixerUI(state.settings.audioMix);
             setAudioMixerOpen(false);
+            setSaveDataOpen(false);
         });
     });
 }
@@ -3415,6 +3567,7 @@ if (confirmYes) {
         if (confirmModal) confirmModal.classList.add('hidden');
         if (settingsPopup) settingsPopup.classList.add('hidden');
         setAudioMixerOpen(false);
+        setSaveDataOpen(false);
         cutsceneManager?.finishActiveRun(true);
         dialogueManager?.cancelDialogue();
         dialogueManager?.cancelTutorial();
@@ -3437,8 +3590,30 @@ if (closeSettings && settingsPopup) {
         draftAudioMix = cloneAudioMix(state.settings.audioMix);
         AudioManager.setMix(state.settings.audioMix);
         setAudioMixerOpen(false);
+        setSaveDataOpen(false);
     });
 }
+
+function setSaveDataOpen(isOpen) {
+    saveDataPopup?.classList.toggle('hidden', !isOpen);
+    if (!isOpen && saveDataStatus) {
+        saveDataStatus.textContent = '';
+        saveDataStatus.classList.remove('is-success', 'is-error');
+    }
+}
+
+function setSaveDataStatus(message, type = '') {
+    if (!saveDataStatus) return;
+    saveDataStatus.textContent = message;
+    saveDataStatus.classList.toggle('is-success', type === 'success');
+    saveDataStatus.classList.toggle('is-error', type === 'error');
+}
+
+openSaveDataBtn?.addEventListener('click', () => {
+    setSaveDataOpen(true);
+    saveDataCode?.focus();
+});
+closeSaveDataBtn?.addEventListener('click', () => setSaveDataOpen(false));
 
 // Global Escape Key Listener for Modals
 document.addEventListener('keydown', (event) => {
@@ -3465,12 +3640,20 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const saveDataPopup = document.getElementById('save-data-popup');
+        if (saveDataPopup && !saveDataPopup.classList.contains('hidden')) {
+            setSaveDataOpen(false);
+            event.preventDefault();
+            return;
+        }
+
         const settingsPopup = document.getElementById('settings-popup');
         if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
             settingsPopup.classList.add('hidden');
             draftAudioMix = cloneAudioMix(state.settings.audioMix);
             AudioManager.setMix(state.settings.audioMix);
             setAudioMixerOpen(false);
+            setSaveDataOpen(false);
             event.preventDefault();
             return;
         }
@@ -3519,12 +3702,16 @@ document.getElementById('archive-btn')?.addEventListener('click', () => {
 });
 document.getElementById('close-archive-modal')?.addEventListener('click', () => {
     const modal = document.getElementById('archive-modal');
+    closeArchiveLogDetail();
     if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
 });
 setupClickOutside('archive-modal', () => {
     const modal = document.getElementById('archive-modal');
+    closeArchiveLogDetail();
     if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
 });
+document.getElementById('close-archive-log-detail')?.addEventListener('click', closeArchiveLogDetail);
+setupClickOutside('archive-log-detail-modal', closeArchiveLogDetail);
 
 // ── Fabrication Bay ───────────────────────────────────────────
 // Spend banked salvage to print gear (recipe art reused from mothership's item
@@ -3893,33 +4080,44 @@ if (callsignInput) {
 
 document.getElementById('export-save')?.addEventListener('click', async () => {
     const code = exportSaveCode();
-    if (!code) { window.AudioManager?.play?.('ui_error', { volume: 0.5 }); return; }
+    if (!code) {
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        setSaveDataStatus('Unable to generate a save code.', 'error');
+        return;
+    }
+    if (saveDataCode) {
+        saveDataCode.value = code;
+        saveDataCode.select();
+    }
     let copied = false;
     try {
         await navigator.clipboard?.writeText(code);
         copied = true;
     } catch { /* clipboard blocked — fall back to manual copy */ }
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-    window.prompt(
-        copied
-            ? 'SAVE CODE COPIED TO CLIPBOARD. Keep it somewhere safe — paste it into IMPORT on another device.'
-            : 'COPY THIS SAVE CODE and keep it safe — paste it into IMPORT on another device.',
-        code
+    setSaveDataStatus(
+        copied ? 'Save code copied to clipboard.' : 'Save code ready. Copy it from the field above.',
+        'success'
     );
 });
 
 document.getElementById('import-save')?.addEventListener('click', () => {
-    const code = window.prompt('Paste a HUNKER BUNKER save code to restore progress.\nWARNING: this overwrites current progress on this device.');
-    if (code == null) return;
+    const code = saveDataCode?.value.trim();
+    if (!code) {
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        setSaveDataStatus('Paste a save code before importing.', 'error');
+        saveDataCode?.focus();
+        return;
+    }
     const written = importSaveCode(code);
     if (written < 0) {
         window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-        window.alert('That save code was not valid.');
+        setSaveDataStatus('That save code is not valid.', 'error');
         return;
     }
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-    window.alert(`Restored ${written} save record(s). Reloading…`);
-    window.location.reload();
+    setSaveDataStatus(`Restored ${written} save record(s). Reloading...`, 'success');
+    window.setTimeout(() => window.location.reload(), 700);
 });
 
 // ── Operator roster / loadout console (doc 01.C) ──────────────
@@ -4011,8 +4209,11 @@ setupClickOutside('settings-popup', () => {
         draftAudioMix = cloneAudioMix(state.settings.audioMix);
         AudioManager.setMix(state.settings.audioMix);
         setAudioMixerOpen(false);
+        setSaveDataOpen(false);
     }
 });
+
+setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
 
 setupClickOutside('confirm-modal', () => {
     const confirmModal = document.getElementById('confirm-modal');
@@ -4310,14 +4511,34 @@ function syncHeroPreview(type) {
     const stage = document.querySelector('.char-preview-stage');
     if (stage) {
         const glowColors = {
-            'SCOUT': { border: 'rgba(125, 255, 90, 0.28)', bg: 'rgba(125, 255, 90, 0.16)', shadow: 'rgba(125, 255, 90, 0.18)' },
-            'TANK': { border: 'rgba(255, 183, 0, 0.28)', bg: 'rgba(255, 183, 0, 0.16)', shadow: 'rgba(255, 183, 0, 0.18)' },
-            'ENGINEER': { border: 'rgba(0, 229, 255, 0.28)', bg: 'rgba(0, 229, 255, 0.16)', shadow: 'rgba(0, 229, 255, 0.18)' }
+            'SCOUT': {
+                border: 'rgba(125, 255, 90, 0.28)',
+                bg: 'rgba(125, 255, 90, 0.16)',
+                shadow: 'rgba(125, 255, 90, 0.18)',
+                spriteGlow: 'rgba(125, 255, 90, 0.25)',
+                spriteGlowUnder: 'rgba(125, 255, 90, 0.38)'
+            },
+            'TANK': {
+                border: 'rgba(255, 183, 0, 0.28)',
+                bg: 'rgba(255, 183, 0, 0.16)',
+                shadow: 'rgba(255, 183, 0, 0.18)',
+                spriteGlow: 'rgba(255, 183, 0, 0.25)',
+                spriteGlowUnder: 'rgba(255, 183, 0, 0.38)'
+            },
+            'ENGINEER': {
+                border: 'rgba(0, 229, 255, 0.28)',
+                bg: 'rgba(0, 229, 255, 0.16)',
+                shadow: 'rgba(0, 229, 255, 0.18)',
+                spriteGlow: 'rgba(0, 229, 255, 0.25)',
+                spriteGlowUnder: 'rgba(0, 229, 255, 0.38)'
+            }
         };
         const colors = glowColors[type] || glowColors['SCOUT'];
         stage.style.setProperty('--preview-glow-border', colors.border);
         stage.style.setProperty('--preview-glow-bg', colors.bg);
         stage.style.setProperty('--preview-glow-shadow', colors.shadow);
+        stage.style.setProperty('--sprite-glow', colors.spriteGlow);
+        stage.style.setProperty('--sprite-glow-under', colors.spriteGlowUnder);
     }
 }
 
@@ -4421,19 +4642,25 @@ charCards.forEach(card => {
             setActiveAmmoCapacity(type, { clampExisting: true });
 
             if (window.game?.updatePlayerType) {
+                // Play swap sound and 2D DOM smoke poof in the demo container
+                const gameContainer = document.getElementById('game-container');
+                if (gameContainer) {
+                    spawnSectorScanSmoke(gameContainer, 25);
+                }
+                AudioManager.play('amb_metal_stress1', { volume: 0.4 });
+
                 if (!isGameplayPhase()) {
                     hideAllGameplayPrompts();
                     hideRunLoadingScreen();
-                    window.game.updatePlayerType(type, { poof: false, emitWorldEvents: false });
+                    setTimeout(() => {
+                        window.game.updatePlayerType(type, { poof: true, emitWorldEvents: false });
+                        AudioManager.play('class_lock', { volume: 0.5 });
+                    }, 150);
                     return;
                 }
 
-                const gameContainer = document.getElementById('game-container');
-                spawnSectorScanSmoke(gameContainer, 25);
-                AudioManager.play('amb_metal_stress1', { volume: 0.4 });
-                
                 setTimeout(() => {
-                    window.game.updatePlayerType(type);
+                    window.game.updatePlayerType(type, { poof: true, emitWorldEvents: true });
                     AudioManager.play('class_lock', { volume: 0.5 });
                 }, 150);
             }
@@ -4473,6 +4700,14 @@ function initTacticalCursor() {
     let touchFadeTimeout = null;
 
     let lastTouchTime = 0;
+    const isInsideGameViewport = (clientX, clientY) => {
+        const rect = gameViewport?.getBoundingClientRect();
+        return !!rect
+            && clientX >= rect.left
+            && clientX <= rect.right
+            && clientY >= rect.top
+            && clientY <= rect.bottom;
+    };
 
     window.addEventListener('mousemove', (e) => {
         // Ignore synthetic mousemove events triggered by touchscreen touch/taps
@@ -4488,6 +4723,13 @@ function initTacticalCursor() {
 
         mouseX = e.clientX;
         mouseY = e.clientY;
+
+        if (!isInsideGameViewport(mouseX, mouseY)) {
+            cursor.classList.add('cursor-fade-out');
+            document.documentElement.classList.remove('custom-cursor-enabled');
+            targetScale = 0.65;
+            return;
+        }
         
         // Ensure cursor is visible on desktop move (clearing touch fade states)
         cursor.classList.remove('cursor-fade-out');
@@ -4497,10 +4739,8 @@ function initTacticalCursor() {
             touchFadeTimeout = null;
         }
 
-        if (!hasMoved) {
-            hasMoved = true;
-            document.documentElement.classList.add('custom-cursor-enabled');
-        }
+        if (!hasMoved) hasMoved = true;
+        document.documentElement.classList.add('custom-cursor-enabled');
     }, { passive: true });
 
     // Instantly support touchscreen interaction: show cursor on tap/drag and fade it out nicely

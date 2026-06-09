@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
@@ -1514,8 +1514,8 @@ export class ThreeGame {
             ctx.stroke();
         };
 
-        drawGrid(16, 'rgba(106, 231, 255, 0.16)', 1);
-        drawGrid(64, 'rgba(185, 247, 255, 0.3)', 1.5);
+        drawGrid(16, 'rgba(255, 255, 255, 0.16)', 1);
+        drawGrid(64, 'rgba(255, 255, 255, 0.36)', 1.5);
 
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
@@ -1542,11 +1542,13 @@ export class ThreeGame {
 
         const spawn = this.getSpawnTile();
         this.menuGridTexture = this.createMenuGridTexture();
+        const startColorHex = PLAYER_COLORS[this.playerType] ?? 0xffffff;
+        this.targetMenuGridColor = new THREE.Color(startColorHex);
         this.menuShowroomFloor = new THREE.Mesh(
             new THREE.PlaneGeometry(MENU_SHOWROOM_FLOOR_SIZE, MENU_SHOWROOM_FLOOR_SIZE),
             new THREE.MeshBasicMaterial({
                 map: this.menuGridTexture,
-                color: 0xd5d9dc,
+                color: this.targetMenuGridColor.clone(),
                 transparent: true,
                 opacity: 0.92,
                 depthWrite: true,
@@ -2283,13 +2285,23 @@ export class ThreeGame {
         // themed boss that heads for the ship (Note 6). Additive — ambient
         // biome bosses are untouched.
         if (FEATURE_MILESTONE_BOSSES) {
-            this._onGoalUnlocked = (event) => {
+            this._onGoalUnlocked = async (event) => {
                 const goalKey = event?.detail?.goalKey;
                 const bossType = MILESTONE_BOSS_FOR_GOAL[goalKey];
                 if (!bossType) return;
                 if (goalKey === 'o2Bubble') return;
-                // Brief delay so the unlock confirmation reads before the counterattack.
-                setTimeout(() => this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey }), 1800);
+
+                this.closeConsoleModal();
+                this.setInputEnabled(false);
+                await this.dialogueManager?.openO2MilestoneDialogue({
+                    playerType: this.playerType,
+                    goalKey
+                });
+                this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
+                window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+                    detail: { type: bossType, goalKey }
+                }));
+                this.setInputEnabled(true);
             };
             window.addEventListener('goal-unlocked', this._onGoalUnlocked);
         }
@@ -2643,6 +2655,12 @@ export class ThreeGame {
         this.playerMaterial.color.setHex(color);
         this.playerMaterial.emissive.setHex(color);
         this.playerGlow.color.setHex(color);
+        if (this.targetMenuGridColor) {
+            this.targetMenuGridColor.setHex(color);
+        }
+        if (poof && this.player) {
+            this.spawnShipPoofEffect(this.player.position.x, this.player.position.z, color);
+        }
         if (this.suitFillLight?.color) {
             this.suitFillLight.color.setHex(color);
         }
@@ -3180,6 +3198,9 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu') {
             if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
             this.updateMenuShowcase(delta);
+            if (this.menuShowroomFloor?.material?.color && this.targetMenuGridColor) {
+                this.menuShowroomFloor.material.color.lerp(this.targetMenuGridColor, delta * 5);
+            }
             this.updatePlayer(delta);
             this.updateWeaponState(delta);
             this.updateProjectiles(delta);
@@ -4243,25 +4264,25 @@ export class ThreeGame {
             if (!cfg) continue;
             const alreadyUnlocked = Boolean(tier2Unlocks[key]);
             const prereqMet = !cfg.prereq || Boolean(unlocks[cfg.prereq]);
-            const cost = cfg.cost;
-            const canAfford = this.bank.canAfford(cost);
+            const shellPrice = shellPriceOf(cfg.cost);
+            const canAfford = this.bank.canAffordShells(shellPrice);
             const buildable = !alreadyUnlocked && prereqMet && canAfford;
 
             const statusEl = document.getElementById(`terminal-tier2-${key}-status`);
             if (statusEl) {
                 statusEl.textContent = alreadyUnlocked ? 'INSTALLED'
                     : !prereqMet ? 'LOCKED'
-                    : canAfford ? 'READY' : 'RESOURCE DEFICIT';
+                    : canAfford ? 'READY' : 'NEED SHELLS';
             }
             const costEl = document.getElementById(`terminal-tier2-${key}-cost`);
             if (costEl) {
-                const missingText = canAfford ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
-                costEl.textContent = alreadyUnlocked ? '' : `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !canAfford })}${missingText}`;
+                const have = this.bank.getShells();
+                costEl.textContent = alreadyUnlocked ? '' : `COST: ◈ ${shellPrice} SHELLS${canAfford ? '' : ` // HAVE ${have}`}`;
             }
             const btn = document.getElementById(`terminal-btn-tier2-${key}`);
             if (!btn) continue;
             btn.disabled = !buildable;
-            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : canAfford ? 'INSTALL' : this.getMissingResourceText(cost, bankState);
+            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : canAfford ? 'INSTALL' : `NEED ◈ ${Math.max(0, shellPrice - this.bank.getShells())}`;
             btn.classList.toggle('btn-state--online', alreadyUnlocked);
             btn.classList.toggle('btn-state--available', buildable);
             btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && (!prereqMet || !canAfford));
@@ -4281,6 +4302,7 @@ export class ThreeGame {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
         }
         this.renderConsoleBanking(ship);
+        this.renderSkillsTree(ship);
     }
 
     // COMBAT MATRIX skill tree. Mirrors renderTier2Section: reuses the same action-card
@@ -4300,7 +4322,8 @@ export class ThreeGame {
             const maxed = level >= cfg.maxLevel;
             const nextCost = maxed ? null : cfg.costs[level];
             const cost = nextCost ?? null;
-            const canAfford = cost ? this.bank.canAfford(cost) : false;
+            const shellPrice = cost ? shellPriceOf(cost) : 0;
+            const canAfford = cost ? this.bank.canAffordShells(shellPrice) : false;
 
             const levelEl = document.getElementById(`terminal-weapon-${key}-level`);
             if (levelEl) levelEl.textContent = `LV ${level}/${cfg.maxLevel}`;
@@ -4314,14 +4337,14 @@ export class ThreeGame {
 
             const costEl = document.getElementById(`terminal-weapon-${key}-cost`);
             if (costEl) {
-                const missingText = canAfford || !cost ? '' : ` // ${this.getMissingResourceText(cost, bankState)}`;
-                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ${this.formatResourceCost(cost, { bankState, showHaveNeed: !canAfford })}${missingText}`;
+                const have = this.bank.getShells();
+                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ◈ ${shellPrice} SHELLS${canAfford ? '' : ` // HAVE ${have}`}`;
             }
 
             const btn = document.getElementById(`terminal-btn-weapon-${key}`);
             if (!btn) continue;
             btn.disabled = maxed || !canAfford;
-            btn.textContent = maxed ? 'MAXED' : canAfford ? 'UPGRADE' : this.getMissingResourceText(cost, bankState);
+            btn.textContent = maxed ? 'MAXED' : canAfford ? 'UPGRADE' : `NEED ◈ ${Math.max(0, shellPrice - this.bank.getShells())}`;
             btn.classList.toggle('btn-state--online', maxed);
             btn.classList.toggle('btn-state--available', !maxed && canAfford);
             btn.classList.toggle('btn-state--insufficient', !maxed && !canAfford);
@@ -4342,6 +4365,7 @@ export class ThreeGame {
             window.AudioManager?.play('ui_error', { volume: 0.58 });
         }
         this.renderConsoleBanking(ship);
+        this.renderSkillsTree(ship);
     }
 
     getActiveTerminalEvent() {
@@ -4405,7 +4429,7 @@ export class ThreeGame {
 
         event.choices.forEach((choice, index) => {
             const btn = document.createElement('button');
-            btn.className = `terminal-action-btn terminal-event-choice ${choice.tone === 'risk' ? 'btn-state--available' : 'btn-state--locked'}`;
+            btn.className = `terminal-action-btn terminal-event-choice ${choice.tone === 'risk' ? 'btn-state--risk' : 'btn-state--available'}`;
             btn.textContent = choice.label;
             btn.addEventListener('click', () => this.applyTerminalChoice(event, index));
             choicesEl.appendChild(btn);
@@ -4464,6 +4488,51 @@ export class ThreeGame {
         }
     }
 
+    getActiveBaseGoal(bankState = this.bank.getState()) {
+        const o2Online = bankState.o2GeneratorLevel >= 1;
+        if (!o2Online) {
+            const nextUpgrade = this.getO2GeneratorState(bankState).nextUpgrade;
+            return {
+                key: 'o2Bubble',
+                title: 'REPAIR O₂ GENERATOR',
+                desc: 'REPAIR THIS MODULE TO CREATE A SAFE O₂ ZONE NEAR YOUR SHIP.',
+                cost: nextUpgrade ? this.getEffectiveCost(nextUpgrade.cost) : {},
+                type: 'o2'
+            };
+        }
+        if (!bankState.unlocks.hullExpansion) {
+            return {
+                key: 'hullExpansion',
+                title: 'HULL EXPANSION MATRIX',
+                desc: 'Reinforce exterior hull. Increases max exosuit integrity to 4 hearts.',
+                cost: this.getEffectiveCost(this.bank.getGoalCost('hullExpansion') ?? {}),
+                type: 'goal',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'hullExpansion')
+            };
+        }
+        if (!bankState.unlocks.radarNode) {
+            return {
+                key: 'radarNode',
+                title: 'COMMUNICATION RADAR NODE',
+                desc: 'Establish long-range tactical feeds. Compass tracks nearest supply cache cluster.',
+                cost: this.getEffectiveCost(this.bank.getGoalCost('radarNode') ?? {}),
+                type: 'goal',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'radarNode')
+            };
+        }
+        if (!bankState.unlocks.reactorCompressor) {
+            return {
+                key: 'reactorCompressor',
+                title: 'REACTOR COMPRESSOR',
+                desc: 'Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.',
+                cost: this.getEffectiveCost(this.bank.getGoalCost('reactorCompressor') ?? {}),
+                type: 'goal',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'reactorCompressor')
+            };
+        }
+        return null;
+    }
+
     renderConsoleBanking(ship) {
         const inventory = this.getSessionInventory();
         const bankState = this.bank.getState();
@@ -4482,10 +4551,75 @@ export class ThreeGame {
         setText('terminal-bank-tech', bankState.tech);
         setText('terminal-bank-coin', bankState.coin);
         const totalBanked = (bankState.med ?? 0) + (bankState.tech ?? 0) + (bankState.coin ?? 0);
-        setText('terminal-summary-run', depositableTotal);
+        setText('terminal-summary-shells', `◈ ${this.bank.getShells()}`);
         setText('terminal-summary-bank', totalBanked);
         setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
         setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
+        const playerClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
+        const skillTree = CLASS_SKILL_TREES[playerClass] ?? [];
+        const unlockedSkillCount = skillTree.filter((node) => this.bank.isSkillUnlocked(node.id)).length;
+        const purchasableSkillCount = skillTree.filter((node) => this.bank.canUnlockSkill(node.id, playerClass)).length;
+        setText(
+            'terminal-tab-skills-status',
+            `${unlockedSkillCount}/${skillTree.length} · ◈ ${this.bank.getShells()}${purchasableSkillCount > 0 ? ` · ${purchasableSkillCount} READY` : ''}`
+        );
+        const activeGoal = this.getActiveBaseGoal(bankState);
+        const purchaseZone = document.getElementById('terminal-objective-purchase-zone');
+        const costOutlineEl = document.getElementById('terminal-objective-cost-outline');
+        const buyBtn = document.getElementById('terminal-objective-buy-btn');
+
+        if (activeGoal && purchaseZone && costOutlineEl && buyBtn) {
+            purchaseZone.classList.remove('hidden');
+
+            setText('terminal-current-objective-title', activeGoal.title);
+            setText('terminal-current-objective-detail', activeGoal.desc);
+
+            const breakdown = this.getResourceCostBreakdown(activeGoal.cost, bankState);
+            const canAfford = this.bank.canAfford(activeGoal.cost);
+
+            costOutlineEl.innerHTML = '';
+            for (const entry of breakdown) {
+                const chip = document.createElement('span');
+                chip.className = `objective-cost-chip ${entry.have >= entry.need ? 'cost-met' : 'cost-missing'}`;
+                chip.textContent = `${entry.label}: ${entry.have}/${entry.need}`;
+                costOutlineEl.appendChild(chip);
+            }
+
+            buyBtn.disabled = !canAfford;
+            buyBtn.textContent = activeGoal.key === 'o2Bubble' ? 'REPAIR GENERATOR' : 'INITIATE BUILD';
+            buyBtn.classList.remove('btn-state--available', 'btn-state--insufficient');
+            buyBtn.classList.add(canAfford ? 'btn-state--available' : 'btn-state--insufficient');
+
+            buyBtn.onclick = () => {
+                if (activeGoal.type === 'o2') {
+                    this.attemptO2GeneratorUpgrade(ship);
+                } else if (activeGoal.type === 'goal' && activeGoal.cardConfig) {
+                    this.attemptGoalUnlock(ship, activeGoal.cardConfig);
+                }
+            };
+
+            setText('terminal-current-objective-status', canAfford ? 'READY' : 'INSUFFICIENT');
+        } else {
+            if (purchaseZone) {
+                purchaseZone.classList.add('hidden');
+            }
+            const loopStep = this.getLoopStep() ?? { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
+            const mission = this.missionState;
+            const missionActive = Boolean(mission?.type && mission?.status && mission.status !== 'inactive' && mission.status !== 'extracted');
+            const objectiveDetail = missionActive && mission.label
+                ? mission.label
+                : loopStep.key === 'o2'
+                    ? 'RESTORE THE SHIP O₂ FIELD TO EXTEND OPERATING RANGE'
+                    : 'SECURE SALVAGE, BANK RESOURCES, AND EXPAND BASE SYSTEMS';
+            setText('terminal-current-objective-title', loopStep.label);
+            setText('terminal-current-objective-detail', objectiveDetail);
+            setText(
+                'terminal-current-objective-status',
+                mission?.status === 'objective_complete' ? 'COMPLETE'
+                    : mission?.status === 'elevator_ready' ? 'CHOICE'
+                        : 'ACTIVE'
+            );
+        }
         this.updateTerminalClock();
         const heartsFromMed = Math.floor(bankState.med / 10);
         setText('terminal-med-hearts', heartsFromMed > 0 ? `♥ ×${heartsFromMed} AVAILABLE` : `${bankState.med}/10 FOR ♥`);
@@ -4590,6 +4724,31 @@ export class ThreeGame {
         this.renderWeaponsSection(ship, bankState);
         this.renderTerminalEventPanel();
 
+        // Hide active / unlocked sections below
+        const o2SectionEl = document.getElementById('o2-generator-section');
+        if (o2SectionEl) {
+            const isO2ActiveGoal = activeGoal && activeGoal.key === 'o2Bubble';
+            o2SectionEl.classList.toggle('hidden', generatorState.isOnline || isO2ActiveGoal);
+        }
+
+        const hullSection = document.getElementById('hull-expansion-section');
+        if (hullSection) {
+            const isHullActiveGoal = activeGoal && activeGoal.key === 'hullExpansion';
+            hullSection.classList.toggle('hidden', Boolean(bankState.unlocks.hullExpansion) || isHullActiveGoal);
+        }
+
+        const radarSection = document.getElementById('radar-node-section');
+        if (radarSection) {
+            const isRadarActiveGoal = activeGoal && activeGoal.key === 'radarNode';
+            radarSection.classList.toggle('hidden', Boolean(bankState.unlocks.radarNode) || isRadarActiveGoal);
+        }
+
+        const reactorSection = document.getElementById('reactor-compressor-section');
+        if (reactorSection) {
+            const isReactorActiveGoal = activeGoal && activeGoal.key === 'reactorCompressor';
+            reactorSection.classList.toggle('hidden', Boolean(bankState.unlocks.reactorCompressor) || isReactorActiveGoal);
+        }
+
         const ticker = document.getElementById('terminal-status-ticker');
         if (ticker) {
             this._tickerRefreshTimer = (this._tickerRefreshTimer ?? 0) + 0.12;
@@ -4677,6 +4836,7 @@ export class ThreeGame {
         const fallback = [
             'BUNKER PERIMETER SCAN NOMINAL. TACTICAL NETWORK UPLINK STABLE.',
             'RESOURCE CACHES DETECTED WITHIN OPERATIONAL RANGE. CONTINUE EXTRACTION.',
+            `BANKED SNAIL SHELLS: ◈ ${this.bank?.getShells?.() ?? 0}. USED FOR SKILLS AND MATRIX UPGRADES.`,
             `MOTHERSHIP MONITORING ACTIVE. DEPTH TIER: ${DEPTH_TIER_NAMES[depthTier] ?? 'SURFACE'}. STAY VIGILANT.`,
             `O₂ FIELD ACTIVE [${generatorState.radius.toFixed(1)}u]. REFILL RATE: ${generatorState.refillRate?.toFixed(1) ?? '0.0'}%/s.`
         ];
@@ -4874,6 +5034,8 @@ export class ThreeGame {
                 tabSkills.classList.remove('active');
                 contentBase.classList.remove('hidden');
                 contentSkills.classList.add('hidden');
+                const body = modal.querySelector('.terminal-body');
+                if (body) body.scrollTop = 0;
                 window.AudioManager?.play('ui_click', { volume: 0.5 });
             };
 
@@ -4882,9 +5044,12 @@ export class ThreeGame {
                 tabBase.classList.remove('active');
                 contentSkills.classList.remove('hidden');
                 contentBase.classList.add('hidden');
+                const body = modal.querySelector('.terminal-body');
+                if (body) body.scrollTop = 0;
                 window.AudioManager?.play('ui_click', { volume: 0.5 });
                 this.renderSkillsTree(ship);
             };
+
         }
 
         // Hook up Close button
@@ -4955,11 +5120,22 @@ export class ThreeGame {
 
         gridContainer.innerHTML = '';
 
-        const playerClass = ship.type;
-        const tree = CLASS_SKILL_TREES[playerClass] || [];
+        const requestedClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
+        const playerClass = CLASS_SKILL_TREES[requestedClass]
+            ? requestedClass
+            : String(this.playerType ?? 'SCOUT').toUpperCase();
+        const tree = CLASS_SKILL_TREES[playerClass] ?? [];
         const unlockedCount = tree.filter(node => this.bank.isSkillUnlocked(node.id)).length;
         if (countEl) {
-            countEl.textContent = `UNLOCKED SKILLS: ${unlockedCount}/${tree.length}`;
+            countEl.textContent = `${playerClass} SKILLS: ${unlockedCount}/${tree.length} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+        }
+
+        if (tree.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'skills-tree-empty';
+            emptyState.textContent = 'CLASS SKILL DATA UNAVAILABLE. REOPEN THE TERMINAL TO RETRY.';
+            gridContainer.appendChild(emptyState);
+            return;
         }
 
         for (let row = 1; row <= 7; row++) {
@@ -4991,15 +5167,9 @@ export class ThreeGame {
                     desc.textContent = node.desc;
                     card.appendChild(desc);
 
-                    const costArr = [];
-                    if (node.cost.tech) costArr.push(`${node.cost.tech} TECH`);
-                    if (node.cost.coin) costArr.push(`${node.cost.coin} COIN`);
-                    if (node.cost.med) costArr.push(`${node.cost.med} MED`);
-                    const costText = costArr.join(' / ');
-
                     const costEl = document.createElement('div');
                     costEl.className = 'skill-node-cost';
-                    costEl.textContent = isUnlocked ? 'COMPLETED' : `COST: ${costText}`;
+                    costEl.textContent = isUnlocked ? 'COMPLETED' : `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`;
                     card.appendChild(costEl);
 
                     if (isAvailable) {
@@ -8112,8 +8282,9 @@ export class ThreeGame {
         options = {}
     }) {
         const group = new THREE.Group();
-        const coreColor = options.color ?? (isEnemy ? 0xff4a4a : 0xffe08f);
-        const glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : 0xffaa22);
+        const classColor = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
+        const coreColor = options.color ?? (isEnemy ? 0xff4a4a : classColor);
+        const glowColor = options.glowColor ?? (isEnemy ? 0xff0000 : classColor);
 
         const core = new THREE.Mesh(
             new THREE.SphereGeometry(radius, 8, 8),
@@ -10640,6 +10811,7 @@ export class ThreeGame {
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
+        this.bank?.addShells?.(isBoss ? 15 : 1);
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;

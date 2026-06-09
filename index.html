@@ -160,7 +160,6 @@
       <div class="header-bar">
         <div class="title-group">
           <h1 class="title-small">HUNKER BUNKER</h1>
-          <div class="subtitle-small">TACTICAL COMMAND v2.0</div>
         </div>
         <div class="menu-header-actions">
           <div class="menu-command">
@@ -192,7 +191,6 @@
           <div class="module-row">
             <!-- Module 1: Sector Scan -->
             <div class="map-box">
-              <div class="map-label" id="class-demo-label">TANK FIELD TEST // BRACE</div>
               <div id="game-container"></div>
               <div class="module-scanline"></div>
             </div>
@@ -213,7 +211,8 @@
               </div>
               <div class="hero-detail-panel" id="hero-detail-panel">
                 <div class="hero-detail-panel__kicker">FIELD LOADOUT</div>
-                <div class="hero-detail-panel__copy" id="hero-detail-copy">BULKHEAD FRAME // BRACE REDUCES INCOMING DAMAGE</div>
+                <div class="hero-detail-line1" id="hero-detail-active">—</div>
+                <div class="hero-detail-line2" id="hero-detail-passive">—</div>
               </div>
               <div class="hero-stats-compact" id="hero-stats-row">
                 <div
@@ -226,12 +225,12 @@
                   <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
                 </div>
                 <div class="hero-stat-compact-row">
-                  <span class="hero-stat-compact-label">O₂ USAGE</span>
+                  <span class="hero-stat-compact-label">O₂ USE</span>
                   <div class="hero-stat-pips" id="hero-stat-o2"></div>
                   <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
                 </div>
                 <div class="hero-stat-compact-row">
-                  <span class="hero-stat-compact-label">LOOT-RANGE</span>
+                  <span class="hero-stat-compact-label" aria-label="Loot magnet range">LOOT MAG</span>
                   <div class="hero-stat-pips" id="hero-stat-loot"></div>
                   <span class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
                 </div>
@@ -246,7 +245,10 @@
                 <div class="char-info">
                   <span class="char-kicker">RECON FRAME</span>
                   <span class="char-name">SCOUT</span>
-                  <span class="char-desc">SPRINT BURST // WIDE MAGNET</span>
+                  <div class="char-desc-lines">
+                    <span class="char-desc-line1">SPRINT BURST</span>
+                    <span class="char-desc-line2">WIDE MAGNET</span>
+                  </div>
                   <span class="char-best-score" id="char-best-SCOUT"></span>
                 </div>
                 <div class="char-icon">↗</div>
@@ -255,7 +257,10 @@
                 <div class="char-info">
                   <span class="char-kicker">BULWARK FRAME</span>
                   <span class="char-name">TANK</span>
-                  <span class="char-desc">BRACE // LOW O₂ DRAIN</span>
+                  <div class="char-desc-lines">
+                    <span class="char-desc-line1">BRACE</span>
+                    <span class="char-desc-line2">LOW O₂ DRAIN</span>
+                  </div>
                   <span class="char-best-score" id="char-best-TANK"></span>
                 </div>
                 <div class="char-icon">▰</div>
@@ -264,7 +269,10 @@
                 <div class="char-info">
                   <span class="char-kicker">UTILITY FRAME</span>
                   <span class="char-name">ENGINEER</span>
-                  <span class="char-desc">REROUTE // CHEAPER CONSOLES</span>
+                  <div class="char-desc-lines">
+                    <span class="char-desc-line1">REROUTE</span>
+                    <span class="char-desc-line2">CHEAPER CONSOLES</span>
+                  </div>
                   <span class="char-best-score" id="char-best-ENGINEER"></span>
                 </div>
                 <div class="char-icon">⚙</div>
@@ -295,6 +303,23 @@
           <div id="archive-summary" class="archive-summary">LOGS RECOVERED: 0 / 27</div>
         </div>
         <div id="archive-log-list" class="archive-log-list"></div>
+      </div>
+    </div>
+
+    <!-- Recovered archive log detail -->
+    <div id="archive-log-detail-modal" class="modal archive-log-detail-modal hidden" aria-hidden="true">
+      <div class="modal-content archive-log-detail-content">
+        <div class="terminal-scanline"></div>
+        <button class="close-modal" id="close-archive-log-detail" aria-label="Close archive log">×</button>
+        <div class="archive-log-detail-header">
+          <img id="archive-log-detail-portrait" class="archive-log-detail-portrait" src="" alt="" />
+          <div>
+            <div class="archive-log-detail-kicker">◈ RECOVERED ARCHIVE RECORD</div>
+            <div id="archive-log-detail-key" class="archive-log-detail-key">LOG-A01</div>
+            <div class="archive-log-detail-status">DECRYPTION COMPLETE // READ-ONLY</div>
+          </div>
+        </div>
+        <div id="archive-log-detail-text" class="archive-log-detail-text"></div>
       </div>
     </div>
 
@@ -714,7 +739,10 @@
           <!-- Terminal Tabs Header -->
           <div class="terminal-tabs">
             <button id="terminal-tab-base" class="terminal-tab-btn active">◇ BASE SYSTEM</button>
-            <button id="terminal-tab-skills" class="terminal-tab-btn">◇ CLASS SKILLS</button>
+            <button id="terminal-tab-skills" class="terminal-tab-btn">
+              <span>◇ CLASS SKILLS</span>
+              <span class="terminal-tab-btn__status" id="terminal-tab-skills-status">0/6 · ◈ 0</span>
+            </button>
           </div>
 
           <!-- Base Systems Tab Content -->
@@ -724,11 +752,11 @@
           <div class="terminal-shop-toprow">
             <!-- Bank balance: compact resource grid + deposit -->
             <div id="terminal-bank-panel" class="terminal-shop-bank terminal-tone--bank">
-              <div class="terminal-section-title">BANK BALANCE</div>
+              <div class="terminal-section-title">CURRENT RUN STATS</div>
               <div class="terminal-info-grid">
                 <div class="terminal-info-chip">
-                  <span class="terminal-info-chip__label">RUN CARRY</span>
-                  <span class="terminal-info-chip__value" id="terminal-summary-run">0</span>
+                  <span class="terminal-info-chip__label">SHELLS</span>
+                  <span class="terminal-info-chip__value" id="terminal-summary-shells">◈ 0</span>
                 </div>
                 <div class="terminal-info-chip">
                   <span class="terminal-info-chip__label">BANK TOTAL</span>
@@ -746,59 +774,71 @@
               <div class="terminal-bank-grid">
                 <div class="terminal-bank-cell">
                   <span class="terminal-bank-cell__label">MED</span>
-                  <span class="terminal-bank-cell__values">
-                    <span class="terminal-bank-cell__carried" id="terminal-session-med">0</span>
-                    <span class="terminal-bank-cell__arrow">→</span>
-                    <span class="terminal-bank-cell__stored" id="terminal-bank-med">0</span>
-                  </span>
+                  <span class="terminal-bank-cell__stored" id="terminal-bank-med">0</span>
                   <span class="terminal-bank-cell__subtext" id="terminal-med-hearts">0/10 for ♥</span>
+                  <span class="terminal-bank-cell__carried" id="terminal-session-med" style="display: none;">0</span>
+                  <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
                 </div>
                 <div class="terminal-bank-cell">
                   <span class="terminal-bank-cell__label">TECH</span>
-                  <span class="terminal-bank-cell__values">
-                    <span class="terminal-bank-cell__carried" id="terminal-session-tech">0</span>
-                    <span class="terminal-bank-cell__arrow">→</span>
-                    <span class="terminal-bank-cell__stored" id="terminal-bank-tech">0</span>
-                  </span>
+                  <span class="terminal-bank-cell__stored" id="terminal-bank-tech">0</span>
+                  <span class="terminal-bank-cell__carried" id="terminal-session-tech" style="display: none;">0</span>
+                  <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
                 </div>
                 <div class="terminal-bank-cell">
                   <span class="terminal-bank-cell__label">COIN</span>
-                  <span class="terminal-bank-cell__values">
-                    <span class="terminal-bank-cell__carried" id="terminal-session-coin">0</span>
-                    <span class="terminal-bank-cell__arrow">→</span>
-                    <span class="terminal-bank-cell__stored" id="terminal-bank-coin">0</span>
-                  </span>
+                  <span class="terminal-bank-cell__stored" id="terminal-bank-coin">0</span>
+                  <span class="terminal-bank-cell__carried" id="terminal-session-coin" style="display: none;">0</span>
+                  <span class="terminal-bank-cell__arrow" style="display: none;">→</span>
                 </div>
               </div>
-              <div class="terminal-bank-actions">
-                <div class="terminal-bank-hint" id="terminal-bank-hint">RUN LOOT AUTOMATICALLY SECURED AND BANKED.</div>
+              <div class="terminal-current-objective" id="terminal-current-objective">
+                <div class="terminal-current-objective__header">
+                  <span class="terminal-current-objective__label">CURRENT OBJECTIVE</span>
+                  <span class="terminal-current-objective__status" id="terminal-current-objective-status">ACTIVE</span>
+                </div>
+                <span class="terminal-current-objective__title" id="terminal-current-objective-title">EXPLORE · BANK SALVAGE</span>
+                <span class="terminal-current-objective__detail" id="terminal-current-objective-detail">NO ACTIVE MISSION CONTRACT</span>
+                
+                <!-- Purchase Zone for Active Base Goal -->
+                <div id="terminal-objective-purchase-zone" class="terminal-objective-purchase-zone hidden">
+                  <div class="objective-cost-outline" id="terminal-objective-cost-outline"></div>
+                  <button class="terminal-action-btn" id="terminal-objective-buy-btn">INITIATE BUILD</button>
+                </div>
+
+                <div class="terminal-current-objective__footer">
+                  <span class="terminal-current-objective__directive-label">BASE PRIORITY</span>
+                  <span class="terminal-bank-hint" id="terminal-bank-hint">RUN LOOT AUTOMATICALLY SECURED AND BANKED.</span>
+                </div>
               </div>
             </div>
 
-            <div id="med-conversion-section" class="upgrade-goals-section upgrade-goals-section--medkit terminal-tone--medkit">
-              <div class="terminal-section-title">FIELD MEDKIT</div>
-              <div class="action-card action-card--medkit" data-goal-card="medkit">
-                <div class="action-card-header">
-                  <span class="action-title">MED CONVERSION</span>
-                  <span class="action-cost" id="terminal-medkit-status">OFFLINE</span>
+            <div class="terminal-shop-right-col">
+              <div id="med-conversion-section" class="upgrade-goals-section upgrade-goals-section--medkit terminal-tone--medkit">
+                <div class="terminal-section-title">FIELD MEDKIT</div>
+                <div class="action-card action-card--medkit" data-goal-card="medkit">
+                  <div class="action-card-header">
+                    <span class="action-title">MED CONVERSION</span>
+                    <span class="action-cost" id="terminal-medkit-status">OFFLINE</span>
+                  </div>
+                  <p class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
+                  <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
+                  <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
                 </div>
-                <p class="action-desc" id="terminal-medkit-desc">CONVERT 10 MED → ♥ 1 HEART RESTORED</p>
-                <p class="action-desc action-desc--hint" id="terminal-medkit-hint">USE BANKED MED SUPPLIES TO REPAIR EXOSUIT INTEGRITY.</p>
-                <button class="terminal-action-btn" id="terminal-btn-medkit" disabled>CONVERT 10 MED → ♥</button>
               </div>
-            </div>
-          </div>
 
-          <div id="terminal-event-section" class="upgrade-goals-section terminal-tone--event hidden">
-            <div class="terminal-section-title">FIELD TERMINAL EVENT</div>
-            <div class="action-card action-card--terminal-event">
-              <div class="action-card-header">
-                <span class="action-title" id="terminal-event-title">SYSTEM OFFER</span>
-                <span class="action-cost" id="terminal-event-status">CHOICE REQUIRED</span>
+              <div id="terminal-event-section" class="upgrade-goals-section terminal-tone--event hidden">
+                <div class="terminal-section-title">FIELD TERMINAL EVENT</div>
+                <div class="action-card action-card--terminal-event">
+                  <div class="action-card-header">
+                    <span class="action-title" id="terminal-event-title">SYSTEM OFFER</span>
+                    <span class="action-cost" id="terminal-event-status">CHOICE REQUIRED</span>
+                  </div>
+                  <p class="action-desc" id="terminal-event-body">A bunker subsystem is requesting operator input.</p>
+                  <div id="terminal-event-choices" class="terminal-event-choices"></div>
+                  <p class="action-desc action-desc--hint" id="terminal-event-result"></p>
+                </div>
               </div>
-              <p class="action-desc" id="terminal-event-body">A bunker subsystem is requesting operator input.</p>
-              <div id="terminal-event-choices" class="terminal-event-choices"></div>
-              <p class="action-desc action-desc--hint" id="terminal-event-result"></p>
             </div>
           </div>
 
@@ -936,6 +976,7 @@
           </div>
 
         </div>
+        </div>
         </div><!-- /#terminal-tab-base-content -->
 
         <!-- Class Skills Tab Content -->
@@ -943,7 +984,7 @@
           <div class="terminal-layout terminal-layout--skills">
             <div class="skills-header">
               <span class="skills-unlocked-count" id="skills-unlocked-count">UNLOCKED SKILLS: 0/6</span>
-              <span class="skills-info-hint">SELECT A NODE TO VIEW DATA AND PURCHASE WITH BANKED RESOURCE MATRIX</span>
+              <span class="skills-info-hint">SELECT AN AVAILABLE NODE TO PURCHASE WITH BANKED SNAIL SHELLS</span>
             </div>
             <div class="skills-tree-container">
               <div class="skills-tree-grid" id="skills-tree-grid">
@@ -1012,8 +1053,6 @@
         </div>
       </div>
     </div>
-
-  </div>
 
     <!-- Tactical Confirmation Modal -->
     <div id="confirm-modal" class="modal critical-modal hidden">
@@ -1104,16 +1143,28 @@
         </div>
         <div class="setting-item setting-item--action">
           <span>SAVE DATA</span>
-          <span class="operator-save-actions">
-            <button type="button" class="calibrate-btn settings-action-btn" id="export-save" title="Copy a portable save code">EXPORT</button>
-            <button type="button" class="calibrate-btn settings-action-btn" id="import-save" title="Restore from a save code">IMPORT</button>
-          </span>
+          <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
         </div>
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">
           <button class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
         </div>
 
+      </div>
+    </div>
+
+    <div id="save-data-popup" class="modal audio-mixer-modal hidden">
+      <div class="modal-content audio-mixer-panel save-data-panel">
+        <button class="close-modal audio-mixer-close" id="close-save-data">×</button>
+        <h2 class="modal-title">SAVE DATA</h2>
+        <p class="save-data-hint">Export a portable save code or paste one below to restore progress. Importing overwrites current data on this device.</p>
+        <label class="save-data-code-label" for="save-data-code">PORTABLE SAVE CODE</label>
+        <textarea id="save-data-code" class="save-data-code" rows="5" placeholder="EXPORT OR PASTE SAVE CODE" autocomplete="off" spellcheck="false"></textarea>
+        <div class="save-data-status" id="save-data-status" role="status" aria-live="polite"></div>
+        <div class="audio-mixer-actions save-data-actions">
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="export-save" title="Generate and copy a portable save code">EXPORT + COPY</button>
+          <button type="button" class="settings-action-btn settings-action-btn--reset" id="import-save" title="Restore progress from the pasted save code">IMPORT DATA</button>
+        </div>
       </div>
     </div>
 

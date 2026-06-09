@@ -48,6 +48,52 @@ const O2_MILESTONE_LINES = {
     ]
 };
 
+const MILESTONE_LINES = {
+    o2Bubble: O2_MILESTONE_LINES,
+    hullExpansion: {
+        SCOUT: [
+            { text: 'SYSTEM: HULL INTEGRITY EXPANDED. STRUCTURAL CAPACITY INCREASED.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: CRYOGENIC SHIELDING IS OPERATIONAL. A RETALIATION SIGNATURE IS APPROACHING.' }
+        ],
+        TANK: [
+            { text: 'SYSTEM: HEAVY SHIP PLATING ENGAGED. STRUCTURAL CAPACITY INCREASED.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: HULL ENHANCEMENTS COMPLETE. A CRYOGENIC RETALIATION SIGNATURE IS APPROACHING.' }
+        ],
+        ENGINEER: [
+            { text: 'SYSTEM: BULKHEAD INTEGRATION STABILIZED. STRUCTURAL CAPACITY INCREASED.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: HULL BAY IS ONLINE. A CRYOGENIC RETALIATION SIGNATURE IS APPROACHING.' }
+        ]
+    },
+    radarNode: {
+        SCOUT: [
+            { text: 'SYSTEM: SCANNER MAST ONLINE. RADAR FIELD ESTABLISHED.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: BIOTIC ZONE READINGS UPLOADED. A RETALIATION SIGNATURE IS CLOSING IN.' }
+        ],
+        TANK: [
+            { text: 'SYSTEM: RADAR ANTENNA ENGAGED. SIGNAL RETRIEVAL OPTIMIZED.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: SCANNER MAST IS ONLINE. A RETALIATION SIGNATURE IS CLOSING IN.' }
+        ],
+        ENGINEER: [
+            { text: 'SYSTEM: UPLINK TERMINAL SYNCHRONIZED. RADAR TRANSMITTER ACTIVE.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: RADAR MATRIX LOCKED. A RETALIATION SIGNATURE IS CLOSING IN.' }
+        ]
+    },
+    reactorCompressor: {
+        SCOUT: [
+            { text: 'SYSTEM: REACTOR COMPRESSOR ACTIVE. POWER GRID STABILIZED.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: FINAL SYSTEM REBOOT COMMENCING. DEFEND THE WRECK.' }
+        ],
+        TANK: [
+            { text: 'SYSTEM: POWER REACTOR GRID ENGAGED. FULL SHIELD ENERGY RESTORED.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: POWER COMPRESSOR STABILIZED. DEFEND THE WRECK.' }
+        ],
+        ENGINEER: [
+            { text: 'SYSTEM: COMPRESSOR CONTROL ACTIVE. POWER CHANNELS SYNCHRONIZED.', pauseMs: 400 },
+            { text: 'MOTHERSHIP: REACTOR AUXILIARY ONLINE. DEFEND THE WRECK.' }
+        ]
+    }
+};
+
 export class DialogueManager {
     constructor({
         dialogId = 'mothership-dialogue',
@@ -202,7 +248,7 @@ export class DialogueManager {
         return choice;
     }
 
-    async openO2MilestoneDialogue({ playerType = 'SCOUT' } = {}) {
+    async openO2MilestoneDialogue({ playerType = 'SCOUT', goalKey = 'o2Bubble' } = {}) {
         if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) {
             return;
         }
@@ -235,7 +281,8 @@ export class DialogueManager {
         window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
         window.addEventListener('keydown', this.handleDialogueKey);
 
-        const lines = O2_MILESTONE_LINES[playerType] ?? O2_MILESTONE_LINES.SCOUT;
+        const milestoneLines = MILESTONE_LINES[goalKey] ?? O2_MILESTONE_LINES;
+        const lines = milestoneLines[playerType] ?? milestoneLines.SCOUT;
         this.determineSpeakerSetup(lines);
 
         for (const line of lines) {
@@ -286,7 +333,7 @@ export class DialogueManager {
         await this.closeDialogue(runId);
     }
 
-    async openBriefTransmission({ playerType = 'SCOUT', lines = [], holdMs = 900 } = {}) {
+    async openBriefTransmission({ playerType = 'SCOUT', lines = [] } = {}) {
         if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) return;
         if (this.activeDialogueRunId) return;
 
@@ -294,8 +341,6 @@ export class DialogueManager {
             .map((line) => String(line ?? '').trim())
             .filter(Boolean);
         if (!normalizedLines.length) return;
-
-        this.determineSpeakerSetup(normalizedLines);
 
         this.cancelDialogue();
 
@@ -323,6 +368,8 @@ export class DialogueManager {
 
         this.setInputEnabled?.(false);
         window.AudioManager?.play('door_slide_horiz', { volume: 0.42 });
+        window.addEventListener('keydown', this.handleDialogueKey);
+        this.determineSpeakerSetup(normalizedLines);
 
         for (const line of normalizedLines) {
             await this.typeLine(runId, line);
@@ -330,7 +377,28 @@ export class DialogueManager {
             await this.sleep(runId, 320);
         }
 
-        await this.sleep(runId, holdMs);
+        const skipLabel = this.skipBtn?.querySelector('.choice-card__label');
+        const skipHint = this.skipBtn?.querySelector('.choice-card__hint');
+        const originalLabel = skipLabel?.textContent ?? '';
+        const originalHint = skipHint?.textContent ?? '';
+        if (skipLabel) skipLabel.textContent = '[A] CONTINUE';
+        if (skipHint) skipHint.textContent = 'DISMISS TRANSMISSION';
+        this.tutorialBtn?.classList.add('hidden');
+        this.choicesEl.classList.remove('hidden');
+        requestAnimationFrame(() => this.choicesEl.classList.add('is-visible'));
+
+        await new Promise((resolve) => {
+            this.activeChoiceResolver = resolve;
+        });
+
+        if (skipLabel) skipLabel.textContent = originalLabel;
+        if (skipHint) skipHint.textContent = originalHint;
+        this.tutorialBtn?.classList.remove('hidden');
+        if (!this.isDialogueRunActive(runId)) {
+            this.setInputEnabled?.(true);
+            return;
+        }
+
         await this.closeDialogue(runId);
         this.setInputEnabled?.(true);
     }

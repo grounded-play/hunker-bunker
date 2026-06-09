@@ -22,11 +22,14 @@ describe('chooseDirectorAction', () => {
         expect(a).toBe('patrol');
     });
 
-    it('escalates to lights-out / corrupt at depth on higher rolls', () => {
+    it('keeps environmental sabotage console-driven', () => {
         const deep = { hpFrac: 1, depth: 60, secondsSinceThreat: 999, secondsElapsed: 240 };
-        // escalation is high, so a roll just above patrolP lands on lightsout
-        const a = chooseDirectorAction(deep, () => 0.8);
-        expect(['lightsout', 'corrupt', 'taunt']).toContain(a);
+        for (let r = 0; r < 1; r += 0.05) {
+            const action = chooseDirectorAction(deep, () => r);
+            expect(['patrol', 'taunt', 'none']).toContain(action);
+            expect(action).not.toBe('lightsout');
+            expect(action).not.toBe('corrupt');
+        }
     });
 });
 

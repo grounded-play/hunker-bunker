@@ -54,11 +54,10 @@ export function chooseDirectorAction(snapshot = {}, random = Math.random) {
     // Healthy + quiet → escalate with depth (greed) and run length.
     const escalation = clamp01(depth / 40) * 0.6 + clamp01(secondsElapsed / 240) * 0.4; // 0..1
     const r = random();
-    const patrolP = 0.45 + 0.2 * escalation + (patrolBias ? 0.2 : 0);
+    const patrolP = 0.4 + 0.18 * escalation + (patrolBias ? 0.18 : 0);
     if (r < patrolP) return 'patrol';
-    if (r < patrolP + 0.2 * escalation) return 'lightsout';
-    if (r < patrolP + 0.35 * escalation) return 'corrupt';
-    return 'taunt';
+    if (r < patrolP + 0.22) return 'taunt';
+    return 'none';
 }
 
 export class BunkerDirector {
