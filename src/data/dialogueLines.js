@@ -27,6 +27,12 @@ export const DIALOGUE_LINES = Object.freeze({
         'Recovered resources secured. The bunker denies all emotional investment.',
         'Insurance protocol complete. Try not to create a replacement immediately.'
     ]),
+    caveSignal: Object.freeze([
+        'MOTHERSHIP: SUBTERRANEAN SIGNAL DETECTED. SOURCE UNKNOWN.',
+        'SYSTEM: AUDIO PATTERN RESEMBLES BREATHING. CLASSIFYING AS STATIC.',
+        'BUNKER: DOOR MAP UPDATED. UNAUTHORIZED CAVITY FOUND.',
+        'MOTHERSHIP: DO NOT ENTER ORGANIC STRUCTURE WITHOUT RECOVERY OBJECTIVE.'
+    ]),
     terminalChoice: Object.freeze([
         'Terminal bargain accepted. Consequences have been forwarded to future you.',
         'Choice registered. The facility appreciates decisive risk.',

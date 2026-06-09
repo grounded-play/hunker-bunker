@@ -11,7 +11,9 @@ import { codexStore } from './src/codex.js';
 import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
 import { pickMissionBriefing } from './src/data/missions.js';
-import { getDialogueLine } from './src/data/dialogueLines.js';
+import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
+import { ArcStateManager } from './src/arcState.js';
+import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
@@ -206,6 +208,7 @@ let activeTouchPointerId = null;
 let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 let cutsceneManager = null;
 let dialogueManager = null;
+const arcManager = ARC_PRELUDE_ENABLED ? new ArcStateManager() : null;
 let missionFlowRunning = false;
 let isResettingRun = false;
 
@@ -1248,6 +1251,20 @@ function renderBiomeStatus(detail = {}, { showPrompt = false } = {}) {
     }
 }
 
+function maybeShowCaveSignalTransmission() {
+    if (!ARC_PRELUDE_ENABLED || !arcManager) return;
+    arcManager.evaluate();
+    const arc = arcManager.getState();
+    if (arc.arcState !== 'cave_signal') return;
+    const lines = DIALOGUE_LINES.caveSignal ?? [];
+    if (!lines.length) return;
+    const index = Math.min(arc.caveSignalIndex ?? 0, lines.length - 1);
+    showRadioTransmission(lines[index]);
+    arcManager.recordSignal({ heardCaveSignal: true });
+    arcManager.setCaveSignalIndex(Math.min(index + 1, lines.length - 1));
+    AudioManager.playProceduralBreathing?.({ volume: 0.035, duration: 1.8 });
+}
+
 let lastReportedDepthTier = 0;
 window.addEventListener('depth-tier-changed', (event) => {
     const tier = event?.detail?.tier ?? 0;
@@ -1257,8 +1274,18 @@ window.addEventListener('depth-tier-changed', (event) => {
         const label = event?.detail?.label ?? `DEPTH ${tier}`;
         AudioManager.play('ui_boot', { volume: 0.28, playbackRate: 0.78 + tier * 0.06, bus: 'sfx' });
         showBiomePrompt(`> DEPTH: ${label}`);
+        maybeShowCaveSignalTransmission();
     }
 });
+window.addEventListener('black-box-recovered', () => {
+    maybeShowCaveSignalTransmission();
+});
+
+window.addEventListener('extraction-blocked', () => {
+    arcManager?.recordSignal?.({ blockedExtractions: 1 });
+    arcManager?.evaluate?.();
+});
+
 const BIOME_HUD_COLORS = {
     active: { label: 'rgba(173, 225, 255, 0.98)', glow: 'rgba(94, 178, 255, 0.33)' },
     cryo:   { label: 'rgba(148, 204, 255, 0.98)', glow: 'rgba(68, 158, 240, 0.45)' },
@@ -5142,7 +5169,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     parent: 'game-container',
                     playerType: targetType,
                     bankManager,
-                    dialogueManager
+                    dialogueManager,
+                    arcManager
                 });
                 window.game.nightVision = state.settings.nightVision;
             } catch (err) {

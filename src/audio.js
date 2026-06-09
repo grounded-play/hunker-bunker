@@ -520,6 +520,76 @@ export class AudioManager {
         }
     }
 
+    static playProceduralBreathing(options = {}) {
+        if (this.globalMuted || !this.isUnlocked) return null;
+
+        const now = audioCtx.currentTime;
+        const duration = Math.max(0.5, Number(options.duration) || 2.4);
+        const volume = Math.max(0, Math.min(1, Number(options.volume ?? 0.08)));
+
+        const lowOsc = audioCtx.createOscillator();
+        const lfo = audioCtx.createOscillator();
+        const lfoGain = audioCtx.createGain();
+        const breathGain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        lowOsc.type = 'sine';
+        lowOsc.frequency.setValueAtTime(Number(options.frequency) || 54, now);
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(0.42, now);
+        lfoGain.gain.setValueAtTime(volume * 0.55, now);
+        breathGain.gain.setValueAtTime(0.0001, now);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(260, now);
+        filter.Q.setValueAtTime(6, now);
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(breathGain.gain);
+        lowOsc.connect(filter);
+        filter.connect(breathGain);
+        breathGain.connect(this.worldGain);
+
+        breathGain.gain.linearRampToValueAtTime(volume, now + 0.25);
+        breathGain.gain.setValueAtTime(volume, now + Math.max(0.3, duration - 0.35));
+        breathGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        lowOsc.start(now);
+        lfo.start(now);
+        lowOsc.stop(now + duration + 0.05);
+        lfo.stop(now + duration + 0.05);
+        return { source: lowOsc, gainNode: breathGain };
+    }
+
+    static playProceduralScrape(options = {}) {
+        if (this.globalMuted || !this.isUnlocked) return null;
+
+        const now = audioCtx.currentTime;
+        const duration = Math.max(0.12, Number(options.duration) || 0.55);
+        const volume = Math.max(0, Math.min(1, Number(options.volume ?? 0.22)));
+
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+        osc.type = 'sawtooth';
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(900, now);
+        filter.frequency.exponentialRampToValueAtTime(140, now + duration);
+        filter.Q.setValueAtTime(11, now);
+
+        osc.frequency.setValueAtTime(190, now);
+        osc.frequency.exponentialRampToValueAtTime(38, now + duration);
+        gainNode.gain.setValueAtTime(0.0001, now);
+        gainNode.gain.linearRampToValueAtTime(volume, now + 0.03);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        osc.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.sfxGain);
+        osc.start(now);
+        osc.stop(now + duration + 0.05);
+        return { source: osc, gainNode };
+    }
+
     static playProceduralJunkBurst(junkType = 'bunker_junk') {
         if (this.globalMuted || !this.isUnlocked) return;
         

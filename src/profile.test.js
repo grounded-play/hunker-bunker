@@ -43,6 +43,7 @@ describe('save codes', () => {
         const src = makeStorage({
             hb_bank: '{"tech":5}',
             hb_fabricator_v1: '{"fabricated":{"mk1_sidearm":true}}',
+            hb_arc_v1: '{"arcState":"cave_signal"}',
             unrelated: 'nope'
         });
         const code = exportSaveCode(src);
@@ -50,9 +51,10 @@ describe('save codes', () => {
 
         const dst = makeStorage();
         const written = importSaveCode(code, dst);
-        expect(written).toBe(2);
+        expect(written).toBe(3);
         expect(dst.getItem('hb_bank')).toBe('{"tech":5}');
         expect(dst.getItem('hb_fabricator_v1')).toBe('{"fabricated":{"mk1_sidearm":true}}');
+        expect(dst.getItem('hb_arc_v1')).toBe('{"arcState":"cave_signal"}');
         expect(dst.getItem('unrelated')).toBeNull();
     });
 

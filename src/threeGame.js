@@ -4,6 +4,7 @@ import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { blackBoxStore } from './blackBox.js';
+import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
@@ -554,7 +555,7 @@ function classifyChunkCells(grid, chunkSize) {
 }
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null, arcManager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -562,6 +563,7 @@ export class ThreeGame {
 
         this.playerType = playerType;
         this.dialogueManager = dialogueManager;
+        this.arcManager = ARC_PRELUDE_ENABLED ? arcManager : null;
         this.o2StartupSequenceActive = false;
         this.o2StartupTime = 0;
         this.o2StartupPhase = 'popup';
@@ -3693,6 +3695,8 @@ export class ThreeGame {
         this.spawnPatrolNearPlayer();
         
         window.AudioManager?.play('class_lock', { volume: 0.56, playbackRate: 0.76, bus: 'sfx' });
+        this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
+        this.arcManager?.evaluate?.();
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
         return true;
     }
@@ -7930,6 +7934,8 @@ export class ThreeGame {
 
         if (depthTier > this.maxDepthTierReached) {
             this.maxDepthTierReached = depthTier;
+            this.arcManager?.recordSignal?.({ deepestDepthTier: depthTier });
+            this.arcManager?.evaluate?.();
             this.emitDepthTierChanged(depthTier);
             return;
         }
@@ -10811,6 +10817,8 @@ export class ThreeGame {
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
+        this.arcManager?.recordSignal?.({ snailsKilled: 1 });
+        this.arcManager?.evaluate?.();
         this.bank?.addShells?.(isBoss ? 15 : 1);
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
