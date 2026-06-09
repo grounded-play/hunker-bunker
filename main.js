@@ -1,6 +1,6 @@
 import { AudioManager } from './src/audio.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
-import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST } from './src/fabricator.js';
+import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
 import { ProfileManager, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
@@ -3475,6 +3475,29 @@ function sampleFPS() {
     fpsRafId = requestAnimationFrame(sampleFPS);
 }
 
+const debugGrantResourcesBtn = document.getElementById('debug-grant-resources');
+const debugGodModeBtn = document.getElementById('debug-god-mode');
+let debugGodModeActive = false;
+
+debugGrantResourcesBtn?.addEventListener('click', () => {
+    bankManager.deposit({ tech: 250, coin: 150, med: 75 });
+    bankManager.addShells(75);
+    window.game?.healPlayer?.(99);
+    window.game?.adjustOxygen?.(100);
+    window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
+    renderFabricationModal();
+    updateMenuCommandStatuses();
+    showBiomePrompt('> DEBUG: SALVAGE, SHELLS, HP, AND O₂ GRANTED.');
+});
+
+debugGodModeBtn?.addEventListener('click', () => {
+    debugGodModeActive = !debugGodModeActive;
+    window.game?.setGodMode?.(debugGodModeActive);
+    debugGodModeBtn.classList.toggle('debug-btn--active', debugGodModeActive);
+    debugGodModeBtn.textContent = debugGodModeActive ? 'GOD✓' : 'GOD';
+    showBiomePrompt(`> DEBUG: GOD MODE ${debugGodModeActive ? 'ONLINE' : 'OFFLINE'}.`);
+});
+
 if (fpsDisplay) {
     setInterval(() => {
         if (!document.body.classList.contains('show-debug')) {
@@ -3824,6 +3847,7 @@ function renderFabricationModal() {
     setTxt('fab-bank-tech', bank.tech ?? 0);
     setTxt('fab-bank-coin', bank.coin ?? 0);
     setTxt('fab-bank-med', bank.med ?? 0);
+    setTxt('fab-bank-shells', bank.shells ?? 0);
 
     const rollPanel = document.getElementById('fab-roll-panel');
     grid.innerHTML = '';
@@ -3838,11 +3862,14 @@ function renderFabricationModal() {
     const rollBtn = document.getElementById('fab-roll-btn');
     if (rollBtn && !fabRollSpinning) {
         const canRoll = fabricator.canRoll(bankManager);
+        const objective = fabricator.getObjectiveState();
         rollBtn.disabled = !canRoll;
         rollBtn.classList.toggle('fab-roll-btn--locked', !canRoll);
         rollBtn.innerHTML = canRoll
-            ? `ROLL FABRICATOR &nbsp;·&nbsp; ${fabCostMarkup(FAB_SPIN_COST)}`
-            : `INSUFFICIENT SALVAGE &nbsp;·&nbsp; ${fabCostText(FAB_SPIN_COST, bank, { showHaveNeed: true })}`;
+            ? `FABRICATE TARGET &nbsp;·&nbsp; ${fabCostMarkup(FAB_SPIN_COST)}`
+            : objective.siteUsesRemaining <= 0
+                ? 'FABRICATOR BROKEN — FOLLOW NEXT SIGNAL'
+                : `INSUFFICIENT SALVAGE &nbsp;·&nbsp; ${fabCostText(FAB_SPIN_COST, bank, { showHaveNeed: true })}`;
     }
 
     for (const recipe of FAB_RECIPES) {
@@ -3881,7 +3908,12 @@ function renderFabricationModal() {
 
         grid.appendChild(card);
     }
-    setTxt('fab-summary', `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`);
+    const objective = fabricator.getObjectiveState();
+    const targetName = objective.targetRecipe?.name ?? 'ALL TARGETS COMPLETE';
+    const pct = Math.round((objective.chance ?? 1) * 100);
+    setTxt('fab-summary', objective.complete
+        ? `SCHEMATICS FABRICATED: ${fabricator.getFabricatedCount()} / ${FAB_RECIPES.length}`
+        : `TARGET: ${targetName} · ODDS ${pct}% · USES ${objective.siteUsesRemaining}/${FABRICATOR_SITE_MAX_USES}`);
 }
 
 let fabTicker = null;
@@ -3914,9 +3946,9 @@ function runFabricatorRoll() {
 
     // Build a long strip of rarity tiles; the winner lands under the marker.
     const TILE = 92; // px (matches CSS tile width + gap)
-    const WIN_INDEX = 28;
+    const WIN_INDEX = 42;
     const tiles = [];
-    for (let i = 0; i < 34; i++) {
+    for (let i = 0; i < 58; i++) {
         tiles.push(i === WIN_INDEX ? result.rarity : RARITY_TILES[Math.floor(Math.random() * RARITY_TILES.length)]);
     }
     if (strip) {
@@ -3947,9 +3979,14 @@ function runFabricatorRoll() {
                 `<img class="fab-reveal__art" src="${rec.art}" alt="${rec.name}" onerror="this.src='/bunker_junk_rare.png'">` +
                 `<div class="fab-reveal__rarity">${r}${result.duplicate ? ' · DUPLICATE' : ''}</div>` +
                 `<div class="fab-reveal__name">${rec.name}</div>` +
-                `<div class="fab-reveal__klass">${rec.klass}${result.duplicate ? ' · ALREADY OWNED' : ' · SCHEMATIC UNLOCKED'}</div>`;
+                `<div class="fab-reveal__klass">${rec.klass}${result.objectiveHit ? ' · OBJECTIVE FABRICATED' : result.duplicate ? ' · ALREADY OWNED' : ' · SCHEMATIC UNLOCKED'}${result.broken ? ' · FABRICATOR BROKE' : ''}</div>`;
         }
         window.AudioManager?.playProceduralLoot?.('weapon', r.toLowerCase());
+        if (result.objectiveHit) showBiomePrompt(`> FABRICATOR: ${rec.name} OBJECTIVE PRINT COMPLETE.`);
+        if (result.broken) {
+            showBiomePrompt('> FABRICATOR: PRINT HEAD FAILURE. PARTIAL REFUND ISSUED. FOLLOW NEW SIGNAL.');
+            window.game?.revealFoundry?.({ randomEdge: true });
+        }
         fabRollSpinning = false;
         renderFabricationModal();
     }, 3300);
@@ -3973,8 +4010,7 @@ function closeFabricationModal() {
 function refreshFabAccess() {
     const btn = document.getElementById('fabrication-btn');
     if (!btn) return;
-    const online = (bankManager.getState().o2GeneratorLevel ?? 0) >= 1;
-    document.getElementById('fabrication-command')?.classList.toggle('hidden', !online);
+    document.getElementById('fabrication-command')?.classList.add('hidden');
     btn.textContent = bankManager.isFoundryActivated() ? '◇ FAB BAY' : '◇ ACTIVATE FAB';
     updateMenuCommandStatuses();
 }
@@ -4007,7 +4043,11 @@ window.addEventListener('enemy-killed', (e) => discoverCodex(e?.detail?.type));
 window.addEventListener('milestone-boss-spawned', (e) => discoverCodex(e?.detail?.type));
 window.addEventListener('lore-terminal-read', () => discoverCodex('lore_terminal'));
 window.addEventListener('o2-bubble-activated', () => discoverCodex('o2_generator'));
-window.addEventListener('foundry-discovered', () => discoverCodex('foundry'));
+window.addEventListener('foundry-discovered', () => {
+    discoverCodex('foundry');
+    fabricator.resetSiteUses();
+    renderFabricationModal();
+});
 window.addEventListener('black-box-recovered', () => discoverCodex('black_box'));
 window.addEventListener('elevator-sequence-started', () => discoverCodex('elevator_down'));
 window.addEventListener('codex-discover', (e) => discoverCodex(e?.detail?.id));

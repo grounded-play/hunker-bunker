@@ -44,6 +44,8 @@
         <span style="font-size: var(--font-sm); color: var(--accent-secondary);">T</span>
         <span style="font-size: var(--font-xs); color: var(--text-muted); margin-left: 4px;">T</span>
       </button>
+      <button id="debug-grant-resources" class="debug-btn" title="Grant test salvage and shells">+$</button>
+      <button id="debug-god-mode" class="debug-btn" title="Toggle god mode">GOD</button>
     </div>
     <div id="cabinet-bezel"></div>
 
@@ -370,6 +372,7 @@
           <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span>TECH <b id="fab-bank-tech">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span>COIN <b id="fab-bank-coin">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span>MED <b id="fab-bank-med">0</b></span>
+          <span class="fab-bank-chip"><span class="fab-bank-icon">◈</span>SHELLS <b id="fab-bank-shells">0</b></span>
         </div>
         <!-- Gamba roll panel: spend a flat cost for a rarity-weighted reveal -->
         <div id="fab-roll-panel" class="fab-roll-panel hidden">
@@ -990,6 +993,7 @@
               <div class="skills-tree-grid" id="skills-tree-grid">
                 <!-- Skill nodes generated dynamically by class -->
               </div>
+              <div class="skills-upgrade-matrix" id="skills-upgrade-matrix"></div>
             </div>
           </div>
         </div><!-- /#terminal-tab-skills-content -->

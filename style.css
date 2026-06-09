@@ -8612,3 +8612,21 @@ button.archive-log-entry:active {
   color: #ffb700; /* Warm accent color */
   font-size: 12px;
 }
+
+
+.skills-upgrade-matrix {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.skills-upgrade-matrix #tier2-section,
+.skills-upgrade-matrix #weapons-section {
+  margin-top: 0;
+}
+
+.debug-btn.debug-btn--active {
+  border-color: var(--accent-secondary);
+  color: var(--accent-secondary);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+}

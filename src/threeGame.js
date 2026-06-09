@@ -87,11 +87,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    // Sprint is a base exosuit action for every class. Class specials are not
-    // active in the current loop yet, so this HUD/ability path stays universal.
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5, unlockSkill: 'scout_special_unlock' },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'fortify',   abilityLabel: 'BRACE',        abilityCooldown: 10, abilityDuration: 2.0, unlockSkill: 'tank_special_unlock' },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'overclock', abilityLabel: 'REROUTE',      abilityCooldown: 11, abilityDuration: 2.5, unlockSkill: 'engineer_special_unlock' }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -4724,8 +4722,12 @@ export class ThreeGame {
         for (const cardConfig of GOAL_CARD_CONFIGS) {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
-        this.renderTier2Section(ship, bankState);
-        this.renderWeaponsSection(ship, bankState);
+        const skillsMatrix = document.getElementById('skills-upgrade-matrix');
+        if (skillsMatrix) this.mountUpgradeSectionsInSkillsTab(ship);
+        else {
+            this.renderTier2Section(ship, bankState);
+            this.renderWeaponsSection(ship, bankState);
+        }
         this.renderTerminalEventPanel();
 
         // Hide active / unlocked sections below
@@ -5117,7 +5119,20 @@ export class ThreeGame {
         return `<div class="skill-line-cell">${lineSvg}</div>`;
     }
 
+    mountUpgradeSectionsInSkillsTab(ship) {
+        const matrix = document.getElementById('skills-upgrade-matrix');
+        if (!matrix) return;
+        for (const id of ['tier2-section', 'weapons-section']) {
+            const section = document.getElementById(id);
+            if (section && section.parentElement !== matrix) matrix.appendChild(section);
+        }
+        const bankState = this.bank.getState();
+        this.renderTier2Section(ship, bankState);
+        this.renderWeaponsSection(ship, bankState);
+    }
+
     renderSkillsTree(ship) {
+        this.mountUpgradeSectionsInSkillsTab(ship);
         const gridContainer = document.getElementById('skills-tree-grid');
         const countEl = document.getElementById('skills-unlocked-count');
         if (!gridContainer) return;
@@ -5284,6 +5299,47 @@ export class ThreeGame {
         }
     }
 
+    updatePlayerUpgradeVisuals() {
+        if (!this.player) return;
+        if (this.playerUpgradeVisualGroup) {
+            this.player.remove(this.playerUpgradeVisualGroup);
+            this.playerUpgradeVisualGroup.traverse((child) => {
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            });
+        }
+        const group = new THREE.Group();
+        group.name = 'player-upgrade-visuals';
+        const bankState = this.bank?.getState?.() ?? {};
+        const skillCount = (bankState.unlockedSkills ?? []).length;
+        const weaponLevels = Object.values(bankState.weaponUpgrades ?? {}).reduce((sum, value) => sum + Math.max(0, Math.floor(Number(value) || 0)), 0);
+        const tier2Count = Object.values(bankState.tier2Unlocks ?? {}).filter(Boolean).length;
+        const ringCount = Math.min(3, Math.floor((skillCount + weaponLevels + tier2Count) / 2));
+        for (let i = 0; i < ringCount; i++) {
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(0.46 + i * 0.08, 0.012, 8, 32),
+                new THREE.MeshBasicMaterial({ color: [0x7dff5a, 0x00e5ff, 0xffb700][i % 3], transparent: true, opacity: 0.72 })
+            );
+            ring.rotation.x = Math.PI / 2;
+            ring.position.set(this.playerSpriteLead, 0.16 + i * 0.08, this.playerSpriteLead);
+            group.add(ring);
+        }
+        if (bankState.tier2Unlocks?.stimCache || bankState.tier2Unlocks?.suitThermal || bankState.tier2Unlocks?.deconFilters) {
+            const pack = new THREE.Mesh(
+                new THREE.BoxGeometry(0.18, 0.22, 0.08),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.78 })
+            );
+            pack.position.set(this.playerSpriteLead - 0.38, 0.82, this.playerSpriteLead + 0.02);
+            group.add(pack);
+        }
+        if (group.children.length) {
+            this.player.add(group);
+            this.playerUpgradeVisualGroup = group;
+        } else {
+            this.playerUpgradeVisualGroup = null;
+        }
+    }
+
     syncPersistentUpgrades() {
         this.unlocks = this.bank.getUnlocks();
         this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
@@ -5294,6 +5350,7 @@ export class ThreeGame {
         this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
+        this.updatePlayerUpgradeVisuals();
         this.updateGoalModuleVisualState(this.unlocks);
         this.ensureO2BubbleVisualState();
     }
@@ -5962,6 +6019,17 @@ export class ThreeGame {
         };
     }
 
+    setGodMode(enabled = false) {
+        this.godMode = Boolean(enabled);
+        if (this.godMode) {
+            this.playerVitals.hp = this.playerVitals.maxHp;
+            this.playerVitals.o2 = 100;
+            this.emitHealthState();
+            this.emitO2State();
+        }
+        return this.godMode;
+    }
+
     healPlayer(amount = 1) {
         if (this.isPlayerDead) return;
         const previousHp = this.playerVitals.hp;
@@ -5980,6 +6048,7 @@ export class ThreeGame {
 
     takeDamage(amount = 1, reason = 'hazard') {
         if (this.isPlayerDead) return;
+        if (this.godMode) return;
         if (this._abilityImmune) return;
         if (this.missionState?.status === 'inactive') return;
         const previousHp = this.playerVitals.hp;
@@ -6314,7 +6383,8 @@ export class ThreeGame {
     }
 
     isSpecialAbilityUnlocked() {
-        return true;
+        const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
+        return !stats.unlockSkill || this.bank?.isSkillUnlocked?.(stats.unlockSkill);
     }
 
     triggerClassAbility() {
@@ -6583,6 +6653,12 @@ export class ThreeGame {
 
     updateVitals(delta) {
         if (!this.player || this.isPlayerDead) return;
+        if (this.godMode) {
+            this.playerVitals.o2 = 100;
+            this.playerVitals.o2HealthTimer = 0;
+            this.emitO2State();
+            return;
+        }
         if (this.missionState?.status === 'inactive') return;
 
         const previousO2 = this.playerVitals.o2;

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { FabricatorManager, FAB_RECIPES, getRecipe, rollRarity, FAB_SPIN_COST, getRecipesByRarity } from './fabricator.js';
+import { FabricatorManager, FAB_RECIPES, getRecipe, rollRarity, FAB_SPIN_COST, getRecipesByRarity, FABRICATOR_SITE_MAX_USES } from './fabricator.js';
 
 function makeStorage() {
     const map = new Map();
@@ -21,6 +21,10 @@ function makeBank(initial = { tech: 100, coin: 100, med: 100 }) {
             if (bal.tech < (c.tech ?? 0) || bal.coin < (c.coin ?? 0) || bal.med < (c.med ?? 0)) return false;
             bal.tech -= c.tech ?? 0; bal.coin -= c.coin ?? 0; bal.med -= c.med ?? 0;
             return true;
+        },
+        deposit: (c = {}) => {
+            bal.tech += c.tech ?? 0; bal.coin += c.coin ?? 0; bal.med += c.med ?? 0;
+            return c;
         }
     };
 }
@@ -122,6 +126,37 @@ describe('FabricatorManager', () => {
         expect(bank.bal.tech).toBe(before.tech - FAB_SPIN_COST.tech);
         expect(bank.bal.coin).toBe(before.coin - FAB_SPIN_COST.coin);
         expect(fab.isFabricated(result.recipe.id)).toBe(true);
+    });
+
+
+
+    it('tracks fabricator objective targets and raises odds after misses', () => {
+        expect(fab.getObjectiveState()).toMatchObject({ targetId: 'mk1_sidearm', siteUsesRemaining: FABRICATOR_SITE_MAX_USES });
+        const miss = fab.rollFabrication(bank, () => 0.99); // miss objective chance, then high pool index
+        expect(miss).not.toBeNull();
+        expect(miss.objective.targetId).toBe('mk1_sidearm');
+        expect(miss.objective.attempts).toBe(1);
+        expect(miss.objective.chance).toBeGreaterThan(0.25);
+    });
+
+    it('advances the objective when the target schematic is fabricated', () => {
+        const hit = fab.rollFabrication(bank, () => 0); // COMMON + objective chance hit
+        expect(hit.objectiveHit).toBe(true);
+        expect(hit.recipe.id).toBe('mk1_sidearm');
+        expect(fab.getObjectiveState()).toMatchObject({ targetId: 'pulse_carbine', attempts: 0, siteUsesRemaining: FABRICATOR_SITE_MAX_USES });
+    });
+
+    it('breaks a site after too many objective misses and refunds some salvage', () => {
+        const before = { ...bank.bal };
+        let result = null;
+        for (let i = 0; i < FABRICATOR_SITE_MAX_USES; i++) {
+            result = fab.rollFabrication(bank, () => 0.99);
+        }
+        expect(result.broken).toBe(true);
+        expect(fab.getObjectiveState().siteUsesRemaining).toBe(0);
+        expect(bank.bal.tech).toBeGreaterThan(before.tech - FAB_SPIN_COST.tech * FABRICATOR_SITE_MAX_USES);
+        fab.resetSiteUses();
+        expect(fab.getObjectiveState().siteUsesRemaining).toBe(FABRICATOR_SITE_MAX_USES);
     });
 
     it('rollFabrication returns null and spends nothing when broke', () => {
