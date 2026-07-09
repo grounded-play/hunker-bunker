@@ -21,6 +21,9 @@ coverage
 # Local Chrome binary downloaded via @puppeteer/browsers for local Lighthouse runs
 chrome/
 
+# Local scratch Chrome profile used during debugging / Lighthouse runs
+scratch/chrome-profile/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

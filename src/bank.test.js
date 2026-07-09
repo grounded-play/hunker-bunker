@@ -23,7 +23,7 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         expect(bank.getState()).toEqual({
-            schemaVersion: 6,
+            schemaVersion: 8,
             med: 0,
             ammo: 0,
             tech: 0,
@@ -36,6 +36,9 @@ describe('BankManager', () => {
                 radarNode: false,
                 reactorCompressor: false
             },
+            hullExpansionLevel: 0,
+            radarNodeLevel: 0,
+            reactorCompressorLevel: 0,
             tier2Unlocks: {
                 suitThermal: false,
                 deconFilters: false,
@@ -43,6 +46,7 @@ describe('BankManager', () => {
             },
             weaponUpgrades: {
                 ammoCapacity: 0,
+                ammoRefill: 0,
                 shotSpeed: 0,
                 shotDamage: 0,
                 shotAmount: 0
@@ -148,7 +152,7 @@ describe('BankManager', () => {
         });
     });
 
-    it('migrates a v2 save to v6 without resetting and adds newer fields', () => {
+    it('migrates a v2 save to v8 without resetting and adds newer fields', () => {
         const storage = createMemoryStorage();
         storage.setItem('hb_bank', JSON.stringify({
             schemaVersion: 2,
@@ -160,10 +164,10 @@ describe('BankManager', () => {
 
         const bank = new BankManager({ storage });
         const state = bank.getState();
-        expect(state.schemaVersion).toBe(6);
+        expect(state.schemaVersion).toBe(8);
         expect(state.tech).toBe(40); // preserved, not reset
         expect(state.weaponUpgrades).toEqual({
-            ammoCapacity: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0
+            ammoCapacity: 0, ammoRefill: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0
         });
         expect(state.foundryActivated).toBe(false);
         expect(state.unlockedSkills).toEqual([]);
@@ -217,10 +221,13 @@ describe('BankManager', () => {
 
         // Unknown key is rejected.
         expect(bank.upgradeWeapon('nonexistent')).toBe(false);
+        expect(bank.upgradeWeapon('ammoRefill')).toBe(true);
+        expect(bank.getWeaponUpgradeLevel('ammoRefill')).toBe(1);
 
         // Persists across reload.
         const reloaded = new BankManager({ storage });
         expect(reloaded.getWeaponUpgradeLevel('ammoCapacity')).toBe(3);
+        expect(reloaded.getWeaponUpgradeLevel('ammoRefill')).toBe(1);
     });
 
     it('enforces class skill tree prerequisite checks and unlock logic', () => {
@@ -248,6 +255,25 @@ describe('BankManager', () => {
         const reloaded = new BankManager({ storage });
         expect(reloaded.isSkillUnlocked('scout_magnet_1')).toBe(true);
         expect(reloaded.isSkillUnlocked('scout_speed_1')).toBe(true);
+    });
+
+    it('gates mid and high class skill tiers behind ship builds', () => {
+        const bank = new BankManager({ storage: createMemoryStorage() });
+        bank.addShells(9999);
+        expect(bank.unlockSkill('scout_magnet_1', 'SCOUT')).toBe(true);
+        expect(bank.unlockSkill('scout_speed_1', 'SCOUT')).toBe(true);
+
+        expect(bank.canUnlockSkill('scout_special_unlock', 'SCOUT')).toBe(false);
+        bank.setUnlock('o2Bubble');
+        bank.setUnlock('hullExpansion');
+        expect(bank.canUnlockSkill('scout_special_unlock', 'SCOUT')).toBe(true);
+        expect(bank.unlockSkill('scout_special_unlock', 'SCOUT')).toBe(true);
+
+        expect(bank.canUnlockSkill('scout_special_upgrade_1', 'SCOUT')).toBe(false);
+        bank.setUnlock('radarNode');
+        bank.setUnlock('reactorCompressor');
+        expect(bank.getO2GeneratorLevel()).toBe(3);
+        expect(bank.canUnlockSkill('scout_special_upgrade_1', 'SCOUT')).toBe(true);
     });
 
     it('tracks and persists the snail-shell balance', () => {
@@ -279,5 +305,18 @@ describe('BankManager', () => {
         expect(bank.unlockTier2('suitThermal')).toBe(true);
         expect(bank.upgradeWeapon('ammoCapacity')).toBe(true);
         expect(bank.getShells()).toBeLessThan(50);
+    });
+
+    it('upgrades base systems to level 2 with resources', () => {
+        const bank = new BankManager({ storage: createMemoryStorage() });
+        bank.deposit({ tech: 1000, med: 1000, coin: 1000 });
+        bank.setUnlock('o2Bubble');
+        bank.setUnlock('hullExpansion');
+
+        expect(bank.getState().hullExpansionLevel).toBe(1);
+        expect(bank.canUpgradeGoal('hullExpansion')).toBe(true);
+        expect(bank.upgradeGoal('hullExpansion')).toBe(true);
+        expect(bank.getState().hullExpansionLevel).toBe(2);
+        expect(bank.canUpgradeGoal('hullExpansion')).toBe(false);
     });
 });

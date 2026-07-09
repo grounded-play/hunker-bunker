@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
+import { applyBlackChromaKey } from './textureKeying.js';
 
 const LEADER_SPRITESHEETS = {
     'Commander Briggs': '/briggs_camp_walk.png',
@@ -72,16 +73,8 @@ function applyImageToTexture(texture, image, threshold = 15) {
     ctx.drawImage(image, 0, 0);
 
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imgData.data;
 
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        if (r <= threshold && g <= threshold && b <= threshold) {
-            data[i + 3] = 0; // Make transparent
-        }
-    }
+    applyBlackChromaKey(imgData, { threshold });
 
     ctx.putImageData(imgData, 0, 0);
     texture.image = canvas;

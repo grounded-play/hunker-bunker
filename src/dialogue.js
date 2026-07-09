@@ -567,25 +567,11 @@ export class DialogueManager {
 
         this.activeDialogueRunId = 0;
         this.activeChoiceResolver = null;
+        this.setInputEnabled?.(true);
     }
 
     requestSkip() {
-        if (!this.activeDialogueRunId) return;
-
-        this.activeDialogueRunId = 0;
-        window.removeEventListener('keydown', this.handleDialogueKey);
-        this.panelEl?.classList.remove('is-open', 'is-closing');
-        this.dialogEl?.classList.add('hidden');
-        this.dialogEl?.classList.remove('is-revealed');
-        this.dialogEl?.setAttribute('aria-hidden', 'true');
-        this.choicesEl?.classList.add('hidden');
-        this.choicesEl?.classList.remove('is-visible');
-
-        if (this.activeChoiceResolver) {
-            const resolve = this.activeChoiceResolver;
-            this.activeChoiceResolver = null;
-            resolve('skip');
-        }
+        this.cancelDialogue();
     }
 
     async typeLine(runId, line) {

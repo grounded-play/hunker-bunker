@@ -8,7 +8,8 @@ This plan connects the narrative design in:
 to the current JavaScript/Three.js implementation. The goal is to evolve Act 2
 from a forced cull ladder into a choice-driven faction state machine where
 boarding the vessel evaluates a persistent story vector and plays the matching
-ending cutscene.
+ending cutscene. It also tracks the current playtest regression backlog so the
+story work and the stabilization work stay in one place.
 
 ## Current Code Reconnaissance
 
@@ -675,6 +676,80 @@ The runtime already supports absent videos without stalling; `playCutsceneVideo`
 resolves if the asset cannot load. That means code can land before all final
 video art is done.
 
+## Sprint 6: Runtime Polish, UI Fixes, and Release Hygiene
+
+### Goals
+
+Stabilize the live playtest loop: fix the UI/input freezes, restore the missing
+HUD state after resets, tighten the presentation, and make sure generated
+artifacts never leak into source control.
+
+### P0: Input, Reset, and State Integrity
+
+- Fix the boss-defeat dialogue close path so clicking `X` always restores input
+  and clears any cinematic lock. This should work the same whether the dialogue
+  is a boss exit, a mission transmission, or a normal brief.
+- Make the current objective HUD resilient across death/respawn and boss
+  despawn cases. The display should re-derive from live state instead of staying
+  blank after a reset edge case.
+- Expand `blackBox` from a single active marker into a small collection of
+  recoverable sub-objects so multiple boxes can be visible and tracked from the
+  main screen.
+
+### P1: Presentation and Interaction Fixes
+
+- Chroma-key the egg area so the black matte disappears cleanly under the outer
+  game overlay.
+- Add distance feedback to the yellow radar arrow in the compass UI whenever it
+  is in sync with a live target. Only hide the distance when the radar state is
+  stale or out of sync.
+- Bring the dialogue panels up to the standard HUD scale. The text boxes should
+  feel like the rest of the terminal UI instead of a tiny inset panel.
+- Make the fabricator reveal deterministic from a single resolved roll so the
+  animated visualization, the rarity band, and the granted schematic always
+  agree.
+- Remove the stray crashed ship prop from the ground scene so only the intended
+  fix ship remains.
+- Keep the radar dish static when first built, then let the upgrade unlock the
+  spinning animation.
+- Overscan the class-intro GIF/WebM sequence so the 16:9 frame sits behind the
+  outer overlay edge and hides seams.
+
+### P2: Progression and Build System Tuning
+
+- Make every constructed buildable object upgradable, not just the current goal
+  chain.
+- Add passive ammo refill to the combat loop and expose refill speed as an
+  upgradeable stat.
+- Rework the skill tree into one interwoven web instead of three separate
+  branches. Higher tiers should require a minimum mix of prior nodes, plus
+  actual build and upgrade progress, before they unlock.
+- Lower the mothership announcement frequency and make the messages more
+  legible by using larger type, clearer phrasing, and a stricter cooldown or
+  priority budget.
+
+### P3: CI/CD and Scratch Hygiene
+
+- Audit the CI/CD path, especially the Lighthouse and PR workflows, so browser
+  profile state does not break the pipeline.
+- Clean up the accidentally generated Chrome scratch/profile artifacts. The
+  current modified file is `scratch/chrome-profile/Local State`; the plan is to
+  keep that kind of generated state out of commits going forward.
+- Add or tighten ignore rules for scratch browser outputs and verify the repo
+  still passes build and Lighthouse after the cleanup.
+
+### Suggested Execution Order
+
+1. Fix the boss-dialogue/input freeze first so the run remains controllable.
+2. Restore the reset/respawn objective HUD and multi-box black box state.
+3. Tackle the presentation bugs: eggs, compass distance, dialogue scale, and
+   fabricator mismatch.
+4. Clean up the world/art regressions: stray crashed ship, radar dish behavior,
+   intro overscan, and mothership squawk tuning.
+5. Rework the build/progression graph and the ammo regeneration upgrade path.
+6. Finish with CI/CD and scratch hygiene, then re-run the full verification
+   pass.
+
 ## Verification Plan
 
 ### Unit Tests
@@ -723,12 +798,19 @@ Update `scratch/smoke_camps.js`:
 - New game reset clears `hb_act2_v1` through `clearSaveData()`.
 - Export/import round-trips the new fields because `src/profile.js` snapshots
   all `hb_*` keys.
+- Closing a boss-exit dialogue with `X` returns input immediately.
+- The yellow compass arrow shows distance while its target is valid.
+- The fabricator reveal matches the granted schematic and rarity every time.
+- Resetting after a boss death keeps the objective HUD populated.
+- Multiple black boxes can remain visible and recoverable from the main screen.
+- `npm run lighthouse` still passes after the Chrome scratch cleanup.
 
 ### Build/Test Commands
 
 ```bash
 npm run test -- src/act2.test.js src/camp.test.js
 npm run build
+npm run lighthouse
 ```
 
 Optional smoke run:
@@ -755,6 +837,9 @@ node scratch/smoke_act2.js 5199
    cutscene base mapping.
 7. Extend `scratch/generate_cave_scenes.js` and `public/cutscenes/README.md`.
 8. Run unit tests, build, then smoke tests.
+9. Work through Sprint 6 in the suggested execution order above.
+10. Re-run unit tests, build, smoke tests, and Lighthouse after the
+    stabilization pass.
 
 ## Design Notes and Risks
 

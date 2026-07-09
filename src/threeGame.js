@@ -21,6 +21,7 @@ import { getDialogueLine } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { BunkerDirector } from './director.js';
+import { applyBlackChromaKey } from './textureKeying.js';
 
 const PLAYER_COLORS = {
     SCOUT: 0x7dff5a,
@@ -62,6 +63,8 @@ const TANK_FLIPPED_DIRECTION_INDICES = new Set([4]);
 const PLAYER_SPRITE_WAIST_SPLIT = 0.5;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
+const RADAR_DISH_GRID_SIZE = 2;
+const RADAR_DISH_FRAME_COUNT = RADAR_DISH_GRID_SIZE * RADAR_DISH_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
 const SUIT_LIGHT_BASE_INTENSITY = 2.1;
 const SUIT_LIGHT_BASE_DISTANCE = 7.2;
@@ -155,12 +158,30 @@ const GOAL_CARD_CONFIGS = Object.freeze([
         lockedStatusText: 'LOCKED — INSTALL RADAR NODE FIRST'
     })
 ]);
+function setSpriteSheetFrame(texture, columns, rows, frameIndex = 0) {
+    if (!texture || columns <= 0 || rows <= 0) return;
+
+    const repeatX = 1 / columns;
+    const repeatY = 1 / rows;
+    if (texture.repeat.x !== repeatX || texture.repeat.y !== repeatY) {
+        texture.repeat.set(repeatX, repeatY);
+    }
+
+    const totalFrames = Math.max(1, columns * rows);
+    const normalizedFrame = ((Math.floor(frameIndex) % totalFrames) + totalFrames) % totalFrames;
+    const col = normalizedFrame % columns;
+    const row = Math.floor(normalizedFrame / columns);
+    texture.offset.set(col * repeatX, (rows - 1 - row) * repeatY);
+}
 const PICKUP_MAGNET_RADIUS = 3.4;
 const PICKUP_COLLECT_RADIUS = 0.72;
 const PICKUP_COLLECT_DURATION = 0.2;
 const WEAPON_CLIP_SIZE = 6;
 const WEAPON_RELOAD_DURATION = 1.25;
 const WEAPON_FIRE_COOLDOWN = 0.14;
+const WEAPON_AMMO_REFILL_INTERVAL = 10;
+const WEAPON_AMMO_REFILL_INTERVAL_REDUCTION = 2.1;
+const WEAPON_AMMO_REFILL_MIN_INTERVAL = 3.6;
 const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
@@ -447,8 +468,7 @@ const BIO_SCATTER_VARIANTS = [
     { type: 'bio_spores_amber', weight: 0.04 }
 ];
 const ACTIVE_SCATTER_VARIANTS = [
-    { type: 'scatter_gravel', weight: 0.38 },
-    { type: 'ship_wreckage', weight: 0.08 },
+    { type: 'scatter_gravel', weight: 0.46 },
     ...SPORE_SCATTER_VARIANTS
 ];
 const BIOME_SCATTER_VARIANTS = Object.freeze({
@@ -710,6 +730,7 @@ export class ThreeGame {
         this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
+        this.weaponAmmoRefillTimer = 0;
         this.weaponFireCooldown = 0;
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
@@ -1206,7 +1227,7 @@ export class ThreeGame {
             bio_spores_amber: this.loadScatterTexture('/bio_spores_amber.png', textureLoader),
             scatter_coolant_puddle: this.loadScatterTexture('/scatter_coolant_puddle.png', textureLoader),
             scatter_ice_stalagmite: this.loadScatterTexture('/scatter_ice_stalagmite.png', textureLoader),
-            scatter_bio_pod: this.loadScatterTexture('/scatter_bio_pod.png', textureLoader),
+            scatter_bio_pod: this.loadKeyedSpriteTexture('/scatter_bio_pod.png', 22),
             scatter_slime_puddle: this.loadScatterTexture('/scatter_slime_puddle.png', textureLoader),
             scatter_gravel: this.loadScatterTexture('/scatter_gravel.png', textureLoader),
             scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
@@ -1750,6 +1771,8 @@ export class ThreeGame {
             hullModuleMat.needsUpdate = true;
         }, { cropBottomRatio: 0.16 });
         this.loadKeyedSpriteTexture('/module_radar_dish.png', 18, (tex) => {
+            setSpriteSheetFrame(tex, RADAR_DISH_GRID_SIZE, RADAR_DISH_GRID_SIZE, 0);
+            tex.needsUpdate = true;
             radarModuleMat.map = tex;
             radarModuleMat.needsUpdate = true;
         }, { cropBottomRatio: 0.16 });
@@ -1811,7 +1834,7 @@ export class ThreeGame {
                 maxHp: SHIP_MAX_HP,
                 hp: SHIP_MAX_HP
             }
-        ];
+        ].filter(ship => ship.type === this.playerType);
 
 
         const shadowMat = new THREE.MeshBasicMaterial({
@@ -3069,17 +3092,8 @@ export class ThreeGame {
             );
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
 
-            // Remove flat black background nicely using threshold for dark pixels
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                if (r <= threshold && g <= threshold && b <= threshold) {
-                    data[i + 3] = 0; // Make transparent
-                }
-            }
+            applyBlackChromaKey(imgData, { threshold });
 
             ctx.putImageData(imgData, 0, 0);
             
@@ -3415,6 +3429,7 @@ export class ThreeGame {
         this.updateCaveEntrance(delta);
         this.updateAct2(delta);
         this.updateCamps(delta);
+        this.updateShipVisualState(now);
         this.updateBlackBoxMarker(delta);
         this.updateRunModifierEffects(delta);
         this.updateBunkerDirector(delta);
@@ -3557,10 +3572,10 @@ export class ThreeGame {
         return { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
     }
 
-    updateLoopStep() {
+    updateLoopStep(force = false) {
         const step = this.getLoopStep();
         const key = step?.key ?? null;
-        if (key === this._lastLoopStepKey) return;
+        if (!force && key === this._lastLoopStepKey) return;
         this._lastLoopStepKey = key;
         window.dispatchEvent(new CustomEvent('loop-step-changed', { detail: step }));
     }
@@ -4666,12 +4681,14 @@ export class ThreeGame {
         this.updateShipVisualState();
     }
 
-    updateShipVisualState() {
+    updateShipVisualState(now = performance.now()) {
         if (!this.crashedShips || !this.shipTextures) return;
 
         const bankState = this.bank.getState();
         const activeGoal = this.getActiveBaseGoal(bankState);
         const isFullyHealed = activeGoal === null;
+        const radarUnlocked = Boolean(bankState.unlocks?.radarNode);
+        const radarTexture = this.goalModuleMaterials?.radarDish?.map ?? null;
 
         for (const ship of this.crashedShips) {
             const textures = this.shipTextures[ship.type];
@@ -4682,6 +4699,12 @@ export class ThreeGame {
                     ship.material.needsUpdate = true;
                 }
             }
+        }
+
+        if (radarTexture) {
+            const radarLevel = bankState.radarNodeLevel ?? (radarUnlocked ? 1 : 0);
+            const frame = radarLevel >= 2 ? Math.floor(now * 0.006) % RADAR_DISH_FRAME_COUNT : 0;
+            setSpriteSheetFrame(radarTexture, RADAR_DISH_GRID_SIZE, RADAR_DISH_GRID_SIZE, frame);
         }
     }
 
@@ -4724,6 +4747,38 @@ export class ThreeGame {
                 desc: 'Increase generator efficiency. O₂ refill rate doubles. Drain rate slows 20%.',
                 cost: this.getEffectiveCost(this.bank.getGoalCost('reactorCompressor') ?? {}),
                 type: 'goal',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'reactorCompressor')
+            };
+        }
+
+        // Sequential Level 2 upgrades once all nodes are constructed
+        if ((bankState.hullExpansionLevel ?? 1) < 2) {
+            return {
+                key: 'hullExpansion',
+                title: 'HULL MATRIX LVL 2',
+                desc: 'UPGRADE HULL PLATING INTEGRITY. Increases max exosuit integrity to 5 hearts.',
+                cost: this.getEffectiveCost(this.bank.getGoalUpgradeCost?.('hullExpansion', 2) ?? { tech: 100, med: 40 }),
+                type: 'goal-upgrade',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'hullExpansion')
+            };
+        }
+        if ((bankState.radarNodeLevel ?? 1) < 2) {
+            return {
+                key: 'radarNode',
+                title: 'RADAR DISH OVERCLOCK',
+                desc: 'OVERCLOCK THE RADAR DISH. Enables spinning animation and wide-area scans.',
+                cost: this.getEffectiveCost(this.bank.getGoalUpgradeCost?.('radarNode', 2) ?? { tech: 200, coin: 50 }),
+                type: 'goal-upgrade',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'radarNode')
+            };
+        }
+        if ((bankState.reactorCompressorLevel ?? 1) < 2) {
+            return {
+                key: 'reactorCompressor',
+                title: 'REACTOR COMPRESSOR BOOST',
+                desc: 'BOOST REACTOR COMPRESSOR. Refill rate doubles, drain slows by 35% general.',
+                cost: this.getEffectiveCost(this.bank.getGoalUpgradeCost?.('reactorCompressor', 2) ?? { tech: 400, coin: 150 }),
+                type: 'goal-upgrade',
                 cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'reactorCompressor')
             };
         }
@@ -4783,7 +4838,11 @@ export class ThreeGame {
             }
 
             buyBtn.disabled = !canAfford;
-            buyBtn.textContent = activeGoal.key === 'o2Bubble' ? 'REPAIR GENERATOR' : 'INITIATE BUILD';
+            buyBtn.textContent = activeGoal.key === 'o2Bubble'
+                ? 'REPAIR GENERATOR'
+                : activeGoal.type === 'goal-upgrade'
+                    ? 'INITIATE UPGRADE'
+                    : 'INITIATE BUILD';
             buyBtn.classList.remove('btn-state--available', 'btn-state--insufficient');
             buyBtn.classList.add(canAfford ? 'btn-state--available' : 'btn-state--insufficient');
 
@@ -4792,6 +4851,8 @@ export class ThreeGame {
                     this.attemptO2GeneratorUpgrade(ship);
                 } else if (activeGoal.type === 'goal' && activeGoal.cardConfig) {
                     this.attemptGoalUnlock(ship, activeGoal.cardConfig);
+                } else if (activeGoal.type === 'goal-upgrade') {
+                    this.attemptGoalUpgrade(ship, activeGoal.key);
                 }
             };
 
@@ -5117,6 +5178,25 @@ export class ThreeGame {
         this.renderO2GeneratorModal(ship);
     }
 
+    attemptGoalUpgrade(ship, goalKey) {
+        if (!this.bank.canUpgradeGoal(goalKey)) {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+
+        if (this.bank.upgradeGoal(goalKey)) {
+            this.syncPersistentUpgrades();
+            this.emitVitalsState();
+            window.AudioManager?.play('class_lock', { volume: 0.55 });
+            this.renderConsoleBanking(ship);
+            this.renderO2GeneratorModal(ship);
+        } else {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+        }
+    }
+
     attemptO2GeneratorUpgrade(ship) {
         const generatorState = this.getO2GeneratorState();
         const nextUpgrade = generatorState.nextUpgrade;
@@ -5308,8 +5388,8 @@ export class ThreeGame {
         const strokeWidth = parentUnlocked ? 2.5 : 1.5;
         
         const lineSvg = type === 'down-left'
-            ? `<svg class="skill-line-svg"><line x1="100%" y1="0%" x2="0%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`
-            : `<svg class="skill-line-svg"><line x1="0%" y1="0%" x2="100%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`;
+            ? `<svg class="skill-line-svg"><line class="${parentUnlocked ? 'unlocked-flow' : ''}" x1="100%" y1="0%" x2="0%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`
+            : `<svg class="skill-line-svg"><line class="${parentUnlocked ? 'unlocked-flow' : ''}" x1="0%" y1="0%" x2="100%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`;
         
         return `<div class="skill-line-cell">${lineSvg}</div>`;
     }
@@ -5324,6 +5404,21 @@ export class ThreeGame {
         const bankState = this.bank.getState();
         this.renderTier2Section(ship, bankState);
         this.renderWeaponsSection(ship, bankState);
+    }
+
+    getSkillGateText(node = {}) {
+        const goalLabels = {
+            hullExpansion: 'HULL MATRIX',
+            radarNode: 'RADAR NODE',
+            reactorCompressor: 'REACTOR CORE'
+        };
+        if (node.requiredGoal && !this.bank.getState()?.unlocks?.[node.requiredGoal]) {
+            return `REQUIRES ${goalLabels[node.requiredGoal] ?? String(node.requiredGoal).toUpperCase()}`;
+        }
+        if (node.requiredO2Level && this.bank.getO2GeneratorLevel() < node.requiredO2Level) {
+            return `REQUIRES O2 FIELD LV ${node.requiredO2Level}`;
+        }
+        return '';
     }
 
     renderSkillsTree(ship) {
@@ -5383,7 +5478,8 @@ export class ThreeGame {
 
                     const costEl = document.createElement('div');
                     costEl.className = 'skill-node-cost';
-                    costEl.textContent = isUnlocked ? 'COMPLETED' : `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`;
+                    const gateText = this.getSkillGateText(node);
+                    costEl.textContent = isUnlocked ? 'COMPLETED' : gateText || `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`;
                     card.appendChild(costEl);
 
                     if (isAvailable) {
@@ -5538,7 +5634,13 @@ export class ThreeGame {
     syncPersistentUpgrades() {
         this.unlocks = this.bank.getUnlocks();
         this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
-        let maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
+        let maxHp = BASE_HEARTS;
+        const hullLevel = this.bank.getState().hullExpansionLevel ?? (this.unlocks.hullExpansion ? 1 : 0);
+        if (hullLevel === 2) {
+            maxHp = 5;
+        } else if (hullLevel === 1) {
+            maxHp = UPGRADED_HEARTS;
+        }
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_plating_1')) {
             maxHp += 1;
         }
@@ -6769,6 +6871,7 @@ export class ThreeGame {
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
+        this._lastLoopStepKey = null;
 
         if (emit) {
             this.emitVitalsState();
@@ -6803,13 +6906,18 @@ export class ThreeGame {
         const reloadProgress = this.weaponReloading
             ? Math.max(0, Math.min(1, 1 - (this.weaponReloadTimer / WEAPON_RELOAD_DURATION)))
             : 0;
+        const autoRefillInterval = this.getAmmoRefillInterval();
+        const autoRefillProgress = !this.weaponReloading && this.weaponClipAmmo < this.weaponClipSize
+            ? Math.max(0, Math.min(1, (this.weaponAmmoRefillTimer ?? 0) / autoRefillInterval))
+            : 0;
         window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
             detail: {
                 clip: this.weaponClipAmmo,
                 maxClip: this.weaponClipSize,
                 cache: this.getAvailableAmmo(),
                 reloading: this.weaponReloading,
-                reloadProgress
+                reloadProgress,
+                autoRefillProgress
             }
         }));
     }
@@ -6835,6 +6943,7 @@ export class ThreeGame {
         this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
+        this.weaponAmmoRefillTimer = 0;
         this.weaponFireCooldown = 0;
         this.activeProjectiles = [];
         if (emit) {
@@ -7271,6 +7380,7 @@ export class ThreeGame {
                 o2: this.playerVitals.o2
             }
         }));
+        window.setTimeout(() => this.updateLoopStep(true), 0);
     }
 
     initMission(mission) {
@@ -7681,8 +7791,14 @@ export class ThreeGame {
         }
         this._wasInBubble = inBubble;
 
+        const reactorLevel = this.bank.getState().reactorCompressorLevel ?? (reactorUpgrade ? 1 : 0);
+
         if (inBubble) {
-            let refillRate = (reactorUpgrade ? generatorState.refillRate * 1.2 : generatorState.refillRate)
+            let refillMult = 1.0;
+            if (reactorLevel === 1) refillMult = 1.2;
+            else if (reactorLevel >= 2) refillMult = 2.0;
+
+            let refillRate = generatorState.refillRate * refillMult
                 * (this._abilityRefillMult ?? 1.0);
             if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_special_upgrade_2') && this.classAbility.active) {
                 refillRate *= 1.20;
@@ -7704,8 +7820,10 @@ export class ThreeGame {
             if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
                 drainRate *= O2_DRAIN_RATE_DANGER_MULT;
             }
-            if (reactorUpgrade) {
+            if (reactorLevel === 1) {
                 drainRate *= 0.8;
+            } else if (reactorLevel >= 2) {
+                drainRate *= 0.65;
             }
             // Tier 2 biome O2 drain reductions
             const t2Unlocks = this.bank?.getState?.()?.tier2Unlocks ?? {};
@@ -9190,6 +9308,41 @@ export class ThreeGame {
         return { x: worldX / length, z: worldZ / length };
     }
 
+    getAmmoRefillInterval() {
+        const level = this.bank?.getWeaponUpgradeLevel?.('ammoRefill') ?? 0;
+        return Math.max(
+            WEAPON_AMMO_REFILL_MIN_INTERVAL,
+            WEAPON_AMMO_REFILL_INTERVAL - Math.max(0, Math.floor(level)) * WEAPON_AMMO_REFILL_INTERVAL_REDUCTION
+        );
+    }
+
+    updateWeaponAmmoRefill(delta) {
+        if (!Number.isFinite(delta) || delta <= 0) return;
+        if (this.weaponReloading || this.weaponClipAmmo >= this.weaponClipSize) {
+            this.weaponAmmoRefillTimer = 0;
+            return;
+        }
+
+        const interval = this.getAmmoRefillInterval();
+        this.weaponAmmoRefillTimer = (this.weaponAmmoRefillTimer ?? 0) + delta;
+        if (this.weaponAmmoRefillTimer < interval) {
+            this.emitWeaponClipState();
+            return;
+        }
+
+        let roundsAdded = 0;
+        while (this.weaponAmmoRefillTimer >= interval && this.weaponClipAmmo < this.weaponClipSize) {
+            this.weaponAmmoRefillTimer -= interval;
+            this.weaponClipAmmo += 1;
+            roundsAdded += 1;
+        }
+        if (this.weaponClipAmmo >= this.weaponClipSize) this.weaponAmmoRefillTimer = 0;
+        if (roundsAdded > 0) {
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.08, playbackRate: 1.7 });
+        }
+        this.emitWeaponClipState();
+    }
+
     updateWeaponState(delta) {
         if (this.weaponFireCooldown > 0) {
             this.weaponFireCooldown = Math.max(0, this.weaponFireCooldown - delta);
@@ -9208,6 +9361,8 @@ export class ThreeGame {
                 this.hasActiveAim = false;
             }
         }
+
+        this.updateWeaponAmmoRefill(delta);
 
         if (!this.weaponReloading) return;
         const previousTimer = this.weaponReloadTimer;

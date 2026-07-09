@@ -43,6 +43,7 @@ const touchCompass = touchMoveControl?.querySelector('.touch-move-control__compa
 const touchCompassArrow = touchCompass?.querySelector('.touch-move-control__compass-arrow');
 const touchCompassRadarArrow = touchCompass?.querySelector('#touch-compass-radar-arrow');
 const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
+const touchCompassRadarDistance = touchCompass?.querySelector('#touch-compass-radar-distance');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
 const orientationLock = document.getElementById('orientation-lock');
@@ -318,6 +319,9 @@ let runStartTime = Date.now();
 let currentMission = null;
 let currentRunModifier = null;
 const _mothershipFiredTriggers = new Set();
+let _lastMothershipBroadcastAt = 0;
+const MOTHERSHIP_REACTIVE_COOLDOWN_MS = 45000;
+const MOTHERSHIP_REACTIVE_CRITICAL = new Set(['hp_critical', 'objective_found', 'first_boss']);
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -816,6 +820,10 @@ function renderWeaponClipState(detail = {}) {
     const reloadProgress = Number.isFinite(detail.reloadProgress)
         ? Math.max(0, Math.min(1, detail.reloadProgress))
         : 0;
+    const autoRefillProgress = Number.isFinite(detail.autoRefillProgress)
+        ? Math.max(0, Math.min(1, detail.autoRefillProgress))
+        : 0;
+    const refilling = !reloading && autoRefillProgress > 0;
 
     if (weaponClipCurrent) {
         weaponClipCurrent.textContent = String(clip);
@@ -827,10 +835,11 @@ function renderWeaponClipState(detail = {}) {
         weaponAmmoCache.textContent = `CACHE ${cache}/${activeAmmoCapacity}`;
     }
     if (weaponReloadBar) {
-        weaponReloadBar.style.transform = `scaleX(${reloading ? reloadProgress : 0})`;
+        weaponReloadBar.style.transform = `scaleX(${reloading ? reloadProgress : refilling ? autoRefillProgress : 0})`;
     }
     if (weaponStatusPanel) {
         weaponStatusPanel.classList.toggle('is-reloading', reloading);
+        weaponStatusPanel.classList.toggle('is-refilling', refilling);
         weaponStatusPanel.setAttribute('aria-busy', reloading ? 'true' : 'false');
     }
 }
@@ -1524,10 +1533,24 @@ function refreshLastContractor() {
     const el = document.getElementById('last-contractor');
     if (!el) return;
     const box = blackBoxStore.load();
-    if (!box?.active) { el.classList.add('hidden'); return; }
-    const cls = (box.classType ?? 'OPERATOR').toUpperCase();
-    const tier = DEPTH_TIER_LABELS[Math.max(0, Math.min(DEPTH_TIER_LABELS.length - 1, box.depth ?? 0))];
-    el.innerHTML = `BLACK BOX <span class="ui-separator">//</span> ${cls} @ ${tier} <span class="ui-separator">//</span> SIGNAL ACTIVE`;
+    const archive = Array.isArray(box?.archive) ? box.archive.slice(-3) : [];
+    if (!archive.length) {
+        el.classList.add('hidden');
+        el.innerHTML = '';
+        return;
+    }
+
+    const lines = [
+        `BLACK BOX THREADS <span class="ui-separator">//</span> ${archive.length} RECENT`
+    ];
+
+    for (const [index, entry] of archive.slice().reverse().entries()) {
+        const cls = (entry.classType ?? 'OPERATOR').toUpperCase();
+        const tier = DEPTH_TIER_LABELS[Math.max(0, Math.min(DEPTH_TIER_LABELS.length - 1, entry.depth ?? 0))];
+        const isCurrent = Boolean(box?.active) && index === 0;
+        lines.push(`BLACK BOX <span class="ui-separator">//</span> ${cls} @ ${tier} <span class="ui-separator">//</span> ${isCurrent ? 'SIGNAL ACTIVE' : 'ARCHIVED'}`);
+    }
+    el.innerHTML = lines.join('<br>');
     el.classList.remove('hidden');
 }
 
@@ -1786,6 +1809,7 @@ function resetRunToStartingState({
         currentMission = assignMission(bankManager.getState());
         currentRunModifier = pickRunModifier();
         _mothershipFiredTriggers.clear();
+        _lastMothershipBroadcastAt = 0;
 
         resetPickupCounter();
         window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
@@ -2278,7 +2302,12 @@ document.getElementById('close-lore-modal')?.addEventListener('click', closeLore
 // ── Reactive Mothership ───────────────────────────────────────
 function fireMothershipReactiveLine(trigger) {
     if (_mothershipFiredTriggers.has(trigger)) return;
+    const now = Date.now();
+    if (!MOTHERSHIP_REACTIVE_CRITICAL.has(trigger) && now - _lastMothershipBroadcastAt < MOTHERSHIP_REACTIVE_COOLDOWN_MS) {
+        return;
+    }
     _mothershipFiredTriggers.add(trigger);
+    _lastMothershipBroadcastAt = now;
     const lines = {
         first_kill:       'AGENT — FIRST THREAT NEUTRALIZED. PROCEED.',
         first_cryo:       'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.',
@@ -2989,6 +3018,10 @@ function updateTouchCompass() {
             touchCompassRadarArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
             touchCompassRadarArrow.style.opacity = '0';
         }
+        if (touchCompassRadarDistance) {
+            touchCompassRadarDistance.classList.add('hidden');
+            touchCompassRadarDistance.textContent = '';
+        }
         return;
     }
 
@@ -3010,6 +3043,19 @@ function updateTouchCompass() {
             touchCompassRadarArrow.classList.remove('hidden');
             touchCompassRadarArrow.style.transform = `translate(-50%, -100%) rotate(${radarAngle.toFixed(2)}deg)`;
             touchCompassRadarArrow.style.opacity = radarDistance <= 0.05 ? '0.35' : '0.95';
+        }
+    }
+    if (touchCompassRadarDistance) {
+        if (!radarActive) {
+            touchCompassRadarDistance.classList.add('hidden');
+            touchCompassRadarDistance.textContent = '';
+        } else {
+            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
+            touchCompassRadarDistance.classList.remove('hidden');
+            touchCompassRadarDistance.textContent = radarState.mode === 'corrupt'
+                ? 'OUT OF SYNC'
+                : formatTouchCompassDistance(radarDistance);
+            touchCompassRadarDistance.style.opacity = radarDistance <= 0.05 ? '0.35' : '1';
         }
     }
 }
@@ -3278,6 +3324,7 @@ const CLASS_INTRO_WEBM_BASENAMES = {
     TANK: 'tank-intro',
     ENGINEER: 'engineer-intro'
 };
+const CLASS_INTRO_GIF_DURATION_MS = 8300;
 
 const cutsceneImagePreloadCache = new Map();
 const cutsceneVideoPreloadCache = new Map();
@@ -3455,7 +3502,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
             gifImg.style.opacity = '1';
             if (!timer) {
-                timer = window.setTimeout(startVideoStep, 3500);
+                timer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_DURATION_MS);
             }
         };
         gifImg.addEventListener('load', startGifTimer, { once: true });
@@ -4420,7 +4467,6 @@ function runFabricatorRoll() {
     window.AudioManager?.play?.('door_gears_spin', { volume: 0.4 });
 
     // Build a long strip of rarity tiles; the winner lands under the marker.
-    const TILE = 92; // px (matches CSS tile width + gap)
     const WIN_INDEX = 42;
     const tiles = [];
     for (let i = 0; i < 58; i++) {
@@ -4430,6 +4476,7 @@ function runFabricatorRoll() {
         strip.innerHTML = tiles.map((r) => `<div class="fab-tile fab-tile--${r.toLowerCase()}">${r}</div>`).join('');
         strip.style.transition = 'none';
         strip.style.transform = 'translateX(0)';
+        strip.offsetWidth; // Force synchronous layout reflow for accurate measurements
     }
     if (reveal) reveal.dataset.state = 'spinning';
     if (cardEl) cardEl.innerHTML = '';
@@ -4438,8 +4485,15 @@ function runFabricatorRoll() {
     requestAnimationFrame(() => {
         if (!strip) return;
         const wrap = document.getElementById('fab-reveal-strip-wrap');
+        const firstTile = strip.firstElementChild;
+        const tileRect = firstTile?.getBoundingClientRect?.();
+        const computedStyle = window.getComputedStyle(strip);
+        const tileWidth = tileRect?.width ?? 92;
+        const tileGap = parseFloat(computedStyle.columnGap || computedStyle.gap || '0') || 0;
+        const paddingLeft = parseFloat(computedStyle.paddingLeft || '0') || 0;
         const center = (wrap?.clientWidth ?? 320) / 2;
-        const target = -(WIN_INDEX * TILE) + center - TILE / 2;
+        const step = tileWidth + tileGap;
+        const target = center - (paddingLeft + (WIN_INDEX * step) + (tileWidth / 2));
         strip.style.transition = 'transform 3.2s cubic-bezier(0.12, 0.8, 0.18, 1)';
         strip.style.transform = `translateX(${target}px)`;
     });

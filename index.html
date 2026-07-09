@@ -588,11 +588,12 @@
     </div>
     <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
       <div class="touch-move-control__compass" aria-hidden="true">
-        <div class="touch-move-control__compass-face">
-          <div class="touch-move-control__compass-arrow"></div>
-          <div class="touch-move-control__compass-radar-arrow hidden" id="touch-compass-radar-arrow"></div>
-          <div class="touch-move-control__compass-distance">0u</div>
-          <div id="extraction-progress-ring" class="extraction-progress-ring hidden" aria-hidden="true">
+          <div class="touch-move-control__compass-face">
+            <div class="touch-move-control__compass-arrow"></div>
+            <div class="touch-move-control__compass-radar-arrow hidden" id="touch-compass-radar-arrow"></div>
+            <div class="touch-move-control__compass-radar-distance hidden" id="touch-compass-radar-distance"></div>
+            <div class="touch-move-control__compass-distance">0u</div>
+            <div id="extraction-progress-ring" class="extraction-progress-ring hidden" aria-hidden="true">
             <svg viewBox="0 0 40 40" class="extraction-ring-svg">
               <circle class="extraction-ring-track" cx="20" cy="20" r="16"/>
               <circle id="extraction-ring-fill" class="extraction-ring-fill" cx="20" cy="20" r="16"/>
@@ -950,6 +951,16 @@
               <p class="action-desc" id="terminal-weapon-ammoCapacity-desc">NEXT: Clip +2 rounds</p>
               <p class="action-desc action-desc--cost" id="terminal-weapon-ammoCapacity-cost">COST: 30 TECH / 10 COIN</p>
               <button class="terminal-action-btn" id="terminal-btn-weapon-ammoCapacity">UPGRADE</button>
+            </div>
+
+            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="ammoRefill">
+              <div class="action-card-header">
+                <span class="action-title">AMMO CONDENSER</span>
+                <span class="action-cost" id="terminal-weapon-ammoRefill-level">LV 0/3</span>
+              </div>
+              <p class="action-desc" id="terminal-weapon-ammoRefill-desc">NEXT: Passive ammo refill every 7.9s</p>
+              <p class="action-desc action-desc--cost" id="terminal-weapon-ammoRefill-cost">COST: 45 TECH / 12 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-weapon-ammoRefill">UPGRADE</button>
             </div>
 
             <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="shotSpeed">

@@ -7,10 +7,12 @@ import {
     ACT2_CAMP_MAX_LEVEL,
     ACT2_CAMP_SUPPORT_COSTS,
     ACT2_ENDINGS,
+    ACT2_HIVE_SITES,
     ACT2_LINES,
     ACT2_MAX_BOND,
     ACT2_MAX_OBEDIENCE,
     ACT2_RECRUIT_BOND_THRESHOLD,
+    buildAct2Manifest,
     campSupportCost,
     deriveAct2Phase,
     normalizeAct2State,
@@ -122,12 +124,23 @@ describe('Act 2 story schema', () => {
                 { id: 'camp_vesper', turned: true, bond: -4 }
             ]
         });
-        expect(state.version).toBe(2);
+        expect(state.version).toBe(3);
         expect(state.camps.map((c) => c.status)).toEqual(['culled', 'robbed', 'turned']);
         expect(state.camps[0].destroyed).toBe(true);
+        expect(state.camps[0].passengerState).toBe('dead');
+        expect(state.camps[2].passengerState).toBe('turned');
         expect(state.camps[1].bond).toBe(ACT2_MAX_BOND);
         expect(state.camps[2].bond).toBe(0);
         expect(state.queenObedience).toBe(1);
+        expect(state.humanity).toBe(100);
+        expect(state.coverIntegrity).toBe(100);
+        expect(state.suspicion).toEqual({
+            camp_meridian: 0,
+            camp_tallow: 0,
+            camp_vesper: 0
+        });
+        expect(state.hives.map((h) => h.id)).toEqual(ACT2_HIVE_SITES.map((h) => h.id));
+        expect(state.manifest).toMatchObject({ player: 'infected', seatsMax: 4 });
     });
 
     it('keeps old all-cull saves on the full brood vector', () => {
@@ -145,6 +158,33 @@ describe('Act 2 story schema', () => {
         const state = normalizeAct2State({ camps: [{ id: 'camp_meridian', status: 'space_whale' }] });
         expect(ACT2_CAMP_STATUSES).toContain(state.camps[0].status);
         expect(state.camps[0].status).toBe('alive');
+    });
+
+    it('normalizes infection, network, hive, and manifest fields', () => {
+        const state = normalizeAct2State({
+            humanity: 44,
+            infectionLoad: 12,
+            coverIntegrity: 999,
+            suspicion: { camp_meridian: 120 },
+            networks: {
+                humanRelayOnline: true,
+                knownByCamps: ['camp_meridian', 'fake_camp'],
+                knownByHives: ['hive_suture', 'fake_hive']
+            },
+            hives: [{ id: 'hive_suture', status: 'aboard', bond: 99, extractionLevel: 2 }]
+        });
+
+        expect(state.infectionStage).toBe('symptomatic');
+        expect(state.coverIntegrity).toBe(100);
+        expect(state.suspicion.camp_meridian).toBe(100);
+        expect(state.networks.knownByCamps).toEqual(['camp_meridian']);
+        expect(state.networks.knownByHives).toEqual(['hive_suture']);
+        expect(state.hives.find((h) => h.id === 'hive_suture')).toMatchObject({
+            status: 'aboard',
+            aboard: true,
+            bond: ACT2_MAX_BOND,
+            extractionLevel: 2
+        });
     });
 });
 
@@ -198,6 +238,17 @@ describe('Act 2 choice reducers', () => {
         expect(camp.bond).toBe(2);
         expect(camp.questFlags.lost_probe).toBe('done');
     });
+
+    it('adjusts humanity and suspicion as first-pass Act 2 overlays', () => {
+        const manager = readyManager();
+        manager.adjustHumanity(-30);
+        manager.adjustCampSuspicion('camp_meridian', 85);
+        const state = manager.getState();
+        expect(state.humanity).toBe(70);
+        expect(state.infectionStage).toBe('strained');
+        expect(state.suspicion.camp_meridian).toBe(85);
+        expect(state.camps.find((c) => c.id === 'camp_meridian').knowsPlayerInfected).toBe(true);
+    });
 });
 
 describe('Act 2 ending picker', () => {
@@ -246,6 +297,48 @@ describe('Act 2 ending picker', () => {
             eggsStatus: 'destroyed',
             camps: camps('culled')
         })).toBe(ACT2_ENDINGS.SCORCHED_SKY);
+    });
+
+    it('treats hidden eggs as aboard and abandoned eggs as gone', () => {
+        expect(pickAct2Ending({
+            queenStatus: 'killed',
+            eggsStatus: 'hidden',
+            camps: camps('recruited')
+        })).toBe(ACT2_ENDINGS.CARRIERS_BARGAIN);
+
+        expect(pickAct2Ending({
+            queenStatus: 'abandoned',
+            eggsStatus: 'abandoned',
+            camps: camps('culled')
+        })).toBe(ACT2_ENDINGS.SCORCHED_SKY);
+    });
+});
+
+describe('Act 2 boarding manifest', () => {
+    it('computes seat usage for queen, eggs, humans, and alien allies', () => {
+        const manifest = buildAct2Manifest({
+            queenStatus: 'aboard',
+            eggsStatus: 'aboard',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, status: 'culled' })),
+            hives: []
+        });
+        expect(manifest).toMatchObject({
+            player: 'infected',
+            queen: true,
+            egg: true,
+            seatsUsed: 4,
+            valid: true
+        });
+    });
+
+    it('flags unstable eggs without the queen or Suture aboard', () => {
+        const manifest = buildAct2Manifest({
+            queenStatus: 'killed',
+            eggsStatus: 'hidden',
+            camps: [{ id: 'camp_meridian', status: 'recruited' }]
+        });
+        expect(manifest.valid).toBe(false);
+        expect(manifest.invalidReasons).toContain('egg_unstable');
     });
 });
 

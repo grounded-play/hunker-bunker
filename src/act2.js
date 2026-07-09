@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'hb_act2_v1';
+const ACT2_STATE_VERSION = 3;
 
 // ── Act 2: the PregAlien loop ─────────────────────────────────
 // Unlocks after the cave reveal (arcState 'hive_awakened_tease'). The player is
@@ -122,8 +123,37 @@ export const ACT2_CAMP_STATUSES = Object.freeze([
     'turned'
 ]);
 
-export const ACT2_QUEEN_STATUSES = Object.freeze(['aboard', 'rejected', 'killed']);
-export const ACT2_EGGS_STATUSES = Object.freeze(['aboard', 'destroyed']);
+export const ACT2_QUEEN_STATUSES = Object.freeze(['aboard', 'rejected', 'killed', 'abandoned']);
+export const ACT2_EGGS_STATUSES = Object.freeze(['aboard', 'destroyed', 'abandoned', 'hidden']);
+export const ACT2_INFECTION_STAGES = Object.freeze(['latent', 'strained', 'symptomatic', 'outed', 'cured', 'ascendant']);
+export const ACT2_HIVE_STATUSES = Object.freeze([
+    'dormant',
+    'mined',
+    'wounded',
+    'awakened',
+    'bonded',
+    'rescued',
+    'aboard',
+    'abandoned',
+    'slain',
+    'expired_by_cure',
+    'queen_consumed'
+]);
+export const ACT2_HUMAN_PASSENGER_STATES = Object.freeze([
+    'none',
+    'human_unsuspecting',
+    'human_suspicious',
+    'human_outed',
+    'latent_infected',
+    'turned',
+    'dead'
+]);
+export const ACT2_HIVE_SITES = Object.freeze([
+    Object.freeze({ id: 'hive_suture', characterId: 'nahl', label: 'SUTURE HIVE', resource: 'suture_resin' }),
+    Object.freeze({ id: 'hive_relay', characterId: 'vey', label: 'RELAY HIVE', resource: 'neural_filament' }),
+    Object.freeze({ id: 'hive_carapace', characterId: 'rhun', label: 'CARAPACE HIVE', resource: 'living_chitin' })
+]);
+export const ACT2_MANIFEST_SEATS_MAX = 4;
 
 export const ACT2_MAX_BOND = 5;
 export const ACT2_RECRUIT_BOND_THRESHOLD = 4;
@@ -267,6 +297,12 @@ function getStorage(storage) {
     return storage ?? (typeof window !== 'undefined' ? window.localStorage : null);
 }
 
+function clampInteger(value, min, max, fallback = min) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return fallback;
+    return Math.max(min, Math.min(max, Math.floor(numeric)));
+}
+
 function normalizeCampStatus(raw = {}) {
     if (ACT2_CAMP_STATUSES.includes(raw?.status)) return raw.status;
     // v1 saves only had booleans.
@@ -277,21 +313,27 @@ function normalizeCampStatus(raw = {}) {
 }
 
 function normalizeCamp(raw = {}, id) {
-    const levelRaw = Number(raw?.level);
-    const bondRaw = Number(raw?.bond);
     const status = normalizeCampStatus(raw);
+    const suspicion = clampInteger(raw?.suspicion, 0, 100, 0);
+    const passengerState = ACT2_HUMAN_PASSENGER_STATES.includes(raw?.passengerState)
+        ? raw.passengerState
+        : status === 'recruited' ? 'human_unsuspecting'
+            : status === 'turned' ? 'turned'
+                : status === 'culled' ? 'dead'
+                    : 'none';
     return {
         id,
         x: Number.isFinite(raw?.x) ? raw.x : null,
         z: Number.isFinite(raw?.z) ? raw.z : null,
-        level: Number.isFinite(levelRaw)
-            ? Math.max(0, Math.min(ACT2_CAMP_MAX_LEVEL, Math.floor(levelRaw)))
-            : 0,
-        bond: Number.isFinite(bondRaw)
-            ? Math.max(0, Math.min(ACT2_MAX_BOND, Math.floor(bondRaw)))
-            : 0,
+        level: clampInteger(raw?.level, 0, ACT2_CAMP_MAX_LEVEL, 0),
+        bond: clampInteger(raw?.bond, 0, ACT2_MAX_BOND, 0),
         aided: Boolean(raw?.aided),
         status,
+        suspicion,
+        passengerState,
+        knowsPlayerInfected: Boolean(raw?.knowsPlayerInfected),
+        relayLinked: Boolean(raw?.relayLinked),
+        leaderAlive: raw?.leaderAlive !== false && status !== 'culled',
         questFlags: raw?.questFlags && typeof raw.questFlags === 'object' ? { ...raw.questFlags } : {},
         // Compatibility projections while visuals migrate off booleans.
         destroyed: status === 'culled',
@@ -300,11 +342,92 @@ function normalizeCamp(raw = {}, id) {
     };
 }
 
+function normalizeSuspicion(raw = {}, camps = []) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+    return Object.fromEntries(camps.map((camp) => [
+        camp.id,
+        clampInteger(source[camp.id] ?? camp.suspicion, 0, 100, 0)
+    ]));
+}
+
+function normalizeNetworks(raw = {}) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+    const normalizeKnownIds = (ids, validIds) => (
+        Array.isArray(ids)
+            ? [...new Set(ids.filter((id) => validIds.includes(id)))]
+            : []
+    );
+    return {
+        humanRelayOnline: Boolean(source.humanRelayOnline),
+        hiveSynapseOnline: Boolean(source.hiveSynapseOnline),
+        bridgeOnline: Boolean(source.bridgeOnline),
+        knownByCamps: normalizeKnownIds(source.knownByCamps, ACT2_CAMP_IDS),
+        knownByHives: normalizeKnownIds(source.knownByHives, ACT2_HIVE_SITES.map((site) => site.id))
+    };
+}
+
+function normalizeHive(raw = {}, site = ACT2_HIVE_SITES[0]) {
+    const status = ACT2_HIVE_STATUSES.includes(raw?.status) ? raw.status : 'dormant';
+    return {
+        id: site.id,
+        label: site.label,
+        characterId: site.characterId,
+        resource: site.resource,
+        x: Number.isFinite(raw?.x) ? raw.x : null,
+        z: Number.isFinite(raw?.z) ? raw.z : null,
+        status,
+        extractionLevel: clampInteger(raw?.extractionLevel, 0, 3, 0),
+        bond: clampInteger(raw?.bond, 0, ACT2_MAX_BOND, 0),
+        questFlags: raw?.questFlags && typeof raw.questFlags === 'object' ? { ...raw.questFlags } : {},
+        networked: Boolean(raw?.networked),
+        aboard: Boolean(raw?.aboard) || status === 'aboard'
+    };
+}
+
+function buildManifestFromNormalizedState(state) {
+    const humans = state.camps
+        .filter((camp) => ['recruited'].includes(camp.status))
+        .map((camp) => camp.id);
+    const aliens = state.hives
+        .filter((hive) => hive.aboard || ['rescued', 'aboard'].includes(hive.status))
+        .map((hive) => hive.id);
+    const queen = state.queenStatus === 'aboard';
+    const egg = state.eggsStatus === 'aboard' || state.eggsStatus === 'hidden';
+    const seatsUsed = 1 + humans.length + aliens.length + (queen ? 2 : 0) + (egg ? 1 : 0);
+    const invalidReasons = [];
+    if (seatsUsed > ACT2_MANIFEST_SEATS_MAX) {
+        invalidReasons.push('seat_capacity_exceeded');
+    }
+    if (egg && !queen && !state.hives.some((hive) => hive.id === 'hive_suture' && (hive.aboard || hive.status === 'aboard'))) {
+        invalidReasons.push('egg_unstable');
+    }
+
+    return {
+        player: state.infectionStage === 'cured' ? 'human' : 'infected',
+        humans,
+        aliens,
+        queen,
+        egg,
+        seatsUsed,
+        seatsMax: ACT2_MANIFEST_SEATS_MAX,
+        valid: invalidReasons.length === 0,
+        invalidReasons
+    };
+}
+
+export function buildAct2Manifest(rawState = {}) {
+    return buildManifestFromNormalizedState(normalizeAct2State(rawState));
+}
+
 export function normalizeAct2State(raw = {}) {
     const parsed = raw && typeof raw === 'object' ? raw : {};
     const camps = ACT2_CAMP_IDS.map((id) => {
         const existing = Array.isArray(parsed.camps) ? parsed.camps.find((c) => c?.id === id) : null;
         return normalizeCamp(existing ?? {}, id);
+    });
+    const hives = ACT2_HIVE_SITES.map((site) => {
+        const existing = Array.isArray(parsed.hives) ? parsed.hives.find((h) => h?.id === site.id) : null;
+        return normalizeHive(existing ?? {}, site);
     });
 
     // Migration: v1 saves had no obedience meter — derive it from culls so an
@@ -315,7 +438,15 @@ export function normalizeAct2State(raw = {}) {
         ? Math.max(-ACT2_MAX_OBEDIENCE, Math.min(ACT2_MAX_OBEDIENCE, Math.round(obedienceRaw)))
         : Math.min(ACT2_MAX_OBEDIENCE, culledCount);
 
-    return {
+    const humanity = clampInteger(parsed.humanity, 0, 100, 100);
+    const infectionLoad = clampInteger(parsed.infectionLoad, 0, 100, 0);
+    const infectionStage = ACT2_INFECTION_STAGES.includes(parsed.infectionStage)
+        ? parsed.infectionStage
+        : humanity <= 0 ? 'outed'
+            : humanity <= 50 ? 'symptomatic'
+                : humanity <= 75 ? 'strained'
+                    : 'latent';
+    const normalized = {
         begun: Boolean(parsed.begun),
         uplinkSilenced: Boolean(parsed.uplinkSilenced),
         dishBuilt: Boolean(parsed.dishBuilt),
@@ -323,9 +454,20 @@ export function normalizeAct2State(raw = {}) {
         queenObedience,
         queenStatus: ACT2_QUEEN_STATUSES.includes(parsed.queenStatus) ? parsed.queenStatus : 'aboard',
         eggsStatus: ACT2_EGGS_STATUSES.includes(parsed.eggsStatus) ? parsed.eggsStatus : 'aboard',
+        humanity,
+        infectionLoad,
+        infectionStage,
+        coverIntegrity: clampInteger(parsed.coverIntegrity, 0, 100, 100),
+        outedToHumans: Boolean(parsed.outedToHumans) || infectionStage === 'outed',
+        suspicion: normalizeSuspicion(parsed.suspicion, camps),
+        networks: normalizeNetworks(parsed.networks),
         camps,
-        version: 2
+        hives,
+        manifest: null,
+        version: ACT2_STATE_VERSION
     };
+    normalized.manifest = buildManifestFromNormalizedState(normalized);
+    return normalized;
 }
 
 export const DEFAULT_ACT2_STATE = Object.freeze(normalizeAct2State({}));
@@ -359,10 +501,10 @@ export function pickAct2Ending(rawState = DEFAULT_ACT2_STATE) {
     const allCulled = culled === total;
     const allHumanRecruited = recruited === total;
     const anySurvivorsBoarded = recruited > 0 || turned > 0;
-    const queenGone = state.queenStatus === 'rejected' || state.queenStatus === 'killed';
+    const queenGone = state.queenStatus === 'rejected' || state.queenStatus === 'killed' || state.queenStatus === 'abandoned';
     const queenAboard = state.queenStatus === 'aboard';
-    const eggsAboard = state.eggsStatus === 'aboard';
-    const eggsDestroyed = state.eggsStatus === 'destroyed';
+    const eggsAboard = state.eggsStatus === 'aboard' || state.eggsStatus === 'hidden';
+    const eggsDestroyed = state.eggsStatus === 'destroyed' || state.eggsStatus === 'abandoned';
 
     if (queenAboard && eggsAboard && allCulled && state.queenObedience >= ACT2_MAX_OBEDIENCE) {
         return ACT2_ENDINGS.FULL_BROOD;
@@ -494,7 +636,15 @@ export class Act2Manager {
     setCampStatus(id, status) {
         return this._mutate((s) => {
             const camp = s.camps.find((c) => c.id === id);
-            if (camp && ACT2_CAMP_STATUSES.includes(status)) camp.status = status;
+            if (!camp || !ACT2_CAMP_STATUSES.includes(status)) return;
+            camp.status = status;
+            if (status === 'recruited') camp.passengerState = 'human_unsuspecting';
+            if (status === 'turned') camp.passengerState = 'turned';
+            if (status === 'culled') {
+                camp.passengerState = 'dead';
+                camp.leaderAlive = false;
+            }
+            if (status === 'robbed' || status === 'alive') camp.passengerState = 'none';
         });
     }
 
@@ -525,7 +675,10 @@ export class Act2Manager {
     stealCamp(id) {
         return this._mutate((s) => {
             const camp = s.camps.find((c) => c.id === id);
-            if (camp && camp.status === 'alive') camp.status = 'robbed';
+            if (camp && camp.status === 'alive') {
+                camp.status = 'robbed';
+                camp.passengerState = 'none';
+            }
         });
     }
 
@@ -536,6 +689,8 @@ export class Act2Manager {
             if (!camp || !camp.aided) return;
             if (camp.status !== 'alive' && camp.status !== 'robbed') return;
             camp.status = 'culled';
+            camp.passengerState = 'dead';
+            camp.leaderAlive = false;
             s.queenObedience = Math.min(ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) + 1);
         });
     }
@@ -548,11 +703,45 @@ export class Act2Manager {
             if (camp.bond < ACT2_RECRUIT_BOND_THRESHOLD) return;
             if (mode === 'turned') {
                 camp.status = 'turned';
+                camp.passengerState = 'turned';
                 s.queenObedience = Math.min(ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) + 1);
             } else {
                 camp.status = 'recruited';
+                camp.passengerState = camp.suspicion >= 50 || camp.knowsPlayerInfected
+                    ? 'human_suspicious'
+                    : 'human_unsuspecting';
                 s.queenObedience = Math.max(-ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) - 1);
             }
+        });
+    }
+
+    adjustCampSuspicion(id, delta = 0) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (!camp) return;
+            camp.suspicion = clampInteger(camp.suspicion + Math.round(Number(delta) || 0), 0, 100, camp.suspicion);
+            s.suspicion[camp.id] = camp.suspicion;
+            if (camp.suspicion >= 80) camp.knowsPlayerInfected = true;
+        });
+    }
+
+    adjustHumanity(delta = 0) {
+        return this._mutate((s) => {
+            s.humanity = clampInteger(s.humanity + Math.round(Number(delta) || 0), 0, 100, s.humanity);
+            s.infectionLoad = clampInteger(100 - s.humanity, 0, 100, s.infectionLoad);
+            if (s.humanity <= 0) s.infectionStage = 'outed';
+            else if (s.humanity <= 50) s.infectionStage = 'symptomatic';
+            else if (s.humanity <= 75) s.infectionStage = 'strained';
+            else s.infectionStage = 'latent';
+        });
+    }
+
+    setHiveStatus(id, status) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive || !ACT2_HIVE_STATUSES.includes(status)) return;
+            hive.status = status;
+            hive.aboard = status === 'aboard' || status === 'rescued';
         });
     }
 
@@ -568,6 +757,9 @@ export class Act2Manager {
             queenObedience: state.queenObedience,
             queenStatus: state.queenStatus,
             eggsStatus: state.eggsStatus,
+            humanity: state.humanity,
+            infectionStage: state.infectionStage,
+            manifest: state.manifest,
             camps: state.camps.map((c) => ({ id: c.id, status: c.status, level: c.level, bond: c.bond }))
         };
     }
