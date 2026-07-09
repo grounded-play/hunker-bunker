@@ -12,6 +12,7 @@ import {
     ACT2_MAX_BOND,
     ACT2_MAX_OBEDIENCE,
     ACT2_RECRUIT_BOND_THRESHOLD,
+    ACT2_HIVE_RESCUE_BOND_THRESHOLD,
     buildAct2Manifest,
     campSupportCost,
     deriveAct2Phase,
@@ -303,7 +304,8 @@ describe('Act 2 ending picker', () => {
         expect(pickAct2Ending({
             queenStatus: 'killed',
             eggsStatus: 'hidden',
-            camps: camps('recruited')
+            camps: camps('recruited'),
+            hives: [{ id: 'hive_suture', status: 'aboard' }]
         })).toBe(ACT2_ENDINGS.CARRIERS_BARGAIN);
 
         expect(pickAct2Ending({
@@ -419,5 +421,219 @@ describe('getCampClassMapping', () => {
         expect(mapping.camp_tallow).toMatchObject({ class: 'Tank', leader: 'Commander Briggs', isBoss: false, order: 2 });
         expect(mapping.camp_vesper).toMatchObject({ class: 'Engineer', leader: 'Overseer Kaelen', isBoss: true, order: 3 });
         expect(getBoardingCampId('SpaceWhale')).toBe('camp_vesper');
+    });
+});
+
+describe('hive reducers', () => {
+    const boot = () => new Act2Manager({ storage: memoryStorage() });
+
+    it('mining raises extraction, costs bond, and wounds at level 3', () => {
+        const m = boot();
+        m.adjustHiveBond('hive_suture', 2);
+        m.mineHive('hive_suture');
+        let hive = m.getState().hives.find((h) => h.id === 'hive_suture');
+        expect(hive.extractionLevel).toBe(1);
+        expect(hive.bond).toBe(1);
+        expect(hive.status).toBe('mined');
+        m.mineHive('hive_suture');
+        m.mineHive('hive_suture');
+        m.mineHive('hive_suture'); // capped
+        hive = m.getState().hives.find((h) => h.id === 'hive_suture');
+        expect(hive.extractionLevel).toBe(3);
+        expect(hive.status).toBe('wounded');
+    });
+
+    it('bond threshold marks the hive bonded and rescue takes it aboard', () => {
+        const m = boot();
+        m.adjustHiveBond('hive_relay', ACT2_HIVE_RESCUE_BOND_THRESHOLD);
+        expect(m.getState().hives.find((h) => h.id === 'hive_relay').status).toBe('bonded');
+        const obedienceBefore = m.getState().queenObedience;
+        m.rescueHive('hive_relay');
+        const state = m.getState();
+        const hive = state.hives.find((h) => h.id === 'hive_relay');
+        expect(hive.status).toBe('rescued');
+        expect(hive.aboard).toBe(true);
+        expect(state.queenObedience).toBe(obedienceBefore - 1);
+        expect(state.manifest.aliens).toContain('hive_relay');
+    });
+
+    it('rescue is gated by bond', () => {
+        const m = boot();
+        m.rescueHive('hive_carapace');
+        expect(m.getState().hives.find((h) => h.id === 'hive_carapace').status).toBe('dormant');
+    });
+
+    it('sacrifice and harvest kill the ally and please the queen', () => {
+        const m = boot();
+        m.sacrificeHive('hive_suture');
+        m.harvestHive('hive_relay');
+        const state = m.getState();
+        expect(state.hives.find((h) => h.id === 'hive_suture').status).toBe('queen_consumed');
+        expect(state.hives.find((h) => h.id === 'hive_relay').status).toBe('slain');
+        expect(state.queenObedience).toBe(2);
+    });
+
+    it('synapse comes online when every living hive is networked', () => {
+        const m = boot();
+        m.harvestHive('hive_carapace'); // dead hives do not block the chorus
+        m.setHiveNetworked('hive_suture', true);
+        expect(m.getState().networks.hiveSynapseOnline).toBe(false);
+        m.setHiveNetworked('hive_relay', true);
+        expect(m.getState().networks.hiveSynapseOnline).toBe(true);
+    });
+});
+
+describe('outing propagation', () => {
+    const boot = () => new Act2Manager({ storage: memoryStorage() });
+
+    it('spreads across linked camps when the relay is online', () => {
+        const m = boot();
+        m.markCampRelayLinked('camp_meridian', true);
+        m.markCampRelayLinked('camp_tallow', true);
+        m.setNetworkFlag('humanRelayOnline', true);
+        m.propagateOuting('camp_meridian');
+        const state = m.getState();
+        expect(state.outedToHumans).toBe(true);
+        expect(state.camps.find((c) => c.id === 'camp_meridian').knowsPlayerInfected).toBe(true);
+        expect(state.camps.find((c) => c.id === 'camp_tallow').knowsPlayerInfected).toBe(true);
+        expect(state.camps.find((c) => c.id === 'camp_vesper').knowsPlayerInfected).toBe(false);
+    });
+
+    it('a jammed relay contains the outing to the origin camp', () => {
+        const m = boot();
+        m.markCampRelayLinked('camp_meridian', true);
+        m.markCampRelayLinked('camp_tallow', true);
+        m.setNetworkFlag('humanRelayOnline', true);
+        m.setNetworkFlag('relayJammed', true);
+        m.propagateOuting('camp_meridian');
+        const state = m.getState();
+        expect(state.camps.find((c) => c.id === 'camp_meridian').knowsPlayerInfected).toBe(true);
+        expect(state.camps.find((c) => c.id === 'camp_tallow').knowsPlayerInfected).toBe(false);
+    });
+});
+
+describe('infection reducers', () => {
+    const boot = () => new Act2Manager({ storage: memoryStorage() });
+
+    it('warnCamp recruits them suspicious and defies the queen', () => {
+        const m = boot();
+        m.adjustCampBond('camp_tallow', 2);
+        m.warnCamp('camp_tallow');
+        const state = m.getState();
+        const camp = state.camps.find((c) => c.id === 'camp_tallow');
+        expect(camp.status).toBe('recruited');
+        expect(camp.passengerState).toBe('human_suspicious');
+        expect(camp.knowsPlayerInfected).toBe(true);
+        expect(state.queenObedience).toBe(-1);
+    });
+
+    it('latentInfectCamp needs Host Mercy, bond, and low suspicion', () => {
+        const m = boot();
+        m.adjustCampBond('camp_meridian', ACT2_RECRUIT_BOND_THRESHOLD);
+        m.latentInfectCamp('camp_meridian');
+        expect(m.getState().camps[0].status).toBe('alive'); // no quest yet
+        m.completeHiveQuest('hive_suture', 'host_mercy', 1);
+        m.latentInfectCamp('camp_meridian');
+        const camp = m.getState().camps[0];
+        expect(camp.status).toBe('recruited');
+        expect(camp.passengerState).toBe('latent_infected');
+    });
+
+    it('uninfectSelf is blocked while the queen is aboard, then cures and expires unsecured hives', () => {
+        const m = boot();
+        m.adjustHiveBond('hive_suture', ACT2_HIVE_RESCUE_BOND_THRESHOLD);
+        m.rescueHive('hive_suture');
+        m.uninfectSelf();
+        expect(m.getState().infectionStage).not.toBe('cured'); // queen aboard
+        m.setQueenStatus('rejected');
+        m.uninfectSelf();
+        const state = m.getState();
+        expect(state.infectionStage).toBe('cured');
+        expect(state.humanity).toBe(100);
+        expect(state.hives.find((h) => h.id === 'hive_suture').status).toBe('rescued');
+        expect(state.hives.find((h) => h.id === 'hive_relay').status).toBe('expired_by_cure');
+        expect(state.manifest.player).toBe('human');
+    });
+});
+
+describe('expanded ending families', () => {
+    it('mothership infection: latent carrier, three unsuspecting humans, forged clearance', () => {
+        const state = {
+            begun: true,
+            uplinkSilenced: true,
+            dishBuilt: true,
+            queenStatus: 'rejected',
+            eggsStatus: 'destroyed',
+            infectionStage: 'latent',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, aided: true, status: 'recruited', bond: 4 })),
+            hives: [{ id: 'hive_relay', questFlags: { false_clearance: 'done' } }]
+        };
+        expect(pickAct2Ending(state)).toBe(ACT2_ENDINGS.MOTHERSHIP_INFECTION);
+        // A single suspicious passenger burns the infiltration.
+        state.camps[1].passengerState = 'human_suspicious';
+        expect(pickAct2Ending(state)).not.toBe(ACT2_ENDINGS.MOTHERSHIP_INFECTION);
+    });
+
+    it('alien exodus: three rescued hives, queen left behind', () => {
+        const state = {
+            begun: true,
+            queenStatus: 'abandoned',
+            eggsStatus: 'abandoned',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, aided: true, status: 'robbed' })),
+            hives: ACT2_HIVE_SITES.map((site) => ({ id: site.id, status: 'rescued' }))
+        };
+        expect(pickAct2Ending(state)).toBe(ACT2_ENDINGS.ALIEN_EXODUS);
+    });
+
+    it('outed escape: humans board knowing, player still infected', () => {
+        const state = {
+            begun: true,
+            queenStatus: 'killed',
+            eggsStatus: 'destroyed',
+            infectionStage: 'symptomatic',
+            camps: ACT2_CAMP_IDS.map((id) => ({
+                id, aided: true, status: 'recruited', knowsPlayerInfected: true
+            })),
+            hives: []
+        };
+        expect(pickAct2Ending(state)).toBe(ACT2_ENDINGS.OUTED_ESCAPE);
+    });
+
+    it('cured player with warned humans still earns clean escape', () => {
+        const state = {
+            begun: true,
+            queenStatus: 'killed',
+            eggsStatus: 'destroyed',
+            infectionStage: 'cured',
+            camps: ACT2_CAMP_IDS.map((id) => ({
+                id, aided: true, status: 'recruited', knowsPlayerInfected: true
+            })),
+            hives: []
+        };
+        expect(pickAct2Ending(state)).toBe(ACT2_ENDINGS.CLEAN_ESCAPE);
+    });
+
+    it('failed carrier: hidden egg with no stabilization', () => {
+        const state = {
+            begun: true,
+            queenStatus: 'killed',
+            eggsStatus: 'hidden',
+            camps: ACT2_CAMP_IDS.map((id, i) => ({
+                id, aided: true, status: i === 0 ? 'recruited' : 'culled'
+            })),
+            hives: []
+        };
+        expect(pickAct2Ending(state)).toBe(ACT2_ENDINGS.FAILED_CARRIER);
+    });
+
+    it('empty husk: nobody aboard, camps not even culled', () => {
+        const state = {
+            begun: true,
+            queenStatus: 'abandoned',
+            eggsStatus: 'abandoned',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, aided: true, status: 'robbed' })),
+            hives: ACT2_HIVE_SITES.map((site) => ({ id: site.id, status: 'abandoned' }))
+        };
+        expect(pickAct2Ending(state)).toBe(ACT2_ENDINGS.EMPTY_HUSK);
     });
 });

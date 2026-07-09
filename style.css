@@ -839,6 +839,8 @@ body {
   min-height: calc(var(--vu) * 7.6);
   height: auto;
   max-width: calc(var(--vu) * 73);
+  box-sizing: border-box;
+  align-self: flex-end;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -862,7 +864,7 @@ body {
   white-space: normal;
 }
 .last-contractor.hidden {
-  display: flex !important;
+  display: none !important;
   visibility: hidden;
   animation: none;
 }
@@ -1833,7 +1835,7 @@ body {
 .action-row {
   display: flex;
   justify-content: flex-start;
-  align-items: center;
+  align-items: flex-end;
   gap: calc(var(--vu) * 3);
   width: 100%;
   max-width: calc(var(--vu) * 132);
@@ -9073,4 +9075,28 @@ button.archive-log-entry:active {
 @keyframes shell-row-flash {
   0% { background: rgba(120, 255, 170, 0.28); transform: translateX(2px); }
   100% { background: transparent; transform: none; }
+}
+
+/* ── Humanity / cover bar (post-reveal vitals row) ── */
+.vitals-panel__cover-row.hidden { display: none !important; }
+
+.vitals-panel__cover-bar {
+  background: linear-gradient(90deg, #8cff96, #b9ff5c);
+  transition: width 0.5s ease;
+}
+
+.vitals-panel__cover-bar[data-stage='strained'] {
+  background: linear-gradient(90deg, #ffe45c, #ffb144);
+}
+
+.vitals-panel__cover-bar[data-stage='symptomatic'] {
+  background: linear-gradient(90deg, #ffb144, #ff5a2a);
+}
+
+.vitals-panel__cover-bar[data-stage='outed'] {
+  background: #ff2a4a;
+}
+
+#vitals-cover-label {
+  color: #8cff96;
 }

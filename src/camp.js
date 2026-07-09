@@ -3,9 +3,9 @@ import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 
 const LEADER_SPRITESHEETS = {
-    'Commander Briggs': '/briggs_camp_walk.png',
-    'Sister Martha': '/martha_camp_walk.png',
-    'Overseer Kaelen': '/kaelen_camp_walk.png'
+    'Commander Briggs': '/briggs_camp_walk_v2.png',
+    'Sister Martha': '/martha_camp_walk_v2.png',
+    'Overseer Kaelen': '/kaelen_camp_walk_v2.png'
 };
 
 const LEADER_BOSS_SPRITESHEETS = {

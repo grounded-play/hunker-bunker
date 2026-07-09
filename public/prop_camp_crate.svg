@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="crateFace" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8d6b3f"/>
+      <stop offset="55%" stop-color="#5e4529"/>
+      <stop offset="100%" stop-color="#2f2216"/>
+    </linearGradient>
+    <linearGradient id="crateEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#bd9b69"/>
+      <stop offset="100%" stop-color="#5f4730"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linejoin="round">
+    <rect x="22" y="26" width="84" height="76" rx="6" fill="url(#crateEdge)" stroke="#151515" stroke-width="5"/>
+    <rect x="30" y="34" width="68" height="60" rx="4" fill="url(#crateFace)" stroke="#d2b57d" stroke-width="2" opacity="0.95"/>
+    <path d="M34 38l60 52M94 38L34 90" stroke="#d2b57d" stroke-width="5" opacity="0.7"/>
+    <rect x="54" y="54" width="20" height="22" rx="2" fill="#1b2328" stroke="#95a1ab" stroke-width="2"/>
+    <rect x="47" y="47" width="34" height="10" rx="2" fill="#d08a36"/>
+    <path d="M35 84h58" stroke="#1a1a1a" stroke-width="6" opacity="0.65"/>
+    <path d="M38 87h52" stroke="#f1d4a4" stroke-width="2" opacity="0.55"/>
+  </g>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="cotFrame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d7dde2"/>
+      <stop offset="50%" stop-color="#7a848d"/>
+      <stop offset="100%" stop-color="#2f353a"/>
+    </linearGradient>
+    <linearGradient id="cotBlanket" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffbe8d"/>
+      <stop offset="55%" stop-color="#c96a44"/>
+      <stop offset="100%" stop-color="#713121"/>
+    </linearGradient>
+    <linearGradient id="cotMattress" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d3e5e0"/>
+      <stop offset="100%" stop-color="#7aa6a0"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <rect x="22" y="79" width="84" height="14" rx="6" fill="url(#cotFrame)" stroke="#121518" stroke-width="4"/>
+    <rect x="28" y="56" width="72" height="22" rx="5" fill="url(#cotMattress)" stroke="#263238" stroke-width="3"/>
+    <path d="M30 62h68" stroke="#eef5f7" stroke-width="2" opacity="0.5"/>
+    <path d="M33 72l18-16M95 72L77 56" stroke="#59636b" stroke-width="5"/>
+    <path d="M36 79l-8 12M92 79l8 12" stroke="#9ca8b2" stroke-width="5"/>
+    <path d="M46 58c10-8 28-8 38 0l7 8H39z" fill="url(#cotBlanket)" stroke="#1f1a17" stroke-width="3"/>
+    <rect x="54" y="49" width="18" height="9" rx="4" fill="#edf6ff" stroke="#b4c1cb" stroke-width="2"/>
+  </g>
+</svg>

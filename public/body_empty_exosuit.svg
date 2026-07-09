@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="emptySuit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e7edf0"/>
+      <stop offset="45%" stop-color="#8f989f"/>
+      <stop offset="100%" stop-color="#394047"/>
+    </linearGradient>
+    <linearGradient id="emptyGlow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7dfcff" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#7dfcff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 18h28l5 12-6 13H51l-6-13z" fill="url(#emptySuit)" stroke="#161b1f" stroke-width="4"/>
+    <path d="M44 44c4-7 9-12 20-12s16 5 20 12l8 18-7 12-6 24H49l-6-24-7-12z" fill="url(#emptySuit)" stroke="#161b1f" stroke-width="4"/>
+    <path d="M28 78l14-10 8 12-6 22H26l2-24z" fill="url(#emptySuit)" stroke="#161b1f" stroke-width="4"/>
+    <path d="M100 78l-14-10-8 12 6 22h16l2-24z" fill="url(#emptySuit)" stroke="#161b1f" stroke-width="4"/>
+    <rect x="52" y="49" width="24" height="20" rx="6" fill="#10161b" stroke="#9fd8e8" stroke-width="3"/>
+    <path d="M58 28c4 3 8 4 12 4s8-1 12-4" fill="none" stroke="#d5e2ea" stroke-width="3" opacity="0.55"/>
+    <path d="M44 102c7 5 33 5 40 0" fill="none" stroke="url(#emptyGlow)" stroke-width="4"/>
+    <path d="M56 84h16" stroke="#9fd8e8" stroke-width="3" opacity="0.45"/>
+  </g>
+</svg>

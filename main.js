@@ -3360,14 +3360,11 @@ function warmCutsceneVideo(base) {
 }
 
 function warmClassIntroMedia(playerType = 'SCOUT') {
-    const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
-    warmCutsceneImage(gifSrc);
     warmCutsceneVideo(webmBase);
 }
 
 function playClassIntroSequence(playerType = 'SCOUT') {
-    const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
     warmClassIntroMedia(playerType);
 
@@ -3382,139 +3379,88 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         skipHint.textContent = isTouchDevice() ? 'TAP TO SKIP' : 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
-        let step = 'gif'; // 'gif' | 'video' | 'done'
-        let timer = null;
         let guardTimer = null;
         let videoElement = null;
 
         const clearTimers = () => {
-            if (timer) {
-                window.clearTimeout(timer);
-                timer = null;
-            }
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
             }
         };
 
-        const cleanupAndResolve = () => {
+        function cleanupAndResolve() {
             if (settled) return;
             settled = true;
-            step = 'done';
             clearTimers();
             window.removeEventListener('keydown', onKey);
+            overlay.removeEventListener('pointerup', onPointerUp);
             if (videoElement) {
                 try { videoElement.pause(); } catch { /* ignore */ }
             }
             overlay.classList.add('is-closing');
             window.setTimeout(() => overlay.remove(), 280);
             resolve();
-        };
+        }
 
-        const startVideoStep = () => {
-            if (settled) return;
-            if (guardTimer) {
-                window.clearTimeout(guardTimer);
-                guardTimer = null;
-            }
-            step = 'video';
-            overlay.innerHTML = ''; // Clear GIF image
-
-            videoElement = document.createElement('video');
-            videoElement.className = 'class-intro-video';
-            videoElement.style.opacity = '0';
-            videoElement.playsInline = true;
-            videoElement.muted = true;
-            videoElement.autoplay = true;
-            videoElement.controls = false;
-            videoElement.preload = 'auto';
-            videoElement.poster = `/cutscenes/${webmBase}-poster.jpg`;
-
-            const webmSource = document.createElement('source');
-            webmSource.src = `/cutscenes/${webmBase}.webm`;
-            webmSource.type = 'video/webm';
-
-            // The repo currently ships WebM intros. Avoid adding a missing MP4
-            // source in Chrome, which otherwise creates noisy 404s while still
-            // falling back correctly if we later export MP4 files.
-            if (videoElement.canPlayType('video/webm')) {
-                videoElement.append(webmSource);
-            } else {
-                const mp4Fallback = document.createElement('source');
-                mp4Fallback.src = `/cutscenes/${webmBase}.mp4`;
-                mp4Fallback.type = 'video/mp4';
-                videoElement.append(mp4Fallback);
-            }
-            overlay.append(videoElement, skipHint);
-
-            guardTimer = window.setTimeout(() => {
-                if (videoElement.readyState < 2) cleanupAndResolve();
-            }, 4000);
-
-            videoElement.addEventListener('playing', () => {
-                if (guardTimer) {
-                    window.clearTimeout(guardTimer);
-                    guardTimer = null;
-                }
-                videoElement.style.opacity = '1';
-            });
-            videoElement.addEventListener('loadeddata', () => {
-                videoElement.style.opacity = '1';
-            }, { once: true });
-            videoElement.addEventListener('ended', cleanupAndResolve);
-            videoElement.addEventListener('error', cleanupAndResolve);
-
-            videoElement.play().catch(cleanupAndResolve);
-        };
-
-        const onKey = (event) => {
+        function onKey(event) {
             event.preventDefault();
-            if (step === 'gif') {
-                startVideoStep();
-            } else {
-                cleanupAndResolve();
-            }
-        };
+            cleanupAndResolve();
+        }
 
-        overlay.addEventListener('pointerup', (event) => {
+        function onPointerUp(event) {
             event.preventDefault();
-            if (step === 'gif') {
-                startVideoStep();
-            } else {
-                cleanupAndResolve();
-            }
-        });
+            cleanupAndResolve();
+        }
 
         window.addEventListener('keydown', onKey);
+        overlay.addEventListener('pointerup', onPointerUp);
 
-        // Render GIF step first
-        const gifImg = document.createElement('img');
-        gifImg.className = 'class-intro-video';
-        gifImg.style.opacity = '0';
-        gifImg.src = gifSrc;
-        gifImg.addEventListener('error', startVideoStep, { once: true });
-        const startGifTimer = () => {
-            if (settled || step !== 'gif') return;
+        videoElement = document.createElement('video');
+        videoElement.className = 'class-intro-video';
+        videoElement.style.opacity = '0';
+        videoElement.playsInline = true;
+        videoElement.muted = true;
+        videoElement.autoplay = true;
+        videoElement.controls = false;
+        videoElement.preload = 'auto';
+        videoElement.poster = `/cutscenes/${webmBase}-poster.jpg`;
+
+        const webmSource = document.createElement('source');
+        webmSource.src = `/cutscenes/${webmBase}.webm`;
+        webmSource.type = 'video/webm';
+
+        // Keep the GIF asset as preload-only; the visible intro is the WebM
+        // one-shot cutscene so it never loops.
+        if (videoElement.canPlayType('video/webm')) {
+            videoElement.append(webmSource);
+        } else {
+            const mp4Fallback = document.createElement('source');
+            mp4Fallback.src = `/cutscenes/${webmBase}.mp4`;
+            mp4Fallback.type = 'video/mp4';
+            videoElement.append(mp4Fallback);
+        }
+        overlay.append(videoElement, skipHint);
+        host.appendChild(overlay);
+
+        guardTimer = window.setTimeout(() => {
+            if (videoElement.readyState < 2) cleanupAndResolve();
+        }, 4000);
+
+        videoElement.addEventListener('playing', () => {
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
             }
-            gifImg.style.opacity = '1';
-            if (!timer) {
-                timer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_DURATION_MS);
-            }
-        };
-        gifImg.addEventListener('load', startGifTimer, { once: true });
+            videoElement.style.opacity = '1';
+        });
+        videoElement.addEventListener('loadeddata', () => {
+            videoElement.style.opacity = '1';
+        }, { once: true });
+        videoElement.addEventListener('ended', cleanupAndResolve);
+        videoElement.addEventListener('error', cleanupAndResolve);
 
-        overlay.append(gifImg, skipHint);
-        host.appendChild(overlay);
-
-        if (gifImg.complete && gifImg.naturalWidth > 0) {
-            requestAnimationFrame(startGifTimer);
-        } else {
-            guardTimer = window.setTimeout(startVideoStep, 2500);
-        }
+        videoElement.play().catch(cleanupAndResolve);
     });
 }
 
@@ -3622,6 +3568,11 @@ async function runAct2IntroSequence(game, playerType) {
 
     const lines = alreadyBegun ? ACT2_LINES.resume : ACT2_LINES.intro;
     await dialogueManager?.openBriefTransmission({ playerType, lines: [...lines] });
+    // Post-reveal HUD: the cover meter joins the vitals panel.
+    const infectedState = act2Manager.getState();
+    window.dispatchEvent(new CustomEvent('player-humanity-changed', {
+        detail: { humanity: infectedState.humanity, stage: infectedState.infectionStage }
+    }));
     window.AudioManager?.startAmbience?.();
 }
 
@@ -4783,7 +4734,12 @@ const ACT2_ENDING_TITLES = Object.freeze({
     clean_escape: 'CLEAN ESCAPE',
     mixed_crew: 'MIXED CREW',
     carriers_bargain: 'CARRIERS BARGAIN',
-    scorched_sky: 'SCORCHED SKY'
+    scorched_sky: 'SCORCHED SKY',
+    mothership_infection: 'MOTHERSHIP INFECTION',
+    alien_exodus: 'ALIEN EXODUS',
+    outed_escape: 'OUTED ESCAPE',
+    failed_carrier: 'FAILED CARRIER',
+    empty_husk: 'EMPTY HUSK'
 });
 
 function formatStoryToken(value = '') {
@@ -4886,12 +4842,74 @@ window.addEventListener('camp-defense-triggered', (event) => {
     const { campLabel } = event?.detail ?? {};
     showBiomePrompt(`WARNING: ${campLabel ?? 'CAMP'} DEFENSE GRID ONLINE — THE GUNS YOU FUNDED ANSWER TO THEM.`);
 });
+// ── Humanity / cover HUD + hive feedback (post-reveal) ──
+const coverRow = document.getElementById('vitals-cover-row');
+const coverBar = document.getElementById('vitals-cover-bar');
+const coverPct = document.getElementById('vitals-cover-pct');
+
+function renderCoverBar(humanity = 100, stage = 'latent') {
+    if (!coverRow) return;
+    coverRow.classList.remove('hidden');
+    const pct = Math.max(0, Math.min(100, Math.round(humanity)));
+    if (coverBar) {
+        coverBar.style.width = `${pct}%`;
+        coverBar.dataset.stage = stage;
+    }
+    if (coverPct) coverPct.textContent = `${pct}%`;
+}
+
+window.addEventListener('player-humanity-changed', (event) => {
+    const { humanity, stage } = event?.detail ?? {};
+    renderCoverBar(humanity, stage);
+    if (stage === 'symptomatic' && humanity === 50) {
+        showBiomePrompt('WARNING: COVER DEGRADING — HUMANS WILL NOTICE THE TELLS.');
+    }
+});
+
+window.addEventListener('player-suspicion-changed', (event) => {
+    const { campLabel, suspicion } = event?.detail ?? {};
+    if (suspicion === 50 || suspicion === 80) {
+        showBiomePrompt(`CAUTION: ${campLabel ?? 'CAMP'} IS WATCHING YOU — SUSPICION ${suspicion}%.`);
+    }
+});
+
+window.addEventListener('player-outed', (event) => {
+    const { campLabel, spread } = event?.detail ?? {};
+    const spreadText = (spread?.length ?? 0) > 1 ? ' THE RELAY IS CARRYING IT.' : '';
+    showBiomePrompt(`ALERT: ${campLabel ?? 'A CAMP'} KNOWS WHAT YOU ARE.${spreadText}`);
+    AudioManager.play('ui_error', { volume: 0.5, playbackRate: 0.5 });
+});
+
+window.addEventListener('boarding-blocked', (event) => {
+    const { reasons, seatsUsed, seatsMax } = event?.detail ?? {};
+    const why = (reasons ?? [])
+        .map((r) => r === 'seat_capacity_exceeded' ? `OVER CAPACITY (${seatsUsed}/${seatsMax} SEATS)` : r === 'egg_unstable' ? 'EGG NEEDS THE QUEEN OR NAHL ABOARD' : String(r).toUpperCase())
+        .join(' — ');
+    showBiomePrompt(`LAUNCH ABORTED: ${why || 'INVALID MANIFEST'}.`);
+});
+
+window.addEventListener('hive-mined', (event) => {
+    const { hiveLabel, extractionLevel, wounded } = event?.detail ?? {};
+    showBiomePrompt(wounded
+        ? `SYSTEM: ${hiveLabel ?? 'HIVE'} STRIPPED (${extractionLevel}/3). SOMETHING INSIDE STOPPED MOVING.`
+        : `SYSTEM: ${hiveLabel ?? 'HIVE'} EXTRACTION ${extractionLevel}/3 — RESOURCES BANKED.`);
+});
+
+window.addEventListener('hive-choice-resolved', (event) => {
+    const { hiveLabel, action, status, bond } = event?.detail ?? {};
+    showBiomePrompt(`SYSTEM: ${hiveLabel ?? 'HIVE'} ${formatStoryToken(action?.replace('hive-', ''))} — STATUS ${formatStoryToken(status)}, BOND ${bond ?? 0}/5.`);
+});
+
 window.addEventListener('camp-choice-resolved', (event) => {
     const { campLabel, action, status } = event?.detail ?? {};
     showBiomePrompt(`SYSTEM: ${campLabel ?? 'CAMP'} ${formatStoryToken(action)} COMPLETE. STATUS ${formatStoryToken(status)}.`);
 });
 window.addEventListener('camp-choice-denied', (event) => {
-    const { action, requiredBond, bond } = event?.detail ?? {};
+    const { action, requiredBond, bond, message } = event?.detail ?? {};
+    if (message) {
+        showBiomePrompt(message);
+        return;
+    }
     const bondText = Number.isFinite(requiredBond) ? ` TRUST ${bond ?? 0}/${requiredBond}` : '';
     showBiomePrompt(`SYSTEM: ${formatStoryToken(action)} UNAVAILABLE.${bondText}`);
 });

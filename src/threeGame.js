@@ -8,12 +8,16 @@ import { SurvivorCamp } from './camp.js';
 import {
     ACT2_CAMP_LABELS,
     ACT2_CAMP_MAX_LEVEL,
+    ACT2_HIVE_RESCUE_BOND_THRESHOLD,
+    ACT2_HIVE_SITES,
     ACT2_MAX_BOND,
     ACT2_RECRUIT_BOND_THRESHOLD,
+    buildAct2Manifest,
     campSupportCost,
     getBoardingCampId as getAct2BoardingCampId,
     getClassCampOrder
 } from './act2.js';
+import { HiveSite } from './hiveSite.js';
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
@@ -457,18 +461,23 @@ const CRYO_SCATTER_VARIANTS = [
     { type: 'scatter_coolant_puddle', weight: 0.34 },
     { type: 'scatter_ice_stalagmite', weight: 0.26 },
     { type: 'scatter_cryo_icicle', weight: 0.22 },
-    { type: 'scatter_cryo_shards', weight: 0.18 }
+    { type: 'scatter_cryo_shards', weight: 0.18 },
+    { type: 'body_human_frozen_suit', weight: 0.1 },
+    { type: 'body_empty_exosuit', weight: 0.08 }
 ];
 const BIO_SCATTER_VARIANTS = [
     { type: 'scatter_bio_pod', weight: 0.34 },
     { type: 'scatter_bio_moss', weight: 0.2 },
     { type: 'scatter_slime_puddle', weight: 0.24 },
+    { type: 'prop_hive_resin_sac', weight: 0.12 },
     { type: 'bio_spores', weight: 0.14 },
     { type: 'bio_spores_blue', weight: 0.04 },
     { type: 'bio_spores_amber', weight: 0.04 }
 ];
 const ACTIVE_SCATTER_VARIANTS = [
     { type: 'scatter_gravel', weight: 0.46 },
+    { type: 'scatter_cable_coil', weight: 0.18 },
+    { type: 'scatter_bolts', weight: 0.14 },
     ...SPORE_SCATTER_VARIANTS
 ];
 const BIOME_SCATTER_VARIANTS = Object.freeze({
@@ -600,7 +609,8 @@ export class ThreeGame {
             throw new Error('ThreeGame requires a valid parent container.');
         }
 
-        this.playerType = playerType;
+        const initialType = String(playerType ?? 'TANK').trim().toUpperCase();
+        this.playerType = PLAYER_COLORS[initialType] ? initialType : 'TANK';
         this.dialogueManager = dialogueManager;
         this.arcManager = ARC_PRELUDE_ENABLED ? arcManager : null;
         this.o2StartupSequenceActive = false;
@@ -806,6 +816,9 @@ export class ThreeGame {
         this.camps = [];
         this._act2CampsReady = false;
         this._campPromptLabel = null;
+        // Hive swarm sites: the alien mirror of the camps.
+        this.hives = [];
+        this._hiveSitesReady = false;
         this._terminalEvent = null;
         this._terminalEventResolvedIds = new Set();
         this._terminalEventIsMimic = false;   // forged terminal — punishes unverified trust
@@ -1233,10 +1246,17 @@ export class ThreeGame {
             scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
             scatter_cryo_shards: this.loadScatterTexture('/scatter_cryo_shards.png', textureLoader),
             scatter_bio_moss: this.loadScatterTexture('/scatter_bio_moss.png', textureLoader),
+            scatter_cable_coil: this.loadScatterTexture('/scatter_cable_coil.svg', textureLoader),
+            scatter_bolts: this.loadScatterTexture('/scatter_bolts.svg', textureLoader),
+            body_human_frozen_suit: this.loadScatterTexture('/body_human_frozen_suit.svg', textureLoader),
+            body_empty_exosuit: this.loadScatterTexture('/body_empty_exosuit.svg', textureLoader),
+            prop_hive_resin_sac: this.loadScatterTexture('/prop_hive_resin_sac.svg', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
             lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
             pit_hole: this.loadScatterTexture('/pit_hole.png', textureLoader),
             decal_scars: this.loadScatterTexture('/decal_scars.png', textureLoader),
+            fx_steam_puff: this.loadScatterTexture('/fx_steam_puff.svg', textureLoader),
+            fx_spark_burst: this.loadScatterTexture('/fx_spark_burst.svg', textureLoader),
             // Corpse art ships on flat black — key it out like the live snails.
             cybersnail_dead: this.loadKeyedSpriteTexture('/cybersnail_dead.png', 14),
             cryosnail_dead: this.loadKeyedSpriteTexture('/cryosnail_dead.png', 14),
@@ -1451,6 +1471,46 @@ export class ThreeGame {
                 depthTest: true,
                 fog: false
             }),
+            scatter_cable_coil: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_cable_coil,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_bolts: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_bolts,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            body_human_frozen_suit: new THREE.SpriteMaterial({
+                map: this.scatterTextures.body_human_frozen_suit,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            body_empty_exosuit: new THREE.SpriteMaterial({
+                map: this.scatterTextures.body_empty_exosuit,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_hive_resin_sac: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_hive_resin_sac,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
             ship_wreckage: new THREE.SpriteMaterial({
                 map: this.scatterTextures.ship_wreckage,
                 transparent: true,
@@ -1477,6 +1537,22 @@ export class ThreeGame {
             }),
             sporesnail_dead: new THREE.SpriteMaterial({
                 map: this.scatterTextures.sporesnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            fx_steam_puff: new THREE.SpriteMaterial({
+                map: this.scatterTextures.fx_steam_puff,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            fx_spark_burst: new THREE.SpriteMaterial({
+                map: this.scatterTextures.fx_spark_burst,
                 transparent: true,
                 alphaTest: 0.001,
                 depthWrite: false,
@@ -2356,6 +2432,7 @@ export class ThreeGame {
                 this.interactWithBlackBox();
                 this.interactWithCaveEntrance();
                 this.interactWithAct2Camp();
+                this.interactWithHiveSite();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
@@ -2381,6 +2458,7 @@ export class ThreeGame {
             this.interactWithBlackBox();
             this.interactWithCaveEntrance();
             this.interactWithAct2Camp();
+            this.interactWithHiveSite();
         };
 
         // Pointer/tap state for canvas input.
@@ -2800,12 +2878,14 @@ export class ThreeGame {
     }
 
     updatePlayerType(type, { poof = true, emitWorldEvents = true } = {}) {
-        this.playerType = type;
-        const color = PLAYER_COLORS[type] ?? 0xffffff;
-        const stats = CLASS_STATS[type] ?? CLASS_STATS.ENGINEER;
+        const requestedType = String(type ?? '').trim().toUpperCase();
+        const resolvedType = PLAYER_COLORS[requestedType] ? requestedType : 'ENGINEER';
+        this.playerType = resolvedType;
+        const color = PLAYER_COLORS[resolvedType] ?? 0xffffff;
+        const stats = CLASS_STATS[resolvedType] ?? CLASS_STATS.ENGINEER;
         
         let speed = stats.moveSpeed;
-        if (type === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_speed_1')) {
+        if (resolvedType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_speed_1')) {
             speed *= 1.15;
         }
         this.moveSpeed = speed;
@@ -2813,18 +2893,18 @@ export class ThreeGame {
         this.o2DrainMult = stats.o2DrainMult;
 
         let baseMagnet = stats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
-        if (type === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_magnet_1')) {
+        if (resolvedType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_magnet_1')) {
             baseMagnet = 5.5;
-        } else if (type === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_magnet_1')) {
+        } else if (resolvedType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_magnet_1')) {
             baseMagnet = 5.0;
         }
         this.pickupMagnetRadius = baseMagnet;
 
         this._initClassAbility();
-        this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
+        this.playerSprite.material = this.playerMaterials[resolvedType] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
         if (this.playerTorsoSprite) {
-            this.playerTorsoSprite.material = this.playerTorsoMaterials[type] ?? this.playerTorsoMaterials.SCOUT;
+            this.playerTorsoSprite.material = this.playerTorsoMaterials[resolvedType] ?? this.playerTorsoMaterials.SCOUT;
             this.playerTorsoSprite.material.needsUpdate = true;
         }
         this.playerMaterial.color.setHex(color);
@@ -2873,9 +2953,11 @@ export class ThreeGame {
 
     updateCrashedShipsVisibility(poof = false) {
         if (!this.crashedShips) return;
+        const activeType = String(this.playerType ?? '').trim().toUpperCase();
 
         for (const ship of this.crashedShips) {
-            const shouldBeVisible = ship.type === this.playerType;
+            const shipType = String(ship.type ?? '').trim().toUpperCase();
+            const shouldBeVisible = shipType === activeType;
 
             // Trigger visual 3D smoke poof if it just became visible
             if (shouldBeVisible && !ship.isVisible && poof) {
@@ -3429,6 +3511,8 @@ export class ThreeGame {
         this.updateCaveEntrance(delta);
         this.updateAct2(delta);
         this.updateCamps(delta);
+        this.updateHiveSites(delta);
+        this.updateInfectionPressure(delta);
         this.updateShipVisualState(now);
         this.updateBlackBoxMarker(delta);
         this.updateRunModifierEffects(delta);
@@ -6074,6 +6158,362 @@ export class ThreeGame {
         this.updateCampPrompt(phase);
     }
 
+    // ── Humanity / cover pressure (post-reveal) ────────────────────────────
+    // Humanity is cover, not morality: it bleeds slowly with time and faster
+    // under scrutiny. Camps that watch a low-cover carrier get suspicious;
+    // full suspicion outs the player and the relay spreads the truth.
+    updateInfectionPressure(delta) {
+        if (!ARC_PRELUDE_ENABLED || !this.act2 || !this.player || this.isPlayerDead) return;
+        const phase = this.act2.getPhase();
+        if (phase === 'dormant' || phase === 'departed') return;
+        const state = this.act2.getState();
+        if (['cured', 'ascendant'].includes(state.infectionStage)) return;
+
+        // Ambient decay: ~1 point of cover per 12s of active play.
+        this._humanityDecayAcc = (this._humanityDecayAcc ?? 0) + delta / 12;
+        if (this._humanityDecayAcc >= 1) {
+            const drop = Math.floor(this._humanityDecayAcc);
+            this._humanityDecayAcc -= drop;
+            this.act2.adjustHumanity(-drop);
+            const after = this.act2.getState();
+            window.dispatchEvent(new CustomEvent('player-humanity-changed', {
+                detail: { humanity: after.humanity, stage: after.infectionStage }
+            }));
+        }
+
+        // Scrutiny: standing inside a living camp with visible tells.
+        const stage = state.infectionStage;
+        const suspicionRate = stage === 'symptomatic' ? 1 / 4 : stage === 'strained' ? 1 / 10 : 0;
+        if (suspicionRate <= 0) return;
+        this._suspicionAcc = this._suspicionAcc ?? {};
+        for (const camp of this.camps) {
+            const record = this.getCampRecord(camp.id);
+            if (!record || !['alive', 'robbed'].includes(record.status)) continue;
+            if (record.knowsPlayerInfected) continue;
+            if (camp.distanceTo(this.player.position.x, this.player.position.z) > 6) continue;
+            this._suspicionAcc[camp.id] = (this._suspicionAcc[camp.id] ?? 0) + delta * suspicionRate;
+            if (this._suspicionAcc[camp.id] < 1) continue;
+            const gain = Math.floor(this._suspicionAcc[camp.id]);
+            this._suspicionAcc[camp.id] -= gain;
+            this.act2.adjustCampSuspicion(camp.id, gain);
+            const after = this.getCampRecord(camp.id);
+            window.dispatchEvent(new CustomEvent('player-suspicion-changed', {
+                detail: { campId: camp.id, campLabel: camp.label, suspicion: after.suspicion }
+            }));
+            if (after.suspicion >= 100 && !this.act2.getState().networks.knownByCamps.includes(camp.id)) {
+                this.act2.propagateOuting(camp.id);
+                window.dispatchEvent(new CustomEvent('player-outed', {
+                    detail: {
+                        campId: camp.id,
+                        campLabel: camp.label,
+                        spread: this.act2.getState().networks.knownByCamps
+                    }
+                }));
+            }
+        }
+    }
+
+    // ── Hive swarm sites (docs/hive-swarm-camps-and-humanity-system-design.md) ──
+    // Act 1: mineable bio-anomalies. Act 2: Nahl, Vey, and Rhun — allies the
+    // player wounded for resources, with rescue/harvest/network choices.
+
+    updateHiveSites(delta) {
+        if (!ARC_PRELUDE_ENABLED || !this.act2) return;
+        this.ensureHiveSites();
+        for (const hive of this.hives) hive.update(delta);
+        this.updateHivePrompt();
+    }
+
+    chooseHiveSitePosition(index) {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(anchor.x) - 173 - index * 31,
+            Math.round(anchor.z) + 137 + index * 17
+        ) ^ this.runEntropy) >>> 0);
+        // Fanned between the camps, slightly closer in — the anomalies were
+        // always underfoot, the player just read them as terrain.
+        const baseAngle = [Math.PI * 0.45, Math.PI * 1.1, Math.PI * 1.75][index % 3];
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const dist = THREE.MathUtils.lerp(45, 90, random());
+            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
+            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
+            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+        return {
+            x: Math.round(anchor.x + Math.cos(baseAngle) * 45),
+            z: Math.round(anchor.z + Math.sin(baseAngle) * 45)
+        };
+    }
+
+    ensureHiveSites() {
+        if (this._hiveSitesReady || !this.act2) return;
+        const state = this.act2.getState();
+        this.hives = state.hives.map((record, index) => {
+            const site = ACT2_HIVE_SITES.find((s) => s.id === record.id) ?? ACT2_HIVE_SITES[index];
+            const hive = new HiveSite(this.scene, {
+                id: record.id,
+                label: site?.label ?? 'HIVE',
+                characterId: site?.characterId ?? ''
+            });
+            let { x, z } = record;
+            if (!Number.isFinite(x) || !Number.isFinite(z)) {
+                const spot = this.chooseHiveSitePosition(index);
+                x = spot.x;
+                z = spot.z;
+                this.act2.setHivePosition(record.id, x, z);
+            }
+            hive.reveal(x, z);
+            hive.syncFromRecord(record);
+            return hive;
+        });
+        this._hiveSitesReady = true;
+    }
+
+    getHiveRecord(id) {
+        return this.act2?.getState?.().hives.find((h) => h.id === id) ?? null;
+    }
+
+    getHiveById(id) {
+        return this.hives.find((hive) => hive.id === id) ?? null;
+    }
+
+    // The hive interaction available where the player stands, or null.
+    getActionableHiveAt(x, z) {
+        const phase = this.act2?.getPhase?.() ?? 'dormant';
+        for (const hive of this.hives) {
+            if (!hive.isWithinInteractRange(x, z)) continue;
+            const record = this.getHiveRecord(hive.id);
+            if (!record) continue;
+            if (phase === 'dormant') {
+                // Pre-reveal: a resource node, nothing more.
+                if (record.extractionLevel < 3
+                    && ['dormant', 'mined', 'wounded', 'awakened'].includes(record.status)) {
+                    return {
+                        hive,
+                        action: 'mine',
+                        label: `MINE ${hive.label} — ${record.extractionLevel}/3`
+                    };
+                }
+                return null;
+            }
+            // Post-reveal: the being inside can finally speak.
+            return { hive, action: 'contact', label: `COMMUNE — ${hive.label}` };
+        }
+        return null;
+    }
+
+    updateHivePrompt() {
+        const eligible = this.isGameplayInputActive() && this.player && !this.isPlayerDead;
+        const actionable = eligible
+            ? this.getActionableHiveAt(this.player.position.x, this.player.position.z)
+            : null;
+        const label = actionable?.label ?? null;
+        if (label === this._hivePromptLabel) return;
+        this._hivePromptLabel = label;
+        if (label) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+        } else if (!this._campPromptLabel) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
+    }
+
+    interactWithHiveSite() {
+        if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
+        const actionable = this.getActionableHiveAt(this.player.position.x, this.player.position.z);
+        if (!actionable) return false;
+        if (actionable.action === 'mine') return this.mineHiveSite(actionable.hive);
+        if (actionable.action === 'contact') return this.openHiveChoice(actionable.hive);
+        return false;
+    }
+
+    // Act 1 extraction: real rewards now, a wounded ally later.
+    mineHiveSite(hive) {
+        const before = this.getHiveRecord(hive.id);
+        if (!before || before.extractionLevel >= 3) return false;
+        this.act2.mineHive(hive.id);
+        const after = this.getHiveRecord(hive.id);
+        if (!after || after.extractionLevel === before.extractionLevel) return false;
+
+        const yields = {
+            hive_suture: { med: 2 },
+            hive_relay: { tech: 2 },
+            hive_carapace: { coin: 2 }
+        };
+        this.bank?.deposit?.(yields[hive.id] ?? { tech: 1 });
+        this.bank?.addShells?.(4);
+        hive.syncFromRecord(after);
+        this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bio_spores');
+        this.triggerCameraShake?.(0.14, 0.3);
+        window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.5, playbackRate: 0.6 });
+        window.dispatchEvent(new CustomEvent('hive-mined', {
+            detail: {
+                hiveId: hive.id,
+                hiveLabel: hive.label,
+                extractionLevel: after.extractionLevel,
+                wounded: after.status === 'wounded'
+            }
+        }));
+        window.dispatchEvent(new CustomEvent('shell-collected', {
+            detail: { gained: 4, total: this.bank?.getShells?.() ?? 0, isBoss: false }
+        }));
+        return true;
+    }
+
+    // Act 2 hive contact reuses the camp choice modal — same event, alien detail.
+    openHiveChoice(hive) {
+        const record = this.getHiveRecord(hive.id);
+        if (!record) return false;
+        const character = ACT2_HIVE_SITES.find((s) => s.id === hive.id);
+        window.dispatchEvent(new CustomEvent('camp-choice-open', {
+            detail: {
+                hiveId: hive.id,
+                campId: null,
+                campLabel: hive.label,
+                leaderName: (character?.characterId ?? '').toUpperCase(),
+                leaderClass: 'HIVE MIND',
+                leaderTitle: `Extraction wounds ${record.extractionLevel}/3.`,
+                leaderCallsign: record.status.toUpperCase(),
+                storyOrder: 'H',
+                phase: this.act2.getPhase(),
+                campState: record,
+                endingVector: this.act2.getEndingVector(),
+                options: this.buildHiveChoiceOptions(record)
+            }
+        }));
+        return true;
+    }
+
+    buildHiveChoiceOptions(record) {
+        const options = [];
+        const dead = ['slain', 'queen_consumed', 'expired_by_cure'].includes(record.status);
+        const gone = ['rescued', 'aboard', 'abandoned'].includes(record.status);
+        if (dead || gone) {
+            options.push({
+                action: 'noop',
+                hiveId: record.id,
+                label: `HIVE ${record.status.replace(/_/g, ' ').toUpperCase()}`,
+                desc: 'This being\'s path is already resolved.',
+                disabled: true
+            });
+            return options;
+        }
+
+        options.push({
+            action: 'hive-tend',
+            hiveId: record.id,
+            label: 'RETURN RESOURCES — 5 SHELLS',
+            desc: `Give back what was taken. Bond ${record.bond}/${ACT2_MAX_BOND}; heals one extraction wound.`
+        });
+
+        const questByHive = {
+            hive_suture: { id: 'host_mercy', label: 'HOST MERCY RITE', desc: 'Let Nahl study your infection. Unlocks latent seeding of trusted camps.' },
+            hive_relay: { id: 'false_clearance', label: 'FORGE FALSE CLEARANCE', desc: 'Vey spoofs a mothership-friendly crew signature. Required for infiltration.' },
+            hive_carapace: { id: 'guard_oath', label: 'SEVER THE GUARD OATH', desc: 'Rhun swears to you instead of the queen.' }
+        };
+        const quest = questByHive[record.id];
+        if (quest) {
+            const done = record.questFlags?.[quest.id] === 'done';
+            const locked = record.bond < 2;
+            options.push({
+                action: 'hive-quest',
+                hiveId: record.id,
+                questId: quest.id,
+                label: done ? `${quest.label} — COMPLETE` : locked ? `${quest.label} — LOCKED` : quest.label,
+                desc: locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : quest.desc,
+                disabled: done || locked
+            });
+        }
+
+        options.push({
+            action: 'hive-network',
+            hiveId: record.id,
+            label: record.networked ? 'CHORUS LINKED' : 'LINK THE CHORUS',
+            desc: 'Wire this hive into the synapse. All living hives linked brings the chorus online.',
+            disabled: record.networked
+        });
+
+        const rescueLocked = record.bond < ACT2_HIVE_RESCUE_BOND_THRESHOLD;
+        options.push({
+            action: 'hive-rescue',
+            hiveId: record.id,
+            label: rescueLocked ? 'RESCUE ABOARD — LOCKED' : 'RESCUE ABOARD',
+            desc: rescueLocked
+                ? `Requires bond ${ACT2_HIVE_RESCUE_BOND_THRESHOLD}. Current bond ${record.bond}.`
+                : 'Take them off-world with you. One seat. The queen will feel it.',
+            disabled: rescueLocked
+        });
+
+        options.push({
+            action: 'hive-harvest',
+            hiveId: record.id,
+            label: 'HARVEST THE HIVE',
+            desc: 'Strip it for parts. Kills the being inside. The queen approves.'
+        });
+
+        if (this.act2.getState().queenStatus === 'aboard') {
+            options.push({
+                action: 'hive-sacrifice',
+                hiveId: record.id,
+                label: 'SACRIFICE TO THE QUEEN',
+                desc: 'Feed the ally to her brood. Maximum obedience, minimum mercy.'
+            });
+        }
+
+        return options;
+    }
+
+    resolveHiveChoice(action, payload = {}) {
+        const hive = this.getHiveById(payload.hiveId);
+        if (!hive || !this.act2) return false;
+
+        if (action === 'hive-tend') {
+            if (!this.bank?.canAffordShells?.(5)) {
+                window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+                window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                    detail: { campId: hive.id, campLabel: hive.label, cost: 5 }
+                }));
+                return true;
+            }
+            this.bank.spendShells(5);
+            this.act2.adjustHiveBond(hive.id, 1);
+            this.act2.healHiveExtraction(hive.id, 1);
+        } else if (action === 'hive-quest') {
+            this.act2.completeHiveQuest(hive.id, payload.questId, 1);
+        } else if (action === 'hive-network') {
+            this.act2.setHiveNetworked(hive.id, true);
+        } else if (action === 'hive-rescue') {
+            this.act2.rescueHive(hive.id);
+        } else if (action === 'hive-harvest') {
+            this.act2.harvestHive(hive.id);
+            this.bank?.deposit?.({ tech: 3, med: 3, coin: 3 });
+            this.bank?.addShells?.(12);
+            this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bunker_junk_rare');
+            this.triggerCameraShake?.(0.3, 0.5);
+        } else if (action === 'hive-sacrifice') {
+            this.act2.sacrificeHive(hive.id);
+            this.triggerCameraShake?.(0.35, 0.6);
+        } else {
+            return false;
+        }
+
+        const after = this.getHiveRecord(hive.id);
+        hive.syncFromRecord(after);
+        window.AudioManager?.play?.('class_lock', { volume: 0.45, playbackRate: 0.8 });
+        window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
+            detail: {
+                hiveId: hive.id,
+                hiveLabel: hive.label,
+                action,
+                status: after?.status,
+                bond: after?.bond
+            }
+        }));
+        return true;
+    }
+
     chooseCampPosition(index) {
         const anchor = this.getBiomeAnchorPosition();
         const random = this.createSeededRandom((this.hashTile(
@@ -6129,6 +6569,11 @@ export class ThreeGame {
         this.camps = [];
         this._act2CampsReady = false;
         this._campPromptLabel = null;
+        for (const hive of this.hives ?? []) {
+            if (hive.group) this.scene.remove(hive.group);
+        }
+        this.hives = [];
+        this._hiveSitesReady = false;
     }
 
     getCampRecord(id) {
@@ -6181,24 +6626,33 @@ export class ThreeGame {
         const recruitHint = `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD}. Current bond ${record.bond}.`;
 
         if (camp.id === this.getBoardingCampId()) {
-            options.push({
-                action: 'board',
-                variant: 'queen',
-                label: 'BOARD WITH QUEEN',
-                desc: 'Launch now with the queen and eggs aboard. Unresolved camps become part of the compromise.'
-            });
-            options.push({
-                action: 'board',
-                variant: 'purge',
-                label: 'SEVER QUEEN + PURGE EGGS',
-                desc: 'Reject the hive before launch. Human recruits define whether this is rescue or ash.'
-            });
-            options.push({
-                action: 'board',
-                variant: 'bargain',
-                label: 'KILL QUEEN, KEEP EGGS',
-                desc: 'Save what passengers you can while carrying the brood in secret.'
-            });
+            // Every launch variant is validated against the four-seat manifest
+            // before it is offered: the vessel is a cargo problem first.
+            const variants = [
+                { variant: 'queen', queenStatus: 'aboard', eggsStatus: 'aboard', label: 'BOARD WITH QUEEN', desc: 'Launch with the queen (2 seats) and eggs aboard.' },
+                { variant: 'purge', queenStatus: 'killed', eggsStatus: 'destroyed', label: 'SEVER QUEEN + PURGE EGGS', desc: 'Reject the hive before launch. Human recruits define whether this is rescue or ash.' },
+                { variant: 'bargain', queenStatus: 'killed', eggsStatus: 'hidden', label: 'KILL QUEEN, HIDE EGGS', desc: 'Save what passengers you can while carrying the brood in secret.' },
+                { variant: 'abandon', queenStatus: 'abandoned', eggsStatus: 'abandoned', label: 'LEAVE THEM ALL BEHIND', desc: 'The queen and her clutch stay on the ice. Whoever you rescued is the whole crew.' }
+            ];
+            const baseState = this.act2.getState();
+            for (const entry of variants) {
+                const manifest = buildAct2Manifest({
+                    ...baseState,
+                    queenStatus: entry.queenStatus,
+                    eggsStatus: entry.eggsStatus
+                });
+                const seatText = `SEATS ${manifest.seatsUsed}/${manifest.seatsMax}`;
+                const reasonText = manifest.invalidReasons
+                    .map((r) => r === 'seat_capacity_exceeded' ? 'over capacity' : r === 'egg_unstable' ? 'egg needs the queen or Nahl aboard' : r)
+                    .join('; ');
+                options.push({
+                    action: 'board',
+                    variant: entry.variant,
+                    label: manifest.valid ? `${entry.label} — ${seatText}` : `${entry.label} — BLOCKED`,
+                    desc: manifest.valid ? `${entry.desc} ${seatText}.` : `${entry.desc} INVALID MANIFEST: ${reasonText}.`,
+                    disabled: !manifest.valid
+                });
+            }
         }
 
         if (status === 'alive') {
@@ -6223,6 +6677,28 @@ export class ThreeGame {
                 label: recruitLocked ? 'TURN CAMP LOCKED' : 'TURN CAMP',
                 desc: recruitLocked ? recruitHint : 'Offer trusted survivors to the queen as compliant hybrids.',
                 disabled: recruitLocked
+            });
+            const warnLocked = record.bond < 2;
+            options.push({
+                action: 'warn',
+                label: warnLocked ? 'WARN THEM LOCKED' : 'WARN THEM',
+                desc: warnLocked
+                    ? `Requires bond 2. Current bond ${record.bond}.`
+                    : 'Tell them the truth before they board. They come suspicious — and safe.',
+                disabled: warnLocked
+            });
+            const suture = this.getHiveRecord?.('hive_suture');
+            const latentReady = suture?.questFlags?.host_mercy === 'done';
+            const latentLocked = !latentReady || recruitLocked || record.suspicion >= 50;
+            options.push({
+                action: 'latent',
+                label: latentLocked ? 'LATENT SEED LOCKED' : 'LATENT SEED',
+                desc: !latentReady
+                    ? 'Requires Nahl\'s Host Mercy rite.'
+                    : latentLocked
+                        ? `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD} and suspicion under 50 (now ${record.suspicion}).`
+                        : 'They board believing they are clean. They are not.',
+                disabled: latentLocked
             });
         } else if (status === 'robbed') {
             options.push({
@@ -6270,6 +6746,13 @@ export class ThreeGame {
             if (!camp.isWithinInteractRange(x, z)) continue;
             const record = this.getCampRecord(camp.id);
             const status = record?.status ?? camp.status ?? 'alive';
+            if ((phase === 'gestation' || phase === 'dish') && status !== 'culled') {
+                return {
+                    camp,
+                    action: 'wait',
+                    label: 'GO AWAY'
+                };
+            }
             if (phase === 'dormant' && status === 'alive' && camp.level < ACT2_CAMP_MAX_LEVEL) {
                 return {
                     camp,
@@ -6385,6 +6868,19 @@ export class ThreeGame {
             return true;
         }
 
+        if (action === 'wait') {
+            window.AudioManager?.play?.('ui_error', { volume: 0.3, playbackRate: 0.85 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    action: 'wait',
+                    message: `${camp.label} SHOUTS: GO AWAY.`
+                }
+            }));
+            return true;
+        }
+
         if (action === 'aid') {
             camp.setAided(true);
             const result = this.act2.aidCamp(camp.id);
@@ -6414,12 +6910,17 @@ export class ThreeGame {
     }
 
     resolveCampChoice(action, payload = {}) {
+        if (payload.hiveId || String(action).startsWith('hive-')) {
+            return this.resolveHiveChoice(action, payload);
+        }
         const camp = this.getCampById(payload.campId);
         if (!camp || !this.act2) return false;
         if (action === 'steal') return this.resolveCampSteal(camp);
         if (action === 'cull') return this.resolveCampCull(camp);
         if (action === 'recruit') return this.resolveCampRecruit(camp, 'human');
         if (action === 'turn') return this.resolveCampRecruit(camp, 'turned');
+        if (action === 'warn') return this.resolveCampStatusAction(camp, 'warn', () => this.act2.warnCamp(camp.id), 'recruited');
+        if (action === 'latent') return this.resolveCampStatusAction(camp, 'latent', () => this.act2.latentInfectCamp(camp.id), 'recruited');
         if (action === 'board') return this.resolveAct2Boarding(payload.variant ?? 'queen');
         return false;
     }
@@ -6504,6 +7005,7 @@ export class ThreeGame {
             return true;
         }
         this.syncCampVisualFromRecord(camp, record);
+        this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, camp.level > 0 ? 'bunker_junk_rare' : 'bunker_junk_uncommon');
         this.spawnCampCullLoot(camp);
         this.triggerCameraShake?.(0.4, 0.6);
         window.AudioManager?.play?.('door_slam_vertical', { volume: 0.5, playbackRate: 0.72 });
@@ -6522,7 +7024,46 @@ export class ThreeGame {
         return true;
     }
 
+    // Shared resolver for camp mutations that should land on a target status.
+    resolveCampStatusAction(camp, action, mutate, wantedStatus) {
+        const before = this.getCampRecord(camp.id);
+        mutate();
+        const after = this.getCampRecord(camp.id);
+        if (after?.status !== wantedStatus || before?.status === after?.status) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, action, bond: before?.bond ?? 0 }
+            }));
+            return true;
+        }
+        this.syncCampVisualFromRecord(camp, after);
+        window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: action === 'latent' ? 0.72 : 1.0 });
+        window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
+            detail: { campId: camp.id, campLabel: camp.label, action, status: after.status }
+        }));
+        window.dispatchEvent(new CustomEvent('act2-milestone', {
+            detail: { key: action === 'latent' ? 'campTurned' : 'campRecruited', campId: camp.id, campLabel: camp.label }
+        }));
+        return true;
+    }
+
     resolveAct2Boarding(variant = 'queen') {
+        // Hard manifest gate: an invalid seat plan never launches.
+        const statusByVariant = {
+            queen: { queenStatus: 'aboard', eggsStatus: 'aboard' },
+            purge: { queenStatus: 'killed', eggsStatus: 'destroyed' },
+            bargain: { queenStatus: 'killed', eggsStatus: 'hidden' },
+            abandon: { queenStatus: 'abandoned', eggsStatus: 'abandoned' }
+        };
+        const target = statusByVariant[variant] ?? statusByVariant.queen;
+        const manifest = buildAct2Manifest({ ...this.act2.getState(), ...target });
+        if (!manifest.valid) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.5, playbackRate: 0.6 });
+            window.dispatchEvent(new CustomEvent('boarding-blocked', {
+                detail: { variant, reasons: manifest.invalidReasons, seatsUsed: manifest.seatsUsed, seatsMax: manifest.seatsMax }
+            }));
+            return true;
+        }
         if (variant === 'purge') {
             this.act2.setQueenStatus('killed');
             this.act2.setEggsStatus('destroyed');
@@ -6530,8 +7071,12 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'eggsDestroyed' } }));
         } else if (variant === 'bargain') {
             this.act2.setQueenStatus('killed');
-            this.act2.setEggsStatus('aboard');
+            this.act2.setEggsStatus('hidden');
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenKilled' } }));
+        } else if (variant === 'abandon') {
+            this.act2.setQueenStatus('abandoned');
+            this.act2.setEggsStatus('abandoned');
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenRejected' } }));
         } else {
             this.act2.setQueenStatus('aboard');
             this.act2.setEggsStatus('aboard');
@@ -7328,6 +7873,7 @@ export class ThreeGame {
             }
             this.clearLoadedChunksForRunReset();
             this.syncVisibleChunks(true);
+            this.updateCrashedShipsVisibility(false);
             this.emitDepthTierChanged(0);
         }
 
@@ -9674,6 +10220,48 @@ export class ThreeGame {
         this.transientEffects.push(effect);
     }
 
+    spawnTextureBurstEffect(x, z, {
+        textureKey = 'fx_steam_puff',
+        color = 0xffffff,
+        count = 3,
+        baseScale = 0.56,
+        duration = 0.48,
+        speed = 0.28,
+        rise = 0.18,
+        opacity = 0.9,
+        renderOrder = 29
+    } = {}) {
+        const template = this.scatterMaterials?.[textureKey];
+        if (!template || !this.scene) return null;
+
+        const effect = new THREE.Group();
+        effect.position.set(x, 0.02, z);
+        effect.userData = { age: 0, duration };
+
+        for (let i = 0; i < count; i += 1) {
+            const sprite = new THREE.Sprite(template.clone());
+            sprite.material.color.setHex(color);
+            sprite.material.opacity = opacity * (0.78 + Math.random() * 0.22);
+            sprite.center.set(0.5, 0.5);
+            sprite.position.set((Math.random() - 0.5) * 0.16, 0.06 + Math.random() * 0.08, (Math.random() - 0.5) * 0.16);
+            sprite.scale.setScalar(baseScale * (0.72 + Math.random() * 0.55));
+            sprite.renderOrder = renderOrder;
+            sprite.userData = {
+                isSmoke: textureKey === 'fx_steam_puff',
+                isSpore: textureKey === 'fx_spark_burst',
+                vx: (Math.random() - 0.5) * speed,
+                vz: (Math.random() - 0.5) * speed,
+                vy: rise + Math.random() * (rise * 0.9),
+                growth: 0.22 + Math.random() * 0.35
+            };
+            effect.add(sprite);
+        }
+
+        this.scene.add(effect);
+        this.transientEffects.push(effect);
+        return effect;
+    }
+
     // Ballistic debris: small boxes flung outward with gravity, drag, and a floor bounce.
     // Registered as a plain-object transient effect so it reuses updateTransientEffects().
     spawnPhysicalBurst(x, z, { color = 0xffe08f, count = 6, upward = 0.18, spread = 1.4 } = {}) {
@@ -9705,6 +10293,18 @@ export class ThreeGame {
         }
         group.position.set(x, 0, z);
         this.scene.add(group);
+
+        this.spawnTextureBurstEffect(x, z, {
+            textureKey: 'fx_spark_burst',
+            color,
+            count: Math.max(1, Math.min(3, Math.ceil(count / 2))),
+            baseScale: 0.36 + Math.min(0.18, count * 0.02),
+            duration: 0.34,
+            speed: 0.18,
+            rise: 0.24,
+            opacity: 0.86,
+            renderOrder: 30
+        });
 
         const duration = 0.7;
         this.transientEffects.push({
@@ -10939,17 +11539,27 @@ export class ThreeGame {
             } else {
                 type = this.chooseWeightedType(biomeVariants, random);
                 const isGroundCover = type.includes('puddle') || type === 'scatter_gravel'
-                    || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss';
-                const isTallScatter = type === 'scatter_ice_stalagmite' || type === 'scatter_bio_pod';
+                    || type === 'scatter_cable_coil' || type === 'scatter_bolts'
+                    || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss'
+                    || type === 'body_human_frozen_suit' || type === 'body_empty_exosuit';
+                const isTallScatter = type === 'scatter_ice_stalagmite'
+                    || type === 'scatter_bio_pod'
+                    || type === 'prop_hive_resin_sac';
                 const isWreckage = type === 'ship_wreckage';
                 if (isWreckage) {
                     scaleMultiplier = 1.05 + random() * 0.3;
                     elevation = 0.12 + random() * 0.08;
                     opacity = 0.92;
                 } else if (isGroundCover) {
-                    scaleMultiplier = 0.85 + random() * 0.28;
-                    elevation = 0.05 + random() * 0.04;
-                    opacity = 0.72 + random() * 0.14;
+                    if (type.startsWith('body_')) {
+                        scaleMultiplier = 0.82 + random() * 0.16;
+                        elevation = 0.06 + random() * 0.03;
+                        opacity = 0.9 + random() * 0.08;
+                    } else {
+                        scaleMultiplier = 0.85 + random() * 0.28;
+                        elevation = 0.05 + random() * 0.04;
+                        opacity = 0.72 + random() * 0.14;
+                    }
                 } else if (isTallScatter) {
                     scaleMultiplier = 0.62 + random() * 0.24;
                     elevation = 0.8 + random() * 0.55;
@@ -10984,7 +11594,9 @@ export class ThreeGame {
             const tiltX = type === 'cybersnail' ? 0 : (random() - 0.5) * 0.16;
             const tiltZ = type === 'cybersnail' ? 0 : (random() - 0.5) * 0.16;
             // Subtle rotation (0 to 2pi)
-            const rotation = type === 'cybersnail' ? 0 : random() * Math.PI * 2;
+            const rotation = type === 'cybersnail' || type.startsWith('body_') || type === 'prop_hive_resin_sac'
+                ? 0
+                : random() * Math.PI * 2;
 
             // Template overrides: THE_NEST forces enrage; AGENT_WRECKAGE adds wreckage scatter
             let finalType = type;
@@ -13317,6 +13929,16 @@ export class ThreeGame {
                 const phase = child.userData.phase ?? 0;
                 child.position.y = baseY + Math.sin(time * 1.4 + phase) * 0.05;
                 child.material.opacity = 0.7 + Math.sin(time * 2.1 + phase) * 0.3;
+            } else if (child.userData.type === 'prop_hive_resin_sac') {
+                const phase = child.userData.phase ?? 0;
+                const pulse = 0.92 + Math.sin(time * 1.9 + phase) * 0.08;
+                child.position.y = baseY + Math.sin(time * 1.4 + phase) * 0.05;
+                child.scale.set(
+                    child.userData.baseScaleX * pulse,
+                    child.userData.baseScaleY * pulse,
+                    1
+                );
+                child.material.opacity = child.userData.baseOpacity * (0.88 + Math.sin(time * 2.4 + phase) * 0.12);
             } else if (this.isCrawler(child.userData.type)) {
                 child.position.y = baseY + Math.sin(time * 6 + child.userData.phase) * 0.03;
                 child.material.opacity = child.userData.baseOpacity;
@@ -13570,6 +14192,18 @@ export class ThreeGame {
         glow.renderOrder = 28;
         glow.userData = { isGlow: true };
         effect.add(glow);
+
+        this.spawnTextureBurstEffect(x, z, {
+            textureKey: junkType.includes('bio') ? 'fx_steam_puff' : 'fx_spark_burst',
+            color: colors.glowColor,
+            count: junkType.includes('bio') ? 3 : 2,
+            baseScale: junkType.includes('bio') ? 0.62 : 0.5,
+            duration: junkType.includes('bio') ? 0.6 : 0.42,
+            speed: junkType.includes('bio') ? 0.24 : 0.18,
+            rise: junkType.includes('bio') ? 0.22 : 0.28,
+            opacity: junkType.includes('bio') ? 0.78 : 0.86,
+            renderOrder: 29
+        });
 
         effect.position.set(x, 0.02, z);
         effect.userData = { age: 0, duration: 0.56 };

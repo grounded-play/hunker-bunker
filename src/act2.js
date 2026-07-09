@@ -38,7 +38,7 @@ export const ACT2_CLASS_CAST = Object.freeze({
         leader: 'Sister Martha',
         callsign: 'VESPERS',
         title: 'Pathfinder Prior',
-        sprite: '/martha_camp_walk.png',
+        sprite: '/martha_camp_walk_v2.png',
         bossSprite: '/boss_corrupted_scout.png',
         color: 0x7dff5a
     }),
@@ -47,7 +47,7 @@ export const ACT2_CLASS_CAST = Object.freeze({
         leader: 'Commander Briggs',
         callsign: 'BULWARK',
         title: 'Siege Commander',
-        sprite: '/briggs_camp_walk.png',
+        sprite: '/briggs_camp_walk_v2.png',
         bossSprite: '/boss_corrupted_tank.png',
         color: 0xffb700
     }),
@@ -56,7 +56,7 @@ export const ACT2_CLASS_CAST = Object.freeze({
         leader: 'Overseer Kaelen',
         callsign: 'WRENCHLIGHT',
         title: 'Systems Overseer',
-        sprite: '/kaelen_camp_walk.png',
+        sprite: '/kaelen_camp_walk_v2.png',
         bossSprite: '/boss_corrupted_engineer.png',
         color: 0x00e5ff
     })
@@ -159,12 +159,20 @@ export const ACT2_MAX_BOND = 5;
 export const ACT2_RECRUIT_BOND_THRESHOLD = 4;
 export const ACT2_MAX_OBEDIENCE = 3;
 
+export const ACT2_HIVE_RESCUE_BOND_THRESHOLD = 3;
+
 export const ACT2_ENDINGS = Object.freeze({
     FULL_BROOD: 'full_brood',
     CLEAN_ESCAPE: 'clean_escape',
     MIXED_CREW: 'mixed_crew',
     CARRIERS_BARGAIN: 'carriers_bargain',
-    SCORCHED_SKY: 'scorched_sky'
+    SCORCHED_SKY: 'scorched_sky',
+    // Expanded families (docs/hive-swarm-camps-and-humanity-system-design.md)
+    MOTHERSHIP_INFECTION: 'mothership_infection',
+    ALIEN_EXODUS: 'alien_exodus',
+    OUTED_ESCAPE: 'outed_escape',
+    FAILED_CARRIER: 'failed_carrier',
+    EMPTY_HUSK: 'empty_husk'
 });
 
 export const ACT2_ENDING_CUTSCENES = Object.freeze({
@@ -172,7 +180,12 @@ export const ACT2_ENDING_CUTSCENES = Object.freeze({
     [ACT2_ENDINGS.CLEAN_ESCAPE]: 'ending-cleanescape',
     [ACT2_ENDINGS.MIXED_CREW]: 'ending-mixedcrew',
     [ACT2_ENDINGS.CARRIERS_BARGAIN]: 'ending-carriersbargain',
-    [ACT2_ENDINGS.SCORCHED_SKY]: 'ending-scorchedsky'
+    [ACT2_ENDINGS.SCORCHED_SKY]: 'ending-scorchedsky',
+    [ACT2_ENDINGS.MOTHERSHIP_INFECTION]: 'ending-mothershipinfection',
+    [ACT2_ENDINGS.ALIEN_EXODUS]: 'ending-alienexodus',
+    [ACT2_ENDINGS.OUTED_ESCAPE]: 'ending-outedescape',
+    [ACT2_ENDINGS.FAILED_CARRIER]: 'ending-failedcarrier',
+    [ACT2_ENDINGS.EMPTY_HUSK]: 'ending-emptyhusk'
 });
 
 // Queen/system copy for each beat. Rendered through the brief-transmission
@@ -267,6 +280,31 @@ export const ACT2_ENDING_LINES = Object.freeze({
         'SYSTEM: LAUNCH COMPLETE. CREW MANIFEST: ONE.',
         'SYSTEM: NO BEACONS BEHIND. NO SIGNAL AHEAD.',
         'SYSTEM: FOUR SEATS. ONE HEARTBEAT.'
+    ],
+    [ACT2_ENDINGS.MOTHERSHIP_INFECTION]: [
+        'SYSTEM: MOTHERSHIP CLEARANCE ACCEPTED. SURVIVOR RESCUE FLIGHT LOGGED.',
+        'SYSTEM: THREE PASSENGERS SLEEPING. VITALS CLEAN. YOURS READ CLEAN TOO.',
+        'QUEEN: GO QUIETLY, CARRIER. THE BIG SHIP IS WARM, AND WE ARE PATIENT.'
+    ],
+    [ACT2_ENDINGS.ALIEN_EXODUS]: [
+        'SYSTEM: LAUNCH COMPLETE. CARGO: THREE NON-HUMAN SIGNATURES. FRIENDLY.',
+        'SYSTEM: THE QUEEN\'S SIGNAL IS SCREAMING FROM THE ICE. FADING. GONE.',
+        'SYSTEM: NAHL IS SINGING SOMETHING THROUGH THE HULL. IT SOUNDS LIKE THANK YOU.'
+    ],
+    [ACT2_ENDINGS.OUTED_ESCAPE]: [
+        'SYSTEM: LAUNCH COMPLETE. CABIN LOCKS ENGAGED FROM THE PASSENGER SIDE.',
+        'SYSTEM: THE SURVIVORS KNOW. THEY BOARDED ANYWAY.',
+        'SYSTEM: QUARANTINE COURSE SET. NOBODY IS SLEEPING ON THIS FLIGHT.'
+    ],
+    [ACT2_ENDINGS.FAILED_CARRIER]: [
+        'SYSTEM: LAUNCH COMPLETE. COOLANT CELL BREACH IN COMPARTMENT FOUR.',
+        'SYSTEM: THE AMBER GLOW IS FLICKERING. SOMEONE IS ASKING WHAT THAT LIGHT IS.',
+        'SYSTEM: YOU HID THE FUTURE IN A COLD BOX AND THE COLD BOX IS FAILING.'
+    ],
+    [ACT2_ENDINGS.EMPTY_HUSK]: [
+        'SYSTEM: LAUNCH COMPLETE. CREW MANIFEST: ONE.',
+        'SYSTEM: THE CAMPS ARE SILENT. THE HIVES ARE SILENT. THE QUEEN IS SILENT.',
+        'SYSTEM: THERE WAS SO MUCH TO CARRY. YOU CARRIED NOTHING.'
     ]
 });
 
@@ -359,6 +397,7 @@ function normalizeNetworks(raw = {}) {
     );
     return {
         humanRelayOnline: Boolean(source.humanRelayOnline),
+        relayJammed: Boolean(source.relayJammed),
         hiveSynapseOnline: Boolean(source.hiveSynapseOnline),
         bridgeOnline: Boolean(source.bridgeOnline),
         knownByCamps: normalizeKnownIds(source.knownByCamps, ACT2_CAMP_IDS),
@@ -488,8 +527,12 @@ export function deriveAct2Phase(state = DEFAULT_ACT2_STATE) {
 }
 
 // ── Ending picker: the boarding vector, pure. ────────────────────
+// Priority order per docs/hive-swarm-camps-and-humanity-system-design.md:
+// stealth infiltration > obedience > alien exodus > clean defiance > exposure
+// > egg gambits > sweeps > compromise.
 export function pickAct2Ending(rawState = DEFAULT_ACT2_STATE) {
     const state = normalizeAct2State(rawState);
+    const manifest = state.manifest;
     const camps = state.camps;
     const total = camps.length;
     const count = (status) => camps.filter((c) => c.status === status).length;
@@ -506,18 +549,66 @@ export function pickAct2Ending(rawState = DEFAULT_ACT2_STATE) {
     const eggsAboard = state.eggsStatus === 'aboard' || state.eggsStatus === 'hidden';
     const eggsDestroyed = state.eggsStatus === 'destroyed' || state.eggsStatus === 'abandoned';
 
+    const recruitedCamps = camps.filter((c) => c.status === 'recruited');
+    const humansKnow = state.outedToHumans
+        || recruitedCamps.some((c) => c.knowsPlayerInfected
+            || c.passengerState === 'human_outed'
+            || c.passengerState === 'human_suspicious');
+    const playerLatentInfected = state.infectionStage === 'latent' || state.infectionStage === 'strained';
+    const aliensAboard = manifest.aliens.length;
+    const relayHive = state.hives.find((h) => h.id === 'hive_relay');
+    const falseClearance = relayHive?.questFlags?.false_clearance === 'done';
+
+    // 1. Mothership infection: the stealth-hardest path. Three unsuspecting
+    // humans, a latent carrier, no visible hive presence, forged clearance.
+    if (
+        playerLatentInfected
+        && allHumanRecruited
+        && !humansKnow
+        && aliensAboard === 0
+        && turned === 0
+        && !queenAboard
+        && state.eggsStatus !== 'aboard'
+        && falseClearance
+    ) {
+        return ACT2_ENDINGS.MOTHERSHIP_INFECTION;
+    }
+
+    // 2. Absolute obedience.
     if (queenAboard && eggsAboard && allCulled && state.queenObedience >= ACT2_MAX_OBEDIENCE) {
         return ACT2_ENDINGS.FULL_BROOD;
     }
-    if (queenGone && eggsDestroyed && allHumanRecruited) {
+
+    // 3. The alien friends over everyone: all three hive allies, no queen.
+    if (aliensAboard >= ACT2_HIVE_SITES.length && queenGone) {
+        return ACT2_ENDINGS.ALIEN_EXODUS;
+    }
+
+    // 4. Absolute defiance. A cured player is clean even if humans were told.
+    if (queenGone && eggsDestroyed && allHumanRecruited
+        && (!humansKnow || state.infectionStage === 'cured')) {
         return ACT2_ENDINGS.CLEAN_ESCAPE;
     }
+
+    // 5. Humans board knowing what you still are: tense containment flight.
+    if (queenGone && recruited > 0 && humansKnow
+        && state.infectionStage !== 'cured' && !eggsAboard) {
+        return ACT2_ENDINGS.OUTED_ESCAPE;
+    }
+
+    // 6. Egg gambits without the queen.
     if (queenGone && eggsAboard && anySurvivorsBoarded) {
-        return ACT2_ENDINGS.CARRIERS_BARGAIN;
+        return state.eggsStatus === 'hidden' && manifest.invalidReasons.includes('egg_unstable')
+            ? ACT2_ENDINGS.FAILED_CARRIER
+            : ACT2_ENDINGS.CARRIERS_BARGAIN;
     }
-    if (queenGone && eggsDestroyed && allCulled) {
-        return ACT2_ENDINGS.SCORCHED_SKY;
+
+    // 7. Sweeps: nobody meaningful aboard.
+    if (queenGone && !eggsAboard && manifest.humans.length === 0 && aliensAboard === 0 && turned === 0) {
+        return allCulled ? ACT2_ENDINGS.SCORCHED_SKY : ACT2_ENDINGS.EMPTY_HUSK;
     }
+
+    // 8. Compromise: the queen keeps a fragile peace over a mixed cabin.
     if (queenAboard && (turned > 0 || recruited > 0 || robbed > 0)) {
         return ACT2_ENDINGS.MIXED_CREW;
     }
@@ -742,6 +833,226 @@ export class Act2Manager {
             if (!hive || !ACT2_HIVE_STATUSES.includes(status)) return;
             hive.status = status;
             hive.aboard = status === 'aboard' || status === 'rescued';
+        });
+    }
+
+    // ── Hive reducers (the alien mirror of the camps) ──
+
+    setHivePosition(id, x, z) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (hive && Number.isFinite(x) && Number.isFinite(z)) {
+                hive.x = x;
+                hive.z = z;
+            }
+        });
+    }
+
+    // Act 1 extraction: each pull yields resources in-world but wounds the
+    // being inside. Level 3 leaves the hive starting Act 2 wounded, and every
+    // level costs the bond you could have had.
+    mineHive(id) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive || hive.extractionLevel >= 3) return;
+            if (!['dormant', 'mined', 'wounded', 'awakened'].includes(hive.status)) return;
+            hive.extractionLevel += 1;
+            hive.bond = Math.max(0, hive.bond - 1);
+            hive.status = hive.extractionLevel >= 3 ? 'wounded' : 'mined';
+        });
+    }
+
+    adjustHiveBond(id, delta = 0) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive) return;
+            hive.bond = clampInteger(hive.bond + Math.round(Number(delta) || 0), 0, ACT2_MAX_BOND, hive.bond);
+            if (hive.bond >= ACT2_HIVE_RESCUE_BOND_THRESHOLD
+                && ['dormant', 'mined', 'wounded'].includes(hive.status)) {
+                hive.status = 'bonded';
+            }
+        });
+    }
+
+    // Giving resources back heals extraction wounds.
+    healHiveExtraction(id, amount = 1) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive || ['slain', 'queen_consumed', 'expired_by_cure'].includes(hive.status)) return;
+            hive.extractionLevel = clampInteger(hive.extractionLevel - Math.max(0, Math.round(amount)), 0, 3, hive.extractionLevel);
+            if (hive.status === 'wounded' && hive.extractionLevel < 3) hive.status = 'mined';
+            if (hive.status === 'mined' && hive.extractionLevel === 0) hive.status = 'dormant';
+        });
+    }
+
+    completeHiveQuest(id, questId, bondDelta = 1) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive || !questId || hive.questFlags[questId] === 'done') return;
+            hive.questFlags[questId] = 'done';
+            hive.bond = clampInteger(hive.bond + Math.max(0, Math.round(bondDelta)), 0, ACT2_MAX_BOND, hive.bond);
+            if (hive.bond >= ACT2_HIVE_RESCUE_BOND_THRESHOLD
+                && ['dormant', 'mined', 'wounded', 'awakened'].includes(hive.status)) {
+                hive.status = 'bonded';
+            }
+        });
+    }
+
+    // Take the ally aboard. Needs earned trust; defies the queen's monopoly.
+    rescueHive(id) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive) return;
+            if (hive.bond < ACT2_HIVE_RESCUE_BOND_THRESHOLD) return;
+            if (!['bonded', 'awakened', 'mined', 'dormant', 'wounded'].includes(hive.status)) return;
+            hive.status = 'rescued';
+            hive.aboard = true;
+            s.queenObedience = Math.max(-ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) - 1);
+        });
+    }
+
+    abandonHive(id) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive || ['slain', 'queen_consumed', 'expired_by_cure'].includes(hive.status)) return;
+            hive.status = 'abandoned';
+            hive.aboard = false;
+        });
+    }
+
+    // Feed the ally to the queen. She approves. Nahl/Vey/Rhun do not.
+    sacrificeHive(id) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive || ['slain', 'queen_consumed', 'expired_by_cure', 'rescued', 'aboard'].includes(hive.status)) return;
+            hive.status = 'queen_consumed';
+            hive.aboard = false;
+            s.queenObedience = Math.min(ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) + 1);
+        });
+    }
+
+    // Strip a hive for parts in Act 2: kills the being inside.
+    harvestHive(id) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive || ['slain', 'queen_consumed', 'expired_by_cure', 'rescued', 'aboard'].includes(hive.status)) return;
+            hive.status = 'slain';
+            hive.aboard = false;
+            s.queenObedience = Math.min(ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) + 1);
+        });
+    }
+
+    setHiveNetworked(id, networked = true) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive) return;
+            hive.networked = Boolean(networked);
+            s.networks.hiveSynapseOnline = s.hives.every((h) => h.networked
+                || ['slain', 'queen_consumed', 'expired_by_cure'].includes(h.status));
+        });
+    }
+
+    // ── Network reducers ──
+
+    setNetworkFlag(flag, online = true) {
+        return this._mutate((s) => {
+            if (['humanRelayOnline', 'relayJammed', 'hiveSynapseOnline', 'bridgeOnline'].includes(flag)) {
+                s.networks[flag] = Boolean(online);
+            }
+        });
+    }
+
+    markCampRelayLinked(id, linked = true) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (camp) camp.relayLinked = Boolean(linked);
+        });
+    }
+
+    // Outing propagation rule: exposure at one camp spreads across the human
+    // relay unless it is offline or jammed.
+    propagateOuting(campId) {
+        return this._mutate((s) => {
+            const origin = s.camps.find((c) => c.id === campId);
+            if (!origin) return;
+            origin.knowsPlayerInfected = true;
+            origin.suspicion = 100;
+            s.suspicion[origin.id] = 100;
+            s.outedToHumans = true;
+            if (!['cured', 'ascendant'].includes(s.infectionStage)) s.infectionStage = 'outed';
+            if (!s.networks.knownByCamps.includes(origin.id)) s.networks.knownByCamps.push(origin.id);
+
+            if (s.networks.humanRelayOnline && !s.networks.relayJammed) {
+                for (const camp of s.camps) {
+                    if (camp.id === origin.id || !camp.relayLinked || !origin.relayLinked) continue;
+                    camp.knowsPlayerInfected = true;
+                    camp.suspicion = Math.max(camp.suspicion, 80);
+                    s.suspicion[camp.id] = camp.suspicion;
+                    if (!s.networks.knownByCamps.includes(camp.id)) s.networks.knownByCamps.push(camp.id);
+                }
+            }
+        });
+    }
+
+    // ── Infection reducers ──
+
+    adjustInfectionLoad(delta = 0) {
+        return this._mutate((s) => {
+            if (['cured', 'ascendant'].includes(s.infectionStage)) return;
+            s.infectionLoad = clampInteger(s.infectionLoad + Math.round(Number(delta) || 0), 0, 100, s.infectionLoad);
+            s.humanity = clampInteger(100 - s.infectionLoad, 0, 100, s.humanity);
+            if (s.humanity <= 0) s.infectionStage = 'outed';
+            else if (s.humanity <= 50) s.infectionStage = 'symptomatic';
+            else if (s.humanity <= 75) s.infectionStage = 'strained';
+            else s.infectionStage = 'latent';
+        });
+    }
+
+    // The cure: powerful and costly. The queen link must already be broken,
+    // and every alien ally you didn't independently secure dies with it.
+    uninfectSelf() {
+        return this._mutate((s) => {
+            if (s.queenStatus === 'aboard') return;
+            if (['cured'].includes(s.infectionStage)) return;
+            s.infectionStage = 'cured';
+            s.humanity = 100;
+            s.infectionLoad = 0;
+            s.coverIntegrity = 100;
+            for (const hive of s.hives) {
+                if (!['rescued', 'aboard', 'bonded'].includes(hive.status)) {
+                    hive.status = 'expired_by_cure';
+                    hive.aboard = false;
+                }
+            }
+        });
+    }
+
+    // Quietly seed a trusted camp: they board believing they are clean.
+    latentInfectCamp(id) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (!camp || camp.status !== 'alive') return;
+            if (camp.bond < ACT2_RECRUIT_BOND_THRESHOLD || camp.suspicion >= 50) return;
+            const suture = s.hives.find((h) => h.id === 'hive_suture');
+            if (suture?.questFlags?.host_mercy !== 'done') return;
+            camp.status = 'recruited';
+            camp.passengerState = 'latent_infected';
+            s.queenObedience = Math.min(ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) + 1);
+        });
+    }
+
+    // Tell them the truth before they board. Safer ethically; kills the
+    // infiltration path.
+    warnCamp(id) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (!camp || camp.status !== 'alive') return;
+            if (camp.bond < 2) return;
+            camp.status = 'recruited';
+            camp.passengerState = 'human_suspicious';
+            camp.knowsPlayerInfected = true;
+            if (!s.networks.knownByCamps.includes(camp.id)) s.networks.knownByCamps.push(camp.id);
+            s.queenObedience = Math.max(-ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) - 1);
         });
     }
 
