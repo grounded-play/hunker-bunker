@@ -120,3 +120,24 @@ export function importSaveCode(code, storage = null) {
     }
     return written;
 }
+
+// Clear only persistent Hunker Bunker save records. Preferences such as audio
+// mix and key bindings intentionally live outside hb_* and survive a new game.
+export function clearSaveData(storage = null) {
+    const store = getStorage(storage);
+    if (!store) return 0;
+
+    let removed = 0;
+    for (let i = (store.length ?? 0) - 1; i >= 0; i--) {
+        const key = store.key(i);
+        if (key?.startsWith(SAVE_PREFIX)) {
+            try {
+                store.removeItem(key);
+                removed++;
+            } catch {
+                // Ignore inaccessible records; callers still get best-effort count.
+            }
+        }
+    }
+    return removed;
+}

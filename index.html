@@ -473,6 +473,10 @@
           <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◎</span>COIN</span>
           <span id="pickup-count-coin">0</span>
         </div>
+        <div class="pickup-counter-panel__row pickup-counter-panel__row--shells">
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">❂</span>SHELL</span>
+          <span id="pickup-count-shells">0</span>
+        </div>
       </div>
       <!-- Boss Status Panel -->
       <div id="boss-status-panel" class="boss-status-panel hidden" aria-live="polite">
@@ -664,11 +668,6 @@
       <span id="tutorial-prompt-icon" class="tutorial-prompt__icon hidden"></span>
       <span id="tutorial-prompt-text" class="tutorial-prompt__text"></span>
     </div>
-    <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
-      <span class="biome-hud-prompt__icon">ZONE</span>
-      <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
-    </div>
-
     <!-- Right-side layout container for notifications/prompts -->
     <div class="hud-notification-stack">
       <!-- Radio Transmission CRT Prompt -->
@@ -690,6 +689,11 @@
 
     <!-- Mission/action prompts sit below the popup deck -->
     <div class="hud-mission-stack">
+      <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
+        <span class="biome-hud-prompt__icon">ZONE</span>
+        <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
+      </div>
+
       <div id="console-hud-prompt" class="hud-action-prompt hidden">
         <span class="prompt-key">PRESS E</span>
         <span class="prompt-text">ACCESS BASE SHOP</span>
@@ -1073,6 +1077,20 @@
       </div>
     </div>
 
+    <div id="reset-save-confirm-modal" class="modal critical-modal hidden" aria-hidden="true">
+      <div class="modal-content confirm-modal-content">
+        <h2 class="modal-title confirm-title">RESET SAVE DATA</h2>
+        <p class="confirm-copy">
+          START A NEW GAME?<br>
+          ALL UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.
+        </p>
+        <div class="confirm-actions">
+          <button class="abort-btn" id="reset-save-confirm">RESET SAVE</button>
+          <button class="confirm-secondary-btn" id="reset-save-cancel">CANCEL</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Orientation Lock Overlay -->
     <div id="orientation-lock">
       <div class="lock-content">
@@ -1148,6 +1166,10 @@
         <div class="setting-item setting-item--action">
           <span>SAVE DATA</span>
           <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
+        </div>
+        <div class="setting-item setting-item--action setting-item--danger">
+          <span>NEW GAME RESET</span>
+          <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save">RESET</button>
         </div>
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">

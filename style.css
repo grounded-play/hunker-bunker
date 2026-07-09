@@ -29,6 +29,9 @@
   --text-muted: #94a3b8;
   /* Slate Grey */
   --border-subtle: rgba(255, 255, 255, 0.1);
+  --scrollbar-track: rgba(6, 10, 12, 0.86);
+  --scrollbar-thumb: rgba(255, 159, 28, 0.52);
+  --scrollbar-thumb-hover: rgba(46, 196, 182, 0.72);
   --design-width: 177;
   --design-height: 100;
 }
@@ -40,6 +43,42 @@
   cursor: default;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+  background:
+    linear-gradient(180deg, rgba(255, 159, 28, 0.08), rgba(46, 196, 182, 0.06)),
+    var(--scrollbar-track);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(255, 159, 28, 0.12);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 3px solid rgba(6, 10, 12, 0.92);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 214, 130, 0.86), rgba(255, 159, 28, 0.56) 48%, rgba(46, 196, 182, 0.44)),
+    var(--scrollbar-thumb);
+  background-clip: padding-box;
+  box-shadow: 0 0 10px rgba(255, 159, 28, 0.22);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 231, 179, 0.95), rgba(255, 159, 28, 0.7) 45%, rgba(46, 196, 182, 0.72)),
+    var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--scrollbar-track);
 }
 
 html,
@@ -2320,6 +2359,16 @@ input:checked+.slider:before {
   margin-bottom: calc(var(--vu) * 2.3);
 }
 
+.setting-item--danger {
+  margin-top: calc(var(--vu) * 1);
+  padding-top: calc(var(--vu) * 1.6);
+  border-top: 1px solid rgba(255, 74, 74, 0.18);
+}
+
+.setting-item--danger span {
+  color: #ffb4b4;
+}
+
 .settings-action-btn {
   min-width: calc(var(--vu) * 14);
   border: 1px solid rgba(255, 159, 28, 0.68);
@@ -2569,12 +2618,49 @@ input:checked+.slider:before {
 }
 
 .controls-list {
+  --scrollbar-track: rgba(6, 10, 12, 0.92);
+  --scrollbar-thumb: rgba(255, 159, 28, 0.6);
+  --scrollbar-thumb-hover: rgba(46, 196, 182, 0.78);
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 1.1);
   max-height: min(calc(var(--vu) * 46), 52vh);
   overflow-y: auto;
   padding-right: calc(var(--vu) * 0.8);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) rgba(255, 159, 28, 0.08);
+}
+
+.controls-list::-webkit-scrollbar {
+  width: 13px;
+}
+
+.controls-list::-webkit-scrollbar-track {
+  background:
+    linear-gradient(180deg, rgba(255, 159, 28, 0.12), rgba(46, 196, 182, 0.08)),
+    rgba(4, 7, 10, 0.86);
+  border-radius: 999px;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 159, 28, 0.16),
+    inset 0 0 10px rgba(0, 0, 0, 0.62);
+}
+
+.controls-list::-webkit-scrollbar-thumb {
+  border: 4px solid rgba(4, 7, 10, 0.92);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 221, 156, 0.95), rgba(255, 159, 28, 0.7) 54%, rgba(46, 196, 182, 0.45)),
+    var(--scrollbar-thumb);
+  background-clip: padding-box;
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.28);
+}
+
+.controls-list::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 235, 194, 1), rgba(255, 159, 28, 0.82) 48%, rgba(46, 196, 182, 0.78)),
+    var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
 }
 
 .control-row {
@@ -4343,7 +4429,7 @@ body.mission-intro-active #game-viewport {
   background: #000;
 }
 
-body.mission-intro-active #game-container {
+body.mission-intro-active #game-container canvas {
   visibility: hidden;
 }
 
@@ -4968,7 +5054,9 @@ body.mission-intro-active #game-container {
 }
 
 .hud-mission-stack.is-below-notifications {
-  top: calc(var(--vu) * 20);
+  /* Clear the tallest deck card (radio ≈ 12vu tall at slot 10vu) so the
+     mission column never slides under an active notification. */
+  top: calc(var(--vu) * 26);
 }
 
 .hud-mission-stack > * {
@@ -8629,4 +8717,150 @@ button.archive-log-entry:active {
   border-color: var(--accent-secondary);
   color: var(--accent-secondary);
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+}
+
+/* ── Corrupted title (post-reveal): the game's true name bleeds through. ── */
+.title-corrupted {
+  color: #b9ff5c;
+  text-shadow:
+    0 0 18px rgba(155, 255, 80, 0.55),
+    0 0 46px rgba(255, 64, 220, 0.35);
+  animation: title-corrupt-flicker 3.1s infinite steps(1, end);
+}
+
+@keyframes title-corrupt-flicker {
+  0%, 91%, 100% { opacity: 1; transform: none; filter: none; }
+  92% { opacity: 0.72; transform: translateX(2px) skewX(-4deg); filter: hue-rotate(90deg); }
+  94% { opacity: 1; transform: translateX(-2px); filter: none; }
+  96% { opacity: 0.55; transform: skewX(6deg); filter: hue-rotate(-140deg) saturate(2); }
+  97% { opacity: 1; transform: none; filter: none; }
+}
+
+/* ── Class intro cutscene video (pre-crash, docs/class-intro-cutscene-prompts.md) ── */
+.class-intro-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 80;
+  background-color: #000;
+  background-image: var(--class-intro-poster, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(8px, 1.2%, 18px);
+  box-sizing: border-box;
+  opacity: 1;
+  overflow: hidden;
+  border-radius: inherit;
+  transition: opacity 0.26s ease;
+  pointer-events: auto;
+}
+
+.class-intro-overlay.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.class-intro-video {
+  display: block;
+  flex: 0 1 auto;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  object-position: center center;
+  background: transparent;
+  transition: opacity 0.18s ease-out;
+}
+
+.class-intro-skip {
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+  opacity: 0;
+  animation: class-intro-skip-in 0.4s ease 1.4s forwards;
+  pointer-events: none;
+}
+
+@keyframes class-intro-skip-in {
+  to { opacity: 0.85; }
+}
+
+/* ── Act 2 departure: ACT III tease card ── */
+.act3-tease-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9600;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.act3-tease-overlay.is-open {
+  opacity: 1;
+}
+
+.act3-tease-overlay.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.act3-tease-card {
+  text-align: center;
+  font-family: monospace;
+  color: #b9ff5c;
+  animation: act3-card-drift 5s ease-out forwards;
+}
+
+.act3-tease-kicker {
+  font-size: 12px;
+  letter-spacing: 0.34em;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+
+.act3-tease-title {
+  font-size: 64px;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-shadow:
+    0 0 18px rgba(155, 255, 80, 0.55),
+    0 0 46px rgba(255, 64, 220, 0.35);
+}
+
+.act3-tease-sub {
+  margin-top: 18px;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--text-muted);
+}
+
+@keyframes act3-card-drift {
+  from { transform: translateY(10px) scale(0.985); }
+  to { transform: translateY(-6px) scale(1.01); }
+}
+
+/* ── Snail shell counter (bank-backed row in the loot panel) ── */
+.pickup-counter-panel__row--shells span:last-child {
+  color: #9fe8c4;
+}
+
+.pickup-counter-panel__row--shell-flash {
+  animation: shell-row-flash 0.5s ease-out;
+}
+
+@keyframes shell-row-flash {
+  0% { background: rgba(120, 255, 170, 0.28); transform: translateX(2px); }
+  100% { background: transparent; transform: none; }
 }

@@ -1,7 +1,7 @@
 import { AudioManager } from './src/audio.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
-import { ProfileManager, exportSaveCode, importSaveCode } from './src/profile.js';
+import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DialogueManager } from './src/dialogue.js';
@@ -13,6 +13,8 @@ import { pickRunModifier } from './src/data/runModifiers.js';
 import { pickMissionBriefing } from './src/data/missions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { ArcStateManager } from './src/arcState.js';
+import { CaveRevealController } from './src/caveReveal.js';
+import { Act2Manager, ACT2_LINES } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
@@ -53,6 +55,10 @@ const saveDataPopup = document.getElementById('save-data-popup');
 const closeSaveDataBtn = document.getElementById('close-save-data');
 const saveDataCode = document.getElementById('save-data-code');
 const saveDataStatus = document.getElementById('save-data-status');
+const openResetSaveBtn = document.getElementById('open-reset-save');
+const resetSaveConfirmModal = document.getElementById('reset-save-confirm-modal');
+const resetSaveConfirmBtn = document.getElementById('reset-save-confirm');
+const resetSaveCancelBtn = document.getElementById('reset-save-cancel');
 const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
 const audioVfxSlider = document.getElementById('audio-vfx-slider');
@@ -209,6 +215,7 @@ let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 let cutsceneManager = null;
 let dialogueManager = null;
 const arcManager = ARC_PRELUDE_ENABLED ? new ArcStateManager() : null;
+const act2Manager = ARC_PRELUDE_ENABLED ? new Act2Manager() : null;
 let missionFlowRunning = false;
 let isResettingRun = false;
 
@@ -391,7 +398,30 @@ function recomputePickupTotal() {
     );
 }
 
+// Shells live in the bank (they never ride the extraction loop), so the HUD
+// row tracks the banked total directly.
+const pickupCountShells = document.getElementById('pickup-count-shells');
+
+function renderShellCounter(total = bankManager.getShells?.() ?? 0) {
+    if (pickupCountShells) pickupCountShells.textContent = String(total);
+}
+
+window.addEventListener('shells-changed', (event) => {
+    renderShellCounter(event?.detail?.shells);
+});
+
+window.addEventListener('shell-collected', (event) => {
+    renderShellCounter(event?.detail?.total);
+    const row = pickupCountShells?.closest('.pickup-counter-panel__row');
+    if (row) {
+        row.classList.remove('pickup-counter-panel__row--shell-flash');
+        void row.offsetWidth; // restart the animation
+        row.classList.add('pickup-counter-panel__row--shell-flash');
+    }
+});
+
 function renderPickupCounter() {
+    renderShellCounter();
     if (pickupCountTotal) {
         pickupCountTotal.textContent = String(pickupCounterState.total);
     }
@@ -1681,7 +1711,10 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Daily Ops result save
     if (_isDailyOpsRun) {
         _isDailyOpsRun = false;
-        if (window.game) window.game.globalSeedOffset = 0;
+        if (window.game) {
+            window.game.globalSeedOffset = 0;
+            window.game.fixedRunEntropy = false;
+        }
         saveDailyOpsRecord({
             attempted: true,
             completed: true,
@@ -1915,6 +1948,9 @@ function closeElevatorChoiceModal() {
 
 document.getElementById('elevator-choice-extract')?.addEventListener('click', () => {
     closeElevatorChoiceModal();
+    // Re-enable input before resolving: the extraction flow disables it again on
+    // its own, but if extraction bails early the player must not stay locked.
+    window.game?.setInputEnabled?.(true);
     window.game?.resolveElevatorChoice?.('extract');
 });
 
@@ -2185,6 +2221,16 @@ window.addEventListener('lore-terminal-clear', () => {
     if (prompt) prompt.classList.add('hidden');
 });
 
+// Token invalidates any in-flight typewriter loop when the modal is reopened
+// for a new log (prevents two loops interleaving into the same text node).
+let loreTypewriterToken = 0;
+
+function closeLoreModalAndResume() {
+    loreTypewriterToken += 1;
+    document.getElementById('lore-modal')?.classList.add('hidden');
+    window.game?.setInputEnabled?.(true);
+}
+
 window.addEventListener('lore-terminal-read', (event) => {
     const { loreKey, loreText } = event?.detail ?? {};
     if (!loreKey || !loreText) return;
@@ -2201,10 +2247,11 @@ window.addEventListener('lore-terminal-read', (event) => {
     window.game?.setInputEnabled?.(false);
 
     // Typewrite the log text
+    const token = ++loreTypewriterToken;
     let charIdx = 0;
     const chars = loreText.split('');
     const tick = () => {
-        if (!loreTextEl || loreModal.classList.contains('hidden')) return;
+        if (!loreTextEl || token !== loreTypewriterToken || loreModal.classList.contains('hidden')) return;
         if (charIdx < chars.length) {
             loreTextEl.textContent += chars[charIdx++];
             setTimeout(tick, 18);
@@ -2219,13 +2266,7 @@ window.addEventListener('lore-terminal-read', (event) => {
     }
 });
 
-const closeLoreModal = document.getElementById('close-lore-modal');
-if (closeLoreModal) {
-    closeLoreModal.addEventListener('click', () => {
-        document.getElementById('lore-modal')?.classList.add('hidden');
-        window.game?.setInputEnabled?.(true);
-    });
-}
+document.getElementById('close-lore-modal')?.addEventListener('click', closeLoreModalAndResume);
 
 // ── Reactive Mothership ───────────────────────────────────────
 function fireMothershipReactiveLine(trigger) {
@@ -2758,43 +2799,47 @@ if (gameOverTryAgain) {
     });
 }
 
+function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
+    hideGameOverScreen();
+    hideBiomePrompt();
+    if (biomePromptTimer) {
+        clearTimeout(biomePromptTimer);
+        biomePromptTimer = null;
+    }
+    missionFlowRunning = false;
+    resetRunToStartingState({
+        resetBank: false,
+        skipEffects: true,
+        snailSpawnEnabled: false,
+        purgeSnails: true
+    });
+
+    triggerDoorTransition(
+        () => {
+            document.getElementById('ui')?.classList.add('hidden');
+            window.game?.setInputEnabled?.(false);
+            syncTouchSettingsVisibility();
+            syncTouchMoveControlVisibility();
+            if (menu) menu.classList.remove('hidden');
+            window.game?.setPerformanceProfile?.('menu');
+            transitionToMenuMusic();
+
+            const gameContainer = document.getElementById('game-container');
+            const mapBox = document.querySelector('.map-box');
+            if (gameContainer && mapBox) {
+                mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
+                gameContainer.classList.remove('fullscreen-mode');
+                queueGameLayoutRefresh();
+            }
+        },
+        null,
+        doorKey
+    );
+}
+
 if (gameOverMainMenu) {
     gameOverMainMenu.addEventListener('click', () => {
-        hideGameOverScreen();
-        hideBiomePrompt();
-        if (biomePromptTimer) {
-            clearTimeout(biomePromptTimer);
-            biomePromptTimer = null;
-        }
-        missionFlowRunning = false;
-        resetRunToStartingState({
-            resetBank: false,
-            skipEffects: true,
-            snailSpawnEnabled: false,
-            purgeSnails: true
-        });
-
-        triggerDoorTransition(
-            () => {
-                document.getElementById('ui')?.classList.add('hidden');
-                window.game?.setInputEnabled?.(false);
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
-                if (menu) menu.classList.remove('hidden');
-                window.game?.setPerformanceProfile?.('menu');
-                transitionToMenuMusic();
-
-                const gameContainer = document.getElementById('game-container');
-                const mapBox = document.querySelector('.map-box');
-                if (gameContainer && mapBox) {
-                    mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
-                    gameContainer.classList.remove('fullscreen-mode');
-                    queueGameLayoutRefresh();
-                }
-            },
-            null,
-            'base'
-        );
+        returnToMainMenuFromRun();
     });
 }
 
@@ -3213,6 +3258,319 @@ function setSnailSpawnState(enabled, { purgeExisting = false } = {}) {
     window.game?.setSnailsEnabled?.(Boolean(enabled), { removeExisting: purgeExisting });
 }
 
+// ── Class intro sequence (docs/class-intro-cutscene-prompts.md) ──
+// Plays the intro GIF first, then the custom space launch WebM video.
+const CLASS_INTRO_GIFS = {
+    SCOUT: '/Scout.Intro.gif',
+    TANK: '/Tank.Intro.gif',
+    ENGINEER: '/Eng.Intro.gif'
+};
+
+const CLASS_INTRO_WEBM_BASENAMES = {
+    SCOUT: 'scout-intro',
+    TANK: 'tank-intro',
+    ENGINEER: 'engineer-intro'
+};
+
+const cutsceneImagePreloadCache = new Map();
+const cutsceneVideoPreloadCache = new Map();
+
+function getCutsceneVideoHost() {
+    return document.getElementById('game-container') ?? document.body;
+}
+
+function warmCutsceneImage(src) {
+    if (!src || cutsceneImagePreloadCache.has(src)) return;
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = src;
+    cutsceneImagePreloadCache.set(src, image);
+}
+
+function warmCutsceneVideo(base) {
+    if (!base) return;
+    const canPlayWebm = document.createElement('video').canPlayType('video/webm');
+    const source = canPlayWebm ? `/cutscenes/${base}.webm` : `/cutscenes/${base}.mp4`;
+    if (cutsceneVideoPreloadCache.has(source)) return;
+
+    warmCutsceneImage(`/cutscenes/${base}-poster.jpg`);
+
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.poster = `/cutscenes/${base}-poster.jpg`;
+    video.src = source;
+    video.load();
+    cutsceneVideoPreloadCache.set(source, video);
+}
+
+function warmClassIntroMedia(playerType = 'SCOUT') {
+    const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
+    const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    warmCutsceneImage(gifSrc);
+    warmCutsceneVideo(webmBase);
+}
+
+function playClassIntroSequence(playerType = 'SCOUT') {
+    const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
+    const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    warmClassIntroMedia(playerType);
+
+    return new Promise((resolve) => {
+        const host = getCutsceneVideoHost();
+        const overlay = document.createElement('div');
+        overlay.className = 'class-intro-overlay';
+        overlay.style.setProperty('--class-intro-poster', `url('/cutscenes/${webmBase}-poster.jpg')`);
+
+        const skipHint = document.createElement('div');
+        skipHint.className = 'class-intro-skip';
+        skipHint.textContent = isTouchDevice() ? 'TAP TO SKIP' : 'PRESS ANY KEY TO SKIP';
+
+        let settled = false;
+        let step = 'gif'; // 'gif' | 'video' | 'done'
+        let timer = null;
+        let guardTimer = null;
+        let videoElement = null;
+
+        const clearTimers = () => {
+            if (timer) {
+                window.clearTimeout(timer);
+                timer = null;
+            }
+            if (guardTimer) {
+                window.clearTimeout(guardTimer);
+                guardTimer = null;
+            }
+        };
+
+        const cleanupAndResolve = () => {
+            if (settled) return;
+            settled = true;
+            step = 'done';
+            clearTimers();
+            window.removeEventListener('keydown', onKey);
+            if (videoElement) {
+                try { videoElement.pause(); } catch { /* ignore */ }
+            }
+            overlay.classList.add('is-closing');
+            window.setTimeout(() => overlay.remove(), 280);
+            resolve();
+        };
+
+        const startVideoStep = () => {
+            if (settled) return;
+            if (guardTimer) {
+                window.clearTimeout(guardTimer);
+                guardTimer = null;
+            }
+            step = 'video';
+            overlay.innerHTML = ''; // Clear GIF image
+
+            videoElement = document.createElement('video');
+            videoElement.className = 'class-intro-video';
+            videoElement.style.opacity = '0';
+            videoElement.playsInline = true;
+            videoElement.muted = true;
+            videoElement.autoplay = true;
+            videoElement.controls = false;
+            videoElement.preload = 'auto';
+            videoElement.poster = `/cutscenes/${webmBase}-poster.jpg`;
+
+            const webmSource = document.createElement('source');
+            webmSource.src = `/cutscenes/${webmBase}.webm`;
+            webmSource.type = 'video/webm';
+
+            // The repo currently ships WebM intros. Avoid adding a missing MP4
+            // source in Chrome, which otherwise creates noisy 404s while still
+            // falling back correctly if we later export MP4 files.
+            if (videoElement.canPlayType('video/webm')) {
+                videoElement.append(webmSource);
+            } else {
+                const mp4Fallback = document.createElement('source');
+                mp4Fallback.src = `/cutscenes/${webmBase}.mp4`;
+                mp4Fallback.type = 'video/mp4';
+                videoElement.append(mp4Fallback);
+            }
+            overlay.append(videoElement, skipHint);
+
+            guardTimer = window.setTimeout(() => {
+                if (videoElement.readyState < 2) cleanupAndResolve();
+            }, 4000);
+
+            videoElement.addEventListener('playing', () => {
+                if (guardTimer) {
+                    window.clearTimeout(guardTimer);
+                    guardTimer = null;
+                }
+                videoElement.style.opacity = '1';
+            });
+            videoElement.addEventListener('loadeddata', () => {
+                videoElement.style.opacity = '1';
+            }, { once: true });
+            videoElement.addEventListener('ended', cleanupAndResolve);
+            videoElement.addEventListener('error', cleanupAndResolve);
+
+            videoElement.play().catch(cleanupAndResolve);
+        };
+
+        const onKey = (event) => {
+            event.preventDefault();
+            if (step === 'gif') {
+                startVideoStep();
+            } else {
+                cleanupAndResolve();
+            }
+        };
+
+        overlay.addEventListener('pointerup', (event) => {
+            event.preventDefault();
+            if (step === 'gif') {
+                startVideoStep();
+            } else {
+                cleanupAndResolve();
+            }
+        });
+
+        window.addEventListener('keydown', onKey);
+
+        // Render GIF step first
+        const gifImg = document.createElement('img');
+        gifImg.className = 'class-intro-video';
+        gifImg.style.opacity = '0';
+        gifImg.src = gifSrc;
+        gifImg.addEventListener('error', startVideoStep, { once: true });
+        const startGifTimer = () => {
+            if (settled || step !== 'gif') return;
+            if (guardTimer) {
+                window.clearTimeout(guardTimer);
+                guardTimer = null;
+            }
+            gifImg.style.opacity = '1';
+            if (!timer) {
+                timer = window.setTimeout(startVideoStep, 3500);
+            }
+        };
+        gifImg.addEventListener('load', startGifTimer, { once: true });
+
+        overlay.append(gifImg, skipHint);
+        host.appendChild(overlay);
+
+        if (gifImg.complete && gifImg.naturalWidth > 0) {
+            requestAnimationFrame(startGifTimer);
+        } else {
+            guardTimer = window.setTimeout(startVideoStep, 2500);
+        }
+    });
+}
+
+// Generic fullscreen cutscene video: plays /cutscenes/{base}.webm (mp4
+// fallback, {base}-poster.jpg). Skippable, and resolves immediately when the
+// asset doesn't exist so story beats never stall on missing files.
+function playCutsceneVideo(base) {
+    warmCutsceneVideo(base);
+
+    return new Promise((resolve) => {
+        const host = getCutsceneVideoHost();
+        const overlay = document.createElement('div');
+        overlay.className = 'class-intro-overlay';
+        overlay.style.setProperty('--class-intro-poster', `url('/cutscenes/${base}-poster.jpg')`);
+
+        const video = document.createElement('video');
+        video.className = 'class-intro-video';
+        video.style.opacity = '0';
+        video.playsInline = true;
+        video.muted = true;
+        video.autoplay = true;
+        video.controls = false;
+        video.preload = 'auto';
+        video.poster = `/cutscenes/${base}-poster.jpg`;
+
+        const webm = document.createElement('source');
+        webm.src = `/cutscenes/${base}.webm`;
+        webm.type = 'video/webm';
+        let fallbackSource = webm;
+        if (video.canPlayType('video/webm')) {
+            video.append(webm);
+        } else {
+            const mp4 = document.createElement('source');
+            mp4.src = `/cutscenes/${base}.mp4`;
+            mp4.type = 'video/mp4';
+            video.append(mp4);
+            fallbackSource = mp4;
+        }
+
+        const skipHint = document.createElement('div');
+        skipHint.className = 'class-intro-skip';
+        skipHint.textContent = isTouchDevice() ? 'TAP TO SKIP' : 'PRESS ANY KEY TO SKIP';
+
+        let settled = false;
+        let guardTimer = 0;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(guardTimer);
+            window.removeEventListener('keydown', onKey);
+            try { video.pause(); } catch { /* already detached */ }
+            overlay.classList.add('is-closing');
+            window.setTimeout(() => overlay.remove(), 280);
+            resolve();
+        };
+        const onKey = (event) => {
+            event.preventDefault();
+            finish();
+        };
+
+        video.addEventListener('ended', finish);
+        video.addEventListener('error', finish);
+        video.addEventListener('loadeddata', () => {
+            video.style.opacity = '1';
+        }, { once: true });
+        // The selected source erroring means nothing was playable (asset absent).
+        fallbackSource.addEventListener('error', finish);
+        overlay.addEventListener('pointerup', finish);
+        window.addEventListener('keydown', onKey);
+        guardTimer = window.setTimeout(() => {
+            if (video.readyState < 2) finish();
+        }, 4000);
+        video.addEventListener('playing', () => {
+            window.clearTimeout(guardTimer);
+            video.style.opacity = '1';
+        });
+
+        overlay.append(video, skipHint);
+        host.appendChild(overlay);
+        video.play().catch(finish);
+    });
+}
+
+// ── Act 2 run intro: the queen replaces the Mothership handshake ──
+function isAct2RunActive() {
+    if (!ARC_PRELUDE_ENABLED || !arcManager || !act2Manager) return false;
+    return arcManager.getState().arcState === 'hive_awakened_tease';
+}
+
+async function runAct2IntroSequence(game, playerType) {
+    const alreadyBegun = act2Manager.getState().begun;
+    if (!alreadyBegun) act2Manager.begin();
+
+    document.body.classList.add('hud-hidden');
+    await new Promise((resolve) => {
+        triggerDoorTransition(
+            () => {
+                document.body.classList.remove('mission-intro-active');
+            },
+            () => resolve()
+        );
+    });
+    await new Promise((r) => window.setTimeout(r, 1000));
+    document.body.classList.remove('hud-hidden');
+
+    const lines = alreadyBegun ? ACT2_LINES.resume : ACT2_LINES.intro;
+    await dialogueManager?.openBriefTransmission({ playerType, lines: [...lines] });
+    window.AudioManager?.startAmbience?.();
+}
+
 async function runMissionIntroSequence() {
     if (missionFlowRunning) return;
 
@@ -3230,6 +3588,15 @@ async function runMissionIntroSequence() {
     }
 
     try {
+        // Post-reveal saves belong to the queen: no crash replay, no
+        // Mothership handshake, no human mission briefing.
+        if (isAct2RunActive()) {
+            await runAct2IntroSequence(game, playerType);
+            return;
+        }
+
+        await playClassIntroSequence(playerType);
+
         await cutsceneManager?.play({
             playerType,
             allowSkip: true,
@@ -3373,7 +3740,10 @@ if (dailyOpsBtn) {
         if (record?.completed) return;
         saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
         _isDailyOpsRun = true;
-        if (window.game) window.game.globalSeedOffset = getDailySeedInt();
+        if (window.game) {
+            window.game.globalSeedOffset = getDailySeedInt();
+            window.game.fixedRunEntropy = true;
+        }
         triggerDoorTransition(
             () => {
                 if (menu) menu.classList.add('hidden');
@@ -3590,6 +3960,7 @@ if (settingsBtns.length > 0 && settingsPopup) {
             syncAudioMixerUI(state.settings.audioMix);
             setAudioMixerOpen(false);
             setSaveDataOpen(false);
+            setResetSaveConfirmOpen(false);
         });
     });
 }
@@ -3641,7 +4012,13 @@ if (closeSettings && settingsPopup) {
         AudioManager.setMix(state.settings.audioMix);
         setAudioMixerOpen(false);
         setSaveDataOpen(false);
+        setResetSaveConfirmOpen(false);
     });
+}
+
+function setResetSaveConfirmOpen(isOpen) {
+    resetSaveConfirmModal?.classList.toggle('hidden', !isOpen);
+    resetSaveConfirmModal?.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
 }
 
 function setSaveDataOpen(isOpen) {
@@ -3665,6 +4042,29 @@ openSaveDataBtn?.addEventListener('click', () => {
 });
 closeSaveDataBtn?.addEventListener('click', () => setSaveDataOpen(false));
 
+openResetSaveBtn?.addEventListener('click', () => {
+    setAudioMixerOpen(false);
+    setSaveDataOpen(false);
+    setResetSaveConfirmOpen(true);
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+});
+
+resetSaveCancelBtn?.addEventListener('click', () => {
+    setResetSaveConfirmOpen(false);
+    window.AudioManager?.play?.('ui_click', { volume: 0.45 });
+});
+
+resetSaveConfirmBtn?.addEventListener('click', () => {
+    const removed = clearSaveData();
+    window.AudioManager?.play?.('ui_click', { volume: 0.55 });
+    setResetSaveConfirmOpen(false);
+    settingsPopup?.classList.add('hidden');
+    setAudioMixerOpen(false);
+    setSaveDataOpen(false);
+    console.info(`Reset save data: cleared ${removed} record(s).`);
+    window.setTimeout(() => window.location.reload(), 350);
+});
+
 // Global Escape Key Listener for Modals
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
@@ -3676,6 +4076,12 @@ document.addEventListener('keydown', (event) => {
         const confirmModal = document.getElementById('confirm-modal');
         if (confirmModal && !confirmModal.classList.contains('hidden')) {
             confirmModal.classList.add('hidden');
+            event.preventDefault();
+            return;
+        }
+
+        if (resetSaveConfirmModal && !resetSaveConfirmModal.classList.contains('hidden')) {
+            setResetSaveConfirmOpen(false);
             event.preventDefault();
             return;
         }
@@ -3704,6 +4110,7 @@ document.addEventListener('keydown', (event) => {
             AudioManager.setMix(state.settings.audioMix);
             setAudioMixerOpen(false);
             setSaveDataOpen(false);
+            setResetSaveConfirmOpen(false);
             event.preventDefault();
             return;
         }
@@ -3718,6 +4125,58 @@ document.addEventListener('keydown', (event) => {
         const consoleModal = document.getElementById('console-terminal-modal');
         if (consoleModal && !consoleModal.classList.contains('hidden')) {
             window.game?.closeConsoleModal?.();
+            event.preventDefault();
+            return;
+        }
+
+        const o2GeneratorModal = document.getElementById('o2-generator-modal');
+        if (o2GeneratorModal && !o2GeneratorModal.classList.contains('hidden')) {
+            window.game?.closeO2GeneratorModal?.();
+            event.preventDefault();
+            return;
+        }
+
+        const loreModal = document.getElementById('lore-modal');
+        if (loreModal && !loreModal.classList.contains('hidden')) {
+            closeLoreModalAndResume();
+            event.preventDefault();
+            return;
+        }
+
+        const fabricationModal = document.getElementById('fabrication-modal');
+        if (fabricationModal && !fabricationModal.classList.contains('hidden')) {
+            closeFabricationModal();
+            event.preventDefault();
+            return;
+        }
+
+        const archiveLogDetail = document.getElementById('archive-log-detail-modal');
+        if (archiveLogDetail && !archiveLogDetail.classList.contains('hidden')) {
+            closeArchiveLogDetail();
+            event.preventDefault();
+            return;
+        }
+
+        const archiveModal = document.getElementById('archive-modal');
+        if (archiveModal && !archiveModal.classList.contains('hidden')) {
+            closeArchiveLogDetail();
+            archiveModal.classList.add('hidden');
+            archiveModal.setAttribute('aria-hidden', 'true');
+            event.preventDefault();
+            return;
+        }
+
+        const codexModal = document.getElementById('codex-modal');
+        if (codexModal && !codexModal.classList.contains('hidden')) {
+            closeCodexModal();
+            event.preventDefault();
+            return;
+        }
+
+        const rosterModal = document.getElementById('roster-modal');
+        if (rosterModal && !rosterModal.classList.contains('hidden')) {
+            rosterModal.classList.add('hidden');
+            rosterModal.setAttribute('aria-hidden', 'true');
             event.preventDefault();
             return;
         }
@@ -3740,6 +4199,9 @@ setupClickOutside('about-modal', () => {
     const aboutModal = document.getElementById('about-modal');
     if (aboutModal) aboutModal.classList.add('hidden');
 });
+
+// Lore readouts pause gameplay input, so clicking away must resume it too.
+setupClickOutside('lore-modal', closeLoreModalAndResume);
 
 // Archive modal
 document.getElementById('archive-btn')?.addEventListener('click', () => {
@@ -4127,7 +4589,12 @@ window.addEventListener('foundry-prompt-nearby', () => {
         key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
         key.classList.toggle('prompt-key--tap', touchPrompt);
     }
-    if (text) text.textContent = bankManager.isFoundryActivated() ? 'OPEN FAB BAY' : 'ACTIVATE FAB BAY';
+    if (text) {
+        // Act 2 dish phase hijacks the foundry interaction entirely.
+        text.textContent = (isAct2RunActive() && act2Manager.getPhase() === 'dish')
+            ? 'GROW THE SIGNAL DISH'
+            : (bankManager.isFoundryActivated() ? 'OPEN FAB BAY' : 'ACTIVATE FAB BAY');
+    }
     prompt?.classList.remove('hidden');
 });
 window.addEventListener('foundry-prompt-clear', () => {
@@ -4135,6 +4602,194 @@ window.addEventListener('foundry-prompt-clear', () => {
     prompt?.classList.add('hidden');
     prompt?.classList.remove('visible');
 });
+
+// ── Act 1 finale: cave entrance + infection reveal (Sprint 18 §5–§6) ──
+// The cave reuses the foundry HUD prompt element (they are never active at the
+// same time — the cave only appears after the full rebuild ladder).
+window.addEventListener('cave-prompt-nearby', () => {
+    if (!isGameplayPhase()) return;
+    const prompt = document.getElementById('foundry-hud-prompt');
+    const key = prompt?.querySelector('.prompt-key');
+    const text = prompt?.querySelector('.prompt-text');
+    const touchPrompt = isTouchDevice();
+    if (key) {
+        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
+        key.classList.toggle('prompt-key--tap', touchPrompt);
+    }
+    if (text) text.textContent = 'RECOVER FINAL COMPONENT';
+    prompt?.classList.remove('hidden');
+});
+window.addEventListener('cave-prompt-clear', () => {
+    const prompt = document.getElementById('foundry-hud-prompt');
+    prompt?.classList.add('hidden');
+    prompt?.classList.remove('visible');
+});
+
+window.addEventListener('cave-entrance-revealed', (event) => {
+    if (!isGameplayPhase() || event?.detail?.instant) return;
+    const distance = event?.detail?.distance;
+    const rangeText = Number.isFinite(distance) ? ` // ${distance}u` : '';
+    showTacticalOverlay({
+        title: 'FINAL COMPONENT LOCATED',
+        status: `> DEEP STRUCTURE SIGNAL LOCKED${rangeText}<br>> FOLLOW THE FIELD COMPASS`,
+        progress: 100,
+        duration: 3200
+    });
+    AudioManager.play('ui_scan_ping', { volume: 0.5, playbackRate: 0.6 });
+});
+
+let caveRevealController = null;
+
+function startCaveRevealSequence() {
+    if (!ARC_PRELUDE_ENABLED || !arcManager) return;
+    ensureMissionManagers();
+    if (!caveRevealController) {
+        caveRevealController = new CaveRevealController({
+            arcManager,
+            dialogueManager,
+            audioManager: AudioManager,
+            setCinematicLock: (locked) => window.game?.setCinematicLock?.(locked),
+            setObjectiveText: (text) => {
+                window.dispatchEvent(new CustomEvent('loop-step-changed', {
+                    detail: { key: 'queen', label: text }
+                }));
+            },
+            triggerFade: (onClosed) => new Promise((resolve) => {
+                triggerDoorTransition(
+                    async () => { await onClosed?.(); },
+                    () => resolve(),
+                    'lose',
+                    { waitForClosedWork: true, openingHoldMs: 420 }
+                );
+            }),
+            returnToTitle: handleCaveRevealReturnToTitle
+        });
+    }
+    if (!caveRevealController.canStart()) return;
+
+    const stats = window.game?.getRunStats?.() ?? {};
+    // The cave scene video (public/cutscenes/cave-reveal.webm) plays first,
+    // under cinematic lock; the controller then owns the text/blackout beats.
+    void (async () => {
+        window.game?.setCinematicLock?.(true);
+        await playCutsceneVideo('cave-reveal');
+        await caveRevealController.start({
+            classType: window.game?.playerType ?? getSelectedHeroType(),
+            ...stats
+        });
+    })();
+}
+
+window.addEventListener('cave-entrance-interact', () => {
+    startCaveRevealSequence();
+});
+
+function handleCaveRevealReturnToTitle() {
+    applyCorruptedTitlePresentation({ sting: true });
+    returnToMainMenuFromRun({ doorKey: 'lose' });
+}
+
+// ── Act 2: the PregAlien loop (src/act2.js) ──────────────────────────
+// Camps reuse the foundry HUD prompt element, same as the cave — Act 2 camps
+// never coexist with an active fab-bay prompt.
+window.addEventListener('camp-prompt-nearby', (event) => {
+    if (!isGameplayPhase()) return;
+    const prompt = document.getElementById('foundry-hud-prompt');
+    const key = prompt?.querySelector('.prompt-key');
+    const text = prompt?.querySelector('.prompt-text');
+    const touchPrompt = isTouchDevice();
+    if (key) {
+        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
+        key.classList.toggle('prompt-key--tap', touchPrompt);
+    }
+    if (text) text.textContent = event?.detail?.label ?? 'INTERACT';
+    prompt?.classList.remove('hidden');
+});
+window.addEventListener('camp-prompt-clear', () => {
+    const prompt = document.getElementById('foundry-hud-prompt');
+    prompt?.classList.add('hidden');
+    prompt?.classList.remove('visible');
+});
+
+// Every Act 2 milestone speaks through the brief-transmission panel using the
+// copy defined next to the ladder in src/act2.js.
+window.addEventListener('act2-milestone', (event) => {
+    const lines = ACT2_LINES[event?.detail?.key];
+    if (!lines?.length) return;
+    ensureMissionManagers();
+    void dialogueManager?.openBriefTransmission({
+        playerType: window.game?.playerType ?? getSelectedHeroType(),
+        lines: [...lines]
+    });
+});
+
+window.addEventListener('act2-console-dead', () => {
+    if (!isGameplayPhase()) return;
+    showBiomePrompt('CONSOLE DEAD — UPLINK SEVERED');
+    AudioManager.play('ui_error', { volume: 0.35, playbackRate: 0.6 });
+});
+
+// Boarding the vessel ends Act 2: queen sign-off, ACT III tease card, then
+// back to the (corrupted) title. Act 3 itself is future-sprint scope.
+window.addEventListener('act2-departed', () => {
+    void runAct2DepartureSequence();
+});
+
+function showActThreeTeaseCard() {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'act3-tease-overlay';
+        overlay.innerHTML = `
+            <div class="act3-tease-card">
+                <div class="act3-tease-kicker">THE VESSEL CLEARS THE ICE</div>
+                <div class="act3-tease-title">ACT III</div>
+                <div class="act3-tease-sub">IN TRANSIT — TO BE CONTINUED</div>
+            </div>`;
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('is-open'));
+        window.setTimeout(() => {
+            overlay.classList.add('is-closing');
+            window.setTimeout(() => {
+                overlay.remove();
+                resolve();
+            }, 700);
+        }, 4200);
+    });
+}
+
+async function runAct2DepartureSequence() {
+    ensureMissionManagers();
+    const game = window.game;
+    game?.setCinematicLock?.(true);
+    AudioManager.play('door_gears_spin', { volume: 0.5, playbackRate: 0.7 });
+    await dialogueManager?.openBriefTransmission({
+        playerType: game?.playerType ?? getSelectedHeroType(),
+        lines: [...ACT2_LINES.departed]
+    });
+    await playCutsceneVideo('act3-departure');
+    await showActThreeTeaseCard();
+    game?.setCinematicLock?.(false);
+    returnToMainMenuFromRun({ doorKey: 'lose' });
+}
+
+// After the reveal, Hunker Bunker stops pretending: the title screen shows the
+// game's true name. Applied on boot too so the corruption persists.
+function applyCorruptedTitlePresentation({ sting = false } = {}) {
+    if (!ARC_PRELUDE_ENABLED || !arcManager) return;
+    if (arcManager.getState().arcState !== 'hive_awakened_tease') return;
+    document.title = 'PREGALIEN | HIVE COMMAND';
+    for (const el of [document.querySelector('.splash-title'), document.querySelector('.title-small')]) {
+        if (!el) continue;
+        el.textContent = 'PREGALIEN';
+        el.classList.add('title-corrupted');
+    }
+    if (sting) {
+        AudioManager.play?.('ui_error', { volume: 0.42, playbackRate: 0.5 });
+        AudioManager.playProceduralBreathing?.({ volume: 0.05, duration: 3.2 });
+    }
+}
+
+applyCorruptedTitlePresentation();
 
 // ── Operator profile + portable save codes (no backend; doc 01.B.1) ──
 const callsignInput = document.getElementById('operator-callsign');
@@ -4277,10 +4932,13 @@ setupClickOutside('settings-popup', () => {
         AudioManager.setMix(state.settings.audioMix);
         setAudioMixerOpen(false);
         setSaveDataOpen(false);
+        setResetSaveConfirmOpen(false);
     }
 });
 
 setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
+
+setupClickOutside('reset-save-confirm-modal', () => setResetSaveConfirmOpen(false));
 
 setupClickOutside('confirm-modal', () => {
     const confirmModal = document.getElementById('confirm-modal');
@@ -4704,6 +5362,7 @@ charCards.forEach(card => {
         // Update Preview
         const type = card.getAttribute('data-type');
         if (heroData[type]) {
+            warmClassIntroMedia(type);
             triggerHeroPreviewSwap(type);
             updateHeroStats(type);
             setActiveAmmoCapacity(type, { clampExisting: true });
@@ -5110,6 +5769,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
     setActiveAmmoCapacity(initialType, { clampExisting: true });
     if (initialSelected && heroData[initialType]) {
+        warmClassIntroMedia(initialType);
         syncHeroPreview(initialType);
         updateHeroStats(initialType);
     }
@@ -5210,7 +5870,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     playerType: targetType,
                     bankManager,
                     dialogueManager,
-                    arcManager
+                    arcManager,
+                    act2Manager
                 });
                 window.game.nightVision = state.settings.nightVision;
             } catch (err) {

@@ -3,6 +3,9 @@ import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_
 import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
+import { CaveEntrance } from './caveEntrance.js';
+import { SurvivorCamp } from './camp.js';
+import { ACT2_CAMP_IDS, ACT2_CAMP_LABELS } from './act2.js';
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
@@ -72,6 +75,10 @@ const O2_SAFE_LIGHT_COLOR = 0xb9fbff;
 const O2_SAFE_FILL_OPACITY = 0.16;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
+// The Act-1 finale cave spawns well past the BIO-sector reactor site (z≈176)
+// so recovering the "final ship component" is a genuine expedition.
+const CAVE_DISCOVERY_MIN_DISTANCE = 205;
+const CAVE_DISCOVERY_MAX_DISTANCE = 245;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -311,6 +318,8 @@ const SCATTER_STRAY_RATIO = 0.1;
 const SCATTER_MIN_SEPARATION = 0.78;
 const SCATTER_CLUSTER_CENTER_MIN_DISTANCE = 4.8;
 const BUNKER_JUNK_TRIGGER_RADIUS = 1.35;
+const SNAIL_SHELL_COLLECT_RADIUS = 1.2;
+const SNAIL_SHELL_BOSS_VALUE = 15; // matches the old kill-time boss grant
 const BUNKER_JUNK_MIN_SEPARATION = 2.2;
 const BUNKER_JUNK_DROP_COUNT_MIN = 2;
 const BUNKER_JUNK_DROP_COUNT_MAX = 4;
@@ -553,7 +562,7 @@ function classifyChunkCells(grid, chunkSize) {
 }
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null, arcManager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -608,12 +617,21 @@ export class ThreeGame {
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
         this.globalSeedOffset = 0;
+        // Per-run entropy for one-off placements (foundry, cave). Rerolled on
+        // every run reset so discoveries land somewhere new each attempt; pinned
+        // to 0 for Daily Ops so all players share the same daily layout.
+        this.fixedRunEntropy = false;
+        this.runEntropy = (Math.random() * 0xffffffff) >>> 0;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this.maxChunkMountsPerFrame = 1;
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
+        // Corpses live outside scatterSprites: syncVisibleChunks rebuilds that
+        // array from chunk registries every frame, which silently dropped
+        // scene-attached corpses (no decay, no collection).
+        this.corpses = [];
         this.depletedGearPileKeys = new Set();
         this.transientEffects = [];
         this.activeRadarScans = [];
@@ -741,6 +759,20 @@ export class ThreeGame {
         // and opens the Fabrication Bay when reached (Beat 4).
         this.foundry = new FabricationFoundry(this.scene);
         this._foundryPromptActive = false;
+
+        // Act 1 finale: organic cave entrance holding the "final ship component"
+        // (actually the infection reveal — src/caveReveal.js). Revealed once the
+        // reactor goal completes; one-shot gated on the persisted arc state.
+        this.caveEntrance = new CaveEntrance(this.scene);
+        this._cavePromptActive = false;
+        this._caveAnomalySignaled = false;
+        this.cinematicLock = false;
+
+        // Act 2 (PregAlien loop): survivor camps + queen objective ladder.
+        this.act2 = ARC_PRELUDE_ENABLED ? act2Manager : null;
+        this.camps = [];
+        this._act2CampsReady = false;
+        this._campPromptLabel = null;
         this._terminalEvent = null;
         this._terminalEventResolvedIds = new Set();
         this._terminalEventIsMimic = false;   // forged terminal — punishes unverified trust
@@ -1171,7 +1203,14 @@ export class ThreeGame {
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
             lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
             pit_hole: this.loadScatterTexture('/pit_hole.png', textureLoader),
-            decal_scars: this.loadScatterTexture('/decal_scars.png', textureLoader)
+            decal_scars: this.loadScatterTexture('/decal_scars.png', textureLoader),
+            // Corpse art ships on flat black — key it out like the live snails.
+            cybersnail_dead: this.loadKeyedSpriteTexture('/cybersnail_dead.png', 14),
+            cryosnail_dead: this.loadKeyedSpriteTexture('/cryosnail_dead.png', 14),
+            sporesnail_dead: this.loadKeyedSpriteTexture('/sporesnail_dead.png', 14),
+            boss_cybersnail_dead: this.loadKeyedSpriteTexture('/boss_cybersnail_dead.png', 14),
+            boss_cryosnail_dead: this.loadKeyedSpriteTexture('/boss_cryosnail_dead.png', 14),
+            boss_sporesnail_dead: this.loadKeyedSpriteTexture('/boss_sporesnail_dead.png', 14)
         };
 
         // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
@@ -1386,6 +1425,54 @@ export class ThreeGame {
                 depthWrite: false,
                 depthTest: true,
                 fog: false
+            }),
+            cybersnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.cybersnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            cryosnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.cryosnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            sporesnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.sporesnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_cybersnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_cybersnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_cryosnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_cryosnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_sporesnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_sporesnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
             })
         };
         this.scatterPlaneMaterials = {
@@ -1586,18 +1673,57 @@ export class ThreeGame {
             reactorCompressor: reactorModuleMat
         };
 
+        // Initialize shipTextures dictionary for broken/healed visual progression
+        this.shipTextures = {
+            SCOUT: { broken: null, healed: null },
+            TANK: { broken: null, healed: null },
+            ENGINEER: { broken: null, healed: null }
+        };
+
         // Load textures using our high-fidelity chroma-key transparency shader to strip black backgrounds perfectly!
         this.loadKeyedSpriteTexture('/scout_ship.png', 15, (tex) => {
-            scoutShipMat.map = tex;
-            scoutShipMat.needsUpdate = true;
+            if (!scoutShipMat.map) {
+                scoutShipMat.map = tex;
+                scoutShipMat.needsUpdate = true;
+            }
         });
+        this.loadKeyedSpriteTexture('/scout_ship_broken.png', 15, (tex) => {
+            this.shipTextures.SCOUT.broken = tex;
+            this.updateShipVisualState();
+        });
+        this.loadKeyedSpriteTexture('/scout_ship_healed.png', 15, (tex) => {
+            this.shipTextures.SCOUT.healed = tex;
+            this.updateShipVisualState();
+        });
+
         this.loadKeyedSpriteTexture('/tank_ship.png', 15, (tex) => {
-            tankShipMat.map = tex;
-            tankShipMat.needsUpdate = true;
+            if (!tankShipMat.map) {
+                tankShipMat.map = tex;
+                tankShipMat.needsUpdate = true;
+            }
         });
+        this.loadKeyedSpriteTexture('/tank_ship_broken.png', 15, (tex) => {
+            this.shipTextures.TANK.broken = tex;
+            this.updateShipVisualState();
+        });
+        this.loadKeyedSpriteTexture('/tank_ship_healed.png', 15, (tex) => {
+            this.shipTextures.TANK.healed = tex;
+            this.updateShipVisualState();
+        });
+
         this.loadKeyedSpriteTexture('/engineer_ship.png', 15, (tex) => {
-            engineerShipMat.map = tex;
-            engineerShipMat.needsUpdate = true;
+            if (!engineerShipMat.map) {
+                engineerShipMat.map = tex;
+                engineerShipMat.needsUpdate = true;
+            }
+        });
+        this.loadKeyedSpriteTexture('/engineer_ship_broken.png', 15, (tex) => {
+            this.shipTextures.ENGINEER.broken = tex;
+            this.updateShipVisualState();
+        });
+        this.loadKeyedSpriteTexture('/engineer_ship_healed.png', 15, (tex) => {
+            this.shipTextures.ENGINEER.healed = tex;
+            this.updateShipVisualState();
         });
         this.loadKeyedSpriteTexture('/console.png', 15, (tex) => {
             consoleMat.map = tex;
@@ -2193,6 +2319,8 @@ export class ThreeGame {
                 this.interactWithLoreTerminal();
                 this.interactWithFoundry();
                 this.interactWithBlackBox();
+                this.interactWithCaveEntrance();
+                this.interactWithAct2Camp();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
@@ -2216,6 +2344,8 @@ export class ThreeGame {
             this.interactWithO2Generator();
             this.interactWithFoundry();
             this.interactWithBlackBox();
+            this.interactWithCaveEntrance();
+            this.interactWithAct2Camp();
         };
 
         // Pointer/tap state for canvas input.
@@ -2293,15 +2423,24 @@ export class ThreeGame {
 
                 this.closeConsoleModal();
                 this.setInputEnabled(false);
-                await this.dialogueManager?.openO2MilestoneDialogue({
-                    playerType: this.playerType,
-                    goalKey
-                });
-                this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
-                window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                    detail: { type: bossType, goalKey }
-                }));
-                this.setInputEnabled(true);
+                try {
+                    await this.dialogueManager?.openO2MilestoneDialogue({
+                        playerType: this.playerType,
+                        goalKey
+                    });
+                    this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
+                    window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+                        detail: { type: bossType, goalKey }
+                    }));
+                } finally {
+                    this.setInputEnabled(true);
+                }
+
+                // Act 1 finale: completing the reactor (last console build)
+                // surfaces the distant "final ship component" cave signal.
+                if (goalKey === 'reactorCompressor') {
+                    this.revealCaveEntrance();
+                }
             };
             window.addEventListener('goal-unlocked', this._onGoalUnlocked);
         }
@@ -2474,6 +2613,7 @@ export class ThreeGame {
     }
 
     setInputEnabled(enabled = true) {
+        if (enabled && this.cinematicLock) return; // cinematic owns input until unlocked
         this.inputEnabled = Boolean(enabled);
 
         if (this.inputEnabled) {
@@ -3249,6 +3389,7 @@ export class ThreeGame {
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
+        this.updateCorpses(delta);
         this.updateBuildSiteBeacon(now);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
@@ -3259,6 +3400,8 @@ export class ThreeGame {
         this.baseLights?.update(delta);
         this.foundry?.update(delta);
         this.updateFoundryPrompt();
+        this.updateCaveEntrance(delta);
+        this.updateAct2(delta);
         this.updateBlackBoxMarker(delta);
         this.updateRunModifierEffects(delta);
         this.updateBunkerDirector(delta);
@@ -3346,6 +3489,13 @@ export class ThreeGame {
     // a fresh player always knows the next step from the HUD alone.
     getLoopStep() {
         if (!this.player || this.isPlayerDead) return null;
+
+        // Act 2 owns the loop HUD outright — the human mission loop is over.
+        if (this.isAct2Active()) {
+            const objective = this.getAct2Objective();
+            return objective ? { key: `act2-${objective.key}`, label: objective.label } : null;
+        }
+
         const mission = this.missionState;
         if (mission?.status === 'extracted') return { key: 'done', label: 'EXTRACTION COMPLETE' };
         if (mission?.status === 'elevator_down') return { key: 'elevator', label: 'SURVIVE ELEVATOR ARRIVAL' };
@@ -3363,6 +3513,14 @@ export class ThreeGame {
         const inventory = this.getSessionInventory();
         if ((inventory.total ?? 0) > 0 && !o2?.isOnline) return { key: 'bank', label: 'BANK SALVAGE' };
 
+        // Act 1 finale: the distant cave outranks the rest of the loop.
+        if (this.caveEntrance?.isRevealed && !this.isCaveRevealDone()) {
+            const atCave = this.caveEntrance.isWithinInteractRange(this.player.position.x, this.player.position.z);
+            return atCave
+                ? { key: 'cave', label: 'RECOVER FINAL COMPONENT' }
+                : { key: 'cave', label: 'FOLLOW FINAL COMPONENT SIGNAL' };
+        }
+
         const foundryRevealed = this.foundry?.isRevealed;
         if (foundryRevealed) {
             const atFoundry = this.foundry.isWithinInteractRange(
@@ -3370,14 +3528,14 @@ export class ThreeGame {
                 this.player.position.z
             );
             const activated = this.bank?.isFoundryActivated?.() ?? false;
-            if (activated) {
+            if (!activated) {
                 return atFoundry
-                    ? { key: 'fabricate', label: 'FABRICATE' }
+                    ? { key: 'activate-fab', label: 'ACTIVATE FAB BAY' }
                     : { key: 'foundry', label: 'FOLLOW FOUNDRY SIGNAL' };
             }
-            return atFoundry
-                ? { key: 'activate-fab', label: 'ACTIVATE FAB BAY' }
-                : { key: 'foundry', label: 'FOLLOW FOUNDRY SIGNAL' };
+            if (atFoundry) return { key: 'fabricate', label: 'FABRICATE' };
+            // Activated and away from it: fall through so the loop HUD keeps
+            // pointing at the actual next objective instead of the old foundry.
         }
 
         if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
@@ -3878,6 +4036,10 @@ export class ThreeGame {
     interactWithConsole() {
         if (!this.isGameplayInputActive()) return;
         if (!this.activeInteractiveConsole) return;
+        if (this.isAct2Active()) {
+            this.handleAct2ConsoleInteract();
+            return;
+        }
         this.openConsoleModal(this.activeInteractiveConsole);
     }
 
@@ -4487,6 +4649,26 @@ export class ThreeGame {
         if (this.goalModuleMaterials?.reactorCompressor) {
             this.goalModuleMaterials.reactorCompressor.opacity = reactorOpacity;
             this.goalModuleMaterials.reactorCompressor.needsUpdate = true;
+        }
+        this.updateShipVisualState();
+    }
+
+    updateShipVisualState() {
+        if (!this.crashedShips || !this.shipTextures) return;
+
+        const bankState = this.bank.getState();
+        const activeGoal = this.getActiveBaseGoal(bankState);
+        const isFullyHealed = activeGoal === null;
+
+        for (const ship of this.crashedShips) {
+            const textures = this.shipTextures[ship.type];
+            if (textures) {
+                const tex = isFullyHealed ? textures.healed : textures.broken;
+                if (tex && ship.material.map !== tex) {
+                    ship.material.map = tex;
+                    ship.material.needsUpdate = true;
+                }
+            }
         }
     }
 
@@ -5560,29 +5742,34 @@ export class ThreeGame {
     }
 
     async triggerO2ClassDialogue(bossType) {
-        if (this.dialogueManager) {
-            await this.dialogueManager.openO2MilestoneDialogue({ playerType: this.playerType });
+        try {
+            if (this.dialogueManager) {
+                await this.dialogueManager.openO2MilestoneDialogue({ playerType: this.playerType });
+            }
+
+            // Post-dialogue actions:
+            // 1. Send the boss
+            this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
+
+            // 2. Play warning alert overlay
+            window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+                detail: { type: bossType, goalKey: 'o2Bubble' }
+            }));
+        } finally {
+            // Input must come back even if the dialogue or boss spawn throws —
+            // otherwise the player is stranded with no visible overlay.
+            this.setInputEnabled(true);
         }
-
-        // Post-dialogue actions:
-        // 1. Send the boss
-        this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
-
-        // 2. Play warning alert overlay
-        window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-            detail: { type: bossType, goalKey: 'o2Bubble' }
-        }));
-
-        // 3. Re-enable input
-        this.setInputEnabled(true);
     }
 
     chooseFoundryDiscoveryPosition() {
         const anchor = this.getBiomeAnchorPosition();
-        const random = this.createSeededRandom(this.hashTile(
+        // Mix in per-run entropy: the anchor hash alone is constant for a given
+        // hero, which made the foundry spawn in the same spot every single run.
+        const random = this.createSeededRandom((this.hashTile(
             Math.round(anchor.x),
             Math.round(anchor.z)
-        ));
+        ) ^ this.runEntropy) >>> 0);
         const preferredAngles = [Math.PI * 0.15, Math.PI * 0.85, Math.PI * 1.35, Math.PI * 1.75];
         for (let attempt = 0; attempt < 96; attempt += 1) {
             const ringT = random();
@@ -5639,8 +5826,331 @@ export class ThreeGame {
     interactWithFoundry() {
         if (!this.isGameplayInputActive() || !this.player || !this.foundry?.isRevealed) return false;
         if (!this.foundry.isWithinInteractRange(this.player.position.x, this.player.position.z)) return false;
+        // Act 2 hijacks the foundry: in the dish phase interacting grows the
+        // signal dish instead of opening the fabrication bay.
+        if (this.isAct2Active() && this.act2.getPhase() === 'dish') {
+            this.act2.buildDish();
+            this.triggerCameraShake?.(0.3, 0.7);
+            window.AudioManager?.play?.('ui_upgrade_weapon', { volume: 0.55, playbackRate: 0.7 });
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'dishBuilt' } }));
+            return true;
+        }
         window.dispatchEvent(new CustomEvent('open-fabrication-bay'));
         return true;
+    }
+
+    // ── Act 1 finale: the cave holding the "final ship component" ──────────
+
+    // True once the infection reveal has played (persisted arc state) — the
+    // cave then stays dormant so the sequence can never replay.
+    isCaveRevealDone() {
+        const state = this.arcManager?.getState?.()?.arcState;
+        return state === 'infected_blackout' || state === 'hive_awakened_tease';
+    }
+
+    chooseCaveEntrancePosition() {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(anchor.x) + 101,
+            Math.round(anchor.z) + 47
+        ) ^ this.runEntropy) >>> 0);
+        // Bias outward (+z), the same direction the build-site ladder pushes.
+        const outwardAngles = [Math.PI * 0.5, Math.PI * 0.36, Math.PI * 0.64, Math.PI * 0.5];
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const dist = THREE.MathUtils.lerp(CAVE_DISCOVERY_MIN_DISTANCE, CAVE_DISCOVERY_MAX_DISTANCE, random());
+            const angle = outwardAngles[attempt % outwardAngles.length] + (random() - 0.5) * Math.PI * 0.4;
+            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
+            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+        return { x: Math.round(anchor.x), z: Math.round(anchor.z + CAVE_DISCOVERY_MIN_DISTANCE) };
+    }
+
+    revealCaveEntrance({ instant = false } = {}) {
+        if (!ARC_PRELUDE_ENABLED || !this.arcManager || !this.caveEntrance) return;
+        if (this.isCaveRevealDone() || this.caveEntrance.isRevealed) return;
+        const site = this.chooseCaveEntrancePosition();
+        if (instant) this.caveEntrance.revealInstant(site.x, site.z);
+        else this.caveEntrance.reveal(site.x, site.z);
+        window.dispatchEvent(new CustomEvent('cave-entrance-revealed', {
+            detail: {
+                x: site.x,
+                z: site.z,
+                distance: this.player ? Math.round(Math.hypot(this.player.position.x - site.x, this.player.position.z - site.z)) : null,
+                instant
+            }
+        }));
+    }
+
+    updateCaveEntrance(delta) {
+        if (!this.caveEntrance?.isRevealed) return;
+        this.caveEntrance.update(delta);
+        if (!this.player) return;
+
+        // First close approach marks the "organic anomaly" arc signal (one-shot).
+        if (!this._caveAnomalySignaled) {
+            const dist = this.caveEntrance.distanceTo(this.player.position.x, this.player.position.z);
+            if (dist <= 22) {
+                this._caveAnomalySignaled = true;
+                this.arcManager?.recordSignal?.({ sawOrganicAnomaly: true });
+                this.arcManager?.evaluate?.();
+            }
+        }
+
+        const promptEligible = this.isGameplayInputActive() && !this.isPlayerDead && !this.isCaveRevealDone();
+        const inRange = promptEligible
+            && this.caveEntrance.isWithinInteractRange(this.player.position.x, this.player.position.z);
+        if (inRange && !this._cavePromptActive) {
+            this._cavePromptActive = true;
+            window.dispatchEvent(new CustomEvent('cave-prompt-nearby'));
+        } else if (!inRange && this._cavePromptActive) {
+            this._cavePromptActive = false;
+            window.dispatchEvent(new CustomEvent('cave-prompt-clear'));
+        }
+    }
+
+    interactWithCaveEntrance() {
+        if (!this.isGameplayInputActive() || !this.player || !this.caveEntrance?.isRevealed) return false;
+        if (this.isCaveRevealDone()) return false;
+        if (!this.caveEntrance.isWithinInteractRange(this.player.position.x, this.player.position.z)) return false;
+        window.dispatchEvent(new CustomEvent('cave-entrance-interact'));
+        return true;
+    }
+
+    // ── Act 2: the PregAlien loop (src/act2.js drives the ladder) ──────────
+
+    isAct2Active() {
+        return Boolean(this.act2) && this.act2.getPhase() !== 'dormant';
+    }
+
+    // Per-frame Act 2 upkeep: spawn camps once the dish has swept the sector,
+    // keep camp visuals/prompts fresh, and make sure the foundry exists for the
+    // dish objective (Act 2 starts from a completed rebuild save).
+    updateAct2(delta) {
+        if (!this.isAct2Active()) return;
+        const phase = this.act2.getPhase();
+        if (phase === 'dish' && !this.foundry?.isRevealed) {
+            this.revealFoundry({ instant: true });
+        }
+        if (phase !== 'gestation' && phase !== 'dish') {
+            this.ensureAct2Camps();
+        }
+        for (const camp of this.camps) camp.update(delta);
+        this.updateCampPrompt(phase);
+    }
+
+    chooseCampPosition(index) {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(anchor.x) + 211 + index * 13,
+            Math.round(anchor.z) + 89 - index * 7
+        ) ^ this.runEntropy) >>> 0);
+        // Three camps fanned around the base, each a real trek apart.
+        const baseAngle = [Math.PI * 0.12, Math.PI * 0.78, Math.PI * 1.42][index % 3];
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const dist = THREE.MathUtils.lerp(70, 120, random());
+            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
+            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
+            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+        return {
+            x: Math.round(anchor.x + Math.cos(baseAngle) * 70),
+            z: Math.round(anchor.z + Math.sin(baseAngle) * 70)
+        };
+    }
+
+    ensureAct2Camps() {
+        if (this._act2CampsReady || !this.act2) return;
+        const state = this.act2.getState();
+        this.camps = state.camps.map((record, index) => {
+            const camp = new SurvivorCamp(this.scene, {
+                id: record.id,
+                label: ACT2_CAMP_LABELS[record.id] ?? 'CAMP'
+            });
+            let { x, z } = record;
+            if (!Number.isFinite(x) || !Number.isFinite(z)) {
+                const site = this.chooseCampPosition(index);
+                x = site.x;
+                z = site.z;
+                this.act2.setCampPosition(record.id, x, z);
+            }
+            camp.reveal(x, z);
+            camp.setAided(record.aided);
+            if (record.destroyed) camp.setDestroyed(true);
+            return camp;
+        });
+        this._act2CampsReady = true;
+    }
+
+    resetAct2World() {
+        for (const camp of this.camps) {
+            if (camp.group) this.scene.remove(camp.group);
+        }
+        this.camps = [];
+        this._act2CampsReady = false;
+        this._campPromptLabel = null;
+    }
+
+    // The camp interaction available where the player is standing, or null.
+    getActionableCampAt(x, z, phase = this.act2?.getPhase()) {
+        for (const camp of this.camps) {
+            if (!camp.isWithinInteractRange(x, z)) continue;
+            if (phase === 'camps_help' && !camp.aided) return { camp, action: 'aid', label: 'AID THE CAMP' };
+            if (phase === 'camps_betray' && camp.aided && !camp.destroyed) return { camp, action: 'cull', label: 'CULL THE CAMP' };
+            if (phase === 'launch_ready' && camp.id === ACT2_CAMP_IDS[0]) return { camp, action: 'board', label: 'BOARD THE VESSEL' };
+        }
+        return null;
+    }
+
+    updateCampPrompt(phase) {
+        const eligible = this.isGameplayInputActive() && this.player && !this.isPlayerDead;
+        const actionable = eligible
+            ? this.getActionableCampAt(this.player.position.x, this.player.position.z, phase)
+            : null;
+        const label = actionable?.label ?? null;
+        if (label === this._campPromptLabel) return;
+        this._campPromptLabel = label;
+        if (label) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+        } else {
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
+    }
+
+    interactWithAct2Camp() {
+        if (!this.isGameplayInputActive() || !this.player || !this.isAct2Active()) return false;
+        const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
+        if (!actionable) return false;
+        const { camp, action } = actionable;
+
+        if (action === 'aid') {
+            camp.setAided(true);
+            const result = this.act2.aidCamp(camp.id);
+            window.AudioManager?.play?.('class_lock', { volume: 0.55 });
+            window.dispatchEvent(new CustomEvent('act2-milestone', {
+                detail: {
+                    key: result.to === 'camps_betray' ? 'allAided' : 'campAided',
+                    campId: camp.id,
+                    campLabel: camp.label
+                }
+            }));
+            return true;
+        }
+
+        if (action === 'cull') {
+            camp.setDestroyed(true);
+            const result = this.act2.destroyCamp(camp.id);
+            this.triggerCameraShake?.(0.4, 0.6);
+            window.AudioManager?.play?.('door_slam_vertical', { volume: 0.5, playbackRate: 0.72 });
+            window.AudioManager?.play?.('ui_error', { volume: 0.4, playbackRate: 0.55 });
+            window.dispatchEvent(new CustomEvent('act2-milestone', {
+                detail: {
+                    key: result.to === 'launch_ready' ? 'allCulled' : 'campCulled',
+                    campId: camp.id,
+                    campLabel: camp.label
+                }
+            }));
+            return true;
+        }
+
+        if (action === 'board') {
+            this.act2.depart();
+            window.dispatchEvent(new CustomEvent('act2-departed', {
+                detail: { runStats: this.getRunStats?.() ?? {} }
+            }));
+            return true;
+        }
+
+        return false;
+    }
+
+    // Act 2 replaces the console terminal: severing the uplink is the first
+    // objective; afterwards the console is a dead panel.
+    handleAct2ConsoleInteract() {
+        const phase = this.act2.getPhase();
+        if (phase === 'gestation') {
+            this.triggerCameraShake?.(0.32, 0.55);
+            window.AudioManager?.play?.('ui_error', { volume: 0.5, playbackRate: 0.6 });
+            window.AudioManager?.play?.('door_slam_vertical', { volume: 0.42, playbackRate: 0.8 });
+            this.act2.silenceUplink();
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'uplinkSilenced' } }));
+            return;
+        }
+        window.dispatchEvent(new CustomEvent('act2-console-dead'));
+    }
+
+    // Current Act 2 objective with a world position for compass + loop HUD.
+    getAct2Objective() {
+        if (!this.isAct2Active()) return null;
+        const phase = this.act2.getPhase();
+
+        if (phase === 'gestation') {
+            const ship = this.getActiveShip();
+            if (!ship) return null;
+            return {
+                key: 'uplink',
+                label: 'SEVER THE UPLINK',
+                x: ship.tileX + (ship.consoleOffset?.x ?? 0),
+                z: ship.tileZ + (ship.consoleOffset?.z ?? 0)
+            };
+        }
+
+        if (phase === 'dish') {
+            const pos = this.foundry?.getPosition();
+            return pos ? { key: 'dish', label: 'GROW THE SIGNAL DISH', x: pos.x, z: pos.z } : null;
+        }
+
+        if (phase === 'camps_help' || phase === 'camps_betray') {
+            const wanted = phase === 'camps_help'
+                ? (camp) => !camp.aided
+                : (camp) => camp.aided && !camp.destroyed;
+            let best = null;
+            let bestDistance = Infinity;
+            for (const camp of this.camps) {
+                if (!wanted(camp)) continue;
+                const distance = camp.distanceTo(this.player?.position.x ?? 0, this.player?.position.z ?? 0);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    best = camp;
+                }
+            }
+            if (!best) return null;
+            return {
+                key: phase,
+                label: phase === 'camps_help' ? `AID ${best.label}` : `CULL ${best.label}`,
+                x: best.pos.x,
+                z: best.pos.z
+            };
+        }
+
+        if (phase === 'launch_ready') {
+            const camp = this.camps.find((c) => c.id === ACT2_CAMP_IDS[0]);
+            const pos = camp?.getPosition();
+            return pos ? { key: 'launch', label: 'BOARD THE VESSEL', x: pos.x, z: pos.z } : null;
+        }
+
+        return null;
+    }
+
+    // Hard control lock for scripted sequences (cave reveal): freezes input and
+    // pauses vitals drain so the player can't die mid-cutscene. While locked,
+    // stray setInputEnabled(true) calls (e.g. a brief transmission closing) are
+    // ignored — only unlocking hands control back.
+    setCinematicLock(locked = true) {
+        const next = Boolean(locked);
+        if (next === this.cinematicLock) return;
+        if (next) {
+            this.cinematicLock = true;
+            this.setInputEnabled(false);
+        } else {
+            this.cinematicLock = false;
+            this.setInputEnabled(true);
+        }
     }
 
     getActiveO2GeneratorDistance() {
@@ -5767,6 +6277,11 @@ export class ThreeGame {
         // Foundry on with no theatrics. The animated versions only play on the live
         // first repair, which fires via the o2-generator-upgraded event before this.
         this.revealFoundry({ instant: true });
+        // Restoring an already-completed rebuild ladder also restores the cave
+        // signal (no theatrics), unless the reveal has already played.
+        if (this.hasUpgrade('reactorCompressor')) {
+            this.revealCaveEntrance({ instant: true });
+        }
         if (this.baseLights) {
             const ship = this.getActiveShip();
             if (ship && Number.isFinite(ship.tileX) && Number.isFinite(ship.tileZ)) {
@@ -5951,10 +6466,30 @@ export class ThreeGame {
             };
         }
 
+        // Act 1 finale: once the cave is revealed, the "final component" signal
+        // outranks everything else — it is the run's closing objective.
+        if (this.caveEntrance?.isRevealed && !this.isCaveRevealDone()) {
+            const cp = this.caveEntrance.getPosition();
+            const cdx = cp.x - this.player.position.x;
+            const cdz = cp.z - this.player.position.z;
+            const cdist = Math.hypot(cdx, cdz);
+            if (cdist > 2.0) {
+                return {
+                    active: true,
+                    mode: 'cave',
+                    label: 'FINAL COMPONENT',
+                    angle: this.planarAngleTo(cdx, cdz, cdist),
+                    distance: cdist
+                };
+            }
+        }
+
         // Beat 4 objective: once the Foundry is powered, the compass points to it
-        // until the player reaches it — regardless of the radar upgrade, since
-        // this is a story objective, not a scanner perk.
-        if (this.foundry?.isRevealed) {
+        // until the player reaches and activates it — regardless of the radar
+        // upgrade, since this is a story objective, not a scanner perk. After
+        // activation the compass falls through to the build-site ladder so the
+        // run keeps a single clear "next step".
+        if (this.foundry?.isRevealed && !(this.bank?.isFoundryActivated?.())) {
             const fp = this.foundry.getPosition();
             const fdx = fp.x - this.player.position.x;
             const fdz = fp.z - this.player.position.z;
@@ -6049,6 +6584,7 @@ export class ThreeGame {
     takeDamage(amount = 1, reason = 'hazard') {
         if (this.isPlayerDead) return;
         if (this.godMode) return;
+        if (this.cinematicLock) return; // untouchable during scripted sequences
         if (this._abilityImmune) return;
         if (this.missionState?.status === 'inactive') return;
         const previousHp = this.playerVitals.hp;
@@ -6190,6 +6726,13 @@ export class ThreeGame {
             this._terminalEventResolvedIds.clear();
             this.foundry?.reset?.();
             this._foundryPromptActive = false;
+            this.caveEntrance?.reset?.();
+            this._cavePromptActive = false;
+            this._caveAnomalySignaled = false;
+            this.resetAct2World();
+            this.clearCorpses();
+            this.cinematicLock = false;
+            this.runEntropy = this.fixedRunEntropy ? 0 : (Math.random() * 0xffffffff) >>> 0;
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
             this._initClassAbility();
@@ -6653,6 +7196,7 @@ export class ThreeGame {
 
     updateVitals(delta) {
         if (!this.player || this.isPlayerDead) return;
+        if (this.cinematicLock) return; // no O2 drain during scripted sequences
         if (this.godMode) {
             this.playerVitals.o2 = 100;
             this.playerVitals.o2HealthTimer = 0;
@@ -10895,7 +11439,8 @@ export class ThreeGame {
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
         this.arcManager?.recordSignal?.({ snailsKilled: 1 });
         this.arcManager?.evaluate?.();
-        this.bank?.addShells?.(isBoss ? 15 : 1);
+        // Shells are no longer granted on the kill itself — the player has to
+        // walk over the corpse to claim them (collectSnailShell).
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
@@ -10937,6 +11482,7 @@ export class ThreeGame {
             window.AudioManager?.play('enemy_death_crawler', { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 });
         } else {
             window.AudioManager?.play('enemy_death_snail', { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 });
+            this.spawnEnemyCorpse(sprite);
         }
         window.dispatchEvent(new CustomEvent('enemy-killed', {
             detail: {
@@ -10945,6 +11491,121 @@ export class ThreeGame {
                 isBoss,
                 isMilestone: Boolean(sprite.userData.isMilestone),
                 sourceGoalKey: sprite.userData.sourceGoalKey ?? null
+            }
+        }));
+    }
+
+    spawnEnemyCorpse(enemySprite) {
+        if (!enemySprite) return;
+        const type = enemySprite.userData.type;
+        const deadType = `${type}_dead`;
+        const deadMaterial = this.scatterMaterials[deadType];
+        if (!deadMaterial) return;
+
+        // Clone so per-corpse opacity fades don't bleed into every other
+        // corpse sharing the material (the map itself stays shared).
+        const corpse = new THREE.Sprite(deadMaterial.clone());
+        corpse.position.copy(enemySprite.position);
+        corpse.position.y = 0.05; // Slightly above floor
+
+        const baseScaleX = Math.abs(enemySprite.scale.x);
+        const baseScaleY = Math.abs(enemySprite.scale.y);
+        const facingSign = enemySprite.scale.x < 0 ? -1 : 1;
+        corpse.scale.set(baseScaleX * facingSign, baseScaleY, 1);
+        corpse.center.set(0.5, 0.1); // Same pivot alignment as snails
+
+        corpse.userData = {
+            type: deadType,
+            baseScaleX,
+            baseScaleY,
+            baseOpacity: 0.85,
+            isCorpse: true,
+            decayTimer: 0,
+            isBoss: Boolean(enemySprite.userData.isBoss),
+            shellValue: enemySprite.userData.isBoss ? SNAIL_SHELL_BOSS_VALUE : 1,
+            collected: false
+        };
+
+        corpse.renderOrder = 3; // Render below active enemies
+        this.scene.add(corpse);
+        this.corpses.push(corpse);
+    }
+
+    // Per-frame corpse upkeep: touch-to-collect, then fade out (fast pop when
+    // collected, slow decay otherwise).
+    updateCorpses(delta) {
+        if (!this.corpses?.length) return;
+        const decayStart = 14.0;
+        const decayDuration = 6.0;
+        const survivors = [];
+        for (const corpse of this.corpses) {
+            corpse.userData.decayTimer += delta;
+
+            if (!corpse.userData.collected && this.player && !this.isPlayerDead
+                && Math.hypot(
+                    this.player.position.x - corpse.position.x,
+                    this.player.position.z - corpse.position.z
+                ) <= SNAIL_SHELL_COLLECT_RADIUS) {
+                this.collectSnailShell(corpse);
+            }
+
+            let done = false;
+            if (corpse.userData.collected) {
+                corpse.userData.collectTimer += delta;
+                const fadeT = Math.min(corpse.userData.collectTimer / 0.38, 1);
+                const pop = 1 + Math.sin(Math.min(fadeT * Math.PI, Math.PI)) * 0.16;
+                const facingSign = corpse.scale.x < 0 ? -1 : 1;
+                corpse.scale.set(
+                    corpse.userData.baseScaleX * facingSign * pop,
+                    corpse.userData.baseScaleY * pop,
+                    1
+                );
+                corpse.material.opacity = corpse.userData.baseOpacity * (1 - fadeT);
+                done = fadeT >= 1;
+            } else if (corpse.userData.decayTimer >= decayStart) {
+                const fadeT = Math.min((corpse.userData.decayTimer - decayStart) / decayDuration, 1);
+                corpse.material.opacity = corpse.userData.baseOpacity * (1 - fadeT);
+                done = fadeT >= 1;
+            }
+
+            if (done) {
+                corpse.parent?.remove(corpse);
+                corpse.material?.dispose?.();
+                continue;
+            }
+            const fogVisibility = this.getFogOfWarVisibility(corpse.position.x, corpse.position.z);
+            this.applyFogOfWarOpacity(corpse, fogVisibility, { captureCurrent: true });
+            survivors.push(corpse);
+        }
+        this.corpses = survivors;
+    }
+
+    clearCorpses() {
+        for (const corpse of this.corpses ?? []) {
+            corpse.parent?.remove(corpse);
+            corpse.material?.dispose?.();
+        }
+        this.corpses = [];
+    }
+
+    // Shells bank instantly (no extraction risk) — they are the body-count
+    // currency, so losing them on death would double-punish melee classes.
+    collectSnailShell(corpse) {
+        if (!corpse || corpse.userData.collected) return;
+        corpse.userData.collected = true;
+        corpse.userData.collectTimer = 0;
+        const gained = corpse.userData.shellValue ?? 1;
+        this.bank?.addShells?.(gained);
+        window.AudioManager?.play?.('ui_click_confirm', {
+            volume: 0.5,
+            playbackRate: corpse.userData.isBoss ? 0.85 : 1.25
+        });
+        this.spawnGearPoofEffect(corpse.position.x, corpse.position.z, 'bunker_junk_rare');
+        window.dispatchEvent(new CustomEvent('shell-collected', {
+            detail: {
+                gained,
+                total: this.bank?.getShells?.() ?? 0,
+                isBoss: corpse.userData.isBoss === true
             }
         }));
     }
