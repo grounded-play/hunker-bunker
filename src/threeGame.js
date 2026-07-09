@@ -5,7 +5,15 @@ import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
 import { SurvivorCamp } from './camp.js';
-import { ACT2_CAMP_IDS, ACT2_CAMP_LABELS } from './act2.js';
+import {
+    ACT2_CAMP_LABELS,
+    ACT2_CAMP_MAX_LEVEL,
+    ACT2_MAX_BOND,
+    ACT2_RECRUIT_BOND_THRESHOLD,
+    campSupportCost,
+    getBoardingCampId as getAct2BoardingCampId,
+    getClassCampOrder
+} from './act2.js';
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
@@ -320,6 +328,10 @@ const SCATTER_CLUSTER_CENTER_MIN_DISTANCE = 4.8;
 const BUNKER_JUNK_TRIGGER_RADIUS = 1.35;
 const SNAIL_SHELL_COLLECT_RADIUS = 1.2;
 const SNAIL_SHELL_BOSS_VALUE = 15; // matches the old kill-time boss grant
+const CAMP_O2_HAVEN_RADIUS = 3.4;
+const CAMP_O2_HAVEN_RATE = 4.5; // O2 per second inside a supported camp
+const CAMP_SUPPORT_O2_REFILL = 40; // instant O2 on each support purchase
+const CAMP_FAVOR_BASE_COST = 8;
 const BUNKER_JUNK_MIN_SEPARATION = 2.2;
 const BUNKER_JUNK_DROP_COUNT_MIN = 2;
 const BUNKER_JUNK_DROP_COUNT_MAX = 4;
@@ -3402,6 +3414,7 @@ export class ThreeGame {
         this.updateFoundryPrompt();
         this.updateCaveEntrance(delta);
         this.updateAct2(delta);
+        this.updateCamps(delta);
         this.updateBlackBoxMarker(delta);
         this.updateRunModifierEffects(delta);
         this.updateBunkerDirector(delta);
@@ -5925,19 +5938,37 @@ export class ThreeGame {
         return Boolean(this.act2) && this.act2.getPhase() !== 'dormant';
     }
 
-    // Per-frame Act 2 upkeep: spawn camps once the dish has swept the sector,
-    // keep camp visuals/prompts fresh, and make sure the foundry exists for the
-    // dish objective (Act 2 starts from a completed rebuild save).
-    updateAct2(delta) {
+    // Per-frame Act 2 upkeep: make sure the foundry exists for the dish
+    // objective (Act 2 starts from a completed rebuild save). Camps are
+    // handled by updateCamps — they exist in both acts.
+    updateAct2(_delta) {
         if (!this.isAct2Active()) return;
         const phase = this.act2.getPhase();
         if (phase === 'dish' && !this.foundry?.isRevealed) {
             this.revealFoundry({ instant: true });
         }
-        if (phase !== 'gestation' && phase !== 'dish') {
-            this.ensureAct2Camps();
-        }
+    }
+
+    // Camps exist from Act 1 onward: friendly outposts the player can support
+    // with shells (and later must betray). Leveled camps double as O2 havens
+    // during the human prelude.
+    updateCamps(delta) {
+        if (!ARC_PRELUDE_ENABLED || !this.act2) return;
+        this.ensureAct2Camps();
+        const phase = this.act2.getPhase();
         for (const camp of this.camps) camp.update(delta);
+
+        // Act 1 perk: a supported camp tops up O2 while you stand in it.
+        if (phase === 'dormant' && this.player && !this.isPlayerDead && (this.playerVitals?.o2 ?? 100) < 100) {
+            for (const camp of this.camps) {
+                if (camp.level > 0 && !camp.destroyed
+                    && camp.distanceTo(this.player.position.x, this.player.position.z) <= CAMP_O2_HAVEN_RADIUS) {
+                    this.adjustOxygen(delta * CAMP_O2_HAVEN_RATE);
+                    break;
+                }
+            }
+        }
+
         this.updateCampPrompt(phase);
     }
 
@@ -5970,7 +6001,8 @@ export class ThreeGame {
         this.camps = state.camps.map((record, index) => {
             const camp = new SurvivorCamp(this.scene, {
                 id: record.id,
-                label: ACT2_CAMP_LABELS[record.id] ?? 'CAMP'
+                label: ACT2_CAMP_LABELS[record.id] ?? 'CAMP',
+                playerType: this.playerType
             });
             let { x, z } = record;
             if (!Number.isFinite(x) || !Number.isFinite(z)) {
@@ -5980,8 +6012,9 @@ export class ThreeGame {
                 this.act2.setCampPosition(record.id, x, z);
             }
             camp.reveal(x, z);
+            camp.setLevel(record.level);
             camp.setAided(record.aided);
-            if (record.destroyed) camp.setDestroyed(true);
+            camp.setStatus(record.status);
             return camp;
         });
         this._act2CampsReady = true;
@@ -5996,13 +6029,181 @@ export class ThreeGame {
         this._campPromptLabel = null;
     }
 
+    getCampRecord(id) {
+        return this.act2?.getState?.().camps.find((c) => c.id === id) ?? null;
+    }
+
+    getCampById(id) {
+        return this.camps.find((camp) => camp.id === id) ?? null;
+    }
+
+    getCampStoryOrder() {
+        return getClassCampOrder(this.playerType);
+    }
+
+    getBoardingCampId() {
+        return getAct2BoardingCampId(this.playerType);
+    }
+
+    getNextCampInStoryOrder(predicate = () => true) {
+        for (const entry of this.getCampStoryOrder()) {
+            const camp = this.getCampById(entry.id);
+            if (camp && predicate(camp, entry)) return camp;
+        }
+        return null;
+    }
+
+    syncCampVisualFromRecord(camp, record = this.getCampRecord(camp?.id)) {
+        if (!camp || !record) return;
+        camp.setLevel(record.level);
+        camp.setAided(record.aided);
+        camp.setStatus(record.status);
+    }
+
+    getCampFavorCost(record = {}) {
+        const bond = Math.max(0, Math.floor(Number(record.bond) || 0));
+        return CAMP_FAVOR_BASE_COST + bond * 3;
+    }
+
+    getCampFavorQuestId(record = {}) {
+        const next = Math.min(ACT2_MAX_BOND, Math.max(0, Math.floor(Number(record.bond) || 0)) + 1);
+        return `field_favor_${next}`;
+    }
+
+    buildCampChoiceOptions(camp) {
+        const record = this.getCampRecord(camp.id);
+        if (!record) return [];
+        const options = [];
+        const status = record.status ?? 'alive';
+        const recruitLocked = record.bond < ACT2_RECRUIT_BOND_THRESHOLD;
+        const recruitHint = `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD}. Current bond ${record.bond}.`;
+
+        if (camp.id === this.getBoardingCampId()) {
+            options.push({
+                action: 'board',
+                variant: 'queen',
+                label: 'BOARD WITH QUEEN',
+                desc: 'Launch now with the queen and eggs aboard. Unresolved camps become part of the compromise.'
+            });
+            options.push({
+                action: 'board',
+                variant: 'purge',
+                label: 'SEVER QUEEN + PURGE EGGS',
+                desc: 'Reject the hive before launch. Human recruits define whether this is rescue or ash.'
+            });
+            options.push({
+                action: 'board',
+                variant: 'bargain',
+                label: 'KILL QUEEN, KEEP EGGS',
+                desc: 'Save what passengers you can while carrying the brood in secret.'
+            });
+        }
+
+        if (status === 'alive') {
+            options.push({
+                action: 'steal',
+                label: 'STEAL STOCKPILE',
+                desc: 'Rob supplies and leave the camp hostile. They will not board.'
+            });
+            options.push({
+                action: 'cull',
+                label: camp.level > 0 && !camp._defenseSpawned ? 'BREACH AND CULL' : 'CULL THE CAMP',
+                desc: 'Fight any funded defenses, destroy the camp, and please the queen.'
+            });
+            options.push({
+                action: 'recruit',
+                label: recruitLocked ? 'RECRUIT HUMANS LOCKED' : 'RECRUIT HUMANS',
+                desc: recruitLocked ? recruitHint : 'Smuggle the survivors aboard as human passengers.',
+                disabled: recruitLocked
+            });
+            options.push({
+                action: 'turn',
+                label: recruitLocked ? 'TURN CAMP LOCKED' : 'TURN CAMP',
+                desc: recruitLocked ? recruitHint : 'Offer trusted survivors to the queen as compliant hybrids.',
+                disabled: recruitLocked
+            });
+        } else if (status === 'robbed') {
+            options.push({
+                action: 'cull',
+                label: camp.level > 0 && !camp._defenseSpawned ? 'BREACH HOSTILE CAMP' : 'CULL HOSTILE CAMP',
+                desc: 'The camp already hates you. Finish it for queen obedience and salvage.'
+            });
+        } else {
+            options.push({
+                action: 'noop',
+                label: `CAMP ${status.toUpperCase()}`,
+                desc: 'This camp path is already resolved.',
+                disabled: true
+            });
+        }
+
+        return options;
+    }
+
+    openCampChoice(camp) {
+        const record = this.getCampRecord(camp.id);
+        if (!record) return false;
+        window.dispatchEvent(new CustomEvent('camp-choice-open', {
+            detail: {
+                campId: camp.id,
+                campLabel: camp.label,
+                leaderName: camp.leaderName,
+                leaderClass: camp.leaderClass,
+                leaderTitle: camp.leaderTitle,
+                leaderCallsign: camp.leaderCallsign,
+                leaderIsBoss: camp.leaderIsBoss,
+                storyOrder: camp.campOrder,
+                phase: this.act2.getPhase(),
+                campState: record,
+                endingVector: this.act2.getEndingVector(),
+                options: this.buildCampChoiceOptions(camp)
+            }
+        }));
+        return true;
+    }
+
     // The camp interaction available where the player is standing, or null.
     getActionableCampAt(x, z, phase = this.act2?.getPhase()) {
         for (const camp of this.camps) {
             if (!camp.isWithinInteractRange(x, z)) continue;
+            const record = this.getCampRecord(camp.id);
+            const status = record?.status ?? camp.status ?? 'alive';
+            if (phase === 'dormant' && status === 'alive' && camp.level < ACT2_CAMP_MAX_LEVEL) {
+                return {
+                    camp,
+                    action: 'support',
+                    label: `SUPPORT CAMP — ${campSupportCost(camp.level)} SHELLS`
+                };
+            }
+            if (phase === 'dormant' && status === 'alive' && (record?.bond ?? 0) < ACT2_MAX_BOND) {
+                return {
+                    camp,
+                    action: 'bond',
+                    label: `RUN CAMP FAVOR — ${this.getCampFavorCost(record)} SHELLS`
+                };
+            }
             if (phase === 'camps_help' && !camp.aided) return { camp, action: 'aid', label: 'AID THE CAMP' };
-            if (phase === 'camps_betray' && camp.aided && !camp.destroyed) return { camp, action: 'cull', label: 'CULL THE CAMP' };
-            if (phase === 'launch_ready' && camp.id === ACT2_CAMP_IDS[0]) return { camp, action: 'board', label: 'BOARD THE VESSEL' };
+            if (phase === 'camps_betray' && camp.aided && !camp.destroyed) {
+                // Supported camps fight back: breach, clear the defenders, then cull.
+                if (camp.level > 0 && !camp._defenseSpawned) {
+                    return { camp, action: 'cull', label: 'BREACH THE CAMP' };
+                }
+                if (this.campDefendersAlive(camp.id)) {
+                    return { camp, action: 'defense-active', label: 'CLEAR THE DEFENDERS' };
+                }
+                return { camp, action: 'cull', label: 'CULL THE CAMP' };
+            }
+            if (phase === 'launch_ready') {
+                const canBoardHere = camp.id === this.getBoardingCampId();
+                const needsDecision = status === 'alive' || status === 'robbed';
+                if (canBoardHere || needsDecision) {
+                    return {
+                        camp,
+                        action: 'choice',
+                        label: canBoardHere ? 'VESSEL / CAMP DECISION' : 'CAMP DECISION'
+                    };
+                }
+            }
         }
         return null;
     }
@@ -6023,18 +6224,74 @@ export class ThreeGame {
     }
 
     interactWithAct2Camp() {
-        if (!this.isGameplayInputActive() || !this.player || !this.isAct2Active()) return false;
+        if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
 
+        // Act 1: invest shells in the camp. Pays off now (O2 haven) and pays
+        // out later (harder, richer cull in Act 2).
+        if (action === 'support') {
+            const cost = campSupportCost(camp.level);
+            if (!this.bank?.canAffordShells?.(cost)) {
+                window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+                window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                    detail: { campId: camp.id, campLabel: camp.label, cost }
+                }));
+                return true;
+            }
+            this.bank.spendShells(cost);
+            this.act2.upgradeCamp(camp.id);
+            this.act2.adjustCampBond(camp.id, 1);
+            const record = this.getCampRecord(camp.id);
+            const level = record?.level ?? camp.level + 1;
+            camp.setLevel(level);
+            camp.setStatus(record?.status ?? 'alive');
+            this.adjustOxygen(CAMP_SUPPORT_O2_REFILL);
+            this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_uncommon');
+            window.AudioManager?.play?.('class_lock', { volume: 0.5 });
+            window.dispatchEvent(new CustomEvent('camp-supported', {
+                detail: { campId: camp.id, campLabel: camp.label, level, bond: record?.bond ?? 0, cost }
+            }));
+            return true;
+        }
+
+        if (action === 'bond') {
+            const record = this.getCampRecord(camp.id);
+            const cost = this.getCampFavorCost(record);
+            if (!this.bank?.canAffordShells?.(cost)) {
+                window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+                window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                    detail: { campId: camp.id, campLabel: camp.label, cost }
+                }));
+                return true;
+            }
+            this.bank.spendShells(cost);
+            this.act2.completeCampQuest(camp.id, this.getCampFavorQuestId(record), 1);
+            const next = this.getCampRecord(camp.id);
+            camp.setStatus(next?.status ?? 'alive');
+            this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_rare');
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.45, playbackRate: 1.2 });
+            window.dispatchEvent(new CustomEvent('camp-bonded', {
+                detail: { campId: camp.id, campLabel: camp.label, bond: next?.bond ?? 0, cost }
+            }));
+            return true;
+        }
+
+        if (action === 'defense-active') {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35, playbackRate: 0.8 });
+            return true;
+        }
+
         if (action === 'aid') {
             camp.setAided(true);
             const result = this.act2.aidCamp(camp.id);
+            this.syncCampVisualFromRecord(camp);
             window.AudioManager?.play?.('class_lock', { volume: 0.55 });
+            const allAided = result.state.camps.every((c) => c.aided);
             window.dispatchEvent(new CustomEvent('act2-milestone', {
                 detail: {
-                    key: result.to === 'camps_betray' ? 'allAided' : 'campAided',
+                    key: allAided ? 'allAided' : 'campAided',
                     campId: camp.id,
                     campLabel: camp.label
                 }
@@ -6043,30 +6300,249 @@ export class ThreeGame {
         }
 
         if (action === 'cull') {
-            camp.setDestroyed(true);
-            const result = this.act2.destroyCamp(camp.id);
-            this.triggerCameraShake?.(0.4, 0.6);
-            window.AudioManager?.play?.('door_slam_vertical', { volume: 0.5, playbackRate: 0.72 });
-            window.AudioManager?.play?.('ui_error', { volume: 0.4, playbackRate: 0.55 });
-            window.dispatchEvent(new CustomEvent('act2-milestone', {
-                detail: {
-                    key: result.to === 'launch_ready' ? 'allCulled' : 'campCulled',
-                    campId: camp.id,
-                    campLabel: camp.label
-                }
-            }));
-            return true;
+            return this.resolveCampCull(camp);
         }
 
-        if (action === 'board') {
-            this.act2.depart();
-            window.dispatchEvent(new CustomEvent('act2-departed', {
-                detail: { runStats: this.getRunStats?.() ?? {} }
-            }));
+        if (action === 'choice') {
+            this.openCampChoice(camp);
             return true;
         }
 
         return false;
+    }
+
+    resolveCampChoice(action, payload = {}) {
+        const camp = this.getCampById(payload.campId);
+        if (!camp || !this.act2) return false;
+        if (action === 'steal') return this.resolveCampSteal(camp);
+        if (action === 'cull') return this.resolveCampCull(camp);
+        if (action === 'recruit') return this.resolveCampRecruit(camp, 'human');
+        if (action === 'turn') return this.resolveCampRecruit(camp, 'turned');
+        if (action === 'board') return this.resolveAct2Boarding(payload.variant ?? 'queen');
+        return false;
+    }
+
+    resolveCampSteal(camp) {
+        const before = this.getCampRecord(camp.id);
+        this.act2.stealCamp(camp.id);
+        const after = this.getCampRecord(camp.id);
+        if (before?.status === after?.status) {
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, action: 'steal' }
+            }));
+            return true;
+        }
+        this.syncCampVisualFromRecord(camp, after);
+        this.spawnCampStealLoot(camp);
+        this.triggerCameraShake?.(0.18, 0.35);
+        window.AudioManager?.play?.('ui_error', { volume: 0.38, playbackRate: 0.85 });
+        window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
+            detail: { campId: camp.id, campLabel: camp.label, action: 'steal', status: after.status }
+        }));
+        window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'campRobbed', campId: camp.id, campLabel: camp.label } }));
+        return true;
+    }
+
+    resolveCampRecruit(camp, mode = 'human') {
+        const before = this.getCampRecord(camp.id);
+        const wantedStatus = mode === 'turned' ? 'turned' : 'recruited';
+        this.act2.recruitCamp(camp.id, { mode });
+        const after = this.getCampRecord(camp.id);
+        if (after?.status !== wantedStatus || before?.status === after?.status) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    action: mode === 'turned' ? 'turn' : 'recruit',
+                    requiredBond: ACT2_RECRUIT_BOND_THRESHOLD,
+                    bond: before?.bond ?? 0
+                }
+            }));
+            return true;
+        }
+        this.syncCampVisualFromRecord(camp, after);
+        this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, mode === 'turned' ? 'bio_spores' : 'bunker_junk_legendary');
+        window.AudioManager?.play?.('class_lock', { volume: 0.52, playbackRate: mode === 'turned' ? 0.75 : 1.05 });
+        window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
+            detail: { campId: camp.id, campLabel: camp.label, action: mode === 'turned' ? 'turn' : 'recruit', status: after.status }
+        }));
+        window.dispatchEvent(new CustomEvent('act2-milestone', {
+            detail: { key: mode === 'turned' ? 'campTurned' : 'campRecruited', campId: camp.id, campLabel: camp.label }
+        }));
+        return true;
+    }
+
+    resolveCampCull(camp) {
+        // Fortified camps resist: the first breach wakes the defenders the
+        // player paid for in Act 1. The cull only proceeds once they fall.
+        if (camp.level > 0 && !camp._defenseSpawned) {
+            camp._defenseSpawned = true;
+            this.spawnCampDefenders(camp);
+            this.triggerCameraShake?.(0.3, 0.5);
+            window.AudioManager?.play?.('amb_metal_stress', { volume: 0.5, playbackRate: 0.8 });
+            window.dispatchEvent(new CustomEvent('camp-defense-triggered', {
+                detail: { campId: camp.id, campLabel: camp.label, level: camp.level }
+            }));
+            return true;
+        }
+        if (this.campDefendersAlive(camp.id)) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35, playbackRate: 0.8 });
+            return true;
+        }
+
+        const before = this.getCampRecord(camp.id);
+        this.act2.cullCamp(camp.id);
+        const record = this.getCampRecord(camp.id);
+        if (record?.status !== 'culled' || before?.status === 'culled') {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35, playbackRate: 0.8 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, action: 'cull' }
+            }));
+            return true;
+        }
+        this.syncCampVisualFromRecord(camp, record);
+        this.spawnCampCullLoot(camp);
+        this.triggerCameraShake?.(0.4, 0.6);
+        window.AudioManager?.play?.('door_slam_vertical', { volume: 0.5, playbackRate: 0.72 });
+        window.AudioManager?.play?.('ui_error', { volume: 0.4, playbackRate: 0.55 });
+        const allCulled = this.act2.getState().camps.every((c) => c.status === 'culled');
+        window.dispatchEvent(new CustomEvent('act2-milestone', {
+            detail: {
+                key: allCulled ? 'allCulled' : 'campCulled',
+                campId: camp.id,
+                campLabel: camp.label
+            }
+        }));
+        window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
+            detail: { campId: camp.id, campLabel: camp.label, action: 'cull', status: record?.status ?? 'culled' }
+        }));
+        return true;
+    }
+
+    resolveAct2Boarding(variant = 'queen') {
+        if (variant === 'purge') {
+            this.act2.setQueenStatus('killed');
+            this.act2.setEggsStatus('destroyed');
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenKilled' } }));
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'eggsDestroyed' } }));
+        } else if (variant === 'bargain') {
+            this.act2.setQueenStatus('killed');
+            this.act2.setEggsStatus('aboard');
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenKilled' } }));
+        } else {
+            this.act2.setQueenStatus('aboard');
+            this.act2.setEggsStatus('aboard');
+        }
+        const vector = this.act2.getEndingVector();
+        this.act2.depart();
+        window.dispatchEvent(new CustomEvent('act2-departed', {
+            detail: { runStats: this.getRunStats?.() ?? {}, endingVector: vector, variant }
+        }));
+        return true;
+    }
+
+    // The defense wave a supported camp mounts when breached in Act 2:
+    // level * 2 guards, ring-spawned just outside the barricades.
+    spawnCampDefenders(camp) {
+        const count = camp.level * 2;
+        const biomeSnail = this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail';
+        for (let i = 0; i < count; i += 1) {
+            const type = i % 2 === 0 ? 'cybersnail' : biomeSnail;
+            // Camp surroundings can be walled in — search a few ring spots and
+            // fall back to the camp clearing itself (guaranteed walkable).
+            let x = camp.pos.x;
+            let z = camp.pos.z;
+            for (let attempt = 0; attempt < 10; attempt += 1) {
+                const angle = (i / count) * Math.PI * 2 + 0.6 + attempt * 0.7;
+                const radius = 3.0 + ((i + attempt) % 3) * 0.8;
+                const tryX = camp.pos.x + Math.cos(angle) * radius;
+                const tryZ = camp.pos.z + Math.sin(angle) * radius;
+                if (this.isSnailTileWalkable(Math.round(tryX), Math.round(tryZ))) {
+                    x = tryX;
+                    z = tryZ;
+                    break;
+                }
+            }
+            const placement = {
+                x,
+                z,
+                type,
+                scatterKey: `camp-defender:${camp.id}:${i}`,
+                scale: 1.25,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'enemy',
+                phase: Math.random() * Math.PI * 2,
+                opacity: 1,
+                biomeTint: 0xffffff,
+                isEnemy: true,
+                spawnedEnraged: camp.level >= 3
+            };
+            const sprite = this.createScatterInstance(placement);
+            if (!sprite) continue;
+            sprite.userData.campDefenderId = camp.id;
+            const chunkX = Math.floor(x / this.chunkSize);
+            const chunkY = Math.floor(z / this.chunkSize);
+            const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+            group.add(sprite);
+            this.scatterSprites.push(sprite);
+        }
+    }
+
+    campDefendersAlive(campId) {
+        return this.scatterSprites.some((sprite) =>
+            sprite.userData?.campDefenderId === campId && !sprite.userData.burstTriggered);
+    }
+
+    // The payoff for Act 1 investment: culling a supported camp ejects its
+    // stockpile — level-scaled pickups plus a direct shell grant.
+    spawnCampCullLoot(camp) {
+        if (camp.level <= 0) return;
+        const chunkX = Math.floor(camp.pos.x / this.chunkSize);
+        const chunkY = Math.floor(camp.pos.z / this.chunkSize);
+        const parent = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+        const dropTypes = [];
+        for (let i = 0; i < camp.level; i += 1) {
+            dropTypes.push('coin', 'coin', 'weapon', i >= 1 ? 'health' : 'ammo');
+        }
+        for (const type of dropTypes) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 0.8 + Math.random() * 1.4;
+            const targetX = camp.pos.x + Math.cos(angle) * radius;
+            const targetZ = camp.pos.z + Math.sin(angle) * radius;
+            if (this.getTileType(Math.round(targetX), Math.round(targetZ)) === '#') continue;
+            const placement = this.createSnailDropPlacement(camp.pos.x, camp.pos.z, targetX, targetZ, type);
+            const pickup = this.createPickupInstance(placement);
+            parent.add(pickup);
+            this.pickupMeshes.push(pickup);
+        }
+        const shells = camp.level * 5;
+        this.bank?.addShells?.(shells);
+        window.dispatchEvent(new CustomEvent('shell-collected', {
+            detail: { gained: shells, total: this.bank?.getShells?.() ?? 0, isBoss: false }
+        }));
+    }
+
+    spawnCampStealLoot(camp) {
+        const level = Math.max(0, Math.floor(camp?.level ?? 0));
+        const salvage = {
+            tech: 6 + level * 5,
+            coin: 8 + level * 6,
+            med: 2 + level * 2,
+            ammo: 3 + level * 2
+        };
+        this.bank?.deposit?.(salvage);
+        const shells = 3 + level * 4;
+        this.bank?.addShells?.(shells);
+        window.dispatchEvent(new CustomEvent('shell-collected', {
+            detail: { gained: shells, total: this.bank?.getShells?.() ?? 0, isBoss: false }
+        }));
+        window.dispatchEvent(new CustomEvent('salvage-cache-opened', {
+            detail: { ...salvage, source: 'camp-steal', campId: camp?.id, campLabel: camp?.label }
+        }));
     }
 
     // Act 2 replaces the console terminal: severing the uplink is the first
@@ -6106,19 +6582,9 @@ export class ThreeGame {
         }
 
         if (phase === 'camps_help' || phase === 'camps_betray') {
-            const wanted = phase === 'camps_help'
+            const best = this.getNextCampInStoryOrder(phase === 'camps_help'
                 ? (camp) => !camp.aided
-                : (camp) => camp.aided && !camp.destroyed;
-            let best = null;
-            let bestDistance = Infinity;
-            for (const camp of this.camps) {
-                if (!wanted(camp)) continue;
-                const distance = camp.distanceTo(this.player?.position.x ?? 0, this.player?.position.z ?? 0);
-                if (distance < bestDistance) {
-                    bestDistance = distance;
-                    best = camp;
-                }
-            }
+                : (camp) => camp.aided && !camp.destroyed);
             if (!best) return null;
             return {
                 key: phase,
@@ -6129,9 +6595,9 @@ export class ThreeGame {
         }
 
         if (phase === 'launch_ready') {
-            const camp = this.camps.find((c) => c.id === ACT2_CAMP_IDS[0]);
+            const camp = this.getCampById(this.getBoardingCampId());
             const pos = camp?.getPosition();
-            return pos ? { key: 'launch', label: 'BOARD THE VESSEL', x: pos.x, z: pos.z } : null;
+            return pos ? { key: 'launch', label: 'BOARD AT COMMAND CAMP', x: pos.x, z: pos.z } : null;
         }
 
         return null;
@@ -12361,6 +12827,69 @@ export class ThreeGame {
                         }
                         window.AudioManager?.play('amb_metal_stress', { volume: 0.5, playbackRate: 0.5 });
                     }
+                } else if (data.type === 'boss_corrupted_scout' && target.type === 'player' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 4.0;
+                    const angleToPlayer = Math.atan2(target.z - sprite.position.z, target.x - sprite.position.x);
+                    for (let i = -1; i <= 1; i++) {
+                        const spreadAngle = angleToPlayer + i * 0.16;
+                        this.spawnProjectile({
+                            x: sprite.position.x,
+                            z: sprite.position.z,
+                            vx: Math.cos(spreadAngle) * 9.0,
+                            vz: Math.sin(spreadAngle) * 9.0,
+                            ttl: 1.8,
+                            damage: 1,
+                            radius: 0.18,
+                            isEnemy: true
+                        });
+                    }
+                    if (Math.random() < 0.35 && sprite.parent) {
+                        this.spawnGearPoofEffect(sprite.position.x + (Math.random() - 0.5) * 1.5, sprite.position.z + (Math.random() - 0.5) * 1.5, 'bio_spores_blue');
+                    }
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.4, playbackRate: 1.65 });
+                } else if (data.type === 'boss_corrupted_tank' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 5.0;
+                    this.spawnFrostShockwaveEffect(sprite.position.x, sprite.position.z, 5.0);
+                    if (this.player && !this.isPlayerDead) {
+                        const d = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
+                        if (d <= 5.0) {
+                            this.takeDamage(2, 'ground-slam');
+                            this.triggerCameraShake?.(0.35, 0.45);
+                        }
+                    }
+                    window.AudioManager?.play('amb_metal_stress', { volume: 0.52, playbackRate: 0.8 });
+                } else if (data.type === 'boss_corrupted_engineer' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 6.0;
+                    this.playerSlowTimer = 2.5; // Jam and slow
+                    const parent = sprite.parent;
+                    if (parent) {
+                        const tx = sprite.position.x + (Math.random() - 0.5) * 2;
+                        const tz = sprite.position.z + (Math.random() - 0.5) * 2;
+                        if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                            const placement = {
+                                x: tx,
+                                z: tz,
+                                type: 'cybersnail',
+                                scatterKey: `${sprite.userData.scatterKey}:minion:${Date.now()}`,
+                                scale: 0.85,
+                                rotation: 0,
+                                tiltX: 0,
+                                tiltZ: 0,
+                                elevation: 0.08,
+                                groupType: 'minion',
+                                phase: Math.random() * Math.PI,
+                                opacity: 1,
+                                biomeTint: 0xffffff
+                            };
+                            const minion = this.createScatterInstance(placement);
+                            if (minion) {
+                                parent.add(minion);
+                                this.scatterSprites.push(minion);
+                                this.spawnGearPoofEffect(tx, tz, 'bunker_junk');
+                            }
+                        }
+                    }
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.48, playbackRate: 0.42 });
                 }
             }
         }
@@ -12387,7 +12916,7 @@ export class ThreeGame {
     }
 
     isEnemyType(type) {
-        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler'].includes(type);
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer'].includes(type);
     }
 
     isSentinel(type) {
@@ -12550,6 +13079,12 @@ export class ThreeGame {
                         nameEl.textContent = 'CRYO-GOLIATH SNAIL';
                     } else if (nearestBoss.userData.type === 'boss_sporesnail') {
                         nameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
+                    } else if (nearestBoss.userData.type === 'boss_corrupted_scout') {
+                        nameEl.textContent = 'CORRUPTED SCOUT: MARTHA';
+                    } else if (nearestBoss.userData.type === 'boss_corrupted_tank') {
+                        nameEl.textContent = 'CORRUPTED TANK: BRIGGS';
+                    } else if (nearestBoss.userData.type === 'boss_corrupted_engineer') {
+                        nameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
                     } else {
                         nameEl.textContent = 'ELITE THREAT';
                     }

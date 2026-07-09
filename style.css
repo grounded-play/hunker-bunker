@@ -2282,6 +2282,150 @@ input:checked+.slider:before {
   }
 }
 
+.camp-choice-modal {
+  z-index: 16200;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(141, 255, 112, 0.13), rgba(0, 0, 0, 0.86) 45%),
+    rgba(0, 0, 0, 0.88);
+}
+
+.camp-choice-panel {
+  width: min(calc(var(--vu) * 92), 92%);
+  max-height: min(92%, calc(var(--vu) * 86));
+  border-color: rgba(141, 255, 112, 0.78);
+  background:
+    linear-gradient(180deg, rgba(12, 20, 18, 0.98), rgba(5, 8, 10, 0.98)),
+    var(--bg-panel);
+  box-shadow:
+    0 0 0 1px rgba(141, 255, 112, 0.16) inset,
+    0 0 54px rgba(0, 0, 0, 0.92),
+    0 0 28px rgba(141, 255, 112, 0.12);
+}
+
+.camp-choice-kicker {
+  font-family: monospace;
+  font-size: calc(var(--vu) * 1.35);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin-bottom: calc(var(--vu) * 1.2);
+}
+
+.camp-choice-title {
+  color: #b9ff78;
+  margin-bottom: calc(var(--vu) * 1.5);
+  text-align: left;
+}
+
+.camp-choice-status {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: calc(var(--vu) * 1.2);
+  margin-bottom: calc(var(--vu) * 2.2);
+}
+
+.camp-choice-stat {
+  min-height: calc(var(--vu) * 6.3);
+  border: 1px solid rgba(141, 255, 112, 0.22);
+  background: rgba(0, 0, 0, 0.34);
+  padding: calc(var(--vu) * 1.1);
+  font-family: monospace;
+}
+
+.camp-choice-stat__label {
+  display: block;
+  color: var(--text-muted);
+  font-size: calc(var(--vu) * 1.05);
+  text-transform: uppercase;
+  margin-bottom: calc(var(--vu) * 0.5);
+}
+
+.camp-choice-stat__value {
+  display: block;
+  color: var(--text-main);
+  font-size: calc(var(--vu) * 1.4);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.camp-choice-copy {
+  margin: 0 0 calc(var(--vu) * 2.5);
+  color: var(--text-main);
+  font-family: monospace;
+  font-size: calc(var(--vu) * 1.65);
+  line-height: 1.55;
+}
+
+.camp-choice-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--vu) * 1.5);
+}
+
+.camp-choice-option {
+  min-height: calc(var(--vu) * 11);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: calc(var(--vu) * 0.6);
+  border: 1px solid rgba(141, 255, 112, 0.38);
+  background: rgba(8, 15, 14, 0.92);
+  color: var(--text-main);
+  font-family: monospace;
+  padding: calc(var(--vu) * 1.5);
+  text-align: left;
+  cursor: pointer;
+}
+
+.camp-choice-option:hover:not(:disabled) {
+  border-color: #b9ff78;
+  background: rgba(26, 43, 29, 0.94);
+  box-shadow: 0 0 16px rgba(141, 255, 112, 0.16);
+}
+
+.camp-choice-option:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.camp-choice-option__label {
+  color: #b9ff78;
+  font-size: calc(var(--vu) * 1.45);
+  text-transform: uppercase;
+}
+
+.camp-choice-option__desc {
+  color: var(--text-muted);
+  font-size: calc(var(--vu) * 1.18);
+  line-height: 1.4;
+}
+
+.camp-choice-option--steal .camp-choice-option__label,
+.camp-choice-option--cull .camp-choice-option__label {
+  color: #ff9b5c;
+}
+
+.camp-choice-option--recruit .camp-choice-option__label {
+  color: #7dfcff;
+}
+
+.camp-choice-option--turn .camp-choice-option__label,
+.camp-choice-option--board .camp-choice-option__label {
+  color: #8cff96;
+}
+
+@media (max-width: 760px) {
+  .camp-choice-status,
+  .camp-choice-options {
+    grid-template-columns: 1fr;
+  }
+
+  .camp-choice-panel {
+    width: 94%;
+  }
+}
+
 .confirm-secondary-btn {
   background: #4b5563 !important;
   color: #fff !important;

@@ -14,7 +14,7 @@ import { pickMissionBriefing } from './src/data/missions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
-import { Act2Manager, ACT2_LINES } from './src/act2.js';
+import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
@@ -59,6 +59,13 @@ const openResetSaveBtn = document.getElementById('open-reset-save');
 const resetSaveConfirmModal = document.getElementById('reset-save-confirm-modal');
 const resetSaveConfirmBtn = document.getElementById('reset-save-confirm');
 const resetSaveCancelBtn = document.getElementById('reset-save-cancel');
+const campChoiceModal = document.getElementById('camp-choice-modal');
+const campChoiceCloseBtn = document.getElementById('close-camp-choice');
+const campChoiceKicker = document.getElementById('camp-choice-kicker');
+const campChoiceTitle = document.getElementById('camp-choice-title');
+const campChoiceStatus = document.getElementById('camp-choice-status');
+const campChoiceCopy = document.getElementById('camp-choice-copy');
+const campChoiceOptions = document.getElementById('camp-choice-options');
 const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
 const audioVfxSlider = document.getElementById('audio-vfx-slider');
@@ -4073,6 +4080,12 @@ document.addEventListener('keydown', (event) => {
             return; // Let DialogueManager handle its own Escape key
         }
 
+        if (campChoiceModal && !campChoiceModal.classList.contains('hidden')) {
+            closeCampChoiceModal();
+            event.preventDefault();
+            return;
+        }
+
         const confirmModal = document.getElementById('confirm-modal');
         if (confirmModal && !confirmModal.classList.contains('hidden')) {
             confirmModal.classList.add('hidden');
@@ -4711,6 +4724,124 @@ window.addEventListener('camp-prompt-clear', () => {
     prompt?.classList.remove('visible');
 });
 
+const ACT2_ENDING_TITLES = Object.freeze({
+    full_brood: 'FULL BROOD',
+    clean_escape: 'CLEAN ESCAPE',
+    mixed_crew: 'MIXED CREW',
+    carriers_bargain: 'CARRIERS BARGAIN',
+    scorched_sky: 'SCORCHED SKY'
+});
+
+function formatStoryToken(value = '') {
+    return String(value || 'unknown').replace(/_/g, ' ').toUpperCase();
+}
+
+function setCampChoiceOpen(open) {
+    if (!campChoiceModal) return;
+    campChoiceModal.classList.toggle('hidden', !open);
+    campChoiceModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if (open) {
+        window.game?.setInputEnabled?.(false);
+    } else if (isGameplayPhase()) {
+        window.game?.setInputEnabled?.(true);
+    }
+}
+
+function closeCampChoiceModal() {
+    setCampChoiceOpen(false);
+}
+
+function renderCampChoice(detail = {}) {
+    if (!campChoiceModal || !campChoiceOptions) return;
+    const camp = detail.campState ?? {};
+    const leaderLine = detail.leaderName
+        ? `${detail.leaderName} // ${detail.leaderClass ?? 'SURVIVOR'}${detail.leaderIsBoss ? ' // INVERTED COMMAND' : ''}`
+        : 'SURVIVOR COMMAND';
+    if (campChoiceKicker) {
+        campChoiceKicker.textContent = `CONTACT ${detail.storyOrder ?? '?'} // ${leaderLine}`;
+    }
+    if (campChoiceTitle) {
+        campChoiceTitle.textContent = detail.campLabel ?? 'CAMP DECISION';
+    }
+    const ending = detail.endingVector?.ending;
+    if (campChoiceStatus) {
+        const stats = [
+            ['status', formatStoryToken(camp.status)],
+            ['level', `LVL ${camp.level ?? 0}`],
+            ['bond', `${camp.bond ?? 0}/5`],
+            ['vector', ACT2_ENDING_TITLES[ending] ?? formatStoryToken(ending)]
+        ];
+        campChoiceStatus.innerHTML = stats.map(([label, value]) => `
+            <div class="camp-choice-stat">
+                <span class="camp-choice-stat__label">${label}</span>
+                <span class="camp-choice-stat__value">${value}</span>
+            </div>
+        `).join('');
+    }
+    if (campChoiceCopy) {
+        const title = detail.leaderTitle ? `${detail.leaderTitle}. ` : '';
+        const callsign = detail.leaderCallsign ? `Callsign ${detail.leaderCallsign}. ` : '';
+        campChoiceCopy.textContent = `${title}${callsign}Your next action changes the launch manifest and the ending vector.`;
+    }
+    campChoiceOptions.innerHTML = '';
+    for (const option of detail.options ?? []) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `camp-choice-option camp-choice-option--${option.action ?? 'noop'}`;
+        btn.disabled = Boolean(option.disabled) || option.action === 'noop';
+        btn.innerHTML = `
+            <span class="camp-choice-option__label">${option.label ?? 'OPTION'}</span>
+            <span class="camp-choice-option__desc">${option.desc ?? ''}</span>
+        `;
+        btn.addEventListener('click', () => {
+            window.AudioManager?.play?.('ui_click', { volume: 0.45 });
+            window.game?.resolveCampChoice?.(option.action, {
+                ...option,
+                campId: detail.campId
+            });
+            closeCampChoiceModal();
+        });
+        campChoiceOptions.appendChild(btn);
+    }
+    setCampChoiceOpen(true);
+}
+
+campChoiceCloseBtn?.addEventListener('click', () => {
+    window.AudioManager?.play?.('ui_click', { volume: 0.35 });
+    closeCampChoiceModal();
+});
+
+window.addEventListener('camp-choice-open', (event) => {
+    renderCampChoice(event?.detail ?? {});
+});
+
+// Act 1 camp support + the Act 2 payoff (defended culls).
+window.addEventListener('camp-supported', (event) => {
+    const { campLabel, level, bond } = event?.detail ?? {};
+    showBiomePrompt(`SYSTEM: ${campLabel ?? 'CAMP'} REINFORCED TO LEVEL ${level ?? '?'}. TRUST ${bond ?? 0}/5. SURVIVORS GRATEFUL — O₂ RESERVES SHARED.`);
+});
+window.addEventListener('camp-bonded', (event) => {
+    const { campLabel, bond } = event?.detail ?? {};
+    showBiomePrompt(`SYSTEM: ${campLabel ?? 'CAMP'} FAVOR COMPLETE. TRUST ${bond ?? 0}/5.`);
+});
+window.addEventListener('camp-support-denied', (event) => {
+    const cost = event?.detail?.cost;
+    showBiomePrompt(`SYSTEM: INSUFFICIENT SHELLS FOR CAMP SUPPORT${Number.isFinite(cost) ? ` — ${cost} REQUIRED` : ''}.`);
+});
+window.addEventListener('camp-defense-triggered', (event) => {
+    const { campLabel } = event?.detail ?? {};
+    showBiomePrompt(`WARNING: ${campLabel ?? 'CAMP'} DEFENSE GRID ONLINE — THE GUNS YOU FUNDED ANSWER TO THEM.`);
+});
+window.addEventListener('camp-choice-resolved', (event) => {
+    const { campLabel, action, status } = event?.detail ?? {};
+    showBiomePrompt(`SYSTEM: ${campLabel ?? 'CAMP'} ${formatStoryToken(action)} COMPLETE. STATUS ${formatStoryToken(status)}.`);
+});
+window.addEventListener('camp-choice-denied', (event) => {
+    const { action, requiredBond, bond } = event?.detail ?? {};
+    const bondText = Number.isFinite(requiredBond) ? ` TRUST ${bond ?? 0}/${requiredBond}` : '';
+    showBiomePrompt(`SYSTEM: ${formatStoryToken(action)} UNAVAILABLE.${bondText}`);
+});
+
 // Every Act 2 milestone speaks through the brief-transmission panel using the
 // copy defined next to the ladder in src/act2.js.
 window.addEventListener('act2-milestone', (event) => {
@@ -4731,19 +4862,22 @@ window.addEventListener('act2-console-dead', () => {
 
 // Boarding the vessel ends Act 2: queen sign-off, ACT III tease card, then
 // back to the (corrupted) title. Act 3 itself is future-sprint scope.
-window.addEventListener('act2-departed', () => {
-    void runAct2DepartureSequence();
+window.addEventListener('act2-departed', (event) => {
+    void runAct2DepartureSequence(event?.detail ?? {});
 });
 
-function showActThreeTeaseCard() {
+function showActThreeTeaseCard(ending = null) {
     return new Promise((resolve) => {
+        const title = ACT2_ENDING_TITLES[ending] ?? 'ACT III';
+        const kicker = ending ? 'ENDING VECTOR LOCKED' : 'THE VESSEL CLEARS THE ICE';
+        const sub = ending ? 'SIGNAL RECORDED — TO BE CONTINUED' : 'IN TRANSIT — TO BE CONTINUED';
         const overlay = document.createElement('div');
         overlay.className = 'act3-tease-overlay';
         overlay.innerHTML = `
             <div class="act3-tease-card">
-                <div class="act3-tease-kicker">THE VESSEL CLEARS THE ICE</div>
-                <div class="act3-tease-title">ACT III</div>
-                <div class="act3-tease-sub">IN TRANSIT — TO BE CONTINUED</div>
+                <div class="act3-tease-kicker">${kicker}</div>
+                <div class="act3-tease-title">${title}</div>
+                <div class="act3-tease-sub">${sub}</div>
             </div>`;
         document.body.appendChild(overlay);
         requestAnimationFrame(() => overlay.classList.add('is-open'));
@@ -4757,17 +4891,20 @@ function showActThreeTeaseCard() {
     });
 }
 
-async function runAct2DepartureSequence() {
+async function runAct2DepartureSequence(detail = {}) {
     ensureMissionManagers();
     const game = window.game;
+    const vector = detail.endingVector ?? game?.act2?.getEndingVector?.() ?? act2Manager?.getEndingVector?.();
+    const ending = vector?.ending ?? null;
+    const videoBase = ACT2_ENDING_CUTSCENES[ending] ?? 'act3-departure';
     game?.setCinematicLock?.(true);
     AudioManager.play('door_gears_spin', { volume: 0.5, playbackRate: 0.7 });
     await dialogueManager?.openBriefTransmission({
         playerType: game?.playerType ?? getSelectedHeroType(),
-        lines: [...ACT2_LINES.departed]
+        lines: [...getAct2EndingLines(ending)]
     });
-    await playCutsceneVideo('act3-departure');
-    await showActThreeTeaseCard();
+    await playCutsceneVideo(videoBase);
+    await showActThreeTeaseCard(ending);
     game?.setCinematicLock?.(false);
     returnToMainMenuFromRun({ doorKey: 'lose' });
 }
@@ -4939,6 +5076,8 @@ setupClickOutside('settings-popup', () => {
 setupClickOutside('save-data-popup', () => setSaveDataOpen(false));
 
 setupClickOutside('reset-save-confirm-modal', () => setResetSaveConfirmOpen(false));
+
+setupClickOutside('camp-choice-modal', closeCampChoiceModal);
 
 setupClickOutside('confirm-modal', () => {
     const confirmModal = document.getElementById('confirm-modal');

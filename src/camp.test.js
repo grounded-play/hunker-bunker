@@ -34,4 +34,22 @@ describe('SurvivorCamp', () => {
         expect(camp.beacon.color.getHex()).toBe(0xff5a2a); // embers, not beacon
         expect(camp.tents.every((t) => t.rotation.z !== 0)).toBe(true);
     });
+
+    it('assigns the final camp to the player class mirror with living workers', () => {
+        const camp = new SurvivorCamp(new THREE.Scene(), {
+            id: 'camp_vesper',
+            label: 'CAMP VESPER',
+            playerType: 'SCOUT'
+        });
+        camp.reveal(4, 4);
+        expect(camp.leaderClass).toBe('Scout');
+        expect(camp.leaderName).toBe('Sister Martha');
+        expect(camp.leaderIsBoss).toBe(true);
+        expect(camp.campWorkers).toHaveLength(2);
+        expect(camp.campWorkers.every((worker) => worker.mesh.visible)).toBe(true);
+
+        camp.setStatus('turned');
+        expect(camp.npcSprite.scale.x).toBeGreaterThan(1.5);
+        expect(camp.campWorkers.every((worker) => worker.mesh.visible)).toBe(true);
+    });
 });
