@@ -3392,6 +3392,17 @@ body.orientation-locked #orientation-lock {
   transition: color 1.2s ease, text-shadow 1.2s ease;
 }
 
+.level-indicator__seed {
+  font-size: calc(var(--vu) * 1.3);
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.level-indicator__seed.hidden {
+  display: none !important;
+}
+
 .level-indicator #level-num {
   line-height: 1;
 }
@@ -9165,3 +9176,366 @@ button.archive-log-entry:active {
 #vitals-cover-label {
   color: #8cff96;
 }
+
+/* ── Queen's Ledger HUD Chip ── */
+.queens-ledger-hud {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.8);
+  background: rgba(11, 13, 15, 0.72);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(9px, calc(var(--vu) * 1.3), 13px);
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.queens-ledger-hud.hidden {
+  display: none !important;
+}
+
+.queens-ledger-hud--obedience-hive {
+  border-color: rgba(180, 255, 50, 0.45);
+  box-shadow: 0 0 8px rgba(180, 255, 50, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.queens-ledger-hud--obedience-human {
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.queens-ledger-hud--neutral {
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+/* Style individual parts of the ledger text for readability */
+.queens-ledger-hud__icon {
+  margin-right: 5px;
+  color: #ffb700;
+}
+
+.queens-ledger-hud__value {
+  color: #fff;
+  font-weight: 900;
+}
+
+.queens-ledger-hud--obedience-hive .queens-ledger-hud__value--obedience {
+  color: #b4ff32;
+  text-shadow: 0 0 4px rgba(180, 255, 50, 0.4);
+}
+
+.queens-ledger-hud--obedience-human .queens-ledger-hud__value--obedience {
+  color: #00e5ff;
+  text-shadow: 0 0 4px rgba(0, 229, 255, 0.4);
+}
+
+.queens-ledger-hud__value--vector {
+  color: #ff9f1c;
+}
+
+.queens-ledger-hud__value--vector.unstable {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.queens-ledger-hud__flash {
+  animation: ledger-update-flash 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes ledger-update-flash {
+  0% {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.15);
+  }
+  100% {
+    transform: scale(1);
+    background: rgba(11, 13, 15, 0.72);
+  }
+}
+
+/* ── Vessel Boarding Manifest Forecast ── */
+.boarding-manifest-forecast {
+  margin: calc(var(--vu) * 2) 0;
+  padding: calc(var(--vu) * 1.8);
+  background: rgba(8, 12, 16, 0.88);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 8px;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.08);
+}
+
+.boarding-manifest-forecast.hidden {
+  display: none !important;
+}
+
+.manifest-forecast-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(10px, calc(var(--vu) * 1.6), 14px);
+  font-weight: 900;
+  color: var(--accent-primary);
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: calc(var(--vu) * 1.5);
+  text-shadow: 0 0 6px rgba(255, 159, 28, 0.35);
+}
+
+.manifest-seats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: calc(var(--vu) * 1);
+  margin-bottom: calc(var(--vu) * 1.5);
+}
+
+.manifest-seat-slot {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 5px;
+  padding: calc(var(--vu) * 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(var(--vu) * 9);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.manifest-seat-slot--double {
+  grid-column: span 2;
+}
+
+.manifest-seat-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(7px, calc(var(--vu) * 1.0), 10px);
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.manifest-seat-status {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(8px, calc(var(--vu) * 1.2), 12px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Slot type accent styling */
+.manifest-seat-slot--player {
+  border-color: rgba(0, 229, 255, 0.35);
+  background: rgba(0, 229, 255, 0.04);
+}
+.manifest-seat-slot--player .manifest-seat-status {
+  color: #00e5ff;
+}
+
+.manifest-seat-slot--queen {
+  border-color: rgba(180, 255, 50, 0.45);
+  background: rgba(180, 255, 50, 0.05);
+  animation: queen-pulse 2.2s infinite ease-in-out;
+}
+.manifest-seat-slot--queen .manifest-seat-status {
+  color: #b4ff32;
+}
+
+.manifest-seat-slot--eggs {
+  border-color: rgba(255, 159, 28, 0.45);
+  background: rgba(255, 159, 28, 0.05);
+}
+.manifest-seat-slot--eggs .manifest-seat-status {
+  color: #ff9f1c;
+}
+
+.manifest-seat-slot--human {
+  border-color: rgba(0, 229, 255, 0.35);
+  background: rgba(0, 229, 255, 0.04);
+}
+.manifest-seat-slot--human .manifest-seat-status {
+  color: #00e5ff;
+}
+
+.manifest-seat-slot--alien {
+  border-color: rgba(180, 255, 50, 0.35);
+  background: rgba(180, 255, 50, 0.04);
+}
+.manifest-seat-slot--alien .manifest-seat-status {
+  color: #b4ff32;
+}
+
+.manifest-seat-slot--empty {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.08);
+  opacity: 0.5;
+}
+.manifest-seat-slot--empty .manifest-seat-status {
+  color: #94a3b8;
+}
+
+@keyframes queen-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(180, 255, 50, 0.05); }
+  50% { box-shadow: 0 0 10px rgba(180, 255, 50, 0.25); }
+}
+
+.manifest-blockers-list {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(9px, calc(var(--vu) * 1.3), 12px);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.manifest-blocker-item {
+  color: #ff2a4a;
+  background: rgba(255, 42, 74, 0.08);
+  border-left: 3px solid #ff2a4a;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+.manifest-success-item {
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.08);
+  border-left: 3px solid #00e5ff;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+/* ── Game Over Act 2 Summary Card ── */
+.game-over-act2-summary {
+  margin-top: calc(var(--vu) * 2.2);
+  padding: calc(var(--vu) * 1.8);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(11, 13, 15, 0.88);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.08);
+  text-align: left;
+}
+
+.game-over-act2-summary.hidden {
+  display: none !important;
+}
+
+.go-act2-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1.5px solid rgba(0, 229, 255, 0.22);
+  padding-bottom: calc(var(--vu) * 0.9);
+  margin-bottom: calc(var(--vu) * 1.2);
+}
+
+.go-act2-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(11px, calc(var(--vu) * 1.8), 15px);
+  font-weight: 900;
+  color: var(--accent-primary);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.go-act2-seed {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(8px, calc(var(--vu) * 1.2), 10px);
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.go-act2-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--vu) * 1.5);
+  margin-bottom: calc(var(--vu) * 1.5);
+}
+
+.go-act2-col-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(8px, calc(var(--vu) * 1.2), 10px);
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: calc(var(--vu) * 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 2px;
+}
+
+.go-act2-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.4);
+}
+
+.go-act2-item {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(9px, calc(var(--vu) * 1.3), 11px);
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+}
+
+.go-act2-item__label {
+  color: #fff;
+}
+
+.go-act2-item__status {
+  text-transform: uppercase;
+}
+
+/* Status colors */
+.go-act2-item__status--alive { color: #00e5ff; }
+.go-act2-item__status--robbed { color: #ff9f1c; }
+.go-act2-item__status--culled { color: #ff2a4a; }
+.go-act2-item__status--recruited { color: #00e5ff; }
+.go-act2-item__status--turned { color: #b4ff32; }
+
+.go-act2-item__status--dormant { color: #94a3b8; }
+.go-act2-item__status--mined { color: #ff9f1c; }
+.go-act2-item__status--wounded { color: #ef4444; }
+.go-act2-item__status--bonded { color: #b4ff32; }
+.go-act2-item__status--rescued { color: #00e5ff; font-weight: 900; }
+.go-act2-item__status--queen_consumed { color: #ff2a4a; }
+.go-act2-item__status--slain { color: #ff2a4a; }
+
+.go-act2-stats-row {
+  display: flex;
+  gap: calc(var(--vu) * 2);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: calc(var(--vu) * 1);
+  margin-bottom: calc(var(--vu) * 1.2);
+}
+
+.go-act2-stat {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(9px, calc(var(--vu) * 1.4), 12px);
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.go-act2-stat span {
+  color: #fff;
+  font-weight: 900;
+}
+
+.go-act2-one-liner {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(10px, calc(var(--vu) * 1.5), 13px);
+  font-weight: 800;
+  color: #fff;
+  background: rgba(0, 229, 255, 0.05);
+  border-left: 3px solid var(--accent-primary);
+  padding: calc(var(--vu) * 0.9) calc(var(--vu) * 1.4);
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+

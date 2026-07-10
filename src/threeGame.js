@@ -6702,7 +6702,7 @@ export class ThreeGame {
                     action: 'hive-final',
                     hiveId: record.id,
                     label: 'ACCEPT THEIR OATH',
-                    desc: 'Their rite completes; they are fully yours. The queen loses a hand.'
+                    desc: 'Their rite completes; they are fully yours. Consequence: The queen loses a hand.'
                 });
             }
         }
@@ -6710,7 +6710,7 @@ export class ThreeGame {
             action: 'hive-tend',
             hiveId: record.id,
             label: 'RETURN RESOURCES — 5 SHELLS',
-            desc: `Give back what was taken. Bond ${record.bond}/${ACT2_MAX_BOND}; heals one extraction wound.`
+            desc: `Give back what was taken. Consequence: Bond ${record.bond}/${ACT2_MAX_BOND}; heals one extraction wound.`
         });
 
         const questByHive = {
@@ -6736,7 +6736,7 @@ export class ThreeGame {
             action: 'hive-network',
             hiveId: record.id,
             label: record.networked ? 'CHORUS LINKED' : 'LINK THE CHORUS',
-            desc: 'Wire this hive into the synapse. All living hives linked brings the chorus online.',
+            desc: 'Wire this hive into the synapse. Consequence: Networked = true. All living hives linked brings chorus online.',
             disabled: record.networked
         });
 
@@ -6747,7 +6747,7 @@ export class ThreeGame {
             label: rescueLocked ? 'RESCUE ABOARD — LOCKED' : 'RESCUE ABOARD',
             desc: rescueLocked
                 ? `Requires bond ${ACT2_HIVE_RESCUE_BOND_THRESHOLD}. Current bond ${record.bond}.`
-                : 'Take them off-world with you. One seat. The queen will feel it.',
+                : 'Take them off-world with you. Consequence: SEATS +1, OBEDIENCE −1 (the queen feels it).',
             disabled: rescueLocked
         });
 
@@ -6755,7 +6755,7 @@ export class ThreeGame {
             action: 'hive-harvest',
             hiveId: record.id,
             label: 'HARVEST THE HIVE',
-            desc: 'Strip it for parts. Kills the being inside. The queen approves.'
+            desc: 'Strip it for parts. Consequence: OBEDIENCE +1, SEATS +0. (Kills the being, queen approves)'
         });
 
         if (this.act2.getState().queenStatus === 'aboard') {
@@ -6763,7 +6763,7 @@ export class ThreeGame {
                 action: 'hive-sacrifice',
                 hiveId: record.id,
                 label: 'SACRIFICE TO THE QUEEN',
-                desc: 'Feed the ally to her brood. Maximum obedience, minimum mercy.'
+                desc: 'Feed the ally to her brood. Consequence: OBEDIENCE +1, SEATS +0. (Maximum obedience, minimum mercy)'
             });
         }
 
@@ -7130,35 +7130,35 @@ export class ThreeGame {
                     label: tooFarGone ? `FIGHT THE URGE — LOCKED` : `FIGHT THE URGE — ${cost} HUMANITY`,
                     desc: tooFarGone
                         ? `The pull is too strong (${humanity} humanity, needs > ${cost}). Restore your cover first.`
-                        : 'Stand their final vigil as the person they remember. She pulls harder every time.',
+                        : `Stand their final vigil. Consequence: Humanity −${cost}. She pulls harder next time.`,
                     disabled: tooFarGone
                 });
                 options.push({
                     action: 'final-betray',
                     label: `BETRAY THE QUEEN — HER WRATH (${1 + finalsDone})`,
-                    desc: 'Defy her openly to stand with them. They learn what you are — and trust you anyway.'
+                    desc: `Defy her openly to stand with them. Consequence: OBEDIENCE −${1 + finalsDone}, they board suspicious & safe.`
                 });
             }
             options.push({
                 action: 'steal',
                 label: 'STEAL STOCKPILE',
-                desc: 'Rob supplies and leave the camp hostile. They will not board.'
+                desc: 'Rob supplies and leave the camp hostile. Consequence: OBEDIENCE +0, SEATS +0. (Disables boarding, triggers defense grid)'
             });
             options.push({
                 action: 'cull',
                 label: camp.level > 0 && !camp._defenseSpawned ? 'BREACH AND CULL' : 'CULL THE CAMP',
-                desc: 'Fight any funded defenses, destroy the camp, and please the queen.'
+                desc: 'Fight any funded defenses, destroy the camp, and please the queen. Consequence: OBEDIENCE +1, SEATS +0.'
             });
             options.push({
                 action: 'recruit',
                 label: recruitLocked ? 'RECRUIT HUMANS LOCKED' : 'RECRUIT HUMANS',
-                desc: recruitLocked ? recruitHint : 'Smuggle the survivors aboard as human passengers.',
+                desc: recruitLocked ? recruitHint : 'Smuggle the survivors aboard. Consequence: OBEDIENCE −1, SEATS +1. (Humans unsuspectedly board)',
                 disabled: recruitLocked
             });
             options.push({
                 action: 'turn',
                 label: recruitLocked ? 'TURN CAMP LOCKED' : 'TURN CAMP',
-                desc: recruitLocked ? recruitHint : 'Offer trusted survivors to the queen as compliant hybrids.',
+                desc: recruitLocked ? recruitHint : 'Converts trusted survivors. Consequence: OBEDIENCE +1, SEATS +1. (Compliant hybrid passengers)',
                 disabled: recruitLocked
             });
             const warnLocked = record.bond < 2;
@@ -7167,7 +7167,7 @@ export class ThreeGame {
                 label: warnLocked ? 'WARN THEM LOCKED' : 'WARN THEM',
                 desc: warnLocked
                     ? `Requires bond 2. Current bond ${record.bond}.`
-                    : 'Tell them the truth before they board. They come suspicious — and safe.',
+                    : 'Tell them the truth before they board. Consequence: OBEDIENCE −1, SEATS +1. (They board suspicious & safe)',
                 disabled: warnLocked
             });
             const suture = this.getHiveRecord?.('hive_suture');
@@ -7180,14 +7180,14 @@ export class ThreeGame {
                     ? 'Requires Nahl\'s Host Mercy rite.'
                     : latentLocked
                         ? `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD} and suspicion under 50 (now ${record.suspicion}).`
-                        : 'They board believing they are clean. They are not.',
+                        : 'Carry the hive infection in secret. Consequence: OBEDIENCE +1, SEATS +1. (They board believing they are clean)',
                 disabled: latentLocked
             });
         } else if (status === 'robbed') {
             options.push({
                 action: 'cull',
                 label: camp.level > 0 && !camp._defenseSpawned ? 'BREACH HOSTILE CAMP' : 'CULL HOSTILE CAMP',
-                desc: 'The camp already hates you. Finish it for queen obedience and salvage.'
+                desc: 'The camp already hates you. Consequence: OBEDIENCE +1, SEATS +0. (Finish it for obedience and salvage)'
             });
         } else {
             options.push({

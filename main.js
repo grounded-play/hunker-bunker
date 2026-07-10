@@ -14,7 +14,7 @@ import { pickMissionBriefing } from './src/data/missions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
-import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines } from './src/act2.js';
+import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import { getGifDurationMs } from './src/gifDuration.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
@@ -175,6 +175,7 @@ function setAppPhase(phase) {
         clearLoaderBriefingMode();
         window.game?.setInputEnabled?.(false);
     }
+    updateQueensLedgerHUD();
 }
 const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveUp', label: 'MOVE UP' },
@@ -1837,6 +1838,131 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         setTimeout(() => { if (killsBar) killsBar.style.width = `${killsPct}%`;    }, 760);
         setTimeout(() => { if (timeBar)  timeBar.style.width  = `${timePct}%`;     }, 960);
     });
+
+    renderGameOverAct2Summary();
+}
+
+let activeRunSeed = null;
+let activeRunCards = [];
+
+window.addEventListener('run-cards-drawn', (event) => {
+    const detail = event?.detail ?? {};
+    activeRunSeed = detail.seed ?? null;
+    activeRunCards = detail.cards ?? [];
+
+    const seedHUD = document.getElementById('hud-run-seed');
+    if (seedHUD) {
+        if (activeRunSeed !== null) {
+            seedHUD.textContent = `SEED: ${activeRunSeed}`;
+            seedHUD.classList.remove('hidden');
+        } else {
+            seedHUD.classList.add('hidden');
+        }
+    }
+    updateQueensLedgerHUD();
+});
+
+function generateRunOneSentenceSummary(state, ending) {
+    switch (ending) {
+        case 'full_brood':
+            return "You delivered the Queen and her clutch to a crowded new world, executing her will flawlessly.";
+        case 'clean_escape':
+            return "You broke the hive link, purged the eggs, and successfully escaped with all human survivors.";
+        case 'mixed_crew':
+            return "You maintained a fragile compromise between human survivors and infected hybrids under the Queen's watch.";
+        case 'carriers_bargain':
+            return "You saved the survivors but carried the infection silently in your own flesh.";
+        case 'scorched_sky':
+            return "You incinerated every survivor camp and purged the eggs, leaving the sector a dead wasteland.";
+        case 'mothership_infection':
+            return "You stealthily smuggled the infection onto the Mother Ship disguised as a clean rescue flight.";
+        case 'alien_exodus':
+            return "You rejected the Queen but brought the allied beings off-world into safety.";
+        case 'outed_escape':
+            return "The survivors boarded knowing what you are, setting course for quarantine in deep suspicion.";
+        case 'failed_carrier':
+            return "You hid the future in a cargo pod but the containment failed, consuming your passengers.";
+        case 'empty_husk':
+            return "You fled alone, leaving both human camps and alien hives to die in the freezing dark.";
+        default:
+            return "You navigated the freezing dark, leaving a complex legacy in sector 9.";
+    }
+}
+
+function renderGameOverAct2Summary() {
+    const summaryCard = document.getElementById('game-over-act2-summary');
+    if (!summaryCard) return;
+
+    if (!isAct2RunActive()) {
+        summaryCard.classList.add('hidden');
+        return;
+    }
+
+    summaryCard.classList.remove('hidden');
+
+    const state = act2Manager.getState();
+    const ending = pickAct2Ending(state);
+    const obedience = state.queenObedience ?? 0;
+    const seatsUsed = state.manifest?.seatsUsed ?? 1;
+    const seatsMax = state.manifest?.seatsMax ?? 4;
+    const oneLiner = generateRunOneSentenceSummary(state, ending);
+
+    const endingName = ACT2_ENDING_TITLES[ending] ?? String(ending).replace(/_/g, ' ').toUpperCase();
+    const obedienceSign = obedience < 0 ? '\u2212' : obedience > 0 ? '+' : '';
+    const obedienceText = `${obedienceSign}${Math.abs(obedience)}`;
+
+    const campDetails = state.camps.map(c => {
+        const label = c.id === 'camp_meridian' ? 'MERIDIAN' : c.id === 'camp_tallow' ? 'TALLOW' : 'VESPER';
+        return `
+            <div class="go-act2-item">
+                <span class="go-act2-item__label">${label}</span>
+                <span class="go-act2-item__status go-act2-item__status--${c.status}">${formatStoryToken(c.status)}</span>
+            </div>
+        `;
+    }).join('');
+
+    const hiveDetails = state.hives.map(h => {
+        const label = h.id === 'hive_suture' ? 'SUTURE HIVE' : h.id === 'hive_relay' ? 'RELAY HIVE' : 'CARAPACE HIVE';
+        return `
+            <div class="go-act2-item">
+                <span class="go-act2-item__label">${label}</span>
+                <span class="go-act2-item__status go-act2-item__status--${h.status}">${formatStoryToken(h.status)}</span>
+            </div>
+        `;
+    }).join('');
+
+    const seedText = activeRunSeed !== null
+        ? `SEED: ${activeRunSeed}${activeRunCards.length > 0 ? ` (${activeRunCards.map(c => c.label).join(', ')})` : ''}`
+        : 'SEED: STANDARD';
+
+    summaryCard.innerHTML = `
+        <div class="go-act2-header">
+            <span class="go-act2-title">Projected End: ${endingName}</span>
+            <span class="go-act2-seed">${seedText}</span>
+        </div>
+        <div class="go-act2-grid">
+            <div>
+                <div class="go-act2-col-title">Survivor Camps</div>
+                <div class="go-act2-list">
+                    ${campDetails}
+                </div>
+            </div>
+            <div>
+                <div class="go-act2-col-title">Alien Hives</div>
+                <div class="go-act2-list">
+                    ${hiveDetails}
+                </div>
+            </div>
+        </div>
+        <div class="go-act2-stats-row">
+            <div class="go-act2-stat">Obedience: <span>${obedienceText}</span></div>
+            <div class="go-act2-stat">Seats Filled: <span>${seatsUsed}/${seatsMax}</span></div>
+            <div class="go-act2-stat">Humanity: <span>${state.humanity}%</span></div>
+        </div>
+        <div class="go-act2-one-liner">
+            ${oneLiner}
+        </div>
+    `;
 }
 
 function hideGameOverScreen() {
@@ -1850,6 +1976,11 @@ function resetRunToStartingState({
     snailSpawnEnabled = false,
     purgeSnails = true
 } = {}) {
+    activeRunSeed = null;
+    activeRunCards = [];
+    const seedHUD = document.getElementById('hud-run-seed');
+    if (seedHUD) seedHUD.classList.add('hidden');
+
     isResettingRun = true;
     try {
         if (resetBank) {
@@ -4933,6 +5064,15 @@ function closeCampChoiceModal() {
 function renderCampChoice(detail = {}) {
     if (!campChoiceModal || !campChoiceOptions) return;
     const camp = detail.campState ?? {};
+    const boardOptions = (detail.options ?? []).filter(o => o.action === 'board');
+    const panelEl = campChoiceModal.querySelector('.camp-choice-panel');
+    if (panelEl) {
+        if (boardOptions.length > 0) {
+            panelEl.classList.add('camp-choice-panel--boarding');
+        } else {
+            panelEl.classList.remove('camp-choice-panel--boarding');
+        }
+    }
     const leaderLine = detail.leaderName
         ? `${detail.leaderName} // ${detail.leaderClass ?? 'SURVIVOR'}${detail.leaderIsBoss ? ' // INVERTED COMMAND' : ''}`
         : 'SURVIVOR COMMAND';
@@ -4962,6 +5102,94 @@ function renderCampChoice(detail = {}) {
         const callsign = detail.leaderCallsign ? `Callsign ${detail.leaderCallsign}. ` : '';
         campChoiceCopy.textContent = `${title}${callsign}Your next action changes the launch manifest and the ending vector.`;
     }
+
+    // Boarding manifest forecast logic
+    const forecastEl = document.getElementById('boarding-manifest-forecast');
+
+    function updateForecast(variant) {
+        const state = act2Manager.getState();
+        let queenStatus = state.queenStatus;
+        let eggsStatus = state.eggsStatus;
+
+        if (variant === 'queen') { queenStatus = 'aboard'; eggsStatus = 'aboard'; }
+        else if (variant === 'purge') { queenStatus = 'killed'; eggsStatus = 'destroyed'; }
+        else if (variant === 'bargain') { queenStatus = 'killed'; eggsStatus = 'hidden'; }
+        else if (variant === 'abandon') { queenStatus = 'abandoned'; eggsStatus = 'abandoned'; }
+
+        const previewState = { ...state, queenStatus, eggsStatus };
+        const manifest = buildAct2Manifest(previewState);
+
+        const seats = [];
+        seats.push({ type: 'player', label: 'OPERATOR (CARRIER)', status: previewState.infectionStage === 'cured' ? 'CLEANED' : 'INFECTED' });
+
+        if (queenStatus === 'aboard') {
+            seats.push({ type: 'queen', label: 'QUEEN ALIEN', status: 'BROOD MOTHER (2 SLOTS)', isDouble: true });
+        }
+        if (eggsStatus === 'aboard' || eggsStatus === 'hidden') {
+            seats.push({ type: 'eggs', label: 'BROOD CLUTCH', status: eggsStatus === 'hidden' ? 'HIDDEN' : 'SECURED' });
+        }
+
+        const humanLabels = {
+            camp_meridian: 'MERIDIAN LEADER',
+            camp_tallow: 'TALLOW LEADER',
+            camp_vesper: 'VESPER LEADER'
+        };
+        for (const humanId of manifest.humans) {
+            const c = previewState.camps.find((x) => x.id === humanId);
+            const label = humanLabels[humanId] ?? 'HUMAN PASSENGER';
+            seats.push({ type: 'human', label, status: c?.passengerState === 'turned' ? 'NEURAL HYBRID' : 'SURVIVOR' });
+        }
+
+        const alienLabels = {
+            hive_suture: 'ALLIED BEING: NAHL',
+            hive_relay: 'ALLIED BEING: VEY',
+            hive_carapace: 'ALLIED BEING: RHUN'
+        };
+        for (const alienId of manifest.aliens) {
+            seats.push({ type: 'alien', label: alienLabels[alienId] ?? 'ALLIED BEING', status: 'HIVE RESONANT' });
+        }
+
+        while (seats.length < 4 && seats.reduce((acc, s) => acc + (s.isDouble ? 2 : 1), 0) < 4) {
+            seats.push({ type: 'empty', label: 'VACANT SLOT', status: 'FREE' });
+        }
+
+        const seatsGrid = forecastEl?.querySelector('.manifest-seats-grid');
+        if (seatsGrid) {
+            seatsGrid.innerHTML = seats.map((seat) => {
+                const doubleClass = seat.isDouble ? ' manifest-seat-slot--double' : '';
+                return `
+                    <div class="manifest-seat-slot manifest-seat-slot--${seat.type}${doubleClass}">
+                        <div class="manifest-seat-label">${seat.label}</div>
+                        <div class="manifest-seat-status">${seat.status}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const blockersList = document.getElementById('manifest-blockers-list');
+        if (blockersList) {
+            if (!manifest.valid) {
+                blockersList.innerHTML = manifest.invalidReasons.map((reason) => {
+                    let msg = reason;
+                    if (reason === 'seat_capacity_exceeded') msg = 'MANIFEST GATING: VESSEL CAPACITY EXCEEDED (4 SLOTS MAX)';
+                    if (reason === 'egg_unstable') msg = 'BIOLOGICAL CRITICAL: HIVE EGG UNSTABLE WITHOUT QUEEN OR NAHL IN TRANSIT';
+                    return `<div class="manifest-blocker-item">${msg}</div>`;
+                }).join('');
+            } else {
+                const projectedEnding = pickAct2Ending(previewState);
+                const endingName = ACT2_ENDING_TITLES[projectedEnding] ?? projectedEnding.replace(/_/g, ' ').toUpperCase();
+                blockersList.innerHTML = `<div class="manifest-success-item">PROJECTED PATH: ${endingName}</div>`;
+            }
+        }
+    }
+
+    if (boardOptions.length > 0 && forecastEl) {
+        forecastEl.classList.remove('hidden');
+        updateForecast(boardOptions[0].variant);
+    } else if (forecastEl) {
+        forecastEl.classList.add('hidden');
+    }
+
     campChoiceOptions.innerHTML = '';
     for (const option of detail.options ?? []) {
         const btn = document.createElement('button');
@@ -4972,6 +5200,10 @@ function renderCampChoice(detail = {}) {
             <span class="camp-choice-option__label">${option.label ?? 'OPTION'}</span>
             <span class="camp-choice-option__desc">${option.desc ?? ''}</span>
         `;
+        if (option.action === 'board') {
+            btn.addEventListener('mouseenter', () => updateForecast(option.variant));
+            btn.addEventListener('focus', () => updateForecast(option.variant));
+        }
         btn.addEventListener('click', () => {
             window.AudioManager?.play?.('ui_click', { volume: 0.45 });
             closeCampChoiceModal();
@@ -5042,9 +5274,71 @@ function renderCoverBar(humanity = 100, stage = 'latent') {
     if (coverPct) coverPct.textContent = `${pct}%`;
 }
 
+function updateQueensLedgerHUD() {
+    const hud = document.getElementById('queens-ledger-hud');
+    if (!hud) return;
+
+    if (!isAct2RunActive()) {
+        hud.classList.add('hidden');
+        return;
+    }
+
+    hud.classList.remove('hidden');
+
+    const state = act2Manager.getState();
+    const ending = state.manifest ? pickAct2Ending(state) : null;
+    const obedience = state.queenObedience ?? 0;
+    const seatsUsed = state.manifest?.seatsUsed ?? 1;
+    const seatsMax = state.manifest?.seatsMax ?? 4;
+
+    let vectorText = 'UNSTABLE';
+    let vectorClass = 'unstable';
+
+    if (state.dishBuilt) {
+        vectorText = ACT2_ENDING_TITLES[ending] ?? String(ending ?? 'unknown').replace(/_/g, ' ').toUpperCase();
+        vectorClass = 'revealed';
+    }
+
+    const sign = obedience < 0 ? '\u2212' : obedience > 0 ? '+' : '';
+    const obedienceText = `${sign}${Math.abs(obedience)}`;
+
+    hud.classList.remove('queens-ledger-hud--obedience-hive', 'queens-ledger-hud--obedience-human', 'queens-ledger-hud--neutral');
+    if (obedience > 0) {
+        hud.classList.add('queens-ledger-hud--obedience-hive');
+    } else if (obedience < 0) {
+        hud.classList.add('queens-ledger-hud--obedience-human');
+    } else {
+        hud.classList.add('queens-ledger-hud--neutral');
+    }
+
+    const newHTML = `
+        <span class="queens-ledger-hud__icon">♛</span>
+        OBEDIENCE <span class="queens-ledger-hud__value queens-ledger-hud__value--obedience">${obedienceText}</span>
+        &nbsp;·&nbsp;
+        SEATS <span class="queens-ledger-hud__value">${seatsUsed}/${seatsMax}</span>
+        &nbsp;·&nbsp;
+        VECTOR: <span class="queens-ledger-hud__value queens-ledger-hud__value--vector ${vectorClass}">${vectorText}</span>
+    `;
+
+    if (hud.innerHTML !== newHTML) {
+        hud.innerHTML = newHTML;
+        hud.classList.remove('queens-ledger-hud__flash');
+        void hud.offsetWidth; // Force reflow
+        hud.classList.add('queens-ledger-hud__flash');
+    }
+}
+
+window.addEventListener('camp-choice-resolved', updateQueensLedgerHUD);
+window.addEventListener('hive-choice-resolved', updateQueensLedgerHUD);
+window.addEventListener('camp-supported', updateQueensLedgerHUD);
+window.addEventListener('camp-bonded', updateQueensLedgerHUD);
+window.addEventListener('camp-final-resolved', updateQueensLedgerHUD);
+window.addEventListener('act2-milestone', updateQueensLedgerHUD);
+
 window.addEventListener('player-humanity-changed', (event) => {
     const { humanity, stage } = event?.detail ?? {};
     renderCoverBar(humanity, stage);
+    updateQueensLedgerHUD();
     if (stage === 'symptomatic' && humanity === 50) {
         showBiomePrompt('WARNING: COVER DEGRADING — HUMANS WILL NOTICE THE TELLS.');
     }

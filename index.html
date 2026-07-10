@@ -396,6 +396,7 @@
         <span class="level-indicator__title">BUNKER LEVEL</span>
         <span id="level-num">0</span>
         <span id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
+        <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
       </div>
       <div class="header-bar hud-header">
         <div class="hud-header__center">
@@ -441,6 +442,10 @@
               </div>
               <span class="vitals-panel__o2-pct" id="vitals-cover-pct">100%</span>
             </div>
+          </div>
+          <!-- Queen's Ledger HUD Chip (visible post-reveal/Act 2 begun) -->
+          <div id="queens-ledger-hud" class="queens-ledger-hud hidden" aria-live="polite">
+            <span id="queens-ledger-text">♛ OBEDIENCE 0 · SEATS 1/4 · VECTOR: UNSTABLE</span>
           </div>
           <div id="class-ability-panel" class="class-ability-panel" aria-live="polite" role="button" tabindex="-1" title="Sprint Burst [F]">
             <span class="class-ability-panel__key" aria-hidden="true"><svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="3" r="2.2" fill="currentColor" stroke="none"/><path d="M11 5 L8 11"/><path d="M10 8 L14 5.5" stroke-width="1.4"/><path d="M10 8 L6 10.5" stroke-width="1.4"/><path d="M8 11 L12 16 L16 18"/><path d="M8 11 L5 15 L2 13"/></svg></span>
@@ -551,6 +556,11 @@
 
           <div class="game-over-bank-note" id="go-bank-note">BANKED RESOURCES PRESERVED</div>
           <div class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
+          
+          <!-- Act 2 Summary Card -->
+          <div id="game-over-act2-summary" class="game-over-act2-summary hidden">
+            <!-- Dynamically populated summary stats and text -->
+          </div>
         </div>
 
         <div class="game-over-score-section">
@@ -1116,6 +1126,16 @@
         <h2 class="modal-title camp-choice-title" id="camp-choice-title">CAMP DECISION</h2>
         <div class="camp-choice-status" id="camp-choice-status"></div>
         <p class="camp-choice-copy" id="camp-choice-copy"></p>
+        
+        <!-- Boarding Manifest Forecast (hidden by default, shown during boarding choice) -->
+        <div id="boarding-manifest-forecast" class="boarding-manifest-forecast hidden">
+          <div class="manifest-forecast-title">◇ VESSEL LAUNCH MANIFEST FORECAST ◇</div>
+          <div class="manifest-seats-grid">
+            <!-- Dynamically populated seats forecast -->
+          </div>
+          <div class="manifest-blockers-list" id="manifest-blockers-list"></div>
+        </div>
+
         <div class="camp-choice-options" id="camp-choice-options"></div>
       </div>
     </div>
