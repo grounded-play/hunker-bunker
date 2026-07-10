@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="sacGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#b9ff9e" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#61d86d" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#1d4c24" stop-opacity="0.15"/>
+    </radialGradient>
+    <linearGradient id="sacShell" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#dfffd5"/>
+      <stop offset="45%" stop-color="#8de28f"/>
+      <stop offset="100%" stop-color="#2d6c37"/>
+    </linearGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="64" cy="68" rx="26" ry="34" fill="url(#sacGlow)"/>
+    <path d="M44 52c4-12 16-20 20-20s16 8 20 20" fill="none" stroke="url(#sacShell)" stroke-width="7"/>
+    <path d="M44 78c2 14 10 24 20 24s18-10 20-24" fill="none" stroke="#1c4422" stroke-width="7" opacity="0.65"/>
+    <path d="M53 34c-8 6-13 17-13 30" fill="none" stroke="#d5ffd1" stroke-width="4" opacity="0.75"/>
+    <path d="M75 34c8 6 13 17 13 30" fill="none" stroke="#d5ffd1" stroke-width="4" opacity="0.75"/>
+    <path d="M40 62c-6 4-10 8-12 15" fill="none" stroke="#9aff86" stroke-width="3" opacity="0.55"/>
+    <path d="M88 62c6 4 10 8 12 15" fill="none" stroke="#9aff86" stroke-width="3" opacity="0.55"/>
+    <circle cx="64" cy="67" r="10" fill="#dfffd5" opacity="0.35"/>
+    <circle cx="58" cy="61" r="4" fill="#f4ffe8" opacity="0.8"/>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="steamCore" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.96"/>
+      <stop offset="45%" stop-color="#d7edf8" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#9fb9c7" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g opacity="0.95">
+    <ellipse cx="64" cy="74" rx="30" ry="20" fill="url(#steamCore)"/>
+    <ellipse cx="48" cy="66" rx="18" ry="14" fill="url(#steamCore)"/>
+    <ellipse cx="80" cy="64" rx="19" ry="15" fill="url(#steamCore)"/>
+    <ellipse cx="58" cy="48" rx="16" ry="13" fill="url(#steamCore)"/>
+    <ellipse cx="76" cy="50" rx="14" ry="12" fill="url(#steamCore)"/>
+    <path d="M36 74c4-10 14-18 28-18s24 8 28 18" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.65"/>
+    <path d="M44 60c3-8 9-13 18-15" fill="none" stroke="#e7f7ff" stroke-width="3" opacity="0.6"/>
+    <path d="M84 61c-3-8-9-13-18-15" fill="none" stroke="#e7f7ff" stroke-width="3" opacity="0.6"/>
+  </g>
+</svg>

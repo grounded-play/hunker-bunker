@@ -11,7 +11,7 @@ export const DIALOGUE_LINES = Object.freeze({
         'Launch authorization pending. Try not to die during paperwork.',
         'Objective payload accepted. Please remain within regret distance of the wreck.',
         'Mothership uplink forming. Excellent time to leave.',
-        'Return corridor verified. Probability of dignified exit improving.'
+        'Return path verified. Probability of dignified exit improving.'
     ]),
     death: Object.freeze([
         'Operator signal terminated. Generating condolences with reduced sincerity.',
@@ -26,6 +26,12 @@ export const DIALOGUE_LINES = Object.freeze({
         'Field stain cleared. Archive retained the embarrassing details.',
         'Recovered resources secured. The bunker denies all emotional investment.',
         'Insurance protocol complete. Try not to create a replacement immediately.'
+    ]),
+    caveSignal: Object.freeze([
+        'MOTHERSHIP: SUBTERRANEAN SIGNAL DETECTED. SOURCE UNKNOWN.',
+        'SYSTEM: AUDIO PATTERN RESEMBLES BREATHING. CLASSIFYING AS STATIC.',
+        'BUNKER: DOOR MAP UPDATED. UNAUTHORIZED CAVITY FOUND.',
+        'MOTHERSHIP: DO NOT ENTER ORGANIC STRUCTURE WITHOUT RECOVERY OBJECTIVE.'
     ]),
     terminalChoice: Object.freeze([
         'Terminal bargain accepted. Consequences have been forwarded to future you.',
@@ -44,11 +50,11 @@ export const DIALOGUE_LINES = Object.freeze({
     // The bunker's ambient "I am watching you" commentary — fired by the Director.
     director: Object.freeze([
         'Movement logged. Facilities has dispatched a welcome committee.',
-        'Unauthorized exploration detected. Adjusting corridor enthusiasm.',
+        'Unauthorized exploration detected. Adjusting pillar lighting.',
         'Your curiosity exceeds your clearance. Compensating accordingly.',
         'Power rerouted to a department that resents you.',
         'The structure notes your depth and disapproves.',
-        'Please remain calm while the corridor selects a new destination.',
+        'Please remain calm while the column field selects a new destination.',
         'Productivity is being monitored. So is everything else.',
         'A maintenance event has been scheduled around your location.'
     ])

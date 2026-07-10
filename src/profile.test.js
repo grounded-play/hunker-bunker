@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ProfileManager, exportSaveCode, importSaveCode } from './profile.js';
+import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './profile.js';
 
 function makeStorage(seed = {}) {
     const map = new Map(Object.entries(seed));
@@ -43,6 +43,7 @@ describe('save codes', () => {
         const src = makeStorage({
             hb_bank: '{"tech":5}',
             hb_fabricator_v1: '{"fabricated":{"mk1_sidearm":true}}',
+            hb_arc_v1: '{"arcState":"cave_signal"}',
             unrelated: 'nope'
         });
         const code = exportSaveCode(src);
@@ -50,9 +51,10 @@ describe('save codes', () => {
 
         const dst = makeStorage();
         const written = importSaveCode(code, dst);
-        expect(written).toBe(2);
+        expect(written).toBe(3);
         expect(dst.getItem('hb_bank')).toBe('{"tech":5}');
         expect(dst.getItem('hb_fabricator_v1')).toBe('{"fabricated":{"mk1_sidearm":true}}');
+        expect(dst.getItem('hb_arc_v1')).toBe('{"arcState":"cave_signal"}');
         expect(dst.getItem('unrelated')).toBeNull();
     });
 
@@ -61,5 +63,20 @@ describe('save codes', () => {
         expect(importSaveCode('garbage', dst)).toBe(-1);
         expect(importSaveCode('HBSAVE1:!!!notb64', dst)).toBe(-1);
         expect(importSaveCode('', dst)).toBe(-1);
+    });
+
+    it('clears hb_ save records while keeping preferences', () => {
+        const storage = makeStorage({
+            hb_bank: '{"tech":5}',
+            hb_profile_v1: '{"callsign":"GHOST"}',
+            hunker_key_bindings: '{"moveUp":["KeyW","ArrowUp"]}',
+            hunker_audio_mix_v1: '{"master":0.7}'
+        });
+
+        expect(clearSaveData(storage)).toBe(2);
+        expect(storage.getItem('hb_bank')).toBeNull();
+        expect(storage.getItem('hb_profile_v1')).toBeNull();
+        expect(storage.getItem('hunker_key_bindings')).toBe('{"moveUp":["KeyW","ArrowUp"]}');
+        expect(storage.getItem('hunker_audio_mix_v1')).toBe('{"master":0.7}');
     });
 });

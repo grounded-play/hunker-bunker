@@ -12,7 +12,8 @@ const MOTHERSHIP_LINES = [
     { text: 'MOTHERSHIP: YOUR SHIP TOOK A HYPERSONIC STRIKE ON DESCENT.' },
     { text: "MOTHERSHIP: YOU'VE CRASHED IN SECTOR 9. STRUCTURE UNKNOWN." },
     { text: 'MOTHERSHIP: SCATTERED SUPPLY CACHES ARE DETECTABLE BY YOUR SUIT.' },
-    { text: 'MOTHERSHIP: SALVAGE CONSOLE IS NEAR YOUR WRECKAGE. UPLINK THERE FOR EXTRACTION.' },
+    { text: 'MOTHERSHIP: SALVAGE CONSOLE IS NEAR YOUR WRECKAGE. BANK SALVAGE THERE AND REBUILD YOUR SHIP, SYSTEM BY SYSTEM.' },
+    { text: 'MOTHERSHIP: RESTORE EVERY SYSTEM AND WE CAN PULL YOU OFF THIS ROCK, AGENT.' },
     { text: 'MOTHERSHIP: AWAITING YOUR RESPONSE, AGENT.' }
 ];
 
@@ -81,15 +82,21 @@ const MILESTONE_LINES = {
     reactorCompressor: {
         SCOUT: [
             { text: 'SYSTEM: REACTOR COMPRESSOR ACTIVE. POWER GRID STABILIZED.', pauseMs: 400 },
-            { text: 'MOTHERSHIP: FINAL SYSTEM REBOOT COMMENCING. DEFEND THE WRECK.' }
+            { text: 'MOTHERSHIP: FINAL SYSTEM REBOOT COMMENCING. DEFEND THE WRECK.' },
+            { text: 'MOTHERSHIP: ...WAIT. THE CORE READS INCOMPLETE. ONE COMPONENT IS STILL MISSING.', pauseMs: 400 },
+            { text: 'SYSTEM: DEEP STRUCTURE SIGNAL LOCKED, FAR PAST THE BIO SECTOR. COORDINATES ON THE FIELD COMPASS.' }
         ],
         TANK: [
             { text: 'SYSTEM: POWER REACTOR GRID ENGAGED. FULL SHIELD ENERGY RESTORED.', pauseMs: 400 },
-            { text: 'MOTHERSHIP: POWER COMPRESSOR STABILIZED. DEFEND THE WRECK.' }
+            { text: 'MOTHERSHIP: POWER COMPRESSOR STABILIZED. DEFEND THE WRECK.' },
+            { text: 'MOTHERSHIP: ...HOLD. CORE MANIFEST INCOMPLETE. ONE COMPONENT IS STILL MISSING.', pauseMs: 400 },
+            { text: 'SYSTEM: DEEP STRUCTURE SIGNAL LOCKED, FAR PAST THE BIO SECTOR. COORDINATES ON THE FIELD COMPASS.' }
         ],
         ENGINEER: [
             { text: 'SYSTEM: COMPRESSOR CONTROL ACTIVE. POWER CHANNELS SYNCHRONIZED.', pauseMs: 400 },
-            { text: 'MOTHERSHIP: REACTOR AUXILIARY ONLINE. DEFEND THE WRECK.' }
+            { text: 'MOTHERSHIP: REACTOR AUXILIARY ONLINE. DEFEND THE WRECK.' },
+            { text: 'MOTHERSHIP: ...ANOMALY. CORE CHECKSUM FAILS — ONE COMPONENT IS STILL MISSING.', pauseMs: 400 },
+            { text: 'SYSTEM: DEEP STRUCTURE SIGNAL LOCKED, FAR PAST THE BIO SECTOR. COORDINATES ON THE FIELD COMPASS.' }
         ]
     }
 };
@@ -129,6 +136,12 @@ export class DialogueManager {
         this.activeChoiceResolver = null;
         this.currentPlayerType = 'SCOUT';
 
+        // Default skip-button copy captured once so temporary relabels (milestone
+        // / brief transmissions) always restore to a known-good state even when
+        // dialogues overlap or cancel each other mid-flight.
+        this._defaultSkipLabel = this.skipBtn?.querySelector('.choice-card__label')?.textContent ?? '';
+        this._defaultSkipHint = this.skipBtn?.querySelector('.choice-card__hint')?.textContent ?? '';
+
         this.tutorialRunId = 0;
         this.activeTutorialRunId = 0;
         this.activeTutorialPromptCard = null;
@@ -151,8 +164,12 @@ export class DialogueManager {
                 return;
             }
             if (event.code === 'KeyB') {
-                event.preventDefault();
-                this.resolveChoice('tutorial');
+                // Only honor the tutorial hotkey when the tutorial choice is
+                // actually on screen — milestone/brief dialogues hide it.
+                if (this.tutorialBtn && !this.tutorialBtn.classList.contains('hidden')) {
+                    event.preventDefault();
+                    this.resolveChoice('tutorial');
+                }
             }
         };
 
@@ -295,13 +312,7 @@ export class DialogueManager {
         }
 
         // Configure choices to show a single button
-        const skipLabel = this.skipBtn?.querySelector('.choice-card__label');
-        const skipHint = this.skipBtn?.querySelector('.choice-card__hint');
-        const origLabel = skipLabel ? skipLabel.textContent : '';
-        const origHint = skipHint ? skipHint.textContent : '';
-
-        if (skipLabel) skipLabel.textContent = "[A] ACKNOWLEDGED. GET READY.";
-        if (skipHint) skipHint.textContent = "CLOSE AND DEFEND BASE";
+        this.setSkipChoiceCopy('[A] ACKNOWLEDGED. GET READY.', 'CLOSE AND DEFEND BASE');
 
         // Hide tutorial button for this dialogue
         if (this.tutorialBtn) this.tutorialBtn.classList.add('hidden');
@@ -323,8 +334,7 @@ export class DialogueManager {
         });
 
         // Restore original labels
-        if (skipLabel) skipLabel.textContent = origLabel;
-        if (skipHint) skipHint.textContent = origHint;
+        this.restoreSkipChoiceCopy();
         if (this.tutorialBtn) this.tutorialBtn.classList.remove('hidden');
 
         if (!this.isDialogueRunActive(runId)) return;
@@ -335,10 +345,15 @@ export class DialogueManager {
 
     async openBriefTransmission({ playerType = 'SCOUT', lines = [] } = {}) {
         if (!this.dialogEl || !this.panelEl || !this.bodyEl || !this.choicesEl) return;
-        if (this.activeDialogueRunId) return;
+        if (this.activeDialogueRunId) {
+            // Another dialogue owns the panel — wait for it to finish instead of
+            // silently dropping this transmission (the old behavior lost text).
+            const idle = await this.waitForDialogueIdle(15000);
+            if (!idle) return;
+        }
 
         const normalizedLines = lines
-            .map((line) => String(line ?? '').trim())
+            .map((line) => String((line && typeof line === 'object' ? line.text : line) ?? '').trim())
             .filter(Boolean);
         if (!normalizedLines.length) return;
 
@@ -377,12 +392,7 @@ export class DialogueManager {
             await this.sleep(runId, 320);
         }
 
-        const skipLabel = this.skipBtn?.querySelector('.choice-card__label');
-        const skipHint = this.skipBtn?.querySelector('.choice-card__hint');
-        const originalLabel = skipLabel?.textContent ?? '';
-        const originalHint = skipHint?.textContent ?? '';
-        if (skipLabel) skipLabel.textContent = '[A] CONTINUE';
-        if (skipHint) skipHint.textContent = 'DISMISS TRANSMISSION';
+        this.setSkipChoiceCopy('[A] CONTINUE', 'DISMISS TRANSMISSION');
         this.tutorialBtn?.classList.add('hidden');
         this.choicesEl.classList.remove('hidden');
         requestAnimationFrame(() => this.choicesEl.classList.add('is-visible'));
@@ -391,8 +401,7 @@ export class DialogueManager {
             this.activeChoiceResolver = resolve;
         });
 
-        if (skipLabel) skipLabel.textContent = originalLabel;
-        if (skipHint) skipHint.textContent = originalHint;
+        this.restoreSkipChoiceCopy();
         this.tutorialBtn?.classList.remove('hidden');
         if (!this.isDialogueRunActive(runId)) {
             this.setInputEnabled?.(true);
@@ -474,8 +483,44 @@ export class DialogueManager {
         const stablePortraitEl = document.getElementById('dialogue-stable-portrait');
         if (stablePortraitEl) stablePortraitEl.classList.add('hidden');
         this.panelEl?.classList.remove('dialogue-layout--single-speaker');
+        this.restoreSkipChoiceCopy();
+        this.tutorialBtn?.classList.remove('hidden');
 
-        this.setInputEnabled?.(false);
+        // Tearing a dialogue down returns control to the player. Callers that
+        // open a new dialogue immediately re-disable input themselves; callers
+        // that end gameplay (game over) also disable it on their own path.
+        this.setInputEnabled?.(true);
+    }
+
+    // Wait (poll) until no dialogue run owns the shared panel. Returns true when
+    // idle, false if the timeout elapsed while still busy.
+    waitForDialogueIdle(timeoutMs = 10000) {
+        return new Promise((resolve) => {
+            const startedAt = performance.now();
+            const check = () => {
+                if (!this.activeDialogueRunId) {
+                    resolve(true);
+                    return;
+                }
+                if (performance.now() - startedAt >= timeoutMs) {
+                    resolve(false);
+                    return;
+                }
+                window.setTimeout(check, 150);
+            };
+            check();
+        });
+    }
+
+    setSkipChoiceCopy(label, hint) {
+        const skipLabel = this.skipBtn?.querySelector('.choice-card__label');
+        const skipHint = this.skipBtn?.querySelector('.choice-card__hint');
+        if (skipLabel) skipLabel.textContent = label;
+        if (skipHint) skipHint.textContent = hint;
+    }
+
+    restoreSkipChoiceCopy() {
+        this.setSkipChoiceCopy(this._defaultSkipLabel, this._defaultSkipHint);
     }
 
     cancelTutorial() {
@@ -522,25 +567,11 @@ export class DialogueManager {
 
         this.activeDialogueRunId = 0;
         this.activeChoiceResolver = null;
+        this.setInputEnabled?.(true);
     }
 
     requestSkip() {
-        if (!this.activeDialogueRunId) return;
-
-        this.activeDialogueRunId = 0;
-        window.removeEventListener('keydown', this.handleDialogueKey);
-        this.panelEl?.classList.remove('is-open', 'is-closing');
-        this.dialogEl?.classList.add('hidden');
-        this.dialogEl?.classList.remove('is-revealed');
-        this.dialogEl?.setAttribute('aria-hidden', 'true');
-        this.choicesEl?.classList.add('hidden');
-        this.choicesEl?.classList.remove('is-visible');
-
-        if (this.activeChoiceResolver) {
-            const resolve = this.activeChoiceResolver;
-            this.activeChoiceResolver = null;
-            resolve('skip');
-        }
+        this.cancelDialogue();
     }
 
     async typeLine(runId, line) {
@@ -620,6 +651,36 @@ export class DialogueManager {
             name = 'MOTHERSHIP COMMAND';
             portrait = '/lore_portraits/survivor_00.webp';
             cleanText = text.replace(/^MOTHERSHIP:\s*/, '');
+        } else if (text.startsWith('SISTER MARTHA:')) {
+            name = 'SISTER MARTHA';
+            portrait = '/lore_portraits/tallow_martha.png';
+            cleanText = text.replace(/^SISTER MARTHA:\s*/, '');
+        } else if (text.startsWith('COMMANDER BRIGGS:')) {
+            name = 'COMMANDER BRIGGS';
+            portrait = '/lore_portraits/vesper_briggs.png';
+            cleanText = text.replace(/^COMMANDER BRIGGS:\s*/, '');
+        } else if (text.startsWith('OVERSEER KAELEN:')) {
+            name = 'OVERSEER KAELEN';
+            portrait = '/lore_portraits/meridian_kaelen.png';
+            cleanText = text.replace(/^OVERSEER KAELEN:\s*/, '');
+        } else if (/^(KAELEN|MARTHA|BRIGGS|NAHL|VEY|RHUN):/.test(text)) {
+            const speakerMap = {
+                KAELEN: { name: 'OVERSEER KAELEN', portrait: '/lore_portraits/survivor_10.webp' },
+                MARTHA: { name: 'SISTER MARTHA', portrait: '/lore_portraits/survivor_09.webp' },
+                BRIGGS: { name: 'COMMANDER BRIGGS', portrait: '/lore_portraits/survivor_06.webp' },
+                NAHL: { name: 'NAHL, THE SUTURE', portrait: '/lore_portraits/survivor_05.webp' },
+                VEY: { name: 'VEY, THE LISTENER', portrait: '/lore_portraits/survivor_11.webp' },
+                RHUN: { name: 'RHUN, THE SHIELD', portrait: '/lore_portraits/queen_00.webp' }
+            };
+            const prefix = text.split(':')[0];
+            const mapped = speakerMap[prefix];
+            name = mapped.name;
+            portrait = mapped.portrait;
+            cleanText = text.replace(/^[A-Z]+:\s*/, '');
+        } else if (text.startsWith('QUEEN:')) {
+            name = 'THE QUEEN';
+            portrait = '/lore_portraits/queen_00.webp';
+            cleanText = text.replace(/^QUEEN:\s*/, '');
         } else {
             if (playerType === 'TANK') {
                 name = 'TANK OPERATOR LINK';
@@ -755,7 +816,7 @@ export class DialogueManager {
     async tutorialStepDeadEnds(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '⬡',
-            text: 'DEAD-END CORRIDORS ARE REWARD CACHES — DENSER LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
+            text: 'DEAD-END PILLAR CLUSTERS ARE REWARD CACHES — DENSER LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
         });
         await this.sleep(runId, 3200);
         this.hideTutorialPrompt(runId);
@@ -877,7 +938,9 @@ export class DialogueManager {
         const prompt = this.tutorialPromptEl.cloneNode(true);
         prompt.removeAttribute('id');
         prompt.dataset.tutorialStackCard = 'true';
-        prompt.dataset.notificationPriority = '0';
+        // Keep tutorials in the same HUD hierarchy, but below the most urgent
+        // system/radio cards so they don't crowd out other on-screen text.
+        prompt.dataset.notificationPriority = '15';
         prompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 45)));
         prompt.dataset.removeDelayMs = '220';
         prompt.classList.add('hud-stack-card');

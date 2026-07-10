@@ -8,6 +8,15 @@ describe('dialogueLines', () => {
         }
     });
 
+    it('includes escalating cave-signal foreshadowing', () => {
+        expect(DIALOGUE_LINES.caveSignal).toEqual([
+            'MOTHERSHIP: SUBTERRANEAN SIGNAL DETECTED. SOURCE UNKNOWN.',
+            'SYSTEM: AUDIO PATTERN RESEMBLES BREATHING. CLASSIFYING AS STATIC.',
+            'BUNKER: DOOR MAP UPDATED. UNAUTHORIZED CAVITY FOUND.',
+            'MOTHERSHIP: DO NOT ENTER ORGANIC STRUCTURE WITHOUT RECOVERY OBJECTIVE.'
+        ]);
+    });
+
     it('selects lines deterministically', () => {
         expect(getDialogueLine('death', () => 0)).toBe(DIALOGUE_LINES.death[0]);
         expect(getDialogueLine('death', () => 0.999)).toBe(DIALOGUE_LINES.death[DIALOGUE_LINES.death.length - 1]);

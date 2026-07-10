@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="sparkCenter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="40%" stop-color="#ffe7a2" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#ff8a3d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="64" cy="64" r="15" fill="url(#sparkCenter)"/>
+    <path d="M64 18v26M64 84v26" stroke="#ffd77a" stroke-width="5"/>
+    <path d="M18 64h26M84 64h26" stroke="#ffd77a" stroke-width="5"/>
+    <path d="M29 29l18 18M81 81l18 18" stroke="#ffb347" stroke-width="5"/>
+    <path d="M99 29L81 47M47 81L29 99" stroke="#ffb347" stroke-width="5"/>
+    <path d="M39 18l8 24M89 86l12 24" stroke="#ffffff" stroke-width="4" opacity="0.8"/>
+    <path d="M18 39l24 8M86 89l24 12" stroke="#7dfcff" stroke-width="3" opacity="0.7"/>
+  </g>
+</svg>

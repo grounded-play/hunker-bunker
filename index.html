@@ -44,6 +44,8 @@
         <span style="font-size: var(--font-sm); color: var(--accent-secondary);">T</span>
         <span style="font-size: var(--font-xs); color: var(--text-muted); margin-left: 4px;">T</span>
       </button>
+      <button id="debug-grant-resources" class="debug-btn" title="Grant test salvage and shells">+$</button>
+      <button id="debug-god-mode" class="debug-btn" title="Toggle god mode">GOD</button>
     </div>
     <div id="cabinet-bezel"></div>
 
@@ -370,6 +372,7 @@
           <span class="fab-bank-chip"><span class="fab-bank-icon">⬢</span>TECH <b id="fab-bank-tech">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">◎</span>COIN <b id="fab-bank-coin">0</b></span>
           <span class="fab-bank-chip"><span class="fab-bank-icon">✚</span>MED <b id="fab-bank-med">0</b></span>
+          <span class="fab-bank-chip"><span class="fab-bank-icon">◈</span>SHELLS <b id="fab-bank-shells">0</b></span>
         </div>
         <!-- Gamba roll panel: spend a flat cost for a rarity-weighted reveal -->
         <div id="fab-roll-panel" class="fab-roll-panel hidden">
@@ -431,6 +434,13 @@
               </div>
               <span class="vitals-panel__o2-pct" id="vitals-o2-pct">100%</span>
             </div>
+            <div class="vitals-panel__o2-row vitals-panel__cover-row hidden" id="vitals-cover-row">
+              <span class="vitals-panel__o2-label" id="vitals-cover-label">COVER</span>
+              <div class="vitals-panel__o2-bar-track">
+                <div class="vitals-panel__o2-bar vitals-panel__cover-bar" id="vitals-cover-bar"></div>
+              </div>
+              <span class="vitals-panel__o2-pct" id="vitals-cover-pct">100%</span>
+            </div>
           </div>
           <div id="class-ability-panel" class="class-ability-panel" aria-live="polite" role="button" tabindex="-1" title="Sprint Burst [F]">
             <span class="class-ability-panel__key" aria-hidden="true"><svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="3" r="2.2" fill="currentColor" stroke="none"/><path d="M11 5 L8 11"/><path d="M10 8 L14 5.5" stroke-width="1.4"/><path d="M10 8 L6 10.5" stroke-width="1.4"/><path d="M8 11 L12 16 L16 18"/><path d="M8 11 L5 15 L2 13"/></svg></span>
@@ -469,6 +479,10 @@
         <div class="pickup-counter-panel__row">
           <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">◎</span>COIN</span>
           <span id="pickup-count-coin">0</span>
+        </div>
+        <div class="pickup-counter-panel__row pickup-counter-panel__row--shells">
+          <span class="pickup-counter-panel__label"><span class="pickup-counter-panel__icon">❂</span>SHELL</span>
+          <span id="pickup-count-shells">0</span>
         </div>
       </div>
       <!-- Boss Status Panel -->
@@ -581,11 +595,12 @@
     </div>
     <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
       <div class="touch-move-control__compass" aria-hidden="true">
-        <div class="touch-move-control__compass-face">
-          <div class="touch-move-control__compass-arrow"></div>
-          <div class="touch-move-control__compass-radar-arrow hidden" id="touch-compass-radar-arrow"></div>
-          <div class="touch-move-control__compass-distance">0u</div>
-          <div id="extraction-progress-ring" class="extraction-progress-ring hidden" aria-hidden="true">
+          <div class="touch-move-control__compass-face">
+            <div class="touch-move-control__compass-arrow"></div>
+            <div class="touch-move-control__compass-radar-arrow hidden" id="touch-compass-radar-arrow"></div>
+            <div class="touch-move-control__compass-radar-distance hidden" id="touch-compass-radar-distance"></div>
+            <div class="touch-move-control__compass-distance">0u</div>
+            <div id="extraction-progress-ring" class="extraction-progress-ring hidden" aria-hidden="true">
             <svg viewBox="0 0 40 40" class="extraction-ring-svg">
               <circle class="extraction-ring-track" cx="20" cy="20" r="16"/>
               <circle id="extraction-ring-fill" class="extraction-ring-fill" cx="20" cy="20" r="16"/>
@@ -661,11 +676,6 @@
       <span id="tutorial-prompt-icon" class="tutorial-prompt__icon hidden"></span>
       <span id="tutorial-prompt-text" class="tutorial-prompt__text"></span>
     </div>
-    <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
-      <span class="biome-hud-prompt__icon">ZONE</span>
-      <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
-    </div>
-
     <!-- Right-side layout container for notifications/prompts -->
     <div class="hud-notification-stack">
       <!-- Radio Transmission CRT Prompt -->
@@ -687,6 +697,11 @@
 
     <!-- Mission/action prompts sit below the popup deck -->
     <div class="hud-mission-stack">
+      <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
+        <span class="biome-hud-prompt__icon">ZONE</span>
+        <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
+      </div>
+
       <div id="console-hud-prompt" class="hud-action-prompt hidden">
         <span class="prompt-key">PRESS E</span>
         <span class="prompt-text">ACCESS BASE SHOP</span>
@@ -945,6 +960,16 @@
               <button class="terminal-action-btn" id="terminal-btn-weapon-ammoCapacity">UPGRADE</button>
             </div>
 
+            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="ammoRefill">
+              <div class="action-card-header">
+                <span class="action-title">AMMO CONDENSER</span>
+                <span class="action-cost" id="terminal-weapon-ammoRefill-level">LV 0/3</span>
+              </div>
+              <p class="action-desc" id="terminal-weapon-ammoRefill-desc">NEXT: Passive ammo refill every 7.9s</p>
+              <p class="action-desc action-desc--cost" id="terminal-weapon-ammoRefill-cost">COST: 45 TECH / 12 COIN</p>
+              <button class="terminal-action-btn" id="terminal-btn-weapon-ammoRefill">UPGRADE</button>
+            </div>
+
             <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="shotSpeed">
               <div class="action-card-header">
                 <span class="action-title">PROJECTILE VELOCITY</span>
@@ -984,12 +1009,13 @@
           <div class="terminal-layout terminal-layout--skills">
             <div class="skills-header">
               <span class="skills-unlocked-count" id="skills-unlocked-count">UNLOCKED SKILLS: 0/6</span>
-              <span class="skills-info-hint">SELECT AN AVAILABLE NODE TO PURCHASE WITH BANKED SNAIL SHELLS</span>
+              <span class="skills-info-hint">ONE DASHBOARD FOR CLASS, SYSTEM, AND COMBAT PATHS</span>
             </div>
             <div class="skills-tree-container">
               <div class="skills-tree-grid" id="skills-tree-grid">
                 <!-- Skill nodes generated dynamically by class -->
               </div>
+              <div class="skills-upgrade-matrix" id="skills-upgrade-matrix"></div>
             </div>
           </div>
         </div><!-- /#terminal-tab-skills-content -->
@@ -1069,6 +1095,31 @@
       </div>
     </div>
 
+    <div id="reset-save-confirm-modal" class="modal critical-modal hidden" aria-hidden="true">
+      <div class="modal-content confirm-modal-content">
+        <h2 class="modal-title confirm-title">RESET SAVE DATA</h2>
+        <p class="confirm-copy">
+          START A NEW GAME?<br>
+          ALL UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.
+        </p>
+        <div class="confirm-actions">
+          <button class="abort-btn" id="reset-save-confirm">RESET SAVE</button>
+          <button class="confirm-secondary-btn" id="reset-save-cancel">CANCEL</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="camp-choice-modal" class="modal camp-choice-modal hidden" aria-hidden="true">
+      <div class="modal-content camp-choice-panel">
+        <button class="close-modal camp-choice-close" id="close-camp-choice" aria-label="Close camp decision">×</button>
+        <div class="camp-choice-kicker" id="camp-choice-kicker">CAMP CONTACT</div>
+        <h2 class="modal-title camp-choice-title" id="camp-choice-title">CAMP DECISION</h2>
+        <div class="camp-choice-status" id="camp-choice-status"></div>
+        <p class="camp-choice-copy" id="camp-choice-copy"></p>
+        <div class="camp-choice-options" id="camp-choice-options"></div>
+      </div>
+    </div>
+
     <!-- Orientation Lock Overlay -->
     <div id="orientation-lock">
       <div class="lock-content">
@@ -1144,6 +1195,10 @@
         <div class="setting-item setting-item--action">
           <span>SAVE DATA</span>
           <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
+        </div>
+        <div class="setting-item setting-item--action setting-item--danger">
+          <span>NEW GAME RESET</span>
+          <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save">RESET</button>
         </div>
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">

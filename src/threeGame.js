@@ -3,12 +3,31 @@ import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_
 import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
+import { CaveEntrance } from './caveEntrance.js';
+import { SurvivorCamp } from './camp.js';
+import {
+    ACT2_CAMP_LABELS,
+    ACT2_CAMP_MAX_LEVEL,
+    ACT2_HIVE_RESCUE_BOND_THRESHOLD,
+    ACT2_HIVE_SITES,
+    ACT2_MAX_BOND,
+    ACT2_RECRUIT_BOND_THRESHOLD,
+    buildAct2Manifest,
+    campFinalUrgeCost,
+    campSupportCost,
+    getBoardingCampId as getAct2BoardingCampId,
+    getClassCampOrder
+} from './act2.js';
+import { HiveSite } from './hiveSite.js';
+import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
+import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { BunkerDirector } from './director.js';
+import { applyBlackChromaKey } from './textureKeying.js';
 
 const PLAYER_COLORS = {
     SCOUT: 0x7dff5a,
@@ -50,6 +69,8 @@ const TANK_FLIPPED_DIRECTION_INDICES = new Set([4]);
 const PLAYER_SPRITE_WAIST_SPLIT = 0.5;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
+const RADAR_DISH_GRID_SIZE = 2;
+const RADAR_DISH_FRAME_COUNT = RADAR_DISH_GRID_SIZE * RADAR_DISH_GRID_SIZE;
 const SPRITE_ANIMATION_SPEED = 12;
 const SUIT_LIGHT_BASE_INTENSITY = 2.1;
 const SUIT_LIGHT_BASE_DISTANCE = 7.2;
@@ -71,6 +92,10 @@ const O2_SAFE_LIGHT_COLOR = 0xb9fbff;
 const O2_SAFE_FILL_OPACITY = 0.16;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
+// The Act-1 finale cave spawns well past the BIO-sector reactor site (z≈176)
+// so recovering the "final ship component" is a genuine expedition.
+const CAVE_DISCOVERY_MIN_DISTANCE = 205;
+const CAVE_DISCOVERY_MAX_DISTANCE = 245;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -86,11 +111,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    // Sprint is a base exosuit action for every class. Class specials are not
-    // active in the current loop yet, so this HUD/ability path stays universal.
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5 }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5, unlockSkill: 'scout_special_unlock' },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'fortify',   abilityLabel: 'BRACE',        abilityCooldown: 10, abilityDuration: 2.0, unlockSkill: 'tank_special_unlock' },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'overclock', abilityLabel: 'REROUTE',      abilityCooldown: 11, abilityDuration: 2.5, unlockSkill: 'engineer_special_unlock' }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -141,12 +164,30 @@ const GOAL_CARD_CONFIGS = Object.freeze([
         lockedStatusText: 'LOCKED — INSTALL RADAR NODE FIRST'
     })
 ]);
+function setSpriteSheetFrame(texture, columns, rows, frameIndex = 0) {
+    if (!texture || columns <= 0 || rows <= 0) return;
+
+    const repeatX = 1 / columns;
+    const repeatY = 1 / rows;
+    if (texture.repeat.x !== repeatX || texture.repeat.y !== repeatY) {
+        texture.repeat.set(repeatX, repeatY);
+    }
+
+    const totalFrames = Math.max(1, columns * rows);
+    const normalizedFrame = ((Math.floor(frameIndex) % totalFrames) + totalFrames) % totalFrames;
+    const col = normalizedFrame % columns;
+    const row = Math.floor(normalizedFrame / columns);
+    texture.offset.set(col * repeatX, (rows - 1 - row) * repeatY);
+}
 const PICKUP_MAGNET_RADIUS = 3.4;
 const PICKUP_COLLECT_RADIUS = 0.72;
 const PICKUP_COLLECT_DURATION = 0.2;
 const WEAPON_CLIP_SIZE = 6;
 const WEAPON_RELOAD_DURATION = 1.25;
 const WEAPON_FIRE_COOLDOWN = 0.14;
+const WEAPON_AMMO_REFILL_INTERVAL = 10;
+const WEAPON_AMMO_REFILL_INTERVAL_REDUCTION = 2.1;
+const WEAPON_AMMO_REFILL_MIN_INTERVAL = 3.6;
 const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
@@ -191,6 +232,11 @@ const MILESTONE_BOSS_FOR_GOAL = Object.freeze({
     radarNode: 'boss_sporesnail',
     reactorCompressor: 'boss_sporesnail'
 });
+const HIVE_HARVEST_BOSS_FOR_HIVE = Object.freeze({
+    hive_suture: 'boss_sporesnail',
+    hive_relay: 'boss_cybersnail',
+    hive_carapace: 'boss_cryosnail'
+});
 
 // Fixed world build-site coordinates the yellow scanner arrow guides toward
 // (Note 4). Ordered by progression; a site is "built" once its goalKey is
@@ -220,7 +266,7 @@ const LORE_LOGS = {
         { key: 'A03', text: 'Atmospheric readings stable. O₂ generator nominal.\nSnail-variant bio-entities adapting to hull material. Pest control authorized.' },
         { key: 'A04', text: 'Communication with Mothership limited to quarterly uplink. By design.\nThey don\'t want to know what we found. But they want what we found.' },
         { key: 'A05', text: 'Agent roster — OPERATION SHARD:\nSCOUT TEAM: Sgt. A. Henderson. Lt. J. Park. Pvt. M. Reyes.\nMission: RETRIEVAL. Target: Bay C Specimen 0047.\nDo not allow them to open the stasis pods. Tell them it\'s samples.' },
-        { key: 'A06', text: 'Bay C alarm triggered. Manual override engaged. Who authorized override?\nPerimeter sensors show movement in corridor 9-F. Cameras offline.\nRecommend: code red lock — Director Chen APPROVED.' },
+        { key: 'A06', text: 'Bay C alarm triggered. Manual override engaged. Who authorized override?\nPerimeter sensors show movement between the support pillars in sector 9-F. Cameras offline.\nRecommend: code red lock — Director Chen APPROVED.' },
         { key: 'A07', text: 'O₂ generator in sector 4 is offline. Reserves depleted.\nPersonnel evacuating sub-levels 4 through 9.\nAnyone still in those levels — I\'m sorry.' },
         { key: 'A08', text: 'Three ships inbound. SCOUT ALPHA, BRAVO, CHARLIE.\nThey don\'t know what they\'re walking into. Orders are orders.\nUplink will cut when they enter atmosphere.\n— Director Chen' },
         { key: 'A09', text: '[CORRUPTED]\n...THE THING IN BAY...\n...NOT SPECIMEN 00...\n...IT KNEW THE CODE...\n[END]' },
@@ -235,7 +281,7 @@ const LORE_LOGS = {
         { key: 'C02', text: 'Coolant system failure in Bay C.\nEstimated repair time: 72 hours.\nWe have 12 hours before temperature rises.\nIce will form throughout the sector. This is acceptable.' },
         { key: 'C03', text: 'Something is wrong with Pod 312.\nThe readings show... movement inside.\nNot the tremors we expect in suspension — voluntary movement.\n— Cryo Tech Okonkwo' },
         { key: 'C04', text: 'Pod 312 has been opened. From the inside.\nInitiating full sector lockdown.\nAll personnel evacuate Bay C immediately.\n— AUTOMATED BUNKER ALERT' },
-        { key: 'C05', text: 'I can hear it moving in the corridor.\nThe thermal cameras show something approximately 1.2 meters.\nIt\'s not the stasis unit. The stasis unit was 0047.\nThis is something else. Something it made.' },
+        { key: 'C05', text: 'I can hear it moving between the pillars.\nThe thermal cameras show something approximately 1.2 meters.\nIt\'s not the stasis unit. The stasis unit was 0047.\nThis is something else. Something it made.' },
         { key: 'C06', text: 'Crawlers. That\'s what we\'re calling them.\nFast. Very fast. One hit and you\'re down.\nThey don\'t attack the Snails. They work together.\n— Cryo Tech Okonkwo (last entry)' },
         { key: 'C07', text: 'Bay C is sealed. Airtight. The Crawlers are inside.\nThe cold won\'t kill them. We tried.\nThey\'re still moving. Whatever 0047 is, it doesn\'t need warmth.' },
         { key: 'C08', text: 'The coolant puddles are spreading.\nI used to think the ice was the disaster.\nNow I think the ice is the least of our problems.' },
@@ -312,6 +358,12 @@ const SCATTER_STRAY_RATIO = 0.1;
 const SCATTER_MIN_SEPARATION = 0.78;
 const SCATTER_CLUSTER_CENTER_MIN_DISTANCE = 4.8;
 const BUNKER_JUNK_TRIGGER_RADIUS = 1.35;
+const SNAIL_SHELL_COLLECT_RADIUS = 1.2;
+const SNAIL_SHELL_BOSS_VALUE = 15; // matches the old kill-time boss grant
+const CAMP_O2_HAVEN_RADIUS = 3.4;
+const CAMP_O2_HAVEN_RATE = 4.5; // O2 per second inside a supported camp
+const CAMP_SUPPORT_O2_REFILL = 40; // instant O2 on each support purchase
+const CAMP_FAVOR_BASE_COST = 8;
 const BUNKER_JUNK_MIN_SEPARATION = 2.2;
 const BUNKER_JUNK_DROP_COUNT_MIN = 2;
 const BUNKER_JUNK_DROP_COUNT_MAX = 4;
@@ -416,19 +468,23 @@ const CRYO_SCATTER_VARIANTS = [
     { type: 'scatter_coolant_puddle', weight: 0.34 },
     { type: 'scatter_ice_stalagmite', weight: 0.26 },
     { type: 'scatter_cryo_icicle', weight: 0.22 },
-    { type: 'scatter_cryo_shards', weight: 0.18 }
+    { type: 'scatter_cryo_shards', weight: 0.18 },
+    { type: 'body_human_frozen_suit', weight: 0.1 },
+    { type: 'body_empty_exosuit', weight: 0.08 }
 ];
 const BIO_SCATTER_VARIANTS = [
     { type: 'scatter_bio_pod', weight: 0.34 },
     { type: 'scatter_bio_moss', weight: 0.2 },
     { type: 'scatter_slime_puddle', weight: 0.24 },
+    { type: 'prop_hive_resin_sac', weight: 0.12 },
     { type: 'bio_spores', weight: 0.14 },
     { type: 'bio_spores_blue', weight: 0.04 },
     { type: 'bio_spores_amber', weight: 0.04 }
 ];
 const ACTIVE_SCATTER_VARIANTS = [
-    { type: 'scatter_gravel', weight: 0.38 },
-    { type: 'ship_wreckage', weight: 0.08 },
+    { type: 'scatter_gravel', weight: 0.46 },
+    { type: 'scatter_cable_coil', weight: 0.18 },
+    { type: 'scatter_bolts', weight: 0.14 },
     ...SPORE_SCATTER_VARIANTS
 ];
 const BIOME_SCATTER_VARIANTS = Object.freeze({
@@ -554,14 +610,16 @@ function classifyChunkCells(grid, chunkSize) {
 }
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
         }
 
-        this.playerType = playerType;
+        const initialType = String(playerType ?? 'TANK').trim().toUpperCase();
+        this.playerType = PLAYER_COLORS[initialType] ? initialType : 'TANK';
         this.dialogueManager = dialogueManager;
+        this.arcManager = ARC_PRELUDE_ENABLED ? arcManager : null;
         this.o2StartupSequenceActive = false;
         this.o2StartupTime = 0;
         this.o2StartupPhase = 'popup';
@@ -608,12 +666,21 @@ export class ThreeGame {
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
         this.globalSeedOffset = 0;
+        // Per-run entropy for one-off placements (foundry, cave). Rerolled on
+        // every run reset so discoveries land somewhere new each attempt; pinned
+        // to 0 for Daily Ops so all players share the same daily layout.
+        this.fixedRunEntropy = false;
+        this.runEntropy = (Math.random() * 0xffffffff) >>> 0;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this.maxChunkMountsPerFrame = 1;
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
+        // Corpses live outside scatterSprites: syncVisibleChunks rebuilds that
+        // array from chunk registries every frame, which silently dropped
+        // scene-attached corpses (no decay, no collection).
+        this.corpses = [];
         this.depletedGearPileKeys = new Set();
         this.transientEffects = [];
         this.activeRadarScans = [];
@@ -680,6 +747,7 @@ export class ThreeGame {
         this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
+        this.weaponAmmoRefillTimer = 0;
         this.weaponFireCooldown = 0;
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
@@ -723,6 +791,7 @@ export class ThreeGame {
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
         this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
         this.hadNearDeath = false;
+        this._blockedExtractionSignalFired = false;
         this.nightVision = false;
         this._initClassAbility();
 
@@ -741,6 +810,23 @@ export class ThreeGame {
         // and opens the Fabrication Bay when reached (Beat 4).
         this.foundry = new FabricationFoundry(this.scene);
         this._foundryPromptActive = false;
+
+        // Act 1 finale: organic cave entrance holding the "final ship component"
+        // (actually the infection reveal — src/caveReveal.js). Revealed once the
+        // reactor goal completes; one-shot gated on the persisted arc state.
+        this.caveEntrance = new CaveEntrance(this.scene);
+        this._cavePromptActive = false;
+        this._caveAnomalySignaled = false;
+        this.cinematicLock = false;
+
+        // Act 2 (PregAlien loop): survivor camps + queen objective ladder.
+        this.act2 = ARC_PRELUDE_ENABLED ? act2Manager : null;
+        this.camps = [];
+        this._act2CampsReady = false;
+        this._campPromptLabel = null;
+        // Hive swarm sites: the alien mirror of the camps.
+        this.hives = [];
+        this._hiveSitesReady = false;
         this._terminalEvent = null;
         this._terminalEventResolvedIds = new Set();
         this._terminalEventIsMimic = false;   // forged terminal — punishes unverified trust
@@ -1162,16 +1248,30 @@ export class ThreeGame {
             bio_spores_amber: this.loadScatterTexture('/bio_spores_amber.png', textureLoader),
             scatter_coolant_puddle: this.loadScatterTexture('/scatter_coolant_puddle.png', textureLoader),
             scatter_ice_stalagmite: this.loadScatterTexture('/scatter_ice_stalagmite.png', textureLoader),
-            scatter_bio_pod: this.loadScatterTexture('/scatter_bio_pod.png', textureLoader),
+            scatter_bio_pod: this.loadKeyedSpriteTexture('/scatter_bio_pod.png', 22),
             scatter_slime_puddle: this.loadScatterTexture('/scatter_slime_puddle.png', textureLoader),
             scatter_gravel: this.loadScatterTexture('/scatter_gravel.png', textureLoader),
             scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
             scatter_cryo_shards: this.loadScatterTexture('/scatter_cryo_shards.png', textureLoader),
             scatter_bio_moss: this.loadScatterTexture('/scatter_bio_moss.png', textureLoader),
+            scatter_cable_coil: this.loadScatterTexture('/scatter_cable_coil.svg', textureLoader),
+            scatter_bolts: this.loadScatterTexture('/scatter_bolts.svg', textureLoader),
+            body_human_frozen_suit: this.loadScatterTexture('/body_human_frozen_suit.svg', textureLoader),
+            body_empty_exosuit: this.loadScatterTexture('/body_empty_exosuit.svg', textureLoader),
+            prop_hive_resin_sac: this.loadScatterTexture('/prop_hive_resin_sac.svg', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
             lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
             pit_hole: this.loadScatterTexture('/pit_hole.png', textureLoader),
-            decal_scars: this.loadScatterTexture('/decal_scars.png', textureLoader)
+            decal_scars: this.loadScatterTexture('/decal_scars.png', textureLoader),
+            fx_steam_puff: this.loadScatterTexture('/fx_steam_puff.svg', textureLoader),
+            fx_spark_burst: this.loadScatterTexture('/fx_spark_burst.svg', textureLoader),
+            // Corpse art ships on flat black — key it out like the live snails.
+            cybersnail_dead: this.loadKeyedSpriteTexture('/cybersnail_dead.png', 14),
+            cryosnail_dead: this.loadKeyedSpriteTexture('/cryosnail_dead.png', 14),
+            sporesnail_dead: this.loadKeyedSpriteTexture('/sporesnail_dead.png', 14),
+            boss_cybersnail_dead: this.loadKeyedSpriteTexture('/boss_cybersnail_dead.png', 14),
+            boss_cryosnail_dead: this.loadKeyedSpriteTexture('/boss_cryosnail_dead.png', 14),
+            boss_sporesnail_dead: this.loadKeyedSpriteTexture('/boss_sporesnail_dead.png', 14)
         };
 
         // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
@@ -1379,8 +1479,112 @@ export class ThreeGame {
                 depthTest: true,
                 fog: false
             }),
+            scatter_cable_coil: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_cable_coil,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            scatter_bolts: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_bolts,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            body_human_frozen_suit: new THREE.SpriteMaterial({
+                map: this.scatterTextures.body_human_frozen_suit,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            body_empty_exosuit: new THREE.SpriteMaterial({
+                map: this.scatterTextures.body_empty_exosuit,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_hive_resin_sac: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_hive_resin_sac,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
             ship_wreckage: new THREE.SpriteMaterial({
                 map: this.scatterTextures.ship_wreckage,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            cybersnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.cybersnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            cryosnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.cryosnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            sporesnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.sporesnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            fx_steam_puff: new THREE.SpriteMaterial({
+                map: this.scatterTextures.fx_steam_puff,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            fx_spark_burst: new THREE.SpriteMaterial({
+                map: this.scatterTextures.fx_spark_burst,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_cybersnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_cybersnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_cryosnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_cryosnail_dead,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            boss_sporesnail_dead: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_sporesnail_dead,
                 transparent: true,
                 alphaTest: 0.001,
                 depthWrite: false,
@@ -1586,18 +1790,57 @@ export class ThreeGame {
             reactorCompressor: reactorModuleMat
         };
 
+        // Initialize shipTextures dictionary for broken/healed visual progression
+        this.shipTextures = {
+            SCOUT: { broken: null, healed: null },
+            TANK: { broken: null, healed: null },
+            ENGINEER: { broken: null, healed: null }
+        };
+
         // Load textures using our high-fidelity chroma-key transparency shader to strip black backgrounds perfectly!
         this.loadKeyedSpriteTexture('/scout_ship.png', 15, (tex) => {
-            scoutShipMat.map = tex;
-            scoutShipMat.needsUpdate = true;
+            if (!scoutShipMat.map) {
+                scoutShipMat.map = tex;
+                scoutShipMat.needsUpdate = true;
+            }
         });
+        this.loadKeyedSpriteTexture('/scout_ship_broken.png', 15, (tex) => {
+            this.shipTextures.SCOUT.broken = tex;
+            this.updateShipVisualState();
+        });
+        this.loadKeyedSpriteTexture('/scout_ship_healed.png', 15, (tex) => {
+            this.shipTextures.SCOUT.healed = tex;
+            this.updateShipVisualState();
+        });
+
         this.loadKeyedSpriteTexture('/tank_ship.png', 15, (tex) => {
-            tankShipMat.map = tex;
-            tankShipMat.needsUpdate = true;
+            if (!tankShipMat.map) {
+                tankShipMat.map = tex;
+                tankShipMat.needsUpdate = true;
+            }
         });
+        this.loadKeyedSpriteTexture('/tank_ship_broken.png', 15, (tex) => {
+            this.shipTextures.TANK.broken = tex;
+            this.updateShipVisualState();
+        });
+        this.loadKeyedSpriteTexture('/tank_ship_healed.png', 15, (tex) => {
+            this.shipTextures.TANK.healed = tex;
+            this.updateShipVisualState();
+        });
+
         this.loadKeyedSpriteTexture('/engineer_ship.png', 15, (tex) => {
-            engineerShipMat.map = tex;
-            engineerShipMat.needsUpdate = true;
+            if (!engineerShipMat.map) {
+                engineerShipMat.map = tex;
+                engineerShipMat.needsUpdate = true;
+            }
+        });
+        this.loadKeyedSpriteTexture('/engineer_ship_broken.png', 15, (tex) => {
+            this.shipTextures.ENGINEER.broken = tex;
+            this.updateShipVisualState();
+        });
+        this.loadKeyedSpriteTexture('/engineer_ship_healed.png', 15, (tex) => {
+            this.shipTextures.ENGINEER.healed = tex;
+            this.updateShipVisualState();
         });
         this.loadKeyedSpriteTexture('/console.png', 15, (tex) => {
             consoleMat.map = tex;
@@ -1612,6 +1855,8 @@ export class ThreeGame {
             hullModuleMat.needsUpdate = true;
         }, { cropBottomRatio: 0.16 });
         this.loadKeyedSpriteTexture('/module_radar_dish.png', 18, (tex) => {
+            setSpriteSheetFrame(tex, RADAR_DISH_GRID_SIZE, RADAR_DISH_GRID_SIZE, 0);
+            tex.needsUpdate = true;
             radarModuleMat.map = tex;
             radarModuleMat.needsUpdate = true;
         }, { cropBottomRatio: 0.16 });
@@ -1674,6 +1919,9 @@ export class ThreeGame {
                 hp: SHIP_MAX_HP
             }
         ];
+        // All three wrecks are defined; updateCrashedShipsVisibility shows
+        // only the active class's ship (filtering here broke class switching:
+        // picking a different hero after construction left NO ship at all).
 
 
         const shadowMat = new THREE.MeshBasicMaterial({
@@ -2193,6 +2441,9 @@ export class ThreeGame {
                 this.interactWithLoreTerminal();
                 this.interactWithFoundry();
                 this.interactWithBlackBox();
+                this.interactWithCaveEntrance();
+                this.interactWithAct2Camp();
+                this.interactWithHiveSite();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
@@ -2216,6 +2467,9 @@ export class ThreeGame {
             this.interactWithO2Generator();
             this.interactWithFoundry();
             this.interactWithBlackBox();
+            this.interactWithCaveEntrance();
+            this.interactWithAct2Camp();
+            this.interactWithHiveSite();
         };
 
         // Pointer/tap state for canvas input.
@@ -2293,15 +2547,24 @@ export class ThreeGame {
 
                 this.closeConsoleModal();
                 this.setInputEnabled(false);
-                await this.dialogueManager?.openO2MilestoneDialogue({
-                    playerType: this.playerType,
-                    goalKey
-                });
-                this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
-                window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-                    detail: { type: bossType, goalKey }
-                }));
-                this.setInputEnabled(true);
+                try {
+                    await this.dialogueManager?.openO2MilestoneDialogue({
+                        playerType: this.playerType,
+                        goalKey
+                    });
+                    this.spawnMilestoneBoss(bossType, { sourceGoalKey: goalKey });
+                    window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+                        detail: { type: bossType, goalKey }
+                    }));
+                } finally {
+                    this.setInputEnabled(true);
+                }
+
+                // Act 1 finale: completing the reactor (last console build)
+                // surfaces the distant "final ship component" cave signal.
+                if (goalKey === 'reactorCompressor') {
+                    this.revealCaveEntrance();
+                }
             };
             window.addEventListener('goal-unlocked', this._onGoalUnlocked);
         }
@@ -2474,6 +2737,7 @@ export class ThreeGame {
     }
 
     setInputEnabled(enabled = true) {
+        if (enabled && this.cinematicLock) return; // cinematic owns input until unlocked
         this.inputEnabled = Boolean(enabled);
 
         if (this.inputEnabled) {
@@ -2625,12 +2889,14 @@ export class ThreeGame {
     }
 
     updatePlayerType(type, { poof = true, emitWorldEvents = true } = {}) {
-        this.playerType = type;
-        const color = PLAYER_COLORS[type] ?? 0xffffff;
-        const stats = CLASS_STATS[type] ?? CLASS_STATS.ENGINEER;
+        const requestedType = String(type ?? '').trim().toUpperCase();
+        const resolvedType = PLAYER_COLORS[requestedType] ? requestedType : 'ENGINEER';
+        this.playerType = resolvedType;
+        const color = PLAYER_COLORS[resolvedType] ?? 0xffffff;
+        const stats = CLASS_STATS[resolvedType] ?? CLASS_STATS.ENGINEER;
         
         let speed = stats.moveSpeed;
-        if (type === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_speed_1')) {
+        if (resolvedType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_speed_1')) {
             speed *= 1.15;
         }
         this.moveSpeed = speed;
@@ -2638,18 +2904,18 @@ export class ThreeGame {
         this.o2DrainMult = stats.o2DrainMult;
 
         let baseMagnet = stats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
-        if (type === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_magnet_1')) {
+        if (resolvedType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_magnet_1')) {
             baseMagnet = 5.5;
-        } else if (type === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_magnet_1')) {
+        } else if (resolvedType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_magnet_1')) {
             baseMagnet = 5.0;
         }
         this.pickupMagnetRadius = baseMagnet;
 
         this._initClassAbility();
-        this.playerSprite.material = this.playerMaterials[type] ?? this.playerMaterials.SCOUT;
+        this.playerSprite.material = this.playerMaterials[resolvedType] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
         if (this.playerTorsoSprite) {
-            this.playerTorsoSprite.material = this.playerTorsoMaterials[type] ?? this.playerTorsoMaterials.SCOUT;
+            this.playerTorsoSprite.material = this.playerTorsoMaterials[resolvedType] ?? this.playerTorsoMaterials.SCOUT;
             this.playerTorsoSprite.material.needsUpdate = true;
         }
         this.playerMaterial.color.setHex(color);
@@ -2698,9 +2964,11 @@ export class ThreeGame {
 
     updateCrashedShipsVisibility(poof = false) {
         if (!this.crashedShips) return;
+        const activeType = String(this.playerType ?? '').trim().toUpperCase();
 
         for (const ship of this.crashedShips) {
-            const shouldBeVisible = ship.type === this.playerType;
+            const shipType = String(ship.type ?? '').trim().toUpperCase();
+            const shouldBeVisible = shipType === activeType;
 
             // Trigger visual 3D smoke poof if it just became visible
             if (shouldBeVisible && !ship.isVisible && poof) {
@@ -2917,17 +3185,8 @@ export class ThreeGame {
             );
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imgData.data;
 
-            // Remove flat black background nicely using threshold for dark pixels
-            for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-                if (r <= threshold && g <= threshold && b <= threshold) {
-                    data[i + 3] = 0; // Make transparent
-                }
-            }
+            applyBlackChromaKey(imgData, { threshold });
 
             ctx.putImageData(imgData, 0, 0);
             
@@ -3249,6 +3508,7 @@ export class ThreeGame {
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
+        this.updateCorpses(delta);
         this.updateBuildSiteBeacon(now);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
@@ -3259,6 +3519,12 @@ export class ThreeGame {
         this.baseLights?.update(delta);
         this.foundry?.update(delta);
         this.updateFoundryPrompt();
+        this.updateCaveEntrance(delta);
+        this.updateAct2(delta);
+        this.updateCamps(delta);
+        this.updateHiveSites(delta);
+        this.updateInfectionPressure(delta);
+        this.updateShipVisualState(now);
         this.updateBlackBoxMarker(delta);
         this.updateRunModifierEffects(delta);
         this.updateBunkerDirector(delta);
@@ -3346,6 +3612,13 @@ export class ThreeGame {
     // a fresh player always knows the next step from the HUD alone.
     getLoopStep() {
         if (!this.player || this.isPlayerDead) return null;
+
+        // Act 2 owns the loop HUD outright — the human mission loop is over.
+        if (this.isAct2Active()) {
+            const objective = this.getAct2Objective();
+            return objective ? { key: `act2-${objective.key}`, label: objective.label } : null;
+        }
+
         const mission = this.missionState;
         if (mission?.status === 'extracted') return { key: 'done', label: 'EXTRACTION COMPLETE' };
         if (mission?.status === 'elevator_down') return { key: 'elevator', label: 'SURVIVE ELEVATOR ARRIVAL' };
@@ -3363,6 +3636,14 @@ export class ThreeGame {
         const inventory = this.getSessionInventory();
         if ((inventory.total ?? 0) > 0 && !o2?.isOnline) return { key: 'bank', label: 'BANK SALVAGE' };
 
+        // Act 1 finale: the distant cave outranks the rest of the loop.
+        if (this.caveEntrance?.isRevealed && !this.isCaveRevealDone()) {
+            const atCave = this.caveEntrance.isWithinInteractRange(this.player.position.x, this.player.position.z);
+            return atCave
+                ? { key: 'cave', label: 'RECOVER FINAL COMPONENT' }
+                : { key: 'cave', label: 'FOLLOW FINAL COMPONENT SIGNAL' };
+        }
+
         const foundryRevealed = this.foundry?.isRevealed;
         if (foundryRevealed) {
             const atFoundry = this.foundry.isWithinInteractRange(
@@ -3370,14 +3651,14 @@ export class ThreeGame {
                 this.player.position.z
             );
             const activated = this.bank?.isFoundryActivated?.() ?? false;
-            if (activated) {
+            if (!activated) {
                 return atFoundry
-                    ? { key: 'fabricate', label: 'FABRICATE' }
+                    ? { key: 'activate-fab', label: 'ACTIVATE FAB BAY' }
                     : { key: 'foundry', label: 'FOLLOW FOUNDRY SIGNAL' };
             }
-            return atFoundry
-                ? { key: 'activate-fab', label: 'ACTIVATE FAB BAY' }
-                : { key: 'foundry', label: 'FOLLOW FOUNDRY SIGNAL' };
+            if (atFoundry) return { key: 'fabricate', label: 'FABRICATE' };
+            // Activated and away from it: fall through so the loop HUD keeps
+            // pointing at the actual next objective instead of the old foundry.
         }
 
         if (mission?.status === 'objective_complete') return { key: 'extract', label: 'EXTRACT — RETURN TO SHIP' };
@@ -3386,10 +3667,10 @@ export class ThreeGame {
         return { key: 'explore', label: 'EXPLORE · BANK SALVAGE' };
     }
 
-    updateLoopStep() {
+    updateLoopStep(force = false) {
         const step = this.getLoopStep();
         const key = step?.key ?? null;
-        if (key === this._lastLoopStepKey) return;
+        if (!force && key === this._lastLoopStepKey) return;
         this._lastLoopStepKey = key;
         window.dispatchEvent(new CustomEvent('loop-step-changed', { detail: step }));
     }
@@ -3693,6 +3974,8 @@ export class ThreeGame {
         this.spawnPatrolNearPlayer();
         
         window.AudioManager?.play('class_lock', { volume: 0.56, playbackRate: 0.76, bus: 'sfx' });
+        this.arcManager?.recordSignal?.({ blackBoxesRecovered: 1 });
+        this.arcManager?.evaluate?.();
         window.dispatchEvent(new CustomEvent('black-box-recovered', { detail: recovered }));
         return true;
     }
@@ -3876,6 +4159,10 @@ export class ThreeGame {
     interactWithConsole() {
         if (!this.isGameplayInputActive()) return;
         if (!this.activeInteractiveConsole) return;
+        if (this.isAct2Active()) {
+            this.handleAct2ConsoleInteract();
+            return;
+        }
         this.openConsoleModal(this.activeInteractiveConsole);
     }
 
@@ -4021,7 +4308,7 @@ export class ThreeGame {
     }
 
     revealNearbyExits() {
-        this.showBunkerLine('ROUTES REVEALED. COMPASS DATA IS TEMPORARILY UNTRUSTWORTHY.');
+        this.showBunkerLine('OPEN PATHS REVEALED. COMPASS DATA IS TEMPORARILY UNTRUSTWORTHY.');
         window.dispatchEvent(new CustomEvent('terminal-routes-revealed'));
     }
 
@@ -4486,6 +4773,34 @@ export class ThreeGame {
             this.goalModuleMaterials.reactorCompressor.opacity = reactorOpacity;
             this.goalModuleMaterials.reactorCompressor.needsUpdate = true;
         }
+        this.updateShipVisualState();
+    }
+
+    updateShipVisualState(now = performance.now()) {
+        if (!this.crashedShips || !this.shipTextures) return;
+
+        const bankState = this.bank.getState();
+        const activeGoal = this.getActiveBaseGoal(bankState);
+        const isFullyHealed = activeGoal === null;
+        const radarUnlocked = Boolean(bankState.unlocks?.radarNode);
+        const radarTexture = this.goalModuleMaterials?.radarDish?.map ?? null;
+
+        for (const ship of this.crashedShips) {
+            const textures = this.shipTextures[ship.type];
+            if (textures) {
+                const tex = isFullyHealed ? textures.healed : textures.broken;
+                if (tex && ship.material.map !== tex) {
+                    ship.material.map = tex;
+                    ship.material.needsUpdate = true;
+                }
+            }
+        }
+
+        if (radarTexture) {
+            const radarLevel = bankState.radarNodeLevel ?? (radarUnlocked ? 1 : 0);
+            const frame = radarLevel >= 2 ? Math.floor(now * 0.006) % RADAR_DISH_FRAME_COUNT : 0;
+            setSpriteSheetFrame(radarTexture, RADAR_DISH_GRID_SIZE, RADAR_DISH_GRID_SIZE, frame);
+        }
     }
 
     getActiveBaseGoal(bankState = this.bank.getState()) {
@@ -4530,6 +4845,38 @@ export class ThreeGame {
                 cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'reactorCompressor')
             };
         }
+
+        // Sequential Level 2 upgrades once all nodes are constructed
+        if ((bankState.hullExpansionLevel ?? 1) < 2) {
+            return {
+                key: 'hullExpansion',
+                title: 'HULL MATRIX LVL 2',
+                desc: 'UPGRADE HULL PLATING INTEGRITY. Increases max exosuit integrity to 5 hearts.',
+                cost: this.getEffectiveCost(this.bank.getGoalUpgradeCost?.('hullExpansion', 2) ?? { tech: 100, med: 40 }),
+                type: 'goal-upgrade',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'hullExpansion')
+            };
+        }
+        if ((bankState.radarNodeLevel ?? 1) < 2) {
+            return {
+                key: 'radarNode',
+                title: 'RADAR DISH OVERCLOCK',
+                desc: 'OVERCLOCK THE RADAR DISH. Enables spinning animation and wide-area scans.',
+                cost: this.getEffectiveCost(this.bank.getGoalUpgradeCost?.('radarNode', 2) ?? { tech: 200, coin: 50 }),
+                type: 'goal-upgrade',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'radarNode')
+            };
+        }
+        if ((bankState.reactorCompressorLevel ?? 1) < 2) {
+            return {
+                key: 'reactorCompressor',
+                title: 'REACTOR COMPRESSOR BOOST',
+                desc: 'BOOST REACTOR COMPRESSOR. Refill rate doubles, drain slows by 35% general.',
+                cost: this.getEffectiveCost(this.bank.getGoalUpgradeCost?.('reactorCompressor', 2) ?? { tech: 400, coin: 150 }),
+                type: 'goal-upgrade',
+                cardConfig: GOAL_CARD_CONFIGS.find(cfg => cfg.goalKey === 'reactorCompressor')
+            };
+        }
         return null;
     }
 
@@ -4555,13 +4902,10 @@ export class ThreeGame {
         setText('terminal-summary-bank', totalBanked);
         setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
         setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
-        const playerClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
-        const skillTree = CLASS_SKILL_TREES[playerClass] ?? [];
-        const unlockedSkillCount = skillTree.filter((node) => this.bank.isSkillUnlocked(node.id)).length;
-        const purchasableSkillCount = skillTree.filter((node) => this.bank.canUnlockSkill(node.id, playerClass)).length;
+        const progression = this.getProgressionStats(ship, bankState);
         setText(
             'terminal-tab-skills-status',
-            `${unlockedSkillCount}/${skillTree.length} · ◈ ${this.bank.getShells()}${purchasableSkillCount > 0 ? ` · ${purchasableSkillCount} READY` : ''}`
+            `SKL ${progression.classUnlocked}/${progression.classTotal} · SYS ${progression.systemUnlocked}/${progression.systemTotal} · WPN ${progression.combatUnlocked}/${progression.combatTotal} · ◈ ${this.bank.getShells()}`
         );
         const activeGoal = this.getActiveBaseGoal(bankState);
         const purchaseZone = document.getElementById('terminal-objective-purchase-zone');
@@ -4586,7 +4930,11 @@ export class ThreeGame {
             }
 
             buyBtn.disabled = !canAfford;
-            buyBtn.textContent = activeGoal.key === 'o2Bubble' ? 'REPAIR GENERATOR' : 'INITIATE BUILD';
+            buyBtn.textContent = activeGoal.key === 'o2Bubble'
+                ? 'REPAIR GENERATOR'
+                : activeGoal.type === 'goal-upgrade'
+                    ? 'INITIATE UPGRADE'
+                    : 'INITIATE BUILD';
             buyBtn.classList.remove('btn-state--available', 'btn-state--insufficient');
             buyBtn.classList.add(canAfford ? 'btn-state--available' : 'btn-state--insufficient');
 
@@ -4595,6 +4943,8 @@ export class ThreeGame {
                     this.attemptO2GeneratorUpgrade(ship);
                 } else if (activeGoal.type === 'goal' && activeGoal.cardConfig) {
                     this.attemptGoalUnlock(ship, activeGoal.cardConfig);
+                } else if (activeGoal.type === 'goal-upgrade') {
+                    this.attemptGoalUpgrade(ship, activeGoal.key);
                 }
             };
 
@@ -4720,8 +5070,12 @@ export class ThreeGame {
         for (const cardConfig of GOAL_CARD_CONFIGS) {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
-        this.renderTier2Section(ship, bankState);
-        this.renderWeaponsSection(ship, bankState);
+        const skillsMatrix = document.getElementById('skills-upgrade-matrix');
+        if (skillsMatrix) this.mountUpgradeSectionsInSkillsTab(ship);
+        else {
+            this.renderTier2Section(ship, bankState);
+            this.renderWeaponsSection(ship, bankState);
+        }
         this.renderTerminalEventPanel();
 
         // Hide active / unlocked sections below
@@ -4916,6 +5270,25 @@ export class ThreeGame {
         this.renderO2GeneratorModal(ship);
     }
 
+    attemptGoalUpgrade(ship, goalKey) {
+        if (!this.bank.canUpgradeGoal(goalKey)) {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+            return;
+        }
+
+        if (this.bank.upgradeGoal(goalKey)) {
+            this.syncPersistentUpgrades();
+            this.emitVitalsState();
+            window.AudioManager?.play('class_lock', { volume: 0.55 });
+            this.renderConsoleBanking(ship);
+            this.renderO2GeneratorModal(ship);
+        } else {
+            window.AudioManager?.play('ui_error', { volume: 0.58 });
+            this.renderConsoleBanking(ship);
+        }
+    }
+
     attemptO2GeneratorUpgrade(ship) {
         const generatorState = this.getO2GeneratorState();
         const nextUpgrade = generatorState.nextUpgrade;
@@ -5107,27 +5480,103 @@ export class ThreeGame {
         const strokeWidth = parentUnlocked ? 2.5 : 1.5;
         
         const lineSvg = type === 'down-left'
-            ? `<svg class="skill-line-svg"><line x1="100%" y1="0%" x2="0%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`
-            : `<svg class="skill-line-svg"><line x1="0%" y1="0%" x2="100%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`;
+            ? `<svg class="skill-line-svg"><line class="${parentUnlocked ? 'unlocked-flow' : ''}" x1="100%" y1="0%" x2="0%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`
+            : `<svg class="skill-line-svg"><line class="${parentUnlocked ? 'unlocked-flow' : ''}" x1="0%" y1="0%" x2="100%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`;
         
         return `<div class="skill-line-cell">${lineSvg}</div>`;
     }
 
+    mountUpgradeSectionsInSkillsTab(ship) {
+        const matrix = document.getElementById('skills-upgrade-matrix');
+        if (!matrix) return;
+        for (const id of ['tier2-section', 'weapons-section']) {
+            const section = document.getElementById(id);
+            if (section && section.parentElement !== matrix) matrix.appendChild(section);
+        }
+        const bankState = this.bank.getState();
+        this.renderTier2Section(ship, bankState);
+        this.renderWeaponsSection(ship, bankState);
+    }
+
+    getSkillGateText(node = {}) {
+        const goalLabels = {
+            hullExpansion: 'HULL MATRIX',
+            radarNode: 'RADAR NODE',
+            reactorCompressor: 'REACTOR CORE'
+        };
+        if (node.requiredGoal && !this.bank.getState()?.unlocks?.[node.requiredGoal]) {
+            return `REQUIRES ${goalLabels[node.requiredGoal] ?? String(node.requiredGoal).toUpperCase()}`;
+        }
+        if (node.requiredO2Level && this.bank.getO2GeneratorLevel() < node.requiredO2Level) {
+            return `REQUIRES O2 FIELD LV ${node.requiredO2Level}`;
+        }
+        return '';
+    }
+
+    getProgressionStats(ship = this.getActiveShip(), bankState = this.bank.getState()) {
+        const playerClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
+        const classTree = CLASS_SKILL_TREES[playerClass] ?? [];
+        const classUnlocked = classTree.filter((node) => this.bank.isSkillUnlocked(node.id)).length;
+        const classReady = classTree.filter((node) => this.bank.canUnlockSkill(node.id, playerClass)).length;
+
+        const tier2Unlocks = bankState?.tier2Unlocks ?? {};
+        const systemUnlocked = TIER2_UPGRADE_ORDER.filter((key) => Boolean(tier2Unlocks[key])).length;
+        const systemReady = TIER2_UPGRADE_ORDER.filter((key) => {
+            if (tier2Unlocks[key]) return false;
+            const cfg = TIER2_UPGRADE_CONFIGS[key];
+            if (!cfg) return false;
+            const prereqMet = !cfg.prereq || Boolean(bankState?.unlocks?.[cfg.prereq]);
+            const shellPrice = shellPriceOf(cfg.cost);
+            return prereqMet && this.bank.canAffordShells(shellPrice);
+        }).length;
+
+        const weaponLevels = bankState?.weaponUpgrades ?? {};
+        const combatUnlocked = WEAPON_UPGRADE_ORDER.reduce(
+            (sum, key) => sum + Math.max(0, Math.floor(Number(weaponLevels[key]) || 0)),
+            0
+        );
+        const combatTotal = WEAPON_UPGRADE_ORDER.reduce(
+            (sum, key) => sum + (WEAPON_UPGRADES_CONFIG[key]?.maxLevel ?? 0),
+            0
+        );
+        const combatReady = WEAPON_UPGRADE_ORDER.filter((key) => {
+            const cfg = WEAPON_UPGRADES_CONFIG[key];
+            if (!cfg) return false;
+            const level = Math.max(0, Math.floor(Number(weaponLevels[key]) || 0));
+            if (level >= cfg.maxLevel) return false;
+            const shellPrice = shellPriceOf(cfg.costs[level]);
+            return this.bank.canAffordShells(shellPrice);
+        }).length;
+
+        return {
+            playerClass,
+            classTotal: classTree.length,
+            classUnlocked,
+            classReady,
+            systemTotal: TIER2_UPGRADE_ORDER.length,
+            systemUnlocked,
+            systemReady,
+            combatTotal,
+            combatUnlocked,
+            combatReady
+        };
+    }
+
     renderSkillsTree(ship) {
+        this.mountUpgradeSectionsInSkillsTab(ship);
         const gridContainer = document.getElementById('skills-tree-grid');
         const countEl = document.getElementById('skills-unlocked-count');
         if (!gridContainer) return;
 
         gridContainer.innerHTML = '';
 
-        const requestedClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
-        const playerClass = CLASS_SKILL_TREES[requestedClass]
-            ? requestedClass
+        const progression = this.getProgressionStats(ship);
+        const playerClass = CLASS_SKILL_TREES[progression.playerClass]
+            ? progression.playerClass
             : String(this.playerType ?? 'SCOUT').toUpperCase();
         const tree = CLASS_SKILL_TREES[playerClass] ?? [];
-        const unlockedCount = tree.filter(node => this.bank.isSkillUnlocked(node.id)).length;
         if (countEl) {
-            countEl.textContent = `${playerClass} SKILLS: ${unlockedCount}/${tree.length} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+            countEl.textContent = `${playerClass} SKILLS: ${progression.classUnlocked}/${progression.classTotal} (${progression.classReady} READY) | SYSTEM: ${progression.systemUnlocked}/${progression.systemTotal} (${progression.systemReady} READY) | COMBAT: ${progression.combatUnlocked}/${progression.combatTotal} (${progression.combatReady} READY) | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
         }
 
         if (tree.length === 0) {
@@ -5169,7 +5618,8 @@ export class ThreeGame {
 
                     const costEl = document.createElement('div');
                     costEl.className = 'skill-node-cost';
-                    costEl.textContent = isUnlocked ? 'COMPLETED' : `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`;
+                    const gateText = this.getSkillGateText(node);
+                    costEl.textContent = isUnlocked ? 'COMPLETED' : gateText || `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`;
                     card.appendChild(costEl);
 
                     if (isAvailable) {
@@ -5280,16 +5730,64 @@ export class ThreeGame {
         }
     }
 
+    updatePlayerUpgradeVisuals() {
+        if (!this.player) return;
+        if (this.playerUpgradeVisualGroup) {
+            this.player.remove(this.playerUpgradeVisualGroup);
+            this.playerUpgradeVisualGroup.traverse((child) => {
+                child.geometry?.dispose?.();
+                child.material?.dispose?.();
+            });
+        }
+        const group = new THREE.Group();
+        group.name = 'player-upgrade-visuals';
+        const bankState = this.bank?.getState?.() ?? {};
+        const skillCount = (bankState.unlockedSkills ?? []).length;
+        const weaponLevels = Object.values(bankState.weaponUpgrades ?? {}).reduce((sum, value) => sum + Math.max(0, Math.floor(Number(value) || 0)), 0);
+        const tier2Count = Object.values(bankState.tier2Unlocks ?? {}).filter(Boolean).length;
+        const ringCount = Math.min(3, Math.floor((skillCount + weaponLevels + tier2Count) / 2));
+        for (let i = 0; i < ringCount; i++) {
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(0.46 + i * 0.08, 0.012, 8, 32),
+                new THREE.MeshBasicMaterial({ color: [0x7dff5a, 0x00e5ff, 0xffb700][i % 3], transparent: true, opacity: 0.72 })
+            );
+            ring.rotation.x = Math.PI / 2;
+            ring.position.set(this.playerSpriteLead, 0.16 + i * 0.08, this.playerSpriteLead);
+            group.add(ring);
+        }
+        if (bankState.tier2Unlocks?.stimCache || bankState.tier2Unlocks?.suitThermal || bankState.tier2Unlocks?.deconFilters) {
+            const pack = new THREE.Mesh(
+                new THREE.BoxGeometry(0.18, 0.22, 0.08),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.78 })
+            );
+            pack.position.set(this.playerSpriteLead - 0.38, 0.82, this.playerSpriteLead + 0.02);
+            group.add(pack);
+        }
+        if (group.children.length) {
+            this.player.add(group);
+            this.playerUpgradeVisualGroup = group;
+        } else {
+            this.playerUpgradeVisualGroup = null;
+        }
+    }
+
     syncPersistentUpgrades() {
         this.unlocks = this.bank.getUnlocks();
         this.o2GeneratorLevel = this.bank.getO2GeneratorLevel();
-        let maxHp = this.unlocks.hullExpansion ? UPGRADED_HEARTS : BASE_HEARTS;
+        let maxHp = BASE_HEARTS;
+        const hullLevel = this.bank.getState().hullExpansionLevel ?? (this.unlocks.hullExpansion ? 1 : 0);
+        if (hullLevel === 2) {
+            maxHp = 5;
+        } else if (hullLevel === 1) {
+            maxHp = UPGRADED_HEARTS;
+        }
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_plating_1')) {
             maxHp += 1;
         }
         this.playerVitals.maxHp = maxHp;
         this.playerVitals.hp = Math.min(this.playerVitals.hp, this.playerVitals.maxHp);
         this.applyWeaponUpgrades();
+        this.updatePlayerUpgradeVisuals();
         this.updateGoalModuleVisualState(this.unlocks);
         this.ensureO2BubbleVisualState();
     }
@@ -5499,29 +5997,34 @@ export class ThreeGame {
     }
 
     async triggerO2ClassDialogue(bossType) {
-        if (this.dialogueManager) {
-            await this.dialogueManager.openO2MilestoneDialogue({ playerType: this.playerType });
+        try {
+            if (this.dialogueManager) {
+                await this.dialogueManager.openO2MilestoneDialogue({ playerType: this.playerType });
+            }
+
+            // Post-dialogue actions:
+            // 1. Send the boss
+            this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
+
+            // 2. Play warning alert overlay
+            window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
+                detail: { type: bossType, goalKey: 'o2Bubble' }
+            }));
+        } finally {
+            // Input must come back even if the dialogue or boss spawn throws —
+            // otherwise the player is stranded with no visible overlay.
+            this.setInputEnabled(true);
         }
-
-        // Post-dialogue actions:
-        // 1. Send the boss
-        this.spawnMilestoneBoss(bossType, { sourceGoalKey: 'o2Bubble' });
-
-        // 2. Play warning alert overlay
-        window.dispatchEvent(new CustomEvent('milestone-boss-warning', {
-            detail: { type: bossType, goalKey: 'o2Bubble' }
-        }));
-
-        // 3. Re-enable input
-        this.setInputEnabled(true);
     }
 
     chooseFoundryDiscoveryPosition() {
         const anchor = this.getBiomeAnchorPosition();
-        const random = this.createSeededRandom(this.hashTile(
+        // Mix in per-run entropy: the anchor hash alone is constant for a given
+        // hero, which made the foundry spawn in the same spot every single run.
+        const random = this.createSeededRandom((this.hashTile(
             Math.round(anchor.x),
             Math.round(anchor.z)
-        ));
+        ) ^ this.runEntropy) >>> 0);
         const preferredAngles = [Math.PI * 0.15, Math.PI * 0.85, Math.PI * 1.35, Math.PI * 1.75];
         for (let attempt = 0; attempt < 96; attempt += 1) {
             const ringT = random();
@@ -5578,8 +6081,1603 @@ export class ThreeGame {
     interactWithFoundry() {
         if (!this.isGameplayInputActive() || !this.player || !this.foundry?.isRevealed) return false;
         if (!this.foundry.isWithinInteractRange(this.player.position.x, this.player.position.z)) return false;
+        // Act 2 hijacks the foundry: in the dish phase interacting grows the
+        // signal dish instead of opening the fabrication bay.
+        if (this.isAct2Active() && this.act2.getPhase() === 'dish') {
+            this.act2.buildDish();
+            this.triggerCameraShake?.(0.3, 0.7);
+            window.AudioManager?.play?.('ui_upgrade_weapon', { volume: 0.55, playbackRate: 0.7 });
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'dishBuilt' } }));
+            return true;
+        }
         window.dispatchEvent(new CustomEvent('open-fabrication-bay'));
         return true;
+    }
+
+    // ── Act 1 finale: the cave holding the "final ship component" ──────────
+
+    // True once the infection reveal has played (persisted arc state) — the
+    // cave then stays dormant so the sequence can never replay.
+    isCaveRevealDone() {
+        const state = this.arcManager?.getState?.()?.arcState;
+        return state === 'infected_blackout' || state === 'hive_awakened_tease';
+    }
+
+    chooseCaveEntrancePosition() {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(anchor.x) + 101,
+            Math.round(anchor.z) + 47
+        ) ^ this.runEntropy) >>> 0);
+        // Bias outward (+z), the same direction the build-site ladder pushes.
+        const outwardAngles = [Math.PI * 0.5, Math.PI * 0.36, Math.PI * 0.64, Math.PI * 0.5];
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const dist = THREE.MathUtils.lerp(CAVE_DISCOVERY_MIN_DISTANCE, CAVE_DISCOVERY_MAX_DISTANCE, random());
+            const angle = outwardAngles[attempt % outwardAngles.length] + (random() - 0.5) * Math.PI * 0.4;
+            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
+            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+        return { x: Math.round(anchor.x), z: Math.round(anchor.z + CAVE_DISCOVERY_MIN_DISTANCE) };
+    }
+
+    revealCaveEntrance({ instant = false } = {}) {
+        if (!ARC_PRELUDE_ENABLED || !this.arcManager || !this.caveEntrance) return;
+        if (this.isCaveRevealDone() || this.caveEntrance.isRevealed) return;
+        const site = this.chooseCaveEntrancePosition();
+        if (instant) this.caveEntrance.revealInstant(site.x, site.z);
+        else this.caveEntrance.reveal(site.x, site.z);
+        window.dispatchEvent(new CustomEvent('cave-entrance-revealed', {
+            detail: {
+                x: site.x,
+                z: site.z,
+                distance: this.player ? Math.round(Math.hypot(this.player.position.x - site.x, this.player.position.z - site.z)) : null,
+                instant
+            }
+        }));
+    }
+
+    updateCaveEntrance(delta) {
+        if (!this.caveEntrance?.isRevealed) return;
+        this.caveEntrance.update(delta);
+        if (!this.player) return;
+
+        // First close approach marks the "organic anomaly" arc signal (one-shot).
+        if (!this._caveAnomalySignaled) {
+            const dist = this.caveEntrance.distanceTo(this.player.position.x, this.player.position.z);
+            if (dist <= 22) {
+                this._caveAnomalySignaled = true;
+                this.arcManager?.recordSignal?.({ sawOrganicAnomaly: true });
+                this.arcManager?.evaluate?.();
+            }
+        }
+
+        const promptEligible = this.isGameplayInputActive() && !this.isPlayerDead && !this.isCaveRevealDone();
+        const inRange = promptEligible
+            && this.caveEntrance.isWithinInteractRange(this.player.position.x, this.player.position.z);
+        if (inRange && !this._cavePromptActive) {
+            this._cavePromptActive = true;
+            window.dispatchEvent(new CustomEvent('cave-prompt-nearby'));
+        } else if (!inRange && this._cavePromptActive) {
+            this._cavePromptActive = false;
+            window.dispatchEvent(new CustomEvent('cave-prompt-clear'));
+        }
+    }
+
+    interactWithCaveEntrance() {
+        if (!this.isGameplayInputActive() || !this.player || !this.caveEntrance?.isRevealed) return false;
+        if (this.isCaveRevealDone()) return false;
+        if (!this.caveEntrance.isWithinInteractRange(this.player.position.x, this.player.position.z)) return false;
+        window.dispatchEvent(new CustomEvent('cave-entrance-interact'));
+        return true;
+    }
+
+    // ── Act 2: the PregAlien loop (src/act2.js drives the ladder) ──────────
+
+    isAct2Active() {
+        return Boolean(this.act2) && this.act2.getPhase() !== 'dormant';
+    }
+
+    // Per-frame Act 2 upkeep: make sure the foundry exists for the dish
+    // objective (Act 2 starts from a completed rebuild save). Camps are
+    // handled by updateCamps — they exist in both acts.
+    updateAct2(_delta) {
+        if (!this.isAct2Active()) return;
+        const phase = this.act2.getPhase();
+        if (phase === 'dish' && !this.foundry?.isRevealed) {
+            this.revealFoundry({ instant: true });
+        }
+    }
+
+    // Camps exist from Act 1 onward: friendly outposts the player can support
+    // with shells (and later must betray). Leveled camps double as O2 havens
+    // during the human prelude.
+    updateCamps(delta) {
+        if (!ARC_PRELUDE_ENABLED || !this.act2) return;
+        this.ensureAct2Camps();
+        const phase = this.act2.getPhase();
+        for (const camp of this.camps) camp.update(delta);
+
+        // Act 1 perk: a supported camp tops up O2 while you stand in it.
+        if (phase === 'dormant' && this.player && !this.isPlayerDead && (this.playerVitals?.o2 ?? 100) < 100) {
+            for (const camp of this.camps) {
+                if (camp.level > 0 && !camp.destroyed
+                    && camp.distanceTo(this.player.position.x, this.player.position.z) <= CAMP_O2_HAVEN_RADIUS) {
+                    this.adjustOxygen(delta * CAMP_O2_HAVEN_RATE);
+                    break;
+                }
+            }
+        }
+
+        this.updateCampTurrets(delta, phase);
+        this.updateCampPrompt(phase);
+    }
+
+    // Camp defense turrets: friendly artillery in Act 1, the first hostile
+    // system the carrier meets in Act 2. Disable them with Vey's spoof, smash
+    // them loudly, or eat the shocks.
+    updateCampTurrets(delta, phase) {
+        if (!this.player) return;
+        for (const camp of this.camps) {
+            const turrets = camp.getActiveTurrets?.() ?? [];
+            if (!turrets.length) continue;
+            const record = this.getCampRecord(camp.id);
+            const friendly = phase === 'dormant'
+                || ['recruited', 'turned'].includes(record?.status ?? 'alive');
+            for (const turret of turrets) {
+                turret.cooldown -= delta;
+                if (turret.cooldown > 0) continue;
+                const pos = camp.turretWorldPos(turret);
+
+                if (friendly) {
+                    // Shock the nearest low-tier slug in range.
+                    let best = null;
+                    let bestDist = 7;
+                    for (const sprite of this.scatterSprites) {
+                        if (!this.isEnemyType(sprite.userData?.type)) continue;
+                        if (sprite.userData.burstTriggered || sprite.userData.isBoss) continue;
+                        const d = Math.hypot(sprite.position.x - pos.x, sprite.position.z - pos.z);
+                        if (d < bestDist) {
+                            bestDist = d;
+                            best = sprite;
+                        }
+                    }
+                    if (best) {
+                        this.damageSnail(best, 1);
+                        this.spawnPhysicalBurst(best.position.x, best.position.z, {
+                            color: 0x7df2ff,
+                            count: 5,
+                            upward: 0.18,
+                            spread: 0.8
+                        });
+                        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.3, playbackRate: 1.6 });
+                        turret.cooldown = 2.8;
+                    } else {
+                        turret.cooldown = 0.5;
+                    }
+                    continue;
+                }
+
+                // Hostile grid: the carrier gets shocked and the camp gets told.
+                if (this.isAct2Active() && ['alive', 'robbed'].includes(record?.status ?? '')) {
+                    const d = Math.hypot(this.player.position.x - pos.x, this.player.position.z - pos.z);
+                    if (d <= 5 && !this.isPlayerDead && this.isGameplayInputActive()) {
+                        this.takeDamage(1, 'camp-turret');
+                        this.act2?.adjustCampSuspicion?.(camp.id, 8);
+                        this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, {
+                            color: 0x7df2ff,
+                            count: 7,
+                            upward: 0.25,
+                            spread: 1.1
+                        });
+                        this.triggerCameraShake?.(0.25, 0.4);
+                        window.AudioManager?.play?.('player_hit', { volume: 0.55, playbackRate: 1.3 });
+                        window.dispatchEvent(new CustomEvent('camp-turret-zap', {
+                            detail: { campId: camp.id, campLabel: camp.label }
+                        }));
+                        turret.cooldown = 3.2;
+                    } else {
+                        turret.cooldown = 0.4;
+                    }
+                } else {
+                    turret.cooldown = 1;
+                }
+            }
+        }
+    }
+
+    // ── Humanity / cover pressure (post-reveal) ────────────────────────────
+    // Humanity is cover, not morality: it bleeds slowly with time and faster
+    // under scrutiny. Camps that watch a low-cover carrier get suspicious;
+    // full suspicion outs the player and the relay spreads the truth.
+    updateInfectionPressure(delta) {
+        if (!ARC_PRELUDE_ENABLED || !this.act2 || !this.player || this.isPlayerDead) return;
+        const phase = this.act2.getPhase();
+        if (phase === 'dormant' || phase === 'departed') return;
+        const state = this.act2.getState();
+        if (['cured', 'ascendant'].includes(state.infectionStage)) return;
+
+        // Ambient decay: ~1 point of cover per 12s of active play.
+        this._humanityDecayAcc = (this._humanityDecayAcc ?? 0) + delta / 12;
+        if (this._humanityDecayAcc >= 1) {
+            const drop = Math.floor(this._humanityDecayAcc);
+            this._humanityDecayAcc -= drop;
+            this.act2.adjustHumanity(-drop);
+            const after = this.act2.getState();
+            window.dispatchEvent(new CustomEvent('player-humanity-changed', {
+                detail: { humanity: after.humanity, stage: after.infectionStage }
+            }));
+        }
+
+        // Scrutiny: standing inside a living camp with visible tells.
+        const stage = state.infectionStage;
+        const suspicionRate = stage === 'symptomatic' ? 1 / 4 : stage === 'strained' ? 1 / 10 : 0;
+        if (suspicionRate <= 0) return;
+        this._suspicionAcc = this._suspicionAcc ?? {};
+        for (const camp of this.camps) {
+            const record = this.getCampRecord(camp.id);
+            if (!record || !['alive', 'robbed'].includes(record.status)) continue;
+            if (record.knowsPlayerInfected) continue;
+            if (camp.distanceTo(this.player.position.x, this.player.position.z) > 6) continue;
+            this._suspicionAcc[camp.id] = (this._suspicionAcc[camp.id] ?? 0) + delta * suspicionRate;
+            if (this._suspicionAcc[camp.id] < 1) continue;
+            const gain = Math.floor(this._suspicionAcc[camp.id]);
+            this._suspicionAcc[camp.id] -= gain;
+            this.act2.adjustCampSuspicion(camp.id, gain);
+            const after = this.getCampRecord(camp.id);
+            window.dispatchEvent(new CustomEvent('player-suspicion-changed', {
+                detail: { campId: camp.id, campLabel: camp.label, suspicion: after.suspicion }
+            }));
+            if (after.suspicion >= 100 && !this.act2.getState().networks.knownByCamps.includes(camp.id)) {
+                this.act2.propagateOuting(camp.id);
+                window.dispatchEvent(new CustomEvent('player-outed', {
+                    detail: {
+                        campId: camp.id,
+                        campLabel: camp.label,
+                        spread: this.act2.getState().networks.knownByCamps
+                    }
+                }));
+            }
+        }
+    }
+
+    // ── Hive swarm sites (docs/hive-swarm-camps-and-humanity-system-design.md) ──
+    // Act 1: mineable bio-anomalies. Act 2: Nahl, Vey, and Rhun — allies the
+    // player wounded for resources, with rescue/harvest/network choices.
+
+    updateHiveSites(delta) {
+        if (!ARC_PRELUDE_ENABLED || !this.act2) return;
+        this.ensureHiveSites();
+        for (const hive of this.hives) hive.update(delta);
+        this.updateHivePrompt();
+    }
+
+    chooseHiveSitePosition(index) {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(anchor.x) - 173 - index * 31,
+            Math.round(anchor.z) + 137 + index * 17
+        ) ^ this.runEntropy) >>> 0);
+        // Fanned between the camps, slightly closer in — the anomalies were
+        // always underfoot, the player just read them as terrain.
+        const baseAngle = [Math.PI * 0.45, Math.PI * 1.1, Math.PI * 1.75][index % 3];
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const dist = THREE.MathUtils.lerp(45, 90, random());
+            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
+            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
+            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+        return {
+            x: Math.round(anchor.x + Math.cos(baseAngle) * 45),
+            z: Math.round(anchor.z + Math.sin(baseAngle) * 45)
+        };
+    }
+
+    ensureHiveSites() {
+        if (this._hiveSitesReady || !this.act2) return;
+        const state = this.act2.getState();
+        this.hives = state.hives.map((record, index) => {
+            const site = ACT2_HIVE_SITES.find((s) => s.id === record.id) ?? ACT2_HIVE_SITES[index];
+            const hive = new HiveSite(this.scene, {
+                id: record.id,
+                label: site?.label ?? 'HIVE',
+                characterId: site?.characterId ?? ''
+            });
+            let { x, z } = record;
+            if (!Number.isFinite(x) || !Number.isFinite(z)) {
+                const spot = this.chooseHiveSitePosition(index);
+                x = spot.x;
+                z = spot.z;
+                this.act2.setHivePosition(record.id, x, z);
+            }
+            hive.reveal(x, z);
+            hive.syncFromRecord(record);
+            return hive;
+        });
+        this._hiveSitesReady = true;
+    }
+
+    getHiveRecord(id) {
+        return this.act2?.getState?.().hives.find((h) => h.id === id) ?? null;
+    }
+
+    getHiveById(id) {
+        return this.hives.find((hive) => hive.id === id) ?? null;
+    }
+
+    getHiveHarvestCycleKey(date = new Date()) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    canHarvestHiveToday(record, cycleKey = this.getHiveHarvestCycleKey()) {
+        return record?.lastHarvestCycle !== cycleKey;
+    }
+
+    denyHiveHarvest(hive, record = this.getHiveRecord(hive?.id)) {
+        window.AudioManager?.play?.('ui_error', { volume: 0.38, playbackRate: 0.72 });
+        window.dispatchEvent(new CustomEvent('hive-harvest-denied', {
+            detail: {
+                hiveId: hive?.id,
+                hiveLabel: hive?.label,
+                harvestCycle: record?.lastHarvestCycle ?? null
+            }
+        }));
+        return true;
+    }
+
+    // The hive interaction available where the player stands, or null.
+    getActionableHiveAt(x, z) {
+        const phase = this.act2?.getPhase?.() ?? 'dormant';
+        for (const hive of this.hives) {
+            if (!hive.isWithinInteractRange(x, z)) continue;
+            const record = this.getHiveRecord(hive.id);
+            if (!record) continue;
+            if (phase === 'dormant') {
+                // Pre-reveal: a resource node, nothing more.
+                if (record.extractionLevel < 3
+                    && ['dormant', 'mined', 'wounded', 'awakened'].includes(record.status)) {
+                    if (!this.canHarvestHiveToday(record)) {
+                        return {
+                            hive,
+                            action: 'cooldown',
+                            label: `${hive.label} HARVESTED TODAY`
+                        };
+                    }
+                    return {
+                        hive,
+                        action: 'mine',
+                        label: `HARVEST ${hive.label} — ${record.extractionLevel}/3`
+                    };
+                }
+                return null;
+            }
+            // Post-reveal: the being inside can finally speak.
+            return { hive, action: 'contact', label: `COMMUNE — ${hive.label}` };
+        }
+        return null;
+    }
+
+    updateHivePrompt() {
+        const eligible = this.isGameplayInputActive() && this.player && !this.isPlayerDead;
+        const actionable = eligible
+            ? this.getActionableHiveAt(this.player.position.x, this.player.position.z)
+            : null;
+        const label = actionable?.label ?? null;
+        if (label === this._hivePromptLabel) return;
+        this._hivePromptLabel = label;
+        if (label) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+        } else if (!this._campPromptLabel) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
+    }
+
+    interactWithHiveSite() {
+        if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
+        const actionable = this.getActionableHiveAt(this.player.position.x, this.player.position.z);
+        if (!actionable) return false;
+        if (actionable.action === 'mine') return this.mineHiveSite(actionable.hive);
+        if (actionable.action === 'cooldown') return this.denyHiveHarvest(actionable.hive);
+        if (actionable.action === 'contact') return this.openHiveChoice(actionable.hive);
+        return false;
+    }
+
+    // Act 1 extraction: real rewards now, a wounded ally later.
+    mineHiveSite(hive) {
+        const before = this.getHiveRecord(hive.id);
+        if (!before || before.extractionLevel >= 3) return false;
+        const harvestCycle = this.getHiveHarvestCycleKey();
+        if (!this.canHarvestHiveToday(before, harvestCycle)) {
+            return this.denyHiveHarvest(hive, before);
+        }
+        this.act2.mineHive(hive.id, { harvestCycle });
+        const after = this.getHiveRecord(hive.id);
+        if (!after || after.extractionLevel === before.extractionLevel) return false;
+
+        const yields = {
+            hive_suture: { med: 2 },
+            hive_relay: { tech: 2 },
+            hive_carapace: { coin: 2 }
+        };
+        this.bank?.deposit?.(yields[hive.id] ?? { tech: 1 });
+        this.bank?.addShells?.(4);
+        hive.syncFromRecord(after);
+        this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bio_spores');
+        this.triggerCameraShake?.(0.14, 0.3);
+        window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.5, playbackRate: 0.6 });
+        const boss = this.spawnHiveHarvestBoss(hive, after.extractionLevel);
+        window.dispatchEvent(new CustomEvent('hive-mined', {
+            detail: {
+                hiveId: hive.id,
+                hiveLabel: hive.label,
+                extractionLevel: after.extractionLevel,
+                wounded: after.status === 'wounded',
+                harvestCycle,
+                bossType: boss?.userData?.type ?? null
+            }
+        }));
+        window.dispatchEvent(new CustomEvent('shell-collected', {
+            detail: { gained: 4, total: this.bank?.getShells?.() ?? 0, isBoss: false }
+        }));
+        return true;
+    }
+
+    // Act 2 hive contact reuses the camp choice modal — same event, alien detail.
+    openHiveChoice(hive) {
+        const record = this.getHiveRecord(hive.id);
+        if (!record) return false;
+        const character = ACT2_HIVE_SITES.find((s) => s.id === hive.id);
+        window.dispatchEvent(new CustomEvent('camp-choice-open', {
+            detail: {
+                hiveId: hive.id,
+                campId: null,
+                campLabel: hive.label,
+                leaderName: (character?.characterId ?? '').toUpperCase(),
+                leaderClass: 'HIVE MIND',
+                leaderTitle: `Extraction wounds ${record.extractionLevel}/3.`,
+                leaderCallsign: record.status.toUpperCase(),
+                storyOrder: 'H',
+                phase: this.act2.getPhase(),
+                campState: record,
+                endingVector: this.act2.getEndingVector(),
+                options: this.buildHiveChoiceOptions(record)
+            }
+        }));
+        return true;
+    }
+
+    buildHiveChoiceOptions(record) {
+        const options = [];
+        const dead = ['slain', 'queen_consumed', 'expired_by_cure'].includes(record.status);
+        const gone = ['rescued', 'aboard', 'abandoned'].includes(record.status);
+        if (dead || gone) {
+            options.push({
+                action: 'noop',
+                hiveId: record.id,
+                label: `HIVE ${record.status.replace(/_/g, ' ').toUpperCase()}`,
+                desc: 'This being\'s path is already resolved.',
+                disabled: true
+            });
+            return options;
+        }
+
+        options.push({
+            action: 'hive-talk',
+            hiveId: record.id,
+            label: `COMMUNE — ${(record.characterId ?? 'THE BEING').toUpperCase()}`,
+            desc: 'Listen. They remember everything you did to them.'
+        });
+        if (isFinalStage(record.dialogueStage)) {
+            const riteDoneByHive = {
+                hive_suture: record.questFlags?.host_mercy === 'done',
+                hive_relay: record.questFlags?.false_clearance === 'done',
+                hive_carapace: record.questFlags?.guard_oath === 'done'
+            };
+            if (!riteDoneByHive[record.id]) {
+                options.push({
+                    action: 'hive-final',
+                    hiveId: record.id,
+                    label: 'ACCEPT THEIR OATH',
+                    desc: 'Their rite completes; they are fully yours. The queen loses a hand.'
+                });
+            }
+        }
+        options.push({
+            action: 'hive-tend',
+            hiveId: record.id,
+            label: 'RETURN RESOURCES — 5 SHELLS',
+            desc: `Give back what was taken. Bond ${record.bond}/${ACT2_MAX_BOND}; heals one extraction wound.`
+        });
+
+        const questByHive = {
+            hive_suture: { id: 'host_mercy', label: 'HOST MERCY RITE', desc: 'Let Nahl study your infection. Unlocks latent seeding of trusted camps.' },
+            hive_relay: { id: 'false_clearance', label: 'FORGE FALSE CLEARANCE', desc: 'Vey spoofs a mothership-friendly crew signature. Required for infiltration.' },
+            hive_carapace: { id: 'guard_oath', label: 'SEVER THE GUARD OATH', desc: 'Rhun swears to you instead of the queen.' }
+        };
+        const quest = questByHive[record.id];
+        if (quest) {
+            const done = record.questFlags?.[quest.id] === 'done';
+            const locked = record.bond < 2;
+            options.push({
+                action: 'hive-quest',
+                hiveId: record.id,
+                questId: quest.id,
+                label: done ? `${quest.label} — COMPLETE` : locked ? `${quest.label} — LOCKED` : quest.label,
+                desc: locked && !done ? `Requires bond 2. Current bond ${record.bond}.` : quest.desc,
+                disabled: done || locked
+            });
+        }
+
+        options.push({
+            action: 'hive-network',
+            hiveId: record.id,
+            label: record.networked ? 'CHORUS LINKED' : 'LINK THE CHORUS',
+            desc: 'Wire this hive into the synapse. All living hives linked brings the chorus online.',
+            disabled: record.networked
+        });
+
+        const rescueLocked = record.bond < ACT2_HIVE_RESCUE_BOND_THRESHOLD;
+        options.push({
+            action: 'hive-rescue',
+            hiveId: record.id,
+            label: rescueLocked ? 'RESCUE ABOARD — LOCKED' : 'RESCUE ABOARD',
+            desc: rescueLocked
+                ? `Requires bond ${ACT2_HIVE_RESCUE_BOND_THRESHOLD}. Current bond ${record.bond}.`
+                : 'Take them off-world with you. One seat. The queen will feel it.',
+            disabled: rescueLocked
+        });
+
+        options.push({
+            action: 'hive-harvest',
+            hiveId: record.id,
+            label: 'HARVEST THE HIVE',
+            desc: 'Strip it for parts. Kills the being inside. The queen approves.'
+        });
+
+        if (this.act2.getState().queenStatus === 'aboard') {
+            options.push({
+                action: 'hive-sacrifice',
+                hiveId: record.id,
+                label: 'SACRIFICE TO THE QUEEN',
+                desc: 'Feed the ally to her brood. Maximum obedience, minimum mercy.'
+            });
+        }
+
+        return options;
+    }
+
+    resolveHiveChoice(action, payload = {}) {
+        const hive = this.getHiveById(payload.hiveId);
+        if (!hive || !this.act2) return false;
+
+        if (action === 'hive-talk') {
+            return this.talkToLeader('hive', hive);
+        }
+        if (action === 'hive-final') {
+            this.act2.completeHiveFinal(hive.id);
+            const rec = this.getHiveRecord(hive.id);
+            hive.syncFromRecord(rec);
+            window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: 0.68 });
+            window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
+                detail: { hiveId: hive.id, hiveLabel: hive.label, action: 'hive-final', status: rec?.status, bond: rec?.bond }
+            }));
+            return true;
+        }
+        if (action === 'hive-tend') {
+            if (!this.bank?.canAffordShells?.(5)) {
+                window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+                window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                    detail: { campId: hive.id, campLabel: hive.label, cost: 5 }
+                }));
+                return true;
+            }
+            this.bank.spendShells(5);
+            this.act2.adjustHiveBond(hive.id, 1);
+            this.act2.healHiveExtraction(hive.id, 1);
+        } else if (action === 'hive-quest') {
+            this.act2.completeHiveQuest(hive.id, payload.questId, 1);
+        } else if (action === 'hive-network') {
+            this.act2.setHiveNetworked(hive.id, true);
+        } else if (action === 'hive-rescue') {
+            this.act2.rescueHive(hive.id);
+        } else if (action === 'hive-harvest') {
+            this.act2.harvestHive(hive.id);
+            this.bank?.deposit?.({ tech: 3, med: 3, coin: 3 });
+            this.bank?.addShells?.(12);
+            this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bunker_junk_rare');
+            this.triggerCameraShake?.(0.3, 0.5);
+            this.spawnHiveHarvestBoss(hive, 3);
+        } else if (action === 'hive-sacrifice') {
+            this.act2.sacrificeHive(hive.id);
+            this.triggerCameraShake?.(0.35, 0.6);
+        } else {
+            return false;
+        }
+
+        const after = this.getHiveRecord(hive.id);
+        hive.syncFromRecord(after);
+        window.AudioManager?.play?.('class_lock', { volume: 0.45, playbackRate: 0.8 });
+        window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
+            detail: {
+                hiveId: hive.id,
+                hiveLabel: hive.label,
+                action,
+                status: after?.status,
+                bond: after?.bond
+            }
+        }));
+        return true;
+    }
+
+    chooseCampPosition(index) {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(anchor.x) + 211 + index * 13,
+            Math.round(anchor.z) + 89 - index * 7
+        ) ^ this.runEntropy) >>> 0);
+        // Three camps fanned around the base, each a real trek apart.
+        const baseAngle = [Math.PI * 0.12, Math.PI * 0.78, Math.PI * 1.42][index % 3];
+        for (let attempt = 0; attempt < 96; attempt += 1) {
+            const dist = THREE.MathUtils.lerp(70, 120, random());
+            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
+            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
+            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                return { x: tileX, z: tileZ };
+            }
+        }
+        return {
+            x: Math.round(anchor.x + Math.cos(baseAngle) * 70),
+            z: Math.round(anchor.z + Math.sin(baseAngle) * 70)
+        };
+    }
+
+    ensureAct2Camps() {
+        if (this._act2CampsReady || !this.act2) return;
+        const state = this.act2.getState();
+        this.camps = state.camps.map((record, index) => {
+            const camp = new SurvivorCamp(this.scene, {
+                id: record.id,
+                label: ACT2_CAMP_LABELS[record.id] ?? 'CAMP',
+                playerType: this.playerType
+            });
+            let { x, z } = record;
+            if (!Number.isFinite(x) || !Number.isFinite(z)) {
+                const site = this.chooseCampPosition(index);
+                x = site.x;
+                z = site.z;
+                this.act2.setCampPosition(record.id, x, z);
+            }
+            camp.reveal(x, z);
+            camp.setLevel(record.level);
+            camp.setAided(record.aided);
+            camp.setStatus(record.status);
+            return camp;
+        });
+        this._act2CampsReady = true;
+    }
+
+    resetAct2World() {
+        for (const camp of this.camps) {
+            if (camp.group) this.scene.remove(camp.group);
+        }
+        this.camps = [];
+        this._act2CampsReady = false;
+        this._campPromptLabel = null;
+        for (const hive of this.hives ?? []) {
+            if (hive.group) this.scene.remove(hive.group);
+        }
+        this.hives = [];
+        this._hiveSitesReady = false;
+    }
+
+    getCampRecord(id) {
+        return this.act2?.getState?.().camps.find((c) => c.id === id) ?? null;
+    }
+
+    getCampById(id) {
+        return this.camps.find((camp) => camp.id === id) ?? null;
+    }
+
+    getCampStoryOrder() {
+        return getClassCampOrder(this.playerType);
+    }
+
+    getBoardingCampId() {
+        return getAct2BoardingCampId(this.playerType);
+    }
+
+    getAct1SideSignalTarget() {
+        if (!ARC_PRELUDE_ENABLED || !this.player || !this.act2) return null;
+        if (this.act2.getPhase() !== 'dormant') return null;
+
+        this.ensureAct2Camps();
+        this.ensureHiveSites();
+
+        const candidates = [];
+        for (const camp of this.camps ?? []) {
+            const record = this.getCampRecord(camp.id);
+            if (!record || record.status !== 'alive') continue;
+            if (record.level >= ACT2_CAMP_MAX_LEVEL && record.bond >= ACT2_MAX_BOND) continue;
+            const dist = camp.distanceTo(this.player.position.x, this.player.position.z);
+            candidates.push({
+                mode: 'camp',
+                label: record.level < ACT2_CAMP_MAX_LEVEL ? `CAMP BEACON: ${camp.label}` : `CAMP FAVOR: ${camp.label}`,
+                x: camp.pos.x,
+                z: camp.pos.z,
+                distance: dist
+            });
+        }
+
+        const cycleKey = this.getHiveHarvestCycleKey();
+        for (const hive of this.hives ?? []) {
+            const record = this.getHiveRecord(hive.id);
+            if (!record || record.extractionLevel >= 3) continue;
+            if (!['dormant', 'mined', 'wounded', 'awakened'].includes(record.status)) continue;
+            if (!this.canHarvestHiveToday(record, cycleKey)) continue;
+            const dist = hive.distanceTo(this.player.position.x, this.player.position.z);
+            candidates.push({
+                mode: 'hive',
+                label: `HIVE SIGNAL: ${hive.label}`,
+                x: hive.pos.x,
+                z: hive.pos.z,
+                distance: dist
+            });
+        }
+
+        candidates.sort((a, b) => a.distance - b.distance);
+        return candidates[0] ?? null;
+    }
+
+    getNextCampInStoryOrder(predicate = () => true) {
+        for (const entry of this.getCampStoryOrder()) {
+            const camp = this.getCampById(entry.id);
+            if (camp && predicate(camp, entry)) return camp;
+        }
+        return null;
+    }
+
+    syncCampVisualFromRecord(camp, record = this.getCampRecord(camp?.id)) {
+        if (!camp || !record) return;
+        camp.setLevel(record.level);
+        camp.setAided(record.aided);
+        camp.setStatus(record.status);
+    }
+
+    getCampFavorCost(record = {}) {
+        const bond = Math.max(0, Math.floor(Number(record.bond) || 0));
+        return CAMP_FAVOR_BASE_COST + bond * 3;
+    }
+
+    getCampFavorQuestId(record = {}) {
+        const next = Math.min(ACT2_MAX_BOND, Math.max(0, Math.floor(Number(record.bond) || 0)) + 1);
+        return `field_favor_${next}`;
+    }
+
+    buildCampChoiceOptions(camp) {
+        const record = this.getCampRecord(camp.id);
+        if (!record) return [];
+        const options = [];
+        const status = record.status ?? 'alive';
+        const recruitLocked = record.bond < ACT2_RECRUIT_BOND_THRESHOLD;
+        const recruitHint = `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD}. Current bond ${record.bond}.`;
+
+        if (camp.id === this.getBoardingCampId()) {
+            // Every launch variant is validated against the four-seat manifest
+            // before it is offered: the vessel is a cargo problem first.
+            const variants = [
+                { variant: 'queen', queenStatus: 'aboard', eggsStatus: 'aboard', label: 'BOARD WITH QUEEN', desc: 'Launch with the queen (2 seats) and eggs aboard.' },
+                { variant: 'purge', queenStatus: 'killed', eggsStatus: 'destroyed', label: 'SEVER QUEEN + PURGE EGGS', desc: 'Reject the hive before launch. Human recruits define whether this is rescue or ash.' },
+                { variant: 'bargain', queenStatus: 'killed', eggsStatus: 'hidden', label: 'KILL QUEEN, HIDE EGGS', desc: 'Save what passengers you can while carrying the brood in secret.' },
+                { variant: 'abandon', queenStatus: 'abandoned', eggsStatus: 'abandoned', label: 'LEAVE THEM ALL BEHIND', desc: 'The queen and her clutch stay on the ice. Whoever you rescued is the whole crew.' }
+            ];
+            const baseState = this.act2.getState();
+            for (const entry of variants) {
+                const manifest = buildAct2Manifest({
+                    ...baseState,
+                    queenStatus: entry.queenStatus,
+                    eggsStatus: entry.eggsStatus
+                });
+                const seatText = `SEATS ${manifest.seatsUsed}/${manifest.seatsMax}`;
+                const reasonText = manifest.invalidReasons
+                    .map((r) => r === 'seat_capacity_exceeded' ? 'over capacity' : r === 'egg_unstable' ? 'egg needs the queen or Nahl aboard' : r)
+                    .join('; ');
+                options.push({
+                    action: 'board',
+                    variant: entry.variant,
+                    label: manifest.valid ? `${entry.label} — ${seatText}` : `${entry.label} — BLOCKED`,
+                    desc: manifest.valid ? `${entry.desc} ${seatText}.` : `${entry.desc} INVALID MANIFEST: ${reasonText}.`,
+                    disabled: !manifest.valid
+                });
+            }
+        }
+
+        if (status === 'alive') {
+            const beat = this.peekDialogueBeat('camp', camp, record);
+            options.push({
+                action: 'talk',
+                label: `TALK — ${camp.leaderName?.toUpperCase() || 'LEADER'}`,
+                desc: beat?.type === 'loop'
+                    ? 'They are waiting on you to make progress before saying more.'
+                    : 'They have more to say.'
+            });
+            if (isFinalStage(record.dialogueStage) && record.questFlags?.final_vigil !== 'done') {
+                const finalsDone = this.act2.countCampFinalsDone();
+                const cost = campFinalUrgeCost(finalsDone);
+                const humanity = this.act2.getState().humanity;
+                const tooFarGone = humanity <= cost;
+                options.push({
+                    action: 'final-urge',
+                    label: tooFarGone ? `FIGHT THE URGE — LOCKED` : `FIGHT THE URGE — ${cost} HUMANITY`,
+                    desc: tooFarGone
+                        ? `The pull is too strong (${humanity} humanity, needs > ${cost}). Restore your cover first.`
+                        : 'Stand their final vigil as the person they remember. She pulls harder every time.',
+                    disabled: tooFarGone
+                });
+                options.push({
+                    action: 'final-betray',
+                    label: `BETRAY THE QUEEN — HER WRATH (${1 + finalsDone})`,
+                    desc: 'Defy her openly to stand with them. They learn what you are — and trust you anyway.'
+                });
+            }
+            options.push({
+                action: 'steal',
+                label: 'STEAL STOCKPILE',
+                desc: 'Rob supplies and leave the camp hostile. They will not board.'
+            });
+            options.push({
+                action: 'cull',
+                label: camp.level > 0 && !camp._defenseSpawned ? 'BREACH AND CULL' : 'CULL THE CAMP',
+                desc: 'Fight any funded defenses, destroy the camp, and please the queen.'
+            });
+            options.push({
+                action: 'recruit',
+                label: recruitLocked ? 'RECRUIT HUMANS LOCKED' : 'RECRUIT HUMANS',
+                desc: recruitLocked ? recruitHint : 'Smuggle the survivors aboard as human passengers.',
+                disabled: recruitLocked
+            });
+            options.push({
+                action: 'turn',
+                label: recruitLocked ? 'TURN CAMP LOCKED' : 'TURN CAMP',
+                desc: recruitLocked ? recruitHint : 'Offer trusted survivors to the queen as compliant hybrids.',
+                disabled: recruitLocked
+            });
+            const warnLocked = record.bond < 2;
+            options.push({
+                action: 'warn',
+                label: warnLocked ? 'WARN THEM LOCKED' : 'WARN THEM',
+                desc: warnLocked
+                    ? `Requires bond 2. Current bond ${record.bond}.`
+                    : 'Tell them the truth before they board. They come suspicious — and safe.',
+                disabled: warnLocked
+            });
+            const suture = this.getHiveRecord?.('hive_suture');
+            const latentReady = suture?.questFlags?.host_mercy === 'done';
+            const latentLocked = !latentReady || recruitLocked || record.suspicion >= 50;
+            options.push({
+                action: 'latent',
+                label: latentLocked ? 'LATENT SEED LOCKED' : 'LATENT SEED',
+                desc: !latentReady
+                    ? 'Requires Nahl\'s Host Mercy rite.'
+                    : latentLocked
+                        ? `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD} and suspicion under 50 (now ${record.suspicion}).`
+                        : 'They board believing they are clean. They are not.',
+                disabled: latentLocked
+            });
+        } else if (status === 'robbed') {
+            options.push({
+                action: 'cull',
+                label: camp.level > 0 && !camp._defenseSpawned ? 'BREACH HOSTILE CAMP' : 'CULL HOSTILE CAMP',
+                desc: 'The camp already hates you. Finish it for queen obedience and salvage.'
+            });
+        } else {
+            options.push({
+                action: 'noop',
+                label: `CAMP ${status.toUpperCase()}`,
+                desc: 'This camp path is already resolved.',
+                disabled: true
+            });
+        }
+
+        return options;
+    }
+
+    openCampChoice(camp) {
+        const record = this.getCampRecord(camp.id);
+        if (!record) return false;
+        window.dispatchEvent(new CustomEvent('camp-choice-open', {
+            detail: {
+                campId: camp.id,
+                campLabel: camp.label,
+                leaderName: camp.leaderName,
+                leaderClass: camp.leaderClass,
+                leaderTitle: camp.leaderTitle,
+                leaderCallsign: camp.leaderCallsign,
+                leaderIsBoss: camp.leaderIsBoss,
+                storyOrder: camp.campOrder,
+                phase: this.act2.getPhase(),
+                campState: record,
+                endingVector: this.act2.getEndingVector(),
+                options: this.buildCampChoiceOptions(camp)
+            }
+        }));
+        return true;
+    }
+
+    // The camp interaction available where the player is standing, or null.
+    // ── Leader dialogue (Elden Ring grammar) ───────────────────────────────
+    // Compute the next beat for a camp leader or hive being, persist the
+    // talk/stage movement, and play it through the brief transmission panel.
+    leaderKeyFor(kind, entity) {
+        if (kind === 'hive') return entity.characterId || leaderKeyFromName(entity.label);
+        return leaderKeyFromName(entity.leaderName ?? '');
+    }
+
+    getDialogueContext(kind, record) {
+        return {
+            level: record.level ?? 0,
+            bond: record.bond ?? 0,
+            postReveal: Boolean(this.act2?.getState?.().begun)
+        };
+    }
+
+    peekDialogueBeat(kind, entity, record) {
+        const key = this.leaderKeyFor(kind, entity);
+        if (!key || !record) return null;
+        return nextDialogueBeat(key, {
+            stage: record.dialogueStage ?? 0,
+            talks: record.stageTalks ?? 0
+        }, this.getDialogueContext(kind, record));
+    }
+
+    talkToLeader(kind, entity) {
+        const record = kind === 'hive' ? this.getHiveRecord(entity.id) : this.getCampRecord(entity.id);
+        const beat = this.peekDialogueBeat(kind, entity, record);
+        if (!beat) return false;
+        if (beat.type === 'advance') {
+            this.act2.advanceDialogueStage(kind, entity.id);
+        } else if (beat.type === 'beat') {
+            this.act2.recordDialogueTalk(kind, entity.id);
+        }
+        window.dispatchEvent(new CustomEvent('leader-dialogue', {
+            detail: {
+                kind,
+                id: entity.id,
+                lines: beat.lines,
+                beatType: beat.type,
+                stage: beat.stage,
+                finalReady: isFinalStage(beat.stage)
+            }
+        }));
+        return true;
+    }
+
+    getActionableCampAt(x, z, phase = this.act2?.getPhase()) {
+        for (const camp of this.camps) {
+            // Post-reveal, a live defense turret is its own interaction: spoof
+            // it quietly if Vey taught you how, or smash it and be heard.
+            if (phase !== 'dormant' && this.isAct2Active()) {
+                const turretRecord = this.getCampRecord(camp.id);
+                if (['alive', 'robbed'].includes(turretRecord?.status ?? 'alive')) {
+                    const turret = camp.getTurretNear?.(x, z, 1.9);
+                    if (turret) {
+                        const canSpoof = (this.getHiveRecord?.('hive_relay')?.bond ?? 0) >= 1;
+                        return {
+                            camp,
+                            turret,
+                            action: 'turret',
+                            label: canSpoof ? "SPOOF TURRET IFF — VEY'S GIFT" : 'SMASH TURRET — THEY WILL HEAR'
+                        };
+                    }
+                }
+            }
+            if (!camp.isWithinInteractRange(x, z)) continue;
+            const record = this.getCampRecord(camp.id);
+            const status = record?.status ?? camp.status ?? 'alive';
+            if ((phase === 'gestation' || phase === 'dish') && status !== 'culled') {
+                return {
+                    camp,
+                    action: 'wait',
+                    label: 'GO AWAY'
+                };
+            }
+            if (phase === 'dormant' && status === 'alive') {
+                const beat = this.peekDialogueBeat('camp', camp, record);
+                if (beat && beat.type !== 'loop') {
+                    return {
+                        camp,
+                        action: 'talk',
+                        label: `TALK — ${camp.leaderName?.toUpperCase() || 'THE CAMP'}`
+                    };
+                }
+            }
+            if (phase === 'dormant' && status === 'alive' && camp.level < ACT2_CAMP_MAX_LEVEL) {
+                return {
+                    camp,
+                    action: 'support',
+                    label: `SUPPORT CAMP — ${campSupportCost(camp.level)} SHELLS`
+                };
+            }
+            if (phase === 'dormant' && status === 'alive' && (record?.bond ?? 0) < ACT2_MAX_BOND) {
+                return {
+                    camp,
+                    action: 'bond',
+                    label: `RUN CAMP FAVOR — ${this.getCampFavorCost(record)} SHELLS`
+                };
+            }
+            if (phase === 'camps_help' && !camp.aided) return { camp, action: 'aid', label: 'AID THE CAMP' };
+            if (phase === 'camps_betray' && camp.aided && !camp.destroyed) {
+                // Supported camps fight back: breach, clear the defenders, then cull.
+                if (camp.level > 0 && !camp._defenseSpawned) {
+                    return { camp, action: 'cull', label: 'BREACH THE CAMP' };
+                }
+                if (this.campDefendersAlive(camp.id)) {
+                    return { camp, action: 'defense-active', label: 'CLEAR THE DEFENDERS' };
+                }
+                return { camp, action: 'cull', label: 'CULL THE CAMP' };
+            }
+            if (phase === 'launch_ready') {
+                const canBoardHere = camp.id === this.getBoardingCampId();
+                const needsDecision = status === 'alive' || status === 'robbed';
+                if (canBoardHere || needsDecision) {
+                    return {
+                        camp,
+                        action: 'choice',
+                        label: canBoardHere ? 'VESSEL / CAMP DECISION' : 'CAMP DECISION'
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    updateCampPrompt(phase) {
+        const eligible = this.isGameplayInputActive() && this.player && !this.isPlayerDead;
+        const actionable = eligible
+            ? this.getActionableCampAt(this.player.position.x, this.player.position.z, phase)
+            : null;
+        const label = actionable?.label ?? null;
+        if (label === this._campPromptLabel) return;
+        this._campPromptLabel = label;
+        if (label) {
+            window.dispatchEvent(new CustomEvent('camp-prompt-nearby', { detail: { label } }));
+        } else {
+            window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
+        }
+    }
+
+    interactWithAct2Camp() {
+        if (!this.isGameplayInputActive() || !this.player || !this.act2) return false;
+        const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
+        if (!actionable) return false;
+        const { camp, action } = actionable;
+
+        if (action === 'talk') {
+            return this.talkToLeader('camp', camp);
+        }
+
+        if (action === 'turret') {
+            const turret = actionable.turret;
+            const canSpoof = (this.getHiveRecord?.('hive_relay')?.bond ?? 0) >= 1;
+            if (canSpoof) {
+                camp.setTurretDisabled(turret);
+                window.AudioManager?.play?.('ui_click_confirm', { volume: 0.5, playbackRate: 1.1 });
+                window.dispatchEvent(new CustomEvent('camp-turret-resolved', {
+                    detail: { campId: camp.id, campLabel: camp.label, mode: 'disabled' }
+                }));
+            } else {
+                camp.setTurretDestroyed(turret);
+                this.act2?.adjustCampSuspicion?.(camp.id, 20);
+                this.triggerCameraShake?.(0.3, 0.45);
+                window.AudioManager?.play?.('door_slam_vertical', { volume: 0.5, playbackRate: 0.9 });
+                window.dispatchEvent(new CustomEvent('camp-turret-resolved', {
+                    detail: {
+                        campId: camp.id,
+                        campLabel: camp.label,
+                        mode: 'smashed',
+                        suspicion: this.getCampRecord(camp.id)?.suspicion ?? 0
+                    }
+                }));
+            }
+            return true;
+        }
+
+        // Act 1: invest shells in the camp. Pays off now (O2 haven) and pays
+        // out later (harder, richer cull in Act 2).
+        if (action === 'support') {
+            const cost = campSupportCost(camp.level);
+            if (!this.bank?.canAffordShells?.(cost)) {
+                window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+                window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                    detail: { campId: camp.id, campLabel: camp.label, cost }
+                }));
+                return true;
+            }
+            this.bank.spendShells(cost);
+            this.act2.upgradeCamp(camp.id);
+            this.act2.adjustCampBond(camp.id, 1);
+            const record = this.getCampRecord(camp.id);
+            const level = record?.level ?? camp.level + 1;
+            camp.setLevel(level);
+            camp.setStatus(record?.status ?? 'alive');
+            this.adjustOxygen(CAMP_SUPPORT_O2_REFILL);
+            const supplyCache = {
+                med: 1 + (level >= 3 ? 1 : 0),
+                tech: 1,
+                coin: level >= 2 ? 1 : 0
+            };
+            this.bank?.deposit?.(supplyCache);
+            this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_uncommon');
+            window.AudioManager?.play?.('class_lock', { volume: 0.5 });
+            window.dispatchEvent(new CustomEvent('salvage-cache-opened', {
+                detail: { ...supplyCache, source: 'camp-support', campId: camp.id, campLabel: camp.label }
+            }));
+            window.dispatchEvent(new CustomEvent('camp-supported', {
+                detail: { campId: camp.id, campLabel: camp.label, level, bond: record?.bond ?? 0, cost }
+            }));
+            return true;
+        }
+
+        if (action === 'bond') {
+            const record = this.getCampRecord(camp.id);
+            const cost = this.getCampFavorCost(record);
+            if (!this.bank?.canAffordShells?.(cost)) {
+                window.AudioManager?.play?.('ui_error', { volume: 0.45 });
+                window.dispatchEvent(new CustomEvent('camp-support-denied', {
+                    detail: { campId: camp.id, campLabel: camp.label, cost }
+                }));
+                return true;
+            }
+            this.bank.spendShells(cost);
+            this.act2.completeCampQuest(camp.id, this.getCampFavorQuestId(record), 1);
+            const next = this.getCampRecord(camp.id);
+            camp.setStatus(next?.status ?? 'alive');
+            this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_rare');
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.45, playbackRate: 1.2 });
+            window.dispatchEvent(new CustomEvent('camp-bonded', {
+                detail: { campId: camp.id, campLabel: camp.label, bond: next?.bond ?? 0, cost }
+            }));
+            return true;
+        }
+
+        if (action === 'defense-active') {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35, playbackRate: 0.8 });
+            return true;
+        }
+
+        if (action === 'wait') {
+            window.AudioManager?.play?.('ui_error', { volume: 0.3, playbackRate: 0.85 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    action: 'wait',
+                    message: `${camp.label} SHOUTS: GO AWAY.`
+                }
+            }));
+            return true;
+        }
+
+        if (action === 'aid') {
+            camp.setAided(true);
+            const result = this.act2.aidCamp(camp.id);
+            this.syncCampVisualFromRecord(camp);
+            window.AudioManager?.play?.('class_lock', { volume: 0.55 });
+            const allAided = result.state.camps.every((c) => c.aided);
+            window.dispatchEvent(new CustomEvent('act2-milestone', {
+                detail: {
+                    key: allAided ? 'allAided' : 'campAided',
+                    campId: camp.id,
+                    campLabel: camp.label
+                }
+            }));
+            return true;
+        }
+
+        if (action === 'cull') {
+            return this.resolveCampCull(camp);
+        }
+
+        if (action === 'choice') {
+            this.openCampChoice(camp);
+            return true;
+        }
+
+        return false;
+    }
+
+    resolveCampChoice(action, payload = {}) {
+        if (payload.hiveId || String(action).startsWith('hive-')) {
+            return this.resolveHiveChoice(action, payload);
+        }
+        const camp = this.getCampById(payload.campId);
+        if (!camp || !this.act2) return false;
+        if (action === 'steal') return this.resolveCampSteal(camp);
+        if (action === 'cull') return this.resolveCampCull(camp);
+        if (action === 'recruit') return this.resolveCampRecruit(camp, 'human');
+        if (action === 'turn') return this.resolveCampRecruit(camp, 'turned');
+        if (action === 'talk') return this.talkToLeader('camp', camp);
+        if (action === 'final-urge' || action === 'final-betray') {
+            const mode = action === 'final-urge' ? 'urge' : 'betray';
+            const before = this.getCampRecord(camp.id);
+            this.act2.completeCampFinal(camp.id, { mode });
+            const after = this.getCampRecord(camp.id);
+            if (after?.questFlags?.final_vigil !== 'done') {
+                window.AudioManager?.play?.('ui_error', { volume: 0.45, playbackRate: 0.6 });
+                window.dispatchEvent(new CustomEvent('camp-final-denied', {
+                    detail: { campId: camp.id, campLabel: camp.label, humanity: this.act2.getState().humanity }
+                }));
+                return true;
+            }
+            this.syncCampVisualFromRecord(camp, after);
+            window.AudioManager?.play?.('class_lock', { volume: 0.55, playbackRate: mode === 'urge' ? 0.7 : 1.0 });
+            this.triggerCameraShake?.(mode === 'urge' ? 0.35 : 0.2, 0.6);
+            window.dispatchEvent(new CustomEvent('camp-final-resolved', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    mode,
+                    bond: after.bond,
+                    humanity: this.act2.getState().humanity,
+                    obedience: this.act2.getState().queenObedience,
+                    beforeBond: before?.bond ?? 0
+                }
+            }));
+            return true;
+        }
+        if (action === 'warn') return this.resolveCampStatusAction(camp, 'warn', () => this.act2.warnCamp(camp.id), 'recruited');
+        if (action === 'latent') return this.resolveCampStatusAction(camp, 'latent', () => this.act2.latentInfectCamp(camp.id), 'recruited');
+        if (action === 'board') return this.resolveAct2Boarding(payload.variant ?? 'queen');
+        return false;
+    }
+
+    resolveCampSteal(camp) {
+        const before = this.getCampRecord(camp.id);
+        this.act2.stealCamp(camp.id);
+        const after = this.getCampRecord(camp.id);
+        if (before?.status === after?.status) {
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, action: 'steal' }
+            }));
+            return true;
+        }
+        this.syncCampVisualFromRecord(camp, after);
+        this.spawnCampStealLoot(camp);
+        this.triggerCameraShake?.(0.18, 0.35);
+        window.AudioManager?.play?.('ui_error', { volume: 0.38, playbackRate: 0.85 });
+        window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
+            detail: { campId: camp.id, campLabel: camp.label, action: 'steal', status: after.status }
+        }));
+        window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'campRobbed', campId: camp.id, campLabel: camp.label } }));
+        return true;
+    }
+
+    resolveCampRecruit(camp, mode = 'human') {
+        const before = this.getCampRecord(camp.id);
+        const wantedStatus = mode === 'turned' ? 'turned' : 'recruited';
+        this.act2.recruitCamp(camp.id, { mode });
+        const after = this.getCampRecord(camp.id);
+        if (after?.status !== wantedStatus || before?.status === after?.status) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    action: mode === 'turned' ? 'turn' : 'recruit',
+                    requiredBond: ACT2_RECRUIT_BOND_THRESHOLD,
+                    bond: before?.bond ?? 0
+                }
+            }));
+            return true;
+        }
+        this.syncCampVisualFromRecord(camp, after);
+        this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, mode === 'turned' ? 'bio_spores' : 'bunker_junk_legendary');
+        window.AudioManager?.play?.('class_lock', { volume: 0.52, playbackRate: mode === 'turned' ? 0.75 : 1.05 });
+        window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
+            detail: { campId: camp.id, campLabel: camp.label, action: mode === 'turned' ? 'turn' : 'recruit', status: after.status }
+        }));
+        window.dispatchEvent(new CustomEvent('act2-milestone', {
+            detail: { key: mode === 'turned' ? 'campTurned' : 'campRecruited', campId: camp.id, campLabel: camp.label }
+        }));
+        return true;
+    }
+
+    resolveCampCull(camp) {
+        // Fortified camps resist: the first breach wakes the defenders the
+        // player paid for in Act 1. The cull only proceeds once they fall.
+        if (camp.level > 0 && !camp._defenseSpawned) {
+            camp._defenseSpawned = true;
+            this.spawnCampDefenders(camp);
+            this.triggerCameraShake?.(0.3, 0.5);
+            window.AudioManager?.play?.('amb_metal_stress', { volume: 0.5, playbackRate: 0.8 });
+            window.dispatchEvent(new CustomEvent('camp-defense-triggered', {
+                detail: { campId: camp.id, campLabel: camp.label, level: camp.level }
+            }));
+            return true;
+        }
+        if (this.campDefendersAlive(camp.id)) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35, playbackRate: 0.8 });
+            return true;
+        }
+
+        const before = this.getCampRecord(camp.id);
+        this.act2.cullCamp(camp.id);
+        const record = this.getCampRecord(camp.id);
+        if (record?.status !== 'culled' || before?.status === 'culled') {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35, playbackRate: 0.8 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, action: 'cull' }
+            }));
+            return true;
+        }
+        this.syncCampVisualFromRecord(camp, record);
+        this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, camp.level > 0 ? 'bunker_junk_rare' : 'bunker_junk_uncommon');
+        this.spawnCampCullLoot(camp);
+        this.triggerCameraShake?.(0.4, 0.6);
+        window.AudioManager?.play?.('door_slam_vertical', { volume: 0.5, playbackRate: 0.72 });
+        window.AudioManager?.play?.('ui_error', { volume: 0.4, playbackRate: 0.55 });
+        const allCulled = this.act2.getState().camps.every((c) => c.status === 'culled');
+        window.dispatchEvent(new CustomEvent('act2-milestone', {
+            detail: {
+                key: allCulled ? 'allCulled' : 'campCulled',
+                campId: camp.id,
+                campLabel: camp.label
+            }
+        }));
+        window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
+            detail: { campId: camp.id, campLabel: camp.label, action: 'cull', status: record?.status ?? 'culled' }
+        }));
+        return true;
+    }
+
+    // Shared resolver for camp mutations that should land on a target status.
+    resolveCampStatusAction(camp, action, mutate, wantedStatus) {
+        const before = this.getCampRecord(camp.id);
+        mutate();
+        const after = this.getCampRecord(camp.id);
+        if (after?.status !== wantedStatus || before?.status === after?.status) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, action, bond: before?.bond ?? 0 }
+            }));
+            return true;
+        }
+        this.syncCampVisualFromRecord(camp, after);
+        window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: action === 'latent' ? 0.72 : 1.0 });
+        window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
+            detail: { campId: camp.id, campLabel: camp.label, action, status: after.status }
+        }));
+        window.dispatchEvent(new CustomEvent('act2-milestone', {
+            detail: { key: action === 'latent' ? 'campTurned' : 'campRecruited', campId: camp.id, campLabel: camp.label }
+        }));
+        return true;
+    }
+
+    resolveAct2Boarding(variant = 'queen') {
+        // Hard manifest gate: an invalid seat plan never launches.
+        const statusByVariant = {
+            queen: { queenStatus: 'aboard', eggsStatus: 'aboard' },
+            purge: { queenStatus: 'killed', eggsStatus: 'destroyed' },
+            bargain: { queenStatus: 'killed', eggsStatus: 'hidden' },
+            abandon: { queenStatus: 'abandoned', eggsStatus: 'abandoned' }
+        };
+        const target = statusByVariant[variant] ?? statusByVariant.queen;
+        const manifest = buildAct2Manifest({ ...this.act2.getState(), ...target });
+        if (!manifest.valid) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.5, playbackRate: 0.6 });
+            window.dispatchEvent(new CustomEvent('boarding-blocked', {
+                detail: { variant, reasons: manifest.invalidReasons, seatsUsed: manifest.seatsUsed, seatsMax: manifest.seatsMax }
+            }));
+            return true;
+        }
+        if (variant === 'purge') {
+            this.act2.setQueenStatus('killed');
+            this.act2.setEggsStatus('destroyed');
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenKilled' } }));
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'eggsDestroyed' } }));
+        } else if (variant === 'bargain') {
+            this.act2.setQueenStatus('killed');
+            this.act2.setEggsStatus('hidden');
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenKilled' } }));
+        } else if (variant === 'abandon') {
+            this.act2.setQueenStatus('abandoned');
+            this.act2.setEggsStatus('abandoned');
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenRejected' } }));
+        } else {
+            this.act2.setQueenStatus('aboard');
+            this.act2.setEggsStatus('aboard');
+        }
+        const vector = this.act2.getEndingVector();
+        this.act2.depart();
+        window.dispatchEvent(new CustomEvent('act2-departed', {
+            detail: { runStats: this.getRunStats?.() ?? {}, endingVector: vector, variant }
+        }));
+        return true;
+    }
+
+    // The defense wave a supported camp mounts when breached in Act 2:
+    // level * 2 guards, ring-spawned just outside the barricades.
+    spawnCampDefenders(camp) {
+        const count = camp.level * 2;
+        const biomeSnail = this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail';
+        for (let i = 0; i < count; i += 1) {
+            const type = i % 2 === 0 ? 'cybersnail' : biomeSnail;
+            // Camp surroundings can be walled in — search a few ring spots and
+            // fall back to the camp clearing itself (guaranteed walkable).
+            let x = camp.pos.x;
+            let z = camp.pos.z;
+            for (let attempt = 0; attempt < 10; attempt += 1) {
+                const angle = (i / count) * Math.PI * 2 + 0.6 + attempt * 0.7;
+                const radius = 3.0 + ((i + attempt) % 3) * 0.8;
+                const tryX = camp.pos.x + Math.cos(angle) * radius;
+                const tryZ = camp.pos.z + Math.sin(angle) * radius;
+                if (this.isSnailTileWalkable(Math.round(tryX), Math.round(tryZ))) {
+                    x = tryX;
+                    z = tryZ;
+                    break;
+                }
+            }
+            const placement = {
+                x,
+                z,
+                type,
+                scatterKey: `camp-defender:${camp.id}:${i}`,
+                scale: 1.25,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'enemy',
+                phase: Math.random() * Math.PI * 2,
+                opacity: 1,
+                biomeTint: 0xffffff,
+                isEnemy: true,
+                spawnedEnraged: camp.level >= 3
+            };
+            const sprite = this.createScatterInstance(placement);
+            if (!sprite) continue;
+            sprite.userData.campDefenderId = camp.id;
+            const chunkX = Math.floor(x / this.chunkSize);
+            const chunkY = Math.floor(z / this.chunkSize);
+            const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+            group.add(sprite);
+            this.scatterSprites.push(sprite);
+        }
+    }
+
+    campDefendersAlive(campId) {
+        return this.scatterSprites.some((sprite) =>
+            sprite.userData?.campDefenderId === campId && !sprite.userData.burstTriggered);
+    }
+
+    // The payoff for Act 1 investment: culling a supported camp ejects its
+    // stockpile — level-scaled pickups plus a direct shell grant.
+    spawnCampCullLoot(camp) {
+        if (camp.level <= 0) return;
+        const chunkX = Math.floor(camp.pos.x / this.chunkSize);
+        const chunkY = Math.floor(camp.pos.z / this.chunkSize);
+        const parent = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+        const dropTypes = [];
+        for (let i = 0; i < camp.level; i += 1) {
+            dropTypes.push('coin', 'coin', 'weapon', i >= 1 ? 'health' : 'ammo');
+        }
+        for (const type of dropTypes) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 0.8 + Math.random() * 1.4;
+            const targetX = camp.pos.x + Math.cos(angle) * radius;
+            const targetZ = camp.pos.z + Math.sin(angle) * radius;
+            if (this.getTileType(Math.round(targetX), Math.round(targetZ)) === '#') continue;
+            const placement = this.createSnailDropPlacement(camp.pos.x, camp.pos.z, targetX, targetZ, type);
+            const pickup = this.createPickupInstance(placement);
+            parent.add(pickup);
+            this.pickupMeshes.push(pickup);
+        }
+        const shells = camp.level * 5;
+        this.bank?.addShells?.(shells);
+        window.dispatchEvent(new CustomEvent('shell-collected', {
+            detail: { gained: shells, total: this.bank?.getShells?.() ?? 0, isBoss: false }
+        }));
+    }
+
+    spawnCampStealLoot(camp) {
+        const level = Math.max(0, Math.floor(camp?.level ?? 0));
+        const salvage = {
+            tech: 6 + level * 5,
+            coin: 8 + level * 6,
+            med: 2 + level * 2,
+            ammo: 3 + level * 2
+        };
+        this.bank?.deposit?.(salvage);
+        const shells = 3 + level * 4;
+        this.bank?.addShells?.(shells);
+        window.dispatchEvent(new CustomEvent('shell-collected', {
+            detail: { gained: shells, total: this.bank?.getShells?.() ?? 0, isBoss: false }
+        }));
+        window.dispatchEvent(new CustomEvent('salvage-cache-opened', {
+            detail: { ...salvage, source: 'camp-steal', campId: camp?.id, campLabel: camp?.label }
+        }));
+    }
+
+    // Act 2 replaces the console terminal: severing the uplink is the first
+    // objective; afterwards the console is a dead panel.
+    handleAct2ConsoleInteract() {
+        const phase = this.act2.getPhase();
+        if (phase === 'gestation') {
+            this.triggerCameraShake?.(0.32, 0.55);
+            window.AudioManager?.play?.('ui_error', { volume: 0.5, playbackRate: 0.6 });
+            window.AudioManager?.play?.('door_slam_vertical', { volume: 0.42, playbackRate: 0.8 });
+            this.act2.silenceUplink();
+            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'uplinkSilenced' } }));
+            return;
+        }
+        window.dispatchEvent(new CustomEvent('act2-console-dead'));
+    }
+
+    // Current Act 2 objective with a world position for compass + loop HUD.
+    getAct2Objective() {
+        if (!this.isAct2Active()) return null;
+        const phase = this.act2.getPhase();
+
+        if (phase === 'gestation') {
+            const ship = this.getActiveShip();
+            if (!ship) return null;
+            return {
+                key: 'uplink',
+                label: 'SEVER THE UPLINK',
+                x: ship.tileX + (ship.consoleOffset?.x ?? 0),
+                z: ship.tileZ + (ship.consoleOffset?.z ?? 0)
+            };
+        }
+
+        if (phase === 'dish') {
+            const pos = this.foundry?.getPosition();
+            return pos ? { key: 'dish', label: 'GROW THE SIGNAL DISH', x: pos.x, z: pos.z } : null;
+        }
+
+        if (phase === 'camps_help' || phase === 'camps_betray') {
+            const best = this.getNextCampInStoryOrder(phase === 'camps_help'
+                ? (camp) => !camp.aided
+                : (camp) => camp.aided && !camp.destroyed);
+            if (!best) return null;
+            return {
+                key: phase,
+                label: phase === 'camps_help' ? `AID ${best.label}` : `CULL ${best.label}`,
+                x: best.pos.x,
+                z: best.pos.z
+            };
+        }
+
+        if (phase === 'launch_ready') {
+            const camp = this.getCampById(this.getBoardingCampId());
+            const pos = camp?.getPosition();
+            return pos ? { key: 'launch', label: 'BOARD AT COMMAND CAMP', x: pos.x, z: pos.z } : null;
+        }
+
+        return null;
+    }
+
+    // Hard control lock for scripted sequences (cave reveal): freezes input and
+    // pauses vitals drain so the player can't die mid-cutscene. While locked,
+    // stray setInputEnabled(true) calls (e.g. a brief transmission closing) are
+    // ignored — only unlocking hands control back.
+    setCinematicLock(locked = true) {
+        const next = Boolean(locked);
+        if (next === this.cinematicLock) return;
+        if (next) {
+            this.cinematicLock = true;
+            this.setInputEnabled(false);
+        } else {
+            this.cinematicLock = false;
+            this.setInputEnabled(true);
+        }
     }
 
     getActiveO2GeneratorDistance() {
@@ -5706,6 +7804,11 @@ export class ThreeGame {
         // Foundry on with no theatrics. The animated versions only play on the live
         // first repair, which fires via the o2-generator-upgraded event before this.
         this.revealFoundry({ instant: true });
+        // Restoring an already-completed rebuild ladder also restores the cave
+        // signal (no theatrics), unless the reveal has already played.
+        if (this.hasUpgrade('reactorCompressor')) {
+            this.revealCaveEntrance({ instant: true });
+        }
         if (this.baseLights) {
             const ship = this.getActiveShip();
             if (ship && Number.isFinite(ship.tileX) && Number.isFinite(ship.tileZ)) {
@@ -5727,6 +7830,7 @@ export class ThreeGame {
         this.playerVitals.o2HealthTimer = 0;
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
+        this._lastLoopStepKey = null;
 
         if (emit) {
             this.emitVitalsState();
@@ -5761,13 +7865,20 @@ export class ThreeGame {
         const reloadProgress = this.weaponReloading
             ? Math.max(0, Math.min(1, 1 - (this.weaponReloadTimer / WEAPON_RELOAD_DURATION)))
             : 0;
+        const autoRefillInterval = this.getAmmoRefillInterval();
+        const autoRefillProgress = Number.isFinite(autoRefillInterval)
+            && !this.weaponReloading
+            && this.weaponClipAmmo < this.weaponClipSize
+            ? Math.max(0, Math.min(1, (this.weaponAmmoRefillTimer ?? 0) / autoRefillInterval))
+            : 0;
         window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
             detail: {
                 clip: this.weaponClipAmmo,
                 maxClip: this.weaponClipSize,
                 cache: this.getAvailableAmmo(),
                 reloading: this.weaponReloading,
-                reloadProgress
+                reloadProgress,
+                autoRefillProgress
             }
         }));
     }
@@ -5793,6 +7904,7 @@ export class ThreeGame {
         this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
+        this.weaponAmmoRefillTimer = 0;
         this.weaponFireCooldown = 0;
         this.activeProjectiles = [];
         if (emit) {
@@ -5890,10 +8002,30 @@ export class ThreeGame {
             };
         }
 
+        // Act 1 finale: once the cave is revealed, the "final component" signal
+        // outranks everything else — it is the run's closing objective.
+        if (this.caveEntrance?.isRevealed && !this.isCaveRevealDone()) {
+            const cp = this.caveEntrance.getPosition();
+            const cdx = cp.x - this.player.position.x;
+            const cdz = cp.z - this.player.position.z;
+            const cdist = Math.hypot(cdx, cdz);
+            if (cdist > 2.0) {
+                return {
+                    active: true,
+                    mode: 'cave',
+                    label: 'FINAL COMPONENT',
+                    angle: this.planarAngleTo(cdx, cdz, cdist),
+                    distance: cdist
+                };
+            }
+        }
+
         // Beat 4 objective: once the Foundry is powered, the compass points to it
-        // until the player reaches it — regardless of the radar upgrade, since
-        // this is a story objective, not a scanner perk.
-        if (this.foundry?.isRevealed) {
+        // until the player reaches and activates it — regardless of the radar
+        // upgrade, since this is a story objective, not a scanner perk. After
+        // activation the compass falls through to the build-site ladder so the
+        // run keeps a single clear "next step".
+        if (this.foundry?.isRevealed && !(this.bank?.isFoundryActivated?.())) {
             const fp = this.foundry.getPosition();
             const fdx = fp.x - this.player.position.x;
             const fdz = fp.z - this.player.position.z;
@@ -5909,8 +8041,22 @@ export class ThreeGame {
             }
         }
 
-        // The yellow scanner arrow only appears once the SCANNER/RADAR upgrade is
-        // unlocked. Until then there is no arrow at all.
+        const sideSignal = this.getAct1SideSignalTarget?.();
+        if (sideSignal) {
+            const dx = sideSignal.x - this.player.position.x;
+            const dz = sideSignal.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            return {
+                active: true,
+                mode: sideSignal.mode,
+                label: sideSignal.label,
+                angle: this.planarAngleTo(dx, dz, distance),
+                distance
+            };
+        }
+
+        // General salvage scanning still needs the radar upgrade; camp and hive
+        // beacons above are deliberate Act 1 side signals.
         if (!this.hasUpgrade('radarNode')) {
             return { active: false, angle: 0, distance: 0 };
         }
@@ -5958,6 +8104,17 @@ export class ThreeGame {
         };
     }
 
+    setGodMode(enabled = false) {
+        this.godMode = Boolean(enabled);
+        if (this.godMode) {
+            this.playerVitals.hp = this.playerVitals.maxHp;
+            this.playerVitals.o2 = 100;
+            this.emitHealthState();
+            this.emitO2State();
+        }
+        return this.godMode;
+    }
+
     healPlayer(amount = 1) {
         if (this.isPlayerDead) return;
         const previousHp = this.playerVitals.hp;
@@ -5976,6 +8133,8 @@ export class ThreeGame {
 
     takeDamage(amount = 1, reason = 'hazard') {
         if (this.isPlayerDead) return;
+        if (this.godMode) return;
+        if (this.cinematicLock) return; // untouchable during scripted sequences
         if (this._abilityImmune) return;
         if (this.missionState?.status === 'inactive') return;
         const previousHp = this.playerVitals.hp;
@@ -6113,10 +8272,19 @@ export class ThreeGame {
             this.bunkerDirector?.reset();
             this._blackoutWaveTimer = 0;
             this._extractionLockdownFired = false;
+            this._blockedExtractionSignalFired = false;
             this._terminalEvent = null;
             this._terminalEventResolvedIds.clear();
             this.foundry?.reset?.();
             this._foundryPromptActive = false;
+            this.caveEntrance?.reset?.();
+            this._cavePromptActive = false;
+            this._caveAnomalySignaled = false;
+            this.resetAct2World();
+            this.clearCorpses();
+            this._hiveKinKills = 0;
+            this.cinematicLock = false;
+            this.runEntropy = this.fixedRunEntropy ? 0 : (Math.random() * 0xffffffff) >>> 0;
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
             this._initClassAbility();
@@ -6137,6 +8305,7 @@ export class ThreeGame {
             }
             this.clearLoadedChunksForRunReset();
             this.syncVisibleChunks(true);
+            this.updateCrashedShipsVisibility(false);
             this.emitDepthTierChanged(0);
         }
 
@@ -6189,6 +8358,7 @@ export class ThreeGame {
                 o2: this.playerVitals.o2
             }
         }));
+        window.setTimeout(() => this.updateLoopStep(true), 0);
     }
 
     initMission(mission) {
@@ -6202,6 +8372,15 @@ export class ThreeGame {
             targetKills: mission.targetKills ?? 0,
             targetDepth: mission.targetDepth ?? 0
         };
+    }
+
+    clearMission() {
+        this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
+        this._extractionLockdownFired = false;
+        this._blockedExtractionSignalFired = false;
+        window.dispatchEvent(new CustomEvent('extraction-progress', {
+            detail: { progress: 0, active: false }
+        }));
     }
 
     handleExtraction({ skipElevator = false } = {}) {
@@ -6310,7 +8489,8 @@ export class ThreeGame {
     }
 
     isSpecialAbilityUnlocked() {
-        return true;
+        const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
+        return !stats.unlockSkill || this.bank?.isSkillUnlocked?.(stats.unlockSkill);
     }
 
     triggerClassAbility() {
@@ -6579,6 +8759,13 @@ export class ThreeGame {
 
     updateVitals(delta) {
         if (!this.player || this.isPlayerDead) return;
+        if (this.cinematicLock) return; // no O2 drain during scripted sequences
+        if (this.godMode) {
+            this.playerVitals.o2 = 100;
+            this.playerVitals.o2HealthTimer = 0;
+            this.emitO2State();
+            return;
+        }
         if (this.missionState?.status === 'inactive') return;
 
         const previousO2 = this.playerVitals.o2;
@@ -6591,8 +8778,14 @@ export class ThreeGame {
         }
         this._wasInBubble = inBubble;
 
+        const reactorLevel = this.bank.getState().reactorCompressorLevel ?? (reactorUpgrade ? 1 : 0);
+
         if (inBubble) {
-            let refillRate = (reactorUpgrade ? generatorState.refillRate * 1.2 : generatorState.refillRate)
+            let refillMult = 1.0;
+            if (reactorLevel === 1) refillMult = 1.2;
+            else if (reactorLevel >= 2) refillMult = 2.0;
+
+            let refillRate = generatorState.refillRate * refillMult
                 * (this._abilityRefillMult ?? 1.0);
             if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_special_upgrade_2') && this.classAbility.active) {
                 refillRate *= 1.20;
@@ -6614,8 +8807,10 @@ export class ThreeGame {
             if (this.playerVitals.o2 < O2_DANGER_THRESHOLD) {
                 drainRate *= O2_DRAIN_RATE_DANGER_MULT;
             }
-            if (reactorUpgrade) {
+            if (reactorLevel === 1) {
                 drainRate *= 0.8;
+            } else if (reactorLevel >= 2) {
+                drainRate *= 0.65;
             }
             // Tier 2 biome O2 drain reductions
             const t2Unlocks = this.bank?.getState?.()?.tier2Unlocks ?? {};
@@ -6847,6 +9042,16 @@ export class ThreeGame {
             const uplink = this.getMothershipUplinkReadiness();
             if (!uplink.ready) {
                 this.missionState.extractionTimer = 0;
+                if (!this._blockedExtractionSignalFired) {
+                    this._blockedExtractionSignalFired = true;
+                    window.dispatchEvent(new CustomEvent('extraction-blocked', {
+                        detail: {
+                            missionType: this.missionState?.type ?? null,
+                            missionStatus: this.missionState?.status ?? null,
+                            uplink
+                        }
+                    }));
+                }
                 window.dispatchEvent(new CustomEvent('extraction-progress', {
                     detail: { progress: 0, active: false }
                 }));
@@ -7930,6 +10135,8 @@ export class ThreeGame {
 
         if (depthTier > this.maxDepthTierReached) {
             this.maxDepthTierReached = depthTier;
+            this.arcManager?.recordSignal?.({ deepestDepthTier: depthTier });
+            this.arcManager?.evaluate?.();
             this.emitDepthTierChanged(depthTier);
             return;
         }
@@ -8098,6 +10305,47 @@ export class ThreeGame {
         return { x: worldX / length, z: worldZ / length };
     }
 
+    getAmmoRefillInterval() {
+        const level = this.bank?.getWeaponUpgradeLevel?.('ammoRefill') ?? 0;
+        if (Math.floor(level) <= 0) return Number.POSITIVE_INFINITY;
+        return Math.max(
+            WEAPON_AMMO_REFILL_MIN_INTERVAL,
+            WEAPON_AMMO_REFILL_INTERVAL - Math.max(0, Math.floor(level)) * WEAPON_AMMO_REFILL_INTERVAL_REDUCTION
+        );
+    }
+
+    updateWeaponAmmoRefill(delta) {
+        if (!Number.isFinite(delta) || delta <= 0) return;
+        if (this.weaponReloading || this.weaponClipAmmo >= this.weaponClipSize) {
+            this.weaponAmmoRefillTimer = 0;
+            return;
+        }
+
+        const interval = this.getAmmoRefillInterval();
+        if (!Number.isFinite(interval)) {
+            this.weaponAmmoRefillTimer = 0;
+            this.emitWeaponClipState();
+            return;
+        }
+        this.weaponAmmoRefillTimer = (this.weaponAmmoRefillTimer ?? 0) + delta;
+        if (this.weaponAmmoRefillTimer < interval) {
+            this.emitWeaponClipState();
+            return;
+        }
+
+        let roundsAdded = 0;
+        while (this.weaponAmmoRefillTimer >= interval && this.weaponClipAmmo < this.weaponClipSize) {
+            this.weaponAmmoRefillTimer -= interval;
+            this.weaponClipAmmo += 1;
+            roundsAdded += 1;
+        }
+        if (this.weaponClipAmmo >= this.weaponClipSize) this.weaponAmmoRefillTimer = 0;
+        if (roundsAdded > 0) {
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.08, playbackRate: 1.7 });
+        }
+        this.emitWeaponClipState();
+    }
+
     updateWeaponState(delta) {
         if (this.weaponFireCooldown > 0) {
             this.weaponFireCooldown = Math.max(0, this.weaponFireCooldown - delta);
@@ -8116,6 +10364,8 @@ export class ThreeGame {
                 this.hasActiveAim = false;
             }
         }
+
+        this.updateWeaponAmmoRefill(delta);
 
         if (!this.weaponReloading) return;
         const previousTimer = this.weaponReloadTimer;
@@ -8427,6 +10677,48 @@ export class ThreeGame {
         this.transientEffects.push(effect);
     }
 
+    spawnTextureBurstEffect(x, z, {
+        textureKey = 'fx_steam_puff',
+        color = 0xffffff,
+        count = 3,
+        baseScale = 0.56,
+        duration = 0.48,
+        speed = 0.28,
+        rise = 0.18,
+        opacity = 0.9,
+        renderOrder = 29
+    } = {}) {
+        const template = this.scatterMaterials?.[textureKey];
+        if (!template || !this.scene) return null;
+
+        const effect = new THREE.Group();
+        effect.position.set(x, 0.02, z);
+        effect.userData = { age: 0, duration };
+
+        for (let i = 0; i < count; i += 1) {
+            const sprite = new THREE.Sprite(template.clone());
+            sprite.material.color.setHex(color);
+            sprite.material.opacity = opacity * (0.78 + Math.random() * 0.22);
+            sprite.center.set(0.5, 0.5);
+            sprite.position.set((Math.random() - 0.5) * 0.16, 0.06 + Math.random() * 0.08, (Math.random() - 0.5) * 0.16);
+            sprite.scale.setScalar(baseScale * (0.72 + Math.random() * 0.55));
+            sprite.renderOrder = renderOrder;
+            sprite.userData = {
+                isSmoke: textureKey === 'fx_steam_puff',
+                isSpore: textureKey === 'fx_spark_burst',
+                vx: (Math.random() - 0.5) * speed,
+                vz: (Math.random() - 0.5) * speed,
+                vy: rise + Math.random() * (rise * 0.9),
+                growth: 0.22 + Math.random() * 0.35
+            };
+            effect.add(sprite);
+        }
+
+        this.scene.add(effect);
+        this.transientEffects.push(effect);
+        return effect;
+    }
+
     // Ballistic debris: small boxes flung outward with gravity, drag, and a floor bounce.
     // Registered as a plain-object transient effect so it reuses updateTransientEffects().
     spawnPhysicalBurst(x, z, { color = 0xffe08f, count = 6, upward = 0.18, spread = 1.4 } = {}) {
@@ -8458,6 +10750,18 @@ export class ThreeGame {
         }
         group.position.set(x, 0, z);
         this.scene.add(group);
+
+        this.spawnTextureBurstEffect(x, z, {
+            textureKey: 'fx_spark_burst',
+            color,
+            count: Math.max(1, Math.min(3, Math.ceil(count / 2))),
+            baseScale: 0.36 + Math.min(0.18, count * 0.02),
+            duration: 0.34,
+            speed: 0.18,
+            rise: 0.24,
+            opacity: 0.86,
+            renderOrder: 30
+        });
 
         const duration = 0.7;
         this.transientEffects.push({
@@ -9692,17 +11996,27 @@ export class ThreeGame {
             } else {
                 type = this.chooseWeightedType(biomeVariants, random);
                 const isGroundCover = type.includes('puddle') || type === 'scatter_gravel'
-                    || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss';
-                const isTallScatter = type === 'scatter_ice_stalagmite' || type === 'scatter_bio_pod';
+                    || type === 'scatter_cable_coil' || type === 'scatter_bolts'
+                    || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss'
+                    || type === 'body_human_frozen_suit' || type === 'body_empty_exosuit';
+                const isTallScatter = type === 'scatter_ice_stalagmite'
+                    || type === 'scatter_bio_pod'
+                    || type === 'prop_hive_resin_sac';
                 const isWreckage = type === 'ship_wreckage';
                 if (isWreckage) {
                     scaleMultiplier = 1.05 + random() * 0.3;
                     elevation = 0.12 + random() * 0.08;
                     opacity = 0.92;
                 } else if (isGroundCover) {
-                    scaleMultiplier = 0.85 + random() * 0.28;
-                    elevation = 0.05 + random() * 0.04;
-                    opacity = 0.72 + random() * 0.14;
+                    if (type.startsWith('body_')) {
+                        scaleMultiplier = 0.82 + random() * 0.16;
+                        elevation = 0.06 + random() * 0.03;
+                        opacity = 0.9 + random() * 0.08;
+                    } else {
+                        scaleMultiplier = 0.85 + random() * 0.28;
+                        elevation = 0.05 + random() * 0.04;
+                        opacity = 0.72 + random() * 0.14;
+                    }
                 } else if (isTallScatter) {
                     scaleMultiplier = 0.62 + random() * 0.24;
                     elevation = 0.8 + random() * 0.55;
@@ -9737,7 +12051,9 @@ export class ThreeGame {
             const tiltX = type === 'cybersnail' ? 0 : (random() - 0.5) * 0.16;
             const tiltZ = type === 'cybersnail' ? 0 : (random() - 0.5) * 0.16;
             // Subtle rotation (0 to 2pi)
-            const rotation = type === 'cybersnail' ? 0 : random() * Math.PI * 2;
+            const rotation = type === 'cybersnail' || type.startsWith('body_') || type === 'prop_hive_resin_sac'
+                ? 0
+                : random() * Math.PI * 2;
 
             // Template overrides: THE_NEST forces enrage; AGENT_WRECKAGE adds wreckage scatter
             let finalType = type;
@@ -10811,7 +13127,21 @@ export class ThreeGame {
         sprite.userData.burstTriggered = true;
         sprite.userData.burstTimer = 0;
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
-        this.bank?.addShells?.(isBoss ? 15 : 1);
+        this.arcManager?.recordSignal?.({ snailsKilled: 1 });
+        this.arcManager?.evaluate?.();
+        // Post-turn, wild snails are family. Killing them upsets the queen —
+        // the first kill each run stings, then every fifth.
+        if (this.isAct2Active() && !sprite.userData.campDefenderId && !sprite.userData.isHiveHarvestBoss) {
+            this._hiveKinKills = (this._hiveKinKills ?? 0) + 1;
+            if (this._hiveKinKills === 1 || this._hiveKinKills % 5 === 0) {
+                this.act2?.recordQueenObedience?.(-1);
+                window.dispatchEvent(new CustomEvent('queen-displeased', {
+                    detail: { kills: this._hiveKinKills, obedience: this.act2?.getState?.().queenObedience }
+                }));
+            }
+        }
+        // Shells are no longer granted on the kill itself — the player has to
+        // walk over the corpse to claim them (collectSnailShell).
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
@@ -10853,6 +13183,7 @@ export class ThreeGame {
             window.AudioManager?.play('enemy_death_crawler', { volume: isBoss ? 0.6 : 0.4, playbackRate: isBoss ? 0.75 : 1.0 });
         } else {
             window.AudioManager?.play('enemy_death_snail', { volume: isBoss ? 0.6 : 0.45, playbackRate: isBoss ? 0.75 : 1.0 });
+            this.spawnEnemyCorpse(sprite);
         }
         window.dispatchEvent(new CustomEvent('enemy-killed', {
             detail: {
@@ -10861,6 +13192,121 @@ export class ThreeGame {
                 isBoss,
                 isMilestone: Boolean(sprite.userData.isMilestone),
                 sourceGoalKey: sprite.userData.sourceGoalKey ?? null
+            }
+        }));
+    }
+
+    spawnEnemyCorpse(enemySprite) {
+        if (!enemySprite) return;
+        const type = enemySprite.userData.type;
+        const deadType = `${type}_dead`;
+        const deadMaterial = this.scatterMaterials[deadType];
+        if (!deadMaterial) return;
+
+        // Clone so per-corpse opacity fades don't bleed into every other
+        // corpse sharing the material (the map itself stays shared).
+        const corpse = new THREE.Sprite(deadMaterial.clone());
+        corpse.position.copy(enemySprite.position);
+        corpse.position.y = 0.05; // Slightly above floor
+
+        const baseScaleX = Math.abs(enemySprite.scale.x);
+        const baseScaleY = Math.abs(enemySprite.scale.y);
+        const facingSign = enemySprite.scale.x < 0 ? -1 : 1;
+        corpse.scale.set(baseScaleX * facingSign, baseScaleY, 1);
+        corpse.center.set(0.5, 0.1); // Same pivot alignment as snails
+
+        corpse.userData = {
+            type: deadType,
+            baseScaleX,
+            baseScaleY,
+            baseOpacity: 0.85,
+            isCorpse: true,
+            decayTimer: 0,
+            isBoss: Boolean(enemySprite.userData.isBoss),
+            shellValue: enemySprite.userData.isBoss ? SNAIL_SHELL_BOSS_VALUE : 1,
+            collected: false
+        };
+
+        corpse.renderOrder = 3; // Render below active enemies
+        this.scene.add(corpse);
+        this.corpses.push(corpse);
+    }
+
+    // Per-frame corpse upkeep: touch-to-collect, then fade out (fast pop when
+    // collected, slow decay otherwise).
+    updateCorpses(delta) {
+        if (!this.corpses?.length) return;
+        const decayStart = 14.0;
+        const decayDuration = 6.0;
+        const survivors = [];
+        for (const corpse of this.corpses) {
+            corpse.userData.decayTimer += delta;
+
+            if (!corpse.userData.collected && this.player && !this.isPlayerDead
+                && Math.hypot(
+                    this.player.position.x - corpse.position.x,
+                    this.player.position.z - corpse.position.z
+                ) <= SNAIL_SHELL_COLLECT_RADIUS) {
+                this.collectSnailShell(corpse);
+            }
+
+            let done = false;
+            if (corpse.userData.collected) {
+                corpse.userData.collectTimer += delta;
+                const fadeT = Math.min(corpse.userData.collectTimer / 0.38, 1);
+                const pop = 1 + Math.sin(Math.min(fadeT * Math.PI, Math.PI)) * 0.16;
+                const facingSign = corpse.scale.x < 0 ? -1 : 1;
+                corpse.scale.set(
+                    corpse.userData.baseScaleX * facingSign * pop,
+                    corpse.userData.baseScaleY * pop,
+                    1
+                );
+                corpse.material.opacity = corpse.userData.baseOpacity * (1 - fadeT);
+                done = fadeT >= 1;
+            } else if (corpse.userData.decayTimer >= decayStart) {
+                const fadeT = Math.min((corpse.userData.decayTimer - decayStart) / decayDuration, 1);
+                corpse.material.opacity = corpse.userData.baseOpacity * (1 - fadeT);
+                done = fadeT >= 1;
+            }
+
+            if (done) {
+                corpse.parent?.remove(corpse);
+                corpse.material?.dispose?.();
+                continue;
+            }
+            const fogVisibility = this.getFogOfWarVisibility(corpse.position.x, corpse.position.z);
+            this.applyFogOfWarOpacity(corpse, fogVisibility, { captureCurrent: true });
+            survivors.push(corpse);
+        }
+        this.corpses = survivors;
+    }
+
+    clearCorpses() {
+        for (const corpse of this.corpses ?? []) {
+            corpse.parent?.remove(corpse);
+            corpse.material?.dispose?.();
+        }
+        this.corpses = [];
+    }
+
+    // Shells bank instantly (no extraction risk) — they are the body-count
+    // currency, so losing them on death would double-punish melee classes.
+    collectSnailShell(corpse) {
+        if (!corpse || corpse.userData.collected) return;
+        corpse.userData.collected = true;
+        corpse.userData.collectTimer = 0;
+        const gained = corpse.userData.shellValue ?? 1;
+        this.bank?.addShells?.(gained);
+        window.AudioManager?.play?.('ui_click_confirm', {
+            volume: 0.5,
+            playbackRate: corpse.userData.isBoss ? 0.85 : 1.25
+        });
+        this.spawnGearPoofEffect(corpse.position.x, corpse.position.z, 'bunker_junk_rare');
+        window.dispatchEvent(new CustomEvent('shell-collected', {
+            detail: {
+                gained,
+                total: this.bank?.getShells?.() ?? 0,
+                isBoss: corpse.userData.isBoss === true
             }
         }));
     }
@@ -10978,9 +13424,92 @@ export class ThreeGame {
         return boss;
     }
 
+    spawnHiveHarvestBoss(hive, extractionLevel = 1) {
+        if (!hive || !this.player) return null;
+        const bossType = HIVE_HARVEST_BOSS_FOR_HIVE[hive.id] ?? 'boss_sporesnail';
+        if (!this.scatterMaterials[bossType]) return null;
+        if (this.scatterSprites.some((s) => s.userData?.isHiveHarvestBoss && s.userData?.hiveId === hive.id && !s.userData?.burstTriggered)) {
+            return null;
+        }
+
+        this.snailsEnabled = true;
+        let spawnX = null;
+        let spawnZ = null;
+        const baseX = hive.pos?.x ?? this.player.position.x;
+        const baseZ = hive.pos?.z ?? this.player.position.z;
+        for (const dist of [6, 7.5, 5, 9]) {
+            const startA = Math.random() * Math.PI * 2;
+            for (let a = 0; a < 16; a += 1) {
+                const ang = startA + (a / 16) * Math.PI * 2;
+                const tx = baseX + Math.cos(ang) * dist;
+                const tz = baseZ + Math.sin(ang) * dist;
+                if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                    spawnX = tx;
+                    spawnZ = tz;
+                    break;
+                }
+            }
+            if (spawnX !== null) break;
+        }
+        if (spawnX === null) return null;
+
+        const tint = bossType === 'boss_cryosnail' ? 0x88ccff
+            : bossType === 'boss_sporesnail' ? 0x88ff88 : 0xffffff;
+        const level = Math.max(1, Math.min(3, Math.floor(Number(extractionLevel) || 1)));
+        const placement = {
+            x: spawnX,
+            z: spawnZ,
+            type: bossType,
+            scatterKey: `hive-harvest:${hive.id}:${Date.now()}`,
+            scale: bossType === 'boss_cybersnail' ? 2.9 : bossType === 'boss_cryosnail' ? 3.35 : 3.8,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'boss',
+            phase: 0,
+            opacity: 1,
+            biomeTint: tint,
+            isBoss: true,
+            maxHp: 7 + level * 4
+        };
+        const boss = this.createScatterInstance(placement);
+        if (!boss) return null;
+        boss.userData.isMilestone = true;
+        boss.userData.isHiveHarvestBoss = true;
+        boss.userData.hiveId = hive.id;
+        boss.userData.sourceGoalKey = 'hiveHarvest';
+        boss.userData.prioritizeShip = false;
+        boss.userData.targetType = 'player';
+
+        const chunkX = Math.floor(spawnX / this.chunkSize);
+        const chunkY = Math.floor(spawnZ / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+        group.add(boss);
+        this.scatterSprites.push(boss);
+
+        window.AudioManager?.play?.('amb_metal_stress', { volume: 0.6, playbackRate: 0.5, bus: 'sfx' });
+        window.dispatchEvent(new CustomEvent('milestone-boss-spawned', {
+            detail: { type: bossType, sourceGoalKey: 'hiveHarvest', hiveId: hive.id }
+        }));
+        window.dispatchEvent(new CustomEvent('hive-harvest-boss-spawned', {
+            detail: { type: bossType, hiveId: hive.id, hiveLabel: hive.label, extractionLevel: level }
+        }));
+        return boss;
+    }
+
+    // Post-turn the hive recognizes its carrier: wild snails ignore the
+    // player. Camp defenders and anything the player shoots stay hostile.
+    isHiveKinPassive(sprite) {
+        return this.isAct2Active()
+            && !sprite?.userData?.campDefenderId
+            && !sprite?.userData?.isHiveHarvestBoss
+            && !sprite?.userData?.shotByPlayer;
+    }
+
     selectSnailTarget(sprite, activeShip) {
         const targets = [];
-        if (this.player && !this.isPlayerDead) {
+        if (this.player && !this.isPlayerDead && !this.isHiveKinPassive(sprite)) {
             targets.push({
                 type: 'player',
                 x: this.player.position.x,
@@ -11292,7 +13821,7 @@ export class ThreeGame {
 
             // Player hit check
             const newDist = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
-            if (!this.isPlayerDead && newDist <= CRAWLER_ATTACK_RADIUS && data.attackCooldown <= 0) {
+            if (!this.isPlayerDead && newDist <= CRAWLER_ATTACK_RADIUS && data.attackCooldown <= 0 && !this.isHiveKinPassive(sprite)) {
                 data.attackCooldown = CRAWLER_ATTACK_COOLDOWN;
                 data.crawlerState = 'idle';
                 window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'crawler' } }));
@@ -11616,6 +14145,69 @@ export class ThreeGame {
                         }
                         window.AudioManager?.play('amb_metal_stress', { volume: 0.5, playbackRate: 0.5 });
                     }
+                } else if (data.type === 'boss_corrupted_scout' && target.type === 'player' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 4.0;
+                    const angleToPlayer = Math.atan2(target.z - sprite.position.z, target.x - sprite.position.x);
+                    for (let i = -1; i <= 1; i++) {
+                        const spreadAngle = angleToPlayer + i * 0.16;
+                        this.spawnProjectile({
+                            x: sprite.position.x,
+                            z: sprite.position.z,
+                            vx: Math.cos(spreadAngle) * 9.0,
+                            vz: Math.sin(spreadAngle) * 9.0,
+                            ttl: 1.8,
+                            damage: 1,
+                            radius: 0.18,
+                            isEnemy: true
+                        });
+                    }
+                    if (Math.random() < 0.35 && sprite.parent) {
+                        this.spawnGearPoofEffect(sprite.position.x + (Math.random() - 0.5) * 1.5, sprite.position.z + (Math.random() - 0.5) * 1.5, 'bio_spores_blue');
+                    }
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.4, playbackRate: 1.65 });
+                } else if (data.type === 'boss_corrupted_tank' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 5.0;
+                    this.spawnFrostShockwaveEffect(sprite.position.x, sprite.position.z, 5.0);
+                    if (this.player && !this.isPlayerDead) {
+                        const d = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
+                        if (d <= 5.0) {
+                            this.takeDamage(2, 'ground-slam');
+                            this.triggerCameraShake?.(0.35, 0.45);
+                        }
+                    }
+                    window.AudioManager?.play('amb_metal_stress', { volume: 0.52, playbackRate: 0.8 });
+                } else if (data.type === 'boss_corrupted_engineer' && distanceToTarget <= 12) {
+                    data.bossAttackTimer = 6.0;
+                    this.playerSlowTimer = 2.5; // Jam and slow
+                    const parent = sprite.parent;
+                    if (parent) {
+                        const tx = sprite.position.x + (Math.random() - 0.5) * 2;
+                        const tz = sprite.position.z + (Math.random() - 0.5) * 2;
+                        if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                            const placement = {
+                                x: tx,
+                                z: tz,
+                                type: 'cybersnail',
+                                scatterKey: `${sprite.userData.scatterKey}:minion:${Date.now()}`,
+                                scale: 0.85,
+                                rotation: 0,
+                                tiltX: 0,
+                                tiltZ: 0,
+                                elevation: 0.08,
+                                groupType: 'minion',
+                                phase: Math.random() * Math.PI,
+                                opacity: 1,
+                                biomeTint: 0xffffff
+                            };
+                            const minion = this.createScatterInstance(placement);
+                            if (minion) {
+                                parent.add(minion);
+                                this.scatterSprites.push(minion);
+                                this.spawnGearPoofEffect(tx, tz, 'bunker_junk');
+                            }
+                        }
+                    }
+                    window.AudioManager?.play('ui_scan_ping', { volume: 0.48, playbackRate: 0.42 });
                 }
             }
         }
@@ -11642,7 +14234,7 @@ export class ThreeGame {
     }
 
     isEnemyType(type) {
-        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler'].includes(type);
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer'].includes(type);
     }
 
     isSentinel(type) {
@@ -11805,6 +14397,12 @@ export class ThreeGame {
                         nameEl.textContent = 'CRYO-GOLIATH SNAIL';
                     } else if (nearestBoss.userData.type === 'boss_sporesnail') {
                         nameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
+                    } else if (nearestBoss.userData.type === 'boss_corrupted_scout') {
+                        nameEl.textContent = 'CORRUPTED SCOUT: MARTHA';
+                    } else if (nearestBoss.userData.type === 'boss_corrupted_tank') {
+                        nameEl.textContent = 'CORRUPTED TANK: BRIGGS';
+                    } else if (nearestBoss.userData.type === 'boss_corrupted_engineer') {
+                        nameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
                     } else {
                         nameEl.textContent = 'ELITE THREAT';
                     }
@@ -11882,6 +14480,16 @@ export class ThreeGame {
                 const phase = child.userData.phase ?? 0;
                 child.position.y = baseY + Math.sin(time * 1.4 + phase) * 0.05;
                 child.material.opacity = 0.7 + Math.sin(time * 2.1 + phase) * 0.3;
+            } else if (child.userData.type === 'prop_hive_resin_sac') {
+                const phase = child.userData.phase ?? 0;
+                const pulse = 0.92 + Math.sin(time * 1.9 + phase) * 0.08;
+                child.position.y = baseY + Math.sin(time * 1.4 + phase) * 0.05;
+                child.scale.set(
+                    child.userData.baseScaleX * pulse,
+                    child.userData.baseScaleY * pulse,
+                    1
+                );
+                child.material.opacity = child.userData.baseOpacity * (0.88 + Math.sin(time * 2.4 + phase) * 0.12);
             } else if (this.isCrawler(child.userData.type)) {
                 child.position.y = baseY + Math.sin(time * 6 + child.userData.phase) * 0.03;
                 child.material.opacity = child.userData.baseOpacity;
@@ -12135,6 +14743,18 @@ export class ThreeGame {
         glow.renderOrder = 28;
         glow.userData = { isGlow: true };
         effect.add(glow);
+
+        this.spawnTextureBurstEffect(x, z, {
+            textureKey: junkType.includes('bio') ? 'fx_steam_puff' : 'fx_spark_burst',
+            color: colors.glowColor,
+            count: junkType.includes('bio') ? 3 : 2,
+            baseScale: junkType.includes('bio') ? 0.62 : 0.5,
+            duration: junkType.includes('bio') ? 0.6 : 0.42,
+            speed: junkType.includes('bio') ? 0.24 : 0.18,
+            rise: junkType.includes('bio') ? 0.22 : 0.28,
+            opacity: junkType.includes('bio') ? 0.78 : 0.86,
+            renderOrder: 29
+        });
 
         effect.position.set(x, 0.02, z);
         effect.userData = { age: 0, duration: 0.56 };

@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'hb_bank';
-const BANK_SCHEMA_VERSION = 6;
+const BANK_SCHEMA_VERSION = 8;
 
 export function shellPriceOf(cost = {}) {
     const tech = Number(cost?.tech) || 0;
@@ -41,6 +41,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['scout_speed_1', 'scout_ammo_1']),
             prereqMode: 'any',
+            requiredGoal: 'hullExpansion',
             row: 5, col: 3
         }),
         Object.freeze({
@@ -49,6 +50,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
             desc: 'Sprint Burst duration increased by +1.0s.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['scout_special_unlock']),
+            requiredGoal: 'reactorCompressor',
+            requiredO2Level: 3,
             row: 7, col: 1
         }),
         Object.freeze({
@@ -57,6 +60,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
             desc: 'Sprint Burst cooldown reduced by -2.0s.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['scout_special_unlock']),
+            requiredGoal: 'reactorCompressor',
+            requiredO2Level: 3,
             row: 7, col: 5
         })
     ]),
@@ -92,6 +97,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['tank_damage_1', 'tank_o2_efficiency']),
             prereqMode: 'any',
+            requiredGoal: 'hullExpansion',
             row: 5, col: 3
         }),
         Object.freeze({
@@ -100,6 +106,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
             desc: 'Brace duration increased by +1.5s.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['tank_special_unlock']),
+            requiredGoal: 'reactorCompressor',
+            requiredO2Level: 3,
             row: 7, col: 1
         }),
         Object.freeze({
@@ -108,6 +116,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
             desc: 'O2 refill speed inside O2 bubble increased by 20% while braced.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['tank_special_unlock']),
+            requiredGoal: 'reactorCompressor',
+            requiredO2Level: 3,
             row: 7, col: 5
         })
     ]),
@@ -143,6 +153,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['engineer_magnet_1', 'engineer_battery_1']),
             prereqMode: 'any',
+            requiredGoal: 'hullExpansion',
             row: 5, col: 3
         }),
         Object.freeze({
@@ -151,6 +162,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
             desc: 'Reroute active ability grants +20% firing rate & projectile speed.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['engineer_special_unlock']),
+            requiredGoal: 'reactorCompressor',
+            requiredO2Level: 3,
             row: 7, col: 1
         }),
         Object.freeze({
@@ -159,6 +172,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
             desc: 'Reroute active ability reduces radar scan cooldown by 50%.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['engineer_special_unlock']),
+            requiredGoal: 'reactorCompressor',
+            requiredO2Level: 3,
             row: 7, col: 5
         })
     ])
@@ -170,6 +185,7 @@ export const FOUNDRY_ACTIVATION_COST = Object.freeze({ tech: 25, coin: 10, med: 
 // price to advance FROM that level. Effects are applied in threeGame at run init.
 export const WEAPON_UPGRADE_ORDER = Object.freeze([
     'ammoCapacity',
+    'ammoRefill',
     'shotSpeed',
     'shotDamage',
     'shotAmount'
@@ -182,6 +198,13 @@ export const WEAPON_UPGRADES_CONFIG = Object.freeze({
         maxLevel: 3,
         desc: Object.freeze(['Clip +2 rounds', 'Clip +4 rounds', 'Clip +6 rounds']),
         costs: Object.freeze([{ tech: 30, coin: 10 }, { tech: 60, coin: 20 }, { tech: 100, coin: 35 }])
+    }),
+    ammoRefill: Object.freeze({
+        key: 'ammoRefill',
+        label: 'AMMO CONDENSER',
+        maxLevel: 3,
+        desc: Object.freeze(['Passive ammo refill every 7.9s', 'Passive ammo refill every 5.8s', 'Passive ammo refill every 3.7s']),
+        costs: Object.freeze([{ tech: 45, coin: 12 }, { tech: 80, coin: 30 }, { tech: 130, coin: 55 }])
     }),
     shotSpeed: Object.freeze({
         key: 'shotSpeed',
@@ -207,7 +230,7 @@ export const WEAPON_UPGRADES_CONFIG = Object.freeze({
 });
 
 function createDefaultWeaponUpgrades() {
-    return { ammoCapacity: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0 };
+    return { ammoCapacity: 0, ammoRefill: 0, shotSpeed: 0, shotDamage: 0, shotAmount: 0 };
 }
 
 export const GOAL_ORDER = Object.freeze([
@@ -222,6 +245,12 @@ export const GOAL_COSTS = Object.freeze({
     hullExpansion: Object.freeze({ tech: 50, med: 20 }),
     radarNode: Object.freeze({ tech: 150, coin: 30 }),
     reactorCompressor: Object.freeze({ tech: 300, coin: 100 })
+});
+
+export const GOAL_LEVEL2_COSTS = Object.freeze({
+    hullExpansion: Object.freeze({ tech: 100, med: 40 }),
+    radarNode: Object.freeze({ tech: 200, coin: 50 }),
+    reactorCompressor: Object.freeze({ tech: 400, coin: 150 })
 });
 
 export const O2_GENERATOR_UPGRADES = Object.freeze([
@@ -307,6 +336,9 @@ function createDefaultState() {
             radarNode: false,
             reactorCompressor: false
         },
+        hullExpansionLevel: 0,
+        radarNodeLevel: 0,
+        reactorCompressorLevel: 0,
         tier2Unlocks: {
             suitThermal: false,
             deconFilters: false,
@@ -353,6 +385,21 @@ function migrateBank(raw) {
     if (version < 6) {
         raw.shells = Number.isFinite(raw.shells) ? raw.shells : 0;
         raw.schemaVersion = 6;
+    }
+    if (version < 7) {
+        if (!raw.weaponUpgrades || typeof raw.weaponUpgrades !== 'object') {
+            raw.weaponUpgrades = createDefaultWeaponUpgrades();
+        }
+        raw.weaponUpgrades.ammoRefill = Number.isFinite(raw.weaponUpgrades.ammoRefill)
+            ? raw.weaponUpgrades.ammoRefill
+            : 0;
+        raw.schemaVersion = 7;
+    }
+    if (version < 8) {
+        raw.hullExpansionLevel = raw.hullExpansionLevel ?? (raw.unlocks?.hullExpansion ? 1 : 0);
+        raw.radarNodeLevel = raw.radarNodeLevel ?? (raw.unlocks?.radarNode ? 1 : 0);
+        raw.reactorCompressorLevel = raw.reactorCompressorLevel ?? (raw.unlocks?.reactorCompressor ? 1 : 0);
+        raw.schemaVersion = 8;
     }
     return raw;
 }
@@ -408,6 +455,10 @@ function toSerializableState(raw) {
 
     syncLegacyUnlocksFromGeneratorLevel(base);
 
+    base.hullExpansionLevel = Math.max(0, Math.floor(Number(raw.hullExpansionLevel) || (base.unlocks.hullExpansion ? 1 : 0)));
+    base.radarNodeLevel = Math.max(0, Math.floor(Number(raw.radarNodeLevel) || (base.unlocks.radarNode ? 1 : 0)));
+    base.reactorCompressorLevel = Math.max(0, Math.floor(Number(raw.reactorCompressorLevel) || (base.unlocks.reactorCompressor ? 1 : 0)));
+
     // Tier 2 unlocks
     if (raw.tier2Unlocks && typeof raw.tier2Unlocks === 'object') {
         for (const key of TIER2_UPGRADE_ORDER) {
@@ -444,6 +495,9 @@ function cloneState(state) {
         unlocks: {
             ...state.unlocks
         },
+        hullExpansionLevel: state.hullExpansionLevel ?? (state.unlocks?.hullExpansion ? 1 : 0),
+        radarNodeLevel: state.radarNodeLevel ?? (state.unlocks?.radarNode ? 1 : 0),
+        reactorCompressorLevel: state.reactorCompressorLevel ?? (state.unlocks?.reactorCompressor ? 1 : 0),
         tier2Unlocks: {
             ...(state.tier2Unlocks ?? { suitThermal: false, deconFilters: false, stimCache: false })
         },
@@ -681,6 +735,10 @@ export class BankManager {
         }
 
         this.state.unlocks[goalKey] = true;
+        if (goalKey === 'hullExpansion') this.state.hullExpansionLevel = 1;
+        if (goalKey === 'radarNode') this.state.radarNodeLevel = 1;
+        if (goalKey === 'reactorCompressor') this.state.reactorCompressorLevel = 1;
+
         this.state.o2GeneratorLevel = Math.max(
             this.state.o2GeneratorLevel,
             Math.min(MAX_O2_GENERATOR_LEVEL, deriveLegacyO2GeneratorLevel(this.state.unlocks))
@@ -694,6 +752,36 @@ export class BankManager {
             bank: this.getState()
         });
 
+        return true;
+    }
+
+    getGoalUpgradeCost(goalKey, level = 2) {
+        if (level === 2) {
+            return GOAL_LEVEL2_COSTS[goalKey] ?? null;
+        }
+        return GOAL_COSTS[goalKey] ?? null;
+    }
+
+    canUpgradeGoal(goalKey) {
+        if (!GOAL_ORDER.includes(goalKey)) return false;
+        if (!this.state.unlocks[goalKey]) return false;
+        const currentLevel = this.state[`${goalKey}Level`] ?? 1;
+        if (currentLevel >= 2) return false;
+        const cost = this.getGoalUpgradeCost(goalKey, 2);
+        return this.canAfford(cost ?? {});
+    }
+
+    upgradeGoal(goalKey) {
+        if (!this.canUpgradeGoal(goalKey)) return false;
+        const cost = this.getGoalUpgradeCost(goalKey, 2);
+        if (!this.spend(cost)) return false;
+        this.state[`${goalKey}Level`] = 2;
+        this.save();
+        emit('goal-upgraded', {
+            goalKey,
+            level: 2,
+            bank: this.getState()
+        });
         return true;
     }
 
@@ -787,6 +875,9 @@ export class BankManager {
                 if (unlockedCount < node.prereqs.length) return false;
             }
         }
+
+        if (node.requiredGoal && !this.state.unlocks?.[node.requiredGoal]) return false;
+        if (node.requiredO2Level && this.getO2GeneratorLevel() < node.requiredO2Level) return false;
 
         // 3. Cost check
         return this.canAffordShells(shellPriceOf(node.cost));
