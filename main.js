@@ -223,8 +223,8 @@ let activeTouchPointerId = null;
 let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 let cutsceneManager = null;
 let dialogueManager = null;
-const arcManager = ARC_PRELUDE_ENABLED ? new ArcStateManager() : null;
-const act2Manager = ARC_PRELUDE_ENABLED ? new Act2Manager() : null;
+const arcManager = new ArcStateManager();
+const act2Manager = new Act2Manager();
 let missionFlowRunning = false;
 let isResettingRun = false;
 
@@ -1647,7 +1647,7 @@ function formatRunTime(ms) {
 }
 
 function clearAllTimers() {
-    if (biomePromptTimer) { clearTimeout(biomePromptTimer); biomePromptTimer = null; }
+    if (biomePromptTimer != null) { clearTimeout(biomePromptTimer); biomePromptTimer = null; }
     if (damageFlashTimer) { clearTimeout(damageFlashTimer); damageFlashTimer = null; }
     if (deathSequenceTimer) { clearTimeout(deathSequenceTimer); deathSequenceTimer = null; }
     if (missionProgressHUDTimer) { clearTimeout(missionProgressHUDTimer); missionProgressHUDTimer = null; }
@@ -1899,7 +1899,7 @@ function runDeathSequence(event) {
     window.game?.setInputEnabled?.(false);
     hideBiomePrompt();
     hideExtractionRing();
-    if (biomePromptTimer) {
+    if (biomePromptTimer != null) {
         clearTimeout(biomePromptTimer);
         biomePromptTimer = null;
     }
@@ -2904,7 +2904,7 @@ if (gameOverTryAgain) {
 function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
     hideGameOverScreen();
     hideBiomePrompt();
-    if (biomePromptTimer) {
+    if (biomePromptTimer != null) {
         clearTimeout(biomePromptTimer);
         biomePromptTimer = null;
     }
