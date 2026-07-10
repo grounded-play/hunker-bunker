@@ -9,6 +9,8 @@ export const ENEMY_BASE = Object.freeze({ maxHp: 2, speed: 1.2 });
 export const ENEMY_STATS = Object.freeze({
     cryosnail:       { maxHp: 4,  speed: 0.9 },
     sporesnail:      { maxHp: 3,  speed: 1.4 },
+    alien_proto_crawler: { maxHp: 3, speed: 1.5 },
+    alien_proto_spitter: { maxHp: 4, speed: 1.1 },
     boss_cybersnail: { maxHp: 20, speed: 1.5 },
     boss_cryosnail:  { maxHp: 40, speed: 1.1 },
     boss_sporesnail: { maxHp: 75, speed: 1.3 }

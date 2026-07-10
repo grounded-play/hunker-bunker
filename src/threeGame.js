@@ -1236,6 +1236,10 @@ export class ThreeGame {
             cryosnail: this.loadKeyedSpriteTexture('/cryosnail.png', 14),
             sporesnail: this.loadKeyedSpriteTexture('/sporesnail.png', 14),
             crawler: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
+            civilian_miner: this.loadKeyedSpriteTexture('/civilian_miner_walk.png', 16),
+            civilian_researcher: this.loadKeyedSpriteTexture('/civilian_researcher_walk.png', 16),
+            alien_proto_crawler: this.loadKeyedSpriteTexture('/alien_proto_crawler_walk.png', 16),
+            alien_proto_spitter: this.loadKeyedSpriteTexture('/alien_proto_spitter_walk.png', 16),
             boss_cybersnail: this.loadKeyedSpriteTexture('/boss_cybersnail.png', 14),
             boss_cryosnail: this.loadKeyedSpriteTexture('/boss_cryosnail.png', 14),
             boss_sporesnail: this.loadKeyedSpriteTexture('/boss_sporesnail.png', 14),
@@ -1334,6 +1338,38 @@ export class ThreeGame {
                 depthTest: true,
                 fog: false,
                 color: new THREE.Color(CRAWLER_TINT)
+            }),
+            civilian_miner: new THREE.SpriteMaterial({
+                map: this.scatterTextures.civilian_miner,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            civilian_researcher: new THREE.SpriteMaterial({
+                map: this.scatterTextures.civilian_researcher,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            alien_proto_crawler: new THREE.SpriteMaterial({
+                map: this.scatterTextures.alien_proto_crawler,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            alien_proto_spitter: new THREE.SpriteMaterial({
+                map: this.scatterTextures.alien_proto_spitter,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
             }),
             boss_cybersnail: new THREE.SpriteMaterial({
                 map: this.scatterTextures.boss_cybersnail,
@@ -14234,7 +14270,7 @@ export class ThreeGame {
     }
 
     isEnemyType(type) {
-        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer'].includes(type);
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer', 'alien_proto_crawler', 'alien_proto_spitter'].includes(type);
     }
 
     isSentinel(type) {

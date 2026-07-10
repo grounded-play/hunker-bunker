@@ -1,4 +1,4 @@
-// Generates the cave-reveal and act3-departure cutscene videos into
+// Generates the cave-reveal, act3-departure, and ending cutscene videos into
 // public/cutscenes/ using a temp server + headless Chrome + MediaRecorder,
 // same pipeline as generate_cutscenes.js.
 //
@@ -80,6 +80,15 @@ function grainAndVignette(t, strength = 0.5) {
     for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
 }
 
+function drawCoverImage(img, zoom = 1, offsetX = 0, offsetY = 0) {
+    if (!img) return false;
+    const scale = Math.max(W / img.width, H / img.height) * zoom;
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    ctx.drawImage(img, (W - dw) / 2 + offsetX, (H - dh) / 2 + offsetY, dw, dh);
+    return true;
+}
+
 async function recordVideo(name, drawFrame, durationMs, posterT = 0.5) {
     const chunks = [];
     const stream = canvas.captureStream(30);
@@ -127,6 +136,11 @@ async function start() {
     const eggCluster = chromaKeyImage(await loadImage('/egg_cluster.png'));
     const queenSil = chromaKeyImage(await loadImage('/queen_silhouette.png'));
     const vessel = chromaKeyImage(await loadImage('/survivor_vessel.png'));
+    const endingFullBroodShip = chromaKeyImage(await loadImage('/ending_fullbrood_ship.png'));
+    const endingCleanEscapeCabin = chromaKeyImage(await loadImage('/ending_cleanescape_cabin.png'));
+    const endingMixedCrewCabin = chromaKeyImage(await loadImage('/ending_mixedcrew_cabin.png'));
+    const endingCarriersBargainEggs = chromaKeyImage(await loadImage('/ending_carriersbargain_eggs.png'));
+    const endingScorchedSkyCockpit = chromaKeyImage(await loadImage('/ending_scorchedsky_cockpit.png'));
 
     // ── Scene 1: cave-reveal (7.5s) ─────────────────────────────
     // approach the mouth → egg chamber → queen flicker → sting to black
@@ -390,6 +404,174 @@ async function start() {
             ctx.fillRect(0, 0, W, H);
         }
         grainAndVignette(t, 0.4);
+    }, 7000, 0.45);
+
+    // ── Scene 3: ending-fullbrood (6.5s) ─────────────────────────
+    await recordVideo('ending-fullbrood', (t, elapsed) => {
+        ctx.fillStyle = '#020308';
+        ctx.fillRect(0, 0, W, H);
+
+        for (let i = 0; i < 160; i += 1) {
+            const x = (i * 137.3 + elapsed * 0.035) % W;
+            const y = (i * 61.7 + elapsed * 0.09) % H;
+            const size = 1 + (i % 4) * 0.35;
+            ctx.fillStyle = i % 5 === 0 ? 'rgba(140,255,150,0.7)' : 'rgba(220,235,255,0.6)';
+            ctx.fillRect(x, y, size, size);
+        }
+
+        const zoom = 1.02 + t * 0.06;
+        const driftX = Math.sin(elapsed / 900) * 14;
+        const driftY = Math.cos(elapsed / 1200) * 10;
+        if (!drawCoverImage(endingFullBroodShip, zoom, driftX, driftY)) {
+            drawCoverImage(vessel, zoom, driftX, driftY);
+        }
+
+        const engineGlow = ctx.createRadialGradient(W * 0.56, H * 0.72, 30, W * 0.56, H * 0.72, H * 0.55);
+        engineGlow.addColorStop(0, 'rgba(140,255,150,' + (0.18 + 0.08 * Math.sin(elapsed / 180)) + ')');
+        engineGlow.addColorStop(0.45, 'rgba(255,180,74,' + (0.09 + 0.05 * Math.sin(elapsed / 260)) + ')');
+        engineGlow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = engineGlow;
+        ctx.fillRect(0, 0, W, H);
+
+        const hullPulse = 0.06 + 0.04 * Math.sin(elapsed / 140);
+        ctx.fillStyle = 'rgba(140,255,160,' + hullPulse + ')';
+        ctx.fillRect(0, 0, W, H);
+        grainAndVignette(t, 0.55);
+    }, 6500, 0.58);
+
+    // ── Scene 4: ending-cleanescape (6.5s) ───────────────────────
+    await recordVideo('ending-cleanescape', (t, elapsed) => {
+        ctx.fillStyle = '#07101c';
+        ctx.fillRect(0, 0, W, H);
+
+        for (let i = 0; i < 120; i += 1) {
+            const x = (i * 83.4 + elapsed * 0.025) % W;
+            const y = (i * 43.1 + elapsed * 0.02) % H;
+            const size = 1 + (i % 3) * 0.3;
+            ctx.fillStyle = 'rgba(220,235,255,0.75)';
+            ctx.fillRect(x, y, size, size);
+        }
+
+        const zoom = 1.04 + t * 0.03;
+        const driftX = Math.sin(elapsed / 1200) * 12;
+        const driftY = Math.cos(elapsed / 1400) * 8;
+        if (!drawCoverImage(endingCleanEscapeCabin, zoom, driftX, driftY)) {
+            drawCoverImage(vessel, zoom, driftX, driftY);
+        }
+
+        const viewportGlow = ctx.createRadialGradient(W * 0.77, H * 0.24, 50, W * 0.77, H * 0.24, H * 0.5);
+        viewportGlow.addColorStop(0, 'rgba(110,170,255,' + (0.15 + 0.05 * Math.sin(elapsed / 260)) + ')');
+        viewportGlow.addColorStop(0.5, 'rgba(255,190,110,' + (0.08 + 0.03 * Math.sin(elapsed / 420)) + ')');
+        viewportGlow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = viewportGlow;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.fillStyle = 'rgba(255,194,108,' + (0.05 + 0.02 * Math.sin(elapsed / 180)) + ')';
+        ctx.fillRect(0, H * 0.65, W, H * 0.35);
+        grainAndVignette(t, 0.46);
+    }, 6500, 0.56);
+
+    // ── Scene 5: ending-mixedcrew (7s) ──────────────────────────
+    await recordVideo('ending-mixedcrew', (t, elapsed) => {
+        ctx.fillStyle = '#041018';
+        ctx.fillRect(0, 0, W, H);
+
+        const leftTint = ctx.createLinearGradient(0, 0, W * 0.5, 0);
+        leftTint.addColorStop(0, 'rgba(255,176,74,0.14)');
+        leftTint.addColorStop(1, 'rgba(255,176,74,0)');
+        ctx.fillStyle = leftTint;
+        ctx.fillRect(0, 0, W * 0.5, H);
+
+        const rightTint = ctx.createLinearGradient(W * 0.5, 0, W, 0);
+        rightTint.addColorStop(0, 'rgba(0,229,255,0)');
+        rightTint.addColorStop(1, 'rgba(0,229,255,0.16)');
+        ctx.fillStyle = rightTint;
+        ctx.fillRect(W * 0.5, 0, W * 0.5, H);
+
+        const zoom = 1.03 + t * 0.035;
+        const driftX = Math.sin(elapsed / 850) * 10;
+        const driftY = Math.cos(elapsed / 980) * 7;
+        if (!drawCoverImage(endingMixedCrewCabin, zoom, driftX, driftY)) {
+            drawCoverImage(vessel, zoom, driftX, driftY);
+        }
+
+        const beamX = W * 0.5 + Math.sin(elapsed / 230) * 18;
+        ctx.fillStyle = 'rgba(0,229,255,' + (0.12 + 0.06 * Math.sin(elapsed / 120)) + ')';
+        ctx.fillRect(beamX - 18, 0, 36, H);
+
+        ctx.fillStyle = 'rgba(0,229,255,0.05)';
+        for (let i = 0; i < 12; i += 1) {
+            ctx.fillRect(0, (i / 12) * H, W, 2);
+        }
+
+        grainAndVignette(t, 0.5);
+    }, 7000, 0.5);
+
+    // ── Scene 6: ending-carriersbargain (6.5s) ──────────────────
+    await recordVideo('ending-carriersbargain', (t, elapsed) => {
+        ctx.fillStyle = '#061012';
+        ctx.fillRect(0, 0, W, H);
+
+        for (let i = 0; i < 80; i += 1) {
+            const x = (i * 91.7 + elapsed * 0.018) % W;
+            const y = (i * 67.2 + elapsed * 0.014) % H;
+            ctx.fillStyle = 'rgba(225,245,255,0.04)';
+            ctx.beginPath();
+            ctx.arc(x, y, 3 + (i % 3), 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        const zoom = 1.03 + t * 0.025;
+        const driftX = Math.sin(elapsed / 1100) * 8;
+        const driftY = Math.cos(elapsed / 1300) * 6;
+        if (!drawCoverImage(endingCarriersBargainEggs, zoom, driftX, driftY)) {
+            drawCoverImage(eggCluster, zoom, driftX, driftY);
+        }
+
+        const eggGlow = ctx.createRadialGradient(W * 0.52, H * 0.55, 40, W * 0.52, H * 0.55, H * 0.52);
+        eggGlow.addColorStop(0, 'rgba(255,194,108,' + (0.18 + 0.08 * Math.sin(elapsed / 180)) + ')');
+        eggGlow.addColorStop(0.45, 'rgba(140,255,160,' + (0.08 + 0.04 * Math.sin(elapsed / 260)) + ')');
+        eggGlow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = eggGlow;
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.fillStyle = 'rgba(190,225,255,' + (0.05 + 0.03 * Math.sin(elapsed / 160)) + ')';
+        ctx.fillRect(0, 0, W, H * 0.18);
+        grainAndVignette(t, 0.58);
+    }, 6500, 0.55);
+
+    // ── Scene 7: ending-scorchedsky (7s) ────────────────────────
+    await recordVideo('ending-scorchedsky', (t, elapsed) => {
+        ctx.fillStyle = '#040308';
+        ctx.fillRect(0, 0, W, H);
+
+        for (let i = 0; i < 70; i += 1) {
+            const x = (i * 153.2 + elapsed * 0.04) % W;
+            const y = (i * 37.6 + elapsed * 0.1) % H;
+            const s = 1 + (i % 4) * 0.5;
+            ctx.fillStyle = i % 6 === 0 ? 'rgba(255,140,58,0.8)' : 'rgba(255,92,58,0.5)';
+            ctx.fillRect(x, y, s, s);
+        }
+
+        const shakeX = Math.sin(elapsed / 60) * 8 * (1 - t * 0.4);
+        const shakeY = Math.cos(elapsed / 47) * 6 * (1 - t * 0.4);
+        const zoom = 1.02 + t * 0.02;
+        if (!drawCoverImage(endingScorchedSkyCockpit, zoom, shakeX, shakeY)) {
+            drawCoverImage(vessel, zoom, shakeX, shakeY);
+        }
+
+        const alarm = 0.12 + 0.14 * Math.max(0, Math.sin(elapsed / 140));
+        ctx.fillStyle = 'rgba(178,34,22,' + alarm + ')';
+        ctx.fillRect(0, 0, W, H);
+
+        const burn = ctx.createRadialGradient(W * 0.76, H * 0.2, 80, W * 0.76, H * 0.2, H * 0.7);
+        burn.addColorStop(0, 'rgba(255,176,74,' + (0.14 + 0.08 * Math.sin(elapsed / 180)) + ')');
+        burn.addColorStop(0.5, 'rgba(178,34,22,' + (0.1 + 0.05 * Math.sin(elapsed / 260)) + ')');
+        burn.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = burn;
+        ctx.fillRect(0, 0, W, H);
+
+        grainAndVignette(t, 0.72);
     }, 7000, 0.45);
 
     await fetch('/done', { method: 'POST' });
