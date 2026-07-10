@@ -3418,8 +3418,8 @@ const CLASS_INTRO_GIFS = Object.freeze({
     TANK: '/Tank.Intro.gif',
     ENGINEER: '/Eng.Intro.gif'
 });
-const CLASS_INTRO_GIF_DURATION_MS = 8300; // fallback when the GIF can't be parsed
-const CLASS_INTRO_GIF_LOOP_GUARD_MS = 120; // cut slightly early so no loop frame shows
+const CLASS_INTRO_GIF_DURATION_MS = 7300; // fallback when the GIF can't be parsed
+const CLASS_INTRO_GIF_LOOP_GUARD_MS = 500; // cut well before the first loop boundary
 
 function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
