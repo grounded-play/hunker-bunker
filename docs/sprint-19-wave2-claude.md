@@ -4,6 +4,30 @@ Derived from [sprint-19-wave2-work.md](sprint-19-wave2-work.md). Siblings:
 [Gemini — Assets](sprint-19-wave2-gemini.md),
 [Codex — Achievements](sprint-19-wave2-codex.md).
 
+## Status
+
+Implemented 2026-07-10 (commit `76a27fc`):
+
+- **The Bunker Tree**: `src/skillTree.js` adapter (structure-only node
+  graph; purchases delegate to existing BankManager paths; storage keys
+  untouched) + a three-branch tree render on the console SKILLS tab with
+  geometry-derived connectors. Old tier2/weapons card sections retired;
+  Base-tab goal cards kept as the story-facing mirror.
+- **Lore drops**: `src/loreDrops.js` — 14 site-keyed collectibles; seeded
+  spawns (ruins/crater chunks 30% at mount, one per camp/hive/cave);
+  touch-collect → `lore-drop-collected` + existing reader/codex;
+  persistence in `hb_world_memory_v1.logsFound`, no respawn after reload.
+- 16 unit tests; headless probe `scratch/verify_wave2_claude.js` (run it
+  against a **static build** — `HB_PORT=5233` after `npm run build` +
+  `vite preview` — sibling HMR reloads kill dev-server boots).
+- Runtime verified: tree renders 3 branches, purchases land per branch,
+  drops spawn/collect/read/persist/never-respawn (first run 11/12; the
+  one FAIL was a probe assertion reading a nonexistent bank field —
+  skills live in `state.unlockedSkills`).
+
+Placeholder art note: drops use the tinted lore-terminal sprite until a
+Gemini drop-sprite batch lands.
+
 ## Mission
 
 Progression currently lives in three disconnected surfaces; merge them into
