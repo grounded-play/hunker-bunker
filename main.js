@@ -523,16 +523,21 @@ function applyAudioMixSettings(nextMix, { persist = true } = {}) {
 function loadAudioMixSettings() {
     const storedMix = parseStoredAudioMix(localStorage.getItem(AUDIO_MIX_STORAGE_KEY));
     if (storedMix) {
-        applyAudioMixSettings(storedMix, { persist: false });
+        // Self-heal a fully-zeroed mix: the old audio-off toggle migrated to
+        // {0,0,0} and then every boot started silent. Nobody wants a mixer
+        // that persists at absolute zero across sessions — restore defaults.
+        const allZero = storedMix.master === 0 && storedMix.music === 0 && storedMix.vfx === 0;
+        if (!allZero) {
+            applyAudioMixSettings(storedMix, { persist: false });
+            return;
+        }
+        applyAudioMixSettings({ ...DEFAULT_AUDIO_MIX }, { persist: true });
         return;
     }
 
-    const legacyAudioEnabled = localStorage.getItem(LEGACY_AUDIO_TOGGLE_KEY);
-    const migratedMix = legacyAudioEnabled === 'false'
-        ? { master: 0, music: 0, vfx: 0 }
-        : { ...DEFAULT_AUDIO_MIX };
-
-    applyAudioMixSettings(migratedMix, { persist: true });
+    // Legacy toggle migrates to defaults either way — a muted mix that
+    // silently persists forever reads as a bug, not a preference.
+    applyAudioMixSettings({ ...DEFAULT_AUDIO_MIX }, { persist: true });
     localStorage.removeItem(LEGACY_AUDIO_TOGGLE_KEY);
 }
 
