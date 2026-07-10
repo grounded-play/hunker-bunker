@@ -10,6 +10,30 @@ Make each seed a different problem. The game is strong on consequence and
 thin on run-to-run pressure: today a seed changes placement and little else.
 Randomness should change decisions, not just coordinates.
 
+## Status
+
+Implemented 2026-07-10:
+
+- `src/runModifiers.js` now owns the six-card pressure deck, deterministic
+  seed draws, public card serialization, and merged effect contracts.
+- `src/director.js` now stores active cards and exposes `activeCards`,
+  `cardEffects`, and `cardState`.
+- Existing runtime modifier wiring now dispatches `run-cards-drawn` with
+  `{ seed, cards }` for Gemini's UI seam.
+- `threeGame.js` now consumes card effects for patrol pressure, relay blackout
+  radar degradation, blackout pulses, camp paranoia suspicion scaling, and
+  relay-blackout outing suppression.
+- `src/data/runModifiers.js` remains as the compatibility adapter for the
+  existing `main.js` import.
+- `scratch/verify_run_cards.js` verifies fixed seeds, different card draws, and
+  observable effect differences without needing a full browser boot.
+
+Still only a contract:
+
+- `spore_bloom` economy and hazard consumers.
+- `ice_collapse` canyon sealing and dig-out placement.
+- `egg_instability` boarding-manifest enforcement.
+
 ## Why Codex
 
 This lane is almost entirely **new files** — the lowest-collision systems

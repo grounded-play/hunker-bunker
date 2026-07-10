@@ -8,6 +8,8 @@
 // The decision is a pure, testable function; the class only adds cadence +
 // per-action cooldowns. threeGame maps the returned action id onto its levers.
 
+import { createRunCardState, mergeEffects, serializeRunCards } from './runModifiers.js';
+
 export const DIRECTOR_ACTIONS = Object.freeze(['patrol', 'lightsout', 'corrupt', 'mercy', 'taunt']);
 
 const ACTION_COOLDOWNS = Object.freeze({
@@ -64,6 +66,9 @@ export class BunkerDirector {
     constructor({ cadence = 16, threatGap = 16 } = {}) {
         this.baseCadence = cadence;
         this.threatGap = threatGap;
+        this._runSeed = 'default';
+        this._activeCards = Object.freeze([]);
+        this._cardEffects = Object.freeze({});
         this.reset();
     }
 
@@ -72,6 +77,42 @@ export class BunkerDirector {
         this._sinceEval = 0;
         this._elapsed = 0;
         this._cooldowns = {};
+    }
+
+    startRun(seed = 'default', options = {}) {
+        const state = createRunCardState(seed, options);
+        this.setRunCards(state);
+        this.reset();
+        return state;
+    }
+
+    setRunCards(runState = {}) {
+        const cards = Object.freeze([...(runState.cards ?? [])]);
+        this._runSeed = String(runState.seed ?? 'default');
+        this._activeCards = cards;
+        this._cardEffects = runState.effects ?? mergeEffects(...cards.map((card) => card.effects));
+        return this.cardState;
+    }
+
+    get runSeed() {
+        return this._runSeed;
+    }
+
+    get activeCards() {
+        return this._activeCards;
+    }
+
+    get cardEffects() {
+        return this._cardEffects;
+    }
+
+    get cardState() {
+        return Object.freeze({
+            seed: this._runSeed,
+            cards: this._activeCards,
+            effects: this._cardEffects,
+            publicCards: serializeRunCards(this._activeCards)
+        });
     }
 
     // Call whenever the player is threatened (took damage, boss spawned) so the

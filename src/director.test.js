@@ -65,4 +65,34 @@ describe('BunkerDirector', () => {
         const a = d.tick(2, snap, () => 0.9); // sinceThreat tiny -> breathe
         expect(a).toBeNull();
     });
+
+    it('draws and exposes deterministic run cards', () => {
+        const d = new BunkerDirector();
+        const state = d.startRun('director-seed');
+
+        expect(d.runSeed).toBe('director-seed');
+        expect(d.activeCards.map((card) => card.key)).toEqual(state.cards.map((card) => card.key));
+        expect(d.cardEffects).toEqual(state.effects);
+        expect(d.cardState.publicCards[0]).toEqual({
+            key: d.activeCards[0].key,
+            label: d.activeCards[0].label,
+            blurb: d.activeCards[0].blurb
+        });
+    });
+
+    it('accepts a pre-drawn card state from the runtime', () => {
+        const d = new BunkerDirector();
+        d.setRunCards({
+            seed: 'manual',
+            cards: [{
+                key: 'patrol_surge',
+                label: 'PATROL SURGE',
+                blurb: 'test',
+                effects: { spawnBias: { patrolBias: true } }
+            }]
+        });
+
+        expect(d.runSeed).toBe('manual');
+        expect(d.cardEffects.spawnBias.patrolBias).toBe(true);
+    });
 });

@@ -860,6 +860,7 @@ export class ThreeGame {
         // The Bunker Director: one pressure brain that reacts to the player's
         // greed/struggle by pulling existing levers (doc 11 §4.A).
         this.bunkerDirector = new BunkerDirector();
+        this._syncedRunModifier = null;
 
         this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
         this.camera.position.copy(this.cameraOffset);
@@ -3591,6 +3592,8 @@ export class ThreeGame {
     updateBunkerDirector(delta) {
         if (!this.bunkerDirector || !this.player || this.isPlayerDead || !this.snailsEnabled) return;
         if (!this.isGameplayInputActive()) return;
+        this.syncRunModifierCards();
+        const cardEffects = this.getRunCardEffects();
         const generatorState = this.getO2GeneratorState?.();
         const inSafeField = Boolean(generatorState?.isOnline)
             && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
@@ -3599,7 +3602,7 @@ export class ThreeGame {
             o2Frac: (this.playerVitals?.o2 ?? 100) / 100,
             depth: this.getActiveO2GeneratorDistance?.() ?? 0,
             inSafeField,
-            patrolBias: this.currentRunModifier?.id === 'patrol_surge'
+            patrolBias: Boolean(cardEffects.spawnBias?.patrolBias) || this.currentRunModifier?.id === 'patrol_surge'
         };
         const action = this.bunkerDirector.tick(delta, snapshot);
         if (action) this.executeDirectorAction(action);
@@ -3630,20 +3633,49 @@ export class ThreeGame {
         }
     }
 
-    // Per-run modifier mechanical effects (doc 11 §2). Data lives in runModifiers.js;
-    // the picked modifier is set on this.currentRunModifier from main.js at deploy.
+    getRunCardEffects() {
+        const directorEffects = this.bunkerDirector?.cardEffects;
+        if (directorEffects && Object.keys(directorEffects).length > 0) return directorEffects;
+        return this.currentRunModifier?.effects ?? {};
+    }
+
+    syncRunModifierCards() {
+        const modifier = this.currentRunModifier;
+        if (!modifier || this._syncedRunModifier === modifier) return;
+        this._syncedRunModifier = modifier;
+        if (modifier.cards?.length && this.bunkerDirector?.setRunCards) {
+            this.bunkerDirector.setRunCards({
+                seed: modifier.seed ?? modifier.id ?? 'default',
+                cards: modifier.cards,
+                effects: modifier.effects
+            });
+        }
+        const cards = this.bunkerDirector?.cardState?.publicCards ?? [];
+        if (cards.length) {
+            window.dispatchEvent(new CustomEvent('run-cards-drawn', {
+                detail: { seed: this.bunkerDirector.runSeed, cards }
+            }));
+        }
+    }
+
+    // Per-run card effects. The picked cards are set on currentRunModifier from
+    // main.js at deploy, then synced into BunkerDirector for consumers.
     updateRunModifierEffects(delta) {
+        this.syncRunModifierCards();
+        const effects = this.getRunCardEffects();
+        const hasEffects = effects && Object.keys(effects).length > 0;
         const id = this.currentRunModifier?.id;
-        if (!id || !this.isGameplayInputActive() || this.isPlayerDead) return;
+        if ((!id && !hasEffects) || !this.isGameplayInputActive() || this.isPlayerDead) return;
         const generatorState = this.getO2GeneratorState?.();
         const inField = Boolean(generatorState?.isOnline)
             && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
-        if (id === 'rolling_blackout') {
-            // Lighting faults pulse in short waves while outside the safe field.
+        if (effects.environment?.blackoutPulseSeconds || id === 'rolling_blackout') {
             this._blackoutWaveTimer = (this._blackoutWaveTimer ?? 0) + delta;
-            if (!inField && this._blackoutWaveTimer >= 14 && performance.now() >= (this._lightsOutUntil ?? 0)) {
+            const pulseSeconds = effects.environment?.blackoutPulseSeconds ?? 14;
+            const duration = effects.environment?.blackoutDurationSeconds ?? 3;
+            if (!inField && this._blackoutWaveTimer >= pulseSeconds && performance.now() >= (this._lightsOutUntil ?? 0)) {
                 this._blackoutWaveTimer = 0;
-                this.triggerLightsOut(3);
+                this.triggerLightsOut(duration);
             }
         } else if (id === 'bad_map_data') {
             // Compass telemetry jitters periodically.
@@ -6394,7 +6426,8 @@ export class ThreeGame {
 
         // Scrutiny: standing inside a living camp with visible tells.
         const stage = state.infectionStage;
-        const suspicionRate = stage === 'symptomatic' ? 1 / 4 : stage === 'strained' ? 1 / 10 : 0;
+        const suspicionMult = this.getRunCardEffects().suspicionMult ?? 1;
+        const suspicionRate = (stage === 'symptomatic' ? 1 / 4 : stage === 'strained' ? 1 / 10 : 0) * suspicionMult;
         if (suspicionRate <= 0) return;
         this._suspicionAcc = this._suspicionAcc ?? {};
         for (const camp of this.camps) {
@@ -6412,7 +6445,8 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('player-suspicion-changed', {
                 detail: { campId: camp.id, campLabel: camp.label, suspicion: after.suspicion }
             }));
-            if (after.suspicion >= 100 && !this.act2.getState().networks.knownByCamps.includes(camp.id)) {
+            const relayBlocked = Boolean(this.getRunCardEffects().outing?.propagationBlocked);
+            if (after.suspicion >= 100 && !relayBlocked && !this.act2.getState().networks.knownByCamps.includes(camp.id)) {
                 this.act2.propagateOuting(camp.id);
                 window.dispatchEvent(new CustomEvent('player-outed', {
                     detail: {
@@ -8472,6 +8506,7 @@ export class ThreeGame {
             this.hadNearDeath = false;
             this._lastLoopStepKey = null; // force the loop-state HUD to re-emit
             this.bunkerDirector?.reset();
+            this._syncedRunModifier = null;
             this._blackoutWaveTimer = 0;
             this._extractionLockdownFired = false;
             this._blockedExtractionSignalFired = false;
@@ -8833,7 +8868,8 @@ export class ThreeGame {
         }
         if (!this.player) return;
 
-        let cdMax = 4.0;
+        const radarEffects = this.getRunCardEffects().radar ?? {};
+        let cdMax = 4.0 * (radarEffects.cooldownMult ?? 1);
         if (this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_special_upgrade_2') && this.classAbility.active) {
             cdMax *= 0.5;
         }
@@ -8843,7 +8879,7 @@ export class ThreeGame {
         const pz = this.player.position.z;
 
         const upgrade1 = this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_radar_1');
-        const maxRadius = 18.0 * (upgrade1 ? 1.3 : 1.0);
+        const maxRadius = 18.0 * (upgrade1 ? 1.3 : 1.0) * (radarEffects.rangeMult ?? 1);
 
         if (!this.activeRadarScans) this.activeRadarScans = [];
         this.activeRadarScans.push({
@@ -9000,7 +9036,7 @@ export class ThreeGame {
                 * (this.currentBiomeO2DrainMult ?? 1.0)
                 * (this._abilityO2DrainMult ?? 1.0)
                 // THIN AIR run modifier: reserves are poor beyond the ship field.
-                * (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0);
+                * (this.getRunCardEffects().survival?.o2DrainMult ?? (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0));
             if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_o2_efficiency')) {
                 drainRate *= 0.85;
             } else if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_battery_1')) {
