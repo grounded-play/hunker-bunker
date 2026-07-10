@@ -4,6 +4,23 @@ Derived from [sprint-19-next-work.md](sprint-19-next-work.md) §4 and §5.
 Sibling briefs: [Gemini — Legibility & Boarding](sprint-19-work-gemini.md),
 [Codex — Run Director](sprint-19-work-codex.md).
 
+## Status
+
+Implemented 2026-07-10 (commit `f2f97de`):
+
+- Landform-keyed proto spawner (crawlers in ruins, spitters on crater rims),
+  with 4x4 walk-sheet UV animation and defensive `cardEffects.spawnBias` read.
+- Ambient civilians (miner + researcher) wandering each living camp.
+- Suspicion tells: lockdown strobe + hostile barricades at suspicion ≥ 50,
+  social interactions refused with plain-language reasons; culls still work.
+- Crater/field-biased camp placement with the walkable fallback intact.
+- Hive signal columns color-keyed to state (native/wounded/bonded/dead).
+- Headless regression: `scratch/verify_physicality.js` (ALL PASS).
+
+Still open in this lane: leader keep-away behavior at high suspicion, barter
+price tells below the lockdown line, and the queen boss fight (stretch —
+start once the other lanes land).
+
 ## Mission
 
 Once the UI is readable (Gemini) and seeds create pressure (Codex), the world
