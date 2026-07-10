@@ -6155,7 +6155,81 @@ export class ThreeGame {
             }
         }
 
+        this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
+    }
+
+    // Camp defense turrets: friendly artillery in Act 1, the first hostile
+    // system the carrier meets in Act 2. Disable them with Vey's spoof, smash
+    // them loudly, or eat the shocks.
+    updateCampTurrets(delta, phase) {
+        if (!this.player) return;
+        for (const camp of this.camps) {
+            const turrets = camp.getActiveTurrets?.() ?? [];
+            if (!turrets.length) continue;
+            const record = this.getCampRecord(camp.id);
+            const friendly = phase === 'dormant'
+                || ['recruited', 'turned'].includes(record?.status ?? 'alive');
+            for (const turret of turrets) {
+                turret.cooldown -= delta;
+                if (turret.cooldown > 0) continue;
+                const pos = camp.turretWorldPos(turret);
+
+                if (friendly) {
+                    // Shock the nearest low-tier slug in range.
+                    let best = null;
+                    let bestDist = 7;
+                    for (const sprite of this.scatterSprites) {
+                        if (!this.isEnemyType(sprite.userData?.type)) continue;
+                        if (sprite.userData.burstTriggered || sprite.userData.isBoss) continue;
+                        const d = Math.hypot(sprite.position.x - pos.x, sprite.position.z - pos.z);
+                        if (d < bestDist) {
+                            bestDist = d;
+                            best = sprite;
+                        }
+                    }
+                    if (best) {
+                        this.damageSnail(best, 1);
+                        this.spawnPhysicalBurst(best.position.x, best.position.z, {
+                            color: 0x7df2ff,
+                            count: 5,
+                            upward: 0.18,
+                            spread: 0.8
+                        });
+                        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.3, playbackRate: 1.6 });
+                        turret.cooldown = 2.8;
+                    } else {
+                        turret.cooldown = 0.5;
+                    }
+                    continue;
+                }
+
+                // Hostile grid: the carrier gets shocked and the camp gets told.
+                if (this.isAct2Active() && ['alive', 'robbed'].includes(record?.status ?? '')) {
+                    const d = Math.hypot(this.player.position.x - pos.x, this.player.position.z - pos.z);
+                    if (d <= 5 && !this.isPlayerDead && this.isGameplayInputActive()) {
+                        this.takeDamage(1, 'camp-turret');
+                        this.act2?.adjustCampSuspicion?.(camp.id, 8);
+                        this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, {
+                            color: 0x7df2ff,
+                            count: 7,
+                            upward: 0.25,
+                            spread: 1.1
+                        });
+                        this.triggerCameraShake?.(0.25, 0.4);
+                        window.AudioManager?.play?.('player_hit', { volume: 0.55, playbackRate: 1.3 });
+                        window.dispatchEvent(new CustomEvent('camp-turret-zap', {
+                            detail: { campId: camp.id, campLabel: camp.label }
+                        }));
+                        turret.cooldown = 3.2;
+                    } else {
+                        turret.cooldown = 0.4;
+                    }
+                } else {
+                    turret.cooldown = 1;
+                }
+            }
+        }
     }
 
     // ── Humanity / cover pressure (post-reveal) ────────────────────────────
@@ -6743,6 +6817,23 @@ export class ThreeGame {
     // The camp interaction available where the player is standing, or null.
     getActionableCampAt(x, z, phase = this.act2?.getPhase()) {
         for (const camp of this.camps) {
+            // Post-reveal, a live defense turret is its own interaction: spoof
+            // it quietly if Vey taught you how, or smash it and be heard.
+            if (phase !== 'dormant' && this.isAct2Active()) {
+                const turretRecord = this.getCampRecord(camp.id);
+                if (['alive', 'robbed'].includes(turretRecord?.status ?? 'alive')) {
+                    const turret = camp.getTurretNear?.(x, z, 1.9);
+                    if (turret) {
+                        const canSpoof = (this.getHiveRecord?.('hive_relay')?.bond ?? 0) >= 1;
+                        return {
+                            camp,
+                            turret,
+                            action: 'turret',
+                            label: canSpoof ? "SPOOF TURRET IFF — VEY'S GIFT" : 'SMASH TURRET — THEY WILL HEAR'
+                        };
+                    }
+                }
+            }
             if (!camp.isWithinInteractRange(x, z)) continue;
             const record = this.getCampRecord(camp.id);
             const status = record?.status ?? camp.status ?? 'alive';
@@ -6813,6 +6904,32 @@ export class ThreeGame {
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
+
+        if (action === 'turret') {
+            const turret = actionable.turret;
+            const canSpoof = (this.getHiveRecord?.('hive_relay')?.bond ?? 0) >= 1;
+            if (canSpoof) {
+                camp.setTurretDisabled(turret);
+                window.AudioManager?.play?.('ui_click_confirm', { volume: 0.5, playbackRate: 1.1 });
+                window.dispatchEvent(new CustomEvent('camp-turret-resolved', {
+                    detail: { campId: camp.id, campLabel: camp.label, mode: 'disabled' }
+                }));
+            } else {
+                camp.setTurretDestroyed(turret);
+                this.act2?.adjustCampSuspicion?.(camp.id, 20);
+                this.triggerCameraShake?.(0.3, 0.45);
+                window.AudioManager?.play?.('door_slam_vertical', { volume: 0.5, playbackRate: 0.9 });
+                window.dispatchEvent(new CustomEvent('camp-turret-resolved', {
+                    detail: {
+                        campId: camp.id,
+                        campLabel: camp.label,
+                        mode: 'smashed',
+                        suspicion: this.getCampRecord(camp.id)?.suspicion ?? 0
+                    }
+                }));
+            }
+            return true;
+        }
 
         // Act 1: invest shells in the camp. Pays off now (O2 haven) and pays
         // out later (harder, richer cull in Act 2).

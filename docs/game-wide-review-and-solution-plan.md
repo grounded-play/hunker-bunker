@@ -565,3 +565,142 @@ If we do that, the game can become something rare:
 - Asset strategy and world-dressing recommendations: AI-assisted, curated by the project direction
 - Core reference material: the three northstar docs listed at the top of this file
 
+
+---
+
+# Appendix A — Code-Level Audit and Direct Answers (Second Reviewer)
+
+The body of this document reviews the design. This appendix reviews the
+**code as it actually stands** (post-`348931a` plus the seamless-infection and
+turret work landed the same day), answers the questions doc point-by-point,
+and proposes the concrete mechanisms that turn the recommendations above into
+work items. Art production is assumed solved by AI generation throughout.
+
+## A.1 Ground-truth inventory
+
+| Layer | Where | State | Honest assessment |
+| --- | --- | --- | --- |
+| Act 1 survival loop | `threeGame.js` (~14k lines), `bank.js`, `foundry.js`, `director.js` | Shipped, playable | The strongest minute-to-minute game: O2 pressure, extraction-risk banking, chunked world, classes, bosses. Already fun. |
+| Hidden arc / reveal | `arcState.js`, `caveReveal.js` | Shipped | Best authored beat in the game. The reveal now continues the run seamlessly — you become infected and walk back out of the cave with the uplink objective live. |
+| Act 2 faction state | `act2.js` v3 (pure, ~1k lines) | Shipped, 47+ dedicated unit tests | Camps, hives, humanity/infection/cover, suspicion, networks, manifest solver, 10-ending picker. Deterministic and persistent. The machine is done. |
+| Act 2 world layer | `camp.js` (leaders, workers, barricades, turrets), `hiveSite.js` (alien walkers), defenders, mining | Shipped | Camps and hives are places with people. Turrets make camp investment physical in both acts: they shock slugs for you in Act 1 and hunt you in Act 2 until spoofed (Vey bond) or smashed (raises suspicion 20). |
+| Choice surface | camp/hive modal, warn/latent/steal/cull/recruit/turn, 4 boarding variants, manifest gate | Shipped | Every reducer reachable through play; illegal manifests blocked with reasons. |
+| Cover pressure | humanity decay (~1/12s), per-camp suspicion, outing propagation over the relay, COVER HUD bar | Shipped | Runs, but tuning is guesswork until playtested. |
+| Endings | 10 families with lines, titles, cutscene basenames | Shipped as text cards + queen/system copy | Correct call: videos are an AI-art pass, not a code dependency. |
+| Verification | 202 unit tests (28 files), 4 headless smoke suites (full ladder, camps, hives/manifest, fresh boot) | Shipped | The game regression-plays itself end to end. Protect this asset. |
+| Run director / event decks | `director.js`, `runModifiers.js` | **Thin** | Modifiers mostly scale numbers. Biggest roguelike gap — matches Phase 2 above. |
+| Manifest forecast UI | — | **Missing** | Player meets the seat math at the launch button. |
+| Run summary / ending explanation | — | **Missing** | Nothing tells the player *why* they got their ending. |
+| Dedicated vessel object | boarding overloaded on the command camp | **Missing** | The climax happens at a tent. |
+| Queen boss fight | — | **Missing** | The single biggest unbuilt promise of the defiance paths. |
+
+### The structural insight
+
+The codebase has quietly split into two games: **(1)** the minute-to-minute
+survival game, which is fun and verified, and **(2)** the consequence engine,
+which is complete, correct, and almost entirely invisible until the end.
+Every risk in the questions doc — spreadsheet, lore-first, late payoff — is
+the same gap stated differently: *game #2 doesn't yet express itself through
+game #1.* Everything in this appendix is about closing that gap.
+
+## A.2 Direct answers to the review questions
+
+**Core fantasy.** The player's verb is *carrying* — salvage in Act 1; a
+queen, secrets, and finally a manifest of lives in Act 2. Ten-minute fantasy
+sentence: *"Everything I build will still be here when I'm the monster."*
+Helping vs. using a camp should differ in the player's head, not in a karma
+meter — do not add an ethics stat. The Queen is pressure-source and narrator
+until the player chooses defiance; then she must become a fight.
+
+**Roguelike structure.** What changes per run today: seed, placement,
+missions, thin modifiers, class camp-order. Not enough (see A.3). The
+suspicion system is the right kind of hidden information but needs *tells*
+(leader behavior, barter prices) instead of an invisible number. Death should
+bend the arc cheaply — e.g., dying inside a camp while symptomatic costs
+suspicion. Classes need one Act 2 *verb* each, not just stat bias:
+Scout slips turret sensor cones; Tank shrugs the first zap of any grid;
+Engineer can reprogram a spoofed turret to fight *for* him.
+
+**Story and branching.** Consequence-engine, not branching-story: commit.
+Hives currently mirror camps ~70%; the three rites (Host Mercy / False
+Clearance / Guard Oath) are the differentiators — deepen them before adding
+anything new. Endings don't need simplifying; they need the forecast (A.3.1)
+so a player who can predict the ending family and *chooses it anyway* is
+having the intended experience.
+
+**Systems and UI.** `queenObedience` is almost a cull counter — give it
+teeth: at high obedience the queen helps (marked loot, slowed humanity
+decay); at negative she interferes (compass lies, vitals static, hive
+ambushes). Meter jobs are distinct except `coverIntegrity`, which overlaps
+humanity — fold it in until a masking-item system needs it. **One meter
+should die rather than two meters half-live.**
+
+**Production.** With AI art assumed, the remaining scope discipline is
+systems scope. Crunch-cut order: networks bridge/jam UI (keep state), latent
+infect path (keep reducer), mothership-infection gameplay (keep picker),
+tail-end ending videos (text cards carry them).
+
+## A.3 Concrete mechanisms (work items for the roadmap phases)
+
+### A.3.1 Legibility (Phase 1) — the state machine must speak in-world
+
+1. **Consequence lines on every modal option** (~1 day): each option shows
+   *what changes now / what it means at launch*. Data already exists in
+   `getEndingVector()` and `buildAct2Manifest()`.
+2. **The Queen's Ledger** (~2 days): one post-reveal HUD chip —
+   `♛ obedience −1 · seats 3/4 · vector: OUTED ESCAPE` — updating live as
+   choices land. This single element converts the hidden picker into a dial
+   the player watches themselves turn. The moment a player says "if I warn
+   Tallow my vector flips" the spreadsheet has become a game.
+3. **Manifest Forecast at the vessel** (~2 days): four-slot seat diagram
+   (queen two seats wide), eligibility with reasons, per-variant ending
+   preview. Reuses `buildAct2Manifest` verbatim.
+4. **Tells over numbers** (ongoing): suspicion as behavior — leaders stop
+   approaching, barter prices tick up, workers stare. Leader sprites already
+   animate; this is state-driven animation, not new systems.
+5. **Run summary card** at death/launch (~1 day): what you built, what you
+   broke, what it cost — doubles as the ending explanation.
+
+### A.3.2 Run Director (Phase 2) — pressure cards
+
+Draw 2–3 visible cards per run (max one faction card + one world card); every
+card must create a **route decision**, never just a stat tax:
+
+| Card | World effect | Faction effect | Decision it creates |
+| --- | --- | --- | --- |
+| RELAY BLACKOUT | radar degraded | outing cannot propagate | the safest run to be sloppy in |
+| SPORE BLOOM | bio biome spreads | Tallow pays double for meds; Nahl starts wounded | herbalist run vs. avoidance run |
+| PATROL SURGE | faster, denser snails | Vesper sells ammo cheap; camps lock down at night | fight-through vs. daylight routing |
+| ICE COLLAPSE | corridors sealed per-seed | one camp unreachable until dug out | route around vs. rescue dig |
+| CAMP PARANOIA | — | suspicion ×2, bond quests pay ×2 | high-risk high-trust run |
+| EGG INSTABILITY | — | egg seat requires Nahl even with the queen | reshapes the whole boarding calculus |
+
+Implementation: extend `runModifiers.js` data + hooks already present in
+`director.js` and the camp/hive economy paths. Surface the seed on the HUD
+and the run summary.
+
+### A.3.3 Physical payoff (Phase 3) — started this session
+
+- ✅ Seamless infection: no menu reset at the reveal; you wake as the carrier
+  and walk out of the cave into a world you must now deceive.
+- ✅ Turrets: investment physically defends you, then physically hunts you;
+  spoof (Vey bond ≥ 1), smash (loud, +20 suspicion), or stay clear.
+- Next: queen interference/gifts keyed to obedience; camp lockdowns at
+  suspicion 50 (gates, refused barter, warning strobes — suspicion becomes a
+  *place*); the queen fight in the cave you crawled out of, reusing the boss
+  framework and the corrupted-leader boss sprites already in the repo.
+
+### A.3.4 Acceptance addition
+
+To the criteria above, add one: **every surviving meter must be visible as
+behavior somewhere in the world.** Any meter that can't earn that either goes
+internal or dies.
+
+## A.4 Bottom line (second reviewer)
+
+The engine half of this game is finished and tested; the felt half is ~40%
+built. Nothing needs cutting — but the build order must be legibility →
+variability → physicality → content, and the discipline is refusing new
+systems until the existing thirty flags each have a face, a sound, or a
+turret. The spreadsheet becomes a game the day the player watches themselves
+turning its dials.

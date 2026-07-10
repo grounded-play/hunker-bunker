@@ -154,6 +154,7 @@ export class SurvivorCamp {
         this.status = 'alive';
         this.level = 0;
         this.barricades = [];
+        this.turrets = [];
         this.elapsed = 0;
         this.pos = { x: 0, z: 0 };
 
@@ -404,6 +405,75 @@ export class SurvivorCamp {
             this.beacon.intensity = 0.9 + next * 0.35;
             this.beacon.distance = 7 + next * 1.5;
         }
+
+        // Level 2 builds a shock turret, level 3 a second — the defense grid
+        // the survivors always wanted. In Act 1 it zaps slugs for you. After
+        // the reveal, you are what it was built to shock.
+        while (this.turrets.length < Math.max(0, next - 1)) {
+            const i = this.turrets.length;
+            const angle = i === 0 ? -0.55 : 2.45;
+            const offset = { x: Math.cos(angle) * 2.7, z: Math.sin(angle) * 2.7 };
+            const group = new THREE.Group();
+            const mast = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.07, 0.1, 0.9, 6),
+                new THREE.MeshStandardMaterial({ color: 0x3a444d, metalness: 0.7, roughness: 0.4 })
+            );
+            mast.position.y = 0.45;
+            group.add(mast);
+            const head = new THREE.Mesh(
+                new THREE.BoxGeometry(0.3, 0.18, 0.42),
+                new THREE.MeshStandardMaterial({ color: 0x222b31, metalness: 0.6, roughness: 0.45 })
+            );
+            head.position.y = 0.98;
+            group.add(head);
+            const tipMat = new THREE.MeshBasicMaterial({ color: 0x7df2ff });
+            const tip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), tipMat);
+            tip.position.set(0, 0.98, 0.26);
+            group.add(tip);
+            group.position.set(offset.x, 0, offset.z);
+            this.group.add(group);
+            this.turrets.push({
+                group,
+                head,
+                tipMat,
+                offset,
+                disabled: false,
+                destroyed: false,
+                cooldown: 1 + Math.random() * 2
+            });
+        }
+    }
+
+    // World position of a turret.
+    turretWorldPos(turret) {
+        return { x: this.pos.x + turret.offset.x, z: this.pos.z + turret.offset.z };
+    }
+
+    // Turrets that can still fire (camp intact, unit intact).
+    getActiveTurrets() {
+        if (this.destroyed) return [];
+        return this.turrets.filter((t) => !t.disabled && !t.destroyed);
+    }
+
+    // Nearest live turret within reach of (x, z), or null.
+    getTurretNear(x, z, radius = 1.8) {
+        for (const turret of this.getActiveTurrets()) {
+            const pos = this.turretWorldPos(turret);
+            if (Math.hypot(pos.x - x, pos.z - z) <= radius) return turret;
+        }
+        return null;
+    }
+
+    setTurretDisabled(turret) {
+        turret.disabled = true;
+        turret.tipMat?.color.set(0x33403c);
+    }
+
+    setTurretDestroyed(turret) {
+        turret.destroyed = true;
+        turret.tipMat?.color.set(0x2a2523);
+        turret.group.rotation.x = 0.85;
+        turret.group.position.y = -0.12;
     }
 
     setStatus(status = 'alive') {
@@ -502,6 +572,8 @@ export class SurvivorCamp {
             wall.position.y = 0.1;
             wall.material.color.set(0x2c2a26);
         });
+        // The defense grid dies with the camp.
+        for (const turret of this.turrets) this.setTurretDestroyed(turret);
         // The vessel section survives the cull — it is the whole point.
         if (this.section) this.section.visible = this.aided;
     }

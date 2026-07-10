@@ -3311,20 +3311,11 @@ function setSnailSpawnState(enabled, { purgeExisting = false } = {}) {
     window.game?.setSnailsEnabled?.(Boolean(enabled), { removeExisting: purgeExisting });
 }
 
-// ── Class intro sequence (docs/class-intro-cutscene-prompts.md) ──
-// Plays the intro GIF first, then the custom space launch WebM video.
-const CLASS_INTRO_GIFS = {
-    SCOUT: '/Scout.Intro.gif',
-    TANK: '/Tank.Intro.gif',
-    ENGINEER: '/Eng.Intro.gif'
-};
-
 const CLASS_INTRO_WEBM_BASENAMES = {
     SCOUT: 'scout-intro',
     TANK: 'tank-intro',
     ENGINEER: 'engineer-intro'
 };
-const CLASS_INTRO_GIF_DURATION_MS = 8300;
 
 const cutsceneImagePreloadCache = new Map();
 const cutsceneVideoPreloadCache = new Map();
@@ -4680,7 +4671,7 @@ function startCaveRevealSequence() {
                     { waitForClosedWork: true, openingHoldMs: 420 }
                 );
             }),
-            returnToTitle: handleCaveRevealReturnToTitle
+            returnToTitle: handleCaveRevealBecomeInfected
         });
     }
     if (!caveRevealController.canStart()) return;
@@ -4702,9 +4693,28 @@ window.addEventListener('cave-entrance-interact', () => {
     startCaveRevealSequence();
 });
 
-function handleCaveRevealReturnToTitle() {
+// The reveal no longer kicks the player to the menu: you wake as the carrier
+// at the cave mouth and walk back out into a world that now answers to the
+// queen. The title corruption still lands for whenever they next see the menu.
+async function handleCaveRevealBecomeInfected() {
     applyCorruptedTitlePresentation({ sting: true });
-    returnToMainMenuFromRun({ doorKey: 'lose' });
+    const game = window.game;
+    ensureMissionManagers();
+    if (act2Manager && !act2Manager.getState().begun) {
+        act2Manager.begin();
+    }
+    const infected = act2Manager?.getState?.();
+    if (infected) {
+        window.dispatchEvent(new CustomEvent('player-humanity-changed', {
+            detail: { humanity: infected.humanity, stage: infected.infectionStage }
+        }));
+    }
+    await dialogueManager?.openBriefTransmission({
+        playerType: game?.playerType ?? getSelectedHeroType(),
+        lines: [...ACT2_LINES.intro]
+    });
+    game?.setInputEnabled?.(true);
+    showBiomePrompt('NEW INSTINCT ACTIVE — SEVER THE MOTHERSHIP UPLINK AT YOUR WRECK.');
 }
 
 // ── Act 2: the PregAlien loop (src/act2.js) ──────────────────────────
@@ -4838,6 +4848,21 @@ window.addEventListener('camp-support-denied', (event) => {
     const cost = event?.detail?.cost;
     showBiomePrompt(`SYSTEM: INSUFFICIENT SHELLS FOR CAMP SUPPORT${Number.isFinite(cost) ? ` — ${cost} REQUIRED` : ''}.`);
 });
+let lastTurretZapPromptAt = 0;
+window.addEventListener('camp-turret-zap', (event) => {
+    const now = Date.now();
+    if (now - lastTurretZapPromptAt < 6000) return; // don't spam the radio
+    lastTurretZapPromptAt = now;
+    const { campLabel } = event?.detail ?? {};
+    showBiomePrompt(`WARNING: ${campLabel ?? 'CAMP'} DEFENSE GRID FIRING — SPOOF IT, SMASH IT, OR STAY CLEAR.`);
+});
+window.addEventListener('camp-turret-resolved', (event) => {
+    const { campLabel, mode, suspicion } = event?.detail ?? {};
+    showBiomePrompt(mode === 'disabled'
+        ? `SYSTEM: TURRET IFF SPOOFED — ${campLabel ?? 'CAMP'} GRID READS YOU AS FRIENDLY.`
+        : `ALERT: TURRET DESTROYED. ${campLabel ?? 'CAMP'} HEARD THAT — SUSPICION ${suspicion ?? '?'}%.`);
+});
+
 window.addEventListener('camp-defense-triggered', (event) => {
     const { campLabel } = event?.detail ?? {};
     showBiomePrompt(`WARNING: ${campLabel ?? 'CAMP'} DEFENSE GRID ONLINE — THE GUNS YOU FUNDED ANSWER TO THEM.`);

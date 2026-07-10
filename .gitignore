@@ -34,3 +34,5 @@ scratch/chrome-profile/
 *.njsproj
 *.sln
 *.sw?
+scratch/chrome-profile
+scratch/chrome-profile*/
