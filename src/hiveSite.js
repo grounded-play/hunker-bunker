@@ -13,6 +13,9 @@ const ALIEN_COLORS = {
     'hive_carapace': 0xffa200 // Amber carapace
 };
 
+// Shorter than the camps' distress flare (11): hives whisper, camps shout.
+const HIVE_SIGNAL_HEIGHT = 8;
+
 const INTERACT_RADIUS = 2.6;
 
 function makeAlienFallbackCanvas({ color = 0x8cff96 } = {}) {
@@ -98,6 +101,8 @@ export class HiveSite {
         this.status = 'dormant';
         this.extractionLevel = 0;
         this.bond = 0;
+        this.signalColumn = null;
+        this.signalMat = null;
 
         // Pathfinding/ambient walk cycles
         this.npcPos = { x: 0, z: 0 };
@@ -225,9 +230,28 @@ export class HiveSite {
             return drone;
         });
 
+        // Signal column: the hive-side of the camps' flare vocabulary. One
+        // shared visual language — a light column means "a living site is
+        // here", and its color reads the site's state from across the maze.
+        this.signalMat = new THREE.MeshBasicMaterial({
+            color: this.color,
+            transparent: true,
+            opacity: 0.2,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        this.signalColumn = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.3, 0.66, HIVE_SIGNAL_HEIGHT, 10, 1, true),
+            this.signalMat
+        );
+        this.signalColumn.position.y = HIVE_SIGNAL_HEIGHT / 2;
+        group.add(this.signalColumn);
+
         this.scene.add(group);
         this.group = group;
         this.built = true;
+        this.syncSignalColumn();
     }
 
     reveal(x, z) {
@@ -236,9 +260,27 @@ export class HiveSite {
         if (this.group) this.group.visible = true;
     }
 
+    // Column color is the state glyph: hive-native violet while dormant or
+    // bonded-green once kin, wound-red while hurt or mined, and no column at
+    // all over a dead or abandoned site.
+    syncSignalColumn() {
+        if (!this.signalColumn || !this.signalMat) return;
+        const dead = ['slain', 'abandoned', 'expired_by_cure', 'queen_consumed'].includes(this.status);
+        this.signalColumn.visible = !dead;
+        if (dead) return;
+        if (this.status === 'mined' || this.status === 'wounded') {
+            this.signalMat.color.set(0xff5a3c);
+        } else if (this.status === 'bonded' || this.status === 'rescued') {
+            this.signalMat.color.set(0x7dff9a);
+        } else {
+            this.signalMat.color.set(this.color);
+        }
+    }
+
     setStatus(status) {
         this.status = status;
         if (!this.built) return;
+        this.syncSignalColumn();
 
         // Change color / emission based on status
         if (status === 'slain' || status === 'abandoned') {
@@ -282,6 +324,10 @@ export class HiveSite {
         const pulse = 0.45 + 0.15 * Math.sin(this.elapsed * 2.8);
         if (this.coreMat && this.status !== 'slain') {
             this.coreMat.emissiveIntensity = pulse;
+        }
+        if (this.signalColumn?.visible && this.signalMat) {
+            // Slow breathing, out of phase with the core — organic, not urgent.
+            this.signalMat.opacity = 0.14 + (Math.sin(this.elapsed * 1.1) + 1) * 0.045;
         }
 
         // Ambient NPC walking logic

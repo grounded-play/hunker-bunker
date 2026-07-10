@@ -145,6 +145,9 @@ export class SurvivorCamp {
         this.signalColumn = null;
         this.signalMat = null;
         this.discovered = false;
+        this.suspicion = 0;
+        this.lockdownStrobe = null;
+        this.lockdownStrobeMat = null;
         this.tents = [];
         this.sectionMat = null;
         this.section = null;
@@ -316,6 +319,17 @@ export class SurvivorCamp {
         this.signalColumn.position.y = SIGNAL_FLARE_HEIGHT / 2;
         group.add(this.signalColumn);
 
+        // Lockdown strobe: hidden until suspicion crosses the lockdown line.
+        // A camp that distrusts you shows it before you press anything.
+        this.lockdownStrobeMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
+        this.lockdownStrobe = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 8, 8),
+            this.lockdownStrobeMat
+        );
+        this.lockdownStrobe.position.set(0, 1.78, 0);
+        this.lockdownStrobe.visible = false;
+        group.add(this.lockdownStrobe);
+
         // Vessel section gantry: hidden until the camp is aided.
         this.sectionMat = new THREE.MeshStandardMaterial({
             color: 0x9fb4c4,
@@ -394,6 +408,25 @@ export class SurvivorCamp {
         if (!this.built) this.build(x, z);
         this.revealed = true;
         if (this.group) this.group.visible = true;
+    }
+
+    // Suspicion is a place, not a number: at the lockdown line the camp runs
+    // a warning strobe and barricades read hostile. Interaction refusal lives
+    // in threeGame (getActionableCampAt); this is the visible tell.
+    setSuspicion(suspicion = 0) {
+        this.suspicion = Math.max(0, Math.min(100, Math.floor(Number(suspicion) || 0)));
+        const lockdown = this.isLockedDown;
+        if (this.lockdownStrobe) this.lockdownStrobe.visible = lockdown;
+        // Culled camps keep their charred barricades — don't repaint the ash.
+        if (!this.destroyed) {
+            for (const wall of this.barricades) {
+                wall.material.color.set(lockdown ? 0x7a3026 : 0x55606a);
+            }
+        }
+    }
+
+    get isLockedDown() {
+        return this.suspicion >= 50 && !this.destroyed && this.status !== 'culled';
     }
 
     // First contact: dousing the flare is the visible proof the camp has been
@@ -599,8 +632,9 @@ export class SurvivorCamp {
             this.beacon.intensity = 0.35;
             this.beacon.position.y = 0.4;
         }
-        // Nobody left to signal.
+        // Nobody left to signal, and nobody left to distrust you.
         if (this.signalColumn) this.signalColumn.visible = false;
+        if (this.lockdownStrobe) this.lockdownStrobe.visible = false;
         // Barricades get breached in the cull.
         this.barricades.forEach((wall, i) => {
             wall.rotation.x = (i % 2 === 0 ? 1 : -1) * 0.9;
@@ -648,6 +682,10 @@ export class SurvivorCamp {
         }
         if (this.signalColumn?.visible && this.signalMat) {
             this.signalMat.opacity = 0.2 + (Math.sin(this.elapsed * 1.6) + 1) * 0.05;
+        }
+        if (this.lockdownStrobe?.visible && this.lockdownStrobeMat) {
+            // Hard on/off blink — a warning, not a glow.
+            this.lockdownStrobeMat.color.setHex(Math.sin(this.elapsed * 9) > 0 ? 0xff2222 : 0x481010);
         }
 
         // NPC movement pathfinding and animation update loop

@@ -550,6 +550,18 @@ const SNAIL_BIOME_TINTS = Object.freeze({
     bio:    0x88ff88
 });
 
+// Proto enemies (sprint 19 physicality lane): landform-native families.
+// Crawlers nest in ruins, spitters guard crater rims. Their art is 4x4 walk
+// sheets (camp-leader layout), so they animate via UV rows, not scale flips.
+const SHEET_ENEMY_TYPES = Object.freeze({
+    alien_proto_crawler: '/alien_proto_crawler_walk.png',
+    alien_proto_spitter: '/alien_proto_spitter_walk.png'
+});
+const PROTO_SPAWN_MAX_PER_CHUNK = 2;
+const PROTO_SPAWN_CHANCE = 0.2;
+const CAMP_CIVILIAN_SPRITES = Object.freeze(['/civilian_miner_walk.png', '/civilian_researcher_walk.png']);
+const CAMP_CIVILIAN_WANDER_RADIUS = 3.2;
+
 const CRAWLER_MAX_HP = 1;
 const CRAWLER_DETECT_RADIUS = 7.0;
 const CRAWLER_WINDUP_DURATION = 0.35;
@@ -828,6 +840,9 @@ export class ThreeGame {
         this.camps = [];
         this._act2CampsReady = false;
         this._campPromptLabel = null;
+        // Ambient civilians wandering near living camps. Scene-attached like
+        // corpses — never in the scatter registries, which rebuild each frame.
+        this.campCivilians = [];
         // Hive swarm sites: the alien mirror of the camps.
         this.hives = [];
         this._hiveSitesReady = false;
@@ -6276,6 +6291,7 @@ export class ThreeGame {
             }
         }
 
+        this.updateCampCivilians(delta);
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
     }
@@ -6392,6 +6408,7 @@ export class ThreeGame {
             this._suspicionAcc[camp.id] -= gain;
             this.act2.adjustCampSuspicion(camp.id, gain);
             const after = this.getCampRecord(camp.id);
+            camp.setSuspicion?.(after.suspicion);
             window.dispatchEvent(new CustomEvent('player-suspicion-changed', {
                 detail: { campId: camp.id, campLabel: camp.label, suspicion: after.suspicion }
             }));
@@ -6789,12 +6806,22 @@ export class ThreeGame {
             Math.round(anchor.z) + 89 - index * 7
         ) ^ this.runEntropy) >>> 0);
         // Three camps fanned around the base, each a real trek apart.
+        // Early attempts insist on a crater or field chunk — camps read as
+        // authored when they sit in a natural clearing instead of maze
+        // corridors — then the requirement relaxes so placement never fails.
         const baseAngle = [Math.PI * 0.12, Math.PI * 0.78, Math.PI * 1.42][index % 3];
         for (let attempt = 0; attempt < 96; attempt += 1) {
             const dist = THREE.MathUtils.lerp(70, 120, random());
             const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
             const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
             const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            if (attempt < 48) {
+                const landform = this.getChunkLandform(
+                    Math.floor(tileX / this.chunkSize),
+                    Math.floor(tileZ / this.chunkSize)
+                );
+                if (landform !== LANDFORMS.CRATER && landform !== LANDFORMS.FIELD) continue;
+            }
             if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
                 return { x: tileX, z: tileZ };
             }
@@ -6826,9 +6853,88 @@ export class ThreeGame {
             camp.setAided(record.aided);
             camp.setStatus(record.status);
             camp.setDiscovered(record.discovered);
+            camp.setSuspicion(record.suspicion ?? 0);
             return camp;
         });
+        this.ensureCampCivilians();
         this._act2CampsReady = true;
+    }
+
+    // Two ambient civilians per living camp (miner + researcher walk sheets).
+    // Pure dressing: non-hostile, wander inside the camp radius, hidden when
+    // the camp dies. Makes a camp read as inhabited from further away.
+    ensureCampCivilians() {
+        for (const civ of this.campCivilians) {
+            if (civ.sprite) this.scene.remove(civ.sprite);
+        }
+        this.campCivilians = [];
+        for (const camp of this.camps) {
+            for (let i = 0; i < CAMP_CIVILIAN_SPRITES.length; i++) {
+                const tex = this.loadKeyedSpriteTexture(CAMP_CIVILIAN_SPRITES[i], 16);
+                tex.wrapS = THREE.RepeatWrapping;
+                tex.wrapT = THREE.RepeatWrapping;
+                tex.repeat.set(0.25, 0.25);
+                tex.offset.set(0, 0.75);
+                const mat = new THREE.SpriteMaterial({
+                    map: tex,
+                    transparent: true,
+                    alphaTest: 0.06,
+                    depthWrite: false,
+                    fog: false
+                });
+                const sprite = new THREE.Sprite(mat);
+                sprite.center.set(0.5, 0);
+                sprite.scale.set(0.92, 0.92, 1);
+                const angle = (i / CAMP_CIVILIAN_SPRITES.length) * Math.PI * 2 + camp.pos.x;
+                sprite.position.set(
+                    camp.pos.x + Math.cos(angle) * 1.6,
+                    0.02,
+                    camp.pos.z + Math.sin(angle) * 1.6
+                );
+                sprite.userData = { sheetSprite: true, sheetTime: Math.random() * 4, sheetRow: 0 };
+                sprite.renderOrder = 5;
+                this.scene.add(sprite);
+                this.campCivilians.push({
+                    sprite,
+                    campId: camp.id,
+                    target: { x: sprite.position.x, z: sprite.position.z },
+                    idleTimer: 1 + Math.random() * 3
+                });
+            }
+        }
+    }
+
+    updateCampCivilians(delta) {
+        for (const civ of this.campCivilians) {
+            const camp = this.getCampById(civ.campId);
+            const sprite = civ.sprite;
+            if (!camp || !sprite) continue;
+            const alive = camp.revealed && !camp.destroyed && camp.status !== 'culled';
+            sprite.visible = alive;
+            if (!alive) continue;
+            const dx = civ.target.x - sprite.position.x;
+            const dz = civ.target.z - sprite.position.z;
+            const dist = Math.hypot(dx, dz);
+            if (dist < 0.08) {
+                civ.idleTimer -= delta;
+                this.updateSheetSpriteFrame(sprite, 0, 0, delta, false);
+                if (civ.idleTimer <= 0) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = 0.8 + Math.random() * CAMP_CIVILIAN_WANDER_RADIUS;
+                    civ.target = {
+                        x: camp.pos.x + Math.cos(angle) * radius,
+                        z: camp.pos.z + Math.sin(angle) * radius
+                    };
+                    civ.idleTimer = 2 + Math.random() * 4;
+                }
+            } else {
+                const dirX = dx / dist;
+                const dirZ = dz / dist;
+                sprite.position.x += dirX * 0.55 * delta;
+                sprite.position.z += dirZ * 0.55 * delta;
+                this.updateSheetSpriteFrame(sprite, dirX, dirZ, delta);
+            }
+        }
     }
 
     resetAct2World() {
@@ -6836,6 +6942,10 @@ export class ThreeGame {
             if (camp.group) this.scene.remove(camp.group);
         }
         this.camps = [];
+        for (const civ of this.campCivilians) {
+            if (civ.sprite) this.scene.remove(civ.sprite);
+        }
+        this.campCivilians = [];
         this._act2CampsReady = false;
         this._campPromptLabel = null;
         for (const hive of this.hives ?? []) {
@@ -6916,6 +7026,7 @@ export class ThreeGame {
         camp.setLevel(record.level);
         camp.setAided(record.aided);
         camp.setStatus(record.status);
+        camp.setSuspicion(record.suspicion ?? 0);
     }
 
     getCampFavorCost(record = {}) {
@@ -7148,6 +7259,18 @@ export class ThreeGame {
             if (!camp.isWithinInteractRange(x, z)) continue;
             const record = this.getCampRecord(camp.id);
             const status = record?.status ?? camp.status ?? 'alive';
+            // Suspicion >= 50 locks the camp down: gates shut, barter and aid
+            // refused, strobes running. Culls and breaches stay possible —
+            // the lockdown is social, not physical. Dormant-phase camps never
+            // lock (suspicion is post-reveal pressure).
+            if (phase !== 'dormant' && phase !== 'camps_betray'
+                && ['alive', 'robbed'].includes(status) && (record?.suspicion ?? 0) >= 50) {
+                return {
+                    camp,
+                    action: 'lockdown',
+                    label: 'LOCKDOWN — THEY WATCH YOU'
+                };
+            }
             if ((phase === 'gestation' || phase === 'dish') && status !== 'culled') {
                 return {
                     camp,
@@ -7327,6 +7450,19 @@ export class ThreeGame {
                     campLabel: camp.label,
                     action: 'wait',
                     message: `${camp.label} SHOUTS: GO AWAY.`
+                }
+            }));
+            return true;
+        }
+
+        if (action === 'lockdown') {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35, playbackRate: 0.8 });
+            window.dispatchEvent(new CustomEvent('camp-choice-denied', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    action: 'lockdown',
+                    message: `${camp.label} IS LOCKED DOWN. SUSPICION TOO HIGH — COME BACK CLEAN.`
                 }
             }));
             return true;
@@ -12019,10 +12155,20 @@ export class ThreeGame {
 
         let snailCount = 0;
         let crawlerCount = 0;
+        let protoCount = 0;
         let hasSentinelThisChunk = false;
         let hasLoreTerminalThisChunk = false;
         const depthTierForScatter = this.getDepthTier(chunkX, chunkY);
         const snailSpawnConfig = SNAIL_DEPTH_SPAWN[Math.min(depthTierForScatter, SNAIL_DEPTH_SPAWN.length - 1)];
+        // Proto enemies are landform-native: crawlers nest in ruins, spitters
+        // guard crater rims. Run-director cards can bias the rate (contract:
+        // director.cardEffects.spawnBias, number or { proto } — defensive
+        // read, the director may not expose cards yet).
+        const chunkLandform = this.getChunkLandform(chunkX, chunkY);
+        const rawSpawnBias = this.bunkerDirector?.cardEffects?.spawnBias;
+        const protoSpawnBias = typeof rawSpawnBias === 'number'
+            ? rawSpawnBias
+            : Number.isFinite(rawSpawnBias?.proto) ? rawSpawnBias.proto : 1;
         for (const p of placements) {
             // Re-verify after relaxation that it's still walkable
             if (!isWalkable(p.x, p.z)) continue;
@@ -12039,6 +12185,9 @@ export class ThreeGame {
             const sentinelForced = templateCfg?.forceSentinel && isChamber && !hasSentinelThisChunk && distFromSpawn > 20;
             const canSpawnSentinel = !templateNoEnemies && (sentinelForced || (depthTierForScatter >= 2 && isChamber && !hasSentinelThisChunk && distFromSpawn > 20));
             const canSpawnCrawler = !templateNoEnemies && depthTierForScatter >= 3 && chunkBiomeKey === BIOME_KEYS.BIO && crawlerCount < 2 && distFromSpawn > 20 && !isDeadEnd;
+            const canSpawnProto = !templateNoEnemies && depthTierForScatter >= 1
+                && protoCount < PROTO_SPAWN_MAX_PER_CHUNK && distFromSpawn > 16 && !isDeadEnd
+                && (chunkLandform === LANDFORMS.RUINS || chunkLandform === LANDFORMS.CRATER);
             const loreChance = (templateCfg?.forceLore && !hasLoreTerminalThisChunk && isDeadEnd) ? 1.0 : (depthTierForScatter >= 2 ? 0.12 : 0.07);
             const canSpawnLore = isDeadEnd && !hasLoreTerminalThisChunk && distFromSpawn > 10;
             let type;
@@ -12057,6 +12206,12 @@ export class ThreeGame {
                 elevation = 0.09;
                 opacity = 1;
                 crawlerCount += 1;
+            } else if (canSpawnProto && roll < PROTO_SPAWN_CHANCE * protoSpawnBias) {
+                type = chunkLandform === LANDFORMS.RUINS ? 'alien_proto_crawler' : 'alien_proto_spitter';
+                scaleMultiplier = 0.9 + random() * 0.2;
+                elevation = 0.09;
+                opacity = 1;
+                protoCount += 1;
             } else if (canSpawnLore && roll > (1 - loreChance)) {
                 type = 'lore_terminal';
                 scaleMultiplier = 0.7;
@@ -12356,6 +12511,20 @@ export class ThreeGame {
             const tintColor = placement.biomeTint ?? 0xffffff;
             clonedMat.color.setHex(tintColor);
 
+            // 4x4 walk-sheet enemies get their own keyed texture so each
+            // sprite can hold an independent UV frame/facing. Cloning the
+            // shared texture is unsafe here: the chroma-key canvas lands
+            // async, and clones taken before it arrives stay blank.
+            const sheetPath = SHEET_ENEMY_TYPES[placement.type];
+            if (sheetPath) {
+                const sheetTex = this.loadKeyedSpriteTexture(sheetPath, 16);
+                sheetTex.wrapS = THREE.RepeatWrapping;
+                sheetTex.wrapT = THREE.RepeatWrapping;
+                sheetTex.repeat.set(0.25, 0.25);
+                sheetTex.offset.set(0, 0.75); // frame 0, south-facing row
+                clonedMat.map = sheetTex;
+            }
+
             const isBoss = placement.isBoss || placement.type.startsWith('boss_');
             const isPreEnraged = Boolean(placement.spawnedEnraged) || isBoss;
             const sprite = new THREE.Sprite(clonedMat);
@@ -12381,6 +12550,9 @@ export class ThreeGame {
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
+                sheetSprite: Boolean(sheetPath),
+                sheetTime: 0,
+                sheetRow: 0,
                 baseY: anchoredY,
                 elevationOffset: placement.elevation,
                 baseScaleX: scaleX,
@@ -13982,6 +14154,13 @@ export class ThreeGame {
     // when both inputs are inside the deadzone to avoid jitter.
     faceSpriteFromDir(sprite, dirX, fallbackX = 0) {
         const data = sprite.userData;
+        // Walk-sheet sprites carry directional rows in the texture; a scale
+        // flip would mirror them wrongly. Their facing lives in the UV row
+        // (updateSheetSpriteFrame), so hold the scale positive here.
+        if (data.sheetSprite) {
+            sprite.scale.set(Math.abs(data.baseScaleX), data.baseScaleY, 1);
+            return;
+        }
         const DEADZONE = 0.02;
         if (dirX <= -DEADZONE) {
             data.facingSign = -1;
@@ -13994,6 +14173,25 @@ export class ThreeGame {
         }
         const facingSign = data.facingSign === -1 ? -1 : 1;
         sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
+    }
+
+    // 4x4 walk-sheet UV animation (camp-leader layout: 4 frames per row,
+    // rows = S/N/E/W facings, texture rows counted from the top). Facing
+    // picks the dominant travel axis; frames step at 6 fps while moving.
+    updateSheetSpriteFrame(sprite, dirX, dirZ, delta, moving = true) {
+        const data = sprite.userData;
+        const map = sprite.material?.map;
+        if (!data?.sheetSprite || !map) return;
+        if (moving) {
+            data.sheetTime = (data.sheetTime ?? 0) + delta;
+            if (Math.abs(dirX) > Math.abs(dirZ)) {
+                data.sheetRow = dirX > 0 ? 2 : 3; // East / West
+            } else if (Math.abs(dirZ) > 0.001) {
+                data.sheetRow = dirZ > 0 ? 0 : 1; // South / North
+            }
+        }
+        const frame = moving ? Math.floor((data.sheetTime ?? 0) * 6) % 4 : 0;
+        map.offset.set(frame * 0.25, (3 - (data.sheetRow ?? 0)) * 0.25);
     }
 
     // Shoves the player and the snail apart on a contact hit and gives the
@@ -14151,6 +14349,9 @@ export class ThreeGame {
             // Face the travel direction every frame; fall back to bearing toward
             // the target when movement is Z-dominant so snails never slide backward.
             this.faceSpriteFromDir(sprite, dirX, toGoalX);
+            this.updateSheetSpriteFrame(sprite, dirX, dirZ, delta);
+        } else if (data.sheetSprite) {
+            this.updateSheetSpriteFrame(sprite, 0, 0, delta, false);
         }
 
         const distanceToTarget = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
