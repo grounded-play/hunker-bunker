@@ -1647,7 +1647,8 @@ function formatRunTime(ms) {
 }
 
 function clearAllTimers() {
-    if (biomePromptTimer != null) { clearTimeout(biomePromptTimer); biomePromptTimer = null; }
+    clearTimeout(biomePromptTimer);
+    biomePromptTimer = null;
     if (damageFlashTimer) { clearTimeout(damageFlashTimer); damageFlashTimer = null; }
     if (deathSequenceTimer) { clearTimeout(deathSequenceTimer); deathSequenceTimer = null; }
     if (missionProgressHUDTimer) { clearTimeout(missionProgressHUDTimer); missionProgressHUDTimer = null; }
@@ -1899,10 +1900,8 @@ function runDeathSequence(event) {
     window.game?.setInputEnabled?.(false);
     hideBiomePrompt();
     hideExtractionRing();
-    if (biomePromptTimer != null) {
-        clearTimeout(biomePromptTimer);
-        biomePromptTimer = null;
-    }
+    clearTimeout(biomePromptTimer);
+    biomePromptTimer = null;
     document.body.classList.add('player-dead-flash');
     playPlayerDeathCue(deathReason);
 
@@ -2904,10 +2903,6 @@ if (gameOverTryAgain) {
 function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
     hideGameOverScreen();
     hideBiomePrompt();
-    if (biomePromptTimer != null) {
-        clearTimeout(biomePromptTimer);
-        biomePromptTimer = null;
-    }
     missionFlowRunning = false;
     resetRunToStartingState({
         resetBank: false,
