@@ -349,6 +349,12 @@ function clampInteger(value, min, max, fallback = min) {
     return Math.max(min, Math.min(max, Math.floor(numeric)));
 }
 
+function normalizeCycleKey(value) {
+    return typeof value === 'string' && value.trim()
+        ? value.trim().slice(0, 32)
+        : null;
+}
+
 function normalizeCampStatus(raw = {}) {
     if (ACT2_CAMP_STATUSES.includes(raw?.status)) return raw.status;
     // v1 saves only had booleans.
@@ -431,7 +437,8 @@ function normalizeHive(raw = {}, site = ACT2_HIVE_SITES[0]) {
         stageTalks: clampInteger(raw?.stageTalks, 0, 9, 0),
         questFlags: raw?.questFlags && typeof raw.questFlags === 'object' ? { ...raw.questFlags } : {},
         networked: Boolean(raw?.networked),
-        aboard: Boolean(raw?.aboard) || status === 'aboard'
+        aboard: Boolean(raw?.aboard) || status === 'aboard',
+        lastHarvestCycle: normalizeCycleKey(raw?.lastHarvestCycle)
     };
 }
 
@@ -863,14 +870,17 @@ export class Act2Manager {
     // Act 1 extraction: each pull yields resources in-world but wounds the
     // being inside. Level 3 leaves the hive starting Act 2 wounded, and every
     // level costs the bond you could have had.
-    mineHive(id) {
+    mineHive(id, { harvestCycle = null } = {}) {
         return this._mutate((s) => {
             const hive = s.hives.find((h) => h.id === id);
             if (!hive || hive.extractionLevel >= 3) return;
             if (!['dormant', 'mined', 'wounded', 'awakened'].includes(hive.status)) return;
+            const cycleKey = normalizeCycleKey(harvestCycle);
+            if (cycleKey && hive.lastHarvestCycle === cycleKey) return;
             hive.extractionLevel += 1;
             hive.bond = Math.max(0, hive.bond - 1);
             hive.status = hive.extractionLevel >= 3 ? 'wounded' : 'mined';
+            if (cycleKey) hive.lastHarvestCycle = cycleKey;
         });
     }
 

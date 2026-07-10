@@ -106,8 +106,56 @@ export class HiveSite {
         this.npcAction = 'idle';
         this.npcActionTimer = 0.5;
         this.elapsed = Math.random() * 5.0;
+        this.alienDrones = [];
 
         this.color = ALIEN_COLORS[id] ?? 0x8cff96;
+    }
+
+    createAlienDrone({ angle = 0, radius = 1.6, scale = 1 } = {}) {
+        const drone = new THREE.Group();
+        const glowMat = new THREE.MeshStandardMaterial({
+            color: this.color,
+            roughness: 0.32,
+            metalness: 0.18,
+            emissive: this.color,
+            emissiveIntensity: 0.28
+        });
+        const shellMat = new THREE.MeshStandardMaterial({
+            color: 0x101d18,
+            roughness: 0.75,
+            metalness: 0.25,
+            emissive: this.color,
+            emissiveIntensity: 0.08
+        });
+
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.18 * scale, 8, 8), glowMat);
+        body.scale.set(1.25, 0.82, 1);
+        body.position.y = 0.42 * scale;
+        drone.add(body);
+
+        const carapace = new THREE.Mesh(new THREE.ConeGeometry(0.18 * scale, 0.26 * scale, 6), shellMat);
+        carapace.position.y = 0.56 * scale;
+        carapace.rotation.x = Math.PI;
+        drone.add(carapace);
+
+        for (let i = 0; i < 4; i += 1) {
+            const side = i < 2 ? -1 : 1;
+            const spread = i % 2 === 0 ? -0.7 : 0.7;
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.018 * scale, 0.018 * scale, 0.48 * scale, 5), shellMat);
+            leg.position.set(0.12 * side * scale, 0.26 * scale, spread * 0.18 * scale);
+            leg.rotation.z = side * 0.82;
+            leg.rotation.x = spread * 0.45;
+            drone.add(leg);
+        }
+
+        drone.userData = { kind: 'alien-hive-attendant', hiveId: this.id };
+        return {
+            mesh: drone,
+            angle,
+            radius,
+            speed: 0.45 + Math.random() * 0.18,
+            bobPhase: Math.random() * Math.PI * 2
+        };
     }
 
     build(x, z) {
@@ -161,6 +209,22 @@ export class HiveSite {
         };
         group.add(this.npcSprite);
 
+        const droneSpecs = [
+            { angle: 0.4, radius: 1.45, scale: 1.0 },
+            { angle: 2.5, radius: 1.75, scale: 0.88 },
+            { angle: 4.5, radius: 1.95, scale: 0.95 }
+        ];
+        this.alienDrones = droneSpecs.map((spec) => {
+            const drone = this.createAlienDrone(spec);
+            drone.mesh.position.set(
+                Math.cos(drone.angle) * drone.radius,
+                0.02,
+                Math.sin(drone.angle) * drone.radius
+            );
+            group.add(drone.mesh);
+            return drone;
+        });
+
         this.scene.add(group);
         this.group = group;
         this.built = true;
@@ -181,15 +245,24 @@ export class HiveSite {
             this.coreMat.color.set(0x3a3a3a);
             this.coreMat.emissive.set(0x000000);
             if (this.npcSprite) this.npcSprite.visible = false;
+            for (const drone of this.alienDrones) {
+                if (drone.mesh) drone.mesh.visible = false;
+            }
         } else if (status === 'mined' || status === 'wounded') {
             this.coreMat.color.set(0xff3b30);
             this.coreMat.emissive.set(0xff3b30);
             this.coreMat.emissiveIntensity = 0.3;
+            for (const drone of this.alienDrones) {
+                if (drone.mesh) drone.mesh.visible = true;
+            }
         } else {
             this.coreMat.color.set(this.color);
             this.coreMat.emissive.set(this.color);
             this.coreMat.emissiveIntensity = 0.55;
             if (this.npcSprite) this.npcSprite.visible = true;
+            for (const drone of this.alienDrones) {
+                if (drone.mesh) drone.mesh.visible = true;
+            }
         }
     }
 
@@ -264,6 +337,18 @@ export class HiveSite {
                 // Keep relative position inside group
                 this.npcSprite.position.set(this.npcPos.x - this.pos.x, 0.7, this.npcPos.z - this.pos.z);
             }
+        }
+
+        for (const drone of this.alienDrones) {
+            if (!drone.mesh?.visible) continue;
+            const angle = drone.angle + this.elapsed * drone.speed;
+            drone.mesh.position.set(
+                Math.cos(angle) * drone.radius,
+                0.04 + Math.sin(this.elapsed * 2.5 + drone.bobPhase) * 0.05,
+                Math.sin(angle) * drone.radius
+            );
+            drone.mesh.rotation.y = -angle + Math.PI / 2;
+            drone.mesh.rotation.z = Math.sin(this.elapsed * 3.1 + drone.bobPhase) * 0.08;
         }
     }
 

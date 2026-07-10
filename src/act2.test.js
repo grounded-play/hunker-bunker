@@ -444,6 +444,20 @@ describe('hive reducers', () => {
         expect(hive.status).toBe('wounded');
     });
 
+    it('limits hive extraction to once per real-world daily harvest cycle', () => {
+        const m = boot();
+        m.mineHive('hive_suture', { harvestCycle: '2026-07-10' });
+        m.mineHive('hive_suture', { harvestCycle: '2026-07-10' });
+        let hive = m.getState().hives.find((h) => h.id === 'hive_suture');
+        expect(hive.extractionLevel).toBe(1);
+        expect(hive.lastHarvestCycle).toBe('2026-07-10');
+
+        m.mineHive('hive_suture', { harvestCycle: '2026-07-11' });
+        hive = m.getState().hives.find((h) => h.id === 'hive_suture');
+        expect(hive.extractionLevel).toBe(2);
+        expect(hive.lastHarvestCycle).toBe('2026-07-11');
+    });
+
     it('bond threshold marks the hive bonded and rescue takes it aboard', () => {
         const m = boot();
         m.adjustHiveBond('hive_relay', ACT2_HIVE_RESCUE_BOND_THRESHOLD);

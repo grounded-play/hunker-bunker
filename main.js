@@ -4960,7 +4960,7 @@ window.addEventListener('camp-choice-open', (event) => {
 // Act 1 camp support + the Act 2 payoff (defended culls).
 window.addEventListener('camp-supported', (event) => {
     const { campLabel, level, bond } = event?.detail ?? {};
-    showBiomePrompt(`SYSTEM: ${campLabel ?? 'CAMP'} REINFORCED TO LEVEL ${level ?? '?'}. TRUST ${bond ?? 0}/5. SURVIVORS GRATEFUL — O₂ RESERVES SHARED.`);
+    showBiomePrompt(`SYSTEM: ${campLabel ?? 'CAMP'} REINFORCED TO LEVEL ${level ?? '?'}. TRUST ${bond ?? 0}/5. SURVIVORS SHARE O₂ AND SUPPLIES.`);
 });
 window.addEventListener('camp-bonded', (event) => {
     const { campLabel, bond } = event?.detail ?? {};
@@ -5071,8 +5071,19 @@ window.addEventListener('boarding-blocked', (event) => {
 window.addEventListener('hive-mined', (event) => {
     const { hiveLabel, extractionLevel, wounded } = event?.detail ?? {};
     showBiomePrompt(wounded
-        ? `SYSTEM: ${hiveLabel ?? 'HIVE'} STRIPPED (${extractionLevel}/3). SOMETHING INSIDE STOPPED MOVING.`
-        : `SYSTEM: ${hiveLabel ?? 'HIVE'} EXTRACTION ${extractionLevel}/3 — RESOURCES BANKED.`);
+        ? `SYSTEM: ${hiveLabel ?? 'HIVE'} HARVEST ${extractionLevel}/3. SOMETHING INSIDE STOPPED MOVING.`
+        : `SYSTEM: ${hiveLabel ?? 'HIVE'} HARVEST ${extractionLevel}/3 — RESOURCES BANKED.`);
+});
+
+window.addEventListener('hive-harvest-denied', (event) => {
+    const { hiveLabel } = event?.detail ?? {};
+    showBiomePrompt(`SYSTEM: ${hiveLabel ?? 'HIVE'} ALREADY HARVESTED TODAY — RETURN AFTER THE REAL-WORLD DAILY RESET.`);
+    AudioManager.play('ui_error', { volume: 0.35, playbackRate: 0.65 });
+});
+
+window.addEventListener('hive-harvest-boss-spawned', (event) => {
+    const { hiveLabel } = event?.detail ?? {};
+    showBiomePrompt(`WARNING: ${hiveLabel ?? 'HIVE'} GUARDIAN AWAKENED — HARVEST CONTESTED.`);
 });
 
 window.addEventListener('hive-choice-resolved', (event) => {

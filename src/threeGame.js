@@ -232,6 +232,11 @@ const MILESTONE_BOSS_FOR_GOAL = Object.freeze({
     radarNode: 'boss_sporesnail',
     reactorCompressor: 'boss_sporesnail'
 });
+const HIVE_HARVEST_BOSS_FOR_HIVE = Object.freeze({
+    hive_suture: 'boss_sporesnail',
+    hive_relay: 'boss_cybersnail',
+    hive_carapace: 'boss_cryosnail'
+});
 
 // Fixed world build-site coordinates the yellow scanner arrow guides toward
 // (Note 4). Ordered by progression; a site is "built" once its goalKey is
@@ -6404,6 +6409,29 @@ export class ThreeGame {
         return this.hives.find((hive) => hive.id === id) ?? null;
     }
 
+    getHiveHarvestCycleKey(date = new Date()) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    canHarvestHiveToday(record, cycleKey = this.getHiveHarvestCycleKey()) {
+        return record?.lastHarvestCycle !== cycleKey;
+    }
+
+    denyHiveHarvest(hive, record = this.getHiveRecord(hive?.id)) {
+        window.AudioManager?.play?.('ui_error', { volume: 0.38, playbackRate: 0.72 });
+        window.dispatchEvent(new CustomEvent('hive-harvest-denied', {
+            detail: {
+                hiveId: hive?.id,
+                hiveLabel: hive?.label,
+                harvestCycle: record?.lastHarvestCycle ?? null
+            }
+        }));
+        return true;
+    }
+
     // The hive interaction available where the player stands, or null.
     getActionableHiveAt(x, z) {
         const phase = this.act2?.getPhase?.() ?? 'dormant';
@@ -6415,10 +6443,17 @@ export class ThreeGame {
                 // Pre-reveal: a resource node, nothing more.
                 if (record.extractionLevel < 3
                     && ['dormant', 'mined', 'wounded', 'awakened'].includes(record.status)) {
+                    if (!this.canHarvestHiveToday(record)) {
+                        return {
+                            hive,
+                            action: 'cooldown',
+                            label: `${hive.label} HARVESTED TODAY`
+                        };
+                    }
                     return {
                         hive,
                         action: 'mine',
-                        label: `MINE ${hive.label} — ${record.extractionLevel}/3`
+                        label: `HARVEST ${hive.label} — ${record.extractionLevel}/3`
                     };
                 }
                 return null;
@@ -6449,6 +6484,7 @@ export class ThreeGame {
         const actionable = this.getActionableHiveAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         if (actionable.action === 'mine') return this.mineHiveSite(actionable.hive);
+        if (actionable.action === 'cooldown') return this.denyHiveHarvest(actionable.hive);
         if (actionable.action === 'contact') return this.openHiveChoice(actionable.hive);
         return false;
     }
@@ -6457,7 +6493,11 @@ export class ThreeGame {
     mineHiveSite(hive) {
         const before = this.getHiveRecord(hive.id);
         if (!before || before.extractionLevel >= 3) return false;
-        this.act2.mineHive(hive.id);
+        const harvestCycle = this.getHiveHarvestCycleKey();
+        if (!this.canHarvestHiveToday(before, harvestCycle)) {
+            return this.denyHiveHarvest(hive, before);
+        }
+        this.act2.mineHive(hive.id, { harvestCycle });
         const after = this.getHiveRecord(hive.id);
         if (!after || after.extractionLevel === before.extractionLevel) return false;
 
@@ -6472,12 +6512,15 @@ export class ThreeGame {
         this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bio_spores');
         this.triggerCameraShake?.(0.14, 0.3);
         window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.5, playbackRate: 0.6 });
+        const boss = this.spawnHiveHarvestBoss(hive, after.extractionLevel);
         window.dispatchEvent(new CustomEvent('hive-mined', {
             detail: {
                 hiveId: hive.id,
                 hiveLabel: hive.label,
                 extractionLevel: after.extractionLevel,
-                wounded: after.status === 'wounded'
+                wounded: after.status === 'wounded',
+                harvestCycle,
+                bossType: boss?.userData?.type ?? null
             }
         }));
         window.dispatchEvent(new CustomEvent('shell-collected', {
@@ -6650,6 +6693,7 @@ export class ThreeGame {
             this.bank?.addShells?.(12);
             this.spawnGearPoofEffect(hive.pos.x, hive.pos.z, 'bunker_junk_rare');
             this.triggerCameraShake?.(0.3, 0.5);
+            this.spawnHiveHarvestBoss(hive, 3);
         } else if (action === 'hive-sacrifice') {
             this.act2.sacrificeHive(hive.id);
             this.triggerCameraShake?.(0.35, 0.6);
@@ -6748,6 +6792,48 @@ export class ThreeGame {
 
     getBoardingCampId() {
         return getAct2BoardingCampId(this.playerType);
+    }
+
+    getAct1SideSignalTarget() {
+        if (!ARC_PRELUDE_ENABLED || !this.player || !this.act2) return null;
+        if (this.act2.getPhase() !== 'dormant') return null;
+
+        this.ensureAct2Camps();
+        this.ensureHiveSites();
+
+        const candidates = [];
+        for (const camp of this.camps ?? []) {
+            const record = this.getCampRecord(camp.id);
+            if (!record || record.status !== 'alive') continue;
+            if (record.level >= ACT2_CAMP_MAX_LEVEL && record.bond >= ACT2_MAX_BOND) continue;
+            const dist = camp.distanceTo(this.player.position.x, this.player.position.z);
+            candidates.push({
+                mode: 'camp',
+                label: record.level < ACT2_CAMP_MAX_LEVEL ? `CAMP BEACON: ${camp.label}` : `CAMP FAVOR: ${camp.label}`,
+                x: camp.pos.x,
+                z: camp.pos.z,
+                distance: dist
+            });
+        }
+
+        const cycleKey = this.getHiveHarvestCycleKey();
+        for (const hive of this.hives ?? []) {
+            const record = this.getHiveRecord(hive.id);
+            if (!record || record.extractionLevel >= 3) continue;
+            if (!['dormant', 'mined', 'wounded', 'awakened'].includes(record.status)) continue;
+            if (!this.canHarvestHiveToday(record, cycleKey)) continue;
+            const dist = hive.distanceTo(this.player.position.x, this.player.position.z);
+            candidates.push({
+                mode: 'hive',
+                label: `HIVE SIGNAL: ${hive.label}`,
+                x: hive.pos.x,
+                z: hive.pos.z,
+                distance: dist
+            });
+        }
+
+        candidates.sort((a, b) => a.distance - b.distance);
+        return candidates[0] ?? null;
     }
 
     getNextCampInStoryOrder(predicate = () => true) {
@@ -7122,8 +7208,17 @@ export class ThreeGame {
             camp.setLevel(level);
             camp.setStatus(record?.status ?? 'alive');
             this.adjustOxygen(CAMP_SUPPORT_O2_REFILL);
+            const supplyCache = {
+                med: 1 + (level >= 3 ? 1 : 0),
+                tech: 1,
+                coin: level >= 2 ? 1 : 0
+            };
+            this.bank?.deposit?.(supplyCache);
             this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_uncommon');
             window.AudioManager?.play?.('class_lock', { volume: 0.5 });
+            window.dispatchEvent(new CustomEvent('salvage-cache-opened', {
+                detail: { ...supplyCache, source: 'camp-support', campId: camp.id, campLabel: camp.label }
+            }));
             window.dispatchEvent(new CustomEvent('camp-supported', {
                 detail: { campId: camp.id, campLabel: camp.label, level, bond: record?.bond ?? 0, cost }
             }));
@@ -7943,8 +8038,22 @@ export class ThreeGame {
             }
         }
 
-        // The yellow scanner arrow only appears once the SCANNER/RADAR upgrade is
-        // unlocked. Until then there is no arrow at all.
+        const sideSignal = this.getAct1SideSignalTarget?.();
+        if (sideSignal) {
+            const dx = sideSignal.x - this.player.position.x;
+            const dz = sideSignal.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            return {
+                active: true,
+                mode: sideSignal.mode,
+                label: sideSignal.label,
+                angle: this.planarAngleTo(dx, dz, distance),
+                distance
+            };
+        }
+
+        // General salvage scanning still needs the radar upgrade; camp and hive
+        // beacons above are deliberate Act 1 side signals.
         if (!this.hasUpgrade('radarNode')) {
             return { active: false, angle: 0, distance: 0 };
         }
@@ -12993,7 +13102,7 @@ export class ThreeGame {
         this.arcManager?.evaluate?.();
         // Post-turn, wild snails are family. Killing them upsets the queen —
         // the first kill each run stings, then every fifth.
-        if (this.isAct2Active() && !sprite.userData.campDefenderId) {
+        if (this.isAct2Active() && !sprite.userData.campDefenderId && !sprite.userData.isHiveHarvestBoss) {
             this._hiveKinKills = (this._hiveKinKills ?? 0) + 1;
             if (this._hiveKinKills === 1 || this._hiveKinKills % 5 === 0) {
                 this.act2?.recordQueenObedience?.(-1);
@@ -13286,11 +13395,86 @@ export class ThreeGame {
         return boss;
     }
 
+    spawnHiveHarvestBoss(hive, extractionLevel = 1) {
+        if (!hive || !this.player) return null;
+        const bossType = HIVE_HARVEST_BOSS_FOR_HIVE[hive.id] ?? 'boss_sporesnail';
+        if (!this.scatterMaterials[bossType]) return null;
+        if (this.scatterSprites.some((s) => s.userData?.isHiveHarvestBoss && s.userData?.hiveId === hive.id && !s.userData?.burstTriggered)) {
+            return null;
+        }
+
+        this.snailsEnabled = true;
+        let spawnX = null;
+        let spawnZ = null;
+        const baseX = hive.pos?.x ?? this.player.position.x;
+        const baseZ = hive.pos?.z ?? this.player.position.z;
+        for (const dist of [6, 7.5, 5, 9]) {
+            const startA = Math.random() * Math.PI * 2;
+            for (let a = 0; a < 16; a += 1) {
+                const ang = startA + (a / 16) * Math.PI * 2;
+                const tx = baseX + Math.cos(ang) * dist;
+                const tz = baseZ + Math.sin(ang) * dist;
+                if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                    spawnX = tx;
+                    spawnZ = tz;
+                    break;
+                }
+            }
+            if (spawnX !== null) break;
+        }
+        if (spawnX === null) return null;
+
+        const tint = bossType === 'boss_cryosnail' ? 0x88ccff
+            : bossType === 'boss_sporesnail' ? 0x88ff88 : 0xffffff;
+        const level = Math.max(1, Math.min(3, Math.floor(Number(extractionLevel) || 1)));
+        const placement = {
+            x: spawnX,
+            z: spawnZ,
+            type: bossType,
+            scatterKey: `hive-harvest:${hive.id}:${Date.now()}`,
+            scale: bossType === 'boss_cybersnail' ? 2.9 : bossType === 'boss_cryosnail' ? 3.35 : 3.8,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'boss',
+            phase: 0,
+            opacity: 1,
+            biomeTint: tint,
+            isBoss: true,
+            maxHp: 7 + level * 4
+        };
+        const boss = this.createScatterInstance(placement);
+        if (!boss) return null;
+        boss.userData.isMilestone = true;
+        boss.userData.isHiveHarvestBoss = true;
+        boss.userData.hiveId = hive.id;
+        boss.userData.sourceGoalKey = 'hiveHarvest';
+        boss.userData.prioritizeShip = false;
+        boss.userData.targetType = 'player';
+
+        const chunkX = Math.floor(spawnX / this.chunkSize);
+        const chunkY = Math.floor(spawnZ / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+        group.add(boss);
+        this.scatterSprites.push(boss);
+
+        window.AudioManager?.play?.('amb_metal_stress', { volume: 0.6, playbackRate: 0.5, bus: 'sfx' });
+        window.dispatchEvent(new CustomEvent('milestone-boss-spawned', {
+            detail: { type: bossType, sourceGoalKey: 'hiveHarvest', hiveId: hive.id }
+        }));
+        window.dispatchEvent(new CustomEvent('hive-harvest-boss-spawned', {
+            detail: { type: bossType, hiveId: hive.id, hiveLabel: hive.label, extractionLevel: level }
+        }));
+        return boss;
+    }
+
     // Post-turn the hive recognizes its carrier: wild snails ignore the
     // player. Camp defenders and anything the player shoots stay hostile.
     isHiveKinPassive(sprite) {
         return this.isAct2Active()
             && !sprite?.userData?.campDefenderId
+            && !sprite?.userData?.isHiveHarvestBoss
             && !sprite?.userData?.shotByPlayer;
     }
 
