@@ -1599,10 +1599,10 @@ function refreshLastContractor() {
         lines.push(`BLACK BOX <span class="ui-separator">//</span> ${cls} @ ${tier} <span class="ui-separator">//</span> ${isCurrent ? 'SIGNAL ACTIVE' : 'ARCHIVED'}`);
     }
     const marqueeContent = lines.join(' <span class="ui-separator">///</span> ');
+    const marqueeLoop = `${marqueeContent} <span class="ui-separator">///</span> ${marqueeContent}`;
     el.innerHTML = `
         <div class="last-contractor-marquee" aria-live="polite">
-          <span class="last-contractor-marquee__track">${marqueeContent}</span>
-          <span class="last-contractor-marquee__track" aria-hidden="true">${marqueeContent}</span>
+          <span class="last-contractor-marquee__track">${marqueeLoop}</span>
         </div>
     `;
     el.classList.remove('hidden');

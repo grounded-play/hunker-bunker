@@ -868,20 +868,20 @@ body {
   animation: none;
 }
 .last-contractor-marquee {
-  display: flex;
-  align-items: center;
+  display: block;
   width: max-content;
   min-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
   animation: last-contractor-marquee-scroll 20s linear infinite;
   will-change: transform;
 }
 
 .last-contractor-marquee__track {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 0 auto;
+  display: inline-block;
   min-width: max-content;
   white-space: nowrap;
+  padding-right: calc(var(--vu) * 3);
 }
 @keyframes last-contractor-marquee-scroll {
   0% { transform: translateX(0); }
