@@ -836,7 +836,7 @@ body {
   position: relative;
   flex: 1 1 calc(var(--vu) * 73);
   width: min(calc(var(--vu) * 73), 100%);
-  min-height: calc(var(--vu) * 7.6);
+  min-height: calc(var(--vu) * 6);
   height: auto;
   max-width: calc(var(--vu) * 73);
   min-width: 0;
@@ -869,17 +869,26 @@ body {
 }
 .last-contractor-marquee {
   display: block;
-  width: max-content;
-  min-width: 100%;
+  width: 100%;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
+}
+
+.last-contractor-marquee__track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  min-width: max-content;
+  white-space: nowrap;
   animation: last-contractor-marquee-scroll 20s linear infinite;
   will-change: transform;
 }
 
-.last-contractor-marquee__track {
-  display: inline-block;
-  min-width: max-content;
+.last-contractor-marquee__segment {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
   white-space: nowrap;
   padding-right: calc(var(--vu) * 3);
 }
