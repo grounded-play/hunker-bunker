@@ -13,11 +13,13 @@ import {
     ACT2_MAX_BOND,
     ACT2_RECRUIT_BOND_THRESHOLD,
     buildAct2Manifest,
+    campFinalUrgeCost,
     campSupportCost,
     getBoardingCampId as getAct2BoardingCampId,
     getClassCampOrder
 } from './act2.js';
 import { HiveSite } from './hiveSite.js';
+import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
@@ -6476,6 +6478,27 @@ export class ThreeGame {
         }
 
         options.push({
+            action: 'hive-talk',
+            hiveId: record.id,
+            label: `COMMUNE — ${(record.characterId ?? 'THE BEING').toUpperCase()}`,
+            desc: 'Listen. They remember everything you did to them.'
+        });
+        if (isFinalStage(record.dialogueStage)) {
+            const riteDoneByHive = {
+                hive_suture: record.questFlags?.host_mercy === 'done',
+                hive_relay: record.questFlags?.false_clearance === 'done',
+                hive_carapace: record.questFlags?.guard_oath === 'done'
+            };
+            if (!riteDoneByHive[record.id]) {
+                options.push({
+                    action: 'hive-final',
+                    hiveId: record.id,
+                    label: 'ACCEPT THEIR OATH',
+                    desc: 'Their rite completes; they are fully yours. The queen loses a hand.'
+                });
+            }
+        }
+        options.push({
             action: 'hive-tend',
             hiveId: record.id,
             label: 'RETURN RESOURCES — 5 SHELLS',
@@ -6543,6 +6566,19 @@ export class ThreeGame {
         const hive = this.getHiveById(payload.hiveId);
         if (!hive || !this.act2) return false;
 
+        if (action === 'hive-talk') {
+            return this.talkToLeader('hive', hive);
+        }
+        if (action === 'hive-final') {
+            this.act2.completeHiveFinal(hive.id);
+            const rec = this.getHiveRecord(hive.id);
+            hive.syncFromRecord(rec);
+            window.AudioManager?.play?.('class_lock', { volume: 0.5, playbackRate: 0.68 });
+            window.dispatchEvent(new CustomEvent('hive-choice-resolved', {
+                detail: { hiveId: hive.id, hiveLabel: hive.label, action: 'hive-final', status: rec?.status, bond: rec?.bond }
+            }));
+            return true;
+        }
         if (action === 'hive-tend') {
             if (!this.bank?.canAffordShells?.(5)) {
                 window.AudioManager?.play?.('ui_error', { volume: 0.4 });
@@ -6730,6 +6766,33 @@ export class ThreeGame {
         }
 
         if (status === 'alive') {
+            const beat = this.peekDialogueBeat('camp', camp, record);
+            options.push({
+                action: 'talk',
+                label: `TALK — ${camp.leaderName?.toUpperCase() || 'LEADER'}`,
+                desc: beat?.type === 'loop'
+                    ? 'They are waiting on you to make progress before saying more.'
+                    : 'They have more to say.'
+            });
+            if (isFinalStage(record.dialogueStage) && record.questFlags?.final_vigil !== 'done') {
+                const finalsDone = this.act2.countCampFinalsDone();
+                const cost = campFinalUrgeCost(finalsDone);
+                const humanity = this.act2.getState().humanity;
+                const tooFarGone = humanity <= cost;
+                options.push({
+                    action: 'final-urge',
+                    label: tooFarGone ? `FIGHT THE URGE — LOCKED` : `FIGHT THE URGE — ${cost} HUMANITY`,
+                    desc: tooFarGone
+                        ? `The pull is too strong (${humanity} humanity, needs > ${cost}). Restore your cover first.`
+                        : 'Stand their final vigil as the person they remember. She pulls harder every time.',
+                    disabled: tooFarGone
+                });
+                options.push({
+                    action: 'final-betray',
+                    label: `BETRAY THE QUEEN — HER WRATH (${1 + finalsDone})`,
+                    desc: 'Defy her openly to stand with them. They learn what you are — and trust you anyway.'
+                });
+            }
             options.push({
                 action: 'steal',
                 label: 'STEAL STOCKPILE',
@@ -6815,6 +6878,53 @@ export class ThreeGame {
     }
 
     // The camp interaction available where the player is standing, or null.
+    // ── Leader dialogue (Elden Ring grammar) ───────────────────────────────
+    // Compute the next beat for a camp leader or hive being, persist the
+    // talk/stage movement, and play it through the brief transmission panel.
+    leaderKeyFor(kind, entity) {
+        if (kind === 'hive') return entity.characterId || leaderKeyFromName(entity.label);
+        return leaderKeyFromName(entity.leaderName ?? '');
+    }
+
+    getDialogueContext(kind, record) {
+        return {
+            level: record.level ?? 0,
+            bond: record.bond ?? 0,
+            postReveal: Boolean(this.act2?.getState?.().begun)
+        };
+    }
+
+    peekDialogueBeat(kind, entity, record) {
+        const key = this.leaderKeyFor(kind, entity);
+        if (!key || !record) return null;
+        return nextDialogueBeat(key, {
+            stage: record.dialogueStage ?? 0,
+            talks: record.stageTalks ?? 0
+        }, this.getDialogueContext(kind, record));
+    }
+
+    talkToLeader(kind, entity) {
+        const record = kind === 'hive' ? this.getHiveRecord(entity.id) : this.getCampRecord(entity.id);
+        const beat = this.peekDialogueBeat(kind, entity, record);
+        if (!beat) return false;
+        if (beat.type === 'advance') {
+            this.act2.advanceDialogueStage(kind, entity.id);
+        } else if (beat.type === 'beat') {
+            this.act2.recordDialogueTalk(kind, entity.id);
+        }
+        window.dispatchEvent(new CustomEvent('leader-dialogue', {
+            detail: {
+                kind,
+                id: entity.id,
+                lines: beat.lines,
+                beatType: beat.type,
+                stage: beat.stage,
+                finalReady: isFinalStage(beat.stage)
+            }
+        }));
+        return true;
+    }
+
     getActionableCampAt(x, z, phase = this.act2?.getPhase()) {
         for (const camp of this.camps) {
             // Post-reveal, a live defense turret is its own interaction: spoof
@@ -6843,6 +6953,16 @@ export class ThreeGame {
                     action: 'wait',
                     label: 'GO AWAY'
                 };
+            }
+            if (phase === 'dormant' && status === 'alive') {
+                const beat = this.peekDialogueBeat('camp', camp, record);
+                if (beat && beat.type !== 'loop') {
+                    return {
+                        camp,
+                        action: 'talk',
+                        label: `TALK — ${camp.leaderName?.toUpperCase() || 'THE CAMP'}`
+                    };
+                }
             }
             if (phase === 'dormant' && status === 'alive' && camp.level < ACT2_CAMP_MAX_LEVEL) {
                 return {
@@ -6904,6 +7024,10 @@ export class ThreeGame {
         const actionable = this.getActionableCampAt(this.player.position.x, this.player.position.z);
         if (!actionable) return false;
         const { camp, action } = actionable;
+
+        if (action === 'talk') {
+            return this.talkToLeader('camp', camp);
+        }
 
         if (action === 'turret') {
             const turret = actionable.turret;
@@ -7036,6 +7160,35 @@ export class ThreeGame {
         if (action === 'cull') return this.resolveCampCull(camp);
         if (action === 'recruit') return this.resolveCampRecruit(camp, 'human');
         if (action === 'turn') return this.resolveCampRecruit(camp, 'turned');
+        if (action === 'talk') return this.talkToLeader('camp', camp);
+        if (action === 'final-urge' || action === 'final-betray') {
+            const mode = action === 'final-urge' ? 'urge' : 'betray';
+            const before = this.getCampRecord(camp.id);
+            this.act2.completeCampFinal(camp.id, { mode });
+            const after = this.getCampRecord(camp.id);
+            if (after?.questFlags?.final_vigil !== 'done') {
+                window.AudioManager?.play?.('ui_error', { volume: 0.45, playbackRate: 0.6 });
+                window.dispatchEvent(new CustomEvent('camp-final-denied', {
+                    detail: { campId: camp.id, campLabel: camp.label, humanity: this.act2.getState().humanity }
+                }));
+                return true;
+            }
+            this.syncCampVisualFromRecord(camp, after);
+            window.AudioManager?.play?.('class_lock', { volume: 0.55, playbackRate: mode === 'urge' ? 0.7 : 1.0 });
+            this.triggerCameraShake?.(mode === 'urge' ? 0.35 : 0.2, 0.6);
+            window.dispatchEvent(new CustomEvent('camp-final-resolved', {
+                detail: {
+                    campId: camp.id,
+                    campLabel: camp.label,
+                    mode,
+                    bond: after.bond,
+                    humanity: this.act2.getState().humanity,
+                    obedience: this.act2.getState().queenObedience,
+                    beforeBond: before?.bond ?? 0
+                }
+            }));
+            return true;
+        }
         if (action === 'warn') return this.resolveCampStatusAction(camp, 'warn', () => this.act2.warnCamp(camp.id), 'recruited');
         if (action === 'latent') return this.resolveCampStatusAction(camp, 'latent', () => this.act2.latentInfectCamp(camp.id), 'recruited');
         if (action === 'board') return this.resolveAct2Boarding(payload.variant ?? 'queen');
@@ -7968,6 +8121,7 @@ export class ThreeGame {
             this._caveAnomalySignaled = false;
             this.resetAct2World();
             this.clearCorpses();
+            this._hiveKinKills = 0;
             this.cinematicLock = false;
             this.runEntropy = this.fixedRunEntropy ? 0 : (Math.random() * 0xffffffff) >>> 0;
             this.clearBlackBoxMarker();
@@ -12789,6 +12943,17 @@ export class ThreeGame {
         this.snailsKilledThisRun = (this.snailsKilledThisRun ?? 0) + 1;
         this.arcManager?.recordSignal?.({ snailsKilled: 1 });
         this.arcManager?.evaluate?.();
+        // Post-turn, wild snails are family. Killing them upsets the queen —
+        // the first kill each run stings, then every fifth.
+        if (this.isAct2Active() && !sprite.userData.campDefenderId) {
+            this._hiveKinKills = (this._hiveKinKills ?? 0) + 1;
+            if (this._hiveKinKills === 1 || this._hiveKinKills % 5 === 0) {
+                this.act2?.recordQueenObedience?.(-1);
+                window.dispatchEvent(new CustomEvent('queen-displeased', {
+                    detail: { kills: this._hiveKinKills, obedience: this.act2?.getState?.().queenObedience }
+                }));
+            }
+        }
         // Shells are no longer granted on the kill itself — the player has to
         // walk over the corpse to claim them (collectSnailShell).
 
@@ -13073,9 +13238,17 @@ export class ThreeGame {
         return boss;
     }
 
+    // Post-turn the hive recognizes its carrier: wild snails ignore the
+    // player. Camp defenders and anything the player shoots stay hostile.
+    isHiveKinPassive(sprite) {
+        return this.isAct2Active()
+            && !sprite?.userData?.campDefenderId
+            && !sprite?.userData?.shotByPlayer;
+    }
+
     selectSnailTarget(sprite, activeShip) {
         const targets = [];
-        if (this.player && !this.isPlayerDead) {
+        if (this.player && !this.isPlayerDead && !this.isHiveKinPassive(sprite)) {
             targets.push({
                 type: 'player',
                 x: this.player.position.x,
@@ -13387,7 +13560,7 @@ export class ThreeGame {
 
             // Player hit check
             const newDist = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
-            if (!this.isPlayerDead && newDist <= CRAWLER_ATTACK_RADIUS && data.attackCooldown <= 0) {
+            if (!this.isPlayerDead && newDist <= CRAWLER_ATTACK_RADIUS && data.attackCooldown <= 0 && !this.isHiveKinPassive(sprite)) {
                 data.attackCooldown = CRAWLER_ATTACK_COOLDOWN;
                 data.crawlerState = 'idle';
                 window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'crawler' } }));

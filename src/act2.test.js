@@ -14,6 +14,7 @@ import {
     ACT2_RECRUIT_BOND_THRESHOLD,
     ACT2_HIVE_RESCUE_BOND_THRESHOLD,
     buildAct2Manifest,
+    campFinalUrgeCost,
     campSupportCost,
     deriveAct2Phase,
     normalizeAct2State,
@@ -635,5 +636,75 @@ describe('expanded ending families', () => {
             hives: ACT2_HIVE_SITES.map((site) => ({ id: site.id, status: 'abandoned' }))
         };
         expect(pickAct2Ending(state)).toBe(ACT2_ENDINGS.EMPTY_HUSK);
+    });
+});
+
+describe('dialogue stages and finals', () => {
+    const boot = () => new Act2Manager({ storage: memoryStorage() });
+
+    it('records talks and stage advances with persistence', () => {
+        const storage = memoryStorage();
+        const m = new Act2Manager({ storage });
+        m.recordDialogueTalk('camp', 'camp_meridian');
+        m.recordDialogueTalk('camp', 'camp_meridian');
+        m.advanceDialogueStage('camp', 'camp_meridian');
+        m.recordDialogueTalk('hive', 'hive_relay');
+        const reloaded = new Act2Manager({ storage });
+        const camp = reloaded.getState().camps[0];
+        expect(camp.dialogueStage).toBe(1);
+        expect(camp.stageTalks).toBe(1);
+        expect(reloaded.getState().hives.find((h) => h.id === 'hive_relay').stageTalks).toBe(1);
+    });
+
+    it('camp finals require the reveal, stage 3, and enough humanity for the urge', () => {
+        const m = boot();
+        for (let i = 0; i < 3; i += 1) m.advanceDialogueStage('camp', 'camp_meridian');
+        m.completeCampFinal('camp_meridian', { mode: 'urge' });
+        expect(m.getState().camps[0].questFlags.final_vigil).toBeUndefined(); // not begun
+        m.begin();
+        m.completeCampFinal('camp_meridian', { mode: 'urge' });
+        const state = m.getState();
+        expect(state.camps[0].questFlags.final_vigil).toBe('done');
+        expect(state.camps[0].bond).toBe(ACT2_MAX_BOND);
+        expect(state.humanity).toBe(100 - campFinalUrgeCost(0));
+    });
+
+    it('urge cost escalates and is blocked when humanity is too low', () => {
+        const m = boot();
+        m.begin();
+        for (const id of ACT2_CAMP_IDS) {
+            for (let i = 0; i < 3; i += 1) m.advanceDialogueStage('camp', id);
+        }
+        m.completeCampFinal(ACT2_CAMP_IDS[0], { mode: 'urge' }); // -15
+        m.completeCampFinal(ACT2_CAMP_IDS[1], { mode: 'urge' }); // -25
+        expect(m.getState().humanity).toBe(100 - 15 - 25);
+        m.adjustHumanity(-(m.getState().humanity - 10)); // drop to ~10
+        m.completeCampFinal(ACT2_CAMP_IDS[2], { mode: 'urge' }); // needs >35 → blocked
+        expect(m.getState().camps[2].questFlags.final_vigil).toBeUndefined();
+    });
+
+    it('betraying the queen costs escalating obedience and outs you to that camp', () => {
+        const m = boot();
+        m.begin();
+        for (const id of ACT2_CAMP_IDS) {
+            for (let i = 0; i < 3; i += 1) m.advanceDialogueStage('camp', id);
+        }
+        m.completeCampFinal(ACT2_CAMP_IDS[0], { mode: 'betray' }); // -1
+        m.completeCampFinal(ACT2_CAMP_IDS[1], { mode: 'betray' }); // -2
+        const state = m.getState();
+        expect(state.queenObedience).toBe(-3);
+        expect(state.camps[0].knowsPlayerInfected).toBe(true);
+        expect(state.camps[0].bond).toBe(ACT2_MAX_BOND);
+    });
+
+    it('hive finals complete the rite and max the bond', () => {
+        const m = boot();
+        m.begin();
+        for (let i = 0; i < 3; i += 1) m.advanceDialogueStage('hive', 'hive_relay');
+        m.completeHiveFinal('hive_relay');
+        const hive = m.getState().hives.find((h) => h.id === 'hive_relay');
+        expect(hive.questFlags.false_clearance).toBe('done');
+        expect(hive.bond).toBe(ACT2_MAX_BOND);
+        expect(hive.status).toBe('bonded');
     });
 });

@@ -160,6 +160,14 @@ export const ACT2_RECRUIT_BOND_THRESHOLD = 4;
 export const ACT2_MAX_OBEDIENCE = 3;
 
 export const ACT2_HIVE_RESCUE_BOND_THRESHOLD = 3;
+export const ACT2_DIALOGUE_FINAL_STAGE = 3;
+export const ACT2_FINAL_URGE_BASE_COST = 15;
+export const ACT2_FINAL_URGE_COST_STEP = 10;
+
+// The queen's pull grows with every final you resist.
+export function campFinalUrgeCost(finalsDone = 0) {
+    return ACT2_FINAL_URGE_BASE_COST + ACT2_FINAL_URGE_COST_STEP * Math.max(0, finalsDone);
+}
 
 export const ACT2_ENDINGS = Object.freeze({
     FULL_BROOD: 'full_brood',
@@ -372,6 +380,8 @@ function normalizeCamp(raw = {}, id) {
         knowsPlayerInfected: Boolean(raw?.knowsPlayerInfected),
         relayLinked: Boolean(raw?.relayLinked),
         leaderAlive: raw?.leaderAlive !== false && status !== 'culled',
+        dialogueStage: clampInteger(raw?.dialogueStage, 0, ACT2_DIALOGUE_FINAL_STAGE, 0),
+        stageTalks: clampInteger(raw?.stageTalks, 0, 9, 0),
         questFlags: raw?.questFlags && typeof raw.questFlags === 'object' ? { ...raw.questFlags } : {},
         // Compatibility projections while visuals migrate off booleans.
         destroyed: status === 'culled',
@@ -417,6 +427,8 @@ function normalizeHive(raw = {}, site = ACT2_HIVE_SITES[0]) {
         status,
         extractionLevel: clampInteger(raw?.extractionLevel, 0, 3, 0),
         bond: clampInteger(raw?.bond, 0, ACT2_MAX_BOND, 0),
+        dialogueStage: clampInteger(raw?.dialogueStage, 0, ACT2_DIALOGUE_FINAL_STAGE, 0),
+        stageTalks: clampInteger(raw?.stageTalks, 0, 9, 0),
         questFlags: raw?.questFlags && typeof raw.questFlags === 'object' ? { ...raw.questFlags } : {},
         networked: Boolean(raw?.networked),
         aboard: Boolean(raw?.aboard) || status === 'aboard'
@@ -1053,6 +1065,82 @@ export class Act2Manager {
             camp.knowsPlayerInfected = true;
             if (!s.networks.knownByCamps.includes(camp.id)) s.networks.knownByCamps.push(camp.id);
             s.queenObedience = Math.max(-ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) - 1);
+        });
+    }
+
+    // ── Leader dialogue ladders (Elden Ring grammar) ──
+
+    _findSpeaker(s, kind, id) {
+        return kind === 'hive'
+            ? s.hives.find((h) => h.id === id)
+            : s.camps.find((c) => c.id === id);
+    }
+
+    recordDialogueTalk(kind, id) {
+        return this._mutate((s) => {
+            const who = this._findSpeaker(s, kind, id);
+            if (who) who.stageTalks = clampInteger(who.stageTalks + 1, 0, 9, who.stageTalks);
+        });
+    }
+
+    advanceDialogueStage(kind, id) {
+        return this._mutate((s) => {
+            const who = this._findSpeaker(s, kind, id);
+            if (!who || who.dialogueStage >= ACT2_DIALOGUE_FINAL_STAGE) return;
+            who.dialogueStage += 1;
+            who.stageTalks = 1; // the advance visit plays the new stage's first beat
+        });
+    }
+
+    countCampFinalsDone() {
+        return this.getState().camps.filter((c) => c.questFlags?.final_vigil === 'done').length;
+    }
+
+    // The human final: only available once you have turned. Resist the
+    // queen's pull quietly (humanity cost that escalates per final), or defy
+    // her openly (obedience hit, and the camp learns what you are).
+    completeCampFinal(id, { mode = 'urge' } = {}) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (!camp || camp.status !== 'alive' || !s.begun) return;
+            if (camp.dialogueStage < ACT2_DIALOGUE_FINAL_STAGE) return;
+            if (camp.questFlags.final_vigil === 'done') return;
+            const finalsDone = s.camps.filter((c) => c.questFlags?.final_vigil === 'done').length;
+
+            if (mode === 'urge') {
+                const cost = campFinalUrgeCost(finalsDone);
+                if (s.humanity <= cost) return; // the urge is too strong
+                s.humanity = clampInteger(s.humanity - cost, 0, 100, s.humanity);
+                s.infectionLoad = clampInteger(100 - s.humanity, 0, 100, s.infectionLoad);
+                if (s.humanity <= 50) s.infectionStage = 'symptomatic';
+                else if (s.humanity <= 75) s.infectionStage = 'strained';
+            } else {
+                s.queenObedience = Math.max(-ACT2_MAX_OBEDIENCE, (s.queenObedience ?? 0) - (1 + finalsDone));
+                camp.knowsPlayerInfected = true;
+                if (!s.networks.knownByCamps.includes(camp.id)) s.networks.knownByCamps.push(camp.id);
+            }
+
+            camp.questFlags.final_vigil = 'done';
+            camp.bond = ACT2_MAX_BOND;
+        });
+    }
+
+    // The hive final: their rite completes and they are fully yours.
+    completeHiveFinal(id) {
+        return this._mutate((s) => {
+            const hive = s.hives.find((h) => h.id === id);
+            if (!hive || !s.begun) return;
+            if (hive.dialogueStage < ACT2_DIALOGUE_FINAL_STAGE) return;
+            if (['slain', 'queen_consumed', 'expired_by_cure', 'abandoned'].includes(hive.status)) return;
+            const riteByHive = {
+                hive_suture: 'host_mercy',
+                hive_relay: 'false_clearance',
+                hive_carapace: 'guard_oath'
+            };
+            const rite = riteByHive[hive.id];
+            if (rite) hive.questFlags[rite] = 'done';
+            hive.bond = ACT2_MAX_BOND;
+            if (!['rescued', 'aboard'].includes(hive.status)) hive.status = 'bonded';
         });
     }
 

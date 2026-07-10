@@ -4905,6 +4905,39 @@ window.addEventListener('player-outed', (event) => {
     AudioManager.play('ui_error', { volume: 0.5, playbackRate: 0.5 });
 });
 
+window.addEventListener('leader-dialogue', (event) => {
+    const { lines, beatType } = event?.detail ?? {};
+    if (!lines?.length) return;
+    ensureMissionManagers();
+    void dialogueManager?.openBriefTransmission({
+        playerType: window.game?.playerType ?? getSelectedHeroType(),
+        lines: [...lines]
+    });
+    if (beatType === 'advance') {
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
+    }
+});
+
+window.addEventListener('camp-final-resolved', (event) => {
+    const { campLabel, mode, humanity, obedience } = event?.detail ?? {};
+    showBiomePrompt(mode === 'urge'
+        ? `SYSTEM: FINAL VIGIL STOOD AT ${campLabel ?? 'CAMP'} — THE URGE COST YOU. HUMANITY ${humanity ?? '?'}.`
+        : `SYSTEM: YOU DEFIED HER FOR ${campLabel ?? 'CAMP'} — THEY KNOW, AND STAND WITH YOU. OBEDIENCE ${obedience ?? '?'}.`);
+});
+window.addEventListener('camp-final-denied', (event) => {
+    const { humanity } = event?.detail ?? {};
+    showBiomePrompt(`WARNING: THE URGE IS TOO STRONG (HUMANITY ${humanity ?? '?'}). RESTORE YOUR COVER OR DEFY HER OPENLY.`);
+});
+let lastQueenDispleasedAt = 0;
+window.addEventListener('queen-displeased', (event) => {
+    const now = Date.now();
+    if (now - lastQueenDispleasedAt < 8000) return;
+    lastQueenDispleasedAt = now;
+    const { obedience } = event?.detail ?? {};
+    showBiomePrompt(`QUEEN: THAT ONE WAS MINE, CARRIER. (OBEDIENCE ${obedience ?? '?'})`);
+    AudioManager.play('ui_error', { volume: 0.4, playbackRate: 0.5 });
+});
+
 window.addEventListener('boarding-blocked', (event) => {
     const { reasons, seatsUsed, seatsMax } = event?.detail ?? {};
     const why = (reasons ?? [])

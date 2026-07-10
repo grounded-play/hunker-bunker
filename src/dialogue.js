@@ -663,6 +663,20 @@ export class DialogueManager {
             name = 'OVERSEER KAELEN';
             portrait = '/lore_portraits/meridian_kaelen.png';
             cleanText = text.replace(/^OVERSEER KAELEN:\s*/, '');
+        } else if (/^(KAELEN|MARTHA|BRIGGS|NAHL|VEY|RHUN):/.test(text)) {
+            const speakerMap = {
+                KAELEN: { name: 'OVERSEER KAELEN', portrait: '/lore_portraits/survivor_10.webp' },
+                MARTHA: { name: 'SISTER MARTHA', portrait: '/lore_portraits/survivor_09.webp' },
+                BRIGGS: { name: 'COMMANDER BRIGGS', portrait: '/lore_portraits/survivor_06.webp' },
+                NAHL: { name: 'NAHL, THE SUTURE', portrait: '/lore_portraits/survivor_05.webp' },
+                VEY: { name: 'VEY, THE LISTENER', portrait: '/lore_portraits/survivor_11.webp' },
+                RHUN: { name: 'RHUN, THE SHIELD', portrait: '/lore_portraits/queen_00.webp' }
+            };
+            const prefix = text.split(':')[0];
+            const mapped = speakerMap[prefix];
+            name = mapped.name;
+            portrait = mapped.portrait;
+            cleanText = text.replace(/^[A-Z]+:\s*/, '');
         } else if (text.startsWith('QUEEN:')) {
             name = 'THE QUEEN';
             portrait = '/lore_portraits/queen_00.webp';
