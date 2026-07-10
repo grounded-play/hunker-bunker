@@ -16,6 +16,7 @@ import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
+import { getGifDurationMs } from './src/gifDuration.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
@@ -1026,10 +1027,12 @@ function hideBiomePrompt() {
         clearInterval(window.radioTypewriterInterval);
         window.radioTypewriterInterval = null;
     }
-    if (window.radioPromptTimer) {
-        clearTimeout(window.radioPromptTimer);
-        window.radioPromptTimer = null;
+    if (radioPumpTimer) {
+        clearTimeout(radioPumpTimer);
+        radioPumpTimer = null;
     }
+    radioQueue = [];
+    hudNotificationDeckHoldUntil = 0;
 }
 
 function parseRadioTransmission(rawText = '') {
@@ -1081,7 +1084,10 @@ function parseRadioTransmission(rawText = '') {
 
 let hudNotificationTopTimer = null;
 let hudNotificationTopCard = null;
+let hudNotificationDeckHoldUntil = 0;
 let hudCardSeq = 0;
+
+const RADIO_REPEAT_SUPPRESSION_MS = 6500;
 
 function getHudNotificationCards() {
     const stack = document.querySelector('.hud-notification-stack');
@@ -1093,10 +1099,17 @@ function getHudNotificationCards() {
             const bPriority = Number(b.dataset.notificationPriority ?? 50);
             if (aPriority !== bPriority) return aPriority - bPriority;
             return Number(a.dataset.seq ?? 0) - Number(b.dataset.seq ?? 0);
-        });
+    });
+}
+
+function getNowMs() {
+    return typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now();
 }
 
 function scheduleTopHudNotificationTimer() {
+    if (getNowMs() < hudNotificationDeckHoldUntil) return;
     const [topCard] = getHudNotificationCards();
     if (hudNotificationTopCard === topCard && hudNotificationTopTimer) return;
     if (hudNotificationTopTimer) {
@@ -1133,18 +1146,27 @@ window.updateHudNotificationDeck = updateHudNotificationDeck;
 
 function dismissHudNotificationCard(card) {
     if (!card || card.dataset.dismissing === 'true') return;
+    const wasTopCard = card === hudNotificationTopCard;
     if (card === hudNotificationTopCard && hudNotificationTopTimer) {
         window.clearTimeout(hudNotificationTopTimer);
         hudNotificationTopTimer = null;
         hudNotificationTopCard = null;
     }
+    const removeDelay = Number(card.dataset.removeDelayMs) || 300;
+    if (wasTopCard) {
+        hudNotificationDeckHoldUntil = Math.max(hudNotificationDeckHoldUntil, getNowMs() + removeDelay);
+    }
     card.dataset.dismissing = 'true';
     card.classList.remove('visible', 'is-visible', 'is-top-card');
     card.classList.add('is-exiting');
-    updateHudNotificationDeck();
-    const removeDelay = Number(card.dataset.removeDelayMs) || 300;
+    if (!wasTopCard) {
+        updateHudNotificationDeck();
+    }
     window.setTimeout(() => {
         card.remove();
+        if (wasTopCard) {
+            hudNotificationDeckHoldUntil = 0;
+        }
         updateHudNotificationDeck();
     }, removeDelay);
 }
@@ -1166,9 +1188,23 @@ const RADIO_MAX_QUEUED = 4;
 let radioQueue = [];
 let radioPumpTimer = null;
 let lastRadioRenderAt = 0;
+const radioRecentMessages = new Map();
 
 function normalizedRadioText(rawText) {
     return trimRadioCopy(parseRadioTransmission(rawText).text);
+}
+
+function radioTransmissionKey(rawText) {
+    const parsed = parseRadioTransmission(rawText);
+    return `${parsed.sender}::${trimRadioCopy(parsed.text).toLowerCase()}`;
+}
+
+function pruneRadioRecentMessages() {
+    while (radioRecentMessages.size > 48) {
+        const oldest = radioRecentMessages.keys().next().value;
+        if (oldest == null) break;
+        radioRecentMessages.delete(oldest);
+    }
 }
 
 function pumpRadioQueue() {
@@ -1198,11 +1234,14 @@ function showRadioTransmission(rawText) {
     if (!isGameplayPhase() || !isGameplayHudActive() || isResettingRun) return;
     const text = normalizedRadioText(rawText);
     if (!text) return;
-    if (radioQueue.some((queued) => normalizedRadioText(queued) === text)) return;
+    const key = radioTransmissionKey(rawText);
+    const recentlySeenAt = radioRecentMessages.get(key);
+    if (recentlySeenAt != null && getNowMs() - recentlySeenAt < RADIO_REPEAT_SUPPRESSION_MS) return;
+    if (radioQueue.some((queued) => radioTransmissionKey(queued) === key)) return;
 
     const stack = document.querySelector('.hud-notification-stack');
     const alreadyVisible = stack && Array.from(stack.querySelectorAll('.radio-transmission-prompt__message'))
-        .some((element) => element.textContent === text);
+        .some((element) => element.closest('.radio-transmission-prompt')?.dataset.radioKey === key);
     if (alreadyVisible) return;
 
     radioQueue.push(rawText);
@@ -1221,12 +1260,14 @@ function renderRadioTransmission(rawText) {
     const { sender, portrait, text: parsedText } = parseRadioTransmission(rawText);
     const text = trimRadioCopy(parsedText);
     if (!text) return;
+    const radioKey = radioTransmissionKey(rawText);
 
     const radioPrompt = document.createElement('div');
     radioPrompt.className = 'radio-transmission-prompt hud-stack-card hidden';
     radioPrompt.setAttribute('aria-live', 'polite');
     radioPrompt.dataset.notificationPriority = '10';
     radioPrompt.dataset.seq = String(hudCardSeq++);
+    radioPrompt.dataset.radioKey = radioKey;
     radioPrompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 42)));
     radioPrompt.dataset.removeDelayMs = '300';
     radioPrompt.innerHTML = `
@@ -1263,6 +1304,8 @@ function renderRadioTransmission(rawText) {
         radioPrompt.classList.add('visible');
         updateHudNotificationDeck();
     });
+    radioRecentMessages.set(radioKey, getNowMs());
+    pruneRadioRecentMessages();
 
     const visibleCards = getHudNotificationCards();
     for (const oldCard of visibleCards.slice(3)) {
@@ -1555,7 +1598,7 @@ function refreshLastContractor() {
         const isCurrent = Boolean(box?.active) && index === 0;
         lines.push(`BLACK BOX <span class="ui-separator">//</span> ${cls} @ ${tier} <span class="ui-separator">//</span> ${isCurrent ? 'SIGNAL ACTIVE' : 'ARCHIVED'}`);
     }
-    el.innerHTML = lines.join('<br>');
+    el.innerHTML = `<div class="last-contractor-marquee">${lines.join(' <span class="ui-separator">///</span> ')}</div>`;
     el.classList.remove('hidden');
 }
 
@@ -1825,6 +1868,16 @@ function resetRunToStartingState({
         renderBunkerLevel(0);
         renderBiomeStatus({ label: DEFAULT_BIOME_LABEL }, { showPrompt: false });
         hideBiomePrompt();
+        if (hudNotificationTopTimer) {
+            window.clearTimeout(hudNotificationTopTimer);
+            hudNotificationTopTimer = null;
+        }
+        hudNotificationTopCard = null;
+        radioQueue = [];
+        radioPumpTimer = null;
+        lastRadioRenderAt = 0;
+        radioRecentMessages.clear();
+        hudNotificationDeckHoldUntil = 0;
         hideMissionProgressHUD();
     } finally {
         isResettingRun = false;
@@ -3293,7 +3346,7 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;
 
-    showRunLoadingScreen('DOWNLOADING SECTOR CORRIDOR TOPOGRAPHY...', 0, { overDoor: loaderOverDoor });
+    showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: loaderOverDoor });
     game.setLoadingPaused?.(true);
     try {
         await settleGameLayoutForWarmup();
@@ -3301,7 +3354,7 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
             batchSize: 3,
             onProgress: (progress) => {
                 const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
-                showRunLoadingScreen(`DOWNLOADING SECTOR CORRIDOR TOPOGRAPHY... ${pct}%`, pct, { overDoor: loaderOverDoor });
+                showRunLoadingScreen(`DOWNLOADING SECTOR PILLAR TOPOGRAPHY... ${pct}%`, pct, { overDoor: loaderOverDoor });
             }
         });
         showRunLoadingScreen('DEPLOYMENT SYNC COMPLETE', 100, { overDoor: loaderOverDoor });
@@ -3365,7 +3418,8 @@ const CLASS_INTRO_GIFS = Object.freeze({
     TANK: '/Tank.Intro.gif',
     ENGINEER: '/Eng.Intro.gif'
 });
-const CLASS_INTRO_GIF_DURATION_MS = 8300;
+const CLASS_INTRO_GIF_DURATION_MS = 8300; // fallback when the GIF can't be parsed
+const CLASS_INTRO_GIF_LOOP_GUARD_MS = 120; // cut slightly early so no loop frame shows
 
 function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
@@ -3450,7 +3504,17 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         gifImg.addEventListener('error', startVideoStep, { once: true });
         overlay.append(gifImg, skipHint);
         host.appendChild(overlay);
+        const gifShownAt = performance.now();
         gifTimer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_DURATION_MS);
+
+        // Cut to the video right before the GIF would wrap to frame one.
+        void getGifDurationMs(gifSrc).then((durationMs) => {
+            if (settled || step !== 'gif' || !durationMs) return;
+            const elapsed = performance.now() - gifShownAt;
+            const remaining = durationMs - CLASS_INTRO_GIF_LOOP_GUARD_MS - elapsed;
+            window.clearTimeout(gifTimer);
+            gifTimer = window.setTimeout(startVideoStep, Math.max(0, remaining));
+        });
 
         function buildVideo() {
         videoElement = document.createElement('video');
@@ -5966,12 +6030,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (name.includes('boss_cybersnail')) return 'PINPOINTING GIGAWATT GOLIATH RADAR PROFILE';
         if (name.includes('boss_cryosnail')) return 'WARNING: DETECTING SEVERE LOCAL TEMPERATURE DROP';
         if (name.includes('boss_sporesnail')) return 'DANGER: BIO-ORGANIC HULL CONTAGION CRITICAL';
-        if (name.includes('cybersnail')) return 'IDENTIFYING CORRIDOR CORROSIVE ANOMALIES';
+        if (name.includes('cybersnail')) return 'IDENTIFYING SUPPORT-FIELD CORROSIVE ANOMALIES';
         if (name.includes('cryosnail')) return 'MEASURING GELID EXOSUIT DRAIN INDEX';
         if (name.includes('sporesnail')) return 'MONITORING SUBTERRANEAN BIO-KINETIC PATHOGENS';
         
         // Biome Textures
-        if (name.includes('bunker_base') || name.includes('bunker_wall') || name.includes('bunker_grunge')) return 'MAPPING SECURE METAL-STRUCT CORRIDORS';
+        if (name.includes('bunker_base') || name.includes('bunker_wall') || name.includes('bunker_grunge')) return 'MAPPING SECURE METAL-STRUCT SUPPORTS';
         if (name.includes('cryo_base') || name.includes('cryo_grunge') || name.includes('cryo_wall')) return 'STABILIZING CRYOGENIC COOLANT PIPELINES';
         if (name.includes('bio_base') || name.includes('bio_grunge') || name.includes('bio_wall')) return 'ISOLATING SPORE-INFESTED BIOSPHERES';
         if (name.includes('ice_base') || name.includes('ice_grunge') || name.includes('ice_wall')) return 'SURVEYING GEOTHERMAL GLACIAL CAVERNS';

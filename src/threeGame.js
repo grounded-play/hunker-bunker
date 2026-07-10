@@ -261,7 +261,7 @@ const LORE_LOGS = {
         { key: 'A03', text: 'Atmospheric readings stable. O₂ generator nominal.\nSnail-variant bio-entities adapting to hull material. Pest control authorized.' },
         { key: 'A04', text: 'Communication with Mothership limited to quarterly uplink. By design.\nThey don\'t want to know what we found. But they want what we found.' },
         { key: 'A05', text: 'Agent roster — OPERATION SHARD:\nSCOUT TEAM: Sgt. A. Henderson. Lt. J. Park. Pvt. M. Reyes.\nMission: RETRIEVAL. Target: Bay C Specimen 0047.\nDo not allow them to open the stasis pods. Tell them it\'s samples.' },
-        { key: 'A06', text: 'Bay C alarm triggered. Manual override engaged. Who authorized override?\nPerimeter sensors show movement in corridor 9-F. Cameras offline.\nRecommend: code red lock — Director Chen APPROVED.' },
+        { key: 'A06', text: 'Bay C alarm triggered. Manual override engaged. Who authorized override?\nPerimeter sensors show movement between the support pillars in sector 9-F. Cameras offline.\nRecommend: code red lock — Director Chen APPROVED.' },
         { key: 'A07', text: 'O₂ generator in sector 4 is offline. Reserves depleted.\nPersonnel evacuating sub-levels 4 through 9.\nAnyone still in those levels — I\'m sorry.' },
         { key: 'A08', text: 'Three ships inbound. SCOUT ALPHA, BRAVO, CHARLIE.\nThey don\'t know what they\'re walking into. Orders are orders.\nUplink will cut when they enter atmosphere.\n— Director Chen' },
         { key: 'A09', text: '[CORRUPTED]\n...THE THING IN BAY...\n...NOT SPECIMEN 00...\n...IT KNEW THE CODE...\n[END]' },
@@ -276,7 +276,7 @@ const LORE_LOGS = {
         { key: 'C02', text: 'Coolant system failure in Bay C.\nEstimated repair time: 72 hours.\nWe have 12 hours before temperature rises.\nIce will form throughout the sector. This is acceptable.' },
         { key: 'C03', text: 'Something is wrong with Pod 312.\nThe readings show... movement inside.\nNot the tremors we expect in suspension — voluntary movement.\n— Cryo Tech Okonkwo' },
         { key: 'C04', text: 'Pod 312 has been opened. From the inside.\nInitiating full sector lockdown.\nAll personnel evacuate Bay C immediately.\n— AUTOMATED BUNKER ALERT' },
-        { key: 'C05', text: 'I can hear it moving in the corridor.\nThe thermal cameras show something approximately 1.2 meters.\nIt\'s not the stasis unit. The stasis unit was 0047.\nThis is something else. Something it made.' },
+        { key: 'C05', text: 'I can hear it moving between the pillars.\nThe thermal cameras show something approximately 1.2 meters.\nIt\'s not the stasis unit. The stasis unit was 0047.\nThis is something else. Something it made.' },
         { key: 'C06', text: 'Crawlers. That\'s what we\'re calling them.\nFast. Very fast. One hit and you\'re down.\nThey don\'t attack the Snails. They work together.\n— Cryo Tech Okonkwo (last entry)' },
         { key: 'C07', text: 'Bay C is sealed. Airtight. The Crawlers are inside.\nThe cold won\'t kill them. We tried.\nThey\'re still moving. Whatever 0047 is, it doesn\'t need warmth.' },
         { key: 'C08', text: 'The coolant puddles are spreading.\nI used to think the ice was the disaster.\nNow I think the ice is the least of our problems.' },
@@ -4302,7 +4302,7 @@ export class ThreeGame {
     }
 
     revealNearbyExits() {
-        this.showBunkerLine('ROUTES REVEALED. COMPASS DATA IS TEMPORARILY UNTRUSTWORTHY.');
+        this.showBunkerLine('OPEN PATHS REVEALED. COMPASS DATA IS TEMPORARILY UNTRUSTWORTHY.');
         window.dispatchEvent(new CustomEvent('terminal-routes-revealed'));
     }
 
@@ -4896,13 +4896,10 @@ export class ThreeGame {
         setText('terminal-summary-bank', totalBanked);
         setText('terminal-summary-hp', `${this.playerVitals.hp}/${this.playerVitals.maxHp}`);
         setText('terminal-summary-o2', `${Math.round(this.playerVitals.o2)}%`);
-        const playerClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
-        const skillTree = CLASS_SKILL_TREES[playerClass] ?? [];
-        const unlockedSkillCount = skillTree.filter((node) => this.bank.isSkillUnlocked(node.id)).length;
-        const purchasableSkillCount = skillTree.filter((node) => this.bank.canUnlockSkill(node.id, playerClass)).length;
+        const progression = this.getProgressionStats(ship, bankState);
         setText(
             'terminal-tab-skills-status',
-            `${unlockedSkillCount}/${skillTree.length} · ◈ ${this.bank.getShells()}${purchasableSkillCount > 0 ? ` · ${purchasableSkillCount} READY` : ''}`
+            `SKL ${progression.classUnlocked}/${progression.classTotal} · SYS ${progression.systemUnlocked}/${progression.systemTotal} · WPN ${progression.combatUnlocked}/${progression.combatTotal} · ◈ ${this.bank.getShells()}`
         );
         const activeGoal = this.getActiveBaseGoal(bankState);
         const purchaseZone = document.getElementById('terminal-objective-purchase-zone');
@@ -5510,6 +5507,55 @@ export class ThreeGame {
         return '';
     }
 
+    getProgressionStats(ship = this.getActiveShip(), bankState = this.bank.getState()) {
+        const playerClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
+        const classTree = CLASS_SKILL_TREES[playerClass] ?? [];
+        const classUnlocked = classTree.filter((node) => this.bank.isSkillUnlocked(node.id)).length;
+        const classReady = classTree.filter((node) => this.bank.canUnlockSkill(node.id, playerClass)).length;
+
+        const tier2Unlocks = bankState?.tier2Unlocks ?? {};
+        const systemUnlocked = TIER2_UPGRADE_ORDER.filter((key) => Boolean(tier2Unlocks[key])).length;
+        const systemReady = TIER2_UPGRADE_ORDER.filter((key) => {
+            if (tier2Unlocks[key]) return false;
+            const cfg = TIER2_UPGRADE_CONFIGS[key];
+            if (!cfg) return false;
+            const prereqMet = !cfg.prereq || Boolean(bankState?.unlocks?.[cfg.prereq]);
+            const shellPrice = shellPriceOf(cfg.cost);
+            return prereqMet && this.bank.canAffordShells(shellPrice);
+        }).length;
+
+        const weaponLevels = bankState?.weaponUpgrades ?? {};
+        const combatUnlocked = WEAPON_UPGRADE_ORDER.reduce(
+            (sum, key) => sum + Math.max(0, Math.floor(Number(weaponLevels[key]) || 0)),
+            0
+        );
+        const combatTotal = WEAPON_UPGRADE_ORDER.reduce(
+            (sum, key) => sum + (WEAPON_UPGRADES_CONFIG[key]?.maxLevel ?? 0),
+            0
+        );
+        const combatReady = WEAPON_UPGRADE_ORDER.filter((key) => {
+            const cfg = WEAPON_UPGRADES_CONFIG[key];
+            if (!cfg) return false;
+            const level = Math.max(0, Math.floor(Number(weaponLevels[key]) || 0));
+            if (level >= cfg.maxLevel) return false;
+            const shellPrice = shellPriceOf(cfg.costs[level]);
+            return this.bank.canAffordShells(shellPrice);
+        }).length;
+
+        return {
+            playerClass,
+            classTotal: classTree.length,
+            classUnlocked,
+            classReady,
+            systemTotal: TIER2_UPGRADE_ORDER.length,
+            systemUnlocked,
+            systemReady,
+            combatTotal,
+            combatUnlocked,
+            combatReady
+        };
+    }
+
     renderSkillsTree(ship) {
         this.mountUpgradeSectionsInSkillsTab(ship);
         const gridContainer = document.getElementById('skills-tree-grid');
@@ -5518,14 +5564,13 @@ export class ThreeGame {
 
         gridContainer.innerHTML = '';
 
-        const requestedClass = String(ship?.type ?? this.playerType ?? 'SCOUT').toUpperCase();
-        const playerClass = CLASS_SKILL_TREES[requestedClass]
-            ? requestedClass
+        const progression = this.getProgressionStats(ship);
+        const playerClass = CLASS_SKILL_TREES[progression.playerClass]
+            ? progression.playerClass
             : String(this.playerType ?? 'SCOUT').toUpperCase();
         const tree = CLASS_SKILL_TREES[playerClass] ?? [];
-        const unlockedCount = tree.filter(node => this.bank.isSkillUnlocked(node.id)).length;
         if (countEl) {
-            countEl.textContent = `${playerClass} SKILLS: ${unlockedCount}/${tree.length} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+            countEl.textContent = `${playerClass} SKILLS: ${progression.classUnlocked}/${progression.classTotal} (${progression.classReady} READY) | SYSTEM: ${progression.systemUnlocked}/${progression.systemTotal} (${progression.systemReady} READY) | COMBAT: ${progression.combatUnlocked}/${progression.combatTotal} (${progression.combatReady} READY) | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
         }
 
         if (tree.length === 0) {

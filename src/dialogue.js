@@ -816,7 +816,7 @@ export class DialogueManager {
     async tutorialStepDeadEnds(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '⬡',
-            text: 'DEAD-END CORRIDORS ARE REWARD CACHES — DENSER LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
+            text: 'DEAD-END PILLAR CLUSTERS ARE REWARD CACHES — DENSER LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
         });
         await this.sleep(runId, 3200);
         this.hideTutorialPrompt(runId);

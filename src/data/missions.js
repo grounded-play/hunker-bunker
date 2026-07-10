@@ -16,9 +16,9 @@ export const MISSION_BRIEFINGS = Object.freeze({
     survey: Object.freeze([
         'SURVEY: CRYO SECTOR BOUNDARY',
         'SURVEY: DEEP SECTOR RECON',
-        'MAP: UNLOGGED CORRIDOR NETWORK',
+        'MAP: UNLOGGED PILLAR NETWORK',
         'CHART: STRUCTURAL DRIFT ZONE',
-        'AUDIT: CORRIDORS PENDING DEMOLITION'
+        'AUDIT: SUPPORTS PENDING DEMOLITION'
     ]),
     elimination: Object.freeze([
         'ELIMINATE: BIO-ENTITY CLUSTER',

@@ -842,10 +842,8 @@ body {
   box-sizing: border-box;
   align-self: flex-end;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: calc(var(--vu) * 0.3);
+  align-items: center;
+  justify-content: flex-start;
   font-size: var(--font-xs);
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -861,15 +859,22 @@ body {
   box-shadow: inset 0 0 calc(var(--vu) * 1.2) rgba(255, 159, 28, 0.08);
   animation: last-contractor-pulse 2.4s ease-in-out infinite;
   overflow: hidden;
-  white-space: normal;
+  white-space: nowrap;
 }
 .last-contractor.hidden {
   display: none !important;
   visibility: hidden;
   animation: none;
 }
-.last-contractor br {
-  display: block;
+.last-contractor-marquee {
+  display: inline-block;
+  padding-left: 100%;
+  animation: last-contractor-marquee-scroll 15s linear infinite;
+  white-space: nowrap;
+}
+@keyframes last-contractor-marquee-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
 @keyframes last-contractor-pulse {
   0%, 100% { border-color: rgba(255, 184, 64, 0.42); border-left-color: var(--accent-primary); }
@@ -5315,6 +5320,8 @@ body.mission-intro-active #game-container canvas {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: calc(var(--vu) * 0.75) calc(var(--vu) * 1.25);
   padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.5);
   background: rgba(255, 159, 28, 0.06);
   border: 1px solid rgba(255, 159, 28, 0.25);
@@ -5330,20 +5337,41 @@ body.mission-intro-active #game-container canvas {
 }
 
 .skills-info-hint {
+  flex: 1 1 auto;
   font-family: 'Outfit', sans-serif;
   font-weight: 500;
   font-size: var(--font-xxs);
   color: rgba(255, 159, 28, 0.65);
   letter-spacing: 0.5px;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .skills-header {
+    align-items: flex-start;
+  }
+
+  .skills-info-hint {
+    text-align: left;
+  }
 }
 
 .skills-tree-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1.22fr) minmax(0, 0.92fr);
+  gap: calc(var(--vu) * 1.5);
+  align-items: start;
   flex: 0 0 auto;
   overflow: visible;
   padding: calc(var(--vu) * 1);
 }
 
+.skills-tree-container > * {
+  min-width: 0;
+}
+
 .skills-tree-grid {
+  width: 100%;
   display: grid;
   grid-template-rows: repeat(7, auto);
   grid-template-columns: repeat(5, 1fr);
@@ -8914,14 +8942,31 @@ button.archive-log-entry:active {
 
 
 .skills-upgrade-matrix {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 0;
+  padding: 0 0 0 calc(var(--vu) * 1.2);
+  border-left: 1px solid rgba(255, 159, 28, 0.16);
+  min-width: 0;
 }
 
 .skills-upgrade-matrix #tier2-section,
 .skills-upgrade-matrix #weapons-section {
   margin-top: 0;
+}
+
+@media (max-width: 1220px) {
+  .skills-tree-container {
+    grid-template-columns: 1fr;
+  }
+
+  .skills-upgrade-matrix {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid rgba(255, 159, 28, 0.16);
+    padding-top: calc(var(--vu) * 1.2);
+  }
 }
 
 .debug-btn.debug-btn--active {
