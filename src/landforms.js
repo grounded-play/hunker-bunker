@@ -91,6 +91,74 @@ function applyCanyonLandform(grid, random) {
     }
 }
 
+function countFloorCells(grid) {
+    return grid.reduce((sum, row) => sum + row.filter((cell) => cell === '.').length, 0);
+}
+
+function findFloorCell(grid) {
+    for (let y = 1; y < grid.length - 1; y += 1) {
+        for (let x = 1; x < grid[y].length - 1; x += 1) {
+            if (grid[y][x] === '.') return { x, y };
+        }
+    }
+    return null;
+}
+
+function reachableFloorCells(grid) {
+    const start = findFloorCell(grid);
+    if (!start) return 0;
+    const seen = new Set([`${start.x},${start.y}`]);
+    const stack = [start];
+    while (stack.length) {
+        const { x, y } = stack.pop();
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = x + dx;
+            const ny = y + dy;
+            const key = `${nx},${ny}`;
+            if (ny < 0 || ny >= grid.length || nx < 0 || nx >= grid[ny].length || seen.has(key)) continue;
+            if (grid[ny][nx] !== '.') continue;
+            seen.add(key);
+            stack.push({ x: nx, y: ny });
+        }
+    }
+    return seen.size;
+}
+
+function isCanyonGapCandidate(grid, x, y) {
+    const left = grid[y]?.[x - 1];
+    const right = grid[y]?.[x + 1];
+    const up = grid[y - 1]?.[x];
+    const down = grid[y + 1]?.[x];
+    const verticalRidgeGap = left === '.' && right === '.' && (up === '#' || down === '#');
+    const horizontalRidgeGap = up === '.' && down === '.' && (left === '#' || right === '#');
+    return verticalRidgeGap || horizontalRidgeGap;
+}
+
+export function applyCanyonCollapse(grid, random, sealedGapCount = 3) {
+    const target = Math.max(0, Math.floor(Number(sealedGapCount) || 0));
+    if (target <= 0) return 0;
+    const candidates = [];
+    for (let y = 2; y < grid.length - 2; y += 1) {
+        for (let x = 2; x < grid[y].length - 2; x += 1) {
+            if (grid[y][x] === '.' && isCanyonGapCandidate(grid, x, y)) candidates.push({ x, y, sort: random() });
+        }
+    }
+    candidates.sort((a, b) => a.sort - b.sort);
+
+    let sealed = 0;
+    for (const { x, y } of candidates) {
+        if (sealed >= target) break;
+        const floorBefore = countFloorCells(grid);
+        grid[y][x] = '#';
+        if (reachableFloorCells(grid) === floorBefore - 1) {
+            sealed += 1;
+        } else {
+            grid[y][x] = '.';
+        }
+    }
+    return sealed;
+}
+
 // A round open clearing ringed by a rim wall with cardinal breaches; the maze
 // survives outside the rim. Natural arena — and a natural camp/boss stage.
 function applyCraterLandform(grid, random) {

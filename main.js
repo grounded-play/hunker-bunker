@@ -17,6 +17,7 @@ import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import { getGifDurationMs } from './src/gifDuration.js';
+import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, hasAnyUnlock } from './src/achievements.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
 const splash = document.getElementById('splash');
@@ -341,6 +342,9 @@ window.fabricator = fabricator;
 
 const profile = new ProfileManager();
 window.profile = profile;
+
+const achievementEngine = new AchievementEngine();
+window.achievementEngine = achievementEngine;
 
 const loadout = new LoadoutManager();
 window.loadout = loadout;
@@ -1994,6 +1998,10 @@ function resetRunToStartingState({
         }
 
         runStartTime = Date.now();
+        recordAchievementEvent('run-start', {
+            startedAt: runStartTime,
+            classType: window.game?.playerType ?? getSelectedHeroType()
+        });
         const act2Run = isAct2RunActive();
         currentMission = act2Run ? null : assignMission(bankManager.getState());
         currentRunModifier = pickRunModifier();
@@ -2050,16 +2058,16 @@ function runDeathSequence(event) {
             totalPickups: 0,
             generatorLevel: 0
         };
-        // Check achievements and show unlock notification if new
-        const { newUnlocks } = checkAchievements(stats);
+        recordAchievementRunEnd({
+            ...stats,
+            outcome: 'death',
+            deathReason,
+            runMs: Date.now() - runStartTime,
+            classType: window.game?.playerType ?? getSelectedHeroType()
+        }, { delayMs: 2200 });
         triggerDoorTransition(
             () => {
                 showGameOverScreen(stats, { isVictory: false, deathReason });
-                if (newUnlocks.length > 0) {
-                    setTimeout(() => {
-                        showBiomePrompt(`> ACHIEVEMENT: ${newUnlocks[0]}`);
-                    }, 2200);
-                }
                 resetRunToStartingState({
                     resetBank: false,
                     skipEffects: true,
@@ -2367,50 +2375,255 @@ function buildArchiveModal() {
 }
 
 // ── Achievement / Unlock System ───────────────────────────────
-const ACHIEVEMENT_KEY = 'hb_achievements_v1';
+const ACHIEVEMENT_BUTTON_SHINE_KEY = 'hb_achievements_button_shown_v1';
 
-function getAchievements() {
+function getAchievementUnlockCount(state = achievementEngine.getState()) {
+    return Object.keys(state.unlocked ?? {}).length;
+}
+
+function getLiveAchievementCount() {
+    return ACHIEVEMENT_DEFS.filter((def) => !def.comingSoon).length;
+}
+
+function updateAchievementsMenuButton({ shine = false } = {}) {
+    const state = achievementEngine.getState();
+    const unlockedCount = getAchievementUnlockCount(state);
+    const command = document.getElementById('achievements-command');
+    const status = document.getElementById('achievements-command-status');
+    if (command) command.classList.toggle('hidden', unlockedCount <= 0);
+    if (status) status.textContent = unlockedCount > 0
+        ? `${unlockedCount} / ${getLiveAchievementCount()} UNLOCKED`
+        : 'LOCKED';
+
+    if (!command || unlockedCount <= 0 || !shine) return;
+    const alreadyShined = localStorage.getItem(ACHIEVEMENT_BUTTON_SHINE_KEY) === '1';
+    if (alreadyShined) return;
+    command.classList.add('achievement-command--new');
+    localStorage.setItem(ACHIEVEMENT_BUTTON_SHINE_KEY, '1');
+    window.setTimeout(() => command.classList.remove('achievement-command--new'), 3600);
+}
+
+function showAchievementToast(unlock) {
+    if (!unlock) return;
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) {
+        showBiomePrompt(`> ACHIEVEMENT: ${unlock.title}`);
+        return;
+    }
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
+    const toast = document.createElement('div');
+    toast.className = 'achievement-toast hud-stack-card hidden';
+    toast.setAttribute('aria-live', 'polite');
+    toast.dataset.notificationPriority = '5';
+    toast.dataset.seq = String(hudCardSeq++);
+    toast.dataset.autoDismissMs = '5600';
+    toast.dataset.removeDelayMs = '320';
+
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'achievement-toast__icon';
+    const img = document.createElement('img');
+    img.alt = '';
+    img.src = `/ach_${unlock.icon ?? unlock.key}.png`;
+    const fallback = document.createElement('span');
+    fallback.textContent = 'ACH';
+    img.addEventListener('error', () => {
+        img.classList.add('hidden');
+        fallback.classList.remove('hidden');
+    }, { once: true });
+    fallback.classList.add('hidden');
+    iconWrap.append(img, fallback);
+
+    const body = document.createElement('div');
+    body.className = 'achievement-toast__body';
+    const kicker = document.createElement('div');
+    kicker.className = 'achievement-toast__kicker';
+    kicker.textContent = 'ACHIEVEMENT UNLOCKED';
+    const title = document.createElement('div');
+    title.className = 'achievement-toast__title';
+    title.textContent = unlock.title;
+    const blurb = document.createElement('div');
+    blurb.className = 'achievement-toast__blurb';
+    blurb.textContent = unlock.blurb;
+    body.append(kicker, title, blurb);
+    toast.append(iconWrap, body);
+    toast.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        dismissHudNotificationCard(toast);
+    });
+
+    stack.append(toast);
+    updateHudNotificationDeck();
+    toast.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        toast.classList.add('visible');
+        updateHudNotificationDeck();
+    });
+}
+
+function handleAchievementUnlocks(newUnlocks = [], { delayMs = 0 } = {}) {
+    if (!newUnlocks.length) {
+        updateAchievementsMenuButton();
+        return;
+    }
+    updateAchievementsMenuButton({ shine: true });
+    newUnlocks.forEach((unlock, index) => {
+        window.dispatchEvent(new CustomEvent('achievement-unlocked', {
+            detail: { key: unlock.key, title: unlock.title, blurb: unlock.blurb }
+        }));
+        window.setTimeout(() => showAchievementToast(unlock), delayMs + index * 700);
+    });
+}
+
+function recordAchievementEvent(name, detail = {}, options = {}) {
+    const result = achievementEngine.recordEvent(name, detail);
+    handleAchievementUnlocks(result.newUnlocks, options);
+    return result;
+}
+
+function recordAchievementRunEnd(stats = {}, options = {}) {
+    const result = achievementEngine.recordRunEnd(stats);
+    handleAchievementUnlocks(result.newUnlocks, options);
+    return result;
+}
+
+function renderAchievementsModal() {
+    const state = achievementEngine.getState();
+    const grid = document.getElementById('achievements-grid');
+    const summary = document.getElementById('achievements-summary');
+    const status = document.getElementById('achievements-save-status');
+    if (summary) summary.textContent = `${getAchievementUnlockCount(state)} / ${getLiveAchievementCount()} UNLOCKED`;
+    if (status) status.textContent = '';
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    for (const def of ACHIEVEMENT_DEFS) {
+        const unlocked = Boolean(state.unlocked?.[def.key]);
+        const secretLocked = def.secret && !unlocked && !def.comingSoon;
+        const progress = getAchievementProgress(def, state);
+        const card = document.createElement('div');
+        card.className = [
+            'achievement-card',
+            unlocked ? 'achievement-card--unlocked' : 'achievement-card--locked',
+            def.comingSoon ? 'achievement-card--soon' : ''
+        ].filter(Boolean).join(' ');
+
+        const icon = document.createElement('div');
+        icon.className = 'achievement-card__icon';
+        const img = document.createElement('img');
+        img.alt = '';
+        img.src = `/ach_${def.icon ?? def.key}.png`;
+        const fallback = document.createElement('span');
+        fallback.textContent = secretLocked ? '???' : (def.title.match(/[A-Z0-9]/g)?.slice(0, 3).join('') || 'ACH');
+        img.addEventListener('error', () => {
+            img.classList.add('hidden');
+            fallback.classList.remove('hidden');
+        }, { once: true });
+        if (!unlocked) img.classList.add('achievement-card__img--locked');
+        fallback.classList.add('hidden');
+        icon.append(img, fallback);
+
+        const body = document.createElement('div');
+        body.className = 'achievement-card__body';
+        const title = document.createElement('div');
+        title.className = 'achievement-card__title';
+        title.textContent = secretLocked ? '???' : def.title;
+        const blurb = document.createElement('div');
+        blurb.className = 'achievement-card__blurb';
+        blurb.textContent = secretLocked ? 'Hidden record. Unlock to reveal.' : def.blurb;
+        body.append(title, blurb);
+
+        if (def.comingSoon) {
+            const soon = document.createElement('div');
+            soon.className = 'achievement-card__meta';
+            soon.textContent = 'COMING SOON';
+            body.appendChild(soon);
+        } else if (progress && !unlocked && !secretLocked) {
+            const meta = document.createElement('div');
+            meta.className = 'achievement-card__meta';
+            meta.textContent = `${progress.current} / ${progress.target}`;
+            body.appendChild(meta);
+        } else if (unlocked) {
+            const meta = document.createElement('div');
+            meta.className = 'achievement-card__meta achievement-card__meta--unlocked';
+            meta.textContent = 'UNLOCKED';
+            body.appendChild(meta);
+        }
+
+        card.append(icon, body);
+        grid.appendChild(card);
+    }
+}
+
+function openAchievementsModal() {
+    renderAchievementsModal();
+    const modal = document.getElementById('achievements-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+}
+
+function closeAchievementsModal() {
+    const modal = document.getElementById('achievements-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+async function copyAchievementSaveCode() {
+    const code = exportSaveCode();
+    const status = document.getElementById('achievements-save-status');
+    if (!code) {
+        if (status) status.textContent = 'SAVE CODE UNAVAILABLE';
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        return;
+    }
+    let copied = false;
     try {
-        return JSON.parse(localStorage.getItem(ACHIEVEMENT_KEY) ?? 'null') ?? {
-            totalDeaths: 0,
-            totalKills: 0,
-            maxKillsOneRun: 0,
-            deepTierReachedAlive: false,
-            unlockedHardened: false
-        };
-    } catch { return { totalDeaths: 0, totalKills: 0, maxKillsOneRun: 0, deepTierReachedAlive: false, unlockedHardened: false }; }
-}
-
-function saveAchievements(ach) {
-    try { localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(ach)); } catch { /* ignore */ }
-}
-
-function checkAchievements(runStats) {
-    const ach = getAchievements();
-    const newUnlocks = [];
-
-    // Track deaths
-    ach.totalDeaths = (ach.totalDeaths ?? 0) + 1;
-    if (ach.totalDeaths >= 5 && !ach.unlockedHardened) {
-        ach.unlockedHardened = true;
-        newUnlocks.push('HARDENED MODE UNLOCKED — Die 5 times to prove dedication.');
+        await navigator.clipboard?.writeText(code);
+        copied = true;
+    } catch {
+        // clipboard blocked
     }
-
-    // Track kills
-    const kills = runStats?.snailsKilled ?? 0;
-    ach.totalKills = (ach.totalKills ?? 0) + kills;
-    ach.maxKillsOneRun = Math.max(ach.maxKillsOneRun ?? 0, kills);
-
-    // Track deep tier
-    const depthTier = runStats?.depthTier ?? 0;
-    if (depthTier >= 2 && !ach.deepTierReachedAlive) {
-        ach.deepTierReachedAlive = true;
-        newUnlocks.push('DEEP SECTOR MAPPED — Advanced sentinels now active in future runs.');
+    if (status) {
+        status.textContent = copied
+            ? 'SAVE CODE COPIED'
+            : 'SAVE CODE READY IN SAVE DATA PANEL';
     }
-
-    saveAchievements(ach);
-    return { ach, newUnlocks };
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    if (!copied) {
+        setSaveDataOpen(true);
+        if (saveDataCode) {
+            saveDataCode.value = code;
+            saveDataCode.select();
+        }
+    }
 }
+
+function installAchievementsUi() {
+    updateAchievementsMenuButton({ shine: hasAnyUnlock(achievementEngine.getState()) });
+    document.getElementById('achievements-btn')?.addEventListener('click', openAchievementsModal);
+    document.getElementById('close-achievements-modal')?.addEventListener('click', closeAchievementsModal);
+    document.getElementById('achievement-copy-save')?.addEventListener('click', copyAchievementSaveCode);
+    document.getElementById('achievements-modal')?.addEventListener('click', (event) => {
+        if (event.target?.id === 'achievements-modal') closeAchievementsModal();
+    });
+}
+installAchievementsUi();
+
+[
+    'act2-milestone',
+    'player-suspicion-changed',
+    'hive-choice-resolved',
+    'run-cards-drawn',
+    'shell-collected',
+    'lore-drop-collected'
+].forEach((eventName) => {
+    window.addEventListener(eventName, (event) => {
+        recordAchievementEvent(eventName, event?.detail ?? {});
+    });
+});
 
 // ── Lore Terminal System ──────────────────────────────────────
 const WORLD_MEMORY_KEY = 'hb_world_memory_v1';
@@ -4999,6 +5212,9 @@ async function handleCaveRevealBecomeInfected() {
             detail: { humanity: infected.humanity, stage: infected.infectionStage }
         }));
     }
+    recordAchievementEvent('reveal-reached', {
+        classType: game?.playerType ?? getSelectedHeroType()
+    });
     await dialogueManager?.openBriefTransmission({
         playerType: game?.playerType ?? getSelectedHeroType(),
         lines: [...ACT2_LINES.intro]
@@ -5044,6 +5260,22 @@ const ACT2_ENDING_TITLES = Object.freeze({
 
 function formatStoryToken(value = '') {
     return String(value || 'unknown').replace(/_/g, ' ').toUpperCase();
+}
+
+function getActiveRunManifestOptions() {
+    const effects = window.game?.getRunCardEffects?.() ?? {};
+    return {
+        eggSeatRequiresNahl: Boolean(effects.manifest?.eggSeatRequiresNahl)
+    };
+}
+
+function formatManifestBlocker(reason, manifest = {}) {
+    if (reason === 'seat_capacity_exceeded') {
+        return `OVER CAPACITY (${manifest.seatsUsed ?? '?'}/${manifest.seatsMax ?? '?'} SEATS)`;
+    }
+    if (reason === 'egg_requires_nahl') return 'EGG INSTABILITY: NAHL MUST BE ABOARD';
+    if (reason === 'egg_unstable') return 'EGG NEEDS THE QUEEN OR NAHL ABOARD';
+    return String(reason).replace(/_/g, ' ').toUpperCase();
 }
 
 function setCampChoiceOpen(open) {
@@ -5117,7 +5349,7 @@ function renderCampChoice(detail = {}) {
         else if (variant === 'abandon') { queenStatus = 'abandoned'; eggsStatus = 'abandoned'; }
 
         const previewState = { ...state, queenStatus, eggsStatus };
-        const manifest = buildAct2Manifest(previewState);
+        const manifest = buildAct2Manifest(previewState, getActiveRunManifestOptions());
 
         const seats = [];
         seats.push({ type: 'player', label: 'OPERATOR (CARRIER)', status: previewState.infectionStage === 'cured' ? 'CLEANED' : 'INFECTED' });
@@ -5170,7 +5402,7 @@ function renderCampChoice(detail = {}) {
         if (blockersList) {
             if (!manifest.valid) {
                 blockersList.innerHTML = manifest.invalidReasons.map((reason) => {
-                    let msg = reason;
+                    let msg = formatManifestBlocker(reason, manifest);
                     if (reason === 'seat_capacity_exceeded') msg = 'MANIFEST GATING: VESSEL CAPACITY EXCEEDED (4 SLOTS MAX)';
                     if (reason === 'egg_unstable') msg = 'BIOLOGICAL CRITICAL: HIVE EGG UNSTABLE WITHOUT QUEEN OR NAHL IN TRANSIT';
                     return `<div class="manifest-blocker-item">${msg}</div>`;
@@ -5394,7 +5626,7 @@ window.addEventListener('queen-displeased', (event) => {
 window.addEventListener('boarding-blocked', (event) => {
     const { reasons, seatsUsed, seatsMax } = event?.detail ?? {};
     const why = (reasons ?? [])
-        .map((r) => r === 'seat_capacity_exceeded' ? `OVER CAPACITY (${seatsUsed}/${seatsMax} SEATS)` : r === 'egg_unstable' ? 'EGG NEEDS THE QUEEN OR NAHL ABOARD' : String(r).toUpperCase())
+        .map((r) => formatManifestBlocker(r, { seatsUsed, seatsMax }))
         .join(' — ');
     showBiomePrompt(`LAUNCH ABORTED: ${why || 'INVALID MANIFEST'}.`);
 });
@@ -5491,6 +5723,13 @@ async function runAct2DepartureSequence(detail = {}) {
     const vector = detail.endingVector ?? game?.act2?.getEndingVector?.() ?? act2Manager?.getEndingVector?.();
     const ending = vector?.ending ?? null;
     const videoBase = ACT2_ENDING_CUTSCENES[ending] ?? 'act3-departure';
+    recordAchievementRunEnd({
+        ...(detail.runStats ?? game?.getRunStats?.() ?? {}),
+        outcome: 'victory',
+        ending,
+        runMs: Date.now() - runStartTime,
+        classType: game?.playerType ?? getSelectedHeroType()
+    }, { delayMs: 900 });
     game?.setCinematicLock?.(true);
     AudioManager.play('door_gears_spin', { volume: 0.5, playbackRate: 0.7 });
     await dialogueManager?.openBriefTransmission({
@@ -6585,7 +6824,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'weapon_fire_sidearm2', url: '/audio/vg2/weapon_fire_sidearm2.wav' },
                     { key: 'weapon_fire_sidearm3', url: '/audio/vg2/weapon_fire_sidearm3.wav' },
                     { key: 'weapon_reload1', url: '/audio/vg2/weapon_reload1.wav' },
-                    { key: 'weapon_reload2', url: '/audio/vg2/weapon_reload2.wav' }
+                    { key: 'weapon_reload2', url: '/audio/vg2/weapon_reload2.wav' },
+                    { key: 'camp_fire_loop', url: '/audio/vg2/camp_fire_loop.wav' },
+                    { key: 'camp_fire_douse', url: '/audio/vg2/camp_fire_douse.wav' },
+                    { key: 'camp_lockdown_alarm', url: '/audio/vg2/camp_lockdown_alarm.wav' },
+                    { key: 'camp_lockdown_chains', url: '/audio/vg2/camp_lockdown_chains.wav' },
+                    { key: 'hive_eggs_hum', url: '/audio/vg2/hive_eggs_hum.wav' },
+                    { key: 'hive_eggs_hatch', url: '/audio/vg2/hive_eggs_hatch.wav' },
+                    { key: 'hive_spores_puff', url: '/audio/vg2/hive_spores_puff.wav' },
+                    { key: 'hive_webs_sticky', url: '/audio/vg2/hive_webs_sticky.wav' },
+                    { key: 'hive_queen_throne', url: '/audio/vg2/hive_queen_throne.wav' },
+                    { key: 'hive_wounded_drip', url: '/audio/vg2/hive_wounded_drip.wav' },
+                    { key: 'fx_scout_sprint', url: '/audio/vg2/fx_scout_sprint.wav' },
+                    { key: 'fx_tank_shockwave', url: '/audio/vg2/fx_tank_shockwave.wav' },
+                    { key: 'fx_engineer_turret', url: '/audio/vg2/fx_engineer_turret.wav' },
+                    { key: 'fx_levelup', url: '/audio/vg2/fx_levelup.wav' },
+                    { key: 'fx_achievement', url: '/audio/vg2/fx_achievement.wav' }
                 ]
             };
 

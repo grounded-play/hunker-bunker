@@ -28,11 +28,14 @@ Implemented 2026-07-10:
 - `scratch/verify_run_cards.js` verifies fixed seeds, different card draws, and
   observable effect differences without needing a full browser boot.
 
-Still only a contract:
+Wave 2 stretch sweep, implemented 2026-07-10:
 
-- `spore_bloom` economy and hazard consumers.
-- `ice_collapse` canyon sealing and dig-out placement.
-- `egg_instability` boarding-manifest enforcement.
+- `spore_bloom` now feeds a tested camp-payout helper that doubles Tallow
+  medical salvage rewards.
+- `ice_collapse` now seals seeded canyon gaps with a connectivity-preserving
+  landform helper.
+- `egg_instability` now passes an optional manifest rule into boarding previews
+  and launch validation, requiring Nahl/Suture aboard with the eggs.
 
 ## Why Codex
 

@@ -10,6 +10,36 @@ Turn the death-only achievements stub into a real meta layer: a data-driven
 engine that watches the game's existing event stream, and a home-screen
 ACHIEVEMENTS page that stays hidden until the first unlock.
 
+## Status
+
+Implemented 2026-07-10:
+
+- `src/achievements.js` now owns the v2 achievement schema, v1 migration,
+  data-driven definitions, progress counters, and storage-backed
+  `recordEvent` / `recordRunEnd` helpers.
+- The launch set includes QUICK STUDY, HUNKERED, class completion, all ten
+  ending families, CARTOGRAPHER, ARCHIVIST, KIN, GHOST, HARDENED, and the
+  coming-soon SLAY THE QUEEN record.
+- `main.js` now records achievements from run start/end, Act 2 milestones,
+  suspicion changes, hive choices, run cards, shell collection, lore-drop
+  events, the reveal, and the Act 2 departure path.
+- The home screen now has a hidden-until-unlocked ACHIEVEMENTS command, modal
+  grid, copy-save-code action, and unlock toast using the notification deck.
+- `scratch/verify_achievements_quick_study.js` verifies fresh gating and the
+  QUICK STUDY unlock path without a browser boot.
+- Stretch card consumers are swept:
+  - `spore_bloom` doubles Tallow medical payouts through the run-card economy
+    helper.
+  - `ice_collapse` safely seals seeded canyon gaps while preserving chunk
+    connectivity.
+  - `egg_instability` blocks egg launch vectors unless Nahl/Suture has a seat.
+
+Verification commands to keep green:
+
+- `node scratch/verify_achievements_quick_study.js`
+- `npm test`
+- `npm run build` (passes with the existing Vite large-chunk warning)
+
 ## What exists (migrate, don't orphan)
 
 `main.js` has `hb_achievements_v1` (totalDeaths, totalKills, maxKillsOneRun,

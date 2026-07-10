@@ -176,6 +176,10 @@
             <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
             <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
           </div>
+          <div class="menu-command hidden" id="achievements-command">
+            <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+            <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
+          </div>
           <div class="menu-command menu-command--fab hidden" id="fabrication-command">
             <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
             <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
@@ -355,6 +359,23 @@
           <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
         </div>
         <div id="codex-grid" class="codex-grid"></div>
+      </div>
+    </div>
+
+    <!-- Achievements Modal -->
+    <div id="achievements-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content achievements-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="achievements-header">
+          <button class="close-modal" id="close-achievements-modal">×</button>
+          <div class="achievements-title">ACHIEVEMENTS</div>
+          <div id="achievements-summary" class="achievements-summary">0 / 0 UNLOCKED</div>
+        </div>
+        <div id="achievements-grid" class="achievements-grid"></div>
+        <div class="achievements-footer">
+          <button type="button" class="settings-action-btn settings-action-btn--save" id="achievement-copy-save" title="Copy a portable save code">COPY SAVE CODE</button>
+          <div class="achievements-save-status" id="achievements-save-status" role="status" aria-live="polite"></div>
+        </div>
       </div>
     </div>
 

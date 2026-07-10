@@ -159,3 +159,15 @@ export function createRunCardState(seed = 'default', options = {}) {
 export function serializeRunCards(cards = []) {
     return cards.map(({ key, label, blurb }) => ({ key, label, blurb }));
 }
+
+export function applyCampPayoutEffects(payout = {}, { campId = '', effects = {} } = {}) {
+    const adjusted = { ...payout };
+    const med = Number(adjusted.med);
+    const tallowMedPayMult = campId === 'camp_tallow'
+        ? Number(effects?.economy?.tallowMedPayMult)
+        : 1;
+    if (Number.isFinite(med) && Number.isFinite(tallowMedPayMult) && tallowMedPayMult > 1) {
+        adjusted.med = Math.max(0, Math.round(med * tallowMedPayMult));
+    }
+    return adjusted;
+}

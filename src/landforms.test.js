@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LANDFORMS, pickLandform, applyLandform, connectPortalsInward } from './landforms.js';
+import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward } from './landforms.js';
 
 const SIZE = 19;
 
@@ -45,6 +45,15 @@ function floodFillFloorCount(grid, startX, startY) {
         }
     }
     return seen.size;
+}
+
+function firstFloor(grid) {
+    for (let y = 1; y < SIZE - 1; y += 1) {
+        for (let x = 1; x < SIZE - 1; x += 1) {
+            if (grid[y][x] === '.') return { x, y };
+        }
+    }
+    return { x: 1, y: 1 };
 }
 
 describe('pickLandform', () => {
@@ -100,6 +109,20 @@ describe('applyLandform', () => {
             expect(floors).toBeGreaterThan(150); // wide halls, not a maze
             expect(floodFillFloorCount(grid, 9, 9 + (grid[9][9] === '.' ? 0 : 1))).toBeGreaterThanOrEqual(floors - 2);
         }
+    });
+
+    it('canyon collapse seals seeded gaps without breaking floor connectivity', () => {
+        const grid = mazeLikeGrid();
+        applyLandform(grid, LANDFORMS.CANYON, mulberry32(8));
+        const wallsBefore = countWalls(grid);
+        const sealed = applyCanyonCollapse(grid, mulberry32(99), 3);
+        const floors = grid.flat().filter((c) => c === '.').length;
+        const start = firstFloor(grid);
+
+        expect(sealed).toBeGreaterThan(0);
+        expect(sealed).toBeLessThanOrEqual(3);
+        expect(countWalls(grid)).toBe(wallsBefore + sealed);
+        expect(floodFillFloorCount(grid, start.x, start.y)).toBe(floors);
     });
 
     it('crater clears an open center arena ringed by a breached rim', () => {

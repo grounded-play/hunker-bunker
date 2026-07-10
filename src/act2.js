@@ -448,7 +448,7 @@ function normalizeHive(raw = {}, site = ACT2_HIVE_SITES[0]) {
     };
 }
 
-function buildManifestFromNormalizedState(state) {
+function buildManifestFromNormalizedState(state, options = {}) {
     const humans = state.camps
         .filter((camp) => ['recruited', 'turned'].includes(camp.status))
         .map((camp) => camp.id);
@@ -457,12 +457,15 @@ function buildManifestFromNormalizedState(state) {
         .map((hive) => hive.id);
     const queen = state.queenStatus === 'aboard';
     const egg = state.eggsStatus === 'aboard' || state.eggsStatus === 'hidden';
+    const sutureAboard = state.hives.some((hive) => hive.id === 'hive_suture' && (hive.aboard || hive.status === 'aboard'));
     const seatsUsed = 1 + humans.length + aliens.length + (queen ? 2 : 0) + (egg ? 1 : 0);
     const invalidReasons = [];
     if (seatsUsed > ACT2_MANIFEST_SEATS_MAX) {
         invalidReasons.push('seat_capacity_exceeded');
     }
-    if (egg && !queen && !state.hives.some((hive) => hive.id === 'hive_suture' && (hive.aboard || hive.status === 'aboard'))) {
+    if (egg && options.eggSeatRequiresNahl && !sutureAboard) {
+        invalidReasons.push('egg_requires_nahl');
+    } else if (egg && !queen && !sutureAboard) {
         invalidReasons.push('egg_unstable');
     }
 
@@ -479,8 +482,8 @@ function buildManifestFromNormalizedState(state) {
     };
 }
 
-export function buildAct2Manifest(rawState = {}) {
-    return buildManifestFromNormalizedState(normalizeAct2State(rawState));
+export function buildAct2Manifest(rawState = {}, options = {}) {
+    return buildManifestFromNormalizedState(normalizeAct2State(rawState), options);
 }
 
 export function normalizeAct2State(raw = {}) {

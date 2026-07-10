@@ -344,6 +344,31 @@ describe('Act 2 boarding manifest', () => {
         expect(manifest.invalidReasons).toContain('egg_unstable');
     });
 
+    it('can require Suture aboard for egg-instability runs even when the queen boards', () => {
+        const manifest = buildAct2Manifest({
+            queenStatus: 'aboard',
+            eggsStatus: 'aboard',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, status: 'culled' })),
+            hives: []
+        }, { eggSeatRequiresNahl: true });
+
+        expect(manifest.seatsUsed).toBe(4);
+        expect(manifest.valid).toBe(false);
+        expect(manifest.invalidReasons).toContain('egg_requires_nahl');
+    });
+
+    it('satisfies egg-instability runs when Suture has a seat', () => {
+        const manifest = buildAct2Manifest({
+            queenStatus: 'aboard',
+            eggsStatus: 'aboard',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, status: 'culled' })),
+            hives: [{ id: 'hive_suture', status: 'aboard' }]
+        }, { eggSeatRequiresNahl: true });
+
+        expect(manifest.aliens).toContain('hive_suture');
+        expect(manifest.invalidReasons).not.toContain('egg_requires_nahl');
+    });
+
     it('counts turned camps against launch capacity', () => {
         const manifest = buildAct2Manifest({
             queenStatus: 'aboard',

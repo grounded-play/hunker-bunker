@@ -3649,6 +3649,27 @@ export class ThreeGame {
         return this.currentRunModifier?.effects ?? {};
     }
 
+    getRunManifestOptions() {
+        const effects = this.getRunCardEffects();
+        return {
+            eggSeatRequiresNahl: Boolean(effects.manifest?.eggSeatRequiresNahl)
+        };
+    }
+
+    getManifestInvalidReasonText(reason, manifest = {}) {
+        if (reason === 'seat_capacity_exceeded') return `over capacity (${manifest.seatsUsed}/${manifest.seatsMax} seats)`;
+        if (reason === 'egg_requires_nahl') return 'egg instability requires Nahl aboard';
+        if (reason === 'egg_unstable') return 'egg needs the queen or Nahl aboard';
+        return String(reason).replace(/_/g, ' ');
+    }
+
+    applyCampPayoutEffects(payout = {}, campId = '') {
+        return applyCampPayoutEffects(payout, {
+            campId,
+            effects: this.getRunCardEffects()
+        });
+    }
+
     syncRunModifierCards() {
         const modifier = this.currentRunModifier;
         if (!modifier || this._syncedRunModifier === modifier) return;
@@ -7305,10 +7326,10 @@ export class ThreeGame {
                     ...baseState,
                     queenStatus: entry.queenStatus,
                     eggsStatus: entry.eggsStatus
-                });
+                }, this.getRunManifestOptions());
                 const seatText = `SEATS ${manifest.seatsUsed}/${manifest.seatsMax}`;
                 const reasonText = manifest.invalidReasons
-                    .map((r) => r === 'seat_capacity_exceeded' ? 'over capacity' : r === 'egg_unstable' ? 'egg needs the queen or Nahl aboard' : r)
+                    .map((r) => this.getManifestInvalidReasonText(r, manifest))
                     .join('; ');
                 options.push({
                     action: 'board',
@@ -7641,11 +7662,11 @@ export class ThreeGame {
             camp.setLevel(level);
             camp.setStatus(record?.status ?? 'alive');
             this.adjustOxygen(CAMP_SUPPORT_O2_REFILL);
-            const supplyCache = {
+            const supplyCache = this.applyCampPayoutEffects({
                 med: 1 + (level >= 3 ? 1 : 0),
                 tech: 1,
                 coin: level >= 2 ? 1 : 0
-            };
+            }, camp.id);
             this.bank?.deposit?.(supplyCache);
             this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_uncommon');
             window.AudioManager?.play?.('class_lock', { volume: 0.5 });
@@ -7915,7 +7936,7 @@ export class ThreeGame {
             abandon: { queenStatus: 'abandoned', eggsStatus: 'abandoned' }
         };
         const target = statusByVariant[variant] ?? statusByVariant.queen;
-        const manifest = buildAct2Manifest({ ...this.act2.getState(), ...target });
+        const manifest = buildAct2Manifest({ ...this.act2.getState(), ...target }, this.getRunManifestOptions());
         if (!manifest.valid) {
             window.AudioManager?.play?.('ui_error', { volume: 0.5, playbackRate: 0.6 });
             window.dispatchEvent(new CustomEvent('boarding-blocked', {
@@ -8034,12 +8055,12 @@ export class ThreeGame {
 
     spawnCampStealLoot(camp) {
         const level = Math.max(0, Math.floor(camp?.level ?? 0));
-        const salvage = {
+        const salvage = this.applyCampPayoutEffects({
             tech: 6 + level * 5,
             coin: 8 + level * 6,
             med: 2 + level * 2,
             ammo: 3 + level * 2
-        };
+        }, camp?.id);
         this.bank?.deposit?.(salvage);
         const shells = 3 + level * 4;
         this.bank?.addShells?.(shells);
@@ -15667,6 +15688,10 @@ export class ThreeGame {
         const landform = this.getChunkLandform(chunkX, chunkY);
         if (landform !== LANDFORMS.MAZE) {
             applyLandform(grid, landform, random);
+            const routeBlocks = this.getRunCardEffects().routeBlocks ?? {};
+            if (landform === LANDFORMS.CANYON && routeBlocks.landform === LANDFORMS.CANYON) {
+                applyCanyonCollapse(grid, random, routeBlocks.sealedGapCount ?? 0);
+            }
         }
         this.ensureChunkPortals(grid, chunkX, chunkY);
         if (landform === LANDFORMS.MAZE) {

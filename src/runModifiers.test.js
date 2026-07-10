@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     RUN_MODIFIER_CARDS,
+    applyCampPayoutEffects,
     createRunCardState,
     drawRunCards,
     getRunCardByKey,
@@ -72,5 +73,18 @@ describe('run modifier cards', () => {
     it('looks up individual card definitions', () => {
         expect(getRunCardByKey('egg_instability')?.effects.manifest.eggSeatRequiresNahl).toBe(true);
         expect(getRunCardByKey('missing')).toBeNull();
+    });
+
+    it('applies spore bloom medical payout only at Tallow', () => {
+        const effects = getRunCardByKey('spore_bloom')?.effects;
+
+        expect(applyCampPayoutEffects({ med: 2, tech: 1 }, { campId: 'camp_tallow', effects })).toEqual({
+            med: 4,
+            tech: 1
+        });
+        expect(applyCampPayoutEffects({ med: 2, tech: 1 }, { campId: 'camp_vesper', effects })).toEqual({
+            med: 2,
+            tech: 1
+        });
     });
 });
