@@ -11,6 +11,11 @@ Primary references:
 - [game-wide-review-and-solution-plan.md](game-wide-review-and-solution-plan.md)
 - [game-wide-review-questions-and-proposals.md](game-wide-review-questions-and-proposals.md)
 
+> **Update 2026-07-10 (evening):** all three wave-1 lanes shipped
+> (`f2f97de`, `9638feb`, `bbc286f`). The next assignment round is
+> [sprint-19-wave2-work.md](sprint-19-wave2-work.md) — asset factory,
+> unified skill tree, lore drops, achievements.
+
 ## Agent Assignments
 
 This plan is split into three parallel lanes, one per agent working this
