@@ -1598,7 +1598,13 @@ function refreshLastContractor() {
         const isCurrent = Boolean(box?.active) && index === 0;
         lines.push(`BLACK BOX <span class="ui-separator">//</span> ${cls} @ ${tier} <span class="ui-separator">//</span> ${isCurrent ? 'SIGNAL ACTIVE' : 'ARCHIVED'}`);
     }
-    el.innerHTML = `<div class="last-contractor-marquee">${lines.join(' <span class="ui-separator">///</span> ')}</div>`;
+    const marqueeContent = lines.join(' <span class="ui-separator">///</span> ');
+    el.innerHTML = `
+        <div class="last-contractor-marquee" aria-live="polite">
+          <span class="last-contractor-marquee__track">${marqueeContent}</span>
+          <span class="last-contractor-marquee__track" aria-hidden="true">${marqueeContent}</span>
+        </div>
+    `;
     el.classList.remove('hidden');
 }
 

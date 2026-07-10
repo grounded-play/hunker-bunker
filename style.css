@@ -834,11 +834,12 @@ body {
 /* Death-thread banner (doc 11 §4.D): a prior contractor's black box, at the base. */
 .last-contractor {
   position: relative;
-  flex: 0 0 calc(var(--vu) * 73);
-  width: calc(var(--vu) * 73);
+  flex: 1 1 calc(var(--vu) * 73);
+  width: min(calc(var(--vu) * 73), 100%);
   min-height: calc(var(--vu) * 7.6);
   height: auto;
   max-width: calc(var(--vu) * 73);
+  min-width: 0;
   box-sizing: border-box;
   align-self: flex-end;
   display: flex;
@@ -867,14 +868,24 @@ body {
   animation: none;
 }
 .last-contractor-marquee {
-  display: inline-block;
-  padding-left: 100%;
-  animation: last-contractor-marquee-scroll 15s linear infinite;
+  display: flex;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+  animation: last-contractor-marquee-scroll 20s linear infinite;
+  will-change: transform;
+}
+
+.last-contractor-marquee__track {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: max-content;
   white-space: nowrap;
 }
 @keyframes last-contractor-marquee-scroll {
   0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+  100% { transform: translateX(-50%); }
 }
 @keyframes last-contractor-pulse {
   0%, 100% { border-color: rgba(255, 184, 64, 0.42); border-left-color: var(--accent-primary); }
