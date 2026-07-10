@@ -938,7 +938,9 @@ export class DialogueManager {
         const prompt = this.tutorialPromptEl.cloneNode(true);
         prompt.removeAttribute('id');
         prompt.dataset.tutorialStackCard = 'true';
-        prompt.dataset.notificationPriority = '0';
+        // Keep tutorials in the same HUD hierarchy, but below the most urgent
+        // system/radio cards so they don't crowd out other on-screen text.
+        prompt.dataset.notificationPriority = '15';
         prompt.dataset.autoDismissMs = String(Math.max(3600, Math.min(7600, text.length * 45)));
         prompt.dataset.removeDelayMs = '220';
         prompt.classList.add('hud-stack-card');

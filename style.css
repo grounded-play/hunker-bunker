@@ -5089,6 +5089,7 @@ body.mission-intro-active #game-container canvas {
   --tutorial-glow: var(--accent-primary);
   --tutorial-glow-rgb: 255, 159, 28;
   width: 100%;
+  box-sizing: border-box;
   background: rgba(11, 13, 15, 0.92);
   border: 1.5px solid var(--tutorial-glow);
   border-radius: 8px;
@@ -5097,7 +5098,6 @@ body.mission-intro-active #game-container canvas {
   display: flex;
   align-items: center;
   gap: calc(var(--vu) * 1.8);
-  z-index: 12120;
   opacity: 0;
   transform: translateX(calc(var(--vu) * 6));
   transition: transform 300ms ease-out, opacity 220ms ease-out;
