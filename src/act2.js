@@ -444,7 +444,7 @@ function normalizeHive(raw = {}, site = ACT2_HIVE_SITES[0]) {
 
 function buildManifestFromNormalizedState(state) {
     const humans = state.camps
-        .filter((camp) => ['recruited'].includes(camp.status))
+        .filter((camp) => ['recruited', 'turned'].includes(camp.status))
         .map((camp) => camp.id);
     const aliens = state.hives
         .filter((hive) => hive.aboard || ['rescued', 'aboard'].includes(hive.status))

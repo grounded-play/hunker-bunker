@@ -44,4 +44,26 @@ describe('CaveRevealController', () => {
         const controller = new CaveRevealController({ arcManager, timing: { lineDelayMs: 0, blackoutMs: 0, teaseMs: 0 } });
         await expect(controller.start()).resolves.toBe(false);
     });
+
+    it('keeps the cinematic lock until the async reveal handoff finishes', async () => {
+        const arcManager = new ArcStateManager({ storage: memoryStorage() });
+        arcManager.forceState('cave_signal');
+        const steps = [];
+        const controller = new CaveRevealController({
+            arcManager,
+            dialogueManager: { openBriefTransmission: async () => {} },
+            setCinematicLock: (locked) => steps.push(locked ? 'lock' : 'unlock'),
+            triggerFade: async (onClosed) => onClosed(),
+            returnToTitle: async () => {
+                steps.push('handoff-start');
+                await Promise.resolve();
+                steps.push('handoff-end');
+            },
+            timing: { lineDelayMs: 0, blackoutMs: 0, teaseMs: 0 }
+        });
+
+        await controller.start({ classId: 'SCOUT' });
+
+        expect(steps).toEqual(['lock', 'handoff-start', 'handoff-end', 'unlock']);
+    });
 });

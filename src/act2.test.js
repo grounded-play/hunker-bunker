@@ -343,6 +343,19 @@ describe('Act 2 boarding manifest', () => {
         expect(manifest.valid).toBe(false);
         expect(manifest.invalidReasons).toContain('egg_unstable');
     });
+
+    it('counts turned camps against launch capacity', () => {
+        const manifest = buildAct2Manifest({
+            queenStatus: 'aboard',
+            eggsStatus: 'aboard',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, status: 'turned' })),
+            hives: []
+        });
+        expect(manifest.humans).toEqual(ACT2_CAMP_IDS);
+        expect(manifest.seatsUsed).toBe(7);
+        expect(manifest.valid).toBe(false);
+        expect(manifest.invalidReasons).toContain('seat_capacity_exceeded');
+    });
 });
 
 describe('camp support levels', () => {

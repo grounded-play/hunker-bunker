@@ -1863,14 +1863,19 @@ function resetRunToStartingState({
         }
 
         runStartTime = Date.now();
-        currentMission = assignMission(bankManager.getState());
+        const act2Run = isAct2RunActive();
+        currentMission = act2Run ? null : assignMission(bankManager.getState());
         currentRunModifier = pickRunModifier();
         _mothershipFiredTriggers.clear();
         _lastMothershipBroadcastAt = 0;
 
         resetPickupCounter();
         window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
-        window.game?.initMission?.(currentMission);
+        if (currentMission) {
+            window.game?.initMission?.(currentMission);
+        } else {
+            window.game?.clearMission?.();
+        }
         if (window.game) window.game.currentRunModifier = currentRunModifier;
         setSnailSpawnState(snailSpawnEnabled, { purgeExisting: purgeSnails });
         window.game?.setInputEnabled?.(false);
@@ -3653,12 +3658,29 @@ function playCutsceneVideo(base) {
 }
 
 // ── Act 2 run intro: the queen replaces the Mothership handshake ──
+function repairInterruptedCaveReveal() {
+    if (!ARC_PRELUDE_ENABLED || !arcManager) return null;
+    const arc = arcManager.getState();
+    if (arc.arcState === 'infected_blackout') {
+        return arcManager.forceState('hive_awakened_tease');
+    }
+    return arc;
+}
+
 function isAct2RunActive() {
     if (!ARC_PRELUDE_ENABLED || !arcManager || !act2Manager) return false;
-    return arcManager.getState().arcState === 'hive_awakened_tease';
+    return repairInterruptedCaveReveal()?.arcState === 'hive_awakened_tease';
+}
+
+function clearAct1MissionForAct2(game = window.game) {
+    currentMission = null;
+    game?.clearMission?.();
+    hideExtractionRing();
+    hideMissionProgressHUD();
 }
 
 async function runAct2IntroSequence(game, playerType) {
+    clearAct1MissionForAct2(game);
     const alreadyBegun = act2Manager.getState().begun;
     if (!alreadyBegun) act2Manager.begin();
 
@@ -4794,15 +4816,35 @@ function startCaveRevealSequence() {
     if (!caveRevealController.canStart()) return;
 
     const stats = window.game?.getRunStats?.() ?? {};
+    const arcSignals = arcManager?.getState?.().signals ?? {};
+    const deepestDepthTier = Math.max(
+        Number(arcSignals.deepestDepthTier) || 0,
+        Number(stats.deepestDepthTier ?? stats.depthTier ?? stats.depth) || 0
+    );
+    const snailsKilled = Math.max(
+        Number(arcSignals.snailsKilled) || 0,
+        Number(stats.snailsKilled ?? stats.killCount) || 0
+    );
+    const blackBoxesRecovered = Math.max(
+        Number(arcSignals.blackBoxesRecovered) || 0,
+        Number(stats.blackBoxesRecovered) || 0
+    );
+    const preludeSummary = {
+        ...stats,
+        ...arcSignals,
+        classType: window.game?.playerType ?? getSelectedHeroType(),
+        blackBoxesRecovered,
+        snailsKilled,
+        salvageBanked: stats.salvageBanked ?? stats.totalPickups ?? stats.salvage ?? 0,
+        salvage: stats.salvage ?? stats.totalPickups ?? stats.salvageBanked ?? 0,
+        deepestDepthTier
+    };
     // The cave scene video (public/cutscenes/cave-reveal.webm) plays first,
     // under cinematic lock; the controller then owns the text/blackout beats.
     void (async () => {
         window.game?.setCinematicLock?.(true);
         await playCutsceneVideo('cave-reveal');
-        await caveRevealController.start({
-            classType: window.game?.playerType ?? getSelectedHeroType(),
-            ...stats
-        });
+        await caveRevealController.start(preludeSummary);
     })();
 }
 
@@ -4932,11 +4974,11 @@ function renderCampChoice(detail = {}) {
         `;
         btn.addEventListener('click', () => {
             window.AudioManager?.play?.('ui_click', { volume: 0.45 });
+            closeCampChoiceModal();
             window.game?.resolveCampChoice?.(option.action, {
                 ...option,
                 campId: detail.campId
             });
-            closeCampChoiceModal();
         });
         campChoiceOptions.appendChild(btn);
     }

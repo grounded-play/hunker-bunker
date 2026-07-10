@@ -74,7 +74,7 @@ export class CaveRevealController {
             await wait(this.timing.teaseMs);
             this.arcManager?.evaluate?.(ARC_TRANSITION_EVENTS.BLACKOUT_COMPLETE);
             this.arcManager?.forceState?.('hive_awakened_tease');
-            this.returnToTitle?.({ corruptedTitleSting: true, inheritance });
+            await this.returnToTitle?.({ corruptedTitleSting: true, inheritance });
             return true;
         } finally {
             this.setCinematicLock?.(false);

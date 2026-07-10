@@ -791,6 +791,7 @@ export class ThreeGame {
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
         this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
         this.hadNearDeath = false;
+        this._blockedExtractionSignalFired = false;
         this.nightVision = false;
         this._initClassAbility();
 
@@ -7865,7 +7866,9 @@ export class ThreeGame {
             ? Math.max(0, Math.min(1, 1 - (this.weaponReloadTimer / WEAPON_RELOAD_DURATION)))
             : 0;
         const autoRefillInterval = this.getAmmoRefillInterval();
-        const autoRefillProgress = !this.weaponReloading && this.weaponClipAmmo < this.weaponClipSize
+        const autoRefillProgress = Number.isFinite(autoRefillInterval)
+            && !this.weaponReloading
+            && this.weaponClipAmmo < this.weaponClipSize
             ? Math.max(0, Math.min(1, (this.weaponAmmoRefillTimer ?? 0) / autoRefillInterval))
             : 0;
         window.dispatchEvent(new CustomEvent('weapon-clip-updated', {
@@ -8269,6 +8272,7 @@ export class ThreeGame {
             this.bunkerDirector?.reset();
             this._blackoutWaveTimer = 0;
             this._extractionLockdownFired = false;
+            this._blockedExtractionSignalFired = false;
             this._terminalEvent = null;
             this._terminalEventResolvedIds.clear();
             this.foundry?.reset?.();
@@ -8368,6 +8372,15 @@ export class ThreeGame {
             targetKills: mission.targetKills ?? 0,
             targetDepth: mission.targetDepth ?? 0
         };
+    }
+
+    clearMission() {
+        this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
+        this._extractionLockdownFired = false;
+        this._blockedExtractionSignalFired = false;
+        window.dispatchEvent(new CustomEvent('extraction-progress', {
+            detail: { progress: 0, active: false }
+        }));
     }
 
     handleExtraction({ skipElevator = false } = {}) {
@@ -9029,6 +9042,16 @@ export class ThreeGame {
             const uplink = this.getMothershipUplinkReadiness();
             if (!uplink.ready) {
                 this.missionState.extractionTimer = 0;
+                if (!this._blockedExtractionSignalFired) {
+                    this._blockedExtractionSignalFired = true;
+                    window.dispatchEvent(new CustomEvent('extraction-blocked', {
+                        detail: {
+                            missionType: this.missionState?.type ?? null,
+                            missionStatus: this.missionState?.status ?? null,
+                            uplink
+                        }
+                    }));
+                }
                 window.dispatchEvent(new CustomEvent('extraction-progress', {
                     detail: { progress: 0, active: false }
                 }));
@@ -10284,6 +10307,7 @@ export class ThreeGame {
 
     getAmmoRefillInterval() {
         const level = this.bank?.getWeaponUpgradeLevel?.('ammoRefill') ?? 0;
+        if (Math.floor(level) <= 0) return Number.POSITIVE_INFINITY;
         return Math.max(
             WEAPON_AMMO_REFILL_MIN_INTERVAL,
             WEAPON_AMMO_REFILL_INTERVAL - Math.max(0, Math.floor(level)) * WEAPON_AMMO_REFILL_INTERVAL_REDUCTION
@@ -10298,6 +10322,11 @@ export class ThreeGame {
         }
 
         const interval = this.getAmmoRefillInterval();
+        if (!Number.isFinite(interval)) {
+            this.weaponAmmoRefillTimer = 0;
+            this.emitWeaponClipState();
+            return;
+        }
         this.weaponAmmoRefillTimer = (this.weaponAmmoRefillTimer ?? 0) + delta;
         if (this.weaponAmmoRefillTimer < interval) {
             this.emitWeaponClipState();
