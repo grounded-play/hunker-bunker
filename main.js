@@ -3424,8 +3424,8 @@ const CLASS_INTRO_GIFS = Object.freeze({
     TANK: '/Tank.Intro.gif',
     ENGINEER: '/Eng.Intro.gif'
 });
-const CLASS_INTRO_GIF_DURATION_MS = 7300; // fallback when the GIF can't be parsed
-const CLASS_INTRO_GIF_LOOP_GUARD_MS = 500; // cut well before the first loop boundary
+const CLASS_INTRO_GIF_VISIBLE_MS = 7750;
+const CLASS_INTRO_GIF_LOOP_GUARD_MS = 250; // keep a safety margin before the loop boundary
 
 function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
@@ -3511,13 +3511,17 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         overlay.append(gifImg, skipHint);
         host.appendChild(overlay);
         const gifShownAt = performance.now();
-        gifTimer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_DURATION_MS);
+        gifTimer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_VISIBLE_MS);
 
         // Cut to the video right before the GIF would wrap to frame one.
         void getGifDurationMs(gifSrc).then((durationMs) => {
             if (settled || step !== 'gif' || !durationMs) return;
             const elapsed = performance.now() - gifShownAt;
-            const remaining = durationMs - CLASS_INTRO_GIF_LOOP_GUARD_MS - elapsed;
+            const safeVisibleMs = Math.min(
+                CLASS_INTRO_GIF_VISIBLE_MS,
+                Math.max(0, durationMs - CLASS_INTRO_GIF_LOOP_GUARD_MS)
+            );
+            const remaining = safeVisibleMs - elapsed;
             window.clearTimeout(gifTimer);
             gifTimer = window.setTimeout(startVideoStep, Math.max(0, remaining));
         });
