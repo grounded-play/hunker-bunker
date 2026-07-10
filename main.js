@@ -3355,8 +3355,16 @@ function warmClassIntroMedia(playerType = 'SCOUT') {
     warmCutsceneVideo(webmBase);
 }
 
+const CLASS_INTRO_GIFS = Object.freeze({
+    SCOUT: '/Scout.Intro.gif',
+    TANK: '/Tank.Intro.gif',
+    ENGINEER: '/Eng.Intro.gif'
+});
+const CLASS_INTRO_GIF_DURATION_MS = 8300;
+
 function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
     warmClassIntroMedia(playerType);
 
     return new Promise((resolve) => {
@@ -3370,10 +3378,17 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         skipHint.textContent = isTouchDevice() ? 'TAP TO SKIP' : 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
+        let step = 'gif'; // 'gif' → 'video' → done
+        let gifTimer = null;
         let guardTimer = null;
         let videoElement = null;
+        let gifImg = null;
 
         const clearTimers = () => {
+            if (gifTimer) {
+                window.clearTimeout(gifTimer);
+                gifTimer = null;
+            }
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
@@ -3383,6 +3398,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         function cleanupAndResolve() {
             if (settled) return;
             settled = true;
+            step = 'done';
             clearTimers();
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointerUp);
@@ -3396,17 +3412,42 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         function onKey(event) {
             event.preventDefault();
-            cleanupAndResolve();
+            if (step === 'gif') startVideoStep();
+            else cleanupAndResolve();
         }
 
         function onPointerUp(event) {
             event.preventDefault();
-            cleanupAndResolve();
+            if (step === 'gif') startVideoStep();
+            else cleanupAndResolve();
         }
 
         window.addEventListener('keydown', onKey);
         overlay.addEventListener('pointerup', onPointerUp);
 
+        // ── Step 1: the class intro GIF, then the launch WebM ──
+        function startVideoStep() {
+            if (settled || step === 'video') return;
+            step = 'video';
+            if (gifTimer) {
+                window.clearTimeout(gifTimer);
+                gifTimer = null;
+            }
+            gifImg?.remove();
+            buildVideo();
+        }
+
+        gifImg = document.createElement('img');
+        gifImg.className = 'class-intro-video';
+        gifImg.style.objectFit = 'cover';
+        gifImg.alt = '';
+        gifImg.src = gifSrc;
+        gifImg.addEventListener('error', startVideoStep, { once: true });
+        overlay.append(gifImg, skipHint);
+        host.appendChild(overlay);
+        gifTimer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_DURATION_MS);
+
+        function buildVideo() {
         videoElement = document.createElement('video');
         videoElement.className = 'class-intro-video';
         videoElement.style.opacity = '0';
@@ -3431,8 +3472,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             mp4Fallback.type = 'video/mp4';
             videoElement.append(mp4Fallback);
         }
-        overlay.append(videoElement, skipHint);
-        host.appendChild(overlay);
+        overlay.insertBefore(videoElement, skipHint);
 
         guardTimer = window.setTimeout(() => {
             if (videoElement.readyState < 2) cleanupAndResolve();
@@ -3452,6 +3492,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         videoElement.addEventListener('error', cleanupAndResolve);
 
         videoElement.play().catch(cleanupAndResolve);
+        }
     });
 }
 

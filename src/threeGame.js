@@ -1912,7 +1912,10 @@ export class ThreeGame {
                 maxHp: SHIP_MAX_HP,
                 hp: SHIP_MAX_HP
             }
-        ].filter(ship => ship.type === this.playerType);
+        ];
+        // All three wrecks are defined; updateCrashedShipsVisibility shows
+        // only the active class's ship (filtering here broke class switching:
+        // picking a different hero after construction left NO ship at all).
 
 
         const shadowMat = new THREE.MeshBasicMaterial({
