@@ -114,6 +114,8 @@ export class HiveSite {
         this.alienDrones = [];
 
         this.color = ALIEN_COLORS[id] ?? 0x8cff96;
+        this.eggsAudio = null;
+        this.wasHurt = false;
     }
 
     createAlienDrone({ angle = 0, radius = 1.6, scale = 1 } = {}) {
@@ -248,6 +250,51 @@ export class HiveSite {
         this.signalColumn.position.y = HIVE_SIGNAL_HEIGHT / 2;
         group.add(this.signalColumn);
 
+        // Load cave prop textures for hive surrounds
+        this.texEggsIntact = loadAlienKeyedTexture('/prop_cave_eggs_intact.png', 15);
+        this.texEggsHatched = loadAlienKeyedTexture('/prop_cave_eggs_hatched.png', 15);
+        this.texSpores = loadAlienKeyedTexture('/prop_cave_spores.png', 15);
+        this.texWebs = loadAlienKeyedTexture('/prop_cave_webs.png', 15);
+        this.texWounded = loadAlienKeyedTexture('/prop_cave_hive_wounded.png', 15);
+
+        // Override default 4x4 wrap/repeat logic to make static props render full size
+        [this.texEggsIntact, this.texEggsHatched, this.texSpores, this.texWebs, this.texWounded].forEach(t => {
+            t.repeat.set(1, 1);
+        });
+
+        this.propSprites = {};
+
+        // Eggs Cluster (intact by default, swaps to hatched on extraction/wound)
+        const matEggs = new THREE.SpriteMaterial({ map: this.texEggsIntact, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteEggs = new THREE.Sprite(matEggs);
+        spriteEggs.position.set(-1.6, 0.4, -0.6);
+        spriteEggs.scale.set(0.8, 0.8, 1);
+        group.add(spriteEggs);
+        this.propSprites.eggs = spriteEggs;
+
+        // Spores
+        const matSpores = new THREE.SpriteMaterial({ map: this.texSpores, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteSpores = new THREE.Sprite(matSpores);
+        spriteSpores.position.set(1.4, 0.5, 1.2);
+        spriteSpores.scale.set(0.9, 0.9, 1);
+        group.add(spriteSpores);
+
+        // Resin Webs
+        const matWebs = new THREE.SpriteMaterial({ map: this.texWebs, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteWebs = new THREE.Sprite(matWebs);
+        spriteWebs.position.set(-1.1, 0.6, 1.3);
+        spriteWebs.scale.set(1.1, 0.9, 1);
+        group.add(spriteWebs);
+
+        // Wounded membrane leak (only visible if mined or wounded)
+        const matWounded = new THREE.SpriteMaterial({ map: this.texWounded, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteWounded = new THREE.Sprite(matWounded);
+        spriteWounded.position.set(0.9, 0.4, -1.2);
+        spriteWounded.scale.set(1.0, 0.8, 1);
+        spriteWounded.visible = false;
+        group.add(spriteWounded);
+        this.propSprites.wounded = spriteWounded;
+
         this.scene.add(group);
         this.group = group;
         this.built = true;
@@ -306,6 +353,47 @@ export class HiveSite {
                 if (drone.mesh) drone.mesh.visible = true;
             }
         }
+        this.updatePropVisuals();
+    }
+
+    updatePropVisuals() {
+        if (!this.propSprites) return;
+        const isHurt = this.status === 'wounded' || this.status === 'mined';
+        const dead = ['slain', 'abandoned', 'expired_by_cure', 'queen_consumed'].includes(this.status);
+        const audio = typeof window !== 'undefined' ? window.AudioManager : null;
+
+        if (this.propSprites.eggs) {
+            this.propSprites.eggs.material.map = isHurt ? this.texEggsHatched : this.texEggsIntact;
+            this.propSprites.eggs.material.needsUpdate = true;
+            this.propSprites.eggs.visible = !dead;
+        }
+
+        if (this.propSprites.wounded) {
+            this.propSprites.wounded.visible = isHurt && !dead;
+        }
+
+        // --- AUDIO WIRING ---
+        if (this.revealed) {
+            if (!dead) {
+                if (!this.eggsAudio) {
+                    this.eggsAudio = audio?.play('hive_eggs_hum', { loop: true, volume: 0.07, bus: 'world' });
+                }
+            } else {
+                if (this.eggsAudio) {
+                    try { this.eggsAudio.source.stop(); } catch (err) { void err; }
+                    this.eggsAudio = null;
+                }
+            }
+
+            if (isHurt && !dead) {
+                if (!this.wasHurt) {
+                    this.wasHurt = true;
+                    audio?.play('hive_eggs_hatch', { volume: 0.45, bus: 'sfx' });
+                }
+            } else {
+                this.wasHurt = false;
+            }
+        }
     }
 
     setExtractionLevel(level) {
@@ -319,6 +407,13 @@ export class HiveSite {
     update(delta) {
         if (!this.built || !this.revealed) return;
         this.elapsed += delta;
+
+        // Occasionally play dripping sounds if wounded/mined
+        const isHurt = this.status === 'wounded' || this.status === 'mined';
+        const audio = typeof window !== 'undefined' ? window.AudioManager : null;
+        if (isHurt && Math.random() < 0.0028) {
+            audio?.play('hive_wounded_drip', { volume: 0.22, bus: 'world' });
+        }
 
         // Pulse core bioluminescence
         const pulse = 0.45 + 0.15 * Math.sin(this.elapsed * 2.8);
@@ -410,6 +505,7 @@ export class HiveSite {
             this.setStatus(worldStatus);
             this.status = record.status;
         }
+        this.updatePropVisuals();
     }
 
     get isRevealed() { return this.revealed; }
@@ -428,5 +524,10 @@ export class HiveSite {
     reset() {
         this.revealed = false;
         if (this.group) this.group.visible = false;
+        if (this.eggsAudio) {
+            try { this.eggsAudio.source.stop(); } catch (err) { void err; }
+            this.eggsAudio = null;
+        }
+        this.wasHurt = false;
     }
 }

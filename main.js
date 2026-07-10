@@ -928,6 +928,7 @@ window.addEventListener('weapon-upgraded', () => {
 });
 
 window.addEventListener('skill-unlocked', () => {
+    window.AudioManager?.play?.('fx_levelup', { volume: 0.38, bus: 'sfx' });
     syncAbilityPanelLabel();
     syncTouchMoveControlVisibility();
 });

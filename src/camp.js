@@ -192,6 +192,8 @@ export class SurvivorCamp {
         this.npcAction = 'idle';
         this.npcFacingRow = 0;
         this.campWorkers = [];
+        this.fireAudio = null;
+        this.wasLockedDown = false;
     }
 
     createCampWorkerFigure(color = 0xffe9b0, scale = 1) {
@@ -398,6 +400,99 @@ export class SurvivorCamp {
 
         this.createCampWorkers(group);
 
+        // Load prop textures
+        this.texCookfireLit = loadKeyedTexture('/prop_camp_cookfire_lit.png', 15, tex => tex.repeat.set(1, 1));
+        this.texCookfireDoused = loadKeyedTexture('/prop_camp_cookfire_doused.png', 15, tex => tex.repeat.set(1, 1));
+        this.texCrates = loadKeyedTexture('/prop_camp_crates.png', 15, tex => tex.repeat.set(1, 1));
+        this.texCratesChained = loadKeyedTexture('/prop_camp_crates_chained.png', 15, tex => tex.repeat.set(1, 1));
+        this.texPlacard = loadKeyedTexture('/prop_camp_warning_placard.png', 15, tex => tex.repeat.set(1, 1));
+        this.texShutter = loadKeyedTexture('/prop_camp_shutter_lockdown.png', 15, tex => tex.repeat.set(1, 1));
+        this.texLaundry = loadKeyedTexture('/prop_camp_laundry.png', 15, tex => tex.repeat.set(1, 1));
+        this.texBedrolls = loadKeyedTexture('/prop_camp_bedrolls.png', 15, tex => tex.repeat.set(1, 1));
+        this.texGraveFresh = loadKeyedTexture('/prop_camp_grave_fresh.png', 15, tex => tex.repeat.set(1, 1));
+        this.texGraveOld = loadKeyedTexture('/prop_camp_grave_old.png', 15, tex => tex.repeat.set(1, 1));
+        this.texSandbags = loadKeyedTexture('/prop_camp_sandbags.png', 15, tex => tex.repeat.set(1, 1));
+
+        this.propSprites = {};
+
+        // Cookfire Sprite
+        const matFire = new THREE.SpriteMaterial({ map: this.texCookfireLit, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteFire = new THREE.Sprite(matFire);
+        spriteFire.position.set(0.2, 0.4, 0.1);
+        spriteFire.scale.set(0.85, 0.85, 1);
+        group.add(spriteFire);
+        this.propSprites.cookfire = spriteFire;
+
+        // Crates Sprite
+        const matCrates = new THREE.SpriteMaterial({ map: this.texCrates, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteCrates = new THREE.Sprite(matCrates);
+        spriteCrates.position.set(-1.1, 0.4, 1.1);
+        spriteCrates.scale.set(0.8, 0.8, 1);
+        group.add(spriteCrates);
+        this.propSprites.crates = spriteCrates;
+
+        // Placard Sprite
+        const matPlacard = new THREE.SpriteMaterial({ map: this.texPlacard, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spritePlacard = new THREE.Sprite(matPlacard);
+        spritePlacard.position.set(0, 0.4, -2.4);
+        spritePlacard.scale.set(0.7, 0.7, 1);
+        spritePlacard.visible = false;
+        group.add(spritePlacard);
+        this.propSprites.placard = spritePlacard;
+
+        // Shutter Sprite
+        const matShutter = new THREE.SpriteMaterial({ map: this.texShutter, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteShutter = new THREE.Sprite(matShutter);
+        spriteShutter.position.set(0.8, 0.5, -0.9);
+        spriteShutter.scale.set(0.8, 0.8, 1);
+        spriteShutter.visible = false;
+        group.add(spriteShutter);
+        this.propSprites.shutter = spriteShutter;
+
+        // Laundry Sprite
+        const matLaundry = new THREE.SpriteMaterial({ map: this.texLaundry, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteLaundry = new THREE.Sprite(matLaundry);
+        spriteLaundry.position.set(-1.4, 0.5, -0.8);
+        spriteLaundry.scale.set(1.0, 1.0, 1);
+        group.add(spriteLaundry);
+
+        // Bedrolls Sprite
+        const matBedrolls = new THREE.SpriteMaterial({ map: this.texBedrolls, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteBedrolls = new THREE.Sprite(matBedrolls);
+        spriteBedrolls.position.set(1.3, 0.3, 0.4);
+        spriteBedrolls.scale.set(0.6, 0.6, 1);
+        group.add(spriteBedrolls);
+
+        // Grave Sprite
+        const useOldGrave = this.id === 'camp_vesper';
+        const matGrave = new THREE.SpriteMaterial({
+            map: useOldGrave ? this.texGraveOld : this.texGraveFresh,
+            transparent: true,
+            alphaTest: 0.05,
+            depthWrite: false
+        });
+        const spriteGrave = new THREE.Sprite(matGrave);
+        spriteGrave.position.set(-2.3, 0.4, 0.2);
+        spriteGrave.scale.set(0.7, 0.7, 1);
+        group.add(spriteGrave);
+
+        // Sandbags Sprites (level-based)
+        this.sandbagSprites = [];
+        const sandbagOffsets = [
+            { x: 1.8, z: -1.8 },
+            { x: -1.8, z: -1.8 },
+            { x: 2.2, z: 0 }
+        ];
+        for (let i = 0; i < 3; i++) {
+            const matSandbags = new THREE.SpriteMaterial({ map: this.texSandbags, transparent: true, alphaTest: 0.05, depthWrite: false });
+            const spriteSandbags = new THREE.Sprite(matSandbags);
+            spriteSandbags.position.set(sandbagOffsets[i].x, 0.3, sandbagOffsets[i].z);
+            spriteSandbags.scale.set(0.75, 0.75, 1);
+            spriteSandbags.visible = false;
+            group.add(spriteSandbags);
+            this.sandbagSprites.push(spriteSandbags);
+        }
+
         group.visible = false;
         this.scene.add(group);
         this.group = group;
@@ -417,12 +512,12 @@ export class SurvivorCamp {
         this.suspicion = Math.max(0, Math.min(100, Math.floor(Number(suspicion) || 0)));
         const lockdown = this.isLockedDown;
         if (this.lockdownStrobe) this.lockdownStrobe.visible = lockdown;
-        // Culled camps keep their charred barricades — don't repaint the ash.
         if (!this.destroyed) {
             for (const wall of this.barricades) {
                 wall.material.color.set(lockdown ? 0x7a3026 : 0x55606a);
             }
         }
+        this.updatePropVisuals();
     }
 
     get isLockedDown() {
@@ -436,6 +531,7 @@ export class SurvivorCamp {
         if (this.signalColumn) {
             this.signalColumn.visible = !this.discovered && !this.destroyed;
         }
+        this.updatePropVisuals();
     }
 
     setAided(aided = true) {
@@ -445,6 +541,7 @@ export class SurvivorCamp {
             if (this.beaconMat) this.beaconMat.color.set(0x9dffb0);
             this.beacon?.color.set(0x9dffb0);
         }
+        this.updatePropVisuals();
     }
 
     // Act 1 support level: each level rings the camp with barricade segments
@@ -508,6 +605,7 @@ export class SurvivorCamp {
                 cooldown: 1 + Math.random() * 2
             });
         }
+        this.updatePropVisuals();
     }
 
     // World position of a turret.
@@ -540,6 +638,63 @@ export class SurvivorCamp {
         turret.tipMat?.color.set(0x2a2523);
         turret.group.rotation.x = 0.85;
         turret.group.position.y = -0.12;
+    }
+
+    updatePropVisuals() {
+        if (!this.propSprites) return;
+        const lit = this.status !== 'culled';
+        const lockdown = this.isLockedDown;
+        const audio = typeof window !== 'undefined' ? window.AudioManager : null;
+
+        if (this.propSprites.cookfire) {
+            this.propSprites.cookfire.material.map = lit ? this.texCookfireLit : this.texCookfireDoused;
+            this.propSprites.cookfire.material.needsUpdate = true;
+        }
+
+        if (this.propSprites.crates) {
+            this.propSprites.crates.material.map = (lockdown && lit) ? this.texCratesChained : this.texCrates;
+            this.propSprites.crates.material.needsUpdate = true;
+            this.propSprites.crates.visible = lit;
+        }
+
+        if (this.propSprites.placard) {
+            this.propSprites.placard.visible = lockdown && lit;
+        }
+
+        if (this.propSprites.shutter) {
+            this.propSprites.shutter.visible = lockdown && lit;
+        }
+
+        if (this.sandbagSprites) {
+            this.sandbagSprites.forEach((sprite, i) => {
+                sprite.visible = this.level > i && lit;
+            });
+        }
+
+        // --- AUDIO WIRING ---
+        if (this.revealed) {
+            if (lit) {
+                if (!this.fireAudio) {
+                    this.fireAudio = audio?.play('camp_fire_loop', { loop: true, volume: 0.08, bus: 'world' });
+                }
+            } else {
+                if (this.fireAudio) {
+                    try { this.fireAudio.source.stop(); } catch (err) { void err; }
+                    this.fireAudio = null;
+                    audio?.play('camp_fire_douse', { volume: 0.35, bus: 'world' });
+                }
+            }
+
+            if (lockdown && lit) {
+                if (!this.wasLockedDown) {
+                    this.wasLockedDown = true;
+                    audio?.play('camp_lockdown_alarm', { volume: 0.28, bus: 'sfx' });
+                    audio?.play('camp_lockdown_chains', { volume: 0.38, bus: 'sfx' });
+                }
+            } else {
+                this.wasLockedDown = false;
+            }
+        }
     }
 
     setStatus(status = 'alive') {
@@ -605,6 +760,7 @@ export class SurvivorCamp {
             }
             this.npcSprite.scale.set(useBossSheet ? 1.85 : 1.5, useBossSheet ? 1.85 : 1.5, 1.0);
         }
+        this.updatePropVisuals();
     }
 
     setDestroyed(destroyed = true) {
@@ -645,12 +801,18 @@ export class SurvivorCamp {
         for (const turret of this.turrets) this.setTurretDestroyed(turret);
         // The vessel section survives the cull — it is the whole point.
         if (this.section) this.section.visible = this.aided;
+        this.updatePropVisuals();
     }
 
     reset() {
         this.revealed = false;
         this.elapsed = 0;
         if (this.group) this.group.visible = false;
+        if (this.fireAudio) {
+            try { this.fireAudio.source.stop(); } catch (err) { void err; }
+            this.fireAudio = null;
+        }
+        this.wasLockedDown = false;
     }
 
     get isRevealed() { return this.revealed; }

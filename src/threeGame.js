@@ -5,6 +5,7 @@ import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
 import { SurvivorCamp } from './camp.js';
+import { KeyedVideoSprite } from './KeyedVideoSprite.js';
 import {
     ACT2_CAMP_LABELS,
     ACT2_CAMP_MAX_LEVEL,
@@ -8981,6 +8982,39 @@ export class ThreeGame {
             detail: { ability: abilityKey, playerType: this.playerType }
         }));
         window.AudioManager?.play('ui_boot', { volume: 0.42, playbackRate: abilityKey === 'fortify' ? 0.72 : 1.15, bus: 'sfx' });
+
+        if (abilityKey === 'sprint') {
+            window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
+            const videoSprite = new KeyedVideoSprite('/fx_scout_sprint.webm', {
+                width: 2.2,
+                height: 2.2,
+                threshold: 0.05,
+                edgeSoftness: 0.05,
+                loop: false
+            });
+            const spriteObj = videoSprite.getSprite();
+            if (spriteObj && this.player) {
+                spriteObj.position.copy(this.player.position);
+                spriteObj.position.y = 0.55;
+                this.scene.add(spriteObj);
+                this.transientEffects.push({
+                    videoSprite,
+                    spriteObj,
+                    age: 0,
+                    maxAge: 1.0,
+                    update(dt) {
+                        this.age += dt;
+                    },
+                    dispose() {
+                        videoSprite.dispose();
+                    }
+                });
+            }
+        } else if (abilityKey === 'fortify') {
+            window.AudioManager?.play('fx_tank_shockwave', { volume: 0.55, bus: 'sfx' });
+        } else if (abilityKey === 'overclock') {
+            window.AudioManager?.play('fx_engineer_turret', { volume: 0.48, bus: 'sfx' });
+        }
     }
 
     updateClassAbility(delta) {
