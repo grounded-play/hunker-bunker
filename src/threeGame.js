@@ -27,8 +27,12 @@ import { getDialogueLine } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { BunkerDirector } from './director.js';
+import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
-import { LANDFORMS, pickLandform, applyLandform, connectPortalsInward } from './landforms.js';
+import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward } from './landforms.js';
+import { buildUnifiedSkillTree, getBranchConnectors, TREE_BRANCHES } from './skillTree.js';
+import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound } from './loreDrops.js';
+
 
 const PLAYER_COLORS = {
     SCOUT: 0x7dff5a,
@@ -843,6 +847,11 @@ export class ThreeGame {
         // Ambient civilians wandering near living camps. Scene-attached like
         // corpses — never in the scatter registries, which rebuild each frame.
         this.campCivilians = [];
+        // Findable lore drops (corpse pattern: scene-attached, own array).
+        // Keyed spawn sites remember what they offered so a drop appears at
+        // most once per site per run — and never again once collected.
+        this.loreDrops = [];
+        this._loreDropSitesSpawned = new Set();
         // Hive swarm sites: the alien mirror of the camps.
         this.hives = [];
         this._hiveSitesReady = false;
@@ -3565,6 +3574,7 @@ export class ThreeGame {
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
         this.updateCorpses(delta);
+        this.updateLoreDrops(delta);
         this.updateBuildSiteBeacon(now);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
@@ -5157,11 +5167,11 @@ export class ThreeGame {
         for (const cardConfig of GOAL_CARD_CONFIGS) {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
-        const skillsMatrix = document.getElementById('skills-upgrade-matrix');
-        if (skillsMatrix) this.mountUpgradeSectionsInSkillsTab(ship);
-        else {
-            this.renderTier2Section(ship, bankState);
-            this.renderWeaponsSection(ship, bankState);
+        // The tier-2 and weapons card sections are retired: the Bunker Tree
+        // (skills tab) renders those systems as branches now. The sections
+        // stay in the DOM so nothing dangles, but never show again.
+        for (const id of ['tier2-section', 'weapons-section']) {
+            document.getElementById(id)?.classList.add('hidden');
         }
         this.renderTerminalEventPanel();
 
@@ -5529,60 +5539,27 @@ export class ThreeGame {
         }
     }
 
-    getConnectorLine(row, col, playerType) {
-        let parentUnlocked = false;
-        let type = ''; // 'down-left' or 'down-right'
-        
-        const tree = CLASS_SKILL_TREES[playerType] || [];
-
-        if (row === 2) {
-            // Parent is node at (1,3)
-            const parent = tree.find(n => n.row === 1 && n.col === 3);
-            parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
-            if (col === 2) type = 'down-left';
-            else if (col === 4) type = 'down-right';
-        } else if (row === 4) {
-            if (col === 2) {
-                // Parent is (3,1)
-                const parent = tree.find(n => n.row === 3 && n.col === 1);
-                parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
-                type = 'down-right';
-            } else if (col === 4) {
-                // Parent is (3,5)
-                const parent = tree.find(n => n.row === 3 && n.col === 5);
-                parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
-                type = 'down-left';
-            }
-        } else if (row === 6) {
-            // Parent is (5,3)
-            const parent = tree.find(n => n.row === 5 && n.col === 3);
-            parentUnlocked = parent ? this.bank.isSkillUnlocked(parent.id) : false;
-            if (col === 2) type = 'down-left';
-            else if (col === 4) type = 'down-right';
-        }
-        
-        if (!type) return '';
-        
+    // Generic connector cell for the Bunker Tree: shape comes from the
+    // adapter's grid geometry (getBranchConnectors), color from whether the
+    // parent node is already unlocked.
+    buildConnectorCell(connector, parentUnlocked) {
         const strokeColor = parentUnlocked ? '#38bdf8' : 'rgba(255, 159, 28, 0.25)';
         const strokeWidth = parentUnlocked ? 2.5 : 1.5;
-        
-        const lineSvg = type === 'down-left'
-            ? `<svg class="skill-line-svg"><line class="${parentUnlocked ? 'unlocked-flow' : ''}" x1="100%" y1="0%" x2="0%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`
-            : `<svg class="skill-line-svg"><line class="${parentUnlocked ? 'unlocked-flow' : ''}" x1="0%" y1="0%" x2="100%" y2="100%" stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg>`;
-        
-        return `<div class="skill-line-cell">${lineSvg}</div>`;
-    }
-
-    mountUpgradeSectionsInSkillsTab(ship) {
-        const matrix = document.getElementById('skills-upgrade-matrix');
-        if (!matrix) return;
-        for (const id of ['tier2-section', 'weapons-section']) {
-            const section = document.getElementById(id);
-            if (section && section.parentElement !== matrix) matrix.appendChild(section);
+        const flowClass = parentUnlocked ? 'unlocked-flow' : '';
+        let line;
+        if (connector.type === 'down-left') {
+            line = `x1="100%" y1="0%" x2="0%" y2="100%"`;
+        } else if (connector.type === 'down-right') {
+            line = `x1="0%" y1="0%" x2="100%" y2="100%"`;
+        } else {
+            line = `x1="50%" y1="0%" x2="50%" y2="100%"`;
         }
-        const bankState = this.bank.getState();
-        this.renderTier2Section(ship, bankState);
-        this.renderWeaponsSection(ship, bankState);
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `<div class="skill-line-cell"><svg class="skill-line-svg"><line class="${flowClass}" ${line} stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg></div>`;
+        const cell = wrapper.firstChild;
+        cell.style.gridRow = String(connector.row);
+        cell.style.gridColumn = String(connector.col);
+        return cell;
     }
 
     getSkillGateText(node = {}) {
@@ -5649,104 +5626,218 @@ export class ThreeGame {
         };
     }
 
-    renderSkillsTree(ship) {
-        this.mountUpgradeSectionsInSkillsTab(ship);
-        const gridContainer = document.getElementById('skills-tree-grid');
-        const countEl = document.getElementById('skills-unlocked-count');
-        if (!gridContainer) return;
-
-        gridContainer.innerHTML = '';
-
-        const progression = this.getProgressionStats(ship);
-        const playerClass = CLASS_SKILL_TREES[progression.playerClass]
-            ? progression.playerClass
-            : String(this.playerType ?? 'SCOUT').toUpperCase();
-        const tree = CLASS_SKILL_TREES[playerClass] ?? [];
-        if (countEl) {
-            countEl.textContent = `${playerClass} SKILLS: ${progression.classUnlocked}/${progression.classTotal} (${progression.classReady} READY) | SYSTEM: ${progression.systemUnlocked}/${progression.systemTotal} (${progression.systemReady} READY) | COMBAT: ${progression.combatUnlocked}/${progression.combatTotal} (${progression.combatReady} READY) | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+    // Resolve a Bunker Tree node's live state through the SAME bank methods
+    // the retired card surfaces used — the adapter carries structure only,
+    // so unlock/afford behavior is provably unchanged.
+    getUnifiedNodeState(node, bankState) {
+        const kind = node.purchase.kind;
+        if (kind === 'skill') {
+            const unlocked = this.bank.isSkillUnlocked(node.id);
+            const available = !unlocked && this.bank.canUnlockSkill(node.id, buildUnifiedSkillTree({ playerClass: this.playerType }).playerClass);
+            return {
+                unlocked,
+                available,
+                level: unlocked ? 1 : 0,
+                maxLevel: 1,
+                gateText: unlocked ? '' : this.getSkillGateText(node),
+                costText: `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`,
+                desc: node.desc
+            };
         }
-
-        if (tree.length === 0) {
-            const emptyState = document.createElement('div');
-            emptyState.className = 'skills-tree-empty';
-            emptyState.textContent = 'CLASS SKILL DATA UNAVAILABLE. REOPEN THE TERMINAL TO RETRY.';
-            gridContainer.appendChild(emptyState);
-            return;
+        if (kind === 'weapon') {
+            const level = Math.max(0, Math.floor(Number(bankState?.weaponUpgrades?.[node.purchase.key]) || 0));
+            const maxed = level >= node.maxLevel;
+            const nextCost = maxed ? null : node.costsPerLevel?.[level];
+            return {
+                unlocked: maxed,
+                available: !maxed && this.bank.canAffordShells(shellPriceOf(nextCost)),
+                level,
+                maxLevel: node.maxLevel,
+                gateText: '',
+                costText: maxed ? 'MAXED' : `COST: ◈ ${shellPriceOf(nextCost)} SHELLS`,
+                desc: maxed ? node.descPerLevel?.[node.maxLevel - 1] ?? node.desc : `NEXT: ${node.descPerLevel?.[level] ?? node.desc}`
+            };
         }
+        if (kind === 'o2gen') {
+            const level = this.bank.getO2GeneratorLevel();
+            const maxed = level >= node.maxLevel;
+            const nextCost = maxed ? null : node.costsPerLevel?.[level];
+            return {
+                unlocked: maxed,
+                available: !maxed && this.bank.canAfford(this.getEffectiveCost(nextCost ?? {})),
+                level,
+                maxLevel: node.maxLevel,
+                gateText: '',
+                costText: maxed ? 'MAXED' : `COST: ${this.formatResourceCost(this.getEffectiveCost(nextCost ?? {}))}`,
+                desc: node.desc
+            };
+        }
+        if (kind === 'goal') {
+            const unlocks = bankState?.unlocks ?? {};
+            const goalKey = node.purchase.key;
+            const built = Boolean(unlocks[goalKey]);
+            const level = built ? (bankState?.[`${goalKey}Level`] ?? 1) : 0;
+            const maxed = built && (node.maxLevel < 2 || level >= 2);
+            const prereqMet = !node.purchase.prereqKey || Boolean(unlocks[node.purchase.prereqKey]);
+            const nextCost = !built ? node.cost : (maxed ? null : node.level2Cost);
+            const available = !maxed && prereqMet
+                && (!built ? this.bank.canAfford(this.getEffectiveCost(nextCost ?? {})) : this.bank.canUpgradeGoal(goalKey));
+            return {
+                unlocked: maxed,
+                available,
+                level,
+                maxLevel: node.maxLevel,
+                gateText: prereqMet ? '' : `REQUIRES ${node.prereqs[0]?.replace('goal_', '').toUpperCase() ?? 'PRIOR SITE'}`,
+                costText: maxed ? 'ONLINE' : `COST: ${this.formatResourceCost(this.getEffectiveCost(nextCost ?? {}))}`,
+                desc: node.desc
+            };
+        }
+        // tier2
+        const unlocked = Boolean(bankState?.tier2Unlocks?.[node.purchase.key]);
+        const prereqMet = !node.prereqs.length || Boolean(bankState?.unlocks?.[node.prereqs[0].replace('goal_', '')]);
+        return {
+            unlocked,
+            available: !unlocked && this.bank.canUnlockTier2(node.purchase.key),
+            level: unlocked ? 1 : 0,
+            maxLevel: 1,
+            gateText: unlocked || prereqMet ? '' : `REQUIRES ${node.prereqs[0].replace('goal_', '').toUpperCase()}`,
+            costText: `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`,
+            desc: node.desc
+        };
+    }
 
-        for (let row = 1; row <= 7; row++) {
-            for (let col = 1; col <= 5; col++) {
-                const node = tree.find(n => n.row === row && n.col === col);
-                if (node) {
-                    const isUnlocked = this.bank.isSkillUnlocked(node.id);
-                    const isAvailable = !isUnlocked && this.bank.canUnlockSkill(node.id, playerClass);
-                    const state = isUnlocked ? 'unlocked' : (isAvailable ? 'available' : 'locked');
-
-                    const card = document.createElement('div');
-                    card.className = `skill-node-card node-state--${state}`;
-                    card.style.gridRow = String(row);
-                    card.style.gridColumn = String(col);
-
-                    const header = document.createElement('div');
-                    header.className = 'skill-node-header';
-                    const label = document.createElement('span');
-                    label.textContent = node.label;
-                    const status = document.createElement('span');
-                    status.className = 'skill-node-status';
-                    status.textContent = isUnlocked ? '[UNLOCKED]' : (isAvailable ? '[AVAILABLE]' : '[LOCKED]');
-                    header.appendChild(label);
-                    header.appendChild(status);
-                    card.appendChild(header);
-
-                    const desc = document.createElement('div');
-                    desc.className = 'skill-node-desc';
-                    desc.textContent = node.desc;
-                    card.appendChild(desc);
-
-                    const costEl = document.createElement('div');
-                    costEl.className = 'skill-node-cost';
-                    const gateText = this.getSkillGateText(node);
-                    costEl.textContent = isUnlocked ? 'COMPLETED' : gateText || `COST: ◈ ${shellPriceOf(node.cost)} SHELLS`;
-                    card.appendChild(costEl);
-
-                    if (isAvailable) {
-                        const buyBtn = document.createElement('button');
-                        buyBtn.className = 'skill-node-btn';
-                        buyBtn.textContent = 'UNLOCK';
-                        buyBtn.onclick = (e) => {
-                            e.stopPropagation();
-                            const success = this.bank.unlockSkill(node.id, playerClass);
-                            if (success) {
-                                window.AudioManager?.play('ui_upgrade_weapon', { volume: 0.6 });
-                                this.syncPersistentUpgrades();
-                                this.updatePlayerType(this.playerType);
-                                if (window.syncAbilityPanelLabel) window.syncAbilityPanelLabel();
-                                this.renderSkillsTree(ship);
-                                this.renderConsoleBanking(ship);
-                            } else {
-                                window.AudioManager?.play('ui_error', { volume: 0.5 });
-                            }
-                        };
-                        card.appendChild(buyBtn);
-                    }
-
-                    gridContainer.appendChild(card);
-                } else {
-                    const connectorHtml = this.getConnectorLine(row, col, playerClass);
-                    if (connectorHtml) {
-                        const wrapper = document.createElement('div');
-                        wrapper.style.gridRow = String(row);
-                        wrapper.style.gridColumn = String(col);
-                        wrapper.innerHTML = connectorHtml;
-                        gridContainer.appendChild(wrapper.firstChild);
-                    } else {
-                        const empty = document.createElement('div');
-                        empty.style.gridRow = String(row);
-                        empty.style.gridColumn = String(col);
-                        gridContainer.appendChild(empty);
-                    }
-                }
+    // Every purchase delegates to the pre-existing handler for its system —
+    // the tree is a new surface over old, tested plumbing.
+    purchaseTreeNode(ship, node) {
+        const kind = node.purchase.kind;
+        if (kind === 'skill') {
+            const playerClass = buildUnifiedSkillTree({ playerClass: this.playerType }).playerClass;
+            const success = this.bank.unlockSkill(node.id, playerClass);
+            if (success) {
+                window.AudioManager?.play('ui_upgrade_weapon', { volume: 0.6 });
+                this.syncPersistentUpgrades();
+                this.updatePlayerType(this.playerType);
+                if (window.syncAbilityPanelLabel) window.syncAbilityPanelLabel();
+            } else {
+                window.AudioManager?.play('ui_error', { volume: 0.5 });
             }
+        } else if (kind === 'weapon') {
+            this.attemptWeaponUpgrade(this.activeInteractiveConsole ?? ship, node.purchase.key);
+        } else if (kind === 'tier2') {
+            this.attemptTier2Unlock(this.activeInteractiveConsole ?? ship, node.purchase.key);
+        } else if (kind === 'o2gen') {
+            this.attemptO2GeneratorUpgrade(ship);
+        } else if (kind === 'goal') {
+            const bankState = this.bank.getState();
+            if (bankState?.unlocks?.[node.purchase.key]) {
+                this.attemptGoalUpgrade(ship, node.purchase.key);
+            } else {
+                this.attemptGoalUnlock(ship, { goalKey: node.purchase.key, prereqKey: node.purchase.prereqKey });
+            }
+        }
+        this.renderSkillsTree(ship);
+        this.renderConsoleBanking(ship);
+    }
+
+    buildTreeNodeCard(ship, node, state) {
+        const status = state.unlocked ? 'unlocked' : (state.available ? 'available' : 'locked');
+        const card = document.createElement('div');
+        card.className = `skill-node-card node-state--${status}`;
+        card.style.gridRow = String(node.row);
+        card.style.gridColumn = String(node.col);
+
+        const header = document.createElement('div');
+        header.className = 'skill-node-header';
+        const label = document.createElement('span');
+        label.textContent = node.label;
+        const statusEl = document.createElement('span');
+        statusEl.className = 'skill-node-status';
+        statusEl.textContent = node.maxLevel > 1
+            ? `[LV ${state.level}/${node.maxLevel}]`
+            : (state.unlocked ? '[UNLOCKED]' : (state.available ? '[AVAILABLE]' : '[LOCKED]'));
+        header.appendChild(label);
+        header.appendChild(statusEl);
+        card.appendChild(header);
+
+        const desc = document.createElement('div');
+        desc.className = 'skill-node-desc';
+        desc.textContent = state.desc;
+        card.appendChild(desc);
+
+        const costEl = document.createElement('div');
+        costEl.className = 'skill-node-cost';
+        costEl.textContent = state.unlocked ? (node.maxLevel > 1 ? state.costText : 'COMPLETED') : (state.gateText || state.costText);
+        card.appendChild(costEl);
+
+        if (state.available) {
+            const buyBtn = document.createElement('button');
+            buyBtn.className = 'skill-node-btn';
+            buyBtn.textContent = node.maxLevel > 1 && state.level > 0 ? 'UPGRADE' : 'UNLOCK';
+            buyBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.purchaseTreeNode(ship, node);
+            };
+            card.appendChild(buyBtn);
+        }
+        return card;
+    }
+
+    renderTreeBranch(container, ship, branchDef, bankState) {
+        const title = document.createElement('div');
+        title.className = 'skills-branch-title terminal-section-title';
+        title.textContent = branchDef.label;
+        container.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'skills-tree-grid';
+        const stateById = new Map();
+        for (const node of branchDef.nodes) {
+            const state = this.getUnifiedNodeState(node, bankState);
+            stateById.set(node.id, state);
+            grid.appendChild(this.buildTreeNodeCard(ship, node, state));
+        }
+        for (const connector of getBranchConnectors(branchDef.nodes)) {
+            const parentState = stateById.get(connector.parentId);
+            grid.appendChild(this.buildConnectorCell(connector, Boolean(parentState?.unlocked || (parentState?.level ?? 0) > 0)));
+        }
+        container.appendChild(grid);
+    }
+
+    // The Bunker Tree: one surface for all three progression systems.
+    renderSkillsTree(ship) {
+        const gridContainer = document.getElementById('skills-tree-grid');
+        const matrix = document.getElementById('skills-upgrade-matrix');
+        const countEl = document.getElementById('skills-unlocked-count');
+        if (!gridContainer || !matrix) return;
+
+        const bankState = this.bank.getState();
+        const progression = this.getProgressionStats(ship, bankState);
+        const tree = buildUnifiedSkillTree({ playerClass: progression.playerClass });
+
+        if (countEl) {
+            countEl.textContent = `${tree.playerClass} SKILLS: ${progression.classUnlocked}/${progression.classTotal} (${progression.classReady} READY) | SYSTEM: ${progression.systemUnlocked}/${progression.systemTotal} (${progression.systemReady} READY) | COMBAT: ${progression.combatUnlocked}/${progression.combatTotal} (${progression.combatReady} READY) | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
+        }
+
+        // Class branch keeps the original grid element; combat + ship render
+        // as sibling tree grids where the retired card sections used to mount.
+        gridContainer.innerHTML = '';
+        const classGrid = document.createElement('div');
+        classGrid.style.display = 'contents';
+        const stateById = new Map();
+        for (const node of tree.branches.class.nodes) {
+            const state = this.getUnifiedNodeState(node, bankState);
+            stateById.set(node.id, state);
+            classGrid.appendChild(this.buildTreeNodeCard(ship, node, state));
+        }
+        for (const connector of getBranchConnectors(tree.branches.class.nodes)) {
+            classGrid.appendChild(this.buildConnectorCell(connector, Boolean(stateById.get(connector.parentId)?.unlocked)));
+        }
+        gridContainer.appendChild(classGrid);
+
+        matrix.innerHTML = '';
+        for (const branchKey of TREE_BRANCHES) {
+            if (branchKey === 'class') continue;
+            this.renderTreeBranch(matrix, ship, tree.branches[branchKey], bankState);
         }
     }
 
@@ -6969,6 +7060,124 @@ export class ThreeGame {
                 this.updateSheetSpriteFrame(sprite, dirX, dirZ, delta);
             }
         }
+    }
+
+    // ── Findable lore drops (wave 2) ──────────────────────────
+    // Physical collectibles keyed to site families; the table, rarity pick,
+    // and found-ledger live in loreDrops.js. Sprites are scene-attached
+    // (corpse pattern) and a site offers at most one drop per run.
+
+    spawnLoreDropSprite(drop, x, z) {
+        const baseMat = this.scatterMaterials.lore_terminal;
+        if (!baseMat?.map) return null;
+        const mat = baseMat.clone();
+        mat.color.setHex(drop.rarity === 'legendary' ? 0xffd27a : drop.rarity === 'rare' ? 0x9be8ff : 0xffffff);
+        const sprite = new THREE.Sprite(mat);
+        sprite.center.set(0.5, 0);
+        sprite.scale.set(0.55, 0.55, 1);
+        sprite.position.set(x, 0.06, z);
+        sprite.renderOrder = 5;
+        this.scene.add(sprite);
+        this.loreDrops.push({ sprite, drop, baseY: 0.06, t: Math.random() * Math.PI * 2 });
+        return sprite;
+    }
+
+    maybeSpawnSiteLoreDrop(siteKind, siteId, x, z) {
+        if (this._loreDropSitesSpawned.has(siteId)) return;
+        this._loreDropSitesSpawned.add(siteId);
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(x) + 977,
+            Math.round(z) - 431
+        ) ^ this.runEntropy) >>> 0);
+        const drop = pickLoreDropForSite(random, siteKind, getFoundLoreKeys());
+        if (!drop) return;
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+            const angle = random() * Math.PI * 2;
+            const dist = 1.6 + random() * 1.8;
+            const tx = Math.round(x + Math.cos(angle) * dist);
+            const tz = Math.round(z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable(tx, tz)) {
+                this.spawnLoreDropSprite(drop, tx, tz);
+                return;
+            }
+        }
+    }
+
+    maybeSpawnChunkLoreDrop(chunkX, chunkY, grid, landform) {
+        if (landform !== LANDFORMS.RUINS && landform !== LANDFORMS.CRATER) return;
+        if (Math.hypot(chunkX, chunkY) < 2) return;
+        const siteId = `chunk:${chunkX},${chunkY}`;
+        if (this._loreDropSitesSpawned.has(siteId)) return;
+        this._loreDropSitesSpawned.add(siteId);
+        const random = this.createSeededRandom(this.hashTile(chunkX * 733 + 91, chunkY * 389 - 57));
+        // Most ruins hold nothing — that's what keeps a find special.
+        if (random() > 0.3) return;
+        const drop = pickLoreDropForSite(
+            random,
+            landform === LANDFORMS.RUINS ? 'ruins' : 'crater',
+            getFoundLoreKeys()
+        );
+        if (!drop) return;
+        for (let attempt = 0; attempt < 24; attempt += 1) {
+            const lx = 2 + Math.floor(random() * (this.chunkSize - 4));
+            const ly = 2 + Math.floor(random() * (this.chunkSize - 4));
+            if (grid[ly][lx] === '.') {
+                this.spawnLoreDropSprite(drop, chunkX * this.chunkSize + lx, chunkY * this.chunkSize + ly);
+                return;
+            }
+        }
+    }
+
+    updateLoreDrops(delta) {
+        if (!this.player) return;
+        // Site-anchored drops spawn lazily once their site exists in-world.
+        for (const camp of this.camps ?? []) {
+            if (camp.built) this.maybeSpawnSiteLoreDrop('camp', `camp:${camp.id}`, camp.pos.x, camp.pos.z);
+        }
+        for (const hive of this.hives ?? []) {
+            if (hive.built) this.maybeSpawnSiteLoreDrop('hive', `hive:${hive.id}`, hive.pos.x, hive.pos.z);
+        }
+        if (this.caveEntrance?.isRevealed) {
+            const cavePos = this.caveEntrance.getPosition?.();
+            if (cavePos) this.maybeSpawnSiteLoreDrop('cave', 'cave', cavePos.x, cavePos.z);
+        }
+
+        for (let i = this.loreDrops.length - 1; i >= 0; i -= 1) {
+            const entry = this.loreDrops[i];
+            entry.t += delta;
+            entry.sprite.position.y = entry.baseY + 0.08 + Math.sin(entry.t * 2.2) * 0.07;
+            entry.sprite.material.opacity = 0.8 + Math.sin(entry.t * 3.1) * 0.2;
+            if (this.isPlayerDead) continue;
+            const d = Math.hypot(
+                entry.sprite.position.x - this.player.position.x,
+                entry.sprite.position.z - this.player.position.z
+            );
+            if (d <= 1.25) this.collectLoreDrop(i);
+        }
+    }
+
+    collectLoreDrop(index) {
+        const entry = this.loreDrops[index];
+        if (!entry) return;
+        this.loreDrops.splice(index, 1);
+        this.scene.remove(entry.sprite);
+        markLoreDropFound(entry.drop.key);
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.6 });
+        window.dispatchEvent(new CustomEvent('lore-drop-collected', {
+            detail: { key: entry.drop.key, title: entry.drop.title, rarity: entry.drop.rarity }
+        }));
+        // The existing reader modal + codex feed listen for this event.
+        window.dispatchEvent(new CustomEvent('lore-terminal-read', {
+            detail: { loreKey: entry.drop.title, loreText: entry.drop.text }
+        }));
+    }
+
+    clearLoreDrops() {
+        for (const entry of this.loreDrops) {
+            if (entry.sprite) this.scene.remove(entry.sprite);
+        }
+        this.loreDrops = [];
+        this._loreDropSitesSpawned = new Set();
     }
 
     resetAct2World() {
@@ -8519,6 +8728,7 @@ export class ThreeGame {
             this._caveAnomalySignaled = false;
             this.resetAct2World();
             this.clearCorpses();
+            this.clearLoreDrops();
             this._hiveKinKills = 0;
             this.cinematicLock = false;
             this.runEntropy = this.fixedRunEntropy ? 0 : (Math.random() * 0xffffffff) >>> 0;
@@ -11373,6 +11583,7 @@ export class ThreeGame {
         // walls, field outcrops read as tilted rock, canyon ridges stand
         // tall and unbroken. Same shared geometries, different mix.
         const landform = this.getChunkLandform(chunkX, chunkY);
+        this.maybeSpawnChunkLoreDrop(chunkX, chunkY, grid, landform);
         let holeCut = 0.06;
         let hazardCut = 0.22;
         let damagedCut = 0.35;

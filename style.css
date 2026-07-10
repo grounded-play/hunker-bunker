@@ -8987,6 +8987,16 @@ button.archive-log-entry:active {
   margin-top: 0;
 }
 
+/* Bunker Tree: combat + ship branches render as sibling tree grids in the
+   matrix column, each under its own section title. */
+.skills-branch-title {
+  margin: calc(var(--vu) * 0.8) 0 calc(var(--vu) * 0.4);
+}
+
+.skills-upgrade-matrix .skills-tree-grid {
+  margin-bottom: calc(var(--vu) * 1.2);
+}
+
 @media (max-width: 1220px) {
   .skills-tree-container {
     grid-template-columns: 1fr;
