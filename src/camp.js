@@ -131,6 +131,7 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
 // walkable tile and passes world coordinates in.
 
 const INTERACT_RADIUS = 2.8;
+const SIGNAL_FLARE_HEIGHT = 11;
 
 export class SurvivorCamp {
     constructor(scene, { id = 'camp', label = 'CAMP', playerType = 'Scout' } = {}) {
@@ -141,6 +142,9 @@ export class SurvivorCamp {
         this.group = null;
         this.beacon = null;
         this.beaconMat = null;
+        this.signalColumn = null;
+        this.signalMat = null;
+        this.discovered = false;
         this.tents = [];
         this.sectionMat = null;
         this.section = null;
@@ -292,6 +296,26 @@ export class SurvivorCamp {
         this.beacon.position.set(0, 1.6, 0);
         group.add(this.beacon);
 
+        // Distress flare: a tall additive light column that reads over the
+        // maze walls from far away — the survivors are signalling for help,
+        // and it is the player's reason to walk toward a camp they haven't
+        // met yet. Doused on first contact (setDiscovered) or when the camp
+        // dies.
+        this.signalMat = new THREE.MeshBasicMaterial({
+            color: 0xffd27a,
+            transparent: true,
+            opacity: 0.26,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        this.signalColumn = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.24, 0.6, SIGNAL_FLARE_HEIGHT, 10, 1, true),
+            this.signalMat
+        );
+        this.signalColumn.position.y = SIGNAL_FLARE_HEIGHT / 2;
+        group.add(this.signalColumn);
+
         // Vessel section gantry: hidden until the camp is aided.
         this.sectionMat = new THREE.MeshStandardMaterial({
             color: 0x9fb4c4,
@@ -370,6 +394,15 @@ export class SurvivorCamp {
         if (!this.built) this.build(x, z);
         this.revealed = true;
         if (this.group) this.group.visible = true;
+    }
+
+    // First contact: dousing the flare is the visible proof the camp has been
+    // found. The small beacon light stays — the camp is known now, not lost.
+    setDiscovered(discovered = true) {
+        this.discovered = Boolean(discovered);
+        if (this.signalColumn) {
+            this.signalColumn.visible = !this.discovered && !this.destroyed;
+        }
     }
 
     setAided(aided = true) {
@@ -566,6 +599,8 @@ export class SurvivorCamp {
             this.beacon.intensity = 0.35;
             this.beacon.position.y = 0.4;
         }
+        // Nobody left to signal.
+        if (this.signalColumn) this.signalColumn.visible = false;
         // Barricades get breached in the cull.
         this.barricades.forEach((wall, i) => {
             wall.rotation.x = (i % 2 === 0 ? 1 : -1) * 0.9;
@@ -610,6 +645,9 @@ export class SurvivorCamp {
             const pulse = this.turned ? 0.34 : this.recruited ? 0.2 : 0.15;
             const base = this.turned ? 1.22 : this.recruited ? 1.05 : 0.85;
             this.beacon.intensity = base + Math.sin(this.elapsed * 2.1) * pulse;
+        }
+        if (this.signalColumn?.visible && this.signalMat) {
+            this.signalMat.opacity = 0.2 + (Math.sin(this.elapsed * 1.6) + 1) * 0.05;
         }
 
         // NPC movement pathfinding and animation update loop

@@ -220,6 +220,11 @@ export const ACT2_LINES = Object.freeze({
     campAided: [
         'SYSTEM: VESSEL SECTION COMPLETE. SURVIVORS GRATEFUL.'
     ],
+    campDiscovered: [
+        'SYSTEM: SURVIVOR CAMP LOCATED. FLARE DOUSED.',
+        'SYSTEM: SURVIVORS SHARE SUPPLIES — SHELLS AND O₂ RECEIVED.',
+        'SYSTEM: SUPPORTED CAMPS DOUBLE AS O₂ HAVENS. INVEST SHELLS TO FORTIFY.'
+    ],
     allAided: [
         'SYSTEM: VESSEL ASSEMBLY COMPLETE. FOUR SEATS PRESSURIZED.',
         'QUEEN: FOUR SEATS. YOU. ME. THE EGGS MAKE FOUR.',
@@ -380,6 +385,7 @@ function normalizeCamp(raw = {}, id) {
         level: clampInteger(raw?.level, 0, ACT2_CAMP_MAX_LEVEL, 0),
         bond: clampInteger(raw?.bond, 0, ACT2_MAX_BOND, 0),
         aided: Boolean(raw?.aided),
+        discovered: Boolean(raw?.discovered),
         status,
         suspicion,
         passengerState,
@@ -708,6 +714,15 @@ export class Act2Manager {
         return this._mutate((s) => {
             const camp = s.camps.find((c) => c.id === id);
             if (camp) camp.aided = true;
+        });
+    }
+
+    // Act 1 exploration: first contact with a camp is persisted so the
+    // discovery payout can never be farmed across deaths or sessions.
+    discoverCamp(id) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (camp) camp.discovered = true;
         });
     }
 

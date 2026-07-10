@@ -28,6 +28,7 @@ import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { BunkerDirector } from './director.js';
 import { applyBlackChromaKey } from './textureKeying.js';
+import { LANDFORMS, pickLandform, applyLandform, connectPortalsInward } from './landforms.js';
 
 const PLAYER_COLORS = {
     SCOUT: 0x7dff5a,
@@ -362,6 +363,9 @@ const SNAIL_SHELL_COLLECT_RADIUS = 1.2;
 const SNAIL_SHELL_BOSS_VALUE = 15; // matches the old kill-time boss grant
 const CAMP_O2_HAVEN_RADIUS = 3.4;
 const CAMP_O2_HAVEN_RATE = 4.5; // O2 per second inside a supported camp
+const CAMP_DISCOVERY_RADIUS = 7.0;
+const CAMP_DISCOVERY_SHELLS = 10; // survivors share supplies on first contact
+const CAMP_DISCOVERY_O2 = 35;
 const CAMP_SUPPORT_O2_REFILL = 40; // instant O2 on each support purchase
 const CAMP_FAVOR_BASE_COST = 8;
 const BUNKER_JUNK_MIN_SEPARATION = 2.2;
@@ -6247,6 +6251,31 @@ export class ThreeGame {
             }
         }
 
+        // First contact: walking up to a camp you haven't met pays out
+        // immediately (shells + O2), douses its distress flare, and is
+        // persisted so it can't be farmed. This is the reason to chase the
+        // light columns on the horizon.
+        if (this.player && !this.isPlayerDead) {
+            for (const camp of this.camps) {
+                if (camp.discovered || camp.destroyed) continue;
+                const record = this.getCampRecord(camp.id);
+                if (!record) continue;
+                if (record.discovered) {
+                    camp.setDiscovered(true);
+                    continue;
+                }
+                if (camp.distanceTo(this.player.position.x, this.player.position.z) > CAMP_DISCOVERY_RADIUS) continue;
+                this.act2.discoverCamp(camp.id);
+                camp.setDiscovered(true);
+                this.bank?.addShells?.(CAMP_DISCOVERY_SHELLS);
+                this.adjustOxygen(CAMP_DISCOVERY_O2);
+                this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_uncommon');
+                window.dispatchEvent(new CustomEvent('act2-milestone', {
+                    detail: { key: 'campDiscovered', campId: camp.id, campLabel: camp.label }
+                }));
+            }
+        }
+
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
     }
@@ -6796,6 +6825,7 @@ export class ThreeGame {
             camp.setLevel(record.level);
             camp.setAided(record.aided);
             camp.setStatus(record.status);
+            camp.setDiscovered(record.discovered);
             return camp;
         });
         this._act2CampsReady = true;
@@ -11167,6 +11197,21 @@ export class ThreeGame {
         const grid = this.getOrCreateChunk(chunkX, chunkY);
         const group = new THREE.Group();
 
+        // Landform-specific wall dressing: ruins are mostly toppled short
+        // walls, field outcrops read as tilted rock, canyon ridges stand
+        // tall and unbroken. Same shared geometries, different mix.
+        const landform = this.getChunkLandform(chunkX, chunkY);
+        let holeCut = 0.06;
+        let hazardCut = 0.22;
+        let damagedCut = 0.35;
+        if (landform === LANDFORMS.RUINS) {
+            holeCut = 0.08; hazardCut = 0.12; damagedCut = 0.85;
+        } else if (landform === LANDFORMS.FIELD) {
+            holeCut = 0.03; hazardCut = 0.05; damagedCut = 0.60;
+        } else if (landform === LANDFORMS.CANYON) {
+            holeCut = 0.0; hazardCut = 0.06; damagedCut = 0.12;
+        }
+
         // Single merged floor for the whole chunk (see chunkFloorGeometry note).
         const chunkCenter = (this.chunkSize - 1) / 2;
         const chunkFloor = new THREE.Mesh(this.chunkFloorGeometry, this.floorMaterial);
@@ -11189,12 +11234,12 @@ export class ThreeGame {
                 const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldZ) + 999);
                 const wallTypeRoll = wallTypeRng();
 
-                if (wallTypeRoll < 0.06) {
+                if (wallTypeRoll < holeCut) {
                     // Hole / Pit (flat on the ground)
                     const holeMesh = new THREE.Mesh(this.floorGeometry, this.holeMaterial);
                     holeMesh.rotation.x = -Math.PI / 2;
                     // Various sizes scaled up based on seeded random (from 1.5 up to 4.0)
-                    const sizeFactor = wallTypeRoll / 0.06;
+                    const sizeFactor = wallTypeRoll / holeCut;
                     const scale = 1.5 + sizeFactor * 2.5;
                     holeMesh.scale.set(scale, scale, 1);
                     // Random organic rotation around the Z axis (the tile normal)
@@ -11202,7 +11247,7 @@ export class ThreeGame {
                     holeMesh.position.set(worldX, 0.005, worldZ);
                     holeMesh.receiveShadow = true;
                     group.add(holeMesh);
-                } else if (wallTypeRoll < 0.22) {
+                } else if (wallTypeRoll < hazardCut) {
                     // Hazard Wall (pulsing warning siren)
                     const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
                     wall.position.set(worldX, this.wallHeight / 2, worldZ);
@@ -11222,7 +11267,7 @@ export class ThreeGame {
                     const sirenDome = new THREE.Mesh(this.sirenDomeGeometry, this.sirenDomeMaterial);
                     sirenDome.position.y = this.wallHeight / 2 + 0.14;
                     wall.add(sirenDome);
-                } else if (wallTypeRoll < 0.35) {
+                } else if (wallTypeRoll < damagedCut) {
                     // Damaged Wall (ruins with rubble debris)
                     const shortHeightMult = 0.45 + wallTypeRng() * 0.25;
                     const damagedHeight = this.wallHeight * shortHeightMult;
@@ -11260,6 +11305,13 @@ export class ThreeGame {
                     // Standard Wall
                     const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
                     wall.position.set(worldX, this.wallHeight / 2, worldZ);
+                    // Canyon ridges tower over the standard maze so the halls
+                    // read as carved terrain, not corridors.
+                    if (landform === LANDFORMS.CANYON) {
+                        const ridge = 1.2 + wallTypeRng() * 0.35;
+                        wall.scale.y = ridge;
+                        wall.position.y = (this.wallHeight * ridge) / 2;
+                    }
                     wall.castShadow = true;
                     wall.receiveShadow = true;
                     wall.userData.isWall = true;
@@ -15162,11 +15214,47 @@ export class ThreeGame {
             }
         }
 
+        // Landforms reshape the carved maze before portals are punched, so
+        // every chunk still connects to its neighbors at the same offsets.
+        const landform = this.getChunkLandform(chunkX, chunkY);
+        if (landform !== LANDFORMS.MAZE) {
+            applyLandform(grid, landform, random);
+        }
         this.ensureChunkPortals(grid, chunkX, chunkY);
-        this.runMarkovPass(grid, random);
-        this.widenChunkCorridors(grid);
+        if (landform === LANDFORMS.MAZE) {
+            this.runMarkovPass(grid, random);
+        } else {
+            // A ridge or crater rim can sit flush behind a portal opening —
+            // tunnel inward so entrances never dead-end.
+            connectPortalsInward(grid);
+        }
+        // Widening erodes the deliberate structures (field outcrops, canyon
+        // ridges, and especially the crater rim — the open bowl beside the
+        // ring lets widen chew straight through it), so it only runs where
+        // the corridors come from the maze carve.
+        if (landform === LANDFORMS.MAZE || landform === LANDFORMS.RUINS) {
+            this.widenChunkCorridors(grid);
+        }
         this.clearSpawnArea(grid, chunkX, chunkY);
         return grid;
+    }
+
+    // Seeded landform per chunk. The two-chunk ring around the crash site
+    // stays classic maze so the tutorial reads the way it always has.
+    getChunkLandform(chunkX, chunkY) {
+        if (this.performanceProfile === 'menu') return LANDFORMS.MAZE;
+        if (Math.hypot(chunkX, chunkY) < 2) return LANDFORMS.MAZE;
+        if (!this._chunkLandformCache) this._chunkLandformCache = new Map();
+        const key = `${chunkX},${chunkY}`;
+        if (!this._chunkLandformCache.has(key)) {
+            const biome = this.getBiomeKeyForWorldPosition(
+                chunkX * this.chunkSize + this.chunkSize * 0.5,
+                chunkY * this.chunkSize + this.chunkSize * 0.5
+            );
+            const random = this.createSeededRandom(this.hashTile(chunkX * 977 + 61, chunkY * 613 + 37));
+            this._chunkLandformCache.set(key, pickLandform(random, biome));
+        }
+        return this._chunkLandformCache.get(key);
     }
 
     carveCell(grid, cellX, cellY) {

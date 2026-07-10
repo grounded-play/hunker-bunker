@@ -35,6 +35,23 @@ describe('SurvivorCamp', () => {
         expect(camp.tents.every((t) => t.rotation.z !== 0)).toBe(true);
     });
 
+    it('burns a distress flare until first contact douses it', () => {
+        const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_meridian', label: 'CAMP MERIDIAN' });
+        camp.reveal(10, 10);
+        expect(camp.signalColumn.visible).toBe(true);
+
+        camp.setDiscovered(true);
+        expect(camp.discovered).toBe(true);
+        expect(camp.signalColumn.visible).toBe(false);
+
+        // Rediscovering an undiscovered-but-culled camp never relights it.
+        camp.setDiscovered(false);
+        camp.setDestroyed(true);
+        expect(camp.signalColumn.visible).toBe(false);
+        camp.setDiscovered(false);
+        expect(camp.signalColumn.visible).toBe(false);
+    });
+
     it('assigns the final camp to the player class mirror with living workers', () => {
         const camp = new SurvivorCamp(new THREE.Scene(), {
             id: 'camp_vesper',

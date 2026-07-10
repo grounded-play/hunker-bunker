@@ -400,6 +400,27 @@ describe('camp support levels', () => {
     });
 });
 
+describe('camp discovery', () => {
+    it('defaults to undiscovered and normalizes the flag', () => {
+        expect(normalizeAct2State({}).camps.every((c) => c.discovered === false)).toBe(true);
+        const state = normalizeAct2State({ camps: [{ id: 'camp_meridian', discovered: true }] });
+        expect(state.camps.find((c) => c.id === 'camp_meridian').discovered).toBe(true);
+        expect(state.camps.find((c) => c.id === 'camp_tallow').discovered).toBe(false);
+    });
+
+    it('discoverCamp marks first contact and persists across reloads', () => {
+        const storage = memoryStorage();
+        const manager = new Act2Manager({ storage });
+        manager.discoverCamp('camp_vesper');
+        expect(manager.getState().camps.find((c) => c.id === 'camp_vesper').discovered).toBe(true);
+
+        const reloaded = new Act2Manager({ storage });
+        const camps = reloaded.getState().camps;
+        expect(camps.find((c) => c.id === 'camp_vesper').discovered).toBe(true);
+        expect(camps.find((c) => c.id === 'camp_meridian').discovered).toBe(false);
+    });
+});
+
 describe('getCampClassMapping', () => {
     it('returns the correct RPS mapping for a Scout player', () => {
         const mapping = getCampClassMapping('Scout');
