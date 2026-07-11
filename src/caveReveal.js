@@ -4,6 +4,7 @@ import { deriveInheritance } from './data/strains.js';
 export const CAVE_REVEAL_LINES = Object.freeze([
     'SIGNAL SOURCE CONFIRMED.',
     'RECOVER SAMPLE.',
+    'SYSTEM: Pod 312... opened from the inside.',
     'HEART RATE ELEVATED.',
     'UNKNOWN: ...'
 ]);

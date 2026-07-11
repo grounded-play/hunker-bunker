@@ -21,5 +21,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onSaveDataChanged: (key, value) => ipcRenderer.send('hb:saveDataChanged', key, value),
     onSaveDataRemoved: (key) => ipcRenderer.send('hb:saveDataRemoved', key),
     unlockAchievement: (key) => ipcRenderer.send('hb:unlockAchievement', key),
+    setStat: (key, value) => ipcRenderer.send('hb:setStat', key, value),
     getSteamInfo: () => ipcRenderer.invoke('hb:steamInfo')
 });

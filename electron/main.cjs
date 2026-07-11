@@ -15,7 +15,7 @@ const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
 // Spacewar test appid until the real one is set (docs/steam-build-pipeline.md
 // human checklist step 1). Override without a rebuild via HB_STEAM_APPID.
-const STEAM_APPID = Number(process.env.HB_STEAM_APPID ?? 480);
+const STEAM_APPID = Number(process.env.HB_STEAM_APPID ?? 1247290);
 
 let steam = null;
 let steamClient = null;
@@ -105,6 +105,15 @@ ipcMain.on('hb:unlockAchievement', (_e, key) => {
         steamClient.achievement.activate(key);
     } catch (err) {
         console.log(`[steam] achievement '${key}' failed: ${err?.message ?? err}`);
+    }
+});
+ipcMain.on('hb:setStat', (_e, key, value) => {
+    if (!steamClient || typeof key !== 'string') return;
+    try {
+        steamClient.stats.setInt(key, Number(value));
+        steamClient.stats.store();
+    } catch (err) {
+        console.log(`[steam] setStat '${key}' failed: ${err?.message ?? err}`);
     }
 });
 ipcMain.handle('hb:steamInfo', () => ({

@@ -6,6 +6,7 @@ import {
     applyAchievementEvent,
     createDefaultAchievementState,
     getAchievementProgress,
+    getSecretGateState,
     hasAnyUnlock,
     migrateAchievements,
     recordRunEnd
@@ -35,6 +36,9 @@ describe('achievements definitions', () => {
         expect(keys).toContain('archivist');
         expect(keys).toContain('kin');
         expect(keys).toContain('ghost');
+        expect(keys).toContain('gentle_drill');
+        expect(keys).toContain('chen_thirteenth');
+        expect(keys).toContain('reyes_courier');
         expect(keys).toContain('hardened');
         expect(keys).toContain('slay_the_queen');
         expect(keys.filter((key) => key.startsWith('ending_'))).toHaveLength(10);
@@ -54,7 +58,7 @@ describe('achievement migration', () => {
             unlockedHardened: true
         }, 1234);
 
-        expect(migrated.schemaVersion).toBe(2);
+        expect(migrated.schemaVersion).toBe(3);
         expect(migrated.stats.totalDeaths).toBe(7);
         expect(migrated.stats.totalKills).toBe(12);
         expect(migrated.stats.maxKillsOneRun).toBe(5);
@@ -129,6 +133,30 @@ describe('achievement checks', () => {
         const result = applyAchievementEvent(state, 'reveal-reached', {}, 3);
 
         expect(result.newUnlocks.map((def) => def.key)).not.toContain('ghost');
+    });
+
+    it('tracks no-hive-harm, deathless reveal, and Reyes courier secrets', () => {
+        let state = applyAchievementEvent(createDefaultAchievementState(), 'run-start', {}, 1).state;
+        let result = applyAchievementEvent(state, 'reveal-reached', { totalDeathsBeforeReveal: 0 }, 2);
+        expect(result.newUnlocks.map((def) => def.key)).toEqual(expect.arrayContaining([
+            'ghost',
+            'gentle_drill',
+            'chen_thirteenth'
+        ]));
+        expect(getSecretGateState(result.state)).toMatchObject({
+            deathlessReveal: true,
+            hiveHarmFreeReveal: true
+        });
+
+        state = applyAchievementEvent(createDefaultAchievementState(), 'run-start', {}, 10).state;
+        state = applyAchievementEvent(state, 'hive-mined', { hiveId: 'hive_suture' }, 11).state;
+        result = applyAchievementEvent(state, 'reveal-reached', { totalDeathsBeforeReveal: 1 }, 12);
+        expect(result.newUnlocks.map((def) => def.key)).not.toContain('gentle_drill');
+        expect(result.newUnlocks.map((def) => def.key)).not.toContain('chen_thirteenth');
+
+        result = applyAchievementEvent(result.state, 'reyes-letter-delivered', { campId: 'camp_vesper' }, 13);
+        expect(result.newUnlocks.map((def) => def.key)).toContain('reyes_courier');
+        expect(result.state.stats.reyesLetterDelivered).toBe(true);
     });
 
     it('reports progress for counter achievements', () => {

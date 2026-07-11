@@ -1,6 +1,6 @@
 "DepotBuild"
 {
-    "DepotID" "__DEPOT_WINDOWS__"
+    "DepotID" "1247291"
     "FileMapping"
     {
         "LocalPath" "win-unpacked/*"

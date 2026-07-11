@@ -1,5 +1,5 @@
 export const ACHIEVEMENT_STORAGE_KEY = 'hb_achievements_v1';
-export const ACHIEVEMENT_SCHEMA_VERSION = 2;
+export const ACHIEVEMENT_SCHEMA_VERSION = 3;
 export const ARCHIVIST_TARGET = 12;
 
 const CLASS_IDS = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
@@ -139,6 +139,33 @@ export const ACHIEVEMENT_DEFS = freezeDeep([
             && (state.currentRun.suspicionGained ?? 0) <= 0
     },
     {
+        key: 'gentle_drill',
+        title: 'GENTLE DRILL',
+        blurb: 'Reach the reveal without harming a hive site.',
+        icon: 'gentle_drill',
+        secret: true,
+        check: (state, event) => event.name === 'reveal-reached'
+            && !state.currentRun.hiveHarmed
+            && !event.detail?.hiveHarmed
+    },
+    {
+        key: 'chen_thirteenth',
+        title: "CHEN'S THIRTEENTH",
+        blurb: 'Reach the cave reveal before any operator death is recorded.',
+        icon: 'chen_thirteenth',
+        secret: true,
+        check: (state, event) => event.name === 'reveal-reached'
+            && Number(event.detail?.totalDeathsBeforeReveal ?? state.stats.totalDeaths ?? 0) <= 0
+    },
+    {
+        key: 'reyes_courier',
+        title: 'REYES COURIER',
+        blurb: 'Carry Pvt. Reyes\' letter to Commander Briggs.',
+        icon: 'reyes_courier',
+        secret: true,
+        check: (_state, event) => event.name === 'reyes-letter-delivered'
+    },
+    {
         key: 'hardened',
         title: 'HARDENED',
         blurb: 'Die five times and keep coming back.',
@@ -168,7 +195,9 @@ export function createDefaultRunState() {
         discoveredCampIds: [],
         loreDropIds: [],
         maxHiveBond: 0,
-        runCards: []
+        runCards: [],
+        hiveHarmed: false,
+        deathsAtStart: 0
     };
 }
 
@@ -189,7 +218,10 @@ export function createDefaultAchievementState() {
             maxCampsDiscoveredOneRun: 0,
             endings: {},
             classesCompleted: {},
-            shellsCollected: 0
+            shellsCollected: 0,
+            deathlessReveal: false,
+            hiveHarmFreeReveal: false,
+            reyesLetterDelivered: false
         },
         currentRun: createDefaultRunState(),
         unlocked: {}
@@ -200,10 +232,11 @@ export function migrateAchievements(raw = null, now = Date.now()) {
     const base = createDefaultAchievementState();
     if (!raw || typeof raw !== 'object') return base;
 
-    if (raw.schemaVersion === ACHIEVEMENT_SCHEMA_VERSION && raw.stats && raw.currentRun && raw.unlocked) {
+    if (Number(raw.schemaVersion) >= 2 && raw.stats && raw.currentRun && raw.unlocked) {
         return {
             ...base,
             ...raw,
+            schemaVersion: ACHIEVEMENT_SCHEMA_VERSION,
             stats: {
                 ...base.stats,
                 ...raw.stats,
@@ -216,7 +249,9 @@ export function migrateAchievements(raw = null, now = Date.now()) {
                 ...raw.currentRun,
                 discoveredCampIds: uniqueStrings(raw.currentRun.discoveredCampIds),
                 loreDropIds: uniqueStrings(raw.currentRun.loreDropIds),
-                runCards: Array.isArray(raw.currentRun.runCards) ? raw.currentRun.runCards : []
+                runCards: Array.isArray(raw.currentRun.runCards) ? raw.currentRun.runCards : [],
+                hiveHarmed: Boolean(raw.currentRun.hiveHarmed),
+                deathsAtStart: Math.max(0, Number(raw.currentRun.deathsAtStart) || 0)
             },
             unlocked: { ...(raw.unlocked ?? {}) }
         };
@@ -238,6 +273,18 @@ export function migrateAchievements(raw = null, now = Date.now()) {
         migrated.unlocked.hardened = { unlockedAt: now, migrated: true };
     }
     return migrated;
+}
+
+export function getSecretGateState(rawState = null) {
+    const state = migrateAchievements(rawState);
+    return {
+        noHiveHarmThisRun: !state.currentRun.hiveHarmed,
+        deathlessReveal: Boolean(state.stats.deathlessReveal),
+        hiveHarmFreeReveal: Boolean(state.stats.hiveHarmFreeReveal),
+        reyesLetterDelivered: Boolean(state.stats.reyesLetterDelivered),
+        totalDeaths: state.stats.totalDeaths,
+        deathsThisRun: Math.max(0, state.stats.totalDeaths - (state.currentRun.deathsAtStart ?? state.stats.totalDeaths))
+    };
 }
 
 function getStorage(storage) {
@@ -273,7 +320,8 @@ function updateStatsForEvent(state, name, detail = {}) {
             state.currentRun = {
                 ...createDefaultRunState(),
                 startedAt: Number(detail.startedAt) || Date.now(),
-                classType: normalizeClass(detail.classType)
+                classType: normalizeClass(detail.classType),
+                deathsAtStart: state.stats.totalDeaths
             };
             break;
         }
@@ -298,6 +346,27 @@ function updateStatsForEvent(state, name, detail = {}) {
             const bond = Math.max(0, Number(detail.bond) || 0);
             state.currentRun.maxHiveBond = Math.max(state.currentRun.maxHiveBond, bond);
             state.stats.maxHiveBond = Math.max(state.stats.maxHiveBond, bond);
+            if (['hive-harvest', 'hive-sacrifice'].includes(detail.action)) {
+                state.currentRun.hiveHarmed = true;
+            }
+            break;
+        }
+        case 'hive-mined':
+        case 'hive-harmed': {
+            state.currentRun.hiveHarmed = true;
+            break;
+        }
+        case 'reyes-letter-delivered': {
+            state.stats.reyesLetterDelivered = true;
+            break;
+        }
+        case 'reveal-reached': {
+            if (!state.currentRun.hiveHarmed && !detail.hiveHarmed) {
+                state.stats.hiveHarmFreeReveal = true;
+            }
+            if (Number(detail.totalDeathsBeforeReveal ?? state.stats.totalDeaths ?? 0) <= 0) {
+                state.stats.deathlessReveal = true;
+            }
             break;
         }
         case 'run-cards-drawn': {

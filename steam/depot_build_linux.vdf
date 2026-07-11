@@ -1,6 +1,6 @@
 "DepotBuild"
 {
-    "DepotID" "__DEPOT_LINUX__"
+    "DepotID" "1247292"
     "FileMapping"
     {
         "LocalPath" "linux-unpacked/*"

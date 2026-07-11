@@ -10,6 +10,13 @@ function clampHearts(value, fallback = 0) {
     return Math.max(0, Math.floor(numeric));
 }
 
+export function humanityDecayProgress(deltaSeconds = 0, { multiplier = 1, secondsPerPoint = 12 } = {}) {
+    const delta = Math.max(0, Number(deltaSeconds) || 0);
+    const mult = Math.max(0, Number(multiplier) || 0);
+    const cadence = Math.max(0.001, Number(secondsPerPoint) || 12);
+    return (delta / cadence) * mult;
+}
+
 export class VitalsHUD {
     constructor({
         root = document,

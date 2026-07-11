@@ -615,7 +615,7 @@ body {
 #splash {
   position: absolute;
   inset: 0;
-  background: var(--bg-dark) url('/bg.webp') center 85% / cover no-repeat;
+  background: #000 url('/title_key_art.png') center center / cover no-repeat;
   z-index: 9000;
   display: flex;
   flex-direction: column;
@@ -648,15 +648,16 @@ body {
 }
 
 .splash-title {
-  font-size: calc(var(--vu) * 18);
+  font-size: calc(var(--vu) * 16);
   font-weight: 900;
   color: var(--text-main);
-  letter-spacing: 2px;
+  letter-spacing: 4px;
   line-height: 1.1;
-  margin-bottom: calc(var(--vu) * 2);
-  text-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
+  margin-bottom: calc(var(--vu) * 1.5);
+  text-shadow: 0 0 20px rgba(255, 159, 28, 0.6), 0 0 40px rgba(255, 159, 28, 0.3);
   width: 100%;
   text-transform: uppercase;
+  animation: title-glow-pulse 4s infinite ease-in-out;
 }
 
 .splash-subtitle {
@@ -665,31 +666,150 @@ body {
   font-weight: 900;
   letter-spacing: 5px;
   text-transform: uppercase;
-  margin-bottom: calc(var(--vu) * 6);
+  margin-bottom: calc(var(--vu) * 5);
 }
 
-.splash-settings {
+.title-menu {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1.5);
-  margin-top: calc(var(--vu) * 4);
-  width: calc(var(--vu) * 60);
+  gap: calc(var(--vu) * 2.2);
+  margin-top: calc(var(--vu) * 2);
+  width: calc(var(--vu) * 45);
+  max-width: 90vw;
+  align-items: stretch;
 }
 
-.setting-row {
+.title-menu-btn {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-sm);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  padding: calc(var(--vu) * 1.8) calc(var(--vu) * 4);
+  border-radius: 8px;
+  background: rgba(11, 13, 15, 0.76);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+
+.title-menu-btn:hover {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #000;
+  box-shadow: 0 0 20px rgba(255, 159, 28, 0.38);
+  transform: translateY(-2px);
+}
+
+.title-menu-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.title-menu-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.title-menu-btn:disabled:hover {
+  background: rgba(11, 13, 15, 0.76);
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+@keyframes title-glow-pulse {
+  0%, 100% { text-shadow: 0 0 20px rgba(255, 159, 28, 0.6), 0 0 40px rgba(255, 159, 28, 0.3); }
+  50% { text-shadow: 0 0 30px rgba(255, 159, 28, 0.8), 0 0 60px rgba(255, 159, 28, 0.5); }
+}
+
+.settings-select {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-primary);
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-sm);
+  font-weight: 900;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 2);
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+}
+
+.settings-select:focus {
+  border-color: var(--accent-primary);
+}
+
+.setting-val-display {
+  color: var(--accent-secondary);
+  font-weight: 900;
+  font-size: var(--font-sm);
+  letter-spacing: 1px;
+}
+
+.global-skip-btn {
+  position: absolute;
+  top: calc(var(--vu) * 3);
+  right: calc(var(--vu) * 3);
+  z-index: 99999;
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-xs);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  background: rgba(11, 13, 15, 0.85);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-secondary);
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.global-skip-btn:hover {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+  color: #000;
+  box-shadow: 0 0 15px rgba(255, 74, 74, 0.4);
+}
+
+#damage-vignette-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9400;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: calc(var(--vu) * 4);
-  padding: calc(var(--vu) * 1) 0;
-  border-top: 1px solid var(--border-subtle);
+  overflow: hidden;
 }
 
-.setting-label {
-  font-size: calc(var(--vu) * 1.8);
-  color: var(--text-muted);
-  font-weight: 900;
-  letter-spacing: 1px;
+#hit-indicator-wedge {
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 35px solid rgba(255, 74, 74, 0.85);
+  position: absolute;
+  transform-origin: center bottom;
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+  transform: translateY(-80px) rotate(0deg);
+  filter: drop-shadow(0 0 8px #ff4a4a);
+}
+
+#hit-indicator-wedge.flash {
+  animation: hit-wedge-fade 0.6s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes hit-wedge-fade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 
@@ -3527,6 +3647,22 @@ body.orientation-locked #orientation-lock {
   animation: ammo-error-pulse 0.35s ease-in-out 2;
 }
 
+.weapon-status-panel.is-low-ammo {
+  animation: ammo-warning-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes ammo-warning-pulse {
+  0% {
+    border-color: rgba(255, 74, 74, 0.4);
+    box-shadow: inset 0 0 4px rgba(255, 74, 74, 0.2);
+  }
+  100% {
+    border-color: rgba(255, 74, 74, 0.95);
+    box-shadow: inset 0 0 10px rgba(255, 74, 74, 0.5), 0 0 8px rgba(255, 74, 74, 0.3);
+    color: #ff4a4a;
+  }
+}
+
 .ship-status-panel {
   gap: calc(var(--vu) * 0.55);
 }
@@ -4017,6 +4153,22 @@ body.distress-mode #game-viewport::after {
 @keyframes legendary-vignette {
   0% { opacity: 0; }
   25% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#game-viewport.kill-confirm-flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9550;
+  background: radial-gradient(circle at center, rgba(255, 74, 74, 0.05) 30%, rgba(255, 159, 28, 0.28) 100%);
+  animation: kill-confirm-vignette 0.3s ease-out forwards;
+}
+
+@keyframes kill-confirm-vignette {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
   100% { opacity: 0; }
 }
 
@@ -9769,4 +9921,100 @@ button.archive-log-entry:active {
   line-height: 1.4;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+/* ── Sprint 19 Wave 3: Narrative & Aesthetics ── */
+
+/* Monospace intimate dialogue state (Stage 3/4 intimacy) */
+.mothership-line--intimate .mothership-line__text {
+  text-transform: none !important;
+  font-family: 'Space Mono', monospace !important;
+  font-weight: 500 !important;
+  font-style: italic !important;
+  font-size: clamp(16px, calc(var(--vu) * 2.8), 34px) !important;
+  color: #cbd5e1 !important; /* Soft slate gray */
+  letter-spacing: 0.01em !important;
+  text-shadow: 0 0 6px rgba(var(--terminal-glow-rgb), 0.15) !important;
+}
+
+/* Queen Dial Layouts */
+.dialogue-layout--queen-warm {
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  box-shadow: 0 0 30px rgba(245, 158, 11, 0.15), inset 0 0 15px rgba(245, 158, 11, 0.05) !important;
+}
+
+.dialogue-layout--queen-hostile {
+  border-color: rgba(255, 34, 34, 0.45) !important;
+  box-shadow: 0 0 35px rgba(255, 34, 34, 0.22), inset 0 0 20px rgba(255, 34, 34, 0.08) !important;
+}
+
+/* Fullscreen Alert Vignette */
+@keyframes alert-vignette-pulse {
+  0%, 100% {
+    box-shadow: inset 0 0 40px rgba(255, 159, 28, 0.22);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: inset 0 0 80px rgba(255, 159, 28, 0.48);
+    filter: brightness(0.92) contrast(1.05);
+  }
+}
+
+@keyframes critical-vignette-pulse {
+  0%, 100% {
+    box-shadow: inset 0 0 50px rgba(239, 68, 68, 0.28);
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    box-shadow: inset 0 0 100px rgba(239, 68, 68, 0.65);
+    filter: brightness(0.85) contrast(1.15) saturate(1.2);
+  }
+}
+
+.hud-alert-flash #game-viewport {
+  animation: alert-vignette-pulse 0.4s ease-in-out infinite !important;
+}
+
+.hud-critical-flash #game-viewport {
+  animation: critical-vignette-pulse 0.3s ease-in-out infinite !important;
+}
+
+/* Queen Hallucination Glitch overlay styling */
+@keyframes hallucination-jitter {
+  0% {
+    transform: translate(0, 0) skew(0deg);
+    filter: contrast(1) brightness(1);
+  }
+  20% {
+    transform: translate(-1px, 1px) skew(-0.5deg);
+    filter: contrast(1.05) brightness(1.02);
+  }
+  40% {
+    transform: translate(1px, -1px) skew(0.5deg);
+  }
+  60% {
+    transform: translate(-1.5px, -0.5px) skew(0deg);
+    filter: contrast(1.1) brightness(0.98);
+  }
+  80% {
+    transform: translate(1px, 1.5px) skew(0.2deg);
+  }
+  100% {
+    transform: translate(0, 0) skew(0deg);
+  }
+}
+
+.queen-hallucination-pulse #game-viewport {
+  animation: hallucination-jitter var(--hallucination-speed, 0.15s) ease-in-out infinite !important;
+}
+
+.queen-hallucination-pulse #game-viewport::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(239, 68, 68, 0.15) 100%);
+  pointer-events: none;
+  mix-blend-mode: color-burn;
+  z-index: 1000;
+  animation: fade-in-out 0.3s ease-in-out;
 }

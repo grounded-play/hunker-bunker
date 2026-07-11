@@ -201,6 +201,7 @@ export const ACT2_ENDING_CUTSCENES = Object.freeze({
 export const ACT2_LINES = Object.freeze({
     intro: [
         'QUEEN: TWO HEARTBEATS. ONE PURPOSE.',
+        'QUEEN: THE COLD BOX THEY KEPT ME IN COULD NOT FREEZE THE MIND. NOW WE SHARE THE BODY.',
         'QUEEN: THE MOTHERSHIP STILL WHISPERS THROUGH YOUR WRECK. IT WILL SEND EXTERMINATORS.',
         'SYSTEM: NEW INSTINCT — SEVER THE MOTHERSHIP UPLINK AT YOUR SHIP CONSOLE.'
     ],
@@ -214,6 +215,7 @@ export const ACT2_LINES = Object.freeze({
     ],
     dishBuilt: [
         'SYSTEM: SIGNAL DISH GROWN. WIDEBAND SWEEP COMPLETE.',
+        'QUEEN: THE LITTLE BUILDERS TRIED THIS ONCE. THEY LACKED HANDS. YOU ARE BETTER HANDS.',
         'QUEEN: THREE CAMPS OF SURVIVORS. THEY BUILD A VESSEL TO FLEE THIS WORLD.',
         'QUEEN: HELP THEM FINISH IT. WE WILL NEED THEIR WINGS.'
     ],
@@ -275,9 +277,9 @@ export const ACT2_ENDING_LINES = Object.freeze({
         'QUEEN: SLEEP, CARRIER. WE HAVE SO MANY WORLDS TO MEET.'
     ],
     [ACT2_ENDINGS.CLEAN_ESCAPE]: [
-        'SYSTEM: LAUNCH COMPLETE. ALL SURVIVOR MANIFESTS ACCOUNTED FOR. HUMAN.',
-        'SYSTEM: NO HIVE SIGNATURE DETECTED ABOARD.',
-        'SYSTEM: COURSE SET FOR THE RELAY. TELL THEM WHAT HAPPENED HERE.'
+        'SYSTEM: Launch complete. All survivor manifests accounted for. Human.',
+        'SYSTEM: No hive signature detected aboard.',
+        'SYSTEM: Course set for the relay. Tell them what happened here.'
     ],
     [ACT2_ENDINGS.MIXED_CREW]: [
         'SYSTEM: LAUNCH COMPLETE. CABIN PARTITION FIELDS HOLDING.',
@@ -285,14 +287,14 @@ export const ACT2_ENDING_LINES = Object.freeze({
         'QUEEN: A FRAGILE PEACE. FRAGILE THINGS ARE MY FAVORITE.'
     ],
     [ACT2_ENDINGS.CARRIERS_BARGAIN]: [
-        'SYSTEM: LAUNCH COMPLETE. COOLANT CELL TEMPERATURE ANOMALY LOGGED.',
-        'SYSTEM: OPERATOR VITALS NOMINAL. SUBDERMAL READINGS... FLAGGED.',
-        'SYSTEM: THE SURVIVORS ARE SAFE. NOBODY CHECKED YOUR NECK.'
+        'SYSTEM: Launch complete. Coolant cell temperature anomaly logged.',
+        'SYSTEM: Operator vitals nominal. Subdermal readings... flagged.',
+        'SYSTEM: The survivors are safe. Nobody checked your neck.'
     ],
     [ACT2_ENDINGS.SCORCHED_SKY]: [
-        'SYSTEM: LAUNCH COMPLETE. CREW MANIFEST: ONE.',
-        'SYSTEM: NO BEACONS BEHIND. NO SIGNAL AHEAD.',
-        'SYSTEM: FOUR SEATS. ONE HEARTBEAT.'
+        'SYSTEM: Launch complete. Crew manifest: one.',
+        'SYSTEM: No beacons behind. No signal ahead.',
+        'SYSTEM: Four seats. One heartbeat.'
     ],
     [ACT2_ENDINGS.MOTHERSHIP_INFECTION]: [
         'SYSTEM: MOTHERSHIP CLEARANCE ACCEPTED. SURVIVOR RESCUE FLIGHT LOGGED.',
@@ -312,7 +314,7 @@ export const ACT2_ENDING_LINES = Object.freeze({
     [ACT2_ENDINGS.FAILED_CARRIER]: [
         'SYSTEM: LAUNCH COMPLETE. COOLANT CELL BREACH IN COMPARTMENT FOUR.',
         'SYSTEM: THE AMBER GLOW IS FLICKERING. SOMEONE IS ASKING WHAT THAT LIGHT IS.',
-        'SYSTEM: YOU HID THE FUTURE IN A COLD BOX AND THE COLD BOX IS FAILING.'
+        'SYSTEM: You hid the future in a cold box and the cold box is failing.'
     ],
     [ACT2_ENDINGS.EMPTY_HUSK]: [
         'SYSTEM: LAUNCH COMPLETE. CREW MANIFEST: ONE.',

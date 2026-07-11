@@ -61,7 +61,10 @@
     }
   </script>
   <div id="game-viewport">
-    
+    <button id="global-skip-intro-btn" class="global-skip-btn hidden">SKIP INTRO</button>
+    <div id="damage-vignette-layer" class="hidden">
+      <div id="hit-indicator-wedge"></div>
+    </div>
     <div id="debug-toolbar">
       <div id="fps-counter">FPS: --</div>
       <button id="toggle-typo" class="debug-btn">
@@ -97,29 +100,13 @@
         <div class="splash-title">HUNKER BUNKER</div>
         <div class="splash-subtitle">TACTICAL COMMAND v2.0</div>
 
-        <button class="splash-btn" id="enter-fullscreen">PLAY GAME</button>
-
-        <div class="utility-btns splash-corner">
-          <button class="calibrate-btn open-settings-btn">⚙</button>
+        <div class="title-menu">
+          <button class="title-menu-btn" id="title-continue-btn" disabled>CONTINUE</button>
+          <button class="title-menu-btn" id="title-newrun-btn">NEW RUN</button>
+          <button class="title-menu-btn" id="title-achievements-btn">ACHIEVEMENTS</button>
+          <button class="title-menu-btn" id="title-settings-btn">SETTINGS</button>
+          <button class="title-menu-btn" id="title-about-btn">ABOUT</button>
         </div>
-
-        <div class="splash-settings">
-          <div class="setting-row">
-            <span class="setting-label">FULLSCREEN MODE</span>
-            <label class="toggle"><input type="checkbox" id="splash-fs-toggle"> <span
-                class="slider"></span></label>
-          </div>
-          <div class="setting-row">
-            <span class="setting-label">DEBUG DIAGNOSTICS</span>
-            <label class="toggle"><input type="checkbox" id="splash-debug-toggle"> <span class="slider"></span></label>
-          </div>
-          <div class="setting-row">
-            <span class="setting-label">NIGHT VISION</span>
-            <label class="toggle"><input type="checkbox" id="splash-nightvision-toggle"> <span class="slider"></span></label>
-          </div>
-        </div>
-
-        <button class="about-btn" id="about-btn">ABOUT</button>
       </div>
     </div>
 
@@ -346,6 +333,10 @@
           <div>
             <div class="archive-log-detail-kicker">◈ RECOVERED ARCHIVE RECORD</div>
             <div id="archive-log-detail-key" class="archive-log-detail-key">LOG-A01</div>
+            <div class="archive-log-detail-meta" style="font-family: 'Space Mono', monospace; font-size: 11px; color: #ffaa44; margin-bottom: 8px; opacity: 0.85; display: flex; gap: 16px;">
+              <span id="archive-log-detail-date"></span>
+              <span id="archive-log-detail-coords"></span>
+            </div>
             <div class="archive-log-detail-status">DECRYPTION COMPLETE // READ-ONLY</div>
           </div>
         </div>
@@ -723,6 +714,10 @@
         <div class="terminal-scanline"></div>
         <div class="lore-modal-header">BUNKER TERMINAL — LOG FRAGMENT</div>
         <div class="lore-modal-key" id="lore-modal-key">LOG-A01</div>
+        <div class="lore-modal-meta" style="font-family: 'Space Mono', monospace; font-size: 11px; color: #ffaa44; margin-bottom: 12px; opacity: 0.85; display: flex; gap: 16px;">
+          <span id="lore-modal-date"></span>
+          <span id="lore-modal-coords"></span>
+        </div>
         <div class="lore-modal-text" id="lore-modal-text"></div>
       </div>
     </div>
@@ -1240,6 +1235,26 @@
         <div class="setting-item">
           <span>NIGHT VISION (NO FOG/NIGHT)</span>
           <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span>TEXT SPEED</span>
+          <select id="setting-text-speed" class="settings-select">
+            <option value="normal">NORMAL</option>
+            <option value="fast">FAST</option>
+            <option value="instant">INSTANT</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span>CAMERA SHAKE</span>
+          <label class="toggle"><input type="checkbox" id="setting-shake-toggle"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span>COLORBLIND ASSIST</span>
+          <label class="toggle"><input type="checkbox" id="setting-colorblind-toggle"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span>RUN DIFFICULTY</span>
+          <span id="setting-difficulty-val" class="setting-val-display">STANDARD</span>
         </div>
         <div class="setting-item setting-item--action">
           <span>AUDIO MIXER</span>

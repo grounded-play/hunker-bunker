@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { chooseDirectorAction, BunkerDirector } from './director.js';
+import { BunkerDirector, chooseApexThreatEvents, chooseDirectorAction } from './director.js';
 
 describe('chooseDirectorAction', () => {
     it('never harasses inside the safe field', () => {
@@ -94,5 +94,34 @@ describe('BunkerDirector', () => {
 
         expect(d.runSeed).toBe('manual');
         expect(d.cardEffects.spawnBias.patrolBias).toBe(true);
+    });
+
+    it('emits apex threats once per run gate', () => {
+        const d = new BunkerDirector();
+        const first = d.evaluateApexThreats({ campId: 'camp_vesper', suspicion: 75 });
+        const second = d.evaluateApexThreats({ campId: 'camp_vesper', suspicion: 100 });
+        const outed = d.evaluateApexThreats({ campId: 'camp_vesper', suspicion: 100, outed: true });
+
+        expect(first.map((event) => event.type)).toEqual(['hunter_pair']);
+        expect(second).toEqual([]);
+        expect(outed.map((event) => event.type)).toEqual(['exterminator_lander']);
+    });
+});
+
+describe('chooseApexThreatEvents', () => {
+    it('triggers hunters at high suspicion and a lander when outed', () => {
+        const events = chooseApexThreatEvents({ campId: 'camp_meridian', suspicion: 80, outed: true });
+
+        expect(events.map((event) => event.type)).toEqual(['hunter_pair', 'exterminator_lander']);
+        expect(events[0].hunters).toEqual(['HENDERSON-REDLINE', 'PARK-ASH']);
+    });
+
+    it('does not repeat already spawned threat keys', () => {
+        const events = chooseApexThreatEvents(
+            { campId: 'camp_meridian', suspicion: 80, outed: true },
+            ['hunter_pair:camp_meridian', 'exterminator_lander:global']
+        );
+
+        expect(events).toEqual([]);
     });
 });

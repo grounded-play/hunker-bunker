@@ -22,6 +22,7 @@ you own) lifts it clean.
   `docs/wave2-asset-manifest.md`: filename → what it is → where it goes.
 - Colorblind rule: state variants must differ in **shape or pattern**, not
   color alone (a lockdown prop gets bars/angles, not just a red tint).
+- Sprite-Density Unification Grid Rule: All generated sprites, icons, and character portraits must adhere to a standardized pixel density (pixel grid) matching the walk-sheet/sheet-sprite density. Any outliers (such as high-detail painterly-scale props or photographic radio portraits) must be re-generated or post-processed to conform to this locked pixel grid and color palette to prevent visual incoherence.
 
 ## Batch 1 — Camp prop families (state-variant aware)
 

@@ -11,6 +11,9 @@
 import { createRunCardState, mergeEffects, serializeRunCards } from './runModifiers.js';
 
 export const DIRECTOR_ACTIONS = Object.freeze(['patrol', 'lightsout', 'corrupt', 'mercy', 'taunt']);
+export const APEX_THREAT_TYPES = Object.freeze(['hunter_pair', 'exterminator_lander']);
+export const APEX_HUNTER_PAIR = Object.freeze(['HENDERSON-REDLINE', 'PARK-ASH']);
+export const APEX_EXTERMINATOR_LANDER = 'MOTHERSHIP EXTERMINATOR LANDER';
 
 const ACTION_COOLDOWNS = Object.freeze({
     patrol: 28,
@@ -62,6 +65,40 @@ export function chooseDirectorAction(snapshot = {}, random = Math.random) {
     return 'none';
 }
 
+function apexThreatKey(type, campId = 'global') {
+    return `${type}:${campId || 'global'}`;
+}
+
+export function chooseApexThreatEvents(snapshot = {}, alreadySpawned = []) {
+    const spawned = alreadySpawned instanceof Set ? alreadySpawned : new Set(alreadySpawned);
+    const suspicion = Math.max(0, Math.min(100, Number(snapshot.suspicion) || 0));
+    const campId = String(snapshot.campId ?? 'global');
+    const events = [];
+
+    if (suspicion >= 75 && !spawned.has(apexThreatKey('hunter_pair', campId))) {
+        events.push({
+            type: 'hunter_pair',
+            key: apexThreatKey('hunter_pair', campId),
+            label: APEX_HUNTER_PAIR.join(' + '),
+            campId,
+            suspicion,
+            hunters: [...APEX_HUNTER_PAIR]
+        });
+    }
+
+    if (snapshot.outed === true && !spawned.has(apexThreatKey('exterminator_lander'))) {
+        events.push({
+            type: 'exterminator_lander',
+            key: apexThreatKey('exterminator_lander'),
+            label: APEX_EXTERMINATOR_LANDER,
+            campId,
+            suspicion
+        });
+    }
+
+    return events;
+}
+
 export class BunkerDirector {
     constructor({ cadence = 16, threatGap = 16 } = {}) {
         this.baseCadence = cadence;
@@ -77,6 +114,7 @@ export class BunkerDirector {
         this._sinceEval = 0;
         this._elapsed = 0;
         this._cooldowns = {};
+        this._apexThreats = new Set();
     }
 
     startRun(seed = 'default', options = {}) {
@@ -150,5 +188,11 @@ export class BunkerDirector {
             this._sinceThreat = 0;
         }
         return action;
+    }
+
+    evaluateApexThreats(snapshot = {}) {
+        const events = chooseApexThreatEvents(snapshot, this._apexThreats);
+        for (const event of events) this._apexThreats.add(event.key);
+        return events;
     }
 }

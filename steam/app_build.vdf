@@ -5,7 +5,7 @@
 //   depot ids       set in the depots block + matching depot_build_*.vdf
 "AppBuild"
 {
-    "AppID" "__APPID__"
+    "AppID" "1247290"
     "Desc" "Hunker Bunker automated build" // shown in the Steamworks build list
     "BuildOutput" "../steam_build_output/"
     "ContentRoot" "../dist_electron/"
@@ -16,7 +16,7 @@
 
     "Depots"
     {
-        "__DEPOT_WINDOWS__" "depot_build_windows.vdf"
-        "__DEPOT_LINUX__" "depot_build_linux.vdf"
+        "1247291" "depot_build_windows.vdf"
+        "1247292" "depot_build_linux.vdf"
     }
 }

@@ -3,7 +3,7 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'chrome/**', 'scratch/**'],
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'chrome/**', 'scratch/**', 'scripts/**', 'dist_soundtrack/**'],
   },
   js.configs.recommended,
   {
@@ -26,6 +26,17 @@ export default [
       sourceType: 'module',
       globals: {
         ...globals.node,
+      },
+    },
+  },
+  {
+    files: ['electron/**/*.cjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+      globals: {
+        ...globals.node,
+        ...globals.browser,
       },
     },
   },

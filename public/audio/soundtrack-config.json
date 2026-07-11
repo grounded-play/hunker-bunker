@@ -1,0 +1,40 @@
+{
+  "album": "Hunker Bunker (Original Game Soundtrack)",
+  "artist": "Government Name",
+  "year": 2026,
+  "genre": "Soundtrack / Industrial Ambient / Chiptune",
+  "description": "The official industrial electronic and tactical chiptune soundtrack for Hunker Bunker, composed by Government Name.",
+  "cover": "cover.png",
+  "tracks": [
+    {
+      "track_number": 1,
+      "title": "Hunker Bunker Main Theme",
+      "filename": "vg2/mainbg_music.mp3",
+      "description": "The primary tactical theme greeting operators at the entrance of the deep bio-vaults."
+    },
+    {
+      "track_number": 2,
+      "title": "Safe Haven (Ship Sanctuary)",
+      "filename": "NewTrack1.mp3",
+      "description": "Warm ambient sanctuary vibes heard inside the player's recovery vessel."
+    },
+    {
+      "track_number": 3,
+      "title": "Glacial Depths (Cryo Biome)",
+      "filename": "NewTrack2.mp3",
+      "description": "Cold, isolating resonant pads echo through the frozen sub-sectors."
+    },
+    {
+      "track_number": 4,
+      "title": "Overgrown Bio-Sphere (Bio Biome)",
+      "filename": "NewTrack3.mp3",
+      "description": "Organic clicks and unsettling synthesizer sweeps inside the flora sectors."
+    },
+    {
+      "track_number": 5,
+      "title": "Under Siege (Combat Alert)",
+      "filename": "NewTrack4.mp3",
+      "description": "Fast-paced tension driving operators during close-quarters hostile encounters."
+    }
+  ]
+}

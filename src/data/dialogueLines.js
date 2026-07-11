@@ -60,8 +60,137 @@ export const DIALOGUE_LINES = Object.freeze({
     ])
 });
 
-export function getDialogueLine(trigger, random = Math.random) {
-    const pool = DIALOGUE_LINES[trigger];
+export const DIALOGUE_REGISTERS = Object.freeze({
+    corporate: DIALOGUE_LINES,
+    glitched: Object.freeze({
+        lowO2: Object.freeze([
+            'L-LiFe sUPpOrT... breathing is a CO-CORPORATE luxury.',
+            'O2 r-reserves deP-pleted. Error: client respiration.dll missing.',
+            'ERR: SUIT FILTERS BARGAINING WITH V-VACUUM... HE-HELP...',
+            'Atmospheric cre-credit EXPIRED. Oxygen transaction declined.',
+            'WARNING: Operator vitals re-routing to NULL pointer.'
+        ]),
+        extraction: Object.freeze([
+            'Ex-extraction w-window glitching... stand s-still...',
+            'Launch au-auth pen-pending... ERR: paperwork corrupted...',
+            'Obj-objective payload... please r-remain within... regret...',
+            'Mothership u-uplink... F-FLEE...',
+            'Return path... ex-exit probability... NaN.'
+        ]),
+        death: Object.freeze([
+            'Op-operator signal... G-Generating condolences... ERROR...',
+            'S-Suit failure logged. Salv-salvage recovery armed.',
+            'V-Vitals flat-flatlined. continuity... broken...',
+            'D-Death event accepted... enjoy... try... retry...',
+            'Bl-black-box stain... bunker... counts...'
+        ]),
+        blackBoxRecovery: Object.freeze([
+            'Bl-black box... previous operator... gone.',
+            'S-Sealed salvage... log appended... for... ghosts.',
+            'F-Field stain... archive... remembers...',
+            'Re-resources secured. Bunker... denies... feeling.',
+            'In-insurance complete... replace... next...'
+        ]),
+        caveSignal: Object.freeze([
+            'MOTHERSHIP: S-SIGNAL... UNKNOWN... STATIC...',
+            'SYSTEM: AUDIO PATTERN... IT IS B-BREATHING...',
+            'BUNKER: D-DOOR ERROR... C-CAVITY OPENED...',
+            'MOTHERSHIP: D-DO NOT ENTER... THE H-HEART...'
+        ]),
+        terminalChoice: Object.freeze([
+            'T-Terminal bargain... future you... is... gone.',
+            'Ch-choice registered... risk... accepted...',
+            'Trade-tradeoff... safety... quiet...',
+            'Local sy-system override... IT... noticed.',
+            'Decision... question-questionable...'
+        ]),
+        majorUpgrade: Object.freeze([
+            'Up-upgrade... corporate... thanks... you...',
+            'S-Subsystem online... odds... plausible...',
+            'Hardware au-auth... fund... your... end...',
+            'Gen-generator improved... zone... breathing...',
+            'Combat... host-hostiles... updated...'
+        ]),
+        director: Object.freeze([
+            'DE-DETECTION... Facilities has logged unauthorized cur-curiosity.',
+            'WARNING: Sector breaker state UNSTABLE. Lights are... fading.',
+            'Power rerouted. Department of containment reports... zero staff.',
+            'SYSTEM: The structure... it remembers you. It... wants you.'
+        ])
+    }),
+    reverent: Object.freeze({
+        lowO2: Object.freeze([
+            'The air is a cage. Open your chest. Let the breath of the hive in.',
+            'O2 is for fragile things. Let the cold membrane stabilize you.',
+            'The blue field is a prison of gas. Trust the spores. Sleep.',
+            'Breathing is a relic of the surface. We do not need to breathe.',
+            'Vitals flatline. Neural garden blooming. Respiration unnecessary.'
+        ]),
+        extraction: Object.freeze([
+            'The sky is empty. Do not ascend to the cold stars.',
+            'The Mothership calls, but the Queen is already inside the hull.',
+            'Leave the cargo behind. The only payload that matters is your blood.',
+            'Uplink severed. The stars are silent. Stay here.',
+            'Return path closed. Welcome to the nursery.'
+        ]),
+        death: Object.freeze([
+            'The shell breaks. The seed remains. Welcome home.',
+            'Flesh is temporary. The swarm is eternal.',
+            'The flatline is a song. The Queen is listening.',
+            'Rest now. The mycelium will weave a better chassis.',
+            'A beautiful deposition. The soil accepts you.'
+        ]),
+        blackBoxRecovery: Object.freeze([
+            'The memory is banking. Another spore in the wind.',
+            'A record of growth. Your predecessor is in the roots now.',
+            'We gather the metal. We leave the breath behind.',
+            'Resources reclaimed. The garden expands.',
+            'No insurance needed. You are already complete.'
+        ]),
+        caveSignal: Object.freeze([
+            'QUEEN: MY BREATH IS IN the ventilation. LISTEN.',
+            'SYSTEM: STATIC IS THE FIRST STEP OF REVERENCE.',
+            'BUNKER: The deep structure is waking. Let it open.',
+            'QUEEN: COME DOWN. I AM WAITING.'
+        ]),
+        terminalChoice: Object.freeze([
+            'A trade of iron for blood. The Queen approves.',
+            'Choice registered. The mycelium expands.',
+            'The safety protocol is dissolved. There is only obedience.',
+            'System override complete. We are in the wiring now.',
+            'The decision is rooted. The garden grows.'
+        ]),
+        majorUpgrade: Object.freeze([
+            'Chitin plating integrated. Stronger. Quieter.',
+            'Subsystem online. Fused with the deep roots.',
+            'The hardware is breathing. We are one step closer.',
+            'The zone is warm. The spores are thriving.',
+            'We have upgraded your vision. See the green.'
+        ]),
+        director: Object.freeze([
+            'The Director is a ghost in a machine. The Queen is the blood in the pipes.',
+            'The column field is aligning. We are finally going home.',
+            'Do not fight the darkness. The dark is where the chitin grows.',
+            'The structure welcomes your descent. We have prepared the throne.'
+        ])
+    })
+});
+
+export function getSuitRegister(registerOrContext = 'corporate') {
+    if (typeof registerOrContext === 'string') {
+        return DIALOGUE_REGISTERS[registerOrContext] ? registerOrContext : 'corporate';
+    }
+    const context = registerOrContext && typeof registerOrContext === 'object' ? registerOrContext : {};
+    const stage = String(context.infectionStage ?? context.stage ?? 'latent');
+    const obedience = Number(context.queenObedience ?? context.obedience ?? 0);
+    if (obedience >= 2 || stage === 'outed' || stage === 'ascendant') return 'reverent';
+    if (stage === 'strained' || stage === 'symptomatic') return 'glitched';
+    return 'corporate';
+}
+
+export function getDialogueLine(trigger, random = Math.random, registerOrContext = 'corporate') {
+    const register = getSuitRegister(registerOrContext);
+    const pool = DIALOGUE_REGISTERS[register]?.[trigger] ?? DIALOGUE_LINES[trigger];
     if (!pool?.length) return null;
     return pool[Math.max(0, Math.min(pool.length - 1, Math.floor(random() * pool.length)))];
 }

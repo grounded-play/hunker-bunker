@@ -7,8 +7,8 @@ import { CutsceneManager } from './src/cutscene.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
-import { codexStore } from './src/codex.js';
-import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL } from './src/data/codex.js';
+import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from './src/codex.js';
+import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
 import { pickMissionBriefing } from './src/data/missions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
@@ -17,9 +17,13 @@ import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import { getGifDurationMs } from './src/gifDuration.js';
-import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, hasAnyUnlock } from './src/achievements.js';
+import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
-const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
+const titleContinueBtn = document.getElementById('title-continue-btn');
+const titleNewRunBtn = document.getElementById('title-newrun-btn');
+const titleAchievementsBtn = document.getElementById('title-achievements-btn');
+const titleSettingsBtn = document.getElementById('title-settings-btn');
+const titleAboutBtn = document.getElementById('title-about-btn');
 const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
@@ -31,10 +35,7 @@ const loaderBriefingAvatar = document.getElementById('loader-briefing-avatar');
 const loaderBriefingAvatarImg = document.getElementById('loader-briefing-avatar-img');
 const loaderBriefingSpeaker = document.getElementById('loader-briefing-speaker');
 
-const splashDebugToggle = document.getElementById('splash-debug-toggle');
-const splashFsToggle = document.getElementById('splash-fs-toggle');
 const mainDebugToggle = document.getElementById('main-debug-toggle');
-const splashNightVisionToggle = document.getElementById('splash-nightvision-toggle');
 const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
@@ -229,6 +230,17 @@ const arcManager = new ArcStateManager();
 const act2Manager = new Act2Manager();
 let missionFlowRunning = false;
 let isResettingRun = false;
+
+function getActiveSuitDialogueContext() {
+    const act2State = act2Manager?.getState?.() ?? {};
+    const achievementState = window.achievementEngine?.getState?.() ?? {};
+    return {
+        infectionStage: act2State.infectionStage ?? 'latent',
+        queenObedience: act2State.queenObedience ?? 0,
+        totalDeaths: achievementState.stats?.totalDeaths ?? 0,
+        sessionDeaths: getSecretGateState(achievementState).deathsThisRun
+    };
+}
 
 function isPortraitOrientationLocked() {
     const visualWidth = window.visualViewport?.width ?? window.innerWidth;
@@ -729,8 +741,12 @@ function setupControlsModal() {
 
 function resetPickupCounter(playerType = (window.game?.playerType || 'SCOUT')) {
     setActiveAmmoCapacity(playerType, { clampExisting: false });
-    pickupCounterState.health = 0;
-    pickupCounterState.ammo = Math.min(STARTING_RUN_AMMO, activeAmmoCapacity);
+    const campEffects = window.game?.getCampVerbRuntimeEffects?.() ?? {};
+    const medkitReserve = Math.max(0, Math.floor(Number(campEffects.medkitInventory) || 0));
+    const ammoReserve = Math.max(0, Math.floor(Number(campEffects.ammoReserve) || 0));
+    activeAmmoCapacity += ammoReserve;
+    pickupCounterState.health = medkitReserve;
+    pickupCounterState.ammo = Math.min(STARTING_RUN_AMMO + ammoReserve, activeAmmoCapacity);
     pickupCounterState.weapon = 0;
     pickupCounterState.coin = 0;
     recomputePickupTotal();
@@ -851,6 +867,7 @@ function renderWeaponClipState(detail = {}) {
     if (weaponStatusPanel) {
         weaponStatusPanel.classList.toggle('is-reloading', reloading);
         weaponStatusPanel.classList.toggle('is-refilling', refilling);
+        weaponStatusPanel.classList.toggle('is-low-ammo', clip <= 2 && !reloading);
         weaponStatusPanel.setAttribute('aria-busy', reloading ? 'true' : 'false');
     }
 }
@@ -906,6 +923,13 @@ window.addEventListener('enemy-killed', (event) => {
     const total = event?.detail?.totalKills ?? 0;
     const type = event?.detail?.type ?? '';
     const isBoss = Boolean(event?.detail?.isBoss);
+
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) {
+        viewport.classList.remove('kill-confirm-flash');
+        void viewport.offsetWidth;
+        viewport.classList.add('kill-confirm-flash');
+    }
     if (total === 1 && !isBoss) fireMothershipReactiveLine('first_kill');
     if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
     if (type === 'crawler') fireMothershipReactiveLine('crawler_detected');
@@ -1263,6 +1287,12 @@ function renderRadioTransmission(rawText) {
 
     const stack = document.querySelector('.hud-notification-stack');
     if (!stack) return;
+
+    const activeCards = Array.from(stack.querySelectorAll('.radio-transmission-prompt:not(.is-closing):not(.hidden)'));
+    if (activeCards.length >= 2) {
+        dismissRadioPrompt(activeCards[0]);
+    }
+
     const { sender, portrait, text: parsedText } = parseRadioTransmission(rawText);
     const text = trimRadioCopy(parsedText);
     if (!text) return;
@@ -1825,7 +1855,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const mem = getWorldMemory();
     const logsFound = mem.logsFound?.length ?? 0;
     if (archiveRow) archiveRow.classList.toggle('hidden', logsFound === 0);
-    if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/27`;
+    if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/${ALL_LORE_KEYS.length}`;
 
     const modal = document.getElementById('game-over-modal');
     if (modal) {
@@ -2111,6 +2141,15 @@ window.addEventListener('player-respawned', () => {
     if (scanBar) scanBar.style.transform = 'scaleX(1)';
     updateTouchScanButtonState({ remaining: 0, max: 1 });
     window.game?.setInputEnabled?.(true);
+
+    if (window.game?.act2?.getState?.().begun) {
+        window.setTimeout(() => {
+            void dialogueManager?.openBriefTransmission?.({
+                playerType: window.game?.playerType ?? getSelectedHeroType(),
+                lines: ['QUEEN: I FELT THAT. DO NOT DO IT AGAIN.']
+            });
+        }, 1200);
+    }
 });
 
 window.addEventListener('mission-objective-complete', (event) => {
@@ -2125,7 +2164,7 @@ window.addEventListener('mission-objective-complete', (event) => {
         ? (messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP')
         : 'OBJECTIVE COMPLETE — UPLINK LOCKED // MAX ALL SYSTEMS TO EXTRACT';
     showBiomePrompt(msg);
-    const line = getDialogueLine('extraction');
+    const line = getDialogueLine('extraction', Math.random, getActiveSuitDialogueContext());
     if (line) window.setTimeout(() => showBiomePrompt(`> BUNKER: ${line}`), 900);
     AudioManager.play('ui_boot', { volume: 0.45, playbackRate: 0.88, bus: 'sfx' });
 });
@@ -2133,13 +2172,13 @@ window.addEventListener('mission-objective-complete', (event) => {
 window.addEventListener('goal-unlocked', (event) => {
     const goalKey = event?.detail?.goalKey;
     if (['o2Bubble', 'hullExpansion', 'radarNode', 'reactorCompressor'].includes(goalKey)) return;
-    const line = getDialogueLine('majorUpgrade');
+    const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
 
 window.addEventListener('o2-generator-upgraded', (event) => {
     if (event?.detail?.level === 1) return;
-    const line = getDialogueLine('majorUpgrade');
+    const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
 
@@ -2232,7 +2271,7 @@ window.addEventListener('player-extracted', (event) => {
 const ALL_LORE_KEYS = [
     'A01','A02','A03','A04','A05','A06','A07','A08','A09','A10','A11','A12',
     'C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12',
-    'B01','B02','B03'
+    'B01','B02','B03','B13'
 ];
 
 function updateMenuCommandStatuses() {
@@ -2282,6 +2321,13 @@ function openArchiveLogDetail(key) {
     if (keyEl) keyEl.textContent = `LOG-${key}`;
     if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
     if (portraitEl) portraitEl.src = lorePortraitSrc(key);
+
+    const metadata = LORE_METADATA[key];
+    const dateEl = document.getElementById('archive-log-detail-date');
+    const coordsEl = document.getElementById('archive-log-detail-coords');
+    if (dateEl) dateEl.textContent = metadata ? `DATE: ${metadata.date}` : '';
+    if (coordsEl) coordsEl.textContent = metadata ? `LOC: ${metadata.coords}` : '';
+
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
 }
@@ -2296,11 +2342,12 @@ function buildArchiveModal() {
     updateMenuCommandStatuses();
     listEl.innerHTML = '';
 
-    // Group by sector
+    const historicalKeys = ALL_LORE_KEYS.filter(k => LORE_METADATA[k]?.group === 'historical');
+    const recentKeys = ALL_LORE_KEYS.filter(k => LORE_METADATA[k]?.group === 'recent');
+
     const sections = [
-        { prefix: 'A', label: 'ACTIVE SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('A')) },
-        { prefix: 'C', label: 'CRYO SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('C')) },
-        { prefix: 'B', label: 'BIO SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('B')) }
+        { label: 'HISTORICAL COLLAPSE RECORDS', keys: historicalKeys },
+        { label: 'RECENT CONTAINMENT OPERATIONS', keys: recentKeys }
     ];
 
     for (const section of sections) {
@@ -2478,12 +2525,30 @@ function handleAchievementUnlocks(newUnlocks = [], { delayMs = 0 } = {}) {
 function recordAchievementEvent(name, detail = {}, options = {}) {
     const result = achievementEngine.recordEvent(name, detail);
     handleAchievementUnlocks(result.newUnlocks, options);
+    if (window.electronAPI?.setStat) {
+        if (result.state?.stats?.totalDeaths !== undefined) {
+            window.electronAPI.setStat('total_deaths', result.state.stats.totalDeaths);
+        }
+        if (result.state?.stats?.maxRunMs !== undefined) {
+            const maxSeconds = Math.floor(result.state.stats.maxRunMs / 1000);
+            window.electronAPI.setStat('longest_run_seconds', maxSeconds);
+        }
+    }
     return result;
 }
 
 function recordAchievementRunEnd(stats = {}, options = {}) {
     const result = achievementEngine.recordRunEnd(stats);
     handleAchievementUnlocks(result.newUnlocks, options);
+    if (window.electronAPI?.setStat) {
+        if (result.state?.stats?.totalDeaths !== undefined) {
+            window.electronAPI.setStat('total_deaths', result.state.stats.totalDeaths);
+        }
+        if (result.state?.stats?.maxRunMs !== undefined) {
+            const maxSeconds = Math.floor(result.state.stats.maxRunMs / 1000);
+            window.electronAPI.setStat('longest_run_seconds', maxSeconds);
+        }
+    }
     return result;
 }
 
@@ -2616,7 +2681,9 @@ installAchievementsUi();
 [
     'act2-milestone',
     'player-suspicion-changed',
+    'hive-mined',
     'hive-choice-resolved',
+    'reyes-letter-delivered',
     'run-cards-drawn',
     'shell-collected',
     'lore-drop-collected'
@@ -2631,8 +2698,13 @@ const WORLD_MEMORY_KEY = 'hb_world_memory_v1';
 
 function getWorldMemory() {
     try {
-        return JSON.parse(localStorage.getItem(WORLD_MEMORY_KEY) ?? 'null') ?? { logsFound: [], biomesMapped: [] };
-    } catch { return { logsFound: [], biomesMapped: [] }; }
+        const parsed = JSON.parse(localStorage.getItem(WORLD_MEMORY_KEY) ?? 'null') ?? {};
+        return {
+            logsFound: Array.isArray(parsed.logsFound) ? parsed.logsFound : [],
+            biomesMapped: Array.isArray(parsed.biomesMapped) ? parsed.biomesMapped : [],
+            storyFlags: parsed.storyFlags && typeof parsed.storyFlags === 'object' ? { ...parsed.storyFlags } : {}
+        };
+    } catch { return { logsFound: [], biomesMapped: [], storyFlags: {} }; }
 }
 
 function saveWorldMemory(mem) {
@@ -2689,6 +2761,12 @@ window.addEventListener('lore-terminal-read', (event) => {
     if (loreKeyEl) loreKeyEl.textContent = `LOG-${loreKey}`;
     if (loreTextEl) loreTextEl.textContent = '';
 
+    const metadata = LORE_METADATA[loreKey];
+    const dateEl = document.getElementById('lore-modal-date');
+    const coordsEl = document.getElementById('lore-modal-coords');
+    if (dateEl) dateEl.textContent = metadata ? `DATE: ${metadata.date}` : '';
+    if (coordsEl) coordsEl.textContent = metadata ? `LOC: ${metadata.coords}` : '';
+
     loreModal.classList.remove('hidden');
     window.game?.setInputEnabled?.(false);
 
@@ -2709,6 +2787,11 @@ window.addEventListener('lore-terminal-read', (event) => {
     const isNew = markLogFound(loreKey);
     if (isNew) {
         fireMothershipReactiveLine('lore_found');
+    }
+    if (recordSpecimen0047OriginIfFound(codexStore, getWorldMemory())) {
+        const entry = getCodexEntry('specimen_0047');
+        if (entry) showBiomePrompt(`> CODEX UPDATED: ${entry.name}`);
+        updateMenuCommandStatuses();
     }
 });
 
@@ -2754,12 +2837,26 @@ window.addEventListener('pickup-collected', (event) => {
 window.addEventListener('special-room-discovered', (event) => {
     const label = event?.detail?.label ?? 'SPECIAL ROOM';
     const template = event?.detail?.template ?? '';
+    const wreckageLog = template === 'agent_wreckage'
+        ? getClassWreckageLog(window.game?.playerType ?? getSelectedHeroType(), event?.detail ?? {})
+        : null;
     const roomMessages = {
         armory: `> SCAN: ${label} — WEAPON CACHE`,
         the_nest: `> ALERT: ${label} — HIGH THREAT`,
-        agent_wreckage: `> SCAN: ${label} — RECOVERY SIGNAL`
+        agent_wreckage: wreckageLog
+            ? `> SCAN: ${wreckageLog.title} — ${wreckageLog.hull} PAYLOAD RECOVERED`
+            : `> SCAN: ${label} — RECOVERY SIGNAL`
     };
     if (roomMessages[template]) showBiomePrompt(roomMessages[template]);
+    if (wreckageLog) {
+        discoverCodex(wreckageLog.codexId, {
+            classType: wreckageLog.classType,
+            hull: wreckageLog.hull,
+            date: wreckageLog.date,
+            coords: wreckageLog.coords,
+            payload: wreckageLog.payload
+        });
+    }
     window.AudioManager?.play('ui_boot', { volume: 0.3, playbackRate: 0.82, bus: 'sfx' });
     if (template === 'the_nest') fireMothershipReactiveLine('the_nest');
     if (template === 'armory') fireMothershipReactiveLine('armory_found');
@@ -3194,7 +3291,7 @@ window.addEventListener('player-o2-changed', (event) => {
     document.body.classList.toggle('vitals-critical', o2 < 25 && !_distressModeActive);
     if (o2 < 25 && Date.now() - _lastLowO2LineAt > 45000) {
         _lastLowO2LineAt = Date.now();
-        const line = getDialogueLine('lowO2');
+        const line = getDialogueLine('lowO2', Math.random, getActiveSuitDialogueContext());
         if (line) showBiomePrompt(`> BUNKER: ${line}`);
     }
     updateDistressMode(o2, hp);
@@ -3780,6 +3877,11 @@ function playClassIntroSequence(playerType = 'SCOUT') {
     warmClassIntroMedia(playerType);
 
     return new Promise((resolve) => {
+        if (window.skipAllIntro) {
+            resolve();
+            return;
+        }
+
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
@@ -3795,6 +3897,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         let guardTimer = null;
         let videoElement = null;
         let gifImg = null;
+        let checkSkipInterval = null;
 
         const clearTimers = () => {
             if (gifTimer) {
@@ -3812,6 +3915,10 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             settled = true;
             step = 'done';
             clearTimers();
+            if (checkSkipInterval) {
+                clearInterval(checkSkipInterval);
+                checkSkipInterval = null;
+            }
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointerUp);
             if (videoElement) {
@@ -3836,6 +3943,12 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         window.addEventListener('keydown', onKey);
         overlay.addEventListener('pointerup', onPointerUp);
+
+        checkSkipInterval = setInterval(() => {
+            if (window.skipAllIntro) {
+                cleanupAndResolve();
+            }
+        }, 50);
 
         // ── Step 1: the class intro GIF, then the launch WebM ──
         function startVideoStep() {
@@ -4067,25 +4180,48 @@ async function runMissionIntroSequence() {
         consoleModal.classList.add('hidden');
     }
 
+    // Set up global skip button
+    window.skipAllIntro = false;
+    const skipBtn = document.getElementById('global-skip-intro-btn');
+    if (skipBtn) {
+        skipBtn.classList.remove('hidden');
+        skipBtn.onclick = () => {
+            window.skipAllIntro = true;
+            skipBtn.classList.add('hidden');
+            cutsceneManager?.finishActiveRun?.(true);
+            dialogueManager?.cancelDialogue?.();
+        };
+    }
+
     try {
         // Post-reveal saves belong to the queen: no crash replay, no
         // Mothership handshake, no human mission briefing.
         if (isAct2RunActive()) {
+            if (skipBtn) skipBtn.classList.add('hidden');
             await runAct2IntroSequence(game, playerType);
             return;
         }
 
-        await playClassIntroSequence(playerType);
+        if (!window.skipAllIntro) {
+            await playClassIntroSequence(playerType);
+        }
 
-        await cutsceneManager?.play({
-            playerType,
-            allowSkip: true,
-            resolveImpactPoint: resolveCutsceneImpactPoint
-        });
+        if (!window.skipAllIntro) {
+            await cutsceneManager?.play({
+                playerType,
+                allowSkip: true,
+                resolveImpactPoint: resolveCutsceneImpactPoint
+            });
+        }
 
-        const choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
+        let choice = 'skip';
+        if (!window.skipAllIntro) {
+            choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
+        }
 
-        if (choice === 'tutorial') {
+        if (skipBtn) skipBtn.classList.add('hidden');
+
+        if (choice === 'tutorial' && !window.skipAllIntro) {
             // Reveal HUD/touch elements for in-world tutorial prompts.
             document.body.classList.remove('mission-intro-active');
             game?.setInputEnabled?.(true);
@@ -4146,30 +4282,36 @@ async function runMissionIntroSequence() {
         document.body.classList.remove('hud-hidden');
         game?.setInputEnabled?.(true);
         missionFlowRunning = false;
+        const skipBtn = document.getElementById('global-skip-intro-btn');
+        if (skipBtn) skipBtn.classList.add('hidden');
     }
 }
 
-// --- Initialization ---
-if (playBtn) {
-    playBtn.addEventListener('click', () => {
-        triggerDoorTransition(
-            () => {
-                if (splash) splash.classList.add('hidden');
-                if (menu) {
-                    setAppPhase('menu');
-                    menu.classList.remove('hidden');
-                    window.game?.setPerformanceProfile?.('menu');
-                    queueGameLayoutRefresh();
-                }
-            },
-            () => {
-                if (state.settings.fullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => { });
-                }
-            },
-            'base'
-        );
-    });
+const transitionFromTitleToMenu = () => {
+    triggerDoorTransition(
+        () => {
+            if (splash) splash.classList.add('hidden');
+            if (menu) {
+                setAppPhase('menu');
+                menu.classList.remove('hidden');
+                window.game?.setPerformanceProfile?.('menu');
+                queueGameLayoutRefresh();
+            }
+        },
+        () => {
+            if (state.settings.fullscreen) {
+                document.documentElement.requestFullscreen().catch(() => { });
+            }
+        },
+        'base'
+    );
+};
+
+if (titleNewRunBtn) {
+    titleNewRunBtn.addEventListener('click', transitionFromTitleToMenu);
+}
+if (titleContinueBtn) {
+    titleContinueBtn.addEventListener('click', transitionFromTitleToMenu);
 }
 
 if (startBtn) {
@@ -4261,42 +4403,10 @@ if (dailyOpsBtn) {
     });
 }
 
-// Settings Handlers
-if (splashDebugToggle) {
-    splashDebugToggle.addEventListener('change', (e) => {
-        state.settings.debug = e.target.checked;
-        setDebugMode(state.settings.debug);
-        if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
-    });
-}
-
-if (splashNightVisionToggle) {
-    splashNightVisionToggle.addEventListener('change', (e) => {
-        state.settings.nightVision = e.target.checked;
-        localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
-        if (mainNightVisionToggle) mainNightVisionToggle.checked = state.settings.nightVision;
-        if (window.game) {
-            window.game.nightVision = state.settings.nightVision;
-        }
-    });
-}
-
-if (splashFsToggle) {
-    splashFsToggle.addEventListener('change', (e) => {
-        state.settings.fullscreen = e.target.checked;
-        if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => { });
-        } else {
-            if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
-        }
-    });
-}
-
 // Fullscreen State Sync Listener
 document.addEventListener('fullscreenchange', () => {
     const isFs = !!document.fullscreenElement;
     state.settings.fullscreen = isFs;
-    if (splashFsToggle) splashFsToggle.checked = isFs;
     if (mainFsToggle) mainFsToggle.checked = isFs;
     queueGameLayoutRefresh();
 });
@@ -4421,27 +4531,45 @@ const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
 const abortBtn = document.getElementById('abort-mission');
 
+function openSettingsModal() {
+    if (!settingsPopup) return;
+    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
+    if (abortBtn) {
+        if (isHUD) abortBtn.classList.remove('hidden');
+        else abortBtn.classList.add('hidden');
+    }
+
+    syncTouchSettingsVisibility();
+    settingsPopup.classList.remove('hidden');
+    if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
+    if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
+    if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
+    if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
+
+    const txtSpeedSelect = document.getElementById('setting-text-speed');
+    if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
+
+    const shakeToggle = document.getElementById('setting-shake-toggle');
+    if (shakeToggle) shakeToggle.checked = state.settings.shakeEnabled !== false;
+
+    const cbToggle = document.getElementById('setting-colorblind-toggle');
+    if (cbToggle) cbToggle.checked = !!state.settings.colorblindAssist;
+
+    const diffVal = document.getElementById('setting-difficulty-val');
+    if (diffVal) {
+        const difficulty = window.game?.difficulty || state.settings.difficulty || 'standard';
+        diffVal.textContent = difficulty.toUpperCase();
+    }
+
+    syncAudioMixerUI(state.settings.audioMix);
+    setAudioMixerOpen(false);
+    setSaveDataOpen(false);
+    setResetSaveConfirmOpen(false);
+}
+
 if (settingsBtns.length > 0 && settingsPopup) {
     settingsBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Only show Abort Mission if we are actually in the tactical HUD
-            const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
-            if (abortBtn) {
-                if (isHUD) abortBtn.classList.remove('hidden');
-                else abortBtn.classList.add('hidden');
-            }
-
-            syncTouchSettingsVisibility();
-            settingsPopup.classList.remove('hidden');
-            if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
-            if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
-            if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
-            if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
-            syncAudioMixerUI(state.settings.audioMix);
-            setAudioMixerOpen(false);
-            setSaveDataOpen(false);
-            setResetSaveConfirmOpen(false);
-        });
+        btn.addEventListener('click', openSettingsModal);
     });
 }
 
@@ -4663,6 +4791,12 @@ document.addEventListener('keydown', (event) => {
         if (rosterModal && !rosterModal.classList.contains('hidden')) {
             rosterModal.classList.add('hidden');
             rosterModal.setAttribute('aria-hidden', 'true');
+            event.preventDefault();
+            return;
+        }
+
+        if (isGameplayPhase()) {
+            openSettingsModal();
             event.preventDefault();
             return;
         }
@@ -4982,9 +5116,9 @@ refreshLastContractor();
 window.addEventListener('black-box-recovered', refreshLastContractor);
 
 // ── Codex (doc 11 §3.2): discover-by-encounter meta layer ─────
-function discoverCodex(id) {
+function discoverCodex(id, metadata = null) {
     if (!id || !getCodexEntry(id)) return;
-    const isNew = codexStore.record(id);
+    const isNew = codexStore.record(id, metadata);
     if (isNew) {
         const entry = getCodexEntry(id);
         showBiomePrompt(`> CODEX UPDATED: ${entry.name}`);
@@ -5005,7 +5139,7 @@ window.addEventListener('foundry-discovered', () => {
 });
 window.addEventListener('black-box-recovered', () => discoverCodex('black_box'));
 window.addEventListener('elevator-sequence-started', () => discoverCodex('elevator_down'));
-window.addEventListener('codex-discover', (e) => discoverCodex(e?.detail?.id));
+window.addEventListener('codex-discover', (e) => discoverCodex(e?.detail?.id, e?.detail?.metadata));
 
 function renderCodexModal() {
     const grid = document.getElementById('codex-grid');
@@ -5122,9 +5256,12 @@ window.addEventListener('cave-entrance-revealed', (event) => {
     if (!isGameplayPhase() || event?.detail?.instant) return;
     const distance = event?.detail?.distance;
     const rangeText = Number.isFinite(distance) ? ` // ${distance}u` : '';
+    const x = event?.detail?.x;
+    const z = event?.detail?.z;
+    const locStr = (Number.isFinite(x) && Number.isFinite(z)) ? ` // LOC: [${x.toFixed(1)}, ${z.toFixed(1)}]` : '';
     showTacticalOverlay({
-        title: 'FINAL COMPONENT LOCATED',
-        status: `> DEEP STRUCTURE SIGNAL LOCKED${rangeText}<br>> FOLLOW THE FIELD COMPASS`,
+        title: 'FINAL COMPONENT LOCATED — SECTOR ZERO',
+        status: `> DEEP STRUCTURE SIGNAL LOCKED${rangeText}${locStr}<br>> FOLLOW THE FIELD COMPASS`,
         progress: 100,
         duration: 3200
     });
@@ -5213,8 +5350,14 @@ async function handleCaveRevealBecomeInfected() {
             detail: { humanity: infected.humanity, stage: infected.infectionStage }
         }));
     }
+    const secretGate = getSecretGateState(achievementEngine.getState());
+    if (secretGate.totalDeaths <= 0 && markLogFound('B13')) {
+        showBiomePrompt('ARCHIVE UPDATED: CHEN HIDDEN LOG 13 RECOVERED.');
+    }
     recordAchievementEvent('reveal-reached', {
-        classType: game?.playerType ?? getSelectedHeroType()
+        classType: game?.playerType ?? getSelectedHeroType(),
+        totalDeathsBeforeReveal: secretGate.totalDeaths,
+        hiveHarmed: !secretGate.noHiveHarmThisRun
     });
     await dialogueManager?.openBriefTransmission({
         playerType: game?.playerType ?? getSelectedHeroType(),
@@ -5477,14 +5620,19 @@ window.addEventListener('camp-turret-zap', (event) => {
     const now = Date.now();
     if (now - lastTurretZapPromptAt < 6000) return; // don't spam the radio
     lastTurretZapPromptAt = now;
-    const { campLabel } = event?.detail ?? {};
-    showBiomePrompt(`WARNING: ${campLabel ?? 'CAMP'} DEFENSE GRID FIRING — SPOOF IT, SMASH IT, OR STAY CLEAR.`);
+    const { campLabel, negated } = event?.detail ?? {};
+    showBiomePrompt(negated
+        ? `TANK GUARD: ${campLabel ?? 'CAMP'} DEFENSE ZAP ABSORBED — FIRST SHOCK NEGATED.`
+        : `WARNING: ${campLabel ?? 'CAMP'} DEFENSE GRID FIRING — SPOOF IT, SMASH IT, OR STAY CLEAR.`);
 });
 window.addEventListener('camp-turret-resolved', (event) => {
     const { campLabel, mode, suspicion } = event?.detail ?? {};
-    showBiomePrompt(mode === 'disabled'
-        ? `SYSTEM: TURRET IFF SPOOFED — ${campLabel ?? 'CAMP'} GRID READS YOU AS FRIENDLY.`
-        : `ALERT: TURRET DESTROYED. ${campLabel ?? 'CAMP'} HEARD THAT — SUSPICION ${suspicion ?? '?'}%.`);
+    const message = mode === 'reprogrammed'
+        ? `SYSTEM: TURRET REPROGRAMMED — ${campLabel ?? 'CAMP'} GRID NOW COVERS YOU.`
+        : mode === 'disabled'
+            ? `SYSTEM: TURRET IFF SPOOFED — ${campLabel ?? 'CAMP'} GRID READS YOU AS FRIENDLY.`
+            : `ALERT: TURRET DESTROYED. ${campLabel ?? 'CAMP'} HEARD THAT — SUSPICION ${suspicion ?? '?'}%.`;
+    showBiomePrompt(message);
 });
 
 window.addEventListener('camp-defense-triggered', (event) => {
@@ -5591,13 +5739,37 @@ window.addEventListener('player-outed', (event) => {
     AudioManager.play('ui_error', { volume: 0.5, playbackRate: 0.5 });
 });
 
+window.addEventListener('act2-apex-threat-spawned', (event) => {
+    const { type, campLabel, label } = event?.detail ?? {};
+    const source = campLabel ? ` FROM ${campLabel}` : '';
+    const title = type === 'hunter_pair' ? 'HUNTER PAIR' : label ?? 'APEX THREAT';
+    showBiomePrompt(`WARNING: ${title}${source} — ESCALATION ACTIVE.`);
+});
+
 window.addEventListener('leader-dialogue', (event) => {
-    const { lines, beatType } = event?.detail ?? {};
-    if (!lines?.length) return;
+    const { beatType, leaderName, leaderClassId } = event?.detail ?? {};
+    let lines = [...(event?.detail?.lines ?? [])];
+    if (!lines.length) return;
+    const memory = getWorldMemory();
+    const hasReyesLetter = memory.logsFound.includes('C11');
+    const talkingToBriggs = String(leaderName ?? '').toUpperCase().includes('BRIGGS')
+        || String(leaderClassId ?? '').toUpperCase() === 'TANK';
+    if (hasReyesLetter && talkingToBriggs && !memory.storyFlags.reyesLetterDelivered) {
+        memory.storyFlags.reyesLetterDelivered = true;
+        saveWorldMemory(memory);
+        lines = [
+            ...lines,
+            'BRIGGS: REYES WROTE THIS? SHE ALWAYS SAID SHE WOULD MAKE IT HOME ON PAPER IF NOT IN PERSON.',
+            'BRIGGS: WE DO NOT HAVE A FUNERAL DETAIL. WE HAVE A LINE TO HOLD. I WILL HOLD IT FOR HER.'
+        ];
+        window.dispatchEvent(new CustomEvent('reyes-letter-delivered', {
+            detail: { leaderName: leaderName ?? 'Commander Briggs', loreKey: 'C11' }
+        }));
+    }
     ensureMissionManagers();
     void dialogueManager?.openBriefTransmission({
         playerType: window.game?.playerType ?? getSelectedHeroType(),
-        lines: [...lines]
+        lines
     });
     if (beatType === 'advance') {
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
@@ -5672,12 +5844,26 @@ window.addEventListener('camp-choice-denied', (event) => {
 // Every Act 2 milestone speaks through the brief-transmission panel using the
 // copy defined next to the ladder in src/act2.js.
 window.addEventListener('act2-milestone', (event) => {
-    const lines = ACT2_LINES[event?.detail?.key];
+    let lines = ACT2_LINES[event?.detail?.key];
     if (!lines?.length) return;
-    ensureMissionManagers();
-    void dialogueManager?.openBriefTransmission({
-        playerType: window.game?.playerType ?? getSelectedHeroType(),
-        lines: [...lines]
+
+    if (event?.detail?.key === 'campDiscovered') {
+        const campLabel = event?.detail?.campLabel || 'CAMP';
+        const x = event?.detail?.x;
+        const z = event?.detail?.z;
+        let sector = 'SECTOR A-9 GRID RUINS';
+        if (campLabel.includes('TALLOW')) sector = 'SECTOR B-4 FROZEN OUTPOST';
+        if (campLabel.includes('VESPER')) sector = 'SECTOR C-7 HIVE SHADOW';
+        const locStr = (Number.isFinite(x) && Number.isFinite(z)) ? ` // LOC: [${x.toFixed(1)}, ${z.toFixed(1)}]` : '';
+        lines = [
+            `SYSTEM: ${campLabel} — ${sector}${locStr}`,
+            ...lines
+        ];
+    }
+
+    lines.forEach((line) => {
+        const rawLine = typeof line === 'object' ? line.text : line;
+        showRadioTransmission(rawLine);
     });
 });
 
@@ -5926,7 +6112,6 @@ if (mainDebugToggle) {
     mainDebugToggle.addEventListener('change', (e) => {
         state.settings.debug = e.target.checked;
         setDebugMode(state.settings.debug);
-        if (splashDebugToggle) splashDebugToggle.checked = state.settings.debug;
     });
 }
 
@@ -5934,7 +6119,6 @@ if (mainNightVisionToggle) {
     mainNightVisionToggle.addEventListener('change', (e) => {
         state.settings.nightVision = e.target.checked;
         localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
-        if (splashNightVisionToggle) splashNightVisionToggle.checked = state.settings.nightVision;
         if (window.game) {
             window.game.nightVision = state.settings.nightVision;
         }
@@ -5944,7 +6128,6 @@ if (mainNightVisionToggle) {
 if (mainFsToggle) {
     mainFsToggle.addEventListener('change', (e) => {
         state.settings.fullscreen = e.target.checked;
-        if (splashFsToggle) splashFsToggle.checked = state.settings.fullscreen;
 
         if (state.settings.fullscreen) {
             document.documentElement.requestFullscreen().catch(() => { });
@@ -6602,9 +6785,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         state.settings.nightVision = false;
     }
-    if (splashNightVisionToggle) {
-        splashNightVisionToggle.checked = !!state.settings.nightVision;
-    }
     if (mainNightVisionToggle) {
         mainNightVisionToggle.checked = !!state.settings.nightVision;
     }
@@ -6747,9 +6927,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateHeroStats(initialType);
     }
     startHeroPreviewAnimation();
-    if (splashFsToggle) splashFsToggle.checked = false;
-    if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
+    
+    // Check if player has active save data to enable CONTINUE
+    const hasSave = hasAnyUnlock(achievementEngine.getState()) || localStorage.getItem('hb_profile_v1') !== null;
+    if (titleContinueBtn) {
+        titleContinueBtn.disabled = !hasSave;
+    }
+
+    if (titleNewRunBtn) {
+        titleNewRunBtn.addEventListener('click', transitionFromTitleToMenu);
+    }
+    if (titleContinueBtn) {
+        titleContinueBtn.addEventListener('click', transitionFromTitleToMenu);
+    }
+    if (titleAchievementsBtn) {
+        titleAchievementsBtn.addEventListener('click', openAchievementsModal);
+    }
+    if (titleAboutBtn) {
+        titleAboutBtn.addEventListener('click', () => {
+            const aboutModal = document.getElementById('about-modal');
+            if (aboutModal) aboutModal.classList.remove('hidden');
+        });
+    }
+    if (titleSettingsBtn) {
+        titleSettingsBtn.addEventListener('click', openSettingsModal);
+    }
+
+    // Load new settings
+    state.settings.textSpeed = localStorage.getItem('hunker_text_speed') || 'normal';
+    state.settings.shakeEnabled = localStorage.getItem('hunker_shake_enabled') !== 'false';
+    state.settings.colorblindAssist = localStorage.getItem('hunker_colorblind_assist') === 'true';
+    state.settings.difficulty = localStorage.getItem('hunker_difficulty') || 'standard';
+
+    if (state.settings.colorblindAssist) {
+        document.body.classList.add('colorblind-assist');
+    } else {
+        document.body.classList.remove('colorblind-assist');
+    }
+
+    // Wire settings modal changes
+    const settingTextSpeed = document.getElementById('setting-text-speed');
+    if (settingTextSpeed) {
+        settingTextSpeed.addEventListener('change', (e) => {
+            state.settings.textSpeed = e.target.value;
+            localStorage.setItem('hunker_text_speed', state.settings.textSpeed);
+        });
+    }
+
+    const settingShakeToggle = document.getElementById('setting-shake-toggle');
+    if (settingShakeToggle) {
+        settingShakeToggle.addEventListener('change', (e) => {
+            state.settings.shakeEnabled = e.target.checked;
+            localStorage.setItem('hunker_shake_enabled', String(state.settings.shakeEnabled));
+        });
+    }
+
+    const settingColorblindToggle = document.getElementById('setting-colorblind-toggle');
+    if (settingColorblindToggle) {
+        settingColorblindToggle.addEventListener('change', (e) => {
+            state.settings.colorblindAssist = e.target.checked;
+            localStorage.setItem('hunker_colorblind_assist', String(state.settings.colorblindAssist));
+            if (state.settings.colorblindAssist) {
+                document.body.classList.add('colorblind-assist');
+            } else {
+                document.body.classList.remove('colorblind-assist');
+            }
+        });
+    }
+
     syncTouchSettingsVisibility();
     syncTouchMoveControlVisibility();
 
@@ -6921,13 +7167,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (loaderStatus) {
         loaderStatus.style.opacity = 0;
         setTimeout(() => {
-            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK ANYWHERE TO INITIALIZE ]</div>`;
+            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK OR PRESS ANY KEY TO INITIALIZE ]</div>`;
             loaderStatus.style.opacity = 1;
         }, 220);
     }
 
     let clickInitializing = false;
-    document.body.addEventListener('click', async () => {
+    const triggerBoot = async () => {
         if (clickInitializing) return;
         if (AudioManager.isUnlocked && window.game) return;
 
@@ -6946,7 +7192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Initialization failed:', err);
             clickInitializing = false;
             if (loaderStatus) {
-                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK ANYWHERE TO RETRY INITIALIZATION ]</div>`;
+                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK OR PRESS ANY KEY TO RETRY INITIALIZATION ]</div>`;
             }
             return;
         }
@@ -6962,7 +7208,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             null,
             'base'
         );
-    });
+    };
+
+    document.body.addEventListener('click', triggerBoot);
+    window.addEventListener('keydown', triggerBoot);
+
+    // Poll gamepads for boot trigger
+    let gamepadPollInterval = setInterval(() => {
+        if (AudioManager.isUnlocked && window.game) {
+            clearInterval(gamepadPollInterval);
+            return;
+        }
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        for (const gp of gamepads) {
+            if (gp) {
+                const pressed = gp.buttons.some(b => b.pressed);
+                if (pressed) {
+                    triggerBoot();
+                    clearInterval(gamepadPollInterval);
+                    break;
+                }
+            }
+        }
+    }, 100);
 });
 
 setDebugMode(false);

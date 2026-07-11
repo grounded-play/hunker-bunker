@@ -39,3 +39,4 @@ scratch/
 dist_electron/
 steam_build_output/
 steam_appid.txt
+dist_soundtrack/

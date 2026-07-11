@@ -16,7 +16,8 @@
     "electron:build": "vite build && electron-builder --dir",
     "electron:dist": "vite build && electron-builder",
     "lighthouse:setup": "npx -y @puppeteer/browsers install chrome@stable",
-    "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun"
+    "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun",
+    "package-soundtrack": "node scripts/package-soundtrack.js"
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",

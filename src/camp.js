@@ -602,6 +602,7 @@ export class SurvivorCamp {
                 offset,
                 disabled: false,
                 destroyed: false,
+                reprogrammed: false,
                 cooldown: 1 + Math.random() * 2
             });
         }
@@ -633,8 +634,16 @@ export class SurvivorCamp {
         turret.tipMat?.color.set(0x33403c);
     }
 
+    setTurretReprogrammed(turret) {
+        turret.reprogrammed = true;
+        turret.disabled = false;
+        turret.destroyed = false;
+        turret.tipMat?.color.set(0x9dffb0);
+    }
+
     setTurretDestroyed(turret) {
         turret.destroyed = true;
+        turret.reprogrammed = false;
         turret.tipMat?.color.set(0x2a2523);
         turret.group.rotation.x = 0.85;
         turret.group.position.y = -0.12;
