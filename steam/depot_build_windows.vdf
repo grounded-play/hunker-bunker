@@ -1,0 +1,12 @@
+"DepotBuild"
+{
+    "DepotID" "__DEPOT_WINDOWS__"
+    "FileMapping"
+    {
+        "LocalPath" "win-unpacked/*"
+        "DepotPath" "."
+        "recursive" "1"
+    }
+    // Dev-only file; never ship it — retail launches through the Steam client.
+    "FileExclusion" "steam_appid.txt"
+}

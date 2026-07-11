@@ -6966,3 +6966,51 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 setDebugMode(false);
+
+// ── Sprint 19 Wave 3 threat warnings and Queen hallucinations ──
+window.addEventListener('queen-hallucination', (event) => {
+    const intensity = event?.detail?.intensity ?? 0.5;
+    document.body.classList.add('queen-hallucination-pulse');
+    const speed = (0.05 + (1.0 - intensity) * 0.15).toFixed(2);
+    document.body.style.setProperty('--hallucination-speed', `${speed}s`);
+    window.setTimeout(() => {
+        document.body.classList.remove('queen-hallucination-pulse');
+    }, 300);
+});
+
+window.addEventListener('hunter-pair-spawned', () => {
+    showTacticalOverlay({
+        title: 'WARNING: HUNTER SHADOWS INBOUND',
+        status: '> BRIGGS COVERT TEAM DEPLOYED<br>> SCANNING PATROLS DETECTED',
+        progress: 100,
+        duration: 3800
+    });
+    AudioManager.play('camp_lockdown_alarm', { volume: 0.5, playbackRate: 1.2 });
+    document.body.classList.add('hud-alert-flash');
+    setTimeout(() => document.body.classList.remove('hud-alert-flash'), 1200);
+});
+
+window.addEventListener('lander-deployed', () => {
+    showTacticalOverlay({
+        title: 'CRITICAL ALERT: EXTERMINATION LANDER INBOUND',
+        status: '> MOTHERSHIP EXTERMINATOR DEPLOYED<br>> HULL INTEGRITY TRACKING LOCKED',
+        progress: 100,
+        duration: 4800
+    });
+    AudioManager.play('camp_lockdown_alarm', { volume: 0.65, playbackRate: 0.85 });
+    document.body.classList.add('hud-critical-flash');
+    setTimeout(() => document.body.classList.remove('hud-critical-flash'), 2000);
+});
+
+// ── Desktop shell (Electron/Steam) bridge ─────────────────────
+// Present only inside the desktop wrapper; the web build never defines
+// electronAPI. Achievements ride the existing wave-2 event contract.
+if (window.electronAPI) {
+    window.addEventListener('achievement-unlocked', (event) => {
+        const key = event?.detail?.key;
+        if (key) window.electronAPI.unlockAchievement(key);
+    });
+    window.electronAPI.getSteamInfo?.().then((info) => {
+        if (info?.active) console.log(`[steam] linked as ${info.persona} (app ${info.appId})`);
+    }).catch(() => {});
+}

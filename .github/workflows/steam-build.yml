@@ -1,0 +1,95 @@
+# Steam build pipeline (docs/steam-build-pipeline.md, Phase C).
+# - Every push to dev/main branches + PRs: prove the game still packages.
+# - Tags (v*) or manual dispatch: build win+linux, then upload to Steam's
+#   'beta' branch IF the Steam secrets are configured. Without secrets the
+#   upload job skips and the artifacts are still attached to the run.
+name: steam-build
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'main.js'
+      - 'index.html'
+      - 'style.css'
+      - 'package.json'
+      - 'vite.config.js'
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            unpacked: linux-unpacked
+          - os: windows-latest
+            unpacked: win-unpacked
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx electron-builder --dir
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hunker-bunker-${{ matrix.unpacked }}
+          path: dist_electron/${{ matrix.unpacked }}/
+          retention-days: 14
+
+  upload-to-steam:
+    # Only on tags/dispatch, and only once the builder secrets exist
+    # (docs/steam-build-pipeline.md human checklist step 3).
+    needs: package
+    if: >-
+      (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Steam secrets
+        id: creds
+        run: |
+          if [ -n "${{ secrets.STEAM_BUILD_ACCOUNT }}" ] && [ -n "${{ secrets.STEAM_CONFIG_VDF }}" ] && [ -n "${{ secrets.STEAM_APPID }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Steam secrets not configured — skipping upload (artifacts are on the run)."
+          fi
+      - uses: actions/download-artifact@v4
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          name: hunker-bunker-linux-unpacked
+          path: dist_electron/linux-unpacked
+      - uses: actions/download-artifact@v4
+        if: steps.creds.outputs.ready == 'true'
+        with:
+          name: hunker-bunker-win-unpacked
+          path: dist_electron/win-unpacked
+      - name: Fill VDF placeholders
+        if: steps.creds.outputs.ready == 'true'
+        run: |
+          sed -i "s/__APPID__/${{ secrets.STEAM_APPID }}/" steam/app_build.vdf
+          sed -i "s/__DEPOT_WINDOWS__/${{ secrets.STEAM_DEPOT_WINDOWS }}/" steam/app_build.vdf steam/depot_build_windows.vdf
+          sed -i "s/__DEPOT_LINUX__/${{ secrets.STEAM_DEPOT_LINUX }}/" steam/app_build.vdf steam/depot_build_linux.vdf
+      - name: Upload via steamcmd
+        if: steps.creds.outputs.ready == 'true'
+        uses: game-ci/steam-deploy@v3
+        with:
+          username: ${{ secrets.STEAM_BUILD_ACCOUNT }}
+          configVdf: ${{ secrets.STEAM_CONFIG_VDF }}
+          appId: ${{ secrets.STEAM_APPID }}
+          buildDescription: ${{ github.ref_name }}
+          rootPath: dist_electron
+          depot1Id: ${{ secrets.STEAM_DEPOT_WINDOWS }}
+          depot1Path: win-unpacked
+          depot2Id: ${{ secrets.STEAM_DEPOT_LINUX }}
+          depot2Path: linux-unpacked
+          releaseBranch: beta

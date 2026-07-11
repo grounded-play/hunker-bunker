@@ -21,8 +21,8 @@ coverage
 # Local Chrome binary downloaded via @puppeteer/browsers for local Lighthouse runs
 chrome/
 
-# Local scratch Chrome profile used during debugging / Lighthouse runs
-scratch/chrome-profile/
+# Local scratch directory (generators, smoke tests, profiles)
+scratch/
 
 # Editor directories and files
 .vscode/*
@@ -34,5 +34,8 @@ scratch/chrome-profile/
 *.njsproj
 *.sln
 *.sw?
-scratch/chrome-profile
-scratch/chrome-profile*/
+
+# Electron/Steam build outputs
+dist_electron/
+steam_build_output/
+steam_appid.txt

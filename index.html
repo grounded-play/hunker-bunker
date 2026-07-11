@@ -36,6 +36,30 @@
 </head>
 
 <body>
+  <script>
+    // Desktop shell save bridge (no-op on the web). The preload already
+    // restored save.json into localStorage before this ran; here we patch
+    // the write path so every hb_* change mirrors to disk, which Steam
+    // Auto-Cloud syncs. See docs/steam-build-pipeline.md.
+    if (window.electronAPI) {
+      (function () {
+        var origSet = Storage.prototype.setItem;
+        var origRemove = Storage.prototype.removeItem;
+        Storage.prototype.setItem = function (key, value) {
+          origSet.call(this, key, value);
+          if (this === window.localStorage && String(key).indexOf('hb_') === 0) {
+            window.electronAPI.onSaveDataChanged(key, String(value));
+          }
+        };
+        Storage.prototype.removeItem = function (key) {
+          origRemove.call(this, key);
+          if (this === window.localStorage && String(key).indexOf('hb_') === 0) {
+            window.electronAPI.onSaveDataRemoved(key);
+          }
+        };
+      })();
+    }
+  </script>
   <div id="game-viewport">
     
     <div id="debug-toolbar">
