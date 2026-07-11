@@ -16233,10 +16233,32 @@ export class ThreeGame {
         // Widening erodes the deliberate structures (field outcrops, canyon
         // ridges, and especially the crater rim — the open bowl beside the
         // ring lets widen chew straight through it), so it only runs where
-        // the corridors come from the maze carve.
+        // the corridors come from the maze carve. Maze chunks get a second
+        // pass so the lanes breathe a little more for the player radius.
         if (landform === LANDFORMS.MAZE || landform === LANDFORMS.RUINS) {
-            this.widenChunkCorridors(grid);
+            const widenPasses = landform === LANDFORMS.MAZE ? 2 : 1;
+            for (let pass = 0; pass < widenPasses; pass++) {
+                this.widenChunkCorridors(grid);
+            }
         }
+
+        // Trim interior walls that already border floor so corridor mouths
+        // open up without spraying isolated holes into sealed rooms.
+        for (let y = 2; y < this.chunkSize - 2; y++) {
+            for (let x = 2; x < this.chunkSize - 2; x++) {
+                if (grid[y][x] !== '#') continue;
+                const openNeighbors =
+                    (grid[y - 1][x] === '.') +
+                    (grid[y + 1][x] === '.') +
+                    (grid[y][x - 1] === '.') +
+                    (grid[y][x + 1] === '.');
+                if (openNeighbors < 2) continue;
+
+                const carveChance = 0.18 + openNeighbors * 0.08;
+                if (random() < carveChance) grid[y][x] = '.';
+            }
+        }
+
         this.clearSpawnArea(grid, chunkX, chunkY);
         return grid;
     }
