@@ -25,6 +25,12 @@
     "directories": {
       "output": "dist_electron"
     },
+    "extraFiles": [
+      {
+        "from": "steam/steam_input_manifest.vdf",
+        "to": "steam_input_manifest.vdf"
+      }
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*",

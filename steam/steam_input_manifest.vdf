@@ -1,0 +1,67 @@
+"Action Manifest"
+{
+    "configurations"
+    {
+    }
+    "actions"
+    {
+        "menu"
+        {
+            "title" "#ActionSetMenu"
+            "StickPadGyro"
+            {
+                "menu_cursor" "#ActionMenuCursor"
+            }
+            "AnalogTrigger"
+            {
+            }
+            "Button"
+            {
+                "menu_confirm" "#ActionMenuConfirm"
+                "menu_back" "#ActionMenuBack"
+                "menu_tab_prev" "#ActionMenuTabPrev"
+                "menu_tab_next" "#ActionMenuTabNext"
+            }
+        }
+        "gameplay"
+        {
+            "title" "#ActionSetGameplay"
+            "StickPadGyro"
+            {
+                "move" "#ActionMove"
+                "camera" "#ActionCamera"
+            }
+            "AnalogTrigger"
+            {
+            }
+            "Button"
+            {
+                "interact" "#ActionInteract"
+                "reload" "#ActionReload"
+                "ability" "#ActionAbility"
+                "scan" "#ActionScan"
+                "pause" "#ActionPause"
+            }
+        }
+    }
+    "localization"
+    {
+        "english"
+        {
+            "ActionSetMenu" "Menu"
+            "ActionSetGameplay" "Gameplay"
+            "ActionMenuCursor" "Menu Cursor"
+            "ActionMenuConfirm" "Confirm"
+            "ActionMenuBack" "Back"
+            "ActionMenuTabPrev" "Previous Tab"
+            "ActionMenuTabNext" "Next Tab"
+            "ActionMove" "Move"
+            "ActionCamera" "Camera"
+            "ActionInteract" "Interact"
+            "ActionReload" "Reload"
+            "ActionAbility" "Ability"
+            "ActionScan" "Scan"
+            "ActionPause" "Pause"
+        }
+    }
+}
