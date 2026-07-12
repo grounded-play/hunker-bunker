@@ -33,24 +33,31 @@ All generated image assets (camp props, cave dressing, achievement icons) and We
 - `fx_shared_achievement.webm` -> Golden achievement toast burst -> Shared achievement toast.
 
 ## Batch 4: Achievement Icons
+
+For each achievement below, a matching unlocked (`ach_*.png` in glowing amber-on-black HUD style) and locked (`ach_*_locked.png` in desaturated dark grey-on-black HUD style) variant has been generated and placed in `public/`.
+
 - `ach_quick_study.png` -> Cybernetic skull icon -> QUICK STUDY (die <5s).
-- `ach_hunkered.png` -> Hourglass icon -> HUNKERED (survive >20m).
-- `ach_victory_scout.png` -> Scout victory glyph.
-- `ach_victory_tank.png` -> Tank victory glyph.
-- `ach_victory_engineer.png` -> Engineer victory glyph.
-- `ach_ending_full_brood.png` -> Crown icon for FULL BROOD ending.
-- `ach_ending_clean_escape.png` -> Rocket icon for CLEAN ESCAPE ending.
-- `ach_ending_mixed_crew.png` -> Shaking hands icon for MIXED CREW ending.
-- `ach_ending_carriers_bargain.png` -> Case icon for CARRIER'S BARGAIN ending.
-- `ach_ending_scorched_sky.png` -> Fire icon for SCORCHED SKY ending.
-- `ach_ending_mothership_infection.png` -> UFO icon for MOTHERSHIP INFECTION ending.
-- `ach_ending_alien_exodus.png` -> Leaf icon for ALIEN EXODUS ending.
-- `ach_ending_outed_escape.png` -> Megaphone icon for OUTED ESCAPE ending.
-- `ach_ending_failed_carrier.png` -> Caution warning icon for FAILED CARRIER ending.
-- `ach_ending_empty_husk.png` -> Snowflake icon for EMPTY HUSK ending.
-- `ach_cartographer.png` -> Map icon for CARTOGRAPHER (find all 3 camps in 1 run).
-- `ach_archivist.png` -> Books icon for ARCHIVIST (collect lore drops).
-- `ach_kin.png` -> Heart outline icon for KIN (max bond with hive).
-- `ach_ghost.png` -> Ghost silhouette icon for GHOST (reach reveal with 0 suspicion).
-- `ach_hardened.png` -> Corrupted skull icon for HARDENED (5 deaths).
-- `ach_slay_the_queen.png` -> Crossed swords icon for SLAY THE QUEEN (coming soon).
+- `ach_hunkered.png` -> blast shield / bunker door icon -> HUNKERED (survive >20m).
+- `ach_victory_scout.png` -> Scout victory visor radar scan glyph.
+- `ach_victory_tank.png` -> Tank victory heavy tactical shield glyph.
+- `ach_victory_engineer.png` -> Engineer victory circuit cogwheel glyph.
+- `ach_ending_full_brood.png` -> Spiked chitin crown icon for FULL BROOD ending.
+- `ach_ending_clean_escape.png` -> Escaping transport shuttle icon for CLEAN ESCAPE ending.
+- `ach_ending_mixed_crew.png` -> Human-alien handshake icon for MIXED CREW ending.
+- `ach_ending_carriers_bargain.png` -> Secure containment unit icon for CARRIER'S BARGAIN ending.
+- `ach_ending_scorched_sky.png` -> Orbital strike satellite target crosshair icon for SCORCHED SKY ending.
+- `ach_ending_mothership_infection.png` -> Infected cruiser silhouette icon for MOTHERSHIP INFECTION ending.
+- `ach_ending_alien_exodus.png` -> Ascending spores void rift portal icon for ALIEN EXODUS ending.
+- `ach_ending_outed_escape.png` -> Radio transmission antenna icon for OUTED ESCAPE ending.
+- `ach_ending_failed_carrier.png` -> Cracked biohazard plate icon for FAILED CARRIER ending.
+- `ach_ending_empty_husk.png` -> Hollow human skull in ice crystals icon for EMPTY HUSK ending.
+- `ach_cartographer.png` -> Camp radar sweep sonar scan icon for CARTOGRAPHER (find 3 camps).
+- `ach_archivist.png` -> Holographic datapad file stack icon for ARCHIVIST (collect lore drops).
+- `ach_kin.png` -> DNA helix and neural tendril icon for KIN (max bond with hive).
+- `ach_ghost.png` -> Hooded stealth radar mask icon for GHOST (reach reveal with 0 suspicion).
+- `ach_gentle_drill.png` -> Drill in standby above pristine alien pod icon for GENTLE DRILL (no hive harm).
+- `ach_chen_thirteenth.png` -> Three intact tactical helmets icon for CHEN'S THIRTEENTH (deathless reveal).
+- `ach_reyes_courier.png` -> Sealed tactical envelope container icon for REYES COURIER (deliver Reyes' letter).
+- `ach_hardened.png` -> Cracked metal reinforced skull icon for HARDENED (5 deaths).
+- `ach_slay_the_queen.png` -> Crossed power swords icon for SLAY THE QUEEN (coming soon).
+- `ach_locked.png` -> Generic locked padlock icon placeholder.
