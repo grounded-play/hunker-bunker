@@ -123,6 +123,7 @@ let appPhase = 'loading';
 function isGameplayPhase() {
     return appPhase === 'gameplay';
 }
+window.isGameplayPhase = isGameplayPhase;
 
 function isGameplayHudActive() {
     const ui = document.getElementById('ui');
@@ -1436,7 +1437,7 @@ window.addEventListener('biome-changed', (event) => {
             AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
             fireMothershipReactiveLine('first_cryo');
         } else if (biomeKey === 'bio') {
-            AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
+            AudioManager.playMetalStress({ volume: 0.3, playbackRate: 0.62, force: true });
             fireMothershipReactiveLine('first_bio');
         }
     }
@@ -6529,7 +6530,9 @@ charCards.forEach(card => {
                 if (gameContainer) {
                     spawnSectorScanSmoke(gameContainer, 25);
                 }
-                AudioManager.play('amb_metal_stress1', { volume: 0.4 });
+                if (isGameplayPhase()) {
+                    AudioManager.playMetalStress({ volume: 0.4 });
+                }
 
                 if (!isGameplayPhase()) {
                     hideAllGameplayPrompts();

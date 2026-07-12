@@ -3459,6 +3459,7 @@ export class ThreeGame {
                 this.snapCameraToPlayer();
             }
             this.clearLoadedChunksForRunReset();
+            this.resetAct2World();
             window.AudioManager?.stopAmbience?.();
             if (typeof window.transitionToMenuMusic === 'function') {
                 window.transitionToMenuMusic();
@@ -7340,17 +7341,20 @@ export class ThreeGame {
     }
 
     resetAct2World() {
-        for (const camp of this.camps) {
+        this.caveEntrance?.reset?.();
+        for (const camp of this.camps ?? []) {
+            camp.reset?.();
             if (camp.group) this.scene.remove(camp.group);
         }
         this.camps = [];
-        for (const civ of this.campCivilians) {
+        for (const civ of this.campCivilians ?? []) {
             if (civ.sprite) this.scene.remove(civ.sprite);
         }
         this.campCivilians = [];
         this._act2CampsReady = false;
         this._campPromptLabel = null;
         for (const hive of this.hives ?? []) {
+            hive.reset?.();
             if (hive.group) this.scene.remove(hive.group);
         }
         this.hives = [];
@@ -8083,7 +8087,7 @@ export class ThreeGame {
             camp._defenseSpawned = true;
             this.spawnCampDefenders(camp);
             this.triggerCameraShake?.(0.3, 0.5);
-            window.AudioManager?.play?.('amb_metal_stress', { volume: 0.5, playbackRate: 0.8 });
+            window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.8, force: true });
             window.dispatchEvent(new CustomEvent('camp-defense-triggered', {
                 detail: { campId: camp.id, campLabel: camp.label, level: camp.level }
             }));
@@ -9673,7 +9677,7 @@ export class ThreeGame {
             if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
                 this.isPlayerFalling = true;
                 this.setInputEnabled(false);
-                window.AudioManager?.play('amb_metal_stress', { volume: 0.8, playbackRate: 0.6 });
+                window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
                 return;
             }
@@ -9793,7 +9797,12 @@ export class ThreeGame {
                 this.footstepTimer = 0;
                 const footRate = 1.6 + Math.random() * 0.3;
                 if (this.performanceProfile !== 'menu') {
-                    window.AudioManager?.play('amb_metal_stress', { volume: 0.055, playbackRate: footRate });
+                    window.AudioManager?.playMetalStress?.({
+                        volume: 0.055,
+                        playbackRate: footRate,
+                        chance: 0.25,
+                        minGapMs: 1800
+                    });
                     if (this.wetFootprintTrailTime > 0.04) {
                         this.spawnWetFootprint(this.player.position.x, this.player.position.z, moveDirX, moveDirZ);
                     }
@@ -13963,7 +13972,7 @@ export class ThreeGame {
             sprite.userData.speed = SNAIL_ENRAGED_MOVE_SPEED;
             sprite.userData.attackCooldown = Math.min(sprite.userData.attackCooldown ?? 0, 0.2);
             sprite.material?.color?.setHex(SNAIL_ENRAGED_TINT);
-            window.AudioManager?.play('amb_metal_stress', { volume: 0.38, playbackRate: 1.55 });
+            window.AudioManager?.playMetalStress?.({ volume: 0.38, playbackRate: 1.55, force: true });
         }
 
         if (sprite.userData.hp > 0) {
@@ -14324,7 +14333,7 @@ export class ThreeGame {
         group.add(boss);
         this.scatterSprites.push(boss);
 
-        window.AudioManager?.play('amb_metal_stress', { volume: 0.6, playbackRate: 0.42, bus: 'sfx' });
+        window.AudioManager?.playMetalStress?.({ volume: 0.6, playbackRate: 0.42, force: true });
         window.dispatchEvent(new CustomEvent('milestone-boss-spawned', { detail: { type: bossType } }));
         return boss;
     }
@@ -14393,7 +14402,7 @@ export class ThreeGame {
         group.add(boss);
         this.scatterSprites.push(boss);
 
-        window.AudioManager?.play?.('amb_metal_stress', { volume: 0.6, playbackRate: 0.5, bus: 'sfx' });
+        window.AudioManager?.playMetalStress?.({ volume: 0.6, playbackRate: 0.5, force: true });
         window.dispatchEvent(new CustomEvent('milestone-boss-spawned', {
             detail: { type: bossType, sourceGoalKey: 'hiveHarvest', hiveId: hive.id }
         }));
@@ -14540,7 +14549,7 @@ export class ThreeGame {
         }
 
         if (spawned.length) {
-            window.AudioManager?.play?.('amb_metal_stress', { volume: 0.7, playbackRate: 0.55, bus: 'sfx' });
+            window.AudioManager?.playMetalStress?.({ volume: 0.7, playbackRate: 0.55, force: true });
             window.dispatchEvent(new CustomEvent('act2-apex-threat-spawned', {
                 detail: {
                     ...event,
@@ -14852,7 +14861,7 @@ export class ThreeGame {
                 data.chargeTimer = 0;
                 data.crawlerState = 'charging';
                 sprite.material.color.setHex(CRAWLER_TINT);
-                window.AudioManager?.play('amb_metal_stress', { volume: 0.45, playbackRate: 2.6, bus: 'sfx' });
+                window.AudioManager?.playMetalStress?.({ volume: 0.45, playbackRate: 2.6, force: true });
             }
         } else if (data.crawlerState === 'charging') {
             data.chargeTimer += delta;
@@ -15229,7 +15238,7 @@ export class ThreeGame {
                                 }
                             }
                         }
-                        window.AudioManager?.play('amb_metal_stress', { volume: 0.5, playbackRate: 0.5 });
+                        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
                     }
                 } else if (data.type === 'boss_corrupted_scout' && target.type === 'player' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 4.0;
@@ -15261,7 +15270,7 @@ export class ThreeGame {
                             this.triggerCameraShake?.(0.35, 0.45);
                         }
                     }
-                    window.AudioManager?.play('amb_metal_stress', { volume: 0.52, playbackRate: 0.8 });
+                    window.AudioManager?.playMetalStress?.({ volume: 0.52, playbackRate: 0.8, force: true });
                 } else if (data.type === 'boss_corrupted_engineer' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 6.0;
                     this.playerSlowTimer = 2.5; // Jam and slow
@@ -15315,7 +15324,7 @@ export class ThreeGame {
                     this.applySnailShipKnockback(sprite, data, activeShip);
                 }
             }
-            window.AudioManager?.play('amb_metal_stress', { volume: 0.24, playbackRate: 1.1 });
+            window.AudioManager?.playMetalStress?.({ volume: 0.24, playbackRate: 1.1, force: true });
         }
     }
 
@@ -15524,11 +15533,11 @@ export class ThreeGame {
             }
             if (nearestHuntingSnail < 5.5) {
                 const pan = Math.max(-1, Math.min(1, (nearestSnailX - this.player.position.x) / 6));
-                window.AudioManager?.play('amb_metal_stress', {
+                window.AudioManager?.playMetalStress?.({
                     volume: 0.08 + (1 - nearestHuntingSnail / 5.5) * 0.06,
                     playbackRate: 1.25,
-                    bus: 'sfx',
-                    pan
+                    pan,
+                    force: true
                 });
                 this._threatAudioTimer = 1.8;
             } else {
