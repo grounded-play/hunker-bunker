@@ -6408,6 +6408,7 @@ export class ThreeGame {
     }
 
     updateCaveEntrance(delta) {
+        if (this.performanceProfile === 'menu') return;
         if (!this.caveEntrance?.isRevealed) return;
         this.caveEntrance.update(delta);
         if (!this.player) return;
@@ -6470,7 +6471,7 @@ export class ThreeGame {
     // objective (Act 2 starts from a completed rebuild save). Camps are
     // handled by updateCamps — they exist in both acts.
     updateAct2(_delta) {
-        if (!this.isAct2Active()) return;
+        if (this.performanceProfile === 'menu' || !this.isAct2Active()) return;
         const phase = this.act2.getPhase();
         if (phase === 'dish' && !this.foundry?.isRevealed) {
             this.revealFoundry({ instant: true });
@@ -6481,7 +6482,7 @@ export class ThreeGame {
     // with shells (and later must betray). Leveled camps double as O2 havens
     // during the human prelude.
     updateCamps(delta) {
-        if (!ARC_PRELUDE_ENABLED || !this.act2) return;
+        if (this.performanceProfile === 'menu' || !ARC_PRELUDE_ENABLED || !this.act2) return;
         this.ensureAct2Camps();
         const phase = this.act2.getPhase();
         for (const camp of this.camps) camp.update(delta);
@@ -6715,7 +6716,7 @@ export class ThreeGame {
     // player wounded for resources, with rescue/harvest/network choices.
 
     updateHiveSites(delta) {
-        if (!ARC_PRELUDE_ENABLED || !this.act2) return;
+        if (this.performanceProfile === 'menu' || !ARC_PRELUDE_ENABLED || !this.act2) return;
         this.ensureHiveSites();
         for (const hive of this.hives) hive.update(delta);
         this.updateHivePrompt();
