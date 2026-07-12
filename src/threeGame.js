@@ -2548,26 +2548,19 @@ export class ThreeGame {
                 return;
             }
             if (this.codeMatchesAction(event.code, 'interact')) {
-                this.interactWithConsole();
-                this.interactWithO2Generator();
-                this.interactWithLoreTerminal();
-                this.interactWithFoundry();
-                this.interactWithBlackBox();
-                this.interactWithCaveEntrance();
-                this.interactWithAct2Camp();
-                this.interactWithHiveSite();
+                this.triggerGameplayInteract();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
-                this.requestReload({ manual: true });
+                this.triggerGameplayReload({ manual: true });
             }
             if (this.codeMatchesAction(event.code, 'ability')) {
                 event.preventDefault();
-                this.triggerClassAbility();
+                this.triggerGameplayAbility();
             }
             if (this.codeMatchesAction(event.code, 'scan')) {
                 event.preventDefault();
-                this.triggerRadarScan();
+                this.triggerGameplayScan();
             }
             this.setKeyState(event.code, true);
         };
@@ -2575,13 +2568,7 @@ export class ThreeGame {
         this.handlePromptTap = (event) => {
             event.preventDefault();
             if (!this.isGameplayInputActive()) return;
-            this.interactWithConsole();
-            this.interactWithO2Generator();
-            this.interactWithFoundry();
-            this.interactWithBlackBox();
-            this.interactWithCaveEntrance();
-            this.interactWithAct2Camp();
-            this.interactWithHiveSite();
+            this.triggerGameplayInteract();
         };
 
         // Pointer/tap state for canvas input.
@@ -2759,6 +2746,124 @@ export class ThreeGame {
         this.mouseAimActive = keepMouseActive;
         this._aimResetTimer = keepMouseActive ? 0 : Math.max(0, persistDuration);
         return worldPoint;
+    }
+
+    triggerGameplayInteract() {
+        if (!this.isGameplayInputActive()) return false;
+        this.interactWithConsole();
+        this.interactWithO2Generator();
+        this.interactWithLoreTerminal();
+        this.interactWithFoundry();
+        this.interactWithBlackBox();
+        this.interactWithCaveEntrance();
+        this.interactWithAct2Camp();
+        this.interactWithHiveSite();
+        return true;
+    }
+
+    triggerGameplayReload({ manual = false } = {}) {
+        if (!this.isGameplayInputActive()) return false;
+        return this.requestReload({ manual });
+    }
+
+    triggerGameplayAbility() {
+        if (!this.isGameplayInputActive()) return false;
+        this.triggerClassAbility();
+        return true;
+    }
+
+    triggerGameplayScan() {
+        if (!this.isGameplayInputActive()) return false;
+        this.triggerRadarScan();
+        return true;
+    }
+
+    setControllerAimVector(x = 0, y = 0) {
+        if (!this.isGameplayInputActive()) return false;
+
+        const screenAxisX = THREE.MathUtils.clamp(Number(x) || 0, -1, 1);
+        const screenAxisZ = THREE.MathUtils.clamp(Number(y) || 0, -1, 1);
+        const magnitude = Math.hypot(screenAxisX, screenAxisZ);
+        if (magnitude <= 0.18) return false;
+
+        const right = this.cameraPlanarRight ?? { x: 1, y: 0 };
+        const forward = this.cameraPlanarForward ?? { x: 0, y: 1 };
+        const aimX = (right.x * screenAxisX) + (forward.x * -screenAxisZ);
+        const aimZ = (right.y * screenAxisX) + (forward.y * -screenAxisZ);
+        const aimLength = Math.hypot(aimX, aimZ);
+        if (aimLength <= 0.0001) return false;
+
+        this.aimWorldPoint = null;
+        this.aimDirX = aimX / aimLength;
+        this.aimDirZ = aimZ / aimLength;
+        this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
+        this.hasActiveAim = true;
+        this.mouseAimActive = false;
+        this._aimResetTimer = 0;
+        return true;
+    }
+
+    fireWeaponAtCurrentAim() {
+        if (!this.isGameplayInputActive()) return false;
+
+        if (this.isInsideNoFireZone()) {
+            window.AudioManager?.play('ui_error', { volume: 0.42 });
+            window.dispatchEvent(new CustomEvent('combat-no-fire-zone'));
+            return false;
+        }
+
+        if (this.weaponReloading) {
+            window.AudioManager?.play('ui_error', { volume: 0.34, playbackRate: 1.05 });
+            return false;
+        }
+        if (this.weaponFireCooldown > 0) {
+            return false;
+        }
+        if (this.weaponClipAmmo <= 0) {
+            const availableAmmo = this.getAvailableAmmo();
+            if (availableAmmo < 1) {
+                window.AudioManager?.play('ui_error', { volume: 0.45 });
+                window.dispatchEvent(new CustomEvent('combat-no-ammo'));
+                return false;
+            }
+            this.requestReload();
+            return false;
+        }
+
+        if (!this.hasActiveAim) {
+            const fallbackX = this.cameraPlanarForward?.x ?? this.aimDirX ?? 1;
+            const fallbackZ = this.cameraPlanarForward?.y ?? this.aimDirZ ?? 0;
+            const fallbackLength = Math.hypot(fallbackX, fallbackZ) || 1;
+            this.aimDirX = fallbackX / fallbackLength;
+            this.aimDirZ = fallbackZ / fallbackLength;
+            this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
+            this.hasActiveAim = true;
+        }
+
+        const normX = this.aimDirX;
+        const normZ = this.aimDirZ;
+        if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return false;
+
+        this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
+        let fireCd = WEAPON_FIRE_COOLDOWN;
+        if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
+            fireCd /= 1.20;
+        }
+        this.weaponFireCooldown = fireCd;
+        this.emitWeaponClipState();
+
+        this.spawnPlayerShot(normX, normZ);
+
+        window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
+
+        if (this.weaponClipAmmo <= 0) {
+            this.requestReload();
+        }
+        return true;
+    }
+
+    triggerControllerFire() {
+        return this.fireWeaponAtCurrentAim();
     }
 
     setKeyState(code, pressed) {
@@ -4215,8 +4320,15 @@ export class ThreeGame {
 
     shouldUseTapPromptLabel() {
         if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+        if (window.HunkerInputState?.isTouchPrompt?.()) return true;
         const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
         return coarsePointer || navigator.maxTouchPoints > 0 || ('ontouchstart' in window);
+    }
+
+    getPromptKeyLabel(defaultKey = 'E') {
+        const rawLabel = window.HunkerInputState?.getPromptKeyText?.(defaultKey)
+            ?? (this.shouldUseTapPromptLabel() ? 'TAP' : defaultKey);
+        return rawLabel === 'TAP' ? 'TAP' : `PRESS ${rawLabel}`;
     }
 
     updateConsoles(delta, now) {
@@ -4294,13 +4406,13 @@ export class ThreeGame {
             if (promptEl) {
                 const actionText = promptEl.querySelector('.prompt-text');
                 const promptKey = promptEl.querySelector('.prompt-key');
-                const shouldUseTapLabel = this.shouldUseTapPromptLabel();
                 if (actionText) {
                     actionText.textContent = `ACCESS ${nearestConsole.type} BASE SHOP`;
                 }
                 if (promptKey) {
-                    promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'PRESS E';
-                    promptKey.classList.toggle('prompt-key--tap', shouldUseTapLabel);
+                    const promptKeyLabel = this.getPromptKeyLabel('E');
+                    promptKey.textContent = promptKeyLabel;
+                    promptKey.classList.toggle('prompt-key--tap', promptKeyLabel === 'TAP');
                 }
                 promptEl.classList.add('visible');
                 promptEl.classList.remove('hidden');
@@ -4324,11 +4436,11 @@ export class ThreeGame {
             if (o2InRange) {
                 const actionText = o2PromptEl.querySelector('.prompt-text');
                 const promptKey = o2PromptEl.querySelector('.prompt-key');
-                const shouldUseTapLabel = this.shouldUseTapPromptLabel();
                 if (actionText) actionText.textContent = 'UPGRADE O₂ GENERATOR';
                 if (promptKey) {
-                    promptKey.textContent = shouldUseTapLabel ? 'TAP' : 'PRESS E';
-                    promptKey.classList.toggle('prompt-key--tap', shouldUseTapLabel);
+                    const promptKeyLabel = this.getPromptKeyLabel('E');
+                    promptKey.textContent = promptKeyLabel;
+                    promptKey.classList.toggle('prompt-key--tap', promptKeyLabel === 'TAP');
                 }
                 o2PromptEl.classList.add('visible');
                 o2PromptEl.classList.remove('hidden');
@@ -11238,30 +11350,6 @@ export class ThreeGame {
     tryFireWeapon(clientX, clientY) {
         if (!this.isGameplayInputActive()) return;
 
-        if (this.isInsideNoFireZone()) {
-            window.AudioManager?.play('ui_error', { volume: 0.42 });
-            window.dispatchEvent(new CustomEvent('combat-no-fire-zone'));
-            return;
-        }
-
-        if (this.weaponReloading) {
-            window.AudioManager?.play('ui_error', { volume: 0.34, playbackRate: 1.05 });
-            return;
-        }
-        if (this.weaponFireCooldown > 0) {
-            return;
-        }
-        if (this.weaponClipAmmo <= 0) {
-            const availableAmmo = this.getAvailableAmmo();
-            if (availableAmmo < 1) {
-                window.AudioManager?.play('ui_error', { volume: 0.45 });
-                window.dispatchEvent(new CustomEvent('combat-no-ammo'));
-                return;
-            }
-            this.requestReload();
-            return;
-        }
-
         const worldPoint = this.updateAimFromClient(clientX, clientY, {
             keepMouseActive: this._canvasPointerType === 'mouse',
             persistDuration: this._canvasPointerType === 'mouse' ? 0 : 2.0
@@ -11269,25 +11357,7 @@ export class ThreeGame {
 
         if (!worldPoint && !this.hasActiveAim) return;
 
-        const normX = this.aimDirX;
-        const normZ = this.aimDirZ;
-        if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return;
-
-        this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
-        let fireCd = WEAPON_FIRE_COOLDOWN;
-        if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
-            fireCd /= 1.20;
-        }
-        this.weaponFireCooldown = fireCd;
-        this.emitWeaponClipState();
-
-        this.spawnPlayerShot(normX, normZ);
-
-        window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
-
-        if (this.weaponClipAmmo <= 0) {
-            this.requestReload();
-        }
+        this.fireWeaponAtCurrentAim();
     }
 
     spawnPlayerShot(normX, normZ) {

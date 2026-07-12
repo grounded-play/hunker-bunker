@@ -1474,6 +1474,13 @@ body {
   border-color: rgba(var(--class-color-rgb, 255, 159, 28), 0.38);
 }
 
+.char-card:focus-visible {
+  outline: 2px solid rgba(46, 196, 182, 0.95);
+  outline-offset: 3px;
+  transform: translateX(calc(var(--vu) * -1.2));
+  box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.22), 0 0 24px rgba(46, 196, 182, 0.18);
+}
+
 .char-card.selected {
   background:
     linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.18), rgba(111, 213, 214, 0.045)),
@@ -1485,6 +1492,20 @@ body {
 
 .char-card.selected::after {
   display: none;
+}
+
+.title-menu-btn:focus-visible,
+.start-btn:focus-visible,
+.close-modal:focus-visible,
+.calibrate-btn:focus-visible,
+.about-btn:focus-visible,
+.confirm-secondary-btn:focus-visible,
+.abort-btn:focus-visible,
+.open-settings-btn:focus-visible,
+.operator-callsign-input:focus-visible,
+.save-data-code:focus-visible {
+  outline: 2px solid rgba(46, 196, 182, 0.9);
+  outline-offset: 3px;
 }
 
 .char-info {

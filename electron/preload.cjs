@@ -22,5 +22,27 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onSaveDataRemoved: (key) => ipcRenderer.send('hb:saveDataRemoved', key),
     unlockAchievement: (key) => ipcRenderer.send('hb:unlockAchievement', key),
     setStat: (key, value) => ipcRenderer.send('hb:setStat', key, value),
-    getSteamInfo: () => ipcRenderer.invoke('hb:steamInfo')
+    getSteamInfo: () => ipcRenderer.invoke('hb:steamInfo'),
+    setSteamInputPhase: (phase) => ipcRenderer.send('hb:steamInputPhase', phase),
+    showGamepadTextInput: (inputMode, lineMode, description, maxCharacters, existingText) => ipcRenderer.invoke(
+        'hb:showGamepadTextInput',
+        inputMode,
+        lineMode,
+        description,
+        maxCharacters,
+        existingText
+    ),
+    showFloatingGamepadTextInput: (keyboardMode, x, y, width, height) => ipcRenderer.invoke(
+        'hb:showFloatingGamepadTextInput',
+        keyboardMode,
+        x,
+        y,
+        width,
+        height
+    ),
+    onSteamInputState: (handler) => {
+        const listener = (_event, snapshot) => handler(snapshot);
+        ipcRenderer.on('hb:steamInputState', listener);
+        return () => ipcRenderer.removeListener('hb:steamInputState', listener);
+    }
 });

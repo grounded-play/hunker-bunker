@@ -19,6 +19,19 @@ const STEAM_APPID = Number(process.env.HB_STEAM_APPID ?? 1247290);
 
 let steam = null;
 let steamClient = null;
+let mainWindow = null;
+let steamInputPhase = 'loading';
+let steamInputReady = false;
+let steamInputHandles = null;
+let steamInputPollTimer = null;
+
+function isValidActionHandle(handle) {
+    return typeof handle === 'bigint' && handle !== 0n;
+}
+
+function normalizeSteamInputPhase(phase) {
+    return phase === 'gameplay' ? 'gameplay' : 'menu';
+}
 
 function initSteam() {
     try {
@@ -27,10 +40,43 @@ function initSteam() {
         if (DEV) {
             try { fs.writeFileSync(path.join(process.cwd(), 'steam_appid.txt'), String(STEAM_APPID)); } catch { /* best effort */ }
         }
-        // eslint-disable-next-line global-require
         steam = require('steamworks.js');
         steamClient = steam.init(STEAM_APPID);
         console.log(`[steam] initialized (appid ${STEAM_APPID}) as ${steamClient.localplayer.getName()}`);
+        try {
+            steamClient.input?.init?.();
+            steamInputHandles = {
+                menu: steamClient.input.getActionSet('menu'),
+                gameplay: steamClient.input.getActionSet('gameplay'),
+                menuUp: steamClient.input.getDigitalAction('menu_up'),
+                menuDown: steamClient.input.getDigitalAction('menu_down'),
+                menuLeft: steamClient.input.getDigitalAction('menu_left'),
+                menuRight: steamClient.input.getDigitalAction('menu_right'),
+                menuConfirm: steamClient.input.getDigitalAction('menu_confirm'),
+                menuBack: steamClient.input.getDigitalAction('menu_back'),
+                move: steamClient.input.getAnalogAction('move'),
+                camera: steamClient.input.getAnalogAction('camera'),
+                fire: steamClient.input.getDigitalAction('fire'),
+                interact: steamClient.input.getDigitalAction('interact'),
+                reload: steamClient.input.getDigitalAction('reload'),
+                ability: steamClient.input.getDigitalAction('ability'),
+                scan: steamClient.input.getDigitalAction('scan'),
+                pause: steamClient.input.getDigitalAction('pause')
+            };
+
+            const handlesAreValid = Object.values(steamInputHandles).every(isValidActionHandle);
+            steamInputReady = handlesAreValid;
+            if (!handlesAreValid) {
+                console.log('[steam] input initialized, but one or more action handles were missing. Check the bundled action manifest and Steamworks Steam Input settings.');
+            } else {
+                steamInputPhase = 'loading';
+                console.log('[steam] input initialized');
+            }
+        } catch (err) {
+            steamInputReady = false;
+            steamInputHandles = null;
+            console.log(`[steam] input not available (${DEV ? 'dev' : 'no client'}): ${err?.message ?? err}`);
+        }
         return true;
     } catch (err) {
         steam = null;
@@ -48,6 +94,119 @@ function enableOverlay() {
     } catch (err) {
         console.log(`[steam] overlay hook failed: ${err?.message ?? err}`);
     }
+}
+
+function setSteamInputPhase(phase) {
+    steamInputPhase = normalizeSteamInputPhase(phase);
+}
+
+function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
+    if (!controller || !actionHandles) return null;
+
+    const controllerType = controller.getType();
+    const controllerHandle = controller.getHandle?.();
+    const handle = typeof controllerHandle === 'bigint' ? controllerHandle.toString() : String(controllerHandle ?? '');
+
+    const moveVector = phase === 'gameplay' && isValidActionHandle(actionHandles.move)
+        ? controller.getAnalogActionVector(actionHandles.move)
+        : { x: 0, y: 0 };
+    const cameraVector = phase === 'gameplay' && isValidActionHandle(actionHandles.camera)
+        ? controller.getAnalogActionVector(actionHandles.camera)
+        : { x: 0, y: 0 };
+
+    const buttonState = phase === 'gameplay'
+        ? {
+            fire: isValidActionHandle(actionHandles.fire) ? controller.isDigitalActionPressed(actionHandles.fire) : false,
+            interact: isValidActionHandle(actionHandles.interact) ? controller.isDigitalActionPressed(actionHandles.interact) : false,
+            reload: isValidActionHandle(actionHandles.reload) ? controller.isDigitalActionPressed(actionHandles.reload) : false,
+            ability: isValidActionHandle(actionHandles.ability) ? controller.isDigitalActionPressed(actionHandles.ability) : false,
+            scan: isValidActionHandle(actionHandles.scan) ? controller.isDigitalActionPressed(actionHandles.scan) : false,
+            pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
+        }
+        : {
+            menuUp: isValidActionHandle(actionHandles.menuUp) ? controller.isDigitalActionPressed(actionHandles.menuUp) : false,
+            menuDown: isValidActionHandle(actionHandles.menuDown) ? controller.isDigitalActionPressed(actionHandles.menuDown) : false,
+            menuLeft: isValidActionHandle(actionHandles.menuLeft) ? controller.isDigitalActionPressed(actionHandles.menuLeft) : false,
+            menuRight: isValidActionHandle(actionHandles.menuRight) ? controller.isDigitalActionPressed(actionHandles.menuRight) : false,
+            menuConfirm: isValidActionHandle(actionHandles.menuConfirm) ? controller.isDigitalActionPressed(actionHandles.menuConfirm) : false,
+            menuBack: isValidActionHandle(actionHandles.menuBack) ? controller.isDigitalActionPressed(actionHandles.menuBack) : false
+        };
+
+    const moveMagnitude = Math.hypot(Number(moveVector?.x) || 0, Number(moveVector?.y) || 0);
+    const cameraMagnitude = Math.hypot(Number(cameraVector?.x) || 0, Number(cameraVector?.y) || 0);
+    const anyButtonPressed = Object.values(buttonState).some(Boolean);
+    const active = anyButtonPressed || moveMagnitude > 0.18 || cameraMagnitude > 0.18;
+
+    return {
+        handle,
+        type: controllerType,
+        active,
+        move: {
+            x: Math.max(-1, Math.min(1, Number(moveVector?.x) || 0)),
+            y: Math.max(-1, Math.min(1, Number(moveVector?.y) || 0))
+        },
+        camera: {
+            x: Math.max(-1, Math.min(1, Number(cameraVector?.x) || 0)),
+            y: Math.max(-1, Math.min(1, Number(cameraVector?.y) || 0))
+        },
+        ...buttonState
+    };
+}
+
+function buildSteamInputSnapshot() {
+    if (!steamInputReady || !steamClient?.input || !steamInputHandles) {
+        return {
+            available: false,
+            phase: steamInputPhase,
+            controllerCount: 0,
+            anyInput: false,
+            isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.()),
+            primaryControllerHandle: null,
+            primaryControllerType: null,
+            controllers: []
+        };
+    }
+
+    const phase = normalizeSteamInputPhase(steamInputPhase);
+    const actionSet = phase === 'gameplay' ? steamInputHandles.gameplay : steamInputHandles.menu;
+    const controllers = [];
+
+    try {
+        for (const controller of steamClient.input.getControllers()) {
+            if (isValidActionHandle(actionSet)) {
+                controller.activateActionSet(actionSet);
+            }
+            const snapshot = getPrimaryControllerSnapshot(controller, phase, steamInputHandles);
+            if (snapshot) controllers.push(snapshot);
+        }
+    } catch (err) {
+        console.log(`[steam] input snapshot failed: ${err?.message ?? err}`);
+    }
+
+    const activeController = controllers.find((controller) => controller.active) ?? controllers[0] ?? null;
+    return {
+        available: true,
+        phase: steamInputPhase,
+        controllerCount: controllers.length,
+        anyInput: controllers.some((controller) => controller.active),
+        isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.()),
+        primaryControllerHandle: activeController?.handle ?? null,
+        primaryControllerType: activeController?.type ?? null,
+        controllers
+    };
+}
+
+function startSteamInputPolling() {
+    if (!steamInputReady || steamInputPollTimer) return;
+
+    steamInputPollTimer = setInterval(() => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        try {
+            mainWindow.webContents.send('hb:steamInputState', buildSteamInputSnapshot());
+        } catch (err) {
+            console.log(`[steam] input dispatch failed: ${err?.message ?? err}`);
+        }
+    }, 1000 / 30);
 }
 
 // ── Save bridge ───────────────────────────────────────────────
@@ -116,10 +275,34 @@ ipcMain.on('hb:setStat', (_e, key, value) => {
         console.log(`[steam] setStat '${key}' failed: ${err?.message ?? err}`);
     }
 });
+ipcMain.on('hb:steamInputPhase', (_e, phase) => {
+    setSteamInputPhase(phase);
+});
+ipcMain.handle('hb:showGamepadTextInput', async (_e, inputMode, lineMode, description, maxCharacters, existingText) => {
+    if (!steamClient?.utils?.showGamepadTextInput) return null;
+    try {
+        return await steamClient.utils.showGamepadTextInput(inputMode, lineMode, description, maxCharacters, existingText);
+    } catch (err) {
+        console.log(`[steam] gamepad text input failed: ${err?.message ?? err}`);
+        return null;
+    }
+});
+ipcMain.handle('hb:showFloatingGamepadTextInput', async (_e, keyboardMode, x, y, width, height) => {
+    if (!steamClient?.utils?.showFloatingGamepadTextInput) return false;
+    try {
+        return await steamClient.utils.showFloatingGamepadTextInput(keyboardMode, x, y, width, height);
+    } catch (err) {
+        console.log(`[steam] floating gamepad text input failed: ${err?.message ?? err}`);
+        return false;
+    }
+});
 ipcMain.handle('hb:steamInfo', () => ({
     active: Boolean(steamClient),
     persona: steamClient ? steamClient.localplayer.getName() : null,
-    appId: STEAM_APPID
+    appId: STEAM_APPID,
+    steamInputAvailable: steamInputReady,
+    steamInputPhase,
+    isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.())
 }));
 
 function createWindow() {
@@ -145,6 +328,7 @@ function createWindow() {
     } else {
         win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
     }
+    mainWindow = win;
     return win;
 }
 
@@ -154,6 +338,7 @@ enableOverlay();
 app.whenReady().then(() => {
     loadSaveFile();
     createWindow();
+    startSteamInputPolling();
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });
@@ -161,5 +346,12 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
     flushSaveFile();
+    if (steamInputPollTimer) {
+        clearInterval(steamInputPollTimer);
+        steamInputPollTimer = null;
+    }
+    try {
+        steamClient?.input?.shutdown?.();
+    } catch { /* ignore */ }
     app.quit();
 });

@@ -11,8 +11,10 @@ current repo already supports from what is still planned.
   `steam/app_build.vdf`.
 - Save path: `hb_*` localStorage values mirror to `save.json` under Electron
   `userData`, which is the right shape for Steam Auto-Cloud.
-- Input: keyboard/mouse plus touch UI. Keyboard bindings are remappable.
-  There is no native gamepad/controller layer in the runtime yet.
+- Input: keyboard/mouse plus touch UI, remappable keyboard bindings, and
+  native Steam Input API support for controller input.
+- Steam Input: wired through the Electron shell with the bundled action
+  manifest at `steam_input_manifest.vdf`.
 - Accessibility: text speed selector, difficulty selector, shake toggle,
   colorblind assist, and key remapping exist in `main.js` / `index.html`.
 - Steam hooks: optional Steam overlay, achievements, and stats forwarding
@@ -21,7 +23,6 @@ current repo already supports from what is still planned.
 ## Do Not Claim Yet
 
 - Steam Deck Verified.
-- Native controller support.
 - macOS shipping support.
 - "All OSes" in the Steam platform checkboxes.
 
@@ -36,4 +37,3 @@ current repo already supports from what is still planned.
 - Ship Windows + Linux/SteamOS first.
 - Treat Steam Deck as "in progress" unless you have actually tested the
   controller layout on real hardware.
-

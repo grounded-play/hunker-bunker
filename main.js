@@ -167,6 +167,7 @@ function hideAllGameplayPrompts() {
 
 function setAppPhase(phase) {
     appPhase = phase;
+    syncSteamInputPhase();
     if (!isGameplayPhase()) {
         if (tacticalOverlayTimer) {
             clearTimeout(tacticalOverlayTimer);
@@ -180,6 +181,518 @@ function setAppPhase(phase) {
     }
     updateQueensLedgerHUD();
 }
+
+const STEAM_INPUT_CONFIRM_GLYPHS = Object.freeze({
+    SteamDeckController: 'A',
+    SteamController: 'A',
+    XBox360Controller: 'A',
+    XBoxOneController: 'A',
+    GenericGamepad: 'A',
+    AppleMFiController: 'A',
+    AndroidController: 'A',
+    PS3Controller: 'X',
+    PS4Controller: 'X',
+    PS5Controller: 'X',
+    SwitchProController: 'B',
+    SwitchJoyConPair: 'B',
+    SwitchJoyConSingle: 'B',
+    MobileTouch: 'TAP'
+});
+
+const STEAM_INPUT_PROMPT_IDS = Object.freeze([
+    'console-hud-prompt',
+    'lore-hud-prompt',
+    'foundry-hud-prompt',
+    'o2-generator-hud-prompt',
+    'black-box-hud-prompt'
+]);
+
+const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
+    'confirm-modal',
+    'reset-save-confirm-modal',
+    'audio-mixer-popup',
+    'save-data-popup',
+    'settings-popup',
+    'about-modal',
+    'archive-log-detail-modal',
+    'archive-modal',
+    'codex-modal',
+    'lore-modal',
+    'game-over-modal',
+    'camp-choice-modal',
+    'mothership-dialogue',
+    'console-terminal-modal',
+    'o2-generator-modal',
+    'splash',
+    'menu'
+]);
+
+const steamInputState = {
+    available: false,
+    phase: appPhase,
+    controllerCount: 0,
+    anyInput: false,
+    isSteamDeck: false,
+    primaryControllerHandle: null,
+    primaryControllerType: null,
+    controllers: [],
+    lastInputMode: 'keyboard'
+};
+
+const steamInputPrevControllers = new Map();
+let steamGamepadTextInputInFlight = false;
+let pendingSteamInputBoot = false;
+let suppressSteamInputUntilRelease = false;
+
+window.HunkerTriggerBoot = () => {
+    pendingSteamInputBoot = true;
+};
+
+window.HunkerInputState = {
+    getPromptKeyText,
+    isTouchPrompt: () => isTouchDevice(),
+    isControllerPrompt: () => !isTouchDevice() && isSteamControllerInputActive(),
+    getLastInputMode: () => steamInputState.lastInputMode,
+    getPrimaryControllerType: () => steamInputState.primaryControllerType,
+    getState: () => ({ ...steamInputState })
+};
+
+function syncSteamInputPhase() {
+    window.electronAPI?.setSteamInputPhase?.(appPhase);
+}
+
+function getSteamInputConfirmGlyph(controllerType) {
+    return STEAM_INPUT_CONFIRM_GLYPHS[controllerType] ?? 'A';
+}
+
+function isSteamControllerInputActive() {
+    return steamInputState.lastInputMode === 'controller'
+        || (steamInputState.isSteamDeck && steamInputState.controllerCount > 0);
+}
+
+function getPromptKeyText(defaultKey = 'E') {
+    if (isTouchDevice() || steamInputState.lastInputMode === 'touch') return 'TAP';
+    if (isSteamControllerInputActive()) {
+        return getSteamInputConfirmGlyph(steamInputState.primaryControllerType);
+    }
+    return defaultKey;
+}
+
+function setLastInputMode(mode, { refresh = true } = {}) {
+    const normalized = mode === 'touch' ? 'touch' : mode === 'controller' ? 'controller' : 'keyboard';
+    if (steamInputState.lastInputMode === normalized) return false;
+    steamInputState.lastInputMode = normalized;
+    if (refresh) refreshInteractivePromptKeys();
+    return true;
+}
+
+function setPromptKeyLabel(promptKey, defaultKey = 'E') {
+    if (!promptKey) return;
+    const label = getPromptKeyText(defaultKey);
+    promptKey.dataset.defaultKey = defaultKey;
+    promptKey.textContent = label === 'TAP' ? 'TAP' : `PRESS ${label}`;
+    promptKey.classList.toggle('prompt-key--tap', label === 'TAP');
+}
+
+function refreshInteractivePromptKeys() {
+    for (const id of STEAM_INPUT_PROMPT_IDS) {
+        const prompt = document.getElementById(id);
+        if (!prompt || prompt.classList.contains('hidden')) continue;
+        const promptKey = prompt.querySelector('.prompt-key');
+        if (promptKey) setPromptKeyLabel(promptKey, promptKey.dataset.defaultKey || 'E');
+    }
+}
+
+function isElementVisible(element) {
+    return Boolean(element && element.getClientRects().length > 0);
+}
+
+function getVisibleControllerFocusables(root = document) {
+    if (!root) return [];
+    const selector = [
+        'button:not([disabled])',
+        'input:not([disabled])',
+        'textarea:not([disabled])',
+        'select:not([disabled])',
+        'a[href]',
+        '[role="button"]',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(', ');
+    return Array.from(root.querySelectorAll(selector)).filter((element) => {
+        if (!isElementVisible(element)) return false;
+        if (element.closest('.hidden')) return false;
+        if (element.getAttribute('aria-hidden') === 'true') return false;
+        return true;
+    });
+}
+
+function getInputType(element) {
+    return String(element?.getAttribute?.('type') ?? '').trim().toLowerCase();
+}
+
+function isTextEditableElement(element) {
+    if (!element) return false;
+    if (element.matches?.('textarea')) return true;
+    if (element.matches?.('input')) {
+        const type = getInputType(element);
+        return !type || ['text', 'search', 'url', 'tel', 'email', 'password', 'number'].includes(type);
+    }
+    return Boolean(element.isContentEditable);
+}
+
+function isRangeInputElement(element) {
+    return Boolean(element?.matches?.('input')) && getInputType(element) === 'range';
+}
+
+function adjustRangeInputValue(element, direction) {
+    if (!isRangeInputElement(element)) return false;
+
+    const min = Number.parseFloat(element.min);
+    const max = Number.parseFloat(element.max);
+    const current = Number.parseFloat(element.value);
+    const safeMin = Number.isFinite(min) ? min : 0;
+    const safeMax = Number.isFinite(max) ? max : 100;
+    let step = Number.parseFloat(element.step);
+    if (!Number.isFinite(step) || step <= 0) {
+        step = Math.max((safeMax - safeMin) / 100, 1);
+    }
+
+    const nextValue = Math.min(safeMax, Math.max(safeMin, (Number.isFinite(current) ? current : safeMin) + (step * direction)));
+    if (element.value !== String(nextValue)) {
+        element.value = String(nextValue);
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    return true;
+}
+
+function getControllerFocusRoot() {
+    for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
+        const element = document.getElementById(id);
+        if (element && !element.classList.contains('hidden') && isElementVisible(element)) {
+            return element;
+        }
+    }
+
+    if (document.body.classList.contains('mission-intro-active')) {
+        return document.body;
+    }
+
+    return null;
+}
+
+function getPreferredControllerFocusTarget(root, focusables) {
+    if (!focusables.length) return null;
+    if (root?.id === 'splash') {
+        return focusables.find((element) => element.id === 'title-newrun-btn' && !element.disabled)
+            ?? focusables.find((element) => element.id === 'title-continue-btn' && !element.disabled)
+            ?? focusables[0];
+    }
+    if (root?.id === 'menu') {
+        return focusables.find((element) => element.classList?.contains('char-card') && element.classList.contains('selected'))
+            ?? focusables.find((element) => element.id === 'start-game')
+            ?? focusables[0];
+    }
+    return focusables[0];
+}
+
+function focusControllerTarget(target) {
+    if (!target) return false;
+    try {
+        target.focus?.({ preventScroll: true });
+    } catch {
+        target.focus?.();
+    }
+    return true;
+}
+
+function moveControllerFocus(delta) {
+    const root = getControllerFocusRoot();
+    const focusables = getVisibleControllerFocusables(root ?? document);
+    if (!focusables.length) return null;
+
+    let index = focusables.indexOf(document.activeElement);
+    if (index < 0 || (root && !root.contains(document.activeElement))) {
+        const preferred = getPreferredControllerFocusTarget(root, focusables);
+        if (preferred) {
+            focusControllerTarget(preferred);
+            index = focusables.indexOf(preferred);
+        } else {
+            index = 0;
+        }
+    } else {
+        index = (index + delta + focusables.length) % focusables.length;
+    }
+
+    const target = focusables[index] ?? null;
+    focusControllerTarget(target);
+    return target;
+}
+
+async function openSteamGamepadTextInputForElement(element, {
+    description = 'Enter text',
+    maxCharacters = 32,
+    multiline = false,
+    password = false
+} = {}) {
+    if (!element || !window.electronAPI?.showGamepadTextInput) return false;
+    if (isTouchDevice() || !isSteamControllerInputActive()) return false;
+    if (steamGamepadTextInputInFlight) return true;
+
+    steamGamepadTextInputInFlight = true;
+    try {
+        const existingText = typeof element.value === 'string'
+            ? element.value
+            : typeof element.textContent === 'string'
+                ? element.textContent
+                : '';
+        const result = await window.electronAPI.showGamepadTextInput(
+            password ? 1 : 0,
+            multiline ? 1 : 0,
+            description,
+            maxCharacters,
+            existingText
+        );
+        if (typeof result === 'string' && document.contains(element)) {
+            element.value = result;
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return true;
+    } finally {
+        steamGamepadTextInputInFlight = false;
+    }
+}
+
+function activateControllerFocusedElement() {
+    const root = getControllerFocusRoot();
+    const focusables = getVisibleControllerFocusables(root ?? document);
+    let activeElement = document.activeElement;
+    if (!activeElement || activeElement === document.body || (root && !root.contains(activeElement))) {
+        activeElement = getPreferredControllerFocusTarget(root, focusables);
+        if (activeElement) focusControllerTarget(activeElement);
+    }
+
+    if (!activeElement) return false;
+
+    if (isTextEditableElement(activeElement)) {
+        void openSteamGamepadTextInputForElement(activeElement, {
+            description: activeElement.getAttribute('aria-label')
+                || activeElement.getAttribute('placeholder')
+                || 'Enter text',
+            maxCharacters: Number(activeElement.getAttribute('maxlength')) || (activeElement.tagName === 'TEXTAREA' ? 1024 : 32),
+            multiline: activeElement.tagName === 'TEXTAREA'
+        });
+        return true;
+    }
+
+    if (isRangeInputElement(activeElement)) {
+        focusControllerTarget(activeElement);
+        return true;
+    }
+
+    if (typeof activeElement.click === 'function') {
+        activeElement.click();
+        return true;
+    }
+
+    return false;
+}
+
+function dispatchControllerEscape() {
+    const escapeEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        code: 'Escape',
+        bubbles: true,
+        cancelable: true
+    });
+    document.dispatchEvent(escapeEvent);
+}
+
+function triggerControllerPauseAction() {
+    const settingsPopup = document.getElementById('settings-popup');
+    if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
+        dispatchControllerEscape();
+        return true;
+    }
+    const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
+        .map((id) => document.getElementById(id))
+        .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
+    if (activeModal) {
+        dispatchControllerEscape();
+        return true;
+    }
+    document.querySelector('.open-settings-btn')?.click();
+    return true;
+}
+
+function handleSteamInputSnapshot(snapshot = {}) {
+    const previousPhase = steamInputState.phase;
+    const previousMode = steamInputState.lastInputMode;
+    const previousPrimaryType = steamInputState.primaryControllerType;
+    const controllers = Array.isArray(snapshot.controllers) ? snapshot.controllers : [];
+
+    steamInputState.available = Boolean(snapshot.available);
+    steamInputState.phase = snapshot.phase ?? steamInputState.phase;
+    steamInputState.controllerCount = Number(snapshot.controllerCount) || 0;
+    steamInputState.anyInput = Boolean(snapshot.anyInput);
+    steamInputState.isSteamDeck = Boolean(snapshot.isSteamDeck);
+    steamInputState.primaryControllerHandle = snapshot.primaryControllerHandle ?? null;
+    steamInputState.primaryControllerType = snapshot.primaryControllerType ?? null;
+    steamInputState.controllers = controllers;
+
+    if (steamInputState.anyInput) {
+        setLastInputMode('controller', { refresh: false });
+    } else if (steamInputState.controllerCount === 0 && steamInputState.lastInputMode === 'controller') {
+        setLastInputMode('keyboard', { refresh: false });
+    }
+
+    if (previousPhase !== steamInputState.phase) {
+        steamInputPrevControllers.clear();
+    }
+    if (previousMode !== steamInputState.lastInputMode || previousPrimaryType !== steamInputState.primaryControllerType) {
+        refreshInteractivePromptKeys();
+    }
+
+    if (steamInputState.anyInput && (!window.AudioManager?.isUnlocked || !window.game)) {
+        suppressSteamInputUntilRelease = true;
+        window.HunkerTriggerBoot?.();
+        return;
+    }
+
+    if (suppressSteamInputUntilRelease) {
+        if (steamInputState.anyInput) return;
+        suppressSteamInputUntilRelease = false;
+        steamInputPrevControllers.clear();
+        return;
+    }
+
+    const activeController = controllers.find((controller) => controller.active) ?? controllers[0] ?? null;
+    if (!activeController) {
+        if (window.game?.setVirtualInput) window.game.setVirtualInput(0, 0);
+        return;
+    }
+
+    steamInputPrevControllers.set(activeController.handle, steamInputPrevControllers.get(activeController.handle) ?? {});
+
+    const gameplayActive = Boolean(window.game?.isGameplayInputActive?.());
+    if (steamInputState.phase === 'gameplay' && gameplayActive) {
+        handleSteamGameplayInput(activeController);
+    } else {
+        handleSteamMenuInput(activeController);
+    }
+}
+
+function updateControllerInputMemory(controller, nextState) {
+    steamInputPrevControllers.set(controller.handle, { ...nextState });
+}
+
+function handleSteamMenuInput(controller) {
+    const prev = steamInputPrevControllers.get(controller.handle) ?? {};
+    const moved = Boolean(controller.menuUp && !prev.menuUp)
+        || Boolean(controller.menuDown && !prev.menuDown)
+        || Boolean(controller.menuLeft && !prev.menuLeft)
+        || Boolean(controller.menuRight && !prev.menuRight);
+    const activeElement = document.activeElement;
+    const rangeAdjusted = Boolean(activeElement && isRangeInputElement(activeElement) && (
+        (controller.menuLeft && !prev.menuLeft && adjustRangeInputValue(activeElement, -1))
+        || (controller.menuRight && !prev.menuRight && adjustRangeInputValue(activeElement, 1))
+    ));
+
+    if (!document.activeElement || document.activeElement === document.body || !getControllerFocusRoot()?.contains?.(document.activeElement)) {
+        const root = getControllerFocusRoot();
+        const focusables = getVisibleControllerFocusables(root ?? document);
+        const preferred = getPreferredControllerFocusTarget(root, focusables);
+        if (preferred) focusControllerTarget(preferred);
+    } else if (moved && !rangeAdjusted) {
+        const step = (controller.menuUp || controller.menuLeft) && !(controller.menuDown || controller.menuRight) ? -1 : 1;
+        moveControllerFocus(step);
+    }
+
+    if (controller.menuConfirm && !prev.menuConfirm) {
+        activateControllerFocusedElement();
+    }
+    if (controller.menuBack && !prev.menuBack) {
+        dispatchControllerEscape();
+    }
+
+    updateControllerInputMemory(controller, {
+        ...prev,
+        menuUp: Boolean(controller.menuUp),
+        menuDown: Boolean(controller.menuDown),
+        menuLeft: Boolean(controller.menuLeft),
+        menuRight: Boolean(controller.menuRight),
+        menuConfirm: Boolean(controller.menuConfirm),
+        menuBack: Boolean(controller.menuBack)
+    });
+}
+
+function handleSteamGameplayInput(controller) {
+    const prev = steamInputPrevControllers.get(controller.handle) ?? {};
+    const moveX = Math.abs(Number(controller.move?.x) || 0) > 0.18 ? Number(controller.move?.x) || 0 : 0;
+    const moveY = Math.abs(Number(controller.move?.y) || 0) > 0.18 ? Number(controller.move?.y) || 0 : 0;
+    const aimX = Math.abs(Number(controller.camera?.x) || 0) > 0.18 ? Number(controller.camera?.x) || 0 : 0;
+    const aimY = Math.abs(Number(controller.camera?.y) || 0) > 0.18 ? Number(controller.camera?.y) || 0 : 0;
+
+    if (window.game?.setVirtualInput) {
+        window.game.setVirtualInput(moveX, -moveY);
+    }
+    if ((aimX || aimY) && window.game?.setControllerAimVector) {
+        window.game.setControllerAimVector(aimX, -aimY);
+    }
+
+    if (controller.fire && !prev.fire) {
+        window.game?.triggerControllerFire?.();
+    }
+    if (controller.interact && !prev.interact) {
+        window.game?.triggerGameplayInteract?.();
+    }
+    if (controller.reload && !prev.reload) {
+        window.game?.triggerGameplayReload?.({ manual: true });
+    }
+    if (controller.ability && !prev.ability) {
+        window.game?.triggerClassAbility?.();
+    }
+    if (controller.scan && !prev.scan) {
+        window.game?.triggerRadarScan?.();
+    }
+    if (controller.pause && !prev.pause) {
+        triggerControllerPauseAction();
+    }
+
+    updateControllerInputMemory(controller, {
+        ...prev,
+        fire: Boolean(controller.fire),
+        interact: Boolean(controller.interact),
+        reload: Boolean(controller.reload),
+        ability: Boolean(controller.ability),
+        scan: Boolean(controller.scan),
+        pause: Boolean(controller.pause),
+        moveX,
+        moveY,
+        aimX,
+        aimY
+    });
+}
+
+if (window.electronAPI?.onSteamInputState) {
+    window.electronAPI.onSteamInputState(handleSteamInputSnapshot);
+}
+
+window.addEventListener('keydown', (event) => {
+    if (!event.isTrusted) return;
+    setLastInputMode('keyboard');
+}, true);
+
+window.addEventListener('pointerdown', (event) => {
+    if (!event.isTrusted) return;
+    if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+        setLastInputMode('touch');
+    } else if (event.pointerType === 'mouse') {
+        setLastInputMode('keyboard');
+    }
+}, true);
+
 const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveUp', label: 'MOVE UP' },
     { id: 'moveDown', label: 'MOVE DOWN' },
@@ -2726,11 +3239,7 @@ window.addEventListener('lore-terminal-nearby', () => {
     const prompt = document.getElementById('lore-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) text.textContent = 'READ LOG';
     if (prompt) prompt.classList.remove('hidden');
 });
@@ -2890,11 +3399,7 @@ window.addEventListener('black-box-prompt-nearby', () => {
     }
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) text.textContent = 'RECOVER BLACK BOX';
     prompt?.classList.remove('hidden');
     prompt?.classList.add('visible');
@@ -4651,6 +5156,14 @@ openSaveDataBtn?.addEventListener('click', () => {
 });
 closeSaveDataBtn?.addEventListener('click', () => setSaveDataOpen(false));
 
+saveDataCode?.addEventListener('focus', () => {
+    void openSteamGamepadTextInputForElement(saveDataCode, {
+        description: 'Portable save code',
+        maxCharacters: 8192,
+        multiline: true
+    });
+});
+
 openResetSaveBtn?.addEventListener('click', () => {
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
@@ -5212,11 +5725,7 @@ window.addEventListener('foundry-prompt-nearby', () => {
     const prompt = document.getElementById('foundry-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) {
         // Act 2 dish phase hijacks the foundry interaction entirely.
         text.textContent = (isAct2RunActive() && act2Manager.getPhase() === 'dish')
@@ -5239,11 +5748,7 @@ window.addEventListener('cave-prompt-nearby', () => {
     const prompt = document.getElementById('foundry-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) text.textContent = 'RECOVER FINAL COMPONENT';
     prompt?.classList.remove('hidden');
 });
@@ -5376,11 +5881,7 @@ window.addEventListener('camp-prompt-nearby', (event) => {
     const prompt = document.getElementById('foundry-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) text.textContent = event?.detail?.label ?? 'INTERACT';
     prompt?.classList.remove('hidden');
 });
@@ -5956,6 +6457,12 @@ if (callsignInput) {
     const commitCallsign = () => { callsignInput.value = profile.setCallsign(callsignInput.value); };
     callsignInput.addEventListener('change', commitCallsign);
     callsignInput.addEventListener('blur', commitCallsign);
+    callsignInput.addEventListener('focus', () => {
+        void openSteamGamepadTextInputForElement(callsignInput, {
+            description: 'Operator callsign',
+            maxCharacters: 16
+        });
+    });
 }
 
 document.getElementById('export-save')?.addEventListener('click', async () => {
@@ -6294,6 +6801,17 @@ let pendingPreviewType = null;
 let activePreviewType = 'TANK';
 const previewSpriteImages = new Map();
 
+charCards.forEach((card) => {
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-pressed', card.classList.contains('selected') ? 'true' : 'false');
+    card.addEventListener('keydown', (event) => {
+        if (event.code !== 'Enter' && event.code !== 'Space') return;
+        event.preventDefault();
+        card.click();
+    });
+});
+
 const heroData = {
     'SCOUT': { name: 'SCOUT', sprite: '/Scout.full.jpeg' },
     'TANK': { name: 'TANK', sprite: '/Tank.full.jpeg' },
@@ -6513,8 +7031,10 @@ charCards.forEach(card => {
         AudioManager.play('ui_click', { volume: 0.6 });
         // Remove selected from others
         charCards.forEach(c => c.classList.remove('selected'));
+        charCards.forEach(c => c.setAttribute('aria-pressed', 'false'));
         // Add to clicked
         card.classList.add('selected');
+        card.setAttribute('aria-pressed', 'true');
 
         // Update Preview
         const type = card.getAttribute('data-type');
@@ -7212,6 +7732,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             'base'
         );
     };
+
+    window.HunkerTriggerBoot = triggerBoot;
+    if (pendingSteamInputBoot) {
+        pendingSteamInputBoot = false;
+        void triggerBoot();
+    }
 
     document.body.addEventListener('click', triggerBoot);
     window.addEventListener('keydown', triggerBoot);
