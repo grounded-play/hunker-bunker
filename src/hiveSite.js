@@ -376,7 +376,7 @@ export class HiveSite {
         if (this.revealed) {
             if (!dead) {
                 if (!this.eggsAudio) {
-                    this.eggsAudio = audio?.play('hive_eggs_hum', { loop: true, volume: 0.07, bus: 'world' });
+                    this.eggsAudio = audio?.play('hive_eggs_hum', { loop: true, volume: 0.0, pan: 0, bus: 'world' });
                 }
             } else {
                 if (this.eggsAudio) {
@@ -407,6 +407,37 @@ export class HiveSite {
     update(delta) {
         if (!this.built || !this.revealed) return;
         this.elapsed += delta;
+
+        // Dynamic eggs hum volume and panning based on player distance
+        if (this.eggsAudio) {
+            const player = (typeof window !== 'undefined' && window.game) ? window.game.player : null;
+            if (player && player.position) {
+                const dist = this.distanceTo(player.position.x, player.position.z);
+                const maxVol = 0.07;
+                const minDistance = 2.0;
+                const maxDistance = 18.0;
+                let targetVol = 0.0;
+
+                if (dist <= minDistance) {
+                    targetVol = maxVol;
+                } else if (dist < maxDistance) {
+                    const t = (dist - minDistance) / (maxDistance - minDistance);
+                    targetVol = maxVol * (1.0 - t);
+                }
+
+                const dx = this.pos.x - player.position.x;
+                const targetPan = Math.max(-1.0, Math.min(1.0, dx / 12.0));
+
+                const ctx = this.eggsAudio.gainNode?.context;
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    this.eggsAudio.gainNode.gain.setTargetAtTime(targetVol, now, 0.1);
+                    if (this.eggsAudio.panner) {
+                        this.eggsAudio.panner.pan.setTargetAtTime(targetPan, now, 0.1);
+                    }
+                }
+            }
+        }
 
         // Occasionally play dripping sounds if wounded/mined
         const isHurt = this.status === 'wounded' || this.status === 'mined';

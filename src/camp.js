@@ -684,7 +684,7 @@ export class SurvivorCamp {
         if (this.revealed) {
             if (lit) {
                 if (!this.fireAudio) {
-                    this.fireAudio = audio?.play('camp_fire_loop', { loop: true, volume: 0.08, bus: 'world' });
+                    this.fireAudio = audio?.play('camp_fire_loop', { loop: true, volume: 0.0, pan: 0, bus: 'world' });
                 }
             } else {
                 if (this.fireAudio) {
@@ -840,11 +840,49 @@ export class SurvivorCamp {
     update(delta) {
         if (!this.revealed || !this.built) return;
         this.elapsed += delta;
+
+        // Dynamic fire loop volume and panning based on player distance
+        if (this.fireAudio) {
+            const player = (typeof window !== 'undefined' && window.game) ? window.game.player : null;
+            if (player && player.position) {
+                const dist = this.distanceTo(player.position.x, player.position.z);
+                const maxVol = 0.08;
+                const minDistance = 2.0;
+                const maxDistance = 20.0;
+                let targetVol = 0.0;
+
+                if (dist <= minDistance) {
+                    targetVol = maxVol;
+                } else if (dist < maxDistance) {
+                    const t = (dist - minDistance) / (maxDistance - minDistance);
+                    targetVol = maxVol * (1.0 - t);
+                }
+
+                const dx = this.pos.x - player.position.x;
+                const targetPan = Math.max(-1.0, Math.min(1.0, dx / 12.0));
+
+                const ctx = this.fireAudio.gainNode?.context;
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    this.fireAudio.gainNode.gain.setTargetAtTime(targetVol, now, 0.1);
+                    if (this.fireAudio.panner) {
+                        this.fireAudio.panner.pan.setTargetAtTime(targetPan, now, 0.1);
+                    }
+                }
+            }
+        }
+
         if (this.destroyed) {
             if (this.npcSprite) this.npcSprite.visible = false;
             // Ember flicker.
             if (this.beacon) this.beacon.intensity = 0.28 + Math.abs(Math.sin(this.elapsed * 6.1)) * 0.14;
             return;
+        }
+
+        // Subtle organic campfire scale flicker
+        if (this.propSprites.cookfire && this.status !== 'culled') {
+            const flicker = 0.94 + Math.sin(this.elapsed * 13.0) * 0.06 + Math.cos(this.elapsed * 8.5) * 0.03;
+            this.propSprites.cookfire.scale.set(0.85 * flicker, 0.85 * flicker, 1.0);
         }
         if (this.beacon) {
             const pulse = this.turned ? 0.34 : this.recruited ? 0.2 : 0.15;

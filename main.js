@@ -7802,12 +7802,57 @@ window.addEventListener('lander-deployed', () => {
 // ── Desktop shell (Electron/Steam) bridge ─────────────────────
 // Present only inside the desktop wrapper; the web build never defines
 // electronAPI. Achievements ride the existing wave-2 event contract.
+const steamDebugStatus = document.getElementById('steam-debug-status');
+
+function setSteamDebugStatus(text, state = 'unknown') {
+    if (!steamDebugStatus) return;
+    steamDebugStatus.textContent = text;
+    steamDebugStatus.dataset.state = state;
+}
+
+function formatSteamStatus(info, health) {
+    const steamLine = info?.active
+        ? `STEAM: ${info.persona ?? info.steamId64 ?? 'LINKED'}`
+        : 'STEAM: OFFLINE';
+    let backendLine = 'BACKEND: OFF';
+    if (health?.ok) {
+        backendLine = health.steam?.authConfigured ? 'BACKEND: AUTH READY' : 'BACKEND: DEV';
+    }
+    return `${steamLine}\n${backendLine}`;
+}
+
+async function refreshSteamBridgeStatus() {
+    if (!window.electronAPI) {
+        setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
+        return null;
+    }
+
+    const identityRequest = window.electronAPI.getSteamIdentity
+        ? window.electronAPI.getSteamIdentity()
+        : window.electronAPI.getSteamInfo?.();
+    const [info, health] = await Promise.all([
+        Promise.resolve(identityRequest).catch(() => null),
+        window.electronAPI.getSteamBackendHealth?.().catch(() => null)
+    ]);
+
+    const state = info?.active && health?.steam?.authConfigured
+        ? 'ready'
+        : (info?.active || health?.ok ? 'partial' : 'offline');
+    setSteamDebugStatus(formatSteamStatus(info, health), state);
+    return { info, health };
+}
+
 if (window.electronAPI) {
     window.addEventListener('achievement-unlocked', (event) => {
         const key = event?.detail?.key;
         if (key) window.electronAPI.unlockAchievement(key);
     });
-    window.electronAPI.getSteamInfo?.().then((info) => {
+    refreshSteamBridgeStatus().then(({ info } = {}) => {
         if (info?.active) console.log(`[steam] linked as ${info.persona} (app ${info.appId})`);
     }).catch(() => {});
+    window.setInterval(() => {
+        void refreshSteamBridgeStatus();
+    }, 60000);
+} else {
+    setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
 }

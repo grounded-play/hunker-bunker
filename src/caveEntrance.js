@@ -231,8 +231,40 @@ export class CaveEntrance {
         // --- AUDIO WIRING ---
         const audio = typeof window !== 'undefined' ? window.AudioManager : null;
         if (!this.throneAudio) {
-            this.throneAudio = audio?.play('hive_queen_throne', { loop: true, volume: 0.06, bus: 'world' });
+            this.throneAudio = audio?.play('hive_queen_throne', { loop: true, volume: 0.0, pan: 0, bus: 'world' });
         }
+
+        // Dynamic throne loop volume and panning based on player distance
+        if (this.throneAudio) {
+            const player = (typeof window !== 'undefined' && window.game) ? window.game.player : null;
+            if (player && player.position) {
+                const dist = this.distanceTo(player.position.x, player.position.z);
+                const maxVol = 0.06;
+                const minDistance = 2.0;
+                const maxDistance = 18.0;
+                let targetVol = 0.0;
+
+                if (dist <= minDistance) {
+                    targetVol = maxVol;
+                } else if (dist < maxDistance) {
+                    const t = (dist - minDistance) / (maxDistance - minDistance);
+                    targetVol = maxVol * (1.0 - t);
+                }
+
+                const dx = this.pos.x - player.position.x;
+                const targetPan = Math.max(-1.0, Math.min(1.0, dx / 12.0));
+
+                const ctx = this.throneAudio.gainNode?.context;
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    this.throneAudio.gainNode.gain.setTargetAtTime(targetVol, now, 0.1);
+                    if (this.throneAudio.panner) {
+                        this.throneAudio.panner.pan.setTargetAtTime(targetPan, now, 0.1);
+                    }
+                }
+            }
+        }
+
         if (Math.random() < 0.0028) {
             const sfx = Math.random() < 0.5 ? 'hive_spores_puff' : 'hive_webs_sticky';
             audio?.play(sfx, { volume: 0.18, bus: 'world' });

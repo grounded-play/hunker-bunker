@@ -10,12 +10,15 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 
 const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
 // Spacewar test appid until the real one is set (docs/steam-build-pipeline.md
 // human checklist step 1). Override without a rebuild via HB_STEAM_APPID.
 const STEAM_APPID = Number(process.env.HB_STEAM_APPID ?? 1247290);
+const DEFAULT_STEAM_AUTH_IDENTITY = process.env.HB_STEAM_AUTH_IDENTITY ?? 'hunker-bunker-backend';
+const STEAM_AUTH_TICKET_TTL_MS = 60 * 1000;
 
 let steam = null;
 let steamClient = null;
@@ -24,6 +27,7 @@ let steamInputPhase = 'loading';
 let steamInputReady = false;
 let steamInputHandles = null;
 let steamInputPollTimer = null;
+const activeSteamAuthTickets = new Map();
 
 function isValidActionHandle(handle) {
     return typeof handle === 'bigint' && handle !== 0n;
@@ -31,6 +35,84 @@ function isValidActionHandle(handle) {
 
 function normalizeSteamInputPhase(phase) {
     return phase === 'gameplay' ? 'gameplay' : 'menu';
+}
+
+function normalizeSteamAuthIdentity(identity) {
+    const normalized = String(identity ?? DEFAULT_STEAM_AUTH_IDENTITY).trim();
+    return (normalized || DEFAULT_STEAM_AUTH_IDENTITY).slice(0, 128);
+}
+
+function serializeSteamId(steamId) {
+    if (!steamId || typeof steamId !== 'object') return null;
+    return {
+        steamId64: steamId.steamId64 != null ? String(steamId.steamId64) : null,
+        steamId32: steamId.steamId32 != null ? String(steamId.steamId32) : null,
+        accountId: Number.isFinite(Number(steamId.accountId)) ? Number(steamId.accountId) : null
+    };
+}
+
+function getSteamIdentitySnapshot() {
+    const base = {
+        ok: Boolean(steamClient),
+        active: Boolean(steamClient),
+        appId: STEAM_APPID,
+        steamInputAvailable: steamInputReady,
+        steamInputPhase,
+        isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.())
+    };
+
+    if (!steamClient) {
+        return { ...base, reason: 'steam_unavailable' };
+    }
+
+    try {
+        const playerSteamId = serializeSteamId(steamClient.localplayer.getSteamId?.());
+        const ownerSteamId = serializeSteamId(steamClient.apps?.appOwner?.());
+        return {
+            ...base,
+            persona: steamClient.localplayer.getName(),
+            ipCountry: steamClient.localplayer.getIpCountry?.() ?? null,
+            steamId64: playerSteamId?.steamId64 ?? null,
+            steamId32: playerSteamId?.steamId32 ?? null,
+            accountId: playerSteamId?.accountId ?? null,
+            ownerSteamId64: ownerSteamId?.steamId64 ?? null,
+            subscribed: steamClient.apps?.isSubscribed?.() ?? null
+        };
+    } catch (err) {
+        return {
+            ...base,
+            ok: false,
+            reason: 'steam_identity_failed',
+            message: err?.message ?? String(err)
+        };
+    }
+}
+
+function rememberSteamAuthTicket(ticket) {
+    const handle = crypto.randomUUID();
+    const timeout = setTimeout(() => {
+        cancelSteamAuthTicket(handle);
+    }, STEAM_AUTH_TICKET_TTL_MS);
+    timeout.unref?.();
+    activeSteamAuthTickets.set(handle, { ticket, timeout });
+    return handle;
+}
+
+function cancelSteamAuthTicket(handle) {
+    const active = activeSteamAuthTickets.get(handle);
+    if (!active) return false;
+    activeSteamAuthTickets.delete(handle);
+    clearTimeout(active.timeout);
+    try {
+        active.ticket?.cancel?.();
+    } catch { /* best effort */ }
+    return true;
+}
+
+function cancelAllSteamAuthTickets() {
+    for (const handle of activeSteamAuthTickets.keys()) {
+        cancelSteamAuthTicket(handle);
+    }
 }
 
 function initSteam() {
@@ -278,6 +360,55 @@ ipcMain.on('hb:setStat', (_e, key, value) => {
 ipcMain.on('hb:steamInputPhase', (_e, phase) => {
     setSteamInputPhase(phase);
 });
+ipcMain.handle('hb:getSteamIdentity', () => getSteamIdentitySnapshot());
+ipcMain.handle('hb:getSteamAuthTicket', async (_e, identity, timeoutSeconds = 10) => {
+    if (!steamClient?.auth?.getAuthTicketForWebApi) {
+        return {
+            ok: false,
+            active: Boolean(steamClient),
+            appId: STEAM_APPID,
+            reason: 'steam_auth_unavailable'
+        };
+    }
+
+    const normalizedIdentity = normalizeSteamAuthIdentity(identity);
+    const timeout = Math.max(1, Math.min(30, Number(timeoutSeconds) || 10));
+    try {
+        const ticket = await steamClient.auth.getAuthTicketForWebApi(normalizedIdentity, timeout);
+        const bytes = ticket?.getBytes?.();
+        const buffer = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes ?? []);
+        if (buffer.length === 0) {
+            ticket?.cancel?.();
+            return {
+                ok: false,
+                appId: STEAM_APPID,
+                identity: normalizedIdentity,
+                reason: 'steam_auth_empty_ticket'
+            };
+        }
+
+        return {
+            ok: true,
+            appId: STEAM_APPID,
+            identity: normalizedIdentity,
+            ticketHex: buffer.toString('hex'),
+            handle: rememberSteamAuthTicket(ticket),
+            expiresAt: Date.now() + STEAM_AUTH_TICKET_TTL_MS
+        };
+    } catch (err) {
+        return {
+            ok: false,
+            appId: STEAM_APPID,
+            identity: normalizedIdentity,
+            reason: 'steam_auth_ticket_failed',
+            message: err?.message ?? String(err)
+        };
+    }
+});
+ipcMain.handle('hb:cancelSteamAuthTicket', (_e, handle) => ({
+    ok: true,
+    cancelled: typeof handle === 'string' ? cancelSteamAuthTicket(handle) : false
+}));
 ipcMain.handle('hb:showGamepadTextInput', async (_e, inputMode, lineMode, description, maxCharacters, existingText) => {
     if (!steamClient?.utils?.showGamepadTextInput) return null;
     try {
@@ -296,14 +427,7 @@ ipcMain.handle('hb:showFloatingGamepadTextInput', async (_e, keyboardMode, x, y,
         return false;
     }
 });
-ipcMain.handle('hb:steamInfo', () => ({
-    active: Boolean(steamClient),
-    persona: steamClient ? steamClient.localplayer.getName() : null,
-    appId: STEAM_APPID,
-    steamInputAvailable: steamInputReady,
-    steamInputPhase,
-    isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.())
-}));
+ipcMain.handle('hb:steamInfo', () => getSteamIdentitySnapshot());
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -353,5 +477,6 @@ app.on('window-all-closed', () => {
     try {
         steamClient?.input?.shutdown?.();
     } catch { /* ignore */ }
+    cancelAllSteamAuthTickets();
     app.quit();
 });

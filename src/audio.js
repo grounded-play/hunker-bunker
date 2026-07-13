@@ -202,8 +202,9 @@ export class AudioManager {
 
         // Optional stereo panning
         let lastNode = gainNode;
+        let panner = null;
         if (options.pan !== undefined && Number.isFinite(options.pan)) {
-            const panner = audioCtx.createStereoPanner();
+            panner = audioCtx.createStereoPanner();
             panner.pan.value = Math.max(-1, Math.min(1, options.pan));
             gainNode.connect(panner);
             lastNode = panner;
@@ -219,7 +220,7 @@ export class AudioManager {
         }
 
         source.start(0);
-        return { source, gainNode };
+        return { source, gainNode, panner };
     }
 
     static _isGameplayAudioContext() {
