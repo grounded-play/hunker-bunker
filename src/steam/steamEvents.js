@@ -135,7 +135,8 @@ export function buildSteamRunScorePayload({
             biomeKey: stats.biomeKey ?? null,
             biomeLabel: stats.biomeLabel ?? '',
             snailsKilled: clampInteger(stats.snailsKilled),
-            hadNearDeath: Boolean(stats.hadNearDeath)
+            hadNearDeath: Boolean(stats.hadNearDeath),
+            fullHealthAtEnd: Boolean(stats.fullHealthAtEnd)
         },
         depositedResources: normalizeResourceCounts(depositedResources),
         leaderboardTargets: buildLeaderboardTargets({

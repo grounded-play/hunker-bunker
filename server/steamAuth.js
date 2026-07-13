@@ -1,7 +1,7 @@
 const DEFAULT_STEAM_AUTH_IDENTITY = 'hunker-bunker-backend';
 const STEAM_AUTH_URL = 'https://api.steampowered.com/ISteamUserAuth/AuthenticateUserTicket/v1/';
 
-function getSteamPublisherKey() {
+export function getSteamPublisherKey() {
     return process.env.HB_STEAM_PUBLISHER_KEY
         ?? process.env.STEAM_PUBLISHER_KEY
         ?? process.env.STEAM_WEB_API_KEY

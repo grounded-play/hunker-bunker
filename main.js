@@ -2306,7 +2306,11 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const wasDailyOpsRun = _isDailyOpsRun;
     const dailyOpsDate = wasDailyOpsRun ? getTodayDateString() : null;
     const steamRunPayload = buildSteamRunScorePayload({
-        stats,
+        stats: {
+            ...stats,
+            fullHealthAtEnd: Boolean(window.game?.playerVitals
+                && window.game.playerVitals.hp >= window.game.playerVitals.maxHp)
+        },
         score,
         rating,
         classType: window.game?.playerType ?? getSelectedHeroType(),
