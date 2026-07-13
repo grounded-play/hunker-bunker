@@ -3,9 +3,72 @@ import { getSteamAuthConfig, getSteamPublisherKey, verifySteamSessionTicket } fr
 
 const STEAM_PARTNER_API = 'https://partner.steam-api.com/ISteamLeaderboards';
 const leaderboardIdCache = new Map();
+const mockLeaderboardStore = new Map();
+
+const MOCK_LEADERBOARD_SEED = Object.freeze({
+    best_run_score: Object.freeze([
+        Object.freeze({ steamId64: '76561198000000001', score: 1550, persona: 'Operator Aegis', timestamp: Date.UTC(2026, 6, 12, 16) }),
+        Object.freeze({ steamId64: '76561198000000002', score: 1200, persona: 'Operator Striker', timestamp: Date.UTC(2026, 6, 12, 12) }),
+        Object.freeze({ steamId64: '76561198000000003', score: 980, persona: 'Operator Scout', timestamp: Date.UTC(2026, 6, 12, 8) }),
+        Object.freeze({ steamId64: '76561198000000000', score: 850, persona: 'Agent (You)', timestamp: Date.UTC(2026, 6, 12, 19) })
+    ]),
+    survival_time_seconds: Object.freeze([
+        Object.freeze({ steamId64: '76561198000000001', score: 320, persona: 'Operator Aegis', timestamp: Date.UTC(2026, 6, 12, 16) }),
+        Object.freeze({ steamId64: '76561198000000002', score: 240, persona: 'Operator Striker', timestamp: Date.UTC(2026, 6, 12, 12) }),
+        Object.freeze({ steamId64: '76561198000000000', score: 180, persona: 'Agent (You)', timestamp: Date.UTC(2026, 6, 12, 19) }),
+        Object.freeze({ steamId64: '76561198000000003', score: 150, persona: 'Operator Scout', timestamp: Date.UTC(2026, 6, 12, 8) })
+    ]),
+    deepest_depth_score: Object.freeze([
+        Object.freeze({ steamId64: '76561198000000001', score: 300450, persona: 'Operator Aegis', timestamp: Date.UTC(2026, 6, 12, 16) }),
+        Object.freeze({ steamId64: '76561198000000002', score: 200380, persona: 'Operator Striker', timestamp: Date.UTC(2026, 6, 12, 12) }),
+        Object.freeze({ steamId64: '76561198000000003', score: 100120, persona: 'Operator Scout', timestamp: Date.UTC(2026, 6, 12, 8) }),
+        Object.freeze({ steamId64: '76561198000000000', score: 100080, persona: 'Agent (You)', timestamp: Date.UTC(2026, 6, 12, 19) })
+    ])
+});
 
 function getAutoCreateEnabled() {
     return process.env.HB_STEAM_LEADERBOARD_AUTO_CREATE === '1';
+}
+
+function normalizeBoardName(boardName) {
+    const normalized = String(boardName ?? '').trim();
+    return STEAM_LEADERBOARD_DEFS[normalized] ? normalized : null;
+}
+
+function normalizeLeaderboardRange({ count = null, rangeStart = 0, rangeEnd = null } = {}) {
+    const start = Math.max(0, Math.floor(Number(rangeStart) || 0));
+    const requestedEnd = rangeEnd ?? (count == null ? 10 : start + Number(count));
+    const end = Math.max(start + 1, Math.min(start + 100, Math.floor(Number(requestedEnd) || 10)));
+    return { rangeStart: start, rangeEnd: end };
+}
+
+function normalizeDataRequest(value = 'RequestGlobal') {
+    const raw = String(value ?? '').trim();
+    const lowered = raw.toLowerCase();
+    if (lowered === 'friends' || lowered === 'requestfriends') return 'RequestFriends';
+    if (lowered === 'arounduser' || lowered === 'requestarounduser') return 'RequestAroundUser';
+    return 'RequestGlobal';
+}
+
+function normalizeLeaderboardEntries(data) {
+    const candidates = data?.response?.entries?.entry
+        ?? data?.response?.entries
+        ?? data?.response?.entry
+        ?? data?.entries
+        ?? [];
+    const list = Array.isArray(candidates) ? candidates : [candidates];
+
+    return list
+        .filter(Boolean)
+        .map((entry) => ({
+            steamId64: String(entry.steamid ?? entry.steamId ?? entry.steamID ?? ''),
+            score: Number(entry.score) || 0,
+            rank: Number(entry.rank ?? entry.global_rank ?? entry.globalRank ?? 0) || 0,
+            persona: entry.persona ?? entry.name ?? 'Agent',
+            timestamp: entry.timestamp ? Number(entry.timestamp) * 1000 : null,
+            details: entry.details ?? null
+        }))
+        .filter((entry) => entry.steamId64);
 }
 
 function parseConfiguredLeaderboardIds() {
@@ -200,6 +263,120 @@ export function clearLeaderboardCache() {
     leaderboardIdCache.clear();
 }
 
+export function clearMockLeaderboards() {
+    mockLeaderboardStore.clear();
+}
+
+function cloneMockEntries(entries = []) {
+    return entries.map((entry) => ({ ...entry }));
+}
+
+function rankMockLeaderboard(boardName, entries = []) {
+    const isAscending = boardName === 'fastest_extraction_ms';
+    return cloneMockEntries(entries)
+        .sort((a, b) => (isAscending ? a.score - b.score : b.score - a.score))
+        .map((entry, index) => ({
+            ...entry,
+            rank: index + 1
+        }));
+}
+
+function getMockLeaderboard(boardName) {
+    if (!mockLeaderboardStore.has(boardName)) {
+        mockLeaderboardStore.set(
+            boardName,
+            rankMockLeaderboard(boardName, MOCK_LEADERBOARD_SEED[boardName] ?? [])
+        );
+    }
+    return cloneMockEntries(mockLeaderboardStore.get(boardName));
+}
+
+function saveMockLeaderboard(boardName, entries) {
+    mockLeaderboardStore.set(boardName, rankMockLeaderboard(boardName, entries));
+}
+
+function getMockLeaderboardEntries(boardName, options = {}) {
+    const { rangeStart, rangeEnd } = normalizeLeaderboardRange(options);
+    return getMockLeaderboard(boardName)
+        .slice(rangeStart, rangeEnd)
+        .map((entry, index) => ({
+            steamId64: String(entry.steamId64),
+            score: Number(entry.score) || 0,
+            rank: Number(entry.rank) || rangeStart + index + 1,
+            persona: entry.persona ?? 'Agent',
+            timestamp: entry.timestamp ?? null,
+            details: null
+        }));
+}
+
+export async function getLeaderboardEntries({
+    boardName,
+    dataRequest = 'RequestGlobal',
+    rangeStart = 0,
+    rangeEnd = null,
+    count = null,
+    steamId64 = null
+} = {}) {
+    const normalizedBoard = normalizeBoardName(boardName);
+    if (!normalizedBoard) {
+        return { ok: false, status: 404, reason: 'unknown_leaderboard' };
+    }
+
+    const range = normalizeLeaderboardRange({ count, rangeStart, rangeEnd });
+    const normalizedDataRequest = normalizeDataRequest(dataRequest);
+    const config = getSteamAuthConfig();
+    const key = getSteamPublisherKey();
+
+    if (!config.configured || !key) {
+        return {
+            ok: true,
+            status: 200,
+            mock: true,
+            board: normalizedBoard,
+            dataRequest: normalizedDataRequest,
+            entries: getMockLeaderboardEntries(normalizedBoard, range)
+        };
+    }
+
+    if (normalizedDataRequest !== 'RequestGlobal' && !steamId64) {
+        return { ok: false, status: 401, reason: 'steamid_required_for_scoped_leaderboard_read' };
+    }
+
+    const resolved = await resolveLeaderboardId(config.appId, key, normalizedBoard);
+    if (!resolved.ok) {
+        return { ...resolved, board: normalizedBoard };
+    }
+
+    const params = new URLSearchParams({
+        key,
+        appid: String(config.appId),
+        leaderboardid: String(resolved.leaderboardId),
+        rangestart: String(range.rangeStart),
+        rangeend: String(range.rangeEnd),
+        datarequest: normalizedDataRequest
+    });
+    if (steamId64) params.set('steamid', String(steamId64));
+
+    const result = await requestSteamLeaderboardApi(`/GetLeaderboardEntries/v1/?${params.toString()}`);
+    if (!result.ok) {
+        return {
+            ...result,
+            board: normalizedBoard,
+            leaderboardId: resolved.leaderboardId
+        };
+    }
+
+    return {
+        ok: true,
+        status: 200,
+        mock: false,
+        board: normalizedBoard,
+        dataRequest: normalizedDataRequest,
+        leaderboardId: resolved.leaderboardId,
+        entries: normalizeLeaderboardEntries(result.data)
+    };
+}
+
 export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
     const validation = validateRunScorePayload(payload);
     if (!validation.ok) {
@@ -212,16 +389,67 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
         };
     }
 
-    const config = getSteamAuthConfig();
-    const key = getSteamPublisherKey();
-    if (!config.configured || !key) {
-        return { ok: false, status: 503, reason: 'steam_leaderboards_not_configured' };
-    }
     if (!auth?.steamId64) {
         return { ok: false, status: 401, reason: 'steam_auth_missing_steamid' };
     }
 
     const canonicalTargets = buildCanonicalLeaderboardTargets(payload);
+
+    if (auth.isDevMode) {
+        const results = [];
+        for (const target of canonicalTargets) {
+            const entries = getMockLeaderboard(target.name);
+            const existingIndex = entries.findIndex((e) => e.steamId64 === auth.steamId64);
+            const isAscending = target.name === 'fastest_extraction_ms';
+
+            let updated = false;
+            const newEntry = {
+                steamId64: auth.steamId64,
+                score: target.score,
+                persona: auth.persona ?? 'Agent',
+                timestamp: Date.now()
+            };
+
+            if (existingIndex >= 0) {
+                const currentScore = entries[existingIndex].score;
+                const isBetter = isAscending ? (target.score < currentScore) : (target.score > currentScore);
+                if (isBetter) {
+                    entries[existingIndex] = newEntry;
+                    updated = true;
+                }
+            } else {
+                entries.push(newEntry);
+                updated = true;
+            }
+
+            if (updated) {
+                saveMockLeaderboard(target.name, entries);
+            }
+
+            results.push({
+                ok: true,
+                target: target.name,
+                mock: true,
+                leaderboardId: null,
+                score: target.score,
+                status: 200
+            });
+        }
+
+        return {
+            ok: true,
+            status: 200,
+            recomputedScore: validation.recomputedScore,
+            submitted: results
+        };
+    }
+
+    const config = getSteamAuthConfig();
+    const key = getSteamPublisherKey();
+    if (!config.configured || !key) {
+        return { ok: false, status: 503, reason: 'steam_leaderboards_not_configured' };
+    }
+
     const results = [];
     for (const target of canonicalTargets) {
         results.push(await setLeaderboardScore({
@@ -251,23 +479,63 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
 
 export function attachSteamLeaderboardRoutes(app) {
     app.post('/steam/leaderboards/submit-run', async (req, res) => {
-        const auth = await verifySteamSessionTicket({
-            ticketHex: req.body?.ticketHex,
-            identity: req.body?.identity
-        });
+        let auth;
+        if (getSteamAuthConfig().configured) {
+            auth = await verifySteamSessionTicket({
+                ticketHex: req.body?.ticketHex,
+                identity: req.body?.identity
+            });
 
-        if (!auth.ok) {
-            res.status(Number(auth.status) || 401).json(auth);
-            return;
+            if (!auth.ok) {
+                res.status(Number(auth.status) || 401).json(auth);
+                return;
+            }
+        } else {
+            auth = {
+                ok: true,
+                steamId64: req.body?.mockSteamId64 ?? '76561198000000000',
+                ownerSteamId64: req.body?.mockSteamId64 ?? '76561198000000000',
+                persona: 'Agent',
+                isDevMode: true,
+                appId: getSteamAuthConfig().appId
+            };
         }
 
         const result = await submitRunToSteamLeaderboards({
             auth: {
                 steamId64: auth.steamId64,
                 ownerSteamId64: auth.ownerSteamId64,
-                appId: auth.appId
+                appId: auth.appId,
+                persona: auth.persona ?? 'Agent',
+                isDevMode: Boolean(auth.isDevMode)
             },
             payload: req.body?.payload
+        });
+        res.status(Number(result.status) || (result.ok ? 200 : 500)).json(result);
+    });
+
+    app.get('/steam/leaderboards/:board', async (req, res) => {
+        const dataRequest = normalizeDataRequest(req.query.dataRequest ?? req.query.type ?? 'RequestGlobal');
+        let steamId64 = null;
+        if (dataRequest !== 'RequestGlobal' && getSteamAuthConfig().configured) {
+            const auth = await verifySteamSessionTicket({
+                ticketHex: req.query?.ticketHex,
+                identity: req.query?.identity
+            });
+            if (!auth.ok) {
+                res.status(Number(auth.status) || 401).json(auth);
+                return;
+            }
+            steamId64 = auth.steamId64;
+        }
+
+        const result = await getLeaderboardEntries({
+            boardName: req.params.board,
+            dataRequest,
+            count: req.query.count,
+            rangeStart: req.query.rangeStart ?? req.query.rangestart ?? 0,
+            rangeEnd: req.query.rangeEnd ?? req.query.rangeend ?? null,
+            steamId64
         });
         res.status(Number(result.status) || (result.ok ? 200 : 500)).json(result);
     });
