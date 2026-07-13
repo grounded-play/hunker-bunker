@@ -2,6 +2,7 @@ import express from 'express';
 import http from 'http';
 import { attachRelay } from './relay.js';
 import { attachSteamAuthRoutes } from './steamAuth.js';
+import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -38,6 +39,7 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '16kb' }));
 
 attachSteamAuthRoutes(app);
+attachSteamLeaderboardRoutes(app);
 attachRelay(server, { allowedOrigins: ALLOWED_ORIGINS });
 
 const PORT = process.env.PORT || 3001;

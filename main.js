@@ -18,6 +18,7 @@ import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pic
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import { getGifDurationMs } from './src/gifDuration.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
+import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
@@ -2227,7 +2228,8 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     _distressModeActive = false;
     missionFlowRunning = false;
 
-    const elapsedMs    = Date.now() - runStartTime;
+    const endedAt = Date.now();
+    const elapsedMs    = endedAt - runStartTime;
     const elapsedMin   = elapsedMs / 60000;
     const distancePct  = Math.min(100, (stats.distanceTravelled / 500) * 100);
     const itemsPct     = Math.min(100, (stats.totalPickups / 50) * 100);
@@ -2301,6 +2303,24 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Score + rating
     const score = window.game?.calculateRunScore?.(stats, { status: stats.missionStatus }, runStartTime) ?? 0;
     const rating = window.game?.getRunRating?.(score) ?? { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
+    const wasDailyOpsRun = _isDailyOpsRun;
+    const dailyOpsDate = wasDailyOpsRun ? getTodayDateString() : null;
+    const steamRunPayload = buildSteamRunScorePayload({
+        stats,
+        score,
+        rating,
+        classType: window.game?.playerType ?? getSelectedHeroType(),
+        runStartTime,
+        endedAt,
+        isVictory,
+        deathReason,
+        isDailyOps: wasDailyOpsRun,
+        dailyOpsDate,
+        seed: activeRunSeed,
+        runCards: activeRunCards,
+        depositedResources: window.game?.runDepositedResources ?? {}
+    });
+    dispatchSteamRunScoreFinalized(steamRunPayload, window);
 
     const scoreVal = document.getElementById('go-score-val');
     const ratingBadge = document.getElementById('go-rating-badge');
@@ -2342,11 +2362,11 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // World seed display
     const seedRow = document.getElementById('go-seed-row');
     const seedVal = document.getElementById('go-seed-val');
-    if (seedRow) seedRow.classList.toggle('hidden', !_isDailyOpsRun);
-    if (seedVal && _isDailyOpsRun) seedVal.textContent = `DAILY-${getTodayDateString()}`;
+    if (seedRow) seedRow.classList.toggle('hidden', !wasDailyOpsRun);
+    if (seedVal && wasDailyOpsRun) seedVal.textContent = `DAILY-${dailyOpsDate}`;
 
     // Daily Ops result save
-    if (_isDailyOpsRun) {
+    if (wasDailyOpsRun) {
         _isDailyOpsRun = false;
         if (window.game) {
             window.game.globalSeedOffset = 0;
@@ -2355,7 +2375,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         saveDailyOpsRecord({
             attempted: true,
             completed: true,
-            date: getTodayDateString(),
+            date: dailyOpsDate,
             score,
             grade: rating.grade,
             isVictory
@@ -7846,6 +7866,20 @@ if (window.electronAPI) {
     window.addEventListener('achievement-unlocked', (event) => {
         const key = event?.detail?.key;
         if (key) window.electronAPI.unlockAchievement(key);
+    });
+    window.addEventListener(STEAM_RUN_SCORE_FINALIZED_EVENT, (event) => {
+        const payload = event?.detail;
+        if (!payload || !window.electronAPI?.submitSteamRunScore) return;
+
+        window.electronAPI.submitSteamRunScore(payload).then((result) => {
+            if (result?.ok) {
+                console.log(`[steam] leaderboard payload accepted (${payload.runId})`);
+            } else if (!['steam_auth_unavailable', 'steam_backend_unreachable'].includes(result?.reason)) {
+                console.log(`[steam] leaderboard submit skipped: ${result?.reason ?? 'unknown'}`);
+            }
+        }).catch((err) => {
+            console.log(`[steam] leaderboard submit failed: ${err?.message ?? err}`);
+        });
     });
     refreshSteamBridgeStatus().then(({ info } = {}) => {
         if (info?.active) console.log(`[steam] linked as ${info.persona} (app ${info.appId})`);
