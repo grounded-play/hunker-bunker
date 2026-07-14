@@ -1,5 +1,10 @@
 import { buildCanonicalLeaderboardTargets, STEAM_LEADERBOARD_DEFS, validateRunScorePayload } from './leaderboardScoring.js';
 import { getSteamAuthConfig, getSteamPublisherKey, verifySteamSessionTicket } from './steamAuth.js';
+import { checkIdempotency, saveIdempotency } from './db.js';
+import { grantItemToPlayer } from './steamGrant.js';
+import { DEEP_RELIC_CACHE_ITEMDEFID } from './lootTables.js';
+
+const CLASS_VICTORY_PATCH_ITEMDEFID = Object.freeze({ SCOUT: 2000, TANK: 2001, ENGINEER: 2002 });
 
 const STEAM_PARTNER_API = 'https://partner.steam-api.com/ISteamLeaderboards';
 const leaderboardIdCache = new Map();
@@ -377,6 +382,53 @@ export async function getLeaderboardEntries({
     };
 }
 
+// Grants tied to a run submission are derived server-side from the payload
+// `validateRunScorePayload` already recomputed and validated (outcome,
+// stats.fullHealthAtEnd, run.dailyOps.date) plus `isNewBest`, which the
+// dev-mode loop below computes independently of anything the client
+// claims. This is Tier A of the milestone-grant design: nothing here
+// trusts a client-supplied flag or itemdefid — every requestId and item
+// choice is derived from already-validated data, so this can't be used to
+// farm items by lying about run state the same way a purely
+// client-triggered call could.
+async function deriveAndGrantMilestones({ auth, payload, isNewBest }) {
+    const steamId = auth.steamId64;
+    const isDevMode = Boolean(auth.isDevMode);
+    const isVictory = payload.outcome === 'victory';
+    const isFlawless = isVictory && payload.stats?.fullHealthAtEnd === true;
+    const dailyOpsDate = payload.run?.dailyOps?.date ?? null;
+
+    const grants = [];
+
+    async function tryGrant(requestId, itemdefid, source, mode) {
+        // A cache hit means this specific milestone (this run's victory
+        // patch, or this calendar day's Daily Ops bonus, etc.) was already
+        // claimed by an earlier submission — nothing NEW happened on this
+        // submission, so it's correctly omitted from milestoneGrants rather
+        // than re-reported as if it just happened again.
+        if (checkIdempotency(requestId)) return;
+        const grant = await grantItemToPlayer({ steamId, itemdefid, isDevMode, source, mode });
+        await saveIdempotency(requestId, { status: 200, body: grant });
+        if (grant.ok && Array.isArray(grant.granted)) grants.push(...grant.granted);
+    }
+
+    if (isVictory) {
+        const patchItemdefid = CLASS_VICTORY_PATCH_ITEMDEFID[payload.classType] ?? CLASS_VICTORY_PATCH_ITEMDEFID.SCOUT;
+        await tryGrant(`victory-${payload.runId}`, patchItemdefid, 'victory_promo', 'once');
+    }
+    if (isFlawless) {
+        await tryGrant(`flawless-${payload.runId}`, DEEP_RELIC_CACHE_ITEMDEFID, 'flawless_bonus', 'stack');
+    }
+    if (isNewBest) {
+        await tryGrant(`pbest-${payload.runId}`, DEEP_RELIC_CACHE_ITEMDEFID, 'personal_best_bonus', 'stack');
+    }
+    if (dailyOpsDate) {
+        await tryGrant(`daily-ops-${steamId}-${dailyOpsDate}`, DEEP_RELIC_CACHE_ITEMDEFID, 'daily_ops_bonus', 'stack');
+    }
+
+    return grants;
+}
+
 export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
     const validation = validateRunScorePayload(payload);
     if (!validation.ok) {
@@ -397,6 +449,7 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
 
     if (auth.isDevMode) {
         const results = [];
+        let isNewBest = false;
         for (const target of canonicalTargets) {
             const entries = getMockLeaderboard(target.name);
             const existingIndex = entries.findIndex((e) => e.steamId64 === auth.steamId64);
@@ -426,6 +479,10 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
                 saveMockLeaderboard(target.name, entries);
             }
 
+            if (target.name === 'best_run_score') {
+                isNewBest = updated;
+            }
+
             results.push({
                 ok: true,
                 target: target.name,
@@ -436,11 +493,14 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
             });
         }
 
+        const milestoneGrants = await deriveAndGrantMilestones({ auth, payload, isNewBest });
+
         return {
             ok: true,
             status: 200,
             recomputedScore: validation.recomputedScore,
-            submitted: results
+            submitted: results,
+            milestoneGrants
         };
     }
 
@@ -451,21 +511,37 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
     }
 
     const results = [];
+    let isNewBestReal = false;
     for (const target of canonicalTargets) {
-        results.push(await setLeaderboardScore({
+        const scoreResult = await setLeaderboardScore({
             appId: config.appId,
             key,
             steamId64: auth.steamId64,
             target
-        }));
+        });
+        // Valve's real SetLeaderboardScore response includes a
+        // score-changed indicator under response.params — field name/shape
+        // unverified against a live Steamworks app from this repo; falls
+        // back to false (no personal-best grant) if absent so a missing
+        // field never over-grants.
+        if (target.name === 'best_run_score') {
+            const params = scoreResult?.data?.response?.params ?? {};
+            isNewBestReal = params.score_changed === true || params.score_changed === 1 || params.scorechanged === 1;
+        }
+        results.push(scoreResult);
     }
 
     const failed = results.filter((result) => !result.ok);
+    const milestoneGrants = failed.length === 0
+        ? await deriveAndGrantMilestones({ auth, payload, isNewBest: isNewBestReal })
+        : [];
+
     return {
         ok: failed.length === 0,
         status: failed.length === 0 ? 200 : 502,
         reason: failed.length === 0 ? null : 'steam_leaderboard_submit_failed',
         recomputedScore: validation.recomputedScore,
+        milestoneGrants,
         submitted: results.map((result) => ({
             ok: result.ok,
             target: result.target,

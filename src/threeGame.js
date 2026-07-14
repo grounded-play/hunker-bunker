@@ -32,8 +32,8 @@ import { getAct2ClassPerks as getAct2ClassPerksConfig, mergeCampVerbEffects } fr
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
-import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward } from './landforms.js';
-import { buildUnifiedSkillTree, getBranchConnectors, TREE_BRANCHES } from './skillTree.js';
+import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain } from './landforms.js';
+import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound } from './loreDrops.js';
 
 
@@ -3872,13 +3872,16 @@ export class ThreeGame {
         const id = this.currentRunModifier?.id;
         if ((!id && !hasEffects) || !this.isGameplayInputActive() || this.isPlayerDead) return;
         const generatorState = this.getO2GeneratorState?.();
+        const basePowerOnline = this.canTripLightingBreaker();
         const inField = Boolean(generatorState?.isOnline)
             && this.getActiveO2GeneratorDistance() <= (generatorState?.radius ?? 0);
         if (effects.environment?.blackoutPulseSeconds || id === 'rolling_blackout') {
             this._blackoutWaveTimer = (this._blackoutWaveTimer ?? 0) + delta;
             const pulseSeconds = effects.environment?.blackoutPulseSeconds ?? 14;
             const duration = effects.environment?.blackoutDurationSeconds ?? 3;
-            if (!inField && this._blackoutWaveTimer >= pulseSeconds && performance.now() >= (this._lightsOutUntil ?? 0)) {
+            if (!basePowerOnline) {
+                this._blackoutWaveTimer = 0;
+            } else if (!inField && this._blackoutWaveTimer >= pulseSeconds && performance.now() >= (this._lightsOutUntil ?? 0)) {
                 this._blackoutWaveTimer = 0;
                 this.triggerLightsOut(duration);
             }
@@ -4616,16 +4619,24 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'compass_corruption' } }));
     }
 
+    canTripLightingBreaker(bankState = this.bank.getState()) {
+        return Boolean(this.getO2GeneratorState(bankState)?.isOnline);
+    }
+
     grantSalvageCache({ tech = 0, coin = 0, med = 0 } = {}) {
         this.bank.deposit({ tech, coin, med });
         window.dispatchEvent(new CustomEvent('salvage-cache-opened', { detail: { tech, coin, med } }));
     }
 
     triggerLightsOut(seconds = 8) {
+        if (!this.canTripLightingBreaker()) {
+            return false;
+        }
         // Held for `seconds` by the dayBlend override in updateDayNightCycle.
         this._lightsOutUntil = Math.max(this._lightsOutUntil, performance.now() + seconds * 1000);
         this.showBunkerLine('LIGHTING BREAKER TRIPPED. PLEASE ENJOY THE DARKNESS RESPONSIBLY.');
         window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'lights_out' } }));
+        return true;
     }
 
     getO2GeneratorState(bankState = this.bank.getState()) {
@@ -4967,6 +4978,13 @@ export class ThreeGame {
         return event;
     }
 
+    getTerminalChoiceLabel(choice) {
+        if (choice?.requiresBasePowerOnline && !this.canTripLightingBreaker()) {
+            return choice.offlineLabel ?? choice.label;
+        }
+        return choice?.label ?? '';
+    }
+
     renderTerminalEventPanel() {
         const section = document.getElementById('terminal-event-section');
         const title = document.getElementById('terminal-event-title');
@@ -5004,7 +5022,7 @@ export class ThreeGame {
                     window.AudioManager?.play('ui_error', { volume: 0.32, playbackRate: 0.9, bus: 'sfx' });
                     return;
                 }
-                const risky = event.choices.filter((choice) => choice.tone === 'risk').map((choice) => choice.label);
+                const risky = event.choices.filter((choice) => choice.tone === 'risk').map((choice) => this.getTerminalChoiceLabel(choice));
                 if (resultEl) resultEl.textContent = risky.length
                     ? `VERIFIED RISK: ${risky.join(' // ')}`
                     : 'VERIFIED: NO HIDDEN RISK FLAGGED.';
@@ -5016,7 +5034,7 @@ export class ThreeGame {
         event.choices.forEach((choice, index) => {
             const btn = document.createElement('button');
             btn.className = `terminal-action-btn terminal-event-choice ${choice.tone === 'risk' ? 'btn-state--risk' : 'btn-state--available'}`;
-            btn.textContent = choice.label;
+            btn.textContent = this.getTerminalChoiceLabel(choice);
             btn.addEventListener('click', () => this.applyTerminalChoice(event, index));
             choicesEl.appendChild(btn);
         });
@@ -5741,29 +5759,6 @@ export class ThreeGame {
         }
     }
 
-    // Generic connector cell for the Bunker Tree: shape comes from the
-    // adapter's grid geometry (getBranchConnectors), color from whether the
-    // parent node is already unlocked.
-    buildConnectorCell(connector, parentUnlocked) {
-        const strokeColor = parentUnlocked ? '#38bdf8' : 'rgba(255, 159, 28, 0.25)';
-        const strokeWidth = parentUnlocked ? 2.5 : 1.5;
-        const flowClass = parentUnlocked ? 'unlocked-flow' : '';
-        let line;
-        if (connector.type === 'down-left') {
-            line = `x1="100%" y1="0%" x2="0%" y2="100%"`;
-        } else if (connector.type === 'down-right') {
-            line = `x1="0%" y1="0%" x2="100%" y2="100%"`;
-        } else {
-            line = `x1="50%" y1="0%" x2="50%" y2="100%"`;
-        }
-        const wrapper = document.createElement('div');
-        wrapper.innerHTML = `<div class="skill-line-cell"><svg class="skill-line-svg"><line class="${flowClass}" ${line} stroke="${strokeColor}" stroke-width="${strokeWidth}" /></svg></div>`;
-        const cell = wrapper.firstChild;
-        cell.style.gridRow = String(connector.row);
-        cell.style.gridColumn = String(connector.col);
-        return cell;
-    }
-
     getSkillGateText(node = {}) {
         const goalLabels = {
             hullExpansion: 'HULL MATRIX',
@@ -5908,6 +5903,50 @@ export class ThreeGame {
         };
     }
 
+    isTreeNodeActive(state) {
+        return Boolean(state?.unlocked || (state?.level ?? 0) > 0);
+    }
+
+    getGraphPrereqLabel(nodeId, nodeById = new Map()) {
+        const node = nodeById.get(nodeId);
+        if (node?.label) return node.label;
+        return String(nodeId ?? '')
+            .replace(/^goal_/, '')
+            .replace(/^weapon_/, '')
+            .replace(/^tier2_/, '')
+            .replace(/_/g, ' ')
+            .toUpperCase();
+    }
+
+    getGraphPrereqGateText(node, stateById, nodeById) {
+        const missingAll = (node.graphPrereqs ?? [])
+            .filter((id) => !this.isTreeNodeActive(stateById.get(id)))
+            .map((id) => this.getGraphPrereqLabel(id, nodeById));
+        const anyPrereqs = node.graphAnyPrereqs ?? [];
+        const anySatisfied = anyPrereqs.length === 0
+            || anyPrereqs.some((id) => this.isTreeNodeActive(stateById.get(id)));
+
+        if (!missingAll.length && anySatisfied) return '';
+
+        const parts = [];
+        if (missingAll.length) parts.push(...missingAll);
+        if (!anySatisfied) {
+            parts.push(`ONE OF ${anyPrereqs.map((id) => this.getGraphPrereqLabel(id, nodeById)).join(' / ')}`);
+        }
+        return `REQUIRES: ${parts.join(' + ')}`;
+    }
+
+    applyTreeGraphGates(nodes, stateById, nodeById) {
+        for (const node of nodes) {
+            const state = stateById.get(node.id);
+            if (!state || this.isTreeNodeActive(state)) continue;
+            const graphGateText = this.getGraphPrereqGateText(node, stateById, nodeById);
+            if (!graphGateText) continue;
+            state.available = false;
+            state.gateText = graphGateText;
+        }
+    }
+
     // Every purchase delegates to the pre-existing handler for its system —
     // the tree is a new surface over old, tested plumbing.
     purchaseTreeNode(ship, node) {
@@ -5945,8 +5984,19 @@ export class ThreeGame {
         const status = state.unlocked ? 'unlocked' : (state.available ? 'available' : 'locked');
         const card = document.createElement('div');
         card.className = `skill-node-card node-state--${status}`;
+        card.dataset.nodeId = node.id;
+        card.dataset.branch = node.branch;
         card.style.gridRow = String(node.row);
         card.style.gridColumn = String(node.col);
+
+        const branchTag = document.createElement('div');
+        branchTag.className = `skill-node-branch skill-node-branch--${node.branch}`;
+        branchTag.textContent = node.branch === 'class'
+            ? 'CLASS'
+            : node.branch === 'combat'
+                ? 'COMBAT'
+                : 'BASE';
+        card.appendChild(branchTag);
 
         const header = document.createElement('div');
         header.className = 'skill-node-header';
@@ -5984,25 +6034,44 @@ export class ThreeGame {
         return card;
     }
 
-    renderTreeBranch(container, ship, branchDef, bankState) {
-        const title = document.createElement('div');
-        title.className = 'skills-branch-title terminal-section-title';
-        title.textContent = branchDef.label;
-        container.appendChild(title);
+    renderSkillGraphConnectors(gridContainer, connectors, stateById, cardById) {
+        if (!gridContainer) return;
+        gridContainer.querySelector('.skills-tree-connectors')?.remove();
 
-        const grid = document.createElement('div');
-        grid.className = 'skills-tree-grid';
-        const stateById = new Map();
-        for (const node of branchDef.nodes) {
-            const state = this.getUnifiedNodeState(node, bankState);
-            stateById.set(node.id, state);
-            grid.appendChild(this.buildTreeNodeCard(ship, node, state));
+        const bounds = gridContainer.getBoundingClientRect();
+        if (bounds.width <= 0 || bounds.height <= 0) return;
+
+        const svgNs = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNs, 'svg');
+        svg.classList.add('skills-tree-connectors');
+        svg.setAttribute('viewBox', `0 0 ${bounds.width.toFixed(2)} ${bounds.height.toFixed(2)}`);
+        svg.setAttribute('preserveAspectRatio', 'none');
+
+        for (const connector of connectors) {
+            const parentCard = cardById.get(connector.parentId);
+            const childCard = cardById.get(connector.childId);
+            if (!parentCard || !childCard) continue;
+
+            const parentBounds = parentCard.getBoundingClientRect();
+            const childBounds = childCard.getBoundingClientRect();
+            const x1 = parentBounds.left + parentBounds.width * 0.5 - bounds.left;
+            const y1 = parentBounds.bottom - bounds.top - 2;
+            const x2 = childBounds.left + childBounds.width * 0.5 - bounds.left;
+            const y2 = childBounds.top - bounds.top + 2;
+            const verticalGap = Math.max(32, y2 - y1);
+            const bend = Math.min(120, Math.max(42, verticalGap * 0.44));
+
+            const path = document.createElementNS(svgNs, 'path');
+            path.classList.add('skill-graph-path');
+            if (connector.mode === 'any') path.classList.add('skill-graph-path--any');
+            if (this.isTreeNodeActive(stateById.get(connector.parentId))) {
+                path.classList.add('unlocked-flow');
+            }
+            path.setAttribute('d', `M ${x1.toFixed(1)} ${y1.toFixed(1)} C ${x1.toFixed(1)} ${(y1 + bend).toFixed(1)}, ${x2.toFixed(1)} ${(y2 - bend).toFixed(1)}, ${x2.toFixed(1)} ${y2.toFixed(1)}`);
+            svg.appendChild(path);
         }
-        for (const connector of getBranchConnectors(branchDef.nodes)) {
-            const parentState = stateById.get(connector.parentId);
-            grid.appendChild(this.buildConnectorCell(connector, Boolean(parentState?.unlocked || (parentState?.level ?? 0) > 0)));
-        }
-        container.appendChild(grid);
+
+        gridContainer.prepend(svg);
     }
 
     // The Bunker Tree: one surface for all three progression systems.
@@ -6010,37 +6079,48 @@ export class ThreeGame {
         const gridContainer = document.getElementById('skills-tree-grid');
         const matrix = document.getElementById('skills-upgrade-matrix');
         const countEl = document.getElementById('skills-unlocked-count');
-        if (!gridContainer || !matrix) return;
+        if (!gridContainer) return;
 
         const bankState = this.bank.getState();
         const progression = this.getProgressionStats(ship, bankState);
         const tree = buildUnifiedSkillTree({ playerClass: progression.playerClass });
-
-        if (countEl) {
-            countEl.textContent = `${tree.playerClass} SKILLS: ${progression.classUnlocked}/${progression.classTotal} (${progression.classReady} READY) | SYSTEM: ${progression.systemUnlocked}/${progression.systemTotal} (${progression.systemReady} READY) | COMBAT: ${progression.combatUnlocked}/${progression.combatTotal} (${progression.combatReady} READY) | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
-        }
-
-        // Class branch keeps the original grid element; combat + ship render
-        // as sibling tree grids where the retired card sections used to mount.
-        gridContainer.innerHTML = '';
-        const classGrid = document.createElement('div');
-        classGrid.style.display = 'contents';
+        const nodes = tree.nodes ?? [];
+        const nodeById = new Map(nodes.map((node) => [node.id, node]));
         const stateById = new Map();
-        for (const node of tree.branches.class.nodes) {
+
+        gridContainer.innerHTML = '';
+        gridContainer.style.setProperty('--skill-tree-columns', String(tree.graph?.columns ?? 7));
+        gridContainer.style.setProperty('--skill-tree-rows', String(tree.graph?.rows ?? 13));
+
+        for (const node of nodes) {
             const state = this.getUnifiedNodeState(node, bankState);
             stateById.set(node.id, state);
-            classGrid.appendChild(this.buildTreeNodeCard(ship, node, state));
         }
-        for (const connector of getBranchConnectors(tree.branches.class.nodes)) {
-            classGrid.appendChild(this.buildConnectorCell(connector, Boolean(stateById.get(connector.parentId)?.unlocked)));
-        }
-        gridContainer.appendChild(classGrid);
+        this.applyTreeGraphGates(nodes, stateById, nodeById);
 
-        matrix.innerHTML = '';
-        for (const branchKey of TREE_BRANCHES) {
-            if (branchKey === 'class') continue;
-            this.renderTreeBranch(matrix, ship, tree.branches[branchKey], bankState);
+        if (countEl) {
+            const activeCount = nodes.filter((node) => this.isTreeNodeActive(stateById.get(node.id))).length;
+            const readyCount = nodes.filter((node) => Boolean(stateById.get(node.id)?.available)).length;
+            countEl.textContent = `${tree.playerClass} BUNKER TREE: ${activeCount}/${nodes.length} ONLINE (${readyCount} READY) | COMBAT LV: ${progression.combatUnlocked}/${progression.combatTotal} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
         }
+
+        const cardById = new Map();
+        for (const node of nodes) {
+            const card = this.buildTreeNodeCard(ship, node, stateById.get(node.id));
+            cardById.set(node.id, card);
+            gridContainer.appendChild(card);
+        }
+
+        if (matrix) {
+            matrix.innerHTML = '';
+            matrix.classList.add('hidden');
+        }
+
+        const connectors = tree.graph?.connectors ?? getTreeConnectors(nodes);
+        if (this._skillGraphConnectorFrame) cancelAnimationFrame(this._skillGraphConnectorFrame);
+        this._skillGraphConnectorFrame = requestAnimationFrame(() => {
+            this.renderSkillGraphConnectors(gridContainer, connectors, stateById, cardById);
+        });
     }
 
     renderO2GeneratorModal(ship = this.getActiveShip()) {
@@ -12092,6 +12172,7 @@ export class ThreeGame {
                     wall.castShadow = true;
                     wall.receiveShadow = true;
                     wall.userData.isWall = true;
+                    wall.userData.wallHeightScale = shortHeightMult;
                     group.add(wall);
 
                     const rubbleCount = 2 + Math.floor(wallTypeRng() * 3);
@@ -12113,17 +12194,36 @@ export class ThreeGame {
                 } else {
                     // Standard Wall
                     const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
-                    wall.position.set(worldX, this.wallHeight / 2, worldZ);
-                    // Canyon ridges tower over the standard maze so the halls
-                    // read as carved terrain, not corridors.
+                    let heightScale = 1;
                     if (landform === LANDFORMS.CANYON) {
-                        const ridge = 1.2 + wallTypeRng() * 0.35;
-                        wall.scale.y = ridge;
-                        wall.position.y = (this.wallHeight * ridge) / 2;
+                        // Canyon ridges tower over the standard maze so the halls
+                        // read as carved terrain, not corridors.
+                        heightScale = 1.2 + wallTypeRng() * 0.35;
+                    } else if (landform === LANDFORMS.MAZE) {
+                        const terrainRoll = wallTypeRng();
+                        if (terrainRoll < 0.28) {
+                            heightScale = 0.60 + wallTypeRng() * 0.18;
+                        } else if (terrainRoll < 0.66) {
+                            heightScale = 0.82 + wallTypeRng() * 0.16;
+                        } else if (terrainRoll > 0.92) {
+                            heightScale = 1.08 + wallTypeRng() * 0.18;
+                        }
+                    } else if (landform === LANDFORMS.RUINS) {
+                        const terrainRoll = wallTypeRng();
+                        heightScale = terrainRoll < 0.62
+                            ? 0.58 + wallTypeRng() * 0.26
+                            : 0.88 + wallTypeRng() * 0.22;
+                    } else if (landform === LANDFORMS.FIELD) {
+                        heightScale = 0.72 + wallTypeRng() * 0.36;
+                    } else if (landform === LANDFORMS.CRATER) {
+                        heightScale = 0.88 + wallTypeRng() * 0.40;
                     }
+                    wall.scale.y = heightScale;
+                    wall.position.set(worldX, (this.wallHeight * heightScale) / 2, worldZ);
                     wall.castShadow = true;
                     wall.receiveShadow = true;
                     wall.userData.isWall = true;
+                    wall.userData.wallHeightScale = heightScale;
                     group.add(wall);
 
                     const rng = this.createSeededRandom(this.hashTile(worldX, worldZ));
@@ -16305,10 +16405,24 @@ export class ThreeGame {
         this.ensureChunkPortals(grid, chunkX, chunkY);
         if (landform === LANDFORMS.MAZE) {
             this.runMarkovPass(grid, random);
+            openMazeTerrain(grid, random, {
+                plazaCount: 5,
+                floorTarget: 0.68,
+                minRadius: 1.9,
+                maxRadius: 3.4
+            });
         } else {
             // A ridge or crater rim can sit flush behind a portal opening —
             // tunnel inward so entrances never dead-end.
             connectPortalsInward(grid);
+            if (landform === LANDFORMS.RUINS) {
+                openMazeTerrain(grid, random, {
+                    plazaCount: 3,
+                    floorTarget: 0.72,
+                    minRadius: 1.6,
+                    maxRadius: 2.8
+                });
+            }
         }
         // Widening erodes the deliberate structures (field outcrops, canyon
         // ridges, and especially the crater rim — the open bowl beside the
@@ -16344,7 +16458,8 @@ export class ThreeGame {
     }
 
     // Seeded landform per chunk. The two-chunk ring around the crash site
-    // stays classic maze so the tutorial reads the way it always has.
+    // stays maze-routed, then gets the same plaza/terrace opening pass so the
+    // tutorial remains legible without feeling like a wall comb.
     getChunkLandform(chunkX, chunkY) {
         if (this.performanceProfile === 'menu') return LANDFORMS.MAZE;
         if (Math.hypot(chunkX, chunkY) < 2) return LANDFORMS.MAZE;

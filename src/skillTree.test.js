@@ -3,6 +3,7 @@ import {
     buildUnifiedSkillTree,
     getAllTreeNodes,
     getBranchConnectors,
+    getTreeConnectors,
     TREE_BRANCHES
 } from './skillTree.js';
 import {
@@ -46,15 +47,15 @@ describe('buildUnifiedSkillTree', () => {
         }
     });
 
-    it('preserves class prereqs, costs, and grid positions verbatim', () => {
+    it('preserves class prereqs and costs while carrying legacy grid coordinates', () => {
         const tree = buildUnifiedSkillTree({ playerClass: 'SCOUT' });
         for (const legacy of CLASS_SKILL_TREES.SCOUT) {
             const node = tree.branches.class.nodes.find((n) => n.id === legacy.id);
             expect(node).toBeTruthy();
             expect(node.prereqs).toEqual([...legacy.prereqs]);
             expect(node.cost).toEqual(legacy.cost);
-            expect(node.row).toBe(legacy.row);
-            expect(node.col).toBe(legacy.col);
+            expect(node.legacyRow).toBe(legacy.row);
+            expect(node.legacyCol).toBe(legacy.col);
             expect(node.purchase).toEqual({ kind: 'skill', key: legacy.id });
         }
     });
@@ -75,7 +76,7 @@ describe('buildUnifiedSkillTree', () => {
         expect(o2.maxLevel).toBe(O2_GENERATOR_UPGRADES.length);
     });
 
-    it('carries weapon level ladders without inventing prereqs', () => {
+    it('carries weapon level ladders while adding graph-only cross gates', () => {
         const combat = buildUnifiedSkillTree({}).branches.combat.nodes;
         for (const key of WEAPON_UPGRADE_ORDER) {
             const node = combat.find((n) => n.id === `weapon_${key}`);
@@ -85,6 +86,8 @@ describe('buildUnifiedSkillTree', () => {
             expect(node.descPerLevel).toEqual(cfg.desc);
             expect(node.prereqs).toEqual([]);
         }
+        expect(combat.find((n) => n.id === 'weapon_ammoRefill').graphPrereqs).toContain('goal_o2Bubble');
+        expect(combat.find((n) => n.id === 'weapon_shotAmount').graphPrereqs).toContain('scout_special_unlock');
     });
 
     it('falls back to SCOUT for unknown classes and exposes all branches', () => {
@@ -96,38 +99,61 @@ describe('buildUnifiedSkillTree', () => {
         }
     });
 
-    it('never places two nodes in the same branch grid cell', () => {
+    it('renders all nodes into one downward graph with unique global cells', () => {
         for (const playerClass of Object.keys(CLASS_SKILL_TREES)) {
             const tree = buildUnifiedSkillTree({ playerClass });
-            for (const branch of TREE_BRANCHES) {
-                const seen = new Set();
-                for (const node of tree.branches[branch].nodes) {
-                    const cell = `${node.row},${node.col}`;
-                    expect(seen.has(cell), `${branch} ${cell}`).toBe(false);
-                    seen.add(cell);
-                }
+            const seen = new Set();
+            for (const node of getAllTreeNodes(tree)) {
+                const cell = `${node.row},${node.col}`;
+                expect(seen.has(cell), `${node.id} ${cell}`).toBe(false);
+                seen.add(cell);
             }
+            expect(tree.graph.columns).toBeGreaterThanOrEqual(7);
+            expect(tree.graph.rows).toBeGreaterThan(10);
         }
+    });
+
+    it('adds cross-branch graph prerequisites without changing bank prereq keys', () => {
+        const tree = buildUnifiedSkillTree({ playerClass: 'TANK' });
+        const byId = new Map(getAllTreeNodes(tree).map((node) => [node.id, node]));
+
+        expect(byId.get('goal_o2Bubble').graphPrereqs).toContain('ship_o2_generator');
+        expect(byId.get('goal_radarNode').graphPrereqs).toContain('weapon_ammoRefill');
+        expect(byId.get('goal_reactorCompressor').graphPrereqs).toContain('weapon_shotAmount');
+        expect(byId.get('tank_special_unlock').graphPrereqs).toContain('goal_hullExpansion');
+        expect(byId.get('tank_special_unlock').graphAnyPrereqs).toEqual(['tank_damage_1', 'tank_o2_efficiency']);
+        expect(byId.get('tank_special_upgrade_1').graphPrereqs).toContain('goal_reactorCompressor');
     });
 });
 
-describe('getBranchConnectors', () => {
-    it('derives the same connector shapes the old hardcoded table drew', () => {
-        // SCOUT rows 1→3: parent (1,3) to children (3,1) and (3,5) were the
-        // old down-left/down-right cases at row 2, cols 2 and 4.
+describe('getTreeConnectors', () => {
+    it('connects graph-only cross-branch prerequisites', () => {
         const tree = buildUnifiedSkillTree({ playerClass: 'SCOUT' });
-        const connectors = getBranchConnectors(tree.branches.class.nodes);
-        expect(connectors).toContainEqual(expect.objectContaining({ row: 2, col: 2, type: 'down-left' }));
-        expect(connectors).toContainEqual(expect.objectContaining({ row: 2, col: 4, type: 'down-right' }));
+        const connectors = getTreeConnectors(getAllTreeNodes(tree));
+
+        expect(connectors).toContainEqual(expect.objectContaining({
+            parentId: 'goal_o2Bubble',
+            childId: 'weapon_ammoRefill',
+            type: 'down-left',
+            mode: 'all'
+        }));
+        expect(connectors).toContainEqual(expect.objectContaining({
+            parentId: 'scout_speed_1',
+            childId: 'scout_special_unlock',
+            mode: 'any'
+        }));
     });
 
-    it('produces straight-down connectors for the ship goal chain', () => {
-        const ship = buildUnifiedSkillTree({}).branches.ship.nodes;
+    it('keeps the branch connector export as a compatibility alias', () => {
+        const tree = buildUnifiedSkillTree({ playerClass: 'SCOUT' });
+        const ship = tree.branches.ship.nodes;
         const connectors = getBranchConnectors(ship);
-        // Goals alternate cols 2/4 with rowGap 2 → diagonal connectors exist.
+
         expect(connectors.length).toBeGreaterThan(0);
         for (const c of connectors) {
             expect(['down', 'down-left', 'down-right']).toContain(c.type);
+            expect(c.parentId).toBeTruthy();
+            expect(c.childId).toBeTruthy();
         }
     });
 });

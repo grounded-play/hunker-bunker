@@ -409,6 +409,23 @@ ipcMain.handle('hb:cancelSteamAuthTicket', (_e, handle) => ({
     ok: true,
     cancelled: typeof handle === 'string' ? cancelSteamAuthTicket(handle) : false
 }));
+ipcMain.handle('hb:openSteamOverlayToUrl', async (_e, url) => {
+    if (steamClient?.overlay?.activateToWebPage) {
+        try {
+            steamClient.overlay.activateToWebPage(url);
+            return { ok: true, overlay: true };
+        } catch (err) {
+            console.warn('[steam] overlay navigate failed, falling back to shell:', err);
+        }
+    }
+    try {
+        const { shell } = require('electron');
+        await shell.openExternal(url);
+        return { ok: true, overlay: false };
+    } catch (err) {
+        return { ok: false, reason: 'open_external_failed', message: err.message };
+    }
+});
 ipcMain.handle('hb:showGamepadTextInput', async (_e, inputMode, lineMode, description, maxCharacters, existingText) => {
     if (!steamClient?.utils?.showGamepadTextInput) return null;
     try {

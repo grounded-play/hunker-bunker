@@ -18,13 +18,12 @@ export const LANDFORMS = Object.freeze({
     RUINS: 'ruins'
 });
 
-// Weights lean on the biome fantasy: cryo reads as carved ice canyons, bio as
-// overgrown clearings. Maze stays the most common everywhere so the landforms
-// register as discoveries, not the default.
+// Weights lean on the biome fantasy: active sectors still bias toward bunker
+// mazes, cryo reads as carved ice canyons, and bio opens into overgrown fields.
 const LANDFORM_WEIGHTS = Object.freeze({
-    active: Object.freeze({ maze: 0.42, field: 0.18, canyon: 0.14, crater: 0.14, ruins: 0.12 }),
-    cryo: Object.freeze({ maze: 0.34, field: 0.10, canyon: 0.30, crater: 0.12, ruins: 0.14 }),
-    bio: Object.freeze({ maze: 0.34, field: 0.26, canyon: 0.10, crater: 0.18, ruins: 0.12 })
+    active: Object.freeze({ maze: 0.30, field: 0.22, canyon: 0.16, crater: 0.17, ruins: 0.15 }),
+    cryo: Object.freeze({ maze: 0.26, field: 0.12, canyon: 0.34, crater: 0.13, ruins: 0.15 }),
+    bio: Object.freeze({ maze: 0.26, field: 0.30, canyon: 0.10, crater: 0.20, ruins: 0.14 })
 });
 
 export function pickLandform(random, biome = 'active') {
@@ -122,6 +121,94 @@ function reachableFloorCells(grid) {
         }
     }
     return seen.size;
+}
+
+export function openMazeTerrain(grid, random, {
+    plazaCount = 4,
+    floorTarget = 0.66,
+    minRadius = 1.7,
+    maxRadius = 3.2
+} = {}) {
+    const size = grid.length;
+    if (size < 7) return 0;
+
+    let carved = 0;
+    const carve = (x, y) => {
+        if (x <= 0 || y <= 0 || x >= size - 1 || y >= size - 1) return;
+        if (grid[y][x] !== '#') return;
+        grid[y][x] = '.';
+        carved += 1;
+    };
+    const floorCount = () => grid.slice(1, -1).reduce((sum, row) => (
+        sum + row.slice(1, -1).filter((cell) => cell === '.').length
+    ), 0);
+    const floorCandidates = () => {
+        const candidates = [];
+        for (let y = 2; y < size - 2; y += 1) {
+            for (let x = 2; x < size - 2; x += 1) {
+                if (grid[y][x] === '.') candidates.push({ x, y });
+            }
+        }
+        return candidates;
+    };
+
+    for (let i = 0; i < plazaCount; i += 1) {
+        const floors = floorCandidates();
+        if (!floors.length) break;
+        const center = floors[Math.floor(random() * floors.length)];
+        const radiusX = minRadius + random() * (maxRadius - minRadius);
+        const radiusY = minRadius + random() * (maxRadius - minRadius);
+        for (let y = Math.floor(center.y - radiusY); y <= Math.ceil(center.y + radiusY); y += 1) {
+            for (let x = Math.floor(center.x - radiusX); x <= Math.ceil(center.x + radiusX); x += 1) {
+                const dx = (x - center.x) / radiusX;
+                const dy = (y - center.y) / radiusY;
+                if ((dx * dx) + (dy * dy) <= 1) carve(x, y);
+            }
+        }
+    }
+
+    const soften = grid.map((row) => [...row]);
+    for (let y = 2; y < size - 2; y += 1) {
+        for (let x = 2; x < size - 2; x += 1) {
+            if (grid[y][x] !== '#') continue;
+            const openNeighbors =
+                (grid[y - 1][x] === '.') +
+                (grid[y + 1][x] === '.') +
+                (grid[y][x - 1] === '.') +
+                (grid[y][x + 1] === '.');
+            if (openNeighbors <= 0) continue;
+            const chance = openNeighbors >= 3 ? 0.58 : openNeighbors === 2 ? 0.34 : 0.12;
+            if (random() < chance) soften[y][x] = '.';
+        }
+    }
+    for (let y = 1; y < size - 1; y += 1) {
+        for (let x = 1; x < size - 1; x += 1) {
+            if (grid[y][x] === '#' && soften[y][x] === '.') carve(x, y);
+        }
+    }
+
+    const targetFloorCount = Math.floor((size - 2) * (size - 2) * floorTarget);
+    let safety = size * size;
+    while (floorCount() < targetFloorCount && safety > 0) {
+        safety -= 1;
+        const candidates = [];
+        for (let y = 2; y < size - 2; y += 1) {
+            for (let x = 2; x < size - 2; x += 1) {
+                if (grid[y][x] !== '#') continue;
+                const touchesFloor =
+                    grid[y - 1][x] === '.' ||
+                    grid[y + 1][x] === '.' ||
+                    grid[y][x - 1] === '.' ||
+                    grid[y][x + 1] === '.';
+                if (touchesFloor) candidates.push({ x, y });
+            }
+        }
+        if (!candidates.length) break;
+        const pick = candidates[Math.floor(random() * candidates.length)];
+        carve(pick.x, pick.y);
+    }
+
+    return carved;
 }
 
 function isCanyonGapCandidate(grid, x, y) {

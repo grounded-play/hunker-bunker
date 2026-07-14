@@ -1,3 +1,6 @@
+import os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs';
 import express from 'express';
 import { afterEach, afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
@@ -7,9 +10,27 @@ import {
     getLeaderboardEntries,
     submitRunToSteamLeaderboards
 } from './steamLeaderboards.js';
+import { initDb, getMockInventory, setMockInventory } from './db.js';
+import { recomputeRunScore } from './leaderboardScoring.js';
 
+// Isolated from server/db_storage.json so this file's milestone-grant
+// writes (idempotency + mock inventory, added alongside the leaderboard
+// submission) never race steamInventory.test.js/steamStore.test.js writing
+// the same physical file in a parallel worker.
+const TEST_DB_PATH = path.join(os.tmpdir(), `hb-steam-leaderboards-test-${process.pid}-${Date.now()}.json`);
+process.env.HB_DB_STORAGE_PATH = TEST_DB_PATH;
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_FETCH = globalThis.fetch;
+
+beforeAll(async () => {
+    await initDb();
+});
+
+afterAll(() => {
+    for (const p of [TEST_DB_PATH, `${TEST_DB_PATH}.tmp`]) {
+        try { fs.unlinkSync(p); } catch { /* already gone */ }
+    }
+});
 
 function restoreEnv() {
     for (const key of Object.keys(process.env)) {
@@ -49,6 +70,38 @@ function validPayload() {
             med: 1
         }
     };
+}
+
+// A valid, full-health VICTORY payload with a correctly recomputed score
+// (validateRunScorePayload rejects any client/server score mismatch).
+// runSuffix varies runId (and hence every milestone's requestId) so
+// different test cases don't collide on idempotency; dailyOpsDate is only
+// set when a test needs a Daily Ops run.
+function buildVictoryPayload(steamId, { runSuffix = 'x', dailyOpsDate = null, statsOverride = {} } = {}) {
+    const payload = {
+        schemaVersion: 1,
+        runId: `hb:1000:91000:TANK:${steamId}-${runSuffix}`,
+        classType: 'TANK',
+        outcome: 'victory',
+        mission: { type: 'extraction', status: 'extracted', label: 'EXTRACTION' },
+        run: {
+            runMs: 90000,
+            dailyOps: dailyOpsDate ? { date: dailyOpsDate } : null
+        },
+        stats: {
+            distanceTravelled: 200,
+            totalPickups: 10,
+            generatorLevel: 2,
+            depthTier: 2,
+            snailsKilled: 5,
+            hadNearDeath: false,
+            fullHealthAtEnd: true,
+            ...statsOverride
+        },
+        depositedResources: { tech: 2, coin: 1, med: 0 }
+    };
+    payload.score = recomputeRunScore(payload);
+    return payload;
 }
 
 afterEach(() => {
@@ -113,6 +166,97 @@ describe('submitRunToSteamLeaderboards', () => {
         expect(firstBody.get('steamid')).toBe('76561198000000000');
         expect(firstBody.get('score')).toBe('891');
         expect(firstBody.get('scoremethod')).toBe('KeepBest');
+    });
+});
+
+describe('submitRunToSteamLeaderboards milestone grants (Tier A)', () => {
+    it('grants the class victory patch on a victory submission, idempotent on retry', async () => {
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        const steamId = 'milestone-victory-steamid';
+        await setMockInventory(steamId, []);
+        const auth = { steamId64: steamId, persona: 'Agent', isDevMode: true };
+        const payload = buildVictoryPayload(steamId);
+
+        const first = await submitRunToSteamLeaderboards({ auth, payload });
+        expect(first.ok).toBe(true);
+        expect(first.milestoneGrants).toContainEqual(expect.objectContaining({ itemdefid: 2001 })); // Tank patch
+        expect(getMockInventory(steamId).filter((i) => i.itemdefid === 2001)).toHaveLength(1);
+
+        // Retry with the identical payload (same runId): idempotent on the
+        // server-derived requestId, not a second patch.
+        const second = await submitRunToSteamLeaderboards({ auth, payload });
+        expect(second.ok).toBe(true);
+        expect(getMockInventory(steamId).filter((i) => i.itemdefid === 2001)).toHaveLength(1);
+    });
+
+    it('grants a bonus Deep Relic Cache for a flawless (full-health) victory', async () => {
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        const steamId = 'milestone-flawless-steamid';
+        await setMockInventory(steamId, []);
+
+        const auth = { steamId64: steamId, persona: 'Agent', isDevMode: true };
+        const result = await submitRunToSteamLeaderboards({ auth, payload: buildVictoryPayload(steamId) });
+
+        expect(result.ok).toBe(true);
+        expect(result.milestoneGrants).toContainEqual(expect.objectContaining({ itemdefid: 4000 }));
+    });
+
+    it('does not grant a second personal-best bonus for a lower-scoring later run', async () => {
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        const steamId = 'milestone-pbest-steamid';
+        await setMockInventory(steamId, []);
+        const auth = { steamId64: steamId, persona: 'Agent', isDevMode: true };
+
+        // First-ever submission is always a "new best" (nothing to beat
+        // yet) — grants both a flawless cache and a personal-best cache.
+        const first = await submitRunToSteamLeaderboards({
+            auth,
+            payload: buildVictoryPayload(steamId, { runSuffix: 'first' })
+        });
+        expect(first.ok).toBe(true);
+        const cachesAfterFirst = first.milestoneGrants.filter((g) => g.itemdefid === 4000).length;
+        expect(cachesAfterFirst).toBe(2); // flawless + personal-best
+
+        // A strictly worse run (fewer kills/pickups, same class/health)
+        // still gets its own flawless grant, but must not also claim a
+        // personal-best bonus since it didn't beat the first run's score.
+        const second = await submitRunToSteamLeaderboards({
+            auth,
+            payload: buildVictoryPayload(steamId, {
+                runSuffix: 'second',
+                statsOverride: { snailsKilled: 0, totalPickups: 0, distanceTravelled: 10 }
+            })
+        });
+        expect(second.ok).toBe(true);
+        const cachesAfterSecond = second.milestoneGrants.filter((g) => g.itemdefid === 4000).length;
+        expect(cachesAfterSecond).toBe(1); // flawless only, no personal-best
+    });
+
+    it('grants a Daily Ops bonus cache once per calendar day, not per run', async () => {
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        const steamId = 'milestone-dailyops-steamid';
+        await setMockInventory(steamId, []);
+        const auth = { steamId64: steamId, persona: 'Agent', isDevMode: true };
+        const date = '2026-07-14';
+
+        const first = await submitRunToSteamLeaderboards({
+            auth,
+            payload: buildVictoryPayload(steamId, { runSuffix: 'a', dailyOpsDate: date })
+        });
+        // First Daily Ops run of the day: flawless + personal-best + daily-ops.
+        expect(first.milestoneGrants.filter((g) => g.itemdefid === 4000)).toHaveLength(3);
+
+        const second = await submitRunToSteamLeaderboards({
+            auth,
+            payload: buildVictoryPayload(steamId, {
+                runSuffix: 'b',
+                dailyOpsDate: date,
+                statsOverride: { snailsKilled: 0, totalPickups: 0, distanceTravelled: 10 }
+            })
+        });
+        // Second (lower-scoring) run same day: only its own flawless grant —
+        // no second personal-best, no second daily-ops bonus for the same date.
+        expect(second.milestoneGrants.filter((g) => g.itemdefid === 4000)).toHaveLength(1);
     });
 });
 

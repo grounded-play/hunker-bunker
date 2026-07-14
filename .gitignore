@@ -39,4 +39,9 @@ scratch/
 dist_electron/
 steam_build_output/
 steam_appid.txt
+electron/steam-config.json
 dist_soundtrack/
+
+# Local backend/dev stores
+server/db_storage.json
+server/db_storage.json.tmp

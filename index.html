@@ -200,6 +200,10 @@
             <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
             <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
           </div>
+          <div class="menu-command" id="steam-vault-command">
+            <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+            <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
+          </div>
         </div>
       </div>
 
@@ -360,7 +364,19 @@
         </div>
         <div class="roster-section-label">EQUIPPED SIDEARM</div>
         <div id="roster-weapon-grid" class="roster-weapon-grid"></div>
-        <div class="roster-hint" id="roster-hint">Fabricate weapons in the FAB BAY to equip them here.</div>
+        <div class="roster-section-label">EQUIPPED STEAM COSMETICS</div>
+        <div id="roster-cosmetics-row" class="roster-cosmetics-row">
+          <div class="roster-cosmetic-chip">
+            <span class="label">PATCH:</span> <span id="roster-equipped-patch">NONE</span>
+          </div>
+          <div class="roster-cosmetic-chip">
+            <span class="label">DECAL:</span> <span id="roster-equipped-decal">NONE</span>
+          </div>
+          <div class="roster-cosmetic-chip">
+            <span class="label">FINISH:</span> <span id="roster-equipped-weapon-finish">NONE</span>
+          </div>
+        </div>
+        <div class="roster-hint" id="roster-hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
       </div>
     </div>
 
@@ -391,6 +407,86 @@
         <div class="achievements-footer">
           <button type="button" class="settings-action-btn settings-action-btn--save" id="achievement-copy-save" title="Copy a portable save code">COPY SAVE CODE</button>
           <div class="achievements-save-status" id="achievements-save-status" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Steam Vault Modal -->
+    <div id="steam-vault-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content vault-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="vault-header">
+          <button class="close-modal" id="close-steam-vault-modal">×</button>
+          <div class="vault-title">◈ STEAM VAULT</div>
+          <div class="vault-callsign-row">
+            <span class="vault-callsign" id="vault-player-name">OFFLINE OPERATOR</span>
+            <span class="vault-status" id="vault-connection-status">DEV FALLBACK</span>
+          </div>
+        </div>
+        <div class="vault-tabs">
+          <button class="vault-tab-btn active" id="vault-tab-inventory">OWNED ITEMS</button>
+          <button class="vault-tab-btn" id="vault-tab-store">◈ STORE</button>
+        </div>
+        <div class="vault-main-layout" id="vault-inventory-layout">
+          <div class="vault-left-column">
+            <div class="vault-inventory-container" id="vault-inventory-container">
+              <div class="vault-grid" id="vault-item-grid"></div>
+              <div class="vault-empty-state hidden" id="vault-empty-state">NO ITEMS DETECTED IN STEAM VAULT</div>
+            </div>
+          </div>
+          <div class="vault-right-column">
+            <div class="vault-details-panel" id="vault-details-panel">
+              <div class="vault-details-art">
+                <img id="vault-details-img" src="/favicon.png" alt="" />
+              </div>
+              <div class="vault-details-name" id="vault-details-name">SELECT AN ITEM</div>
+              <div class="vault-details-rarity" id="vault-details-rarity">—</div>
+              <div class="vault-details-desc" id="vault-details-desc">Select any item from the grid to view Steam ownership details.</div>
+              <div class="vault-details-meta">
+                <span class="vault-meta-tag" id="vault-meta-tradable">TRADABLE</span>
+                <span class="vault-meta-tag" id="vault-meta-marketable">MARKETABLE</span>
+              </div>
+              <div class="vault-details-actions">
+                <span class="vault-equip-status" id="vault-equip-status">READ-ONLY STEAM INVENTORY</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="vault-store-layout hidden" id="vault-store-layout">
+          <div class="vault-store-intro">
+            Deep Relic Caches drop for free during play. Cache Keys are the
+            only item sold for real money — buying a key does not guarantee
+            a Cache, and opening a Cache does not guarantee its best reward.
+            Odds below are exactly what the server rolls against.
+          </div>
+          <div class="vault-store-grid" id="vault-store-sku-grid"></div>
+          <div class="vault-store-odds">
+            <div class="vault-store-odds-title">DEEP RELIC CACHE — PUBLISHED ODDS</div>
+            <div class="vault-store-odds-table" id="vault-store-odds-table"></div>
+          </div>
+          <div class="vault-store-open-row">
+            <span class="vault-store-open-status" id="vault-store-open-status">No Cache + Key pair detected in your inventory.</span>
+            <button class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo End Modal -->
+    <div id="demo-end-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content demo-end-content">
+        <div class="terminal-scanline"></div>
+        <div class="demo-end-header">
+          <div class="demo-end-title">◈ TRANSMISSION TERMINATED</div>
+        </div>
+        <div class="demo-end-body">
+          <p class="queen-voice">"You belong to the deep now, little machine. The swarm remembers your call."</p>
+          <p class="demo-end-text">Thank you for playing the Hunker Bunker demo.</p>
+          <p class="demo-end-subtext">The mothership uplink has been severed, but the true threat still awaits. Wishlist the full game on Steam to continue your extraction in the deep vaults.</p>
+        </div>
+        <div class="demo-end-actions">
+          <button class="start-btn wishlist-btn" id="demo-wishlist-btn">◈ WISHLIST ON STEAM</button>
+          <button class="abort-btn" id="demo-end-main-menu">RETURN TO MENU</button>
         </div>
       </div>
     </div>
@@ -593,7 +689,8 @@
 
           <div class="game-over-bank-note" id="go-bank-note">BANKED RESOURCES PRESERVED</div>
           <div class="game-over-bank-note game-over-bank-note--recoverable" id="go-recoverable-note">BLACK BOX: NONE</div>
-          
+          <div class="game-over-bank-note game-over-bank-note--steam hidden" id="go-steam-grant-note"></div>
+
           <!-- Act 2 Summary Card -->
           <div id="game-over-act2-summary" class="game-over-act2-summary hidden">
             <!-- Dynamically populated summary stats and text -->
@@ -622,6 +719,13 @@
             <span class="go-archive-icon">◈</span>
             <span id="go-archive-text" class="go-archive-text">LOGS RECOVERED: 0/27</span>
           </div>
+        </div>
+
+        <!-- Game Over Leaderboard Widget -->
+        <div class="go-leaderboard-container" id="go-leaderboard-container">
+          <div class="go-leaderboard-header">◈ LEADERBOARD RESULTS</div>
+          <div class="go-leaderboard-status" id="go-leaderboard-status">CONNECTING...</div>
+          <div class="go-leaderboard-list" id="go-leaderboard-list"></div>
         </div>
 
         <div class="game-over-actions">
@@ -1060,7 +1164,7 @@
           <div class="terminal-layout terminal-layout--skills">
             <div class="skills-header">
               <span class="skills-unlocked-count" id="skills-unlocked-count">UNLOCKED SKILLS: 0/6</span>
-              <span class="skills-info-hint">ONE DASHBOARD FOR CLASS, SYSTEM, AND COMBAT PATHS</span>
+              <span class="skills-info-hint">BUNKER TREE // CROSS-LINKED PROTOCOLS</span>
             </div>
             <div class="skills-tree-container">
               <div class="skills-tree-grid" id="skills-tree-grid">

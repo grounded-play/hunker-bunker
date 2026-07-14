@@ -1,8 +1,11 @@
 import express from 'express';
 import http from 'http';
+import { initDb } from './db.js';
 import { attachRelay } from './relay.js';
 import { attachSteamAuthRoutes } from './steamAuth.js';
 import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
+import { attachSteamInventoryRoutes } from './steamInventory.js';
+import { attachSteamStoreRoutes } from './steamStore.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -38,8 +41,13 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: '16kb' }));
 
+// Initialize DB before routing
+await initDb();
+
 attachSteamAuthRoutes(app);
 attachSteamLeaderboardRoutes(app);
+attachSteamInventoryRoutes(app);
+attachSteamStoreRoutes(app);
 attachRelay(server, { allowedOrigins: ALLOWED_ORIGINS });
 
 const PORT = process.env.PORT || 3001;

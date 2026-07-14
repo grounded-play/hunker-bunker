@@ -1,0 +1,33 @@
+# Fly.io config for the Steam trusted backend (server/index.js).
+# Placeholder app name — rename before first deploy (`fly apps create <name>`
+# or let `fly launch` pick one), then update this file to match.
+app = "hunker-bunker-steam-backend"
+primary_region = "iad"
+
+[build]
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+# Set real values before going live:
+#   fly secrets set HB_STEAM_PUBLISHER_KEY=... HB_STEAM_APPID=1247290 \
+#     HB_ALLOWED_ORIGINS=https://your-domain-or-electron-origin \
+#     HB_STEAM_LEADERBOARD_IDS=... HB_STEAM_MICROTXN_ENABLED=0
+#
+# db_storage.json lives on the container's local disk, which does NOT
+# persist across deploys/restarts on Fly — mount a volume before trusting
+# this for production purchase/leaderboard receipts:
+#   fly volumes create hb_data --size 1
+# and add:
+# [mounts]
+#   source = "hb_data"
+#   destination = "/app/server/data"
+# then set HB_DB_STORAGE_PATH=/app/server/data/db_storage.json as a secret.

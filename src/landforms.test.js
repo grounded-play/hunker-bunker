@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward } from './landforms.js';
+import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain } from './landforms.js';
 
 const SIZE = 19;
 
@@ -25,8 +25,23 @@ function mazeLikeGrid() {
     );
 }
 
+function connectedMazeGrid() {
+    const grid = Array.from({ length: SIZE }, () => Array(SIZE).fill('#'));
+    for (let y = 1; y < SIZE - 1; y += 2) {
+        for (let x = 1; x < SIZE - 1; x += 1) {
+            grid[y][x] = '.';
+        }
+        if (y < SIZE - 2) grid[y + 1][SIZE - 2] = '.';
+    }
+    return grid;
+}
+
 function countWalls(grid) {
     return grid.flat().filter((c) => c === '#').length;
+}
+
+function countFloors(grid) {
+    return grid.flat().filter((c) => c === '.').length;
 }
 
 function floodFillFloorCount(grid, startX, startY) {
@@ -67,7 +82,7 @@ describe('pickLandform', () => {
         }
     });
 
-    it('produces a mixed distribution with maze most common, biased by biome', () => {
+    it('produces a mixed distribution with biome-specific dominant landforms', () => {
         const tally = (biome) => {
             const counts = {};
             for (let seed = 1; seed <= 600; seed++) {
@@ -158,6 +173,31 @@ describe('applyLandform', () => {
         const copy = grid.map((row) => [...row]);
         applyLandform(grid, LANDFORMS.MAZE, mulberry32(3));
         expect(grid).toEqual(copy);
+    });
+});
+
+describe('openMazeTerrain', () => {
+    it('opens breathing room while keeping the maze border and connectivity', () => {
+        const grid = connectedMazeGrid();
+        const floorsBefore = countFloors(grid);
+        const carved = openMazeTerrain(grid, mulberry32(101), {
+            plazaCount: 5,
+            floorTarget: 0.68,
+            minRadius: 1.9,
+            maxRadius: 3.4
+        });
+        const floorsAfter = countFloors(grid);
+        const start = firstFloor(grid);
+
+        expect(carved).toBeGreaterThan(25);
+        expect(floorsAfter).toBeGreaterThan(floorsBefore + 25);
+        expect(floodFillFloorCount(grid, start.x, start.y)).toBe(floorsAfter);
+        expect(grid[0].every((c) => c === '#')).toBe(true);
+        expect(grid[SIZE - 1].every((c) => c === '#')).toBe(true);
+        for (let y = 0; y < SIZE; y += 1) {
+            expect(grid[y][0]).toBe('#');
+            expect(grid[y][SIZE - 1]).toBe('#');
+        }
     });
 });
 

@@ -92,6 +92,23 @@ Not yet implemented:
 - Short-lived backend session tokens to avoid burning a fresh Steam auth ticket
   on every call.
 
+**Update 2026-07-14: real roguelike-run connections, not just a leaderboard
+write.** `submitRunToSteamLeaderboards` (`server/steamLeaderboards.js`) now
+derives and grants milestone rewards server-side from the same validated,
+recomputed payload — victory (class patch), flawless (full-health bonus
+cache), new personal best, and Daily Ops completion (once per calendar
+day) — via the shared `server/steamGrant.js` helper, returned as
+`milestoneGrants` on the submit-run response. Mid-run milestones that can't
+wait for a final payload (queen kill, achievement-tied cosmetics) go
+through a new `POST /steam/inventory/grant-milestone` route where the
+server owns the milestone→item mapping (client never supplies an
+itemdefid). Free Deep Relic Cache drops are now tied to the existing
+in-world `salvage-cache-opened` loot event (15% client-side roll) instead
+of a blind timer. See `docs/steam-lootbox-odds-disclosure.md` and the
+Decision Log for the crate/key naming (renamed from "Salvage Cache" to
+avoid colliding with the pre-existing local bank-currency mechanic of the
+same name).
+
 ### Inventory and Marketplace
 
 Planned, not fully accepted as complete:
@@ -99,14 +116,20 @@ Planned, not fully accepted as complete:
 - Steam Inventory item schema draft.
 - Server inventory routes for read, drop, promo grant, exchange, and market
   eligibility.
-- In-game Steam Vault UI.
+- In-game Steam Vault UI, now including a STORE tab (Cache Key purchase +
+  published Deep Relic Cache odds) — see `docs/steam-lootbox-odds-disclosure.md`.
+- Deep Relic Cache (free drop) + Cache Key (real money) crate/key economy,
+  server/steamStore.js + the recipe-4100 open-cache path in
+  server/steamInventory.js.
 
 Current product stance:
 
 - Steam-owned items should be cosmetics, collectibles, and non-power items.
 - Core progression remains local/Steam Cloud only.
-- Paid crates/keys and random rewards are deferred until policy, legal, and
-  Steamworks setup are reviewed.
+- Paid random-reward crates are now approved (2026-07-13, owner decision) —
+  see the Decision Log below and `docs/steam-lootbox-odds-disclosure.md`.
+  Real-money charges stay gated off (`HB_STEAM_MICROTXN_ENABLED=0`) until
+  Valve enables Microtransactions for this app in Steamworks.
 
 ### DRM and Build Pipeline
 
@@ -183,7 +206,10 @@ Recommended order:
 7. Add exchanges/crafting.
 8. Add Steam Vault read-only UI.
 9. Add equip state with ownership reconciliation on every refresh.
-10. Revisit marketability and paid crates later.
+10. Paid crates: done as the Deep Relic Cache + Cache Key model (2026-07-13) —
+    see `docs/steam-lootbox-odds-disclosure.md`. Marketability (Steam
+    Community Market listings) is still just `marketable: true` in the
+    schema draft, unverified against a live Steamworks app.
 
 Hard requirements:
 
@@ -191,7 +217,10 @@ Hard requirements:
 - No client-supplied `steamid` trust.
 - No production grants without durable idempotency.
 - No marketable gameplay power.
-- No paid random item launch without policy review.
+- Paid random items are policy-reviewed and approved (2026-07-13) as the
+  Deep Relic Cache + Cache Key model; disclosed odds must stay byte-for-byte
+  in sync with `server/lootTables.js`, and no other paid-random SKU ships
+  without updating both the code and the published odds together.
 
 ## Steam Vault UI Roadmap
 
@@ -227,7 +256,23 @@ Recommended order:
   a custom in-game peer-to-peer marketplace.
 - Local save data may cache display/equip state, but ownership is reconciled
   against Steam inventory.
-- Lootbox/key monetization is deferred.
+- **Update 2026-07-13: the game ships free-to-play, and paid random-reward
+  loot boxes are now approved** (owner decision, reversing the prior
+  deferral). Implemented as Valve's own crate+key pattern rather than a new
+  system: Deep Relic Caches (itemdefid 4000) drop for free during play; Cache
+  Keys (itemdefid 4001) are the only item sold for real money; opening a
+  Cache rolls against `server/lootTables.js`, the single source of truth
+  disclosed to players before purchase (Steamworks policy requires
+  disclosed odds to equal actual odds). See
+  `docs/steam-lootbox-odds-disclosure.md` for the full policy/compliance
+  notes, including that Belgium and the Netherlands treat this as
+  gambling — geo-gating or a direct-purchase fallback there is still an
+  open decision, not yet built.
+- Real-money purchases go through `server/steamStore.js`'s
+  `ISteamMicroTxn` flow, gated behind `HB_STEAM_MICROTXN_ENABLED` (default
+  off) because Valve must separately enable Microtransactions for this app
+  in Steamworks before those calls will succeed — until then, `purchase/init`
+  always grants through the mock path so dev/Playtest builds work today.
 
 ## Validation Baseline
 
