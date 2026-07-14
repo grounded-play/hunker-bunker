@@ -2660,7 +2660,8 @@ function resetRunToStartingState({
     resetBank = false,
     skipEffects = true,
     snailSpawnEnabled = false,
-    purgeSnails = true
+    purgeSnails = true,
+    deferChunkMount = false
 } = {}) {
     activeRunSeed = null;
     activeRunCards = [];
@@ -2691,7 +2692,7 @@ function resetRunToStartingState({
         _lastMothershipBroadcastAt = 0;
 
         resetPickupCounter();
-        window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
+        window.game?.respawnPlayer?.({ resetRunState: true, skipEffects, deferChunkMount });
         if (currentMission) {
             window.game?.initMission?.(currentMission);
         } else {
@@ -3971,20 +3972,25 @@ if (gameOverTryAgain) {
         hideGameOverScreen();
         triggerDoorTransition(
             () => {
+                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: false,
                     skipEffects: false,
                     snailSpawnEnabled: true,
-                    purgeSnails: false
+                    purgeSnails: false,
+                    deferChunkMount: true
                 });
                 document.getElementById('ui')?.classList.remove('hidden');
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
+                return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
                 window.game?.setInputEnabled?.(true);
-            }
+            },
+            undefined,
+            { waitForClosedWork: true, openingHoldMs: 160 }
             // Defaults to the currently selected class door
         );
     });
@@ -4986,6 +4992,7 @@ if (startBtn) {
     startBtn.addEventListener('click', () => {
         triggerDoorTransition(
             () => {
+                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 if (menu) menu.classList.add('hidden');
                 setAppPhase('gameplay');
                 window.game?.setPerformanceProfile?.('gameplay');
@@ -4994,7 +5001,8 @@ if (startBtn) {
                     resetBank: true,
                     skipEffects: true,
                     snailSpawnEnabled: true,
-                    purgeSnails: false
+                    purgeSnails: false,
+                    deferChunkMount: true
                 });
                 document.getElementById('ui').classList.remove('hidden');
                 syncTouchSettingsVisibility();
@@ -5036,6 +5044,7 @@ if (dailyOpsBtn) {
         }
         triggerDoorTransition(
             () => {
+                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 if (menu) menu.classList.add('hidden');
                 setAppPhase('gameplay');
                 window.game?.setPerformanceProfile?.('gameplay');
@@ -5044,7 +5053,8 @@ if (dailyOpsBtn) {
                     resetBank: false,
                     skipEffects: true,
                     snailSpawnEnabled: true,
-                    purgeSnails: false
+                    purgeSnails: false,
+                    deferChunkMount: true
                 });
                 document.getElementById('ui')?.classList.remove('hidden');
                 syncTouchSettingsVisibility();

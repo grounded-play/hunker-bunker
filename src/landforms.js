@@ -18,12 +18,12 @@ export const LANDFORMS = Object.freeze({
     RUINS: 'ruins'
 });
 
-// Weights lean on the biome fantasy: active sectors still bias toward bunker
-// mazes, cryo reads as carved ice canyons, and bio opens into overgrown fields.
+// Weights lean on the biome fantasy while keeping hard pillar mazes as a
+// discovery beat instead of the default traversal texture.
 const LANDFORM_WEIGHTS = Object.freeze({
-    active: Object.freeze({ maze: 0.30, field: 0.22, canyon: 0.16, crater: 0.17, ruins: 0.15 }),
-    cryo: Object.freeze({ maze: 0.26, field: 0.12, canyon: 0.34, crater: 0.13, ruins: 0.15 }),
-    bio: Object.freeze({ maze: 0.26, field: 0.30, canyon: 0.10, crater: 0.20, ruins: 0.14 })
+    active: Object.freeze({ maze: 0.18, field: 0.28, canyon: 0.16, crater: 0.20, ruins: 0.18 }),
+    cryo: Object.freeze({ maze: 0.16, field: 0.13, canyon: 0.38, crater: 0.15, ruins: 0.18 }),
+    bio: Object.freeze({ maze: 0.14, field: 0.36, canyon: 0.10, crater: 0.22, ruins: 0.18 })
 });
 
 export function pickLandform(random, biome = 'active') {
@@ -45,7 +45,7 @@ function applyFieldLandform(grid, random) {
     }
     // Each outcrop stays inside a 3x3 patch and patches never touch each
     // other or the border, so no blob can ever seal off a pocket of floor.
-    const clusters = 7 + Math.floor(random() * 5);
+    const clusters = 5 + Math.floor(random() * 4);
     const centers = [];
     let attempts = 0;
     while (centers.length < clusters && attempts < 80) {
@@ -72,16 +72,16 @@ function applyCanyonLandform(grid, random) {
     for (let y = 1; y < size - 1; y++) {
         for (let x = 1; x < size - 1; x++) grid[y][x] = '.';
     }
-    for (let line = 3; line < size - 2; line += 3) {
+    for (let line = 4; line < size - 2; line += 4) {
         for (let i = 1; i < size - 1; i++) {
             if (vertical) grid[i][line] = '#';
             else grid[line][i] = '#';
         }
         // Two guaranteed gaps per ridge keep every hall connected.
-        const gaps = 2 + Math.floor(random() * 2);
+        const gaps = 3 + Math.floor(random() * 2);
         for (let g = 0; g < gaps; g++) {
             const at = 1 + Math.floor(random() * (size - 3));
-            for (const j of [at, at + 1]) {
+            for (const j of [at - 1, at, at + 1]) {
                 if (j < 1 || j > size - 2) continue;
                 if (vertical) grid[j][line] = '.';
                 else grid[line][j] = '.';
@@ -124,10 +124,10 @@ function reachableFloorCells(grid) {
 }
 
 export function openMazeTerrain(grid, random, {
-    plazaCount = 4,
-    floorTarget = 0.66,
-    minRadius = 1.7,
-    maxRadius = 3.2
+    plazaCount = 6,
+    floorTarget = 0.76,
+    minRadius = 2.2,
+    maxRadius = 4.2
 } = {}) {
     const size = grid.length;
     if (size < 7) return 0;
@@ -152,17 +152,46 @@ export function openMazeTerrain(grid, random, {
         return candidates;
     };
 
+    // Every plaza used to carve the same silhouette (an ellipse), so even a
+    // generously-opened maze read as visually uniform — one blob shape
+    // repeated everywhere. Picking a shape per plaza (still seeded, still
+    // respecting the same radius/center roll) gives the layout real
+    // room-to-room variety without touching density, floorTarget, or the
+    // reachability guarantee below, which stay exactly as they were.
+    const plazaShapeRoll = () => {
+        const roll = random();
+        if (roll < 0.4) return 'ellipse';
+        if (roll < 0.7) return 'diamond';
+        return 'cross';
+    };
+
     for (let i = 0; i < plazaCount; i += 1) {
         const floors = floorCandidates();
         if (!floors.length) break;
         const center = floors[Math.floor(random() * floors.length)];
         const radiusX = minRadius + random() * (maxRadius - minRadius);
         const radiusY = minRadius + random() * (maxRadius - minRadius);
+        const shape = plazaShapeRoll();
         for (let y = Math.floor(center.y - radiusY); y <= Math.ceil(center.y + radiusY); y += 1) {
             for (let x = Math.floor(center.x - radiusX); x <= Math.ceil(center.x + radiusX); x += 1) {
                 const dx = (x - center.x) / radiusX;
                 const dy = (y - center.y) / radiusY;
-                if ((dx * dx) + (dy * dy) <= 1) carve(x, y);
+                let inside;
+                if (shape === 'diamond') {
+                    // Manhattan distance instead of Euclidean — a
+                    // rotated-square silhouette, distinct from both the
+                    // ellipse and the maze's own axis-aligned corridors.
+                    inside = Math.abs(dx) + Math.abs(dy) <= 1;
+                } else if (shape === 'cross') {
+                    // Two overlapping perpendicular arms through the
+                    // center — reads as a deliberate room, not a blob.
+                    const armWidth = 0.42;
+                    inside = (Math.abs(dx) <= armWidth && Math.abs(dy) <= 1)
+                        || (Math.abs(dy) <= armWidth && Math.abs(dx) <= 1);
+                } else {
+                    inside = (dx * dx) + (dy * dy) <= 1;
+                }
+                if (inside) carve(x, y);
             }
         }
     }
@@ -177,7 +206,7 @@ export function openMazeTerrain(grid, random, {
                 (grid[y][x - 1] === '.') +
                 (grid[y][x + 1] === '.');
             if (openNeighbors <= 0) continue;
-            const chance = openNeighbors >= 3 ? 0.58 : openNeighbors === 2 ? 0.34 : 0.12;
+            const chance = openNeighbors >= 3 ? 0.78 : openNeighbors === 2 ? 0.52 : 0.18;
             if (random() < chance) soften[y][x] = '.';
         }
     }
@@ -275,7 +304,7 @@ function applyRuinsLandform(grid, random) {
     const size = grid.length;
     for (let y = 1; y < size - 1; y++) {
         for (let x = 1; x < size - 1; x++) {
-            if (grid[y][x] === '#' && random() < 0.45) grid[y][x] = '.';
+            if (grid[y][x] === '#' && random() < 0.58) grid[y][x] = '.';
         }
     }
 }

@@ -196,10 +196,17 @@ const WEAPON_FIRE_COOLDOWN = 0.14;
 const WEAPON_AMMO_REFILL_INTERVAL = 10;
 const WEAPON_AMMO_REFILL_INTERVAL_REDUCTION = 2.1;
 const WEAPON_AMMO_REFILL_MIN_INTERVAL = 3.6;
+const WEAPON_BLOCKED_CUE_INTERVAL = 420;
 const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
+const WALL_HP_DAMAGED = 2;
+const WALL_HP_STANDARD = 3;
+const WALL_HP_HAZARD = 4;
+const WALL_HP_CANYON_BONUS = 2;
+const BOSS_WALL_BREAK_COOLDOWN = 0.42;
+const BOSS_WALL_BREAK_DAMAGE = 999;
 
 // --- Sprint 10 combat tuning / feature flags ---
 const FEATURE_WALL_DECALS = true;
@@ -674,6 +681,9 @@ export class ThreeGame {
         // visually identical while removing ~360 meshes per chunk — the dominant
         // cause of the chunk-load frame stutter.
         this.chunkFloorGeometry = new THREE.PlaneGeometry(this.chunkSize, this.chunkSize);
+        this.terrainStepGeometry = new THREE.BoxGeometry(1, 0.08, 1);
+        this.rewardGlowGeometry = new THREE.CircleGeometry(1, 24);
+        this.rewardGlowMaterials = new Map();
         this.pillarGeometry = new THREE.CylinderGeometry(0.16, 0.16, this.wallHeight, 8);
         this.bracketGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.12);
         this.ventGeometry = new THREE.BoxGeometry(0.48, 0.48, 0.06);
@@ -690,6 +700,8 @@ export class ThreeGame {
         this.rubbleGeometry = new THREE.DodecahedronGeometry(1.0, 0);
 
         this.playerRadius = 0.66;
+        this.wallCollisionHalfSize = 0.30;
+        this.wallCollisionPadding = this.playerRadius * 0.88;
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = _initialStats.moveSpeed;
         this.o2DrainMult = _initialStats.o2DrainMult;
@@ -711,6 +723,8 @@ export class ThreeGame {
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this.maxChunkMountsPerFrame = 1;
+        this.chunkPrefetchMargin = 7;
+        this.destroyedWallKeys = new Set();
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
@@ -776,6 +790,12 @@ export class ThreeGame {
         this.mouseAimActive = false;
         this.lastMouseClientX = null;
         this.lastMouseClientY = null;
+        this.isPointerFireHeld = false;
+        this.heldFireClientX = null;
+        this.heldFireClientY = null;
+        this._lastNoFireCueAt = 0;
+        this._lastNoAmmoCueAt = 0;
+        this._lastReloadBlockedCueAt = 0;
         this._aimResetTimer = 0;
         this._aimRaycaster = new THREE.Raycaster();
         this._projRaycaster = new THREE.Raycaster();
@@ -2576,16 +2596,22 @@ export class ThreeGame {
         this._canvasTapStartY = 0;
         this._canvasPointerType = 'mouse';
         this.handleCanvasPointerDown = (event) => {
+            const pointerType = event.pointerType || 'mouse';
+            if (pointerType === 'mouse' && event.button !== 0) return;
             this._canvasTapStartX = event.clientX;
             this._canvasTapStartY = event.clientY;
-            this._canvasPointerType = event.pointerType || 'mouse';
+            this._canvasPointerType = pointerType;
+            try {
+                this.renderer.domElement.setPointerCapture?.(event.pointerId);
+            } catch {
+                // Pointer capture is a browser affordance; gameplay still works without it.
+            }
             if (this._canvasPointerType === 'mouse') {
                 this.lastMouseClientX = event.clientX;
                 this.lastMouseClientY = event.clientY;
             }
 
             if (!this.isGameplayInputActive()) return;
-            const pointerType = this._canvasPointerType;
             const isTouchPointer = pointerType !== 'mouse';
             if (isTouchPointer && this.isInTouchMoveControlBounds(event.clientX, event.clientY)) {
                 return;
@@ -2608,12 +2634,16 @@ export class ThreeGame {
                 keepMouseActive: pointerType === 'mouse',
                 persistDuration: pointerType === 'mouse' ? 0 : 2.0
             });
-            this.tryFireWeapon(event.clientX, event.clientY);
+            this.beginHeldFire(event.clientX, event.clientY, pointerType);
         };
 
         this.handleCanvasPointerMove = (event) => {
             if (!this.isGameplayInputActive()) return;
             const pointerType = event.pointerType || this._canvasPointerType || 'mouse';
+            if (this.isPointerFireHeld) {
+                this.heldFireClientX = event.clientX;
+                this.heldFireClientY = event.clientY;
+            }
             if (pointerType !== 'mouse') return;
             this.lastMouseClientX = event.clientX;
             this.lastMouseClientY = event.clientY;
@@ -2624,11 +2654,25 @@ export class ThreeGame {
         };
 
         this.handleCanvasTap = (event) => {
+            this.endHeldFire();
+            try {
+                this.renderer.domElement.releasePointerCapture?.(event.pointerId);
+            } catch {
+                // Best effort only.
+            }
             if (!this.isGameplayInputActive()) return;
             const dx = event.clientX - this._canvasTapStartX;
             const dy = event.clientY - this._canvasTapStartY;
             const wasTap = Math.sqrt(dx * dx + dy * dy) < 14;
             if (!wasTap) return;
+        };
+        this.handleCanvasPointerCancel = (event) => {
+            this.endHeldFire();
+            try {
+                this.renderer.domElement.releasePointerCapture?.(event.pointerId);
+            } catch {
+                // Best effort only.
+            }
         };
 
         window.addEventListener('keydown', this.handleKeyDown);
@@ -2701,6 +2745,8 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
+        this.renderer.domElement.addEventListener('pointercancel', this.handleCanvasPointerCancel);
+        this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
     }
 
     isInTouchMoveControlBounds(clientX, clientY) {
@@ -2803,17 +2849,28 @@ export class ThreeGame {
         return true;
     }
 
+    playThrottledUiError(fieldName, options = {}, eventName = null) {
+        const now = performance.now();
+        const lastPlayed = this[fieldName] ?? 0;
+        if (lastPlayed > 0 && now - lastPlayed < WEAPON_BLOCKED_CUE_INTERVAL) return false;
+        this[fieldName] = now;
+        window.AudioManager?.play('ui_error', options);
+        if (eventName) {
+            window.dispatchEvent(new CustomEvent(eventName));
+        }
+        return true;
+    }
+
     fireWeaponAtCurrentAim() {
         if (!this.isGameplayInputActive()) return false;
 
         if (this.isInsideNoFireZone()) {
-            window.AudioManager?.play('ui_error', { volume: 0.42 });
-            window.dispatchEvent(new CustomEvent('combat-no-fire-zone'));
+            this.playThrottledUiError('_lastNoFireCueAt', { volume: 0.42 }, 'combat-no-fire-zone');
             return false;
         }
 
         if (this.weaponReloading) {
-            window.AudioManager?.play('ui_error', { volume: 0.34, playbackRate: 1.05 });
+            this.playThrottledUiError('_lastReloadBlockedCueAt', { volume: 0.34, playbackRate: 1.05 });
             return false;
         }
         if (this.weaponFireCooldown > 0) {
@@ -2822,8 +2879,7 @@ export class ThreeGame {
         if (this.weaponClipAmmo <= 0) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
-                window.AudioManager?.play('ui_error', { volume: 0.45 });
-                window.dispatchEvent(new CustomEvent('combat-no-ammo'));
+                this.playThrottledUiError('_lastNoAmmoCueAt', { volume: 0.45 }, 'combat-no-ammo');
                 return false;
             }
             this.requestReload();
@@ -2864,6 +2920,34 @@ export class ThreeGame {
 
     triggerControllerFire() {
         return this.fireWeaponAtCurrentAim();
+    }
+
+    beginHeldFire(clientX, clientY, pointerType = 'mouse') {
+        if (!this.isGameplayInputActive()) return false;
+        this.isPointerFireHeld = true;
+        this.heldFireClientX = clientX;
+        this.heldFireClientY = clientY;
+        this._canvasPointerType = pointerType;
+        return this.tryFireWeapon(clientX, clientY);
+    }
+
+    endHeldFire() {
+        this.isPointerFireHeld = false;
+        this.heldFireClientX = null;
+        this.heldFireClientY = null;
+    }
+
+    updateHeldFire() {
+        if (!this.isPointerFireHeld) return;
+        if (!this.isGameplayInputActive()) {
+            this.endHeldFire();
+            return;
+        }
+        if (Number.isFinite(this.heldFireClientX) && Number.isFinite(this.heldFireClientY)) {
+            this.tryFireWeapon(this.heldFireClientX, this.heldFireClientY);
+            return;
+        }
+        this.fireWeaponAtCurrentAim();
     }
 
     setKeyState(code, pressed) {
@@ -2949,6 +3033,7 @@ export class ThreeGame {
         this.isMoving = false;
         this.mouseAimActive = false;
         this.hasActiveAim = false;
+        this.endHeldFire();
         this._aimResetTimer = 0;
         this.lastMouseClientX = null;
         this.lastMouseClientY = null;
@@ -4845,51 +4930,6 @@ export class ThreeGame {
         button.addEventListener('click', () => this.attemptGoalUnlock(this.activeInteractiveConsole ?? ship, cardConfig));
     }
 
-    renderTier2Section(ship, bankState) {
-        // Section opens once the O₂ bubble is built so the Space Heater (Note 5)
-        // is an early cold-mitigation build. Cards whose own prereq isn't met yet
-        // (e.g. endgame filters/stim) still appear but read LOCKED.
-        const unlocks = bankState?.unlocks ?? {};
-        const sectionAvailable = Boolean(unlocks.o2Bubble);
-        const section = document.getElementById('tier2-section');
-        if (section) section.classList.toggle('hidden', !sectionAvailable);
-        if (!sectionAvailable) return;
-
-        const tier2Unlocks = bankState?.tier2Unlocks ?? {};
-        for (const key of TIER2_UPGRADE_ORDER) {
-            const cfg = TIER2_UPGRADE_CONFIGS[key];
-            if (!cfg) continue;
-            const alreadyUnlocked = Boolean(tier2Unlocks[key]);
-            const prereqMet = !cfg.prereq || Boolean(unlocks[cfg.prereq]);
-            const shellPrice = shellPriceOf(cfg.cost);
-            const canAfford = this.bank.canAffordShells(shellPrice);
-            const buildable = !alreadyUnlocked && prereqMet && canAfford;
-
-            const statusEl = document.getElementById(`terminal-tier2-${key}-status`);
-            if (statusEl) {
-                statusEl.textContent = alreadyUnlocked ? 'INSTALLED'
-                    : !prereqMet ? 'LOCKED'
-                    : canAfford ? 'READY' : 'NEED SHELLS';
-            }
-            const costEl = document.getElementById(`terminal-tier2-${key}-cost`);
-            if (costEl) {
-                const have = this.bank.getShells();
-                costEl.textContent = alreadyUnlocked ? '' : `COST: ◈ ${shellPrice} SHELLS${canAfford ? '' : ` // HAVE ${have}`}`;
-            }
-            const btn = document.getElementById(`terminal-btn-tier2-${key}`);
-            if (!btn) continue;
-            btn.disabled = !buildable;
-            btn.textContent = alreadyUnlocked ? 'INSTALLED' : !prereqMet ? 'LOCKED' : canAfford ? 'INSTALL' : `NEED ◈ ${Math.max(0, shellPrice - this.bank.getShells())}`;
-            btn.classList.toggle('btn-state--online', alreadyUnlocked);
-            btn.classList.toggle('btn-state--available', buildable);
-            btn.classList.toggle('btn-state--insufficient', !alreadyUnlocked && (!prereqMet || !canAfford));
-
-            if (btn.dataset.listenerAttached === 'true') continue;
-            btn.dataset.listenerAttached = 'true';
-            btn.addEventListener('click', () => this.attemptTier2Unlock(this.activeInteractiveConsole ?? ship, key));
-        }
-    }
-
     attemptTier2Unlock(ship, key) {
         const success = this.bank.unlockTier2(key);
         if (success) {
@@ -4900,56 +4940,6 @@ export class ThreeGame {
         }
         this.renderConsoleBanking(ship);
         this.renderSkillsTree(ship);
-    }
-
-    // COMBAT MATRIX skill tree. Mirrors renderTier2Section: reuses the same action-card
-    // markup + btn-state classes. Gated on the O2 generator being repaired so weapon
-    // progression is available early-game (unlike end-game tier2 systems).
-    renderWeaponsSection(ship, bankState) {
-        const available = (bankState?.o2GeneratorLevel ?? 0) >= 1;
-        const section = document.getElementById('weapons-section');
-        if (section) section.classList.toggle('hidden', !available);
-        if (!available) return;
-
-        const levels = bankState?.weaponUpgrades ?? {};
-        for (const key of WEAPON_UPGRADE_ORDER) {
-            const cfg = WEAPON_UPGRADES_CONFIG[key];
-            if (!cfg) continue;
-            const level = Math.max(0, Math.floor(levels[key] ?? 0));
-            const maxed = level >= cfg.maxLevel;
-            const nextCost = maxed ? null : cfg.costs[level];
-            const cost = nextCost ?? null;
-            const shellPrice = cost ? shellPriceOf(cost) : 0;
-            const canAfford = cost ? this.bank.canAffordShells(shellPrice) : false;
-
-            const levelEl = document.getElementById(`terminal-weapon-${key}-level`);
-            if (levelEl) levelEl.textContent = `LV ${level}/${cfg.maxLevel}`;
-
-            const descEl = document.getElementById(`terminal-weapon-${key}-desc`);
-            if (descEl) {
-                descEl.textContent = maxed
-                    ? `MAX TIER — ${cfg.desc[cfg.desc.length - 1]}`
-                    : `NEXT: ${cfg.desc[level]}`;
-            }
-
-            const costEl = document.getElementById(`terminal-weapon-${key}-cost`);
-            if (costEl) {
-                const have = this.bank.getShells();
-                costEl.textContent = maxed ? 'FULLY UPGRADED' : `COST: ◈ ${shellPrice} SHELLS${canAfford ? '' : ` // HAVE ${have}`}`;
-            }
-
-            const btn = document.getElementById(`terminal-btn-weapon-${key}`);
-            if (!btn) continue;
-            btn.disabled = maxed || !canAfford;
-            btn.textContent = maxed ? 'MAXED' : canAfford ? 'UPGRADE' : `NEED ◈ ${Math.max(0, shellPrice - this.bank.getShells())}`;
-            btn.classList.toggle('btn-state--online', maxed);
-            btn.classList.toggle('btn-state--available', !maxed && canAfford);
-            btn.classList.toggle('btn-state--insufficient', !maxed && !canAfford);
-
-            if (btn.dataset.listenerAttached === 'true') continue;
-            btn.dataset.listenerAttached = 'true';
-            btn.addEventListener('click', () => this.attemptWeaponUpgrade(this.activeInteractiveConsole ?? ship, key));
-        }
     }
 
     attemptWeaponUpgrade(ship, key) {
@@ -8789,6 +8779,10 @@ export class ThreeGame {
         this.weaponReloadTimer = 0;
         this.weaponAmmoRefillTimer = 0;
         this.weaponFireCooldown = 0;
+        this.endHeldFire();
+        this._lastNoFireCueAt = 0;
+        this._lastNoAmmoCueAt = 0;
+        this._lastReloadBlockedCueAt = 0;
         this.activeProjectiles = [];
         if (emit) {
             this.emitWeaponClipState();
@@ -9152,6 +9146,7 @@ export class ThreeGame {
         this.chunkCache.clear();
         this._chunkRoomTypeCache?.clear();
         this._chunkTemplateCache?.clear();
+        this.destroyedWallKeys.clear();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys.clear();
         this.wallMeshes = [];
@@ -9159,7 +9154,7 @@ export class ThreeGame {
         this.scatterSprites = [];
     }
 
-    respawnPlayer({ resetRunState = true, skipEffects = false } = {}) {
+    respawnPlayer({ resetRunState = true, skipEffects = false, deferChunkMount = false } = {}) {
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
         this.mouseAimActive = false;
@@ -9236,7 +9231,7 @@ export class ThreeGame {
                 bossPanel.classList.add('hidden');
             }
             this.clearLoadedChunksForRunReset();
-            this.syncVisibleChunks(true);
+            this.syncVisibleChunks(true, { processLimit: deferChunkMount ? 0 : null });
             this.updateCrashedShipsVisibility(false);
             this.emitDepthTierChanged(0);
         }
@@ -9588,6 +9583,52 @@ export class ThreeGame {
         });
     }
 
+    // A scanned enemy's ping marker already renders through walls
+    // (depthTest: false on the ring), but the enemy's own sprite still uses
+    // its type's shared, depth-tested material — so only the abstract ring
+    // icon showed through a wall, not the creature itself. Enemy sprite
+    // materials are shared across every instance of that type, so this
+    // can't just flip depthTest on sprite.material (that would X-ray every
+    // enemy of that type permanently); it clones the same texture into a
+    // temporary sprite instead, tracks the target's position/scale each
+    // frame, and disposes with the same ping lifetime.
+    spawnEnemyXrayGhost(sprite) {
+        const sourceMap = sprite?.material?.map;
+        if (!sprite?.isSprite || !sourceMap) return;
+
+        const ghostMat = new THREE.SpriteMaterial({
+            map: sourceMap,
+            transparent: true,
+            opacity: 0.85,
+            depthTest: false,
+            depthWrite: false,
+            color: 0x8be9ff,
+            fog: false
+        });
+        const ghost = new THREE.Sprite(ghostMat);
+        ghost.scale.copy(sprite.scale);
+        ghost.position.copy(sprite.position);
+        ghost.renderOrder = 9998;
+        this.scene.add(ghost);
+
+        this.transientEffects.push({
+            mesh: ghost,
+            age: 0,
+            duration: 5.0,
+            update: (dt, age) => {
+                if (sprite?.parent) {
+                    ghost.position.copy(sprite.position);
+                    ghost.scale.copy(sprite.scale);
+                }
+                const t = age / 5.0;
+                ghostMat.opacity = 0.85 * (1 - t * t);
+            },
+            dispose: () => {
+                ghostMat.dispose();
+            }
+        });
+    }
+
     triggerRadarScan() {
         if (!this.isGameplayInputActive()) return;
         if (this.radarScanCooldownRemaining > 0) {
@@ -9678,6 +9719,7 @@ export class ThreeGame {
                     if (d <= currentRadius) {
                         pingedIds.add(sprite.uuid);
                         this.spawnRadarPingHighlight(sprite, 0x00d2ff);
+                        if (isEnemy) this.spawnEnemyXrayGhost(sprite);
                     }
                 }
 
@@ -11303,7 +11345,6 @@ export class ThreeGame {
 
     getAmmoRefillInterval() {
         const level = this.bank?.getWeaponUpgradeLevel?.('ammoRefill') ?? 0;
-        if (Math.floor(level) <= 0) return Number.POSITIVE_INFINITY;
         return Math.max(
             WEAPON_AMMO_REFILL_MIN_INTERVAL,
             WEAPON_AMMO_REFILL_INTERVAL - Math.max(0, Math.floor(level)) * WEAPON_AMMO_REFILL_INTERVAL_REDUCTION
@@ -11362,6 +11403,7 @@ export class ThreeGame {
         }
 
         this.updateWeaponAmmoRefill(delta);
+        this.updateHeldFire();
 
         if (!this.weaponReloading) return;
         const previousTimer = this.weaponReloadTimer;
@@ -11428,16 +11470,16 @@ export class ThreeGame {
     }
 
     tryFireWeapon(clientX, clientY) {
-        if (!this.isGameplayInputActive()) return;
+        if (!this.isGameplayInputActive()) return false;
 
         const worldPoint = this.updateAimFromClient(clientX, clientY, {
             keepMouseActive: this._canvasPointerType === 'mouse',
             persistDuration: this._canvasPointerType === 'mouse' ? 0 : 2.0
         });
 
-        if (!worldPoint && !this.hasActiveAim) return;
+        if (!worldPoint && !this.hasActiveAim) return false;
 
-        this.fireWeaponAtCurrentAim();
+        return this.fireWeaponAtCurrentAim();
     }
 
     spawnPlayerShot(normX, normZ) {
@@ -11546,7 +11588,7 @@ export class ThreeGame {
                 nz = worldNormal.z;
             }
         }
-        return { point: hit.point, normalX: nx, normalZ: nz };
+        return { point: hit.point, normalX: nx, normalZ: nz, wall: hit.object };
     }
 
     checkProjectilePlayerHit(projectile) {
@@ -11859,6 +11901,9 @@ export class ThreeGame {
                 if (FEATURE_WALL_DECALS) {
                     this.spawnWallDecal(hx, hz, wallHit.normalX, wallHit.normalZ);
                 }
+                this.damageWall(wallHit.wall, projectile.damage, {
+                    source: projectile.isEnemy ? 'enemy-projectile' : 'player'
+                });
                 toRemove.add(projectile);
                 continue;
             }
@@ -11938,7 +11983,7 @@ export class ThreeGame {
         this._cameraShakeTimer = Math.max(this._cameraShakeTimer, duration);
     }
 
-    syncVisibleChunks(force = false) {
+    syncVisibleChunks(force = false, { prefetch = !force, processLimit = null } = {}) {
         if (this.performanceProfile === 'menu') {
             this.clearLoadedChunksForRunReset();
             if (this.chunkGroups) this.chunkGroups.visible = false;
@@ -11949,6 +11994,7 @@ export class ThreeGame {
         const centerChunkY = Math.floor(this.player.position.z / this.chunkSize);
         this.updateDepthTierProgress(centerChunkX, centerChunkY);
         const needed = new Set();
+        const resident = new Set();
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
@@ -11957,9 +12003,10 @@ export class ThreeGame {
             for (let chunkX = centerChunkX - this.visibleChunkRadius; chunkX <= centerChunkX + this.visibleChunkRadius; chunkX++) {
                 const key = `${chunkX},${chunkY}`;
                 needed.add(key);
-                const isNewChunk = !this.chunkMeshes.has(key) && !this.visitedChunks.has(key);
+                resident.add(key);
+                const isNewChunk = !this.visitedChunks.has(key);
                 if (force || !this.chunkMeshes.has(key)) {
-                    this.queueChunkMount(chunkX, chunkY, centerChunkX, centerChunkY);
+                    this.queueChunkMount(chunkX, chunkY, centerChunkX, centerChunkY, { prefetch: false });
                 }
                 if (isNewChunk && !force) {
                     this.visitedChunks.add(key);
@@ -11968,19 +12015,33 @@ export class ThreeGame {
             }
         }
 
-        this.pendingChunkMounts = this.pendingChunkMounts.filter((entry) => needed.has(entry.key));
+        if (prefetch) {
+            for (const entry of this.getChunkPrefetchCoords(centerChunkX, centerChunkY)) {
+                if (needed.has(entry.key)) continue;
+                resident.add(entry.key);
+                this.queueChunkMount(entry.chunkX, entry.chunkY, centerChunkX, centerChunkY, { prefetch: true });
+            }
+        }
+
+        this.pendingChunkMounts = this.pendingChunkMounts.filter((entry) => resident.has(entry.key));
         this.pendingChunkMountKeys = new Set(this.pendingChunkMounts.map((entry) => entry.key));
 
         const frameAlreadySlow = (this._lastFrameDeltaForChunkMounts ?? 0) > 0.024;
-        const chunkMountLimit = force
-            ? 1
-            : frameAlreadySlow
-                ? 0
-                : this.maxChunkMountsPerFrame;
+        const chunkMountLimit = Number.isFinite(processLimit)
+            ? Math.max(0, Math.floor(processLimit))
+            : force
+                ? 1
+                : frameAlreadySlow
+                    ? 0
+                    : this.maxChunkMountsPerFrame;
         this.processPendingChunkMounts(chunkMountLimit);
 
         for (const [key, group] of this.chunkMeshes.entries()) {
-            if (needed.has(key)) continue;
+            if (resident.has(key)) {
+                group.visible = needed.has(key);
+                group.userData.isPrefetch = !needed.has(key);
+                continue;
+            }
             group.traverse((child) => {
                 if (child.userData?.isScatter) {
                     child.material?.dispose?.();
@@ -12001,6 +12062,7 @@ export class ThreeGame {
         }
 
         for (const group of this.chunkMeshes.values()) {
+            if (!group.visible) continue;
             for (const child of group.children) {
                 if (child.userData.isWall) {
                     this.wallMeshes.push(child);
@@ -12015,9 +12077,65 @@ export class ThreeGame {
         }
     }
 
-    queueChunkMount(chunkX, chunkY, centerChunkX, centerChunkY) {
+    getChunkPrefetchCoords(centerChunkX, centerChunkY) {
+        if (!this.player || this.visibleChunkRadius < 1) return [];
+
+        const radius = this.visibleChunkRadius;
+        const margin = Math.max(1, Math.min(this.chunkSize * 0.48, this.chunkPrefetchMargin ?? 7));
+        const localX = this.player.position.x - centerChunkX * this.chunkSize;
+        const localY = this.player.position.z - centerChunkY * this.chunkSize;
+        const dirs = {
+            east: localX >= this.chunkSize - margin,
+            west: localX <= margin,
+            south: localY >= this.chunkSize - margin,
+            north: localY <= margin
+        };
+        const coords = new Map();
+        const add = (chunkX, chunkY) => {
+            const key = `${chunkX},${chunkY}`;
+            coords.set(key, { key, chunkX, chunkY });
+        };
+
+        if (dirs.east) {
+            const chunkX = centerChunkX + radius + 1;
+            for (let dy = -radius; dy <= radius; dy++) add(chunkX, centerChunkY + dy);
+        }
+        if (dirs.west) {
+            const chunkX = centerChunkX - radius - 1;
+            for (let dy = -radius; dy <= radius; dy++) add(chunkX, centerChunkY + dy);
+        }
+        if (dirs.south) {
+            const chunkY = centerChunkY + radius + 1;
+            for (let dx = -radius; dx <= radius; dx++) add(centerChunkX + dx, chunkY);
+        }
+        if (dirs.north) {
+            const chunkY = centerChunkY - radius - 1;
+            for (let dx = -radius; dx <= radius; dx++) add(centerChunkX + dx, chunkY);
+        }
+        if (dirs.east && dirs.south) add(centerChunkX + radius + 1, centerChunkY + radius + 1);
+        if (dirs.east && dirs.north) add(centerChunkX + radius + 1, centerChunkY - radius - 1);
+        if (dirs.west && dirs.south) add(centerChunkX - radius - 1, centerChunkY + radius + 1);
+        if (dirs.west && dirs.north) add(centerChunkX - radius - 1, centerChunkY - radius - 1);
+
+        return [...coords.values()];
+    }
+
+    queueChunkMount(chunkX, chunkY, centerChunkX, centerChunkY, { prefetch = false } = {}) {
         const key = `${chunkX},${chunkY}`;
-        if (this.chunkMeshes.has(key) || this.pendingChunkMountKeys.has(key)) {
+        if (this.chunkMeshes.has(key)) {
+            return;
+        }
+
+        const priority = Math.abs(chunkX - centerChunkX)
+            + Math.abs(chunkY - centerChunkY)
+            + (prefetch ? 100 : 0);
+        if (this.pendingChunkMountKeys.has(key)) {
+            const pending = this.pendingChunkMounts.find((entry) => entry.key === key);
+            if (pending && (!prefetch || pending.prefetch)) {
+                pending.prefetch = Boolean(prefetch && pending.prefetch);
+                pending.priority = Math.min(pending.priority, priority);
+                this.pendingChunkMounts.sort((a, b) => a.priority - b.priority);
+            }
             return;
         }
 
@@ -12026,7 +12144,8 @@ export class ThreeGame {
             key,
             chunkX,
             chunkY,
-            priority: Math.abs(chunkX - centerChunkX) + Math.abs(chunkY - centerChunkY)
+            prefetch: Boolean(prefetch),
+            priority
         });
         this.pendingChunkMounts.sort((a, b) => a.priority - b.priority);
     }
@@ -12048,7 +12167,7 @@ export class ThreeGame {
     async prepareVisibleChunksForGameplay({ batchSize = 3, onProgress = null } = {}) {
         if (this.performanceProfile !== 'gameplay' || !this.player) return;
 
-        this.syncVisibleChunks(true);
+        this.syncVisibleChunks(true, { prefetch: true });
         const initialPending = this.pendingChunkMounts.length;
         let mounted = 0;
         onProgress?.(initialPending === 0 ? 1 : 0);
@@ -12062,7 +12181,7 @@ export class ThreeGame {
             await new Promise((resolve) => requestAnimationFrame(resolve));
         }
 
-        this.syncVisibleChunks(true);
+        this.syncVisibleChunks(true, { prefetch: true });
 
         // Warm up the GPU before the cutscene: compile every material's shader
         // program and prime the shadow map now, while the loader still covers
@@ -12081,6 +12200,264 @@ export class ThreeGame {
         onProgress?.(1);
     }
 
+    addTerrainStepDressing(group, chunkX, chunkY, grid, landform) {
+        if (!this.terrainStepGeometry || !this.wallMaterial) return;
+        const stepChanceByLandform = {
+            [LANDFORMS.MAZE]: 0.105,
+            [LANDFORMS.RUINS]: 0.145,
+            [LANDFORMS.FIELD]: 0.055,
+            [LANDFORMS.CRATER]: 0.075,
+            [LANDFORMS.CANYON]: 0.045
+        };
+        const stepChance = stepChanceByLandform[landform] ?? 0.07;
+        if (stepChance <= 0) return;
+
+        const random = this.createSeededRandom(this.hashTile(chunkX * 1229 + 83, chunkY * 1597 + 131));
+        const maxSteps = landform === LANDFORMS.RUINS ? 30 : landform === LANDFORMS.MAZE ? 24 : 16;
+        let steps = 0;
+
+        for (let localY = 1; localY < this.chunkSize - 1; localY++) {
+            for (let localX = 1; localX < this.chunkSize - 1; localX++) {
+                if (steps >= maxSteps) return;
+                if (grid[localY][localX] !== '.') continue;
+
+                const floorNeighbors =
+                    (grid[localY - 1][localX] === '.') +
+                    (grid[localY + 1][localX] === '.') +
+                    (grid[localY][localX - 1] === '.') +
+                    (grid[localY][localX + 1] === '.');
+                if (floorNeighbors < 3) continue;
+                if (random() > stepChance) continue;
+
+                const height = 0.055 + random() * (landform === LANDFORMS.RUINS ? 0.17 : 0.12);
+                const width = 0.68 + random() * 0.26;
+                const depth = 0.68 + random() * 0.26;
+                const worldX = chunkX * this.chunkSize + localX + (random() - 0.5) * 0.16;
+                const worldZ = chunkY * this.chunkSize + localY + (random() - 0.5) * 0.16;
+                const step = new THREE.Mesh(this.terrainStepGeometry, this.wallMaterial);
+                step.position.set(worldX, height / 2 + 0.006, worldZ);
+                step.scale.set(width, height / 0.08, depth);
+                step.rotation.y = Math.floor(random() * 4) * (Math.PI / 2);
+                step.castShadow = true;
+                step.receiveShadow = true;
+                step.userData.isTerrainStep = true;
+                group.add(step);
+                steps++;
+            }
+        }
+    }
+
+    getRewardGlowMaterial(colorHex) {
+        const color = Number(colorHex) || 0xffcc66;
+        const key = color.toString(16);
+        if (!this.rewardGlowMaterials.has(key)) {
+            this.rewardGlowMaterials.set(key, new THREE.MeshBasicMaterial({
+                color,
+                transparent: true,
+                opacity: 0.28,
+                depthWrite: false,
+                depthTest: true,
+                blending: THREE.AdditiveBlending,
+                side: THREE.DoubleSide,
+                fog: true
+            }));
+        }
+        return this.rewardGlowMaterials.get(key);
+    }
+
+    addChunkRewardGlow(group, x, z, colorHex, { radius = 1.15, intensity = 1 } = {}) {
+        if (!this.rewardGlowGeometry) return;
+        const glow = new THREE.Mesh(this.rewardGlowGeometry, this.getRewardGlowMaterial(colorHex));
+        glow.rotation.x = -Math.PI / 2;
+        glow.position.set(x, 0.032, z);
+        const scale = Math.max(0.4, radius * (0.78 + Math.max(0, intensity) * 0.22));
+        glow.scale.set(scale, scale, 1);
+        glow.renderOrder = 2;
+        glow.userData.isChunkGlow = true;
+        group.add(glow);
+    }
+
+    getWallKey(worldX, worldZ) {
+        return `${Math.round(worldX)},${Math.round(worldZ)}`;
+    }
+
+    getChunkLocalFromWorld(worldX, worldZ) {
+        const tileX = Math.round(worldX);
+        const tileZ = Math.round(worldZ);
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileZ / this.chunkSize);
+        return {
+            tileX,
+            tileZ,
+            chunkX,
+            chunkY,
+            localX: tileX - chunkX * this.chunkSize,
+            localY: tileZ - chunkY * this.chunkSize,
+            key: `${chunkX},${chunkY}`
+        };
+    }
+
+    getWallMaxHp({ landform = null, variant = 'standard', heightScale = 1 } = {}) {
+        let hp = WALL_HP_STANDARD;
+        if (variant === 'damaged') hp = WALL_HP_DAMAGED;
+        if (variant === 'hazard') hp = WALL_HP_HAZARD;
+        if (landform === LANDFORMS.CANYON) hp += WALL_HP_CANYON_BONUS;
+        if (landform === LANDFORMS.RUINS) hp = Math.max(1, hp - 1);
+        if (heightScale < 0.7) hp = Math.max(1, hp - 1);
+        return hp;
+    }
+
+    configureWallMesh(wall, {
+        chunkX,
+        chunkY,
+        localX,
+        localY,
+        worldX,
+        worldZ,
+        landform = null,
+        variant = 'standard',
+        heightScale = 1
+    } = {}) {
+        if (!wall) return null;
+        const maxHp = this.getWallMaxHp({ landform, variant, heightScale });
+        wall.userData = {
+            ...wall.userData,
+            isWall: true,
+            wallKey: this.getWallKey(worldX, worldZ),
+            wallHp: maxHp,
+            maxWallHp: maxHp,
+            wallVariant: variant,
+            wallHeightScale: heightScale,
+            chunkX,
+            chunkY,
+            localX,
+            localY,
+            worldX,
+            worldZ
+        };
+        return wall;
+    }
+
+    applyDestroyedWallsToGrid(grid, chunkX, chunkY) {
+        if (!grid || !this.destroyedWallKeys?.size) return grid;
+        for (let localY = 0; localY < this.chunkSize; localY += 1) {
+            for (let localX = 0; localX < this.chunkSize; localX += 1) {
+                const worldX = chunkX * this.chunkSize + localX;
+                const worldZ = chunkY * this.chunkSize + localY;
+                if (this.destroyedWallKeys.has(this.getWallKey(worldX, worldZ))) {
+                    grid[localY][localX] = '.';
+                }
+            }
+        }
+        return grid;
+    }
+
+    markWallTileDestroyed(worldX, worldZ) {
+        const coord = this.getChunkLocalFromWorld(worldX, worldZ);
+        this.destroyedWallKeys.add(this.getWallKey(coord.tileX, coord.tileZ));
+        const grid = this.chunkCache.get(coord.key);
+        if (grid?.[coord.localY]) {
+            grid[coord.localY][coord.localX] = '.';
+        }
+        this._chunkRoomTypeCache?.delete(coord.key);
+        this._chunkTemplateCache?.delete(coord.key);
+        return coord;
+    }
+
+    findWallMeshAt(worldX, worldZ) {
+        const key = this.getWallKey(worldX, worldZ);
+        return this.wallMeshes.find((wall) => wall?.userData?.wallKey === key && !wall.userData.destroyed) ?? null;
+    }
+
+    destroyWall(wall, { source = 'player', burstColor = 0xb8c2c9, force = false } = {}) {
+        if (!wall?.userData?.isWall || wall.userData.destroyed) return false;
+        if (wall.userData.indestructible && !force) return false;
+
+        const worldX = Number.isFinite(wall.userData.worldX) ? wall.userData.worldX : wall.position.x;
+        const worldZ = Number.isFinite(wall.userData.worldZ) ? wall.userData.worldZ : wall.position.z;
+        const coord = this.markWallTileDestroyed(worldX, worldZ);
+        wall.userData.destroyed = true;
+        wall.visible = false;
+        wall.parent?.remove(wall);
+        this.wallMeshes = this.wallMeshes.filter((candidate) => candidate !== wall);
+
+        const fxColor = source === 'boss' ? 0xffa45a : burstColor;
+        this.spawnPhysicalBurst(coord.tileX, coord.tileZ, {
+            color: fxColor,
+            count: source === 'boss' ? 12 : 8,
+            upward: source === 'boss' ? 0.22 : 0.17,
+            spread: source === 'boss' ? 1.9 : 1.25
+        });
+        this.spawnTextureBurstEffect(coord.tileX, coord.tileZ, {
+            textureKey: 'fx_steam_puff',
+            color: source === 'boss' ? 0xffc08a : 0xbfd4dd,
+            count: source === 'boss' ? 5 : 3,
+            baseScale: source === 'boss' ? 0.82 : 0.58,
+            duration: source === 'boss' ? 0.62 : 0.44,
+            speed: source === 'boss' ? 0.42 : 0.24,
+            rise: source === 'boss' ? 0.22 : 0.16
+        });
+        window.AudioManager?.playMetalStress?.({
+            volume: source === 'boss' ? 0.64 : 0.34,
+            playbackRate: source === 'boss' ? 0.62 : 1.4,
+            force: source === 'boss'
+        });
+        this.triggerCameraShake?.(source === 'boss' ? 0.22 : 0.08, source === 'boss' ? 0.28 : 0.14);
+        window.dispatchEvent(new CustomEvent('wall-destroyed', {
+            detail: { source, x: coord.tileX, z: coord.tileZ }
+        }));
+        return true;
+    }
+
+    damageWall(wall, amount = 1, { source = 'player' } = {}) {
+        if (!wall?.userData?.isWall || wall.userData.destroyed) return false;
+        const maxHp = Math.max(1, wall.userData.maxWallHp ?? WALL_HP_STANDARD);
+        const damage = Math.max(0, Number(amount) || 0);
+        wall.userData.wallHp = Math.max(0, (wall.userData.wallHp ?? maxHp) - damage);
+        if (wall.userData.wallHp > 0) {
+            window.dispatchEvent(new CustomEvent('wall-damaged', {
+                detail: {
+                    source,
+                    x: wall.userData.worldX,
+                    z: wall.userData.worldZ,
+                    hp: wall.userData.wallHp,
+                    maxHp
+                }
+            }));
+            return false;
+        }
+        return this.destroyWall(wall, { source });
+    }
+
+    tryBossBreakWall(sprite, nextX, nextZ) {
+        const data = sprite?.userData;
+        if (!data?.isBoss) return false;
+        if ((data.wallBreakCooldown ?? 0) > 0) return false;
+
+        const tileX = Math.round(nextX);
+        const tileZ = Math.round(nextZ);
+        if (this.getTileType(tileX, tileZ) !== '#') return false;
+        if (this.isHoleTile(tileX, tileZ)) return false;
+
+        const wall = this.findWallMeshAt(tileX, tileZ);
+        if (wall) {
+            this.damageWall(wall, BOSS_WALL_BREAK_DAMAGE, { source: 'boss' });
+        } else {
+            const coord = this.markWallTileDestroyed(tileX, tileZ);
+            this.spawnPhysicalBurst(coord.tileX, coord.tileZ, {
+                color: 0xffa45a,
+                count: 8,
+                upward: 0.2,
+                spread: 1.5
+            });
+            window.AudioManager?.playMetalStress?.({ volume: 0.48, playbackRate: 0.65, force: true });
+        }
+        data.wallBreakCooldown = BOSS_WALL_BREAK_COOLDOWN;
+        data.pathNodes = null;
+        data.pathRetargetTimer = 0;
+        return true;
+    }
+
     mountChunk(chunkX, chunkY) {
         const grid = this.getOrCreateChunk(chunkX, chunkY);
         const group = new THREE.Group();
@@ -12090,15 +12467,20 @@ export class ThreeGame {
         // tall and unbroken. Same shared geometries, different mix.
         const landform = this.getChunkLandform(chunkX, chunkY);
         this.maybeSpawnChunkLoreDrop(chunkX, chunkY, grid, landform);
-        let holeCut = 0.06;
+        // holeCut is derived from the shared getHoleCutForLandform helper so
+        // this render pass can never drift from isHoleTile's collision/fall
+        // check again (that drift was the "holes in the door" bug).
+        const holeCut = this.getHoleCutForLandform(landform);
         let hazardCut = 0.22;
         let damagedCut = 0.35;
-        if (landform === LANDFORMS.RUINS) {
-            holeCut = 0.08; hazardCut = 0.12; damagedCut = 0.85;
+        if (landform === LANDFORMS.MAZE) {
+            hazardCut = 0.12; damagedCut = 0.62;
+        } else if (landform === LANDFORMS.RUINS) {
+            hazardCut = 0.12; damagedCut = 0.85;
         } else if (landform === LANDFORMS.FIELD) {
-            holeCut = 0.03; hazardCut = 0.05; damagedCut = 0.60;
+            hazardCut = 0.05; damagedCut = 0.60;
         } else if (landform === LANDFORMS.CANYON) {
-            holeCut = 0.0; hazardCut = 0.06; damagedCut = 0.12;
+            hazardCut = 0.06; damagedCut = 0.12;
         }
 
         // Single merged floor for the whole chunk (see chunkFloorGeometry note).
@@ -12112,6 +12494,7 @@ export class ThreeGame {
         );
         chunkFloor.receiveShadow = true;
         group.add(chunkFloor);
+        this.addTerrainStepDressing(group, chunkX, chunkY, grid, landform);
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
@@ -12142,7 +12525,17 @@ export class ThreeGame {
                     wall.position.set(worldX, this.wallHeight / 2, worldZ);
                     wall.castShadow = true;
                     wall.receiveShadow = true;
-                    wall.userData.isWall = true;
+                    this.configureWallMesh(wall, {
+                        chunkX,
+                        chunkY,
+                        localX,
+                        localY,
+                        worldX,
+                        worldZ,
+                        landform,
+                        variant: 'hazard',
+                        heightScale: 1
+                    });
                     group.add(wall);
 
                     const sirenBase = new THREE.Mesh(this.sirenBaseGeometry, this.sirenBaseMaterial);
@@ -12171,8 +12564,17 @@ export class ThreeGame {
                     
                     wall.castShadow = true;
                     wall.receiveShadow = true;
-                    wall.userData.isWall = true;
-                    wall.userData.wallHeightScale = shortHeightMult;
+                    this.configureWallMesh(wall, {
+                        chunkX,
+                        chunkY,
+                        localX,
+                        localY,
+                        worldX,
+                        worldZ,
+                        landform,
+                        variant: 'damaged',
+                        heightScale: shortHeightMult
+                    });
                     group.add(wall);
 
                     const rubbleCount = 2 + Math.floor(wallTypeRng() * 3);
@@ -12222,8 +12624,17 @@ export class ThreeGame {
                     wall.position.set(worldX, (this.wallHeight * heightScale) / 2, worldZ);
                     wall.castShadow = true;
                     wall.receiveShadow = true;
-                    wall.userData.isWall = true;
-                    wall.userData.wallHeightScale = heightScale;
+                    this.configureWallMesh(wall, {
+                        chunkX,
+                        chunkY,
+                        localX,
+                        localY,
+                        worldX,
+                        worldZ,
+                        landform,
+                        variant: 'standard',
+                        heightScale
+                    });
                     group.add(wall);
 
                     const rng = this.createSeededRandom(this.hashTile(worldX, worldZ));
@@ -12309,7 +12720,9 @@ export class ThreeGame {
             }
         }
 
-        // Add subtle reward-cache glow lights in dead-end rooms
+        // Cheap reward-cache glow decals in dead-end rooms. These used to be
+        // per-chunk PointLights; adding/removing them changed the scene light
+        // count during travel and forced shader churn on chunk boundaries.
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const chunkTemplate = this.getChunkTemplate(chunkX, chunkY);
         const templateCfg = chunkTemplate ? ROOM_TEMPLATE_CONFIGS[chunkTemplate] : null;
@@ -12337,15 +12750,14 @@ export class ThreeGame {
                 }
             }
             for (const { wx, wz } of deadEndLights.slice(0, 2)) {
-                const deLight = new THREE.PointLight(defaultLightColor, 1.1, 5, 2);
-                deLight.position.set(wx, 1.4, wz);
-                group.add(deLight);
+                this.addChunkRewardGlow(group, wx, wz, defaultLightColor, { radius: 1.2, intensity: 1.1 });
             }
-            // Template-specific chamber light
+            // Template-specific chamber glow.
             if (templateCfg && chamberCenter) {
-                const tLight = new THREE.PointLight(templateCfg.lightColor, templateCfg.lightIntensity, 8, 2);
-                tLight.position.set(chamberCenter.wx, 1.8, chamberCenter.wz);
-                group.add(tLight);
+                this.addChunkRewardGlow(group, chamberCenter.wx, chamberCenter.wz, templateCfg.lightColor, {
+                    radius: 1.75,
+                    intensity: templateCfg.lightIntensity ?? 1
+                });
             }
         }
 
@@ -15241,6 +15653,7 @@ export class ThreeGame {
         const data = sprite.userData;
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
+        data.wallBreakCooldown = Math.max(0, (data.wallBreakCooldown ?? 0) - delta);
 
         if (data.knockbackTimer > 0) {
             const kx = (data.knockbackVx ?? 0) * delta;
@@ -15256,6 +15669,7 @@ export class ThreeGame {
 
         const target = this.selectSnailTarget(sprite, activeShip);
         if (!target) return;
+        const bossCanBreakWalls = Boolean(data.isBoss && target.mode === 'hunt');
 
         const startTileX = Math.round(sprite.position.x);
         const startTileZ = Math.round(sprite.position.z);
@@ -15268,7 +15682,14 @@ export class ThreeGame {
         const noPath = !Array.isArray(data.pathNodes) || data.pathNodes.length === 0 || data.pathIndex >= data.pathNodes.length;
         const shouldRepath = targetChanged || noPath || data.pathRetargetTimer <= 0;
 
-        if (shouldRepath) {
+        if (bossCanBreakWalls) {
+            data.pathNodes = null;
+            data.pathIndex = 0;
+            data.pathGoalTileX = goalTileX;
+            data.pathGoalTileZ = goalTileZ;
+            data.aiMode = target.mode;
+            data.targetType = target.type;
+        } else if (shouldRepath) {
             const previousMode = data.aiMode;
             const pathNodes = this.findSnailPath(startTileX, startTileZ, goalTileX, goalTileZ, SNAIL_PATH_NODE_BUDGET);
             data.pathNodes = pathNodes;
@@ -15287,7 +15708,7 @@ export class ThreeGame {
 
         let moveTargetX = target.goalX;
         let moveTargetZ = target.goalZ;
-        if (Array.isArray(data.pathNodes) && data.pathNodes.length > 0) {
+        if (!bossCanBreakWalls && Array.isArray(data.pathNodes) && data.pathNodes.length > 0) {
             const index = Math.max(0, Math.min(data.pathIndex ?? 0, data.pathNodes.length - 1));
             const waypoint = data.pathNodes[index];
             moveTargetX = waypoint.x;
@@ -15318,6 +15739,11 @@ export class ThreeGame {
             if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
                 sprite.position.x = nextX;
                 sprite.position.z = nextZ;
+            } else if (data.isBoss && this.tryBossBreakWall(sprite, nextX, nextZ)) {
+                if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                    sprite.position.x = nextX;
+                    sprite.position.z = nextZ;
+                }
             } else {
                 data.pathRetargetTimer = 0;
                 data.pathNodes = null;
@@ -16194,10 +16620,12 @@ export class ThreeGame {
     }
 
     overlapsWall(x, z, wallX, wallZ) {
-        const minX = wallX - 0.5 - this.playerRadius;
-        const maxX = wallX + 0.5 + this.playerRadius;
-        const minZ = wallZ - 0.5 - this.playerRadius;
-        const maxZ = wallZ + 0.5 + this.playerRadius;
+        const halfSize = this.wallCollisionHalfSize ?? 0.30;
+        const padding = this.wallCollisionPadding ?? this.playerRadius;
+        const minX = wallX - halfSize - padding;
+        const maxX = wallX + halfSize + padding;
+        const minZ = wallZ - halfSize - padding;
+        const maxZ = wallZ + halfSize + padding;
         return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
     }
 
@@ -16235,10 +16663,32 @@ export class ThreeGame {
         return this.getOrCreateChunk(chunkX, chunkY)[localY][localX];
     }
 
+    // Single source of truth for the "is this wall tile actually a hole"
+    // threshold, shared by mountChunk's render pass and isHoleTile's
+    // collision/fall-hazard pass. Must match mountChunk's per-landform
+    // holeCut exactly — those two were hardcoded independently (mountChunk
+    // varied 0.0-0.08 by landform, isHoleTile always used 0.06), so a wall
+    // tile could render as an open, walkable-looking pit while still
+    // blocking movement (MAZE/RUINS), or render as a solid-looking Hazard/
+    // Damaged wall while the player fell straight through it (FIELD/CANYON)
+    // — reported as "holes are in the door" since doorway-adjacent wall
+    // tiles roll through this same per-tile check.
+    getHoleCutForLandform(landform) {
+        if (landform === LANDFORMS.MAZE) return 0.08;
+        if (landform === LANDFORMS.RUINS) return 0.08;
+        if (landform === LANDFORMS.FIELD) return 0.03;
+        if (landform === LANDFORMS.CANYON) return 0.0;
+        return 0.06;
+    }
+
     isHoleTile(worldX, worldY) {
         if (this.getTileType(worldX, worldY) !== '#') return false;
+        const chunkX = Math.floor(worldX / this.chunkSize);
+        const chunkY = Math.floor(worldY / this.chunkSize);
+        const holeCut = this.getHoleCutForLandform(this.getChunkLandform(chunkX, chunkY));
+        if (holeCut <= 0) return false;
         const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldY) + 999);
-        return wallTypeRng() < 0.06;
+        return wallTypeRng() < holeCut;
     }
 
     isPlayerOverAnyHole(px, pz) {
@@ -16250,9 +16700,12 @@ export class ThreeGame {
                 const hx = cx + dx;
                 const hz = cz + dz;
                 if (this.isHoleTile(hx, hz)) {
+                    const chunkX = Math.floor(hx / this.chunkSize);
+                    const chunkY = Math.floor(hz / this.chunkSize);
+                    const holeCut = this.getHoleCutForLandform(this.getChunkLandform(chunkX, chunkY));
                     const wallTypeRng = this.createSeededRandom(this.hashTile(hx, hz) + 999);
                     const roll = wallTypeRng();
-                    const sizeFactor = roll / 0.06;
+                    const sizeFactor = roll / holeCut;
                     const scale = 1.5 + sizeFactor * 2.5;
                     const fallRadius = scale * 0.42;
                     const dist = Math.hypot(px - hx, pz - hz);
@@ -16335,7 +16788,7 @@ export class ThreeGame {
                     if (evicted >= toEvict) break;
                 }
             }
-            const grid = this.buildChunk(chunkX, chunkY);
+            const grid = this.applyDestroyedWallsToGrid(this.buildChunk(chunkX, chunkY), chunkX, chunkY);
             this.chunkCache.set(key, grid);
             if (!this._chunkRoomTypeCache) this._chunkRoomTypeCache = new Map();
             this._chunkRoomTypeCache.set(key, classifyChunkCells(grid, this.chunkSize));
@@ -16406,10 +16859,10 @@ export class ThreeGame {
         if (landform === LANDFORMS.MAZE) {
             this.runMarkovPass(grid, random);
             openMazeTerrain(grid, random, {
-                plazaCount: 5,
-                floorTarget: 0.68,
-                minRadius: 1.9,
-                maxRadius: 3.4
+                plazaCount: 7,
+                floorTarget: 0.80,
+                minRadius: 2.4,
+                maxRadius: 4.5
             });
         } else {
             // A ridge or crater rim can sit flush behind a portal opening —
@@ -16417,10 +16870,10 @@ export class ThreeGame {
             connectPortalsInward(grid);
             if (landform === LANDFORMS.RUINS) {
                 openMazeTerrain(grid, random, {
-                    plazaCount: 3,
-                    floorTarget: 0.72,
-                    minRadius: 1.6,
-                    maxRadius: 2.8
+                    plazaCount: 5,
+                    floorTarget: 0.82,
+                    minRadius: 2.0,
+                    maxRadius: 3.6
                 });
             }
         }
@@ -16430,7 +16883,7 @@ export class ThreeGame {
         // the corridors come from the maze carve. Maze chunks get a second
         // pass so the lanes breathe a little more for the player radius.
         if (landform === LANDFORMS.MAZE || landform === LANDFORMS.RUINS) {
-            const widenPasses = landform === LANDFORMS.MAZE ? 2 : 1;
+            const widenPasses = landform === LANDFORMS.MAZE ? 3 : 2;
             for (let pass = 0; pass < widenPasses; pass++) {
                 this.widenChunkCorridors(grid);
             }
@@ -16448,7 +16901,7 @@ export class ThreeGame {
                     (grid[y][x + 1] === '.');
                 if (openNeighbors < 2) continue;
 
-                const carveChance = 0.18 + openNeighbors * 0.08;
+                const carveChance = 0.28 + openNeighbors * 0.13;
                 if (random() < carveChance) grid[y][x] = '.';
             }
         }
@@ -16462,7 +16915,9 @@ export class ThreeGame {
     // tutorial remains legible without feeling like a wall comb.
     getChunkLandform(chunkX, chunkY) {
         if (this.performanceProfile === 'menu') return LANDFORMS.MAZE;
-        if (Math.hypot(chunkX, chunkY) < 2) return LANDFORMS.MAZE;
+        const spawnDistance = Math.hypot(chunkX, chunkY);
+        if (spawnDistance < 1) return LANDFORMS.FIELD;
+        if (spawnDistance < 2) return LANDFORMS.RUINS;
         if (!this._chunkLandformCache) this._chunkLandformCache = new Map();
         const key = `${chunkX},${chunkY}`;
         if (!this._chunkLandformCache.has(key)) {
@@ -16580,6 +17035,23 @@ export class ThreeGame {
                     widened[y][x - 1] = '.';
                     widened[y][x + 1] = '.';
                 }
+
+                // True dead ends (exactly one open neighbor) never satisfy any
+                // pair above, so a reward-cache alcove at the end of a corridor
+                // stayed a permanent 1-wide nub no matter how many widen passes
+                // ran. Open the tile perpendicular to its only approach so the
+                // alcove reads as a small pocket instead of a slot the player's
+                // collision radius can barely fit into.
+                const openCount = (leftOpen ? 1 : 0) + (rightOpen ? 1 : 0) + (upOpen ? 1 : 0) + (downOpen ? 1 : 0);
+                if (openCount === 1) {
+                    if (leftOpen || rightOpen) {
+                        widened[y - 1][x] = '.';
+                        widened[y + 1][x] = '.';
+                    } else {
+                        widened[y][x - 1] = '.';
+                        widened[y][x + 1] = '.';
+                    }
+                }
             }
         }
 
@@ -16658,6 +17130,8 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
+        this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
+        this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
         this.darknessOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
@@ -16671,6 +17145,11 @@ export class ThreeGame {
         this.wallGeometry?.dispose();
         this.floorGeometry?.dispose();
         this.chunkFloorGeometry?.dispose();
+        this.terrainStepGeometry?.dispose();
+        this.rewardGlowGeometry?.dispose();
+        for (const material of this.rewardGlowMaterials?.values?.() ?? []) {
+            material.dispose?.();
+        }
         this.pillarGeometry?.dispose();
         this.bracketGeometry?.dispose();
         this.ventGeometry?.dispose();

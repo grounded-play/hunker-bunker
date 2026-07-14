@@ -93,10 +93,8 @@ describe('pickLandform', () => {
         };
         const active = tally('active');
         expect(Object.keys(active).length).toBe(5);
-        for (const l of Object.values(LANDFORMS)) {
-            if (l === LANDFORMS.MAZE) continue;
-            expect(active[LANDFORMS.MAZE]).toBeGreaterThan(active[l] ?? 0);
-        }
+        expect(active[LANDFORMS.MAZE]).toBeLessThan(active[LANDFORMS.FIELD]);
+        expect(active[LANDFORMS.MAZE]).toBeLessThan(active[LANDFORMS.CRATER]);
         expect(tally('cryo')[LANDFORMS.CANYON]).toBeGreaterThan(active[LANDFORMS.CANYON]);
         expect(tally('bio')[LANDFORMS.FIELD]).toBeGreaterThan(active[LANDFORMS.FIELD]);
     });
@@ -181,16 +179,17 @@ describe('openMazeTerrain', () => {
         const grid = connectedMazeGrid();
         const floorsBefore = countFloors(grid);
         const carved = openMazeTerrain(grid, mulberry32(101), {
-            plazaCount: 5,
-            floorTarget: 0.68,
-            minRadius: 1.9,
-            maxRadius: 3.4
+            plazaCount: 7,
+            floorTarget: 0.80,
+            minRadius: 2.4,
+            maxRadius: 4.5
         });
         const floorsAfter = countFloors(grid);
         const start = firstFloor(grid);
 
-        expect(carved).toBeGreaterThan(25);
-        expect(floorsAfter).toBeGreaterThan(floorsBefore + 25);
+        expect(carved).toBeGreaterThan(70);
+        expect(floorsAfter).toBeGreaterThan(floorsBefore + 70);
+        expect(floorsAfter / (SIZE * SIZE)).toBeGreaterThan(0.64);
         expect(floodFillFloorCount(grid, start.x, start.y)).toBe(floorsAfter);
         expect(grid[0].every((c) => c === '#')).toBe(true);
         expect(grid[SIZE - 1].every((c) => c === '#')).toBe(true);
