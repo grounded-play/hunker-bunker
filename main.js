@@ -8148,11 +8148,12 @@ if (window.electronAPI) {
             });
         }
     });
-    // Boss/queen defeat: a guaranteed free Deep Relic Cache tied to an
-    // actual run milestone rather than a wall-clock timer. runKey only
-    // needs to be unique per run, not globally meaningful.
+    // Boss/queen defeat: a guaranteed free Deep Relic Cache tied to a
+    // combat-sourced run milestone rather than a narrative branch choice.
+    // runKey only needs to be unique per run, not globally meaningful.
     window.addEventListener('act2-milestone', (event) => {
         if (event?.detail?.key !== 'queenKilled' || !window.electronAPI?.requestSteamMilestoneGrant) return;
+        if (event.detail.combat !== true && event.detail.source !== 'queen-fight') return;
         const runKey = `${activeRunSeed ?? 'no-seed'}:${runStartTime}`;
         window.electronAPI.requestSteamMilestoneGrant('boss_kill', runKey).then((result) => {
             (result?.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
@@ -8297,6 +8298,9 @@ const STEAM_ITEM_CATALOG = {
 
 let storeCatalog = null;
 let storeOdds = [];
+let storePurchasesEnabled = false;
+let storePurchaseMode = 'disabled';
+let storeDisabledReason = 'catalog_unavailable';
 
 let vaultItems = [];
 let selectedVaultItem = null;
@@ -8592,9 +8596,21 @@ async function loadStoreCatalog() {
     if (result?.ok) {
         storeCatalog = result.catalog ?? [];
         storeOdds = result.deepRelicCacheOdds ?? [];
+        storePurchasesEnabled = Boolean(result.purchasesEnabled);
+        storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
+        storeDisabledReason = result.disabledReason ?? null;
     } else {
+        storePurchasesEnabled = false;
+        storePurchaseMode = 'disabled';
+        storeDisabledReason = result?.reason ?? 'catalog_unavailable';
         console.error('[steam-store] failed to load catalog:', result);
     }
+}
+
+function formatStoreDisabledReason(reason) {
+    if (reason === 'steam_store_disabled') return 'PURCHASES OFFLINE';
+    if (reason === 'catalog_unavailable') return 'CATALOG OFFLINE';
+    return 'UNAVAILABLE';
 }
 
 function renderStoreSkuGrid() {
@@ -8611,12 +8627,16 @@ function renderStoreSkuGrid() {
         const card = document.createElement('div');
         card.className = 'vault-store-sku-card';
         const priceLabel = `$${(sku.priceUsdCents / 100).toFixed(2)}`;
+        const buttonLabel = storePurchasesEnabled
+            ? (storePurchaseMode === 'mock' ? 'DEV BUY' : 'BUY')
+            : formatStoreDisabledReason(storeDisabledReason);
         card.innerHTML = `
             <div class="vault-store-sku-label">${sku.label}</div>
             <div class="vault-store-sku-price">${priceLabel}</div>
-            <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}">BUY</button>
+            <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${storePurchasesEnabled ? '' : 'disabled'}>${buttonLabel}</button>
         `;
-        card.querySelector('.vault-store-buy-btn')?.addEventListener('click', () => purchaseKeys(sku.sku));
+        const buyBtn = card.querySelector('.vault-store-buy-btn');
+        buyBtn?.addEventListener('click', () => purchaseKeys(sku.sku));
         grid.appendChild(card);
     }
 }
@@ -8639,6 +8659,15 @@ function renderOddsTable() {
 
 async function purchaseKeys(sku) {
     if (!window.electronAPI?.purchaseSteamKeys) return;
+    if (!storePurchasesEnabled) {
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Steam Store purchases are offline for this build.';
+        }
+        return;
+    }
+
     const result = await window.electronAPI.purchaseSteamKeys(sku).catch((err) => ({ ok: false, message: err?.message }));
 
     if (result?.ok && result.mode === 'mock') {
