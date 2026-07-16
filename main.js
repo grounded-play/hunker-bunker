@@ -6571,6 +6571,11 @@ window.addEventListener('queen-displeased', (event) => {
     AudioManager.play('ui_error', { volume: 0.4, playbackRate: 0.5 });
 });
 
+window.addEventListener('queen-phase-line', (event) => {
+    const { text } = event?.detail ?? {};
+    if (text) showBiomePrompt(`QUEEN: ${text}`);
+});
+
 window.addEventListener('boarding-blocked', (event) => {
     const { reasons, seatsUsed, seatsMax } = event?.detail ?? {};
     const why = (reasons ?? [])

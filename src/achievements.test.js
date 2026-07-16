@@ -91,6 +91,24 @@ describe('achievement checks', () => {
         expect(result.newUnlocks.map((def) => def.key)).toContain('hardened');
     });
 
+    it('unlocks slay_the_queen only when the Queen is killed in combat, not via a narrative boarding choice', () => {
+        const narrative = applyAchievementEvent(
+            createDefaultAchievementState(),
+            'act2-milestone',
+            { key: 'queenKilled', source: 'boarding-choice', combat: false }
+        );
+        expect(narrative.state.stats.queenDefeated).toBe(false);
+        expect(narrative.newUnlocks.map((def) => def.key)).not.toContain('slay_the_queen');
+
+        const combat = applyAchievementEvent(
+            createDefaultAchievementState(),
+            'act2-milestone',
+            { key: 'queenKilled', source: 'queen-fight', combat: true }
+        );
+        expect(combat.state.stats.queenDefeated).toBe(true);
+        expect(combat.newUnlocks.map((def) => def.key)).toContain('slay_the_queen');
+    });
+
     it('unlocks class and ending achievements on victory', () => {
         const result = applyAchievementEvent(
             createDefaultAchievementState(),

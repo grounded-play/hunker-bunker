@@ -179,11 +179,10 @@ export const ACHIEVEMENT_DEFS = freezeDeep([
     {
         key: 'slay_the_queen',
         title: 'SLAY THE QUEEN',
-        blurb: 'Defeat the Queen when the fight arrives.',
+        blurb: 'Defeat the Queen in single combat.',
         icon: 'slay_the_queen',
         secret: true,
-        comingSoon: true,
-        check: () => false
+        check: (state) => Boolean(state.stats.queenDefeated)
     }
 ]);
 
@@ -221,7 +220,8 @@ export function createDefaultAchievementState() {
             shellsCollected: 0,
             deathlessReveal: false,
             hiveHarmFreeReveal: false,
-            reyesLetterDelivered: false
+            reyesLetterDelivered: false,
+            queenDefeated: false
         },
         currentRun: createDefaultRunState(),
         unlocked: {}
@@ -335,6 +335,9 @@ function updateStatsForEvent(state, name, detail = {}) {
                     state.stats.maxCampsDiscoveredOneRun,
                     state.currentRun.discoveredCampIds.length
                 );
+            }
+            if (detail.key === 'queenKilled' && detail.combat === true) {
+                state.stats.queenDefeated = true;
             }
             break;
         }

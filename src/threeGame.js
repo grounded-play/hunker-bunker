@@ -35,6 +35,7 @@ import { applyBlackChromaKey } from './textureKeying.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain } from './landforms.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound } from './loreDrops.js';
+import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES } from './bossPhases.js';
 
 
 const PLAYER_COLORS = {
@@ -201,10 +202,10 @@ const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
-const WALL_HP_DAMAGED = 2;
-const WALL_HP_STANDARD = 3;
-const WALL_HP_HAZARD = 4;
-const WALL_HP_CANYON_BONUS = 2;
+const WALL_HP_DAMAGED = 5;
+const WALL_HP_STANDARD = 8;
+const WALL_HP_HAZARD = 11;
+const WALL_HP_CANYON_BONUS = 5;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
 
@@ -846,6 +847,7 @@ export class ThreeGame {
         this.playerPoisonTickTimer = 0;
         this.killedBosses = new Set();
         this.activeBoss = null;
+        this.queenFightSprite = null;
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
         this.runDepositedResources = { tech: 0, coin: 0, med: 0 };
         this.hadNearDeath = false;
@@ -1315,6 +1317,7 @@ export class ThreeGame {
             boss_corrupted_scout: this.loadKeyedSpriteTexture('/boss_corrupted_scout.png', 16),
             boss_corrupted_tank: this.loadKeyedSpriteTexture('/boss_corrupted_tank.png', 16),
             boss_corrupted_engineer: this.loadKeyedSpriteTexture('/boss_corrupted_engineer.png', 16),
+            boss_queen: this.loadKeyedSpriteTexture('/queen_silhouette.png', 14),
             bunker_junk: this.loadScatterTexture('/bunker_junk.png', textureLoader),
             bunker_junk_uncommon: this.loadScatterTexture('/bunker_junk_uncommon.png', textureLoader),
             bunker_junk_rare: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
@@ -1490,6 +1493,15 @@ export class ThreeGame {
                 depthWrite: false,
                 depthTest: true,
                 fog: false
+            }),
+            boss_queen: new THREE.SpriteMaterial({
+                map: this.scatterTextures.boss_queen,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x8be04a)
             }),
             bunker_junk: new THREE.SpriteMaterial({
                 map: this.scatterTextures.bunker_junk,
@@ -6637,10 +6649,172 @@ export class ThreeGame {
 
     interactWithCaveEntrance() {
         if (!this.isGameplayInputActive() || !this.player || !this.caveEntrance?.isRevealed) return false;
-        if (this.isCaveRevealDone()) return false;
         if (!this.caveEntrance.isWithinInteractRange(this.player.position.x, this.player.position.z)) return false;
+        if (this.isCaveRevealDone()) {
+            // Act 2: the cave the player crawled out of becomes the Queen's
+            // arena — reachable only while she's still unresolved ("aboard")
+            // and no fight is already underway.
+            if (this.isAct2Active() && this.act2.getState().queenStatus === 'aboard' && !this.queenFightSprite) {
+                this.startQueenFight();
+                return true;
+            }
+            return false;
+        }
         window.dispatchEvent(new CustomEvent('cave-entrance-interact'));
         return true;
+    }
+
+    // ── The Queen fight (Sector Zero, Act 2 defiance path) ─────────────────
+    // src/bossPhases.js owns WHEN things happen (phase timing, attack cadence,
+    // weakpoint windows); this owns spawning sprites, projectiles, and HUD.
+    startQueenFight() {
+        if (this.queenFightSprite && !this.queenFightSprite.userData?.burstTriggered) return null;
+        const pos = this.caveEntrance?.getPosition?.();
+        const origin = pos ?? this.getApexThreatOrigin();
+        const sprite = this.addApexEnemy('boss_queen', origin, {
+            key: 'queen-fight',
+            index: 0,
+            scale: 3.2,
+            hp: QUEEN_FIGHT_DEF.maxHp,
+            tint: 0x8be04a,
+            label: 'THE QUEEN'
+        });
+        if (!sprite) return null;
+        sprite.userData.queenFight = createBossFight(QUEEN_FIGHT_DEF);
+        sprite.userData.aiMode = 'hunt';
+        sprite.userData.targetType = 'player';
+        this.queenFightSprite = sprite;
+        window.AudioManager?.playMetalStress?.({ volume: 0.7, playbackRate: 0.5, force: true });
+        window.dispatchEvent(new CustomEvent('queen-fight-started'));
+        window.dispatchEvent(new CustomEvent('queen-phase-line', { detail: { text: QUEEN_PHASE_LINES.brood } }));
+        return sprite;
+    }
+
+    updateQueenFightTick(sprite, delta) {
+        const data = sprite.userData;
+        if (this.player && !this.isPlayerDead) {
+            const dx = this.player.position.x - sprite.position.x;
+            this.faceSpriteFromDir(sprite, dx, dx);
+        }
+        const fight = data.queenFight;
+        if (!fight || fight.defeated) return;
+        let activeAdds = 0;
+        for (const other of this.scatterSprites) {
+            if (other !== sprite && other.userData?.queenAdd && !other.userData?.burstTriggered) activeAdds += 1;
+        }
+        const events = tickBossFight(fight, delta, { activeAdds });
+        for (const event of events) this.handleQueenFightEvent(event, sprite);
+    }
+
+    handleQueenFightEvent(event, sprite) {
+        const data = sprite.userData;
+        switch (event.type) {
+            case 'phase': {
+                const line = QUEEN_PHASE_LINES[event.phase];
+                if (line) window.dispatchEvent(new CustomEvent('queen-phase-line', { detail: { text: line } }));
+                this.triggerCameraShake?.(0.12, 0.35);
+                window.AudioManager?.playMetalStress?.({ volume: 0.6, playbackRate: 0.6, force: true });
+                break;
+            }
+            case 'weakpoint-open': {
+                data.weakpointOpen = true;
+                sprite.material?.color?.setHex(0xffe066);
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.4, playbackRate: 0.5 });
+                break;
+            }
+            case 'weakpoint-close': {
+                data.weakpointOpen = false;
+                sprite.material?.color?.setHex(data.biomeTint ?? 0x8be04a);
+                break;
+            }
+            case 'attack':
+                this.fireQueenAttack(sprite, event.attack);
+                break;
+            case 'adds':
+                this.spawnQueenAdds(sprite, event.addType, event.count);
+                break;
+            default:
+                break;
+        }
+    }
+
+    fireQueenAttack(sprite, attackKey) {
+        if (!this.player || this.isPlayerDead) return;
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (attackKey === 'spore_lob') {
+            if (dist > 14) return;
+            const angleToPlayer = Math.atan2(dz, dx);
+            for (const i of [-1, 0, 1]) {
+                const spreadAngle = angleToPlayer + i * 0.2;
+                this.spawnProjectile({
+                    x: sprite.position.x,
+                    z: sprite.position.z,
+                    vx: Math.cos(spreadAngle) * 8.0,
+                    vz: Math.sin(spreadAngle) * 8.0,
+                    ttl: 2.0,
+                    damage: 1,
+                    radius: 0.2,
+                    isEnemy: true
+                });
+            }
+            window.AudioManager?.play('ui_scan_ping', { volume: 0.4, playbackRate: 1.3 });
+        } else if (attackKey === 'shockwave_slam') {
+            const radius = 5.5;
+            this.spawnFrostShockwaveEffect(sprite.position.x, sprite.position.z, radius);
+            if (dist <= radius) {
+                this.takeDamage(2, 'queen-shockwave', sprite.position.x, sprite.position.z);
+                this.triggerCameraShake?.(0.35, 0.45);
+            }
+            window.AudioManager?.playMetalStress?.({ volume: 0.55, playbackRate: 0.7, force: true });
+        }
+    }
+
+    spawnQueenAdds(sprite, addType, count) {
+        const parent = sprite.parent;
+        if (!parent) return;
+        const offsets = [[1.4, 1.4], [-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [2.2, 0], [-2.2, 0]];
+        let spawned = 0;
+        for (const [dx, dz] of offsets) {
+            if (spawned >= count) break;
+            const tx = sprite.position.x + dx;
+            const tz = sprite.position.z + dz;
+            if (!this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) continue;
+            const placement = {
+                x: tx,
+                z: tz,
+                type: addType,
+                scatterKey: `${sprite.userData.scatterKey}:add:${Date.now()}:${spawned}`,
+                scale: 1.0,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'minion',
+                phase: Math.random() * Math.PI * 2,
+                opacity: 1,
+                biomeTint: 0x88ff88
+            };
+            const add = this.createScatterInstance(placement);
+            if (!add) continue;
+            add.userData.queenAdd = true;
+            parent.add(add);
+            this.scatterSprites.push(add);
+            this.spawnGearPoofEffect(tx, tz, 'bio_spores');
+            spawned += 1;
+        }
+        if (spawned) window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
+    }
+
+    applyPlayerDamageToEnemy(sprite, amount) {
+        const fight = sprite?.userData?.queenFight;
+        if (fight) {
+            const dealt = applyBossDamage(fight, amount);
+            this.damageSnail(sprite, dealt);
+            return;
+        }
+        this.damageSnail(sprite, amount);
     }
 
     // ── Act 2: the PregAlien loop (src/act2.js drives the ladder) ──────────
@@ -8354,12 +8528,16 @@ export class ThreeGame {
         if (variant === 'purge') {
             this.act2.setQueenStatus('killed');
             this.act2.setEggsStatus('destroyed');
-            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenKilled' } }));
+            window.dispatchEvent(new CustomEvent('act2-milestone', {
+                detail: { key: 'queenKilled', source: 'boarding-choice', combat: false }
+            }));
             window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'eggsDestroyed' } }));
         } else if (variant === 'bargain') {
             this.act2.setQueenStatus('killed');
             this.act2.setEggsStatus('hidden');
-            window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'queenKilled' } }));
+            window.dispatchEvent(new CustomEvent('act2-milestone', {
+                detail: { key: 'queenKilled', source: 'boarding-choice', combat: false }
+            }));
         } else if (variant === 'abandon') {
             this.act2.setQueenStatus('abandoned');
             this.act2.setEggsStatus('abandoned');
@@ -11792,7 +11970,7 @@ export class ThreeGame {
     }
 
     // Fading scorch decal flush against a wall face. Capped + recycled to protect frame time.
-    spawnWallDecal(x, z, normalX, normalZ) {
+    spawnWallDecal(x, z, normalX, normalZ, { wallKey = null } = {}) {
         if (!this.scene) return;
         const len = Math.hypot(normalX, normalZ) || 1;
         const nx = normalX / len;
@@ -11850,6 +12028,7 @@ export class ThreeGame {
         const effect = {
             mesh,
             age: 0,
+            wallKey,
             maxAge: duration,
             update(delta) {
                 this.age += delta;
@@ -11877,6 +12056,20 @@ export class ThreeGame {
         }
     }
 
+    clearWallDecalsForWall(wallKey) {
+        if (!wallKey || !this._wallDecals?.length) return;
+        const removed = new Set();
+        for (const effect of this._wallDecals) {
+            if (effect?.wallKey !== wallKey) continue;
+            effect.dispose?.();
+            effect.mesh?.parent?.remove?.(effect.mesh);
+            removed.add(effect);
+        }
+        if (removed.size === 0) return;
+        this._wallDecals = this._wallDecals.filter((effect) => !removed.has(effect));
+        this.transientEffects = this.transientEffects.filter((effect) => !removed.has(effect));
+    }
+
     updateProjectiles(delta) {
         if (!this.activeProjectiles.length) return;
         const toRemove = new Set();
@@ -11898,12 +12091,14 @@ export class ThreeGame {
                 this.spawnProjectileImpactEffect(hx, hz);
                 const sparkColor = projectile.isEnemy ? 0xff6a4a : 0xffd27a;
                 this.spawnPhysicalBurst(hx, hz, { color: sparkColor, count: 5, upward: 0.16 });
-                if (FEATURE_WALL_DECALS) {
-                    this.spawnWallDecal(hx, hz, wallHit.normalX, wallHit.normalZ);
-                }
-                this.damageWall(wallHit.wall, projectile.damage, {
+                const destroyedWall = this.damageWall(wallHit.wall, projectile.damage, {
                     source: projectile.isEnemy ? 'enemy-projectile' : 'player'
                 });
+                if (!destroyedWall && FEATURE_WALL_DECALS) {
+                    this.spawnWallDecal(hx, hz, wallHit.normalX, wallHit.normalZ, {
+                        wallKey: wallHit.wall?.userData?.wallKey ?? null
+                    });
+                }
                 toRemove.add(projectile);
                 continue;
             }
@@ -11924,7 +12119,7 @@ export class ThreeGame {
             } else {
                 const snail = this.checkProjectileSnailHit(projectile);
                 if (snail) {
-                    this.damageSnail(snail, projectile.damage);
+                    this.applyPlayerDamageToEnemy(snail, projectile.damage);
                     toRemove.add(projectile);
                     continue;
                 }
@@ -12376,6 +12571,7 @@ export class ThreeGame {
         const worldX = Number.isFinite(wall.userData.worldX) ? wall.userData.worldX : wall.position.x;
         const worldZ = Number.isFinite(wall.userData.worldZ) ? wall.userData.worldZ : wall.position.z;
         const coord = this.markWallTileDestroyed(worldX, worldZ);
+        this.clearWallDecalsForWall(wall.userData.wallKey);
         wall.userData.destroyed = true;
         wall.visible = false;
         wall.parent?.remove(wall);
@@ -14610,6 +14806,14 @@ export class ThreeGame {
             if (sprite.userData.isMilestone && sprite.userData.sourceGoalKey === 'o2Bubble') {
                 this.revealFoundry({ randomEdge: true });
             }
+            if (sprite.userData.type === 'boss_queen') {
+                this.act2?.setQueenStatus('killed');
+                this.act2?.setEggsStatus('destroyed');
+                this.queenFightSprite = null;
+                window.dispatchEvent(new CustomEvent('act2-milestone', {
+                    detail: { key: 'queenKilled', source: 'queen-fight', combat: true }
+                }));
+            }
         }
 
         if (this.isSentinel(sprite.userData.type)) {
@@ -15651,6 +15855,10 @@ export class ThreeGame {
 
     updateSnailBehavior(sprite, delta, activeShip) {
         const data = sprite.userData;
+        if (data.type === 'boss_queen') {
+            this.updateQueenFightTick(sprite, delta);
+            return;
+        }
         data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
         data.wallBreakCooldown = Math.max(0, (data.wallBreakCooldown ?? 0) - delta);
@@ -15926,7 +16134,7 @@ export class ThreeGame {
     }
 
     isEnemyType(type) {
-        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer', 'alien_proto_crawler', 'alien_proto_spitter'].includes(type);
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer', 'alien_proto_crawler', 'alien_proto_spitter', 'boss_queen'].includes(type);
     }
 
     isSentinel(type) {
@@ -16095,6 +16303,8 @@ export class ThreeGame {
                         nameEl.textContent = 'CORRUPTED TANK: BRIGGS';
                     } else if (nearestBoss.userData.type === 'boss_corrupted_engineer') {
                         nameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
+                    } else if (nearestBoss.userData.type === 'boss_queen') {
+                        nameEl.textContent = 'THE QUEEN';
                     } else {
                         nameEl.textContent = 'ELITE THREAT';
                     }
@@ -16529,6 +16739,9 @@ export class ThreeGame {
         }
 
         this.transientEffects = this.transientEffects.filter((effect) => !removals.includes(effect));
+        if (this._wallDecals?.length) {
+            this._wallDecals = this._wallDecals.filter((effect) => !removals.includes(effect));
+        }
     }
 
     canOccupyPosition(x, z) {
