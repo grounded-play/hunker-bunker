@@ -63,7 +63,7 @@ jobs:
       - name: Check Steam secrets
         id: creds
         run: |
-          if [ -n "${{ secrets.STEAM_BUILD_ACCOUNT }}" ] && [ -n "${{ secrets.STEAM_CONFIG_VDF }}" ] && [ -n "${{ secrets.STEAM_APPID }}" ]; then
+          if [ -n "${{ secrets.STEAM_BUILD_ACCOUNT }}" ] && [ -n "${{ secrets.STEAM_CONFIG_VDF }}" ] && [ -n "${{ secrets.STEAM_APPID }}" ] && [ -n "${{ secrets.STEAM_DEPOT_CONTENT }}" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
@@ -79,12 +79,6 @@ jobs:
         with:
           name: hunker-bunker-win-unpacked
           path: dist_electron/win-unpacked
-      - name: Fill VDF placeholders
-        if: steps.creds.outputs.ready == 'true'
-        run: |
-          sed -i "s/__APPID__/${{ secrets.STEAM_APPID }}/" steam/app_build.vdf
-          sed -i "s/__DEPOT_WINDOWS__/${{ secrets.STEAM_DEPOT_WINDOWS }}/" steam/app_build.vdf steam/depot_build_windows.vdf
-          sed -i "s/__DEPOT_LINUX__/${{ secrets.STEAM_DEPOT_LINUX }}/" steam/app_build.vdf steam/depot_build_linux.vdf
       - name: Upload via steamcmd
         if: steps.creds.outputs.ready == 'true'
         uses: game-ci/steam-deploy@v3
@@ -94,8 +88,6 @@ jobs:
           appId: ${{ secrets.STEAM_APPID }}
           buildDescription: ${{ github.ref_name }}
           rootPath: dist_electron
-          depot1Id: ${{ secrets.STEAM_DEPOT_WINDOWS }}
-          depot1Path: win-unpacked
-          depot2Id: ${{ secrets.STEAM_DEPOT_LINUX }}
-          depot2Path: linux-unpacked
+          depot1Id: ${{ secrets.STEAM_DEPOT_CONTENT }}
+          depot1Path: .
           releaseBranch: beta

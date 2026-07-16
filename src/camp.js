@@ -312,7 +312,8 @@ export class SurvivorCamp {
             opacity: 0.26,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            fog: false
         });
         this.signalColumn = new THREE.Mesh(
             new THREE.CylinderGeometry(0.24, 0.6, SIGNAL_FLARE_HEIGHT, 10, 1, true),

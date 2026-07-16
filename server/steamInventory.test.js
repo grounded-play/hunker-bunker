@@ -387,4 +387,41 @@ describe('POST /steam/inventory/grant-milestone (Tier B)', () => {
         expect(res.status).toBe(400);
         expect((await res.json()).reason).toBe('invalid_milestone');
     });
+
+    it('normalizes live Steam market eligibility into a top-level allowed flag', async () => {
+        process.env.HB_SESSION_SECRET = 'market-eligibility-test-secret';
+        process.env.HB_STEAM_PUBLISHER_KEY = 'publisher-key';
+        const session = createSteamSessionToken({
+            steamId64: '76561198000000000',
+            isDevMode: false
+        });
+        globalThis.fetch = vi.fn(async (url, options) => {
+            if (String(url).startsWith(baseUrl)) {
+                return ORIGINAL_FETCH(url, options);
+            }
+            return new Response(JSON.stringify({
+                response: {
+                    allowed: 1,
+                    reason: 'none'
+                }
+            }), {
+                status: 200,
+                headers: { 'content-type': 'application/json' }
+            });
+        });
+
+        const response = await fetch(`${baseUrl}/steam/market/eligibility`, {
+            headers: { authorization: `Bearer ${session.token}` }
+        });
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({
+            ok: true,
+            allowed: true,
+            eligibility: {
+                allowed: 1,
+                reason: 'none'
+            }
+        });
+    });
 });

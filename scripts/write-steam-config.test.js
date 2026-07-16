@@ -34,11 +34,11 @@ describe('write-steam-config', () => {
     it('normalizes release config from env', () => {
         expect(buildSteamConfig({
             HB_STEAM_BACKEND_URL: 'https://steam.example.test/',
-            HB_STEAM_APPID: '1247290',
+            HB_STEAM_APPID: '4957040',
             HB_STEAM_AUTH_IDENTITY: ' release-identity '
         })).toEqual({
             backendUrl: 'https://steam.example.test',
-            appId: 1247290,
+            appId: 4957040,
             authIdentity: 'release-identity'
         });
     });
@@ -56,7 +56,7 @@ describe('write-steam-config', () => {
 
         expect(() => requireRemoteSteamBackend({
             backendUrl: 'http://steam.example.test',
-            appId: 1247290,
+            appId: 4957040,
             authIdentity: 'hunker-bunker-backend'
         })).toThrow(/https/);
     });
@@ -74,7 +74,7 @@ describe('write-steam-config', () => {
             outFile,
             env: {
                 HB_STEAM_BACKEND_URL: 'https://backend.example.test',
-                HB_STEAM_APPID: '1247290',
+                HB_STEAM_APPID: '4957040',
                 HB_STEAM_AUTH_IDENTITY: 'hunker-bunker-release'
             }
         });
@@ -83,7 +83,7 @@ describe('write-steam-config', () => {
             outFile,
             config: {
                 backendUrl: 'https://backend.example.test',
-                appId: 1247290,
+                appId: 4957040,
                 authIdentity: 'hunker-bunker-release'
             }
         });

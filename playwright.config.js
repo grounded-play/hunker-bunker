@@ -7,10 +7,16 @@ import { defineConfig, devices } from '@playwright/test';
 // own comments for what's stubbed vs real.
 export default defineConfig({
     testDir: './tests/e2e',
-    timeout: 30_000,
+    // Gameplay specs go through the full run-start sequence
+    // (startRunAndSkipIntro in helpers.js: class intro -> cutscene ->
+    // Mothership dialogue -> door-transition reveal) before they can do
+    // anything — 30s was tight even under normal load and flaked outright
+    // under the heavier multi-agent/multi-browser load this dev container
+    // sees during this sprint.
+    timeout: 60_000,
     expect: { timeout: 5_000 },
     fullyParallel: false,
-    retries: 0,
+    retries: 1,
     reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
     use: {
         baseURL: 'http://localhost:5173',

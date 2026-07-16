@@ -1,8 +1,9 @@
+/* global URL, process, console */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STEAM_LEADERBOARD_DEFS } from '../server/leaderboardScoring.js';
 
-const EXPECTED_STEAM_APPID = 1247290;
+const EXPECTED_STEAM_APPID = 4957040;
 const REQUIRED_ENV_VARS = Object.freeze([
     'HB_STEAM_PUBLISHER_KEY',
     'HB_ALLOWED_ORIGINS',

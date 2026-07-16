@@ -60,17 +60,16 @@ The repo schema currently says:
 
 ```json
 {
-  "appid": 1247290
+  "appid": 4957040
 }
 ```
 
-Before enabling the Item Store, reconcile this mismatch in Steamworks. The Item
-Store URL uses the app's Steam ID. If `4957040` is the current real Steam app,
-the schema, backend env (`HB_STEAM_APPID`), depot config, and documentation need
-to move together. If `1247290` is still the real app, the pasted Item Store URL
-is from the wrong app page.
+Resolved 2026-07-16: `4957040` is the current real Steam app. The schema,
+backend defaults, depot config, and documentation now move together on this
+appid.
 
-Do not enable live commerce until this is resolved.
+Do not enable live commerce until the item schema is uploaded, prices are
+reviewed in Steamworks, and sandbox/live purchase tests pass.
 
 ## Current Repo State
 
@@ -251,7 +250,7 @@ Backend catalog/env support:
 | --- | --- |
 | `HB_STEAM_ITEM_STORE_ENABLED=1` | Allows `/steam/store/catalog` to expose the hosted Item Store URL. |
 | `HB_STEAM_ITEM_STORE_BETA=1` | Exposes the `?beta=1` preview URL as the active button URL. |
-| `HB_STEAM_ITEM_STORE_APPID=4957040` | Overrides the Item Store app ID without rewriting the whole repo app ID. |
+| `HB_STEAM_ITEM_STORE_APPID=4957040` | Optional explicit Item Store app ID; matches the main app by default. |
 | `HB_STEAM_ITEM_STORE_URL=https://store.steampowered.com/itemstore/4957040/` | Optional explicit public URL override. |
 | `HB_STEAM_ITEM_STORE_BETA_URL=https://store.steampowered.com/itemstore/4957040/?beta=1` | Optional explicit beta URL override. |
 
@@ -435,7 +434,7 @@ stable HTTPS URLs before upload to Steamworks.
 
 ## Launch Checklist
 
-- Resolve app ID mismatch (`4957040` versus `1247290`).
+- Confirm Steamworks app `4957040` owns the Item Store and published inventory schema.
 - Decide whether Phase 1 sells only `4001` Cache Key or adds bundle itemdefs.
 - Add `price_category` or `price` to sellable itemdefs.
 - Add `store_tags` to sellable itemdefs.

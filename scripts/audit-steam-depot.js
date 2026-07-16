@@ -1,3 +1,4 @@
+/* global process, console */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,8 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 
 const DEFAULT_DEPOT_ROOTS = [
-    'dist_electron/linux-unpacked',
-    'dist_electron/win-unpacked'
+    'dist_electron'
 ];
 
 const FORBIDDEN_BASENAMES = new Map([
@@ -91,28 +91,24 @@ function stripVdfComments(text) {
 export function auditSteamVdfs({ steamDir = path.join(repoRoot, 'steam') } = {}) {
     const failures = [];
     const appBuild = readTextIfExists(path.join(steamDir, 'app_build.vdf'));
-    const winDepot = readTextIfExists(path.join(steamDir, 'depot_build_windows.vdf'));
-    const linuxDepot = readTextIfExists(path.join(steamDir, 'depot_build_linux.vdf'));
+    const contentDepot = readTextIfExists(path.join(steamDir, 'depot_build_content.vdf'));
 
     if (!appBuild) {
         failures.push({ file: 'steam/app_build.vdf', reason: 'Missing Steam app build VDF.' });
     } else {
         const appBuildBody = stripVdfComments(appBuild);
-        if (/__APPID__|__DEPOT_WINDOWS__|__DEPOT_LINUX__/.test(appBuildBody)) {
+        if (/__APPID__|__DEPOT_/.test(appBuildBody)) {
             failures.push({ file: 'steam/app_build.vdf', reason: 'Steam VDF still contains upload placeholders.' });
         }
-        if (!/"AppID"\s+"1247290"/.test(appBuildBody)) {
-            failures.push({ file: 'steam/app_build.vdf', reason: 'Steam appid 1247290 is not pinned.' });
+        if (!/"AppID"\s+"4957040"/.test(appBuildBody)) {
+            failures.push({ file: 'steam/app_build.vdf', reason: 'Steam appid 4957040 is not pinned.' });
         }
-        if (!/"1247291"\s+"depot_build_windows\.vdf"/.test(appBuildBody)) {
-            failures.push({ file: 'steam/app_build.vdf', reason: 'Windows depot 1247291 is not wired.' });
-        }
-        if (!/"1247292"\s+"depot_build_linux\.vdf"/.test(appBuildBody)) {
-            failures.push({ file: 'steam/app_build.vdf', reason: 'Linux depot 1247292 is not wired.' });
+        if (!/"4957041"\s+"depot_build_content\.vdf"/.test(appBuildBody)) {
+            failures.push({ file: 'steam/app_build.vdf', reason: 'Content depot 4957041 is not wired.' });
         }
     }
 
-    for (const [label, text] of [['steam/depot_build_windows.vdf', winDepot], ['steam/depot_build_linux.vdf', linuxDepot]]) {
+    for (const [label, text] of [['steam/depot_build_content.vdf', contentDepot]]) {
         if (!text) {
             failures.push({ file: label, reason: 'Missing Steam depot VDF.' });
             continue;
@@ -120,6 +116,9 @@ export function auditSteamVdfs({ steamDir = path.join(repoRoot, 'steam') } = {})
         const depotBody = stripVdfComments(text);
         if (/__DEPOT_/.test(depotBody)) {
             failures.push({ file: label, reason: 'Depot VDF still contains upload placeholders.' });
+        }
+        if (!/"DepotID"\s+"4957041"/.test(depotBody)) {
+            failures.push({ file: label, reason: 'Content depot 4957041 is not pinned.' });
         }
         if (!/"FileExclusion"\s+"steam_appid\.txt"/.test(depotBody)) {
             failures.push({ file: label, reason: 'Depot VDF must exclude steam_appid.txt.' });

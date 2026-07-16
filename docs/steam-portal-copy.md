@@ -19,8 +19,8 @@ Leave unchecked for now:
 
 Why:
 
-- The current release matrix only has Windows and Linux depots in
-  `steam/app_build.vdf`.
+- The current release matrix has Windows and Linux payloads in the Steam
+  content depot configured by `steam/app_build.vdf`.
 - The Electron build config in `package.json` only targets `win` and `linux`.
 
 ## Steam Deck Compatibility Info
@@ -178,8 +178,8 @@ Future-only template:
 
 ## Release Dates
 
-- Use `Coming Soon` until the Windows and Linux depots have been uploaded and
-  smoke-tested.
+- Use `Coming Soon` until the Windows and Linux payloads have been uploaded and
+  smoke-tested from Steam.
 - Once you have a real launch date, set the public date only after you can
   launch successfully on every checked platform.
 - If you want external testing first, keep the main app unreleased and use
@@ -192,3 +192,15 @@ Future-only template:
 - Do not mark macOS as supported until you have a shipped mac build.
 - Do not mark Steam Deck Verified yet unless you have actually completed the
   Deck review pass.
+- Do not mark PvP or Co-op on the current Steam page. The relay is an
+  experimental prototype and Steam builds are still single-player.
+- Commentary Mode is now code-backed as optional text developer commentary.
+  If Steam review expects audio commentary, leave "Commentary available"
+  unchecked until recorded commentary VO exists.
+- Steam Timeline has a renderer/Electron bridge, but the current
+  `steamworks.js` package does not expose `ISteamTimeline`. Leave Steam
+  Timeline unchecked until a native binding path is added and a
+  Steam-installed build records Timeline events.
+- Steam Cloud has a code-side `save.json` bridge and runtime status readout.
+  Keep it pending until Auto-Cloud paths are configured in Steamworks and a
+  two-machine sync test passes.

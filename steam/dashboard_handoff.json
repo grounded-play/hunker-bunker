@@ -1,0 +1,502 @@
+{
+  "generatedAt": "2026-07-16T23:04:28.369Z",
+  "app": {
+    "appId": 4957040,
+    "title": "Hunker Bunker",
+    "packageName": "hunker-bunker",
+    "electronAppId": "com.icecave.hunkerbunker",
+    "productName": "Hunker Bunker"
+  },
+  "depots": {
+    "contentDepotId": 4957041,
+    "currentModel": "single content depot",
+    "launchOptions": [
+      {
+        "platform": "Windows",
+        "executable": "win-unpacked/Hunker Bunker.exe"
+      },
+      {
+        "platform": "Linux + SteamOS",
+        "executable": "linux-unpacked/hunker-bunker"
+      }
+    ],
+    "optionalFutureSplit": "Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml."
+  },
+  "leaderboards": [
+    {
+      "apiName": "best_run_score",
+      "sortMethod": "Descending",
+      "displayType": "Numeric",
+      "uploadScoreMethod": "KeepBest",
+      "dashboardId": "<fill after Steamworks creation>"
+    },
+    {
+      "apiName": "daily_ops_score",
+      "sortMethod": "Descending",
+      "displayType": "Numeric",
+      "uploadScoreMethod": "KeepBest",
+      "dashboardId": "<fill after Steamworks creation>"
+    },
+    {
+      "apiName": "fastest_extraction_ms",
+      "sortMethod": "Ascending",
+      "displayType": "Milliseconds",
+      "uploadScoreMethod": "KeepBest",
+      "dashboardId": "<fill after Steamworks creation>"
+    },
+    {
+      "apiName": "deepest_depth_score",
+      "sortMethod": "Descending",
+      "displayType": "Numeric",
+      "uploadScoreMethod": "KeepBest",
+      "dashboardId": "<fill after Steamworks creation>"
+    },
+    {
+      "apiName": "survival_time_seconds",
+      "sortMethod": "Descending",
+      "displayType": "Seconds",
+      "uploadScoreMethod": "KeepBest",
+      "dashboardId": "<fill after Steamworks creation>"
+    }
+  ],
+  "leaderboardEnvTemplate": "best_run_score:<best_run_score_id>,daily_ops_score:<daily_ops_score_id>,fastest_extraction_ms:<fastest_extraction_ms_id>,deepest_depth_score:<deepest_depth_score_id>,survival_time_seconds:<survival_time_seconds_id>",
+  "achievements": [
+    {
+      "apiName": "quick_study",
+      "displayName": "QUICK STUDY",
+      "description": "Lose a run within five seconds of deployment.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_quick_study.png",
+      "lockedIcon": "public/ach_quick_study_locked.png"
+    },
+    {
+      "apiName": "hunkered",
+      "displayName": "HUNKERED",
+      "description": "Survive a single run past twenty minutes.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_hunkered.png",
+      "lockedIcon": "public/ach_hunkered_locked.png"
+    },
+    {
+      "apiName": "scouts_honor",
+      "displayName": "SCOUT'S HONOR",
+      "description": "Reach any ending as the Scout.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_victory_scout.png",
+      "lockedIcon": "public/ach_victory_scout_locked.png"
+    },
+    {
+      "apiName": "tank_commander",
+      "displayName": "TANK COMMANDER",
+      "description": "Reach any ending as the Tank.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_victory_tank.png",
+      "lockedIcon": "public/ach_victory_tank_locked.png"
+    },
+    {
+      "apiName": "chief_engineer",
+      "displayName": "CHIEF ENGINEER",
+      "description": "Reach any ending as the Engineer.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_victory_engineer.png",
+      "lockedIcon": "public/ach_victory_engineer_locked.png"
+    },
+    {
+      "apiName": "ending_full_brood",
+      "displayName": "FULL BROOD",
+      "description": "Reach the FULL BROOD ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_full_brood.png",
+      "lockedIcon": "public/ach_ending_full_brood_locked.png"
+    },
+    {
+      "apiName": "ending_clean_escape",
+      "displayName": "CLEAN ESCAPE",
+      "description": "Reach the CLEAN ESCAPE ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_clean_escape.png",
+      "lockedIcon": "public/ach_ending_clean_escape_locked.png"
+    },
+    {
+      "apiName": "ending_mixed_crew",
+      "displayName": "MIXED CREW",
+      "description": "Reach the MIXED CREW ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_mixed_crew.png",
+      "lockedIcon": "public/ach_ending_mixed_crew_locked.png"
+    },
+    {
+      "apiName": "ending_carriers_bargain",
+      "displayName": "CARRIERS BARGAIN",
+      "description": "Reach the CARRIERS BARGAIN ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_carriers_bargain.png",
+      "lockedIcon": "public/ach_ending_carriers_bargain_locked.png"
+    },
+    {
+      "apiName": "ending_scorched_sky",
+      "displayName": "SCORCHED SKY",
+      "description": "Reach the SCORCHED SKY ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_scorched_sky.png",
+      "lockedIcon": "public/ach_ending_scorched_sky_locked.png"
+    },
+    {
+      "apiName": "ending_mothership_infection",
+      "displayName": "MOTHERSHIP INFECTION",
+      "description": "Reach the MOTHERSHIP INFECTION ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_mothership_infection.png",
+      "lockedIcon": "public/ach_ending_mothership_infection_locked.png"
+    },
+    {
+      "apiName": "ending_alien_exodus",
+      "displayName": "ALIEN EXODUS",
+      "description": "Reach the ALIEN EXODUS ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_alien_exodus.png",
+      "lockedIcon": "public/ach_ending_alien_exodus_locked.png"
+    },
+    {
+      "apiName": "ending_outed_escape",
+      "displayName": "OUTED ESCAPE",
+      "description": "Reach the OUTED ESCAPE ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_outed_escape.png",
+      "lockedIcon": "public/ach_ending_outed_escape_locked.png"
+    },
+    {
+      "apiName": "ending_failed_carrier",
+      "displayName": "FAILED CARRIER",
+      "description": "Reach the FAILED CARRIER ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_failed_carrier.png",
+      "lockedIcon": "public/ach_ending_failed_carrier_locked.png"
+    },
+    {
+      "apiName": "ending_empty_husk",
+      "displayName": "EMPTY HUSK",
+      "description": "Reach the EMPTY HUSK ending family.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ending_empty_husk.png",
+      "lockedIcon": "public/ach_ending_empty_husk_locked.png"
+    },
+    {
+      "apiName": "cartographer",
+      "displayName": "CARTOGRAPHER",
+      "description": "Discover all three survivor camps in one run.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_cartographer.png",
+      "lockedIcon": "public/ach_cartographer_locked.png"
+    },
+    {
+      "apiName": "archivist",
+      "displayName": "ARCHIVIST",
+      "description": "Collect 12 lore drops.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_archivist.png",
+      "lockedIcon": "public/ach_archivist_locked.png"
+    },
+    {
+      "apiName": "kin",
+      "displayName": "KIN",
+      "description": "Reach maximum bond with any hive.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_kin.png",
+      "lockedIcon": "public/ach_kin_locked.png"
+    },
+    {
+      "apiName": "ghost",
+      "displayName": "GHOST",
+      "description": "Reach the reveal with zero suspicion gained.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_ghost.png",
+      "lockedIcon": "public/ach_ghost_locked.png"
+    },
+    {
+      "apiName": "gentle_drill",
+      "displayName": "GENTLE DRILL",
+      "description": "Reach the reveal without harming a hive site.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_gentle_drill.png",
+      "lockedIcon": "public/ach_gentle_drill_locked.png"
+    },
+    {
+      "apiName": "chen_thirteenth",
+      "displayName": "CHEN'S THIRTEENTH",
+      "description": "Reach the cave reveal before any operator death is recorded.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_chen_thirteenth.png",
+      "lockedIcon": "public/ach_chen_thirteenth_locked.png"
+    },
+    {
+      "apiName": "reyes_courier",
+      "displayName": "REYES COURIER",
+      "description": "Carry Pvt. Reyes' letter to Commander Briggs.",
+      "hidden": true,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_reyes_courier.png",
+      "lockedIcon": "public/ach_reyes_courier_locked.png"
+    },
+    {
+      "apiName": "hardened",
+      "displayName": "HARDENED",
+      "description": "Die five times and keep coming back.",
+      "hidden": false,
+      "publishNow": true,
+      "codeStatus": "active",
+      "icon": "public/ach_hardened.png",
+      "lockedIcon": "public/ach_hardened_locked.png"
+    },
+    {
+      "apiName": "slay_the_queen",
+      "displayName": "SLAY THE QUEEN",
+      "description": "Defeat the Queen in single combat.",
+      "hidden": true,
+      "publishNow": false,
+      "codeStatus": "hold: comingSoon in code",
+      "icon": "public/ach_slay_the_queen.png",
+      "lockedIcon": "public/ach_slay_the_queen_locked.png"
+    }
+  ],
+  "activeAchievementCount": 23,
+  "heldAchievements": [
+    {
+      "apiName": "slay_the_queen",
+      "displayName": "SLAY THE QUEEN",
+      "description": "Defeat the Queen in single combat.",
+      "hidden": true,
+      "publishNow": false,
+      "codeStatus": "hold: comingSoon in code",
+      "icon": "public/ach_slay_the_queen.png",
+      "lockedIcon": "public/ach_slay_the_queen_locked.png"
+    }
+  ],
+  "stats": [
+    {
+      "apiName": "total_deaths",
+      "type": "INT",
+      "setBy": "Client",
+      "source": "main.js -> recordAchievementEvent/recordAchievementRunEnd -> electronAPI.setStat"
+    },
+    {
+      "apiName": "longest_run_seconds",
+      "type": "INT",
+      "setBy": "Client",
+      "source": "main.js -> max run duration -> electronAPI.setStat"
+    }
+  ],
+  "cloudPaths": [
+    {
+      "platform": "Windows",
+      "root": "WinAppDataRoaming",
+      "path": "Hunker Bunker",
+      "pattern": "save.json",
+      "recursive": false
+    },
+    {
+      "platform": "Linux + SteamOS",
+      "root": "LinuxXdgDataHome",
+      "path": "Hunker Bunker",
+      "pattern": "save.json",
+      "recursive": false
+    }
+  ],
+  "steamInput": {
+    "manifestSource": "steam/steam_input_manifest.vdf",
+    "manifestInstallPath": "steam_input_manifest.vdf",
+    "dashboardTemplate": "Custom Configuration (Bundled with Game)",
+    "actions": [
+      {
+        "actionSet": "menu",
+        "actionType": "Button",
+        "action": "menu_up",
+        "label": "Up"
+      },
+      {
+        "actionSet": "menu",
+        "actionType": "Button",
+        "action": "menu_down",
+        "label": "Down"
+      },
+      {
+        "actionSet": "menu",
+        "actionType": "Button",
+        "action": "menu_left",
+        "label": "Left"
+      },
+      {
+        "actionSet": "menu",
+        "actionType": "Button",
+        "action": "menu_right",
+        "label": "Right"
+      },
+      {
+        "actionSet": "menu",
+        "actionType": "Button",
+        "action": "menu_confirm",
+        "label": "Confirm"
+      },
+      {
+        "actionSet": "menu",
+        "actionType": "Button",
+        "action": "menu_back",
+        "label": "Back"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "StickPadGyro",
+        "action": "move",
+        "label": "Move"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "StickPadGyro",
+        "action": "camera",
+        "label": "Camera"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
+        "action": "fire",
+        "label": "Fire"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
+        "action": "interact",
+        "label": "Interact"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
+        "action": "reload",
+        "label": "Reload"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
+        "action": "ability",
+        "label": "Ability"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
+        "action": "scan",
+        "label": "Scan"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
+        "action": "pause",
+        "label": "Pause"
+      }
+    ]
+  },
+  "inventory": {
+    "appid": 4957040,
+    "itemCount": 13,
+    "sellableItems": [
+      {
+        "itemdefid": 4001,
+        "name": "Cache Key",
+        "priceCategory": "1;VLV100",
+        "storeTags": "featured;keys;cache_key"
+      }
+    ],
+    "publicStoreFilters": [
+      {
+        "name": "Featured",
+        "storeTags": "featured"
+      },
+      {
+        "name": "Keys",
+        "storeTags": "keys;cache_key"
+      }
+    ]
+  },
+  "backendEnv": {
+    "HB_STEAM_APPID": "4957040",
+    "HB_STEAM_ITEM_STORE_APPID": "4957040",
+    "HB_STEAM_LEADERBOARD_IDS": "best_run_score:<best_run_score_id>,daily_ops_score:<daily_ops_score_id>,fastest_extraction_ms:<fastest_extraction_ms_id>,deepest_depth_score:<deepest_depth_score_id>,survival_time_seconds:<survival_time_seconds_id>",
+    "STEAM_APPID": "4957040",
+    "STEAM_DEPOT_CONTENT": "4957041"
+  },
+  "sourceRefs": [
+    {
+      "label": "Steam Cloud",
+      "url": "https://partner.steamgames.com/doc/features/cloud"
+    },
+    {
+      "label": "Stats and Achievements",
+      "url": "https://partner.steamgames.com/doc/features/achievements"
+    },
+    {
+      "label": "Leaderboards Guide",
+      "url": "https://partner.steamgames.com/doc/features/leaderboards/guide"
+    },
+    {
+      "label": "Inventory Service",
+      "url": "https://partner.steamgames.com/doc/features/inventory"
+    },
+    {
+      "label": "Inventory Schema",
+      "url": "https://partner.steamgames.com/doc/features/inventory/schema"
+    },
+    {
+      "label": "Item Store",
+      "url": "https://partner.steamgames.com/doc/features/inventory/itemstore"
+    },
+    {
+      "label": "Steam Input Setup",
+      "url": "https://partner.steamgames.com/doc/features/steam_controller/getting_started_for_devs"
+    },
+    {
+      "label": "SteamPipe Uploads",
+      "url": "https://partner.steamgames.com/doc/sdk/uploading"
+    }
+  ]
+}

@@ -10,7 +10,7 @@ function getSteamPublisherKey() {
 }
 
 function getSteamAppId() {
-    return Number(process.env.HB_STEAM_APPID ?? 1247290);
+    return Number(process.env.HB_STEAM_APPID ?? 4957040);
 }
 
 // Shared by every route that grants a Steam Inventory item (trigger-drop,

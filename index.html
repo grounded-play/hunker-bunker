@@ -537,6 +537,27 @@
         <span id="biome-label" class="level-indicator__biome">ACTIVE SECTOR</span>
         <span id="hud-run-seed" class="level-indicator__seed hidden">SEED: —</span>
       </div>
+
+      <!-- Desktop Compass HUD (shown only on PC) -->
+      <div id="desktop-compass" class="desktop-compass hidden" aria-hidden="true">
+        <div class="desktop-compass__header">NAV-LINK: ACTIVE</div>
+        <div class="desktop-compass__face">
+          <div class="desktop-compass__ring">
+            <div class="desktop-compass__arrow" id="desktop-compass-arrow"></div>
+            <div class="desktop-compass__radar-arrow hidden" id="desktop-compass-radar-arrow"></div>
+          </div>
+          <div class="desktop-compass__readout">
+            <div class="desktop-compass__row">
+              <span class="desktop-compass__label">BASE</span>
+              <span class="desktop-compass__value" id="desktop-compass-distance">0u</span>
+            </div>
+            <div class="desktop-compass__row hidden" id="desktop-compass-radar-row">
+              <span class="desktop-compass__label">NODE</span>
+              <span class="desktop-compass__value" id="desktop-compass-radar-distance">0u</span>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="header-bar hud-header">
         <div class="hud-header__center">
           <div id="weapon-status-panel" class="weapon-status-panel" aria-live="polite">
@@ -812,11 +833,7 @@
 
 
 
-    <!-- Lore Terminal Prompt -->
-    <div id="lore-hud-prompt" class="lore-hud-prompt hidden">
-      <span class="prompt-key">PRESS E</span>
-      <span class="prompt-text">READ LOG</span>
-    </div>
+
 
     <!-- Lore Terminal Modal -->
     <div id="lore-modal" class="modal hidden" aria-live="polite">
@@ -861,6 +878,11 @@
       <div id="biome-hud-prompt" class="biome-hud-prompt hidden" aria-live="polite">
         <span class="biome-hud-prompt__icon">ZONE</span>
         <span id="biome-hud-text" class="biome-hud-prompt__text">ENTERING ACTIVE SECTOR</span>
+      </div>
+
+      <div id="lore-hud-prompt" class="lore-hud-prompt hud-action-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">READ LOG</span>
       </div>
 
       <div id="console-hud-prompt" class="hud-action-prompt hidden">
@@ -1272,6 +1294,10 @@
         <div class="setting-item">
           <span>COLORBLIND ASSIST</span>
           <label class="toggle"><input type="checkbox" id="setting-colorblind-toggle"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span>COMMENTARY MODE</span>
+          <label class="toggle"><input type="checkbox" id="main-commentary-toggle"> <span class="slider"></span></label>
         </div>
         <div class="setting-item">
           <span>RUN DIFFICULTY</span>

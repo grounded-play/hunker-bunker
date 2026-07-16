@@ -30,10 +30,13 @@ PWA/web demo. Steam is a parallel artifact of the same `dist/`.
 - **Defensive Steam init.** The wrapper must run with no Steam client
   present (dev boxes, itch later): `steamworks.js` loads via dynamic import
   behind a try/catch; absence of Steam = silent no-op, the game never knows.
-- **Windows + Linux depots; macOS deferred.** Windows is the audience;
+- **Windows + Linux payloads; macOS deferred.** Steamworks currently has one
+  content depot (`4957041`) for app `4957040`, so the upload carries both
+  `win-unpacked/` and `linux-unpacked/` inside that depot. A second OS-specific
+  depot can be added later to reduce download size. Windows is the audience;
   the Linux native build doubles as the Steam Deck build (no Proton
-  dependency). macOS needs signing + notarization — park it until the demo
-  is proven.
+  dependency). macOS needs signing + notarization — park it until the demo is
+  proven.
 - **Playtest before Demo.** Steam **Playtest** (free sub-app, one click on
   the store page, keyless, wipeable) is the right first public surface.
   A **Demo** appid (separate build with a `DEMO_BUILD` content gate) comes
@@ -66,12 +69,14 @@ and `src/game.js`).
    code needed beyond the Phase A file bridge; document byte quota (1 MB is
    plenty — save codes are ~KBs).
 3. **Achievements**: register API names on the dashboard exactly matching
-   `ACHIEVEMENT_DEFS` keys (Gemini's plan has the full mapping table —
-   use it verbatim) and **Publish**. `SLAY THE QUEEN` registers now,
-   ships achievable in wave 4+.
-4. **Launch options**: single launch config per OS; `steam_appid.txt` is
-   dev-only and must NOT ship in depots (retail launches through the
-   client). The packaged app refuses `steam_appid.txt` outside dev mode.
+   `ACHIEVEMENT_DEFS` keys and **Publish** only the achievements that are
+   active in code. Leave `comingSoon` definitions unpublished or hidden until
+   their unlock paths are live.
+4. **Launch options**: single launch config per OS. With the current single
+   depot, use `win-unpacked/Hunker Bunker.exe` for Windows and
+   `linux-unpacked/hunker-bunker` for Linux/SteamOS. `steam_appid.txt` is
+   dev-only and must NOT ship in depots (retail launches through the client).
+   The packaged app refuses `steam_appid.txt` outside dev mode.
 5. **Relay server**: the socket.io relay (`server/`) is not wired into the
    client today — Steam builds ship fully offline. If multiplayer ghosts
    land later, gate behind a flag defaulting off on Steam until a hosted
@@ -82,8 +87,7 @@ and `src/game.js`).
 ```
 steam/
   app_build.vdf          # appid, branch (default→none, sets 'beta'), depots
-  depot_build_windows.vdf  # dist_electron/win-unpacked → depot 1001
-  depot_build_linux.vdf    # dist_electron/linux-unpacked → depot 1002
+  depot_build_content.vdf  # dist_electron/* → depot 4957041
 ```
 
 - electron-builder targets: `--dir` (win-unpacked / linux-unpacked) — Steam
@@ -108,16 +112,17 @@ steam/
    card — the reveal is the hook; ending the demo ON it is the wishlist
    converter. Demo builds are the same pipeline with a second app_build
    VDF pointing at the demo appid.
-3. **Deck pass**: the Linux depot on real hardware; the blockers are
+3. **Deck pass**: the Linux/SteamOS payload on real hardware; the blockers are
    already in the wave-4 plan (gamepad support is the honest gap — the
    game is KB/M/touch; Steam Input template mapping is the stopgap,
    native pad support is wave-5 work).
 
 ## Human checklist (only you can do these — Steamworks dashboard)
 
-1. Confirm appid; note it in `steam/app_build.vdf` (currently `480`
-   placeholder = Spacewar for local testing).
-2. Create two depots (Windows, Linux) and put their ids in the VDFs.
+1. Confirm appid `4957040` and note it in `steam/app_build.vdf`.
+2. Current dashboard has one content depot: `4957041`. If you keep one depot,
+   set Launch Options to the platform subfolders above. If you add a second
+   depot later, update `steam/app_build.vdf`, the CI upload job, and this doc.
 3. Create the builder account, grant minimal perms, run `steamcmd +login`
    once locally to mint `config.vdf`, store as the CI secret.
 4. Register + publish achievements from the mapping table.

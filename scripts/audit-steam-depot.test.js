@@ -23,7 +23,7 @@ describe('auditSteamDepot', () => {
         const dir = makeTempDir();
         const depot = path.join(dir, 'dist_electron', 'linux-unpacked');
         fs.mkdirSync(path.join(depot, 'resources'), { recursive: true });
-        fs.writeFileSync(path.join(depot, 'steam_appid.txt'), '1247290');
+        fs.writeFileSync(path.join(depot, 'steam_appid.txt'), '4957040');
         fs.writeFileSync(path.join(depot, 'resources', '.env'), 'HB_STEAM_PUBLISHER_KEY=secret');
         fs.writeFileSync(path.join(depot, 'resources', 'db_storage.json'), '{}');
 

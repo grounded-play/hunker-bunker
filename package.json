@@ -16,6 +16,7 @@
     "coverage": "vitest run --coverage",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=1 electron .\"",
     "steam:config": "node scripts/write-steam-config.js",
+    "steam:dashboard-handoff": "node scripts/steam-dashboard-handoff.js",
     "steam:audit-backend": "node scripts/audit-steam-backend-env.js",
     "steam:audit-backend:strict": "node scripts/audit-steam-backend-env.js --strict",
     "steam:audit-depot": "node scripts/audit-steam-depot.js",
@@ -66,7 +67,7 @@
     "eslint": "^10.4.0",
     "globals": "^17.6.0",
     "nodemon": "^3.1.14",
-    "vite": "^8.0.12",
+    "vite": "^8.1.5",
     "vitest": "^4.1.7",
     "wait-on": "^9.0.10"
   },
@@ -76,5 +77,14 @@
     "socket.io-client": "^4.8.3",
     "steamworks.js": "^0.4.0",
     "three": "^0.184.0"
+  },
+  "overrides": {
+    "vite": "^8.1.5",
+    "ws": "^8.21.1",
+    "tmp": "^0.2.7",
+    "uuid": "^14.0.1",
+    "qs": "^6.15.3",
+    "js-yaml": "^4.3.0",
+    "launch-editor": "^2.14.1"
   }
 }

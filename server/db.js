@@ -1,14 +1,31 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+import { createSqliteBackend } from './db-sqlite.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 
 // Overridable so parallel test files don't race each other writing the same
 // physical file (each vitest file runs in its own module registry but they
 // all still hit the same real path on disk otherwise).
 function getDbFilePath() {
     return process.env.HB_DB_STORAGE_PATH || path.join(__dirname, 'db_storage.json');
+}
+
+function sqliteBackendEnabled() {
+    return String(process.env.HB_DB_BACKEND ?? '').trim().toLowerCase() === 'sqlite'
+        || Boolean(process.env.HB_DB_SQLITE_PATH || process.env.HB_SQLITE_DB_PATH);
+}
+
+function getSqliteDbFilePath() {
+    if (process.env.HB_DB_SQLITE_PATH) return process.env.HB_DB_SQLITE_PATH;
+    if (process.env.HB_SQLITE_DB_PATH) return process.env.HB_SQLITE_DB_PATH;
+    if (process.env.HB_DB_STORAGE_PATH) {
+        return path.join(path.dirname(process.env.HB_DB_STORAGE_PATH), 'hunker-bunker.sqlite');
+    }
+    return path.join(__dirname, 'data', 'hunker-bunker.sqlite');
 }
 
 let dbState = {
@@ -27,6 +44,19 @@ let lastWriteAt = null;
 let lastWriteError = null;
 let lastInitError = null;
 const PURCHASE_EVENT_LIMIT = 50;
+let sqliteBackend = null;
+let sqliteBackendPath = null;
+
+function getSqliteBackend() {
+    if (!sqliteBackendEnabled()) return null;
+    const dbFilePath = getSqliteDbFilePath();
+    if (sqliteBackend && sqliteBackendPath === dbFilePath) return sqliteBackend;
+    sqliteBackend?.close?.();
+    const { DatabaseSync } = require('node:sqlite');
+    sqliteBackend = createSqliteBackend({ DatabaseSync, dbFilePath });
+    sqliteBackendPath = dbFilePath;
+    return sqliteBackend;
+}
 
 // Atomic writing: write to tmp, then rename to ensure crash-resistance
 async function saveToDisk() {
@@ -171,6 +201,9 @@ function normalizeDbStateShape() {
 }
 
 export async function initDb() {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.initDb();
+
     const dbFilePath = getDbFilePath();
     try {
         if (fs.existsSync(dbFilePath)) {
@@ -195,10 +228,14 @@ export async function initDb() {
 }
 
 export function getDbStatus() {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.getDbStatus();
+
     const dbFilePath = getDbFilePath();
     const envConfigured = Boolean(process.env.HB_DB_STORAGE_PATH);
     return {
         path: dbFilePath,
+        storageBackend: 'json',
         envConfigured,
         durable: envConfigured,
         initialized: dbInitialized,
@@ -212,6 +249,9 @@ export function getDbStatus() {
 }
 
 export function getMockInventory(steamId64) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.getMockInventory(steamId64);
+
     const sId = String(steamId64);
     if (!dbState.inventories[sId]) {
         // Seed default items for developers to start with
@@ -237,12 +277,18 @@ export function getMockInventory(steamId64) {
 }
 
 export async function setMockInventory(steamId64, items) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.setMockInventory(steamId64, items);
+
     const sId = String(steamId64);
     dbState.inventories[sId] = Array.isArray(items) ? items : [];
     await saveToDisk();
 }
 
 export function getMockLeaderboard(boardName) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.getMockLeaderboard(boardName);
+
     if (!dbState.leaderboards[boardName]) {
         if (boardName === 'best_run_score') {
             dbState.leaderboards[boardName] = [
@@ -281,11 +327,17 @@ export function getMockLeaderboard(boardName) {
 }
 
 export async function saveMockLeaderboard(boardName, entries) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.saveMockLeaderboard(boardName, entries);
+
     dbState.leaderboards[boardName] = Array.isArray(entries) ? entries : [];
     await saveToDisk();
 }
 
 export function checkIdempotency(requestId) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.checkIdempotency(requestId);
+
     if (!requestId) return null;
     const key = String(requestId);
     const req = dbState.idempotency[key];
@@ -299,6 +351,9 @@ export function checkIdempotency(requestId) {
 }
 
 export async function saveIdempotency(requestId, response, { ttlMs = null } = {}) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.saveIdempotency(requestId, response, { ttlMs });
+
     if (!requestId) return;
     const now = Date.now();
     const record = {
@@ -316,6 +371,9 @@ export async function saveIdempotency(requestId, response, { ttlMs = null } = {}
 }
 
 export async function cleanupExpiredIdempotency({ now = Date.now() } = {}) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.cleanupExpiredIdempotency({ now });
+
     let removed = 0;
     for (const [key, record] of Object.entries(dbState.idempotency)) {
         if (idempotencyExpired(record, now)) {
@@ -333,6 +391,9 @@ export async function cleanupExpiredIdempotency({ now = Date.now() } = {}) {
 }
 
 export async function saveRunReceipt(receipt) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.saveRunReceipt(receipt);
+
     dbState.receipts.push({
         ...receipt,
         timestamp: Date.now()
@@ -341,16 +402,25 @@ export async function saveRunReceipt(receipt) {
 }
 
 export function findPurchaseByTransId(transId) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.findPurchaseByTransId(transId);
+
     const purchase = dbState.purchases.find((p) => purchasesMatch(p, { transId })) ?? null;
     return clonePurchase(purchase);
 }
 
 export function findPurchaseByRequestId(requestId) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.findPurchaseByRequestId(requestId);
+
     const purchase = dbState.purchases.find((p) => purchasesMatch(p, { requestId })) ?? null;
     return clonePurchase(purchase);
 }
 
 export function listPurchases({ steamId64 = null, status = null, limit = 100 } = {}) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.listPurchases({ steamId64, status, limit });
+
     const steamIdText = normalizeOptionalString(steamId64);
     const statusText = normalizeOptionalString(status);
     const max = Math.min(1000, Math.max(1, Number(limit) || 100));
@@ -364,6 +434,9 @@ export function listPurchases({ steamId64 = null, status = null, limit = 100 } =
 }
 
 export async function savePurchaseState(receipt) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.savePurchaseState(receipt);
+
     const now = Date.now();
     const index = dbState.purchases.findIndex((purchase) => purchasesMatch(purchase, {
         transId: receipt?.transId,
@@ -381,6 +454,9 @@ export async function savePurchaseState(receipt) {
 }
 
 export async function savePurchaseReceipt(receipt) {
+    const sqlite = getSqliteBackend();
+    if (sqlite) return sqlite.savePurchaseReceipt(receipt);
+
     return savePurchaseState({
         ...receipt,
         timestamp: Date.now()

@@ -10,7 +10,7 @@
  *   node scripts/steam-drm-wrap.js --tool <path/to/steamworks_drm.exe> [--key <optional_drm_key>]
  *
  * It will:
- *   1. Resolve the target App ID (default: 1247290).
+ *   1. Resolve the target App ID (default: 4957040).
  *   2. Find the compiled executable at: dist_electron/win-unpacked/Hunker Bunker.exe
  *   3. Execute steamworks_drm.exe to wrap the binary.
  *   4. Replace the original binary with the wrapped version.
@@ -36,7 +36,7 @@ function printUsage(errorMsg = '') {
     console.log(`\nOptions:`);
     console.log(`  --tool   Path to steamworks_drm.exe from Steamworks SDK.`);
     console.log(`  --key    Optional DRM key assigned to your app in the Steamworks partner portal.`);
-    console.log(`  --appid  Override Steam App ID (default parsed from configs, fallback: 1247290).`);
+    console.log(`  --appid  Override Steam App ID (default parsed from configs, fallback: 4957040).`);
     console.log(`\nNotes:`);
     console.log(`  - DRM wrapping is only supported for Windows executables (.exe).`);
     console.log(`  - If running this helper on Linux/macOS, it will attempt to use Wine to run steamworks_drm.exe.`);
@@ -59,7 +59,7 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 
 // Resolve App ID
-let appId = 1247290; // Fallback
+let appId = 4957040; // Fallback
 const rootPath = path.resolve(__dirname, '..');
 const configPath = path.join(rootPath, 'electron', 'steam-config.json');
 

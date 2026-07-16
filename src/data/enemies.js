@@ -11,7 +11,7 @@ export const ENEMY_STATS = Object.freeze({
     sporesnail:      { maxHp: 3,  speed: 1.4 },
     alien_proto_crawler: { maxHp: 3, speed: 1.5 },
     alien_proto_spitter: { maxHp: 4, speed: 1.1 },
-    boss_cybersnail: { maxHp: 20, speed: 1.5 },
+    boss_cybersnail: { maxHp: 15, speed: 1.5 },
     boss_cryosnail:  { maxHp: 40, speed: 1.1 },
     boss_sporesnail: { maxHp: 75, speed: 1.3 },
     boss_corrupted_scout: { maxHp: 14, speed: 1.65 },

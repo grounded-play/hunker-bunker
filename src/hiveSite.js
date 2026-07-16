@@ -241,7 +241,8 @@ export class HiveSite {
             opacity: 0.2,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            fog: false
         });
         this.signalColumn = new THREE.Mesh(
             new THREE.CylinderGeometry(0.3, 0.66, HIVE_SIGNAL_HEIGHT, 10, 1, true),

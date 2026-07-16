@@ -1,10 +1,11 @@
+/* global URL, process, console */
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const DEFAULT_STEAM_CONFIG = Object.freeze({
     backendUrl: 'http://localhost:3001',
-    appId: 1247290,
+    appId: 4957040,
     authIdentity: 'hunker-bunker-backend'
 });
 

@@ -7,7 +7,7 @@ This document details the step-by-step procedure to wrap the Windows packaged ex
 ## 1. Prerequisites
 
 Before wrapping the executable, ensure you have:
-1.  Access to the **Steamworks Partner Portal** for Hunker Bunker (App ID: `1247290`).
+1.  Access to the **Steamworks Partner Portal** for Hunker Bunker (App ID: `4957040`).
 2.  The **Steamworks SDK** downloaded and extracted to your local system.
     *   The DRM tool is located in the SDK folder at: `sdk/tools/ContentPrep/steamworks_drm.exe`.
 3.  A packaged Windows build of the game (the unpacked folder).
@@ -34,7 +34,7 @@ node scripts/steam-drm-wrap.js --tool "/path/to/steamworks_drm.exe" --key "YOUR_
 ```
 
 ### Script Execution Flow
-1.  **Validates App ID:** Reads the local App ID from `electron/steam-config.json` (defaults to `1247290` if missing).
+1.  **Validates App ID:** Reads the local App ID from `electron/steam-config.json` (defaults to `4957040` if missing).
 2.  **Validates Binary:** Verifies `dist_electron/win-unpacked/Hunker Bunker.exe` exists.
 3.  **Applies Wrapping:** Invokes the DRM tool with the correct arguments.
 4.  **Verifies Output:** Replaces the original `Hunker Bunker.exe` with the newly wrapped version in-place, ready for depot staging.
@@ -50,7 +50,7 @@ If you prefer to run the command manually or in a custom batch script:
 3.  Execute the tool specifying the input, output, and Hunker Bunker App ID:
 
 ```cmd
-steamworks_drm.exe -inputfile "C:\path\to\hunker-bunker\dist_electron\win-unpacked\Hunker Bunker.exe" -outputfile "C:\path\to\hunker-bunker\dist_electron\win-unpacked\Hunker Bunker.exe" -appid 1247290
+steamworks_drm.exe -inputfile "C:\path\to\hunker-bunker\dist_electron\win-unpacked\Hunker Bunker.exe" -outputfile "C:\path\to\hunker-bunker\dist_electron\win-unpacked\Hunker Bunker.exe" -appid 4957040
 ```
 
 *Note: You can overwrite the input file directly by using the same path for both `-inputfile` and `-outputfile`.*

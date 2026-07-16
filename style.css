@@ -3586,6 +3586,156 @@ body.orientation-locked #orientation-lock {
   line-height: 1;
 }
 
+/* ── Desktop Compass HUD ───────────────────────────────────── */
+.desktop-compass {
+  position: absolute;
+  top: calc(var(--vu) * 16.5);
+  left: calc(var(--vu) * 4);
+  pointer-events: none;
+  font-family: 'Outfit', sans-serif;
+  background: rgba(11, 13, 15, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.3);
+  border-left: 4px solid #00e5ff;
+  border-radius: 0 4px 4px 0;
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 1.8);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.1), inset 0 0 8px rgba(0, 229, 255, 0.05);
+  width: calc(var(--vu) * 24);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.8);
+  transition: opacity 0.3s ease;
+  z-index: 100;
+}
+
+.desktop-compass.hidden {
+  display: none !important;
+}
+
+.desktop-compass__header {
+  font-size: clamp(8px, calc(var(--vu) * 1.1), 12px);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #00e5ff;
+  text-transform: uppercase;
+}
+
+.desktop-compass__face {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.5);
+}
+
+.desktop-compass__ring {
+  position: relative;
+  width: calc(var(--vu) * 8);
+  height: calc(var(--vu) * 8);
+  border: 2px solid rgba(0, 229, 255, 0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.03) 0%, transparent 70%);
+}
+
+.desktop-compass__ring::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  background: #00e5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #00e5ff;
+}
+
+.desktop-compass__arrow {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: calc(50% - 1.5px);
+  width: 3px;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  transition: transform 0.1s ease-out;
+}
+
+.desktop-compass__arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 7px;
+  height: 7px;
+  background: #00e5ff;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  box-shadow: 0 0 6px #00e5ff;
+}
+
+.desktop-compass__radar-arrow {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: calc(50% - 1.5px);
+  width: 3px;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  transition: transform 0.1s ease-out;
+}
+
+.desktop-compass__radar-arrow.hidden {
+  display: none !important;
+}
+
+.desktop-compass__radar-arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -2.5px;
+  width: 8px;
+  height: 8px;
+  background: #ff3344;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  box-shadow: 0 0 6px #ff3344;
+}
+
+.desktop-compass__readout {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.4);
+  flex-grow: 1;
+}
+
+.desktop-compass__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: clamp(9px, calc(var(--vu) * 1.3), 14px);
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.desktop-compass__row.hidden {
+  display: none !important;
+}
+
+.desktop-compass__label {
+  color: var(--text-muted);
+}
+
+.desktop-compass__value {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+/* Toggle visibility between Desktop & Touch */
+body.touch-controls-enabled #desktop-compass {
+  display: none !important;
+}
+
+body:not(.touch-controls-enabled) #desktop-compass {
+  display: flex;
+}
+
 .weapon-status-panel,
 .ship-status-panel {
   display: flex;
@@ -5732,7 +5882,7 @@ body.mission-intro-active #game-container canvas {
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 0.5);
-  cursor: pointer;
+  cursor: default;
   user-select: none;
   transition: all 0.22s ease-in-out;
 }
@@ -5774,7 +5924,11 @@ body.mission-intro-active #game-container canvas {
   color: rgba(125, 211, 252, 0.92);
 }
 
-.skill-node-card:hover:not(.node-state--locked) {
+.skill-node-card.node-state--available {
+  cursor: pointer;
+}
+
+.skill-node-card.node-state--available:hover {
   border-color: var(--accent-primary);
   box-shadow: 0 0 12px rgba(255, 159, 28, 0.22);
 }
@@ -6020,7 +6174,7 @@ body.mission-intro-active #game-container canvas {
   background: rgba(10, 15, 20, 0.94);
   border: 1.5px solid #00d2ff;
   border-radius: 4px;
-  box-shadow: 
+  box-shadow:
     0 0 16px rgba(0, 210, 255, 0.35),
     inset 0 0 8px rgba(0, 210, 255, 0.15);
   display: flex;
@@ -7009,6 +7163,56 @@ body.mission-intro-active #game-container canvas {
   font-size: var(--font-xs);
   line-height: 1.35;
   color: rgba(232, 239, 247, 0.82);
+}
+
+.commentary-toast {
+  display: grid;
+  grid-template-columns: calc(var(--vu) * 7.2) 1fr;
+  gap: calc(var(--vu) * 1.1);
+  width: min(calc(var(--vu) * 48), 86vw);
+  padding: calc(var(--vu) * 1.25);
+  background:
+    linear-gradient(135deg, rgba(12, 18, 24, 0.97), rgba(20, 24, 25, 0.94)),
+    repeating-linear-gradient(0deg, rgba(125, 211, 252, 0.05) 0 1px, transparent 1px 4px);
+  border: 1px solid rgba(125, 211, 252, 0.42);
+  border-left: 3px solid rgba(251, 191, 36, 0.92);
+  border-radius: 6px;
+  box-shadow: 0 calc(var(--vu) * 1.2) calc(var(--vu) * 2.4) rgba(0, 0, 0, 0.38), 0 0 18px rgba(14, 165, 233, 0.12);
+}
+
+.commentary-toast__icon {
+  width: calc(var(--vu) * 6.2);
+  height: calc(var(--vu) * 6.2);
+  border-radius: 6px;
+  border: 1px solid rgba(251, 191, 36, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fde68a;
+  background: rgba(31, 41, 55, 0.72);
+  font-size: var(--font-xs);
+  font-weight: 900;
+}
+
+.commentary-toast__kicker {
+  font-size: var(--font-xs);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: rgba(125, 211, 252, 0.88);
+}
+
+.commentary-toast__title {
+  margin-top: calc(var(--vu) * 0.35);
+  font-size: var(--font-sm);
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.commentary-toast__blurb {
+  margin-top: calc(var(--vu) * 0.35);
+  font-size: var(--font-xs);
+  line-height: 1.4;
+  color: rgba(232, 239, 247, 0.84);
 }
 
 .roster-header { position: relative; text-align: center; margin-bottom: calc(var(--vu) * 2); }
@@ -11078,3 +11282,91 @@ button.archive-log-entry:active {
   color: #ef4444 !important;
 }
 
+/* ── Tactical Alert Toast ──────────────────────────────────── */
+.tactical-alert-toast {
+  position: absolute;
+  top: calc(var(--vu) * 20);
+  right: calc(var(--vu) * 4);
+  transform: translateX(calc(var(--vu) * 4));
+  width: 100%;
+  background: rgba(22, 10, 10, 0.96);
+  border: 1.5px solid #ff3344;
+  border-radius: 4px;
+  box-shadow:
+    0 0 20px rgba(255, 51, 68, 0.45),
+    inset 0 0 10px rgba(255, 51, 68, 0.2);
+  display: flex;
+  padding: 12px;
+  gap: 12px;
+  z-index: 12080;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
+}
+
+.tactical-alert-toast.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.tactical-alert-toast.fade-out {
+  opacity: 0;
+  transform: translateY(calc(var(--vu) * -2));
+}
+
+.tactical-alert-toast__icon {
+  font-size: 24px;
+  align-self: center;
+  color: #ff3344;
+  animation: tactical-pulse 1.2s infinite ease-in-out;
+}
+
+.tactical-alert-toast__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tactical-alert-toast__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tactical-alert-toast__kicker {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #ffaa44;
+  text-transform: uppercase;
+}
+
+.tactical-alert-toast__status {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #ff3344;
+  background: rgba(255, 51, 68, 0.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.tactical-alert-toast__title {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.tactical-alert-toast__blurb {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffaa44;
+  font-family: monospace;
+  line-height: 1.3;
+}

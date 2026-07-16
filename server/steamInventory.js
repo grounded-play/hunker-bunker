@@ -25,7 +25,7 @@ function getSteamPublisherKey() {
 }
 
 function getSteamAppId() {
-    return Number(process.env.HB_STEAM_APPID ?? 1247290);
+    return Number(process.env.HB_STEAM_APPID ?? 4957040);
 }
 
 function getPlaytimeDropCooldownMs() {
@@ -54,6 +54,19 @@ function getPlaytimeDropCooldownResponse(steamId, now = Date.now()) {
             reason: 'drop_cooldown',
             retryAfterSeconds: Math.max(1, Math.ceil((cooldownMs - (now - lastGrantedAt)) / 1000))
         }
+    };
+}
+
+function isAllowedMarketEligibility(value) {
+    return value === true || value === 1 || value === '1' || value === 'true';
+}
+
+function normalizeMarketEligibilityResponse(data) {
+    const eligibility = data?.response ?? null;
+    return {
+        ok: true,
+        allowed: isAllowedMarketEligibility(eligibility?.allowed),
+        eligibility
     };
 }
 
@@ -427,7 +440,7 @@ export function attachSteamInventoryRoutes(app) {
             }
 
             const data = await response.json();
-            res.json({ ok: true, eligibility: data?.response ?? null });
+            res.json(normalizeMarketEligibilityResponse(data));
         } catch (err) {
             res.status(502).json({ ok: false, reason: 'steam_request_failed', message: err.message });
         }

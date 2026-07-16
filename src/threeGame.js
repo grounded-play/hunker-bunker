@@ -34,7 +34,7 @@ import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain } from './landforms.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
-import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound } from './loreDrops.js';
+import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES } from './bossPhases.js';
 
 
@@ -1339,7 +1339,7 @@ export class ThreeGame {
             body_empty_exosuit: this.loadScatterTexture('/body_empty_exosuit.svg', textureLoader),
             prop_hive_resin_sac: this.loadScatterTexture('/prop_hive_resin_sac.svg', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
-            lore_terminal: this.loadScatterTexture('/bunker_junk_rare.png', textureLoader),
+            lore_terminal: this.loadKeyedSpriteTexture('/console.png', 15),
             pit_hole: this.loadScatterTexture('/pit_hole.png', textureLoader),
             decal_scars: this.loadScatterTexture('/decal_scars.png', textureLoader),
             fx_steam_puff: this.loadScatterTexture('/fx_steam_puff.svg', textureLoader),
@@ -4257,7 +4257,7 @@ export class ThreeGame {
             opacity: 1,
             biomeTint: 0xff3344,
             isBoss: true,
-            maxHp: 10 + depth * 8
+            maxHp: 8 + depth * 6
         };
         const boss = this.createScatterInstance(placement);
         if (!boss) return null;
@@ -4335,18 +4335,33 @@ export class ThreeGame {
             this.player.position.z - this._blackBoxState.z
         );
         const inRange = dist <= 2.2;
-        if (inRange && !this._blackBoxMarkerPromptActive) {
-            this._blackBoxMarkerPromptActive = true;
-            window.dispatchEvent(new CustomEvent('black-box-prompt-nearby'));
-        } else if (!inRange && this._blackBoxMarkerPromptActive) {
-            this._blackBoxMarkerPromptActive = false;
-            window.dispatchEvent(new CustomEvent('black-box-prompt-clear'));
+        const isBossAlive = this.scatterSprites.some(sprite => sprite.userData?.corruptedOperator === true);
+
+        if (inRange) {
+            if (!this._blackBoxMarkerPromptActive || this._lastBlackBoxLockedState !== isBossAlive) {
+                this._blackBoxMarkerPromptActive = true;
+                this._lastBlackBoxLockedState = isBossAlive;
+                window.dispatchEvent(new CustomEvent('black-box-prompt-nearby', { detail: { locked: isBossAlive } }));
+            }
+        } else {
+            if (this._blackBoxMarkerPromptActive) {
+                this._blackBoxMarkerPromptActive = false;
+                window.dispatchEvent(new CustomEvent('black-box-prompt-clear'));
+            }
         }
         if (delta > 0) this._lastBlackBoxDistance = dist;
     }
 
     interactWithBlackBox() {
         if (!this.isGameplayInputActive() || !this._blackBoxMarkerActive || !this.player) return false;
+
+        const isBossAlive = this.scatterSprites.some(sprite => sprite.userData?.corruptedOperator === true);
+        if (isBossAlive) {
+            this.showBunkerLine('MOTHERSHIP: DEFEAT THE CORRUPTED OPERATOR TO SECURE THE BLACK BOX.');
+            window.AudioManager?.play('ui_error', { volume: 0.35, bus: 'sfx' });
+            return false;
+        }
+
         const state = this._blackBoxState;
         const dist = Math.hypot(this.player.position.x - state.x, this.player.position.z - state.z);
         if (dist > 2.2) return false;
@@ -7683,9 +7698,8 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('lore-drop-collected', {
             detail: { key: entry.drop.key, title: entry.drop.title, rarity: entry.drop.rarity }
         }));
-        // The existing reader modal + codex feed listen for this event.
         window.dispatchEvent(new CustomEvent('lore-terminal-read', {
-            detail: { loreKey: entry.drop.title, loreText: entry.drop.text }
+            detail: { loreKey: entry.drop.key, loreText: entry.drop.text, skipSave: true }
         }));
     }
 
@@ -9553,11 +9567,23 @@ export class ThreeGame {
     }
 
     getLoreText(key) {
+        if (key && key.startsWith('drop_')) {
+            const drop = LORE_DROPS.find((d) => d.key === key);
+            return drop ? drop.text : null;
+        }
         for (const pool of Object.values(LORE_LOGS)) {
             const entry = pool.find((e) => e.key === key);
             if (entry) return entry.text;
         }
         return null;
+    }
+
+    getLoreTitle(key) {
+        if (key && key.startsWith('drop_')) {
+            const drop = LORE_DROPS.find((d) => d.key === key);
+            return drop ? drop.title : `LOG-${key}`;
+        }
+        return `LOG-${key}`;
     }
 
     // Ability key + display label for the active class (drives the HUD panel).
@@ -13793,6 +13819,10 @@ export class ThreeGame {
             sprite.renderOrder = 4;
             sprite.scale.set(scaleX * 0.8, scaleY * 0.8, 1);
 
+            const light = new THREE.PointLight(0xffaa44, 1.8, 3.5, 1.8);
+            light.position.set(0, 0.35, 0);
+            sprite.add(light);
+
             // Assign a log entry from the biome pool
             const biomeKey = this.getBiomeKeyForWorldPosition(placement.x, placement.z);
             const pool = LORE_LOGS[biomeKey] ?? LORE_LOGS.active;
@@ -16381,7 +16411,12 @@ export class ThreeGame {
             } else if (child.userData.type === 'lore_terminal') {
                 const phase = child.userData.phase ?? 0;
                 child.position.y = baseY + Math.sin(time * 1.4 + phase) * 0.05;
-                child.material.opacity = 0.7 + Math.sin(time * 2.1 + phase) * 0.3;
+                const opacityPulse = 0.7 + Math.sin(time * 2.1 + phase) * 0.3;
+                child.material.opacity = opacityPulse;
+                const light = child.children.find((c) => c.isPointLight);
+                if (light) {
+                    light.intensity = opacityPulse * 1.8;
+                }
             } else if (child.userData.type === 'prop_hive_resin_sac') {
                 const phase = child.userData.phase ?? 0;
                 const pulse = 0.92 + Math.sin(time * 1.9 + phase) * 0.08;

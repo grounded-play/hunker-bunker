@@ -12,7 +12,7 @@ const VALID_LEADERBOARD_IDS = [
 function validStrictEnv(overrides = {}) {
     return {
         NODE_ENV: 'production',
-        HB_STEAM_APPID: '1247290',
+        HB_STEAM_APPID: '4957040',
         HB_STEAM_PUBLISHER_KEY: 'publisher-key',
         HB_SESSION_SECRET: 'session-secret',
         HB_ALLOWED_ORIGINS: 'https://hunker-bunker.example.test',
@@ -71,7 +71,7 @@ describe('auditSteamBackendEnv', () => {
     it('allows local non-strict development while surfacing warnings', () => {
         const result = auditSteamBackendEnv({
             HB_ALLOWED_ORIGINS: 'http://localhost:5173',
-            HB_STEAM_APPID: '1247290'
+            HB_STEAM_APPID: '4957040'
         }, { strict: false });
 
         expect(result.ok).toBe(true);

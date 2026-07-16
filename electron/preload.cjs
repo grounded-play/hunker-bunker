@@ -7,7 +7,7 @@ const path = require('node:path');
 
 const DEFAULT_STEAM_CONFIG = Object.freeze({
     backendUrl: 'http://localhost:3001',
-    appId: 1247290,
+    appId: 4957040,
     authIdentity: 'hunker-bunker-backend'
 });
 
@@ -282,6 +282,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setStat: (key, value) => ipcRenderer.send('hb:setStat', key, value),
     getSteamInfo: () => ipcRenderer.invoke('hb:steamInfo'),
     getSteamIdentity: () => ipcRenderer.invoke('hb:getSteamIdentity'),
+    getSteamCloudStatus: () => ipcRenderer.invoke('hb:getSteamCloudStatus'),
     getSteamAuthTicket: (identity = STEAM_AUTH_IDENTITY) => ipcRenderer.invoke('hb:getSteamAuthTicket', identity),
     cancelSteamAuthTicket: (handle) => ipcRenderer.invoke('hb:cancelSteamAuthTicket', handle),
     getSteamBackendHealth: () => requestSteamBackend('/health'),
@@ -302,6 +303,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ),
     getSteamLeaderboard,
     openSteamOverlayToUrl: (url) => ipcRenderer.invoke('hb:openSteamOverlayToUrl', url),
+    addSteamTimelineEvent: (event) => ipcRenderer.invoke('hb:addSteamTimelineEvent', event),
+    setSteamTimelineGameMode: (mode) => ipcRenderer.invoke('hb:setSteamTimelineGameMode', mode),
     setSteamInputPhase: (phase) => ipcRenderer.send('hb:steamInputPhase', phase),
     showGamepadTextInput: (inputMode, lineMode, description, maxCharacters, existingText) => ipcRenderer.invoke(
         'hb:showGamepadTextInput',

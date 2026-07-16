@@ -374,7 +374,7 @@ describe('getLeaderboardEntries', () => {
         const url = new URL(globalThis.fetch.mock.calls[0][0]);
         expect(url.pathname).toBe('/ISteamLeaderboards/GetLeaderboardEntries/v1/');
         expect(url.searchParams.get('key')).toBe('publisher-key');
-        expect(url.searchParams.get('appid')).toBe('1247290');
+        expect(url.searchParams.get('appid')).toBe('4957040');
         expect(url.searchParams.get('leaderboardid')).toBe('101');
         expect(url.searchParams.get('rangestart')).toBe('0');
         expect(url.searchParams.get('rangeend')).toBe('5');

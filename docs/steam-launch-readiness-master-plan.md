@@ -237,7 +237,7 @@ HTTPS.
 - Health reports:
   - `steam.authConfigured: true`
   - `storage.durable: true`
-  - correct appid `1247290`
+  - correct appid `4957040`
   - explicit session signing mode
 - `curl https://<backend>/steam/store/catalog` returns catalog/odds and does
   not allow production mock purchases.
@@ -268,9 +268,11 @@ This is account/dashboard work. It cannot be completed purely in repo code.
 
 Known app/depot values in repo:
 
-- App ID: `1247290`
-- Windows depot: `1247291`
-- Linux depot: `1247292`
+- App ID: `4957040`
+- Content depot: `4957041`
+- Current package contains only this one depot, so Windows and Linux payloads
+  are uploaded under `win-unpacked/` and `linux-unpacked/` unless a second
+  OS-specific depot is added in Steamworks.
 
 ### Needs
 
@@ -832,8 +834,7 @@ with one machine. It is not a long-term production database.
 - `STEAM_BUILD_ACCOUNT`
 - `STEAM_CONFIG_VDF`
 - `STEAM_APPID`
-- `STEAM_DEPOT_WINDOWS`
-- `STEAM_DEPOT_LINUX`
+- `STEAM_DEPOT_CONTENT`
 
 ## Command Checklist
 
@@ -852,7 +853,7 @@ npm run steam:audit-depot
 
 ```bash
 HB_BACKEND_AUDIT_STRICT=1 \
-HB_STEAM_APPID=1247290 \
+HB_STEAM_APPID=4957040 \
 HB_STEAM_PUBLISHER_KEY=<publisher> \
 HB_SESSION_SECRET=<secret> \
 HB_ALLOWED_ORIGINS=https://<origin> \

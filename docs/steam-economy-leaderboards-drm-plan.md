@@ -29,8 +29,7 @@ Already present:
 - `steamworks.js` dependency, currently used for Steam init, overlay, Steam
   Input, achievements, stats, and local player persona lookup. The installed
   package also exposes auth ticket APIs that this plan can build on.
-- App ID `1247290` and depot IDs `1247291` / `1247292` in
-  `steam/app_build.vdf`.
+- App ID `4957040` and content depot ID `4957041` in `steam/app_build.vdf`.
 - Steam Input manifest at `steam/steam_input_manifest.vdf`.
 - Local save bridge: `hb_*` localStorage values mirror to `save.json`.
 - Achievement definitions in `src/achievements.js`.
@@ -142,8 +141,9 @@ Tasks:
 1. Keep `steam_appid.txt` dev-only and excluded from depots.
 2. Add a Windows DRM wrapping step before upload:
    - Build `dist_electron/win-unpacked/Hunker Bunker.exe`.
-   - Run `steamcmd +drm_wrap 1247290 "<input exe>" "<output exe>" drmtoolp 0`.
-   - Upload the wrapped exe in the Windows depot.
+   - Run `steamcmd +drm_wrap 4957040 "<input exe>" "<output exe>" drmtoolp 0`.
+   - Upload the wrapped exe in the `win-unpacked/` payload inside the content
+     depot, or in the Windows depot if the dashboard is later split by OS.
 3. Test compatibility mode only if the normal wrapper breaks Electron.
 4. Document that Linux may not have equivalent executable wrapping in the same
    way and should rely on Steam launch/ownership plus backend auth for economy.

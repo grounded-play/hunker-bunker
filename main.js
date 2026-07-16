@@ -40,6 +40,7 @@ const loaderBriefingSpeaker = document.getElementById('loader-briefing-speaker')
 
 const mainDebugToggle = document.getElementById('main-debug-toggle');
 const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
+const mainCommentaryToggle = document.getElementById('main-commentary-toggle');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
 const touchMoveControl = document.getElementById('touch-move-control');
@@ -50,6 +51,12 @@ const touchCompassArrow = touchCompass?.querySelector('.touch-move-control__comp
 const touchCompassRadarArrow = touchCompass?.querySelector('#touch-compass-radar-arrow');
 const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
 const touchCompassRadarDistance = touchCompass?.querySelector('#touch-compass-radar-distance');
+const desktopCompass = document.getElementById('desktop-compass');
+const desktopCompassArrow = document.getElementById('desktop-compass-arrow');
+const desktopCompassRadarArrow = document.getElementById('desktop-compass-radar-arrow');
+const desktopCompassDistance = document.getElementById('desktop-compass-distance');
+const desktopCompassRadarDistance = document.getElementById('desktop-compass-radar-distance');
+const desktopCompassRadarRow = document.getElementById('desktop-compass-radar-row');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
 const orientationLock = document.getElementById('orientation-lock');
@@ -101,6 +108,7 @@ const DESIGN_STAGE = {
 };
 const AUDIO_MIX_STORAGE_KEY = 'hunker_audio_mix_v1';
 const LEGACY_AUDIO_TOGGLE_KEY = 'hunker_audio_enabled';
+const COMMENTARY_STORAGE_KEY = 'hunker_commentary_enabled';
 const DEFAULT_AUDIO_MIX = Object.freeze({
     master: 1,
     music: 1,
@@ -172,6 +180,7 @@ function hideAllGameplayPrompts() {
 function setAppPhase(phase) {
     appPhase = phase;
     syncSteamInputPhase();
+    syncSteamTimelinePhase(phase);
     if (!isGameplayPhase()) {
         if (tacticalOverlayTimer) {
             clearTimeout(tacticalOverlayTimer);
@@ -233,6 +242,53 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'menu'
 ]);
 
+const COMMENTARY_ENTRIES = Object.freeze({
+    run_start: {
+        title: 'The Run Loop',
+        body: 'The bunker is built around short pressure cycles: deploy, read the threat, bank what matters, and decide whether one more room is worth it.'
+    },
+    black_box_signal: {
+        title: 'Failure Becomes Map Data',
+        body: 'Black boxes make death persistent without making it punitive. A failed run becomes a breadcrumb, a banked lesson, and a reason to go back in.'
+    },
+    black_box_recovered: {
+        title: 'Recoverable Consequences',
+        body: 'The black box is meant to feel like contract work, not a reload button. You are collecting evidence from your own mistakes.'
+    },
+    room_armory: {
+        title: 'Armory Rooms',
+        body: 'Armories are deliberately loud rewards. They break the procedural rhythm so players can spot a meaningful room before reading any UI.'
+    },
+    room_the_nest: {
+        title: 'Nest Rooms',
+        body: 'The nest is an authored danger shape inside a generated map. It says: this was not just rolled, something lives here.'
+    },
+    room_agent_wreckage: {
+        title: 'Three Wrecks',
+        body: 'The class wreckage rooms connect the three operators to the larger crash mystery: tracking signal, relay, and weapon, scattered through one disaster.'
+    },
+    queen_fight: {
+        title: 'Queen Fight',
+        body: 'The Queen fight uses vulnerability windows so the arena is about reading intent, not only pouring damage into a large health bar.'
+    },
+    queen_killed: {
+        title: 'The Queen Can Die',
+        body: 'Combat kills and narrative rejection are tracked separately. The story cares whether you defeated her body or only refused her offer.'
+    },
+    achievement: {
+        title: 'Steam Achievements',
+        body: 'Achievements mirror fiction-first milestones. They should read like field records, not chores.'
+    },
+    leaderboard: {
+        title: 'Trusted Scores',
+        body: 'Leaderboard scores are recomputed server-side so the client submits a run receipt, not a number we blindly trust.'
+    },
+    steam_vault: {
+        title: 'Steam Vault',
+        body: 'The Vault is intentionally read-heavy. Tradable and marketable value belongs in Steam systems; the game renders verified ownership.'
+    }
+});
+
 const steamInputState = {
     available: false,
     phase: appPhase,
@@ -265,6 +321,30 @@ window.HunkerInputState = {
 
 function syncSteamInputPhase() {
     window.electronAPI?.setSteamInputPhase?.(appPhase);
+}
+
+function syncSteamTimelinePhase(phase = appPhase) {
+    if (!window.electronAPI?.setSteamTimelineGameMode) return;
+    const mode = phase === 'gameplay' ? 'playing' : phase === 'loading' ? 'loading' : 'menus';
+    window.electronAPI.setSteamTimelineGameMode(mode).catch?.(() => {});
+}
+
+function recordSteamTimelineEvent(type, title, description, {
+    icon = type,
+    priority = 0,
+    durationSeconds = 5,
+    clipPriority = 0
+} = {}) {
+    if (!window.electronAPI?.addSteamTimelineEvent) return;
+    window.electronAPI.addSteamTimelineEvent({
+        type,
+        icon,
+        title,
+        description,
+        priority,
+        durationSeconds,
+        clipPriority
+    }).catch?.(() => {});
 }
 
 function getSteamInputConfirmGlyph(controllerType) {
@@ -831,11 +911,11 @@ const CONTROL_ACTIONS = Object.freeze([
 ]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
-const STARTING_RUN_AMMO = 18;
+const STARTING_RUN_AMMO = 30;
 const CLASS_AMMO_CAPACITY = Object.freeze({
-    SCOUT: 24,
-    TANK: 30,
-    ENGINEER: 21
+    SCOUT: 36,
+    TANK: 42,
+    ENGINEER: 30
 });
 
 const state = {
@@ -845,6 +925,7 @@ const state = {
         fullscreen: false,
         touchControls: false,
         nightVision: false,
+        commentary: false,
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
@@ -1752,6 +1833,7 @@ let hudNotificationTopTimer = null;
 let hudNotificationTopCard = null;
 let hudNotificationDeckHoldUntil = 0;
 let hudCardSeq = 0;
+const commentarySeenThisRun = new Set();
 
 const RADIO_REPEAT_SUPPRESSION_MS = 6500;
 
@@ -1837,6 +1919,70 @@ function dismissHudNotificationCard(card) {
     }, removeDelay);
 }
 window.dismissHudNotificationCard = dismissHudNotificationCard;
+
+function resetCommentaryRunState() {
+    commentarySeenThisRun.clear();
+}
+
+function isCommentaryModeEnabled() {
+    return Boolean(state.settings.commentary);
+}
+
+function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
+    if (!isCommentaryModeEnabled()) return false;
+    const entry = COMMENTARY_ENTRIES[key];
+    if (!entry) return false;
+    const commentaryKey = `${key}:${detail?.template ?? detail?.id ?? ''}`;
+    if (once && commentarySeenThisRun.has(commentaryKey)) return false;
+
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) return false;
+
+    commentarySeenThisRun.add(commentaryKey);
+
+    const card = document.createElement('div');
+    card.className = 'commentary-toast hud-stack-card hidden';
+    card.setAttribute('aria-live', 'polite');
+    card.dataset.notificationPriority = '22';
+    card.dataset.seq = String(hudCardSeq++);
+    card.dataset.autoDismissMs = String(Math.max(6200, Math.min(11000, entry.body.length * 62)));
+    card.dataset.removeDelayMs = '320';
+
+    const icon = document.createElement('div');
+    icon.className = 'commentary-toast__icon';
+    icon.textContent = 'DC';
+
+    const body = document.createElement('div');
+    body.className = 'commentary-toast__body';
+
+    const kicker = document.createElement('div');
+    kicker.className = 'commentary-toast__kicker';
+    kicker.textContent = 'DEVELOPER COMMENTARY';
+
+    const title = document.createElement('div');
+    title.className = 'commentary-toast__title';
+    title.textContent = entry.title;
+
+    const blurb = document.createElement('div');
+    blurb.className = 'commentary-toast__blurb';
+    blurb.textContent = entry.body;
+
+    body.append(kicker, title, blurb);
+    card.append(icon, body);
+    card.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        dismissHudNotificationCard(card);
+    });
+
+    stack.append(card);
+    updateHudNotificationDeck();
+    card.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        card.classList.add('visible');
+        updateHudNotificationDeck();
+    });
+    return true;
+}
 
 function dismissRadioPrompt(radioPrompt) {
     dismissHudNotificationCard(radioPrompt);
@@ -2045,6 +2191,12 @@ window.addEventListener('depth-tier-changed', (event) => {
 });
 window.addEventListener('black-box-recovered', () => {
     maybeShowCaveSignalTransmission();
+    showDeveloperCommentary('black_box_recovered');
+    recordSteamTimelineEvent('black_box_recovered', 'Black Box Recovered', 'A previous operator archive was recovered and banked.', {
+        icon: 'black_box',
+        priority: 2,
+        durationSeconds: 8
+    });
 });
 
 window.addEventListener('extraction-blocked', () => {
@@ -2807,6 +2959,13 @@ function resetRunToStartingState({
         }
 
         runStartTime = Date.now();
+        resetCommentaryRunState();
+        showDeveloperCommentary('run_start');
+        recordSteamTimelineEvent('run_start', 'Run Started', `${window.game?.playerType ?? getSelectedHeroType()} deployed into the bunker.`, {
+            icon: 'run',
+            priority: 1,
+            durationSeconds: 8
+        });
         recordAchievementEvent('run-start', {
             startedAt: runStartTime,
             classType: window.game?.playerType ?? getSelectedHeroType()
@@ -3049,7 +3208,12 @@ window.addEventListener('player-extracted', (event) => {
 const ALL_LORE_KEYS = [
     'A01','A02','A03','A04','A05','A06','A07','A08','A09','A10','A11','A12',
     'C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12',
-    'B01','B02','B03','B13'
+    'B01','B02','B03','B13',
+    'drop_horizon_badge', 'drop_dig_manifest', 'drop_security_log',
+    'drop_survey_probe', 'drop_meteor_core', 'drop_ration_ledger',
+    'drop_child_drawing', 'drop_dogtags', 'drop_resin_locket',
+    'drop_moult_shard', 'drop_first_bore_tag', 'drop_prayer_stone',
+    'drop_frozen_letter', 'drop_black_flask'
 ];
 
 function updateMenuCommandStatuses() {
@@ -3096,7 +3260,7 @@ function openArchiveLogDetail(key) {
     const portraitEl = document.getElementById('archive-log-detail-portrait');
     if (!modal) return;
 
-    if (keyEl) keyEl.textContent = `LOG-${key}`;
+    if (keyEl) keyEl.textContent = window.game?.getLoreTitle?.(key) ?? `LOG-${key}`;
     if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
     if (portraitEl) portraitEl.src = lorePortraitSrc(key);
 
@@ -3524,7 +3688,7 @@ function closeLoreModalAndResume() {
 }
 
 window.addEventListener('lore-terminal-read', (event) => {
-    const { loreKey, loreText } = event?.detail ?? {};
+    const { loreKey, loreText, title } = event?.detail ?? {};
     if (!loreKey || !loreText) return;
 
     const loreModal = document.getElementById('lore-modal');
@@ -3532,7 +3696,7 @@ window.addEventListener('lore-terminal-read', (event) => {
     const loreTextEl = document.getElementById('lore-modal-text');
     if (!loreModal) return;
 
-    if (loreKeyEl) loreKeyEl.textContent = `LOG-${loreKey}`;
+    if (loreKeyEl) loreKeyEl.textContent = title ? title : (window.game?.getLoreTitle?.(loreKey) ?? `LOG-${loreKey}`);
     if (loreTextEl) loreTextEl.textContent = '';
 
     const metadata = LORE_METADATA[loreKey];
@@ -3558,9 +3722,11 @@ window.addEventListener('lore-terminal-read', (event) => {
     tick();
 
     // Track discovery
-    const isNew = markLogFound(loreKey);
-    if (isNew) {
-        fireMothershipReactiveLine('lore_found');
+    if (!event?.detail?.skipSave) {
+        const isNew = markLogFound(loreKey);
+        if (isNew) {
+            fireMothershipReactiveLine('lore_found');
+        }
     }
     if (recordSpecimen0047OriginIfFound(codexStore, getWorldMemory())) {
         const entry = getCodexEntry('specimen_0047');
@@ -3611,6 +3777,12 @@ window.addEventListener('pickup-collected', (event) => {
 window.addEventListener('special-room-discovered', (event) => {
     const label = event?.detail?.label ?? 'SPECIAL ROOM';
     const template = event?.detail?.template ?? '';
+    showDeveloperCommentary(`room_${template}`, event?.detail ?? {});
+    recordSteamTimelineEvent('special_room', 'Special Room Found', label, {
+        icon: template || 'room',
+        priority: template === 'the_nest' ? 3 : 1,
+        durationSeconds: template === 'the_nest' ? 10 : 6
+    });
     const wreckageLog = template === 'agent_wreckage'
         ? getClassWreckageLog(window.game?.playerType ?? getSelectedHeroType(), event?.detail ?? {})
         : null;
@@ -3652,9 +3824,16 @@ window.addEventListener('bunker-line', (event) => {
 
 window.addEventListener('black-box-marker-active', () => {
     showBiomePrompt('> BLACK BOX SIGNAL DETECTED — COMPASS RETARGETED');
+    showDeveloperCommentary('black_box_signal');
+    recordSteamTimelineEvent('black_box_signal', 'Black Box Signal Detected', 'A recoverable death archive signal was marked on the compass.', {
+        icon: 'black_box',
+        priority: 2,
+        durationSeconds: 8
+    });
 });
 
-window.addEventListener('black-box-prompt-nearby', () => {
+window.addEventListener('black-box-prompt-nearby', (event) => {
+    const locked = event?.detail?.locked;
     const prompt = document.getElementById('black-box-hud-prompt');
     if (!isGameplayHudActive()) {
         prompt?.classList.add('hidden');
@@ -3663,8 +3842,13 @@ window.addEventListener('black-box-prompt-nearby', () => {
     }
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    if (key) setPromptKeyLabel(key);
-    if (text) text.textContent = 'RECOVER BLACK BOX';
+    if (key) {
+        setPromptKeyLabel(key);
+        key.classList.toggle('hidden', Boolean(locked));
+    }
+    if (text) {
+        text.textContent = locked ? 'DEFEAT GUARD TO UNLOCK BLACK BOX' : 'RECOVER BLACK BOX';
+    }
     prompt?.classList.remove('hidden');
     prompt?.classList.add('visible');
 });
@@ -4229,9 +4413,10 @@ function syncTouchMoveControlVisibility() {
     const inMissionIntro = document.body.classList.contains('mission-intro-active');
     const showHudTouchReadouts = isHUD && isMenuHidden && !inMissionIntro;
 
-    // Keep the container visible for the compass; the toggle only gates the
-    // lower-left movement joystick itself.
     touchMoveControl.classList.toggle('hidden', !showHudTouchReadouts);
+    if (desktopCompass) {
+        desktopCompass.classList.toggle('hidden', !showHudTouchReadouts);
+    }
 
     // Show/hide the joystick ring and label based on the touchControls setting
     const showJoystick = touchUiEnabled && state.settings.touchControls;
@@ -4330,6 +4515,26 @@ function updateTouchCompass() {
             touchCompassRadarDistance.classList.add('hidden');
             touchCompassRadarDistance.textContent = '';
         }
+
+        // Reset desktop compass
+        if (desktopCompassArrow) {
+            desktopCompassArrow.style.transform = 'rotate(0deg)';
+            desktopCompassArrow.style.opacity = '0.35';
+        }
+        if (desktopCompassDistance) {
+            desktopCompassDistance.textContent = '0u';
+        }
+        if (desktopCompassRadarArrow) {
+            desktopCompassRadarArrow.classList.add('hidden');
+            desktopCompassRadarArrow.style.transform = 'rotate(0deg)';
+            desktopCompassRadarArrow.style.opacity = '0';
+        }
+        if (desktopCompassRadarRow) {
+            desktopCompassRadarRow.classList.add('hidden');
+        }
+        if (desktopCompassRadarDistance) {
+            desktopCompassRadarDistance.textContent = '';
+        }
         return;
     }
 
@@ -4338,6 +4543,15 @@ function updateTouchCompass() {
     touchCompassArrow.style.transform = `translate(-50%, -100%) rotate(${angle.toFixed(2)}deg)`;
     touchCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
     touchCompassDistance.textContent = formatTouchCompassDistance(distance);
+
+    // Update desktop compass
+    if (desktopCompassArrow) {
+        desktopCompassArrow.style.transform = `rotate(${angle.toFixed(2)}deg)`;
+        desktopCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
+    }
+    if (desktopCompassDistance) {
+        desktopCompassDistance.textContent = formatTouchCompassDistance(distance);
+    }
 
     const radarState = compassState.radar ?? null;
     const radarActive = Boolean(radarState?.active);
@@ -4364,6 +4578,33 @@ function updateTouchCompass() {
                 ? 'OUT OF SYNC'
                 : formatTouchCompassDistance(radarDistance);
             touchCompassRadarDistance.style.opacity = radarDistance <= 0.05 ? '0.35' : '1';
+        }
+    }
+
+    // Update desktop compass radar
+    if (desktopCompassRadarArrow) {
+        if (!radarActive) {
+            desktopCompassRadarArrow.classList.add('hidden');
+            desktopCompassRadarArrow.style.opacity = '0';
+        } else {
+            const radarAngle = Number.isFinite(radarState.angle) ? radarState.angle : 0;
+            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
+            desktopCompassRadarArrow.classList.remove('hidden');
+            desktopCompassRadarArrow.style.transform = `rotate(${radarAngle.toFixed(2)}deg)`;
+            desktopCompassRadarArrow.style.opacity = radarDistance <= 0.05 ? '0.35' : '0.95';
+        }
+    }
+    if (desktopCompassRadarRow) {
+        desktopCompassRadarRow.classList.toggle('hidden', !radarActive);
+    }
+    if (desktopCompassRadarDistance) {
+        if (radarActive) {
+            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
+            desktopCompassRadarDistance.textContent = radarState.mode === 'corrupt'
+                ? 'OUT OF SYNC'
+                : formatTouchCompassDistance(radarDistance);
+        } else {
+            desktopCompassRadarDistance.textContent = '';
         }
     }
 }
@@ -4590,6 +4831,35 @@ function showTacticalOverlay({
             tacticalOverlayTimer = null;
         }, duration);
     }
+}
+
+function showTacticalNotificationToast({ title, status, duration = 4000 }) {
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'tactical-alert-toast';
+    toast.innerHTML = `
+        <div class="tactical-alert-toast__icon">⚠️</div>
+        <div class="tactical-alert-toast__body">
+            <div class="tactical-alert-toast__header">
+                <span class="tactical-alert-toast__kicker">TACTICAL ALERT</span>
+                <span class="tactical-alert-toast__status">CRITICAL</span>
+            </div>
+            <div class="tactical-alert-toast__title">${title}</div>
+            <div class="tactical-alert-toast__blurb">${status}</div>
+        </div>
+    `;
+
+    stack.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('visible'), 50);
+
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 600);
+    }, duration);
 }
 
 async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
@@ -5349,6 +5619,7 @@ function openSettingsModal() {
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
     if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
+    if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
 
     const txtSpeedSelect = document.getElementById('setting-text-speed');
     if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
@@ -6972,6 +7243,16 @@ if (mainTouchToggle) {
     });
 }
 
+if (mainCommentaryToggle) {
+    mainCommentaryToggle.addEventListener('change', (e) => {
+        state.settings.commentary = e.target.checked;
+        localStorage.setItem(COMMENTARY_STORAGE_KEY, String(state.settings.commentary));
+        if (state.settings.commentary) {
+            showDeveloperCommentary('run_start', {}, { once: false });
+        }
+    });
+}
+
 function getDoorImage(key) {
     const CLASS_DOORS = {
         'SCOUT': '/door_bio.png',
@@ -7798,6 +8079,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     state.settings.shakeEnabled = localStorage.getItem('hunker_shake_enabled') !== 'false';
     state.settings.colorblindAssist = localStorage.getItem('hunker_colorblind_assist') === 'true';
     state.settings.difficulty = localStorage.getItem('hunker_difficulty') || 'standard';
+    state.settings.commentary = localStorage.getItem(COMMENTARY_STORAGE_KEY) === 'true';
+    if (mainCommentaryToggle) {
+        mainCommentaryToggle.checked = state.settings.commentary;
+    }
 
     if (state.settings.colorblindAssist) {
         document.body.classList.add('colorblind-assist');
@@ -8091,11 +8376,19 @@ window.addEventListener('queen-hallucination', (event) => {
     }, 300);
 });
 
+window.addEventListener('queen-fight-started', () => {
+    showDeveloperCommentary('queen_fight');
+    recordSteamTimelineEvent('queen_fight', 'Queen Fight Started', 'Specimen-0047 entered direct combat.', {
+        icon: 'queen',
+        priority: 4,
+        durationSeconds: 12
+    });
+});
+
 window.addEventListener('hunter-pair-spawned', () => {
-    showTacticalOverlay({
+    showTacticalNotificationToast({
         title: 'WARNING: HUNTER SHADOWS INBOUND',
         status: '> BRIGGS COVERT TEAM DEPLOYED<br>> SCANNING PATROLS DETECTED',
-        progress: 100,
         duration: 3800
     });
     AudioManager.play('camp_lockdown_alarm', { volume: 0.5, playbackRate: 1.2 });
@@ -8104,10 +8397,9 @@ window.addEventListener('hunter-pair-spawned', () => {
 });
 
 window.addEventListener('lander-deployed', () => {
-    showTacticalOverlay({
+    showTacticalNotificationToast({
         title: 'CRITICAL ALERT: EXTERMINATION LANDER INBOUND',
         status: '> MOTHERSHIP EXTERMINATOR DEPLOYED<br>> HULL INTEGRITY TRACKING LOCKED',
-        progress: 100,
         duration: 4800
     });
     AudioManager.play('camp_lockdown_alarm', { volume: 0.65, playbackRate: 0.85 });
@@ -8134,7 +8426,11 @@ function formatSteamStatus(info, health) {
     if (health?.ok) {
         backendLine = health.steam?.authConfigured ? 'BACKEND: AUTH READY' : 'BACKEND: DEV';
     }
-    return `${steamLine}\n${backendLine}`;
+    const cloud = info?.cloud;
+    const cloudLine = cloud?.available
+        ? `CLOUD: ${cloud.enabledForAccount && cloud.enabledForApp ? 'READY' : 'OFF'}`
+        : 'CLOUD: UNKNOWN';
+    return `${steamLine}\n${backendLine}\n${cloudLine}`;
 }
 
 async function refreshSteamBridgeStatus() {
@@ -8173,6 +8469,12 @@ if (window.electronAPI) {
         const key = event?.detail?.key;
         if (!key) return;
         window.electronAPI.unlockAchievement(key);
+        showDeveloperCommentary('achievement');
+        recordSteamTimelineEvent('achievement', 'Achievement Unlocked', event?.detail?.title ?? key, {
+            icon: 'achievement',
+            priority: 2,
+            durationSeconds: 6
+        });
 
         const milestone = STEAM_ACHIEVEMENT_ITEM_MAP[key];
         if (milestone && window.electronAPI?.requestSteamMilestoneGrant) {
@@ -8190,6 +8492,12 @@ if (window.electronAPI) {
         if (event?.detail?.key !== 'queenKilled' || !window.electronAPI?.requestSteamMilestoneGrant) return;
         if (event.detail.combat !== true && event.detail.source !== 'queen-fight') return;
         const runKey = `${activeRunSeed ?? 'no-seed'}:${runStartTime}`;
+        showDeveloperCommentary('queen_killed');
+        recordSteamTimelineEvent('queen_killed', 'Queen Defeated', 'Specimen-0047 was defeated in combat.', {
+            icon: 'queen',
+            priority: 5,
+            durationSeconds: 10
+        });
         window.electronAPI.requestSteamMilestoneGrant('boss_kill', runKey).then((result) => {
             (result?.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
         }).catch((err) => {
@@ -8213,6 +8521,12 @@ if (window.electronAPI) {
     window.addEventListener(STEAM_RUN_SCORE_FINALIZED_EVENT, (event) => {
         const payload = event?.detail;
         if (!payload || !window.electronAPI?.submitSteamRunScore) return;
+        showDeveloperCommentary('leaderboard');
+        recordSteamTimelineEvent('run_end', payload.outcome === 'victory' ? 'Extraction Complete' : 'Run Ended', `Score ${payload.score ?? 0} submitted for trusted ranking.`, {
+            icon: payload.outcome === 'victory' ? 'victory' : 'run_end',
+            priority: payload.outcome === 'victory' ? 4 : 2,
+            durationSeconds: 10
+        });
 
         window.electronAPI.submitSteamRunScore(payload).then((result) => {
             if (result?.ok) {
@@ -8341,6 +8655,7 @@ let storeHostedItemStore = null;
 let vaultItems = [];
 let selectedVaultItem = null;
 let marketEligibility = 'unknown';
+let marketEligibilityReason = null;
 
 // Fired from the playtime-drop interval and the victory class-patch grant —
 // both real Steam Inventory writes, so this is the only place either one
@@ -8424,6 +8739,7 @@ function initSteamVaultUI() {
     vaultBtn.addEventListener('click', async () => {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
+        showDeveloperCommentary('steam_vault');
         await loadVaultData();
     });
 
@@ -8466,6 +8782,33 @@ function initSteamVaultUI() {
     document.getElementById('vault-store-hosted-btn')?.addEventListener('click', openHostedSteamItemStore);
 }
 
+function isMarketEligibilityAllowed(result) {
+    return result?.allowed === true
+        || result?.allowed === 1
+        || result?.allowed === '1'
+        || result?.allowed === 'true'
+        || result?.eligibility?.allowed === true
+        || result?.eligibility?.allowed === 1
+        || result?.eligibility?.allowed === '1'
+        || result?.eligibility?.allowed === 'true';
+}
+
+function setMarketEligibilityFromResult(result) {
+    marketEligibility = result?.ok && isMarketEligibilityAllowed(result) ? 'eligible' : 'ineligible';
+    marketEligibilityReason = result?.reason ?? result?.eligibility?.reason ?? null;
+}
+
+function canOpenMarketOverlay() {
+    return marketEligibility === 'eligible';
+}
+
+function getMarketEligibilityStatusText() {
+    if (marketEligibility === 'unknown') return 'STEAM MARKET CHECK PENDING';
+    if (marketEligibilityReason === 'unsupported') return 'STEAM MARKET CHECK UNSUPPORTED';
+    if (marketEligibilityReason === 'error') return 'STEAM MARKET CHECK FAILED';
+    return 'STEAM MARKET ELIGIBILITY UNCONFIRMED';
+}
+
 async function loadVaultData() {
     const statusEl = document.getElementById('vault-connection-status');
     const playerEl = document.getElementById('vault-player-name');
@@ -8476,11 +8819,11 @@ async function loadVaultData() {
         const identity = await window.electronAPI.getSteamIdentity().catch(() => null);
 
         // Fetch Market Eligibility
-        const marketCheck = window.electronAPI.checkMarketEligibility
-            ? window.electronAPI.checkMarketEligibility()
+        const marketCheck = window.electronAPI.getSteamMarketEligibility
+            ? window.electronAPI.getSteamMarketEligibility()
             : Promise.resolve({ ok: false, reason: 'unsupported' });
         const marketResult = await Promise.resolve(marketCheck).catch(() => ({ ok: false, reason: 'error' }));
-        marketEligibility = marketResult?.ok ? 'eligible' : 'ineligible';
+        setMarketEligibilityFromResult(marketResult);
         if (identity?.active) {
             if (playerEl) playerEl.textContent = identity.persona ?? 'OPERATOR';
             if (statusEl) statusEl.textContent = 'STEAM CONNECTED';
@@ -8503,6 +8846,7 @@ async function loadVaultData() {
             console.error('[steam-vault] failed to load inventory:', result);
         }
     } else {
+        setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
         if (playerEl) playerEl.textContent = 'WEB BUILD';
         if (statusEl) statusEl.textContent = 'OFFLINE';
         if (commandStatus) commandStatus.textContent = 'OFFLINE';
@@ -8592,8 +8936,8 @@ function updateDetailsPanel(item) {
         tradableEl.textContent = catalog.tradable ? 'TRADABLE' : 'NON-TRADABLE';
     }
     if (marketableEl) {
-        const isEligible = marketEligibility !== 'ineligible';
-        marketableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.marketable ? 'active' : ''} ${!isEligible ? 'degraded' : ''}`;
+        const isEligible = canOpenMarketOverlay();
+        marketableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.marketable ? 'active' : ''} ${catalog.marketable && !isEligible ? 'degraded' : ''}`;
         marketableEl.title = "Market actions are handled externally through Steam.";
         if (catalog.marketable && !isEligible) {
             marketableEl.textContent = 'MARKETABLE (OFFLINE)';
@@ -8704,11 +9048,16 @@ function renderHostedItemStoreCta() {
     if (!row || !status || !btn) return;
 
     const url = storeHostedItemStore?.url;
-    const enabled = Boolean(storeHostedItemStore?.enabled && url);
-    row.classList.toggle('hidden', !enabled);
+    const configured = Boolean(storeHostedItemStore?.enabled && url);
+    const enabled = configured && canOpenMarketOverlay();
+    row.classList.toggle('hidden', !configured);
     btn.disabled = !enabled;
-    if (!enabled) {
+    if (!configured) {
         status.textContent = 'STEAM ITEM STORE OFFLINE';
+        return;
+    }
+    if (!enabled) {
+        status.textContent = getMarketEligibilityStatusText();
         return;
     }
 
@@ -8718,7 +9067,10 @@ function renderHostedItemStoreCta() {
 
 async function openHostedSteamItemStore() {
     const url = storeHostedItemStore?.url;
-    if (!url) return;
+    if (!url || !canOpenMarketOverlay()) {
+        renderHostedItemStoreCta();
+        return;
+    }
     if (window.electronAPI?.openSteamOverlayToUrl) {
         await window.electronAPI.openSteamOverlayToUrl(url);
     } else {

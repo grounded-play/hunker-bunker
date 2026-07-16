@@ -104,10 +104,10 @@ describe('Steam Store API endpoints', () => {
         expect(body.hostedItemStore).toMatchObject({
             enabled: false,
             mode: 'disabled',
-            appId: 1247290,
+            appId: 4957040,
             url: null,
-            publicUrl: 'https://store.steampowered.com/itemstore/1247290/',
-            betaUrl: 'https://store.steampowered.com/itemstore/1247290/?beta=1'
+            publicUrl: 'https://store.steampowered.com/itemstore/4957040/',
+            betaUrl: 'https://store.steampowered.com/itemstore/4957040/?beta=1'
         });
         expect(body.catalog.length).toBeGreaterThan(0);
         expect(body.catalog[0]).toMatchObject({ sku: expect.any(String), priceUsdCents: expect.any(Number) });
@@ -489,6 +489,47 @@ describe('Steam Store API endpoints', () => {
 
         const purchase = listPurchases({ limit: 20 }).find((row) => row.transId === transId);
         expect(purchase).toMatchObject({ status: 'failed', steamState: 'Failed' });
+        expect(externalFetchCallCount()).toBe(1);
+    });
+
+    it('POST /steam/store/purchase/finalize records refunded Steam transaction states as reversals', async () => {
+        enableLiveStoreEnv();
+        const transId = `refunded-${Date.now()}`;
+        await savePurchaseState({
+            steamId64: '76561198000000000',
+            sku: 'key_1',
+            transId,
+            orderId: `order-${transId}`,
+            status: 'completed',
+            priceUsdCents: 99
+        });
+        mockExternalFetch(async (url) => {
+            expect(String(url)).toContain('/ISteamMicroTxn/QueryTxn/v3/');
+            return jsonResponse({
+                response: {
+                    result: 'OK',
+                    params: { orderid: `order-${transId}`, transid: transId, status: 'Refunded' }
+                }
+            });
+        });
+
+        const res = await fetch(`${baseUrl}/steam/store/purchase/finalize`, {
+            method: 'POST',
+            headers: liveAuthHeaders(),
+            body: JSON.stringify({ transId, reconcile: true })
+        });
+        expect(res.status).toBe(409);
+        const body = await res.json();
+        expect(body).toMatchObject({
+            ok: false,
+            reason: 'steam_purchase_reversed',
+            purchaseStatus: 'reversed',
+            nextAction: 'show_error',
+            steamState: 'Refunded'
+        });
+
+        const purchase = listPurchases({ limit: 20 }).find((row) => row.transId === transId);
+        expect(purchase).toMatchObject({ status: 'reversed', steamState: 'Refunded' });
         expect(externalFetchCallCount()).toBe(1);
     });
 

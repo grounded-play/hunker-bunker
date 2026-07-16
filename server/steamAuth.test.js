@@ -32,7 +32,7 @@ describe('steam auth backend helpers', () => {
         delete process.env.STEAM_WEB_API_KEY;
 
         expect(getSteamAuthConfig()).toMatchObject({
-            appId: 1247290,
+            appId: 4957040,
             configured: false,
             defaultIdentity: 'hunker-bunker-backend'
         });
@@ -90,7 +90,7 @@ describe('steam auth backend helpers', () => {
         expect(result).toMatchObject({
             ok: true,
             status: 200,
-            appId: 1247290,
+            appId: 4957040,
             identity: 'custom-identity',
             steamId64: '76561198000000000',
             ownerSteamId64: '76561198000000000',
@@ -115,7 +115,7 @@ describe('steam auth backend helpers', () => {
         expect(session).toMatchObject({
             ok: true,
             steamId64: '76561198000000000',
-            appId: 1247290,
+            appId: 4957040,
             identity: 'custom-identity'
         });
 
@@ -234,7 +234,7 @@ describe('steam auth backend helpers', () => {
                 ok: true,
                 service: 'hunker-bunker-relay',
                 steam: {
-                    appId: 1247290,
+                    appId: 4957040,
                     session: {
                         configured: true,
                         ttlSeconds: expect.any(Number)

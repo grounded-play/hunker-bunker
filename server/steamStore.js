@@ -31,7 +31,7 @@ function getSteamPublisherKey() {
 }
 
 function getSteamAppId() {
-    return Number(process.env.HB_STEAM_APPID ?? 1247290);
+    return Number(process.env.HB_STEAM_APPID ?? 4957040);
 }
 
 function getSteamItemStoreAppId() {
@@ -555,6 +555,7 @@ export function attachSteamStoreRoutes(app) {
 
     app.post('/steam/store/purchase/finalize', steamStoreAuthMiddleware, async (req, res) => {
         const transId = req.body?.transId;
+        const reconcile = req.body?.reconcile === true || req.body?.checkSteamState === true;
         if (!transId) {
             return res.status(400).json({ ok: false, reason: 'missing_trans_id' });
         }
@@ -580,7 +581,7 @@ export function attachSteamStoreRoutes(app) {
             });
         }
 
-        if (purchase.status === 'completed') {
+        if (purchase.status === 'completed' && !reconcile) {
             return res.json({
                 ok: true,
                 mode: 'live',
@@ -655,6 +656,28 @@ export function attachSteamStoreRoutes(app) {
                 reason: classified.reason,
                 steamState
             });
+
+            if (
+                purchase.status === 'completed'
+                && (classified.purchaseStatus === 'completed' || classified.purchaseStatus === 'approved')
+            ) {
+                await savePurchaseState({
+                    ...purchase,
+                    status: 'completed',
+                    reason: 'steam_payment_still_completed',
+                    steamState
+                });
+                return res.json({
+                    ok: true,
+                    mode: 'live',
+                    status: 'completed',
+                    purchaseStatus: 'completed',
+                    nextAction: 'refresh_inventory',
+                    alreadyGranted: true,
+                    reconciled: true,
+                    steamState: steamState ?? 'unknown'
+                });
+            }
 
             if (classified.purchaseStatus === 'completed') {
                 const grant = await fulfillPurchasedKeys({ ...purchase, steamState });

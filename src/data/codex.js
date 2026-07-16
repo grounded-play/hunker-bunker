@@ -94,7 +94,22 @@ export const LORE_METADATA = Object.freeze({
 
     B01: { date: '2038-11-20', coords: 'SECTOR C-7 / BIO SWARM', group: 'historical' },
     B02: { date: '2047-08-14', coords: 'SECTOR C-7 / NEURAL FILAMENT', group: 'recent' },
-    B03: { date: '2047-08-14', coords: 'SECTOR C-7 / CHEN SECTOR OFFICE', group: 'recent' }
+    B03: { date: '2047-08-14', coords: 'SECTOR C-7 / CHEN SECTOR OFFICE', group: 'recent' },
+
+    drop_horizon_badge: { date: '2038-11-20', coords: 'SECTOR A-9 / BORE 7 RUINS', group: 'historical' },
+    drop_dig_manifest: { date: '2038-11-21', coords: 'SECTOR A-9 / DEEP TUNNELS', group: 'historical' },
+    drop_security_log: { date: '2038-11-21', coords: 'SECTOR A-9 / SECURITY POST', group: 'historical' },
+    drop_survey_probe: { date: '2038-11-12', coords: 'SECTOR B-4 / CRATER RIM', group: 'historical' },
+    drop_meteor_core: { date: '2038-11-13', coords: 'SECTOR B-4 / IMPACT CORE', group: 'historical' },
+    drop_ration_ledger: { date: '2047-08-11', coords: 'SECTOR B-4 / REFUGEE OUTPOST', group: 'recent' },
+    drop_child_drawing: { date: '2047-08-12', coords: 'SECTOR B-4 / SECTOR FAMILY AREA', group: 'recent' },
+    drop_dogtags: { date: '2047-08-13', coords: 'SECTOR B-4 / PERIMETER DEFENSE', group: 'recent' },
+    drop_resin_locket: { date: '2047-08-14', coords: 'SECTOR C-7 / BIO SWARM NEST', group: 'recent' },
+    drop_moult_shard: { date: '2038-11-20', coords: 'SECTOR C-7 / THE ABYSS HIVE', group: 'historical' },
+    drop_first_bore_tag: { date: '2038-11-21', coords: 'SECTOR C-7 / CAVERN ENTRANCE', group: 'historical' },
+    drop_prayer_stone: { date: '2038-11-22', coords: 'SECTOR C-7 / CULT SANCTUARY', group: 'historical' },
+    drop_frozen_letter: { date: '2047-08-14', coords: 'ACTIVE / DRIFT OUTSIDE OUTPOST', group: 'recent' },
+    drop_black_flask: { date: '2047-08-15', coords: 'ACTIVE / CATACOMBS BASEMENT', group: 'recent' }
 });
 
 // Class-specific payload wreck logs

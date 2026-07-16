@@ -16,7 +16,7 @@ const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
 // Spacewar test appid until the real one is set (docs/steam-build-pipeline.md
 // human checklist step 1). Override without a rebuild via HB_STEAM_APPID.
-const STEAM_APPID = Number(process.env.HB_STEAM_APPID ?? 1247290);
+const STEAM_APPID = Number(process.env.HB_STEAM_APPID ?? 4957040);
 const DEFAULT_STEAM_AUTH_IDENTITY = process.env.HB_STEAM_AUTH_IDENTITY ?? 'hunker-bunker-backend';
 const STEAM_AUTH_TICKET_TTL_MS = 60 * 1000;
 
@@ -58,7 +58,9 @@ function getSteamIdentitySnapshot() {
         appId: STEAM_APPID,
         steamInputAvailable: steamInputReady,
         steamInputPhase,
-        isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.())
+        isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.()),
+        cloud: getSteamCloudStatusSnapshot(),
+        timelineAvailable: Boolean(getSteamTimelineApi())
     };
 
     if (!steamClient) {
@@ -83,6 +85,137 @@ function getSteamIdentitySnapshot() {
             ...base,
             ok: false,
             reason: 'steam_identity_failed',
+            message: err?.message ?? String(err)
+        };
+    }
+}
+
+function getSteamCloudStatusSnapshot() {
+    if (!steamClient?.cloud) {
+        return {
+            available: false,
+            enabledForAccount: null,
+            enabledForApp: null,
+            reason: steamClient ? 'steam_cloud_unavailable' : 'steam_unavailable'
+        };
+    }
+
+    try {
+        const files = steamClient.cloud.listFiles?.();
+        return {
+            available: true,
+            enabledForAccount: steamClient.cloud.isEnabledForAccount?.() ?? null,
+            enabledForApp: steamClient.cloud.isEnabledForApp?.() ?? null,
+            files: Array.isArray(files) ? files.map((file) => ({
+                name: file.name,
+                size: file.size != null ? Number(file.size) : null
+            })) : []
+        };
+    } catch (err) {
+        return {
+            available: false,
+            enabledForAccount: null,
+            enabledForApp: null,
+            reason: 'steam_cloud_status_failed',
+            message: err?.message ?? String(err)
+        };
+    }
+}
+
+function getSteamTimelineApi() {
+    return steamClient?.timeline ?? steamClient?.timelineApi ?? steamClient?.gameTimeline ?? null;
+}
+
+function normalizeTimelineEvent(input = {}) {
+    const title = String(input.title ?? input.type ?? 'Hunker Bunker Event').trim().slice(0, 128);
+    const description = String(input.description ?? '').trim().slice(0, 512);
+    const icon = String(input.icon ?? input.type ?? 'event').trim().slice(0, 64);
+    const priority = Math.max(0, Math.min(5, Number(input.priority) || 0));
+    const durationSeconds = Math.max(0, Math.min(120, Number(input.durationSeconds) || 5));
+    const clipPriority = Math.max(0, Math.min(5, Number(input.clipPriority) || 0));
+    return { title, description, icon, priority, durationSeconds, clipPriority };
+}
+
+function addSteamTimelineEvent(input = {}) {
+    const timeline = getSteamTimelineApi();
+    if (!timeline) {
+        return {
+            ok: false,
+            active: Boolean(steamClient),
+            reason: 'steam_timeline_unavailable'
+        };
+    }
+
+    const event = normalizeTimelineEvent(input);
+    const fn = timeline.addTimelineEvent
+        ?? timeline.AddTimelineEvent
+        ?? timeline.addEvent
+        ?? timeline.addTimelineEntry;
+    if (typeof fn !== 'function') {
+        return {
+            ok: false,
+            active: true,
+            reason: 'steam_timeline_method_missing'
+        };
+    }
+
+    try {
+        if (fn.length <= 1) {
+            fn.call(timeline, event);
+        } else {
+            fn.call(
+                timeline,
+                event.icon,
+                event.title,
+                event.description,
+                event.priority,
+                0,
+                event.durationSeconds,
+                event.clipPriority
+            );
+        }
+        return { ok: true, active: true };
+    } catch (err) {
+        return {
+            ok: false,
+            active: true,
+            reason: 'steam_timeline_event_failed',
+            message: err?.message ?? String(err)
+        };
+    }
+}
+
+function setSteamTimelineGameMode(mode = 'menus') {
+    const timeline = getSteamTimelineApi();
+    if (!timeline) {
+        return {
+            ok: false,
+            active: Boolean(steamClient),
+            reason: 'steam_timeline_unavailable'
+        };
+    }
+
+    const normalized = ['playing', 'menus', 'loading'].includes(mode) ? mode : 'menus';
+    const fn = timeline.setTimelineGameMode
+        ?? timeline.SetTimelineGameMode
+        ?? timeline.setGameMode;
+    if (typeof fn !== 'function') {
+        return {
+            ok: false,
+            active: true,
+            reason: 'steam_timeline_method_missing'
+        };
+    }
+
+    try {
+        fn.call(timeline, normalized);
+        return { ok: true, active: true, mode: normalized };
+    } catch (err) {
+        return {
+            ok: false,
+            active: true,
+            mode: normalized,
+            reason: 'steam_timeline_mode_failed',
             message: err?.message ?? String(err)
         };
     }
@@ -361,6 +494,7 @@ ipcMain.on('hb:steamInputPhase', (_e, phase) => {
     setSteamInputPhase(phase);
 });
 ipcMain.handle('hb:getSteamIdentity', () => getSteamIdentitySnapshot());
+ipcMain.handle('hb:getSteamCloudStatus', () => getSteamCloudStatusSnapshot());
 ipcMain.handle('hb:getSteamAuthTicket', async (_e, identity, timeoutSeconds = 10) => {
     if (!steamClient?.auth?.getAuthTicketForWebApi) {
         return {
@@ -426,6 +560,8 @@ ipcMain.handle('hb:openSteamOverlayToUrl', async (_e, url) => {
         return { ok: false, reason: 'open_external_failed', message: err.message };
     }
 });
+ipcMain.handle('hb:addSteamTimelineEvent', (_e, event) => addSteamTimelineEvent(event));
+ipcMain.handle('hb:setSteamTimelineGameMode', (_e, mode) => setSteamTimelineGameMode(mode));
 ipcMain.handle('hb:showGamepadTextInput', async (_e, inputMode, lineMode, description, maxCharacters, existingText) => {
     if (!steamClient?.utils?.showGamepadTextInput) return null;
     try {

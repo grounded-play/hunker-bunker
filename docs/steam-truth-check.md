@@ -7,8 +7,10 @@ current repo already supports from what is still planned.
 
 - Build/runtime: Vite web build plus Electron wrapper. See `package.json`,
   `electron/main.cjs`, and `electron/preload.cjs`.
-- Current Steam depots: Windows `1247291` and Linux `1247292` in
-  `steam/app_build.vdf`.
+- Current Steam app/depot: app `4957040` with content depot `4957041` in
+  `steam/app_build.vdf`. The depot currently carries both `win-unpacked/`
+  and `linux-unpacked/` payloads until a separate Linux depot is added in
+  Steamworks.
 - Save path: `hb_*` localStorage values mirror to `save.json` under Electron
   `userData`, which is the right shape for Steam Auto-Cloud.
 - Input: keyboard/mouse plus touch UI, remappable keyboard bindings, and
