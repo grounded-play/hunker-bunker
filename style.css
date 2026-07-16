@@ -11054,3 +11054,27 @@ button.archive-log-entry:active {
     padding: 6px 10px !important;
   }
 }
+
+/* ── Results Leaderboard Status & Separators ── */
+.go-leaderboard-row--separator {
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.3) !important;
+  font-size: 10px;
+  padding: 0 !important;
+  margin: 2px 0;
+}
+.go-leaderboard-status--retrieving {
+  color: #64748b !important;
+}
+.go-leaderboard-status--live {
+  color: #3ad6d1 !important;
+}
+.go-leaderboard-status--mock {
+  color: #ff9f1c !important;
+}
+.go-leaderboard-status--offline {
+  color: #ef4444 !important;
+}
+
