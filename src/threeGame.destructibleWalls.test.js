@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 
 function call(method, fakeThis, ...args) {
@@ -32,6 +32,20 @@ describe('weapon ammo refill', () => {
 });
 
 describe('destructible wall grid persistence', () => {
+    it('tunes wall HP above the first prototype values so breaking walls takes commitment', () => {
+        const fakeThis = {};
+
+        const damagedHp = call('getWallMaxHp', fakeThis, { variant: 'damaged', heightScale: 1 });
+        const standardHp = call('getWallMaxHp', fakeThis, { variant: 'standard', heightScale: 1 });
+        const hazardHp = call('getWallMaxHp', fakeThis, { variant: 'hazard', heightScale: 1 });
+        const canyonHp = call('getWallMaxHp', fakeThis, { variant: 'standard', landform: 'canyon', heightScale: 1 });
+
+        expect(damagedHp).toBeGreaterThan(3);
+        expect(standardHp).toBeGreaterThan(6);
+        expect(hazardHp).toBeGreaterThan(standardHp);
+        expect(canyonHp).toBeGreaterThan(standardHp);
+    });
+
     it('marks a destroyed wall tile open in the cached chunk grid', () => {
         const grid = makeGrid();
         const fakeThis = {
@@ -64,5 +78,30 @@ describe('destructible wall grid persistence', () => {
         call('applyDestroyedWallsToGrid', fakeThis, grid, 0, 0);
 
         expect(grid[5][4]).toBe('.');
+    });
+
+    it('removes existing wall decals when their wall is destroyed', () => {
+        const remove = vi.fn();
+        const destroyedDecal = {
+            wallKey: '2,3',
+            mesh: { parent: { remove } },
+            dispose: vi.fn()
+        };
+        const otherDecal = {
+            wallKey: '4,5',
+            mesh: { parent: { remove: vi.fn() } },
+            dispose: vi.fn()
+        };
+        const fakeThis = {
+            _wallDecals: [destroyedDecal, otherDecal],
+            transientEffects: [destroyedDecal, otherDecal]
+        };
+
+        call('clearWallDecalsForWall', fakeThis, '2,3');
+
+        expect(destroyedDecal.dispose).toHaveBeenCalledTimes(1);
+        expect(remove).toHaveBeenCalledWith(destroyedDecal.mesh);
+        expect(fakeThis._wallDecals).toEqual([otherDecal]);
+        expect(fakeThis.transientEffects).toEqual([otherDecal]);
     });
 });

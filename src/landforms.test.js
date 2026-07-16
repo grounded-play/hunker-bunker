@@ -198,6 +198,55 @@ describe('openMazeTerrain', () => {
             expect(grid[y][SIZE - 1]).toBe('#');
         }
     });
+
+    // A single seeded floor cell at grid center, otherwise solid — isolates
+    // one plaza carve so its shape can be inspected directly. Call order
+    // inside openMazeTerrain for one plaza is: center pick, radiusX,
+    // radiusY, then one shape roll — sequenceRandom feeds exactly those 4
+    // values so the shape branch (and resulting radius) is deterministic.
+    function singleFloorCellGrid() {
+        const grid = Array.from({ length: SIZE }, () => Array(SIZE).fill('#'));
+        grid[9][9] = '.';
+        return grid;
+    }
+
+    // Feeds an exact sequence for the plaza-carve's 4 random() calls (center
+    // pick, radiusX, radiusY, shape roll), then a fallback high enough
+    // (0.78 is the highest softening-pass threshold) that the softening
+    // pass right after plaza carving never touches anything — otherwise its
+    // own random() calls would keep consuming from this same sequence and
+    // could carve extra boundary cells, muddying the shape assertion below.
+    function sequenceRandom(values, fallback = 0.99) {
+        let i = 0;
+        return () => (i < values.length ? values[i++] : fallback);
+    }
+
+    it('carves a diamond (Manhattan) silhouette that a circle would not produce', () => {
+        const grid = singleFloorCellGrid();
+        // center=idx0, radiusX roll=0.5, radiusY roll=0.5, shape roll=0.5 -> diamond.
+        const random = sequenceRandom([0, 0.5, 0.5, 0.5]);
+        openMazeTerrain(grid, random, { plazaCount: 1, floorTarget: 0, minRadius: 2, maxRadius: 4 });
+
+        // radius = 2 + 0.5*(4-2) = 3. (11,11) is normalized (0.667, 0.667):
+        // a circle/ellipse carves it (0.667^2*2 = 0.89 <= 1); a diamond does
+        // not (0.667+0.667 = 1.33 > 1).
+        expect(grid[11][11]).toBe('#');
+        // Still carves straight out to the same radius along an axis.
+        expect(grid[9][12]).toBe('.');
+    });
+
+    it('carves a cross silhouette with clear arms and an empty diagonal', () => {
+        const grid = singleFloorCellGrid();
+        // center=idx0, radiusX roll=0.5, radiusY roll=0.5, shape roll=0.9 -> cross.
+        const random = sequenceRandom([0, 0.5, 0.5, 0.9]);
+        openMazeTerrain(grid, random, { plazaCount: 1, floorTarget: 0, minRadius: 2, maxRadius: 4 });
+
+        // On-axis points sit inside the arm (|dx| or |dy| <= 0.42 armWidth).
+        expect(grid[11][9]).toBe('.');
+        expect(grid[9][11]).toBe('.');
+        // The diagonal (0.667, 0.667) is outside both arms.
+        expect(grid[11][11]).toBe('#');
+    });
 });
 
 describe('connectPortalsInward', () => {
