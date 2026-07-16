@@ -6,12 +6,25 @@ primary_region = "iad"
 
 [build]
 
+[env]
+  NODE_ENV = "production"
+  PORT = "3001"
+  HB_STEAM_APPID = "1247290"
+  HB_DB_STORAGE_PATH = "/app/server/data/db_storage.json"
+  HB_STEAM_MICROTXN_ENABLED = "0"
+  HB_STEAM_STORE_ENABLED = "0"
+  HB_STEAM_DROP_COOLDOWN_SECONDS = "60"
+
+[mounts]
+  source = "hb_data"
+  destination = "/app/server/data"
+
 [http_service]
   internal_port = 3001
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
 
 [[vm]]
   size = "shared-cpu-1x"
@@ -20,14 +33,8 @@ primary_region = "iad"
 # Set real values before going live:
 #   fly secrets set HB_STEAM_PUBLISHER_KEY=... HB_STEAM_APPID=1247290 \
 #     HB_ALLOWED_ORIGINS=https://your-domain-or-electron-origin \
-#     HB_STEAM_LEADERBOARD_IDS=... HB_STEAM_MICROTXN_ENABLED=0
+#     HB_SESSION_SECRET=... HB_STEAM_LEADERBOARD_IDS=...
 #
-# db_storage.json lives on the container's local disk, which does NOT
-# persist across deploys/restarts on Fly — mount a volume before trusting
-# this for production purchase/leaderboard receipts:
+# db_storage.json is mounted at /app/server/data/db_storage.json. Create the
+# volume before first deploy:
 #   fly volumes create hb_data --size 1
-# and add:
-# [mounts]
-#   source = "hb_data"
-#   destination = "/app/server/data"
-# then set HB_DB_STORAGE_PATH=/app/server/data/db_storage.json as a secret.

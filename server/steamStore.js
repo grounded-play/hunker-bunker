@@ -1,4 +1,4 @@
-import { verifySteamSessionTicket } from './steamAuth.js';
+import { steamAuthMiddleware as steamStoreAuthMiddleware } from './steamAuth.js';
 import {
     checkIdempotency,
     saveIdempotency,
@@ -30,6 +30,32 @@ function microtxnEnabled() {
     return process.env.HB_STEAM_MICROTXN_ENABLED === '1' && Boolean(getSteamPublisherKey());
 }
 
+function isProductionRuntime() {
+    return process.env.NODE_ENV === 'production';
+}
+
+function mockPurchasesEnabled() {
+    if (process.env.HB_STEAM_STORE_MOCK_PURCHASES === '1') return true;
+    if (process.env.HB_STEAM_STORE_MOCK_PURCHASES === '0') return false;
+    return !isProductionRuntime();
+}
+
+function livePurchasesEnabled() {
+    return process.env.HB_STEAM_STORE_ENABLED === '1' && microtxnEnabled();
+}
+
+function getStoreAvailability() {
+    const live = livePurchasesEnabled();
+    const mock = mockPurchasesEnabled();
+    return {
+        microtransactionsEnabled: microtxnEnabled(),
+        purchasesEnabled: live || mock,
+        purchaseMode: live ? 'live' : (mock ? 'mock' : 'disabled'),
+        mockPurchasesEnabled: mock,
+        disabledReason: live || mock ? null : 'steam_store_disabled'
+    };
+}
+
 // Cache Keys are the only real-money SKU. Deep Relic Caches themselves drop
 // for free via playtime/promo grants — this mirrors Valve's own crate+key model.
 export const STORE_CATALOG = Object.freeze([
@@ -40,31 +66,6 @@ export const STORE_CATALOG = Object.freeze([
 
 function findSku(sku) {
     return STORE_CATALOG.find((row) => row.sku === sku) ?? null;
-}
-
-// steamStoreAuthMiddleware mirrors steamInventory's auth middleware so this
-// module has no import-order dependency on it.
-async function steamStoreAuthMiddleware(req, res, next) {
-    const ticketHex = req.body?.ticketHex ?? req.query?.ticketHex;
-    const identity = req.body?.identity ?? req.query?.identity;
-
-    if (!ticketHex) {
-        return res.status(401).json({ ok: false, reason: 'missing_ticket' });
-    }
-
-    const auth = await verifySteamSessionTicket({ ticketHex, identity });
-    if (!auth.ok) {
-        if (auth.reason === 'steam_auth_not_configured') {
-            req.steamId = '76561198000000000';
-            req.isDevMode = true;
-            return next();
-        }
-        return res.status(auth.status || 401).json(auth);
-    }
-
-    req.steamId = auth.steamId64;
-    req.isDevMode = false;
-    next();
 }
 
 function grantCacheKeys(steamId, keyCount, isDevMode) {
@@ -83,9 +84,10 @@ export function attachSteamStoreRoutes(app) {
     // (Steamworks policy requires published probabilities for any
     // real-money item involving randomized rewards).
     app.get('/steam/store/catalog', (_req, res) => {
+        const availability = getStoreAvailability();
         res.json({
             ok: true,
-            microtransactionsEnabled: microtxnEnabled(),
+            ...availability,
             catalog: STORE_CATALOG.map(({ sku, keyCount, priceUsdCents, label }) => ({
                 sku, keyCount, priceUsdCents, label
             })),
@@ -106,8 +108,20 @@ export function attachSteamStoreRoutes(app) {
         }
 
         let result;
+        const availability = getStoreAvailability();
 
-        if (req.isDevMode || !microtxnEnabled()) {
+        if (!availability.purchasesEnabled) {
+            result = {
+                status: 503,
+                body: {
+                    ok: false,
+                    reason: availability.disabledReason,
+                    microtransactionsEnabled: availability.microtransactionsEnabled,
+                    purchasesEnabled: false,
+                    purchaseMode: availability.purchaseMode
+                }
+            };
+        } else if (availability.purchaseMode === 'mock') {
             const grant = await grantCacheKeys(req.steamId, sku.keyCount, true);
             await savePurchaseReceipt({
                 steamId64: req.steamId,
@@ -120,7 +134,7 @@ export function attachSteamStoreRoutes(app) {
                 status: 200,
                 body: { ok: true, mode: 'mock', granted: grant.granted, requiresConfirmation: false }
             };
-        } else {
+        } else if (availability.purchaseMode === 'live') {
             try {
                 const orderId = Date.now();
                 const params = new URLSearchParams();
@@ -170,6 +184,11 @@ export function attachSteamStoreRoutes(app) {
             } catch (err) {
                 result = { status: 502, body: { ok: false, reason: 'steam_request_failed', message: err.message } };
             }
+        } else {
+            result = {
+                status: 503,
+                body: { ok: false, reason: 'steam_store_disabled' }
+            };
         }
 
         await saveIdempotency(requestId, result);

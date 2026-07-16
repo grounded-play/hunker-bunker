@@ -1,4 +1,4 @@
-import { verifySteamSessionTicket } from './steamAuth.js';
+import { steamAuthMiddleware } from './steamAuth.js';
 import {
     getMockInventory,
     setMockInventory,
@@ -15,6 +15,7 @@ import { grantItemToPlayer } from './steamGrant.js';
 
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
 const STEAM_ECON_MARKET_URL = 'https://partner.steam-api.com/IEconMarketService/';
+const DEFAULT_PLAYTIME_DROP_COOLDOWN_MS = 60 * 1000;
 
 function getSteamPublisherKey() {
     return process.env.HB_STEAM_PUBLISHER_KEY
@@ -27,30 +28,36 @@ function getSteamAppId() {
     return Number(process.env.HB_STEAM_APPID ?? 1247290);
 }
 
-// Auth middleware that extracts the verified steamId
-export async function steamAuthMiddleware(req, res, next) {
-    const ticketHex = req.body?.ticketHex ?? req.query?.ticketHex;
-    const identity = req.body?.identity ?? req.query?.identity;
-
-    if (!ticketHex) {
-        return res.status(401).json({ ok: false, reason: 'missing_ticket' });
-    }
-
-    const auth = await verifySteamSessionTicket({ ticketHex, identity });
-    if (!auth.ok) {
-        // Fallback to dev mode if publisher key is not configured
-        if (auth.reason === 'steam_auth_not_configured') {
-            req.steamId = '76561198000000000';
-            req.isDevMode = true;
-            return next();
-        }
-        return res.status(auth.status || 401).json(auth);
-    }
-
-    req.steamId = auth.steamId64;
-    req.isDevMode = false;
-    next();
+function getPlaytimeDropCooldownMs() {
+    const raw = Number(process.env.HB_STEAM_DROP_COOLDOWN_SECONDS);
+    if (!Number.isFinite(raw)) return DEFAULT_PLAYTIME_DROP_COOLDOWN_MS;
+    return Math.min(3600, Math.max(0, raw)) * 1000;
 }
+
+function getPlaytimeDropCooldownKey(steamId) {
+    return `playtime-drop-cooldown-${steamId}`;
+}
+
+function getPlaytimeDropCooldownResponse(steamId, now = Date.now()) {
+    const cooldownMs = getPlaytimeDropCooldownMs();
+    if (cooldownMs <= 0) return null;
+
+    const marker = checkIdempotency(getPlaytimeDropCooldownKey(steamId));
+    const lastGrantedAt = Number(marker?.timestamp);
+    if (!Number.isFinite(lastGrantedAt) || now - lastGrantedAt >= cooldownMs) return null;
+
+    return {
+        status: 200,
+        body: {
+            ok: true,
+            granted: [],
+            reason: 'drop_cooldown',
+            retryAfterSeconds: Math.max(1, Math.ceil((cooldownMs - (now - lastGrantedAt)) / 1000))
+        }
+    };
+}
+
+export { steamAuthMiddleware };
 
 export function attachSteamInventoryRoutes(app) {
     // 1. Get Inventory
@@ -93,6 +100,11 @@ export function attachSteamInventoryRoutes(app) {
         const cached = checkIdempotency(requestId);
         if (cached) {
             return res.status(cached.status).json(cached.body);
+        }
+        const cooldown = getPlaytimeDropCooldownResponse(req.steamId);
+        if (cooldown) {
+            await saveIdempotency(requestId, cooldown);
+            return res.status(cooldown.status).json(cooldown.body);
         }
 
         let result;
@@ -157,6 +169,12 @@ export function attachSteamInventoryRoutes(app) {
         }
 
         await saveIdempotency(requestId, result);
+        if (result.status === 200 && getPlaytimeDropCooldownMs() > 0) {
+            await saveIdempotency(getPlaytimeDropCooldownKey(req.steamId), {
+                status: 200,
+                body: { ok: true, reason: 'drop_window' }
+            });
+        }
         res.status(result.status).json(result.body);
     });
 

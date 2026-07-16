@@ -3,9 +3,9 @@
 Date: 2026-07-13.
 
 The trusted Steam backend (`server/index.js`: session auth, leaderboards,
-inventory, store) has never been deployed anywhere — packaged Electron
-builds default to `http://localhost:3001`, which does not exist on a
-player's machine. This is the smallest path to a real, reachable backend.
+inventory, store) must be reachable over HTTPS by a Steam-installed build.
+This is the smallest path to a real backend instead of a local
+`http://localhost:3001` dev target.
 Fly.io was chosen because it's a single binary CLI, free-tier friendly for
 a small Express/Socket.IO service, and needs no container registry setup.
 If you'd rather use a different host (Render, a VPS, Railway), the
@@ -51,17 +51,8 @@ on every deploy or restart without a volume:
 fly volumes create hb_data --size 1 --region iad
 ```
 
-Then add to `fly.toml`:
-
-```toml
-[mounts]
-  source = "hb_data"
-  destination = "/app/server/data"
-```
-
-And set `HB_DB_STORAGE_PATH=/app/server/data/db_storage.json` as a secret
-(see below) — `server/db.js` already reads this env var to override the
-default path.
+`fly.toml` already mounts that volume at `/app/server/data` and sets
+`HB_DB_STORAGE_PATH=/app/server/data/db_storage.json`.
 
 This is still a single JSON file with an in-process write queue, fine for
 early Playtest/Demo traffic. Move to a real database before this needs to
@@ -74,10 +65,9 @@ Never commit these. Set them on Fly, not in `fly.toml`:
 ```bash
 fly secrets set \
   HB_STEAM_PUBLISHER_KEY=<steamworks web api publisher key> \
-  HB_STEAM_APPID=1247290 \
+  HB_SESSION_SECRET=<long random string> \
   HB_ALLOWED_ORIGINS=<comma-separated origins your Electron build sends> \
-  HB_STEAM_LEADERBOARD_IDS=<board name to id map, see steamLeaderboards.js> \
-  HB_STEAM_MICROTXN_ENABLED=0
+  HB_STEAM_LEADERBOARD_IDS=<board name to id map, see steamLeaderboards.js>
 ```
 
 Leave `HB_STEAM_MICROTXN_ENABLED` at `0` until Valve has actually enabled
@@ -90,8 +80,18 @@ instead of trying and failing against Steam's API. See
 ## Deploy
 
 ```bash
+npm run steam:audit-backend:strict
 fly deploy
 ```
+
+Or use the `steam-backend-deploy` GitHub Actions workflow after setting:
+
+- Secrets: `FLY_API_TOKEN`, `HB_STEAM_PUBLISHER_KEY`, `HB_SESSION_SECRET`
+- Variables: `HB_ALLOWED_ORIGINS`, `HB_STEAM_LEADERBOARD_IDS`,
+  `HB_STEAM_MICROTXN_ENABLED`, `HB_STEAM_STORE_ENABLED`
+
+The workflow runs the same strict audit, builds the Docker image, then runs
+`flyctl deploy --remote-only`.
 
 Verify:
 
@@ -99,6 +99,10 @@ Verify:
 curl https://<your-app-name>.fly.dev/health
 curl https://<your-app-name>.fly.dev/steam/store/catalog
 ```
+
+`/health` should report `steam.authConfigured: true` and
+`storage.durable: true`. If the strict audit fails, fix the env/secrets
+before deploying.
 
 ## Wire the URL into packaged builds
 

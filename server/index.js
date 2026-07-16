@@ -6,6 +6,7 @@ import { attachSteamAuthRoutes } from './steamAuth.js';
 import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
 import { attachSteamStoreRoutes } from './steamStore.js';
+import { createRateLimitMiddleware } from './rateLimit.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -40,6 +41,7 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.json({ limit: '16kb' }));
+app.use('/steam', createRateLimitMiddleware());
 
 // Initialize DB before routing
 await initDb();

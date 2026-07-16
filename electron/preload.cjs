@@ -64,20 +64,27 @@ const STEAM_AUTH_IDENTITY = cleanConfigString(
     BUNDLED_STEAM_CONFIG.authIdentity ?? process.env.HB_STEAM_AUTH_IDENTITY,
     DEFAULT_STEAM_CONFIG.authIdentity
 );
+const STEAM_SESSION_REFRESH_SKEW_MS = 30 * 1000;
+let cachedSteamSession = null;
+let pendingSteamSession = null;
+let pendingSteamSessionIdentity = null;
 
 function steamBackendUrl(path) {
     return new URL(path, STEAM_BACKEND_URL.endsWith('/') ? STEAM_BACKEND_URL : `${STEAM_BACKEND_URL}/`).toString();
 }
 
-async function requestSteamBackend(path, { method = 'GET', body = null } = {}) {
+async function requestSteamBackend(path, { method = 'GET', body = null, headers = {} } = {}) {
     if (typeof fetch !== 'function') {
         return { ok: false, reason: 'fetch_unavailable' };
     }
 
     try {
+        const requestHeaders = { ...headers };
+        if (body) requestHeaders['content-type'] = 'application/json';
+
         const response = await fetch(steamBackendUrl(path), {
             method,
-            headers: body ? { 'content-type': 'application/json' } : undefined,
+            headers: Object.keys(requestHeaders).length > 0 ? requestHeaders : undefined,
             body: body ? JSON.stringify(body) : undefined
         });
         const text = await response.text();
@@ -101,20 +108,46 @@ async function requestSteamBackend(path, { method = 'GET', body = null } = {}) {
     }
 }
 
-async function withSteamAuthTicket(path, payload = {}, { method = 'POST', identity = STEAM_AUTH_IDENTITY } = {}) {
+function isSteamSessionFresh(session) {
+    return Boolean(
+        session?.ok
+        && session?.token
+        && Number(session.expiresAt) - Date.now() > STEAM_SESSION_REFRESH_SKEW_MS
+    );
+}
+
+function clearSteamSession() {
+    cachedSteamSession = null;
+}
+
+async function mintSteamSession(identity = STEAM_AUTH_IDENTITY) {
     const ticket = await ipcRenderer.invoke('hb:getSteamAuthTicket', identity);
-    if (!ticket?.ok) return ticket;
+    if (!ticket?.ok) {
+        return {
+            ...(ticket ?? {}),
+            ok: false,
+            reason: ticket?.reason ?? 'steam_auth_unavailable',
+            authTicketUnavailable: true
+        };
+    }
 
     try {
-        return await requestSteamBackend(path, {
-            method,
+        const session = await requestSteamBackend('/steam/session', {
+            method: 'POST',
             body: {
-                ...payload,
                 ticketHex: ticket.ticketHex,
                 identity: ticket.identity ?? identity,
                 appId: ticket.appId ?? STEAM_APP_ID
             }
         });
+        if (session?.ok && session?.token) {
+            cachedSteamSession = {
+                ...session,
+                identity: session.identity ?? ticket.identity ?? identity
+            };
+            return cachedSteamSession;
+        }
+        return session;
     } finally {
         if (ticket.handle) {
             await ipcRenderer.invoke('hb:cancelSteamAuthTicket', ticket.handle);
@@ -122,48 +155,81 @@ async function withSteamAuthTicket(path, payload = {}, { method = 'POST', identi
     }
 }
 
-async function withSteamAuthTicketGet(path, queryParams = {}, { identity = STEAM_AUTH_IDENTITY } = {}) {
-    const ticket = await ipcRenderer.invoke('hb:getSteamAuthTicket', identity);
-    if (!ticket?.ok) return ticket;
-
-    try {
-        const urlParams = new URLSearchParams();
-        urlParams.append('ticketHex', ticket.ticketHex);
-        urlParams.append('identity', ticket.identity ?? identity);
-        urlParams.append('appId', String(ticket.appId ?? STEAM_APP_ID));
-
-        for (const [key, value] of Object.entries(queryParams)) {
-            urlParams.append(key, String(value));
-        }
-
-        return await requestSteamBackend(`${path}?${urlParams.toString()}`, {
-            method: 'GET'
-        });
-    } finally {
-        if (ticket.handle) {
-            await ipcRenderer.invoke('hb:cancelSteamAuthTicket', ticket.handle);
-        }
+async function getSteamSession(identity = STEAM_AUTH_IDENTITY, { forceRefresh = false } = {}) {
+    const normalizedIdentity = cleanConfigString(identity, STEAM_AUTH_IDENTITY);
+    if (
+        !forceRefresh
+        && cachedSteamSession?.identity === normalizedIdentity
+        && isSteamSessionFresh(cachedSteamSession)
+    ) {
+        return cachedSteamSession;
     }
+
+    if (!forceRefresh && pendingSteamSession && pendingSteamSessionIdentity === normalizedIdentity) {
+        return pendingSteamSession;
+    }
+
+    pendingSteamSessionIdentity = normalizedIdentity;
+    pendingSteamSession = mintSteamSession(normalizedIdentity).finally(() => {
+        pendingSteamSession = null;
+        pendingSteamSessionIdentity = null;
+    });
+    return pendingSteamSession;
+}
+
+async function requestSteamBackendWithSession(
+    path,
+    { method = 'POST', body = null, identity = STEAM_AUTH_IDENTITY, retry = true } = {}
+) {
+    const session = await getSteamSession(identity);
+    if (!session?.ok) {
+        return session ?? { ok: false, reason: 'steam_session_unavailable' };
+    }
+
+    const result = await requestSteamBackend(path, {
+        method,
+        body,
+        headers: {
+            authorization: `Bearer ${session.token}`
+        }
+    });
+
+    if (retry && result?.status === 401 && String(result.reason ?? '').startsWith('session_')) {
+        clearSteamSession();
+        return requestSteamBackendWithSession(path, { method, body, identity, retry: false });
+    }
+
+    return result;
+}
+
+function withSteamSession(path, payload = {}, { method = 'POST', identity = STEAM_AUTH_IDENTITY } = {}) {
+    return requestSteamBackendWithSession(path, {
+        method,
+        body: payload,
+        identity
+    });
+}
+
+function withSteamSessionGet(path, queryParams = {}, { identity = STEAM_AUTH_IDENTITY } = {}) {
+    const urlParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(queryParams)) {
+        urlParams.append(key, String(value));
+    }
+    const suffix = urlParams.toString() ? `?${urlParams.toString()}` : '';
+    return requestSteamBackendWithSession(`${path}${suffix}`, {
+        method: 'GET',
+        identity
+    });
 }
 
 async function submitSteamRunScore(payload = {}) {
-    const ticket = await ipcRenderer.invoke('hb:getSteamAuthTicket', STEAM_AUTH_IDENTITY);
-    if (ticket?.ok) {
-        try {
-            return await requestSteamBackend('/steam/leaderboards/submit-run', {
-                method: 'POST',
-                body: {
-                    payload,
-                    ticketHex: ticket.ticketHex,
-                    identity: ticket.identity ?? STEAM_AUTH_IDENTITY,
-                    appId: ticket.appId ?? STEAM_APP_ID
-                }
-            });
-        } finally {
-            if (ticket.handle) {
-                await ipcRenderer.invoke('hb:cancelSteamAuthTicket', ticket.handle);
-            }
-        }
+    const result = await requestSteamBackendWithSession('/steam/leaderboards/submit-run', {
+        method: 'POST',
+        body: { payload },
+        identity: STEAM_AUTH_IDENTITY
+    });
+    if (result?.ok || !result?.authTicketUnavailable) {
+        return result;
     }
 
     return requestSteamBackend('/steam/leaderboards/submit-run', {
@@ -171,7 +237,7 @@ async function submitSteamRunScore(payload = {}) {
         body: {
             payload,
             mockMode: true,
-            authFallbackReason: ticket?.reason ?? 'steam_auth_unavailable'
+            authFallbackReason: result?.reason ?? 'steam_auth_unavailable'
         }
     });
 }
@@ -187,7 +253,12 @@ function getSteamLeaderboard(board, optionsOrType = {}, maybeCount = 10) {
     if (options.rangeStart != null) urlParams.set('rangeStart', String(options.rangeStart));
     if (options.rangeEnd != null) urlParams.set('rangeEnd', String(options.rangeEnd));
     const suffix = urlParams.toString() ? `?${urlParams.toString()}` : '';
-    return requestSteamBackend(`/steam/leaderboards/${encodeURIComponent(board)}${suffix}`);
+    const requestType = String(options.dataRequest ?? options.type ?? '').toLowerCase();
+    const needsSession = ['friends', 'requestfriends', 'arounduser', 'requestarounduser'].includes(requestType);
+    const pathWithQuery = `/steam/leaderboards/${encodeURIComponent(board)}${suffix}`;
+    return needsSession
+        ? requestSteamBackendWithSession(pathWithQuery, { method: 'GET' })
+        : requestSteamBackend(pathWithQuery);
 }
 
 // Restore the save file into localStorage BEFORE any page script runs.
@@ -214,20 +285,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSteamAuthTicket: (identity = STEAM_AUTH_IDENTITY) => ipcRenderer.invoke('hb:getSteamAuthTicket', identity),
     cancelSteamAuthTicket: (handle) => ipcRenderer.invoke('hb:cancelSteamAuthTicket', handle),
     getSteamBackendHealth: () => requestSteamBackend('/health'),
-    createSteamSession: (identity = STEAM_AUTH_IDENTITY) => withSteamAuthTicket('/steam/session', {}, { identity }),
+    createSteamSession: (identity = STEAM_AUTH_IDENTITY) => getSteamSession(identity, { forceRefresh: true }),
     submitSteamRunScore,
-    refreshSteamInventory: () => withSteamAuthTicketGet('/steam/inventory'),
-    triggerSteamPlaytimeDrop: () => withSteamAuthTicket('/steam/inventory/trigger-drop'),
-    requestSteamMilestoneGrant: (milestone, runKey) => withSteamAuthTicket('/steam/inventory/grant-milestone', { milestone, runKey }),
-    exchangeSteamInventory: (recipeId, materials) => withSteamAuthTicket('/steam/inventory/exchange', { recipeId, materials }),
-    getSteamMarketEligibility: () => withSteamAuthTicketGet('/steam/market/eligibility'),
+    refreshSteamInventory: () => withSteamSessionGet('/steam/inventory'),
+    triggerSteamPlaytimeDrop: () => withSteamSession('/steam/inventory/trigger-drop'),
+    requestSteamMilestoneGrant: (milestone, runKey) => withSteamSession('/steam/inventory/grant-milestone', { milestone, runKey }),
+    exchangeSteamInventory: (recipeId, materials) => withSteamSession('/steam/inventory/exchange', { recipeId, materials }),
+    getSteamMarketEligibility: () => withSteamSessionGet('/steam/market/eligibility'),
     getSteamStoreCatalog: () => requestSteamBackend('/steam/store/catalog'),
     purchaseSteamKeys: (sku, requestId = `store-${Date.now()}-${Math.random().toString(36).slice(2)}`) => (
-        withSteamAuthTicket('/steam/store/purchase/init', { sku, requestId })
+        withSteamSession('/steam/store/purchase/init', { sku, requestId })
     ),
-    finalizeSteamPurchase: (transId) => withSteamAuthTicket('/steam/store/purchase/finalize', { transId }),
+    finalizeSteamPurchase: (transId) => withSteamSession('/steam/store/purchase/finalize', { transId }),
     openSteamCache: (cacheItemId, keyItemId, requestId = `cache-${Date.now()}-${Math.random().toString(36).slice(2)}`) => (
-        withSteamAuthTicket('/steam/inventory/exchange', { recipeId: 4100, materials: [cacheItemId, keyItemId], requestId })
+        withSteamSession('/steam/inventory/exchange', { recipeId: 4100, materials: [cacheItemId, keyItemId], requestId })
     ),
     getSteamLeaderboard,
     openSteamOverlayToUrl: (url) => ipcRenderer.invoke('hb:openSteamOverlayToUrl', url),

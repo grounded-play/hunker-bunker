@@ -1,0 +1,43 @@
+name: steam-backend-deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      HB_BACKEND_AUDIT_STRICT: "1"
+      HB_STEAM_APPID: "1247290"
+      HB_STEAM_PUBLISHER_KEY: ${{ secrets.HB_STEAM_PUBLISHER_KEY }}
+      HB_SESSION_SECRET: ${{ secrets.HB_SESSION_SECRET }}
+      HB_ALLOWED_ORIGINS: ${{ vars.HB_ALLOWED_ORIGINS }}
+      HB_DB_STORAGE_PATH: "/app/server/data/db_storage.json"
+      HB_STEAM_LEADERBOARD_IDS: ${{ vars.HB_STEAM_LEADERBOARD_IDS }}
+      HB_STEAM_MICROTXN_ENABLED: ${{ vars.HB_STEAM_MICROTXN_ENABLED }}
+      HB_STEAM_STORE_ENABLED: ${{ vars.HB_STEAM_STORE_ENABLED }}
+      HB_STEAM_STORE_MOCK_PURCHASES: "0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Audit backend production env
+        run: npm run steam:audit-backend:strict
+
+      - name: Build backend image
+        run: docker build -t hunker-bunker-steam-backend .
+
+      - name: Check Fly token
+        run: test -n "$FLY_API_TOKEN"
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy backend
+        run: flyctl deploy --remote-only

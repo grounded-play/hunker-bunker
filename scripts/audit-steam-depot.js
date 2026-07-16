@@ -1,0 +1,197 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, '..');
+
+const DEFAULT_DEPOT_ROOTS = [
+    'dist_electron/linux-unpacked',
+    'dist_electron/win-unpacked'
+];
+
+const FORBIDDEN_BASENAMES = new Map([
+    ['steam_appid.txt', 'Dev appid file must not ship in a retail Steam depot.'],
+    ['db_storage.json', 'Local backend JSON database must stay server-side.'],
+    ['db_storage.json.tmp', 'Temporary backend JSON database file must not ship.']
+]);
+
+const FORBIDDEN_EXTENSIONS = new Map([
+    ['.pem', 'Private key/certificate material must not ship in the depot.'],
+    ['.p12', 'Private key/certificate material must not ship in the depot.'],
+    ['.pfx', 'Private key/certificate material must not ship in the depot.'],
+    ['.key', 'Private key material must not ship in the depot.']
+]);
+
+function isEnvFile(basename) {
+    return basename === '.env' || basename.startsWith('.env.');
+}
+
+async function walkFiles(root) {
+    const files = [];
+    const pending = [root];
+
+    while (pending.length > 0) {
+        const dir = pending.pop();
+        const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+            const entryPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                pending.push(entryPath);
+            } else if (entry.isFile()) {
+                files.push(entryPath);
+            }
+        }
+    }
+
+    return files;
+}
+
+function auditFile(filePath, root) {
+    const basename = path.basename(filePath).toLowerCase();
+    const extension = path.extname(basename);
+    const relativePath = path.relative(root, filePath).split(path.sep).join('/');
+
+    if (FORBIDDEN_BASENAMES.has(basename)) {
+        return {
+            file: relativePath,
+            reason: FORBIDDEN_BASENAMES.get(basename)
+        };
+    }
+
+    if (isEnvFile(basename)) {
+        return {
+            file: relativePath,
+            reason: 'Environment files may contain backend URLs, keys, or secrets.'
+        };
+    }
+
+    if (FORBIDDEN_EXTENSIONS.has(extension)) {
+        return {
+            file: relativePath,
+            reason: FORBIDDEN_EXTENSIONS.get(extension)
+        };
+    }
+
+    return null;
+}
+
+function readTextIfExists(filePath) {
+    if (!fs.existsSync(filePath)) return null;
+    return fs.readFileSync(filePath, 'utf8');
+}
+
+function stripVdfComments(text) {
+    return String(text ?? '')
+        .split('\n')
+        .map((line) => line.replace(/\/\/.*$/, ''))
+        .join('\n');
+}
+
+export function auditSteamVdfs({ steamDir = path.join(repoRoot, 'steam') } = {}) {
+    const failures = [];
+    const appBuild = readTextIfExists(path.join(steamDir, 'app_build.vdf'));
+    const winDepot = readTextIfExists(path.join(steamDir, 'depot_build_windows.vdf'));
+    const linuxDepot = readTextIfExists(path.join(steamDir, 'depot_build_linux.vdf'));
+
+    if (!appBuild) {
+        failures.push({ file: 'steam/app_build.vdf', reason: 'Missing Steam app build VDF.' });
+    } else {
+        const appBuildBody = stripVdfComments(appBuild);
+        if (/__APPID__|__DEPOT_WINDOWS__|__DEPOT_LINUX__/.test(appBuildBody)) {
+            failures.push({ file: 'steam/app_build.vdf', reason: 'Steam VDF still contains upload placeholders.' });
+        }
+        if (!/"AppID"\s+"1247290"/.test(appBuildBody)) {
+            failures.push({ file: 'steam/app_build.vdf', reason: 'Steam appid 1247290 is not pinned.' });
+        }
+        if (!/"1247291"\s+"depot_build_windows\.vdf"/.test(appBuildBody)) {
+            failures.push({ file: 'steam/app_build.vdf', reason: 'Windows depot 1247291 is not wired.' });
+        }
+        if (!/"1247292"\s+"depot_build_linux\.vdf"/.test(appBuildBody)) {
+            failures.push({ file: 'steam/app_build.vdf', reason: 'Linux depot 1247292 is not wired.' });
+        }
+    }
+
+    for (const [label, text] of [['steam/depot_build_windows.vdf', winDepot], ['steam/depot_build_linux.vdf', linuxDepot]]) {
+        if (!text) {
+            failures.push({ file: label, reason: 'Missing Steam depot VDF.' });
+            continue;
+        }
+        const depotBody = stripVdfComments(text);
+        if (/__DEPOT_/.test(depotBody)) {
+            failures.push({ file: label, reason: 'Depot VDF still contains upload placeholders.' });
+        }
+        if (!/"FileExclusion"\s+"steam_appid\.txt"/.test(depotBody)) {
+            failures.push({ file: label, reason: 'Depot VDF must exclude steam_appid.txt.' });
+        }
+    }
+
+    return failures;
+}
+
+export async function auditSteamDepot({
+    roots = DEFAULT_DEPOT_ROOTS,
+    cwd = repoRoot
+} = {}) {
+    const failures = auditSteamVdfs();
+    const warnings = [];
+    let scannedFiles = 0;
+    let scannedRoots = 0;
+
+    for (const root of roots) {
+        const absoluteRoot = path.resolve(cwd, root);
+        if (!fs.existsSync(absoluteRoot)) {
+            warnings.push({ root, reason: 'Depot output directory does not exist; skipped.' });
+            continue;
+        }
+
+        scannedRoots += 1;
+        const files = await walkFiles(absoluteRoot);
+        scannedFiles += files.length;
+        for (const file of files) {
+            const failure = auditFile(file, absoluteRoot);
+            if (failure) {
+                failures.push({
+                    root,
+                    ...failure
+                });
+            }
+        }
+    }
+
+    return {
+        ok: failures.length === 0,
+        scannedRoots,
+        scannedFiles,
+        failures,
+        warnings
+    };
+}
+
+async function main() {
+    const roots = process.argv.slice(2);
+    const result = await auditSteamDepot({ roots: roots.length > 0 ? roots : DEFAULT_DEPOT_ROOTS });
+
+    for (const warning of result.warnings) {
+        console.warn(`[steam-audit] warning: ${warning.root}: ${warning.reason}`);
+    }
+
+    if (!result.ok) {
+        console.error('[steam-audit] depot audit failed:');
+        for (const failure of result.failures) {
+            const prefix = failure.root ? `${failure.root}/${failure.file}` : failure.file;
+            console.error(`- ${prefix}: ${failure.reason}`);
+        }
+        process.exitCode = 1;
+        return;
+    }
+
+    console.log(`[steam-audit] ok (${result.scannedFiles} files across ${result.scannedRoots} depot root(s))`);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    main().catch((err) => {
+        console.error(`[steam-audit] ${err?.message ?? err}`);
+        process.exitCode = 1;
+    });
+}

@@ -38,7 +38,13 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npm run steam:config
+        env:
+          HB_STEAM_BACKEND_URL: ${{ vars.HB_STEAM_BACKEND_URL }}
+          HB_STEAM_APPID: ${{ vars.STEAM_APPID }}
+          HB_STEAM_CONFIG_REQUIRE_REMOTE: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
       - run: npx electron-builder --dir
+      - run: npm run steam:audit-depot
       - uses: actions/upload-artifact@v4
         with:
           name: hunker-bunker-${{ matrix.unpacked }}

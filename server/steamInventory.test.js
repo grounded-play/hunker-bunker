@@ -5,6 +5,7 @@ import express from 'express';
 import { afterEach, beforeAll, afterAll, describe, expect, it, vi } from 'vitest';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
 import { initDb, setMockInventory, getMockInventory } from './db.js';
+import { createSteamSessionToken } from './steamAuth.js';
 
 let server;
 let baseUrl;
@@ -72,8 +73,38 @@ describe('Steam Inventory API endpoints', () => {
         });
     });
 
+    it('GET /steam/inventory accepts bearer sessions without a fresh ticket', async () => {
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        delete process.env.STEAM_PUBLISHER_KEY;
+        delete process.env.STEAM_WEB_API_KEY;
+        process.env.HB_SESSION_SECRET = 'session-secret';
+
+        const testId = '76561198000000000';
+        await setMockInventory(testId, [
+            { itemId: 'bearer-item-1', itemdefid: 1100, quantity: 1, acquiredAt: Date.now() }
+        ]);
+        const session = createSteamSessionToken({
+            steamId64: testId,
+            isDevMode: true
+        });
+
+        const response = await fetch(`${baseUrl}/steam/inventory`, {
+            headers: { authorization: `Bearer ${session.token}` }
+        });
+        expect(response.status).toBe(200);
+
+        const body = await response.json();
+        expect(body).toMatchObject({
+            ok: true,
+            inventory: [
+                { itemId: 'bearer-item-1', itemdefid: 1100, quantity: 1 }
+            ]
+        });
+    });
+
     it('POST /steam/inventory/trigger-drop rewards items and respects idempotency', async () => {
         delete process.env.HB_STEAM_PUBLISHER_KEY;
+        process.env.HB_STEAM_DROP_COOLDOWN_SECONDS = '0';
         const testId = '76561198000000000';
         await setMockInventory(testId, []);
 
@@ -108,6 +139,42 @@ describe('Steam Inventory API endpoints', () => {
         const body2 = await res2.json();
         expect(body2).toMatchObject(body1);
         expect(body2.granted[0].itemId).toBe(grantedItemId);
+    });
+
+    it('POST /steam/inventory/trigger-drop enforces a server-side drop cooldown across unique request ids', async () => {
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        process.env.HB_STEAM_DROP_COOLDOWN_SECONDS = '3600';
+        const testId = '76561198000000000';
+        await setMockInventory(testId, []);
+
+        const first = await fetch(`${baseUrl}/steam/inventory/trigger-drop`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                ticketHex: '00112233445566778899aabbccddeeff',
+                requestId: `drop-cooldown-a-${Math.random()}`
+            })
+        });
+        expect(first.status).toBe(200);
+        expect((await first.json()).granted).toHaveLength(1);
+
+        const second = await fetch(`${baseUrl}/steam/inventory/trigger-drop`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                ticketHex: '00112233445566778899aabbccddeeff',
+                requestId: `drop-cooldown-b-${Math.random()}`
+            })
+        });
+        expect(second.status).toBe(200);
+        const secondBody = await second.json();
+        expect(secondBody).toMatchObject({
+            ok: true,
+            granted: [],
+            reason: 'drop_cooldown',
+            retryAfterSeconds: expect.any(Number)
+        });
+        expect(getMockInventory(testId)).toHaveLength(1);
     });
 
     it('POST /steam/inventory/grant-promo awards class victory patches', async () => {

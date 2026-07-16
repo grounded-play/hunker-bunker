@@ -51,6 +51,9 @@ describe('Steam Store API endpoints', () => {
 
         const body = await res.json();
         expect(body.ok).toBe(true);
+        expect(body.purchasesEnabled).toBe(true);
+        expect(body.purchaseMode).toBe('mock');
+        expect(body.mockPurchasesEnabled).toBe(true);
         expect(body.catalog.length).toBeGreaterThan(0);
         expect(body.catalog[0]).toMatchObject({ sku: expect.any(String), priceUsdCents: expect.any(Number) });
 
@@ -83,6 +86,36 @@ describe('Steam Store API endpoints', () => {
         const inv = getMockInventory(testId);
         const keys = inv.find((i) => i.itemdefid === 4001);
         expect(keys?.quantity).toBe(5);
+    });
+
+    it('POST /steam/store/purchase/init rejects production purchases until live Steam commerce is enabled', async () => {
+        process.env.NODE_ENV = 'production';
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        delete process.env.HB_STEAM_MICROTXN_ENABLED;
+        delete process.env.HB_STEAM_STORE_ENABLED;
+        delete process.env.HB_STEAM_STORE_MOCK_PURCHASES;
+        const testId = '76561198000000000';
+        await setMockInventory(testId, []);
+
+        const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                ticketHex: '00112233445566778899aabbccddeeff',
+                requestId: `buy-prod-disabled-${Math.random()}`,
+                sku: 'key_1'
+            })
+        });
+        expect(res.status).toBe(503);
+
+        const body = await res.json();
+        expect(body).toMatchObject({
+            ok: false,
+            reason: 'steam_store_disabled',
+            purchasesEnabled: false,
+            purchaseMode: 'disabled'
+        });
+        expect(getMockInventory(testId).find((i) => i.itemdefid === 4001)).toBeUndefined();
     });
 
     it('POST /steam/store/purchase/init is idempotent on requestId', async () => {

@@ -1,5 +1,5 @@
 import { buildCanonicalLeaderboardTargets, STEAM_LEADERBOARD_DEFS, validateRunScorePayload } from './leaderboardScoring.js';
-import { getSteamAuthConfig, getSteamPublisherKey, verifySteamSessionTicket } from './steamAuth.js';
+import { authenticateSteamRequest, getSteamAuthConfig, getSteamPublisherKey } from './steamAuth.js';
 import { checkIdempotency, saveIdempotency } from './db.js';
 import { grantItemToPlayer } from './steamGrant.js';
 import { DEEP_RELIC_CACHE_ITEMDEFID } from './lootTables.js';
@@ -53,6 +53,10 @@ function normalizeDataRequest(value = 'RequestGlobal') {
     if (lowered === 'friends' || lowered === 'requestfriends') return 'RequestFriends';
     if (lowered === 'arounduser' || lowered === 'requestarounduser') return 'RequestAroundUser';
     return 'RequestGlobal';
+}
+
+function hasBearerAuth(req) {
+    return /^bearer\s+\S+/i.test(String(req?.headers?.authorization ?? ''));
 }
 
 function normalizeLeaderboardEntries(data) {
@@ -556,12 +560,9 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
 export function attachSteamLeaderboardRoutes(app) {
     app.post('/steam/leaderboards/submit-run', async (req, res) => {
         let auth;
-        if (getSteamAuthConfig().configured) {
-            auth = await verifySteamSessionTicket({
-                ticketHex: req.body?.ticketHex,
-                identity: req.body?.identity
-            });
-
+        const config = getSteamAuthConfig();
+        if (config.configured || hasBearerAuth(req)) {
+            auth = await authenticateSteamRequest(req);
             if (!auth.ok) {
                 res.status(Number(auth.status) || 401).json(auth);
                 return;
@@ -573,7 +574,7 @@ export function attachSteamLeaderboardRoutes(app) {
                 ownerSteamId64: req.body?.mockSteamId64 ?? '76561198000000000',
                 persona: 'Agent',
                 isDevMode: true,
-                appId: getSteamAuthConfig().appId
+                appId: config.appId
             };
         }
 
@@ -593,11 +594,8 @@ export function attachSteamLeaderboardRoutes(app) {
     app.get('/steam/leaderboards/:board', async (req, res) => {
         const dataRequest = normalizeDataRequest(req.query.dataRequest ?? req.query.type ?? 'RequestGlobal');
         let steamId64 = null;
-        if (dataRequest !== 'RequestGlobal' && getSteamAuthConfig().configured) {
-            const auth = await verifySteamSessionTicket({
-                ticketHex: req.query?.ticketHex,
-                identity: req.query?.identity
-            });
+        if (dataRequest !== 'RequestGlobal' && (getSteamAuthConfig().configured || hasBearerAuth(req))) {
+            const auth = await authenticateSteamRequest(req);
             if (!auth.ok) {
                 res.status(Number(auth.status) || 401).json(auth);
                 return;

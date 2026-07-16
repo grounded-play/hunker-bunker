@@ -20,28 +20,34 @@ let dbState = {
 };
 
 let writeQueue = Promise.resolve();
+let dbInitialized = false;
+let lastWriteAt = null;
+let lastWriteError = null;
+let lastInitError = null;
 
 // Atomic writing: write to tmp, then rename to ensure crash-resistance
 async function saveToDisk() {
     const dbFilePath = getDbFilePath();
-    return new Promise((resolve, reject) => {
-        writeQueue = writeQueue.then(async () => {
-            const tmpPath = `${dbFilePath}.tmp`;
+    writeQueue = writeQueue.catch(() => {}).then(async () => {
+        const tmpPath = `${dbFilePath}.tmp`;
+        try {
+            const data = JSON.stringify(dbState, null, 2);
+            await fs.promises.mkdir(path.dirname(dbFilePath), { recursive: true });
+            await fs.promises.writeFile(tmpPath, data, 'utf8');
+            await fs.promises.rename(tmpPath, dbFilePath);
+            lastWriteAt = Date.now();
+            lastWriteError = null;
+        } catch (err) {
+            lastWriteError = err?.message ?? String(err);
             try {
-                const data = JSON.stringify(dbState, null, 2);
-                await fs.promises.writeFile(tmpPath, data, 'utf8');
-                await fs.promises.rename(tmpPath, dbFilePath);
-                resolve();
-            } catch (err) {
-                try {
-                    await fs.promises.unlink(tmpPath);
-                } catch (unlinkErr) {
-                    console.debug('[hb-db] temp file unlink failed:', unlinkErr.message);
-                }
-                reject(err);
+                await fs.promises.unlink(tmpPath);
+            } catch (unlinkErr) {
+                console.debug('[hb-db] temp file unlink failed:', unlinkErr.message);
             }
-        });
+            throw err;
+        }
     });
+    return writeQueue;
 }
 
 export async function initDb() {
@@ -56,10 +62,28 @@ export async function initDb() {
         } else {
             await saveToDisk();
         }
+        dbInitialized = true;
+        lastInitError = null;
         console.log('[hb-db] initialized database store at', dbFilePath);
     } catch (err) {
+        lastInitError = err?.message ?? String(err);
         console.error('[hb-db] failed to initialize database store:', err);
     }
+}
+
+export function getDbStatus() {
+    const dbFilePath = getDbFilePath();
+    const envConfigured = Boolean(process.env.HB_DB_STORAGE_PATH);
+    return {
+        path: dbFilePath,
+        envConfigured,
+        durable: envConfigured,
+        initialized: dbInitialized,
+        exists: fs.existsSync(dbFilePath),
+        lastWriteAt,
+        lastWriteError,
+        lastInitError
+    };
 }
 
 export function getMockInventory(steamId64) {

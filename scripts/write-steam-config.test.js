@@ -7,6 +7,7 @@ import {
     DEFAULT_STEAM_CONFIG,
     normalizeBackendUrl,
     normalizeSteamAppId,
+    requireRemoteSteamBackend,
     writeSteamConfig
 } from './write-steam-config.js';
 
@@ -27,6 +28,7 @@ function makeTempDir() {
 describe('write-steam-config', () => {
     it('builds the dev-safe default config', () => {
         expect(buildSteamConfig({})).toEqual(DEFAULT_STEAM_CONFIG);
+        expect(buildSteamConfig({ HB_STEAM_APPID: '' })).toEqual(DEFAULT_STEAM_CONFIG);
     });
 
     it('normalizes release config from env', () => {
@@ -39,6 +41,24 @@ describe('write-steam-config', () => {
             appId: 1247290,
             authIdentity: 'release-identity'
         });
+    });
+
+    it('can require a non-local HTTPS backend for release packaging', () => {
+        expect(buildSteamConfig({
+            HB_STEAM_BACKEND_URL: 'https://steam.example.test',
+            HB_STEAM_CONFIG_REQUIRE_REMOTE: '1'
+        }).backendUrl).toBe('https://steam.example.test');
+
+        expect(() => buildSteamConfig({
+            HB_STEAM_BACKEND_URL: 'http://localhost:3001',
+            HB_STEAM_CONFIG_REQUIRE_REMOTE: '1'
+        })).toThrow(/localhost/);
+
+        expect(() => requireRemoteSteamBackend({
+            backendUrl: 'http://steam.example.test',
+            appId: 1247290,
+            authIdentity: 'hunker-bunker-backend'
+        })).toThrow(/https/);
     });
 
     it('rejects invalid backend URLs and app ids', () => {

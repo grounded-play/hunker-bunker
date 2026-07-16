@@ -30,19 +30,38 @@ export function normalizeBackendUrl(value = DEFAULT_STEAM_CONFIG.backendUrl) {
 }
 
 export function normalizeSteamAppId(value = DEFAULT_STEAM_CONFIG.appId) {
-    const appId = Number(value);
+    const appId = Number(cleanString(value, DEFAULT_STEAM_CONFIG.appId));
     if (!Number.isInteger(appId) || appId <= 0) {
         throw new Error(`Invalid Steam app id: ${value}`);
     }
     return appId;
 }
 
+function isEnabled(value) {
+    return ['1', 'true', 'yes'].includes(String(value ?? '').trim().toLowerCase());
+}
+
+export function requireRemoteSteamBackend(config) {
+    const url = new URL(config.backendUrl);
+    const hostname = url.hostname.toLowerCase();
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+        throw new Error('Release Steam backend URL must not point at localhost.');
+    }
+    if (url.protocol !== 'https:') {
+        throw new Error('Release Steam backend URL must use https.');
+    }
+    return config;
+}
+
 export function buildSteamConfig(env = process.env) {
-    return {
+    const config = {
         backendUrl: normalizeBackendUrl(env.HB_STEAM_BACKEND_URL),
         appId: normalizeSteamAppId(env.HB_STEAM_APPID),
         authIdentity: cleanString(env.HB_STEAM_AUTH_IDENTITY, DEFAULT_STEAM_CONFIG.authIdentity)
     };
+    return isEnabled(env.HB_STEAM_CONFIG_REQUIRE_REMOTE)
+        ? requireRemoteSteamBackend(config)
+        : config;
 }
 
 export function writeSteamConfig({
