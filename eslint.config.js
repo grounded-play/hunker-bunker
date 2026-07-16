@@ -40,4 +40,32 @@ export default [
       },
     },
   },
+  {
+    // playwright.config.js runs under Node (reads process.env for CI).
+    files: ['playwright.config.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
+    // Playwright specs run in Node but their page.evaluate/addInitScript
+    // callback bodies execute in the browser — both global sets apply in
+    // the same file.
+    files: ['tests/e2e/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
 ];

@@ -1,7 +1,12 @@
 # Steam Launch Readiness Master Plan
 
 Date: 2026-07-16
-Branch context: `dev-sprint-19`, dirty worktree with substantial uncommitted Steam/backend/gameplay changes.
+Branch context: `dev-sprint-19`. **Update 2026-07-16:** the dirty worktree
+this doc originally described is gone — split into 6 commits 2026-07-15
+(see "Immediate Repo Hygiene" below, kept for the historical checklist).
+Working tree is clean as of this update; see
+`docs/sprint-19-wave4-lane-split.md` for the current three-way agent
+lane split on what's left.
 
 This document is the project-level plan for turning Hunker Bunker from a game
 with local Steam scaffolding into a Steam-installed build that connects to real
@@ -100,7 +105,21 @@ The project is not yet Steam-proven because these have not been completed:
 
 ## Immediate Repo Hygiene Before More Feature Work
 
-Before implementing more Steam features, stabilize the branch.
+**Done as of 2026-07-15** (this section's date, 2026-07-16, is one day
+after — the dirty tree it describes below no longer exists). The tree
+was split into 6 logical commits rather than one large integration
+commit: browser Gamepad fallback, backend hardening + Fly deploy
+pipeline, Store purchase gating, wall-HP/plaza-shape test coverage
+catch-up, the Queen fight wiring, and Phaser/bank.js dead-code removal +
+doc sync. `git status --short` is clean. All of the bullets originally
+listed here (Phaser references in README/index.html/jsconfig,
+`src/game.js`/`src/levelManager.js` deletion, untracked tests/scripts/
+docs added, doc reconciliation) are resolved. See
+`docs/full-implementation-review-2026-07-14.md`'s tl;dr items 1 and 3,
+and `docs/sprint-19-wave4-lane-split.md` for what's next.
+
+Kept below for the record — this was the actual checklist worked
+through:
 
 ### Needs
 
@@ -124,7 +143,8 @@ Before implementing more Steam features, stabilize the branch.
 - `npm run lint` passes.
 - `npm test` passes.
 - `npm run build` passes.
-- `npm audit --omit=dev` reports 0 vulnerabilities.
+- `npm audit --omit=dev` reports 0 vulnerabilities. **Confirmed
+  2026-07-16.**
 - Dirty branch can be reviewed without guessing which changes belong to which
   sprint slice.
 
@@ -913,8 +933,8 @@ Do this in order.
 
 ## Current Top Outstanding Decisions
 
-1. Do we commit the current dirty tree as one sprint integration or split it?
-2. Do we permanently delete the Phaser-era files and remove all Phaser docs/config?
+1. ~~Do we commit the current dirty tree as one sprint integration or split it?~~ **Resolved 2026-07-15:** split into 6 logical commits (see Immediate Repo Hygiene above).
+2. ~~Do we permanently delete the Phaser-era files and remove all Phaser docs/config?~~ **Resolved 2026-07-15:** yes, with explicit owner go-ahead — `src/levelManager.js`/`src/game.js` deleted, `phaser` npm dependency removed, and every remaining reference (README badge/prose, index.html credits/keywords, jsconfig.json path mapping) cleaned up.
 3. What Fly app name and allowed origin policy should be used?
 4. Are paid Cache Keys definitely in scope for first public release, or should
    Store be read-only/offline until after launch?
@@ -932,8 +952,10 @@ Do this in order.
 
 ## Recommended Next Work Order
 
-1. Commit or split the current dirty tree.
-2. Reconcile docs against the current branch reality.
+1. ~~Commit or split the current dirty tree.~~ Done 2026-07-15.
+2. ~~Reconcile docs against the current branch reality.~~ Done 2026-07-15
+   (this doc itself got its own pass 2026-07-16, see the update note at
+   the top).
 3. Deploy backend to Fly with durable volume and secrets.
 4. Bake deployed backend URL into packaged build.
 5. Upload/install from Steam beta.

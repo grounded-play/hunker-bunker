@@ -45,3 +45,7 @@ dist_soundtrack/
 # Local backend/dev stores
 server/db_storage.json
 server/db_storage.json.tmp
+
+# Playwright e2e (Phase 13) output
+playwright-report/
+test-results/
