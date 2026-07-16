@@ -4,11 +4,10 @@
 [![Netlify Status](https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status)](https://app.netlify.com/projects/hunkerbunker/deploys)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Three.js](https://img.shields.io/badge/Three.js-r184-00e5ff.svg?logo=three.js)](https://threejs.org/)
-[![Phaser](https://img.shields.io/badge/Phaser-v3.80-ff9f1c.svg?logo=phaser)](https://phaser.io/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-v4.8-2ec4b6.svg?logo=socket.io)](https://socket.io/)
 [![Testing: Vitest](https://img.shields.io/badge/Testing-Vitest-41b883.svg?logo=vitest)](https://vitest.dev/)
 
-**HUNKER BUNKER: Tactical Command v2.0** is an immersive, high-performance, retro-futuristic arcade tactics game. Built on a custom 3D WebGL engine utilizing **Three.js** and **Phaser**, players command modular tactical units through an infinite, procedurally generated network of subterranean metallic bunker corridors. 
+**HUNKER BUNKER: Tactical Command v2.0** is an immersive, high-performance, retro-futuristic arcade tactics game. Built on a custom 3D WebGL engine utilizing **Three.js**, players command modular tactical units through an infinite, procedurally generated network of subterranean metallic bunker corridors. 
 
 🎮 **[Play the Live Demo on Netlify!](https://hunkerbunker.netlify.app/)**
 

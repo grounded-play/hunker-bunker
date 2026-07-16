@@ -14,7 +14,7 @@
 
   <!-- SEO Metadata -->
   <meta name="description" content="HUNKER BUNKER is an immersive, retro-futuristic WebGL arcade tactics game. Command modular units through an infinite procedural subterranean corridor network." />
-  <meta name="keywords" content="hunker bunker, game, phaser, three.js, roguelike, retro, webgl, arcade, multiplayer, tactical command" />
+  <meta name="keywords" content="hunker bunker, game, three.js, roguelike, retro, webgl, arcade, multiplayer, tactical command" />
   <meta name="author" content="Tuesday Cinema Club" />
 
   <!-- Open Graph / Facebook -->
@@ -131,7 +131,7 @@
 
             <div class="credits-section">
               <div class="credits-role">GRAPHICS ENGINE</div>
-              <div class="credits-name">Three.js r184 & Phaser v3.80</div>
+              <div class="credits-name">Three.js r184</div>
             </div>
 
             <div class="credits-section">
@@ -1066,96 +1066,6 @@
             </div>
           </div>
 
-          <!-- Tier 2 upgrades — visible only after Goal 4 complete -->
-          <div id="tier2-section" class="upgrade-goals-section terminal-tone--tier2 hidden">
-            <div class="terminal-section-title">ADVANCED SYSTEMS</div>
-
-            <div class="action-card action-card--tier2" data-tier2-card="suitThermal">
-              <div class="action-card-header">
-                <span class="action-title">SPACE HEATER</span>
-                <span class="action-cost" id="terminal-tier2-suitThermal-status">AVAILABLE</span>
-              </div>
-              <p class="action-desc">Deploys a thermal heater that nearly eliminates O₂ drain in the CRYO sector.</p>
-              <p class="action-desc action-desc--cost" id="terminal-tier2-suitThermal-cost">COST: 60 TECH / 12 COIN</p>
-              <button class="terminal-action-btn" id="terminal-btn-tier2-suitThermal">INSTALL</button>
-            </div>
-
-            <div class="action-card action-card--tier2" data-tier2-card="deconFilters">
-              <div class="action-card-header">
-                <span class="action-title">DECONTAMINATION FILTERS</span>
-                <span class="action-cost" id="terminal-tier2-deconFilters-status">AVAILABLE</span>
-              </div>
-              <p class="action-desc">Reduces O₂ drain in BIO sector by 50%.</p>
-              <p class="action-desc action-desc--cost" id="terminal-tier2-deconFilters-cost">COST: 100 TECH / 20 COIN</p>
-              <button class="terminal-action-btn" id="terminal-btn-tier2-deconFilters">INSTALL</button>
-            </div>
-
-            <div class="action-card action-card--tier2" data-tier2-card="stimCache">
-              <div class="action-card-header">
-                <span class="action-title">EMERGENCY STIM CACHE</span>
-                <span class="action-cost" id="terminal-tier2-stimCache-status">AVAILABLE</span>
-              </div>
-              <p class="action-desc">Each run starts with a STIM PACK — press [F] for 3s immunity (if ability ready).</p>
-              <p class="action-desc action-desc--cost" id="terminal-tier2-stimCache-cost">COST: 60 TECH / 25 COIN</p>
-              <button class="terminal-action-btn" id="terminal-btn-tier2-stimCache">INSTALL</button>
-            </div>
-          </div>
-
-          <!-- Weapon skill tree — visible once the O₂ generator is repaired -->
-          <div id="weapons-section" class="upgrade-goals-section terminal-tone--tier2 weapons-matrix-section hidden">
-            <div class="terminal-section-title">COMBAT MATRIX</div>
-
-            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="ammoCapacity">
-              <div class="action-card-header">
-                <span class="action-title">MAGAZINE CAPACITY</span>
-                <span class="action-cost" id="terminal-weapon-ammoCapacity-level">LV 0/3</span>
-              </div>
-              <p class="action-desc" id="terminal-weapon-ammoCapacity-desc">NEXT: Clip +2 rounds</p>
-              <p class="action-desc action-desc--cost" id="terminal-weapon-ammoCapacity-cost">COST: 30 TECH / 10 COIN</p>
-              <button class="terminal-action-btn" id="terminal-btn-weapon-ammoCapacity">UPGRADE</button>
-            </div>
-
-            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="ammoRefill">
-              <div class="action-card-header">
-                <span class="action-title">AMMO CONDENSER</span>
-                <span class="action-cost" id="terminal-weapon-ammoRefill-level">LV 0/3</span>
-              </div>
-              <p class="action-desc" id="terminal-weapon-ammoRefill-desc">NEXT: Passive ammo refill every 7.9s</p>
-              <p class="action-desc action-desc--cost" id="terminal-weapon-ammoRefill-cost">COST: 45 TECH / 12 COIN</p>
-              <button class="terminal-action-btn" id="terminal-btn-weapon-ammoRefill">UPGRADE</button>
-            </div>
-
-            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="shotSpeed">
-              <div class="action-card-header">
-                <span class="action-title">PROJECTILE VELOCITY</span>
-                <span class="action-cost" id="terminal-weapon-shotSpeed-level">LV 0/3</span>
-              </div>
-              <p class="action-desc" id="terminal-weapon-shotSpeed-desc">NEXT: Shot speed +1</p>
-              <p class="action-desc action-desc--cost" id="terminal-weapon-shotSpeed-cost">COST: 25 TECH / 8 COIN</p>
-              <button class="terminal-action-btn" id="terminal-btn-weapon-shotSpeed">UPGRADE</button>
-            </div>
-
-            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="shotDamage">
-              <div class="action-card-header">
-                <span class="action-title">BALLISTIC PAYLOAD</span>
-                <span class="action-cost" id="terminal-weapon-shotDamage-level">LV 0/2</span>
-              </div>
-              <p class="action-desc" id="terminal-weapon-shotDamage-desc">NEXT: +1 shot damage</p>
-              <p class="action-desc action-desc--cost" id="terminal-weapon-shotDamage-cost">COST: 80 TECH / 25 COIN</p>
-              <button class="terminal-action-btn" id="terminal-btn-weapon-shotDamage">UPGRADE</button>
-            </div>
-
-            <div class="action-card action-card--tier2 action-card--weapon" data-weapon-card="shotAmount">
-              <div class="action-card-header">
-                <span class="action-title">BURST INJECTORS</span>
-                <span class="action-cost" id="terminal-weapon-shotAmount-level">LV 0/2</span>
-              </div>
-              <p class="action-desc" id="terminal-weapon-shotAmount-desc">NEXT: Double-shot spread</p>
-              <p class="action-desc action-desc--cost" id="terminal-weapon-shotAmount-cost">COST: 120 TECH / 50 COIN</p>
-              <button class="terminal-action-btn" id="terminal-btn-weapon-shotAmount">UPGRADE</button>
-          </div>
-
-        </div>
         </div>
         </div><!-- /#terminal-tab-base-content -->
 
