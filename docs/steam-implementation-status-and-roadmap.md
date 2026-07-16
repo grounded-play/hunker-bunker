@@ -2,6 +2,12 @@
 
 Date: 2026-07-13.
 
+> **Superseded for "what's left" as of 2026-07-15 by
+> [`docs/steam-launch-readiness-master-plan.md`](./steam-launch-readiness-master-plan.md).**
+> This doc predates the Queen fight wiring, the Fly.io deploy scaffolding,
+> the browser-gamepad fallback, and the store purchase gating — read it
+> for the design reasoning behind earlier decisions, not for current status.
+
 This is the working checkpoint for Hunker Bunker's Steam integration. It records
 where the repo is today, what is safe to build next, and what should remain
 deferred until the Steamworks configuration and policy details are settled.

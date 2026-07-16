@@ -8,8 +8,9 @@ electron-builder) as **Phase A**, then adds everything between "runs in
 Electron on my machine" and "demo on Steam": overlay/cloud plumbing, the
 steamcmd depot pipeline, CI, and the demo-surface strategy.
 
-One correction to that plan: the game is **Three.js**, not Phaser (Phaser is
-a stale dependency — see cleanup note in Phase A). Nothing else changes.
+One correction to that plan: the game is **Three.js**, not Phaser (Phaser
+was a stale dependency, removed 2026-07-15 — see cleanup note in Phase A).
+Nothing else changes.
 
 Netlify stays: it remains the instant-preview channel for agents and the
 PWA/web demo. Steam is a parallel artifact of the same `dist/`.
@@ -51,8 +52,10 @@ Save bridge: hb_* localStorage writes mirror to `save.json` under
 Achievements: the existing `achievement-unlocked` window event forwards to
 `steamworks.js` — the event contract from wave 2 was built for this.
 
-Cleanup rider: `phaser` is in `dependencies` but unused — remove it when
-convenient (it's dead weight in every audit, not in the bundle).
+Cleanup rider: ~~`phaser` is in `dependencies` but unused — remove it when
+convenient~~ — done 2026-07-15 (`npm uninstall phaser`, plus the two
+orphaned Phaser-era files it was the last user of, `src/levelManager.js`
+and `src/game.js`).
 
 ### Phase B — Steam plumbing
 
