@@ -20,6 +20,7 @@ import * as featureFlags from './src/featureFlags.js';
 import { getGifDurationMs } from './src/gifDuration.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
+import { mapBrowserGamepad } from './src/browserGamepad.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
@@ -670,7 +671,7 @@ function handleSteamGameplayInput(controller) {
         window.game.setControllerAimVector(aimX, -aimY);
     }
 
-    if (controller.fire && !prev.fire) {
+    if (controller.fire) {
         window.game?.triggerControllerFire?.();
     }
     if (controller.interact && !prev.interact) {
@@ -688,6 +689,9 @@ function handleSteamGameplayInput(controller) {
     if (controller.pause && !prev.pause) {
         triggerControllerPauseAction();
     }
+    if (controller.sprint && !prev.sprint) {
+        window.game?.setVirtualInputSprint?.(true);
+    }
 
     updateControllerInputMemory(controller, {
         ...prev,
@@ -697,6 +701,7 @@ function handleSteamGameplayInput(controller) {
         ability: Boolean(controller.ability),
         scan: Boolean(controller.scan),
         pause: Boolean(controller.pause),
+        sprint: Boolean(controller.sprint),
         moveX,
         moveY,
         aimX,
@@ -707,6 +712,97 @@ function handleSteamGameplayInput(controller) {
 if (window.electronAPI?.onSteamInputState) {
     window.electronAPI.onSteamInputState(handleSteamInputSnapshot);
 }
+
+let browserGamepadPollRaf = null;
+let browserGamepadOwnedVirtualInput = false;
+let suppressBrowserGamepadUntilRelease = false;
+
+function browserGamepadApiAvailable() {
+    return typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function';
+}
+
+function shouldUseBrowserGamepadFallback() {
+    if (!browserGamepadApiAvailable()) return false;
+    return !steamInputState.available || steamInputState.controllerCount === 0;
+}
+
+function getBrowserGamepadControllers() {
+    if (!browserGamepadApiAvailable()) return [];
+    return Array.from(navigator.getGamepads() ?? [])
+        .filter(Boolean)
+        .map((gamepad) => mapBrowserGamepad(gamepad))
+        .filter(Boolean);
+}
+
+function markBrowserGamepadInput(controller) {
+    const previousMode = steamInputState.lastInputMode;
+    const previousType = steamInputState.primaryControllerType;
+    steamInputState.primaryControllerHandle = controller.handle;
+    steamInputState.primaryControllerType = controller.type;
+    setLastInputMode('controller', { refresh: false });
+    if (previousMode !== steamInputState.lastInputMode || previousType !== steamInputState.primaryControllerType) {
+        refreshInteractivePromptKeys();
+    }
+}
+
+function clearBrowserGamepadGameplayInput() {
+    if (!browserGamepadOwnedVirtualInput) return;
+    window.game?.setVirtualInput?.(0, 0);
+    browserGamepadOwnedVirtualInput = false;
+}
+
+function handleBrowserGamepadFallbackFrame() {
+    if (!shouldUseBrowserGamepadFallback()) {
+        clearBrowserGamepadGameplayInput();
+        browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+        return;
+    }
+
+    const controllers = getBrowserGamepadControllers();
+    const activeController = controllers.find((controller) => controller.active) ?? null;
+    if (!activeController) {
+        if (suppressBrowserGamepadUntilRelease) {
+            suppressBrowserGamepadUntilRelease = false;
+            steamInputPrevControllers.clear();
+        }
+        clearBrowserGamepadGameplayInput();
+        browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+        return;
+    }
+
+    markBrowserGamepadInput(activeController);
+
+    if (suppressBrowserGamepadUntilRelease) {
+        browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+        return;
+    }
+
+    if (!window.AudioManager?.isUnlocked || !window.game) {
+        suppressBrowserGamepadUntilRelease = true;
+        window.HunkerTriggerBoot?.();
+        browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+        return;
+    }
+
+    const gameplayActive = Boolean(window.game?.isGameplayInputActive?.());
+    if (appPhase === 'gameplay' && gameplayActive) {
+        browserGamepadOwnedVirtualInput = true;
+        handleSteamGameplayInput(activeController);
+    } else {
+        clearBrowserGamepadGameplayInput();
+        handleSteamMenuInput(activeController);
+    }
+
+    browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+}
+
+function startBrowserGamepadFallback() {
+    if (browserGamepadPollRaf || typeof window.requestAnimationFrame !== 'function') return;
+    browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+}
+
+startBrowserGamepadFallback();
+window.addEventListener('gamepadconnected', startBrowserGamepadFallback);
 
 window.addEventListener('keydown', (event) => {
     if (!event.isTrusted) return;
