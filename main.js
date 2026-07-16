@@ -1573,14 +1573,11 @@ window.addEventListener('enemy-killed', (event) => {
     if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
     if (type === 'crawler') fireMothershipReactiveLine('crawler_detected');
     if (isBoss || (typeof type === 'string' && type.startsWith('boss_'))) {
-        void dialogueManager?.openBriefTransmission?.({
-            playerType: window.game?.playerType || getSelectedHeroType(),
-            lines: [
-                'MOTHERSHIP: APEX BIO-ENTITY DOWN.',
-                'MOTHERSHIP: SIGNAL ATTENUATION CONFIRMED. FIELD PATH IS CLEAR.'
-            ],
-            holdMs: 1100
-        });
+        // Corner radio transmission, not the full-screen brief-transmission
+        // dialogue (openBriefTransmission pauses input via setInputEnabled
+        // until dismissed) — a boss kill shouldn't stop the run to read text.
+        showBiomePrompt('> MOTHERSHIP: APEX BIO-ENTITY DOWN.');
+        window.setTimeout(() => showBiomePrompt('> MOTHERSHIP: SIGNAL ATTENUATION CONFIRMED. FIELD PATH IS CLEAR.'), 900);
     }
     // Escalation beat: once the agent racks up kills, 0047 takes notice.
     if (total >= 25) fireMothershipReactiveLine('specimen_notices');

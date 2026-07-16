@@ -4,6 +4,13 @@ This is the practical checklist for the Steam store page and Steam client
 assets. It separates what we already have in the repo, what must be captured
 from the real game, and what is a good fit for `image_gen` / Figma / Photoshop.
 
+> **2026-07-16:** the five store capsules below now exist in
+> `steam/store/`, but they're placeholders with a real defect — cropped
+> from `public/title_key_art.png`, which has a leftover wrong game title
+> (`VOID_WALKER`) baked into the source pixels. See
+> [`docs/steam-store-placeholder-assets-and-prompts.md`](./steam-store-placeholder-assets-and-prompts.md)
+> for the full audit and ready-to-use regeneration prompts.
+
 ## What We Already Have
 
 These files are useful source material, but they are not all the final Steam
