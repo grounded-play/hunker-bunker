@@ -8309,6 +8309,7 @@ let storeDisabledReason = 'catalog_unavailable';
 
 let vaultItems = [];
 let selectedVaultItem = null;
+let marketEligibility = 'unknown';
 
 // Fired from the playtime-drop interval and the victory class-patch grant —
 // both real Steam Inventory writes, so this is the only place either one
@@ -8440,6 +8441,13 @@ async function loadVaultData() {
     if (window.electronAPI) {
         // Fetch Identity
         const identity = await window.electronAPI.getSteamIdentity().catch(() => null);
+
+        // Fetch Market Eligibility
+        const marketCheck = window.electronAPI.checkMarketEligibility
+            ? window.electronAPI.checkMarketEligibility()
+            : Promise.resolve({ ok: false, reason: 'unsupported' });
+        const marketResult = await Promise.resolve(marketCheck).catch(() => ({ ok: false, reason: 'error' }));
+        marketEligibility = marketResult?.ok ? 'eligible' : 'ineligible';
         if (identity?.active) {
             if (playerEl) playerEl.textContent = identity.persona ?? 'OPERATOR';
             if (statusEl) statusEl.textContent = 'STEAM CONNECTED';
@@ -8546,12 +8554,20 @@ function updateDetailsPanel(item) {
     if (imgEl) imgEl.src = catalog.img;
 
     if (tradableEl) {
-        tradableEl.className = `vault-meta-tag ${catalog.tradable ? 'active' : ''}`;
+        tradableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.tradable ? 'active' : ''}`;
+        tradableEl.title = "Trading is handled externally through Steam.";
         tradableEl.textContent = catalog.tradable ? 'TRADABLE' : 'NON-TRADABLE';
     }
     if (marketableEl) {
-        marketableEl.className = `vault-meta-tag ${catalog.marketable ? 'active' : ''}`;
-        marketableEl.textContent = catalog.marketable ? 'MARKETABLE' : 'NON-MARKETABLE';
+        const isEligible = marketEligibility !== 'ineligible';
+        marketableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.marketable ? 'active' : ''} ${!isEligible ? 'degraded' : ''}`;
+        marketableEl.title = "Market actions are handled externally through Steam.";
+        if (catalog.marketable && !isEligible) {
+            marketableEl.textContent = 'MARKETABLE (OFFLINE)';
+            marketableEl.title = "Market eligibility route unavailable or rejected.";
+        } else {
+            marketableEl.textContent = catalog.marketable ? 'MARKETABLE' : 'NON-MARKETABLE';
+        }
     }
 
     btnEquip?.classList.add('hidden');

@@ -14,9 +14,11 @@ function getDbFilePath() {
 let dbState = {
     inventories: {}, // steamid64 -> array of { itemId, itemdefid, quantity, acquiredAt, properties }
     leaderboards: {}, // boardName -> array of { steamId64, score, persona, timestamp }
-    idempotency: {}, // requestId -> { status, body, timestamp }
+    idempotency: {}, // requestId -> { status, body, timestamp, expiresAt? }
     receipts: [], // array of run receipts
-    purchases: [] // array of store purchase receipts (steamId64, sku, transId, status, timestamp)
+    // Canonical store purchases keyed by transId/orderId with an event trail.
+    // Older append-only rows are migrated into this shape during initDb().
+    purchases: [] // { steamId64, sku, transId, orderId, status, createdAt, updatedAt, events }
 };
 
 let writeQueue = Promise.resolve();
@@ -24,6 +26,7 @@ let dbInitialized = false;
 let lastWriteAt = null;
 let lastWriteError = null;
 let lastInitError = null;
+const PURCHASE_EVENT_LIMIT = 50;
 
 // Atomic writing: write to tmp, then rename to ensure crash-resistance
 async function saveToDisk() {
@@ -50,6 +53,123 @@ async function saveToDisk() {
     return writeQueue;
 }
 
+function normalizeTimestamp(value, fallback = Date.now()) {
+    const timestamp = Number(value);
+    return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : fallback;
+}
+
+function normalizeOptionalString(value) {
+    if (value === undefined || value === null) return null;
+    const text = String(value).trim();
+    return text ? text : null;
+}
+
+function purchaseEventFrom(input = {}, now = Date.now()) {
+    const event = {
+        status: String(input.status ?? 'unknown'),
+        timestamp: normalizeTimestamp(input.updatedAt ?? input.timestamp ?? input.createdAt, now)
+    };
+    for (const field of ['reason', 'steamState', 'steamResult', 'steamErrorCode', 'mode']) {
+        const value = normalizeOptionalString(input[field]);
+        if (value) event[field] = value;
+    }
+    return event;
+}
+
+function mergePurchaseRecord(existing, input = {}, now = Date.now()) {
+    const transId = normalizeOptionalString(input.transId ?? existing?.transId ?? input.orderId ?? existing?.orderId);
+    const orderId = normalizeOptionalString(input.orderId ?? existing?.orderId ?? input.transId ?? existing?.transId);
+    if (!transId && !orderId) return null;
+
+    const createdAt = normalizeTimestamp(
+        existing?.createdAt ?? existing?.timestamp ?? input.createdAt ?? input.timestamp,
+        now
+    );
+    const previousEvents = Array.isArray(existing?.events)
+        ? existing.events
+        : (existing ? [purchaseEventFrom(existing, createdAt)] : []);
+    const nextEvent = purchaseEventFrom(input, now);
+
+    const next = {
+        ...(existing ?? {}),
+        steamId64: normalizeOptionalString(input.steamId64 ?? existing?.steamId64) ?? '',
+        sku: normalizeOptionalString(input.sku ?? existing?.sku) ?? '',
+        transId: transId ?? orderId,
+        orderId: orderId ?? transId,
+        status: String(input.status ?? existing?.status ?? 'unknown'),
+        priceUsdCents: Number(input.priceUsdCents ?? existing?.priceUsdCents ?? 0) || 0,
+        requestId: normalizeOptionalString(input.requestId ?? existing?.requestId),
+        confirmUrl: normalizeOptionalString(input.confirmUrl ?? existing?.confirmUrl),
+        currency: normalizeOptionalString(input.currency ?? existing?.currency ?? 'USD') ?? 'USD',
+        createdAt,
+        updatedAt: now,
+        events: [...previousEvents, nextEvent].slice(-PURCHASE_EVENT_LIMIT)
+    };
+
+    for (const field of ['steamState', 'steamResult', 'steamErrorCode', 'reason']) {
+        const value = normalizeOptionalString(input[field] ?? existing?.[field]);
+        if (value) next[field] = value;
+        else delete next[field];
+    }
+
+    if (Array.isArray(input.granted)) {
+        next.granted = input.granted;
+    } else if (Array.isArray(existing?.granted)) {
+        next.granted = existing.granted;
+    }
+
+    return next;
+}
+
+function purchasesMatch(purchase, { transId, orderId, requestId } = {}) {
+    const transIdText = normalizeOptionalString(transId);
+    const orderIdText = normalizeOptionalString(orderId);
+    const requestIdText = normalizeOptionalString(requestId);
+    return Boolean(
+        (transIdText && (purchase.transId === transIdText || purchase.orderId === transIdText))
+        || (orderIdText && (purchase.orderId === orderIdText || purchase.transId === orderIdText))
+        || (requestIdText && purchase.requestId === requestIdText)
+    );
+}
+
+function clonePurchase(purchase) {
+    if (!purchase) return null;
+    return {
+        ...purchase,
+        events: Array.isArray(purchase.events) ? purchase.events.map((event) => ({ ...event })) : []
+    };
+}
+
+function normalizePurchaseCollection(rawPurchases) {
+    const normalized = [];
+    for (const raw of Array.isArray(rawPurchases) ? rawPurchases : []) {
+        const now = normalizeTimestamp(raw?.updatedAt ?? raw?.timestamp ?? raw?.createdAt);
+        const index = normalized.findIndex((purchase) => purchasesMatch(purchase, {
+            transId: raw?.transId,
+            orderId: raw?.orderId,
+            requestId: raw?.requestId
+        }));
+        const merged = mergePurchaseRecord(index >= 0 ? normalized[index] : null, raw, now);
+        if (!merged) continue;
+        if (index >= 0) normalized[index] = merged;
+        else normalized.push(merged);
+    }
+    return normalized;
+}
+
+function idempotencyExpired(record, now = Date.now()) {
+    const expiresAt = Number(record?.expiresAt);
+    return Number.isFinite(expiresAt) && expiresAt > 0 && expiresAt <= now;
+}
+
+function normalizeDbStateShape() {
+    dbState.inventories = dbState.inventories && typeof dbState.inventories === 'object' ? dbState.inventories : {};
+    dbState.leaderboards = dbState.leaderboards && typeof dbState.leaderboards === 'object' ? dbState.leaderboards : {};
+    dbState.idempotency = dbState.idempotency && typeof dbState.idempotency === 'object' ? dbState.idempotency : {};
+    dbState.receipts = Array.isArray(dbState.receipts) ? dbState.receipts : [];
+    dbState.purchases = normalizePurchaseCollection(dbState.purchases);
+}
+
 export async function initDb() {
     const dbFilePath = getDbFilePath();
     try {
@@ -59,7 +179,10 @@ export async function initDb() {
             // so a store file written before a new top-level key existed
             // (e.g. `purchases`) doesn't wipe that key back to undefined.
             dbState = { ...dbState, ...JSON.parse(content) };
+            normalizeDbStateShape();
+            await cleanupExpiredIdempotency();
         } else {
+            normalizeDbStateShape();
             await saveToDisk();
         }
         dbInitialized = true;
@@ -80,6 +203,8 @@ export function getDbStatus() {
         durable: envConfigured,
         initialized: dbInitialized,
         exists: fs.existsSync(dbFilePath),
+        idempotencyRecords: Object.keys(dbState.idempotency).length,
+        purchaseRecords: dbState.purchases.length,
         lastWriteAt,
         lastWriteError,
         lastInitError
@@ -162,19 +287,49 @@ export async function saveMockLeaderboard(boardName, entries) {
 
 export function checkIdempotency(requestId) {
     if (!requestId) return null;
-    const req = dbState.idempotency[String(requestId)];
+    const key = String(requestId);
+    const req = dbState.idempotency[key];
     if (!req) return null;
+    if (idempotencyExpired(req)) {
+        delete dbState.idempotency[key];
+        void saveToDisk();
+        return null;
+    }
     return req;
 }
 
-export async function saveIdempotency(requestId, response) {
+export async function saveIdempotency(requestId, response, { ttlMs = null } = {}) {
     if (!requestId) return;
-    dbState.idempotency[String(requestId)] = {
+    const now = Date.now();
+    const record = {
         status: response.status ?? 200,
         body: response.body ?? {},
-        timestamp: Date.now()
+        timestamp: now
+    };
+    if (Number.isFinite(ttlMs) && ttlMs > 0) {
+        record.expiresAt = now + ttlMs;
+    }
+    dbState.idempotency[String(requestId)] = {
+        ...record
     };
     await saveToDisk();
+}
+
+export async function cleanupExpiredIdempotency({ now = Date.now() } = {}) {
+    let removed = 0;
+    for (const [key, record] of Object.entries(dbState.idempotency)) {
+        if (idempotencyExpired(record, now)) {
+            delete dbState.idempotency[key];
+            removed += 1;
+        }
+    }
+    if (removed > 0) {
+        await saveToDisk();
+    }
+    return {
+        removed,
+        remaining: Object.keys(dbState.idempotency).length
+    };
 }
 
 export async function saveRunReceipt(receipt) {
@@ -186,13 +341,48 @@ export async function saveRunReceipt(receipt) {
 }
 
 export function findPurchaseByTransId(transId) {
-    return dbState.purchases.find((p) => p.transId === String(transId)) ?? null;
+    const purchase = dbState.purchases.find((p) => purchasesMatch(p, { transId })) ?? null;
+    return clonePurchase(purchase);
+}
+
+export function findPurchaseByRequestId(requestId) {
+    const purchase = dbState.purchases.find((p) => purchasesMatch(p, { requestId })) ?? null;
+    return clonePurchase(purchase);
+}
+
+export function listPurchases({ steamId64 = null, status = null, limit = 100 } = {}) {
+    const steamIdText = normalizeOptionalString(steamId64);
+    const statusText = normalizeOptionalString(status);
+    const max = Math.min(1000, Math.max(1, Number(limit) || 100));
+    return dbState.purchases
+        .filter((purchase) => !steamIdText || purchase.steamId64 === steamIdText)
+        .filter((purchase) => !statusText || purchase.status === statusText)
+        .slice()
+        .sort((a, b) => Number(b.updatedAt ?? 0) - Number(a.updatedAt ?? 0))
+        .slice(0, max)
+        .map(clonePurchase);
+}
+
+export async function savePurchaseState(receipt) {
+    const now = Date.now();
+    const index = dbState.purchases.findIndex((purchase) => purchasesMatch(purchase, {
+        transId: receipt?.transId,
+        orderId: receipt?.orderId,
+        requestId: receipt?.requestId
+    }));
+    const merged = mergePurchaseRecord(index >= 0 ? dbState.purchases[index] : null, receipt, now);
+    if (!merged) {
+        throw new Error('purchase_state_requires_trans_id_or_order_id');
+    }
+    if (index >= 0) dbState.purchases[index] = merged;
+    else dbState.purchases.push(merged);
+    await saveToDisk();
+    return clonePurchase(merged);
 }
 
 export async function savePurchaseReceipt(receipt) {
-    dbState.purchases.push({
+    return savePurchaseState({
         ...receipt,
         timestamp: Date.now()
     });
-    await saveToDisk();
 }

@@ -182,6 +182,7 @@ export const ACHIEVEMENT_DEFS = freezeDeep([
         blurb: 'Defeat the Queen in single combat.',
         icon: 'slay_the_queen',
         secret: true,
+        comingSoon: true,
         check: (state) => Boolean(state.stats.queenDefeated)
     }
 ]);

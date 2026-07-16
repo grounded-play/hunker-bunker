@@ -41,6 +41,25 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.json({ limit: '16kb' }));
+app.use('/steam', (req, res, next) => {
+    const startedAt = Date.now();
+    res.on('finish', () => {
+        const requestId = typeof req.body?.requestId === 'string'
+            ? req.body.requestId.slice(0, 96)
+            : undefined;
+        const log = {
+            method: req.method,
+            path: req.path,
+            status: res.statusCode,
+            durationMs: Date.now() - startedAt,
+            requestId,
+            hasTicket: Boolean(req.body?.ticketHex || req.query?.ticketHex),
+            hasBearer: Boolean(req.headers.authorization)
+        };
+        console.info('[hb-request]', JSON.stringify(log));
+    });
+    next();
+});
 app.use('/steam', createRateLimitMiddleware());
 
 // Initialize DB before routing

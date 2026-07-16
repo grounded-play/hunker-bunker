@@ -10604,6 +10604,17 @@ button.archive-log-entry:active {
   background: rgba(6, 182, 212, 0.08);
 }
 
+.vault-meta-tag--readonly {
+  opacity: 0.85;
+  cursor: help;
+}
+
+.vault-meta-tag.degraded {
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
 .vault-details-actions {
   width: 100%;
   margin-top: auto;
