@@ -154,7 +154,8 @@
       "description_english": "Generates drops for active play sessions.",
       "bundle": "1000,79,1100,15,2100,4,2200,1,4000,1",
       "tradable": false,
-      "marketable": false
+      "marketable": false,
+      "store_hidden": true
     },
     {
       "itemdefid": 4000,
@@ -170,7 +171,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "Container",
-      "tags": "rarity:container;class:all;slot:cache"
+      "tags": "rarity:container;class:all;slot:cache",
+      "store_tags": "containers;caches",
+      "store_hidden": true
     },
     {
       "itemdefid": 4001,
@@ -186,7 +189,9 @@
       "tradable": true,
       "marketable": true,
       "item_slot": "Key",
-      "tags": "rarity:key;class:all;slot:cache_key"
+      "tags": "rarity:key;class:all;slot:cache_key",
+      "store_tags": "featured;keys;cache_key",
+      "price_category": "1;VLV100"
     },
     {
       "itemdefid": 4002,
@@ -197,7 +202,8 @@
       "description_english": "Hidden resolver item. Exchange recipe 4100 (open a Deep Relic Cache with a Cache Key) targets this itemdefid as its Steam-side output so Valve rolls the reward server-side. Weights must mirror server/lootTables.js DEEP_RELIC_CACHE_DROP_TABLE exactly, since disclosed odds must equal actual odds. Verify the correct Steamworks item type for exchange-triggered generators before publishing — this repo could not confirm that against live Steamworks admin.",
       "bundle": "1000,55,1100,25,2100,12,2200,8",
       "tradable": false,
-      "marketable": false
+      "marketable": false,
+      "store_hidden": true
     }
   ]
 }

@@ -8303,6 +8303,7 @@ let storeOdds = [];
 let storePurchasesEnabled = false;
 let storePurchaseMode = 'disabled';
 let storeDisabledReason = 'catalog_unavailable';
+let storeHostedItemStore = null;
 
 let vaultItems = [];
 let selectedVaultItem = null;
@@ -8423,11 +8424,13 @@ function initSteamVaultUI() {
         inventoryLayout?.classList.add('hidden');
         await loadStoreCatalog();
         renderStoreSkuGrid();
+        renderHostedItemStoreCta();
         renderOddsTable();
         updateOpenCacheAvailability();
     });
 
     document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
+    document.getElementById('vault-store-hosted-btn')?.addEventListener('click', openHostedSteamItemStore);
 }
 
 async function loadVaultData() {
@@ -8617,10 +8620,12 @@ async function loadStoreCatalog() {
         storePurchasesEnabled = Boolean(result.purchasesEnabled);
         storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
         storeDisabledReason = result.disabledReason ?? null;
+        storeHostedItemStore = result.hostedItemStore ?? null;
     } else {
         storePurchasesEnabled = false;
         storePurchaseMode = 'disabled';
         storeDisabledReason = result?.reason ?? 'catalog_unavailable';
+        storeHostedItemStore = null;
         console.error('[steam-store] failed to load catalog:', result);
     }
 }
@@ -8656,6 +8661,35 @@ function renderStoreSkuGrid() {
         const buyBtn = card.querySelector('.vault-store-buy-btn');
         buyBtn?.addEventListener('click', () => purchaseKeys(sku.sku));
         grid.appendChild(card);
+    }
+}
+
+function renderHostedItemStoreCta() {
+    const row = document.getElementById('vault-store-hosted');
+    const status = document.getElementById('vault-store-hosted-status');
+    const btn = document.getElementById('vault-store-hosted-btn');
+    if (!row || !status || !btn) return;
+
+    const url = storeHostedItemStore?.url;
+    const enabled = Boolean(storeHostedItemStore?.enabled && url);
+    row.classList.toggle('hidden', !enabled);
+    btn.disabled = !enabled;
+    if (!enabled) {
+        status.textContent = 'STEAM ITEM STORE OFFLINE';
+        return;
+    }
+
+    const mode = storeHostedItemStore.mode === 'beta' ? 'BETA PREVIEW' : 'STEAM-HOSTED CHECKOUT';
+    status.textContent = mode;
+}
+
+async function openHostedSteamItemStore() {
+    const url = storeHostedItemStore?.url;
+    if (!url) return;
+    if (window.electronAPI?.openSteamOverlayToUrl) {
+        await window.electronAPI.openSteamOverlayToUrl(url);
+    } else {
+        window.open(url, '_blank', 'noopener');
     }
 }
 

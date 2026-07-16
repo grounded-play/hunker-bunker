@@ -30,6 +30,23 @@ The first public-safe version should be narrow:
 - Keep gameplay power out of the Item Store.
 - Make odds and crate/key language clear before any paid purchase path.
 
+## Immediate Image Handoff
+
+If another agent is producing art, give them this exact priority order:
+
+1. `steam/store/steam_item_store_background_en.png` — 1920x1080, prompt in
+   "Background Image Production Prompt" below. This is the one Steamworks needs
+   for the Item Store configuration page.
+2. `steam/store/item_icons/cache_key_master.png` — 1024x1024 master icon for
+   the paid Cache Key.
+3. `steam/store/item_icons/deep_relic_cache_master.png` — 1024x1024 master icon
+   for the free Deep Relic Cache.
+4. Remaining inventory icon masters only after the Cache Key and Cache are
+   done: relic fragments, victory patches, emblems, decal, and weapon finish.
+
+Do not ask the image agent to render final tiny text. HUNKER BUNKER branding
+should be composited by hand on the background after generation.
+
 ## Critical App ID Check
 
 The dashboard text pasted into the task shows:
@@ -223,8 +240,20 @@ Implementation note:
 - Use the Steam Overlay, not an external browser.
 - Keep the backend MicroTxn route as a fallback/testing rail until the hosted
   Item Store path is fully proven.
-- Never show the hosted Item Store link while `purchaseMode` is disabled.
+- The hosted Item Store link is independently gated by
+  `hostedItemStore.enabled`; the backend MicroTxn `purchaseMode` may remain
+  disabled if the hosted Steam page becomes the only checkout path.
 - Keep the disclosed odds panel next to any Cache Key purchase entry point.
+
+Backend catalog/env support:
+
+| Env var | Purpose |
+| --- | --- |
+| `HB_STEAM_ITEM_STORE_ENABLED=1` | Allows `/steam/store/catalog` to expose the hosted Item Store URL. |
+| `HB_STEAM_ITEM_STORE_BETA=1` | Exposes the `?beta=1` preview URL as the active button URL. |
+| `HB_STEAM_ITEM_STORE_APPID=4957040` | Overrides the Item Store app ID without rewriting the whole repo app ID. |
+| `HB_STEAM_ITEM_STORE_URL=https://store.steampowered.com/itemstore/4957040/` | Optional explicit public URL override. |
+| `HB_STEAM_ITEM_STORE_BETA_URL=https://store.steampowered.com/itemstore/4957040/?beta=1` | Optional explicit beta URL override. |
 
 ## Required Item Store Background
 

@@ -101,11 +101,38 @@ describe('Steam Store API endpoints', () => {
         expect(body.purchasesEnabled).toBe(true);
         expect(body.purchaseMode).toBe('mock');
         expect(body.mockPurchasesEnabled).toBe(true);
+        expect(body.hostedItemStore).toMatchObject({
+            enabled: false,
+            mode: 'disabled',
+            appId: 1247290,
+            url: null,
+            publicUrl: 'https://store.steampowered.com/itemstore/1247290/',
+            betaUrl: 'https://store.steampowered.com/itemstore/1247290/?beta=1'
+        });
         expect(body.catalog.length).toBeGreaterThan(0);
         expect(body.catalog[0]).toMatchObject({ sku: expect.any(String), priceUsdCents: expect.any(Number) });
 
         const oddsTotal = body.deepRelicCacheOdds.reduce((sum, row) => sum + row.percent, 0);
         expect(oddsTotal).toBeCloseTo(100, 1);
+    });
+
+    it('GET /steam/store/catalog exposes a gated hosted Steam Item Store URL when configured', async () => {
+        process.env.HB_STEAM_ITEM_STORE_ENABLED = '1';
+        process.env.HB_STEAM_ITEM_STORE_BETA = '1';
+        process.env.HB_STEAM_ITEM_STORE_APPID = '4957040';
+
+        const res = await fetch(`${baseUrl}/steam/store/catalog`);
+        expect(res.status).toBe(200);
+
+        const body = await res.json();
+        expect(body.hostedItemStore).toMatchObject({
+            enabled: true,
+            mode: 'beta',
+            appId: 4957040,
+            url: 'https://store.steampowered.com/itemstore/4957040/?beta=1',
+            publicUrl: 'https://store.steampowered.com/itemstore/4957040/',
+            betaUrl: 'https://store.steampowered.com/itemstore/4957040/?beta=1'
+        });
     });
 
     it('POST /steam/store/purchase/init grants keys immediately in mock mode', async () => {

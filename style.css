@@ -5803,8 +5803,9 @@ body.mission-intro-active #game-container canvas {
 
 .skill-node-header {
   display: flex;
-  justify-content: space-between;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
   font-size: var(--font-xxs);
@@ -5813,8 +5814,14 @@ body.mission-intro-active #game-container canvas {
 }
 
 .skill-node-header span:first-child {
+  /* Own line at the card's full content width — the status badge (e.g.
+     "[LOCKED]") took most of a card's ~136px width when shared with the
+     title on one row, squeezing titles like "REINFORCED PLATING" down to
+     single characters per line regardless of wrap settings. */
+  width: 100%;
   min-width: 0;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .skill-node-status {
@@ -10346,6 +10353,32 @@ button.archive-log-entry:active {
   min-width: 0 !important;
   max-width: none !important;
   padding: calc(var(--vu) * 0.6) 0 !important;
+  font-size: var(--font-xs) !important;
+}
+
+.vault-store-hosted {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 1);
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(var(--vault-glow-rgb), 0.25);
+  border-radius: 6px;
+  padding: calc(var(--vu) * 1.1);
+}
+
+.vault-store-hosted-status {
+  color: rgba(207, 250, 254, 0.72);
+  font-size: var(--font-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.vault-store-hosted-btn {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1.6) !important;
   font-size: var(--font-xs) !important;
 }
 

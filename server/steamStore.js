@@ -34,6 +34,11 @@ function getSteamAppId() {
     return Number(process.env.HB_STEAM_APPID ?? 1247290);
 }
 
+function getSteamItemStoreAppId() {
+    const appId = Number(process.env.HB_STEAM_ITEM_STORE_APPID ?? getSteamAppId());
+    return Number.isInteger(appId) && appId > 0 ? appId : getSteamAppId();
+}
+
 // Real-money microtransactions require Valve to enable "Microtransactions"
 // for this app in Steamworks (a separate partner agreement/tax setup beyond
 // the base Web API key) before InitTxn/QueryTxn/FinalizeTxn calls will
@@ -67,6 +72,42 @@ function getMicroTxnBaseUrl() {
     return process.env.HB_STEAM_MICROTXN_SANDBOX === '1'
         ? STEAM_MICROTXN_SANDBOX_URL
         : STEAM_MICROTXN_URL;
+}
+
+function normalizeSteamItemStoreUrl(value) {
+    const text = String(value ?? '').trim();
+    if (!text) return null;
+    try {
+        const parsed = new URL(text);
+        if (parsed.protocol !== 'https:' || parsed.hostname !== 'store.steampowered.com') return null;
+        if (!parsed.pathname.startsWith('/itemstore/')) return null;
+        return parsed.toString();
+    } catch {
+        return null;
+    }
+}
+
+function withBetaQuery(url) {
+    const parsed = new URL(url);
+    parsed.searchParams.set('beta', '1');
+    return parsed.toString();
+}
+
+function getHostedItemStoreConfig() {
+    const appId = getSteamItemStoreAppId();
+    const defaultUrl = `https://store.steampowered.com/itemstore/${appId}/`;
+    const url = normalizeSteamItemStoreUrl(process.env.HB_STEAM_ITEM_STORE_URL) ?? defaultUrl;
+    const betaUrl = normalizeSteamItemStoreUrl(process.env.HB_STEAM_ITEM_STORE_BETA_URL) ?? withBetaQuery(url);
+    const enabled = process.env.HB_STEAM_ITEM_STORE_ENABLED === '1';
+    const beta = process.env.HB_STEAM_ITEM_STORE_BETA === '1';
+    return {
+        enabled,
+        mode: enabled ? (beta ? 'beta' : 'live') : 'disabled',
+        appId,
+        url: enabled ? (beta ? betaUrl : url) : null,
+        betaUrl,
+        publicUrl: url
+    };
 }
 
 function createOrderId() {
@@ -346,6 +387,7 @@ export function attachSteamStoreRoutes(app) {
         res.json({
             ok: true,
             ...availability,
+            hostedItemStore: getHostedItemStoreConfig(),
             catalog: STORE_CATALOG.map(({ sku, keyCount, priceUsdCents, label }) => ({
                 sku, keyCount, priceUsdCents, label
             })),
