@@ -1,9 +1,10 @@
 import { buildCanonicalLeaderboardTargets, STEAM_LEADERBOARD_DEFS, validateRunScorePayload } from './leaderboardScoring.js';
+import { rateLimit } from 'express-rate-limit';
 import { authenticateSteamRequest, getSteamAuthConfig, getSteamPublisherKey } from './steamAuth.js';
 import { checkIdempotency, saveIdempotency } from './db.js';
 import { grantItemToPlayer } from './steamGrant.js';
 import { DEEP_RELIC_CACHE_ITEMDEFID } from './lootTables.js';
-import { createRateLimitMiddleware } from './rateLimit.js';
+import { createRateLimitOptions } from './rateLimit.js';
 
 const CLASS_VICTORY_PATCH_ITEMDEFID = Object.freeze({ SCOUT: 2000, TANK: 2001, ENGINEER: 2002 });
 
@@ -559,12 +560,9 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
 }
 
 export function attachSteamLeaderboardRoutes(app) {
-    // Also applied globally in server/index.js — kept local too so this
-    // module's routes read as rate-limited on their own (see the
-    // matching comment in steamAuth.js's attachSteamAuthRoutes).
-    app.use(createRateLimitMiddleware());
+    const steamRouteRateLimit = rateLimit(createRateLimitOptions());
 
-    app.post('/steam/leaderboards/submit-run', async (req, res) => {
+    app.post('/steam/leaderboards/submit-run', steamRouteRateLimit, async (req, res) => {
         let auth;
         const config = getSteamAuthConfig();
         if (config.configured || hasBearerAuth(req)) {
@@ -597,7 +595,7 @@ export function attachSteamLeaderboardRoutes(app) {
         res.status(Number(result.status) || (result.ok ? 200 : 500)).json(result);
     });
 
-    app.get('/steam/leaderboards/:board', async (req, res) => {
+    app.get('/steam/leaderboards/:board', steamRouteRateLimit, async (req, res) => {
         const dataRequest = normalizeDataRequest(req.query.dataRequest ?? req.query.type ?? 'RequestGlobal');
         let steamId64 = null;
         if (dataRequest !== 'RequestGlobal' && (getSteamAuthConfig().configured || hasBearerAuth(req))) {

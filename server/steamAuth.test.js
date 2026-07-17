@@ -1,4 +1,5 @@
 import express from 'express';
+import { rateLimit } from 'express-rate-limit';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     attachSteamAuthRoutes,
@@ -8,7 +9,7 @@ import {
     verifySteamSessionTicket,
     verifySteamSessionToken
 } from './steamAuth.js';
-import { createRateLimitMiddleware } from './rateLimit.js';
+import { createRateLimitOptions } from './rateLimit.js';
 
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_FETCH = globalThis.fetch;
@@ -260,8 +261,8 @@ describe('steam auth backend helpers', () => {
 
         const app = express();
         app.use(express.json());
-        app.use(createRateLimitMiddleware());
-        app.get('/protected', steamAuthMiddleware, (req, res) => {
+        const routeRateLimit = rateLimit(createRateLimitOptions());
+        app.get('/protected', routeRateLimit, steamAuthMiddleware, (req, res) => {
             res.json({
                 ok: true,
                 steamId64: req.steamId,

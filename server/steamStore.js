@@ -1,3 +1,4 @@
+import { rateLimit } from 'express-rate-limit';
 import { steamAuthMiddleware as steamStoreAuthMiddleware } from './steamAuth.js';
 import {
     checkIdempotency,
@@ -8,7 +9,7 @@ import {
 } from './db.js';
 import { CACHE_KEY_ITEMDEFID, getDisclosedOdds } from './lootTables.js';
 import { grantItemToPlayer } from './steamGrant.js';
-import { createRateLimitMiddleware } from './rateLimit.js';
+import { createRateLimitOptions } from './rateLimit.js';
 
 const STEAM_MICROTXN_URL = 'https://partner.steam-api.com/ISteamMicroTxn/';
 const STEAM_MICROTXN_SANDBOX_URL = 'https://partner.steam-api.com/ISteamMicroTxnSandbox/';
@@ -380,15 +381,12 @@ async function fulfillPurchasedKeys(purchase) {
 }
 
 export function attachSteamStoreRoutes(app) {
-    // Also applied globally in server/index.js — kept local too so this
-    // module's routes read as rate-limited on their own (see the
-    // matching comment in steamAuth.js's attachSteamAuthRoutes).
-    app.use(createRateLimitMiddleware());
+    const steamRouteRateLimit = rateLimit(createRateLimitOptions());
 
     // Public: catalog + disclosed odds must be visible before purchase
     // (Steamworks policy requires published probabilities for any
     // real-money item involving randomized rewards).
-    app.get('/steam/store/catalog', (_req, res) => {
+    app.get('/steam/store/catalog', steamRouteRateLimit, (_req, res) => {
         const availability = getStoreAvailability();
         res.json({
             ok: true,
@@ -401,7 +399,7 @@ export function attachSteamStoreRoutes(app) {
         });
     });
 
-    app.post('/steam/store/purchase/init', steamStoreAuthMiddleware, async (req, res) => {
+    app.post('/steam/store/purchase/init', steamRouteRateLimit, steamStoreAuthMiddleware, async (req, res) => {
         const requestId = req.body?.requestId;
         const sku = findSku(req.body?.sku);
 
@@ -559,7 +557,7 @@ export function attachSteamStoreRoutes(app) {
         res.status(result.status).json(result.body);
     });
 
-    app.post('/steam/store/purchase/finalize', steamStoreAuthMiddleware, async (req, res) => {
+    app.post('/steam/store/purchase/finalize', steamRouteRateLimit, steamStoreAuthMiddleware, async (req, res) => {
         const transId = req.body?.transId;
         const reconcile = req.body?.reconcile === true || req.body?.checkSteamState === true;
         if (!transId) {

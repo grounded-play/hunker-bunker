@@ -1,3 +1,4 @@
+import { rateLimit } from 'express-rate-limit';
 import { steamAuthMiddleware } from './steamAuth.js';
 import {
     getMockInventory,
@@ -12,7 +13,7 @@ import {
     rollDeepRelicCache
 } from './lootTables.js';
 import { grantItemToPlayer } from './steamGrant.js';
-import { createRateLimitMiddleware } from './rateLimit.js';
+import { createRateLimitOptions } from './rateLimit.js';
 
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
 const STEAM_ECON_MARKET_URL = 'https://partner.steam-api.com/IEconMarketService/';
@@ -74,13 +75,10 @@ function normalizeMarketEligibilityResponse(data) {
 export { steamAuthMiddleware };
 
 export function attachSteamInventoryRoutes(app) {
-    // Also applied globally in server/index.js — kept local too so this
-    // module's routes read as rate-limited on their own (see the
-    // matching comment in steamAuth.js's attachSteamAuthRoutes).
-    app.use(createRateLimitMiddleware());
+    const steamRouteRateLimit = rateLimit(createRateLimitOptions());
 
     // 1. Get Inventory
-    app.get('/steam/inventory', steamAuthMiddleware, async (req, res) => {
+    app.get('/steam/inventory', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
         if (req.isDevMode) {
             return res.json({
                 ok: true,
@@ -114,7 +112,7 @@ export function attachSteamInventoryRoutes(app) {
     });
 
     // 2. Playtime Drops (TriggerItemDrop)
-    app.post('/steam/inventory/trigger-drop', steamAuthMiddleware, async (req, res) => {
+    app.post('/steam/inventory/trigger-drop', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
         const requestId = req.body?.requestId;
         const cached = checkIdempotency(requestId);
         if (cached) {
@@ -198,7 +196,7 @@ export function attachSteamInventoryRoutes(app) {
     });
 
     // 3. Promo Item Grant (Scout, Tank, Engineer victory patches)
-    app.post('/steam/inventory/grant-promo', steamAuthMiddleware, async (req, res) => {
+    app.post('/steam/inventory/grant-promo', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
         const requestId = req.body?.requestId;
         const classType = String(req.body?.classType ?? '').toUpperCase();
         const outcome = req.body?.outcome;
@@ -234,7 +232,7 @@ export function attachSteamInventoryRoutes(app) {
     });
 
     // 4. Crafting/Exchange
-    app.post('/steam/inventory/exchange', steamAuthMiddleware, async (req, res) => {
+    app.post('/steam/inventory/exchange', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
         const requestId = req.body?.requestId;
         const recipeId = Number(req.body?.recipeId);
         const materials = req.body?.materials; // array of itemId strings
@@ -383,7 +381,7 @@ export function attachSteamInventoryRoutes(app) {
     // modified client can't request arbitrary items. The idempotency key is
     // derived here from steamId + milestone (+ runKey where relevant), not
     // from a client-supplied nonce, so a retry can't double-grant.
-    app.post('/steam/inventory/grant-milestone', steamAuthMiddleware, async (req, res) => {
+    app.post('/steam/inventory/grant-milestone', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
         const milestone = String(req.body?.milestone ?? '');
         const runKey = String(req.body?.runKey ?? '');
 
@@ -429,7 +427,7 @@ export function attachSteamInventoryRoutes(app) {
     });
 
     // 6. Market Eligibility
-    app.get('/steam/market/eligibility', steamAuthMiddleware, async (req, res) => {
+    app.get('/steam/market/eligibility', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
         if (req.isDevMode) {
             return res.json({ ok: true, allowed: true, reason: 'dev_mock' });
         }
