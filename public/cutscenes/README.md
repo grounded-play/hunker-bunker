@@ -20,3 +20,10 @@ upgradeable with painted PNGs — see `docs/cave-scene-asset-prompts.md`):
 
 - `cave-reveal.webm` — plays on cave interaction, before the blackout
 - `act3-departure.webm` — plays after boarding the vessel, before the ACT III card
+- `ending-fullbrood.webm` — FULL BROOD ending
+- `ending-cleanescape.webm` — CLEAN ESCAPE ending
+- `ending-mixedcrew.webm` — MIXED CREW ending
+- `ending-carriersbargain.webm` — CARRIER'S BARGAIN ending
+- `ending-scorchedsky.webm` — SCORCHED SKY ending
+
+Optional poster frames use the same base names with `-poster.jpg`.

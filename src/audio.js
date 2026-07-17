@@ -24,6 +24,7 @@ export class AudioManager {
 
     static isUnlocked = false;
     static randInterval = null;
+    static _lastMetalStressAt = 0;
 
     // Active looping music track + the context it represents (for crossfading).
     static activeMusic = null;
@@ -201,8 +202,9 @@ export class AudioManager {
 
         // Optional stereo panning
         let lastNode = gainNode;
+        let panner = null;
         if (options.pan !== undefined && Number.isFinite(options.pan)) {
-            const panner = audioCtx.createStereoPanner();
+            panner = audioCtx.createStereoPanner();
             panner.pan.value = Math.max(-1, Math.min(1, options.pan));
             gainNode.connect(panner);
             lastNode = panner;
@@ -218,7 +220,43 @@ export class AudioManager {
         }
 
         source.start(0);
-        return { source, gainNode };
+        return { source, gainNode, panner };
+    }
+
+    static _isGameplayAudioContext() {
+        if (typeof window === 'undefined') return true;
+        if (typeof window.isGameplayPhase === 'function') return window.isGameplayPhase();
+        return window.game?.performanceProfile !== 'menu';
+    }
+
+    // The metal-stress family is the game's static-like cue. Keep it on the
+    // VFX/SFX mix, lower than the raw asset volume, and suppress it on menus.
+    static playMetalStress(options = {}) {
+        if (this.globalMuted || !this.isUnlocked) return null;
+        if (options.gameplayOnly !== false && !this._isGameplayAudioContext()) return null;
+
+        const force = Boolean(options.force);
+        const minGapMs = Math.max(0, Number(options.minGapMs ?? 900));
+        const chance = Math.max(0, Math.min(1, Number(options.chance ?? 1)));
+        const now = Date.now();
+        if (!force && minGapMs > 0 && now - this._lastMetalStressAt < minGapMs) return null;
+        if (!force && chance < 1 && Math.random() > chance) return null;
+
+        const volumeInput = Number(options.volume ?? 0.08);
+        const volume = Math.max(0.01, Math.min(0.12, volumeInput * 0.35));
+        const playbackRate = Number.isFinite(Number(options.playbackRate))
+            ? Math.max(0.35, Math.min(2.5, Number(options.playbackRate)))
+            : 1;
+
+        const result = this.play('amb_metal_stress', {
+            ...options,
+            bus: 'sfx',
+            volume,
+            playbackRate,
+            varyPitch: false
+        });
+        if (result) this._lastMetalStressAt = now;
+        return result;
     }
 
     static playProceduralHover(options = {}) {
@@ -751,17 +789,15 @@ export class AudioManager {
         this.setMusicContext(this._pendingMusicContext ?? 'safe_ship');
         this._pendingMusicContext = null;
 
-        // Start random ambient pings (drips, metal stress)
+        // Start random ambient pings (drips only; static now comes from
+        // specific gameplay cues so it doesn't wash over the whole menu flow).
         if (!this.randInterval) {
             this.randInterval = setInterval(() => {
                 if (this.globalMuted || Math.random() > 0.6) return; // 40% chance to play something
 
-                const types = ['amb_drip', 'amb_metal_stress'];
-                const key = types[Math.floor(Math.random() * types.length)];
-                
-                this.play(key, { 
+                this.play('amb_drip', {
                     bus: 'world',
-                    volume: 0.15 + (Math.random() * 0.1),
+                    volume: 0.12 + (Math.random() * 0.08),
                     playbackRate: 0.8 + (Math.random() * 0.4) // randomize pitch slightly
                 });
             }, 5000); // Check every 5 seconds
@@ -773,6 +809,9 @@ export class AudioManager {
             this._pendingMusicContext = 'safe_ship';
             return;
         }
+        // The menu should only carry the title music. Any looping ambience
+        // from gameplay needs to stop here so it can't bleed under the theme.
+        this.stopAmbience({ stopMusic: false });
         this.setMusicTension('safe');
         this.setMusicContext('safe_ship');
     }

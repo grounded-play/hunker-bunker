@@ -1,6 +1,11 @@
 import express from 'express';
 import http from 'http';
-import { Server } from 'socket.io';
+import { initDb } from './db.js';
+import { attachRelay } from './relay.js';
+import { attachSteamAuthRoutes } from './steamAuth.js';
+import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
+import { attachSteamInventoryRoutes } from './steamInventory.js';
+import { attachSteamStoreRoutes } from './steamStore.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -16,68 +21,52 @@ if (ALLOWED_ORIGINS.length === 0) {
     console.warn('[hb-relay] HB_ALLOWED_ORIGINS not set — allowing all origins (dev only).');
 }
 
-const io = new Server(server, {
-    cors: {
-        origin: ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : '*',
-        methods: ['GET', 'POST']
-    }
-});
-
-const players = {};
-
-// Movement hardening: reject non-finite values, clamp to a sane world range, and
-// rate-limit so a client can't spoof teleports or flood the relay.
-const WORLD_LIMIT = 100000;
-const MIN_MOVE_INTERVAL_MS = 16; // ~60 updates/sec cap per socket
-
-function sanitizeCoord(value) {
-    if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-    return Math.max(-WORLD_LIMIT, Math.min(WORLD_LIMIT, value));
+function isAllowedOrigin(origin) {
+    return !origin || ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(origin);
 }
 
-io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-
-    players[socket.id] = {
-        id: socket.id,
-        x: 0,
-        z: 0,
-        level: 0,
-        lastMoveAt: 0
-    };
-
-    // Never leak server-only bookkeeping (lastMoveAt) to clients.
-    const publicState = (p) => ({ id: p.id, x: p.x, z: p.z, level: p.level });
-    const publicPlayers = Object.fromEntries(
-        Object.entries(players).map(([id, p]) => [id, publicState(p)])
-    );
-
-    socket.emit('currentPlayers', publicPlayers);
-    socket.broadcast.emit('newPlayer', publicState(players[socket.id]));
-
-    socket.on('playerMove', (movementData) => {
-        const player = players[socket.id];
-        if (!player || !movementData || typeof movementData !== 'object') return;
-
-        const now = Date.now();
-        if (now - player.lastMoveAt < MIN_MOVE_INTERVAL_MS) return; // throttle floods
-        player.lastMoveAt = now;
-
-        const x = sanitizeCoord(movementData.x);
-        const z = sanitizeCoord(movementData.z);
-        if (x === null || z === null) return; // ignore malformed payloads
-
-        player.x = x;
-        player.z = z;
-        socket.broadcast.emit('playerMoved', publicState(player));
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-        delete players[socket.id];
-        io.emit('playerDisconnected', socket.id);
-    });
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (isAllowedOrigin(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin ?? '*');
+        res.setHeader('Vary', 'Origin');
+    }
+    res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    if (req.method === 'OPTIONS') {
+        res.status(isAllowedOrigin(origin) ? 204 : 403).end();
+        return;
+    }
+    next();
 });
+app.use(express.json({ limit: '16kb' }));
+app.use('/steam', (req, res, next) => {
+    const startedAt = Date.now();
+    res.on('finish', () => {
+        const requestId = typeof req.body?.requestId === 'string'
+            ? req.body.requestId.slice(0, 96)
+            : undefined;
+        const log = {
+            method: req.method,
+            path: req.path,
+            status: res.statusCode,
+            durationMs: Date.now() - startedAt,
+            requestId,
+            hasTicket: Boolean(req.body?.ticketHex || req.query?.ticketHex),
+            hasBearer: Boolean(req.headers.authorization)
+        };
+        console.info('[hb-request]', JSON.stringify(log));
+    });
+    next();
+});
+// Initialize DB before routing
+await initDb();
+
+attachSteamAuthRoutes(app);
+attachSteamLeaderboardRoutes(app);
+attachSteamInventoryRoutes(app);
+attachSteamStoreRoutes(app);
+attachRelay(server, { allowedOrigins: ALLOWED_ORIGINS });
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

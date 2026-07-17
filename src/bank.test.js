@@ -94,7 +94,6 @@ describe('BankManager', () => {
         bank.deposit({ tech: 1000, med: 1000, coin: 1000 });
 
         expect(bank.getO2GeneratorLevel()).toBe(0);
-        expect(bank.canUpgradeO2Generator()).toBe(true);
 
         const first = bank.upgradeO2Generator();
         expect(first?.level).toBe(1);
@@ -119,11 +118,9 @@ describe('BankManager', () => {
         expect(bank.setUnlock('radarNode')).toBe(false);
 
         bank.deposit(GOAL_COSTS.o2Bubble);
-        expect(bank.canUnlock('o2Bubble')).toBe(true);
         expect(bank.spend(GOAL_COSTS.o2Bubble)).toBe(true);
         expect(bank.setUnlock('o2Bubble')).toBe(true);
 
-        expect(bank.canUnlock('radarNode')).toBe(false);
         bank.deposit({ tech: 999, med: 999, coin: 999 });
         expect(bank.setUnlock('hullExpansion')).toBe(true);
         expect(bank.setUnlock('radarNode')).toBe(true);
@@ -203,20 +200,17 @@ describe('BankManager', () => {
         const bank = new BankManager({ storage });
 
         // Too poor to start.
-        expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(false);
         expect(bank.upgradeWeapon('ammoCapacity')).toBe(false);
 
         bank.addShells(9999);
 
         // ammoCapacity has maxLevel 3 — buy all three.
         for (let i = 1; i <= 3; i++) {
-            expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(true);
             expect(bank.upgradeWeapon('ammoCapacity')).toBe(true);
             expect(bank.getWeaponUpgradeLevel('ammoCapacity')).toBe(i);
         }
         // Maxed out.
         expect(bank.getWeaponUpgradeNextCost('ammoCapacity')).toBeNull();
-        expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(false);
         expect(bank.upgradeWeapon('ammoCapacity')).toBe(false);
 
         // Unknown key is rejected.
@@ -299,7 +293,6 @@ describe('BankManager', () => {
         bank.deposit({ tech: 9999, coin: 9999, med: 9999 });
         bank.setUnlock('o2Bubble');
         expect(bank.canUnlockTier2('suitThermal')).toBe(false);
-        expect(bank.canUpgradeWeapon('ammoCapacity')).toBe(false);
 
         bank.addShells(50);
         expect(bank.unlockTier2('suitThermal')).toBe(true);

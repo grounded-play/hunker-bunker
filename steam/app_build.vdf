@@ -1,0 +1,21 @@
+// Hunker Bunker — steamcmd app build script.
+// Usage: steamcmd +login <builder_account> +run_app_build <abs path to this file> +quit
+// Current Steamworks dashboard values:
+//   App ID: 4957040
+//   Content Depot ID: 4957041
+"AppBuild"
+{
+    "AppID" "4957040"
+    "Desc" "Hunker Bunker automated build" // shown in the Steamworks build list
+    "BuildOutput" "../steam_build_output/"
+    "ContentRoot" "../dist_electron/"
+
+    // Uploads land on the private 'beta' branch; promote to default manually
+    // from the Steamworks dashboard after a smoke test. Never auto-publish.
+    "SetLive" "beta"
+
+    "Depots"
+    {
+        "4957041" "depot_build_content.vdf"
+    }
+}

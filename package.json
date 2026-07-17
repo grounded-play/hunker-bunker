@@ -3,33 +3,89 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --host",
     "server": "nodemon server/index.js",
+    "server:start": "node server/index.js",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "coverage": "vitest run --coverage",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=1 electron .\"",
+    "steam:config": "node scripts/write-steam-config.js",
+    "steam:dashboard-handoff": "node scripts/steam-dashboard-handoff.js",
+    "steam:audit-backend": "node scripts/audit-steam-backend-env.js",
+    "steam:audit-backend:strict": "node scripts/audit-steam-backend-env.js --strict",
+    "steam:audit-depot": "node scripts/audit-steam-depot.js",
+    "electron:build": "vite build && npm run steam:config && electron-builder --dir",
+    "electron:dist": "vite build && npm run steam:config && electron-builder",
     "lighthouse:setup": "npx -y @puppeteer/browsers install chrome@stable",
-    "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun"
+    "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun",
+    "package-soundtrack": "node scripts/package-soundtrack.js"
+  },
+  "build": {
+    "appId": "com.icecave.hunkerbunker",
+    "productName": "Hunker Bunker",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "extraFiles": [
+      {
+        "from": "steam/steam_input_manifest.vdf",
+        "to": "steam_input_manifest.vdf"
+      }
+    ],
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/steamworks.js/**/*"
+    ],
+    "linux": {
+      "target": "dir"
+    },
+    "win": {
+      "target": "dir"
+    }
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.61.1",
     "@types/three": "^0.184.1",
     "@vitest/coverage-v8": "^4.1.7",
+    "concurrently": "^10.0.3",
+    "cross-env": "^10.1.0",
+    "electron": "^43.1.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.4.0",
-    "express": "^5.2.1",
     "globals": "^17.6.0",
     "nodemon": "^3.1.14",
-    "socket.io": "^4.8.3",
-    "vite": "^8.0.12",
-    "vitest": "^4.1.7"
+    "vite": "^8.1.5",
+    "vitest": "^4.1.7",
+    "wait-on": "^9.0.10"
   },
   "dependencies": {
-    "phaser": "^3.80.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.0",
+    "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
+    "steamworks.js": "^0.4.0",
     "three": "^0.184.0"
+  },
+  "overrides": {
+    "vite": "^8.1.5",
+    "ws": "^8.21.1",
+    "tmp": "^0.2.7",
+    "uuid": "^14.0.1",
+    "qs": "^6.15.3",
+    "js-yaml": "^4.3.0",
+    "launch-editor": "^2.14.1"
   }
 }

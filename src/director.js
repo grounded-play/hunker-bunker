@@ -8,7 +8,12 @@
 // The decision is a pure, testable function; the class only adds cadence +
 // per-action cooldowns. threeGame maps the returned action id onto its levers.
 
+import { createRunCardState, mergeEffects, serializeRunCards } from './runModifiers.js';
+
 export const DIRECTOR_ACTIONS = Object.freeze(['patrol', 'lightsout', 'corrupt', 'mercy', 'taunt']);
+export const APEX_THREAT_TYPES = Object.freeze(['hunter_pair', 'exterminator_lander']);
+export const APEX_HUNTER_PAIR = Object.freeze(['HENDERSON-REDLINE', 'PARK-ASH']);
+export const APEX_EXTERMINATOR_LANDER = 'MOTHERSHIP EXTERMINATOR LANDER';
 
 const ACTION_COOLDOWNS = Object.freeze({
     patrol: 28,
@@ -60,10 +65,50 @@ export function chooseDirectorAction(snapshot = {}, random = Math.random) {
     return 'none';
 }
 
+function apexThreatKey(type, campId = 'global') {
+    return `${type}:${campId || 'global'}`;
+}
+
+export function chooseApexThreatEvents(snapshot = {}, alreadySpawned = []) {
+    const spawned = alreadySpawned instanceof Set ? alreadySpawned : new Set(alreadySpawned);
+    const suspicion = Math.max(0, Math.min(100, Number(snapshot.suspicion) || 0));
+    const campId = String(snapshot.campId ?? 'global');
+    const events = [];
+    // Radar Shroud (Lost Probe camp-quest reward) raises this from its
+    // default 75 — harder for the queen's hunters to lock on.
+    const hunterPairThreshold = Number.isFinite(snapshot.hunterPairThreshold) ? snapshot.hunterPairThreshold : 75;
+
+    if (suspicion >= hunterPairThreshold && !spawned.has(apexThreatKey('hunter_pair', campId))) {
+        events.push({
+            type: 'hunter_pair',
+            key: apexThreatKey('hunter_pair', campId),
+            label: APEX_HUNTER_PAIR.join(' + '),
+            campId,
+            suspicion,
+            hunters: [...APEX_HUNTER_PAIR]
+        });
+    }
+
+    if (snapshot.outed === true && !spawned.has(apexThreatKey('exterminator_lander'))) {
+        events.push({
+            type: 'exterminator_lander',
+            key: apexThreatKey('exterminator_lander'),
+            label: APEX_EXTERMINATOR_LANDER,
+            campId,
+            suspicion
+        });
+    }
+
+    return events;
+}
+
 export class BunkerDirector {
     constructor({ cadence = 16, threatGap = 16 } = {}) {
         this.baseCadence = cadence;
         this.threatGap = threatGap;
+        this._runSeed = 'default';
+        this._activeCards = Object.freeze([]);
+        this._cardEffects = Object.freeze({});
         this.reset();
     }
 
@@ -72,6 +117,43 @@ export class BunkerDirector {
         this._sinceEval = 0;
         this._elapsed = 0;
         this._cooldowns = {};
+        this._apexThreats = new Set();
+    }
+
+    startRun(seed = 'default', options = {}) {
+        const state = createRunCardState(seed, options);
+        this.setRunCards(state);
+        this.reset();
+        return state;
+    }
+
+    setRunCards(runState = {}) {
+        const cards = Object.freeze([...(runState.cards ?? [])]);
+        this._runSeed = String(runState.seed ?? 'default');
+        this._activeCards = cards;
+        this._cardEffects = runState.effects ?? mergeEffects(...cards.map((card) => card.effects));
+        return this.cardState;
+    }
+
+    get runSeed() {
+        return this._runSeed;
+    }
+
+    get activeCards() {
+        return this._activeCards;
+    }
+
+    get cardEffects() {
+        return this._cardEffects;
+    }
+
+    get cardState() {
+        return Object.freeze({
+            seed: this._runSeed,
+            cards: this._activeCards,
+            effects: this._cardEffects,
+            publicCards: serializeRunCards(this._activeCards)
+        });
     }
 
     // Call whenever the player is threatened (took damage, boss spawned) so the
@@ -109,5 +191,11 @@ export class BunkerDirector {
             this._sinceThreat = 0;
         }
         return action;
+    }
+
+    evaluateApexThreats(snapshot = {}) {
+        const events = chooseApexThreatEvents(snapshot, this._apexThreats);
+        for (const event of events) this._apexThreats.add(event.key);
+        return events;
     }
 }

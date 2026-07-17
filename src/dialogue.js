@@ -155,7 +155,14 @@ export class DialogueManager {
             }
             if (event.code === 'Enter' || event.code === 'Space') {
                 event.preventDefault();
-                this.resolveChoice('skip');
+                if (this.isTyping) {
+                    this.completeTypingInstantly = true;
+                } else {
+                    this.skipPause = true;
+                    if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                        this.resolveChoice('skip');
+                    }
+                }
                 return;
             }
             if (event.code === 'KeyA') {
@@ -219,7 +226,7 @@ export class DialogueManager {
 
         this.setInputEnabled?.(false);
         window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
-        window.addEventListener('keydown', this.handleDialogueKey);
+        this.initDialogueListeners();
 
         const allLines = [...MOTHERSHIP_LINES];
         const classBriefing = CLASS_BRIEFING_LINES[playerType];
@@ -296,7 +303,7 @@ export class DialogueManager {
 
         this.setInputEnabled?.(false);
         window.AudioManager?.play('door_slide_horiz', { volume: 0.5 });
-        window.addEventListener('keydown', this.handleDialogueKey);
+        this.initDialogueListeners();
 
         const milestoneLines = MILESTONE_LINES[goalKey] ?? O2_MILESTONE_LINES;
         const lines = milestoneLines[playerType] ?? milestoneLines.SCOUT;
@@ -383,7 +390,7 @@ export class DialogueManager {
 
         this.setInputEnabled?.(false);
         window.AudioManager?.play('door_slide_horiz', { volume: 0.42 });
-        window.addEventListener('keydown', this.handleDialogueKey);
+        this.initDialogueListeners();
         this.determineSpeakerSetup(normalizedLines);
 
         for (const line of normalizedLines) {
@@ -472,7 +479,7 @@ export class DialogueManager {
         this.activeChoiceResolver?.('skip');
         this.activeChoiceResolver = null;
 
-        window.removeEventListener('keydown', this.handleDialogueKey);
+        this.cleanupDialogueListeners();
         this.panelEl?.classList.remove('is-open', 'is-closing');
         this.dialogEl?.classList.add('hidden');
         this.dialogEl?.classList.remove('is-revealed');
@@ -563,7 +570,7 @@ export class DialogueManager {
         if (stablePortraitEl) stablePortraitEl.classList.add('hidden');
         this.panelEl.classList.remove('dialogue-layout--single-speaker');
 
-        window.removeEventListener('keydown', this.handleDialogueKey);
+        this.cleanupDialogueListeners();
 
         this.activeDialogueRunId = 0;
         this.activeChoiceResolver = null;
@@ -601,15 +608,33 @@ export class DialogueManager {
             row.querySelector('.mothership-line__portrait').src = speaker.portrait;
             row.querySelector('.mothership-line__speaker').textContent = speaker.name;
         }
+
+        const isIntimate = /[a-z]/.test(speaker.cleanText) && !line.startsWith('SYSTEM:') && !line.startsWith('WARNING:') && !line.startsWith('ALERT:') && !line.startsWith('CAUTION:');
+        if (isIntimate) {
+            row.classList.add('mothership-line--intimate');
+        }
+
+        if (speaker.name === 'THE QUEEN') {
+            playQueenSting();
+        }
+
         const textEl = row.querySelector('.mothership-line__text');
         textEl.textContent = '> █';
         this.bodyEl.appendChild(row);
         this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
 
         const textToType = speaker.cleanText;
+        this.isTyping = true;
+        this.completeTypingInstantly = false;
 
         for (let index = 0; index < textToType.length; index++) {
-            if (!this.isDialogueRunActive(runId)) return;
+            if (!this.isDialogueRunActive(runId)) {
+                this.isTyping = false;
+                return;
+            }
+            if (this.completeTypingInstantly) {
+                break;
+            }
 
             const nextText = textToType.slice(0, index + 1);
             textEl.textContent = `> ${nextText}█`;
@@ -625,9 +650,20 @@ export class DialogueManager {
                     varyPitch: false
                 });
             }
-            await this.sleep(runId, DIALOGUE_CHAR_INTERVAL_MS);
+            
+            let charDelay = DIALOGUE_CHAR_INTERVAL_MS;
+            if (typeof window !== 'undefined' && window.state?.settings?.textSpeed) {
+                const speed = window.state.settings.textSpeed;
+                if (speed === 'fast') charDelay = 10;
+                else if (speed === 'instant') charDelay = 0;
+            }
+
+            if (charDelay > 0) {
+                await this.sleep(runId, charDelay);
+            }
         }
 
+        this.isTyping = false;
         if (!this.isDialogueRunActive(runId)) return;
         textEl.textContent = `> ${textToType}`;
     }
@@ -728,6 +764,29 @@ export class DialogueManager {
             if (dialoguePanelEl) {
                 dialoguePanelEl.classList.remove('dialogue-layout--single-speaker');
             }
+        }
+
+        // Queen panel styling override (Sprint 19 Wave 3)
+        const hasQueen = Array.from(uniqueSpeakers.keys()).some(name => name.includes('QUEEN') || name.includes('Queen') || name.includes('THE QUEEN'));
+        if (hasQueen && dialoguePanelEl) {
+            const obedience = (typeof window !== 'undefined' ? window.game?.act2?.getState?.()?.queenObedience : 0) ?? 0;
+            if (obedience >= 1) {
+                dialoguePanelEl.style.setProperty('--terminal-glow', '#f59e0b'); // amber
+                dialoguePanelEl.style.setProperty('--terminal-glow-rgb', '245, 158, 11');
+                dialoguePanelEl.classList.add('dialogue-layout--queen-warm');
+                dialoguePanelEl.classList.remove('dialogue-layout--queen-hostile');
+            } else {
+                dialoguePanelEl.style.setProperty('--terminal-glow', '#ff2222'); // sharp red
+                dialoguePanelEl.style.setProperty('--terminal-glow-rgb', '255, 34, 34');
+                dialoguePanelEl.classList.add('dialogue-layout--queen-hostile');
+                dialoguePanelEl.classList.remove('dialogue-layout--queen-warm');
+            }
+        } else if (dialoguePanelEl) {
+            dialoguePanelEl.classList.remove('dialogue-layout--queen-warm', 'dialogue-layout--queen-hostile');
+            // Reapply default class theme
+            const theme = CLASS_COLORS[this.currentPlayerType] ?? CLASS_COLORS.SCOUT;
+            dialoguePanelEl.style.setProperty('--terminal-glow', theme.glow);
+            dialoguePanelEl.style.setProperty('--terminal-glow-rgb', theme.rgb);
         }
     }
 
@@ -1056,10 +1115,38 @@ export class DialogueManager {
     }
 
     sleep(runId, delayMs) {
+        // Adjust pause duration based on global textSpeed setting
+        if (typeof window !== 'undefined' && window.state?.settings?.textSpeed) {
+            const speed = window.state.settings.textSpeed;
+            if (speed === 'fast') delayMs = Math.floor(delayMs / 2);
+            else if (speed === 'instant') delayMs = 0;
+        }
+
+        if (delayMs <= 0) {
+            return Promise.resolve(this.isDialogueRunActive(runId) || this.isTutorialRunActive(runId));
+        }
+
         return new Promise((resolve) => {
-            window.setTimeout(() => {
-                resolve(this.isDialogueRunActive(runId) || this.isTutorialRunActive(runId));
-            }, delayMs);
+            let elapsed = 0;
+            const interval = 20;
+            const check = () => {
+                if (!this.isDialogueRunActive(runId) && !this.isTutorialRunActive(runId)) {
+                    resolve(false);
+                    return;
+                }
+                if (this.skipPause) {
+                    this.skipPause = false;
+                    resolve(true);
+                    return;
+                }
+                elapsed += interval;
+                if (elapsed >= delayMs) {
+                    resolve(true);
+                    return;
+                }
+                window.setTimeout(check, interval);
+            };
+            window.setTimeout(check, interval);
         });
     }
 
@@ -1069,5 +1156,75 @@ export class DialogueManager {
 
     isTutorialRunActive(runId) {
         return this.activeTutorialRunId === runId;
+    }
+
+    initDialogueListeners() {
+        window.addEventListener('keydown', this.handleDialogueKey);
+        this.handlePanelClick = () => {
+            if (this.isTyping) {
+                this.completeTypingInstantly = true;
+            } else {
+                this.skipPause = true;
+            }
+        };
+        this.panelEl?.addEventListener('click', this.handlePanelClick);
+    }
+
+    cleanupDialogueListeners() {
+        window.removeEventListener('keydown', this.handleDialogueKey);
+        if (this.handlePanelClick) {
+            this.panelEl?.removeEventListener('click', this.handlePanelClick);
+            this.handlePanelClick = null;
+        }
+    }
+}
+
+function playQueenSting() {
+    if (typeof window === 'undefined' || !window.AudioManager || window.AudioManager.globalMuted) return;
+    try {
+        const audioCtx = window.AudioManager.audioCtx || window.audioCtx;
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+
+        // Note 1: Eerie detuned triangle drone at 92.5Hz (F#2)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(92.5, now);
+
+        // Lowpass filter to make it dark and heavy
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(180, now);
+
+        osc1.connect(filter);
+        filter.connect(gain1);
+        gain1.connect(window.AudioManager.sfxGain || audioCtx.destination);
+
+        gain1.gain.setValueAtTime(0.001, now);
+        gain1.gain.linearRampToValueAtTime(0.24, now + 0.12);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
+
+        osc1.start(now);
+        osc1.stop(now + 1.0);
+
+        // Note 2: Eerie slide down 0.22s later starting at 73.4Hz (D2) down to 55.0Hz (A1)
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(73.4, now + 0.22);
+        osc2.frequency.exponentialRampToValueAtTime(55.0, now + 0.85);
+
+        osc2.connect(gain2);
+        gain2.connect(window.AudioManager.sfxGain || audioCtx.destination);
+
+        gain2.gain.setValueAtTime(0.001, now + 0.22);
+        gain2.gain.linearRampToValueAtTime(0.35, now + 0.35);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.15);
+
+        osc2.start(now + 0.22);
+        osc2.stop(now + 1.25);
+    } catch (err) {
+        void err;
     }
 }

@@ -344,6 +344,31 @@ describe('Act 2 boarding manifest', () => {
         expect(manifest.invalidReasons).toContain('egg_unstable');
     });
 
+    it('can require Suture aboard for egg-instability runs even when the queen boards', () => {
+        const manifest = buildAct2Manifest({
+            queenStatus: 'aboard',
+            eggsStatus: 'aboard',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, status: 'culled' })),
+            hives: []
+        }, { eggSeatRequiresNahl: true });
+
+        expect(manifest.seatsUsed).toBe(4);
+        expect(manifest.valid).toBe(false);
+        expect(manifest.invalidReasons).toContain('egg_requires_nahl');
+    });
+
+    it('satisfies egg-instability runs when Suture has a seat', () => {
+        const manifest = buildAct2Manifest({
+            queenStatus: 'aboard',
+            eggsStatus: 'aboard',
+            camps: ACT2_CAMP_IDS.map((id) => ({ id, status: 'culled' })),
+            hives: [{ id: 'hive_suture', status: 'aboard' }]
+        }, { eggSeatRequiresNahl: true });
+
+        expect(manifest.aliens).toContain('hive_suture');
+        expect(manifest.invalidReasons).not.toContain('egg_requires_nahl');
+    });
+
     it('counts turned camps against launch capacity', () => {
         const manifest = buildAct2Manifest({
             queenStatus: 'aboard',
@@ -397,6 +422,27 @@ describe('camp support levels', () => {
         expect(campSupportCost(0)).toBe(ACT2_CAMP_SUPPORT_COSTS[0]);
         expect(campSupportCost(ACT2_CAMP_MAX_LEVEL - 1)).toBe(ACT2_CAMP_SUPPORT_COSTS[ACT2_CAMP_MAX_LEVEL - 1]);
         expect(campSupportCost(99)).toBe(ACT2_CAMP_SUPPORT_COSTS[ACT2_CAMP_MAX_LEVEL - 1]);
+    });
+});
+
+describe('camp discovery', () => {
+    it('defaults to undiscovered and normalizes the flag', () => {
+        expect(normalizeAct2State({}).camps.every((c) => c.discovered === false)).toBe(true);
+        const state = normalizeAct2State({ camps: [{ id: 'camp_meridian', discovered: true }] });
+        expect(state.camps.find((c) => c.id === 'camp_meridian').discovered).toBe(true);
+        expect(state.camps.find((c) => c.id === 'camp_tallow').discovered).toBe(false);
+    });
+
+    it('discoverCamp marks first contact and persists across reloads', () => {
+        const storage = memoryStorage();
+        const manager = new Act2Manager({ storage });
+        manager.discoverCamp('camp_vesper');
+        expect(manager.getState().camps.find((c) => c.id === 'camp_vesper').discovered).toBe(true);
+
+        const reloaded = new Act2Manager({ storage });
+        const camps = reloaded.getState().camps;
+        expect(camps.find((c) => c.id === 'camp_vesper').discovered).toBe(true);
+        expect(camps.find((c) => c.id === 'camp_meridian').discovered).toBe(false);
     });
 });
 

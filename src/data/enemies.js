@@ -9,9 +9,14 @@ export const ENEMY_BASE = Object.freeze({ maxHp: 2, speed: 1.2 });
 export const ENEMY_STATS = Object.freeze({
     cryosnail:       { maxHp: 4,  speed: 0.9 },
     sporesnail:      { maxHp: 3,  speed: 1.4 },
-    boss_cybersnail: { maxHp: 20, speed: 1.5 },
+    alien_proto_crawler: { maxHp: 3, speed: 1.5 },
+    alien_proto_spitter: { maxHp: 4, speed: 1.1 },
+    boss_cybersnail: { maxHp: 15, speed: 1.5 },
     boss_cryosnail:  { maxHp: 40, speed: 1.1 },
-    boss_sporesnail: { maxHp: 75, speed: 1.3 }
+    boss_sporesnail: { maxHp: 75, speed: 1.3 },
+    boss_corrupted_scout: { maxHp: 14, speed: 1.65 },
+    boss_corrupted_tank: { maxHp: 18, speed: 1.05 },
+    boss_corrupted_engineer: { maxHp: 16, speed: 1.25 }
 });
 
 // Returns { maxHp, speed } for a type, falling back to the provided base (the

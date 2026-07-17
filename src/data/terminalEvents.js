@@ -59,17 +59,21 @@ export const TERMINAL_EVENTS = Object.freeze([
     {
         id: 'loot_cache',
         title: 'UNCLAIMED ASSET LOCKER',
-        body: 'A bonded salvage locker can be force-opened. Doing so trips the sector lighting breaker.',
+        body: 'A bonded salvage locker can be force-opened. Its breaker tie-in only responds after base power is online.',
         weight: 2,
         biomeTags: ['active', 'cryo', 'bio'],
         choices: [
             {
-                label: 'FORCE OPEN — triggers lights-out',
+                label: 'FORCE OPEN — trips lighting breaker',
+                offlineLabel: 'FORCE OPEN — breaker offline',
                 tone: 'risk',
+                requiresBasePowerOnline: true,
                 effect: (game) => {
                     game?.grantSalvageCache?.({ tech: 12, coin: 8 });
-                    game?.triggerLightsOut?.(8);
-                    return 'Locker emptied. Breaker tripped — running dark.';
+                    const tripped = game?.triggerLightsOut?.(8) === true;
+                    return tripped
+                        ? 'Locker emptied. Breaker tripped — running dark.'
+                        : 'Locker emptied. Lighting breaker is offline until base power is restored.';
                 }
             },
             {

@@ -131,6 +131,7 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
 // walkable tile and passes world coordinates in.
 
 const INTERACT_RADIUS = 2.8;
+const SIGNAL_FLARE_HEIGHT = 11;
 
 export class SurvivorCamp {
     constructor(scene, { id = 'camp', label = 'CAMP', playerType = 'Scout' } = {}) {
@@ -141,6 +142,12 @@ export class SurvivorCamp {
         this.group = null;
         this.beacon = null;
         this.beaconMat = null;
+        this.signalColumn = null;
+        this.signalMat = null;
+        this.discovered = false;
+        this.suspicion = 0;
+        this.lockdownStrobe = null;
+        this.lockdownStrobeMat = null;
         this.tents = [];
         this.sectionMat = null;
         this.section = null;
@@ -185,6 +192,8 @@ export class SurvivorCamp {
         this.npcAction = 'idle';
         this.npcFacingRow = 0;
         this.campWorkers = [];
+        this.fireAudio = null;
+        this.wasLockedDown = false;
     }
 
     createCampWorkerFigure(color = 0xffe9b0, scale = 1) {
@@ -292,6 +301,38 @@ export class SurvivorCamp {
         this.beacon.position.set(0, 1.6, 0);
         group.add(this.beacon);
 
+        // Distress flare: a tall additive light column that reads over the
+        // maze walls from far away — the survivors are signalling for help,
+        // and it is the player's reason to walk toward a camp they haven't
+        // met yet. Doused on first contact (setDiscovered) or when the camp
+        // dies.
+        this.signalMat = new THREE.MeshBasicMaterial({
+            color: 0xffd27a,
+            transparent: true,
+            opacity: 0.26,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            fog: false
+        });
+        this.signalColumn = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.24, 0.6, SIGNAL_FLARE_HEIGHT, 10, 1, true),
+            this.signalMat
+        );
+        this.signalColumn.position.y = SIGNAL_FLARE_HEIGHT / 2;
+        group.add(this.signalColumn);
+
+        // Lockdown strobe: hidden until suspicion crosses the lockdown line.
+        // A camp that distrusts you shows it before you press anything.
+        this.lockdownStrobeMat = new THREE.MeshBasicMaterial({ color: 0xff3030 });
+        this.lockdownStrobe = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 8, 8),
+            this.lockdownStrobeMat
+        );
+        this.lockdownStrobe.position.set(0, 1.78, 0);
+        this.lockdownStrobe.visible = false;
+        group.add(this.lockdownStrobe);
+
         // Vessel section gantry: hidden until the camp is aided.
         this.sectionMat = new THREE.MeshStandardMaterial({
             color: 0x9fb4c4,
@@ -360,6 +401,99 @@ export class SurvivorCamp {
 
         this.createCampWorkers(group);
 
+        // Load prop textures
+        this.texCookfireLit = loadKeyedTexture('/prop_camp_cookfire_lit.png', 15, tex => tex.repeat.set(1, 1));
+        this.texCookfireDoused = loadKeyedTexture('/prop_camp_cookfire_doused.png', 15, tex => tex.repeat.set(1, 1));
+        this.texCrates = loadKeyedTexture('/prop_camp_crates.png', 15, tex => tex.repeat.set(1, 1));
+        this.texCratesChained = loadKeyedTexture('/prop_camp_crates_chained.png', 15, tex => tex.repeat.set(1, 1));
+        this.texPlacard = loadKeyedTexture('/prop_camp_warning_placard.png', 15, tex => tex.repeat.set(1, 1));
+        this.texShutter = loadKeyedTexture('/prop_camp_shutter_lockdown.png', 15, tex => tex.repeat.set(1, 1));
+        this.texLaundry = loadKeyedTexture('/prop_camp_laundry.png', 15, tex => tex.repeat.set(1, 1));
+        this.texBedrolls = loadKeyedTexture('/prop_camp_bedrolls.png', 15, tex => tex.repeat.set(1, 1));
+        this.texGraveFresh = loadKeyedTexture('/prop_camp_grave_fresh.png', 15, tex => tex.repeat.set(1, 1));
+        this.texGraveOld = loadKeyedTexture('/prop_camp_grave_old.png', 15, tex => tex.repeat.set(1, 1));
+        this.texSandbags = loadKeyedTexture('/prop_camp_sandbags.png', 15, tex => tex.repeat.set(1, 1));
+
+        this.propSprites = {};
+
+        // Cookfire Sprite
+        const matFire = new THREE.SpriteMaterial({ map: this.texCookfireLit, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteFire = new THREE.Sprite(matFire);
+        spriteFire.position.set(0.2, 0.4, 0.1);
+        spriteFire.scale.set(0.85, 0.85, 1);
+        group.add(spriteFire);
+        this.propSprites.cookfire = spriteFire;
+
+        // Crates Sprite
+        const matCrates = new THREE.SpriteMaterial({ map: this.texCrates, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteCrates = new THREE.Sprite(matCrates);
+        spriteCrates.position.set(-1.1, 0.4, 1.1);
+        spriteCrates.scale.set(0.8, 0.8, 1);
+        group.add(spriteCrates);
+        this.propSprites.crates = spriteCrates;
+
+        // Placard Sprite
+        const matPlacard = new THREE.SpriteMaterial({ map: this.texPlacard, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spritePlacard = new THREE.Sprite(matPlacard);
+        spritePlacard.position.set(0, 0.4, -2.4);
+        spritePlacard.scale.set(0.7, 0.7, 1);
+        spritePlacard.visible = false;
+        group.add(spritePlacard);
+        this.propSprites.placard = spritePlacard;
+
+        // Shutter Sprite
+        const matShutter = new THREE.SpriteMaterial({ map: this.texShutter, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteShutter = new THREE.Sprite(matShutter);
+        spriteShutter.position.set(0.8, 0.5, -0.9);
+        spriteShutter.scale.set(0.8, 0.8, 1);
+        spriteShutter.visible = false;
+        group.add(spriteShutter);
+        this.propSprites.shutter = spriteShutter;
+
+        // Laundry Sprite
+        const matLaundry = new THREE.SpriteMaterial({ map: this.texLaundry, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteLaundry = new THREE.Sprite(matLaundry);
+        spriteLaundry.position.set(-1.4, 0.5, -0.8);
+        spriteLaundry.scale.set(1.0, 1.0, 1);
+        group.add(spriteLaundry);
+
+        // Bedrolls Sprite
+        const matBedrolls = new THREE.SpriteMaterial({ map: this.texBedrolls, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteBedrolls = new THREE.Sprite(matBedrolls);
+        spriteBedrolls.position.set(1.3, 0.3, 0.4);
+        spriteBedrolls.scale.set(0.6, 0.6, 1);
+        group.add(spriteBedrolls);
+
+        // Grave Sprite
+        const useOldGrave = this.id === 'camp_vesper';
+        const matGrave = new THREE.SpriteMaterial({
+            map: useOldGrave ? this.texGraveOld : this.texGraveFresh,
+            transparent: true,
+            alphaTest: 0.05,
+            depthWrite: false
+        });
+        const spriteGrave = new THREE.Sprite(matGrave);
+        spriteGrave.position.set(-2.3, 0.4, 0.2);
+        spriteGrave.scale.set(0.7, 0.7, 1);
+        group.add(spriteGrave);
+
+        // Sandbags Sprites (level-based)
+        this.sandbagSprites = [];
+        const sandbagOffsets = [
+            { x: 1.8, z: -1.8 },
+            { x: -1.8, z: -1.8 },
+            { x: 2.2, z: 0 }
+        ];
+        for (let i = 0; i < 3; i++) {
+            const matSandbags = new THREE.SpriteMaterial({ map: this.texSandbags, transparent: true, alphaTest: 0.05, depthWrite: false });
+            const spriteSandbags = new THREE.Sprite(matSandbags);
+            spriteSandbags.position.set(sandbagOffsets[i].x, 0.3, sandbagOffsets[i].z);
+            spriteSandbags.scale.set(0.75, 0.75, 1);
+            spriteSandbags.visible = false;
+            group.add(spriteSandbags);
+            this.sandbagSprites.push(spriteSandbags);
+        }
+
         group.visible = false;
         this.scene.add(group);
         this.group = group;
@@ -372,6 +506,35 @@ export class SurvivorCamp {
         if (this.group) this.group.visible = true;
     }
 
+    // Suspicion is a place, not a number: at the lockdown line the camp runs
+    // a warning strobe and barricades read hostile. Interaction refusal lives
+    // in threeGame (getActionableCampAt); this is the visible tell.
+    setSuspicion(suspicion = 0) {
+        this.suspicion = Math.max(0, Math.min(100, Math.floor(Number(suspicion) || 0)));
+        const lockdown = this.isLockedDown;
+        if (this.lockdownStrobe) this.lockdownStrobe.visible = lockdown;
+        if (!this.destroyed) {
+            for (const wall of this.barricades) {
+                wall.material.color.set(lockdown ? 0x7a3026 : 0x55606a);
+            }
+        }
+        this.updatePropVisuals();
+    }
+
+    get isLockedDown() {
+        return this.suspicion >= 50 && !this.destroyed && this.status !== 'culled';
+    }
+
+    // First contact: dousing the flare is the visible proof the camp has been
+    // found. The small beacon light stays — the camp is known now, not lost.
+    setDiscovered(discovered = true) {
+        this.discovered = Boolean(discovered);
+        if (this.signalColumn) {
+            this.signalColumn.visible = !this.discovered && !this.destroyed;
+        }
+        this.updatePropVisuals();
+    }
+
     setAided(aided = true) {
         this.aided = Boolean(aided);
         if (this.section) this.section.visible = this.aided;
@@ -379,6 +542,7 @@ export class SurvivorCamp {
             if (this.beaconMat) this.beaconMat.color.set(0x9dffb0);
             this.beacon?.color.set(0x9dffb0);
         }
+        this.updatePropVisuals();
     }
 
     // Act 1 support level: each level rings the camp with barricade segments
@@ -439,9 +603,11 @@ export class SurvivorCamp {
                 offset,
                 disabled: false,
                 destroyed: false,
+                reprogrammed: false,
                 cooldown: 1 + Math.random() * 2
             });
         }
+        this.updatePropVisuals();
     }
 
     // World position of a turret.
@@ -469,11 +635,76 @@ export class SurvivorCamp {
         turret.tipMat?.color.set(0x33403c);
     }
 
+    setTurretReprogrammed(turret) {
+        turret.reprogrammed = true;
+        turret.disabled = false;
+        turret.destroyed = false;
+        turret.tipMat?.color.set(0x9dffb0);
+    }
+
     setTurretDestroyed(turret) {
         turret.destroyed = true;
+        turret.reprogrammed = false;
         turret.tipMat?.color.set(0x2a2523);
         turret.group.rotation.x = 0.85;
         turret.group.position.y = -0.12;
+    }
+
+    updatePropVisuals() {
+        if (!this.propSprites) return;
+        const lit = this.status !== 'culled';
+        const lockdown = this.isLockedDown;
+        const audio = typeof window !== 'undefined' ? window.AudioManager : null;
+
+        if (this.propSprites.cookfire) {
+            this.propSprites.cookfire.material.map = lit ? this.texCookfireLit : this.texCookfireDoused;
+            this.propSprites.cookfire.material.needsUpdate = true;
+        }
+
+        if (this.propSprites.crates) {
+            this.propSprites.crates.material.map = (lockdown && lit) ? this.texCratesChained : this.texCrates;
+            this.propSprites.crates.material.needsUpdate = true;
+            this.propSprites.crates.visible = lit;
+        }
+
+        if (this.propSprites.placard) {
+            this.propSprites.placard.visible = lockdown && lit;
+        }
+
+        if (this.propSprites.shutter) {
+            this.propSprites.shutter.visible = lockdown && lit;
+        }
+
+        if (this.sandbagSprites) {
+            this.sandbagSprites.forEach((sprite, i) => {
+                sprite.visible = this.level > i && lit;
+            });
+        }
+
+        // --- AUDIO WIRING ---
+        if (this.revealed) {
+            if (lit) {
+                if (!this.fireAudio) {
+                    this.fireAudio = audio?.play('camp_fire_loop', { loop: true, volume: 0.0, pan: 0, bus: 'world' });
+                }
+            } else {
+                if (this.fireAudio) {
+                    try { this.fireAudio.source.stop(); } catch (err) { void err; }
+                    this.fireAudio = null;
+                    audio?.play('camp_fire_douse', { volume: 0.35, bus: 'world' });
+                }
+            }
+
+            if (lockdown && lit) {
+                if (!this.wasLockedDown) {
+                    this.wasLockedDown = true;
+                    audio?.play('camp_lockdown_alarm', { volume: 0.28, bus: 'sfx' });
+                    audio?.play('camp_lockdown_chains', { volume: 0.38, bus: 'sfx' });
+                }
+            } else {
+                this.wasLockedDown = false;
+            }
+        }
     }
 
     setStatus(status = 'alive') {
@@ -539,6 +770,7 @@ export class SurvivorCamp {
             }
             this.npcSprite.scale.set(useBossSheet ? 1.85 : 1.5, useBossSheet ? 1.85 : 1.5, 1.0);
         }
+        this.updatePropVisuals();
     }
 
     setDestroyed(destroyed = true) {
@@ -566,6 +798,9 @@ export class SurvivorCamp {
             this.beacon.intensity = 0.35;
             this.beacon.position.y = 0.4;
         }
+        // Nobody left to signal, and nobody left to distrust you.
+        if (this.signalColumn) this.signalColumn.visible = false;
+        if (this.lockdownStrobe) this.lockdownStrobe.visible = false;
         // Barricades get breached in the cull.
         this.barricades.forEach((wall, i) => {
             wall.rotation.x = (i % 2 === 0 ? 1 : -1) * 0.9;
@@ -576,12 +811,18 @@ export class SurvivorCamp {
         for (const turret of this.turrets) this.setTurretDestroyed(turret);
         // The vessel section survives the cull — it is the whole point.
         if (this.section) this.section.visible = this.aided;
+        this.updatePropVisuals();
     }
 
     reset() {
         this.revealed = false;
         this.elapsed = 0;
         if (this.group) this.group.visible = false;
+        if (this.fireAudio) {
+            try { this.fireAudio.source.stop(); } catch (err) { void err; }
+            this.fireAudio = null;
+        }
+        this.wasLockedDown = false;
     }
 
     get isRevealed() { return this.revealed; }
@@ -600,16 +841,61 @@ export class SurvivorCamp {
     update(delta) {
         if (!this.revealed || !this.built) return;
         this.elapsed += delta;
+
+        // Dynamic fire loop volume and panning based on player distance
+        if (this.fireAudio) {
+            const player = (typeof window !== 'undefined' && window.game) ? window.game.player : null;
+            if (player && player.position) {
+                const dist = this.distanceTo(player.position.x, player.position.z);
+                const maxVol = 0.08;
+                const minDistance = 2.0;
+                const maxDistance = 20.0;
+                let targetVol = 0.0;
+
+                if (dist <= minDistance) {
+                    targetVol = maxVol;
+                } else if (dist < maxDistance) {
+                    const t = (dist - minDistance) / (maxDistance - minDistance);
+                    targetVol = maxVol * (1.0 - t);
+                }
+
+                const dx = this.pos.x - player.position.x;
+                const targetPan = Math.max(-1.0, Math.min(1.0, dx / 12.0));
+
+                const ctx = this.fireAudio.gainNode?.context;
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    this.fireAudio.gainNode.gain.setTargetAtTime(targetVol, now, 0.1);
+                    if (this.fireAudio.panner) {
+                        this.fireAudio.panner.pan.setTargetAtTime(targetPan, now, 0.1);
+                    }
+                }
+            }
+        }
+
         if (this.destroyed) {
             if (this.npcSprite) this.npcSprite.visible = false;
             // Ember flicker.
             if (this.beacon) this.beacon.intensity = 0.28 + Math.abs(Math.sin(this.elapsed * 6.1)) * 0.14;
             return;
         }
+
+        // Subtle organic campfire scale flicker
+        if (this.propSprites.cookfire && this.status !== 'culled') {
+            const flicker = 0.94 + Math.sin(this.elapsed * 13.0) * 0.06 + Math.cos(this.elapsed * 8.5) * 0.03;
+            this.propSprites.cookfire.scale.set(0.85 * flicker, 0.85 * flicker, 1.0);
+        }
         if (this.beacon) {
             const pulse = this.turned ? 0.34 : this.recruited ? 0.2 : 0.15;
             const base = this.turned ? 1.22 : this.recruited ? 1.05 : 0.85;
             this.beacon.intensity = base + Math.sin(this.elapsed * 2.1) * pulse;
+        }
+        if (this.signalColumn?.visible && this.signalMat) {
+            this.signalMat.opacity = 0.2 + (Math.sin(this.elapsed * 1.6) + 1) * 0.05;
+        }
+        if (this.lockdownStrobe?.visible && this.lockdownStrobeMat) {
+            // Hard on/off blink — a warning, not a glow.
+            this.lockdownStrobeMat.color.setHex(Math.sin(this.elapsed * 9) > 0 ? 0xff2222 : 0x481010);
         }
 
         // NPC movement pathfinding and animation update loop

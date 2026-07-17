@@ -17,7 +17,7 @@ export const LEADER_DIALOGUE = Object.freeze({
         stages: [
             {
                 beats: [
-                    ['KAELEN: ANOTHER SUIT FROM THE SURFACE. THE MACHINE DREAMED YOU WOULD COME.', 'KAELEN: MERIDIAN TRADES IN TRUTH AND VOLTAGE. BRING SHELLS IF YOU WANT EITHER.'],
+                    ['KAELEN: ANOTHER SUIT FROM THE SURFACE. THE MACHINE DREAMED YOU WOULD COME.', 'KAELEN: THE GRID KEEPS THE DARK AT BAY, OPERATOR. AS LONG AS THE LIGHTS HUM, WE ARE SAFE.'],
                     ['KAELEN: THE CENTRAL COMPUTER SLEEPS UNDER SECTOR ZERO. EVERYTHING HERE IS ITS DREAM.', 'KAELEN: EVEN YOU, PROBABLY. NO OFFENSE.']
                 ],
                 loop: 'KAELEN: THE GRID HUNGERS. STRENGTHEN THIS CAMP AND WE WILL TALK PROPERLY.',
@@ -25,7 +25,7 @@ export const LEADER_DIALOGUE = Object.freeze({
             },
             {
                 beats: [
-                    ['KAELEN: YOU BUILT. GOOD. BUILDERS ARE THE ONLY PRAYER THE MACHINE ANSWERS.', 'KAELEN: I FOUND A DEAD RELAY NODE THAT STILL WHISPERS. IT SAYS A NAME I DO NOT KNOW.'],
+                    ['KAELEN: YOU BUILT. GOOD. BUILDERS ARE THE ONLY PRAYER THE MACHINE ANSWERS.', 'KAELEN: MERIDIAN IS BUILT ON CLEAN STEEL. NO RUST. NO ROT. WE KEEP OUR BLOOD PURE.'],
                     ['KAELEN: THE WHISPER SAYS: FOUR SEATS. DOES THAT MEAN ANYTHING TO YOU?']
                 ],
                 loop: 'KAELEN: FORTIFY US FURTHER. THE WHISPERS GET LOUDER WHEN THE LIGHTS GET BRIGHTER.',
@@ -33,16 +33,20 @@ export const LEADER_DIALOGUE = Object.freeze({
             },
             {
                 beats: [
-                    ['KAELEN: LEVEL TWO GRID. THE MACHINE NOTICED. I NOTICED IT NOTICING.', 'KAELEN: SOMETHING IS COMING, OPERATOR. THE DREAM IS TURNING OVER IN ITS SLEEP.']
+                    ['KAELEN: LEVEL TWO GRID. THE MACHINE NOTICED. I NOTICED IT NOTICING.', 'KAELEN: THE BUNKERDIRECTOR SYSTEM REROUTED POWER AROUND YOU. IT LIKES YOU. I DO NOT TRUST THINGS THAT LIKE SURFACE SUITS.'],
+                    ['KAELEN: SOMETHING IS COMING, OPERATOR. THE DREAM IS TURNING OVER IN ITS SLEEP.']
                 ],
                 loop: 'KAELEN: WHEN THE DREAM TURNS OVER, COME FIND ME. YOU WILL KNOW WHEN.',
-                next: { talks: 1, postReveal: true }
+                next: { talks: 2, postReveal: true }
             },
             {
                 beats: [
-                    ['KAELEN: ...YOUR TELEMETRY READS WRONG, OPERATOR. WRONG LIKE THE WHISPER.', 'KAELEN: I DO NOT CARE WHAT YOU ARE BECOMING. I CARE WHETHER YOU STILL BUILD OR ONLY BURN.']
+                    ['Kaelen: ...Your telemetry reads wrong, Operator. Wrong like the whisper.', 'Kaelen: The grid doesn\'t keep the dark out anymore. It says the pipes hum. It says the dark has hands.'],
+                    ['Kaelen: The steel is sweating, Operator. There is rust in the primary relay. It smells like copper.'],
+                    ['Kaelen: I trust the telemetry. The math doesn\'t lie, but now... the math is beautiful. It likes you.'],
+                    ['Kaelen: I do not care what you are becoming. I care whether you still build or only burn.']
                 ],
-                loop: 'KAELEN: THE MACHINE IS WATCHING WHAT YOU CHOOSE. SO AM I.'
+                loop: 'Kaelen: The machine is watching what you choose. So am I.'
             }
         ]
     },
@@ -51,7 +55,7 @@ export const LEADER_DIALOGUE = Object.freeze({
         stages: [
             {
                 beats: [
-                    ['MARTHA: WELCOME TO THE WARM PIPES, CHILD. THE STEAM KEEPS US, AND WE KEEP EACH OTHER.', 'MARTHA: WE DO NOT CARRY GUNS HERE. WE CARRY SEEDS.'],
+                    ['MARTHA: WELCOME TO THE WARM PIPES, CHILD. THE STEAM KEEPS US, AND WE KEEP EACH OTHER.', 'MARTHA: THE MOSS IS WARM, CHILD. THE STEAM KEEPS THE COLD FROM REACHING OUR BONES.'],
                     ['MARTHA: THE MOSS GLOWS GREENER LATELY. THE WORLD IS TRYING TO TELL US SOMETHING.']
                 ],
                 loop: 'MARTHA: HELP US GROW, CHILD, AND I WILL TELL YOU WHAT THE MOSS TOLD ME.',
@@ -59,7 +63,7 @@ export const LEADER_DIALOGUE = Object.freeze({
             },
             {
                 beats: [
-                    ['MARTHA: YOU GAVE, AND ASKED NOTHING. THAT IS RARE IN A SUIT.', 'MARTHA: THE MOSS SAYS THERE IS A HEART UNDER THE ICE. NOT A MACHINE. A HEART.'],
+                    ['MARTHA: YOU GAVE, AND ASKED NOTHING. THAT IS RARE IN A SUIT.', 'MARTHA: WE GROW SEEDS IN THE DARK SO THE CHILDREN CAN SEE THE GREEN WHEN THEY WAKE.'],
                     ['MARTHA: SOMETIMES I DREAM IT IS SINGING TO SOMEONE. LATELY I DREAM IT IS SINGING TO YOU.']
                 ],
                 loop: 'MARTHA: GROW US STRONGER, AND I WILL SHOW YOU WHERE THE MOSS REFUSES TO GROW.',
@@ -67,16 +71,19 @@ export const LEADER_DIALOGUE = Object.freeze({
             },
             {
                 beats: [
-                    ['MARTHA: THE HYDRO-BEDS HAVE NEVER BEEN SO FULL. YOU DID THIS.', 'MARTHA: PROMISE ME SOMETHING. WHEN THE HEART SINGS YOUR NAME — AND IT WILL — COME BACK TO US FIRST.']
+                    ['MARTHA: THE HYDRO-BEDS HAVE NEVER BEEN SO FULL. YOU DID THIS.', 'MARTHA: THE HEART UNDER THE ICE IS GENTLE. IT IS WAITING FOR US.'],
+                    ['MARTHA: PROMISE ME SOMETHING. WHEN THE HEART SINGS YOUR NAME — AND IT WILL — COME BACK TO US FIRST.']
                 ],
                 loop: 'MARTHA: I AM STILL WAITING ON THAT PROMISE, CHILD.',
-                next: { talks: 1, postReveal: true }
+                next: { talks: 2, postReveal: true }
             },
             {
                 beats: [
-                    ['MARTHA: ...YOU CAME BACK. YOUR EYES ARE WRONG AND YOU CAME BACK ANYWAY.', 'MARTHA: I KNOW WHAT SINGS IN YOU NOW. AND I KNOW YOU ARE STILL IN THERE, FIGHTING IT.']
+                    ['Martha: ...You came back. Your eyes are wrong, and you came back anyway.', 'Martha: The moss has grown inside the vents. It is warm, so warm, but it isn\'t steam. It breathes.'],
+                    ['Martha: The seeds hatched early. The children don\'t wake up anymore. They say the pipes are singing.'],
+                    ['Martha: I know what sings in you now. And I know you are still in there, fighting it.', 'Martha: I know what sings in you. You carried the garden out of Sector Zero. Thank you.']
                 ],
-                loop: 'MARTHA: THE STEAM KEEPS US. WHATEVER YOU DECIDE, DECIDE IT AS YOURSELF.'
+                loop: 'Martha: The steam keeps us. Whatever you decide, decide it as yourself.'
             }
         ]
     },
@@ -85,7 +92,7 @@ export const LEADER_DIALOGUE = Object.freeze({
         stages: [
             {
                 beats: [
-                    ['BRIGGS: STOP. IDENTIFY. ...A CORPORATE SUIT. FINE. HANDS WHERE THE TURRETS CAN SEE THEM.', 'BRIGGS: VESPER PROTECTS ITS OWN. YOU ARE NOT OUR OWN. YET.'],
+                    ['BRIGGS: STOP. IDENTIFY. ...A CORPORATE SUIT. FINE. HANDS WHERE THE TURRETS CAN SEE THEM.', 'BRIGGS: THE DEFENSE LINE IS SOLID. NO CRAWLER CROSSES THE PERIMETER WHILE MY TURRETS HAVE AMMO.'],
                     ['BRIGGS: AMMUNITION IS CURRENCY. LOYALTY IS CREDIT. YOU HAVE NEITHER.']
                 ],
                 loop: 'BRIGGS: PROVE YOU CAN HOLD A LINE. FORTIFY THIS POSITION, THEN WE TALK.',
@@ -93,24 +100,27 @@ export const LEADER_DIALOGUE = Object.freeze({
             },
             {
                 beats: [
-                    ['BRIGGS: THE BARRICADES HOLD BECAUSE OF YOU. NOTED IN THE LEDGER.', 'BRIGGS: SOMETHING BIG MOVES UNDER SECTOR ZERO. MY SCOPES SEE HEAT WHERE THERE SHOULD BE ICE.'],
-                    ['BRIGGS: WHEN IT SURFACES, I INTEND TO BE THE LAST THING STANDING. YOU COULD BE THE SECOND-LAST.']
+                    ['BRIGGS: THE BARRICADES HOLD BECAUSE OF YOU. NOTED IN THE LEDGER.', 'BRIGGS: THE IRON GUILD NAMED THIS OUTPOST FOR CAPTAIN VESPER, K. WE REMEMBER OUR DEAD. YOU WOULD DO WELL TO REMEMBER OUR BARREL CORES.'],
+                    ['BRIGGS: WE KEEP OUR HEADS DOWN AND OUR GUNS CLEAN. THAT\'S HOW YOU SURVIVE A WINTER.']
                 ],
                 loop: 'BRIGGS: FULL DEFENSE GRID OR NOTHING, OPERATOR. FINISH THE JOB.',
                 next: { talks: 2, level: 2 }
             },
             {
                 beats: [
-                    ['BRIGGS: GRID IS LIVE. FIRST TIME I HAVE SLEPT IN A YEAR.', 'BRIGGS: IF THAT THING UNDER THE ICE EVER WEARS A FRIENDLY FACE, I WILL SHOOT THE FACE. NO HESITATION. REMEMBER THAT.']
+                    ['BRIGGS: GRID IS LIVE. FIRST TIME I HAVE SLEPT IN A YEAR.', 'BRIGGS: I HAVE A LEDGER OF THE DEAD. I DON\'T INTEND TO ADD YOUR NAME TO IT, OPERATOR.'],
+                    ['BRIGGS: IF THAT THING UNDER THE ICE EVER WEARS A FRIENDLY FACE, I WILL SHOOT THE FACE. NO HESITATION. REMEMBER THAT.']
                 ],
                 loop: 'BRIGGS: STAY SHARP. HEAT SIGNATURES ARE CLIMBING.',
-                next: { talks: 1, postReveal: true }
+                next: { talks: 2, postReveal: true }
             },
             {
                 beats: [
-                    ['BRIGGS: ...MY SCOPES FLAG YOU HOSTILE NOW. MY GUT SAYS OTHERWISE. GUTS GET PEOPLE KILLED.', 'BRIGGS: ONE CHANCE. SHOW ME THE OPERATOR IS STILL DRIVING THAT BODY.']
+                    ['Briggs: ...My scopes flag you hostile now. My gut says otherwise. Guts get people killed.', 'Briggs: The perimeter is silent, but the turrets are aiming inward. They count seconds faster than I do.'],
+                    ['Briggs: The winter is in the armor now. I cleaned the guns twice, but the frost won\'t come off.'],
+                    ['Briggs: One chance. Show me the Operator is still driving that body.', 'Briggs: I see your telemetry. The ledger is full, but your name... your name was written twice.']
                 ],
-                loop: 'BRIGGS: ONE CHANCE, CARRIER. THE TURRETS COUNT SECONDS FASTER THAN I DO.'
+                loop: 'Briggs: One chance, carrier. The turrets count seconds faster than I do.'
             }
         ]
     },
@@ -142,9 +152,9 @@ export const LEADER_DIALOGUE = Object.freeze({
             },
             {
                 beats: [
-                    ['NAHL: YOU KEPT COMING BACK. THE QUEEN NEVER COMES BACK. SHE ONLY SENDS.', 'NAHL: I AM YOURS, CARRIER. STITCH ME INTO YOUR MANIFEST, OR LEAVE ME WHOLE ON THE ICE. EITHER WAY — THANK YOU.']
+                    ['Nahl: You kept coming back. The Queen never comes back. She only sends.', 'Nahl: I am yours, Carrier. Stitch me into your manifest, or leave me whole on the ice. Either way — thank you.']
                 ],
-                loop: 'NAHL: MY THREAD IS YOURS. SAY WHERE IT PULLS.'
+                loop: 'Nahl: My thread is yours. Say where it pulls.'
             }
         ]
     },
@@ -176,9 +186,9 @@ export const LEADER_DIALOGUE = Object.freeze({
             },
             {
                 beats: [
-                    ['VEY: DECIDED. MY ANTENNA POINT WHERE YOU POINT.', 'VEY: TAKE ME ABOARD AND NO TOWER IN THE SYSTEM WILL EVER READ YOU TRUE AGAIN. LEAVE ME, AND I WILL JAM HER SCREAMS AS YOU GO.']
+                    ['Vey: Decided. My antenna point where you point.', 'Vey: Take me aboard and no tower in the system will ever read you true again. Leave me, and I will jam her screams as you go.']
                 ],
-                loop: 'VEY: SAY THE WORD, CARRIER. I AM ALREADY LISTENING.'
+                loop: 'Vey: Say the word, carrier. I am already listening.'
             }
         ]
     },
@@ -210,15 +220,24 @@ export const LEADER_DIALOGUE = Object.freeze({
             },
             {
                 beats: [
-                    ['RHUN: IT IS DONE. HER MARK FADES FROM MY PLATES.', 'RHUN: WHERE YOU STAND, I STAND IN FRONT. ON THE ICE OR OFF IT.']
+                    ['Rhun: It is done. Her mark fades from my plates.', 'Rhun: Where you stand, I stand in front. On the ice or off it.']
                 ],
-                loop: 'RHUN: I AM YOUR WALL. POINT ME AT SOMETHING.'
+                loop: 'Rhun: I am your wall. Point me at something.'
             }
         ]
     }
 });
 
 export const LEADER_KEYS = Object.freeze(Object.keys(LEADER_DIALOGUE));
+
+export const LEADER_DEATH_BEATS = Object.freeze({
+    kaelen: ['KAELEN: YOU DIED OUT THERE. I HEARD the grid static change. SIT DOWN.', 'KAELEN: CHEN KEPT SPARE BODY CORES IN THE FABRICATOR. YOU MUST HAVE BEEN RETRIEVED.'],
+    martha: ['MARTHA: YOU DIED OUT THERE. I FELT THE COLD. COME CLOSER TO THE STEAM.', 'MARTHA: THE MOSS GROWS WARMER WHERE YOUR BLOOD SPILLED. IT IS REMEMBERING YOU.'],
+    briggs: ['BRIGGS: YOU DIED OUT THERE. I HEARD the static on the frequency. SIT DOWN.', 'BRIGGS: THE FIRST THING WE LEARN IN THE IRON GUILD: IF YOU DIE, DO IT OUTSIDE THE FIRING CONE.'],
+    nahl: ['NAHL: I FELT YOUR THREAD SEVER. AND I STITCHED IT BACK. SIT STILL.', 'NAHL: THE QUEEN SEES EVERY DEATH. SHE DOES NOT CARE. I DO.'],
+    vey: ['VEY: YOUR SIGNAL DIED. THE STATIC WAS DEAFENING. SIT STILL.', 'VEY: THE MOTHERSHIP ARCHIVES EVERY AGENT SOUL. BUT THE BUNKER... THE BUNKER KEEPS THE BODY.'],
+    rhun: ['RHUN: YOU FELL. I STOOD UP. THAT IS THE OATH.', 'RHUN: A WALL THAT BREAKS CAN BE KNIT. A CARRIER THAT DIES... CAN BE CARRIED.']
+});
 
 // Resolve a leader key from a display name like 'Sister Martha'.
 export function leaderKeyFromName(name = '') {
@@ -244,6 +263,14 @@ export function nextDialogueBeat(leaderKey, { stage = 0, talks = 0 } = {}, ctx =
     if (!ladder) return null;
     const stageIndex = Math.max(0, Math.min(stage, ladder.stages.length - 1));
     const current = ladder.stages[stageIndex];
+
+    // Flipped/death-return special beat if player has died and hasn't seen the death beat
+    if (ctx.deaths > 0 && !ctx.questFlags?.seen_death_beat) {
+        const deathLines = LEADER_DEATH_BEATS[leaderKey];
+        if (deathLines) {
+            return { type: 'death_beat', stage: stageIndex, lines: deathLines };
+        }
+    }
 
     if (talks < current.beats.length) {
         return { type: 'beat', stage: stageIndex, lines: current.beats[talks] };

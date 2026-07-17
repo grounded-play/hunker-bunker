@@ -201,6 +201,7 @@ export const ACT2_ENDING_CUTSCENES = Object.freeze({
 export const ACT2_LINES = Object.freeze({
     intro: [
         'QUEEN: TWO HEARTBEATS. ONE PURPOSE.',
+        'QUEEN: THE COLD BOX THEY KEPT ME IN COULD NOT FREEZE THE MIND. NOW WE SHARE THE BODY.',
         'QUEEN: THE MOTHERSHIP STILL WHISPERS THROUGH YOUR WRECK. IT WILL SEND EXTERMINATORS.',
         'SYSTEM: NEW INSTINCT — SEVER THE MOTHERSHIP UPLINK AT YOUR SHIP CONSOLE.'
     ],
@@ -214,11 +215,17 @@ export const ACT2_LINES = Object.freeze({
     ],
     dishBuilt: [
         'SYSTEM: SIGNAL DISH GROWN. WIDEBAND SWEEP COMPLETE.',
+        'QUEEN: THE LITTLE BUILDERS TRIED THIS ONCE. THEY LACKED HANDS. YOU ARE BETTER HANDS.',
         'QUEEN: THREE CAMPS OF SURVIVORS. THEY BUILD A VESSEL TO FLEE THIS WORLD.',
         'QUEEN: HELP THEM FINISH IT. WE WILL NEED THEIR WINGS.'
     ],
     campAided: [
         'SYSTEM: VESSEL SECTION COMPLETE. SURVIVORS GRATEFUL.'
+    ],
+    campDiscovered: [
+        'SYSTEM: SURVIVOR CAMP LOCATED. FLARE DOUSED.',
+        'SYSTEM: SURVIVORS SHARE SUPPLIES — SHELLS AND O₂ RECEIVED.',
+        'SYSTEM: SUPPORTED CAMPS DOUBLE AS O₂ HAVENS. INVEST SHELLS TO FORTIFY.'
     ],
     allAided: [
         'SYSTEM: VESSEL ASSEMBLY COMPLETE. FOUR SEATS PRESSURIZED.',
@@ -270,9 +277,9 @@ export const ACT2_ENDING_LINES = Object.freeze({
         'QUEEN: SLEEP, CARRIER. WE HAVE SO MANY WORLDS TO MEET.'
     ],
     [ACT2_ENDINGS.CLEAN_ESCAPE]: [
-        'SYSTEM: LAUNCH COMPLETE. ALL SURVIVOR MANIFESTS ACCOUNTED FOR. HUMAN.',
-        'SYSTEM: NO HIVE SIGNATURE DETECTED ABOARD.',
-        'SYSTEM: COURSE SET FOR THE RELAY. TELL THEM WHAT HAPPENED HERE.'
+        'SYSTEM: Launch complete. All survivor manifests accounted for. Human.',
+        'SYSTEM: No hive signature detected aboard.',
+        'SYSTEM: Course set for the relay. Tell them what happened here.'
     ],
     [ACT2_ENDINGS.MIXED_CREW]: [
         'SYSTEM: LAUNCH COMPLETE. CABIN PARTITION FIELDS HOLDING.',
@@ -280,14 +287,14 @@ export const ACT2_ENDING_LINES = Object.freeze({
         'QUEEN: A FRAGILE PEACE. FRAGILE THINGS ARE MY FAVORITE.'
     ],
     [ACT2_ENDINGS.CARRIERS_BARGAIN]: [
-        'SYSTEM: LAUNCH COMPLETE. COOLANT CELL TEMPERATURE ANOMALY LOGGED.',
-        'SYSTEM: OPERATOR VITALS NOMINAL. SUBDERMAL READINGS... FLAGGED.',
-        'SYSTEM: THE SURVIVORS ARE SAFE. NOBODY CHECKED YOUR NECK.'
+        'SYSTEM: Launch complete. Coolant cell temperature anomaly logged.',
+        'SYSTEM: Operator vitals nominal. Subdermal readings... flagged.',
+        'SYSTEM: The survivors are safe. Nobody checked your neck.'
     ],
     [ACT2_ENDINGS.SCORCHED_SKY]: [
-        'SYSTEM: LAUNCH COMPLETE. CREW MANIFEST: ONE.',
-        'SYSTEM: NO BEACONS BEHIND. NO SIGNAL AHEAD.',
-        'SYSTEM: FOUR SEATS. ONE HEARTBEAT.'
+        'SYSTEM: Launch complete. Crew manifest: one.',
+        'SYSTEM: No beacons behind. No signal ahead.',
+        'SYSTEM: Four seats. One heartbeat.'
     ],
     [ACT2_ENDINGS.MOTHERSHIP_INFECTION]: [
         'SYSTEM: MOTHERSHIP CLEARANCE ACCEPTED. SURVIVOR RESCUE FLIGHT LOGGED.',
@@ -307,7 +314,7 @@ export const ACT2_ENDING_LINES = Object.freeze({
     [ACT2_ENDINGS.FAILED_CARRIER]: [
         'SYSTEM: LAUNCH COMPLETE. COOLANT CELL BREACH IN COMPARTMENT FOUR.',
         'SYSTEM: THE AMBER GLOW IS FLICKERING. SOMEONE IS ASKING WHAT THAT LIGHT IS.',
-        'SYSTEM: YOU HID THE FUTURE IN A COLD BOX AND THE COLD BOX IS FAILING.'
+        'SYSTEM: You hid the future in a cold box and the cold box is failing.'
     ],
     [ACT2_ENDINGS.EMPTY_HUSK]: [
         'SYSTEM: LAUNCH COMPLETE. CREW MANIFEST: ONE.',
@@ -380,6 +387,7 @@ function normalizeCamp(raw = {}, id) {
         level: clampInteger(raw?.level, 0, ACT2_CAMP_MAX_LEVEL, 0),
         bond: clampInteger(raw?.bond, 0, ACT2_MAX_BOND, 0),
         aided: Boolean(raw?.aided),
+        discovered: Boolean(raw?.discovered),
         status,
         suspicion,
         passengerState,
@@ -442,7 +450,7 @@ function normalizeHive(raw = {}, site = ACT2_HIVE_SITES[0]) {
     };
 }
 
-function buildManifestFromNormalizedState(state) {
+function buildManifestFromNormalizedState(state, options = {}) {
     const humans = state.camps
         .filter((camp) => ['recruited', 'turned'].includes(camp.status))
         .map((camp) => camp.id);
@@ -451,12 +459,15 @@ function buildManifestFromNormalizedState(state) {
         .map((hive) => hive.id);
     const queen = state.queenStatus === 'aboard';
     const egg = state.eggsStatus === 'aboard' || state.eggsStatus === 'hidden';
+    const sutureAboard = state.hives.some((hive) => hive.id === 'hive_suture' && (hive.aboard || hive.status === 'aboard'));
     const seatsUsed = 1 + humans.length + aliens.length + (queen ? 2 : 0) + (egg ? 1 : 0);
     const invalidReasons = [];
     if (seatsUsed > ACT2_MANIFEST_SEATS_MAX) {
         invalidReasons.push('seat_capacity_exceeded');
     }
-    if (egg && !queen && !state.hives.some((hive) => hive.id === 'hive_suture' && (hive.aboard || hive.status === 'aboard'))) {
+    if (egg && options.eggSeatRequiresNahl && !sutureAboard) {
+        invalidReasons.push('egg_requires_nahl');
+    } else if (egg && !queen && !sutureAboard) {
         invalidReasons.push('egg_unstable');
     }
 
@@ -473,8 +484,8 @@ function buildManifestFromNormalizedState(state) {
     };
 }
 
-export function buildAct2Manifest(rawState = {}) {
-    return buildManifestFromNormalizedState(normalizeAct2State(rawState));
+export function buildAct2Manifest(rawState = {}, options = {}) {
+    return buildManifestFromNormalizedState(normalizeAct2State(rawState), options);
 }
 
 export function normalizeAct2State(raw = {}) {
@@ -711,6 +722,15 @@ export class Act2Manager {
         });
     }
 
+    // Act 1 exploration: first contact with a camp is persisted so the
+    // discovery payout can never be farmed across deaths or sessions.
+    discoverCamp(id) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (camp) camp.discovered = true;
+        });
+    }
+
     // Act 1 support: monotonic level 0→3. Valid any time before the camp is
     // resolved (the ladder itself never depends on levels).
     upgradeCamp(id) {
@@ -779,6 +799,17 @@ export class Act2Manager {
     isQuestDone(id, questId) {
         const camp = this.getState().camps.find((c) => c.id === id);
         return camp?.questFlags?.[questId] === 'done';
+    }
+
+    // Marks a camp-bonding quest as accepted-but-in-progress, distinct from
+    // 'done' — keeps getActionableCampAt from re-offering it while it's
+    // active in the world without granting the completion bond yet.
+    setCampQuestActive(id, questId) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (!camp || !questId || camp.questFlags[questId] === 'done') return;
+            camp.questFlags[questId] = 'active';
+        });
     }
 
     // Rob the stockpile: the camp survives but is lost to every other path.

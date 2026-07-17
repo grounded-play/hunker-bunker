@@ -1,18 +1,38 @@
+const CAMP_AFFINITIES = Object.freeze({
+    camp_meridian: 'ENGINEER',
+    camp_tallow: 'SCOUT',
+    camp_vesper: 'TANK'
+});
+
+const neutralRuntimeEffects = () => ({
+    radar: { rangeMult: 1, cooldownMult: 1, compassHoldSeconds: 0 },
+    humanityDecayMultiplier: 1,
+    medkitInventory: 0,
+    ammoReserve: 0,
+    turretCooldownMult: 1,
+    turretSuspicionGainMult: 1,
+    turretPlacementFavor: false
+});
+
+function normalizeCampStats(campRecord = {}) {
+    return {
+        id: String(campRecord.id ?? ''),
+        level: Math.max(0, Math.min(3, Math.floor(Number(campRecord.level) || 0))),
+        bond: Math.max(0, Math.min(5, Math.floor(Number(campRecord.bond) || 0)))
+    };
+}
+
+function hasCampAffinity(campId, playerType) {
+    return CAMP_AFFINITIES[campId] === String(playerType ?? '').trim().toUpperCase();
+}
+
 export function getCampTrades(campRecord, playerType) {
-    const campId = campRecord.id;
-    const level = campRecord.level || 0;
-    const bond = campRecord.bond || 0;
+    const { id: campId, level, bond } = normalizeCampStats(campRecord);
 
     // Class affinity modifier (20% bonus)
     let discount = 1.0;
     let bonus = 1.0;
-    if (campId === 'camp_meridian' && playerType === 'ENGINEER') {
-        discount = 0.8;
-        bonus = 1.2;
-    } else if (campId === 'camp_tallow' && playerType === 'SCOUT') {
-        discount = 0.8;
-        bonus = 1.2;
-    } else if (campId === 'camp_vesper' && playerType === 'TANK') {
+    if (hasCampAffinity(campId, playerType)) {
         discount = 0.8;
         bonus = 1.2;
     }
@@ -70,6 +90,102 @@ export function getCampTrades(campRecord, playerType) {
             }
         ];
     }
+}
+
+export function getCampVerbEffects(campRecord = {}, playerType = 'SCOUT') {
+    const { id: campId, level, bond } = normalizeCampStats(campRecord);
+    const affinity = hasCampAffinity(campId, playerType);
+
+    if (campId === 'camp_meridian') {
+        return {
+            campId,
+            verb: 'radar_compass_boost',
+            radar: {
+                rangeMult: 1 + level * 0.08 + bond * 0.04 + (affinity ? 0.08 : 0),
+                cooldownMult: Math.max(0.5, 1 - level * 0.04 - bond * 0.02 - (affinity ? 0.05 : 0)),
+                compassHoldSeconds: level * 4 + bond * 2 + (affinity ? 4 : 0)
+            }
+        };
+    }
+
+    if (campId === 'camp_tallow') {
+        return {
+            campId,
+            verb: 'stabilize_cover',
+            humanityDecayMultiplier: Math.max(0.45, 1 - level * 0.08 - bond * 0.04 - (affinity ? 0.08 : 0)),
+            medkitInventory: Math.max(0, level + Math.floor(bond / 2) + (affinity ? 1 : 0))
+        };
+    }
+
+    if (campId === 'camp_vesper') {
+        return {
+            campId,
+            verb: 'ammo_and_turret_favor',
+            ammoReserve: Math.max(0, level * 2 + bond + (affinity ? 2 : 0)),
+            turretCooldownMult: Math.max(0.55, 1 - level * 0.07 - bond * 0.03 - (affinity ? 0.08 : 0)),
+            turretSuspicionGainMult: Math.max(0.5, 1 - bond * 0.05 - (affinity ? 0.1 : 0)),
+            turretPlacementFavor: level >= 2 || bond >= 3 || affinity
+        };
+    }
+
+    return { campId, verb: 'none' };
+}
+
+export function mergeCampVerbEffects(campRecords = [], playerType = 'SCOUT') {
+    const merged = neutralRuntimeEffects();
+    for (const record of Array.isArray(campRecords) ? campRecords : []) {
+        const effects = getCampVerbEffects(record, playerType);
+        if (effects.radar) {
+            merged.radar.rangeMult = Math.max(merged.radar.rangeMult, effects.radar.rangeMult ?? 1);
+            merged.radar.cooldownMult = Math.min(merged.radar.cooldownMult, effects.radar.cooldownMult ?? 1);
+            merged.radar.compassHoldSeconds = Math.max(merged.radar.compassHoldSeconds, effects.radar.compassHoldSeconds ?? 0);
+        }
+        if (Number.isFinite(effects.humanityDecayMultiplier)) {
+            merged.humanityDecayMultiplier = Math.min(merged.humanityDecayMultiplier, effects.humanityDecayMultiplier);
+        }
+        merged.medkitInventory += Math.max(0, Math.floor(effects.medkitInventory ?? 0));
+        merged.ammoReserve += Math.max(0, Math.floor(effects.ammoReserve ?? 0));
+        if (Number.isFinite(effects.turretCooldownMult)) {
+            merged.turretCooldownMult = Math.min(merged.turretCooldownMult, effects.turretCooldownMult);
+        }
+        if (Number.isFinite(effects.turretSuspicionGainMult)) {
+            merged.turretSuspicionGainMult = Math.min(merged.turretSuspicionGainMult, effects.turretSuspicionGainMult);
+        }
+        merged.turretPlacementFavor = merged.turretPlacementFavor || Boolean(effects.turretPlacementFavor);
+    }
+    return merged;
+}
+
+export function getAct2ClassPerks(playerType = 'SCOUT') {
+    const key = String(playerType ?? '').trim().toUpperCase();
+    if (key === 'SCOUT') {
+        return {
+            classType: 'SCOUT',
+            turretDetectionRadiusMult: 0.72,
+            turretSuspicionGainMult: 0.75,
+            turretConeAngleMult: 0.75,
+            shockGuardCharges: 0,
+            canReprogramTurrets: false
+        };
+    }
+    if (key === 'TANK') {
+        return {
+            classType: 'TANK',
+            turretDetectionRadiusMult: 1,
+            turretSuspicionGainMult: 1,
+            turretConeAngleMult: 1,
+            shockGuardCharges: 1,
+            canReprogramTurrets: false
+        };
+    }
+    return {
+        classType: 'ENGINEER',
+        turretDetectionRadiusMult: 1,
+        turretSuspicionGainMult: 1,
+        turretConeAngleMult: 1,
+        shockGuardCharges: 0,
+        canReprogramTurrets: true
+    };
 }
 
 export function canApplyTrade(trade, bankState) {

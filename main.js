@@ -7,18 +7,26 @@ import { CutsceneManager } from './src/cutscene.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
-import { codexStore } from './src/codex.js';
-import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL } from './src/data/codex.js';
+import { codexStore, getClassWreckageLog, recordSpecimen0047OriginIfFound } from './src/codex.js';
+import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METADATA } from './src/data/codex.js';
 import { pickRunModifier } from './src/data/runModifiers.js';
 import { pickMissionBriefing } from './src/data/missions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
 import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
-import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines } from './src/act2.js';
+import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
+import * as featureFlags from './src/featureFlags.js';
 import { getGifDurationMs } from './src/gifDuration.js';
+import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
+import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
+import { mapBrowserGamepad } from './src/browserGamepad.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
-const playBtn = document.getElementById('enter-fullscreen'); // PLAY GAME button
+const titleContinueBtn = document.getElementById('title-continue-btn');
+const titleNewRunBtn = document.getElementById('title-newrun-btn');
+const titleAchievementsBtn = document.getElementById('title-achievements-btn');
+const titleSettingsBtn = document.getElementById('title-settings-btn');
+const titleAboutBtn = document.getElementById('title-about-btn');
 const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
@@ -30,11 +38,9 @@ const loaderBriefingAvatar = document.getElementById('loader-briefing-avatar');
 const loaderBriefingAvatarImg = document.getElementById('loader-briefing-avatar-img');
 const loaderBriefingSpeaker = document.getElementById('loader-briefing-speaker');
 
-const splashDebugToggle = document.getElementById('splash-debug-toggle');
-const splashFsToggle = document.getElementById('splash-fs-toggle');
 const mainDebugToggle = document.getElementById('main-debug-toggle');
-const splashNightVisionToggle = document.getElementById('splash-nightvision-toggle');
 const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
+const mainCommentaryToggle = document.getElementById('main-commentary-toggle');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
 const touchMoveControl = document.getElementById('touch-move-control');
@@ -45,6 +51,12 @@ const touchCompassArrow = touchCompass?.querySelector('.touch-move-control__comp
 const touchCompassRadarArrow = touchCompass?.querySelector('#touch-compass-radar-arrow');
 const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
 const touchCompassRadarDistance = touchCompass?.querySelector('#touch-compass-radar-distance');
+const desktopCompass = document.getElementById('desktop-compass');
+const desktopCompassArrow = document.getElementById('desktop-compass-arrow');
+const desktopCompassRadarArrow = document.getElementById('desktop-compass-radar-arrow');
+const desktopCompassDistance = document.getElementById('desktop-compass-distance');
+const desktopCompassRadarDistance = document.getElementById('desktop-compass-radar-distance');
+const desktopCompassRadarRow = document.getElementById('desktop-compass-radar-row');
 const touchControlsSetting = document.getElementById('touch-controls-setting');
 const mainTouchToggle = document.getElementById('main-touch-toggle');
 const orientationLock = document.getElementById('orientation-lock');
@@ -96,11 +108,13 @@ const DESIGN_STAGE = {
 };
 const AUDIO_MIX_STORAGE_KEY = 'hunker_audio_mix_v1';
 const LEGACY_AUDIO_TOGGLE_KEY = 'hunker_audio_enabled';
+const COMMENTARY_STORAGE_KEY = 'hunker_commentary_enabled';
 const DEFAULT_AUDIO_MIX = Object.freeze({
     master: 1,
     music: 1,
     vfx: 1
 });
+const STEAM_STORE_URL = 'https://store.steampowered.com/app/1247290/Hunker_Bunker/';
 const KEY_BINDINGS_STORAGE_KEY = 'hunker_key_bindings';
 // Each action has a [primary, secondary] slot. WASD + arrow keys are equivalent
 // out of the box. threeGame.js reads window.state.settings.keyBindings.
@@ -121,6 +135,7 @@ let appPhase = 'loading';
 function isGameplayPhase() {
     return appPhase === 'gameplay';
 }
+window.isGameplayPhase = isGameplayPhase;
 
 function isGameplayHudActive() {
     const ui = document.getElementById('ui');
@@ -164,6 +179,8 @@ function hideAllGameplayPrompts() {
 
 function setAppPhase(phase) {
     appPhase = phase;
+    syncSteamInputPhase();
+    syncSteamTimelinePhase(phase);
     if (!isGameplayPhase()) {
         if (tacticalOverlayTimer) {
             clearTimeout(tacticalOverlayTimer);
@@ -171,11 +188,717 @@ function setAppPhase(phase) {
         }
         hideAllGameplayPrompts();
         hideMissionProgressHUD();
+        hideCampQuestHUD();
         hideBiomePrompt();
         clearLoaderBriefingMode();
         window.game?.setInputEnabled?.(false);
     }
+    updateQueensLedgerHUD();
 }
+
+const STEAM_INPUT_CONFIRM_GLYPHS = Object.freeze({
+    SteamDeckController: 'A',
+    SteamController: 'A',
+    XBox360Controller: 'A',
+    XBoxOneController: 'A',
+    GenericGamepad: 'A',
+    AppleMFiController: 'A',
+    AndroidController: 'A',
+    PS3Controller: 'X',
+    PS4Controller: 'X',
+    PS5Controller: 'X',
+    SwitchProController: 'B',
+    SwitchJoyConPair: 'B',
+    SwitchJoyConSingle: 'B',
+    MobileTouch: 'TAP'
+});
+
+const STEAM_INPUT_PROMPT_IDS = Object.freeze([
+    'console-hud-prompt',
+    'lore-hud-prompt',
+    'foundry-hud-prompt',
+    'o2-generator-hud-prompt',
+    'black-box-hud-prompt'
+]);
+
+const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
+    'confirm-modal',
+    'reset-save-confirm-modal',
+    'audio-mixer-popup',
+    'save-data-popup',
+    'settings-popup',
+    'about-modal',
+    'archive-log-detail-modal',
+    'archive-modal',
+    'codex-modal',
+    'lore-modal',
+    'steam-vault-modal',
+    'demo-end-modal',
+    'game-over-modal',
+    'camp-choice-modal',
+    'mothership-dialogue',
+    'console-terminal-modal',
+    'o2-generator-modal',
+    'splash',
+    'menu'
+]);
+
+const COMMENTARY_ENTRIES = Object.freeze({
+    run_start: {
+        title: 'The Run Loop',
+        body: 'The bunker is built around short pressure cycles: deploy, read the threat, bank what matters, and decide whether one more room is worth it.'
+    },
+    black_box_signal: {
+        title: 'Failure Becomes Map Data',
+        body: 'Black boxes make death persistent without making it punitive. A failed run becomes a breadcrumb, a banked lesson, and a reason to go back in.'
+    },
+    black_box_recovered: {
+        title: 'Recoverable Consequences',
+        body: 'The black box is meant to feel like contract work, not a reload button. You are collecting evidence from your own mistakes.'
+    },
+    room_armory: {
+        title: 'Armory Rooms',
+        body: 'Armories are deliberately loud rewards. They break the procedural rhythm so players can spot a meaningful room before reading any UI.'
+    },
+    room_the_nest: {
+        title: 'Nest Rooms',
+        body: 'The nest is an authored danger shape inside a generated map. It says: this was not just rolled, something lives here.'
+    },
+    room_agent_wreckage: {
+        title: 'Three Wrecks',
+        body: 'The class wreckage rooms connect the three operators to the larger crash mystery: tracking signal, relay, and weapon, scattered through one disaster.'
+    },
+    queen_fight: {
+        title: 'Queen Fight',
+        body: 'The Queen fight uses vulnerability windows so the arena is about reading intent, not only pouring damage into a large health bar.'
+    },
+    queen_killed: {
+        title: 'The Queen Can Die',
+        body: 'Combat kills and narrative rejection are tracked separately. The story cares whether you defeated her body or only refused her offer.'
+    },
+    achievement: {
+        title: 'Steam Achievements',
+        body: 'Achievements mirror fiction-first milestones. They should read like field records, not chores.'
+    },
+    leaderboard: {
+        title: 'Trusted Scores',
+        body: 'Leaderboard scores are recomputed server-side so the client submits a run receipt, not a number we blindly trust.'
+    },
+    steam_vault: {
+        title: 'Steam Vault',
+        body: 'The Vault is intentionally read-heavy. Tradable and marketable value belongs in Steam systems; the game renders verified ownership.'
+    }
+});
+
+const steamInputState = {
+    available: false,
+    phase: appPhase,
+    controllerCount: 0,
+    anyInput: false,
+    isSteamDeck: false,
+    primaryControllerHandle: null,
+    primaryControllerType: null,
+    controllers: [],
+    lastInputMode: 'keyboard'
+};
+
+const steamInputPrevControllers = new Map();
+let steamGamepadTextInputInFlight = false;
+let pendingSteamInputBoot = false;
+let suppressSteamInputUntilRelease = false;
+
+window.HunkerTriggerBoot = () => {
+    pendingSteamInputBoot = true;
+};
+
+window.HunkerInputState = {
+    getPromptKeyText,
+    isTouchPrompt: () => isTouchDevice(),
+    isControllerPrompt: () => !isTouchDevice() && isSteamControllerInputActive(),
+    getLastInputMode: () => steamInputState.lastInputMode,
+    getPrimaryControllerType: () => steamInputState.primaryControllerType,
+    getState: () => ({ ...steamInputState })
+};
+
+function syncSteamInputPhase() {
+    window.electronAPI?.setSteamInputPhase?.(appPhase);
+}
+
+function syncSteamTimelinePhase(phase = appPhase) {
+    if (!window.electronAPI?.setSteamTimelineGameMode) return;
+    const mode = phase === 'gameplay' ? 'playing' : phase === 'loading' ? 'loading' : 'menus';
+    window.electronAPI.setSteamTimelineGameMode(mode).catch?.(() => {});
+}
+
+function recordSteamTimelineEvent(type, title, description, {
+    icon = type,
+    priority = 0,
+    durationSeconds = 5,
+    clipPriority = 0
+} = {}) {
+    if (!window.electronAPI?.addSteamTimelineEvent) return;
+    window.electronAPI.addSteamTimelineEvent({
+        type,
+        icon,
+        title,
+        description,
+        priority,
+        durationSeconds,
+        clipPriority
+    }).catch?.(() => {});
+}
+
+function getSteamInputConfirmGlyph(controllerType) {
+    return STEAM_INPUT_CONFIRM_GLYPHS[controllerType] ?? 'A';
+}
+
+function isSteamControllerInputActive() {
+    return steamInputState.lastInputMode === 'controller'
+        || (steamInputState.isSteamDeck && steamInputState.controllerCount > 0);
+}
+
+function getPromptKeyText(defaultKey = 'E') {
+    if (isTouchDevice() || steamInputState.lastInputMode === 'touch') return 'TAP';
+    if (isSteamControllerInputActive()) {
+        return getSteamInputConfirmGlyph(steamInputState.primaryControllerType);
+    }
+    return defaultKey;
+}
+
+function setLastInputMode(mode, { refresh = true } = {}) {
+    const normalized = mode === 'touch' ? 'touch' : mode === 'controller' ? 'controller' : 'keyboard';
+    if (steamInputState.lastInputMode === normalized) return false;
+    steamInputState.lastInputMode = normalized;
+    if (refresh) refreshInteractivePromptKeys();
+    return true;
+}
+
+function setPromptKeyLabel(promptKey, defaultKey = 'E') {
+    if (!promptKey) return;
+    const label = getPromptKeyText(defaultKey);
+    promptKey.dataset.defaultKey = defaultKey;
+
+    const isController = isSteamControllerInputActive();
+    promptKey.classList.toggle('prompt-key--controller', isController);
+
+    if (isController && (label === 'A' || label === 'B' || label === 'X' || label === 'Y')) {
+        promptKey.innerHTML = `PRESS <span class="controller-glyph glyph-${label.toLowerCase()}">${label}</span>`;
+    } else {
+        promptKey.textContent = label === 'TAP' ? 'TAP' : `PRESS ${label}`;
+    }
+    promptKey.classList.toggle('prompt-key--tap', label === 'TAP');
+}
+
+function refreshInteractivePromptKeys() {
+    for (const id of STEAM_INPUT_PROMPT_IDS) {
+        const prompt = document.getElementById(id);
+        if (!prompt || prompt.classList.contains('hidden')) continue;
+        const promptKey = prompt.querySelector('.prompt-key');
+        if (promptKey) setPromptKeyLabel(promptKey, promptKey.dataset.defaultKey || 'E');
+    }
+}
+
+function isElementVisible(element) {
+    return Boolean(element && element.getClientRects().length > 0);
+}
+
+function getVisibleControllerFocusables(root = document) {
+    if (!root) return [];
+    const selector = [
+        'button:not([disabled])',
+        'input:not([disabled])',
+        'textarea:not([disabled])',
+        'select:not([disabled])',
+        'a[href]',
+        '[role="button"]',
+        '[tabindex]:not([tabindex="-1"])'
+    ].join(', ');
+    return Array.from(root.querySelectorAll(selector)).filter((element) => {
+        if (!isElementVisible(element)) return false;
+        if (element.closest('.hidden')) return false;
+        if (element.getAttribute('aria-hidden') === 'true') return false;
+        return true;
+    });
+}
+
+function getInputType(element) {
+    return String(element?.getAttribute?.('type') ?? '').trim().toLowerCase();
+}
+
+function isTextEditableElement(element) {
+    if (!element) return false;
+    if (element.matches?.('textarea')) return true;
+    if (element.matches?.('input')) {
+        const type = getInputType(element);
+        return !type || ['text', 'search', 'url', 'tel', 'email', 'password', 'number'].includes(type);
+    }
+    return Boolean(element.isContentEditable);
+}
+
+function isRangeInputElement(element) {
+    return Boolean(element?.matches?.('input')) && getInputType(element) === 'range';
+}
+
+function adjustRangeInputValue(element, direction) {
+    if (!isRangeInputElement(element)) return false;
+
+    const min = Number.parseFloat(element.min);
+    const max = Number.parseFloat(element.max);
+    const current = Number.parseFloat(element.value);
+    const safeMin = Number.isFinite(min) ? min : 0;
+    const safeMax = Number.isFinite(max) ? max : 100;
+    let step = Number.parseFloat(element.step);
+    if (!Number.isFinite(step) || step <= 0) {
+        step = Math.max((safeMax - safeMin) / 100, 1);
+    }
+
+    const nextValue = Math.min(safeMax, Math.max(safeMin, (Number.isFinite(current) ? current : safeMin) + (step * direction)));
+    if (element.value !== String(nextValue)) {
+        element.value = String(nextValue);
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    return true;
+}
+
+function getControllerFocusRoot() {
+    for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
+        const element = document.getElementById(id);
+        if (element && !element.classList.contains('hidden') && isElementVisible(element)) {
+            return element;
+        }
+    }
+
+    if (document.body.classList.contains('mission-intro-active')) {
+        return document.body;
+    }
+
+    return null;
+}
+
+function getPreferredControllerFocusTarget(root, focusables) {
+    if (!focusables.length) return null;
+    if (root?.id === 'splash') {
+        return focusables.find((element) => element.id === 'title-newrun-btn' && !element.disabled)
+            ?? focusables.find((element) => element.id === 'title-continue-btn' && !element.disabled)
+            ?? focusables[0];
+    }
+    if (root?.id === 'menu') {
+        return focusables.find((element) => element.classList?.contains('char-card') && element.classList.contains('selected'))
+            ?? focusables.find((element) => element.id === 'start-game')
+            ?? focusables[0];
+    }
+    return focusables[0];
+}
+
+function focusControllerTarget(target) {
+    if (!target) return false;
+    try {
+        target.focus?.({ preventScroll: true });
+    } catch {
+        target.focus?.();
+    }
+    return true;
+}
+
+function moveControllerFocus(delta) {
+    const root = getControllerFocusRoot();
+    const focusables = getVisibleControllerFocusables(root ?? document);
+    if (!focusables.length) return null;
+
+    let index = focusables.indexOf(document.activeElement);
+    if (index < 0 || (root && !root.contains(document.activeElement))) {
+        const preferred = getPreferredControllerFocusTarget(root, focusables);
+        if (preferred) {
+            focusControllerTarget(preferred);
+            index = focusables.indexOf(preferred);
+        } else {
+            index = 0;
+        }
+    } else {
+        index = (index + delta + focusables.length) % focusables.length;
+    }
+
+    const target = focusables[index] ?? null;
+    focusControllerTarget(target);
+    return target;
+}
+
+async function openSteamGamepadTextInputForElement(element, {
+    description = 'Enter text',
+    maxCharacters = 32,
+    multiline = false,
+    password = false
+} = {}) {
+    if (!element || !window.electronAPI?.showGamepadTextInput) return false;
+    if (isTouchDevice() || !isSteamControllerInputActive()) return false;
+    if (steamGamepadTextInputInFlight) return true;
+
+    steamGamepadTextInputInFlight = true;
+    try {
+        const existingText = typeof element.value === 'string'
+            ? element.value
+            : typeof element.textContent === 'string'
+                ? element.textContent
+                : '';
+        const result = await window.electronAPI.showGamepadTextInput(
+            password ? 1 : 0,
+            multiline ? 1 : 0,
+            description,
+            maxCharacters,
+            existingText
+        );
+        if (typeof result === 'string' && document.contains(element)) {
+            element.value = result;
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return true;
+    } finally {
+        steamGamepadTextInputInFlight = false;
+    }
+}
+
+function activateControllerFocusedElement() {
+    const root = getControllerFocusRoot();
+    const focusables = getVisibleControllerFocusables(root ?? document);
+    let activeElement = document.activeElement;
+    if (!activeElement || activeElement === document.body || (root && !root.contains(activeElement))) {
+        activeElement = getPreferredControllerFocusTarget(root, focusables);
+        if (activeElement) focusControllerTarget(activeElement);
+    }
+
+    if (!activeElement) return false;
+
+    if (isTextEditableElement(activeElement)) {
+        void openSteamGamepadTextInputForElement(activeElement, {
+            description: activeElement.getAttribute('aria-label')
+                || activeElement.getAttribute('placeholder')
+                || 'Enter text',
+            maxCharacters: Number(activeElement.getAttribute('maxlength')) || (activeElement.tagName === 'TEXTAREA' ? 1024 : 32),
+            multiline: activeElement.tagName === 'TEXTAREA'
+        });
+        return true;
+    }
+
+    if (isRangeInputElement(activeElement)) {
+        focusControllerTarget(activeElement);
+        return true;
+    }
+
+    if (typeof activeElement.click === 'function') {
+        activeElement.click();
+        return true;
+    }
+
+    return false;
+}
+
+function dispatchControllerEscape() {
+    const escapeEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        code: 'Escape',
+        bubbles: true,
+        cancelable: true
+    });
+    document.dispatchEvent(escapeEvent);
+}
+
+function triggerControllerPauseAction() {
+    const settingsPopup = document.getElementById('settings-popup');
+    if (settingsPopup && !settingsPopup.classList.contains('hidden')) {
+        dispatchControllerEscape();
+        return true;
+    }
+    const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
+        .map((id) => document.getElementById(id))
+        .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
+    if (activeModal) {
+        dispatchControllerEscape();
+        return true;
+    }
+    document.querySelector('.open-settings-btn')?.click();
+    return true;
+}
+
+function handleSteamInputSnapshot(snapshot = {}) {
+    const previousPhase = steamInputState.phase;
+    const previousMode = steamInputState.lastInputMode;
+    const previousPrimaryType = steamInputState.primaryControllerType;
+    const controllers = Array.isArray(snapshot.controllers) ? snapshot.controllers : [];
+
+    steamInputState.available = Boolean(snapshot.available);
+    steamInputState.phase = snapshot.phase ?? steamInputState.phase;
+    steamInputState.controllerCount = Number(snapshot.controllerCount) || 0;
+    steamInputState.anyInput = Boolean(snapshot.anyInput);
+    steamInputState.isSteamDeck = Boolean(snapshot.isSteamDeck);
+    steamInputState.primaryControllerHandle = snapshot.primaryControllerHandle ?? null;
+    steamInputState.primaryControllerType = snapshot.primaryControllerType ?? null;
+    steamInputState.controllers = controllers;
+
+    if (steamInputState.anyInput) {
+        setLastInputMode('controller', { refresh: false });
+    } else if (steamInputState.controllerCount === 0 && steamInputState.lastInputMode === 'controller') {
+        setLastInputMode('keyboard', { refresh: false });
+    }
+
+    if (previousPhase !== steamInputState.phase) {
+        steamInputPrevControllers.clear();
+    }
+    if (previousMode !== steamInputState.lastInputMode || previousPrimaryType !== steamInputState.primaryControllerType) {
+        refreshInteractivePromptKeys();
+    }
+
+    if (steamInputState.anyInput && (!window.AudioManager?.isUnlocked || !window.game)) {
+        suppressSteamInputUntilRelease = true;
+        window.HunkerTriggerBoot?.();
+        return;
+    }
+
+    if (suppressSteamInputUntilRelease) {
+        if (steamInputState.anyInput) return;
+        suppressSteamInputUntilRelease = false;
+        steamInputPrevControllers.clear();
+        return;
+    }
+
+    const activeController = controllers.find((controller) => controller.active) ?? controllers[0] ?? null;
+    if (!activeController) {
+        if (window.game?.setVirtualInput) window.game.setVirtualInput(0, 0);
+        return;
+    }
+
+    steamInputPrevControllers.set(activeController.handle, steamInputPrevControllers.get(activeController.handle) ?? {});
+
+    const gameplayActive = Boolean(window.game?.isGameplayInputActive?.());
+    if (steamInputState.phase === 'gameplay' && gameplayActive) {
+        handleSteamGameplayInput(activeController);
+    } else {
+        handleSteamMenuInput(activeController);
+    }
+}
+
+function updateControllerInputMemory(controller, nextState) {
+    steamInputPrevControllers.set(controller.handle, { ...nextState });
+}
+
+function handleSteamMenuInput(controller) {
+    const prev = steamInputPrevControllers.get(controller.handle) ?? {};
+    const moved = Boolean(controller.menuUp && !prev.menuUp)
+        || Boolean(controller.menuDown && !prev.menuDown)
+        || Boolean(controller.menuLeft && !prev.menuLeft)
+        || Boolean(controller.menuRight && !prev.menuRight);
+    const activeElement = document.activeElement;
+    const rangeAdjusted = Boolean(activeElement && isRangeInputElement(activeElement) && (
+        (controller.menuLeft && !prev.menuLeft && adjustRangeInputValue(activeElement, -1))
+        || (controller.menuRight && !prev.menuRight && adjustRangeInputValue(activeElement, 1))
+    ));
+
+    if (!document.activeElement || document.activeElement === document.body || !getControllerFocusRoot()?.contains?.(document.activeElement)) {
+        const root = getControllerFocusRoot();
+        const focusables = getVisibleControllerFocusables(root ?? document);
+        const preferred = getPreferredControllerFocusTarget(root, focusables);
+        if (preferred) focusControllerTarget(preferred);
+    } else if (moved && !rangeAdjusted) {
+        const step = (controller.menuUp || controller.menuLeft) && !(controller.menuDown || controller.menuRight) ? -1 : 1;
+        moveControllerFocus(step);
+    }
+
+    if (controller.menuConfirm && !prev.menuConfirm) {
+        activateControllerFocusedElement();
+    }
+    if (controller.menuBack && !prev.menuBack) {
+        dispatchControllerEscape();
+    }
+
+    updateControllerInputMemory(controller, {
+        ...prev,
+        menuUp: Boolean(controller.menuUp),
+        menuDown: Boolean(controller.menuDown),
+        menuLeft: Boolean(controller.menuLeft),
+        menuRight: Boolean(controller.menuRight),
+        menuConfirm: Boolean(controller.menuConfirm),
+        menuBack: Boolean(controller.menuBack)
+    });
+}
+
+window.addEventListener('gamepad-menu-nav', (event) => {
+    const action = event.detail?.action;
+    if (!action) return;
+
+    setLastInputMode('controller');
+    if (action === 'menu_up' || action === 'menu_left') {
+        moveControllerFocus(-1);
+    } else if (action === 'menu_down' || action === 'menu_right') {
+        moveControllerFocus(1);
+    } else if (action === 'menu_confirm') {
+        activateControllerFocusedElement();
+    } else if (action === 'menu_back') {
+        dispatchControllerEscape();
+    }
+});
+
+function handleSteamGameplayInput(controller) {
+    const prev = steamInputPrevControllers.get(controller.handle) ?? {};
+    const moveX = Math.abs(Number(controller.move?.x) || 0) > 0.18 ? Number(controller.move?.x) || 0 : 0;
+    const moveY = Math.abs(Number(controller.move?.y) || 0) > 0.18 ? Number(controller.move?.y) || 0 : 0;
+    const aimX = Math.abs(Number(controller.camera?.x) || 0) > 0.18 ? Number(controller.camera?.x) || 0 : 0;
+    const aimY = Math.abs(Number(controller.camera?.y) || 0) > 0.18 ? Number(controller.camera?.y) || 0 : 0;
+
+    if (window.game?.setVirtualInput) {
+        window.game.setVirtualInput(moveX, -moveY);
+    }
+    if ((aimX || aimY) && window.game?.setControllerAimVector) {
+        window.game.setControllerAimVector(aimX, -aimY);
+    }
+
+    if (controller.fire) {
+        window.game?.triggerControllerFire?.();
+    }
+    if (controller.interact && !prev.interact) {
+        window.game?.triggerGameplayInteract?.();
+    }
+    if (controller.reload && !prev.reload) {
+        window.game?.triggerGameplayReload?.({ manual: true });
+    }
+    if (controller.ability && !prev.ability) {
+        window.game?.triggerClassAbility?.();
+    }
+    if (controller.scan && !prev.scan) {
+        window.game?.triggerRadarScan?.();
+    }
+    if (controller.pause && !prev.pause) {
+        triggerControllerPauseAction();
+    }
+    if (controller.sprint && !prev.sprint) {
+        window.game?.setVirtualInputSprint?.(true);
+    }
+
+    updateControllerInputMemory(controller, {
+        ...prev,
+        fire: Boolean(controller.fire),
+        interact: Boolean(controller.interact),
+        reload: Boolean(controller.reload),
+        ability: Boolean(controller.ability),
+        scan: Boolean(controller.scan),
+        pause: Boolean(controller.pause),
+        sprint: Boolean(controller.sprint),
+        moveX,
+        moveY,
+        aimX,
+        aimY
+    });
+}
+
+if (window.electronAPI?.onSteamInputState) {
+    window.electronAPI.onSteamInputState(handleSteamInputSnapshot);
+}
+
+let browserGamepadPollRaf = null;
+let browserGamepadOwnedVirtualInput = false;
+let suppressBrowserGamepadUntilRelease = false;
+
+function browserGamepadApiAvailable() {
+    return typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function';
+}
+
+function shouldUseBrowserGamepadFallback() {
+    if (!browserGamepadApiAvailable()) return false;
+    return !steamInputState.available || steamInputState.controllerCount === 0;
+}
+
+function getBrowserGamepadControllers() {
+    if (!browserGamepadApiAvailable()) return [];
+    return Array.from(navigator.getGamepads() ?? [])
+        .filter(Boolean)
+        .map((gamepad) => mapBrowserGamepad(gamepad))
+        .filter(Boolean);
+}
+
+function markBrowserGamepadInput(controller) {
+    const previousMode = steamInputState.lastInputMode;
+    const previousType = steamInputState.primaryControllerType;
+    steamInputState.primaryControllerHandle = controller.handle;
+    steamInputState.primaryControllerType = controller.type;
+    setLastInputMode('controller', { refresh: false });
+    if (previousMode !== steamInputState.lastInputMode || previousType !== steamInputState.primaryControllerType) {
+        refreshInteractivePromptKeys();
+    }
+}
+
+function clearBrowserGamepadGameplayInput() {
+    if (!browserGamepadOwnedVirtualInput) return;
+    window.game?.setVirtualInput?.(0, 0);
+    browserGamepadOwnedVirtualInput = false;
+}
+
+function handleBrowserGamepadFallbackFrame() {
+    if (!shouldUseBrowserGamepadFallback()) {
+        clearBrowserGamepadGameplayInput();
+        browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+        return;
+    }
+
+    const controllers = getBrowserGamepadControllers();
+    const activeController = controllers.find((controller) => controller.active) ?? null;
+    if (!activeController) {
+        if (suppressBrowserGamepadUntilRelease) {
+            suppressBrowserGamepadUntilRelease = false;
+            steamInputPrevControllers.clear();
+        }
+        clearBrowserGamepadGameplayInput();
+        browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+        return;
+    }
+
+    markBrowserGamepadInput(activeController);
+
+    if (suppressBrowserGamepadUntilRelease) {
+        browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+        return;
+    }
+
+    if (!window.AudioManager?.isUnlocked || !window.game) {
+        suppressBrowserGamepadUntilRelease = true;
+        window.HunkerTriggerBoot?.();
+        browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+        return;
+    }
+
+    const gameplayActive = Boolean(window.game?.isGameplayInputActive?.());
+    if (appPhase === 'gameplay' && gameplayActive) {
+        browserGamepadOwnedVirtualInput = true;
+        handleSteamGameplayInput(activeController);
+    } else {
+        clearBrowserGamepadGameplayInput();
+        handleSteamMenuInput(activeController);
+    }
+
+    browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+}
+
+function startBrowserGamepadFallback() {
+    if (browserGamepadPollRaf || typeof window.requestAnimationFrame !== 'function') return;
+    browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
+}
+
+startBrowserGamepadFallback();
+window.addEventListener('gamepadconnected', startBrowserGamepadFallback);
+
+window.addEventListener('keydown', (event) => {
+    if (!event.isTrusted) return;
+    setLastInputMode('keyboard');
+}, true);
+
+window.addEventListener('pointerdown', (event) => {
+    if (!event.isTrusted) return;
+    if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+        setLastInputMode('touch');
+    } else if (event.pointerType === 'mouse') {
+        setLastInputMode('keyboard');
+    }
+}, true);
+
 const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveUp', label: 'MOVE UP' },
     { id: 'moveDown', label: 'MOVE DOWN' },
@@ -189,11 +912,11 @@ const CONTROL_ACTIONS = Object.freeze([
 ]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
-const STARTING_RUN_AMMO = 18;
+const STARTING_RUN_AMMO = 30;
 const CLASS_AMMO_CAPACITY = Object.freeze({
-    SCOUT: 24,
-    TANK: 30,
-    ENGINEER: 21
+    SCOUT: 36,
+    TANK: 42,
+    ENGINEER: 30
 });
 
 const state = {
@@ -203,6 +926,7 @@ const state = {
         fullscreen: false,
         touchControls: false,
         nightVision: false,
+        commentary: false,
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
@@ -227,6 +951,17 @@ const arcManager = new ArcStateManager();
 const act2Manager = new Act2Manager();
 let missionFlowRunning = false;
 let isResettingRun = false;
+
+function getActiveSuitDialogueContext() {
+    const act2State = act2Manager?.getState?.() ?? {};
+    const achievementState = window.achievementEngine?.getState?.() ?? {};
+    return {
+        infectionStage: act2State.infectionStage ?? 'latent',
+        queenObedience: act2State.queenObedience ?? 0,
+        totalDeaths: achievementState.stats?.totalDeaths ?? 0,
+        sessionDeaths: getSecretGateState(achievementState).deathsThisRun
+    };
+}
 
 function isPortraitOrientationLocked() {
     const visualWidth = window.visualViewport?.width ?? window.innerWidth;
@@ -340,6 +1075,9 @@ window.fabricator = fabricator;
 
 const profile = new ProfileManager();
 window.profile = profile;
+
+const achievementEngine = new AchievementEngine();
+window.achievementEngine = achievementEngine;
 
 const loadout = new LoadoutManager();
 window.loadout = loadout;
@@ -724,8 +1462,12 @@ function setupControlsModal() {
 
 function resetPickupCounter(playerType = (window.game?.playerType || 'SCOUT')) {
     setActiveAmmoCapacity(playerType, { clampExisting: false });
-    pickupCounterState.health = 0;
-    pickupCounterState.ammo = Math.min(STARTING_RUN_AMMO, activeAmmoCapacity);
+    const campEffects = window.game?.getCampVerbRuntimeEffects?.() ?? {};
+    const medkitReserve = Math.max(0, Math.floor(Number(campEffects.medkitInventory) || 0));
+    const ammoReserve = Math.max(0, Math.floor(Number(campEffects.ammoReserve) || 0));
+    activeAmmoCapacity += ammoReserve;
+    pickupCounterState.health = medkitReserve;
+    pickupCounterState.ammo = Math.min(STARTING_RUN_AMMO + ammoReserve, activeAmmoCapacity);
     pickupCounterState.weapon = 0;
     pickupCounterState.coin = 0;
     recomputePickupTotal();
@@ -846,6 +1588,7 @@ function renderWeaponClipState(detail = {}) {
     if (weaponStatusPanel) {
         weaponStatusPanel.classList.toggle('is-reloading', reloading);
         weaponStatusPanel.classList.toggle('is-refilling', refilling);
+        weaponStatusPanel.classList.toggle('is-low-ammo', clip <= 2 && !reloading);
         weaponStatusPanel.setAttribute('aria-busy', reloading ? 'true' : 'false');
     }
 }
@@ -901,18 +1644,22 @@ window.addEventListener('enemy-killed', (event) => {
     const total = event?.detail?.totalKills ?? 0;
     const type = event?.detail?.type ?? '';
     const isBoss = Boolean(event?.detail?.isBoss);
+
+    const viewport = document.getElementById('game-viewport');
+    if (viewport) {
+        viewport.classList.remove('kill-confirm-flash');
+        void viewport.offsetWidth;
+        viewport.classList.add('kill-confirm-flash');
+    }
     if (total === 1 && !isBoss) fireMothershipReactiveLine('first_kill');
     if (type === 'sentinel') fireMothershipReactiveLine('sentinel_spotted');
     if (type === 'crawler') fireMothershipReactiveLine('crawler_detected');
     if (isBoss || (typeof type === 'string' && type.startsWith('boss_'))) {
-        void dialogueManager?.openBriefTransmission?.({
-            playerType: window.game?.playerType || getSelectedHeroType(),
-            lines: [
-                'MOTHERSHIP: APEX BIO-ENTITY DOWN.',
-                'MOTHERSHIP: SIGNAL ATTENUATION CONFIRMED. FIELD PATH IS CLEAR.'
-            ],
-            holdMs: 1100
-        });
+        // Corner radio transmission, not the full-screen brief-transmission
+        // dialogue (openBriefTransmission pauses input via setInputEnabled
+        // until dismissed) — a boss kill shouldn't stop the run to read text.
+        showBiomePrompt('> MOTHERSHIP: APEX BIO-ENTITY DOWN.');
+        window.setTimeout(() => showBiomePrompt('> MOTHERSHIP: SIGNAL ATTENUATION CONFIRMED. FIELD PATH IS CLEAR.'), 900);
     }
     // Escalation beat: once the agent racks up kills, 0047 takes notice.
     if (total >= 25) fireMothershipReactiveLine('specimen_notices');
@@ -923,6 +1670,7 @@ window.addEventListener('weapon-upgraded', () => {
 });
 
 window.addEventListener('skill-unlocked', () => {
+    window.AudioManager?.play?.('fx_levelup', { volume: 0.38, bus: 'sfx' });
     syncAbilityPanelLabel();
     syncTouchMoveControlVisibility();
 });
@@ -1086,6 +1834,7 @@ let hudNotificationTopTimer = null;
 let hudNotificationTopCard = null;
 let hudNotificationDeckHoldUntil = 0;
 let hudCardSeq = 0;
+const commentarySeenThisRun = new Set();
 
 const RADIO_REPEAT_SUPPRESSION_MS = 6500;
 
@@ -1172,6 +1921,70 @@ function dismissHudNotificationCard(card) {
 }
 window.dismissHudNotificationCard = dismissHudNotificationCard;
 
+function resetCommentaryRunState() {
+    commentarySeenThisRun.clear();
+}
+
+function isCommentaryModeEnabled() {
+    return Boolean(state.settings.commentary);
+}
+
+function showDeveloperCommentary(key, detail = {}, { once = true } = {}) {
+    if (!isCommentaryModeEnabled()) return false;
+    const entry = COMMENTARY_ENTRIES[key];
+    if (!entry) return false;
+    const commentaryKey = `${key}:${detail?.template ?? detail?.id ?? ''}`;
+    if (once && commentarySeenThisRun.has(commentaryKey)) return false;
+
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) return false;
+
+    commentarySeenThisRun.add(commentaryKey);
+
+    const card = document.createElement('div');
+    card.className = 'commentary-toast hud-stack-card hidden';
+    card.setAttribute('aria-live', 'polite');
+    card.dataset.notificationPriority = '22';
+    card.dataset.seq = String(hudCardSeq++);
+    card.dataset.autoDismissMs = String(Math.max(6200, Math.min(11000, entry.body.length * 62)));
+    card.dataset.removeDelayMs = '320';
+
+    const icon = document.createElement('div');
+    icon.className = 'commentary-toast__icon';
+    icon.textContent = 'DC';
+
+    const body = document.createElement('div');
+    body.className = 'commentary-toast__body';
+
+    const kicker = document.createElement('div');
+    kicker.className = 'commentary-toast__kicker';
+    kicker.textContent = 'DEVELOPER COMMENTARY';
+
+    const title = document.createElement('div');
+    title.className = 'commentary-toast__title';
+    title.textContent = entry.title;
+
+    const blurb = document.createElement('div');
+    blurb.className = 'commentary-toast__blurb';
+    blurb.textContent = entry.body;
+
+    body.append(kicker, title, blurb);
+    card.append(icon, body);
+    card.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        dismissHudNotificationCard(card);
+    });
+
+    stack.append(card);
+    updateHudNotificationDeck();
+    card.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        card.classList.add('visible');
+        updateHudNotificationDeck();
+    });
+    return true;
+}
+
 function dismissRadioPrompt(radioPrompt) {
     dismissHudNotificationCard(radioPrompt);
 }
@@ -1257,6 +2070,12 @@ function renderRadioTransmission(rawText) {
 
     const stack = document.querySelector('.hud-notification-stack');
     if (!stack) return;
+
+    const activeCards = Array.from(stack.querySelectorAll('.radio-transmission-prompt:not(.is-closing):not(.hidden)'));
+    if (activeCards.length >= 2) {
+        dismissRadioPrompt(activeCards[0]);
+    }
+
     const { sender, portrait, text: parsedText } = parseRadioTransmission(rawText);
     const text = trimRadioCopy(parsedText);
     if (!text) return;
@@ -1373,6 +2192,12 @@ window.addEventListener('depth-tier-changed', (event) => {
 });
 window.addEventListener('black-box-recovered', () => {
     maybeShowCaveSignalTransmission();
+    showDeveloperCommentary('black_box_recovered');
+    recordSteamTimelineEvent('black_box_recovered', 'Black Box Recovered', 'A previous operator archive was recovered and banked.', {
+        icon: 'black_box',
+        priority: 2,
+        durationSeconds: 8
+    });
 });
 
 window.addEventListener('extraction-blocked', () => {
@@ -1400,7 +2225,7 @@ window.addEventListener('biome-changed', (event) => {
             AudioManager.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.48, bus: 'sfx' });
             fireMothershipReactiveLine('first_cryo');
         } else if (biomeKey === 'bio') {
-            AudioManager.play('amb_metal_stress', { volume: 0.3, playbackRate: 0.62, bus: 'sfx' });
+            AudioManager.playMetalStress({ volume: 0.3, playbackRate: 0.62, force: true });
             fireMothershipReactiveLine('first_bio');
         }
     }
@@ -1646,6 +2471,118 @@ function formatRunTime(ms) {
     return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function getGameOverLeaderboardBoard(payload = {}) {
+    if (payload.run?.dailyOps?.date) return 'daily_ops_score';
+    return 'best_run_score';
+}
+
+function getGameOverLeaderboardLabel(board) {
+    if (board === 'daily_ops_score') return 'DAILY OPS';
+    if (board === 'survival_time_seconds') return 'SURVIVAL TIME';
+    if (board === 'deepest_depth_score') return 'DEEPEST DEPTH';
+    if (board === 'fastest_extraction_ms') return 'FASTEST EXTRACTION';
+    return 'BEST RUN SCORE';
+}
+
+function setGameOverLeaderboardState(statusText, entries = [], { board = 'best_run_score', selfSteamId = null, type = 'retrieving' } = {}) {
+    const statusEl = document.getElementById('go-leaderboard-status');
+    const listEl = document.getElementById('go-leaderboard-list');
+    if (statusEl) {
+        statusEl.textContent = statusText;
+        statusEl.className = `go-leaderboard-status go-leaderboard-status--${type}`;
+    }
+    if (!listEl) return;
+
+    listEl.innerHTML = '';
+    if (!entries.length) {
+        const empty = document.createElement('div');
+        empty.className = 'go-leaderboard-row go-leaderboard-row--empty';
+        empty.textContent = 'NO RANKS AVAILABLE';
+        listEl.appendChild(empty);
+        return;
+    }
+
+    for (const entry of entries) {
+        if (entry.separator) {
+            const sep = document.createElement('div');
+            sep.className = 'go-leaderboard-row go-leaderboard-row--separator';
+            sep.textContent = '...';
+            listEl.appendChild(sep);
+            continue;
+        }
+
+        const row = document.createElement('div');
+        const isSelf = selfSteamId && String(entry.steamId64) === String(selfSteamId);
+        row.className = `go-leaderboard-row${isSelf ? ' player-self' : ''}`;
+
+        const rank = document.createElement('span');
+        rank.className = 'go-leaderboard-rank';
+        rank.textContent = `#${Number(entry.rank) || '-'}`;
+
+        const name = document.createElement('span');
+        name.className = 'go-leaderboard-name';
+        name.textContent = entry.persona || 'Agent';
+
+        const score = document.createElement('span');
+        score.className = 'go-leaderboard-score';
+        score.textContent = formatLeaderboardScore(board, Number(entry.score) || 0);
+
+        row.append(rank, name, score);
+        listEl.appendChild(row);
+    }
+}
+
+async function renderGameOverLeaderboard(payload = {}) {
+    const board = getGameOverLeaderboardBoard(payload);
+    const label = getGameOverLeaderboardLabel(board);
+    setGameOverLeaderboardState(`RETRIEVING ${label}...`, [], { board, type: 'retrieving' });
+
+    if (!window.electronAPI?.getSteamLeaderboard) {
+        setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
+        return;
+    }
+
+    try {
+        const [result, identity] = await Promise.all([
+            window.electronAPI.getSteamLeaderboard(board, 'Global', 10),
+            window.electronAPI.getSteamIdentity?.().catch(() => null)
+        ]);
+
+        if (!result?.ok) {
+            setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
+            return;
+        }
+
+        const selfSteamId = identity?.steamId64 ?? (result.mock ? '76561198000000000' : null);
+        const status = result.mock ? `${label} - DEV MOCK` : `${label} - GLOBAL TOP 10`;
+        const type = result.mock ? 'mock' : 'live';
+
+        let entries = result.entries ?? [];
+
+        // Fetch exact player rank if player is not in top 10
+        const hasSelf = entries.some(entry => selfSteamId && String(entry.steamId64) === String(selfSteamId));
+        if (!hasSelf && selfSteamId) {
+            try {
+                const aroundResult = await window.electronAPI.getSteamLeaderboard(board, 'AroundUser', 1);
+                if (aroundResult?.ok && aroundResult.entries?.length) {
+                    const selfEntry = aroundResult.entries.find(entry => String(entry.steamId64) === String(selfSteamId));
+                    if (selfEntry) {
+                        entries = [...entries];
+                        entries.push({ separator: true });
+                        entries.push(selfEntry);
+                    }
+                }
+            } catch (err) {
+                console.warn('[steam] failed to fetch player leaderboard rank:', err);
+            }
+        }
+
+        setGameOverLeaderboardState(status, entries, { board, selfSteamId, type });
+    } catch {
+        setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
+    }
+}
+
 function clearAllTimers() {
     clearTimeout(biomePromptTimer);
     biomePromptTimer = null;
@@ -1677,7 +2614,8 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     _distressModeActive = false;
     missionFlowRunning = false;
 
-    const elapsedMs    = Date.now() - runStartTime;
+    const endedAt = Date.now();
+    const elapsedMs    = endedAt - runStartTime;
     const elapsedMin   = elapsedMs / 60000;
     const distancePct  = Math.min(100, (stats.distanceTravelled / 500) * 100);
     const itemsPct     = Math.min(100, (stats.totalPickups / 50) * 100);
@@ -1712,6 +2650,11 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
 
     const bankNote = document.getElementById('go-bank-note');
     const recoverableNote = document.getElementById('go-recoverable-note');
+    const grantNoteEl = document.getElementById('go-steam-grant-note');
+    if (grantNoteEl) {
+        grantNoteEl.textContent = '';
+        grantNoteEl.classList.add('hidden');
+    }
     const box = blackBoxStore.load();
     const banked = stats.totalPickups ?? 0;
     if (bankNote) {
@@ -1751,6 +2694,29 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // Score + rating
     const score = window.game?.calculateRunScore?.(stats, { status: stats.missionStatus }, runStartTime) ?? 0;
     const rating = window.game?.getRunRating?.(score) ?? { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
+    const wasDailyOpsRun = _isDailyOpsRun;
+    const dailyOpsDate = wasDailyOpsRun ? getTodayDateString() : null;
+    const steamRunPayload = buildSteamRunScorePayload({
+        stats: {
+            ...stats,
+            fullHealthAtEnd: Boolean(window.game?.playerVitals
+                && window.game.playerVitals.hp >= window.game.playerVitals.maxHp)
+        },
+        score,
+        rating,
+        classType: window.game?.playerType ?? getSelectedHeroType(),
+        runStartTime,
+        endedAt,
+        isVictory,
+        deathReason,
+        isDailyOps: wasDailyOpsRun,
+        dailyOpsDate,
+        seed: activeRunSeed,
+        runCards: activeRunCards,
+        depositedResources: window.game?.runDepositedResources ?? {}
+    });
+    dispatchSteamRunScoreFinalized(steamRunPayload, window);
+    void renderGameOverLeaderboard(steamRunPayload);
 
     const scoreVal = document.getElementById('go-score-val');
     const ratingBadge = document.getElementById('go-rating-badge');
@@ -1792,11 +2758,11 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     // World seed display
     const seedRow = document.getElementById('go-seed-row');
     const seedVal = document.getElementById('go-seed-val');
-    if (seedRow) seedRow.classList.toggle('hidden', !_isDailyOpsRun);
-    if (seedVal && _isDailyOpsRun) seedVal.textContent = `DAILY-${getTodayDateString()}`;
+    if (seedRow) seedRow.classList.toggle('hidden', !wasDailyOpsRun);
+    if (seedVal && wasDailyOpsRun) seedVal.textContent = `DAILY-${dailyOpsDate}`;
 
     // Daily Ops result save
-    if (_isDailyOpsRun) {
+    if (wasDailyOpsRun) {
         _isDailyOpsRun = false;
         if (window.game) {
             window.game.globalSeedOffset = 0;
@@ -1805,7 +2771,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         saveDailyOpsRecord({
             attempted: true,
             completed: true,
-            date: getTodayDateString(),
+            date: dailyOpsDate,
             score,
             grade: rating.grade,
             isVictory
@@ -1819,7 +2785,7 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const mem = getWorldMemory();
     const logsFound = mem.logsFound?.length ?? 0;
     if (archiveRow) archiveRow.classList.toggle('hidden', logsFound === 0);
-    if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/27`;
+    if (archiveText) archiveText.textContent = `LOGS RECOVERED: ${logsFound}/${ALL_LORE_KEYS.length}`;
 
     const modal = document.getElementById('game-over-modal');
     if (modal) {
@@ -1837,6 +2803,131 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         setTimeout(() => { if (killsBar) killsBar.style.width = `${killsPct}%`;    }, 760);
         setTimeout(() => { if (timeBar)  timeBar.style.width  = `${timePct}%`;     }, 960);
     });
+
+    renderGameOverAct2Summary();
+}
+
+let activeRunSeed = null;
+let activeRunCards = [];
+
+window.addEventListener('run-cards-drawn', (event) => {
+    const detail = event?.detail ?? {};
+    activeRunSeed = detail.seed ?? null;
+    activeRunCards = detail.cards ?? [];
+
+    const seedHUD = document.getElementById('hud-run-seed');
+    if (seedHUD) {
+        if (activeRunSeed !== null) {
+            seedHUD.textContent = `SEED: ${activeRunSeed}`;
+            seedHUD.classList.remove('hidden');
+        } else {
+            seedHUD.classList.add('hidden');
+        }
+    }
+    updateQueensLedgerHUD();
+});
+
+function generateRunOneSentenceSummary(state, ending) {
+    switch (ending) {
+        case 'full_brood':
+            return "You delivered the Queen and her clutch to a crowded new world, executing her will flawlessly.";
+        case 'clean_escape':
+            return "You broke the hive link, purged the eggs, and successfully escaped with all human survivors.";
+        case 'mixed_crew':
+            return "You maintained a fragile compromise between human survivors and infected hybrids under the Queen's watch.";
+        case 'carriers_bargain':
+            return "You saved the survivors but carried the infection silently in your own flesh.";
+        case 'scorched_sky':
+            return "You incinerated every survivor camp and purged the eggs, leaving the sector a dead wasteland.";
+        case 'mothership_infection':
+            return "You stealthily smuggled the infection onto the Mother Ship disguised as a clean rescue flight.";
+        case 'alien_exodus':
+            return "You rejected the Queen but brought the allied beings off-world into safety.";
+        case 'outed_escape':
+            return "The survivors boarded knowing what you are, setting course for quarantine in deep suspicion.";
+        case 'failed_carrier':
+            return "You hid the future in a cargo pod but the containment failed, consuming your passengers.";
+        case 'empty_husk':
+            return "You fled alone, leaving both human camps and alien hives to die in the freezing dark.";
+        default:
+            return "You navigated the freezing dark, leaving a complex legacy in sector 9.";
+    }
+}
+
+function renderGameOverAct2Summary() {
+    const summaryCard = document.getElementById('game-over-act2-summary');
+    if (!summaryCard) return;
+
+    if (!isAct2RunActive()) {
+        summaryCard.classList.add('hidden');
+        return;
+    }
+
+    summaryCard.classList.remove('hidden');
+
+    const state = act2Manager.getState();
+    const ending = pickAct2Ending(state);
+    const obedience = state.queenObedience ?? 0;
+    const seatsUsed = state.manifest?.seatsUsed ?? 1;
+    const seatsMax = state.manifest?.seatsMax ?? 4;
+    const oneLiner = generateRunOneSentenceSummary(state, ending);
+
+    const endingName = ACT2_ENDING_TITLES[ending] ?? String(ending).replace(/_/g, ' ').toUpperCase();
+    const obedienceSign = obedience < 0 ? '\u2212' : obedience > 0 ? '+' : '';
+    const obedienceText = `${obedienceSign}${Math.abs(obedience)}`;
+
+    const campDetails = state.camps.map(c => {
+        const label = c.id === 'camp_meridian' ? 'MERIDIAN' : c.id === 'camp_tallow' ? 'TALLOW' : 'VESPER';
+        return `
+            <div class="go-act2-item">
+                <span class="go-act2-item__label">${label}</span>
+                <span class="go-act2-item__status go-act2-item__status--${c.status}">${formatStoryToken(c.status)}</span>
+            </div>
+        `;
+    }).join('');
+
+    const hiveDetails = state.hives.map(h => {
+        const label = h.id === 'hive_suture' ? 'SUTURE HIVE' : h.id === 'hive_relay' ? 'RELAY HIVE' : 'CARAPACE HIVE';
+        return `
+            <div class="go-act2-item">
+                <span class="go-act2-item__label">${label}</span>
+                <span class="go-act2-item__status go-act2-item__status--${h.status}">${formatStoryToken(h.status)}</span>
+            </div>
+        `;
+    }).join('');
+
+    const seedText = activeRunSeed !== null
+        ? `SEED: ${activeRunSeed}${activeRunCards.length > 0 ? ` (${activeRunCards.map(c => c.label).join(', ')})` : ''}`
+        : 'SEED: STANDARD';
+
+    summaryCard.innerHTML = `
+        <div class="go-act2-header">
+            <span class="go-act2-title">Projected End: ${endingName}</span>
+            <span class="go-act2-seed">${seedText}</span>
+        </div>
+        <div class="go-act2-grid">
+            <div>
+                <div class="go-act2-col-title">Survivor Camps</div>
+                <div class="go-act2-list">
+                    ${campDetails}
+                </div>
+            </div>
+            <div>
+                <div class="go-act2-col-title">Alien Hives</div>
+                <div class="go-act2-list">
+                    ${hiveDetails}
+                </div>
+            </div>
+        </div>
+        <div class="go-act2-stats-row">
+            <div class="go-act2-stat">Obedience: <span>${obedienceText}</span></div>
+            <div class="go-act2-stat">Seats Filled: <span>${seatsUsed}/${seatsMax}</span></div>
+            <div class="go-act2-stat">Humanity: <span>${state.humanity}%</span></div>
+        </div>
+        <div class="go-act2-one-liner">
+            ${oneLiner}
+        </div>
+    `;
 }
 
 function hideGameOverScreen() {
@@ -1848,8 +2939,14 @@ function resetRunToStartingState({
     resetBank = false,
     skipEffects = true,
     snailSpawnEnabled = false,
-    purgeSnails = true
+    purgeSnails = true,
+    deferChunkMount = false
 } = {}) {
+    activeRunSeed = null;
+    activeRunCards = [];
+    const seedHUD = document.getElementById('hud-run-seed');
+    if (seedHUD) seedHUD.classList.add('hidden');
+
     isResettingRun = true;
     try {
         if (resetBank) {
@@ -1863,6 +2960,17 @@ function resetRunToStartingState({
         }
 
         runStartTime = Date.now();
+        resetCommentaryRunState();
+        showDeveloperCommentary('run_start');
+        recordSteamTimelineEvent('run_start', 'Run Started', `${window.game?.playerType ?? getSelectedHeroType()} deployed into the bunker.`, {
+            icon: 'run',
+            priority: 1,
+            durationSeconds: 8
+        });
+        recordAchievementEvent('run-start', {
+            startedAt: runStartTime,
+            classType: window.game?.playerType ?? getSelectedHeroType()
+        });
         const act2Run = isAct2RunActive();
         currentMission = act2Run ? null : assignMission(bankManager.getState());
         currentRunModifier = pickRunModifier();
@@ -1870,7 +2978,7 @@ function resetRunToStartingState({
         _lastMothershipBroadcastAt = 0;
 
         resetPickupCounter();
-        window.game?.respawnPlayer?.({ resetRunState: true, skipEffects });
+        window.game?.respawnPlayer?.({ resetRunState: true, skipEffects, deferChunkMount });
         if (currentMission) {
             window.game?.initMission?.(currentMission);
         } else {
@@ -1919,16 +3027,16 @@ function runDeathSequence(event) {
             totalPickups: 0,
             generatorLevel: 0
         };
-        // Check achievements and show unlock notification if new
-        const { newUnlocks } = checkAchievements(stats);
+        recordAchievementRunEnd({
+            ...stats,
+            outcome: 'death',
+            deathReason,
+            runMs: Date.now() - runStartTime,
+            classType: window.game?.playerType ?? getSelectedHeroType()
+        }, { delayMs: 2200 });
         triggerDoorTransition(
             () => {
                 showGameOverScreen(stats, { isVictory: false, deathReason });
-                if (newUnlocks.length > 0) {
-                    setTimeout(() => {
-                        showBiomePrompt(`> ACHIEVEMENT: ${newUnlocks[0]}`);
-                    }, 2200);
-                }
                 resetRunToStartingState({
                     resetBank: false,
                     skipEffects: true,
@@ -1971,6 +3079,15 @@ window.addEventListener('player-respawned', () => {
     if (scanBar) scanBar.style.transform = 'scaleX(1)';
     updateTouchScanButtonState({ remaining: 0, max: 1 });
     window.game?.setInputEnabled?.(true);
+
+    if (window.game?.act2?.getState?.().begun) {
+        window.setTimeout(() => {
+            void dialogueManager?.openBriefTransmission?.({
+                playerType: window.game?.playerType ?? getSelectedHeroType(),
+                lines: ['QUEEN: I FELT THAT. DO NOT DO IT AGAIN.']
+            });
+        }, 1200);
+    }
 });
 
 window.addEventListener('mission-objective-complete', (event) => {
@@ -1985,7 +3102,7 @@ window.addEventListener('mission-objective-complete', (event) => {
         ? (messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP')
         : 'OBJECTIVE COMPLETE — UPLINK LOCKED // MAX ALL SYSTEMS TO EXTRACT';
     showBiomePrompt(msg);
-    const line = getDialogueLine('extraction');
+    const line = getDialogueLine('extraction', Math.random, getActiveSuitDialogueContext());
     if (line) window.setTimeout(() => showBiomePrompt(`> BUNKER: ${line}`), 900);
     AudioManager.play('ui_boot', { volume: 0.45, playbackRate: 0.88, bus: 'sfx' });
 });
@@ -1993,13 +3110,13 @@ window.addEventListener('mission-objective-complete', (event) => {
 window.addEventListener('goal-unlocked', (event) => {
     const goalKey = event?.detail?.goalKey;
     if (['o2Bubble', 'hullExpansion', 'radarNode', 'reactorCompressor'].includes(goalKey)) return;
-    const line = getDialogueLine('majorUpgrade');
+    const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
 
 window.addEventListener('o2-generator-upgraded', (event) => {
     if (event?.detail?.level === 1) return;
-    const line = getDialogueLine('majorUpgrade');
+    const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
 });
 
@@ -2092,7 +3209,12 @@ window.addEventListener('player-extracted', (event) => {
 const ALL_LORE_KEYS = [
     'A01','A02','A03','A04','A05','A06','A07','A08','A09','A10','A11','A12',
     'C01','C02','C03','C04','C05','C06','C07','C08','C09','C10','C11','C12',
-    'B01','B02','B03'
+    'B01','B02','B03','B13',
+    'drop_horizon_badge', 'drop_dig_manifest', 'drop_security_log',
+    'drop_survey_probe', 'drop_meteor_core', 'drop_ration_ledger',
+    'drop_child_drawing', 'drop_dogtags', 'drop_resin_locket',
+    'drop_moult_shard', 'drop_first_bore_tag', 'drop_prayer_stone',
+    'drop_frozen_letter', 'drop_black_flask'
 ];
 
 function updateMenuCommandStatuses() {
@@ -2139,9 +3261,16 @@ function openArchiveLogDetail(key) {
     const portraitEl = document.getElementById('archive-log-detail-portrait');
     if (!modal) return;
 
-    if (keyEl) keyEl.textContent = `LOG-${key}`;
+    if (keyEl) keyEl.textContent = window.game?.getLoreTitle?.(key) ?? `LOG-${key}`;
     if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
     if (portraitEl) portraitEl.src = lorePortraitSrc(key);
+
+    const metadata = LORE_METADATA[key];
+    const dateEl = document.getElementById('archive-log-detail-date');
+    const coordsEl = document.getElementById('archive-log-detail-coords');
+    if (dateEl) dateEl.textContent = metadata ? `DATE: ${metadata.date}` : '';
+    if (coordsEl) coordsEl.textContent = metadata ? `LOC: ${metadata.coords}` : '';
+
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
 }
@@ -2156,11 +3285,12 @@ function buildArchiveModal() {
     updateMenuCommandStatuses();
     listEl.innerHTML = '';
 
-    // Group by sector
+    const historicalKeys = ALL_LORE_KEYS.filter(k => LORE_METADATA[k]?.group === 'historical');
+    const recentKeys = ALL_LORE_KEYS.filter(k => LORE_METADATA[k]?.group === 'recent');
+
     const sections = [
-        { prefix: 'A', label: 'ACTIVE SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('A')) },
-        { prefix: 'C', label: 'CRYO SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('C')) },
-        { prefix: 'B', label: 'BIO SECTOR LOGS', keys: ALL_LORE_KEYS.filter(k => k.startsWith('B')) }
+        { label: 'HISTORICAL COLLAPSE RECORDS', keys: historicalKeys },
+        { label: 'RECENT CONTAINMENT OPERATIONS', keys: recentKeys }
     ];
 
     for (const section of sections) {
@@ -2236,58 +3366,288 @@ function buildArchiveModal() {
 }
 
 // ── Achievement / Unlock System ───────────────────────────────
-const ACHIEVEMENT_KEY = 'hb_achievements_v1';
+const ACHIEVEMENT_BUTTON_SHINE_KEY = 'hb_achievements_button_shown_v1';
 
-function getAchievements() {
+function getAchievementUnlockCount(state = achievementEngine.getState()) {
+    return Object.keys(state.unlocked ?? {}).length;
+}
+
+function getLiveAchievementCount() {
+    return ACHIEVEMENT_DEFS.filter((def) => !def.comingSoon).length;
+}
+
+function updateAchievementsMenuButton({ shine = false } = {}) {
+    const state = achievementEngine.getState();
+    const unlockedCount = getAchievementUnlockCount(state);
+    const command = document.getElementById('achievements-command');
+    const status = document.getElementById('achievements-command-status');
+    if (command) command.classList.toggle('hidden', unlockedCount <= 0);
+    if (status) status.textContent = unlockedCount > 0
+        ? `${unlockedCount} / ${getLiveAchievementCount()} UNLOCKED`
+        : 'LOCKED';
+
+    if (!command || unlockedCount <= 0 || !shine) return;
+    const alreadyShined = localStorage.getItem(ACHIEVEMENT_BUTTON_SHINE_KEY) === '1';
+    if (alreadyShined) return;
+    command.classList.add('achievement-command--new');
+    localStorage.setItem(ACHIEVEMENT_BUTTON_SHINE_KEY, '1');
+    window.setTimeout(() => command.classList.remove('achievement-command--new'), 3600);
+}
+
+function showAchievementToast(unlock) {
+    if (!unlock) return;
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) {
+        showBiomePrompt(`> ACHIEVEMENT: ${unlock.title}`);
+        return;
+    }
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
+    const toast = document.createElement('div');
+    toast.className = 'achievement-toast hud-stack-card hidden';
+    toast.setAttribute('aria-live', 'polite');
+    toast.dataset.notificationPriority = '5';
+    toast.dataset.seq = String(hudCardSeq++);
+    toast.dataset.autoDismissMs = '5600';
+    toast.dataset.removeDelayMs = '320';
+
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'achievement-toast__icon';
+    const img = document.createElement('img');
+    img.alt = '';
+    img.src = `/ach_${unlock.icon ?? unlock.key}.png`;
+    const fallback = document.createElement('span');
+    fallback.textContent = 'ACH';
+    img.addEventListener('error', () => {
+        img.classList.add('hidden');
+        fallback.classList.remove('hidden');
+    }, { once: true });
+    fallback.classList.add('hidden');
+    iconWrap.append(img, fallback);
+
+    const body = document.createElement('div');
+    body.className = 'achievement-toast__body';
+    const kicker = document.createElement('div');
+    kicker.className = 'achievement-toast__kicker';
+    kicker.textContent = 'ACHIEVEMENT UNLOCKED';
+    const title = document.createElement('div');
+    title.className = 'achievement-toast__title';
+    title.textContent = unlock.title;
+    const blurb = document.createElement('div');
+    blurb.className = 'achievement-toast__blurb';
+    blurb.textContent = unlock.blurb;
+    body.append(kicker, title, blurb);
+    toast.append(iconWrap, body);
+    toast.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        dismissHudNotificationCard(toast);
+    });
+
+    stack.append(toast);
+    updateHudNotificationDeck();
+    toast.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        toast.classList.add('visible');
+        updateHudNotificationDeck();
+    });
+}
+
+function handleAchievementUnlocks(newUnlocks = [], { delayMs = 0 } = {}) {
+    if (!newUnlocks.length) {
+        updateAchievementsMenuButton();
+        return;
+    }
+    updateAchievementsMenuButton({ shine: true });
+    newUnlocks.forEach((unlock, index) => {
+        window.dispatchEvent(new CustomEvent('achievement-unlocked', {
+            detail: { key: unlock.key, title: unlock.title, blurb: unlock.blurb }
+        }));
+        window.setTimeout(() => showAchievementToast(unlock), delayMs + index * 700);
+    });
+}
+
+function recordAchievementEvent(name, detail = {}, options = {}) {
+    const result = achievementEngine.recordEvent(name, detail);
+    handleAchievementUnlocks(result.newUnlocks, options);
+    if (window.electronAPI?.setStat) {
+        if (result.state?.stats?.totalDeaths !== undefined) {
+            window.electronAPI.setStat('total_deaths', result.state.stats.totalDeaths);
+        }
+        if (result.state?.stats?.maxRunMs !== undefined) {
+            const maxSeconds = Math.floor(result.state.stats.maxRunMs / 1000);
+            window.electronAPI.setStat('longest_run_seconds', maxSeconds);
+        }
+    }
+    return result;
+}
+
+function recordAchievementRunEnd(stats = {}, options = {}) {
+    const result = achievementEngine.recordRunEnd(stats);
+    handleAchievementUnlocks(result.newUnlocks, options);
+    if (window.electronAPI?.setStat) {
+        if (result.state?.stats?.totalDeaths !== undefined) {
+            window.electronAPI.setStat('total_deaths', result.state.stats.totalDeaths);
+        }
+        if (result.state?.stats?.maxRunMs !== undefined) {
+            const maxSeconds = Math.floor(result.state.stats.maxRunMs / 1000);
+            window.electronAPI.setStat('longest_run_seconds', maxSeconds);
+        }
+    }
+    return result;
+}
+
+function renderAchievementsModal() {
+    const state = achievementEngine.getState();
+    const grid = document.getElementById('achievements-grid');
+    const summary = document.getElementById('achievements-summary');
+    const status = document.getElementById('achievements-save-status');
+    if (summary) summary.textContent = `${getAchievementUnlockCount(state)} / ${getLiveAchievementCount()} UNLOCKED`;
+    if (status) status.textContent = '';
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    for (const def of ACHIEVEMENT_DEFS) {
+        const unlocked = Boolean(state.unlocked?.[def.key]);
+        const secretLocked = def.secret && !unlocked && !def.comingSoon;
+        const progress = getAchievementProgress(def, state);
+        const card = document.createElement('div');
+        card.className = [
+            'achievement-card',
+            unlocked ? 'achievement-card--unlocked' : 'achievement-card--locked',
+            def.comingSoon ? 'achievement-card--soon' : ''
+        ].filter(Boolean).join(' ');
+
+        const icon = document.createElement('div');
+        icon.className = 'achievement-card__icon';
+        const img = document.createElement('img');
+        img.alt = '';
+        img.src = `/ach_${def.icon ?? def.key}.png`;
+        const fallback = document.createElement('span');
+        fallback.textContent = secretLocked ? '???' : (def.title.match(/[A-Z0-9]/g)?.slice(0, 3).join('') || 'ACH');
+        img.addEventListener('error', () => {
+            img.classList.add('hidden');
+            fallback.classList.remove('hidden');
+        }, { once: true });
+        if (!unlocked) img.classList.add('achievement-card__img--locked');
+        fallback.classList.add('hidden');
+        icon.append(img, fallback);
+
+        const body = document.createElement('div');
+        body.className = 'achievement-card__body';
+        const title = document.createElement('div');
+        title.className = 'achievement-card__title';
+        title.textContent = secretLocked ? '???' : def.title;
+        const blurb = document.createElement('div');
+        blurb.className = 'achievement-card__blurb';
+        blurb.textContent = secretLocked ? 'Hidden record. Unlock to reveal.' : def.blurb;
+        body.append(title, blurb);
+
+        if (def.comingSoon) {
+            const soon = document.createElement('div');
+            soon.className = 'achievement-card__meta';
+            soon.textContent = 'COMING SOON';
+            body.appendChild(soon);
+        } else if (progress && !unlocked && !secretLocked) {
+            const meta = document.createElement('div');
+            meta.className = 'achievement-card__meta';
+            meta.textContent = `${progress.current} / ${progress.target}`;
+            body.appendChild(meta);
+        } else if (unlocked) {
+            const meta = document.createElement('div');
+            meta.className = 'achievement-card__meta achievement-card__meta--unlocked';
+            meta.textContent = 'UNLOCKED';
+            body.appendChild(meta);
+        }
+
+        card.append(icon, body);
+        grid.appendChild(card);
+    }
+}
+
+function openAchievementsModal() {
+    renderAchievementsModal();
+    const modal = document.getElementById('achievements-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+}
+
+function closeAchievementsModal() {
+    const modal = document.getElementById('achievements-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+async function copyAchievementSaveCode() {
+    const code = exportSaveCode();
+    const status = document.getElementById('achievements-save-status');
+    if (!code) {
+        if (status) status.textContent = 'SAVE CODE UNAVAILABLE';
+        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+        return;
+    }
+    let copied = false;
     try {
-        return JSON.parse(localStorage.getItem(ACHIEVEMENT_KEY) ?? 'null') ?? {
-            totalDeaths: 0,
-            totalKills: 0,
-            maxKillsOneRun: 0,
-            deepTierReachedAlive: false,
-            unlockedHardened: false
-        };
-    } catch { return { totalDeaths: 0, totalKills: 0, maxKillsOneRun: 0, deepTierReachedAlive: false, unlockedHardened: false }; }
-}
-
-function saveAchievements(ach) {
-    try { localStorage.setItem(ACHIEVEMENT_KEY, JSON.stringify(ach)); } catch { /* ignore */ }
-}
-
-function checkAchievements(runStats) {
-    const ach = getAchievements();
-    const newUnlocks = [];
-
-    // Track deaths
-    ach.totalDeaths = (ach.totalDeaths ?? 0) + 1;
-    if (ach.totalDeaths >= 5 && !ach.unlockedHardened) {
-        ach.unlockedHardened = true;
-        newUnlocks.push('HARDENED MODE UNLOCKED — Die 5 times to prove dedication.');
+        await navigator.clipboard?.writeText(code);
+        copied = true;
+    } catch {
+        // clipboard blocked
     }
-
-    // Track kills
-    const kills = runStats?.snailsKilled ?? 0;
-    ach.totalKills = (ach.totalKills ?? 0) + kills;
-    ach.maxKillsOneRun = Math.max(ach.maxKillsOneRun ?? 0, kills);
-
-    // Track deep tier
-    const depthTier = runStats?.depthTier ?? 0;
-    if (depthTier >= 2 && !ach.deepTierReachedAlive) {
-        ach.deepTierReachedAlive = true;
-        newUnlocks.push('DEEP SECTOR MAPPED — Advanced sentinels now active in future runs.');
+    if (status) {
+        status.textContent = copied
+            ? 'SAVE CODE COPIED'
+            : 'SAVE CODE READY IN SAVE DATA PANEL';
     }
-
-    saveAchievements(ach);
-    return { ach, newUnlocks };
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    if (!copied) {
+        setSaveDataOpen(true);
+        if (saveDataCode) {
+            saveDataCode.value = code;
+            saveDataCode.select();
+        }
+    }
 }
+
+function installAchievementsUi() {
+    updateAchievementsMenuButton({ shine: hasAnyUnlock(achievementEngine.getState()) });
+    document.getElementById('achievements-btn')?.addEventListener('click', openAchievementsModal);
+    document.getElementById('close-achievements-modal')?.addEventListener('click', closeAchievementsModal);
+    document.getElementById('achievement-copy-save')?.addEventListener('click', copyAchievementSaveCode);
+    document.getElementById('achievements-modal')?.addEventListener('click', (event) => {
+        if (event.target?.id === 'achievements-modal') closeAchievementsModal();
+    });
+}
+installAchievementsUi();
+
+[
+    'act2-milestone',
+    'player-suspicion-changed',
+    'hive-mined',
+    'hive-choice-resolved',
+    'reyes-letter-delivered',
+    'run-cards-drawn',
+    'shell-collected',
+    'lore-drop-collected'
+].forEach((eventName) => {
+    window.addEventListener(eventName, (event) => {
+        recordAchievementEvent(eventName, event?.detail ?? {});
+    });
+});
 
 // ── Lore Terminal System ──────────────────────────────────────
 const WORLD_MEMORY_KEY = 'hb_world_memory_v1';
 
 function getWorldMemory() {
     try {
-        return JSON.parse(localStorage.getItem(WORLD_MEMORY_KEY) ?? 'null') ?? { logsFound: [], biomesMapped: [] };
-    } catch { return { logsFound: [], biomesMapped: [] }; }
+        const parsed = JSON.parse(localStorage.getItem(WORLD_MEMORY_KEY) ?? 'null') ?? {};
+        return {
+            logsFound: Array.isArray(parsed.logsFound) ? parsed.logsFound : [],
+            biomesMapped: Array.isArray(parsed.biomesMapped) ? parsed.biomesMapped : [],
+            storyFlags: parsed.storyFlags && typeof parsed.storyFlags === 'object' ? { ...parsed.storyFlags } : {}
+        };
+    } catch { return { logsFound: [], biomesMapped: [], storyFlags: {} }; }
 }
 
 function saveWorldMemory(mem) {
@@ -2308,11 +3668,7 @@ window.addEventListener('lore-terminal-nearby', () => {
     const prompt = document.getElementById('lore-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) text.textContent = 'READ LOG';
     if (prompt) prompt.classList.remove('hidden');
 });
@@ -2333,7 +3689,7 @@ function closeLoreModalAndResume() {
 }
 
 window.addEventListener('lore-terminal-read', (event) => {
-    const { loreKey, loreText } = event?.detail ?? {};
+    const { loreKey, loreText, title } = event?.detail ?? {};
     if (!loreKey || !loreText) return;
 
     const loreModal = document.getElementById('lore-modal');
@@ -2341,8 +3697,14 @@ window.addEventListener('lore-terminal-read', (event) => {
     const loreTextEl = document.getElementById('lore-modal-text');
     if (!loreModal) return;
 
-    if (loreKeyEl) loreKeyEl.textContent = `LOG-${loreKey}`;
+    if (loreKeyEl) loreKeyEl.textContent = title ? title : (window.game?.getLoreTitle?.(loreKey) ?? `LOG-${loreKey}`);
     if (loreTextEl) loreTextEl.textContent = '';
+
+    const metadata = LORE_METADATA[loreKey];
+    const dateEl = document.getElementById('lore-modal-date');
+    const coordsEl = document.getElementById('lore-modal-coords');
+    if (dateEl) dateEl.textContent = metadata ? `DATE: ${metadata.date}` : '';
+    if (coordsEl) coordsEl.textContent = metadata ? `LOC: ${metadata.coords}` : '';
 
     loreModal.classList.remove('hidden');
     window.game?.setInputEnabled?.(false);
@@ -2361,9 +3723,16 @@ window.addEventListener('lore-terminal-read', (event) => {
     tick();
 
     // Track discovery
-    const isNew = markLogFound(loreKey);
-    if (isNew) {
-        fireMothershipReactiveLine('lore_found');
+    if (!event?.detail?.skipSave) {
+        const isNew = markLogFound(loreKey);
+        if (isNew) {
+            fireMothershipReactiveLine('lore_found');
+        }
+    }
+    if (recordSpecimen0047OriginIfFound(codexStore, getWorldMemory())) {
+        const entry = getCodexEntry('specimen_0047');
+        if (entry) showBiomePrompt(`> CODEX UPDATED: ${entry.name}`);
+        updateMenuCommandStatuses();
     }
 });
 
@@ -2409,12 +3778,32 @@ window.addEventListener('pickup-collected', (event) => {
 window.addEventListener('special-room-discovered', (event) => {
     const label = event?.detail?.label ?? 'SPECIAL ROOM';
     const template = event?.detail?.template ?? '';
+    showDeveloperCommentary(`room_${template}`, event?.detail ?? {});
+    recordSteamTimelineEvent('special_room', 'Special Room Found', label, {
+        icon: template || 'room',
+        priority: template === 'the_nest' ? 3 : 1,
+        durationSeconds: template === 'the_nest' ? 10 : 6
+    });
+    const wreckageLog = template === 'agent_wreckage'
+        ? getClassWreckageLog(window.game?.playerType ?? getSelectedHeroType(), event?.detail ?? {})
+        : null;
     const roomMessages = {
         armory: `> SCAN: ${label} — WEAPON CACHE`,
         the_nest: `> ALERT: ${label} — HIGH THREAT`,
-        agent_wreckage: `> SCAN: ${label} — RECOVERY SIGNAL`
+        agent_wreckage: wreckageLog
+            ? `> SCAN: ${wreckageLog.title} — ${wreckageLog.hull} PAYLOAD RECOVERED`
+            : `> SCAN: ${label} — RECOVERY SIGNAL`
     };
     if (roomMessages[template]) showBiomePrompt(roomMessages[template]);
+    if (wreckageLog) {
+        discoverCodex(wreckageLog.codexId, {
+            classType: wreckageLog.classType,
+            hull: wreckageLog.hull,
+            date: wreckageLog.date,
+            coords: wreckageLog.coords,
+            payload: wreckageLog.payload
+        });
+    }
     window.AudioManager?.play('ui_boot', { volume: 0.3, playbackRate: 0.82, bus: 'sfx' });
     if (template === 'the_nest') fireMothershipReactiveLine('the_nest');
     if (template === 'armory') fireMothershipReactiveLine('armory_found');
@@ -2436,9 +3825,16 @@ window.addEventListener('bunker-line', (event) => {
 
 window.addEventListener('black-box-marker-active', () => {
     showBiomePrompt('> BLACK BOX SIGNAL DETECTED — COMPASS RETARGETED');
+    showDeveloperCommentary('black_box_signal');
+    recordSteamTimelineEvent('black_box_signal', 'Black Box Signal Detected', 'A recoverable death archive signal was marked on the compass.', {
+        icon: 'black_box',
+        priority: 2,
+        durationSeconds: 8
+    });
 });
 
-window.addEventListener('black-box-prompt-nearby', () => {
+window.addEventListener('black-box-prompt-nearby', (event) => {
+    const locked = event?.detail?.locked;
     const prompt = document.getElementById('black-box-hud-prompt');
     if (!isGameplayHudActive()) {
         prompt?.classList.add('hidden');
@@ -2447,12 +3843,13 @@ window.addEventListener('black-box-prompt-nearby', () => {
     }
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
     if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
+        setPromptKeyLabel(key);
+        key.classList.toggle('hidden', Boolean(locked));
     }
-    if (text) text.textContent = 'RECOVER BLACK BOX';
+    if (text) {
+        text.textContent = locked ? 'DEFEAT GUARD TO UNLOCK BLACK BOX' : 'RECOVER BLACK BOX';
+    }
     prompt?.classList.remove('hidden');
     prompt?.classList.add('visible');
 });
@@ -2507,6 +3904,44 @@ if (missionProgressHud) {
         hideMissionProgressHUD();
     });
 }
+
+// Camp Bonding Quests sub-objective tracker — same show/hide shape as
+// showMissionProgressHUD/hideMissionProgressHUD above, driven by the
+// camp-quest-progress/camp-quest-complete events threeGame.js dispatches.
+function showCampQuestHUD(text) {
+    if (!isGameplayPhase()) return;
+    const hud = document.getElementById('camp-quest-hud');
+    const textEl = document.getElementById('camp-quest-text');
+    if (textEl) textEl.textContent = text;
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (isGameplayActive && !isResettingRun && hud) {
+        hud.classList.remove('hidden');
+    }
+}
+
+function hideCampQuestHUD() {
+    const hud = document.getElementById('camp-quest-hud');
+    if (hud) hud.classList.add('hidden');
+}
+
+window.addEventListener('camp-quest-progress', (event) => {
+    const { label, current, target } = event?.detail ?? {};
+    if (!label) return;
+    showCampQuestHUD(`${label}: ${current ?? 0}/${target ?? 1}`);
+});
+
+window.addEventListener('camp-quest-complete', () => {
+    hideCampQuestHUD();
+});
 
 // Persistent loop-state cue (T1): always shows the next action while in a run.
 window.addEventListener('loop-step-changed', (event) => {
@@ -2661,11 +4096,11 @@ window.addEventListener('scan-cooldown-tick', (event) => {
     const bar = document.getElementById('scan-bar');
     const panel = document.getElementById('radar-scan-panel');
     const fillPct = 1 - (remaining / Math.max(0.001, max));
-    
+
     if (bar) {
         bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
     }
-    
+
     if (panel) {
         panel.classList.toggle('class-ability-panel--ready', remaining <= 0);
         panel.classList.toggle('class-ability-panel--active', remaining > 0);
@@ -2849,7 +4284,7 @@ window.addEventListener('player-o2-changed', (event) => {
     document.body.classList.toggle('vitals-critical', o2 < 25 && !_distressModeActive);
     if (o2 < 25 && Date.now() - _lastLowO2LineAt > 45000) {
         _lastLowO2LineAt = Date.now();
-        const line = getDialogueLine('lowO2');
+        const line = getDialogueLine('lowO2', Math.random, getActiveSuitDialogueContext());
         if (line) showBiomePrompt(`> BUNKER: ${line}`);
     }
     updateDistressMode(o2, hp);
@@ -2886,20 +4321,25 @@ if (gameOverTryAgain) {
         hideGameOverScreen();
         triggerDoorTransition(
             () => {
+                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: false,
                     skipEffects: false,
                     snailSpawnEnabled: true,
-                    purgeSnails: false
+                    purgeSnails: false,
+                    deferChunkMount: true
                 });
                 document.getElementById('ui')?.classList.remove('hidden');
                 syncTouchSettingsVisibility();
                 syncTouchMoveControlVisibility();
+                return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
                 window.game?.setInputEnabled?.(true);
-            }
+            },
+            undefined,
+            { waitForClosedWork: true, openingHoldMs: 160 }
             // Defaults to the currently selected class door
         );
     });
@@ -2945,6 +4385,31 @@ if (gameOverMainMenu) {
     });
 }
 
+function showDemoEndModal() {
+    setAppPhase('demo-end');
+    window.game?.setInputEnabled?.(false);
+    hideAllGameplayPrompts();
+    const modal = document.getElementById('demo-end-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(() => {
+        document.getElementById('demo-wishlist-btn')?.focus?.({ preventScroll: true });
+    });
+}
+
+document.getElementById('demo-wishlist-btn')?.addEventListener('click', () => {
+    if (window.electronAPI?.openSteamOverlayToUrl) {
+        window.electronAPI.openSteamOverlayToUrl(STEAM_STORE_URL);
+    } else {
+        window.open(STEAM_STORE_URL, '_blank', 'noopener');
+    }
+});
+
+document.getElementById('demo-end-main-menu')?.addEventListener('click', () => {
+    window.location.reload();
+});
+
 function isTouchDevice() {
     const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
     const touchPoints = navigator.maxTouchPoints > 0;
@@ -2987,9 +4452,10 @@ function syncTouchMoveControlVisibility() {
     const inMissionIntro = document.body.classList.contains('mission-intro-active');
     const showHudTouchReadouts = isHUD && isMenuHidden && !inMissionIntro;
 
-    // Keep the container visible for the compass; the toggle only gates the
-    // lower-left movement joystick itself.
     touchMoveControl.classList.toggle('hidden', !showHudTouchReadouts);
+    if (desktopCompass) {
+        desktopCompass.classList.toggle('hidden', !showHudTouchReadouts);
+    }
 
     // Show/hide the joystick ring and label based on the touchControls setting
     const showJoystick = touchUiEnabled && state.settings.touchControls;
@@ -3032,9 +4498,9 @@ if (touchSprintBtn) {
     touchSprintBtn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         if (!window.game) return;
-        
+
         const triggered = window.game.setVirtualInputSprint?.(true);
-        
+
         updateTouchSprintButtonState({
             remaining: window.game.classAbility?.cooldownRemaining ?? 0,
             max: window.game.classAbility?.cooldownMax ?? 1,
@@ -3044,7 +4510,7 @@ if (touchSprintBtn) {
                 : 0,
             ability: window.game.getClassAbilityInfo?.().key
         });
-        
+
         window.AudioManager?.play(triggered ? 'ui_click' : 'ui_error', { volume: 0.5, playbackRate: triggered ? 1.2 : 0.95 });
     });
 }
@@ -3088,6 +4554,26 @@ function updateTouchCompass() {
             touchCompassRadarDistance.classList.add('hidden');
             touchCompassRadarDistance.textContent = '';
         }
+
+        // Reset desktop compass
+        if (desktopCompassArrow) {
+            desktopCompassArrow.style.transform = 'rotate(0deg)';
+            desktopCompassArrow.style.opacity = '0.35';
+        }
+        if (desktopCompassDistance) {
+            desktopCompassDistance.textContent = '0u';
+        }
+        if (desktopCompassRadarArrow) {
+            desktopCompassRadarArrow.classList.add('hidden');
+            desktopCompassRadarArrow.style.transform = 'rotate(0deg)';
+            desktopCompassRadarArrow.style.opacity = '0';
+        }
+        if (desktopCompassRadarRow) {
+            desktopCompassRadarRow.classList.add('hidden');
+        }
+        if (desktopCompassRadarDistance) {
+            desktopCompassRadarDistance.textContent = '';
+        }
         return;
     }
 
@@ -3096,6 +4582,15 @@ function updateTouchCompass() {
     touchCompassArrow.style.transform = `translate(-50%, -100%) rotate(${angle.toFixed(2)}deg)`;
     touchCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
     touchCompassDistance.textContent = formatTouchCompassDistance(distance);
+
+    // Update desktop compass
+    if (desktopCompassArrow) {
+        desktopCompassArrow.style.transform = `rotate(${angle.toFixed(2)}deg)`;
+        desktopCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
+    }
+    if (desktopCompassDistance) {
+        desktopCompassDistance.textContent = formatTouchCompassDistance(distance);
+    }
 
     const radarState = compassState.radar ?? null;
     const radarActive = Boolean(radarState?.active);
@@ -3122,6 +4617,33 @@ function updateTouchCompass() {
                 ? 'OUT OF SYNC'
                 : formatTouchCompassDistance(radarDistance);
             touchCompassRadarDistance.style.opacity = radarDistance <= 0.05 ? '0.35' : '1';
+        }
+    }
+
+    // Update desktop compass radar
+    if (desktopCompassRadarArrow) {
+        if (!radarActive) {
+            desktopCompassRadarArrow.classList.add('hidden');
+            desktopCompassRadarArrow.style.opacity = '0';
+        } else {
+            const radarAngle = Number.isFinite(radarState.angle) ? radarState.angle : 0;
+            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
+            desktopCompassRadarArrow.classList.remove('hidden');
+            desktopCompassRadarArrow.style.transform = `rotate(${radarAngle.toFixed(2)}deg)`;
+            desktopCompassRadarArrow.style.opacity = radarDistance <= 0.05 ? '0.35' : '0.95';
+        }
+    }
+    if (desktopCompassRadarRow) {
+        desktopCompassRadarRow.classList.toggle('hidden', !radarActive);
+    }
+    if (desktopCompassRadarDistance) {
+        if (radarActive) {
+            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
+            desktopCompassRadarDistance.textContent = radarState.mode === 'corrupt'
+                ? 'OUT OF SYNC'
+                : formatTouchCompassDistance(radarDistance);
+        } else {
+            desktopCompassRadarDistance.textContent = '';
         }
     }
 }
@@ -3350,6 +4872,35 @@ function showTacticalOverlay({
     }
 }
 
+function showTacticalNotificationToast({ title, status, duration = 4000 }) {
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'tactical-alert-toast';
+    toast.innerHTML = `
+        <div class="tactical-alert-toast__icon">⚠️</div>
+        <div class="tactical-alert-toast__body">
+            <div class="tactical-alert-toast__header">
+                <span class="tactical-alert-toast__kicker">TACTICAL ALERT</span>
+                <span class="tactical-alert-toast__status">CRITICAL</span>
+            </div>
+            <div class="tactical-alert-toast__title">${title}</div>
+            <div class="tactical-alert-toast__blurb">${status}</div>
+        </div>
+    `;
+
+    stack.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('visible'), 50);
+
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 600);
+    }, duration);
+}
+
 async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;
@@ -3435,6 +4986,11 @@ function playClassIntroSequence(playerType = 'SCOUT') {
     warmClassIntroMedia(playerType);
 
     return new Promise((resolve) => {
+        if (window.skipAllIntro) {
+            resolve();
+            return;
+        }
+
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
@@ -3450,6 +5006,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         let guardTimer = null;
         let videoElement = null;
         let gifImg = null;
+        let checkSkipInterval = null;
 
         const clearTimers = () => {
             if (gifTimer) {
@@ -3467,6 +5024,10 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             settled = true;
             step = 'done';
             clearTimers();
+            if (checkSkipInterval) {
+                clearInterval(checkSkipInterval);
+                checkSkipInterval = null;
+            }
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointerUp);
             if (videoElement) {
@@ -3491,6 +5052,12 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         window.addEventListener('keydown', onKey);
         overlay.addEventListener('pointerup', onPointerUp);
+
+        checkSkipInterval = setInterval(() => {
+            if (window.skipAllIntro) {
+                cleanupAndResolve();
+            }
+        }, 50);
 
         // ── Step 1: the class intro GIF, then the launch WebM ──
         function startVideoStep() {
@@ -3722,25 +5289,48 @@ async function runMissionIntroSequence() {
         consoleModal.classList.add('hidden');
     }
 
+    // Set up global skip button
+    window.skipAllIntro = false;
+    const skipBtn = document.getElementById('global-skip-intro-btn');
+    if (skipBtn) {
+        skipBtn.classList.remove('hidden');
+        skipBtn.onclick = () => {
+            window.skipAllIntro = true;
+            skipBtn.classList.add('hidden');
+            cutsceneManager?.finishActiveRun?.(true);
+            dialogueManager?.cancelDialogue?.();
+        };
+    }
+
     try {
         // Post-reveal saves belong to the queen: no crash replay, no
         // Mothership handshake, no human mission briefing.
         if (isAct2RunActive()) {
+            if (skipBtn) skipBtn.classList.add('hidden');
             await runAct2IntroSequence(game, playerType);
             return;
         }
 
-        await playClassIntroSequence(playerType);
+        if (!window.skipAllIntro) {
+            await playClassIntroSequence(playerType);
+        }
 
-        await cutsceneManager?.play({
-            playerType,
-            allowSkip: true,
-            resolveImpactPoint: resolveCutsceneImpactPoint
-        });
+        if (!window.skipAllIntro) {
+            await cutsceneManager?.play({
+                playerType,
+                allowSkip: true,
+                resolveImpactPoint: resolveCutsceneImpactPoint
+            });
+        }
 
-        const choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
+        let choice = 'skip';
+        if (!window.skipAllIntro) {
+            choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
+        }
 
-        if (choice === 'tutorial') {
+        if (skipBtn) skipBtn.classList.add('hidden');
+
+        if (choice === 'tutorial' && !window.skipAllIntro) {
             // Reveal HUD/touch elements for in-world tutorial prompts.
             document.body.classList.remove('mission-intro-active');
             game?.setInputEnabled?.(true);
@@ -3801,36 +5391,43 @@ async function runMissionIntroSequence() {
         document.body.classList.remove('hud-hidden');
         game?.setInputEnabled?.(true);
         missionFlowRunning = false;
+        const skipBtn = document.getElementById('global-skip-intro-btn');
+        if (skipBtn) skipBtn.classList.add('hidden');
     }
 }
 
-// --- Initialization ---
-if (playBtn) {
-    playBtn.addEventListener('click', () => {
-        triggerDoorTransition(
-            () => {
-                if (splash) splash.classList.add('hidden');
-                if (menu) {
-                    setAppPhase('menu');
-                    menu.classList.remove('hidden');
-                    window.game?.setPerformanceProfile?.('menu');
-                    queueGameLayoutRefresh();
-                }
-            },
-            () => {
-                if (state.settings.fullscreen) {
-                    document.documentElement.requestFullscreen().catch(() => { });
-                }
-            },
-            'base'
-        );
-    });
+const transitionFromTitleToMenu = () => {
+    triggerDoorTransition(
+        () => {
+            if (splash) splash.classList.add('hidden');
+            if (menu) {
+                setAppPhase('menu');
+                menu.classList.remove('hidden');
+                window.game?.setPerformanceProfile?.('menu');
+                queueGameLayoutRefresh();
+            }
+        },
+        () => {
+            if (state.settings.fullscreen) {
+                document.documentElement.requestFullscreen().catch(() => { });
+            }
+        },
+        'base'
+    );
+};
+
+if (titleNewRunBtn) {
+    titleNewRunBtn.addEventListener('click', transitionFromTitleToMenu);
+}
+if (titleContinueBtn) {
+    titleContinueBtn.addEventListener('click', transitionFromTitleToMenu);
 }
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
         triggerDoorTransition(
             () => {
+                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 if (menu) menu.classList.add('hidden');
                 setAppPhase('gameplay');
                 window.game?.setPerformanceProfile?.('gameplay');
@@ -3839,7 +5436,8 @@ if (startBtn) {
                     resetBank: true,
                     skipEffects: true,
                     snailSpawnEnabled: true,
-                    purgeSnails: false
+                    purgeSnails: false,
+                    deferChunkMount: true
                 });
                 document.getElementById('ui').classList.remove('hidden');
                 syncTouchSettingsVisibility();
@@ -3881,6 +5479,7 @@ if (dailyOpsBtn) {
         }
         triggerDoorTransition(
             () => {
+                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 if (menu) menu.classList.add('hidden');
                 setAppPhase('gameplay');
                 window.game?.setPerformanceProfile?.('gameplay');
@@ -3889,7 +5488,8 @@ if (dailyOpsBtn) {
                     resetBank: false,
                     skipEffects: true,
                     snailSpawnEnabled: true,
-                    purgeSnails: false
+                    purgeSnails: false,
+                    deferChunkMount: true
                 });
                 document.getElementById('ui')?.classList.remove('hidden');
                 syncTouchSettingsVisibility();
@@ -3916,42 +5516,10 @@ if (dailyOpsBtn) {
     });
 }
 
-// Settings Handlers
-if (splashDebugToggle) {
-    splashDebugToggle.addEventListener('change', (e) => {
-        state.settings.debug = e.target.checked;
-        setDebugMode(state.settings.debug);
-        if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
-    });
-}
-
-if (splashNightVisionToggle) {
-    splashNightVisionToggle.addEventListener('change', (e) => {
-        state.settings.nightVision = e.target.checked;
-        localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
-        if (mainNightVisionToggle) mainNightVisionToggle.checked = state.settings.nightVision;
-        if (window.game) {
-            window.game.nightVision = state.settings.nightVision;
-        }
-    });
-}
-
-if (splashFsToggle) {
-    splashFsToggle.addEventListener('change', (e) => {
-        state.settings.fullscreen = e.target.checked;
-        if (state.settings.fullscreen) {
-            document.documentElement.requestFullscreen().catch(() => { });
-        } else {
-            if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
-        }
-    });
-}
-
 // Fullscreen State Sync Listener
 document.addEventListener('fullscreenchange', () => {
     const isFs = !!document.fullscreenElement;
     state.settings.fullscreen = isFs;
-    if (splashFsToggle) splashFsToggle.checked = isFs;
     if (mainFsToggle) mainFsToggle.checked = isFs;
     queueGameLayoutRefresh();
 });
@@ -4076,27 +5644,46 @@ const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
 const abortBtn = document.getElementById('abort-mission');
 
+function openSettingsModal() {
+    if (!settingsPopup) return;
+    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
+    if (abortBtn) {
+        if (isHUD) abortBtn.classList.remove('hidden');
+        else abortBtn.classList.add('hidden');
+    }
+
+    syncTouchSettingsVisibility();
+    settingsPopup.classList.remove('hidden');
+    if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
+    if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
+    if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
+    if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
+    if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
+
+    const txtSpeedSelect = document.getElementById('setting-text-speed');
+    if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
+
+    const shakeToggle = document.getElementById('setting-shake-toggle');
+    if (shakeToggle) shakeToggle.checked = state.settings.shakeEnabled !== false;
+
+    const cbToggle = document.getElementById('setting-colorblind-toggle');
+    if (cbToggle) cbToggle.checked = !!state.settings.colorblindAssist;
+
+    const diffVal = document.getElementById('setting-difficulty-val');
+    if (diffVal) {
+        const difficulty = window.game?.difficulty || state.settings.difficulty || 'standard';
+        diffVal.textContent = difficulty.toUpperCase();
+    }
+
+    syncAudioMixerUI(state.settings.audioMix);
+    setAudioMixerOpen(false);
+    setSaveDataOpen(false);
+    setResetSaveConfirmOpen(false);
+}
+
 if (settingsBtns.length > 0 && settingsPopup) {
     settingsBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Only show Abort Mission if we are actually in the tactical HUD
-            const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
-            if (abortBtn) {
-                if (isHUD) abortBtn.classList.remove('hidden');
-                else abortBtn.classList.add('hidden');
-            }
-
-            syncTouchSettingsVisibility();
-            settingsPopup.classList.remove('hidden');
-            if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
-            if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
-            if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
-            if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
-            syncAudioMixerUI(state.settings.audioMix);
-            setAudioMixerOpen(false);
-            setSaveDataOpen(false);
-            setResetSaveConfirmOpen(false);
-        });
+        btn.addEventListener('click', openSettingsModal);
     });
 }
 
@@ -4176,6 +5763,14 @@ openSaveDataBtn?.addEventListener('click', () => {
     saveDataCode?.focus();
 });
 closeSaveDataBtn?.addEventListener('click', () => setSaveDataOpen(false));
+
+saveDataCode?.addEventListener('focus', () => {
+    void openSteamGamepadTextInputForElement(saveDataCode, {
+        description: 'Portable save code',
+        maxCharacters: 8192,
+        multiline: true
+    });
+});
 
 openResetSaveBtn?.addEventListener('click', () => {
     setAudioMixerOpen(false);
@@ -4318,6 +5913,12 @@ document.addEventListener('keydown', (event) => {
         if (rosterModal && !rosterModal.classList.contains('hidden')) {
             rosterModal.classList.add('hidden');
             rosterModal.setAttribute('aria-hidden', 'true');
+            event.preventDefault();
+            return;
+        }
+
+        if (isGameplayPhase()) {
+            openSettingsModal();
             event.preventDefault();
             return;
         }
@@ -4637,9 +6238,9 @@ refreshLastContractor();
 window.addEventListener('black-box-recovered', refreshLastContractor);
 
 // ── Codex (doc 11 §3.2): discover-by-encounter meta layer ─────
-function discoverCodex(id) {
+function discoverCodex(id, metadata = null) {
     if (!id || !getCodexEntry(id)) return;
-    const isNew = codexStore.record(id);
+    const isNew = codexStore.record(id, metadata);
     if (isNew) {
         const entry = getCodexEntry(id);
         showBiomePrompt(`> CODEX UPDATED: ${entry.name}`);
@@ -4660,7 +6261,7 @@ window.addEventListener('foundry-discovered', () => {
 });
 window.addEventListener('black-box-recovered', () => discoverCodex('black_box'));
 window.addEventListener('elevator-sequence-started', () => discoverCodex('elevator_down'));
-window.addEventListener('codex-discover', (e) => discoverCodex(e?.detail?.id));
+window.addEventListener('codex-discover', (e) => discoverCodex(e?.detail?.id, e?.detail?.metadata));
 
 function renderCodexModal() {
     const grid = document.getElementById('codex-grid');
@@ -4732,11 +6333,7 @@ window.addEventListener('foundry-prompt-nearby', () => {
     const prompt = document.getElementById('foundry-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) {
         // Act 2 dish phase hijacks the foundry interaction entirely.
         text.textContent = (isAct2RunActive() && act2Manager.getPhase() === 'dish')
@@ -4759,11 +6356,7 @@ window.addEventListener('cave-prompt-nearby', () => {
     const prompt = document.getElementById('foundry-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) text.textContent = 'RECOVER FINAL COMPONENT';
     prompt?.classList.remove('hidden');
 });
@@ -4777,9 +6370,12 @@ window.addEventListener('cave-entrance-revealed', (event) => {
     if (!isGameplayPhase() || event?.detail?.instant) return;
     const distance = event?.detail?.distance;
     const rangeText = Number.isFinite(distance) ? ` // ${distance}u` : '';
+    const x = event?.detail?.x;
+    const z = event?.detail?.z;
+    const locStr = (Number.isFinite(x) && Number.isFinite(z)) ? ` // LOC: [${x.toFixed(1)}, ${z.toFixed(1)}]` : '';
     showTacticalOverlay({
-        title: 'FINAL COMPONENT LOCATED',
-        status: `> DEEP STRUCTURE SIGNAL LOCKED${rangeText}<br>> FOLLOW THE FIELD COMPASS`,
+        title: 'FINAL COMPONENT LOCATED — SECTOR ZERO',
+        status: `> DEEP STRUCTURE SIGNAL LOCKED${rangeText}${locStr}<br>> FOLLOW THE FIELD COMPASS`,
         progress: 100,
         duration: 3200
     });
@@ -4857,6 +6453,11 @@ window.addEventListener('cave-entrance-interact', () => {
 // queen. The title corruption still lands for whenever they next see the menu.
 async function handleCaveRevealBecomeInfected() {
     applyCorruptedTitlePresentation({ sting: true });
+    if (featureFlags.DEMO_BUILD) {
+        showDemoEndModal();
+        return;
+    }
+
     const game = window.game;
     ensureMissionManagers();
     if (act2Manager && !act2Manager.getState().begun) {
@@ -4868,6 +6469,15 @@ async function handleCaveRevealBecomeInfected() {
             detail: { humanity: infected.humanity, stage: infected.infectionStage }
         }));
     }
+    const secretGate = getSecretGateState(achievementEngine.getState());
+    if (secretGate.totalDeaths <= 0 && markLogFound('B13')) {
+        showBiomePrompt('ARCHIVE UPDATED: CHEN HIDDEN LOG 13 RECOVERED.');
+    }
+    recordAchievementEvent('reveal-reached', {
+        classType: game?.playerType ?? getSelectedHeroType(),
+        totalDeathsBeforeReveal: secretGate.totalDeaths,
+        hiveHarmed: !secretGate.noHiveHarmThisRun
+    });
     await dialogueManager?.openBriefTransmission({
         playerType: game?.playerType ?? getSelectedHeroType(),
         lines: [...ACT2_LINES.intro]
@@ -4884,11 +6494,7 @@ window.addEventListener('camp-prompt-nearby', (event) => {
     const prompt = document.getElementById('foundry-hud-prompt');
     const key = prompt?.querySelector('.prompt-key');
     const text = prompt?.querySelector('.prompt-text');
-    const touchPrompt = isTouchDevice();
-    if (key) {
-        key.textContent = touchPrompt ? 'TAP' : 'PRESS E';
-        key.classList.toggle('prompt-key--tap', touchPrompt);
-    }
+    if (key) setPromptKeyLabel(key);
     if (text) text.textContent = event?.detail?.label ?? 'INTERACT';
     prompt?.classList.remove('hidden');
 });
@@ -4915,6 +6521,22 @@ function formatStoryToken(value = '') {
     return String(value || 'unknown').replace(/_/g, ' ').toUpperCase();
 }
 
+function getActiveRunManifestOptions() {
+    const effects = window.game?.getRunCardEffects?.() ?? {};
+    return {
+        eggSeatRequiresNahl: Boolean(effects.manifest?.eggSeatRequiresNahl)
+    };
+}
+
+function formatManifestBlocker(reason, manifest = {}) {
+    if (reason === 'seat_capacity_exceeded') {
+        return `OVER CAPACITY (${manifest.seatsUsed ?? '?'}/${manifest.seatsMax ?? '?'} SEATS)`;
+    }
+    if (reason === 'egg_requires_nahl') return 'EGG INSTABILITY: NAHL MUST BE ABOARD';
+    if (reason === 'egg_unstable') return 'EGG NEEDS THE QUEEN OR NAHL ABOARD';
+    return String(reason).replace(/_/g, ' ').toUpperCase();
+}
+
 function setCampChoiceOpen(open) {
     if (!campChoiceModal) return;
     campChoiceModal.classList.toggle('hidden', !open);
@@ -4933,6 +6555,15 @@ function closeCampChoiceModal() {
 function renderCampChoice(detail = {}) {
     if (!campChoiceModal || !campChoiceOptions) return;
     const camp = detail.campState ?? {};
+    const boardOptions = (detail.options ?? []).filter(o => o.action === 'board');
+    const panelEl = campChoiceModal.querySelector('.camp-choice-panel');
+    if (panelEl) {
+        if (boardOptions.length > 0) {
+            panelEl.classList.add('camp-choice-panel--boarding');
+        } else {
+            panelEl.classList.remove('camp-choice-panel--boarding');
+        }
+    }
     const leaderLine = detail.leaderName
         ? `${detail.leaderName} // ${detail.leaderClass ?? 'SURVIVOR'}${detail.leaderIsBoss ? ' // INVERTED COMMAND' : ''}`
         : 'SURVIVOR COMMAND';
@@ -4962,6 +6593,94 @@ function renderCampChoice(detail = {}) {
         const callsign = detail.leaderCallsign ? `Callsign ${detail.leaderCallsign}. ` : '';
         campChoiceCopy.textContent = `${title}${callsign}Your next action changes the launch manifest and the ending vector.`;
     }
+
+    // Boarding manifest forecast logic
+    const forecastEl = document.getElementById('boarding-manifest-forecast');
+
+    function updateForecast(variant) {
+        const state = act2Manager.getState();
+        let queenStatus = state.queenStatus;
+        let eggsStatus = state.eggsStatus;
+
+        if (variant === 'queen') { queenStatus = 'aboard'; eggsStatus = 'aboard'; }
+        else if (variant === 'purge') { queenStatus = 'killed'; eggsStatus = 'destroyed'; }
+        else if (variant === 'bargain') { queenStatus = 'killed'; eggsStatus = 'hidden'; }
+        else if (variant === 'abandon') { queenStatus = 'abandoned'; eggsStatus = 'abandoned'; }
+
+        const previewState = { ...state, queenStatus, eggsStatus };
+        const manifest = buildAct2Manifest(previewState, getActiveRunManifestOptions());
+
+        const seats = [];
+        seats.push({ type: 'player', label: 'OPERATOR (CARRIER)', status: previewState.infectionStage === 'cured' ? 'CLEANED' : 'INFECTED' });
+
+        if (queenStatus === 'aboard') {
+            seats.push({ type: 'queen', label: 'QUEEN ALIEN', status: 'BROOD MOTHER (2 SLOTS)', isDouble: true });
+        }
+        if (eggsStatus === 'aboard' || eggsStatus === 'hidden') {
+            seats.push({ type: 'eggs', label: 'BROOD CLUTCH', status: eggsStatus === 'hidden' ? 'HIDDEN' : 'SECURED' });
+        }
+
+        const humanLabels = {
+            camp_meridian: 'MERIDIAN LEADER',
+            camp_tallow: 'TALLOW LEADER',
+            camp_vesper: 'VESPER LEADER'
+        };
+        for (const humanId of manifest.humans) {
+            const c = previewState.camps.find((x) => x.id === humanId);
+            const label = humanLabels[humanId] ?? 'HUMAN PASSENGER';
+            seats.push({ type: 'human', label, status: c?.passengerState === 'turned' ? 'NEURAL HYBRID' : 'SURVIVOR' });
+        }
+
+        const alienLabels = {
+            hive_suture: 'ALLIED BEING: NAHL',
+            hive_relay: 'ALLIED BEING: VEY',
+            hive_carapace: 'ALLIED BEING: RHUN'
+        };
+        for (const alienId of manifest.aliens) {
+            seats.push({ type: 'alien', label: alienLabels[alienId] ?? 'ALLIED BEING', status: 'HIVE RESONANT' });
+        }
+
+        while (seats.length < 4 && seats.reduce((acc, s) => acc + (s.isDouble ? 2 : 1), 0) < 4) {
+            seats.push({ type: 'empty', label: 'VACANT SLOT', status: 'FREE' });
+        }
+
+        const seatsGrid = forecastEl?.querySelector('.manifest-seats-grid');
+        if (seatsGrid) {
+            seatsGrid.innerHTML = seats.map((seat) => {
+                const doubleClass = seat.isDouble ? ' manifest-seat-slot--double' : '';
+                return `
+                    <div class="manifest-seat-slot manifest-seat-slot--${seat.type}${doubleClass}">
+                        <div class="manifest-seat-label">${seat.label}</div>
+                        <div class="manifest-seat-status">${seat.status}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        const blockersList = document.getElementById('manifest-blockers-list');
+        if (blockersList) {
+            if (!manifest.valid) {
+                blockersList.innerHTML = manifest.invalidReasons.map((reason) => {
+                    let msg = formatManifestBlocker(reason, manifest);
+                    if (reason === 'seat_capacity_exceeded') msg = 'MANIFEST GATING: VESSEL CAPACITY EXCEEDED (4 SLOTS MAX)';
+                    if (reason === 'egg_unstable') msg = 'BIOLOGICAL CRITICAL: HIVE EGG UNSTABLE WITHOUT QUEEN OR NAHL IN TRANSIT';
+                    return `<div class="manifest-blocker-item">${msg}</div>`;
+                }).join('');
+            } else {
+                const projectedEnding = pickAct2Ending(previewState);
+                const endingName = ACT2_ENDING_TITLES[projectedEnding] ?? projectedEnding.replace(/_/g, ' ').toUpperCase();
+                blockersList.innerHTML = `<div class="manifest-success-item">PROJECTED PATH: ${endingName}</div>`;
+            }
+        }
+    }
+
+    if (boardOptions.length > 0 && forecastEl) {
+        forecastEl.classList.remove('hidden');
+        updateForecast(boardOptions[0].variant);
+    } else if (forecastEl) {
+        forecastEl.classList.add('hidden');
+    }
+
     campChoiceOptions.innerHTML = '';
     for (const option of detail.options ?? []) {
         const btn = document.createElement('button');
@@ -4972,6 +6691,10 @@ function renderCampChoice(detail = {}) {
             <span class="camp-choice-option__label">${option.label ?? 'OPTION'}</span>
             <span class="camp-choice-option__desc">${option.desc ?? ''}</span>
         `;
+        if (option.action === 'board') {
+            btn.addEventListener('mouseenter', () => updateForecast(option.variant));
+            btn.addEventListener('focus', () => updateForecast(option.variant));
+        }
         btn.addEventListener('click', () => {
             window.AudioManager?.play?.('ui_click', { volume: 0.45 });
             closeCampChoiceModal();
@@ -5012,14 +6735,19 @@ window.addEventListener('camp-turret-zap', (event) => {
     const now = Date.now();
     if (now - lastTurretZapPromptAt < 6000) return; // don't spam the radio
     lastTurretZapPromptAt = now;
-    const { campLabel } = event?.detail ?? {};
-    showBiomePrompt(`WARNING: ${campLabel ?? 'CAMP'} DEFENSE GRID FIRING — SPOOF IT, SMASH IT, OR STAY CLEAR.`);
+    const { campLabel, negated } = event?.detail ?? {};
+    showBiomePrompt(negated
+        ? `TANK GUARD: ${campLabel ?? 'CAMP'} DEFENSE ZAP ABSORBED — FIRST SHOCK NEGATED.`
+        : `WARNING: ${campLabel ?? 'CAMP'} DEFENSE GRID FIRING — SPOOF IT, SMASH IT, OR STAY CLEAR.`);
 });
 window.addEventListener('camp-turret-resolved', (event) => {
     const { campLabel, mode, suspicion } = event?.detail ?? {};
-    showBiomePrompt(mode === 'disabled'
-        ? `SYSTEM: TURRET IFF SPOOFED — ${campLabel ?? 'CAMP'} GRID READS YOU AS FRIENDLY.`
-        : `ALERT: TURRET DESTROYED. ${campLabel ?? 'CAMP'} HEARD THAT — SUSPICION ${suspicion ?? '?'}%.`);
+    const message = mode === 'reprogrammed'
+        ? `SYSTEM: TURRET REPROGRAMMED — ${campLabel ?? 'CAMP'} GRID NOW COVERS YOU.`
+        : mode === 'disabled'
+            ? `SYSTEM: TURRET IFF SPOOFED — ${campLabel ?? 'CAMP'} GRID READS YOU AS FRIENDLY.`
+            : `ALERT: TURRET DESTROYED. ${campLabel ?? 'CAMP'} HEARD THAT — SUSPICION ${suspicion ?? '?'}%.`;
+    showBiomePrompt(message);
 });
 
 window.addEventListener('camp-defense-triggered', (event) => {
@@ -5042,9 +6770,71 @@ function renderCoverBar(humanity = 100, stage = 'latent') {
     if (coverPct) coverPct.textContent = `${pct}%`;
 }
 
+function updateQueensLedgerHUD() {
+    const hud = document.getElementById('queens-ledger-hud');
+    if (!hud) return;
+
+    if (!isAct2RunActive()) {
+        hud.classList.add('hidden');
+        return;
+    }
+
+    hud.classList.remove('hidden');
+
+    const state = act2Manager.getState();
+    const ending = state.manifest ? pickAct2Ending(state) : null;
+    const obedience = state.queenObedience ?? 0;
+    const seatsUsed = state.manifest?.seatsUsed ?? 1;
+    const seatsMax = state.manifest?.seatsMax ?? 4;
+
+    let vectorText = 'UNSTABLE';
+    let vectorClass = 'unstable';
+
+    if (state.dishBuilt) {
+        vectorText = ACT2_ENDING_TITLES[ending] ?? String(ending ?? 'unknown').replace(/_/g, ' ').toUpperCase();
+        vectorClass = 'revealed';
+    }
+
+    const sign = obedience < 0 ? '\u2212' : obedience > 0 ? '+' : '';
+    const obedienceText = `${sign}${Math.abs(obedience)}`;
+
+    hud.classList.remove('queens-ledger-hud--obedience-hive', 'queens-ledger-hud--obedience-human', 'queens-ledger-hud--neutral');
+    if (obedience > 0) {
+        hud.classList.add('queens-ledger-hud--obedience-hive');
+    } else if (obedience < 0) {
+        hud.classList.add('queens-ledger-hud--obedience-human');
+    } else {
+        hud.classList.add('queens-ledger-hud--neutral');
+    }
+
+    const newHTML = `
+        <span class="queens-ledger-hud__icon">♛</span>
+        OBEDIENCE <span class="queens-ledger-hud__value queens-ledger-hud__value--obedience">${obedienceText}</span>
+        &nbsp;·&nbsp;
+        SEATS <span class="queens-ledger-hud__value">${seatsUsed}/${seatsMax}</span>
+        &nbsp;·&nbsp;
+        VECTOR: <span class="queens-ledger-hud__value queens-ledger-hud__value--vector ${vectorClass}">${vectorText}</span>
+    `;
+
+    if (hud.innerHTML !== newHTML) {
+        hud.innerHTML = newHTML;
+        hud.classList.remove('queens-ledger-hud__flash');
+        void hud.offsetWidth; // Force reflow
+        hud.classList.add('queens-ledger-hud__flash');
+    }
+}
+
+window.addEventListener('camp-choice-resolved', updateQueensLedgerHUD);
+window.addEventListener('hive-choice-resolved', updateQueensLedgerHUD);
+window.addEventListener('camp-supported', updateQueensLedgerHUD);
+window.addEventListener('camp-bonded', updateQueensLedgerHUD);
+window.addEventListener('camp-final-resolved', updateQueensLedgerHUD);
+window.addEventListener('act2-milestone', updateQueensLedgerHUD);
+
 window.addEventListener('player-humanity-changed', (event) => {
     const { humanity, stage } = event?.detail ?? {};
     renderCoverBar(humanity, stage);
+    updateQueensLedgerHUD();
     if (stage === 'symptomatic' && humanity === 50) {
         showBiomePrompt('WARNING: COVER DEGRADING — HUMANS WILL NOTICE THE TELLS.');
     }
@@ -5064,13 +6854,37 @@ window.addEventListener('player-outed', (event) => {
     AudioManager.play('ui_error', { volume: 0.5, playbackRate: 0.5 });
 });
 
+window.addEventListener('act2-apex-threat-spawned', (event) => {
+    const { type, campLabel, label } = event?.detail ?? {};
+    const source = campLabel ? ` FROM ${campLabel}` : '';
+    const title = type === 'hunter_pair' ? 'HUNTER PAIR' : label ?? 'APEX THREAT';
+    showBiomePrompt(`WARNING: ${title}${source} — ESCALATION ACTIVE.`);
+});
+
 window.addEventListener('leader-dialogue', (event) => {
-    const { lines, beatType } = event?.detail ?? {};
-    if (!lines?.length) return;
+    const { beatType, leaderName, leaderClassId } = event?.detail ?? {};
+    let lines = [...(event?.detail?.lines ?? [])];
+    if (!lines.length) return;
+    const memory = getWorldMemory();
+    const hasReyesLetter = memory.logsFound.includes('C11');
+    const talkingToBriggs = String(leaderName ?? '').toUpperCase().includes('BRIGGS')
+        || String(leaderClassId ?? '').toUpperCase() === 'TANK';
+    if (hasReyesLetter && talkingToBriggs && !memory.storyFlags.reyesLetterDelivered) {
+        memory.storyFlags.reyesLetterDelivered = true;
+        saveWorldMemory(memory);
+        lines = [
+            ...lines,
+            'BRIGGS: REYES WROTE THIS? SHE ALWAYS SAID SHE WOULD MAKE IT HOME ON PAPER IF NOT IN PERSON.',
+            'BRIGGS: WE DO NOT HAVE A FUNERAL DETAIL. WE HAVE A LINE TO HOLD. I WILL HOLD IT FOR HER.'
+        ];
+        window.dispatchEvent(new CustomEvent('reyes-letter-delivered', {
+            detail: { leaderName: leaderName ?? 'Commander Briggs', loreKey: 'C11' }
+        }));
+    }
     ensureMissionManagers();
     void dialogueManager?.openBriefTransmission({
         playerType: window.game?.playerType ?? getSelectedHeroType(),
-        lines: [...lines]
+        lines
     });
     if (beatType === 'advance') {
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
@@ -5097,10 +6911,15 @@ window.addEventListener('queen-displeased', (event) => {
     AudioManager.play('ui_error', { volume: 0.4, playbackRate: 0.5 });
 });
 
+window.addEventListener('queen-phase-line', (event) => {
+    const { text } = event?.detail ?? {};
+    if (text) showBiomePrompt(`QUEEN: ${text}`);
+});
+
 window.addEventListener('boarding-blocked', (event) => {
     const { reasons, seatsUsed, seatsMax } = event?.detail ?? {};
     const why = (reasons ?? [])
-        .map((r) => r === 'seat_capacity_exceeded' ? `OVER CAPACITY (${seatsUsed}/${seatsMax} SEATS)` : r === 'egg_unstable' ? 'EGG NEEDS THE QUEEN OR NAHL ABOARD' : String(r).toUpperCase())
+        .map((r) => formatManifestBlocker(r, { seatsUsed, seatsMax }))
         .join(' — ');
     showBiomePrompt(`LAUNCH ABORTED: ${why || 'INVALID MANIFEST'}.`);
 });
@@ -5145,12 +6964,26 @@ window.addEventListener('camp-choice-denied', (event) => {
 // Every Act 2 milestone speaks through the brief-transmission panel using the
 // copy defined next to the ladder in src/act2.js.
 window.addEventListener('act2-milestone', (event) => {
-    const lines = ACT2_LINES[event?.detail?.key];
+    let lines = ACT2_LINES[event?.detail?.key];
     if (!lines?.length) return;
-    ensureMissionManagers();
-    void dialogueManager?.openBriefTransmission({
-        playerType: window.game?.playerType ?? getSelectedHeroType(),
-        lines: [...lines]
+
+    if (event?.detail?.key === 'campDiscovered') {
+        const campLabel = event?.detail?.campLabel || 'CAMP';
+        const x = event?.detail?.x;
+        const z = event?.detail?.z;
+        let sector = 'SECTOR A-9 GRID RUINS';
+        if (campLabel.includes('TALLOW')) sector = 'SECTOR B-4 FROZEN OUTPOST';
+        if (campLabel.includes('VESPER')) sector = 'SECTOR C-7 HIVE SHADOW';
+        const locStr = (Number.isFinite(x) && Number.isFinite(z)) ? ` // LOC: [${x.toFixed(1)}, ${z.toFixed(1)}]` : '';
+        lines = [
+            `SYSTEM: ${campLabel} — ${sector}${locStr}`,
+            ...lines
+        ];
+    }
+
+    lines.forEach((line) => {
+        const rawLine = typeof line === 'object' ? line.text : line;
+        showRadioTransmission(rawLine);
     });
 });
 
@@ -5197,6 +7030,13 @@ async function runAct2DepartureSequence(detail = {}) {
     const vector = detail.endingVector ?? game?.act2?.getEndingVector?.() ?? act2Manager?.getEndingVector?.();
     const ending = vector?.ending ?? null;
     const videoBase = ACT2_ENDING_CUTSCENES[ending] ?? 'act3-departure';
+    recordAchievementRunEnd({
+        ...(detail.runStats ?? game?.getRunStats?.() ?? {}),
+        outcome: 'victory',
+        ending,
+        runMs: Date.now() - runStartTime,
+        classType: game?.playerType ?? getSelectedHeroType()
+    }, { delayMs: 900 });
     game?.setCinematicLock?.(true);
     AudioManager.play('door_gears_spin', { volume: 0.5, playbackRate: 0.7 });
     await dialogueManager?.openBriefTransmission({
@@ -5235,6 +7075,12 @@ if (callsignInput) {
     const commitCallsign = () => { callsignInput.value = profile.setCallsign(callsignInput.value); };
     callsignInput.addEventListener('change', commitCallsign);
     callsignInput.addEventListener('blur', commitCallsign);
+    callsignInput.addEventListener('focus', () => {
+        void openSteamGamepadTextInputForElement(callsignInput, {
+            description: 'Operator callsign',
+            maxCharacters: 16
+        });
+    });
 }
 
 document.getElementById('export-save')?.addEventListener('click', async () => {
@@ -5293,6 +7139,14 @@ function renderRosterModal() {
     const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     setTxt('roster-callsign', profile.getCallsign());
     setTxt('roster-id', profile.getProfileId());
+
+    // Render equipped Steam cosmetics
+    const patchId = localStorage.getItem('hb_equipped_patch');
+    const decalId = localStorage.getItem('hb_equipped_decal');
+    const finishId = localStorage.getItem('hb_equipped_weapon_finish');
+    setTxt('roster-equipped-patch', patchId ? (STEAM_ITEM_CATALOG[Number(patchId)]?.name ?? 'NONE') : 'NONE');
+    setTxt('roster-equipped-decal', decalId ? (STEAM_ITEM_CATALOG[Number(decalId)]?.name ?? 'NONE') : 'NONE');
+    setTxt('roster-equipped-weapon-finish', finishId ? (STEAM_ITEM_CATALOG[Number(finishId)]?.name ?? 'NONE') : 'NONE');
 
     const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
     const fabbed = weapons.filter((r) => fabricator.isFabricated(r.id)).length;
@@ -5392,7 +7246,6 @@ if (mainDebugToggle) {
     mainDebugToggle.addEventListener('change', (e) => {
         state.settings.debug = e.target.checked;
         setDebugMode(state.settings.debug);
-        if (splashDebugToggle) splashDebugToggle.checked = state.settings.debug;
     });
 }
 
@@ -5400,7 +7253,6 @@ if (mainNightVisionToggle) {
     mainNightVisionToggle.addEventListener('change', (e) => {
         state.settings.nightVision = e.target.checked;
         localStorage.setItem('hunker_nightvision_enabled', String(state.settings.nightVision));
-        if (splashNightVisionToggle) splashNightVisionToggle.checked = state.settings.nightVision;
         if (window.game) {
             window.game.nightVision = state.settings.nightVision;
         }
@@ -5410,7 +7262,6 @@ if (mainNightVisionToggle) {
 if (mainFsToggle) {
     mainFsToggle.addEventListener('change', (e) => {
         state.settings.fullscreen = e.target.checked;
-        if (splashFsToggle) splashFsToggle.checked = state.settings.fullscreen;
 
         if (state.settings.fullscreen) {
             document.documentElement.requestFullscreen().catch(() => { });
@@ -5431,6 +7282,16 @@ if (mainTouchToggle) {
     });
 }
 
+if (mainCommentaryToggle) {
+    mainCommentaryToggle.addEventListener('change', (e) => {
+        state.settings.commentary = e.target.checked;
+        localStorage.setItem(COMMENTARY_STORAGE_KEY, String(state.settings.commentary));
+        if (state.settings.commentary) {
+            showDeveloperCommentary('run_start', {}, { once: false });
+        }
+    });
+}
+
 function getDoorImage(key) {
     const CLASS_DOORS = {
         'SCOUT': '/door_bio.png',
@@ -5446,7 +7307,7 @@ function getDoorImage(key) {
     if (key === 'lose') return SPECIAL_DOORS.lose;
     if (key === 'base') return SPECIAL_DOORS.base;
     if (CLASS_DOORS[key]) return CLASS_DOORS[key];
-    
+
     // Automatically determine door image based on active/preview class
     const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
     return CLASS_DOORS[activeClass] || SPECIAL_DOORS.base;
@@ -5575,6 +7436,17 @@ let previewDoorTimer = null;
 let pendingPreviewType = null;
 let activePreviewType = 'TANK';
 const previewSpriteImages = new Map();
+
+charCards.forEach((card) => {
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-pressed', card.classList.contains('selected') ? 'true' : 'false');
+    card.addEventListener('keydown', (event) => {
+        if (event.code !== 'Enter' && event.code !== 'Space') return;
+        event.preventDefault();
+        card.click();
+    });
+});
 
 const heroData = {
     'SCOUT': { name: 'SCOUT', sprite: '/Scout.full.jpeg' },
@@ -5795,8 +7667,10 @@ charCards.forEach(card => {
         AudioManager.play('ui_click', { volume: 0.6 });
         // Remove selected from others
         charCards.forEach(c => c.classList.remove('selected'));
+        charCards.forEach(c => c.setAttribute('aria-pressed', 'false'));
         // Add to clicked
         card.classList.add('selected');
+        card.setAttribute('aria-pressed', 'true');
 
         // Update Preview
         const type = card.getAttribute('data-type');
@@ -5812,7 +7686,9 @@ charCards.forEach(card => {
                 if (gameContainer) {
                     spawnSectorScanSmoke(gameContainer, 25);
                 }
-                AudioManager.play('amb_metal_stress1', { volume: 0.4 });
+                if (isGameplayPhase()) {
+                    AudioManager.playMetalStress({ volume: 0.4 });
+                }
 
                 if (!isGameplayPhase()) {
                     hideAllGameplayPrompts();
@@ -5882,7 +7758,7 @@ function initTacticalCursor() {
         if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
         if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
 
-        // Filter out simulated browser events (common on clicks/focus transitions) 
+        // Filter out simulated browser events (common on clicks/focus transitions)
         // that report false (0,0) or extremely small coordinates on either axis.
         if (e.clientX < 8 || e.clientY < 8) return;
 
@@ -5895,7 +7771,7 @@ function initTacticalCursor() {
             targetScale = 0.65;
             return;
         }
-        
+
         // Ensure cursor is visible on desktop move (clearing touch fade states)
         cursor.classList.remove('cursor-fade-out');
         targetScale = 1.0;
@@ -5913,22 +7789,22 @@ function initTacticalCursor() {
         lastTouchTime = Date.now();
         if (e.touches && e.touches[0]) {
             const touch = e.touches[0];
-            
+
             // Snap position instantly to tapped coordinate to avoid sliding from previous location
             mouseX = touch.clientX;
             mouseY = touch.clientY;
             curX = mouseX;
             curY = mouseY;
-            
+
             hasMoved = true;
             document.documentElement.classList.add('custom-cursor-enabled');
             cursor.classList.remove('cursor-fade-out');
             targetScale = 0.72; // Snappy touch tap compression
-            
+
             if (touchFadeTimeout) {
                 clearTimeout(touchFadeTimeout);
             }
-            
+
             // Fade out cursor after a short delay following tap
             touchFadeTimeout = setTimeout(() => {
                 cursor.classList.add('cursor-fade-out');
@@ -5943,7 +7819,7 @@ function initTacticalCursor() {
             const touch = e.touches[0];
             mouseX = touch.clientX;
             mouseY = touch.clientY;
-            
+
             cursor.classList.remove('cursor-fade-out');
             targetScale = 1.0; // scale up to 1.0 during active touch dragging
             if (touchFadeTimeout) {
@@ -5982,7 +7858,7 @@ function initTacticalCursor() {
 
         cursor.classList.add('cursor-clicking');
         targetScale = 0.72; // Snap scale down on press and hold
-        
+
         // Spawn the click sonar ripple exactly at the smoothed cursor's position.
         // This is robust against synthetic pointer events and ensures precise alignment.
         const ripple = document.createElement('div');
@@ -5990,7 +7866,7 @@ function initTacticalCursor() {
         ripple.style.left = `${curX}px`;
         ripple.style.top = `${curY}px`;
         document.body.appendChild(ripple);
-        
+
         setTimeout(() => ripple.remove(), 600);
     });
 
@@ -6068,16 +7944,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         state.settings.nightVision = false;
     }
-    if (splashNightVisionToggle) {
-        splashNightVisionToggle.checked = !!state.settings.nightVision;
-    }
     if (mainNightVisionToggle) {
         mainNightVisionToggle.checked = !!state.settings.nightVision;
     }
 
     function getLoadingMessageForAsset(itemName) {
         const name = itemName.toLowerCase();
-        
+
         // Doors
         if (name.includes('door_bio')) return 'CALIBRATING BIOMETRIC AIRLOCK GATEWAY';
         if (name.includes('door_nuclear')) return 'SHIELDING REACTOR PILE COOLANT BULKHEAD';
@@ -6085,7 +7958,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (name.includes('door_alien')) return 'DECRYPTING XENO-TECHNOLOGY SECURITY CODES';
         if (name.includes('door_rust')) return 'SEALING CORROSION-DECAYED OUTBOARD PORTS';
         if (name.includes('door')) return 'ENGAGING SECTOR TRANSIT DOORWAY HYDRAULICS';
-        
+
         // Snails / Enemies
         if (name.includes('boss_cybersnail')) return 'PINPOINTING GIGAWATT GOLIATH RADAR PROFILE';
         if (name.includes('boss_cryosnail')) return 'WARNING: DETECTING SEVERE LOCAL TEMPERATURE DROP';
@@ -6093,35 +7966,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (name.includes('cybersnail')) return 'IDENTIFYING SUPPORT-FIELD CORROSIVE ANOMALIES';
         if (name.includes('cryosnail')) return 'MEASURING GELID EXOSUIT DRAIN INDEX';
         if (name.includes('sporesnail')) return 'MONITORING SUBTERRANEAN BIO-KINETIC PATHOGENS';
-        
+
         // Biome Textures
         if (name.includes('bunker_base') || name.includes('bunker_wall') || name.includes('bunker_grunge')) return 'MAPPING SECURE METAL-STRUCT SUPPORTS';
         if (name.includes('cryo_base') || name.includes('cryo_grunge') || name.includes('cryo_wall')) return 'STABILIZING CRYOGENIC COOLANT PIPELINES';
         if (name.includes('bio_base') || name.includes('bio_grunge') || name.includes('bio_wall')) return 'ISOLATING SPORE-INFESTED BIOSPHERES';
         if (name.includes('ice_base') || name.includes('ice_grunge') || name.includes('ice_wall')) return 'SURVEYING GEOTHERMAL GLACIAL CAVERNS';
-        
+
         // Junk / Salvage
         if (name.includes('bunker_junk_legendary')) return 'DETECTING GOLD-SIGNATURE CORE CACHE';
         if (name.includes('bunker_junk_rare')) return 'RADAR RESOLVING UNUSUAL HIGH-VALUE LOBES';
         if (name.includes('bunker_junk_uncommon')) return 'FILTERING DUST SIGNALS FROM RECLAIMABLE METAL';
         if (name.includes('bunker_junk')) return 'SCANNING RECLAIMABLE SALVAGE DEBRIS';
-        
+
         // Modules
         if (name.includes('module_o2')) return 'PREHEATING OXYGEN GENERATOR MIXER VALVE';
         if (name.includes('module_hull')) return 'TUNING DEFENSIVE MATRIX CELL POLARITY';
         if (name.includes('module_radar')) return 'ALIGNING HIGH-GAIN RADOME EM ANTENNA';
         if (name.includes('module_reactor')) return 'VENTING COMPRESSOR LIQUID NITROGEN COOLER';
-        
+
         // Hero portraits
         if (name.includes('scout.full') || name.includes('scout_ship')) return 'ESTABLISHING FAST RECON SCOUT DATA-LINK';
         if (name.includes('tank.full') || name.includes('tank_ship')) return 'BOOTING HEAVY EXOSUIT STRENGTH BUFFERS';
         if (name.includes('eng.full') || name.includes('engineer_ship')) return 'UPLOADING NANOBOT FABRICATOR SUB-ROUTINES';
-        
+
         // Audio / Backgrounds
         if (name.includes('.mp3') || name.includes('.wav')) return 'STABILIZING TACTICAL AUDIO MATRIX FEED';
         if (name.includes('bg.webp') || name.includes('menu_bg')) return 'BUFFERING INTERACTIVE DISPLAY SCHEMATICS';
         if (name.includes('scatter_')) return 'CALIBRATING DEBRIS DEFLECTION ASSIST';
-        
+
         return 'SYNCHRONIZING TACTICAL DATA FILE';
     }
 
@@ -6213,9 +8086,79 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateHeroStats(initialType);
     }
     startHeroPreviewAnimation();
-    if (splashFsToggle) splashFsToggle.checked = false;
-    if (splashDebugToggle) splashDebugToggle.checked = false;
     if (mainDebugToggle) mainDebugToggle.checked = false;
+
+    // Check if player has active save data to enable CONTINUE
+    const hasSave = hasAnyUnlock(achievementEngine.getState()) || localStorage.getItem('hb_profile_v1') !== null;
+    if (titleContinueBtn) {
+        titleContinueBtn.disabled = !hasSave;
+    }
+
+    if (titleNewRunBtn) {
+        titleNewRunBtn.addEventListener('click', transitionFromTitleToMenu);
+    }
+    if (titleContinueBtn) {
+        titleContinueBtn.addEventListener('click', transitionFromTitleToMenu);
+    }
+    if (titleAchievementsBtn) {
+        titleAchievementsBtn.addEventListener('click', openAchievementsModal);
+    }
+    if (titleAboutBtn) {
+        titleAboutBtn.addEventListener('click', () => {
+            const aboutModal = document.getElementById('about-modal');
+            if (aboutModal) aboutModal.classList.remove('hidden');
+        });
+    }
+    if (titleSettingsBtn) {
+        titleSettingsBtn.addEventListener('click', openSettingsModal);
+    }
+
+    // Load new settings
+    state.settings.textSpeed = localStorage.getItem('hunker_text_speed') || 'normal';
+    state.settings.shakeEnabled = localStorage.getItem('hunker_shake_enabled') !== 'false';
+    state.settings.colorblindAssist = localStorage.getItem('hunker_colorblind_assist') === 'true';
+    state.settings.difficulty = localStorage.getItem('hunker_difficulty') || 'standard';
+    state.settings.commentary = localStorage.getItem(COMMENTARY_STORAGE_KEY) === 'true';
+    if (mainCommentaryToggle) {
+        mainCommentaryToggle.checked = state.settings.commentary;
+    }
+
+    if (state.settings.colorblindAssist) {
+        document.body.classList.add('colorblind-assist');
+    } else {
+        document.body.classList.remove('colorblind-assist');
+    }
+
+    // Wire settings modal changes
+    const settingTextSpeed = document.getElementById('setting-text-speed');
+    if (settingTextSpeed) {
+        settingTextSpeed.addEventListener('change', (e) => {
+            state.settings.textSpeed = e.target.value;
+            localStorage.setItem('hunker_text_speed', state.settings.textSpeed);
+        });
+    }
+
+    const settingShakeToggle = document.getElementById('setting-shake-toggle');
+    if (settingShakeToggle) {
+        settingShakeToggle.addEventListener('change', (e) => {
+            state.settings.shakeEnabled = e.target.checked;
+            localStorage.setItem('hunker_shake_enabled', String(state.settings.shakeEnabled));
+        });
+    }
+
+    const settingColorblindToggle = document.getElementById('setting-colorblind-toggle');
+    if (settingColorblindToggle) {
+        settingColorblindToggle.addEventListener('change', (e) => {
+            state.settings.colorblindAssist = e.target.checked;
+            localStorage.setItem('hunker_colorblind_assist', String(state.settings.colorblindAssist));
+            if (state.settings.colorblindAssist) {
+                document.body.classList.add('colorblind-assist');
+            } else {
+                document.body.classList.remove('colorblind-assist');
+            }
+        });
+    }
+
     syncTouchSettingsVisibility();
     syncTouchMoveControlVisibility();
 
@@ -6291,7 +8234,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'weapon_fire_sidearm2', url: '/audio/vg2/weapon_fire_sidearm2.wav' },
                     { key: 'weapon_fire_sidearm3', url: '/audio/vg2/weapon_fire_sidearm3.wav' },
                     { key: 'weapon_reload1', url: '/audio/vg2/weapon_reload1.wav' },
-                    { key: 'weapon_reload2', url: '/audio/vg2/weapon_reload2.wav' }
+                    { key: 'weapon_reload2', url: '/audio/vg2/weapon_reload2.wav' },
+                    { key: 'camp_fire_loop', url: '/audio/vg2/camp_fire_loop.wav' },
+                    { key: 'camp_fire_douse', url: '/audio/vg2/camp_fire_douse.wav' },
+                    { key: 'camp_lockdown_alarm', url: '/audio/vg2/camp_lockdown_alarm.wav' },
+                    { key: 'camp_lockdown_chains', url: '/audio/vg2/camp_lockdown_chains.wav' },
+                    { key: 'hive_eggs_hum', url: '/audio/vg2/hive_eggs_hum.wav' },
+                    { key: 'hive_eggs_hatch', url: '/audio/vg2/hive_eggs_hatch.wav' },
+                    { key: 'hive_spores_puff', url: '/audio/vg2/hive_spores_puff.wav' },
+                    { key: 'hive_webs_sticky', url: '/audio/vg2/hive_webs_sticky.wav' },
+                    { key: 'hive_queen_throne', url: '/audio/vg2/hive_queen_throne.wav' },
+                    { key: 'hive_wounded_drip', url: '/audio/vg2/hive_wounded_drip.wav' },
+                    { key: 'fx_scout_sprint', url: '/audio/vg2/fx_scout_sprint.wav' },
+                    { key: 'fx_tank_shockwave', url: '/audio/vg2/fx_tank_shockwave.wav' },
+                    { key: 'fx_engineer_turret', url: '/audio/vg2/fx_engineer_turret.wav' },
+                    { key: 'fx_levelup', url: '/audio/vg2/fx_levelup.wav' },
+                    { key: 'fx_achievement', url: '/audio/vg2/fx_achievement.wav' }
                 ]
             };
 
@@ -6372,13 +8330,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (loaderStatus) {
         loaderStatus.style.opacity = 0;
         setTimeout(() => {
-            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK ANYWHERE TO INITIALIZE ]</div>`;
+            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK OR PRESS ANY KEY TO INITIALIZE ]</div>`;
             loaderStatus.style.opacity = 1;
         }, 220);
     }
 
     let clickInitializing = false;
-    document.body.addEventListener('click', async () => {
+    const triggerBoot = async () => {
         if (clickInitializing) return;
         if (AudioManager.isUnlocked && window.game) return;
 
@@ -6397,7 +8355,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Initialization failed:', err);
             clickInitializing = false;
             if (loaderStatus) {
-                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK ANYWHERE TO RETRY INITIALIZATION ]</div>`;
+                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK OR PRESS ANY KEY TO RETRY INITIALIZATION ]</div>`;
             }
             return;
         }
@@ -6413,7 +8371,863 @@ document.addEventListener('DOMContentLoaded', async () => {
             null,
             'base'
         );
-    });
+    };
+
+    window.HunkerTriggerBoot = triggerBoot;
+    if (pendingSteamInputBoot) {
+        pendingSteamInputBoot = false;
+        void triggerBoot();
+    }
+
+    document.body.addEventListener('click', triggerBoot);
+    window.addEventListener('keydown', triggerBoot);
+
+    // Poll gamepads for boot trigger
+    let gamepadPollInterval = setInterval(() => {
+        if (AudioManager.isUnlocked && window.game) {
+            clearInterval(gamepadPollInterval);
+            return;
+        }
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        for (const gp of gamepads) {
+            if (gp) {
+                const pressed = gp.buttons.some(b => b.pressed);
+                if (pressed) {
+                    triggerBoot();
+                    clearInterval(gamepadPollInterval);
+                    break;
+                }
+            }
+        }
+    }, 100);
 });
 
 setDebugMode(false);
+
+// ── Sprint 19 Wave 3 threat warnings and Queen hallucinations ──
+window.addEventListener('queen-hallucination', (event) => {
+    const intensity = event?.detail?.intensity ?? 0.5;
+    document.body.classList.add('queen-hallucination-pulse');
+    const speed = (0.05 + (1.0 - intensity) * 0.15).toFixed(2);
+    document.body.style.setProperty('--hallucination-speed', `${speed}s`);
+    window.setTimeout(() => {
+        document.body.classList.remove('queen-hallucination-pulse');
+    }, 300);
+});
+
+window.addEventListener('queen-fight-started', () => {
+    showDeveloperCommentary('queen_fight');
+    recordSteamTimelineEvent('queen_fight', 'Queen Fight Started', 'Specimen-0047 entered direct combat.', {
+        icon: 'queen',
+        priority: 4,
+        durationSeconds: 12
+    });
+});
+
+window.addEventListener('hunter-pair-spawned', () => {
+    showTacticalNotificationToast({
+        title: 'WARNING: HUNTER SHADOWS INBOUND',
+        status: '> BRIGGS COVERT TEAM DEPLOYED<br>> SCANNING PATROLS DETECTED',
+        duration: 3800
+    });
+    AudioManager.play('camp_lockdown_alarm', { volume: 0.5, playbackRate: 1.2 });
+    document.body.classList.add('hud-alert-flash');
+    setTimeout(() => document.body.classList.remove('hud-alert-flash'), 1200);
+});
+
+window.addEventListener('lander-deployed', () => {
+    showTacticalNotificationToast({
+        title: 'CRITICAL ALERT: EXTERMINATION LANDER INBOUND',
+        status: '> MOTHERSHIP EXTERMINATOR DEPLOYED<br>> HULL INTEGRITY TRACKING LOCKED',
+        duration: 4800
+    });
+    AudioManager.play('camp_lockdown_alarm', { volume: 0.65, playbackRate: 0.85 });
+    document.body.classList.add('hud-critical-flash');
+    setTimeout(() => document.body.classList.remove('hud-critical-flash'), 2000);
+});
+
+// ── Desktop shell (Electron/Steam) bridge ─────────────────────
+// Present only inside the desktop wrapper; the web build never defines
+// electronAPI. Achievements ride the existing wave-2 event contract.
+const steamDebugStatus = document.getElementById('steam-debug-status');
+
+function setSteamDebugStatus(text, state = 'unknown') {
+    if (!steamDebugStatus) return;
+    steamDebugStatus.textContent = text;
+    steamDebugStatus.dataset.state = state;
+}
+
+function formatSteamStatus(info, health) {
+    const steamLine = info?.active
+        ? `STEAM: ${info.persona ?? info.steamId64 ?? 'LINKED'}`
+        : 'STEAM: OFFLINE';
+    let backendLine = 'BACKEND: OFF';
+    if (health?.ok) {
+        backendLine = health.steam?.authConfigured ? 'BACKEND: AUTH READY' : 'BACKEND: DEV';
+    }
+    const cloud = info?.cloud;
+    const cloudLine = cloud?.available
+        ? `CLOUD: ${cloud.enabledForAccount && cloud.enabledForApp ? 'READY' : 'OFF'}`
+        : 'CLOUD: UNKNOWN';
+    return `${steamLine}\n${backendLine}\n${cloudLine}`;
+}
+
+async function refreshSteamBridgeStatus() {
+    if (!window.electronAPI) {
+        setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
+        return null;
+    }
+
+    const identityRequest = window.electronAPI.getSteamIdentity
+        ? window.electronAPI.getSteamIdentity()
+        : window.electronAPI.getSteamInfo?.();
+    const [info, health] = await Promise.all([
+        Promise.resolve(identityRequest).catch(() => null),
+        window.electronAPI.getSteamBackendHealth?.().catch(() => null)
+    ]);
+
+    const state = info?.active && health?.steam?.authConfigured
+        ? 'ready'
+        : (info?.active || health?.ok ? 'partial' : 'offline');
+    setSteamDebugStatus(formatSteamStatus(info, health), state);
+    return { info, health };
+}
+
+// Achievement keys that also grant a distinct Steam Inventory cosmetic on
+// top of the local achievement unlock/Steam stat. The achievements engine
+// (src/achievements.js) guarantees each key only ever unlocks once per
+// save, so this never needs its own client-side one-off guard — the
+// backend's requestId (ach-<key>-<steamId>) is idempotent regardless.
+const STEAM_ACHIEVEMENT_ITEM_MAP = Object.freeze({
+    slay_the_queen: 'achievement:slay_the_queen',
+    archivist: 'achievement:archivist'
+});
+
+if (window.electronAPI) {
+    window.addEventListener('achievement-unlocked', (event) => {
+        const key = event?.detail?.key;
+        if (!key) return;
+        window.electronAPI.unlockAchievement(key);
+        showDeveloperCommentary('achievement');
+        recordSteamTimelineEvent('achievement', 'Achievement Unlocked', event?.detail?.title ?? key, {
+            icon: 'achievement',
+            priority: 2,
+            durationSeconds: 6
+        });
+
+        const milestone = STEAM_ACHIEVEMENT_ITEM_MAP[key];
+        if (milestone && window.electronAPI?.requestSteamMilestoneGrant) {
+            window.electronAPI.requestSteamMilestoneGrant(milestone).then((result) => {
+                (result?.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
+            }).catch((err) => {
+                console.log(`[steam] achievement item grant skipped: ${err?.message ?? err}`);
+            });
+        }
+    });
+    // Boss/queen defeat: a guaranteed free Deep Relic Cache tied to a
+    // combat-sourced run milestone rather than a narrative branch choice.
+    // runKey only needs to be unique per run, not globally meaningful.
+    window.addEventListener('act2-milestone', (event) => {
+        if (event?.detail?.key !== 'queenKilled' || !window.electronAPI?.requestSteamMilestoneGrant) return;
+        if (event.detail.combat !== true && event.detail.source !== 'queen-fight') return;
+        const runKey = `${activeRunSeed ?? 'no-seed'}:${runStartTime}`;
+        showDeveloperCommentary('queen_killed');
+        recordSteamTimelineEvent('queen_killed', 'Queen Defeated', 'Specimen-0047 was defeated in combat.', {
+            icon: 'queen',
+            priority: 5,
+            durationSeconds: 10
+        });
+        window.electronAPI.requestSteamMilestoneGrant('boss_kill', runKey).then((result) => {
+            (result?.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
+        }).catch((err) => {
+            console.log(`[steam] boss-kill grant skipped: ${err?.message ?? err}`);
+        });
+    });
+    // World-loot roll: ties the free-drop economy to genuine in-world loot
+    // interaction (camp support, etc.) instead of a blind timer. The 15%
+    // client-side gate keeps this from firing on every single local
+    // salvage-cache pickup, which happens often.
+    window.addEventListener('salvage-cache-opened', () => {
+        if (Math.random() >= 0.15 || !window.electronAPI?.triggerSteamPlaytimeDrop) return;
+        window.electronAPI.triggerSteamPlaytimeDrop().then((result) => {
+            if (result?.ok) {
+                (result.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
+            }
+        }).catch((err) => {
+            console.log(`[steam] world-loot roll skipped: ${err?.message ?? err}`);
+        });
+    });
+    window.addEventListener(STEAM_RUN_SCORE_FINALIZED_EVENT, (event) => {
+        const payload = event?.detail;
+        if (!payload || !window.electronAPI?.submitSteamRunScore) return;
+        showDeveloperCommentary('leaderboard');
+        recordSteamTimelineEvent('run_end', payload.outcome === 'victory' ? 'Extraction Complete' : 'Run Ended', `Score ${payload.score ?? 0} submitted for trusted ranking.`, {
+            icon: payload.outcome === 'victory' ? 'victory' : 'run_end',
+            priority: payload.outcome === 'victory' ? 4 : 2,
+            durationSeconds: 10
+        });
+
+        window.electronAPI.submitSteamRunScore(payload).then((result) => {
+            if (result?.ok) {
+                console.log(`[steam] leaderboard payload accepted (${payload.runId})`);
+                renderSteamMilestoneGrants(result.milestoneGrants);
+            } else if (!['steam_auth_unavailable', 'steam_backend_unreachable'].includes(result?.reason)) {
+                console.log(`[steam] leaderboard submit skipped: ${result?.reason ?? 'unknown'}`);
+            }
+        }).catch((err) => {
+            console.log(`[steam] leaderboard submit failed: ${err?.message ?? err}`);
+        });
+    });
+    refreshSteamBridgeStatus().then(({ info } = {}) => {
+        if (info?.active) console.log(`[steam] linked as ${info.persona} (app ${info.appId})`);
+    }).catch(() => {});
+    window.setInterval(() => {
+        void refreshSteamBridgeStatus();
+    }, 60000);
+
+    // Initialize Steam Vault
+    initSteamVaultUI();
+    loadVaultData();
+} else {
+    setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
+}
+
+// ── Steam Vault Frontend Implementation ──
+const STEAM_ITEM_CATALOG = {
+    1000: {
+        name: 'Common Relic Fragment',
+        rarity: 'common',
+        desc: 'A shard of ancient subterranean machinery, used in basic crafting exchanges.',
+        tradable: true,
+        marketable: false,
+        img: 'https://hunkerbunker.netlify.app/economy/relic_common.png'
+    },
+    1100: {
+        name: 'Rare Relic Fragment',
+        rarity: 'rare',
+        desc: 'An intact processor core from the deep vaults, used to craft elite cosmetics.',
+        tradable: true,
+        marketable: false,
+        img: 'https://hunkerbunker.netlify.app/economy/relic_rare.png'
+    },
+    2000: {
+        name: 'Scout Victory Patch',
+        rarity: 'uncommon',
+        desc: 'Awarded to operators who successfully extract using a Scout frame. Cosmetic equip.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/patch_scout.png'
+    },
+    2001: {
+        name: 'Tank Victory Patch',
+        rarity: 'uncommon',
+        desc: 'Awarded to operators who successfully extract using a Tank frame. Cosmetic equip.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/patch_tank.png'
+    },
+    2002: {
+        name: 'Engineer Victory Patch',
+        rarity: 'uncommon',
+        desc: 'Awarded to operators who successfully extract using an Engineer frame. Cosmetic equip.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/patch_engineer.png'
+    },
+    2100: {
+        name: 'Carbon Fiber Decal',
+        rarity: 'rare',
+        desc: 'A high-performance weave finish for your exosuit. Cosmetic equip.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/decal_carbon.png'
+    },
+    2200: {
+        name: 'Chrome Plated Sidearm',
+        rarity: 'epic',
+        desc: 'Polished high-reflectivity chrome finish for the standard sidearm. Cosmetic equip.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/finish_chrome.png'
+    },
+    2003: {
+        name: 'Queen Slayer Emblem',
+        rarity: 'legendary',
+        desc: 'Awarded for defeating the Act 2 queen. Cosmetic equip.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/emblem_queen_slayer.png'
+    },
+    2004: {
+        name: 'Archivist Emblem',
+        rarity: 'epic',
+        desc: 'Awarded for recovering the full bunker archive. Cosmetic equip.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/emblem_archivist.png'
+    },
+    4000: {
+        name: 'Deep Relic Cache',
+        rarity: 'container',
+        desc: 'A sealed drop container. Requires a Cache Key to open — see the STORE tab for published odds.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/cache_deep_relic.png'
+    },
+    4001: {
+        name: 'Cache Key',
+        rarity: 'key',
+        desc: 'Opens a single Deep Relic Cache. Purchased with real money; never drops for free.',
+        tradable: true,
+        marketable: true,
+        img: 'https://hunkerbunker.netlify.app/economy/cache_key.png'
+    }
+};
+
+let storeCatalog = null;
+let storeOdds = [];
+let storePurchasesEnabled = false;
+let storePurchaseMode = 'disabled';
+let storeDisabledReason = 'catalog_unavailable';
+let storeHostedItemStore = null;
+
+let vaultItems = [];
+let selectedVaultItem = null;
+let marketEligibility = 'unknown';
+let marketEligibilityReason = null;
+
+// Fired from the playtime-drop interval and the victory class-patch grant —
+// both real Steam Inventory writes, so this is the only place either one
+// surfaces to the player short of opening the Vault manually.
+function showSteamDropToast(itemdefid, quantity = 1) {
+    const catalog = STEAM_ITEM_CATALOG[itemdefid];
+    if (!catalog) return;
+    const stack = document.querySelector('.hud-notification-stack');
+    if (!stack) return;
+
+    window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
+    const toast = document.createElement('div');
+    toast.className = 'achievement-toast hud-stack-card hidden';
+    toast.setAttribute('aria-live', 'polite');
+    toast.dataset.notificationPriority = '5';
+    toast.dataset.seq = String(hudCardSeq++);
+    toast.dataset.autoDismissMs = '5600';
+    toast.dataset.removeDelayMs = '320';
+
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'achievement-toast__icon';
+    const img = document.createElement('img');
+    img.alt = '';
+    img.src = catalog.img;
+    iconWrap.append(img);
+
+    const body = document.createElement('div');
+    body.className = 'achievement-toast__body';
+    const kicker = document.createElement('div');
+    kicker.className = 'achievement-toast__kicker';
+    kicker.textContent = 'STEAM ITEM ACQUIRED';
+    const title = document.createElement('div');
+    title.className = 'achievement-toast__title';
+    title.textContent = quantity > 1 ? `${catalog.name} x${quantity}` : catalog.name;
+    const blurb = document.createElement('div');
+    blurb.className = 'achievement-toast__blurb';
+    blurb.textContent = catalog.desc;
+    body.append(kicker, title, blurb);
+    toast.append(iconWrap, body);
+    toast.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        dismissHudNotificationCard(toast);
+    });
+
+    stack.append(toast);
+    updateHudNotificationDeck();
+    toast.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        toast.classList.add('visible');
+        updateHudNotificationDeck();
+    });
+}
+
+// Renders the trusted, server-derived milestone grants (victory patch,
+// flawless/personal-best/daily-ops bonus caches) that ride along on the
+// submit-run response — see server/steamLeaderboards.js deriveAndGrantMilestones.
+// Written into the game-over screen (not the HUD toast stack, which lives
+// inside #ui and is already hidden by the time this resolves).
+function renderSteamMilestoneGrants(grants = []) {
+    const grantNote = document.getElementById('go-steam-grant-note');
+    if (!grantNote || !Array.isArray(grants) || grants.length === 0) return;
+
+    const names = grants
+        .map((item) => {
+            const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+            const label = catalog?.name ?? `Item #${item.itemdefid}`;
+            return item.quantity > 1 ? `${label} x${item.quantity}` : label;
+        })
+        .join(', ');
+    grantNote.textContent = `STEAM ITEM UNLOCKED: ${names}`;
+    grantNote.classList.remove('hidden');
+}
+
+function initSteamVaultUI() {
+    const vaultBtn = document.getElementById('steam-vault-btn');
+    const closeBtn = document.getElementById('close-steam-vault-modal');
+    const modal = document.getElementById('steam-vault-modal');
+
+    if (!vaultBtn || !modal) return;
+
+    vaultBtn.addEventListener('click', async () => {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+        showDeveloperCommentary('steam_vault');
+        await loadVaultData();
+    });
+
+    closeBtn?.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    });
+
+    setupClickOutside('steam-vault-modal', () => {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    });
+
+    const tabInventory = document.getElementById('vault-tab-inventory');
+    const tabStore = document.getElementById('vault-tab-store');
+    const inventoryLayout = document.getElementById('vault-inventory-layout');
+    const storeLayout = document.getElementById('vault-store-layout');
+
+    tabInventory?.addEventListener('click', () => {
+        tabInventory.classList.add('active');
+        tabStore?.classList.remove('active');
+        inventoryLayout?.classList.remove('hidden');
+        storeLayout?.classList.add('hidden');
+        renderInventoryGrid();
+    });
+
+    tabStore?.addEventListener('click', async () => {
+        tabStore.classList.add('active');
+        tabInventory?.classList.remove('active');
+        storeLayout?.classList.remove('hidden');
+        inventoryLayout?.classList.add('hidden');
+        await loadStoreCatalog();
+        renderStoreSkuGrid();
+        renderHostedItemStoreCta();
+        renderOddsTable();
+        updateOpenCacheAvailability();
+    });
+
+    document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
+    document.getElementById('vault-store-hosted-btn')?.addEventListener('click', openHostedSteamItemStore);
+}
+
+function isMarketEligibilityAllowed(result) {
+    return result?.allowed === true
+        || result?.allowed === 1
+        || result?.allowed === '1'
+        || result?.allowed === 'true'
+        || result?.eligibility?.allowed === true
+        || result?.eligibility?.allowed === 1
+        || result?.eligibility?.allowed === '1'
+        || result?.eligibility?.allowed === 'true';
+}
+
+function setMarketEligibilityFromResult(result) {
+    marketEligibility = result?.ok && isMarketEligibilityAllowed(result) ? 'eligible' : 'ineligible';
+    marketEligibilityReason = result?.reason ?? result?.eligibility?.reason ?? null;
+}
+
+function canOpenMarketOverlay() {
+    return marketEligibility === 'eligible';
+}
+
+function getMarketEligibilityStatusText() {
+    if (marketEligibility === 'unknown') return 'STEAM MARKET CHECK PENDING';
+    if (marketEligibilityReason === 'unsupported') return 'STEAM MARKET CHECK UNSUPPORTED';
+    if (marketEligibilityReason === 'error') return 'STEAM MARKET CHECK FAILED';
+    return 'STEAM MARKET ELIGIBILITY UNCONFIRMED';
+}
+
+async function loadVaultData() {
+    const statusEl = document.getElementById('vault-connection-status');
+    const playerEl = document.getElementById('vault-player-name');
+    const commandStatus = document.getElementById('vault-command-status');
+
+    if (window.electronAPI) {
+        // Fetch Identity
+        const identity = await window.electronAPI.getSteamIdentity().catch(() => null);
+
+        // Fetch Market Eligibility
+        const marketCheck = window.electronAPI.getSteamMarketEligibility
+            ? window.electronAPI.getSteamMarketEligibility()
+            : Promise.resolve({ ok: false, reason: 'unsupported' });
+        const marketResult = await Promise.resolve(marketCheck).catch(() => ({ ok: false, reason: 'error' }));
+        setMarketEligibilityFromResult(marketResult);
+        if (identity?.active) {
+            if (playerEl) playerEl.textContent = identity.persona ?? 'OPERATOR';
+            if (statusEl) statusEl.textContent = 'STEAM CONNECTED';
+            if (statusEl) statusEl.classList.remove('vault-status--offline');
+            if (commandStatus) commandStatus.textContent = identity.persona ?? 'ONLINE';
+        } else {
+            if (playerEl) playerEl.textContent = 'DEV MODE';
+            if (statusEl) statusEl.textContent = 'DEV FALLBACK';
+            if (commandStatus) commandStatus.textContent = 'DEV MODE';
+        }
+
+        // Fetch Inventory
+        const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
+        if (result?.ok) {
+            vaultItems = result.inventory ?? [];
+            reconcileCosmeticsOwnership(vaultItems);
+            renderInventoryGrid();
+            updateOpenCacheAvailability();
+        } else {
+            console.error('[steam-vault] failed to load inventory:', result);
+        }
+    } else {
+        setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
+        if (playerEl) playerEl.textContent = 'WEB BUILD';
+        if (statusEl) statusEl.textContent = 'OFFLINE';
+        if (commandStatus) commandStatus.textContent = 'OFFLINE';
+    }
+}
+
+function renderInventoryGrid() {
+    const grid = document.getElementById('vault-item-grid');
+    const emptyState = document.getElementById('vault-empty-state');
+
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (vaultItems.length === 0) {
+        emptyState?.classList.remove('hidden');
+        return;
+    }
+
+    emptyState?.classList.add('hidden');
+
+    vaultItems.forEach(item => {
+        const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+        if (!catalog) return;
+
+        const card = document.createElement('div');
+        const rarityClass = `vault-item--${catalog.rarity}`;
+        const isSelected = selectedVaultItem && selectedVaultItem.itemId === item.itemId;
+
+        card.className = `vault-item-card ${rarityClass} ${isSelected ? 'selected' : ''}`;
+
+        const img = document.createElement('img');
+        img.className = 'vault-item-card__art';
+        img.src = catalog.img;
+        card.appendChild(img);
+
+        if (item.quantity > 1) {
+            const qty = document.createElement('div');
+            qty.className = 'vault-item-card__qty';
+            qty.textContent = `x${item.quantity}`;
+            card.appendChild(qty);
+        }
+
+        card.addEventListener('click', () => {
+            selectedVaultItem = item;
+            document.querySelectorAll('.vault-item-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            updateDetailsPanel(item);
+        });
+
+        grid.appendChild(card);
+    });
+
+    // Select first item by default if nothing selected yet
+    if (!selectedVaultItem && vaultItems.length > 0) {
+        selectedVaultItem = vaultItems[0];
+        updateDetailsPanel(selectedVaultItem);
+    }
+}
+
+function updateDetailsPanel(item) {
+    const nameEl = document.getElementById('vault-details-name');
+    const rarityEl = document.getElementById('vault-details-rarity');
+    const descEl = document.getElementById('vault-details-desc');
+    const imgEl = document.getElementById('vault-details-img');
+    const tradableEl = document.getElementById('vault-meta-tradable');
+    const marketableEl = document.getElementById('vault-meta-marketable');
+
+    const btnEquip = document.getElementById('vault-btn-equip');
+    const btnUnequip = document.getElementById('vault-btn-unequip');
+    const statusEl = document.getElementById('vault-equip-status');
+
+    if (!item) return;
+    const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
+    if (!catalog) return;
+
+    if (nameEl) nameEl.textContent = catalog.name;
+    if (rarityEl) {
+        rarityEl.textContent = catalog.rarity;
+        rarityEl.style.color = getRarityColor(catalog.rarity);
+    }
+    if (descEl) descEl.textContent = catalog.desc;
+    if (imgEl) imgEl.src = catalog.img;
+
+    if (tradableEl) {
+        tradableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.tradable ? 'active' : ''}`;
+        tradableEl.title = "Trading is handled externally through Steam.";
+        tradableEl.textContent = catalog.tradable ? 'TRADABLE' : 'NON-TRADABLE';
+    }
+    if (marketableEl) {
+        const isEligible = canOpenMarketOverlay();
+        marketableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.marketable ? 'active' : ''} ${catalog.marketable && !isEligible ? 'degraded' : ''}`;
+        marketableEl.title = "Market actions are handled externally through Steam.";
+        if (catalog.marketable && !isEligible) {
+            marketableEl.textContent = 'MARKETABLE (OFFLINE)';
+            marketableEl.title = "Market eligibility route unavailable or rejected.";
+        } else {
+            marketableEl.textContent = catalog.marketable ? 'MARKETABLE' : 'NON-MARKETABLE';
+        }
+    }
+
+    btnEquip?.classList.add('hidden');
+    btnUnequip?.classList.add('hidden');
+    if (statusEl) {
+        const quantity = Number(item.quantity) > 1 ? ` x${Number(item.quantity)}` : '';
+        statusEl.textContent = `STEAM OWNERSHIP VERIFIED${quantity}`;
+    }
+}
+
+function getRarityColor(rarity) {
+    if (rarity === 'common') return '#94a3b8';
+    if (rarity === 'uncommon') return '#22c55e';
+    if (rarity === 'rare') return '#00c8ff';
+    if (rarity === 'epic') return '#a855f7';
+    if (rarity === 'legendary') return '#eab308';
+    return '#fff';
+}
+
+function reconcileCosmeticsOwnership(inventory = []) {
+    const ownedDefIds = new Set(inventory.map(item => item.itemdefid));
+
+    const patch = localStorage.getItem('hb_equipped_patch');
+    if (patch && !ownedDefIds.has(Number(patch))) {
+        localStorage.removeItem('hb_equipped_patch');
+        console.log('[steam-vault] Unequipped unowned patch:', patch);
+    }
+
+    const decal = localStorage.getItem('hb_equipped_decal');
+    if (decal && !ownedDefIds.has(Number(decal))) {
+        localStorage.removeItem('hb_equipped_decal');
+        console.log('[steam-vault] Unequipped unowned decal:', decal);
+    }
+
+    const weapon = localStorage.getItem('hb_equipped_weapon_finish');
+    if (weapon && !ownedDefIds.has(Number(weapon))) {
+        localStorage.removeItem('hb_equipped_weapon_finish');
+        console.log('[steam-vault] Unequipped unowned weapon finish:', weapon);
+    }
+}
+
+// ── Steam Store: Cache Keys are the only real-money SKU. Deep Relic Caches
+// drop for free during play; opening one requires a Key from the store. ──
+async function loadStoreCatalog() {
+    if (!window.electronAPI?.getSteamStoreCatalog) return;
+    const result = await window.electronAPI.getSteamStoreCatalog().catch(() => null);
+    if (result?.ok) {
+        storeCatalog = result.catalog ?? [];
+        storeOdds = result.deepRelicCacheOdds ?? [];
+        storePurchasesEnabled = Boolean(result.purchasesEnabled);
+        storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
+        storeDisabledReason = result.disabledReason ?? null;
+        storeHostedItemStore = result.hostedItemStore ?? null;
+    } else {
+        storePurchasesEnabled = false;
+        storePurchaseMode = 'disabled';
+        storeDisabledReason = result?.reason ?? 'catalog_unavailable';
+        storeHostedItemStore = null;
+        console.error('[steam-store] failed to load catalog:', result);
+    }
+}
+
+function formatStoreDisabledReason(reason) {
+    if (reason === 'steam_store_disabled') return 'PURCHASES OFFLINE';
+    if (reason === 'catalog_unavailable') return 'CATALOG OFFLINE';
+    return 'UNAVAILABLE';
+}
+
+function renderStoreSkuGrid() {
+    const grid = document.getElementById('vault-store-sku-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (!storeCatalog || storeCatalog.length === 0) {
+        grid.innerHTML = '<div class="vault-empty-state">STORE CATALOG UNAVAILABLE</div>';
+        return;
+    }
+
+    for (const sku of storeCatalog) {
+        const card = document.createElement('div');
+        card.className = 'vault-store-sku-card';
+        const priceLabel = `$${(sku.priceUsdCents / 100).toFixed(2)}`;
+        const buttonLabel = storePurchasesEnabled
+            ? (storePurchaseMode === 'mock' ? 'DEV BUY' : 'BUY')
+            : formatStoreDisabledReason(storeDisabledReason);
+        card.innerHTML = `
+            <div class="vault-store-sku-label">${sku.label}</div>
+            <div class="vault-store-sku-price">${priceLabel}</div>
+            <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${storePurchasesEnabled ? '' : 'disabled'}>${buttonLabel}</button>
+        `;
+        const buyBtn = card.querySelector('.vault-store-buy-btn');
+        buyBtn?.addEventListener('click', () => purchaseKeys(sku.sku));
+        grid.appendChild(card);
+    }
+}
+
+function renderHostedItemStoreCta() {
+    const row = document.getElementById('vault-store-hosted');
+    const status = document.getElementById('vault-store-hosted-status');
+    const btn = document.getElementById('vault-store-hosted-btn');
+    if (!row || !status || !btn) return;
+
+    const url = storeHostedItemStore?.url;
+    const configured = Boolean(storeHostedItemStore?.enabled && url);
+    const enabled = configured && canOpenMarketOverlay();
+    row.classList.toggle('hidden', !configured);
+    btn.disabled = !enabled;
+    if (!configured) {
+        status.textContent = 'STEAM ITEM STORE OFFLINE';
+        return;
+    }
+    if (!enabled) {
+        status.textContent = getMarketEligibilityStatusText();
+        return;
+    }
+
+    const mode = storeHostedItemStore.mode === 'beta' ? 'BETA PREVIEW' : 'STEAM-HOSTED CHECKOUT';
+    status.textContent = mode;
+}
+
+async function openHostedSteamItemStore() {
+    const url = storeHostedItemStore?.url;
+    if (!url || !canOpenMarketOverlay()) {
+        renderHostedItemStoreCta();
+        return;
+    }
+    if (window.electronAPI?.openSteamOverlayToUrl) {
+        await window.electronAPI.openSteamOverlayToUrl(url);
+    } else {
+        window.open(url, '_blank', 'noopener');
+    }
+}
+
+function renderOddsTable() {
+    const table = document.getElementById('vault-store-odds-table');
+    if (!table) return;
+    table.innerHTML = '';
+
+    for (const row of storeOdds) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'vault-store-odds-row';
+        rowEl.innerHTML = `
+            <span class="vault-store-odds-item">${row.label}</span>
+            <span class="vault-store-odds-percent" style="color:${getRarityColor(row.rarity)}">${row.percent}%</span>
+        `;
+        table.appendChild(rowEl);
+    }
+}
+
+async function purchaseKeys(sku) {
+    if (!window.electronAPI?.purchaseSteamKeys) return;
+    if (!storePurchasesEnabled) {
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Steam Store purchases are offline for this build.';
+        }
+        return;
+    }
+
+    const result = await window.electronAPI.purchaseSteamKeys(sku).catch((err) => ({ ok: false, message: err?.message }));
+
+    if (result?.ok && result.mode === 'mock') {
+        await loadVaultData();
+        updateOpenCacheAvailability();
+        return;
+    }
+
+    if (result?.ok && result.requiresConfirmation && result.confirmUrl) {
+        // Real-money purchase: hand off to the Steam Overlay for payment
+        // confirmation, then poll finalize once the player returns.
+        await window.electronAPI.openSteamOverlayToUrl(result.confirmUrl);
+        const finalized = await window.electronAPI.finalizeSteamPurchase(result.transId).catch(() => null);
+        if (finalized?.ok && finalized.status === 'completed') {
+            await loadVaultData();
+            updateOpenCacheAvailability();
+        } else {
+            console.warn('[steam-store] purchase not yet completed:', finalized);
+        }
+        return;
+    }
+
+    console.error('[steam-store] purchase failed:', result);
+}
+
+function findOwnedCacheAndKey() {
+    const cache = vaultItems.find((i) => i.itemdefid === 4000);
+    const key = vaultItems.find((i) => i.itemdefid === 4001);
+    return cache && key ? { cache, key } : null;
+}
+
+function updateOpenCacheAvailability() {
+    const statusEl = document.getElementById('vault-store-open-status');
+    const btn = document.getElementById('vault-store-open-btn');
+    const pair = findOwnedCacheAndKey();
+
+    if (pair) {
+        statusEl?.classList.add('hidden');
+        btn?.classList.remove('hidden');
+    } else {
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'No Cache + Key pair detected in your inventory.';
+        }
+        btn?.classList.add('hidden');
+    }
+}
+
+async function openDeepRelicCache() {
+    if (!window.electronAPI?.openSteamCache) return;
+    const pair = findOwnedCacheAndKey();
+    if (!pair) return;
+
+    const statusEl = document.getElementById('vault-store-open-status');
+    const result = await window.electronAPI.openSteamCache(pair.cache.itemId, pair.key.itemId)
+        .catch((err) => ({ ok: false, message: err?.message }));
+
+    if (result?.ok) {
+        await loadVaultData();
+        updateOpenCacheAvailability();
+        const reward = STEAM_ITEM_CATALOG[result.granted?.[0]?.itemdefid];
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+        }
+    } else {
+        console.error('[steam-store] cache open failed:', result);
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = 'Cache open failed — check your connection and try again.';
+        }
+    }
+}
+
+function formatLeaderboardScore(board, score) {
+    if (board === 'survival_time_seconds') {
+        const mins = Math.floor(score / 60);
+        const secs = score % 60;
+        return `${mins}m ${secs}s`;
+    }
+    if (board === 'deepest_depth_score') {
+        const tier = Math.floor(score / 100000);
+        const depth = score % 100000;
+        return `Tier ${tier} - ${depth}m`;
+    }
+    return String(score);
+}

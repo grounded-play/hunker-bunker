@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { chooseDirectorAction, BunkerDirector } from './director.js';
+import { BunkerDirector, chooseApexThreatEvents, chooseDirectorAction } from './director.js';
 
 describe('chooseDirectorAction', () => {
     it('never harasses inside the safe field', () => {
@@ -64,5 +64,77 @@ describe('BunkerDirector', () => {
         d.notifyThreat();
         const a = d.tick(2, snap, () => 0.9); // sinceThreat tiny -> breathe
         expect(a).toBeNull();
+    });
+
+    it('draws and exposes deterministic run cards', () => {
+        const d = new BunkerDirector();
+        const state = d.startRun('director-seed');
+
+        expect(d.runSeed).toBe('director-seed');
+        expect(d.activeCards.map((card) => card.key)).toEqual(state.cards.map((card) => card.key));
+        expect(d.cardEffects).toEqual(state.effects);
+        expect(d.cardState.publicCards[0]).toEqual({
+            key: d.activeCards[0].key,
+            label: d.activeCards[0].label,
+            blurb: d.activeCards[0].blurb
+        });
+    });
+
+    it('accepts a pre-drawn card state from the runtime', () => {
+        const d = new BunkerDirector();
+        d.setRunCards({
+            seed: 'manual',
+            cards: [{
+                key: 'patrol_surge',
+                label: 'PATROL SURGE',
+                blurb: 'test',
+                effects: { spawnBias: { patrolBias: true } }
+            }]
+        });
+
+        expect(d.runSeed).toBe('manual');
+        expect(d.cardEffects.spawnBias.patrolBias).toBe(true);
+    });
+
+    it('emits apex threats once per run gate', () => {
+        const d = new BunkerDirector();
+        const first = d.evaluateApexThreats({ campId: 'camp_vesper', suspicion: 75 });
+        const second = d.evaluateApexThreats({ campId: 'camp_vesper', suspicion: 100 });
+        const outed = d.evaluateApexThreats({ campId: 'camp_vesper', suspicion: 100, outed: true });
+
+        expect(first.map((event) => event.type)).toEqual(['hunter_pair']);
+        expect(second).toEqual([]);
+        expect(outed.map((event) => event.type)).toEqual(['exterminator_lander']);
+    });
+});
+
+describe('chooseApexThreatEvents', () => {
+    it('triggers hunters at high suspicion and a lander when outed', () => {
+        const events = chooseApexThreatEvents({ campId: 'camp_meridian', suspicion: 80, outed: true });
+
+        expect(events.map((event) => event.type)).toEqual(['hunter_pair', 'exterminator_lander']);
+        expect(events[0].hunters).toEqual(['HENDERSON-REDLINE', 'PARK-ASH']);
+    });
+
+    it('does not repeat already spawned threat keys', () => {
+        const events = chooseApexThreatEvents(
+            { campId: 'camp_meridian', suspicion: 80, outed: true },
+            ['hunter_pair:camp_meridian', 'exterminator_lander:global']
+        );
+
+        expect(events).toEqual([]);
+    });
+
+    it('honors a raised hunterPairThreshold (Radar Shroud camp-quest reward)', () => {
+        // Same suspicion that triggers hunter_pair at the default 75 must
+        // stay silent once the threshold is raised past it.
+        const withoutReward = chooseApexThreatEvents({ campId: 'camp_meridian', suspicion: 80 });
+        expect(withoutReward.map((event) => event.type)).toEqual(['hunter_pair']);
+
+        const withReward = chooseApexThreatEvents({ campId: 'camp_meridian', suspicion: 80, hunterPairThreshold: 90 });
+        expect(withReward).toEqual([]);
+
+        const stillTriggers = chooseApexThreatEvents({ campId: 'camp_meridian', suspicion: 95, hunterPairThreshold: 90 });
+        expect(stillTriggers.map((event) => event.type)).toEqual(['hunter_pair']);
     });
 });

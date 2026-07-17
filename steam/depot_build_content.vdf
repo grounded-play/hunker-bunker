@@ -1,0 +1,22 @@
+"DepotBuild"
+{
+    "DepotID" "4957041"
+    "FileMapping"
+    {
+        "LocalPath" "*"
+        "DepotPath" "."
+        "recursive" "1"
+    }
+
+    // Dev-only and server-only files; retail launches through Steam and the
+    // trusted backend owns production state.
+    "FileExclusion" "steam_appid.txt"
+    "FileExclusion" ".env"
+    "FileExclusion" ".env.*"
+    "FileExclusion" "db_storage.json"
+    "FileExclusion" "db_storage.json.tmp"
+    "FileExclusion" "*.pem"
+    "FileExclusion" "*.p12"
+    "FileExclusion" "*.pfx"
+    "FileExclusion" "*.key"
+}

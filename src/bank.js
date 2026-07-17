@@ -654,12 +654,6 @@ export class BankManager {
         return O2_GENERATOR_UPGRADES.find((entry) => entry.level === normalized) ?? null;
     }
 
-    canUpgradeO2Generator() {
-        const upgrade = this.getO2GeneratorUpgrade();
-        if (!upgrade) return false;
-        return this.canAfford(upgrade.cost);
-    }
-
     upgradeO2Generator() {
         const upgrade = this.getO2GeneratorUpgrade();
         if (!upgrade) return null;
@@ -708,20 +702,6 @@ export class BankManager {
 
     getGoalCost(goalKey) {
         return GOAL_COSTS[goalKey] ?? null;
-    }
-
-    canUnlock(goalKey) {
-        if (!GOAL_ORDER.includes(goalKey)) return false;
-        if (this.state.unlocks[goalKey]) return false;
-
-        const index = GOAL_ORDER.indexOf(goalKey);
-        if (index > 0) {
-            const prereqKey = GOAL_ORDER[index - 1];
-            if (!this.state.unlocks[prereqKey]) return false;
-        }
-
-        const costs = this.getGoalCost(goalKey);
-        return this.canAfford(costs ?? {});
     }
 
     setUnlock(goalKey) {
@@ -826,12 +806,6 @@ export class BankManager {
         return cfg.costs[level] ?? null;
     }
 
-    canUpgradeWeapon(key) {
-        const cost = this.getWeaponUpgradeNextCost(key);
-        if (!cost) return false;
-        return this.canAffordShells(shellPriceOf(cost));
-    }
-
     upgradeWeapon(key) {
         const cfg = WEAPON_UPGRADES_CONFIG[key];
         if (!cfg) return false;
@@ -848,10 +822,6 @@ export class BankManager {
             bank: this.getState()
         });
         return true;
-    }
-
-    getUnlockedSkills() {
-        return [...(this.state.unlockedSkills ?? [])];
     }
 
     isSkillUnlocked(key) {

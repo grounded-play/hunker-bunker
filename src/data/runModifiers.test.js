@@ -4,26 +4,32 @@ import { RUN_MODIFIERS, getRunModifierById, pickRunModifier } from './runModifie
 describe('runModifiers', () => {
     it('defines the expected run modifier pool', () => {
         expect(RUN_MODIFIERS.map((modifier) => modifier.id)).toEqual([
-            'rolling_blackout',
-            'thin_air',
+            'relay_blackout',
+            'spore_bloom',
             'patrol_surge',
-            'bad_map_data',
-            'unstable_doors'
+            'ice_collapse',
+            'camp_paranoia',
+            'egg_instability'
         ]);
         for (const modifier of RUN_MODIFIERS) {
             expect(typeof modifier.title).toBe('string');
             expect(typeof modifier.description).toBe('string');
-            expect(modifier.weight).toBeGreaterThan(0);
+            expect(modifier.effects).toBeTruthy();
         }
     });
 
     it('looks up modifiers by id', () => {
-        expect(getRunModifierById('thin_air')?.title).toBe('THIN AIR');
+        expect(getRunModifierById('egg_instability')?.title).toBe('EGG INSTABILITY');
         expect(getRunModifierById('missing')).toBeNull();
     });
 
-    it('picks deterministically with injected RNG', () => {
-        expect(pickRunModifier(() => 0)?.id).toBe('rolling_blackout');
-        expect(pickRunModifier(() => 0.999)?.id).toBe('unstable_doors');
+    it('picks a deterministic multi-card run state with a seed', () => {
+        const modifier = pickRunModifier(Math.random, { seed: 'compat-seed' });
+
+        expect(modifier.seed).toBe('compat-seed');
+        expect(modifier.cards.length).toBeGreaterThanOrEqual(2);
+        expect(modifier.cards.length).toBeLessThanOrEqual(3);
+        expect(modifier.title).toContain(modifier.cards[0].label);
+        expect(modifier.effects).toBeTruthy();
     });
 });

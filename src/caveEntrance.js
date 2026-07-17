@@ -23,6 +23,7 @@ export class CaveEntrance {
         this.revealed = false;
         this.elapsed = 0;
         this.pos = { x: 0, z: 0 };
+        this.throneAudio = null;
     }
 
     build(x, z) {
@@ -81,6 +82,96 @@ export class CaveEntrance {
             this.podMats.push(podMat);
         }
 
+        // Load cave reveal interior props
+        const loadCaveTex = (path) => {
+            const texture = new THREE.Texture();
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.NearestFilter;
+            texture.magFilter = THREE.NearestFilter;
+            texture.repeat.set(1, 1);
+            if (typeof Image !== 'undefined') {
+                const img = new Image();
+                img.onload = () => {
+                    if (typeof document !== 'undefined') {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        // apply black chroma key
+                        const threshold = 15;
+                        for (let i = 0; i < imgData.data.length; i += 4) {
+                            const r = imgData.data[i];
+                            const g = imgData.data[i + 1];
+                            const b = imgData.data[i + 2];
+                            if (r <= threshold && g <= threshold && b <= threshold) {
+                                imgData.data[i + 3] = 0;
+                            }
+                        }
+                        ctx.putImageData(imgData, 0, 0);
+                        texture.image = canvas;
+                    } else {
+                        texture.image = img;
+                    }
+                    texture.needsUpdate = true;
+                };
+                img.src = path;
+            }
+            return texture;
+        };
+
+        const texThrone = loadCaveTex('/prop_cave_queen_throne.png');
+        const texWebs = loadCaveTex('/prop_cave_webs.png');
+        const texSpores = loadCaveTex('/prop_cave_spores.png');
+        const texLichen = loadCaveTex('/prop_cave_lichen.png');
+        const texBones = loadCaveTex('/prop_cave_bones.png');
+
+        // Spores around mouth
+        const matSpores1 = new THREE.SpriteMaterial({ map: texSpores, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteSpores1 = new THREE.Sprite(matSpores1);
+        spriteSpores1.position.set(-1.8, 0.5, 0.8);
+        spriteSpores1.scale.set(0.9, 0.9, 1);
+        group.add(spriteSpores1);
+
+        const spriteSpores2 = new THREE.Sprite(matSpores1);
+        spriteSpores2.position.set(1.9, 0.5, 0.7);
+        spriteSpores2.scale.set(0.8, 0.8, 1);
+        group.add(spriteSpores2);
+
+        // Webs covering the path/arch
+        const matWebs = new THREE.SpriteMaterial({ map: texWebs, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteWebs1 = new THREE.Sprite(matWebs);
+        spriteWebs1.position.set(-0.8, 1.2, -0.4);
+        spriteWebs1.scale.set(1.2, 1.0, 1);
+        group.add(spriteWebs1);
+
+        const spriteWebs2 = new THREE.Sprite(matWebs);
+        spriteWebs2.position.set(0.8, 1.2, -0.4);
+        spriteWebs2.scale.set(1.2, 1.0, 1);
+        group.add(spriteWebs2);
+
+        // Lichen hanging down
+        const matLichen = new THREE.SpriteMaterial({ map: texLichen, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteLichen = new THREE.Sprite(matLichen);
+        spriteLichen.position.set(0, 1.6, -0.2);
+        spriteLichen.scale.set(1.4, 0.7, 1);
+        group.add(spriteLichen);
+
+        // Bones piles
+        const matBones = new THREE.SpriteMaterial({ map: texBones, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteBones = new THREE.Sprite(matBones);
+        spriteBones.position.set(-1.2, 0.3, 1.2);
+        spriteBones.scale.set(0.8, 0.7, 1);
+        group.add(spriteBones);
+
+        // Queen's Throne hero prop (placed behind/above the cave arch)
+        const matThrone = new THREE.SpriteMaterial({ map: texThrone, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteThrone = new THREE.Sprite(matThrone);
+        spriteThrone.position.set(0, 2.0, -1.2);
+        spriteThrone.scale.set(2.4, 2.4, 1);
+        group.add(spriteThrone);
+
         group.visible = false;
         this.scene.add(group);
         this.group = group;
@@ -106,6 +197,10 @@ export class CaveEntrance {
         if (this.group) this.group.visible = false;
         if (this.mouthMat) this.mouthMat.opacity = 0;
         if (this.light) this.light.intensity = 0;
+        if (this.throneAudio) {
+            try { this.throneAudio.source.stop(); } catch (err) { void err; }
+            this.throneAudio = null;
+        }
     }
 
     get isRevealed() { return this.revealed; }
@@ -131,6 +226,48 @@ export class CaveEntrance {
         if (this.mouthMat) this.mouthMat.opacity = 0.96 * ramp;
         for (const podMat of this.podMats) {
             podMat.emissiveIntensity = 0.55 * ramp * (0.7 + Math.sin(this.elapsed * 2.3) * 0.3);
+        }
+
+        // --- AUDIO WIRING ---
+        const audio = typeof window !== 'undefined' ? window.AudioManager : null;
+        if (!this.throneAudio) {
+            this.throneAudio = audio?.play('hive_queen_throne', { loop: true, volume: 0.0, pan: 0, bus: 'world' });
+        }
+
+        // Dynamic throne loop volume and panning based on player distance
+        if (this.throneAudio) {
+            const player = (typeof window !== 'undefined' && window.game) ? window.game.player : null;
+            if (player && player.position) {
+                const dist = this.distanceTo(player.position.x, player.position.z);
+                const maxVol = 0.06;
+                const minDistance = 2.0;
+                const maxDistance = 18.0;
+                let targetVol = 0.0;
+
+                if (dist <= minDistance) {
+                    targetVol = maxVol;
+                } else if (dist < maxDistance) {
+                    const t = (dist - minDistance) / (maxDistance - minDistance);
+                    targetVol = maxVol * (1.0 - t);
+                }
+
+                const dx = this.pos.x - player.position.x;
+                const targetPan = Math.max(-1.0, Math.min(1.0, dx / 12.0));
+
+                const ctx = this.throneAudio.gainNode?.context;
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    this.throneAudio.gainNode.gain.setTargetAtTime(targetVol, now, 0.1);
+                    if (this.throneAudio.panner) {
+                        this.throneAudio.panner.pan.setTargetAtTime(targetPan, now, 0.1);
+                    }
+                }
+            }
+        }
+
+        if (Math.random() < 0.0028) {
+            const sfx = Math.random() < 0.5 ? 'hive_spores_puff' : 'hive_webs_sticky';
+            audio?.play(sfx, { volume: 0.18, bus: 'world' });
         }
     }
 }

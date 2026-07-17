@@ -7,7 +7,7 @@ describe('enemy stats', () => {
     it('preserves the exact pre-extraction override values', () => {
         expect(ENEMY_STATS.cryosnail).toEqual({ maxHp: 4, speed: 0.9 });
         expect(ENEMY_STATS.sporesnail).toEqual({ maxHp: 3, speed: 1.4 });
-        expect(ENEMY_STATS.boss_cybersnail).toEqual({ maxHp: 20, speed: 1.5 });
+        expect(ENEMY_STATS.boss_cybersnail).toEqual({ maxHp: 15, speed: 1.5 });
         expect(ENEMY_STATS.boss_cryosnail).toEqual({ maxHp: 40, speed: 1.1 });
         expect(ENEMY_STATS.boss_sporesnail).toEqual({ maxHp: 75, speed: 1.3 });
     });

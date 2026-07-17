@@ -13,6 +13,9 @@ const ALIEN_COLORS = {
     'hive_carapace': 0xffa200 // Amber carapace
 };
 
+// Shorter than the camps' distress flare (11): hives whisper, camps shout.
+const HIVE_SIGNAL_HEIGHT = 8;
+
 const INTERACT_RADIUS = 2.6;
 
 function makeAlienFallbackCanvas({ color = 0x8cff96 } = {}) {
@@ -98,6 +101,8 @@ export class HiveSite {
         this.status = 'dormant';
         this.extractionLevel = 0;
         this.bond = 0;
+        this.signalColumn = null;
+        this.signalMat = null;
 
         // Pathfinding/ambient walk cycles
         this.npcPos = { x: 0, z: 0 };
@@ -109,6 +114,8 @@ export class HiveSite {
         this.alienDrones = [];
 
         this.color = ALIEN_COLORS[id] ?? 0x8cff96;
+        this.eggsAudio = null;
+        this.wasHurt = false;
     }
 
     createAlienDrone({ angle = 0, radius = 1.6, scale = 1 } = {}) {
@@ -225,9 +232,74 @@ export class HiveSite {
             return drone;
         });
 
+        // Signal column: the hive-side of the camps' flare vocabulary. One
+        // shared visual language — a light column means "a living site is
+        // here", and its color reads the site's state from across the maze.
+        this.signalMat = new THREE.MeshBasicMaterial({
+            color: this.color,
+            transparent: true,
+            opacity: 0.2,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            fog: false
+        });
+        this.signalColumn = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.3, 0.66, HIVE_SIGNAL_HEIGHT, 10, 1, true),
+            this.signalMat
+        );
+        this.signalColumn.position.y = HIVE_SIGNAL_HEIGHT / 2;
+        group.add(this.signalColumn);
+
+        // Load cave prop textures for hive surrounds
+        this.texEggsIntact = loadAlienKeyedTexture('/prop_cave_eggs_intact.png', 15);
+        this.texEggsHatched = loadAlienKeyedTexture('/prop_cave_eggs_hatched.png', 15);
+        this.texSpores = loadAlienKeyedTexture('/prop_cave_spores.png', 15);
+        this.texWebs = loadAlienKeyedTexture('/prop_cave_webs.png', 15);
+        this.texWounded = loadAlienKeyedTexture('/prop_cave_hive_wounded.png', 15);
+
+        // Override default 4x4 wrap/repeat logic to make static props render full size
+        [this.texEggsIntact, this.texEggsHatched, this.texSpores, this.texWebs, this.texWounded].forEach(t => {
+            t.repeat.set(1, 1);
+        });
+
+        this.propSprites = {};
+
+        // Eggs Cluster (intact by default, swaps to hatched on extraction/wound)
+        const matEggs = new THREE.SpriteMaterial({ map: this.texEggsIntact, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteEggs = new THREE.Sprite(matEggs);
+        spriteEggs.position.set(-1.6, 0.4, -0.6);
+        spriteEggs.scale.set(0.8, 0.8, 1);
+        group.add(spriteEggs);
+        this.propSprites.eggs = spriteEggs;
+
+        // Spores
+        const matSpores = new THREE.SpriteMaterial({ map: this.texSpores, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteSpores = new THREE.Sprite(matSpores);
+        spriteSpores.position.set(1.4, 0.5, 1.2);
+        spriteSpores.scale.set(0.9, 0.9, 1);
+        group.add(spriteSpores);
+
+        // Resin Webs
+        const matWebs = new THREE.SpriteMaterial({ map: this.texWebs, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteWebs = new THREE.Sprite(matWebs);
+        spriteWebs.position.set(-1.1, 0.6, 1.3);
+        spriteWebs.scale.set(1.1, 0.9, 1);
+        group.add(spriteWebs);
+
+        // Wounded membrane leak (only visible if mined or wounded)
+        const matWounded = new THREE.SpriteMaterial({ map: this.texWounded, transparent: true, alphaTest: 0.05, depthWrite: false });
+        const spriteWounded = new THREE.Sprite(matWounded);
+        spriteWounded.position.set(0.9, 0.4, -1.2);
+        spriteWounded.scale.set(1.0, 0.8, 1);
+        spriteWounded.visible = false;
+        group.add(spriteWounded);
+        this.propSprites.wounded = spriteWounded;
+
         this.scene.add(group);
         this.group = group;
         this.built = true;
+        this.syncSignalColumn();
     }
 
     reveal(x, z) {
@@ -236,9 +308,27 @@ export class HiveSite {
         if (this.group) this.group.visible = true;
     }
 
+    // Column color is the state glyph: hive-native violet while dormant or
+    // bonded-green once kin, wound-red while hurt or mined, and no column at
+    // all over a dead or abandoned site.
+    syncSignalColumn() {
+        if (!this.signalColumn || !this.signalMat) return;
+        const dead = ['slain', 'abandoned', 'expired_by_cure', 'queen_consumed'].includes(this.status);
+        this.signalColumn.visible = !dead;
+        if (dead) return;
+        if (this.status === 'mined' || this.status === 'wounded') {
+            this.signalMat.color.set(0xff5a3c);
+        } else if (this.status === 'bonded' || this.status === 'rescued') {
+            this.signalMat.color.set(0x7dff9a);
+        } else {
+            this.signalMat.color.set(this.color);
+        }
+    }
+
     setStatus(status) {
         this.status = status;
         if (!this.built) return;
+        this.syncSignalColumn();
 
         // Change color / emission based on status
         if (status === 'slain' || status === 'abandoned') {
@@ -264,6 +354,47 @@ export class HiveSite {
                 if (drone.mesh) drone.mesh.visible = true;
             }
         }
+        this.updatePropVisuals();
+    }
+
+    updatePropVisuals() {
+        if (!this.propSprites) return;
+        const isHurt = this.status === 'wounded' || this.status === 'mined';
+        const dead = ['slain', 'abandoned', 'expired_by_cure', 'queen_consumed'].includes(this.status);
+        const audio = typeof window !== 'undefined' ? window.AudioManager : null;
+
+        if (this.propSprites.eggs) {
+            this.propSprites.eggs.material.map = isHurt ? this.texEggsHatched : this.texEggsIntact;
+            this.propSprites.eggs.material.needsUpdate = true;
+            this.propSprites.eggs.visible = !dead;
+        }
+
+        if (this.propSprites.wounded) {
+            this.propSprites.wounded.visible = isHurt && !dead;
+        }
+
+        // --- AUDIO WIRING ---
+        if (this.revealed) {
+            if (!dead) {
+                if (!this.eggsAudio) {
+                    this.eggsAudio = audio?.play('hive_eggs_hum', { loop: true, volume: 0.0, pan: 0, bus: 'world' });
+                }
+            } else {
+                if (this.eggsAudio) {
+                    try { this.eggsAudio.source.stop(); } catch (err) { void err; }
+                    this.eggsAudio = null;
+                }
+            }
+
+            if (isHurt && !dead) {
+                if (!this.wasHurt) {
+                    this.wasHurt = true;
+                    audio?.play('hive_eggs_hatch', { volume: 0.45, bus: 'sfx' });
+                }
+            } else {
+                this.wasHurt = false;
+            }
+        }
     }
 
     setExtractionLevel(level) {
@@ -278,10 +409,52 @@ export class HiveSite {
         if (!this.built || !this.revealed) return;
         this.elapsed += delta;
 
+        // Dynamic eggs hum volume and panning based on player distance
+        if (this.eggsAudio) {
+            const player = (typeof window !== 'undefined' && window.game) ? window.game.player : null;
+            if (player && player.position) {
+                const dist = this.distanceTo(player.position.x, player.position.z);
+                const maxVol = 0.07;
+                const minDistance = 2.0;
+                const maxDistance = 18.0;
+                let targetVol = 0.0;
+
+                if (dist <= minDistance) {
+                    targetVol = maxVol;
+                } else if (dist < maxDistance) {
+                    const t = (dist - minDistance) / (maxDistance - minDistance);
+                    targetVol = maxVol * (1.0 - t);
+                }
+
+                const dx = this.pos.x - player.position.x;
+                const targetPan = Math.max(-1.0, Math.min(1.0, dx / 12.0));
+
+                const ctx = this.eggsAudio.gainNode?.context;
+                if (ctx) {
+                    const now = ctx.currentTime;
+                    this.eggsAudio.gainNode.gain.setTargetAtTime(targetVol, now, 0.1);
+                    if (this.eggsAudio.panner) {
+                        this.eggsAudio.panner.pan.setTargetAtTime(targetPan, now, 0.1);
+                    }
+                }
+            }
+        }
+
+        // Occasionally play dripping sounds if wounded/mined
+        const isHurt = this.status === 'wounded' || this.status === 'mined';
+        const audio = typeof window !== 'undefined' ? window.AudioManager : null;
+        if (isHurt && Math.random() < 0.0028) {
+            audio?.play('hive_wounded_drip', { volume: 0.22, bus: 'world' });
+        }
+
         // Pulse core bioluminescence
         const pulse = 0.45 + 0.15 * Math.sin(this.elapsed * 2.8);
         if (this.coreMat && this.status !== 'slain') {
             this.coreMat.emissiveIntensity = pulse;
+        }
+        if (this.signalColumn?.visible && this.signalMat) {
+            // Slow breathing, out of phase with the core — organic, not urgent.
+            this.signalMat.opacity = 0.14 + (Math.sin(this.elapsed * 1.1) + 1) * 0.045;
         }
 
         // Ambient NPC walking logic
@@ -364,6 +537,7 @@ export class HiveSite {
             this.setStatus(worldStatus);
             this.status = record.status;
         }
+        this.updatePropVisuals();
     }
 
     get isRevealed() { return this.revealed; }
@@ -382,5 +556,10 @@ export class HiveSite {
     reset() {
         this.revealed = false;
         if (this.group) this.group.visible = false;
+        if (this.eggsAudio) {
+            try { this.eggsAudio.source.stop(); } catch (err) { void err; }
+            this.eggsAudio = null;
+        }
+        this.wasHurt = false;
     }
 }

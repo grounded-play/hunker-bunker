@@ -1,0 +1,111 @@
+import { describe, expect, it, vi } from 'vitest';
+import { ThreeGame } from './threeGame.js';
+
+// getHoleCutForLandform is the single source of truth mountChunk's render
+// pass and isHoleTile's collision/fall-hazard pass both call — the bug
+// this fixes ("holes are in the door") was these two paths each hardcoding
+// their own copy of these thresholds and drifting apart. It only reads its
+// argument, so it's callable without a full ThreeGame instance.
+function holeCutFor(landform) {
+    return ThreeGame.prototype.getHoleCutForLandform.call({}, landform);
+}
+
+function makeAllWallGrid(size = 19) {
+    return Array.from({ length: size }, () => Array(size).fill('#'));
+}
+
+function makeFakeHoleGame() {
+    const chunkSize = 19;
+    const grid = makeAllWallGrid(chunkSize);
+    const fakeThis = {
+        chunkSize,
+        chunkCache: new Map([['0,0', grid]]),
+        _chunkLandformCache: new Map(),
+        getOrCreateChunk: () => grid,
+        getChunkLandform: () => 'maze',
+        hashTile: ThreeGame.prototype.hashTile,
+        createSeededRandom: ThreeGame.prototype.createSeededRandom,
+        getTileType: ThreeGame.prototype.getTileType,
+        getCachedTileType: ThreeGame.prototype.getCachedTileType,
+        getHoleCutForLandform: ThreeGame.prototype.getHoleCutForLandform,
+        getHoleVisualInfo: ThreeGame.prototype.getHoleVisualInfo
+    };
+    return fakeThis;
+}
+
+function findFirstHole(fakeThis) {
+    for (let y = 0; y < fakeThis.chunkSize; y += 1) {
+        for (let x = 0; x < fakeThis.chunkSize; x += 1) {
+            const rng = fakeThis.createSeededRandom(fakeThis.hashTile(x, y) + 999);
+            if (rng() < fakeThis.getHoleCutForLandform('maze')) {
+                return { x, y };
+            }
+        }
+    }
+    throw new Error('Expected at least one deterministic maze hole in the test chunk.');
+}
+
+describe('getHoleCutForLandform', () => {
+    it('matches the exact per-landform thresholds mountChunk renders with', () => {
+        expect(holeCutFor('maze')).toBe(0.08);
+        expect(holeCutFor('ruins')).toBe(0.08);
+        expect(holeCutFor('field')).toBe(0.03);
+        expect(holeCutFor('canyon')).toBe(0.0);
+        expect(holeCutFor('crater')).toBe(0.06);
+        expect(holeCutFor(undefined)).toBe(0.06);
+    });
+});
+
+describe('isHoleTile / mountChunk agreement', () => {
+    it('rolls the same seeded value both call sites would compare against the same threshold', () => {
+        // Both mountChunk and isHoleTile derive their roll from
+        // hashTile(worldX, worldY) + 999 via createSeededRandom — confirm
+        // that derivation is deterministic and reused correctly by
+        // isHoleTile, which is the actual code path under test here.
+        const fakeThis = makeFakeHoleGame();
+
+        const isHole = ThreeGame.prototype.isHoleTile.call(fakeThis, 5, 5);
+        // Independently recompute what the threshold-aware roll should be.
+        const rng = fakeThis.createSeededRandom(fakeThis.hashTile(5, 5) + 999);
+        const expectedHole = rng() < fakeThis.getHoleCutForLandform('maze');
+
+        expect(isHole).toBe(expectedHole);
+    });
+
+    it('returns the shared visual scale, rotation, and fall radius for pit hazards', () => {
+        const fakeThis = makeFakeHoleGame();
+        const hole = findFirstHole(fakeThis);
+
+        const rng = fakeThis.createSeededRandom(fakeThis.hashTile(hole.x, hole.y) + 999);
+        const roll = rng();
+        const expectedScale = 1.5 + (roll / fakeThis.getHoleCutForLandform('maze')) * 2.5;
+        const expectedRotation = rng() * Math.PI * 2;
+
+        const holeInfo = ThreeGame.prototype.getHoleVisualInfo.call(fakeThis, hole.x, hole.y);
+
+        expect(holeInfo).toMatchObject({
+            x: hole.x,
+            z: hole.y
+        });
+        expect(holeInfo.scale).toBeCloseTo(expectedScale);
+        expect(holeInfo.rotationZ).toBeCloseTo(expectedRotation);
+        expect(holeInfo.fallRadius).toBeCloseTo(expectedScale * 0.42);
+    });
+
+    it('uses cached chunks when radar scans for pit danger outlines', () => {
+        const fakeThis = makeFakeHoleGame();
+        const hole = findFirstHole(fakeThis);
+        const pingedIds = new Set();
+        fakeThis.spawnHoleDangerOutline = vi.fn();
+
+        ThreeGame.prototype.scanDangerHoles.call(fakeThis, hole.x, hole.y, 0.1, pingedIds);
+
+        expect(fakeThis.spawnHoleDangerOutline).toHaveBeenCalled();
+        expect(pingedIds.has(`hole:${hole.x},${hole.y}`)).toBe(true);
+
+        const callCount = fakeThis.spawnHoleDangerOutline.mock.calls.length;
+        ThreeGame.prototype.scanDangerHoles.call(fakeThis, hole.x, hole.y, 0.1, pingedIds);
+
+        expect(fakeThis.spawnHoleDangerOutline).toHaveBeenCalledTimes(callCount);
+    });
+});

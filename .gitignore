@@ -16,13 +16,18 @@ coverage
 # Claude work notes (local only)
 .claude-work/
 
+# Claude Code local/session state (machine-specific paths, PID locks) —
+# .claude/skills/ (project-scoped installed skills) IS meant to be committed.
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
 # Lighthouse
 .lighthouseci/
 # Local Chrome binary downloaded via @puppeteer/browsers for local Lighthouse runs
 chrome/
 
-# Local scratch Chrome profile used during debugging / Lighthouse runs
-scratch/chrome-profile/
+# Local scratch directory (generators, smoke tests, profiles)
+scratch/
 
 # Editor directories and files
 .vscode/*
@@ -34,5 +39,18 @@ scratch/chrome-profile/
 *.njsproj
 *.sln
 *.sw?
-scratch/chrome-profile
-scratch/chrome-profile*/
+
+# Electron/Steam build outputs
+dist_electron/
+steam_build_output/
+steam_appid.txt
+electron/steam-config.json
+dist_soundtrack/
+
+# Local backend/dev stores
+server/db_storage.json
+server/db_storage.json.tmp
+
+# Playwright e2e (Phase 13) output
+playwright-report/
+test-results/

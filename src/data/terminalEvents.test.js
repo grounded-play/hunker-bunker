@@ -51,4 +51,25 @@ describe('terminalEvents', () => {
         // A choice with missing methods must not throw (optional chaining).
         expect(() => getTerminalEventById('loot_cache').choices[0].effect({})).not.toThrow();
     });
+
+    it('loot cache only trips lights once base power is online', () => {
+        const forceOpen = getTerminalEventById('loot_cache').choices[0];
+        expect(forceOpen.requiresBasePowerOnline).toBe(true);
+        expect(forceOpen.offlineLabel).toContain('offline');
+
+        const offlineGame = {
+            grantSalvageCache: vi.fn(),
+            triggerLightsOut: vi.fn(() => false)
+        };
+        expect(forceOpen.effect(offlineGame)).toContain('offline');
+        expect(offlineGame.grantSalvageCache).toHaveBeenCalledWith({ tech: 12, coin: 8 });
+        expect(offlineGame.triggerLightsOut).toHaveBeenCalledWith(8);
+
+        const onlineGame = {
+            grantSalvageCache: vi.fn(),
+            triggerLightsOut: vi.fn(() => true)
+        };
+        expect(forceOpen.effect(onlineGame)).toContain('Breaker tripped');
+        expect(onlineGame.triggerLightsOut).toHaveBeenCalledWith(8);
+    });
 });
