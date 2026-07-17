@@ -63,6 +63,19 @@ concurrently right now.
 
 ### Claude lane (this session) — world-gen numerics + objective framework
 
+**Status 2026-07-17:** items 1-5 landed on `dev/sprint-20` (Tier-0 test
+fix was already done at merge time; hive/camp bands separated with
+placement tests; plaza-halo shape shielding through soften/fill/widen/
+trim with a regression test; lore compass branch + session read-tracking;
+skill-tree keyboard nav with spatial-arrow unit tests and a real-browser
+e2e — which also surfaced and fixed a genuine deadlock in
+`startRunAndSkipIntro`, see `tests/e2e/helpers.js`). Item 6 now has its
+design pass: `docs/objective-system-spec.md` — implementation not
+started. Also fixed along the way: Steam-drop toast CSS identity (§1.4)
+and two stale punch-list findings corrected in place (§1.3 priority
+inversion, §3a lore-prompt placement — both already resolved by earlier
+work).
+
 1. **Tier 0, do first**: fix `src/data/enemies.test.js` — it asserts
    `boss_cybersnail.maxHp === 20`, current code has `15`
    (`src/data/enemies.js:14`). Confirm 15 is the intended final value

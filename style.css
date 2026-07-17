@@ -7167,6 +7167,25 @@ body.mission-intro-active #game-container canvas {
   color: rgba(125, 255, 90, 0.82);
 }
 
+/* Steam inventory grants ride the achievement-toast layout but carry
+   their own identity (wave-6 punch list §1.4): gold, not green — a real
+   item with economic value must not read as a routine achievement pop,
+   and restyling achievements must never silently reskin Steam grants. */
+.steam-drop-toast {
+  background: linear-gradient(135deg, rgba(24, 18, 6, 0.96), rgba(18, 15, 9, 0.94));
+  border-color: rgba(255, 210, 122, 0.5);
+  border-left-color: rgba(255, 210, 122, 0.92);
+}
+
+.steam-drop-toast .achievement-toast__icon {
+  border-color: rgba(255, 210, 122, 0.42);
+  color: #ffe9c2;
+}
+
+.steam-drop-toast .achievement-toast__kicker {
+  color: rgba(255, 210, 122, 0.88);
+}
+
 .achievement-toast__title {
   margin-top: calc(var(--vu) * 0.35);
   font-size: var(--font-sm);

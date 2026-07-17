@@ -19,6 +19,11 @@ other's docs. Newest/most-authoritative docs first in each section.
 - **[`things-we-missed.md`](./things-we-missed.md)**
   — full audit of underplanned/unexplored/dropped work across design and
   deployment; the source material wave 6 above triages into lanes.
+- **[`objective-system-spec.md`](./objective-system-spec.md)**
+  — design for the unified tracked-objective contract (one event shape,
+  priority ladder, migration order) that collapses the five parallel
+  objective systems; wave 6 Claude-lane item 6, design-complete
+  2026-07-17, implementation not started.
 - **[`ux-and-game-feel-punch-list-2026-07-16.md`](./ux-and-game-feel-punch-list-2026-07-16.md)**
   — the separate, parallel gameplay/UX punch list (camps, hives, maze
   diversity, lore pickup, objectives/black box, sub-objectives, boss

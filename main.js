@@ -8707,7 +8707,11 @@ function showSteamDropToast(itemdefid, quantity = 1) {
 
     window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
     const toast = document.createElement('div');
-    toast.className = 'achievement-toast hud-stack-card hidden';
+    // steam-drop-toast rides the achievement-toast base but carries its own
+    // identity class: a real-inventory grant should read as more valuable
+    // than a routine achievement pop, and an achievement-toast restyle must
+    // never silently reskin Steam grants (wave-6 punch list §1.4).
+    toast.className = 'achievement-toast steam-drop-toast hud-stack-card hidden';
     toast.setAttribute('aria-live', 'polite');
     toast.dataset.notificationPriority = '5';
     toast.dataset.seq = String(hudCardSeq++);
