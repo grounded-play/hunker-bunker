@@ -46,13 +46,43 @@ let lastInitError = null;
 const PURCHASE_EVENT_LIMIT = 50;
 let sqliteBackend = null;
 let sqliteBackendPath = null;
+let nodeSqliteModule = null;
+let nodeSqliteLoadError = null;
+let nodeSqliteChecked = false;
+
+function getNodeSqliteModule() {
+    if (nodeSqliteChecked) return nodeSqliteModule;
+    nodeSqliteChecked = true;
+    try {
+        nodeSqliteModule = require('node:sqlite');
+        nodeSqliteLoadError = null;
+    } catch (err) {
+        nodeSqliteModule = null;
+        nodeSqliteLoadError = err;
+    }
+    return nodeSqliteModule;
+}
+
+export function nodeSqliteAvailable() {
+    return typeof getNodeSqliteModule()?.DatabaseSync === 'function';
+}
+
+function requireNodeSqliteDatabaseSync() {
+    const sqliteModule = getNodeSqliteModule();
+    if (typeof sqliteModule?.DatabaseSync === 'function') return sqliteModule.DatabaseSync;
+
+    const unavailableMessage = nodeSqliteLoadError?.code === 'ERR_UNKNOWN_BUILTIN_MODULE'
+        ? 'This Node runtime does not include the node:sqlite built-in module.'
+        : `Unable to load node:sqlite${nodeSqliteLoadError?.message ? `: ${nodeSqliteLoadError.message}` : '.'}`;
+    throw new Error(`${unavailableMessage} Use a Node runtime with node:sqlite support, or unset HB_DB_BACKEND to use the JSON backend.`);
+}
 
 function getSqliteBackend() {
     if (!sqliteBackendEnabled()) return null;
     const dbFilePath = getSqliteDbFilePath();
     if (sqliteBackend && sqliteBackendPath === dbFilePath) return sqliteBackend;
     sqliteBackend?.close?.();
-    const { DatabaseSync } = require('node:sqlite');
+    const DatabaseSync = requireNodeSqliteDatabaseSync();
     sqliteBackend = createSqliteBackend({ DatabaseSync, dbFilePath });
     sqliteBackendPath = dbFilePath;
     return sqliteBackend;

@@ -11,6 +11,7 @@ import {
     getMockLeaderboard,
     initDb,
     listPurchases,
+    nodeSqliteAvailable,
     saveIdempotency,
     saveMockLeaderboard,
     savePurchaseState,
@@ -19,19 +20,20 @@ import {
 
 const TEST_DB_PATH = path.join(os.tmpdir(), `hb-sqlite-db-test-${process.pid}-${Date.now()}.sqlite`);
 const ORIGINAL_ENV = { ...process.env };
+const describeSqlite = nodeSqliteAvailable() ? describe : describe.skip;
 
-beforeAll(async () => {
-    process.env.HB_DB_BACKEND = 'sqlite';
-    process.env.HB_DB_SQLITE_PATH = TEST_DB_PATH;
-    await initDb();
-});
+describeSqlite('SQLite db backend', () => {
+    beforeAll(async () => {
+        process.env.HB_DB_BACKEND = 'sqlite';
+        process.env.HB_DB_SQLITE_PATH = TEST_DB_PATH;
+        await initDb();
+    });
 
-afterEach(() => {
-    process.env.HB_DB_BACKEND = 'sqlite';
-    process.env.HB_DB_SQLITE_PATH = TEST_DB_PATH;
-});
+    afterEach(() => {
+        process.env.HB_DB_BACKEND = 'sqlite';
+        process.env.HB_DB_SQLITE_PATH = TEST_DB_PATH;
+    });
 
-describe('SQLite db backend', () => {
     it('reports sqlite storage status', () => {
         const status = getDbStatus();
         expect(status).toMatchObject({
@@ -119,14 +121,14 @@ describe('SQLite db backend', () => {
         expect(findPurchaseByTransId('sqlite-trans-1')?.status).toBe('completed');
         expect(listPurchases({ steamId64: '76561198000000000' }).filter((p) => p.transId === 'sqlite-trans-1')).toHaveLength(1);
     });
-});
 
-afterAll(() => {
-    for (const key of Object.keys(process.env)) {
-        delete process.env[key];
-    }
-    Object.assign(process.env, ORIGINAL_ENV);
-    for (const suffix of ['', '-wal', '-shm']) {
-        try { fs.unlinkSync(`${TEST_DB_PATH}${suffix}`); } catch { /* already gone */ }
-    }
+    afterAll(() => {
+        for (const key of Object.keys(process.env)) {
+            delete process.env[key];
+        }
+        Object.assign(process.env, ORIGINAL_ENV);
+        for (const suffix of ['', '-wal', '-shm']) {
+            try { fs.unlinkSync(`${TEST_DB_PATH}${suffix}`); } catch { /* already gone */ }
+        }
+    });
 });
