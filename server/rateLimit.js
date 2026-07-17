@@ -1,4 +1,4 @@
-import { rateLimit } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 
 function readPositiveInt(value, fallback) {
     const parsed = Number(value);
@@ -8,7 +8,11 @@ function readPositiveInt(value, fallback) {
 
 function defaultKey(req) {
     const forwarded = String(req.headers?.['x-forwarded-for'] ?? '').split(',')[0].trim();
-    const ip = forwarded || req.ip || req.socket?.remoteAddress || 'unknown';
+    const rawIp = forwarded || req.ip || req.socket?.remoteAddress || 'unknown';
+    // Normalize through express-rate-limit's own helper so distinct textual
+    // forms of the same IPv6 address (or an IPv6-mapped IPv4 address) can't
+    // be used to dodge the bucket keyed on this string.
+    const ip = ipKeyGenerator(rawIp);
     const method = req.method ?? 'GET';
     const path = req.originalUrl?.split('?')[0] ?? req.path ?? '/';
     return `${ip}:${method}:${path}`;
