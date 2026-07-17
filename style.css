@@ -5831,6 +5831,23 @@ body.mission-intro-active #game-container canvas {
   filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
 }
 
+/* Prereq trace: connectors feeding the focused/hovered node light up so
+   "what unlocks this" reads on the graph itself (wave-6 §4c). Wins over
+   unlocked-flow while active. */
+.skill-graph-path--trace {
+  stroke: #ffd27a;
+  stroke-width: 3.2;
+  stroke-dasharray: none;
+  filter: drop-shadow(0 0 7px rgba(255, 210, 122, 0.85));
+}
+
+/* Keyboard focus ring for the spatial arrow-key navigation. */
+.skill-node-card:focus-visible {
+  outline: 2px solid #ffd27a;
+  outline-offset: 2px;
+  z-index: 3;
+}
+
 .skill-line-svg {
   width: 100%;
   height: 100%;

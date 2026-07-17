@@ -62,16 +62,34 @@ export async function bootToOperatorMenu(page) {
 // actually means "the reveal finished and the player can act" — and
 // only check hud-run-seed's own visibility afterward, once hud-hidden
 // is guaranteed gone too.
+// NOTE on the loop shape: the old "click skip if it appears within 5s,
+// then wait (even 50s) for inputEnabled" had a load-dependent DEADLOCK,
+// not just a slow path — under heavy machine load the skip button can
+// appear after the 5s check gives up, no skip ever fires, and the
+// Mothership dialogue then sits awaiting a manual [A]/[B] choice forever
+// (confirmed against a clean checkout 2026-07-17; same failure mode the
+// wave-5 doc logged). No fixed wait fixes that. Actively unblock
+// whichever control is on screen each tick until input is actually live.
 export async function startRunAndSkipIntro(page) {
     await page.locator('#start-game').click();
     const skipBtn = page.locator('#global-skip-intro-btn');
-    if (await skipBtn.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true).catch(() => false)) {
-        await skipBtn.click();
+    const dialogueSkipChoice = page.locator('#mothership-choice-skip');
+    const deadline = Date.now() + 45_000;
+    let ready = false;
+    while (Date.now() < deadline) {
+        ready = await page.evaluate(() => window.game?.inputEnabled === true).catch(() => false);
+        if (ready) break;
+        if (await skipBtn.isVisible().catch(() => false)) {
+            await skipBtn.click({ timeout: 1_000 }).catch(() => {});
+        }
+        if (await dialogueSkipChoice.isVisible().catch(() => false)) {
+            await dialogueSkipChoice.click({ timeout: 1_000 }).catch(() => {});
+        }
+        await page.waitForTimeout(400);
     }
-    await page.waitForFunction(
-        () => window.game?.inputEnabled === true,
-        { timeout: 20_000 }
-    );
+    if (!ready) {
+        throw new Error('startRunAndSkipIntro: window.game.inputEnabled never became true within 45s');
+    }
     await page.locator('#hud-run-seed').waitFor({ state: 'visible', timeout: 5_000 });
     await page.waitForTimeout(300);
 }

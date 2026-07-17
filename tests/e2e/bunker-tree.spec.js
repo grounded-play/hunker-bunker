@@ -74,4 +74,46 @@ test.describe('Bunker Tree (console skill tree)', () => {
 
         await page.screenshot({ path: 'playwright-report/screenshots/bunker-tree-purchased-1280x800.png' });
     });
+
+    test('supports keyboard navigation: focusable cards, spatial arrows, Enter to buy', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
+
+        await page.evaluate(() => {
+            window.bankManager.addShells(999);
+            window.game.openConsoleModal({ type: 'SCOUT' });
+        });
+        await page.locator('#terminal-tab-skills').click();
+        await expect(page.locator('#terminal-tab-skills-content')).toBeVisible();
+
+        // Every card is focusable.
+        const firstCard = page.locator('.skill-node-card').first();
+        await expect(firstCard).toHaveAttribute('tabindex', '0');
+
+        // Arrow keys move focus to a DIFFERENT card (spatial neighbor).
+        await firstCard.focus();
+        const startId = await page.evaluate(() => document.activeElement?.dataset?.nodeId ?? null);
+        expect(startId).toBeTruthy();
+        await page.keyboard.press('ArrowDown');
+        const afterDown = await page.evaluate(() => document.activeElement?.dataset?.nodeId ?? null);
+        expect(afterDown).toBeTruthy();
+        expect(afterDown).not.toBe(startId);
+
+        // Enter on an available card purchases it — status text changes and
+        // focus survives the re-render on the same node.
+        const availableNode = page.locator('.skill-node-card.node-state--available').first();
+        await expect(availableNode).toBeVisible({ timeout: 5_000 });
+        const nodeId = await availableNode.getAttribute('data-node-id');
+        const statusBefore = await availableNode.locator('.skill-node-status').textContent();
+        await availableNode.focus();
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(300);
+
+        const repainted = page.locator(`.skill-node-card[data-node-id="${nodeId}"]`);
+        await expect(repainted).toBeVisible();
+        const statusAfter = await repainted.locator('.skill-node-status').textContent();
+        expect(statusAfter, 'Enter purchase should change the node status/level text').not.toBe(statusBefore);
+        const focusedAfterBuy = await page.evaluate(() => document.activeElement?.closest?.('[data-node-id]')?.dataset?.nodeId ?? null);
+        expect(focusedAfterBuy, 'focus should survive the purchase re-render').toBe(nodeId);
+    });
 });

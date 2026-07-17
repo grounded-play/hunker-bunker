@@ -12,8 +12,12 @@ export default defineConfig({
     // Mothership dialogue -> door-transition reveal) before they can do
     // anything — 30s was tight even under normal load and flaked outright
     // under the heavier multi-agent/multi-browser load this dev container
-    // sees during this sprint.
-    timeout: 60_000,
+    // sees during this sprint. 60s then proved tight again once
+    // startRunAndSkipIntro became an unblock-until-live loop (its 45s
+    // worst case is the boot alone, leaving nothing for the actual test
+    // body under load) — 120s gives the body real room without masking
+    // hangs, since the boot helper still hard-fails at 45s.
+    timeout: 120_000,
     expect: { timeout: 5_000 },
     fullyParallel: false,
     retries: 1,

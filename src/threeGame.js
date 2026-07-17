@@ -6062,6 +6062,21 @@ export class ThreeGame {
         card.dataset.branch = node.branch;
         card.style.gridRow = String(node.row);
         card.style.gridColumn = String(node.col);
+        // Keyboard/controller access (wave-6 punch list §4c): every card is
+        // focusable; arrow keys move spatially via the grid-container keydown
+        // handler (handleSkillTreeNavKey), Enter/Space buys. Focus/hover also
+        // traces the node's prereq connectors so "what do I need for this"
+        // reads on the graph, not just in the gate text.
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `${node.label} ${node.maxLevel > 1
+            ? `level ${state.level} of ${node.maxLevel}`
+            : (state.unlocked ? 'unlocked' : (state.available ? 'available' : 'locked'))}`);
+        const trace = (on) => this.traceSkillNodePrereqPaths(node.id, on);
+        card.addEventListener('focus', () => trace(true));
+        card.addEventListener('blur', () => trace(false));
+        card.addEventListener('pointerenter', () => trace(true));
+        card.addEventListener('pointerleave', () => trace(false));
 
         const branchTag = document.createElement('div');
         branchTag.className = `skill-node-branch skill-node-branch--${node.branch}`;
@@ -6108,6 +6123,72 @@ export class ThreeGame {
         return card;
     }
 
+    // Highlight the connector paths feeding a node — the "what do I need
+    // for this" preview the gate text alone never gave (wave-6 §4c).
+    traceSkillNodePrereqPaths(nodeId, on) {
+        const grid = document.getElementById('skills-tree-grid');
+        if (!grid) return;
+        for (const path of grid.querySelectorAll(`[data-child-id="${nodeId}"]`)) {
+            path.classList.toggle('skill-graph-path--trace', Boolean(on));
+        }
+    }
+
+    // Spatial arrow-key movement over the tree's real row/col topology —
+    // pure logic (no DOM) so it's unit-testable, and so navigation follows
+    // the grid the player SEES instead of DOM insertion order.
+    findSkillTreeNeighbor(nodeId, key, nodes = this._skillTreeNodes ?? []) {
+        const current = nodes.find((n) => n.id === nodeId);
+        if (!current) return null;
+        const filters = {
+            ArrowDown: (n) => n.row > current.row,
+            ArrowUp: (n) => n.row < current.row,
+            ArrowRight: (n) => n.col > current.col,
+            ArrowLeft: (n) => n.col < current.col
+        };
+        const filter = filters[key];
+        if (!filter) return null;
+        const isVertical = key === 'ArrowDown' || key === 'ArrowUp';
+        let best = null;
+        let bestScore = Infinity;
+        for (const node of nodes) {
+            if (node.id === nodeId || !filter(node)) continue;
+            const rowDist = Math.abs(node.row - current.row);
+            const colDist = Math.abs(node.col - current.col);
+            const primary = isVertical ? rowDist : colDist;
+            const perpendicular = isVertical ? colDist : rowDist;
+            // Nearest along the movement axis wins; perpendicular drift is
+            // penalized harder so Down doesn't skip a row to stay in-column
+            // and Right doesn't leap to a far-away row.
+            const score = primary * 2 + perpendicular * 3;
+            if (score < bestScore) {
+                bestScore = score;
+                best = node;
+            }
+        }
+        return best?.id ?? null;
+    }
+
+    handleSkillTreeNavKey(event) {
+        const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key);
+        const isActivate = event.key === 'Enter' || event.key === ' ';
+        if (!isArrow && !isActivate) return;
+        const card = event.target?.closest?.('.skill-node-card');
+        if (!card) return;
+        if (isActivate) {
+            // A focused buy button already handles Enter/Space natively.
+            if (event.target.classList?.contains('skill-node-btn')) return;
+            event.preventDefault();
+            card.querySelector('.skill-node-btn')?.click();
+            return;
+        }
+        event.preventDefault();
+        const nextId = this.findSkillTreeNeighbor(card.dataset.nodeId, event.key);
+        if (!nextId) return;
+        document.getElementById('skills-tree-grid')
+            ?.querySelector(`[data-node-id="${nextId}"]`)
+            ?.focus();
+    }
+
     renderSkillGraphConnectors(gridContainer, connectors, stateById, cardById) {
         if (!gridContainer) return;
         gridContainer.querySelector('.skills-tree-connectors')?.remove();
@@ -6137,6 +6218,8 @@ export class ThreeGame {
 
             const path = document.createElementNS(svgNs, 'path');
             path.classList.add('skill-graph-path');
+            path.dataset.childId = connector.childId;
+            path.dataset.parentId = connector.parentId;
             if (connector.mode === 'any') path.classList.add('skill-graph-path--any');
             if (this.isTreeNodeActive(stateById.get(connector.parentId))) {
                 path.classList.add('unlocked-flow');
@@ -6162,6 +6245,19 @@ export class ThreeGame {
         const nodeById = new Map(nodes.map((node) => [node.id, node]));
         const stateById = new Map();
 
+        // Keyboard nav state: remember which node held focus so a purchase
+        // re-render doesn't dump the keyboard user back to nowhere, expose
+        // the node list to the spatial-arrow handler, and bind that handler
+        // once (the container outlives every re-render).
+        const focusedNodeId = gridContainer.contains(document.activeElement)
+            ? (document.activeElement.closest?.('[data-node-id]')?.dataset?.nodeId ?? null)
+            : null;
+        this._skillTreeNodes = nodes;
+        if (!this._skillTreeNavBound) {
+            this._skillTreeNavBound = true;
+            gridContainer.addEventListener('keydown', (event) => this.handleSkillTreeNavKey(event));
+        }
+
         gridContainer.innerHTML = '';
         gridContainer.style.setProperty('--skill-tree-columns', String(tree.graph?.columns ?? 7));
         gridContainer.style.setProperty('--skill-tree-rows', String(tree.graph?.rows ?? 13));
@@ -6178,12 +6274,19 @@ export class ThreeGame {
             countEl.textContent = `${tree.playerClass} BUNKER TREE: ${activeCount}/${nodes.length} ONLINE (${readyCount} READY) | COMBAT LV: ${progression.combatUnlocked}/${progression.combatTotal} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
         }
 
+        // Row-major append order: the CSS grid places cards by explicit
+        // row/col style regardless of DOM order, but TAB follows DOM order —
+        // appending branch-by-branch made Tab leap between distant columns
+        // (wave-6 §4c). Sorting by (row, col) makes Tab sweep the grid the
+        // way the eye reads it.
         const cardById = new Map();
-        for (const node of nodes) {
+        const appendOrder = [...nodes].sort((a, b) => (a.row - b.row) || (a.col - b.col));
+        for (const node of appendOrder) {
             const card = this.buildTreeNodeCard(ship, node, stateById.get(node.id));
             cardById.set(node.id, card);
             gridContainer.appendChild(card);
         }
+        if (focusedNodeId) cardById.get(focusedNodeId)?.focus();
 
         if (matrix) {
             matrix.innerHTML = '';
