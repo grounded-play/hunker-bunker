@@ -1,141 +1,364 @@
-# Things We Missed: Audit of Deferred Plans, Dropped Features, and Open Gaps
+# Things We Missed: Underplanned, Unexplored, and Dropped Work
 
-This document presents a comprehensive audit of design promises, narrative branches, technical tasks, and playtest bug fixes that were proposed in previous bibles, plans, and reviews, but were either deferred to future sprints, dropped from execution, or left incomplete in the [dev-sprint-19](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/dev-sprint-19-branch-audit-and-open-work.md) branch.
+Date: 2026-07-16.
 
-By looking back at the documents in our `docs/` folder, this audit details what slipped through the cracks as we prioritized core systems over content and polish.
+This audit looks across the repo documentation and current branch shape to answer one question: **what areas are underplanned, unexplored, or only partially considered in the design and deployment of Hunker Bunker?**
 
-## Implementation Pass: Steam Feature Claims
+It intentionally separates:
 
-Started 2026-07-16.
+- **Still missing**: promised in docs, not visibly covered by current code or current plans.
+- **Now partly landed**: older docs call it missing, but the current branch has code in motion.
+- **Underplanned**: technically mentioned, but not specified enough to be safely built, tested, marketed, or operated.
 
-- **Developer Commentary:** Added an optional in-game Commentary Mode toggle
-  in Settings. When enabled, short developer commentary cards appear on major
-  run/discovery beats such as black boxes, armories, nests, class wreckage,
-  the Queen fight, achievements, the Steam Vault, and trusted leaderboard
-  submission. This makes the Steam "Commentary available" claim code-backed
-  as a text commentary feature.
-- **Steam Cloud Visibility:** Electron now exposes Steam Cloud account/app
-  status through the Steam identity snapshot, and the debug HUD reports
-  `CLOUD: READY/OFF/UNKNOWN`. Dashboard Auto-Cloud configuration and a
-  two-machine sync test are still required before treating Cloud as fully
-  accepted.
-- **Steam Timeline Bridge:** The renderer now emits Timeline-style events for
-  run start, discoveries, black boxes, achievements, Queen combat, and run
-  end. Electron exposes defensive Timeline IPC handlers. The current
-  `steamworks.js` package does not expose `ISteamTimeline`, so this bridge
-  fails safe until a binding/SDK path is added and tested from a
-  Steam-installed build.
-- **Still not code-complete:** PvP and Co-op remain unclaimable on the store
-  page. The Socket.io relay is still only an experimental prototype and is not
-  wired into Steam builds as a real multiplayer loop.
-- **Dashboard Handoff:** Added `npm run steam:dashboard-handoff`, which
-  generates `docs/steam-dashboard-handoff.md` and
-  `steam/dashboard_handoff.json` from the live repo definitions. This gives
-  the owner exact Steamworks values for leaderboards, achievements, stats,
-  Cloud paths, Steam Input, Inventory schema, Item Store filters, backend env,
-  and the current `4957040` / `4957041` app-depot setup.
+Core sources: [implementation_plan.md](implementation_plan.md), [expanded-universe-narrative-design.md](expanded-universe-narrative-design.md), [hive-swarm-camps-and-humanity-system-design.md](hive-swarm-camps-and-humanity-system-design.md), [game-wide-review-and-solution-plan.md](game-wide-review-and-solution-plan.md), [lore-coherence-and-secret-sauce-review.md](lore-coherence-and-secret-sauce-review.md), [ux-and-game-feel-punch-list-2026-07-16.md](ux-and-game-feel-punch-list-2026-07-16.md), [steam-launch-readiness-master-plan.md](steam-launch-readiness-master-plan.md), and [sprint-19-wave5-steam-connection-lane-split.md](sprint-19-wave5-steam-connection-lane-split.md).
 
----
+## Quick Answer
 
-## 🌌 Section 1: Narrative & World-Building Promises
+The most underplanned areas are:
 
-While the core faction state machine and the Queen's ledger are fully implemented, several rich features described in the [expanded-universe-narrative-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/expanded-universe-narrative-design.md) and [lore-coherence-and-secret-sauce-review.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/lore-coherence-and-secret-sauce-review.md) remain absent from the game.
+1. **Player acceptance and first-hour feel**: the docs know what hurts, but there is no hard acceptance pass for the first 5, 15, and 60 minutes.
+2. **Narrative payoff as gameplay**: the story state machine is rich, but too many emotional beats still resolve as flags, cards, or short choices instead of embodied play.
+3. **Faction identity**: camps and hives have strong writing, but unique verbs, economies, risks, and failure modes are still uneven.
+4. **Run variety**: the run director exists, but it is still more modifier layer than true encounter/event deck.
+5. **Objective and sub-objective language**: camp quests are landing, but the general-purpose checklist/objective grammar is still thin.
+6. **Steam deployment proof**: a lot is code-backed, but real Steamworks dashboard setup, live backend, Cloud sync, DRM wrap, Deck hardware acceptance, and microtransaction approval are not proven.
+7. **Compliance and product claims**: store copy and feature lists are ahead of verified evidence in several places, especially Deck, Cloud, paid keys, Timeline, commentary, and multiplayer.
+8. **Operational data durability**: SQLite scaffolding exists, JSON remains the default, and there is no Postgres/high-scale production plan.
+9. **Art density and state aftermath**: big assets exist, but the world still needs more physical consequences, clutter, corpses, damage states, and prop variants.
+10. **Testing strategy for giant interactive systems**: unit coverage is decent, but end-to-end and hardware acceptance lag behind the size of `main.js` and `threeGame.js`.
 
-### 1. Act 1 Camp Bonding Quests
-* **The Promise**: In [expanded-universe-narrative-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/expanded-universe-narrative-design.md#L73-L84), each camp was planned to offer two optional bonding quests (e.g., *Reactor Venting* and *The Lost Probe* for Meridian; *Spore Cleansing* and *The Lost Cultist* for Tallow; *Armory Breach* and *Bunker Holdout* for Vesper). Completing them was meant to yield gameplay benefits (e.g., the *Substation Keycard* to bypass hazard rooms, or a *Bio-Dampener* to slow infection).
-* **The Reality**: None of these quests are implemented as interactive gameplay loops. The `bond` meter is increased through simplified means, but the actual quest objectives, items, and specialized rewards do not exist.
-* **The Gap**: The game lacks a sub-objective/checklist HUD tracker for quests, meaning there is no way to display multi-line step progression to the player.
+## What Changed Since The Old Missed List
 
-### 2. Inverted Class Boss Battles
-* **The Promise**: [expanded-universe-narrative-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/expanded-universe-narrative-design.md#L238-L253) detailed three major boss battles at Camp 3, representing the inverted mirror of the player's class (e.g., a high-speed bio-predator Scout boss, a massive biomechanical titan Tank boss, or a cybernetic terminal Engineer boss).
-* **The Reality**: These boss battles were entirely dropped from implementation. Only the Queen fight is wired in [src/threeGame.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js).
-* **The Gap**: Defeating Camp 3 in Act 2 currently evaluates as a standard camp cull or boarding decision rather than a climactic, mechanical class showdown.
+Some older "missing" items are no longer cleanly missing. They should not be chased blindly:
 
-### 3. Ambient Camp NPC Pathfinding & Behaviors
-* **The Promise**: [expanded-universe-narrative-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/expanded-universe-narrative-design.md#L207-L236) laid out an ambient node-based pathfinding system where camp leaders (Sister Martha, Commander Briggs, Overseer Kaelen) would walk between stations (weld consoles, check barricades, inspect plants) and play specific animations. It also promised state-driven animations, such as leaders pulling out weapons if robbed, or twitching with green bio-spores if turned.
-* **The Reality**: The leaders are largely static billboard sprites. They stand in place and play default idle animation loops without traversing nodes, reacting physically to proximity, or shifting into active hostile/corrupt stances.
+| Area | Old assumption | Current branch reality | Remaining concern |
+| --- | --- | --- | --- |
+| Camp bonding quests | Not implemented | `src/threeGame.js` now has six named camp quests, quest props/enemies, reward checks, progress events, and tests in `src/threeGame.campQuests.test.js` / `tests/e2e/camp-quests.spec.js`. | Needs play acceptance, balancing, visual polish, and a reusable objective framework beyond camp quests. |
+| Desktop compass | Mobile-only | `main.js` now references `#desktop-compass` and updates desktop camp/radar arrows. | Needs in-browser/Deck acceptance and lore/objective target expansion. |
+| Black box guard bypass | Recoverable without killing guard | `interactWithBlackBox()` now blocks while a corrupted operator exists. | Needs persistent HUD clarity and E2E coverage. |
+| Production persistence | JSON only | `server/db.js` now supports `HB_DB_BACKEND=sqlite` / `HB_DB_SQLITE_PATH`. | JSON is still default; SQLite-on-volume is beta scale, not high-scale production. |
+| Inverted class bosses | Entirely absent | Boss sprites, enemy definitions, camp leader boss visuals, and apex threat attacks exist. | The final camp still needs a designed, staged climax instead of only enemy behavior and state dressing. |
 
-### 4. "Three Ships" Class-Keyed Payoff
-* **The Promise**: Lore log `B03` reveals that three ships crashed, carrying the tracking signal, the relay, and the weapon. The [lore-coherence-and-secret-sauce-review.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/lore-coherence-and-secret-sauce-review.md#L52-L61) proposed class-specific wreckage logs found at salvage consoles that would grant unique class gameplay perks or narrative revelations.
-* **The Reality**: While class-specific texts exist in [src/data/codex.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/data/codex.js), the actual gameplay impact is missing; the wreckage consoles serve only to deliver static log text.
+## Design Areas Underplanned
 
----
+### 1. The First Hour
 
-## 🛠️ Section 2: Steam & Production Readiness Gaps
+[player-teardown-and-next-level-plan.md](player-teardown-and-next-level-plan.md) names the first-ten-second black screen, the opening gauntlet, modal takeovers, combat sponge feel, lack of pause/options, and death teaching little. These are identified, but not fully converted into acceptance gates.
 
-As detailed in [steam-launch-readiness-master-plan.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/steam-launch-readiness-master-plan.md), the repository contains extensive mock structures but is missing critical deployment components.
+What is underplanned:
 
-### 1. Production-Grade Persistence
-* **The Promise**: The backend requires durable, concurrent storage to track inventory drops, Leaderboard runs, and microtransaction receipts.
-* **The Reality**: The database in [server/db.js](file:///home/caveman/Desktop/icecave/hunker-bunker/server/db.js) remains an atomic-write JSON file. This lacks any concurrency safety for multiple users, has no garbage collection for transaction tables, and is only suitable for single-machine tests. SQLite/Postgres integration was planned but deferred.
+- A first 5-minute script: menu -> class intro -> crash -> first objective -> first extraction.
+- A first 15-minute script: first camp, first boss/major threat, first upgrade, first meaningful death.
+- A first 60-minute script: cave signal, black box recovery, run loop understanding, first faction consequence.
+- Pass/fail criteria for "the player knows what to do without reading docs."
+- A real "death teaches something" structure beyond black box recovery and inheritance.
 
-### 2. Live Fly.io Deployment & Secrets
-* **The Promise**: A deployed, secure HTTPS backend service is needed to run client verification and prevent cheating.
-* **The Reality**: While the Fly configuration exists, no live Fly.io deployment has been run. The production backend URL has not been baked into Electron builds, which still fall back to localhost in packaged tests.
+Why it matters: this is the area reviewers will feel before they ever appreciate the deeper state machine.
 
-### 3. DRM Wrapping & Steamworks Dashboard Setup
-* **The Promise**: The build pipeline was intended to include DRM wrapping and automated configuration verification.
-* **The Reality**: DRM wrapping is still a manual step. Setting up Steam Cloud save directories, achievements/stats associations, and the Steam Input configuration mapping must be done by hand on the Steamworks dashboard.
+### 2. Faction Verbs And Economies
 
-### 4. Paid Commerce Gating and Legal Compliance
-* **The Promise**: The Store tab and Cache Keys are intended for live microtransactions.
-* **The Reality**: Real money transactions are completely mocked. The system has no legal compliance mechanisms (e.g., geogating or direct-purchase alternatives) for strict loot-box regulations in countries like Belgium or the Netherlands.
+The docs repeatedly say camps should not feel identical. The lore review is blunt: Meridian, Tallow, and Vesper have strong identities but similar verbs. Current branch work adds camp quests and reward hooks, which helps, but the broader camp economy is still under-specified.
 
----
+What is underplanned:
 
-## 🎮 Section 3: UX, Balancing, and Game-Feel Gaps
+- Meridian's unique tech/radar/compass economy.
+- Tallow's infection, humanity, cure, and med economy.
+- Vesper's ammo, turret, defense, and force economy.
+- Per-camp costs, failure states, cooldowns, and exploit limits.
+- How these verbs change after Act 2 corruption, recruitment, robbery, or culling.
 
-A recent review in [ux-and-game-feel-punch-list-2026-07-16.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/ux-and-game-feel-punch-list-2026-07-16.md) highlighted multiple places where systems do not connect to visual player-facing elements, leading to a clunky user experience.
+The highest-value unresolved question: **does each faction change how the player plays, or only what text they receive?**
 
-### 1. Tactical Combat Screen Blur
-* **The Problem**: Whenever high-priority events occur (like `hunter-pair-spawned` or `lander-deployed`), `showTacticalOverlay` uses the fullscreen `#loading-screen` element to display briefing text. This blurs the battlefield for 3.8 to 4.8 seconds, blinding the player during combat.
-* **The Solution**: Move these notifications to a corner HUD stack to preserve player control and line-of-sight.
+### 3. Hive Sites As Play Spaces
 
-### 2. HUD Notification Priority and Styling
-* **The Problem**:
-  * Four distinct alert categories (achievement, tutorial, progress, radio) share the top-right HUD slot with no unifying design.
-  * Real Steam item drops use the exact same CSS class (`.achievement-toast`) as standard achievements, losing their visual prestige.
-  * Onboarding suffers from priority inversion: minor achievement pops override critical tutorial guides in the display queue.
+[hive-swarm-camps-and-humanity-system-design.md](hive-swarm-camps-and-humanity-system-design.md) is deep, but much of it remains design mass rather than acceptance-ready tasks. The hives have names, bonds, extraction wounds, rescue/cull paths, and ending consequences, but their minute-to-minute verbs need sharper constraints.
 
-### 3. Navigation and Radar Compass for Desktop Players
-* **The Problem**: The distance-to-target calculations for camps and hives exist in [src/threeGame.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js) but are only rendered on the mobile touch joystick UI. Desktop players using a keyboard/mouse receive zero navigational indicators, leaving them walking blindly through the maze.
+What is underplanned:
 
-### 4. Visibility of Discovery Flares
-* **The Problem**: Camps burn an additive distress flare to guide players, but the material is affected by the scene's fog. Since fog-far values loop on a 150s timer and camps sit 70–120u away, the flares are completely fogged out and invisible during the entire "day" cycle.
+- Hive-specific traversal, threat, and reward patterns.
+- How mining visibly damages future hive communication.
+- How alien bond changes nearby enemy behavior in a way players can read.
+- What "mothership infection attempt" means in playable steps.
+- How uninfecting the player feels mechanically, not just as a late state change.
+- Failure conditions for alien allies, egg fragility, and queen-consumed states.
 
-### 5. Boss Spawn and Ammo Mismatch
-* **The Problem**:
-  * Biome bosses spawn based on story progress (O2-generator steps) rather than weapon upgrades. A player can reach the 75 HP Sporesnail boss with a base 1-damage weapon kit.
-  * Starting reserve ammo is capped at 24. Since bosses cost between 20 to 75 shots to defeat, players are mathematically soft-locked upon entering boss fights unless they farmed extra ammunition beforehand.
+### 4. Run Director And Pressure Cards
 
-### 6. Skill Tree UI Interaction
-* **The Problem**: Fully purchased/unlocked nodes in the console's skill tree retain their `cursor: pointer` style and hover glows. This falsely suggests they can be clicked, but clicking them silently does nothing. Tabbing through the tree also follows HTML insertion order rather than visual grid layout.
+The game-wide review calls the run director the biggest roguelike gap. Sprint 19 added run modifiers and apex threats, but the director is still underplanned as a full encounter engine.
 
-### 7. Black Box Boss Bypass
-* **The Problem**: The Corrupted Operator guard boss is spawned alongside the Black Box. However, [src/threeGame.js:interactWithBlackBox](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js#L4348) checks only player proximity, not the guard's status. The player can easily run past the boss, grab the box, and leave without fighting.
+What is underplanned:
 
-### 8. Lore Pickup Inconsistencies and Double-Counting Bug
-* **The Problem**:
-  * Lore terminals require an interaction keypress ('E'), while physical lore drops auto-collect on proximity.
-  * Lore terminal prompts have low CSS visual weight and a tiny z-index (150 vs. 9999 for other prompts).
-  * A double-write bug in [src/threeGame.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/threeGame.js) logs physical drops twice under two different names. This breaks the log count denominator, displaying values like "56/28 logs."
+- Event deck composition by act, biome, class, and prior choices.
+- Repeat prevention and escalation pacing.
+- Positive events, not only pressure events.
+- Cards that alter geometry in ways players can identify.
+- Per-card UI language, audio tells, and post-run explanation.
+- A test matrix for "this run actually felt different."
 
----
+Good target: each run should have 2-3 memorable pressure stories, not only different numbers.
 
-## 📊 Section 4: Summary of Dropped, Deferred, and Gapped Features
+### 5. Combat Identity
 
-| Feature / Bug | Category | Originating Plan | Current Code Status | Priority / Impact |
-| --- | --- | --- | --- | --- |
-| **Act 1 Bonding Quests** | Narrative | [expanded-universe-narrative-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/expanded-universe-narrative-design.md) | **Dropped** — No gameplay code exists; bond is incremented directly. | **Medium** — Reduces Act 1 gameplay variety. |
-| **Inverted Class Bosses** | Narrative | [expanded-universe-narrative-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/expanded-universe-narrative-design.md) | **Dropped** — Only the Queen boss fight exists. | **High** — Sparing/culling camps in Act 2 lacks climax. |
-| **Camp NPC Pathfinding** | Aesthetics | [expanded-universe-narrative-design.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/expanded-universe-narrative-design.md) | **Dropped** — NPCs are static billboards; no node walking. | **Low** — Minor immersion loss in camps. |
-| **Production DB Concurrency** | Backend | [steam-launch-readiness-master-plan.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/steam-launch-readiness-master-plan.md) | **Deferred** — Using local JSON file; no SQLite/Postgres. | **High** — Prevents real deployment at scale. |
-| **Live Fly.io Deployment** | Infrastructure | [steam-launch-readiness-master-plan.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/steam-launch-readiness-master-plan.md) | **Deferred** — Never run against a live Fly app. | **High** — Blocks Steam packaging verification. |
-| **EU Lootbox Compliance** | Legal | [dev-sprint-19-branch-audit-and-open-work.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/dev-sprint-19-branch-audit-and-open-work.md) | **Deferred** — No geo-gating or direct key purchases. | **Medium** — Store page cannot launch in EU. |
-| **Tactical Screen Blur** | Gameplay / UX | [ux-and-game-feel-punch-list-2026-07-16.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/ux-and-game-feel-punch-list-2026-07-16.md) | **Incomplete** — Loading screen still used during spawns. | **High** — Disrupts combat sightlines. |
-| **PC Compass / Nav Aid** | Gameplay / UX | [ux-and-game-feel-punch-list-2026-07-16.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/ux-and-game-feel-punch-list-2026-07-16.md) | **Incomplete** — Compass element only visible on mobile touch. | **High** — Desktop players get lost in the maze. |
-| **Daytime Flare Visibility** | Graphics / UX | [ux-and-game-feel-punch-list-2026-07-16.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/ux-and-game-feel-punch-list-2026-07-16.md) | **Incomplete** — Camp signal flare material is affected by fog. | **Medium** — Navigational flares vanish on fog loops. |
-| **Boss HP / Ammo Mismatch** | Balance | [ux-and-game-feel-punch-list-2026-07-16.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/ux-and-game-feel-punch-list-2026-07-16.md) | **Incomplete** — Sporesnail HP (75) exceeds starting ammo pool (24). | **High** — Causes unfair soft-locks for base players. |
-| **Skill Tree false Click** | UI / UX | [ux-and-game-feel-punch-list-2026-07-16.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/ux-and-game-feel-punch-list-2026-07-16.md) | **Incomplete** — Already-purchased nodes show click pointers. | **Low** — Minor UI irritation. |
-| **Black Box Guard Bypass** | Exploiting | [ux-and-game-feel-punch-list-2026-07-16.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/ux-and-game-feel-punch-list-2026-07-16.md) | **Incomplete** — Black box proximity check does not enforce boss kill. | **Medium** — Trivializes black box recovery missions. |
-| **Lore Double-Count Bug** | Bug / UI | [ux-and-game-feel-punch-list-2026-07-16.md](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/ux-and-game-feel-punch-list-2026-07-16.md) | **Incomplete** — Physical drop registers twice under different keys. | **Low** — Visual error in summary counts ("56/28"). |
+The docs call out "one verb against sponges." Current code has enemy variety, boss attacks, queen phases, class abilities, and camp-quest encounters, but fight design still needs a more explicit plan.
+
+What is underplanned:
+
+- Class-specific combat rhythms beyond ability buttons.
+- Enemy readable silhouettes and counterplay rules.
+- Ammo economy by boss HP and weapon upgrade stage.
+- Anti-softlock guarantees before boss-gated objectives.
+- Distinct miniboss/final boss patterns for corrupted Scout, Tank, and Engineer.
+- How non-combat builds survive high-pressure runs.
+
+The Queen fight is better scoped than the rest. The underplanned area is everything players fight before and around it.
+
+### 6. Objective And Sub-Objective Language
+
+Camp quests now have a HUD path, but the design still lacks a general-purpose objective grammar. [ux-and-game-feel-punch-list-2026-07-16.md](ux-and-game-feel-punch-list-2026-07-16.md) correctly flags the absence of a true checklist/multi-step objective display.
+
+What is underplanned:
+
+- Parent objective with child steps.
+- Active/inactive/completed/failed states.
+- Compass targeting rules for each objective type.
+- Persistence across death, reset, Act transition, and save/load.
+- Priority rules when black box, camp quest, mission objective, boss warning, and tutorial all compete.
+- A single source of truth instead of multiple HUD-specific event handlers.
+
+This matters because the game is becoming objective-rich faster than the UI language is becoming objective-literate.
+
+### 7. Lore Discovery As Play
+
+The lore is strong. The interaction model is less settled.
+
+What is underplanned:
+
+- Unified pickup rules for terminals vs physical lore drops.
+- Lore compass/radar hints.
+- Preventing duplicate accounting between lore drops and terminal-read events.
+- Whether class-keyed wreck logs grant mechanical perks or only codex text.
+- Date/timeline presentation to reconcile Horizon's collapse, Chen's operation, camps, and 0047.
+- Quiet/intimate presentation modes so every lore beat is not shouted in all-caps radio voice.
+
+### 8. Consequence Visibility
+
+The state machine knows a lot: bond, suspicion, humanity, cover, queen obedience, hive status, camp status, manifest, eggs, queen, endings. The docs repeatedly warn about "spreadsheet smell."
+
+What is underplanned:
+
+- Which state values are player-facing meters vs hidden fiction.
+- One-line "why this happened" explanations after major outcomes.
+- Run summary that explains choices, costs, and ending derivation.
+- Physical world changes for each state change.
+- The minimum set of state indicators that teaches without overwhelming.
+
+The game can already calculate consequences. The gap is helping the player understand and remember them.
+
+### 9. World Generation Meaning
+
+Landforms, chunk generation, camp flares, hives, and maze passes exist, but reviews still flag that maze diversity can get washed out.
+
+What is underplanned:
+
+- Shape-aware fill/widen rules with visual acceptance screenshots.
+- Camp/hive distance bands that make "lost" and "too close" both less likely.
+- Named sectors and landmarks that tie map reading to lore.
+- More encounter meaning for crater, canyon, field, ruin, and hive spaces.
+- A "landform changed my plan" acceptance criterion.
+
+### 10. Art Density And Aftermath
+
+[public-world-dressing-plan.md](public-world-dressing-plan.md) identifies the exact visual gap: not hero art, but density. Some assets have landed or are referenced, but the full stateful world-dressing pass is still underplanned as production work.
+
+What is underplanned:
+
+- Corpse/remains variants for humans, enemies, and bosses.
+- Camp-specific clutter sets.
+- Hive organic clutter and wounded/consumed variants.
+- Door, console, module, camp, hive, and ship state variants.
+- Damage decals and small repeatable scatter.
+- Rules for when aftermath appears and when it despawns.
+
+This is not only art polish. It is consequence readability.
+
+## Deployment Areas Underplanned
+
+### 1. Steamworks Dashboard Reality
+
+[steam-launch-readiness-master-plan.md](steam-launch-readiness-master-plan.md) and [steam-dashboard-handoff.md](steam-dashboard-handoff.md) are strong, but dashboard work is still owner-driven and externally unproven.
+
+Underplanned or unproven:
+
+- Steamworks achievements/stats creation and association.
+- Leaderboards created with correct sort/display methods.
+- Inventory schema uploaded and accepted.
+- Item Store page configured and linked.
+- Steam Cloud Auto-Cloud paths published.
+- Steam Input manifest uploaded and selected.
+- Store page feature claims matched to accepted evidence.
+
+### 2. Live Backend And Secrets
+
+The backend is increasingly real, but not yet proven as a deployed service.
+
+Underplanned or unproven:
+
+- Fly.io app creation and real secret setup.
+- Packaged Electron pointing at production backend URL.
+- End-to-end Steam auth ticket verification against the real app.
+- Backup/restore drills.
+- Log retention and incident workflow.
+- Rate limit tuning under real traffic.
+- Migration from JSON default to SQLite beta storage or Postgres production storage.
+
+### 3. Paid Random Rewards And Legal Scope
+
+The crate/key model is documented in [steam-lootbox-odds-disclosure.md](steam-lootbox-odds-disclosure.md), but the product/legal decision is still not fully closed.
+
+Underplanned or unproven:
+
+- Whether paid Cache Keys are in first public release.
+- Valve Microtransactions approval.
+- Regional restrictions or direct-purchase alternatives.
+- Refund/reversal reconciliation in live operations.
+- Rating-board disclosures.
+- Store copy and in-game wording for paid random rewards.
+
+Recommendation: do not let this be a late marketing decision. It changes backend, UI, policy, ratings, and trust.
+
+### 4. Steam Deck And Controller Claims
+
+The code now has Steam Input polling, browser gamepad fallback, glyph switching, and controller routing. That is not the same as Deck acceptance.
+
+Underplanned or unproven:
+
+- Five-minute and one-hour physical Steam Deck play passes.
+- Text entry using Steam on-screen keyboard.
+- Settings, modals, skill tree, inventory, store, and codex navigation by controller.
+- 1280x800 layout screenshots.
+- Battery/performance target evidence.
+- Whether the public claim is "Playable," "Deck support in progress," or "Verified-style support."
+
+Important copy risk: [steam-deck-compatibility-announcement.md](steam-deck-compatibility-announcement.md) reads more confident than [steam-portal-copy.md](steam-portal-copy.md), which correctly says not to claim Verified yet.
+
+### 5. Steam Cloud
+
+Electron mirrors localStorage to `save.json`, and the handoff docs list Auto-Cloud paths. The missing part is live proof.
+
+Underplanned or unproven:
+
+- Cloud dashboard setup.
+- Two-machine sync test.
+- Conflict behavior.
+- Save migration between browser/localStorage and Electron/save.json.
+- What happens if Cloud is off, unavailable, or stale.
+
+### 6. DRM
+
+[steam-drm-wrap-procedure.md](steam-drm-wrap-procedure.md) gives a path and helper script, but DRM remains externally gated.
+
+Underplanned or unproven:
+
+- Actual Windows executable wrapping through Steamworks tooling.
+- Steam beta launch of wrapped build.
+- CI guard ensuring depots do not ship `steam_appid.txt`.
+- Linux/Steam Deck packaging policy if Windows DRM wrapping is the only DRM path.
+
+### 7. Multiplayer Feature Claims
+
+The old Steam feature claim work mentions PvP/co-op as unclaimable. This remains a product risk if store metadata drifts.
+
+Underplanned:
+
+- No real multiplayer design.
+- No progression sync model.
+- No matchmaking/lobby plan.
+- No authority/anti-cheat plan.
+- No acceptance criteria for co-op or PvP.
+
+Recommendation: keep all multiplayer claims off the store page until there is an actual multiplayer plan.
+
+### 8. Steam Timeline And Commentary
+
+Timeline-style events and developer commentary hooks exist, but their product meaning needs stricter definition.
+
+Underplanned or unproven:
+
+- Whether current Steamworks bindings expose real Timeline APIs.
+- Which events deserve Timeline entries.
+- Acceptance from a Steam-installed build.
+- Commentary mode content standards and coverage.
+- Whether "Commentary available" means a real feature or scattered dev cards.
+
+## Dropped Or Still Thin Promises
+
+### Dedicated Final Camp Boss Climax
+
+The class boss assets and behaviors exist, but the original promise was stronger: Camp 3 should be the player's inverted class reflected back as a climactic encounter. Current implementation appears closer to corrupted leader visuals plus apex enemy behavior.
+
+Missing design:
+
+- Arena setup.
+- Intro/outro beats.
+- Class-specific mechanics.
+- Win/loss consequences.
+- How the camp choice follows the fight.
+
+### Ambient NPC Pathfinding
+
+The design called for leaders walking between camp stations, reacting to robbery/turning, and performing idle actions. Current camp code has sprites and state visual changes, but not a full ambient node behavior system.
+
+This is lower priority than objective clarity and first-hour feel, but it remains a dropped immersion promise.
+
+### Full Escort / Rescue AI
+
+At least one current quest note explicitly scopes "Lost Cultist" as single-interaction rescue rather than escort AI. That is a reasonable cut, but the design should acknowledge it as a cut.
+
+Unplanned if revived:
+
+- Follow behavior.
+- Getting attacked.
+- Fail/retry states.
+- Camp arrival handoff.
+- Save/load persistence.
+
+### Ending Videos For Every Branch
+
+The current reviews wisely treat text cards as valid first implementation. Still, older docs planned many ending visuals.
+
+Underplanned:
+
+- Which endings deserve video.
+- Which remain text/cards permanently.
+- Asset budget and generation prompts for the rest.
+- Fallback behavior if videos are absent.
+
+## Highest-Risk Planning Gaps
+
+| Risk | Why it matters | Suggested next artifact |
+| --- | --- | --- |
+| First-hour acceptance is not formalized | Reviewers judge the game before deep systems land | `docs/first-hour-acceptance-plan.md` |
+| Steam claims can outrun proof | Store metadata errors create trust and review risk | Claim/evidence matrix tied to dashboard and test results |
+| Objective systems are multiplying | Players will get lost in overlapping HUD events | General objective/sub-objective design spec |
+| Faction identity still leans on text | Strong writing may not become memorable play | Camp/hive verb matrix with costs, risks, rewards |
+| Paid keys touch legal/backend/UI | Late decision can blow up release scope | Commerce go/no-go memo |
+| Deck support is code-backed, not accepted | Hardware failure is visible and expensive | Deck acceptance checklist with screenshots/video |
+| Persistence backend is transitional | Economy features need durable operations | Storage migration plan: JSON -> SQLite beta -> Postgres if needed |
+| World consequences need art rules | State changes can feel invisible | State aftermath and dressing implementation plan |
+
+## Recommended Next Planning Order
+
+1. **First-hour acceptance plan**: five-minute, fifteen-minute, and one-hour pass/fail scripts.
+2. **Claim/evidence matrix**: every Steam feature claim mapped to code, dashboard, and live-test proof.
+3. **Objective system spec**: one data model for mission, black box, camp quest, lore, boss, and tutorial goals.
+4. **Faction verb matrix**: one page for each camp/hive with unique actions, costs, failures, and visible consequences.
+5. **Deck and controller acceptance runbook**: real hardware tasks, screenshots, text entry, modals, and performance.
+6. **Commerce decision memo**: decide whether paid Cache Keys ship now, later, or never.
+7. **State aftermath art pass**: small assets and spawn rules for consequences, not more hero art.
+8. **Production storage plan**: document when SQLite is enough and what would trigger Postgres.
+
+## Short Version
+
+The project is not short on ideas. It is short on **acceptance-ready connective tissue**.
+
+The design has rich state, strong writing, and ambitious Steam scaffolding. The underplanned work is mostly the stuff that turns those into a shippable player experience: first-hour proof, objective clarity, faction-specific play, run variety, consequence visibility, real Steam dashboard acceptance, hardware validation, durable production storage, and careful feature-claim discipline.

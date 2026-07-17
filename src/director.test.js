@@ -124,4 +124,17 @@ describe('chooseApexThreatEvents', () => {
 
         expect(events).toEqual([]);
     });
+
+    it('honors a raised hunterPairThreshold (Radar Shroud camp-quest reward)', () => {
+        // Same suspicion that triggers hunter_pair at the default 75 must
+        // stay silent once the threshold is raised past it.
+        const withoutReward = chooseApexThreatEvents({ campId: 'camp_meridian', suspicion: 80 });
+        expect(withoutReward.map((event) => event.type)).toEqual(['hunter_pair']);
+
+        const withReward = chooseApexThreatEvents({ campId: 'camp_meridian', suspicion: 80, hunterPairThreshold: 90 });
+        expect(withReward).toEqual([]);
+
+        const stillTriggers = chooseApexThreatEvents({ campId: 'camp_meridian', suspicion: 95, hunterPairThreshold: 90 });
+        expect(stillTriggers.map((event) => event.type)).toEqual(['hunter_pair']);
+    });
 });

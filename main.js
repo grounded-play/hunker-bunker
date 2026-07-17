@@ -188,6 +188,7 @@ function setAppPhase(phase) {
         }
         hideAllGameplayPrompts();
         hideMissionProgressHUD();
+        hideCampQuestHUD();
         hideBiomePrompt();
         clearLoaderBriefingMode();
         window.game?.setInputEnabled?.(false);
@@ -3903,6 +3904,44 @@ if (missionProgressHud) {
         hideMissionProgressHUD();
     });
 }
+
+// Camp Bonding Quests sub-objective tracker — same show/hide shape as
+// showMissionProgressHUD/hideMissionProgressHUD above, driven by the
+// camp-quest-progress/camp-quest-complete events threeGame.js dispatches.
+function showCampQuestHUD(text) {
+    if (!isGameplayPhase()) return;
+    const hud = document.getElementById('camp-quest-hud');
+    const textEl = document.getElementById('camp-quest-text');
+    if (textEl) textEl.textContent = text;
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (isGameplayActive && !isResettingRun && hud) {
+        hud.classList.remove('hidden');
+    }
+}
+
+function hideCampQuestHUD() {
+    const hud = document.getElementById('camp-quest-hud');
+    if (hud) hud.classList.add('hidden');
+}
+
+window.addEventListener('camp-quest-progress', (event) => {
+    const { label, current, target } = event?.detail ?? {};
+    if (!label) return;
+    showCampQuestHUD(`${label}: ${current ?? 0}/${target ?? 1}`);
+});
+
+window.addEventListener('camp-quest-complete', () => {
+    hideCampQuestHUD();
+});
 
 // Persistent loop-state cue (T1): always shows the next action while in a run.
 window.addEventListener('loop-step-changed', (event) => {

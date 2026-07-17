@@ -74,8 +74,11 @@ export function chooseApexThreatEvents(snapshot = {}, alreadySpawned = []) {
     const suspicion = Math.max(0, Math.min(100, Number(snapshot.suspicion) || 0));
     const campId = String(snapshot.campId ?? 'global');
     const events = [];
+    // Radar Shroud (Lost Probe camp-quest reward) raises this from its
+    // default 75 — harder for the queen's hunters to lock on.
+    const hunterPairThreshold = Number.isFinite(snapshot.hunterPairThreshold) ? snapshot.hunterPairThreshold : 75;
 
-    if (suspicion >= 75 && !spawned.has(apexThreatKey('hunter_pair', campId))) {
+    if (suspicion >= hunterPairThreshold && !spawned.has(apexThreatKey('hunter_pair', campId))) {
         events.push({
             type: 'hunter_pair',
             key: apexThreatKey('hunter_pair', campId),

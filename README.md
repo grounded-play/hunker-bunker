@@ -1,204 +1,191 @@
-# 🛡️ HUNKER BUNKER | TACTICAL COMMAND v2.0
+<p align="center">
+  <img src="steam/store/steam_header_capsule_en.png" alt="Hunker Bunker key art: a lone operator in an industrial bunker corridor" width="820">
+</p>
+
+# Hunker Bunker
 
 [![Presubmit CI](https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml/badge.svg)](https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status)](https://app.netlify.com/projects/hunkerbunker/deploys)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Three.js](https://img.shields.io/badge/Three.js-r184-00e5ff.svg?logo=three.js)](https://threejs.org/)
-[![Socket.io](https://img.shields.io/badge/Socket.io-v4.8-2ec4b6.svg?logo=socket.io)](https://socket.io/)
+[![Electron](https://img.shields.io/badge/Electron-43.1-47848f.svg?logo=electron)](https://www.electronjs.org/)
 [![Testing: Vitest](https://img.shields.io/badge/Testing-Vitest-41b883.svg?logo=vitest)](https://vitest.dev/)
 
-**HUNKER BUNKER: Tactical Command v2.0** is an immersive, high-performance, retro-futuristic arcade tactics game. Built on a custom 3D WebGL engine utilizing **Three.js**, players command modular tactical units through an infinite, procedurally generated network of subterranean metallic bunker corridors. 
+**Hunker Bunker** is a retro-futuristic tactical survival game about crashing
+into an ice-locked bunker, keeping a failing exosuit alive, and deciding what
+gets to leave the planet with you.
 
-🎮 **[Play the Live Demo on Netlify!](https://hunkerbunker.netlify.app/)**
+[Play the live browser build](https://hunkerbunker.netlify.app/) | [Steam planning index](docs/steam-docs-master-index.md) | [Current open gaps](docs/things-we-missed.md)
 
-Featuring an authentic retro CRT arcade aesthetic, custom triplanar shaders, co-prime texture blending, and deep ambient soundscapes, *Hunker Bunker* is engineered for visual splendor, tactile satisfaction, and high replayability.
+You command Scout, Tank, and Engineer operators through procedural bunker
+corridors, hostile biomes, survivor camps, alien hives, black-box recovery
+runs, and a branching Queen/manifest endgame. The web build is playable now;
+the Electron/Steam build path is in active preparation and still needs live
+Steamworks, hardware, and backend acceptance before release claims are final.
 
----
+## Screens
 
-## Current Prototype Status
+| Field Run | Bunker Tree | Lore / Archive |
+| --- | --- | --- |
+| <img src="public/hunker_bunker_hero.png" alt="In-game tactical run view with wreckage, loot, and HUD" width="320"> | <img src="steam/store/steam_screenshot_03_en.png" alt="Bunker tactical terminal skill tree" width="320"> | <img src="steam/store/steam_screenshot_04_en.png" alt="Recovered archive record modal" width="320"> |
+
+## What You Do
+
+- Push deeper through seeded WebGL bunker runs with oxygen, ammo, and salvage
+  pressure.
+- Choose between three specialist suits: Scout for speed, Tank for endurance,
+  Engineer for systems work.
+- Repair ship systems, bank salvage, unlock the bunker tree, and survive long
+  enough to extract.
+- Recover prior contractors' black boxes, then deal with what followed them.
+- Discover lore terminals, physical drops, camps, hives, Queen signals, and
+  multiple ending vectors.
+- Prepare for Steam through Electron, Steam Input, Steam Cloud save-file
+  bridging, achievements/stats hooks, inventory/backend scaffolding, and
+  dashboard handoff docs.
+
+## Current Status
 
 | Area | Status | Notes |
-| :--- | :--- | :--- |
-| Readable extraction loop | Implemented | Persistent next-action HUD, extraction progress, run report, and black-box recovery cues are active. |
-| Class differentiation | Implemented | Scout uses Sprint Burst, Tank uses Brace, Engineer uses Reroute plus terminal verification. |
-| Fabricator reveal | Implemented | Fixed-cost rarity roll with deterministic rarity helpers, animated strip, and reward card reveal. |
-| Terminal choice events | Implemented | Data-driven (`src/data/terminalEvents.js`); ~1 in 4 is a forged "mimic" that bills you in patrols unless an Engineer verifies it. Lore terminals remain separate. |
-| Bunker Director | Implemented | `src/director.js` reacts to greed/depth/struggle, pulling levers (patrols, lights-out, compass corruption, mercy salvage, taunts) on a cadence — the bunker feels watchful, not random. |
-| Field Codex | Implemented | Discover-by-encounter bestiary/lore (`src/codex.js` + `src/data/codex.js`), persistent across runs; ❑ CODEX console. |
-| Failure as fiction | Implemented | Single active black box + permanent death archive + recovery marker + corrupted-operator gate, surfaced as a "last contractor" thread at the base. |
-| Run modifiers | Implemented | One per deploy with real effects: thin air (faster O₂ drain), patrol surge, rolling blackout, map-data jitter, unstable doors. |
-| Multiplayer relay | Open prototype | Optional Socket.io relay on port `3001`; movement is validated/clamped/rate-limited and CORS is configurable via `HB_ALLOWED_ORIGINS`. Full multiplayer loop remains experimental. |
-| Pattern-rewrite generator | Implemented | Markov-style rewrite pass is active for chunk shaping and still a major tuning surface. |
+| --- | --- | --- |
+| Browser game | Playable | Vite/Three.js build runs on Netlify and locally. |
+| Core extraction loop | Implemented | O2 pressure, salvage banking, upgrades, black-box recovery, bosses, and run summaries are active. |
+| Classes | Implemented | Scout uses Sprint Burst, Tank uses Brace, Engineer uses Reroute. |
+| Story state | Implemented and expanding | Camps, hives, Queen status, eggs, manifest rules, and ending selection are modeled in code. |
+| Camp quests | In progress | Six named camp quests are now wired with HUD progress and tests, but still need play/balance acceptance. |
+| Steam/Electron | Code-backed, not fully accepted | Electron shell, Steam Input, save bridge, achievements/stats forwarding, and backend helpers exist. Real Steam dashboard setup and hardware passes remain. |
+| Steam Cloud / Inventory / Store | Scaffolded | Dashboard, live backend, MicroTxn approval, and two-machine Cloud sync are not yet proven. |
+| Multiplayer | Experimental only | Socket.io relay exists for local prototyping. The shipped Steam/browser game should be treated as single-player. |
 
----
+## Operators
 
-## 🖥️ System Preview (Tactical Console)
+| Scout | Tank | Engineer |
+| --- | --- | --- |
+| <img src="public/cutscenes/scout-intro-poster.jpg" alt="Scout class launch poster" width="260"> | <img src="public/cutscenes/tank-intro-poster.jpg" alt="Tank class launch poster" width="260"> | <img src="public/cutscenes/engineer-intro-poster.jpg" alt="Engineer class launch poster" width="260"> |
+| Fast recon, wide salvage coverage, high-risk oxygen profile. | Heavy survival, stronger shots, slower but steadier under pressure. | System utility, terminal work, and safer recovery windows. |
 
-| Hero Select Interface | Tactical Command View |
-| :---: | :---: |
-| ![Hero Select Interface](./public/hunker_bunker_select.png) | ![Tactical Command View](./public/hunker_bunker_hero.png) |
+## Factions And Signals
 
-> [!NOTE]
-> *Images captured directly from the Tactical Diagnostic Bezel, showing both the tactical Hero Unit Selection Matrix console (left) and the active 3D Orthographic WebGL corridor maze (right).*
+| Queen | Meridian | Tallow | Vesper |
+| --- | --- | --- | --- |
+| <img src="public/lore_portraits/queen_00.webp" alt="Queen portrait" width="150"> | <img src="public/lore_portraits/meridian_kaelen.png" alt="Overseer Kaelen portrait" width="150"> | <img src="public/lore_portraits/tallow_martha.png" alt="Sister Martha portrait" width="150"> | <img src="public/lore_portraits/vesper_briggs.png" alt="Commander Briggs portrait" width="150"> |
+| The voice under Sector Zero. | Tech-scavengers and systems faith. | Hydro-cultists, care, infection, and mercy. | Security survivors, weapons, barricades, and suspicion. |
 
----
+## Run Locally
 
-## 🛠️ Key Technical Features
+Prerequisites:
 
-### 🌀 1. Infinite Procedural Maze Generation
-Instead of pre-authored maps, *Hunker Bunker* creates seamless, infinite environments at runtime using advanced mathematical algorithms:
-* **DFS Maze Carving**: A coordinate-seeded Depth-First Search algorithm constructs 19x19 chunks dynamically as the player moves.
-* **Markov-Chain Replacement (MarkovGenerator)**: A sophisticated rule-based 2D replacement engine pattern-matches grid corridors and places tactical obstacles, barriers, and environmental decorations dynamically.
-* **Corridor Widening & Portal stitching**: Chunks utilize seeded-hash portal endpoints, ensuring seamless corridor connectivity and pathfinding across adjacent chunk boundaries without dead ends.
+- Node.js 20 or newer
+- npm
 
-### 🧪 2. Advanced WebGL Shaders & Materials
-To deliver AAA-grade visuals in a lightweight WebGL package, the engine modifies standard Three.js materials through custom `onBeforeCompile` vertex and fragment shaders:
-* **Dynamic Shader-Based Chroma-Keying (Spritesheets)**: To support retro green screen asset pipelines, the game features a custom GLSL chroma-keying shader that samples sprite sheets and discards pure green pixels (`#00FF00` where `g > 0.85 && r < 0.15 && b < 0.15`) in the fragment processor. This enables high-performance transparency masking without pre-baked checkerboard artifacts.
-* **Coprime Scale Blending (Floor)**: Blends base metal plates (`bunker_base_metal.png`), grunge rust (`bunker_grunge_rust.png`), and mechanical scratches (`bunker_tech_scratches.png`) at non-repeating co-prime scales. This completely eliminates visual tiling repetitions over infinite maps.
-* **Triplanar World-Space Projection (Walls)**: Standard UV mapping stretches textures on custom-proportions mesh blocks. Our triplanar shader projects vertical steel bulkheads along the `ZY` and `XY` planes, and blends them seamlessly with the floor plates projected on the `XZ` plane. The result is perfectly aligned, seamless joints.
-* **Glowing Emissive Stencils**: Detail map green/blue channels are sampled inside the fragment shader to produce glowing cyan cybernetic floor circuits, animated with high-intensity pulse states.
+```bash
+git clone https://github.com/grounded-play/hunker-bunker.git
+cd hunker-bunker
+npm install
+npm run dev
+```
 
-### 🎮 3. Tactical Unit Classes
-Players select and deploy three distinct specialist units, each mapped to high-quality multi-directional 2D spritesheet animations on 3D billboard planes:
-* 🟢 **SCOUT (Agile/Recon)**: High speed, low silhouette, glowing neon green point light signature.
-* 🟡 **TANK (Heavy/Armored)**: Heavy protective plates, glowing amber signature, slower movement velocity.
-* 🔵 **ENGINEER (Utility/Tech)**: Interactive toolsets, high tech signature, glowing tactical cyan point light.
+Open the Vite URL printed by the terminal, usually `http://localhost:5173`.
 
-### 🔊 4. Expressive Audio Design (`audio.js`)
-An asset-cached, multi-layered sound engine powered by the Web Audio API:
-* **Procedural Transitions**: Vertical door slams, horizontal bulkhead slides, and heavy industrial gear rotations align dynamically with visual UI animations.
-* **Dynamic Spatial Ambience**: Heavy tactical hum loops, dripping water, and industrial metal stress sound effects trigger at randomized intervals, immersing players in a desolate subterranean atmosphere.
+Optional local modes:
 
-### 📡 5. Interactive Telemetry Terminals & Exosuit Upgrades
-Integrated around the starting sector, crashed ship wreckage nodes function as tactical telemetry bases:
-* **Real-time Diagnostic Consoles**: Players can access consoles with direct feedback displays indicating Reactor Stability, Shield Intensity, and Exosuit energy levels.
-* **Modular Upgrades**: Dynamically spend collected salvage points to upgrade exosuit properties like hull integrity and radar range.
-* **Live Suit Synchronization**: Seamlessly hot-swap between Scout, Tank, and Engineer classes directly inside the active sector with visual smoke poof feedback.
+```bash
+npm run electron:dev      # Electron shell against the Vite dev server
+npm run server:start      # Optional Socket.io/backend server
+npm run preview           # Preview a production web build
+```
 
-### 💎 6. Seeded Loot Pipelines & Magnetic Attractor Mechanics
-To reward subterranean exploration, sectors are populated with drop caches and materials:
-* **Coarse-to-Fine Rarity System**: Items spawn across four distinct rarity tiers (Basic, Uncommon, Rare, Legendary) using weighted seed-based probability tables.
-* **Magnetic Trajectory Attractor**: Items automatically polarize and pull towards the player within a specific magnetic radius using smooth kinematic interpolation.
-* **Dynamic Item Classes**: Collect specialized gear categorized into Health, Ammo, Weapon, and Coin/Salvage units to update the persistent HUD counters.
+## Validation
 
-### 🐌 7. Cybernetic Flora, Fauna & Ambient Decor
-Subterranean metallic corridors are decorated with procedurally scattered debris and organisms:
-* **Bioluminescent Bio-Spores**: Glowing fungal growths in Green, Blue, and Amber variants scattered across dark corners.
-* **Cybernetic Cyber-Snails**: Cyber-enhanced snails crawling around the corridors, contributing to the desolate retro-arcade atmosphere.
-* **Salvageable Junk Piles**: Interactable debris clusters that burst into loot caches and scrap items upon proximity or impact.
+```bash
+npm test                  # Vitest unit tests
+npm run test:e2e          # Playwright browser tests
+npm run lint              # ESLint
+npm run build             # Production web build
+npm run coverage          # Vitest coverage report
+```
 
-### 🕹️ 8. Hybrid Touch Controls & Tactical HUD Compass
-Optimized for cross-platform deployments with zero configuration:
-* **Dynamic Device Detection**: Automatic UI morphing adjusts layout styling for touchscreens, activating the virtual analog joystick.
-* **Radar Spawn Compass**: A high-contrast HUD compass pointing back to the sector's main telemetry console, showing real-time distance and angle metrics.
-* **Audio Mixer Overlay**: Full control over volume channels (Master, Music, SFX/VFX) via an interactive settings mixer panel.
+Steam/deployment helpers:
 
----
+```bash
+npm run steam:dashboard-handoff
+npm run steam:audit-backend
+npm run steam:audit-backend:strict
+npm run steam:audit-depot
+npm run electron:build
+```
 
-## 📐 Project Architecture
+## Controls
+
+Controls can be remapped in-game.
+
+| Action | Keyboard / Mouse | Controller / Touch |
+| --- | --- | --- |
+| Move | `WASD` or arrow keys | Left stick / touch joystick |
+| Aim and fire | Mouse aim + click | Right stick / fire action |
+| Interact | `E` | Confirm / tap prompt |
+| Reload | `R` | Reload action |
+| Class ability | `F` | Ability action |
+| Radar scan | `Q` | Scan action |
+| Sprint | `Shift` | Sprint action / touch sprint |
+| Settings / menus | Mouse or keyboard focus | Controller menu navigation where supported |
+
+## Architecture
 
 ```mermaid
 graph TD
-    A[index.html / Bezel UI] -->|Controls / Settings| B[main.js]
-    B -->|Initializes| C[src/audio.js - AudioManager]
-    B -->|Loads & Spawns| D[src/threeGame.js - ThreeGame]
-    D -->|Seeds & Decorates| E[src/generator.js - MarkovGenerator]
-    D -->|Tracks Grid Coordinates| F[src/levelManager.js]
-    D -->|Compiles Shaders| G[Three.js WebGLRenderer]
-    D -->|Coordinates Multiplayer| H[Socket.io-Client]
+    A[index.html + main.js UI shell] --> B[src/threeGame.js WebGL runtime]
+    B --> C[src/generator.js + src/landforms.js procedural world]
+    B --> D[src/director.js + src/runModifiers.js pressure systems]
+    B --> E[src/act2.js camps, hives, manifest, endings]
+    B --> F[src/audio.js + src/dialogue.js + src/cutscene.js presentation]
+    B --> G[src/bank.js + src/skillTree.js progression]
+    A --> H[electron/main.cjs + electron/preload.cjs optional desktop shell]
+    H --> I[steamworks.js optional Steam bridge]
+    H --> J[server/* trusted backend routes]
 ```
 
-### Key Modules
-* [main.js](./main.js): Orchestrates UI splash transitions, debug/calibration grids, fullscreen toggles, and state syncing.
-* [src/threeGame.js](./src/threeGame.js): Core WebGL renderer, setup for lighting, triplanar wall/floor shaders, sprite animator, and collision boundaries.
-* [src/generator.js](./src/generator.js): Seeded-random number generator and the rules-based Markov pattern replacements.
-* [src/audio.js](./src/audio.js): Decodes and manages multi-channel audio nodes, including volume smoothing and unlock triggers.
+Key directories:
 
----
+| Path | Purpose |
+| --- | --- |
+| `main.js` | Browser UI, HUDs, menus, dialogue surfaces, Steam/frontend event glue. |
+| `src/threeGame.js` | Core Three.js game runtime, world mounting, combat, camps, hives, and interactions. |
+| `src/data/` | Dialogue, codex, enemies, missions, loot, quests, and run modifier data. |
+| `server/` | Backend routes for Steam auth, leaderboards, inventory, store, and persistence. |
+| `electron/` | Desktop shell, Steamworks bridge, save-file bridge, and preload API. |
+| `steam/` | SteamPipe, inventory schema, dashboard handoff output, and store assets. |
+| `public/` | Runtime sprites, portraits, textures, cutscene posters, audio, and store-ready art. |
+| `docs/` | Current planning, Steam readiness, design reviews, compliance notes, and runbooks. |
+| `tests/e2e/` | Playwright acceptance coverage. |
 
-## ⚡ Quick Start
+## Useful Docs
 
-### Prerequisites
-* [Node.js](https://nodejs.org/) (v20+ recommended)
-* `npm` (Node Package Manager)
+| Doc | Why read it |
+| --- | --- |
+| [docs/steam-docs-master-index.md](docs/steam-docs-master-index.md) | Best starting point for Steam, UX, and launch-readiness docs. |
+| [docs/things-we-missed.md](docs/things-we-missed.md) | Audit of underplanned, unexplored, and dropped work. |
+| [docs/ux-and-game-feel-punch-list-2026-07-16.md](docs/ux-and-game-feel-punch-list-2026-07-16.md) | Gameplay and UX punch list for first-hour feel, objectives, combat, and navigation. |
+| [docs/steam-launch-readiness-master-plan.md](docs/steam-launch-readiness-master-plan.md) | Canonical Steam readiness plan and acceptance ladder. |
+| [docs/steam-portal-copy.md](docs/steam-portal-copy.md) | Store-page copy and feature-claim guardrails. |
+| [docs/implementation_plan.md](docs/implementation_plan.md) | Historical multi-ending/faction implementation plan. |
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/grounded-play/hunker-bunker.git
-   cd hunker-bunker
-   ```
-2. Install all development and core dependencies:
-   ```bash
-   npm install
-   ```
+## Contributing
 
-### Running Locally
-* **Launch Client (Vite Dev Server)**:
-  ```bash
-  npm run dev
-  ```
-  *This spins up the game server. Open `http://localhost:5173` (or the host IP shown in terminal) in your browser.*
+This project moves quickly and has a lot of active planning notes. Before
+taking on larger work, skim [docs/things-we-missed.md](docs/things-we-missed.md)
+and [docs/steam-docs-master-index.md](docs/steam-docs-master-index.md) so new
+changes line up with the current design and release constraints.
 
-* **Launch Multiplayer Relay Server (Optional)**:
-  ```bash
-  npm run server
-  ```
-  *Runs the Socket.io node server at `http://localhost:3001` to handle peer synchronization.*
+Good contribution areas:
 
-### Running Diagnostics & Tests
-* **Run Unit Tests (Vitest)**:
-  ```bash
-  npm run test
-  ```
-* **Generate Code Coverage Report**:
-  ```bash
-  npm run coverage
-  ```
-* **Lint Source Code**:
-  ```bash
-  npm run lint
-  ```
+- Focused bug fixes with tests.
+- UX acceptance improvements from the punch list.
+- Small public asset/state-variant additions that improve consequence
+  readability.
+- Steam/deployment hardening that can be validated locally.
+- Documentation that turns vague plans into acceptance-ready tasks.
 
-## 🎮 Controls & Console Interface
+## License
 
-| Command / Action | Desktop Inputs | Touch/Mobile Inputs |
-| :--- | :--- | :--- |
-| **Movement** | `W`, `A`, `S`, `D` or `Arrow Keys` | Virtual Analog Joystick |
-| **Interact / Access Console** | `E` key near wreckage terminals | "TAP TO ACCESS" HUD Prompt |
-| **Upgrade Attributes** | Click interface cards in Console | Tap interface cards in Console |
-| **Class Hot-Swap** | Trigger suit synchronizer in Console | Trigger suit synchronizer in Console |
-| **Open Menu / Settings** | Click `SETTINGS` button | Tap `SETTINGS` button |
-| **Adjust Audio Channels** | Drag Mixer Sliders in settings | Drag Mixer Sliders in settings |
-
----
-
-## 📈 Backing / Funding & Commercial Roadmap
-
-We are seeking strategic backing and development funding to expand *Hunker Bunker* from a high-fidelity prototype into a commercial multiplayer tactical experience. Our vision includes:
-
-### Phase 1: Dynamic Multiplayer Synchronization
-* Full Socket.io peer state-replication allowing up to 4 players to explore the infinite procedural bunkers simultaneously.
-* P2P collision matrix and specialized roles (e.g. Engineer hacking doors open while Tank holds off threats).
-
-### Phase 2: Expanded Tactical Arsenal
-* Integrated weaponry, turret deployments, and deployable shields.
-* Diverse rogue-like enemy classes governed by state-machine tactical AI.
-
-### Phase 3: Commercial WebGL & Native Distribution
-* High-optimization builds targeted at Steam WebGL integration, itch.io, and mobile native wrappers (e.g. Capacitor/Cordova).
-* Dedicated visual upgrades including Triplanar Bump Mapping, customizable bulkhead parts, and cinematic lighting filters.
-
----
-
-## 🤝 Contributing & Support
-
-*Hunker Bunker* is developed by the **Tuesday Cinema Club**. We welcome contributions from developers, artists, and sound designers!
-
-* **Website / Contact**: [Tuesday Cinema Club Linktree](http://linktr.ee/Tuesday_Cinema_Club)
-* **Issues / Feature Requests**: Please submit a ticket via our Github Issues page.
-
----
-
-### 📄 License
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).

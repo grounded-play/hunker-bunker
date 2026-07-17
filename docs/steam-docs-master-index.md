@@ -7,9 +7,18 @@ other's docs. Newest/most-authoritative docs first in each section.
 
 ## Start here
 
+- **[`sprint-19-wave6-punch-list-lane-split.md`](./sprint-19-wave6-punch-list-lane-split.md)**
+  — the current 3-way (Claude/Codex/Gemini) task split for the gameplay/UX
+  punch list's remaining items plus the objective-framework/first-hour/
+  faction-verb gaps `things-we-missed.md` calls out. Read this before
+  picking up any punch-list or design-gap work; it also lists what's
+  already been fixed since the punch list was written, so you don't redo it.
 - **[`sprint-19-wave5-steam-connection-lane-split.md`](./sprint-19-wave5-steam-connection-lane-split.md)**
   — the current 3-way (Claude/Codex/Gemini) task split for what's left to
   connect the game to Steam. Read this before picking up any Steam work.
+- **[`things-we-missed.md`](./things-we-missed.md)**
+  — full audit of underplanned/unexplored/dropped work across design and
+  deployment; the source material wave 6 above triages into lanes.
 - **[`ux-and-game-feel-punch-list-2026-07-16.md`](./ux-and-game-feel-punch-list-2026-07-16.md)**
   — the separate, parallel gameplay/UX punch list (camps, hives, maze
   diversity, lore pickup, objectives/black box, sub-objectives, boss

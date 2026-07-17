@@ -801,6 +801,17 @@ export class Act2Manager {
         return camp?.questFlags?.[questId] === 'done';
     }
 
+    // Marks a camp-bonding quest as accepted-but-in-progress, distinct from
+    // 'done' — keeps getActionableCampAt from re-offering it while it's
+    // active in the world without granting the completion bond yet.
+    setCampQuestActive(id, questId) {
+        return this._mutate((s) => {
+            const camp = s.camps.find((c) => c.id === id);
+            if (!camp || !questId || camp.questFlags[questId] === 'done') return;
+            camp.questFlags[questId] = 'active';
+        });
+    }
+
     // Rob the stockpile: the camp survives but is lost to every other path.
     stealCamp(id) {
         return this._mutate((s) => {

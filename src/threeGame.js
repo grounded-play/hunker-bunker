@@ -29,6 +29,7 @@ import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { BunkerDirector } from './director.js';
 import { getAct2ClassPerks as getAct2ClassPerksConfig, mergeCampVerbEffects } from './campEconomy.js';
+import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
@@ -99,6 +100,10 @@ const SUIT_LIGHT_EMITTER_HEIGHT = 1.35;
 const SUIT_LIGHT_WALL_PADDING = 0.35;
 const O2_SAFE_LIGHT_COLOR = 0xb9fbff;
 const O2_SAFE_FILL_OPACITY = 0.16;
+const RADAR_STANDARD_TRACK_SECONDS = 5.0;
+const RADAR_DANGER_TRACK_SECONDS = 8.0;
+const RADAR_DANGER_COLOR = 0xff3344;
+const RADAR_HOLE_SCAN_PADDING = 2.25;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
 // The Act-1 finale cave spawns well past the BIO-sector reactor site (z≈176)
@@ -394,6 +399,25 @@ const CAMP_DISCOVERY_SHELLS = 10; // survivors share supplies on first contact
 const CAMP_DISCOVERY_O2 = 35;
 const CAMP_SUPPORT_O2_REFILL = 40; // instant O2 on each support purchase
 const CAMP_FAVOR_BASE_COST = 8;
+// One entry per named camp-quest reward (docs/expanded-universe-narrative-design.md's
+// bonding-quest table) — the single lookup every reward hook checks instead of
+// scattering questFlags reads around the file.
+const CAMP_QUEST_REWARDS = Object.freeze({
+    substation_keycard: { campId: 'camp_meridian', questId: 'reactor_venting' },
+    radar_shroud: { campId: 'camp_meridian', questId: 'lost_probe' },
+    bio_dampener: { campId: 'camp_tallow', questId: 'spore_cleansing' },
+    lost_cultist_trust: { campId: 'camp_tallow', questId: 'lost_cultist' },
+    heavy_munitions: { campId: 'camp_vesper', questId: 'armory_breach' },
+    bunker_holdout_turrets: { campId: 'camp_vesper', questId: 'bunker_holdout' }
+});
+const CAMP_QUEST_GAMEPLAY_TARGET = Object.freeze({
+    reactor_venting: 3,
+    lost_probe: 1,
+    spore_cleansing: 3,
+    lost_cultist: 1,
+    armory_breach: 3,
+    bunker_holdout: 3
+});
 const BUNKER_JUNK_MIN_SEPARATION = 2.2;
 const BUNKER_JUNK_DROP_COUNT_MIN = 2;
 const BUNKER_JUNK_DROP_COUNT_MAX = 4;
@@ -801,6 +825,7 @@ export class ThreeGame {
         this._aimRaycaster = new THREE.Raycaster();
         this._projRaycaster = new THREE.Raycaster();
         this.activeProjectiles = [];
+        this._activeCampQuest = null;
         this.weaponClipSize = WEAPON_CLIP_SIZE;
         this.weaponUpgradeBonuses = { shotDamage: 0, speedAdd: 0, shotAmount: 0 };
         this.weaponClipAmmo = this.weaponClipSize;
@@ -1526,6 +1551,29 @@ export class ThreeGame {
                 depthWrite: false,
                 depthTest: true,
                 fog: false
+            }),
+            // Camp-quest interact/pickup marker — reuses the bunker_junk_rare art
+            // with a gold tint so it reads as "objective", not loot.
+            quest_prop: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bunker_junk_rare,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xffcc33)
+            }),
+            // Camp-quest shoot-counter prop (Spore Cleansing mold blocks) —
+            // reuses the slime-puddle art tinted red; deliberately NOT an
+            // enemy-type sprite so it never gets AI pathing/attack behavior.
+            quest_mold: new THREE.SpriteMaterial({
+                map: this.scatterTextures.scatter_slime_puddle,
+                transparent: true,
+                alphaTest: 0.001,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xcc2233)
             }),
             bunker_junk_legendary: new THREE.SpriteMaterial({
                 map: this.scatterTextures.bunker_junk_legendary,
@@ -2816,6 +2864,7 @@ export class ThreeGame {
         this.interactWithCaveEntrance();
         this.interactWithAct2Camp();
         this.interactWithHiveSite();
+        this.interactWithCampQuestObject();
         return true;
     }
 
@@ -3847,6 +3896,8 @@ export class ThreeGame {
         this.updateCamps(delta);
         this.updateHiveSites(delta);
         this.updateInfectionPressure(delta);
+        this.updateHazardZoneDamage(delta);
+        this.updateCampQuest(delta);
         this.updateShipVisualState(now);
         this.updateBlackBoxMarker(delta);
         this.updateRunModifierEffects(delta);
@@ -6288,6 +6339,9 @@ export class ThreeGame {
         if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_damage_1')) {
             extraDamage += 1;
         }
+        if (this.hasCampQuestReward('heavy_munitions')) {
+            extraDamage += 1;
+        }
 
         this.weaponUpgradeBonuses = {
             shotDamage: extraDamage,
@@ -6906,7 +6960,10 @@ export class ThreeGame {
         if (!this.player) return;
         const campEffects = this.getCampVerbRuntimeEffects();
         const classPerks = this.getAct2ClassPerks();
-        const turretCooldownMult = campEffects.turretCooldownMult ?? 1;
+        // Bunker Holdout (Vesper reward) stacks a faster-cooldown bonus on top
+        // of the level/bond-driven turret-favor baseline.
+        const bunkerHoldoutMult = this.hasCampQuestReward('bunker_holdout_turrets') ? 0.7 : 1;
+        const turretCooldownMult = (campEffects.turretCooldownMult ?? 1) * bunkerHoldoutMult;
         const suspicionGainMult = (campEffects.turretSuspicionGainMult ?? 1) * (classPerks.turretSuspicionGainMult ?? 1);
         const hostileDetectionRadius = 5 * (classPerks.turretDetectionRadiusMult ?? 1);
         for (const camp of this.camps) {
@@ -7039,8 +7096,11 @@ export class ThreeGame {
 
         // Ambient decay: ~1 point of cover per 12s of active play, softened by Tallow.
         const campEffects = this.getCampVerbRuntimeEffects();
+        // Bio-Dampener (Spore Cleansing reward) stacks an extra decay-rate cut
+        // on top of Tallow's level/bond-driven baseline multiplier.
+        const bioDampenerMult = this.hasCampQuestReward('bio_dampener') ? 0.6 : 1;
         this._humanityDecayAcc = (this._humanityDecayAcc ?? 0) + humanityDecayProgress(delta, {
-            multiplier: campEffects.humanityDecayMultiplier ?? 1
+            multiplier: (campEffects.humanityDecayMultiplier ?? 1) * bioDampenerMult
         });
         if (this._humanityDecayAcc >= 1) {
             const drop = Math.floor(this._humanityDecayAcc);
@@ -7080,6 +7140,24 @@ export class ThreeGame {
             });
             this.maybePropagateCampOuting(camp, after);
         }
+    }
+
+    // Substation Keycard (Reactor Venting camp-quest reward): standing near
+    // an unbypassed hazard wall now costs real HP over time, not just the
+    // cosmetic pulsing-siren dressing it always had. The keycard reward
+    // shuts this off entirely rather than reducing it, matching the design
+    // doc's "bypass" framing.
+    updateHazardZoneDamage(delta) {
+        if (!this.isAct2Active() || !this.player || this.isPlayerDead) return;
+        if (this.hasCampQuestReward('substation_keycard')) return;
+        if (!this.isPlayerNearHazardWall(this.player.position.x, this.player.position.z)) {
+            this._hazardZoneDamageAcc = 0;
+            return;
+        }
+        this._hazardZoneDamageAcc = (this._hazardZoneDamageAcc ?? 0) + delta;
+        if (this._hazardZoneDamageAcc < 2.5) return;
+        this._hazardZoneDamageAcc = 0;
+        this.takeDamage(1, 'hazard-zone', this.player.position.x, this.player.position.z);
     }
 
     // ── Hive swarm sites (docs/hive-swarm-camps-and-humanity-system-design.md) ──
@@ -7847,6 +7925,410 @@ export class ThreeGame {
         return `field_favor_${next}`;
     }
 
+    // Single check-point for every camp-quest reward — see CAMP_QUEST_REWARDS.
+    hasCampQuestReward(rewardId) {
+        const mapping = CAMP_QUEST_REWARDS[rewardId];
+        if (!mapping) return false;
+        const record = this.getCampRecord(mapping.campId);
+        return record?.questFlags?.[mapping.questId] === 'done';
+    }
+
+    // Next not-yet-done quest for a camp (data order = Reactor Venting then
+    // Lost Probe, etc.) — one at a time, matching the walk-up single-action
+    // prompt pattern the rest of Act 1 camp interaction already uses.
+    getNextCampQuest(campId, record) {
+        const quests = CAMP_QUESTS[campId];
+        if (!quests || !record) return null;
+        for (const quest of quests) {
+            if (record.questFlags?.[quest.id] === 'done') continue;
+            if ((record.bond ?? 0) < quest.bond) return null;
+            return quest;
+        }
+        return null;
+    }
+
+    // ── Camp Bonding Quests (docs/expanded-universe-narrative-design.md) ──
+    // Only one camp quest can be globally active at a time (HUD/compass
+    // simplicity, and getActionableCampAt already refuses to offer a new one
+    // while this is set). See CAMP_QUEST_GAMEPLAY_TARGET for per-quest counts.
+    acceptCampQuest(camp, quest) {
+        if (!camp || !quest || this._activeCampQuest) return;
+        this.act2.setCampQuestActive(camp.id, quest.id);
+        const target = CAMP_QUEST_GAMEPLAY_TARGET[quest.id] ?? 1;
+        this._activeCampQuest = {
+            campId: camp.id,
+            quest,
+            kind: null,
+            current: 0,
+            target,
+            props: [],
+            waveIndex: 0,
+            waveTotal: target
+        };
+        if (quest.id === 'reactor_venting') {
+            this._activeCampQuest.kind = 'interact';
+            this.spawnReactorVentingObjects(camp);
+        } else if (quest.id === 'lost_probe') {
+            this._activeCampQuest.kind = 'pickup';
+            this.spawnLostProbeObject(camp);
+        } else if (quest.id === 'spore_cleansing') {
+            this._activeCampQuest.kind = 'shoot';
+            this.spawnSporeCleansingObjects(camp);
+        } else if (quest.id === 'lost_cultist') {
+            this._activeCampQuest.kind = 'rescue';
+            this.spawnLostCultistObject(camp);
+        } else if (quest.id === 'armory_breach') {
+            this._activeCampQuest.kind = 'kill';
+            this.spawnArmoryBreachEnemies(camp);
+        } else if (quest.id === 'bunker_holdout') {
+            this._activeCampQuest.kind = 'wave';
+            this.spawnBunkerHoldoutWave(camp);
+        } else {
+            this._activeCampQuest = null;
+            return;
+        }
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: 1.0 });
+        window.dispatchEvent(new CustomEvent('camp-quest-progress', {
+            detail: { campId: camp.id, questId: quest.id, label: quest.label, current: 0, target: this._activeCampQuest.target }
+        }));
+    }
+
+    // Ring-search around a camp for a walkable prop/enemy spawn spot —
+    // mirrors spawnCampDefenders' fallback-to-clearing search exactly.
+    findCampQuestSpawnSpot(camp, index, count) {
+        let x = camp.pos.x;
+        let z = camp.pos.z;
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+            const angle = (index / count) * Math.PI * 2 + 0.9 + attempt * 0.7;
+            const radius = 2.5 + ((index + attempt) % 3) * 0.9;
+            const tryX = camp.pos.x + Math.cos(angle) * radius;
+            const tryZ = camp.pos.z + Math.sin(angle) * radius;
+            if (this.isSnailTileWalkable(Math.round(tryX), Math.round(tryZ))) {
+                x = tryX;
+                z = tryZ;
+                break;
+            }
+        }
+        return { x, z };
+    }
+
+    // Generic non-enemy quest-prop spawner (interact/pickup/shoot/rescue
+    // kinds) — goes through createScatterInstance's GENERIC fallback branch,
+    // so it must never reuse 'lore_terminal' (interactWithLoreTerminal would
+    // misread it) or an isEnemyType() name (would get AI pathing/attacks).
+    spawnCampQuestMarkerProp(camp, { type, x, z, index = 0, scale = 1.1 } = {}) {
+        const placement = {
+            x,
+            z,
+            type,
+            scatterKey: `camp-quest:${camp.id}:${this._activeCampQuest?.quest?.id}:${index}`,
+            scale,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.15,
+            groupType: 'quest',
+            phase: Math.random() * Math.PI * 2,
+            opacity: 1,
+            biomeTint: 0xffffff
+        };
+        const sprite = this.createScatterInstance(placement);
+        if (!sprite) return null;
+        sprite.userData.campQuestId = camp.id;
+        sprite.userData.campQuestKey = this._activeCampQuest?.quest?.id ?? null;
+        const chunkX = Math.floor(x / this.chunkSize);
+        const chunkY = Math.floor(z / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+        group.add(sprite);
+        this.scatterSprites.push(sprite);
+        return sprite;
+    }
+
+    // Reactor Venting (Meridian): 3 pressure-valve props near the camp,
+    // interact-counter — walk up and press E on each.
+    spawnReactorVentingObjects(camp) {
+        for (let i = 0; i < 3; i += 1) {
+            const { x, z } = this.findCampQuestSpawnSpot(camp, i, 3);
+            const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: i });
+            if (sprite) this._activeCampQuest.props.push(sprite);
+        }
+    }
+
+    // The Lost Probe (Meridian): single pickup, placed out in the CRYO biome
+    // band away from camp — falls back to a near-camp spot if the band
+    // search can't find a walkable tile (never leave the quest uncompletable).
+    spawnLostProbeObject(camp) {
+        const anchor = this.getBiomeAnchorPosition();
+        const random = this.createSeededRandom((this.hashTile(
+            Math.round(camp.pos.x) + 401,
+            Math.round(camp.pos.z) - 233
+        ) ^ this.runEntropy) >>> 0);
+        for (let attempt = 0; attempt < 64; attempt += 1) {
+            const angle = random() * Math.PI * 2;
+            const dist = BIOME_THRESHOLD_CRYO + random() * 20;
+            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
+            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+                const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x: tileX, z: tileZ, index: 0, scale: 1.0 });
+                if (sprite) this._activeCampQuest.props.push(sprite);
+                return;
+            }
+        }
+        const { x, z } = this.findCampQuestSpawnSpot(camp, 0, 1);
+        const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: 0 });
+        if (sprite) this._activeCampQuest.props.push(sprite);
+    }
+
+    // Spore Cleansing (Tallow): 3 mold-block props near camp, shoot-counter —
+    // 1 HP each, destroyed by any player projectile via checkProjectileQuestPropHit.
+    spawnSporeCleansingObjects(camp) {
+        for (let i = 0; i < 3; i += 1) {
+            const { x, z } = this.findCampQuestSpawnSpot(camp, i, 3);
+            const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_mold', x, z, index: i, scale: 1.0 });
+            if (!sprite) continue;
+            sprite.userData.isCampQuestShootProp = true;
+            this._activeCampQuest.props.push(sprite);
+        }
+    }
+
+    // The Lost Cultist (Tallow): single rescue NPC near camp. Scope note —
+    // this ships as a single-interaction "find them, free them" rescue, not
+    // full follow-the-player escort AI (pathing/attackable NPC/win-fail
+    // route); that would be a meaningfully bigger feature on its own.
+    spawnLostCultistObject(camp) {
+        const { x, z } = this.findCampQuestSpawnSpot(camp, 0, 1);
+        const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'civilian_researcher', x, z, index: 0, scale: 1.15 });
+        if (sprite) this._activeCampQuest.props.push(sprite);
+    }
+
+    // Armory Breach (Vesper): a pack of 3 existing enemy types near the camp,
+    // kill-counter — polled each frame in updateCampQuest.
+    spawnArmoryBreachEnemies(camp) {
+        for (let i = 0; i < 3; i += 1) {
+            const { x, z } = this.findCampQuestSpawnSpot(camp, i, 3);
+            const type = i % 2 === 0 ? 'alien_proto_crawler' : 'alien_proto_spitter';
+            const placement = {
+                x,
+                z,
+                type,
+                scatterKey: `camp-quest-enemy:${camp.id}:${i}`,
+                scale: 1.2,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'enemy',
+                phase: Math.random() * Math.PI * 2,
+                opacity: 1,
+                biomeTint: 0xffffff,
+                isEnemy: true
+            };
+            const sprite = this.createScatterInstance(placement);
+            if (!sprite) continue;
+            sprite.userData.campQuestId = camp.id;
+            sprite.userData.campQuestKey = 'armory_breach';
+            const chunkX = Math.floor(x / this.chunkSize);
+            const chunkY = Math.floor(z / this.chunkSize);
+            const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+            group.add(sprite);
+            this.scatterSprites.push(sprite);
+            this._activeCampQuest.props.push(sprite);
+        }
+    }
+
+    // Bunker Holdout (Vesper): wave defense at the camp gate. Modeled on
+    // spawnCampDefenders but sequential (3 waves of 3) rather than all at
+    // once — updateCampQuest advances to the next wave once the current
+    // one's enemies are all dead.
+    spawnBunkerHoldoutWave(camp) {
+        const aq = this._activeCampQuest;
+        if (!aq) return;
+        const count = 3;
+        const biomeSnail = this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail';
+        aq.props = [];
+        for (let i = 0; i < count; i += 1) {
+            const type = i % 2 === 0 ? 'cybersnail' : biomeSnail;
+            const { x, z } = this.findCampQuestSpawnSpot(camp, i, count);
+            const placement = {
+                x,
+                z,
+                type,
+                scatterKey: `camp-quest-wave:${camp.id}:${aq.waveIndex}:${i}`,
+                scale: 1.2,
+                rotation: 0,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.1,
+                groupType: 'enemy',
+                phase: Math.random() * Math.PI * 2,
+                opacity: 1,
+                biomeTint: 0xffffff,
+                isEnemy: true
+            };
+            const sprite = this.createScatterInstance(placement);
+            if (!sprite) continue;
+            sprite.userData.campQuestId = camp.id;
+            sprite.userData.campQuestKey = 'bunker_holdout';
+            const chunkX = Math.floor(x / this.chunkSize);
+            const chunkY = Math.floor(z / this.chunkSize);
+            const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+            group.add(sprite);
+            this.scatterSprites.push(sprite);
+            aq.props.push(sprite);
+        }
+        window.dispatchEvent(new CustomEvent('camp-quest-progress', {
+            detail: {
+                campId: camp.id,
+                questId: aq.quest.id,
+                label: aq.quest.label,
+                current: aq.waveIndex,
+                target: aq.target,
+                wave: aq.waveIndex + 1
+            }
+        }));
+    }
+
+    // E-press dispatch for interact/pickup/rescue quest props — proximity
+    // check only, called from triggerGameplayInteract every frame like every
+    // other camp/console/lore interaction in this file.
+    interactWithCampQuestObject() {
+        const aq = this._activeCampQuest;
+        if (!aq || !['interact', 'pickup', 'rescue'].includes(aq.kind)) return false;
+        if (!this.isGameplayInputActive() || !this.player) return false;
+        for (const sprite of aq.props) {
+            if (!sprite?.parent || sprite.userData?.questClaimed) continue;
+            const dist = Math.hypot(
+                this.player.position.x - sprite.position.x,
+                this.player.position.z - sprite.position.z
+            );
+            if (dist >= 2.0) continue;
+            sprite.userData.questClaimed = true;
+            sprite.parent.remove(sprite);
+            sprite.material?.dispose?.();
+            sprite.geometry?.dispose?.();
+            this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
+            window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 1.15 });
+            this.advanceCampQuestProgress(1);
+            return true;
+        }
+        return false;
+    }
+
+    // Dedicated collision check for shoot-counter quest props (Spore
+    // Cleansing's mold blocks) — checkProjectileSnailHit only matches
+    // isEnemyType() sprites, and these are deliberately NOT enemy-type
+    // (would otherwise get AI pathing/attack behavior via updateSnailBehavior).
+    checkProjectileQuestPropHit(projectile) {
+        const aq = this._activeCampQuest;
+        if (!aq || aq.kind !== 'shoot') return null;
+        for (const sprite of aq.props) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
+            const dist = Math.hypot(
+                projectile.mesh.position.x - sprite.position.x,
+                projectile.mesh.position.z - sprite.position.z
+            );
+            if (dist <= SNAIL_HIT_RADIUS + (projectile.radius ?? PROJECTILE_RADIUS) + PLAYER_HITBOX_PADDING) {
+                return sprite;
+            }
+        }
+        return null;
+    }
+
+    destroyCampQuestShootProp(sprite) {
+        if (!sprite?.userData) return;
+        sprite.userData.burstTriggered = true;
+        this.spawnPhysicalBurst(sprite.position.x, sprite.position.z, { color: 0xcc2233, count: 5, upward: 0.16 });
+        window.AudioManager?.play?.('enemy_hit_soft', { volume: 0.4 });
+        sprite.parent?.remove(sprite);
+        sprite.material?.dispose?.();
+        sprite.geometry?.dispose?.();
+        this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
+        this.advanceCampQuestProgress(1);
+    }
+
+    // Per-frame poll — only 'kill' and 'wave' kinds need polling (they
+    // progress by an enemy dying elsewhere in the update loop, not by a
+    // direct interact/shoot dispatch call like the other four kinds).
+    updateCampQuest(_delta) {
+        const aq = this._activeCampQuest;
+        if (!aq) return;
+        if (aq.kind === 'wave') {
+            const alive = aq.props.some((sprite) => sprite?.parent && !sprite.userData?.burstTriggered);
+            if (alive) return;
+            aq.waveIndex += 1;
+            aq.current = aq.waveIndex;
+            window.dispatchEvent(new CustomEvent('camp-quest-progress', {
+                detail: { campId: aq.campId, questId: aq.quest.id, label: aq.quest.label, current: aq.current, target: aq.target }
+            }));
+            if (aq.current >= aq.target) {
+                this.resolveCampQuestCompletion();
+                return;
+            }
+            const camp = this.getCampById(aq.campId);
+            if (camp) this.spawnBunkerHoldoutWave(camp);
+            return;
+        }
+        if (aq.kind === 'kill') {
+            const remaining = aq.props.filter((sprite) => sprite?.parent && !sprite.userData?.burstTriggered).length;
+            const done = aq.props.length - remaining;
+            if (done > aq.current) this.advanceCampQuestProgress(done - aq.current);
+        }
+    }
+
+    advanceCampQuestProgress(amount = 1) {
+        const aq = this._activeCampQuest;
+        if (!aq) return;
+        aq.current = Math.min(aq.target, aq.current + amount);
+        window.dispatchEvent(new CustomEvent('camp-quest-progress', {
+            detail: { campId: aq.campId, questId: aq.quest.id, label: aq.quest.label, current: aq.current, target: aq.target }
+        }));
+        if (aq.current >= aq.target) {
+            this.resolveCampQuestCompletion();
+        }
+    }
+
+    // Nearest remaining live target for the active quest — used by the HUD
+    // compass branch. Falls back to the camp itself once nothing's left to
+    // point at directly (e.g. mid-wave-transition, or wave-defense in general).
+    getActiveCampQuestTargetPos() {
+        const aq = this._activeCampQuest;
+        if (!aq) return null;
+        const alive = (aq.props ?? []).find((sprite) =>
+            sprite?.parent && !sprite.userData?.burstTriggered && !sprite.userData?.questClaimed);
+        if (alive) return { x: alive.position.x, z: alive.position.z };
+        const camp = this.getCampById(aq.campId);
+        return camp ? { x: camp.pos.x, z: camp.pos.z } : null;
+    }
+
+    resolveCampQuestCompletion() {
+        const aq = this._activeCampQuest;
+        if (!aq) return;
+        const camp = this.getCampById(aq.campId);
+        for (const sprite of aq.props ?? []) {
+            if (!sprite?.parent) continue;
+            sprite.parent.remove(sprite);
+            sprite.material?.dispose?.();
+            sprite.geometry?.dispose?.();
+            this.scatterSprites = this.scatterSprites.filter((s) => s !== sprite);
+        }
+        this.act2.completeCampQuest(aq.campId, aq.quest.id, 1);
+        if (camp) {
+            const record = this.getCampRecord(camp.id);
+            camp.setStatus(record?.status ?? 'alive');
+            this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_rare');
+        }
+        // Heavy Munitions needs an immediate recompute so +1 shotDamage is
+        // live the moment the quest completes, not on the next upgrade buy.
+        if (aq.quest.id === 'armory_breach') {
+            this.applyWeaponUpgrades();
+        }
+        window.AudioManager?.play?.('class_lock', { volume: 0.55 });
+        window.dispatchEvent(new CustomEvent('camp-quest-complete', {
+            detail: { campId: aq.campId, questId: aq.quest.id, label: aq.quest.label }
+        }));
+        this._activeCampQuest = null;
+    }
+
     buildCampChoiceOptions(camp) {
         const record = this.getCampRecord(camp.id);
         if (!record) return [];
@@ -7854,6 +8336,7 @@ export class ThreeGame {
         const status = record.status ?? 'alive';
         const recruitLocked = record.bond < ACT2_RECRUIT_BOND_THRESHOLD;
         const recruitHint = `Requires bond ${ACT2_RECRUIT_BOND_THRESHOLD}. Current bond ${record.bond}.`;
+        const lostCultistTrusts = camp.id === 'camp_tallow' && record.questFlags?.lost_cultist === 'done';
 
         if (camp.id === this.getBoardingCampId()) {
             // Every launch variant is validated against the four-seat manifest
@@ -7926,7 +8409,9 @@ export class ThreeGame {
             options.push({
                 action: 'recruit',
                 label: recruitLocked ? 'RECRUIT HUMANS LOCKED' : 'RECRUIT HUMANS',
-                desc: recruitLocked ? recruitHint : 'Smuggle the survivors aboard. Consequence: OBEDIENCE −1, SEATS +1. (Humans unsuspectedly board)',
+                desc: recruitLocked ? recruitHint : (lostCultistTrusts
+                    ? 'Word of the freed cultist has spread — the survivors volunteer to board without hesitation. Consequence: OBEDIENCE −1, SEATS +1.'
+                    : 'Smuggle the survivors aboard. Consequence: OBEDIENCE −1, SEATS +1. (Humans unsuspectedly board)'),
                 disabled: recruitLocked
             });
             options.push({
@@ -8136,6 +8621,17 @@ export class ThreeGame {
                     label: `SUPPORT CAMP — ${campSupportCost(camp.level)} SHELLS`
                 };
             }
+            if (phase === 'dormant' && status === 'alive' && !this._activeCampQuest) {
+                const quest = this.getNextCampQuest(camp.id, record);
+                if (quest && !record?.questFlags?.[quest.id]) {
+                    return {
+                        camp,
+                        quest,
+                        action: 'quest-offer',
+                        label: `START QUEST: ${quest.label}`
+                    };
+                }
+            }
             if (phase === 'dormant' && status === 'alive' && (record?.bond ?? 0) < ACT2_MAX_BOND) {
                 return {
                     camp,
@@ -8271,6 +8767,11 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('camp-supported', {
                 detail: { campId: camp.id, campLabel: camp.label, level, bond: record?.bond ?? 0, cost }
             }));
+            return true;
+        }
+
+        if (action === 'quest-offer') {
+            this.acceptCampQuest(camp, actionable.quest);
             return true;
         }
 
@@ -9110,6 +9611,23 @@ export class ThreeGame {
             }
         }
 
+        // An accepted camp-bonding quest points at its next remaining target
+        // (nearest unresolved prop/enemy, or the camp itself for wave defense)
+        // — important, but below the story-critical beats above.
+        const questTarget = this.getActiveCampQuestTargetPos();
+        if (questTarget) {
+            const qdx = questTarget.x - this.player.position.x;
+            const qdz = questTarget.z - this.player.position.z;
+            const qdist = Math.hypot(qdx, qdz);
+            return {
+                active: true,
+                mode: 'camp-quest',
+                label: `${this._activeCampQuest.quest.label} — ${this._activeCampQuest.current}/${this._activeCampQuest.target}`,
+                angle: this.planarAngleTo(qdx, qdz, qdist),
+                distance: qdist
+            };
+        }
+
         const sideSignal = this.getAct1SideSignalTarget?.();
         if (sideSignal) {
             const dx = sideSignal.x - this.player.position.x;
@@ -9748,7 +10266,7 @@ export class ThreeGame {
         }
     }
 
-    spawnRadarPingHighlight(target, colorHex = 0x00d2ff) {
+    spawnRadarPingHighlight(target, colorHex = 0x00d2ff, { duration = RADAR_STANDARD_TRACK_SECONDS } = {}) {
         if (!target) return;
         const geom = new THREE.RingGeometry(0.12, 0.22, 4);
         const mat = new THREE.MeshBasicMaterial({
@@ -9769,7 +10287,7 @@ export class ThreeGame {
         this.transientEffects.push({
             mesh,
             age: 0,
-            duration: 5.0,
+            duration,
             update: (dt, age) => {
                 if (target && target.parent) {
                     mesh.position.x = target.position.x;
@@ -9777,7 +10295,7 @@ export class ThreeGame {
                 }
                 mesh.position.y = 1.1 + Math.sin(age * 6.5) * 0.08;
                 mesh.rotation.y += 0.04;
-                const t = age / 5.0;
+                const t = age / duration;
                 mat.opacity = 0.95 * (1 - t * t);
             },
             dispose: () => {
@@ -9796,17 +10314,17 @@ export class ThreeGame {
     // enemy of that type permanently); it clones the same texture into a
     // temporary sprite instead, tracks the target's position/scale each
     // frame, and disposes with the same ping lifetime.
-    spawnEnemyXrayGhost(sprite) {
+    spawnEnemyXrayGhost(sprite, { duration = RADAR_DANGER_TRACK_SECONDS, colorHex = RADAR_DANGER_COLOR } = {}) {
         const sourceMap = sprite?.material?.map;
         if (!sprite?.isSprite || !sourceMap) return;
 
         const ghostMat = new THREE.SpriteMaterial({
             map: sourceMap,
             transparent: true,
-            opacity: 0.85,
+            opacity: 0.9,
             depthTest: false,
             depthWrite: false,
-            color: 0x8be9ff,
+            color: colorHex,
             fog: false
         });
         const ghost = new THREE.Sprite(ghostMat);
@@ -9818,19 +10336,80 @@ export class ThreeGame {
         this.transientEffects.push({
             mesh: ghost,
             age: 0,
-            duration: 5.0,
+            duration,
             update: (dt, age) => {
                 if (sprite?.parent) {
                     ghost.position.copy(sprite.position);
                     ghost.scale.copy(sprite.scale);
                 }
-                const t = age / 5.0;
-                ghostMat.opacity = 0.85 * (1 - t * t);
+                const t = age / duration;
+                ghostMat.opacity = 0.9 * (1 - t * t);
             },
             dispose: () => {
                 ghostMat.dispose();
             }
         });
+    }
+
+    spawnHoleDangerOutline(holeInfo, { duration = RADAR_DANGER_TRACK_SECONDS } = {}) {
+        if (!holeInfo || !this.scene) return;
+
+        const geom = new THREE.RingGeometry(0.46, 0.56, 48);
+        const mat = new THREE.MeshBasicMaterial({
+            color: RADAR_DANGER_COLOR,
+            transparent: true,
+            opacity: 0.92,
+            depthTest: false,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.rotation.z = holeInfo.rotationZ ?? 0;
+        mesh.position.set(holeInfo.x, 0.075, holeInfo.z);
+        mesh.scale.set(holeInfo.scale, holeInfo.scale, 1);
+        mesh.renderOrder = 9997;
+        this.scene.add(mesh);
+
+        this.transientEffects.push({
+            mesh,
+            age: 0,
+            duration,
+            update: (dt, age) => {
+                const t = Math.min(age / duration, 1);
+                const pulse = 1 + Math.sin(age * 7.5) * 0.045;
+                mesh.scale.set(holeInfo.scale * pulse, holeInfo.scale * pulse, 1);
+                mat.opacity = 0.92 * (1 - t * t) * (0.82 + Math.sin(age * 9.0) * 0.18);
+            },
+            dispose: () => {
+                geom.dispose();
+                mat.dispose();
+            }
+        });
+    }
+
+    scanDangerHoles(scanX, scanZ, currentRadius, pingedIds) {
+        const scanRadius = Math.max(0, currentRadius);
+        const minX = Math.floor(scanX - scanRadius - RADAR_HOLE_SCAN_PADDING);
+        const maxX = Math.ceil(scanX + scanRadius + RADAR_HOLE_SCAN_PADDING);
+        const minZ = Math.floor(scanZ - scanRadius - RADAR_HOLE_SCAN_PADDING);
+        const maxZ = Math.ceil(scanZ + scanRadius + RADAR_HOLE_SCAN_PADDING);
+
+        for (let tileZ = minZ; tileZ <= maxZ; tileZ += 1) {
+            for (let tileX = minX; tileX <= maxX; tileX += 1) {
+                const id = `hole:${tileX},${tileZ}`;
+                if (pingedIds.has(id)) continue;
+
+                const holeInfo = this.getHoleVisualInfo(tileX, tileZ, { requireCached: true });
+                if (!holeInfo) continue;
+
+                const distance = Math.hypot(holeInfo.x - scanX, holeInfo.z - scanZ);
+                if (distance > scanRadius + holeInfo.fallRadius) continue;
+
+                pingedIds.add(id);
+                this.spawnHoleDangerOutline(holeInfo);
+            }
+        }
     }
 
     triggerRadarScan() {
@@ -9922,10 +10501,14 @@ export class ThreeGame {
                     const d = Math.hypot(dx, dz);
                     if (d <= currentRadius) {
                         pingedIds.add(sprite.uuid);
-                        this.spawnRadarPingHighlight(sprite, 0x00d2ff);
-                        if (isEnemy) this.spawnEnemyXrayGhost(sprite);
+                        const scanColor = isEnemy ? RADAR_DANGER_COLOR : 0x00d2ff;
+                        const duration = isEnemy ? RADAR_DANGER_TRACK_SECONDS : RADAR_STANDARD_TRACK_SECONDS;
+                        this.spawnRadarPingHighlight(sprite, scanColor, { duration });
+                        if (isEnemy) this.spawnEnemyXrayGhost(sprite, { duration, colorHex: RADAR_DANGER_COLOR });
                     }
                 }
+
+                this.scanDangerHoles(px, pz, currentRadius, pingedIds);
 
                 for (const pickup of this.pickupMeshes) {
                     if (!pickup || pingedIds.has(pickup.uuid)) continue;
@@ -12150,6 +12733,13 @@ export class ThreeGame {
                     continue;
                 }
 
+                const questProp = this.checkProjectileQuestPropHit(projectile);
+                if (questProp) {
+                    this.destroyCampQuestShootProp(questProp);
+                    toRemove.add(projectile);
+                    continue;
+                }
+
                 const ship = this.checkProjectileShipHit(projectile);
                 if (ship) {
                     this.damageShip(ship, projectile.damage, 'friendly-fire');
@@ -12693,16 +13283,16 @@ export class ThreeGame {
         // this render pass can never drift from isHoleTile's collision/fall
         // check again (that drift was the "holes in the door" bug).
         const holeCut = this.getHoleCutForLandform(landform);
-        let hazardCut = 0.22;
+        const hazardCut = this.getHazardCutForLandform(landform);
         let damagedCut = 0.35;
         if (landform === LANDFORMS.MAZE) {
-            hazardCut = 0.12; damagedCut = 0.62;
+            damagedCut = 0.62;
         } else if (landform === LANDFORMS.RUINS) {
-            hazardCut = 0.12; damagedCut = 0.85;
+            damagedCut = 0.85;
         } else if (landform === LANDFORMS.FIELD) {
-            hazardCut = 0.05; damagedCut = 0.60;
+            damagedCut = 0.60;
         } else if (landform === LANDFORMS.CANYON) {
-            hazardCut = 0.06; damagedCut = 0.12;
+            damagedCut = 0.12;
         }
 
         // Single merged floor for the whole chunk (see chunkFloorGeometry note).
@@ -12729,16 +13319,14 @@ export class ThreeGame {
                 const wallTypeRoll = wallTypeRng();
 
                 if (wallTypeRoll < holeCut) {
+                    const holeInfo = this.getHoleVisualInfo(worldX, worldZ);
+                    if (!holeInfo) continue;
                     // Hole / Pit (flat on the ground)
                     const holeMesh = new THREE.Mesh(this.floorGeometry, this.holeMaterial);
                     holeMesh.rotation.x = -Math.PI / 2;
-                    // Various sizes scaled up based on seeded random (from 1.5 up to 4.0)
-                    const sizeFactor = wallTypeRoll / holeCut;
-                    const scale = 1.5 + sizeFactor * 2.5;
-                    holeMesh.scale.set(scale, scale, 1);
-                    // Random organic rotation around the Z axis (the tile normal)
-                    holeMesh.rotation.z = wallTypeRng() * Math.PI * 2;
-                    holeMesh.position.set(worldX, 0.005, worldZ);
+                    holeMesh.scale.set(holeInfo.scale, holeInfo.scale, 1);
+                    holeMesh.rotation.z = holeInfo.rotationZ;
+                    holeMesh.position.set(holeInfo.x, 0.005, holeInfo.z);
                     holeMesh.receiveShadow = true;
                     group.add(holeMesh);
                 } else if (wallTypeRoll < hazardCut) {
@@ -15231,7 +15819,12 @@ export class ThreeGame {
 
     triggerApexThreats(snapshot = {}) {
         if (!this.isAct2Active()) return [];
-        const events = this.bunkerDirector?.evaluateApexThreats?.(snapshot) ?? [];
+        // Radar Shroud (Lost Probe reward) — raise the hunter-pair suspicion
+        // threshold rather than inventing a new detection-radius system.
+        const withThreshold = this.hasCampQuestReward('radar_shroud')
+            ? { ...snapshot, hunterPairThreshold: 90 }
+            : snapshot;
+        const events = this.bunkerDirector?.evaluateApexThreats?.(withThreshold) ?? [];
         for (const event of events) this.spawnAct2ApexThreat(event, snapshot);
         return events;
     }
@@ -16911,6 +17504,15 @@ export class ThreeGame {
         return this.getOrCreateChunk(chunkX, chunkY)[localY][localX];
     }
 
+    getCachedTileType(worldX, worldY) {
+        const chunkX = Math.floor(worldX / this.chunkSize);
+        const chunkY = Math.floor(worldY / this.chunkSize);
+        const localX = worldX - chunkX * this.chunkSize;
+        const localY = worldY - chunkY * this.chunkSize;
+        const grid = this.chunkCache?.get?.(`${chunkX},${chunkY}`);
+        return grid?.[localY]?.[localX] ?? null;
+    }
+
     // Single source of truth for the "is this wall tile actually a hole"
     // threshold, shared by mountChunk's render pass and isHoleTile's
     // collision/fall-hazard pass. Must match mountChunk's per-landform
@@ -16929,14 +17531,74 @@ export class ThreeGame {
         return 0.06;
     }
 
-    isHoleTile(worldX, worldY) {
-        if (this.getTileType(worldX, worldY) !== '#') return false;
+    // Single source of truth for the hazard-wall roll threshold, shared by
+    // mountChunk's render pass and isHazardWallTileAt's Substation Keycard
+    // damage-zone check below — same drift risk getHoleCutForLandform's
+    // comment describes.
+    getHazardCutForLandform(landform) {
+        if (landform === LANDFORMS.MAZE) return 0.12;
+        if (landform === LANDFORMS.RUINS) return 0.12;
+        if (landform === LANDFORMS.FIELD) return 0.05;
+        if (landform === LANDFORMS.CANYON) return 0.06;
+        return 0.22;
+    }
+
+    // Deterministically recomputes the same wallTypeRoll mountChunk uses,
+    // without needing a separate hazard-wall registry (mirrors isHoleTile's
+    // approach for the same reason: mount/unmount can't drift from this).
+    isHazardWallTileAt(worldX, worldZ) {
+        if (this.getTileType(worldX, worldZ) !== '#') return false;
+        const chunkX = Math.floor(worldX / this.chunkSize);
+        const chunkY = Math.floor(worldZ / this.chunkSize);
+        const landform = this.getChunkLandform(chunkX, chunkY);
+        const holeCut = this.getHoleCutForLandform(landform);
+        const hazardCut = this.getHazardCutForLandform(landform);
+        const roll = this.createSeededRandom(this.hashTile(worldX, worldZ) + 999)();
+        return roll >= holeCut && roll < hazardCut;
+    }
+
+    isPlayerNearHazardWall(px, pz, radius = 1.4) {
+        const cx = Math.round(px);
+        const cz = Math.round(pz);
+        for (let dx = -2; dx <= 2; dx += 1) {
+            for (let dz = -2; dz <= 2; dz += 1) {
+                const wx = cx + dx;
+                const wz = cz + dz;
+                if (!this.isHazardWallTileAt(wx, wz)) continue;
+                if (Math.hypot(px - wx, pz - wz) <= radius) return true;
+            }
+        }
+        return false;
+    }
+
+    getHoleVisualInfo(worldX, worldY, { requireCached = false } = {}) {
+        const tileType = requireCached
+            ? this.getCachedTileType(worldX, worldY)
+            : this.getTileType(worldX, worldY);
+        if (tileType !== '#') return null;
+
         const chunkX = Math.floor(worldX / this.chunkSize);
         const chunkY = Math.floor(worldY / this.chunkSize);
         const holeCut = this.getHoleCutForLandform(this.getChunkLandform(chunkX, chunkY));
-        if (holeCut <= 0) return false;
+        if (holeCut <= 0) return null;
+
         const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldY) + 999);
-        return wallTypeRng() < holeCut;
+        const roll = wallTypeRng();
+        if (roll >= holeCut) return null;
+
+        const sizeFactor = roll / holeCut;
+        const scale = 1.5 + sizeFactor * 2.5;
+        return {
+            x: worldX,
+            z: worldY,
+            scale,
+            rotationZ: wallTypeRng() * Math.PI * 2,
+            fallRadius: scale * 0.42
+        };
+    }
+
+    isHoleTile(worldX, worldY) {
+        return Boolean(this.getHoleVisualInfo(worldX, worldY));
     }
 
     isPlayerOverAnyHole(px, pz) {
@@ -16947,19 +17609,10 @@ export class ThreeGame {
             for (let dz = -radiusToCheck; dz <= radiusToCheck; dz++) {
                 const hx = cx + dx;
                 const hz = cz + dz;
-                if (this.isHoleTile(hx, hz)) {
-                    const chunkX = Math.floor(hx / this.chunkSize);
-                    const chunkY = Math.floor(hz / this.chunkSize);
-                    const holeCut = this.getHoleCutForLandform(this.getChunkLandform(chunkX, chunkY));
-                    const wallTypeRng = this.createSeededRandom(this.hashTile(hx, hz) + 999);
-                    const roll = wallTypeRng();
-                    const sizeFactor = roll / holeCut;
-                    const scale = 1.5 + sizeFactor * 2.5;
-                    const fallRadius = scale * 0.42;
+                const holeInfo = this.getHoleVisualInfo(hx, hz);
+                if (holeInfo) {
                     const dist = Math.hypot(px - hx, pz - hz);
-                    if (dist < fallRadius) {
-                        return true;
-                    }
+                    if (dist < holeInfo.fallRadius) return true;
                 }
             }
         }
