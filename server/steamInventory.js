@@ -12,6 +12,7 @@ import {
     rollDeepRelicCache
 } from './lootTables.js';
 import { grantItemToPlayer } from './steamGrant.js';
+import { createRateLimitMiddleware } from './rateLimit.js';
 
 const STEAM_INVENTORY_URL = 'https://partner.steam-api.com/IInventoryService/';
 const STEAM_ECON_MARKET_URL = 'https://partner.steam-api.com/IEconMarketService/';
@@ -73,6 +74,11 @@ function normalizeMarketEligibilityResponse(data) {
 export { steamAuthMiddleware };
 
 export function attachSteamInventoryRoutes(app) {
+    // Also applied globally in server/index.js — kept local too so this
+    // module's routes read as rate-limited on their own (see the
+    // matching comment in steamAuth.js's attachSteamAuthRoutes).
+    app.use(createRateLimitMiddleware());
+
     // 1. Get Inventory
     app.get('/steam/inventory', steamAuthMiddleware, async (req, res) => {
         if (req.isDevMode) {

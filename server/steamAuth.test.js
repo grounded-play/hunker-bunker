@@ -8,6 +8,7 @@ import {
     verifySteamSessionTicket,
     verifySteamSessionToken
 } from './steamAuth.js';
+import { createRateLimitMiddleware } from './rateLimit.js';
 
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_FETCH = globalThis.fetch;
@@ -259,6 +260,7 @@ describe('steam auth backend helpers', () => {
 
         const app = express();
         app.use(express.json());
+        app.use(createRateLimitMiddleware());
         app.get('/protected', steamAuthMiddleware, (req, res) => {
             res.json({
                 ok: true,

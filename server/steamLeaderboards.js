@@ -3,6 +3,7 @@ import { authenticateSteamRequest, getSteamAuthConfig, getSteamPublisherKey } fr
 import { checkIdempotency, saveIdempotency } from './db.js';
 import { grantItemToPlayer } from './steamGrant.js';
 import { DEEP_RELIC_CACHE_ITEMDEFID } from './lootTables.js';
+import { createRateLimitMiddleware } from './rateLimit.js';
 
 const CLASS_VICTORY_PATCH_ITEMDEFID = Object.freeze({ SCOUT: 2000, TANK: 2001, ENGINEER: 2002 });
 
@@ -558,6 +559,11 @@ export async function submitRunToSteamLeaderboards({ auth, payload } = {}) {
 }
 
 export function attachSteamLeaderboardRoutes(app) {
+    // Also applied globally in server/index.js — kept local too so this
+    // module's routes read as rate-limited on their own (see the
+    // matching comment in steamAuth.js's attachSteamAuthRoutes).
+    app.use(createRateLimitMiddleware());
+
     app.post('/steam/leaderboards/submit-run', async (req, res) => {
         let auth;
         const config = getSteamAuthConfig();

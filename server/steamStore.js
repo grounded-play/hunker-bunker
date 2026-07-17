@@ -8,6 +8,7 @@ import {
 } from './db.js';
 import { CACHE_KEY_ITEMDEFID, getDisclosedOdds } from './lootTables.js';
 import { grantItemToPlayer } from './steamGrant.js';
+import { createRateLimitMiddleware } from './rateLimit.js';
 
 const STEAM_MICROTXN_URL = 'https://partner.steam-api.com/ISteamMicroTxn/';
 const STEAM_MICROTXN_SANDBOX_URL = 'https://partner.steam-api.com/ISteamMicroTxnSandbox/';
@@ -379,6 +380,11 @@ async function fulfillPurchasedKeys(purchase) {
 }
 
 export function attachSteamStoreRoutes(app) {
+    // Also applied globally in server/index.js — kept local too so this
+    // module's routes read as rate-limited on their own (see the
+    // matching comment in steamAuth.js's attachSteamAuthRoutes).
+    app.use(createRateLimitMiddleware());
+
     // Public: catalog + disclosed odds must be visible before purchase
     // (Steamworks policy requires published probabilities for any
     // real-money item involving randomized rewards).

@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { getDbStatus } from './db.js';
+import { createRateLimitMiddleware } from './rateLimit.js';
 
 const DEFAULT_STEAM_AUTH_IDENTITY = 'hunker-bunker-backend';
 const DEV_STEAM_ID64 = '76561198000000000';
@@ -394,6 +395,13 @@ export async function steamAuthMiddleware(req, res, next) {
 }
 
 export function attachSteamAuthRoutes(app) {
+    // Also applied globally in server/index.js (app.use('/steam', ...)) —
+    // this local mount keeps every route this module registers visibly
+    // rate-limited within its own file for anyone reading/scanning this
+    // module in isolation (index.js composes several of these modules;
+    // static analysis of this file alone can't see that composition).
+    app.use(createRateLimitMiddleware());
+
     app.get('/health', (_req, res) => {
         const config = getSteamAuthConfig();
         res.json({
