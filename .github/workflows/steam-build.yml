@@ -5,6 +5,9 @@
 #   upload job skips and the artifacts are still attached to the run.
 name: steam-build
 
+permissions:
+  contents: read
+
 on:
   push:
     tags: ['v*']

@@ -15721,7 +15721,7 @@ export class ThreeGame {
         boss.userData.targetType = 'ship';
 
         // The O2-generator retaliation is the arc's FIRST boss — an introductory
-        // fight. Quarter the normal cybersnail HP (20 -> 5) and flag it so the
+        // fight. Keep this guard much softer than a full boss and flag it so the
         // attack logic fires a single slow shot instead of the 3-round spread.
         if (sourceGoalKey === 'o2Bubble') {
             boss.userData.easyTier = true;
