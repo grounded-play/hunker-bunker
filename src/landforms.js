@@ -127,10 +127,17 @@ export function openMazeTerrain(grid, random, {
     plazaCount = 6,
     floorTarget = 0.76,
     minRadius = 2.2,
-    maxRadius = 4.2
+    maxRadius = 4.2,
+    // Optional out-param: a Set that receives "x,y" keys for every wall cell
+    // forming a carved plaza's boundary. The soften/fill passes below skip
+    // these cells, and the caller can keep honoring the set through its own
+    // later erosion passes (widen/trim) — otherwise the shaped silhouettes
+    // carved here get blindly eaten back into blobs (wave-6 punch list §2c).
+    protectedCells = null
 } = {}) {
     const size = grid.length;
     if (size < 7) return 0;
+    const halo = protectedCells instanceof Set ? protectedCells : new Set();
 
     let carved = 0;
     const carve = (x, y) => {
@@ -172,6 +179,7 @@ export function openMazeTerrain(grid, random, {
         const radiusX = minRadius + random() * (maxRadius - minRadius);
         const radiusY = minRadius + random() * (maxRadius - minRadius);
         const shape = plazaShapeRoll();
+        const insideCells = new Set();
         for (let y = Math.floor(center.y - radiusY); y <= Math.ceil(center.y + radiusY); y += 1) {
             for (let x = Math.floor(center.x - radiusX); x <= Math.ceil(center.x + radiusX); x += 1) {
                 const dx = (x - center.x) / radiusX;
@@ -191,7 +199,26 @@ export function openMazeTerrain(grid, random, {
                 } else {
                     inside = (dx * dx) + (dy * dy) <= 1;
                 }
-                if (inside) carve(x, y);
+                if (inside) {
+                    carve(x, y);
+                    insideCells.add(`${x},${y}`);
+                }
+            }
+        }
+        // The silhouette only reads if the walls tracing it survive: every
+        // wall cell 4-adjacent to this plaza's interior joins the protected
+        // halo. Plaza-on-plaza overlap stays allowed (a later plaza may
+        // carve into an earlier halo — compound rooms are deliberate); the
+        // stale halo key is harmless since every later pass only acts on
+        // cells that are still walls.
+        for (const key of insideCells) {
+            const [cx, cy] = key.split(',').map(Number);
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                const nx = cx + dx;
+                const ny = cy + dy;
+                if (nx < 1 || ny < 1 || nx >= size - 1 || ny >= size - 1) continue;
+                const nKey = `${nx},${ny}`;
+                if (!insideCells.has(nKey) && grid[ny][nx] === '#') halo.add(nKey);
             }
         }
     }
@@ -200,6 +227,7 @@ export function openMazeTerrain(grid, random, {
     for (let y = 2; y < size - 2; y += 1) {
         for (let x = 2; x < size - 2; x += 1) {
             if (grid[y][x] !== '#') continue;
+            if (halo.has(`${x},${y}`)) continue;
             const openNeighbors =
                 (grid[y - 1][x] === '.') +
                 (grid[y + 1][x] === '.') +
@@ -224,6 +252,7 @@ export function openMazeTerrain(grid, random, {
         for (let y = 2; y < size - 2; y += 1) {
             for (let x = 2; x < size - 2; x += 1) {
                 if (grid[y][x] !== '#') continue;
+                if (halo.has(`${x},${y}`)) continue;
                 const touchesFloor =
                     grid[y - 1][x] === '.' ||
                     grid[y + 1][x] === '.' ||

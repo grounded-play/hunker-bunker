@@ -247,6 +247,37 @@ describe('openMazeTerrain', () => {
         // The diagonal (0.667, 0.667) is outside both arms.
         expect(grid[11][11]).toBe('#');
     });
+
+    it('shields plaza boundary walls from the soften and fill passes (wave-6 §2c)', () => {
+        const grid = singleFloorCellGrid();
+        // Same deterministic diamond as above (center idx0, radii 0.5/0.5,
+        // shape roll 0.5), but with a fallback of 0 so every subsequent
+        // soften roll fires (0 < every soften chance) and the fill loop
+        // picks candidate index 0 forever — maximum blind erosion pressure.
+        // floorTarget 1 makes the fill loop run until candidates run out.
+        const random = sequenceRandom([0, 0.5, 0.5, 0.5], 0);
+        const protectedCells = new Set();
+        openMazeTerrain(grid, random, {
+            plazaCount: 1,
+            floorTarget: 1,
+            minRadius: 2,
+            maxRadius: 4,
+            protectedCells
+        });
+
+        // The diamond's diagonal boundary wall survives — pre-fix, soften
+        // alone carved it on the first pass (grid[11][11] neighbors floor,
+        // and random()=0 beats every chance threshold).
+        expect(protectedCells.size).toBeGreaterThan(0);
+        expect(grid[11][11]).toBe('#');
+        // With the whole rest of the grid solid, every soften/fill candidate
+        // was a boundary wall — so the diamond stayed pristine and the fill
+        // loop stopped instead of eroding the silhouette to hit its target.
+        for (const key of protectedCells) {
+            const [x, y] = key.split(',').map(Number);
+            expect(grid[y][x]).toBe('#');
+        }
+    });
 });
 
 describe('connectPortalsInward', () => {

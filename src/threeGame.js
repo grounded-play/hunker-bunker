@@ -7177,12 +7177,17 @@ export class ThreeGame {
             Math.round(anchor.x) - 173 - index * 31,
             Math.round(anchor.z) + 137 + index * 17
         ) ^ this.runEntropy) >>> 0);
-        // Fanned between the camps, slightly closer in — the anomalies were
-        // always underfoot, the player just read them as terrain.
+        // Fanned between the camps on the bisector bearings, and kept to a
+        // distinctly CLOSER ring than the camps (camps are 70-120u out): the
+        // anomalies were always underfoot, the player just read them as
+        // terrain. The old 45-90u band overlapped the camp band and the wide
+        // ±31.5° jitter could swing a hive right onto a camp bearing, so
+        // hives kept reading as "in the way" on every trek to a camp — the
+        // tighter jitter here keeps them on the between-camp bearings.
         const baseAngle = [Math.PI * 0.45, Math.PI * 1.1, Math.PI * 1.75][index % 3];
         for (let attempt = 0; attempt < 96; attempt += 1) {
-            const dist = THREE.MathUtils.lerp(45, 90, random());
-            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
+            const dist = THREE.MathUtils.lerp(40, 60, random());
+            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.2;
             const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
             const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
             if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
@@ -7190,8 +7195,8 @@ export class ThreeGame {
             }
         }
         return {
-            x: Math.round(anchor.x + Math.cos(baseAngle) * 45),
-            z: Math.round(anchor.z + Math.sin(baseAngle) * 45)
+            x: Math.round(anchor.x + Math.cos(baseAngle) * 40),
+            z: Math.round(anchor.z + Math.sin(baseAngle) * 40)
         };
     }
 
@@ -17757,13 +17762,20 @@ export class ThreeGame {
             }
         }
         this.ensureChunkPortals(grid, chunkX, chunkY);
+        // Walls tracing a carved plaza silhouette. openMazeTerrain fills
+        // this and shields them from its own soften/fill; every later
+        // erosion pass here (widen, trim) honors it too — otherwise the
+        // diamond/cross/ellipse rooms get blindly eaten back into blobs
+        // before the chunk ever renders (wave-6 punch list §2c).
+        const plazaHalo = new Set();
         if (landform === LANDFORMS.MAZE) {
             this.runMarkovPass(grid, random);
             openMazeTerrain(grid, random, {
                 plazaCount: 7,
                 floorTarget: 0.80,
                 minRadius: 2.4,
-                maxRadius: 4.5
+                maxRadius: 4.5,
+                protectedCells: plazaHalo
             });
         } else {
             // A ridge or crater rim can sit flush behind a portal opening —
@@ -17774,7 +17786,8 @@ export class ThreeGame {
                     plazaCount: 5,
                     floorTarget: 0.82,
                     minRadius: 2.0,
-                    maxRadius: 3.6
+                    maxRadius: 3.6,
+                    protectedCells: plazaHalo
                 });
             }
         }
@@ -17786,7 +17799,7 @@ export class ThreeGame {
         if (landform === LANDFORMS.MAZE || landform === LANDFORMS.RUINS) {
             const widenPasses = landform === LANDFORMS.MAZE ? 3 : 2;
             for (let pass = 0; pass < widenPasses; pass++) {
-                this.widenChunkCorridors(grid);
+                this.widenChunkCorridors(grid, plazaHalo);
             }
         }
 
@@ -17795,6 +17808,7 @@ export class ThreeGame {
         for (let y = 2; y < this.chunkSize - 2; y++) {
             for (let x = 2; x < this.chunkSize - 2; x++) {
                 if (grid[y][x] !== '#') continue;
+                if (plazaHalo.has(`${x},${y}`)) continue;
                 const openNeighbors =
                     (grid[y - 1][x] === '.') +
                     (grid[y + 1][x] === '.') +
@@ -17908,8 +17922,15 @@ export class ThreeGame {
         }
     }
 
-    widenChunkCorridors(grid) {
+    widenChunkCorridors(grid, protectedCells = null) {
         const widened = grid.map((row) => [...row]);
+        // Cells in protectedCells (plaza silhouette walls, see generateChunk)
+        // never open — widening is pure erosion, so skipping them can't
+        // break connectivity, it only leaves the shaped room edges intact.
+        const open = (wy, wx) => {
+            if (protectedCells?.has(`${wx},${wy}`)) return;
+            widened[wy][wx] = '.';
+        };
 
         for (let y = 1; y < this.chunkSize - 1; y++) {
             for (let x = 1; x < this.chunkSize - 1; x++) {
@@ -17921,20 +17942,20 @@ export class ThreeGame {
                 const downOpen = grid[y + 1][x] === '.';
 
                 if (leftOpen && rightOpen) {
-                    widened[y - 1][x] = '.';
-                    widened[y + 1][x] = '.';
+                    open(y - 1, x);
+                    open(y + 1, x);
                 }
 
                 if (upOpen && downOpen) {
-                    widened[y][x - 1] = '.';
-                    widened[y][x + 1] = '.';
+                    open(y, x - 1);
+                    open(y, x + 1);
                 }
 
                 if ((leftOpen || rightOpen) && (upOpen || downOpen)) {
-                    widened[y - 1][x] = '.';
-                    widened[y + 1][x] = '.';
-                    widened[y][x - 1] = '.';
-                    widened[y][x + 1] = '.';
+                    open(y - 1, x);
+                    open(y + 1, x);
+                    open(y, x - 1);
+                    open(y, x + 1);
                 }
 
                 // True dead ends (exactly one open neighbor) never satisfy any
@@ -17946,11 +17967,11 @@ export class ThreeGame {
                 const openCount = (leftOpen ? 1 : 0) + (rightOpen ? 1 : 0) + (upOpen ? 1 : 0) + (downOpen ? 1 : 0);
                 if (openCount === 1) {
                     if (leftOpen || rightOpen) {
-                        widened[y - 1][x] = '.';
-                        widened[y + 1][x] = '.';
+                        open(y - 1, x);
+                        open(y + 1, x);
                     } else {
-                        widened[y][x - 1] = '.';
-                        widened[y][x + 1] = '.';
+                        open(y, x - 1);
+                        open(y, x + 1);
                     }
                 }
             }
