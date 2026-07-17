@@ -917,6 +917,11 @@ export class ThreeGame {
         // most once per site per run — and never again once collected.
         this.loreDrops = [];
         this._loreDropSitesSpawned = new Set();
+        // Lore keys read at a terminal this session — lets the compass's
+        // lore branch move on to the NEXT unread log instead of pointing at
+        // one the player just read (wave-6 punch list: lore had no
+        // compass/radar hint at all).
+        this._readLoreKeys = new Set();
         // Hive swarm sites: the alien mirror of the camps.
         this.hives = [];
         this._hiveSitesReady = false;
@@ -4475,6 +4480,7 @@ export class ThreeGame {
                 this.player.position.z - sprite.position.z
             );
             if (dist < 2.2) {
+                this._readLoreKeys.add(sprite.userData.loreKey);
                 window.dispatchEvent(new CustomEvent('lore-terminal-read', {
                     detail: { loreKey: sprite.userData.loreKey, loreText: sprite.userData.loreText }
                 }));
@@ -9554,6 +9560,35 @@ export class ThreeGame {
         return THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY));
     }
 
+    // Nearest unread log within `radius`: mounted lore terminals whose key
+    // hasn't been read this session, plus uncollected physical lore drops
+    // (this.loreDrops only ever holds uncollected ones — collection removes
+    // the entry). Skips anything under 2u — once the player is standing at
+    // it, the interact prompt takes over and the compass should move on.
+    getNearbyUnreadLoreTarget(radius = 28) {
+        if (!this.player) return null;
+        let nearest = null;
+        let nearestDistance = radius;
+        const consider = (x, z) => {
+            const dx = x - this.player.position.x;
+            const dz = z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            if (distance >= nearestDistance || distance < 2.0) return;
+            nearestDistance = distance;
+            nearest = { dx, dz, distance };
+        };
+        for (const sprite of this.scatterSprites) {
+            if (sprite.userData?.type !== 'lore_terminal' || !sprite.parent) continue;
+            if (this._readLoreKeys?.has(sprite.userData.loreKey)) continue;
+            consider(sprite.position.x, sprite.position.z);
+        }
+        for (const entry of this.loreDrops ?? []) {
+            if (!entry?.sprite) continue;
+            consider(entry.sprite.position.x, entry.sprite.position.z);
+        }
+        return nearest;
+    }
+
     getRadarCompassState() {
         if (!this.player) {
             return { active: false, angle: 0, distance: 0 };
@@ -9660,6 +9695,25 @@ export class ThreeGame {
             };
         }
         this._meridianCompassLock = null;
+
+        // A genuinely nearby unread log (terminal or physical drop) gets a
+        // pointer before the radar gate — story-critical beats, camp quests,
+        // and undiscovered camp/hive beacons all still outrank it above, but
+        // lore was the ONE interactable with no compass hint at all (wave-6
+        // punch list §3a). The tight radius keeps this a "something worth
+        // reading is close" nudge, not a cross-map drag toward optional
+        // content, and deliberately sits before the radarNode gate so
+        // un-upgraded players get the nudge too.
+        const loreTarget = this.getNearbyUnreadLoreTarget();
+        if (loreTarget) {
+            return {
+                active: true,
+                mode: 'lore',
+                label: 'LOG SIGNAL',
+                angle: this.planarAngleTo(loreTarget.dx, loreTarget.dz, loreTarget.distance),
+                distance: loreTarget.distance
+            };
+        }
 
         // General salvage scanning still needs the radar upgrade; camp and hive
         // beacons above are deliberate Act 1 side signals.
