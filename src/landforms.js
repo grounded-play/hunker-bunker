@@ -123,6 +123,33 @@ function reachableFloorCells(grid) {
     return seen.size;
 }
 
+export function findFarthestFloorCell(grid, startX, startY) {
+    if (grid[startY]?.[startX] !== '.') return null;
+
+    const seen = new Set([`${startX},${startY}`]);
+    let queue = [{ x: startX, y: startY, distance: 0 }];
+    let farthest = { x: startX, y: startY, distance: 0 };
+
+    while (queue.length) {
+        const next = [];
+        for (const cell of queue) {
+            if (cell.distance > farthest.distance) farthest = cell;
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                const nx = cell.x + dx;
+                const ny = cell.y + dy;
+                const key = `${nx},${ny}`;
+                if (ny < 0 || ny >= grid.length || nx < 0 || nx >= grid[ny].length) continue;
+                if (grid[ny][nx] !== '.' || seen.has(key)) continue;
+                seen.add(key);
+                next.push({ x: nx, y: ny, distance: cell.distance + 1 });
+            }
+        }
+        queue = next;
+    }
+
+    return farthest;
+}
+
 export function openMazeTerrain(grid, random, {
     plazaCount = 6,
     floorTarget = 0.76,
