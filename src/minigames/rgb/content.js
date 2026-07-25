@@ -37,11 +37,9 @@ export const CONTENT_WARNING = 'Depicts workplace injury, medical-access stress,
 
 // Cinematic beats: choice-branch clips (docs/mini-games/rgb/cinematic-branch-prompts.md,
 // fully produced) and connective rail clips (docs/mini-games/rgb/cinematic-rail-prompts.md,
-// a work in progress — only R1-R4 have end-frame stills so far, no video for
-// any rail yet, and R5-R9 don't exist at all). Every entry declares a video
-// and/or an image; cinematicPlayer.js tries the video first and falls back
-// to holding the image when the video is missing. Entries with no video key
-// at all (the current rails) go straight to the image.
+// R1-R8 have video clips and end-frame images; R9 has end-frame image).
+// Every entry declares a video and/or an image; cinematicPlayer.js tries the
+// video first and falls back to holding the image when the video is missing.
 const CINEMATIC_BASE = '/minigames/rgb/cinematics';
 
 export const BRANCH_CINEMATICS = Object.freeze({
@@ -61,13 +59,16 @@ export const BRANCH_CINEMATICS = Object.freeze({
     'C6-B': { video: `${CINEMATIC_BASE}/C6-B.mp4`, image: `${CINEMATIC_BASE}/c6/end_crushed_retry.png` }
 });
 
-// R5-R9 are intentionally absent: no asset exists yet, so no cinematic beat
-// plays at those junctures until they're produced.
 export const RAIL_CINEMATICS = Object.freeze({
-    R1: { image: `${CINEMATIC_BASE}/rails/r1_badge_entry.png` },
-    R2: { image: `${CINEMATIC_BASE}/rails/r2_collision_aftermath.png` },
-    R3: { image: `${CINEMATIC_BASE}/rails/r3_coverage_discharge.png` },
-    R4: { image: `${CINEMATIC_BASE}/rails/r4_utility_map.png` }
+    R1: { video: `${CINEMATIC_BASE}/R1.mp4`, image: `${CINEMATIC_BASE}/rails/r1_badge_entry.png` },
+    R2: { video: `${CINEMATIC_BASE}/R2.mp4`, image: `${CINEMATIC_BASE}/rails/r2_collision_aftermath.png` },
+    R3: { video: `${CINEMATIC_BASE}/R3.mp4`, image: `${CINEMATIC_BASE}/rails/r3_coverage_discharge.png` },
+    R4: { video: `${CINEMATIC_BASE}/R4.mp4`, image: `${CINEMATIC_BASE}/rails/r4_utility_map.png` },
+    R5: { video: `${CINEMATIC_BASE}/R5.mp4`, image: `${CINEMATIC_BASE}/rails/r5_utility_return.png` },
+    R6: { video: `${CINEMATIC_BASE}/R6.mp4`, image: `${CINEMATIC_BASE}/rails/r6_fire_propagation.png` },
+    R7: { video: `${CINEMATIC_BASE}/R7.mp4`, image: `${CINEMATIC_BASE}/rails/r7_pinned_before_rescue.png` },
+    R8: { video: `${CINEMATIC_BASE}/R8.mp4`, image: `${CINEMATIC_BASE}/rails/r8_system_loop.png` },
+    R9: { image: `${CINEMATIC_BASE}/rails/r9_open_hand.png` }
 });
 
 export const INTRO_CINEMATIC = Object.freeze({ video: `${CINEMATIC_BASE}/Intro.mp4` });
@@ -103,14 +104,14 @@ export function resolveCinematicSteps(hotspotId, priorState) {
         case 'follow_utility_map': {
             const calledLuciaOnly = priorState.flags.luciaCallback
                 && !priorState.evidence.includes('kiosk_record');
-            return [calledLuciaOnly ? 'C4-B' : 'C4-A', 'R4'];
+            return [calledLuciaOnly ? 'C4-B' : 'C4-A', 'R4', 'R5'];
         }
         case 'walk_away':
-            return ['C5-A'];
+            return ['C5-A', 'R8'];
         case 'expose_profile':
-            return ['C5-B'];
+            return ['C5-B', 'R9'];
         case 'sever_trunk':
-            return ['C5-C'];
+            return ['C5-C', 'R6', 'R7'];
         case 'rescue_recenter':
             return ['C6-A'];
         case 'rescue_fumble':
@@ -130,6 +131,7 @@ export const CHAPTERS = Object.freeze({
     parking_lot: {
         id: 'parking_lot',
         title: 'Chapter 1: Parking Lot and Intake',
+        bg: `${CINEMATIC_BASE}/../backgrounds/bg_rgb_parking_lot.png`,
         goal: "Enter the shift with Elias's problem, tools, and deadline understood.",
         next: 'warehouse',
         hints: [
@@ -202,6 +204,7 @@ export const CHAPTERS = Object.freeze({
     warehouse: {
         id: 'warehouse',
         title: 'Chapter 2: Warehouse Calibration',
+        bg: `${CINEMATIC_BASE}/../backgrounds/bg_warehouse_line_4a.png`,
         goal: 'Teach 4A to release and recenter an irregular load.',
         next: 'incident_review',
         hints: [
@@ -259,6 +262,7 @@ export const CHAPTERS = Object.freeze({
     incident_review: {
         id: 'incident_review',
         title: 'Chapter 3: Collision and Incident Review',
+        bg: `${CINEMATIC_BASE}/../backgrounds/bg_incident_review.png`,
         goal: 'Preserve evidence while the review process tries to redefine events.',
         next: 'medi_kiosk',
         hints: [
@@ -364,6 +368,7 @@ export const CHAPTERS = Object.freeze({
     medi_kiosk: {
         id: 'medi_kiosk',
         title: 'Chapter 4: Medi-Kiosk',
+        bg: `${CINEMATIC_BASE}/../backgrounds/bg_medi_kiosk.png`,
         goal: 'Exhaust legitimate paths and decide what to do with the time that remains.',
         next: 'server_room',
         hints: [
@@ -444,6 +449,7 @@ export const CHAPTERS = Object.freeze({
     server_room: {
         id: 'server_room',
         title: 'Chapter 5: Server Room',
+        bg: `${CINEMATIC_BASE}/../backgrounds/bg_server_room.png`,
         goal: 'Decide what to do with the training profile.',
         next: 'sector_four',
         hints: [
@@ -497,6 +503,7 @@ export const CHAPTERS = Object.freeze({
     sector_four: {
         id: 'sector_four',
         title: 'Chapter 6: Sector 4 and Epilogue',
+        bg: `${CINEMATIC_BASE}/../backgrounds/bg_sector_four.png`,
         goal: 'Escape the collapse using the lesson taught to 4A.',
         next: null,
         hints: [

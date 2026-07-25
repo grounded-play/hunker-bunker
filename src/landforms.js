@@ -372,3 +372,38 @@ export function connectPortalsInward(grid) {
     }
     return grid;
 }
+
+export const TERRAIN_HEIGHTS = Object.freeze({
+    GROUND: 0,
+    TERRACE: 1.5,
+    HIGH_PLATEAU: 3.0
+});
+
+export function generateHeightmapGrid(grid, landform = LANDFORMS.MAZE, random = Math.random) {
+    const size = grid.length;
+    const heightmap = Array.from({ length: size }, () => Array(size).fill(TERRAIN_HEIGHTS.GROUND));
+
+    for (let y = 1; y < size - 1; y++) {
+        for (let x = 1; x < size - 1; x++) {
+            if (grid[y][x] === '#') {
+                if (landform === LANDFORMS.CANYON) {
+                    heightmap[y][x] = TERRAIN_HEIGHTS.TERRACE;
+                } else if (landform === LANDFORMS.CRATER) {
+                    const center = (size - 1) / 2;
+                    const r = Math.hypot(x - center, y - center);
+                    heightmap[y][x] = r > 4.8 ? TERRAIN_HEIGHTS.HIGH_PLATEAU : TERRAIN_HEIGHTS.TERRACE;
+                } else if (landform === LANDFORMS.RUINS) {
+                    heightmap[y][x] = random() < 0.4 ? TERRAIN_HEIGHTS.TERRACE : TERRAIN_HEIGHTS.GROUND;
+                } else {
+                    heightmap[y][x] = TERRAIN_HEIGHTS.TERRACE;
+                }
+            } else {
+                if (landform === LANDFORMS.FIELD && (x <= 3 || x >= size - 4 || y <= 3 || y >= size - 4)) {
+                    heightmap[y][x] = random() < 0.35 ? TERRAIN_HEIGHTS.TERRACE : TERRAIN_HEIGHTS.GROUND;
+                }
+            }
+        }
+    }
+    return heightmap;
+}
+

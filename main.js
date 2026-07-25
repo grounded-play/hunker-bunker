@@ -5,6 +5,7 @@ import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES
 import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
+import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec } from './src/cinematicFallback.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
@@ -19,7 +20,7 @@ import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pic
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import * as featureFlags from './src/featureFlags.js';
 import { getGifDurationMs } from './src/gifDuration.js';
-import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
+import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
@@ -998,11 +999,17 @@ function closeArchiveSimsModal() {
     document.getElementById('archive-sims-modal')?.classList.add('hidden');
 }
 
-function launchRgb() {
+function launchRgb(chapter = null) {
     closeArchiveSimsModal();
     if (menu) menu.classList.add('hidden');
     const root = document.getElementById('rgb-root');
     if (!root) return;
+    if (chapter && typeof chapter === 'string') {
+        rgbSave = {
+            ...rgbSave,
+            checkpoint: chapter
+        };
+    }
     rgbHandle = mountRgb({
         root,
         save: rgbSave,
@@ -3050,7 +3057,7 @@ function runDeathSequence(event) {
     document.body.classList.add('player-dead-flash');
     playPlayerDeathCue(deathReason);
 
-    deathSequenceTimer = window.setTimeout(() => {
+    deathSequenceTimer = window.setTimeout(async () => {
         document.body.classList.remove('player-dead-flash');
         deathSequenceTimer = null;
 
@@ -3066,6 +3073,11 @@ function runDeathSequence(event) {
             runMs: Date.now() - runStartTime,
             classType: window.game?.playerType ?? getSelectedHeroType()
         }, { delayMs: 2200 });
+        const deathCinematic = getDeathCinematicSpec(deathReason);
+        await playCinematicBeat({
+            videoBase: deathCinematic.id,
+            fallback: deathCinematic
+        });
         triggerDoorTransition(
             () => {
                 showGameOverScreen(stats, { isVictory: false, deathReason });
@@ -4564,17 +4576,38 @@ function installHudCompass() {
 function syncStageMetrics() {
     if (!gameViewport) return;
 
-    // Set actual window dimensions as CSS variables to override standard dvh/vw on mobile fullscreen
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    const targetRes = state?.settings?.resolutionPreset;
+    if (targetRes && targetRes !== 'auto') {
+        const presets = {
+            'deck': { w: 1280, h: 800 },
+            '720p': { w: 1280, h: 720 },
+            '1080p': { w: 1920, h: 1080 },
+            '1440p': { w: 2560, h: 1440 },
+            '4k': { w: 3840, h: 2160 }
+        };
+        const selected = presets[targetRes];
+        if (selected) {
+            width = selected.w;
+            height = selected.h;
+        }
+    }
+
     document.documentElement.style.setProperty('--vw-actual', `${width}px`);
     document.documentElement.style.setProperty('--vh-actual', `${height}px`);
 
     const rect = gameViewport.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
-    const unit = Math.min(rect.width / DESIGN_STAGE.width, rect.height / DESIGN_STAGE.height);
+    const uiScaleMultiplier = (Number(state?.settings?.uiScale) || 100) / 100;
+    const baseUnit = Math.min(rect.width / DESIGN_STAGE.width, rect.height / DESIGN_STAGE.height);
+    const unit = baseUnit * uiScaleMultiplier;
     gameViewport.style.setProperty('--vu', `${unit}px`);
+
+    const textFloor = Number(state?.settings?.textFloor) || 18;
+    document.documentElement.style.setProperty('--hb-text-floor', `${textFloor}px`);
 
     // Expose the canonical 1280x800 stage transform for logical-pixel
     // consumers (archive sims, pointer mapping, safe-frame checks).
@@ -5045,8 +5078,9 @@ function playCutsceneVideo(base) {
         skipHint.textContent = 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
+        let played = false;
         let guardTimer = 0;
-        const finish = () => {
+        const finish = ({ skipped = false } = {}) => {
             if (settled) return;
             settled = true;
             window.clearTimeout(guardTimer);
@@ -5054,16 +5088,17 @@ function playCutsceneVideo(base) {
             try { video.pause(); } catch { /* already detached */ }
             overlay.classList.add('is-closing');
             window.setTimeout(() => overlay.remove(), 280);
-            resolve();
+            resolve({ played, skipped });
         };
         const onKey = (event) => {
             event.preventDefault();
-            finish();
+            finish({ skipped: true });
         };
 
         video.addEventListener('ended', finish);
         video.addEventListener('error', finish);
         video.addEventListener('loadeddata', () => {
+            played = true;
             video.style.opacity = '1';
         }, { once: true });
         // The selected source erroring means nothing was playable (asset absent).
@@ -5075,6 +5110,7 @@ function playCutsceneVideo(base) {
         }, 4000);
         video.addEventListener('playing', () => {
             window.clearTimeout(guardTimer);
+            played = true;
             video.style.opacity = '1';
         });
 
@@ -5083,6 +5119,161 @@ function playCutsceneVideo(base) {
         video.play().catch(finish);
     });
 }
+
+function playCinematicStills(rawSpec = {}) {
+    const spec = normalizeCinematicStillSpec(rawSpec);
+    if (!spec.images.length && !spec.title && !spec.body) {
+        return Promise.resolve({ skipped: false });
+    }
+
+    return new Promise((resolve) => {
+        const host = getCutsceneVideoHost();
+        const overlay = document.createElement('div');
+        overlay.className = `cinematic-still-overlay cinematic-still-overlay--${spec.tone}`;
+        overlay.style.setProperty('--cinematic-still-fit', spec.fit);
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', spec.title);
+
+        const frameA = document.createElement('img');
+        frameA.className = 'cinematic-still-frame is-active';
+        frameA.alt = '';
+        if (spec.images[0]) frameA.src = spec.images[0];
+
+        const frameB = document.createElement('img');
+        frameB.className = 'cinematic-still-frame';
+        frameB.alt = '';
+        if (spec.images[1]) frameB.src = spec.images[1];
+
+        const shade = document.createElement('div');
+        shade.className = 'cinematic-still-shade';
+
+        const copy = document.createElement('div');
+        copy.className = 'cinematic-still-copy';
+        const kicker = document.createElement('div');
+        kicker.className = 'cinematic-still-kicker';
+        kicker.textContent = spec.kicker;
+        const title = document.createElement('div');
+        title.className = 'cinematic-still-title';
+        title.textContent = spec.title;
+        const body = document.createElement('div');
+        body.className = 'cinematic-still-body';
+        body.textContent = spec.body;
+        copy.append(kicker, title);
+        if (spec.body) copy.append(body);
+
+        const skip = document.createElement('button');
+        skip.type = 'button';
+        skip.className = 'class-intro-skip cinematic-still-skip';
+        skip.textContent = spec.allowSkip ? 'PRESS ANY KEY TO CONTINUE' : '';
+        skip.disabled = !spec.allowSkip;
+
+        overlay.append(frameA);
+        if (spec.images[1]) overlay.append(frameB);
+        overlay.append(shade, copy, skip);
+        host.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('is-open'));
+
+        let settled = false;
+        let frameTimer = 0;
+        let finishTimer = 0;
+        const finish = (skipped = false) => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(frameTimer);
+            window.clearTimeout(finishTimer);
+            window.removeEventListener('keydown', onKey);
+            overlay.removeEventListener('pointerup', onPointer);
+            skip.removeEventListener('click', onSkipClick);
+            overlay.classList.add('is-closing');
+            window.setTimeout(() => overlay.remove(), 320);
+            resolve({ skipped });
+        };
+        const onKey = (event) => {
+            if (!spec.allowSkip) return;
+            event.preventDefault();
+            finish(true);
+        };
+        const onPointer = (event) => {
+            if (!spec.allowSkip) return;
+            event.preventDefault();
+            finish(true);
+        };
+        const onSkipClick = (event) => {
+            event.preventDefault();
+            finish(true);
+        };
+
+        if (spec.allowSkip) {
+            window.addEventListener('keydown', onKey);
+            overlay.addEventListener('pointerup', onPointer);
+            skip.addEventListener('click', onSkipClick);
+            skip.focus({ preventScroll: true });
+        }
+        if (spec.images[1]) {
+            frameTimer = window.setTimeout(() => {
+                frameA.classList.remove('is-active');
+                frameB.classList.add('is-active');
+                overlay.classList.add('is-second-frame');
+            }, Math.min(spec.frameMs, spec.durationMs - 600));
+        }
+        finishTimer = window.setTimeout(() => finish(false), spec.durationMs);
+    });
+}
+
+async function playCinematicBeat({
+    videoBase = null,
+    fallback = null
+} = {}) {
+    if (videoBase) {
+        const result = await playCutsceneVideo(videoBase);
+        if (result?.played || result?.skipped) return result;
+    }
+    return playCinematicStills(fallback ?? {});
+}
+
+let cinematicEventQueue = Promise.resolve();
+const seenSessionCinematicEvents = new Set();
+
+function queueCinematicEvent(options = {}) {
+    cinematicEventQueue = cinematicEventQueue
+        .catch(() => undefined)
+        .then(async () => {
+            window.game?.setCinematicLock?.(true);
+            try {
+                return await playCinematicBeat(options);
+            } finally {
+                window.game?.setCinematicLock?.(false);
+            }
+        });
+    return cinematicEventQueue;
+}
+
+window.addEventListener('cinematic-event', (event) => {
+    const detail = event?.detail ?? {};
+    void queueCinematicEvent({
+        videoBase: detail.videoBase ?? null,
+        fallback: detail.fallback ?? detail
+    });
+});
+
+function playAuthoredEventOnce(eventId, { videoBase = null } = {}) {
+    if (seenSessionCinematicEvents.has(eventId)) return;
+    const fallback = getEventCinematicSpec(eventId);
+    if (!fallback) return;
+    seenSessionCinematicEvents.add(eventId);
+    void queueCinematicEvent({ videoBase, fallback });
+}
+
+window.addEventListener('foundry-discovered', () => {
+    playAuthoredEventOnce('foundry_discovered', { videoBase: 'event-foundry-discovered' });
+});
+window.addEventListener('black-box-recovered', () => {
+    playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });
+});
+window.addEventListener('queen-fight-started', () => {
+    playAuthoredEventOnce('queen_encounter', { videoBase: 'event-queen-encounter' });
+});
 
 // ── Act 2 run intro: the queen replaces the Mothership handshake ──
 function repairInterruptedCaveReveal() {
@@ -5426,6 +5617,434 @@ debugGodModeBtn?.addEventListener('click', () => {
     showBiomePrompt(`> DEBUG: GOD MODE ${debugGodModeActive ? 'ONLINE' : 'OFFLINE'}.`);
 });
 
+// ── Dev Console & Steam Test Harness ────────────────────────────
+function logDevConsole(text, type = 'normal') {
+    const logContainer = document.getElementById('dev-console-log');
+    if (!logContainer) return;
+    const line = document.createElement('div');
+    line.className = `dev-log-line ${type}`;
+    line.textContent = text;
+    logContainer.appendChild(line);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+function devUnlockAchievement(key) {
+    if (!key) return 'No achievement key specified.';
+    const def = ACHIEVEMENT_DEFS.find((d) => d.key === key || d.title.toLowerCase() === key.toLowerCase());
+    const targetKey = def ? def.key : key;
+    const targetTitle = def ? def.title : key;
+
+    const state = achievementEngine.getState();
+    state.unlocked[targetKey] = { unlockedAt: Date.now() };
+    saveAchievements(state, localStorage);
+    renderAchievementsModal();
+    updateMenuCommandStatuses();
+
+    window.dispatchEvent(new CustomEvent('achievement-unlocked', {
+        detail: { key: targetKey, title: targetTitle }
+    }));
+    if (window.electronAPI?.unlockAchievement) {
+        window.electronAPI.unlockAchievement(targetKey);
+    }
+    return `Unlocked achievement: ${targetTitle} (${targetKey})`;
+}
+
+function devUnlockAllAchievements() {
+    let count = 0;
+    for (const def of ACHIEVEMENT_DEFS) {
+        devUnlockAchievement(def.key);
+        count++;
+    }
+    return `Unlocked all ${count} achievements locally & sent to Steam.`;
+}
+
+function devResetAchievements() {
+    const state = achievementEngine.getState();
+    state.unlocked = {};
+    saveAchievements(state, localStorage);
+    renderAchievementsModal();
+    updateMenuCommandStatuses();
+    return 'Cleared all unlocked achievements from local save.';
+}
+
+function devGrantResources() {
+    bankManager.deposit({ tech: 250, coin: 150, med: 75 });
+    bankManager.addShells(75);
+    window.game?.healPlayer?.(99);
+    window.game?.adjustOxygen?.(100);
+    window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
+    renderFabricationModal();
+    updateMenuCommandStatuses();
+    return 'Granted 250 Tech, 150 Coin, 75 Med, 75 Shells, Max HP & Max O₂.';
+}
+
+function devToggleGodMode() {
+    debugGodModeActive = !debugGodModeActive;
+    window.game?.setGodMode?.(debugGodModeActive);
+    if (debugGodModeBtn) {
+        debugGodModeBtn.classList.toggle('debug-btn--active', debugGodModeActive);
+        debugGodModeBtn.textContent = debugGodModeActive ? 'GOD✓' : 'GOD';
+    }
+    return `God mode ${debugGodModeActive ? 'ONLINE (Invulnerable)' : 'OFFLINE'}.`;
+}
+
+function devHealPlayer() {
+    window.game?.healPlayer?.(999);
+    window.game?.adjustOxygen?.(999);
+    return 'Player fully healed and O₂ refilled.';
+}
+
+function devKillSnails() {
+    const killed = window.game?.purgeHostiles?.() ?? 0;
+    return `Purged hostiles from current sector (${killed} removed).`;
+}
+
+function devLaunchRgb(chapter = null) {
+    closeDevConsoleModal();
+    launchRgb(chapter);
+    return `Launched RGB minigame${chapter ? ` at chapter '${chapter}'` : ''}.`;
+}
+
+function persistSettings() {
+    try {
+        if (state.settings.resolutionPreset) {
+            localStorage.setItem('hb_resolution_preset', state.settings.resolutionPreset);
+        }
+        if (state.settings.uiScale) {
+            localStorage.setItem('hb_ui_scale', String(state.settings.uiScale));
+        }
+        if (state.settings.textFloor) {
+            localStorage.setItem('hb_text_floor', String(state.settings.textFloor));
+        }
+    } catch {
+        // best-effort persistence
+    }
+}
+
+function devSetResolution(preset) {
+    const validPresets = ['auto', 'deck', '720p', '1080p', '1440p', '4k'];
+    const p = String(preset || '').toLowerCase();
+    if (!validPresets.includes(p)) {
+        return `Invalid resolution preset '${preset}'. Valid options: ${validPresets.join(', ')}`;
+    }
+    state.settings.resolutionPreset = p;
+    persistSettings();
+    refreshGameLayout();
+
+    const devSelect = document.getElementById('dev-res-select');
+    if (devSelect) devSelect.value = p;
+    const settingsSelect = document.getElementById('setting-resolution');
+    if (settingsSelect) settingsSelect.value = p;
+
+    return `Target resolution preset set to '${p}'. Layout refreshed.`;
+}
+
+function devSetUiScale(scalePct) {
+    const scale = parseInt(scalePct, 10);
+    if (isNaN(scale) || scale < 80 || scale > 200) {
+        return 'Invalid UI scale. Enter a percentage between 80 and 200.';
+    }
+    state.settings.uiScale = scale;
+    persistSettings();
+    refreshGameLayout();
+
+    const devSelect = document.getElementById('dev-uiscale-select');
+    if (devSelect) devSelect.value = String(scale);
+    const settingsSelect = document.getElementById('setting-ui-scale');
+    if (settingsSelect) settingsSelect.value = String(scale);
+
+    return `UI Accessibility scale set to ${scale}%. Layout refreshed.`;
+}
+
+function devSetTextFloor(px) {
+    const floor = parseInt(px, 10);
+    if (isNaN(floor) || floor < 12 || floor > 36) {
+        return 'Invalid text floor. Enter a pixel value between 12 and 36.';
+    }
+    state.settings.textFloor = floor;
+    persistSettings();
+    refreshGameLayout();
+
+    const devSelect = document.getElementById('dev-textfloor-select');
+    if (devSelect) devSelect.value = String(floor);
+    const settingsSelect = document.getElementById('setting-text-floor');
+    if (settingsSelect) settingsSelect.value = String(floor);
+
+    return `Minimum text floor set to ${floor}px. CSS --hb-text-floor updated.`;
+}
+
+function devGetLayoutMetrics() {
+    const st = window.hbStage || computeStageTransform(window.innerWidth, window.innerHeight);
+    const preset = state.settings.resolutionPreset || 'deck';
+    const uiScale = state.settings.uiScale || 100;
+    const textFloor = state.settings.textFloor || 18;
+    const vu = document.getElementById('game-viewport')?.style.getPropertyValue('--vu') || 'calculated';
+
+    return `STAGE LAYOUT METRICS:\n`
+        + `  Window Size:     ${window.innerWidth} × ${window.innerHeight}\n`
+        + `  Logical Stage:   1280 × 800 (16:10 Deck reference stage)\n`
+        + `  Transform Scale: ${(st.scale ?? 1).toFixed(4)}x\n`
+        + `  Stage Offsets:   X=${(st.offsetX ?? 0).toFixed(1)}px, Y=${(st.offsetY ?? 0).toFixed(1)}px\n`
+        + `  Stage Bounds:    ${(st.stageWidth ?? 1280).toFixed(1)}px × ${(st.stageHeight ?? 800).toFixed(1)}px\n`
+        + `  Viewport Unit:   --vu = ${vu}\n`
+        + `  Min Text Floor:  --hb-text-floor = ${textFloor}px\n`
+        + `  UI Scale Multi:  ${uiScale}%\n`
+        + `  Res Preset:      ${preset}`;
+}
+
+function executeDevCommand(input) {
+    const raw = String(input ?? '').trim();
+    if (!raw) return;
+    logDevConsole(`> ${raw}`, 'system');
+
+    const parts = raw.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const arg = parts.slice(1).join(' ');
+
+    let result = '';
+    let resultType = 'success';
+
+    switch (cmd) {
+        case 'help':
+        case 'commands':
+        case '?':
+            result = 'Available commands:\n'
+                + '  unlock <key>        - Unlock specific achievement\n'
+                + '  unlock_all          - Unlock all achievements\n'
+                + '  reset_ach           - Clear local achievement unlocks\n'
+                + '  rgb [chapter]       - Launch RGB minigame (parking_lot, warehouse, incident_review, medi_kiosk, server_room, sector_four)\n'
+                + '  resolution <preset> - Set target resolution preset (auto, deck, 720p, 1080p, 1440p, 4k)\n'
+                + '  uiscale <100-150>   - Set UI accessibility scale (%)\n'
+                + '  textfloor <16-24>   - Set minimum text floor font size (px)\n'
+                + '  layout / stage      - Display canonical stage transform & viewport metrics\n'
+                + '  god                 - Toggle God Mode\n'
+                + '  salvage / +$        - Grant salvage & shells\n'
+                + '  heal                - Refill Health & O₂\n'
+                + '  nuke / kill         - Clear hostiles in current sector\n'
+                + '  steam               - View Steam connection info\n'
+                + '  clear / cls         - Clear console log';
+            break;
+        case 'layout':
+        case 'stage':
+        case 'metrics':
+            result = devGetLayoutMetrics();
+            break;
+        case 'resolution':
+        case 'res':
+            result = devSetResolution(arg);
+            break;
+        case 'uiscale':
+        case 'scale':
+            result = devSetUiScale(arg);
+            break;
+        case 'textfloor':
+        case 'fontfloor':
+            result = devSetTextFloor(arg);
+            break;
+        case 'unlock':
+        case 'ach':
+        case 'achievement':
+            result = devUnlockAchievement(arg);
+            break;
+        case 'unlock_all':
+        case 'ach_all':
+        case 'unlockall':
+            result = devUnlockAllAchievements();
+            break;
+        case 'reset_ach':
+        case 'resetach':
+            result = devResetAchievements();
+            break;
+        case 'rgb':
+        case 'minigame':
+            result = devLaunchRgb(arg || null);
+            break;
+        case 'god':
+            result = devToggleGodMode();
+            break;
+        case 'salvage':
+        case 'resources':
+        case '+$':
+            result = devGrantResources();
+            break;
+        case 'heal':
+        case 'hp':
+        case 'o2':
+            result = devHealPlayer();
+            break;
+        case 'nuke':
+        case 'kill':
+        case 'kill_all':
+            result = devKillSnails();
+            break;
+        case 'steam':
+            if (window.electronAPI?.getSteamInfo) {
+                window.electronAPI.getSteamInfo().then((info) => {
+                    logDevConsole(`Steam Identity: ${JSON.stringify(info, null, 2)}`, 'system');
+                });
+                result = 'Fetching Steam info...';
+            } else {
+                result = 'Steam API unavailable (running in web browser).';
+            }
+            break;
+        case 'clear':
+        case 'cls': {
+            const logContainer = document.getElementById('dev-console-log');
+            if (logContainer) logContainer.replaceChildren();
+            logDevConsole('> Console log cleared.', 'system');
+            return;
+        }
+        default:
+            result = `Unknown command '${cmd}'. Type 'help' for command list.`;
+            resultType = 'error';
+            break;
+    }
+
+    logDevConsole(result, resultType);
+}
+
+function openDevConsoleModal() {
+    setDebugMode(true);
+    const modal = document.getElementById('dev-console-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    populateDevAchievementDropdowns();
+
+    const resSelect = document.getElementById('dev-res-select');
+    if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
+    const uiScaleSelect = document.getElementById('dev-uiscale-select');
+    if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
+    const textFloorSelect = document.getElementById('dev-textfloor-select');
+    if (textFloorSelect) textFloorSelect.value = String(state.settings.textFloor || 18);
+
+    const input = document.getElementById('dev-console-input');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+}
+
+function closeDevConsoleModal() {
+    const modal = document.getElementById('dev-console-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+function populateDevAchievementDropdowns() {
+    const toolbarSelect = document.getElementById('debug-achievement-select');
+    const modalSelect = document.getElementById('dev-ach-dropdown');
+    if (toolbarSelect && toolbarSelect.options.length <= 1) {
+        for (const def of ACHIEVEMENT_DEFS) {
+            const opt = document.createElement('option');
+            opt.value = def.key;
+            opt.textContent = `${def.title} (${def.key})`;
+            toolbarSelect.appendChild(opt);
+        }
+    }
+    if (modalSelect && modalSelect.options.length <= 1) {
+        for (const def of ACHIEVEMENT_DEFS) {
+            const opt = document.createElement('option');
+            opt.value = def.key;
+            opt.textContent = `${def.title} (${def.key})`;
+            modalSelect.appendChild(opt);
+        }
+    }
+}
+
+// Dev Console UI Bindings
+document.getElementById('debug-open-console')?.addEventListener('click', openDevConsoleModal);
+document.getElementById('debug-launch-rgb')?.addEventListener('click', () => launchRgb());
+document.getElementById('debug-achievement-select')?.addEventListener('change', (e) => {
+    const key = e.target.value;
+    if (key) {
+        const res = devUnlockAchievement(key);
+        showBiomePrompt(`> DEBUG: ${res}`);
+        e.target.value = '';
+    }
+});
+
+document.getElementById('close-dev-console')?.addEventListener('click', closeDevConsoleModal);
+
+document.getElementById('dev-btn-unlock-ach')?.addEventListener('click', () => {
+    const select = document.getElementById('dev-ach-dropdown');
+    if (select?.value) {
+        const res = devUnlockAchievement(select.value);
+        logDevConsole(res, 'success');
+    } else {
+        logDevConsole('Please select an achievement from the dropdown.', 'error');
+    }
+});
+document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
+    const res = devUnlockAllAchievements();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-reset-ach')?.addEventListener('click', () => {
+    const res = devResetAchievements();
+    logDevConsole(res, 'warn');
+});
+document.getElementById('dev-btn-launch-rgb')?.addEventListener('click', () => {
+    const res = devLaunchRgb();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-jump-rgb-chapter')?.addEventListener('click', () => {
+    const select = document.getElementById('dev-rgb-chapter-select');
+    const res = devLaunchRgb(select?.value || null);
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-god')?.addEventListener('click', () => {
+    const res = devToggleGodMode();
+    logDevConsole(res, 'system');
+});
+document.getElementById('dev-btn-resources')?.addEventListener('click', () => {
+    const res = devGrantResources();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-heal')?.addEventListener('click', () => {
+    const res = devHealPlayer();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-nuke')?.addEventListener('click', () => {
+    const res = devKillSnails();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-res-select')?.addEventListener('change', (e) => {
+    const res = devSetResolution(e.target.value);
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-uiscale-select')?.addEventListener('change', (e) => {
+    const res = devSetUiScale(e.target.value);
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-textfloor-select')?.addEventListener('change', (e) => {
+    const res = devSetTextFloor(e.target.value);
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-layout')?.addEventListener('click', () => {
+    const res = devGetLayoutMetrics();
+    logDevConsole(res, 'system');
+});
+
+const devConsoleInput = document.getElementById('dev-console-input');
+const devConsoleSubmit = document.getElementById('dev-console-submit');
+
+devConsoleSubmit?.addEventListener('click', () => {
+    if (devConsoleInput) {
+        executeDevCommand(devConsoleInput.value);
+        devConsoleInput.value = '';
+    }
+});
+
+devConsoleInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        executeDevCommand(devConsoleInput.value);
+        devConsoleInput.value = '';
+    }
+});
+
 if (fpsDisplay) {
     setInterval(() => {
         if (!document.body.classList.contains('show-debug')) {
@@ -5513,6 +6132,15 @@ function openSettingsModal() {
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
     if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
 
+    const resSelect = document.getElementById('setting-resolution');
+    if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
+
+    const uiScaleSelect = document.getElementById('setting-ui-scale');
+    if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
+
+    const textFloorSelect = document.getElementById('setting-text-floor');
+    if (textFloorSelect) textFloorSelect.value = String(state.settings.textFloor || 18);
+
     const txtSpeedSelect = document.getElementById('setting-text-speed');
     if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
 
@@ -5533,6 +6161,16 @@ function openSettingsModal() {
     setSaveDataOpen(false);
     setResetSaveConfirmOpen(false);
 }
+
+document.getElementById('setting-resolution')?.addEventListener('change', (e) => {
+    devSetResolution(e.target.value);
+});
+document.getElementById('setting-ui-scale')?.addEventListener('change', (e) => {
+    devSetUiScale(e.target.value);
+});
+document.getElementById('setting-text-floor')?.addEventListener('change', (e) => {
+    devSetTextFloor(e.target.value);
+});
 
 if (settingsBtns.length > 0 && settingsPopup) {
     settingsBtns.forEach(btn => {
@@ -5648,9 +6286,31 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     window.setTimeout(() => window.location.reload(), 350);
 });
 
-// Global Escape Key Listener for Modals
+// Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
+    if (event.code === 'Backquote' || event.key === '`' || event.key === '~') {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag === 'input' && document.activeElement?.id !== 'dev-console-input') {
+            return;
+        }
+        if (activeTag === 'textarea') return;
+        event.preventDefault();
+        const devModal = document.getElementById('dev-console-modal');
+        if (devModal && !devModal.classList.contains('hidden')) {
+            closeDevConsoleModal();
+        } else {
+            openDevConsoleModal();
+        }
+        return;
+    }
+
     if (event.key === 'Escape') {
+        const devModal = document.getElementById('dev-console-modal');
+        if (devModal && !devModal.classList.contains('hidden')) {
+            closeDevConsoleModal();
+            event.preventDefault();
+            return;
+        }
         const dialogueModal = document.getElementById('mothership-dialogue');
         if (dialogueModal && !dialogueModal.classList.contains('hidden')) {
             return; // Let DialogueManager handle its own Escape key
@@ -5779,7 +6439,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 // Click Outside Helper to Close Modals
-const setupClickOutside = (modalId, closeAction) => {
+function setupClickOutside(modalId, closeAction) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.addEventListener('click', (event) => {
@@ -5788,7 +6448,9 @@ const setupClickOutside = (modalId, closeAction) => {
             }
         });
     }
-};
+}
+
+setupClickOutside('dev-console-modal', closeDevConsoleModal);
 
 setupClickOutside('about-modal', () => {
     const aboutModal = document.getElementById('about-modal');
@@ -6370,6 +7032,19 @@ const ACT2_ENDING_TITLES = Object.freeze({
     empty_husk: 'EMPTY HUSK'
 });
 
+const ACT2_ENDING_STILLS = Object.freeze({
+    full_brood: ['/ending_fullbrood_ship.png'],
+    clean_escape: ['/ending_cleanescape_cabin.png'],
+    mixed_crew: ['/ending_mixedcrew_cabin.png'],
+    carriers_bargain: ['/ending_carriersbargain_eggs.png'],
+    scorched_sky: ['/ending_scorchedsky_cockpit.png'],
+    mothership_infection: ['/ach_ending_mothership_infection.jpg'],
+    alien_exodus: ['/ach_ending_alien_exodus.jpg'],
+    outed_escape: ['/ach_ending_outed_escape.jpg'],
+    failed_carrier: ['/ach_ending_failed_carrier.jpg'],
+    empty_husk: ['/ach_ending_empty_husk.jpg']
+});
+
 function formatStoryToken(value = '') {
     return String(value || 'unknown').replace(/_/g, ' ').toUpperCase();
 }
@@ -6896,7 +7571,18 @@ async function runAct2DepartureSequence(detail = {}) {
         playerType: game?.playerType ?? getSelectedHeroType(),
         lines: [...getAct2EndingLines(ending)]
     });
-    await playCutsceneVideo(videoBase);
+    await playCinematicBeat({
+        videoBase,
+        fallback: {
+            id: `ending-${ending ?? 'departure'}`,
+            kicker: 'ENDING VECTOR // RECORDED',
+            title: ACT2_ENDING_TITLES[ending] ?? 'THE VESSEL CLEARS THE ICE',
+            body: 'The manifest is sealed. Everything aboard will live with the choice.',
+            images: ACT2_ENDING_STILLS[ending] ?? ['/ship_wreckage.png'],
+            durationMs: 4200,
+            tone: 'ending'
+        }
+    });
     await showActThreeTeaseCard(ending);
     game?.setCinematicLock?.(false);
     returnToMainMenuFromRun({ doorKey: 'lose' });
@@ -7157,6 +7843,28 @@ function getDoorImage(key) {
     return CLASS_DOORS[activeClass] || SPECIAL_DOORS.base;
 }
 
+function preloadDoorAssets() {
+    const doorImages = [
+        '/door.webp',
+        '/door_scout.png',
+        '/door_heavy.png',
+        '/door_engineer.png',
+        '/door_medic.png',
+        '/ship_wreckage.png'
+    ];
+
+    for (const src of doorImages) {
+        const img = new Image();
+        img.src = src;
+    }
+
+    try {
+        AudioManager.preload?.(['ui_boot1', 'door_slam_vertical', 'door_gears_spin', 'door_slide_horiz']);
+    } catch {
+        // best-effort audio preload
+    }
+}
+
 function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     const {
         waitForClosedWork = false,
@@ -7170,7 +7878,11 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     }
 
     const doorImg = getDoorImage(doorKey);
+    const preloader = new Image();
+    preloader.src = doorImg;
     overlay.style.setProperty('--door-bg-image', `url('${doorImg}')`);
+
+    syncStageMetrics();
 
     // 1. Prepare for vertical close
     overlay.classList.add('visible');
@@ -7180,11 +7892,13 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     // Force reflow
     void overlay.offsetWidth;
 
-    // 2. Start closing
+    // 2. Start closing after double RAF frame-settle
     requestAnimationFrame(() => {
-        overlay.classList.add('active');
-        AudioManager.play('door_slam_vertical', { volume: 0.4 });
-        AudioManager.play('door_gears_spin', { volume: 0.25 });
+        requestAnimationFrame(() => {
+            overlay.classList.add('active');
+            AudioManager.play('door_slam_vertical', { volume: 0.4 });
+            AudioManager.play('door_gears_spin', { volume: 0.25 });
+        });
     });
 
     // 3. Once closed, swap content and prepare horizontal open
@@ -7200,19 +7914,23 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
             // Force reflow
             void overlay.offsetWidth;
 
-            // 4. Start opening after a small "hold" gap
-            setTimeout(() => {
-                spawnSmoke(0, 0, 30, false); // Separation smoke
-                overlay.classList.add('active');
-                AudioManager.play('door_slide_horiz', { volume: 0.4 });
-                AudioManager.play('door_gears_spin', { volume: 0.25 });
-                if (onOpened) onOpened();
-            }, openingHoldMs);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    // 4. Start opening after a small "hold" gap
+                    setTimeout(() => {
+                        spawnSmoke(0, 0, 30, false); // Separation smoke
+                        overlay.classList.add('active');
+                        AudioManager.play('door_slide_horiz', { volume: 0.4 });
+                        AudioManager.play('door_gears_spin', { volume: 0.25 });
+                        if (onOpened) onOpened();
+                    }, openingHoldMs);
 
-            // 5. Cleanup
-            setTimeout(() => {
-                overlay.classList.remove('visible', 'opening-h', 'active');
-            }, openingHoldMs + 900);
+                    // 5. Cleanup
+                    setTimeout(() => {
+                        overlay.classList.remove('visible', 'opening-h', 'active');
+                    }, openingHoldMs + 900);
+                });
+            });
         };
 
         if (waitForClosedWork) {
@@ -7684,6 +8402,7 @@ function initTacticalCursor() {
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
+    preloadDoorAssets();
     initTacticalCursor();
     installStageLayoutSync();
     installHudCompass();

@@ -27,3 +27,26 @@ upgradeable with painted PNGs — see `docs/cave-scene-asset-prompts.md`):
 - `ending-scorchedsky.webm` — SCORCHED SKY ending
 
 Optional poster frames use the same base names with `-poster.jpg`.
+
+## Generated still cinematics
+
+`npm run cinematics:stills` converts the authored death/event illustrations
+into 1280×800 VP8 WebM cutaways with a slow Ken Burns pan, push-in, and midpoint
+crossfade when a beat has two images. It also writes matching poster JPEGs.
+
+Generated video basenames:
+
+- `death-oxygen`, `death-abyss`, `death-crawler`, `death-queen`
+- `death-ship`, `death-biohazard`, `death-combat`
+- `death-mission-abort`, `death-hazard`
+- `event-foundry-discovered`, `event-black-box-recovered`
+- `event-queen-encounter`
+
+The runtime falls back to the original still artwork and text if any WebM is
+missing or fails to play.
+
+The authored 16:10 source posters live in `poster-art/`. They follow the RGB
+cinematic prompt-book treatment: grounded high-contrast graphic realism,
+screen-printed grain, industrial monochrome, and functional red only. The
+generated `*-poster.jpg` files are resized playback posters; do not use them as
+the editable source.

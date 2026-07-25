@@ -73,6 +73,11 @@
       </button>
       <button id="debug-grant-resources" class="debug-btn" title="Grant test salvage and shells">+$</button>
       <button id="debug-god-mode" class="debug-btn" title="Toggle god mode">GOD</button>
+      <button id="debug-open-console" class="debug-btn" title="Open Dev Console (`~`)">&gt;_</button>
+      <button id="debug-launch-rgb" class="debug-btn" title="Launch RGB Minigame">◈ RGB</button>
+      <select id="debug-achievement-select" class="dev-select" title="Trigger Steam Achievement">
+        <option value="">-- UNLOCK ACH --</option>
+      </select>
     </div>
     <div id="cabinet-bezel"></div>
 
@@ -875,6 +880,82 @@
       <span id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
     </div>
 
+    <!-- In-Game Dev Console Modal -->
+    <div id="dev-console-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content dev-console-content">
+        <div class="terminal-scanline"></div>
+        <div class="dev-console-header">
+          <button class="close-modal" id="close-dev-console">×</button>
+          <div class="dev-console-title">&gt;_ DEV CONSOLE // SYSTEM OVERRIDE</div>
+          <div class="dev-console-subtitle">STEAM &amp; MINIGAME TEST HARNESS</div>
+        </div>
+        <div class="dev-console-quick-actions">
+          <div class="dev-quick-group">
+            <span class="dev-group-label">STEAM ACHIEVEMENTS:</span>
+            <select id="dev-ach-dropdown" class="dev-select">
+              <option value="">Select Achievement...</option>
+            </select>
+            <button id="dev-btn-unlock-ach" class="dev-btn">UNLOCK</button>
+            <button id="dev-btn-unlock-all-ach" class="dev-btn dev-btn--warn">UNLOCK ALL</button>
+            <button id="dev-btn-reset-ach" class="dev-btn dev-btn--danger">RESET LOCAL ACH</button>
+          </div>
+          <div class="dev-quick-group">
+            <span class="dev-group-label">MINIGAMES &amp; SIMS:</span>
+            <button id="dev-btn-launch-rgb" class="dev-btn dev-btn--accent">LAUNCH RGB (START)</button>
+            <select id="dev-rgb-chapter-select" class="dev-select">
+              <option value="parking_lot">Ch 1: Parking Lot</option>
+              <option value="warehouse">Ch 2: Warehouse</option>
+              <option value="incident_review">Ch 3: Incident Review</option>
+              <option value="medi_kiosk">Ch 4: Medi-Kiosk</option>
+              <option value="server_room">Ch 5: Server Room</option>
+              <option value="sector_four">Ch 6: Sector 4</option>
+            </select>
+            <button id="dev-btn-jump-rgb-chapter" class="dev-btn">JUMP CHAPTER</button>
+          </div>
+          <div class="dev-quick-group">
+            <span class="dev-group-label">GAMEPLAY &amp; SALVAGE:</span>
+            <button id="dev-btn-god" class="dev-btn">TOGGLE GOD</button>
+            <button id="dev-btn-resources" class="dev-btn">+$ SALVAGE</button>
+            <button id="dev-btn-heal" class="dev-btn">+HP / O₂</button>
+            <button id="dev-btn-nuke" class="dev-btn">KILL SNAILS</button>
+          </div>
+          <div class="dev-quick-group">
+            <span class="dev-group-label">STAGE &amp; ACCESSIBILITY:</span>
+            <select id="dev-res-select" class="dev-select">
+              <option value="auto">Auto (Window)</option>
+              <option value="deck" selected>Deck 800p (16:10)</option>
+              <option value="720p">720p HD (16:9)</option>
+              <option value="1080p">1080p FHD (16:9)</option>
+              <option value="1440p">1440p QHD (16:9)</option>
+              <option value="4k">4K UHD (16:9)</option>
+            </select>
+            <select id="dev-uiscale-select" class="dev-select">
+              <option value="100" selected>Scale 100%</option>
+              <option value="115">Scale 115%</option>
+              <option value="130">Scale 130%</option>
+              <option value="150">Scale 150%</option>
+            </select>
+            <select id="dev-textfloor-select" class="dev-select">
+              <option value="16">Floor 16px</option>
+              <option value="18" selected>Floor 18px</option>
+              <option value="20">Floor 20px</option>
+              <option value="22">Floor 22px</option>
+              <option value="24">Floor 24px</option>
+            </select>
+            <button id="dev-btn-layout" class="dev-btn">LAYOUT METRICS</button>
+          </div>
+        </div>
+        <div class="dev-console-log" id="dev-console-log">
+          <div class="dev-log-line system">&gt; HUNKER BUNKER DEV CONSOLE ACTIVE. Type 'help' for available commands.</div>
+        </div>
+        <div class="dev-console-input-row">
+          <span class="dev-prompt">&gt;</span>
+          <input type="text" id="dev-console-input" class="dev-input" placeholder="Type command (e.g. help, unlock quick_study, rgb server_room, god, salvage)..." autocomplete="off" spellcheck="false" />
+          <button id="dev-console-submit" class="dev-btn dev-btn--submit">RUN</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Holographic Retro Terminal Console Modal -->
     <div id="console-terminal-modal" class="modal hidden">
       <div class="modal-content console-terminal-content">
@@ -1240,6 +1321,36 @@
         <div class="setting-item">
           <span>NIGHT VISION (NO FOG/NIGHT)</span>
           <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
+        </div>
+        <div class="setting-item">
+          <span>STAGE RESOLUTION</span>
+          <select id="setting-resolution" class="settings-select">
+            <option value="auto">AUTO (WINDOW FIT)</option>
+            <option value="deck" selected>STEAM DECK (1280×800 - 16:10)</option>
+            <option value="720p">720p HD (1280×720 - 16:9)</option>
+            <option value="1080p">1080p FHD (1920×1080 - 16:9)</option>
+            <option value="1440p">1440p QHD (2560×1440 - 16:9)</option>
+            <option value="4k">4K UHD (3840×2160 - 16:9)</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span>UI ACCESSIBILITY SCALE</span>
+          <select id="setting-ui-scale" class="settings-select">
+            <option value="100" selected>100% (STANDARD)</option>
+            <option value="115">115% (LARGE)</option>
+            <option value="130">130% (EXTRA LARGE)</option>
+            <option value="150">150% (MAX ACCESSIBILITY)</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span>MINIMUM TEXT FLOOR</span>
+          <select id="setting-text-floor" class="settings-select">
+            <option value="16">16px (COMPACT)</option>
+            <option value="18" selected>18px (DECK DEFAULT)</option>
+            <option value="20">20px (LARGE)</option>
+            <option value="22">22px (EXTRA LARGE)</option>
+            <option value="24">24px (MAX CLARITY)</option>
+          </select>
         </div>
         <div class="setting-item">
           <span>TEXT SPEED</span>

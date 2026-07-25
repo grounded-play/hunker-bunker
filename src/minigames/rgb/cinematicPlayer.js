@@ -6,6 +6,8 @@
 // an image (no video declared at all) goes straight to the held-image path.
 // Clicking the layer skips the current step.
 
+import { AudioManager } from '../../audio.js';
+
 export const IMAGE_HOLD_MS = 2600;
 export const FADE_MS = 350;
 
@@ -57,6 +59,8 @@ function playStep(container, step) {
             video.src = step.video;
             video.autoplay = true;
             video.playsInline = true;
+            video.muted = AudioManager.globalMuted;
+            video.volume = Math.min(1, Math.max(0, AudioManager.masterVolume));
             video.addEventListener('ended', finish);
             video.addEventListener('error', showImage);
             container.append(video);

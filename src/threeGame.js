@@ -33,7 +33,8 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
-import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain } from './landforms.js';
+import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS } from './landforms.js';
+import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES } from './bossPhases.js';
@@ -365,6 +366,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     interact: ['KeyE', null],
     reload: ['KeyR', null],
     ability: ['KeyF', null],
+    dash: ['Space', 'ShiftLeft'],
     scan: ['KeyQ', null],
     sprint: ['ShiftLeft', 'ShiftRight']
 });
@@ -836,6 +838,18 @@ export class ThreeGame {
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
+        this.isDashing = false;
+        this.dashTimer = 0;
+        this.dashCooldownTimer = 0;
+        this.dashDirX = 1;
+        this.dashDirZ = 0;
+        this.iFrameTimer = 0;
+        this.perfectReloadBuffTimer = 0;
+        this.recoilBloom = 0;
+        this.runOverclocks = [];
+        this.runRelics = [];
+        this.activeSynergies = [];
+        this.inRunLootDrops = [];
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
@@ -2643,6 +2657,10 @@ export class ThreeGame {
                 event.preventDefault();
                 this.triggerGameplayAbility();
             }
+            if (this.codeMatchesAction(event.code, 'dash')) {
+                event.preventDefault();
+                this.triggerGameplayDash();
+            }
             if (this.codeMatchesAction(event.code, 'scan')) {
                 event.preventDefault();
                 this.triggerGameplayScan();
@@ -2872,6 +2890,95 @@ export class ThreeGame {
         if (!this.isGameplayInputActive()) return false;
         this.triggerRadarScan();
         return true;
+    }
+
+    triggerGameplayDash() {
+        if (!this.isGameplayInputActive()) return false;
+        if (this.dashCooldownTimer > 0 || this.isDashing) return false;
+
+        let dirX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+        let dirZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+
+        if (!dirX && !dirZ) {
+            dirX = this.aimDirX || 1;
+            dirZ = this.aimDirZ || 0;
+        }
+
+        const len = Math.hypot(dirX, dirZ);
+        if (len > 0) {
+            dirX /= len;
+            dirZ /= len;
+        } else {
+            dirX = 1;
+            dirZ = 0;
+        }
+
+        this.isDashing = true;
+        this.dashTimer = 0.22;
+        this.dashCooldownTimer = 1.1;
+        this.dashDirX = dirX;
+        this.dashDirZ = dirZ;
+        this.iFrameTimer = 0.25;
+
+        this.triggerCameraShake?.(0.08, 0.15);
+        window.AudioManager?.play?.('metal_stress', { volume: 0.4, playbackRate: 1.8 });
+        if (this.player) {
+            this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x33ffff, count: 12, upward: 0.2 });
+        }
+        window.dispatchEvent(new CustomEvent('player-dashed', { detail: { dirX, dirZ } }));
+        return true;
+    }
+
+    equipRunDrop(drop) {
+        if (!drop) return;
+        if (drop.type === 'overclock') {
+            this.runOverclocks.push(drop);
+        } else {
+            this.runRelics.push(drop);
+        }
+        this.activeSynergies = computeActiveSynergies([...this.runOverclocks, ...this.runRelics]);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.8 });
+        window.dispatchEvent(new CustomEvent('in-run-drop-equipped', { detail: { drop, synergies: this.activeSynergies } }));
+    }
+
+    getRunDropsInfo() {
+        return {
+            overclocks: this.runOverclocks,
+            relics: this.runRelics,
+            synergies: this.activeSynergies,
+            poolOverclocks: WEAPON_OVERCLOCKS,
+            poolRelics: SUIT_RELICS
+        };
+    }
+
+    spawnPhysicalLootDrop(x, z, item) {
+        if (!item || !this.scene) return;
+        const mesh = new THREE.Mesh(
+            this.rewardGlowGeometry,
+            new THREE.MeshBasicMaterial({
+                color: item.rarity === 'corrupted' ? 0xff2244 : (item.rarity === 'mythic' ? 0xffaa00 : 0x00e5ff),
+                side: THREE.DoubleSide
+            })
+        );
+        mesh.position.set(x, 0.05, z);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.userData = { item, isLootPickup: true };
+        this.scene.add(mesh);
+        this.inRunLootDrops.push(mesh);
+    }
+
+    getTerrainHeightAt(worldX, worldZ) {
+        const chunkX = Math.floor((worldX + this.chunkSize / 2) / this.chunkSize);
+        const chunkY = Math.floor((worldZ + this.chunkSize / 2) / this.chunkSize);
+        const key = `${chunkX},${chunkY}`;
+        const chunk = this.chunkCache?.get(key);
+        if (!chunk || !chunk.heightmap) return TERRAIN_HEIGHTS.GROUND;
+        const localX = Math.floor(worldX - (chunkX * this.chunkSize - this.chunkSize / 2));
+        const localZ = Math.floor(worldZ - (chunkY * this.chunkSize - this.chunkSize / 2));
+        if (localZ < 0 || localZ >= chunk.heightmap.length || localX < 0 || localX >= chunk.heightmap[0].length) {
+            return TERRAIN_HEIGHTS.GROUND;
+        }
+        return chunk.heightmap[localZ][localX] ?? TERRAIN_HEIGHTS.GROUND;
     }
 
     setControllerAimVector(x = 0, y = 0) {
@@ -9664,6 +9771,22 @@ export class ThreeGame {
             return { active: true, mode: 'corrupt', label: 'SIGNAL CORRUPT', angle: jitter, distance: 0 };
         }
 
+        const regTarget = typeof window !== 'undefined' ? window.objectiveRegistry?.getCompassTarget?.() : null;
+        if (regTarget && regTarget.priority < 50) {
+            const rdx = regTarget.x - this.player.position.x;
+            const rdz = regTarget.z - this.player.position.z;
+            const rdist = Math.hypot(rdx, rdz);
+            if (rdist > 0.5) {
+                return {
+                    active: true,
+                    mode: regTarget.source ?? 'objective',
+                    label: regTarget.label,
+                    angle: this.planarAngleTo(rdx, rdz, rdist),
+                    distance: rdist
+                };
+            }
+        }
+
         if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
             const dx = this._blackBoxState.x - this.player.position.x;
             const dz = this._blackBoxState.z - this.player.position.z;
@@ -9861,6 +9984,7 @@ export class ThreeGame {
         if (this.godMode) return;
         if (this.cinematicLock) return; // untouchable during scripted sequences
         if (this._abilityImmune) return;
+        if (this.iFrameTimer > 0 && reason !== 'abyss') return;
         if (this.missionState?.status === 'inactive') return;
         const previousHp = this.playerVitals.hp;
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - Math.max(0, amount));
@@ -10826,6 +10950,48 @@ export class ThreeGame {
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
                 return;
+            }
+        }
+
+        // Update kinetic control timers
+        this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
+        this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
+        this.perfectReloadBuffTimer = Math.max(0, (this.perfectReloadBuffTimer ?? 0) - delta);
+        this.recoilBloom = Math.max(0, (this.recoilBloom ?? 0) - 1.2 * delta);
+
+        if (this.isDashing && this.player) {
+            this.dashTimer -= delta;
+            const dashSpeed = 16.0;
+            const stepX = this.dashDirX * dashSpeed * delta;
+            const stepZ = this.dashDirZ * dashSpeed * delta;
+            if (this.canOccupyPosition(this.player.position.x + stepX, this.player.position.z)) {
+                this.player.position.x += stepX;
+            }
+            if (this.canOccupyPosition(this.player.position.x, this.player.position.z + stepZ)) {
+                this.player.position.z += stepZ;
+            }
+            if (this.dashTimer <= 0) {
+                this.isDashing = false;
+            }
+        }
+
+        if (this.player) {
+            const targetHeight = this.getTerrainHeightAt(this.player.position.x, this.player.position.z);
+            this.player.position.y = THREE.MathUtils.lerp(this.player.position.y, targetHeight * 0.05 + 0.06, 12 * delta);
+        }
+
+        if (this.player && this.inRunLootDrops?.length) {
+            for (let i = this.inRunLootDrops.length - 1; i >= 0; i--) {
+                const dropMesh = this.inRunLootDrops[i];
+                if (!dropMesh) continue;
+                const dist = Math.hypot(this.player.position.x - dropMesh.position.x, this.player.position.z - dropMesh.position.z);
+                if (dist < 0.85) {
+                    this.scene?.remove(dropMesh);
+                    dropMesh.geometry?.dispose?.();
+                    dropMesh.material?.dispose?.();
+                    this.inRunLootDrops.splice(i, 1);
+                    this.equipRunDrop(dropMesh.userData.item);
+                }
             }
         }
 
@@ -12396,13 +12562,37 @@ export class ThreeGame {
     spawnPlayerShot(normX, normZ) {
         const classDamage = CLASS_STATS[this.playerType]?.projectileDamage ?? PROJECTILE_DAMAGE;
         const bonuses = this.weaponUpgradeBonuses ?? null;
-        const damage = classDamage + (bonuses?.shotDamage ?? 0);
+        let damage = classDamage + (bonuses?.shotDamage ?? 0);
+
+        if (this.perfectReloadBuffTimer > 0) {
+            damage *= 1.25;
+        }
+
+        let extraBullets = 0;
+        let spreadAngle = 0.20;
+        for (const mod of this.runOverclocks ?? []) {
+            if (mod.stats?.damageMult) damage *= mod.stats.damageMult;
+            if (mod.stats?.extraBullets) extraBullets += mod.stats.extraBullets;
+            if (mod.stats?.spreadAngle) spreadAngle = mod.stats.spreadAngle;
+        }
+
+        const playerHeight = this.getTerrainHeightAt(this.player?.position?.x ?? 0, this.player?.position?.z ?? 0);
+        if (playerHeight > 0) {
+            damage *= 1.15; // High-Ground +15% Damage Advantage!
+        }
+
         let speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
         if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
             speed *= 1.20;
         }
-        const shotAmount = FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0;
-        const spreads = MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
+
+        this.recoilBloom = Math.min(0.8, (this.recoilBloom ?? 0) + 0.15);
+        this.triggerCameraShake?.(0.04, 0.08);
+
+        const shotAmount = (FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0) + extraBullets;
+        const spreads = extraBullets > 0
+            ? [-spreadAngle, 0, spreadAngle]
+            : MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
 
         const fireOne = (dx, dz) => {
             this.spawnProjectile({
@@ -15526,8 +15716,12 @@ export class ThreeGame {
                 }));
             }
         }
-        // Shells are no longer granted on the kill itself — the player has to
-        // walk over the corpse to claim them (collectSnailShell).
+        const isElite = Boolean(sprite.userData.enraged || sprite.userData.isSentinel);
+        const isBossEnemy = Boolean(sprite.userData.isHiveHarvestBoss || sprite.userData.isBoss);
+        const drop = rollEnemyLootDrop(Math.random, { isElite, isBoss: isBossEnemy });
+        if (drop) {
+            this.spawnPhysicalLootDrop?.(sprite.position?.x ?? 0, sprite.position?.z ?? 0, drop);
+        }
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
@@ -17813,7 +18007,10 @@ export class ThreeGame {
                     if (evicted >= toEvict) break;
                 }
             }
-            const grid = this.applyDestroyedWallsToGrid(this.buildChunk(chunkX, chunkY), chunkX, chunkY);
+            const rawGrid = this.buildChunk(chunkX, chunkY);
+            const landform = rawGrid.landform ?? LANDFORMS.MAZE;
+            const grid = this.applyDestroyedWallsToGrid(rawGrid, chunkX, chunkY);
+            grid.heightmap = generateHeightmapGrid(grid, landform);
             this.chunkCache.set(key, grid);
             if (!this._chunkRoomTypeCache) this._chunkRoomTypeCache = new Map();
             this._chunkRoomTypeCache.set(key, classifyChunkCells(grid, this.chunkSize));

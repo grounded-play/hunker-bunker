@@ -129,11 +129,14 @@ describe('content shape', () => {
         }
     });
 
-    it('rail cinematics only ship what has actually been produced (WIP)', () => {
-        for (const entry of Object.values(RAIL_CINEMATICS)) {
+    it('rail cinematics ship video clips for R1-R8 and image fallbacks for R1-R9', () => {
+        for (const [key, entry] of Object.entries(RAIL_CINEMATICS)) {
             expect(entry.image).toMatch(/\.png$/);
+            if (key !== 'R9') {
+                expect(entry.video).toMatch(/\.mp4$/);
+            }
         }
-        expect(Object.keys(RAIL_CINEMATICS).sort()).toEqual(['R1', 'R2', 'R3', 'R4']);
+        expect(Object.keys(RAIL_CINEMATICS).sort()).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9']);
     });
 
     it('the intro cinematic declares a video', () => {
@@ -151,14 +154,14 @@ describe('content shape', () => {
         const documented = { ...base, flags: { ...base.flags, keptNotebook: true } };
         expect(resolveCinematicSteps('proceed_to_kiosk', documented)).toEqual(['C3-A', 'R3']);
 
-        expect(resolveCinematicSteps('follow_utility_map', base)).toEqual(['C4-A', 'R4']);
+        expect(resolveCinematicSteps('follow_utility_map', base)).toEqual(['C4-A', 'R4', 'R5']);
         const calledOnly = { ...base, flags: { ...base.flags, luciaCallback: true } };
-        expect(resolveCinematicSteps('follow_utility_map', calledOnly)).toEqual(['C4-B', 'R4']);
+        expect(resolveCinematicSteps('follow_utility_map', calledOnly)).toEqual(['C4-B', 'R4', 'R5']);
 
         expect(resolveCinematicSteps('give_up', base)).toEqual(['C4-C']);
-        expect(resolveCinematicSteps('walk_away', base)).toEqual(['C5-A']);
-        expect(resolveCinematicSteps('expose_profile', base)).toEqual(['C5-B']);
-        expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C']);
+        expect(resolveCinematicSteps('walk_away', base)).toEqual(['C5-A', 'R8']);
+        expect(resolveCinematicSteps('expose_profile', base)).toEqual(['C5-B', 'R9']);
+        expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C', 'R6', 'R7']);
         expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A']);
         expect(resolveCinematicSteps('rescue_fumble', base)).toEqual(['C6-B']);
         expect(resolveCinematicSteps('inspect_bottle', base)).toEqual([]);

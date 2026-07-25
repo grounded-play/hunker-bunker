@@ -19,12 +19,31 @@ export const ENEMY_STATS = Object.freeze({
     boss_corrupted_engineer: { maxHp: 16, speed: 1.25 }
 });
 
+export const ALIEN_MUTATIONS = Object.freeze({
+    SPORE_SNARE: { key: 'spore_snare', label: 'Volatile Spore-Snare', hpMult: 1.15, speedMult: 1.1 },
+    ADAPTIVE_CARAPACE: { key: 'adaptive_carapace', label: 'Adaptive Cryo-Carapace', hpMult: 1.35, speedMult: 0.9 },
+    TESLA_DRONE: { key: 'tesla_drone', label: 'Tesla Synapse Drone', hpMult: 1.2, speedMult: 1.25 }
+});
+
 // Returns { maxHp, speed } for a type, falling back to the provided base (the
 // engine passes its live SNAIL_MAX_HP / SNAIL_MOVE_SPEED).
-export function getEnemyStats(type, base = ENEMY_BASE) {
+export function getEnemyStats(type, base = ENEMY_BASE, mutation = null) {
     const override = ENEMY_STATS[type];
-    return {
-        maxHp: override?.maxHp ?? base.maxHp,
-        speed: override?.speed ?? base.speed
-    };
+    let maxHp = override?.maxHp ?? base.maxHp;
+    let speed = override?.speed ?? base.speed;
+
+    if (mutation && ALIEN_MUTATIONS[mutation]) {
+        const mut = ALIEN_MUTATIONS[mutation];
+        maxHp = Math.round(maxHp * mut.hpMult);
+        speed *= mut.speedMult;
+    }
+
+    return { maxHp, speed };
+}
+
+export function rollAlienMutation(random = Math.random, depthTier = 0) {
+    const chance = Math.min(0.8, 0.15 + depthTier * 0.15);
+    if (random() > chance) return null;
+    const keys = Object.keys(ALIEN_MUTATIONS);
+    return keys[Math.floor(random() * keys.length)];
 }

@@ -167,6 +167,7 @@ Key directories:
 | [docs/things-we-missed.md](docs/things-we-missed.md) | Audit of underplanned, unexplored, and dropped work. |
 | [docs/ux-and-game-feel-punch-list-2026-07-16.md](docs/ux-and-game-feel-punch-list-2026-07-16.md) | Gameplay and UX punch list for first-hour feel, objectives, combat, and navigation. |
 | [docs/steam-launch-readiness-master-plan.md](docs/steam-launch-readiness-master-plan.md) | Canonical Steam readiness plan and acceptance ladder. |
+| [docs/steam-deck-first-display-and-input-spec.md](docs/steam-deck-first-display-and-input-spec.md) | Canonical 1280×800 display, Steam Input, desktop parity, and mobile-removal requirements. |
 | [docs/steam-portal-copy.md](docs/steam-portal-copy.md) | Store-page copy and feature-claim guardrails. |
 | [docs/implementation_plan.md](docs/implementation_plan.md) | Historical multi-ending/faction implementation plan. |
 

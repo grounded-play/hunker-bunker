@@ -54,6 +54,7 @@ export function mapBrowserGamepad(gamepad, {
         interact: readButton(buttons, 0),
         reload: readButton(buttons, 2),
         ability: readButton(buttons, 3),
+        dash: readButton(buttons, 1),
         scan: readButton(buttons, 4) || readButton(buttons, 8),
         sprint: readButton(buttons, 10),
         pause: readButton(buttons, 9),

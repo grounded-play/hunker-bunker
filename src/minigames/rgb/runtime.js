@@ -1,8 +1,8 @@
 // RGB gray-box DOM runtime. Data-driven from content.js against the pure
 // state machine in state.js — mounts inside Hunker Bunker's existing
 // aspect-preserving #game-viewport stage (docs/mini-games/rgb/README.md),
-// not a second platform shell. Placeholder shapes per production-plan.md
-// Phase 2; final art/audio is a later pass.
+// not a second platform shell. Authored art, cinematics, ambience, SFX, music,
+// and voice all remain data-driven and use the main game's audio mix.
 
 import {
     CHAPTERS,
@@ -32,6 +32,8 @@ import {
 import { saveCheckpoint, recordEnding, recordGameOver, saveRgbSave } from './save.js';
 import { createActionRouter, ACTION_SETS } from '../../inputActions.js';
 import { mapBrowserGamepad } from '../../browserGamepad.js';
+import { AudioManager } from '../../audio.js';
+import { createRgbAudioController } from './audio.js';
 
 const NAV_REPEAT_MS = 220;
 const STICK_THRESHOLD = 0.5;
@@ -114,6 +116,7 @@ export function mountRgb({ root, save, storage, onExit }) {
     let resolvedGameOverId = null;
 
     const actionRouter = createActionRouter();
+    const rgbAudio = createRgbAudioController();
     actionRouter.setActionSet(ACTION_SETS.ARCHIVE);
 
     root.classList.remove('hidden');
@@ -127,6 +130,14 @@ export function mountRgb({ root, save, storage, onExit }) {
     root.parentElement?.appendChild(cinematicLayer);
 
     window.dispatchEvent(new CustomEvent('rgb-started'));
+
+    try {
+        AudioManager.stopAmbience({ stopMusic: true, musicFadeSeconds: 0.25 });
+        void rgbAudio.load();
+        rgbAudio.enterChapter(runState.checkpoint);
+    } catch {
+        // best-effort audio start
+    }
 
     function persist() {
         currentSave = snapshotRun(currentSave, runState);
@@ -154,17 +165,46 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const header = document.createElement('div');
         header.className = 'rgb-header';
+
+        const titleRow = document.createElement('div');
+        titleRow.className = 'rgb-header__title-row';
+
         const title = document.createElement('div');
         title.className = 'rgb-header__title';
         title.textContent = chapter.title;
+
+        const settingsBtn = document.createElement('button');
+        settingsBtn.type = 'button';
+        settingsBtn.className = 'calibrate-btn open-settings-btn rgb-settings-btn';
+        settingsBtn.setAttribute('aria-label', 'Settings');
+        settingsBtn.title = 'Settings';
+        settingsBtn.textContent = '⚙';
+        settingsBtn.addEventListener('click', () => {
+            const settingsPopup = document.getElementById('settings-popup');
+            if (settingsPopup) {
+                settingsPopup.classList.remove('hidden');
+                settingsPopup.setAttribute('aria-hidden', 'false');
+            }
+        });
+
+        titleRow.append(title, settingsBtn);
+
         const goal = document.createElement('div');
         goal.className = 'rgb-header__goal';
         goal.textContent = chapter.goal;
-        header.append(title, goal);
+
+        header.append(titleRow, goal);
         scene.append(header);
 
         const stage = document.createElement('div');
         stage.className = 'rgb-stage-layer';
+        if (chapter.bg) {
+            const bgImg = document.createElement('img');
+            bgImg.className = 'rgb-stage-bg';
+            bgImg.src = chapter.bg;
+            bgImg.alt = '';
+            stage.appendChild(bgImg);
+        }
         const ready = new Set(focusableHotspots().map((h) => h.id));
         chapter.hotspots.forEach((hotspot) => {
             const btn = document.createElement('button');
@@ -244,7 +284,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         dialogue.replaceChildren();
         for (const line of lines ?? []) {
             const p = document.createElement('p');
-            p.textContent = line;
+            p.innerHTML = `<span class="rgb-dialogue-prompt">❯</span> ${line}`;
             dialogue.appendChild(p);
         }
     }
@@ -299,11 +339,22 @@ export function mountRgb({ root, save, storage, onExit }) {
         resumeBtn.type = 'button';
         resumeBtn.textContent = 'RESUME';
         resumeBtn.addEventListener('click', () => { mode = 'scene'; render(); });
+        const settingsBtn = document.createElement('button');
+        settingsBtn.type = 'button';
+        settingsBtn.className = 'open-settings-btn';
+        settingsBtn.textContent = 'SETTINGS';
+        settingsBtn.addEventListener('click', () => {
+            const settingsPopup = document.getElementById('settings-popup');
+            if (settingsPopup) {
+                settingsPopup.classList.remove('hidden');
+                settingsPopup.setAttribute('aria-hidden', 'false');
+            }
+        });
         const exitBtn = document.createElement('button');
         exitBtn.type = 'button';
         exitBtn.textContent = 'EXIT SIMULATION';
         exitBtn.addEventListener('click', handleExit);
-        overlay.append(title, resumeBtn, exitBtn);
+        overlay.append(title, resumeBtn, settingsBtn, exitBtn);
         root.append(overlay);
         resumeBtn.focus();
     }
@@ -384,6 +435,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (!isHotspotAvailable(hotspot, runState, visited)) return;
 
         renderDialogueLines(hotspot.lines);
+        rgbAudio.hotspot(hotspot.id);
         const priorState = runState;
         runState = applyEffects(runState, hotspot.effects);
         visited.add(hotspot.id);
@@ -431,6 +483,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         currentSave = saveCheckpoint(currentSave, chapterId);
         persist();
         window.dispatchEvent(new CustomEvent('rgb-checkpoint', { detail: { checkpoint: chapterId } }));
+        rgbAudio.enterChapter(chapterId);
         mode = 'scene';
         render();
     }
@@ -443,6 +496,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         window.dispatchEvent(new CustomEvent('rgb-completed', {
             detail: { endingId, evidenceCount: runState.evidence.length }
         }));
+        rgbAudio.ending(endingId);
         mode = 'ending';
         render();
     }
@@ -605,6 +659,8 @@ export function mountRgb({ root, save, storage, onExit }) {
     return {
         destroy() {
             destroyed = true;
+            rgbAudio.destroy();
+            AudioManager.startMenuMusic();
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
             if (gamepadFrame) cancelAnimationFrame(gamepadFrame);

@@ -183,6 +183,11 @@ export function createSqliteBackend({ DatabaseSync, dbFilePath, logger = console
             );
             CREATE INDEX IF NOT EXISTS idx_inventories_steam ON inventories (steam_id64);
 
+            CREATE TABLE IF NOT EXISTS inventory_accounts (
+                steam_id64 TEXT PRIMARY KEY,
+                initialized_at INTEGER NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS leaderboard_entries (
                 board_name TEXT NOT NULL,
                 steam_id64 TEXT NOT NULL,
@@ -269,6 +274,7 @@ export function createSqliteBackend({ DatabaseSync, dbFilePath, logger = console
     function writeInventory(steamId64, items) {
         const sId = String(steamId64);
         transaction((handle) => {
+            handle.prepare('INSERT OR REPLACE INTO inventory_accounts (steam_id64, initialized_at) VALUES (?, ?)').run(sId, Date.now());
             handle.prepare('DELETE FROM inventories WHERE steam_id64 = ?').run(sId);
             const insert = handle.prepare(`
                 INSERT INTO inventories
@@ -441,7 +447,7 @@ export function createSqliteBackend({ DatabaseSync, dbFilePath, logger = console
         return {
             path: dbFilePath,
             storageBackend: 'sqlite',
-            envConfigured: Boolean(process.env.HB_DB_SQLITE_PATH || process.env.HB_SQLITE_DB_PATH),
+            envConfigured: Boolean(process.env.HB_DB_STORAGE_PATH || process.env.HB_DB_SQLITE_PATH || process.env.HB_SQLITE_DB_PATH),
             durable: true,
             initialized,
             exists: fs.existsSync(dbFilePath),
@@ -456,8 +462,11 @@ export function createSqliteBackend({ DatabaseSync, dbFilePath, logger = console
     function getMockInventory(steamId64) {
         ensureInitialized();
         const sId = String(steamId64);
-        const rows = ensureOpen().prepare('SELECT * FROM inventories WHERE steam_id64 = ? ORDER BY acquired_at ASC, item_id ASC').all(sId);
-        if (rows.length > 0) return rows.map(rowToInventory);
+        const account = ensureOpen().prepare('SELECT steam_id64 FROM inventory_accounts WHERE steam_id64 = ?').get(sId);
+        if (account) {
+            const rows = ensureOpen().prepare('SELECT * FROM inventories WHERE steam_id64 = ? ORDER BY acquired_at ASC, item_id ASC').all(sId);
+            return rows.map(rowToInventory);
+        }
 
         const seeded = [
             {

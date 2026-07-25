@@ -15,15 +15,19 @@ function getDbFilePath() {
 }
 
 function sqliteBackendEnabled() {
-    return String(process.env.HB_DB_BACKEND ?? '').trim().toLowerCase() === 'sqlite'
-        || Boolean(process.env.HB_DB_SQLITE_PATH || process.env.HB_SQLITE_DB_PATH);
+    const backendEnv = String(process.env.HB_DB_BACKEND ?? '').trim().toLowerCase();
+    if (backendEnv === 'json') return false;
+    if (backendEnv === 'sqlite' || process.env.HB_DB_SQLITE_PATH || process.env.HB_SQLITE_DB_PATH) return true;
+    return nodeSqliteAvailable();
 }
 
 function getSqliteDbFilePath() {
     if (process.env.HB_DB_SQLITE_PATH) return process.env.HB_DB_SQLITE_PATH;
     if (process.env.HB_SQLITE_DB_PATH) return process.env.HB_SQLITE_DB_PATH;
     if (process.env.HB_DB_STORAGE_PATH) {
-        return path.join(path.dirname(process.env.HB_DB_STORAGE_PATH), 'hunker-bunker.sqlite');
+        const dir = path.dirname(process.env.HB_DB_STORAGE_PATH);
+        const base = path.basename(process.env.HB_DB_STORAGE_PATH, path.extname(process.env.HB_DB_STORAGE_PATH));
+        return path.join(dir, `${base}.sqlite`);
     }
     return path.join(__dirname, 'data', 'hunker-bunker.sqlite');
 }
