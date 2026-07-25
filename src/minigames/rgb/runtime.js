@@ -4,7 +4,17 @@
 // not a second platform shell. Placeholder shapes per production-plan.md
 // Phase 2; final art/audio is a later pass.
 
-import { CHAPTERS, ENDINGS, GAME_OVERS, ITEMS, CONTENT_WARNING } from './content.js';
+import {
+    CHAPTERS,
+    ENDINGS,
+    GAME_OVERS,
+    ITEMS,
+    CONTENT_WARNING,
+    INTRO_CINEMATIC,
+    resolveCinematicSteps,
+    resolveCinematicAssets
+} from './content.js';
+import { playCinematicSequence } from './cinematicPlayer.js';
 import {
     createRunState,
     addItem,
@@ -95,7 +105,7 @@ export function mountRgb({ root, save, storage, onExit }) {
     let currentSave = save;
     let runState = hydrateRunState(currentSave);
     let visited = new Set();
-    let mode = 'warning'; // warning | scene | inventory | recap | pause | ending | gameover
+    let mode = 'warning'; // warning | scene | inventory | recap | pause | ending | gameover | cinematic
     let focusIndex = 0;
     let revealHeld = false;
     let lastNavAt = 0;
@@ -109,6 +119,12 @@ export function mountRgb({ root, save, storage, onExit }) {
     root.classList.remove('hidden');
     root.classList.add('rgb-root');
     root.replaceChildren();
+
+    // Cinematic overlay lives as a sibling of #rgb-root (not a child) so
+    // render()'s root.replaceChildren() never wipes it mid-playback.
+    const cinematicLayer = document.createElement('div');
+    cinematicLayer.className = 'rgb-cinematic hidden';
+    root.parentElement?.appendChild(cinematicLayer);
 
     window.dispatchEvent(new CustomEvent('rgb-started'));
 
@@ -127,6 +143,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
     function render() {
         root.replaceChildren();
+        if (mode === 'cinematic') return;
         if (mode === 'warning') return renderWarning();
         if (mode === 'ending') return renderEndingCard();
         if (mode === 'gameover') return renderGameOverCard();
@@ -189,6 +206,22 @@ export function mountRgb({ root, save, storage, onExit }) {
         applyFocus();
     }
 
+    function dismissWarning() {
+        const isFreshStart = currentSave.checkpoint === 'parking_lot'
+            && currentSave.run.inventory.length === 0;
+        if (isFreshStart) {
+            mode = 'cinematic';
+            render();
+            playCinematicSequence(cinematicLayer, [INTRO_CINEMATIC]).then(() => {
+                mode = 'scene';
+                render();
+            });
+        } else {
+            mode = 'scene';
+            render();
+        }
+    }
+
     function renderWarning() {
         const overlay = document.createElement('div');
         overlay.className = 'rgb-warning';
@@ -199,10 +232,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         btn.type = 'button';
         btn.className = 'rgb-warning__continue';
         btn.textContent = 'CONTINUE';
-        btn.addEventListener('click', () => {
-            mode = 'scene';
-            render();
-        });
+        btn.addEventListener('click', dismissWarning);
         overlay.append(body, btn);
         root.append(overlay);
         btn.focus();
@@ -354,31 +384,44 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (!isHotspotAvailable(hotspot, runState, visited)) return;
 
         renderDialogueLines(hotspot.lines);
+        const priorState = runState;
         runState = applyEffects(runState, hotspot.effects);
         visited.add(hotspot.id);
         persist();
 
-        if (!hotspot.advances) {
+        const proceed = () => {
+            if (!hotspot.advances) {
+                mode = 'scene';
+                render();
+                return;
+            }
+            const failure = gameOver(runState);
+            if (failure) {
+                showGameOver(failure);
+                return;
+            }
+            const ending = resolveOutcome(runState);
+            if (ending) {
+                showEnding(ending);
+                return;
+            }
+            const chapter = currentChapter();
+            if (chapter.next) {
+                transitionToChapter(chapter.next);
+                return;
+            }
+            mode = 'scene';
             render();
-            return;
-        }
+        };
 
-        const failure = gameOver(runState);
-        if (failure) {
-            showGameOver(failure);
-            return;
+        const cinematicSteps = resolveCinematicSteps(hotspot.id, priorState);
+        if (cinematicSteps.length > 0) {
+            mode = 'cinematic';
+            render();
+            playCinematicSequence(cinematicLayer, resolveCinematicAssets(cinematicSteps)).then(proceed);
+        } else {
+            proceed();
         }
-        const ending = resolveOutcome(runState);
-        if (ending) {
-            showEnding(ending);
-            return;
-        }
-        const chapter = currentChapter();
-        if (chapter.next) {
-            transitionToChapter(chapter.next);
-            return;
-        }
-        render();
     }
 
     function transitionToChapter(chapterId) {
@@ -446,11 +489,11 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (mode === 'warning') {
             if (code === 'Enter' || code === 'Space') {
                 event.preventDefault();
-                mode = 'scene';
-                render();
+                dismissWarning();
             }
             return;
         }
+        if (mode === 'cinematic') return;
         if (code === 'KeyQ') {
             revealHeld = true;
             render();
@@ -545,7 +588,7 @@ export function mountRgb({ root, save, storage, onExit }) {
                 mode = 'scene';
                 render();
             }
-            if (revealHeld !== actions.reveal) {
+            if (mode !== 'cinematic' && revealHeld !== actions.reveal) {
                 revealHeld = actions.reveal;
                 render();
             }
@@ -565,6 +608,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
             if (gamepadFrame) cancelAnimationFrame(gamepadFrame);
+            cinematicLayer.remove();
             root.replaceChildren();
             root.classList.add('hidden');
             root.classList.remove('rgb-root');
