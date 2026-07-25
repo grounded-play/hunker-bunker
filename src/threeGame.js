@@ -47,7 +47,8 @@ const PLAYER_COLORS = {
 };
 
 const PLAYER_SPRITESHEET_PATHS = {
-    SCOUT: '/Scout.walk_v4.png',
+    // v4 is back in anatomical review; keep the last packed fallback live.
+    SCOUT: '/Scout.full_v2.png',
     TANK: '/Tank.full_v2.png',
     ENGINEER: '/Eng.Full_v2.png'
 };
@@ -11655,8 +11656,15 @@ export class ThreeGame {
             this.clearGameplayInputState();
         }
 
-        // Check if player stepped on a hole
-        if (this.player && this.performanceProfile === 'gameplay') {
+        // Check if player stepped on a hole. Skipped entirely while inside a
+        // pocket — pockets have no holes of their own, but the pocket-aware
+        // getTileType redirect returns '#' for any out-of-bounds pocket-local
+        // lookup, and the surrounding surface-only hole-roll logic could
+        // otherwise misfire using the real-world coordinates that happen to
+        // still be under the player while underground (caught via the
+        // in-browser verification pass: this spuriously fired near the
+        // climb point, which sits close to the pocket's edge by design).
+        if (this.player && this.performanceProfile === 'gameplay' && !this.isInPocket) {
             if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
                 this.isPlayerFalling = true;
                 this._fallHoleX = Math.round(this.player.position.x);
@@ -14494,6 +14502,13 @@ export class ThreeGame {
         this.isInPocket = false;
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
+
+        // Without this, the player lands back exactly on the hole they fell
+        // through and the very next frame's "stepped on a hole" check
+        // immediately re-triggers the fall. Sealing it behind them (the same
+        // permanent-safe mechanic as the deliberate "PRESS E — FILL HOLE"
+        // bridging action) fixes that and reads narratively fine either way.
+        this.fillHoleAt(holeWorldX, holeWorldZ);
     }
 
     mountChunk(chunkX, chunkY) {

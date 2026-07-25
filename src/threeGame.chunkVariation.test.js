@@ -257,6 +257,9 @@ describe('enterPocket / exitPocket — fall resolution', () => {
             setInputEnabled: function (v) { this.inputEnabled = v; },
             createSnailDropPlacement: () => ({ worldX: 0, worldZ: 0, type: 'health', elevation: 0.2, offsetX: 0, offsetZ: 0, bobOffset: 0, rotation: 0, tiltX: 0, tiltZ: 0, scale: 0.8, shadowRadius: 0.24, collectLock: 0.34 }),
             createPickupInstance: () => new THREE.Object3D(),
+            filledHoleKeys: new Set(),
+            isHoleTile: () => true,
+            fillHoleAt: ThreeGame.prototype.fillHoleAt,
             ...overrides
         };
     }
@@ -294,6 +297,18 @@ describe('enterPocket / exitPocket — fall resolution', () => {
         expect(fakeThis.player.position.x).toBe(10);
         expect(fakeThis.player.position.z).toBe(20);
         expect(fakeThis.chunkMeshes.get('0,1').visible).toBe(true);
+    });
+
+    it('seals the hole behind the player so climbing out cannot immediately re-trigger the fall', () => {
+        // Caught by the in-browser verification pass: without sealing the
+        // hole, the player lands back exactly on it and the very next
+        // "stepped on a hole" check in updatePlayer re-triggers the fall.
+        const fakeThis = makeFakeThreeGameForEnter();
+        ThreeGame.prototype.enterPocket.call(fakeThis, 10, 20);
+
+        ThreeGame.prototype.exitPocket.call(fakeThis);
+
+        expect(fakeThis.filledHoleKeys.has(fakeThis.getWallKey(10, 20))).toBe(true);
     });
 });
 
