@@ -16,6 +16,11 @@
                 "menu_right" "#ActionMenuRight"
                 "menu_confirm" "#ActionMenuConfirm"
                 "menu_back" "#ActionMenuBack"
+                "menu_tab_left" "#ActionMenuTabLeft"
+                "menu_tab_right" "#ActionMenuTabRight"
+                "menu_page_left" "#ActionMenuPageLeft"
+                "menu_page_right" "#ActionMenuPageRight"
+                "pause" "#ActionPause"
             }
         }
         "gameplay"
@@ -33,6 +38,23 @@
                 "reload" "#ActionReload"
                 "ability" "#ActionAbility"
                 "scan" "#ActionScan"
+                "sprint" "#ActionSprint"
+                "pause" "#ActionPause"
+            }
+        }
+        "archive"
+        {
+            "title" "#ActionSetArchive"
+            "StickPadGyro"
+            {
+                "archive_focus" "#ActionArchiveFocus"
+            }
+            "Button"
+            {
+                "archive_confirm" "#ActionArchiveConfirm"
+                "archive_inventory" "#ActionArchiveInventory"
+                "archive_back" "#ActionArchiveBack"
+                "archive_reveal" "#ActionArchiveReveal"
                 "pause" "#ActionPause"
             }
         }
@@ -43,12 +65,17 @@
         {
             "ActionSetMenu" "Menu"
             "ActionSetGameplay" "Gameplay"
+            "ActionSetArchive" "Archive Simulation"
             "ActionMenuUp" "Up"
             "ActionMenuDown" "Down"
             "ActionMenuLeft" "Left"
             "ActionMenuRight" "Right"
             "ActionMenuConfirm" "Confirm"
             "ActionMenuBack" "Back"
+            "ActionMenuTabLeft" "Previous Tab"
+            "ActionMenuTabRight" "Next Tab"
+            "ActionMenuPageLeft" "Page Left"
+            "ActionMenuPageRight" "Page Right"
             "ActionMove" "Move"
             "ActionCamera" "Camera"
             "ActionFire" "Fire"
@@ -56,7 +83,13 @@
             "ActionReload" "Reload"
             "ActionAbility" "Ability"
             "ActionScan" "Scan"
+            "ActionSprint" "Sprint"
             "ActionPause" "Pause"
+            "ActionArchiveFocus" "Move Focus"
+            "ActionArchiveConfirm" "Inspect / Confirm"
+            "ActionArchiveInventory" "Inventory"
+            "ActionArchiveBack" "Back"
+            "ActionArchiveReveal" "Reveal Hotspots"
         }
     }
 }
