@@ -4,7 +4,8 @@
 // work in progress and mostly don't exist yet — it falls back to the still
 // end-frame image, holds it, then fades to the next step. A step with only
 // an image (no video declared at all) goes straight to the held-image path.
-// Clicking the layer skips the current step.
+// A dedicated control skips the current step; ordinary clicks no longer
+// destroy a clip while the player is trying to interact with the scene.
 
 import { AudioManager } from '../../audio.js';
 
@@ -29,7 +30,6 @@ function playStep(container, step) {
             event.preventDefault();
             finish();
         };
-        container.onclick = finish;
         window.addEventListener('keydown', onKey);
 
         const status = document.createElement('div');
@@ -37,7 +37,13 @@ function playStep(container, step) {
         status.textContent = step.label ?? 'ARCHIVE CINEMATIC // RESTORING SIGNAL';
         const skip = document.createElement('div');
         skip.className = 'rgb-cinematic__skip';
-        skip.textContent = 'PRESS ANY KEY TO SKIP';
+        skip.textContent = 'PRESS A KEY TO SKIP';
+        skip.setAttribute('role', 'button');
+        skip.tabIndex = 0;
+        skip.addEventListener('click', (event) => {
+            event.stopPropagation();
+            finish();
+        });
         container.append(status, skip);
 
         const showImage = () => {
@@ -53,6 +59,10 @@ function playStep(container, step) {
             img.src = step.image;
             img.alt = '';
             const imageSkip = skip.cloneNode(true);
+            imageSkip.addEventListener('click', (event) => {
+                event.stopPropagation();
+                finish();
+            });
             container.append(img, imageSkip);
             fallbackTimer = setTimeout(finish, IMAGE_HOLD_MS);
         };

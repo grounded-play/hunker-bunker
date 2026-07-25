@@ -90,7 +90,9 @@ export const INTRO_CINEMATIC = Object.freeze({
 export function resolveCinematicSteps(hotspotId, priorState) {
     switch (hotspotId) {
         case 'reply_to_lucia':
-            return ['C1-A'];
+            return ['C1-A', 'R1'];
+        case 'enter_now':
+            return ['C1-B', 'R1'];
         case 'badge_in':
             return priorState.flags.heardFullMessage ? ['R1'] : ['C1-B', 'R1'];
         case 'double_tap_honest':
@@ -134,9 +136,9 @@ export function resolveCinematicAssets(stepKeys) {
 export const CHAPTERS = Object.freeze({
     parking_lot: {
         id: 'parking_lot',
-        title: 'Chapter 1: Parking Lot and Intake',
-        bg: `${CINEMATIC_BASE}/../backgrounds/bg_rgb_parking_lot.png`,
-        goal: "Enter the shift with Elias's problem, tools, and deadline understood.",
+        title: 'Chapter 1: The Parking Lot',
+        bg: `${CINEMATIC_BASE}/../backgrounds/bg_sedan_interior.png`,
+        goal: 'Lucia is calling. Decide whether Elias answers or enters the shift now.',
         next: 'warehouse',
         hints: [
             "That empty bottle on the seat is the whole shift, before the shift even starts.",
@@ -145,61 +147,29 @@ export const CHAPTERS = Object.freeze({
         ],
         hotspots: [
             {
-                id: 'inspect_bottle',
-                label: 'Albuterol Bottle',
-                x: 180, y: 520, w: 90, h: 70,
-                once: true,
-                lines: ['Empty. Has been since Tuesday.'],
-                effects: { item: 'item_albuterol_bottle' }
-            },
-            {
-                id: 'compare_balance',
-                label: 'Phone Balance',
-                x: 340, y: 480, w: 90, h: 90,
-                once: true,
-                lines: ['Refill: $286.40. Balance: $19.12.', 'Benefits say active until 11:59 PM.'],
-                effects: { item: 'item_phone' }
-            },
-            {
-                id: 'listen_voicemail',
-                label: "Lucia's Message",
-                x: 500, y: 480, w: 90, h: 90,
-                once: true,
-                lines: ['"Hi Dad. Mom says don\'t forget the purple one."', '"I drew Robot 4A. I gave him shoes because he looks cold."']
-            },
-            {
-                id: 'inspect_notebook',
-                label: 'Calibration Notebook',
-                x: 660, y: 520, w: 90, h: 70,
-                once: true,
-                lines: ['The drawing is folded inside. Robot 4A, in sneakers.', 'Joint diagrams on the facing page.'],
-                effects: { item: 'item_calibration_notebook' }
-            },
-            {
                 id: 'reply_to_lucia',
-                label: 'Reply to Lucia',
-                x: 500, y: 600, w: 90, h: 50,
+                label: 'Answer Lucia',
+                x: 238, y: 590, w: 330, h: 72,
                 once: true,
-                requires: {},
-                lines: ['A short reply. It costs a few minutes he doesn\'t have.'],
-                effects: { choice: 'reply_to_lucia', timeCost: 1 }
+                choice: true,
+                lines: ['He answers. For seven seconds, the shift can wait.'],
+                effects: {
+                    items: ['item_albuterol_bottle', 'item_phone', 'item_calibration_notebook', 'item_temp_badge'],
+                    choice: 'reply_to_lucia',
+                    timeCost: 1
+                },
+                advances: true
             },
             {
-                id: 'speak_with_marisol',
-                label: 'Marisol',
-                x: 820, y: 560, w: 90, h: 90,
+                id: 'enter_now',
+                label: 'Enter Now',
+                x: 712, y: 590, w: 330, h: 72,
                 once: true,
-                lines: ['"You look like hell, Eli." "That\'s my good side."', 'She mentions the daycare pickup deadline, half to herself.'],
-                effects: { choice: 'speak_with_marisol' }
-            },
-            {
-                id: 'badge_in',
-                label: 'Badge Reader',
-                x: 1040, y: 500, w: 90, h: 90,
-                once: true,
-                requiresAllOf: ['inspect_bottle', 'compare_balance', 'listen_voicemail', 'inspect_notebook'],
-                lines: ['Scratched badge: TEMP CONTRACTOR.', 'Reader flashes red: ACCESS GRANTED.'],
-                effects: { item: 'item_temp_badge' },
+                choice: true,
+                lines: ['He locks the phone and steps into the heat.'],
+                effects: {
+                    items: ['item_albuterol_bottle', 'item_phone', 'item_calibration_notebook', 'item_temp_badge']
+                },
                 advances: true
             }
         ]

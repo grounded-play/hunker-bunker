@@ -56,6 +56,26 @@ describe('createBossFight / damage gating', () => {
         expect(createBossFight(null)).toBeNull();
         expect(createBossFight({ phases: [] })).toBeNull();
     });
+
+    it('always deals and records whole-number damage, even when the armor multiplier does not divide evenly', () => {
+        const fight = createBossFight(SIMPLE_DEF);
+
+        // 1 * 0.25 = 0.25 -> would leave a fractional hp/pip without rounding.
+        const chip = applyBossDamage(fight, 1);
+        expect(chip).toBe(1); // floored up to the minimum whole hit, not 0
+        expect(Number.isInteger(fight.hp)).toBe(true);
+        expect(fight.hp).toBe(99);
+
+        // 3 * 0.25 = 0.75 -> rounds to 1, not truncates to 0.
+        const chip2 = applyBossDamage(fight, 3);
+        expect(chip2).toBe(1);
+        expect(fight.hp).toBe(98);
+
+        // 10 * 0.25 = 2.5 -> rounds up to 3 (round-half-up), stays whole.
+        const chip3 = applyBossDamage(fight, 10);
+        expect(chip3).toBe(3);
+        expect(fight.hp).toBe(95);
+    });
 });
 
 describe('phase transitions', () => {

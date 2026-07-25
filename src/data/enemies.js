@@ -16,7 +16,11 @@ export const ENEMY_STATS = Object.freeze({
     boss_sporesnail: { maxHp: 75, speed: 1.3 },
     boss_corrupted_scout: { maxHp: 14, speed: 1.65 },
     boss_corrupted_tank: { maxHp: 18, speed: 1.05 },
-    boss_corrupted_engineer: { maxHp: 16, speed: 1.25 }
+    boss_corrupted_engineer: { maxHp: 16, speed: 1.25 },
+    fungal_spore_vent: { maxHp: 6, speed: 0.0 },
+    mycelium_stalker: { maxHp: 5, speed: 2.2 },
+    bio_charger: { maxHp: 8, speed: 2.5 },
+    spore_mortar: { maxHp: 5, speed: 1.0 }
 });
 
 export const ALIEN_MUTATIONS = Object.freeze({

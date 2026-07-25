@@ -69,13 +69,17 @@ describe('save codes', () => {
         const storage = makeStorage({
             hb_bank: '{"tech":5}',
             hb_profile_v1: '{"callsign":"GHOST"}',
+            hb_achievements_v1: '{"unlocked":{"quick_study":1}}',
+            hb_minigame_rgb_v1: '{"checkpoint":"warehouse","endingsSeen":["open_hand"]}',
             hunker_key_bindings: '{"moveUp":["KeyW","ArrowUp"]}',
             hunker_audio_mix_v1: '{"master":0.7}'
         });
 
-        expect(clearSaveData(storage)).toBe(2);
+        expect(clearSaveData(storage)).toBe(4);
         expect(storage.getItem('hb_bank')).toBeNull();
         expect(storage.getItem('hb_profile_v1')).toBeNull();
+        expect(storage.getItem('hb_achievements_v1')).toBeNull();
+        expect(storage.getItem('hb_minigame_rgb_v1')).toBeNull();
         expect(storage.getItem('hunker_key_bindings')).toBe('{"moveUp":["KeyW","ArrowUp"]}');
         expect(storage.getItem('hunker_audio_mix_v1')).toBe('{"master":0.7}');
     });

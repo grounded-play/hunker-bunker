@@ -37,28 +37,16 @@ export const CHAPTER_AMBIENCE = Object.freeze({
 });
 
 export const HOTSPOT_AUDIO = Object.freeze({
-    listen_voicemail: ['rgb_voice_lucia'],
-    reply_to_lucia: ['rgb_voice_elias_ch1'],
-    speak_with_marisol: ['rgb_voice_marisol_ch1'],
-    badge_in: ['rgb_sfx_ui_approved'],
     select_joint: ['rgb_sfx_4a_servo'],
     apply_pressure: ['rgb_sfx_4a_servo'],
     double_tap_honest: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
     double_tap_falsify: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
-    brace_for_impact: ['rgb_voice_elias_ch3'],
-    take_the_hit: ['rgb_voice_elias_ch3'],
-    demand_footage: ['rgb_voice_hr_ch3'],
     proceed_to_kiosk: ['rgb_sfx_ui_denied'],
-    scan_bottle: ['rgb_voice_kiosk_ch4', 'rgb_sfx_ui_denied'],
-    request_billing_agent: ['rgb_voice_kiosk_ch4'],
-    call_hr: ['rgb_voice_hr_ch3'],
-    call_lucia: ['rgb_voice_lucia'],
-    give_up: ['rgb_voice_lucia', 'rgb_sfx_ui_denied'],
-    read_terminal: ['rgb_voice_system_ch5'],
+    scan_bottle: ['rgb_sfx_ui_denied'],
+    give_up: ['rgb_sfx_ui_denied'],
     walk_away: ['rgb_sfx_ui_denied'],
     expose_profile: ['rgb_sfx_ui_approved'],
-    sever_trunk: ['rgb_voice_system_ch5', 'rgb_sfx_ui_denied'],
-    pull_alarm: ['rgb_voice_system_ch6'],
+    sever_trunk: ['rgb_sfx_ui_denied'],
     rescue_recenter: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
     rescue_fumble: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_denied']
 });
@@ -169,14 +157,15 @@ export function createRgbAudioController() {
             });
         },
         hotspot(hotspotId, lines = []) {
-            const authoredVoice = hasAuthoredVoice(hotspotId);
             for (const key of HOTSPOT_AUDIO[hotspotId] ?? []) {
                 play(key, {
                     bus: key.includes('_voice_') ? 'voice' : 'sfx',
                     volume: key.includes('_voice_') ? 0.9 : 0.65
                 });
             }
-            if (!authoredVoice) speakLines(hotspotId, lines);
+            // Speak the current on-screen copy. The previous chapter-level
+            // recordings repeated one fixed sentence across unrelated beats.
+            speakLines(hotspotId, lines);
         },
         ending(endingId) {
             if (endingId !== 'ashes_survival') return;

@@ -88,6 +88,7 @@ function applyEffects(runState, effects) {
     if (!effects) return runState;
     let next = runState;
     if (effects.item) next = addItem(next, effects.item);
+    for (const item of effects.items ?? []) next = addItem(next, item);
     if (effects.evidence) next = addEvidence(next, effects.evidence);
     if (effects.pain) next = setPain(next, effects.pain);
     if (effects.timeCost) next = advanceTime(next, effects.timeCost);
@@ -217,6 +218,11 @@ export function mountRgb({ root, save, storage, onExit }) {
             btn.type = 'button';
             btn.className = 'rgb-hotspot';
             btn.textContent = hotspot.label;
+            btn.style.setProperty('--rgb-x', hotspot.x ?? 0);
+            btn.style.setProperty('--rgb-y', hotspot.y ?? 0);
+            btn.style.setProperty('--rgb-w', hotspot.w ?? 180);
+            btn.style.setProperty('--rgb-h', hotspot.h ?? 56);
+            btn.classList.toggle('rgb-hotspot--choice', Boolean(hotspot.choice));
             const isDone = hotspot.once && visited.has(hotspot.id);
             const isReady = ready.has(hotspot.id);
             btn.classList.toggle('rgb-hotspot--done', Boolean(isDone));
@@ -226,13 +232,13 @@ export function mountRgb({ root, save, storage, onExit }) {
             btn.addEventListener('click', () => activateHotspot(hotspot));
             actionDeck.appendChild(btn);
         });
-        scene.append(actionDeck);
+        stage.append(actionDeck);
 
         const dialogue = document.createElement('div');
         dialogue.className = 'rgb-dialogue';
         dialogue.id = 'rgb-dialogue';
         dialogue.setAttribute('aria-live', 'polite');
-        scene.append(dialogue);
+        stage.append(dialogue);
 
         const footer = document.createElement('div');
         footer.className = 'rgb-footer';

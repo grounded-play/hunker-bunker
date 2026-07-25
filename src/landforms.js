@@ -338,6 +338,39 @@ function applyRuinsLandform(grid, random) {
     }
 }
 
+export function applyRingRoadSystem(grid, chunkX, chunkY, chunkSize = 19) {
+    const half = (chunkSize - 1) / 2;
+    for (let localY = 0; localY < chunkSize; localY++) {
+        for (let localX = 0; localX < chunkSize; localX++) {
+            const worldX = chunkX * chunkSize + (localX - half);
+            const worldZ = chunkY * chunkSize + (localY - half);
+            const r = Math.hypot(worldX, worldZ);
+            
+            // Concentric Ring Road radii: Inner (10), Mid (24), Outer (40)
+            const isInnerRing = Math.abs(r - 10) < 0.85;
+            const isMidRing = Math.abs(r - 24) < 0.95;
+            const isOuterRing = Math.abs(r - 40) < 1.1;
+            
+            // Radial avenues along cardinal & diagonal axes
+            const isRadialAvenue = Math.abs(worldX) <= 1 || Math.abs(worldZ) <= 1 || Math.abs(Math.abs(worldX) - Math.abs(worldZ)) <= 1;
+
+            if (isInnerRing || isMidRing || isOuterRing || isRadialAvenue) {
+                // Keep chunk borders intact if not a portal
+                if (localX > 0 && localX < chunkSize - 1 && localY > 0 && localY < chunkSize - 1) {
+                    // Seeded Biomechanical Door placement at ring/radial intersections
+                    const hash = Math.abs((worldX * 17 + worldZ * 31) % 19);
+                    if ((isInnerRing || isMidRing || isOuterRing) && hash === 0) {
+                        grid[localY][localX] = 'D'; // Biomechanical Door Gate
+                    } else {
+                        grid[localY][localX] = '.'; // Carve Ring Road Floor
+                    }
+                }
+            }
+        }
+    }
+    return grid;
+}
+
 export function applyLandform(grid, landform, random) {
     switch (landform) {
         case LANDFORMS.FIELD: applyFieldLandform(grid, random); break;

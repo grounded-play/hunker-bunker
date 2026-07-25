@@ -50,10 +50,16 @@ export function isWeakpointOpen(fight) {
 
 // Apply player damage. Outside a weakpoint window the boss is armored
 // (armoredDamageMult). Returns the damage actually dealt.
+//
+// Damage is always a whole number: armor/weakpoint multipliers produce
+// fractional values (e.g. 1 base * 0.25 armor = 0.25) that must not leak
+// into fight.hp or the on-screen damage pip. Any positive raw amount still
+// deals at least 1 — armor chips the boss, it doesn't zero the hit out.
 export function applyBossDamage(fight, amount = 0) {
     if (fight.defeated || amount <= 0) return 0;
     const mult = isWeakpointOpen(fight) ? 1 : (fight.def.armoredDamageMult ?? 1);
-    const dealt = Math.max(0, amount * mult);
+    const raw = amount * mult;
+    const dealt = raw > 0 ? Math.max(1, Math.round(raw)) : 0;
     fight.hp = Math.max(0, fight.hp - dealt);
     if (fight.hp <= 0) fight.defeated = true;
     return dealt;

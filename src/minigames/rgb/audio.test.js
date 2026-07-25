@@ -34,10 +34,10 @@ describe('RGB audio content', () => {
         }
     });
 
-    it('distinguishes authored voice from auto-spoken dialogue fallback', () => {
-        expect(hasAuthoredVoice('listen_voicemail')).toBe(true);
-        expect(hasAuthoredVoice('inspect_bottle')).toBe(false);
+    it('uses current-line generated speech instead of repeated chapter recordings', () => {
+        expect(hasAuthoredVoice('reply_to_lucia')).toBe(false);
+        expect(hasAuthoredVoice('scan_bottle')).toBe(false);
         expect(getDialogueSpeaker('scan_bottle')).toBe('KIOSK');
-        expect(getDialogueSpeaker('inspect_bottle')).toBe('ELIAS');
+        expect(getDialogueSpeaker('reply_to_lucia')).toBe('ELIAS');
     });
 });

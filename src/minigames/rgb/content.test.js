@@ -146,9 +146,8 @@ describe('content shape', () => {
     it('picks the branch clip that matches what the player actually did', () => {
         const base = createRunState();
 
-        expect(resolveCinematicSteps('badge_in', base)).toEqual(['C1-B', 'R1']);
-        const replied = { ...base, flags: { ...base.flags, heardFullMessage: true } };
-        expect(resolveCinematicSteps('badge_in', replied)).toEqual(['R1']);
+        expect(resolveCinematicSteps('enter_now', base)).toEqual(['C1-B', 'R1']);
+        expect(resolveCinematicSteps('reply_to_lucia', base)).toEqual(['C1-A', 'R1']);
 
         expect(resolveCinematicSteps('proceed_to_kiosk', base)).toEqual(['C3-B', 'R3']);
         const documented = { ...base, flags: { ...base.flags, keptNotebook: true } };
@@ -164,7 +163,7 @@ describe('content shape', () => {
         expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C', 'R6', 'R7']);
         expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A']);
         expect(resolveCinematicSteps('rescue_fumble', base)).toEqual(['C6-B']);
-        expect(resolveCinematicSteps('inspect_bottle', base)).toEqual([]);
+        expect(resolveCinematicSteps('read_diagram', base)).toEqual([]);
     });
 
     it('every game-over retryFrom points at a real hotspot id', () => {

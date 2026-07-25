@@ -44,14 +44,14 @@ test.describe('RGB archive simulation', () => {
         await page.locator('#rgb-root').waitFor({ state: 'visible' });
 
         await page.locator('.rgb-warning__continue').click();
+        await page.locator('.rgb-cinematic__skip').click();
         await expect(page.locator('.rgb-header__title')).toHaveText(/Chapter 1/);
 
-        const requiredBeats = ['Albuterol Bottle', 'Phone Balance', "Lucia's Message", 'Calibration Notebook'];
-        for (const label of requiredBeats) {
-            await page.locator('.rgb-hotspot', { hasText: label }).click();
-        }
-
-        await page.locator('.rgb-hotspot', { hasText: 'Badge Reader' }).click();
+        await expect(page.locator('.rgb-stage-bg')).toHaveAttribute('src', /bg_sedan_interior/);
+        await page.locator('.rgb-hotspot', { hasText: 'Answer Lucia' }).click();
+        await page.locator('.rgb-cinematic__skip').click();
+        await page.waitForTimeout(400);
+        await page.locator('.rgb-cinematic__skip').click();
         await expect(page.locator('.rgb-header__title')).toHaveText(/Chapter 2/);
 
         const savedCheckpoint = await page.evaluate((key) => {

@@ -108,4 +108,41 @@ describe('isHoleTile / mountChunk agreement', () => {
 
         expect(fakeThis.spawnHoleDangerOutline).toHaveBeenCalledTimes(callCount);
     });
+
+    it('allows filling hole tiles, marking them safe and updating state', () => {
+        const fakeThis = makeFakeHoleGame();
+        fakeThis.getWallKey = ThreeGame.prototype.getWallKey;
+        fakeThis.isHoleTile = ThreeGame.prototype.isHoleTile;
+        const hole = findFirstHole(fakeThis);
+
+        expect(fakeThis.isHoleTile(hole.x, hole.y)).toBe(true);
+
+        const filled = ThreeGame.prototype.fillHoleAt.call(fakeThis, hole.x, hole.y);
+
+        expect(filled).toBe(true);
+        expect(fakeThis.filledHoleKeys.has(`${hole.x},${hole.y}`)).toBe(true);
+        expect(fakeThis.isHoleTile(hole.x, hole.y)).toBe(false);
+    });
+
+    it('defaults enemy X-ray ghost to natural sprite material color instead of red injury tint', () => {
+        const fakeThis = {
+            scene: { add: vi.fn() },
+            transientEffects: []
+        };
+        const sprite = {
+            isSprite: true,
+            scale: { copy: vi.fn() },
+            position: { copy: vi.fn() },
+            material: {
+                map: {},
+                color: { getHex: () => 0xffffff }
+            }
+        };
+
+        ThreeGame.prototype.spawnEnemyXrayGhost.call(fakeThis, sprite);
+
+        expect(fakeThis.scene.add).toHaveBeenCalled();
+        const createdGhost = fakeThis.scene.add.mock.calls[0][0];
+        expect(createdGhost.material.color.getHex()).toBe(0xffffff);
+    });
 });

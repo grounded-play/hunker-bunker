@@ -2322,9 +2322,9 @@ function triggerDamageFlash(event) {
 
 // ---- Hero select stat pips ----
 const HERO_DISPLAY_STATS = {
-    SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE',  detail: 'SPRINT BURST // WIDE SALVAGE MAGNET', demoLabel: 'SCOUT DEMO // SPRINT' },
-    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BRACE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
-    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'NORMAL', detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
+    SCOUT:    { spdPips: 5, o2Pips: 4, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'HIGH',   lootLabel: 'WIDE',  detail: 'SPRINT BURST // WIDE SALVAGE MAGNET', demoLabel: 'SCOUT DEMO // SPRINT' },
+    TANK:     { spdPips: 2, o2Pips: 2, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'LOW',    lootLabel: 'SHORT', detail: 'BRACE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
+    ENGINEER: { spdPips: 3, o2Pips: 3, lootPips: 3, color: '#00e5ff', spdLabel: 'MED',    o2Label: 'MED',    lootLabel: 'MED',   detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
 };
 const HERO_STAT_TOTAL = 5;
 const heroStatValueTimers = new WeakMap();
@@ -4831,7 +4831,9 @@ const cutsceneImagePreloadCache = new Map();
 const cutsceneVideoPreloadCache = new Map();
 
 function getCutsceneVideoHost() {
-    return document.getElementById('game-container') ?? document.body;
+    return document.getElementById('game-viewport')
+        ?? document.getElementById('game-container')
+        ?? document.body;
 }
 
 function warmCutsceneImage(src) {
@@ -5658,6 +5660,17 @@ function devUnlockAllAchievements() {
     return `Unlocked all ${count} achievements locally & sent to Steam.`;
 }
 
+function devUnlockAllCodex() {
+    let count = 0;
+    for (const entry of CODEX_ENTRIES) {
+        discoverCodex(entry.id, { debugUnlocked: true });
+        count++;
+    }
+    updateMenuCommandStatuses();
+    if (!document.getElementById('codex-modal')?.classList.contains('hidden')) renderCodexModal();
+    return `Unlocked all ${count} codex intel records.`;
+}
+
 function devResetAchievements() {
     const state = achievementEngine.getState();
     state.unlocked = {};
@@ -5812,6 +5825,7 @@ function executeDevCommand(input) {
                 + '  unlock <key>        - Unlock specific achievement\n'
                 + '  unlock_all          - Unlock all achievements\n'
                 + '  reset_ach           - Clear local achievement unlocks\n'
+                + '  reset_save          - Confirm a full save, RGB, and achievement reset\n'
                 + '  rgb [chapter]       - Launch RGB minigame (parking_lot, warehouse, incident_review, medi_kiosk, server_room, sector_four)\n'
                 + '  resolution <preset> - Set target resolution preset (auto, deck, 720p, 1080p, 1440p, 4k)\n'
                 + '  uiscale <100-150>   - Set UI accessibility scale (%)\n'
@@ -5851,9 +5865,20 @@ function executeDevCommand(input) {
         case 'unlockall':
             result = devUnlockAllAchievements();
             break;
+        case 'codex_all':
+        case 'codexall':
+        case 'unlock_codex':
+            result = devUnlockAllCodex();
+            break;
         case 'reset_ach':
         case 'resetach':
             result = devResetAchievements();
+            break;
+        case 'reset_save':
+        case 'resetsave':
+            closeDevConsoleModal();
+            openFullSaveResetConfirm();
+            result = 'Full save reset confirmation opened.';
             break;
         case 'rgb':
         case 'minigame':
@@ -5977,13 +6002,25 @@ document.getElementById('dev-btn-unlock-ach')?.addEventListener('click', () => {
         logDevConsole('Please select an achievement from the dropdown.', 'error');
     }
 });
+document.getElementById('debug-unlock-all-ach')?.addEventListener('click', () => {
+    const res = devUnlockAllAchievements();
+    showBiomePrompt(`> DEBUG: ${res}`);
+});
+document.getElementById('debug-unlock-all-codex')?.addEventListener('click', () => {
+    const res = devUnlockAllCodex();
+    showBiomePrompt(`> DEBUG: ${res}`);
+});
 document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
     const res = devUnlockAllAchievements();
     logDevConsole(res, 'success');
 });
-document.getElementById('dev-btn-reset-ach')?.addEventListener('click', () => {
-    const res = devResetAchievements();
-    logDevConsole(res, 'warn');
+document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', () => {
+    const res = devUnlockAllCodex();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
+    closeDevConsoleModal();
+    openFullSaveResetConfirm();
 });
 document.getElementById('dev-btn-launch-rgb')?.addEventListener('click', () => {
     const res = devLaunchRgb();
@@ -6263,12 +6300,14 @@ saveDataCode?.addEventListener('focus', () => {
     });
 });
 
-openResetSaveBtn?.addEventListener('click', () => {
+function openFullSaveResetConfirm() {
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
     setResetSaveConfirmOpen(true);
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-});
+}
+
+openResetSaveBtn?.addEventListener('click', openFullSaveResetConfirm);
 
 resetSaveCancelBtn?.addEventListener('click', () => {
     setResetSaveConfirmOpen(false);
@@ -6734,10 +6773,12 @@ function closeFabricationModal() {
 }
 
 function refreshFabAccess() {
+    const fabCmd = document.getElementById('fabrication-command');
+    if (!fabCmd) return;
+    const activated = bankManager.isFoundryActivated();
+    fabCmd.classList.toggle('hidden', !activated);
     const btn = document.getElementById('fabrication-btn');
-    if (!btn) return;
-    document.getElementById('fabrication-command')?.classList.add('hidden');
-    btn.textContent = bankManager.isFoundryActivated() ? '◇ FAB BAY' : '◇ ACTIVATE FAB';
+    if (btn) btn.textContent = '◇ FAB BAY';
     updateMenuCommandStatuses();
 }
 
@@ -6778,6 +6819,39 @@ window.addEventListener('black-box-recovered', () => discoverCodex('black_box'))
 window.addEventListener('elevator-sequence-started', () => discoverCodex('elevator_down'));
 window.addEventListener('codex-discover', (e) => discoverCodex(e?.detail?.id, e?.detail?.metadata));
 
+function openCodexDetailModal(id) {
+    const entry = getCodexEntry(id);
+    if (!entry || !codexStore.has(id)) return;
+
+    const modal = document.getElementById('codex-detail-modal');
+    const kicker = document.getElementById('codex-detail-kicker');
+    const name = document.getElementById('codex-detail-name');
+    const img = document.getElementById('codex-detail-img');
+    const blurb = document.getElementById('codex-detail-blurb');
+
+    if (kicker) kicker.textContent = `❑ ${entry.category} INTEL RECORD`;
+    if (name) name.textContent = entry.name;
+    if (blurb) blurb.textContent = entry.blurb;
+    if (img) {
+        img.src = entry.image || '/favicon.png';
+        img.alt = entry.name;
+    }
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+    AudioManager?.play?.('ui_click', { volume: 0.6 });
+}
+
+function closeCodexDetailModal() {
+    const modal = document.getElementById('codex-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
 function renderCodexModal() {
     const grid = document.getElementById('codex-grid');
     const summary = document.getElementById('codex-summary');
@@ -6794,10 +6868,23 @@ function renderCodexModal() {
         for (const entry of CODEX_ENTRIES.filter((x) => x.category === category)) {
             const known = codexStore.has(entry.id);
             const card = document.createElement('div');
-            card.className = `codex-card${known ? '' : ' codex-card--locked'}`;
-            card.innerHTML = known
-                ? `<div class="codex-card__name">${entry.name}</div><div class="codex-card__blurb">${entry.blurb}</div>`
-                : `<div class="codex-card__name">??? — UNCATALOGUED</div><div class="codex-card__blurb">Encounter this in the field to recover its record.</div>`;
+            card.className = `codex-card${known ? ' codex-card--unlocked' : ' codex-card--locked'}`;
+            if (known) {
+                card.innerHTML = `
+                    <div class="codex-card__header">
+                      <div class="codex-card__name">${entry.name}</div>
+                      <span class="codex-card__icon" title="View Intel Dossier & Artwork">🔍</span>
+                    </div>
+                    <div class="codex-card__blurb">${entry.blurb}</div>
+                    <div class="codex-card__hint">CLICK TO VIEW INTEL DOSSIER & ARTWORK</div>
+                `;
+                card.addEventListener('click', () => openCodexDetailModal(entry.id));
+            } else {
+                card.innerHTML = `
+                    <div class="codex-card__name">??? — UNCATALOGUED</div>
+                    <div class="codex-card__blurb">Encounter this in the field to recover its record.</div>
+                `;
+            }
             section.appendChild(card);
         }
         grid.appendChild(section);
@@ -6814,7 +6901,9 @@ function closeCodexModal() {
 }
 document.getElementById('codex-btn')?.addEventListener('click', openCodexModal);
 document.getElementById('close-codex-modal')?.addEventListener('click', closeCodexModal);
+document.getElementById('close-codex-detail-modal')?.addEventListener('click', closeCodexDetailModal);
 setupClickOutside('codex-modal', closeCodexModal);
+setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
@@ -7829,7 +7918,7 @@ function getDoorImage(key) {
         'ENGINEER': '/door_cryo.png'
     };
     const SPECIAL_DOORS = {
-        'base': '/door.webp',
+        'base': '/door_biomech_v2.webp',
         'win': '/door_alien.png',
         'lose': '/door_rust.png'
     };
@@ -7845,11 +7934,12 @@ function getDoorImage(key) {
 
 function preloadDoorAssets() {
     const doorImages = [
-        '/door.webp',
-        '/door_scout.png',
-        '/door_heavy.png',
-        '/door_engineer.png',
-        '/door_medic.png',
+        '/door_biomech_v2.webp',
+        '/door_bio.png',
+        '/door_nuclear.png',
+        '/door_cryo.png',
+        '/door_alien.png',
+        '/door_rust.png',
         '/ship_wreckage.png'
     ];
 

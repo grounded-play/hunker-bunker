@@ -67,7 +67,7 @@
     <div id="debug-toolbar">
       <div id="fps-counter">FPS: --</div>
       <div id="steam-debug-status" class="steam-debug-status" data-state="unknown">STEAM: --</div>
-      <button id="toggle-typo" class="debug-btn">
+      <button id="toggle-typo" class="debug-btn" title="Toggle typography debug mode">
         <span style="font-size: var(--font-sm); color: var(--accent-secondary);">T</span>
         <span style="font-size: var(--font-xs); color: var(--text-muted); margin-left: 4px;">T</span>
       </button>
@@ -78,6 +78,8 @@
       <select id="debug-achievement-select" class="dev-select" title="Trigger Steam Achievement">
         <option value="">-- UNLOCK ACH --</option>
       </select>
+      <button id="debug-unlock-all-ach" class="dev-btn dev-btn--warn" title="Unlock All Achievements">★ ACH ALL</button>
+      <button id="debug-unlock-all-codex" class="dev-btn dev-btn--accent" title="Unlock All Codex Entries">❑ CODEX ALL</button>
     </div>
     <div id="cabinet-bezel"></div>
 
@@ -255,7 +257,7 @@
                   <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
                 </div>
                 <div class="hero-stat-compact-row">
-                  <span class="hero-stat-compact-label">O₂ USE</span>
+                  <span class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better" title="O₂ Consumption Rate — Lower value means suit oxygen drains slower">O₂ USE</span>
                   <div class="hero-stat-pips" id="hero-stat-o2"></div>
                   <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
                 </div>
@@ -399,6 +401,26 @@
           <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
         </div>
         <div id="codex-grid" class="codex-grid"></div>
+      </div>
+    </div>
+
+    <!-- Codex Entry Detail Modal -->
+    <div id="codex-detail-modal" class="modal codex-detail-modal hidden" aria-hidden="true">
+      <div class="modal-content codex-detail-content">
+        <div class="terminal-scanline"></div>
+        <button class="close-modal" id="close-codex-detail-modal" aria-label="Close codex entry">×</button>
+        <div class="codex-detail-header">
+          <div class="codex-detail-kicker" id="codex-detail-kicker">❑ FIELD INTEL RECORD</div>
+          <div class="codex-detail-title" id="codex-detail-name">CYBERSNAIL</div>
+          <div class="codex-detail-status">ENTRY RECOVERED // READ-ONLY DOSSIER</div>
+        </div>
+        <div class="codex-detail-body">
+          <div class="codex-detail-image-wrap">
+            <img id="codex-detail-img" class="codex-detail-img" src="" alt="Codex Intel Image" />
+            <div class="codex-detail-scanline"></div>
+          </div>
+          <div class="codex-detail-text" id="codex-detail-blurb"></div>
+        </div>
       </div>
     </div>
 
@@ -860,6 +882,11 @@
         <span class="prompt-text">RECOVER BLACK BOX</span>
       </div>
 
+      <div id="hole-hud-prompt" class="lore-hud-prompt hole-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">FILL HOLE</span>
+      </div>
+
       <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
         <span class="mission-progress-hud__icon">◈</span>
         <span id="mission-progress-text" class="mission-progress-hud__text">MISSION ACTIVE</span>
@@ -891,13 +918,14 @@
         </div>
         <div class="dev-console-quick-actions">
           <div class="dev-quick-group">
-            <span class="dev-group-label">STEAM ACHIEVEMENTS:</span>
+            <span class="dev-group-label">ACHIEVEMENTS &amp; CODEX:</span>
             <select id="dev-ach-dropdown" class="dev-select">
               <option value="">Select Achievement...</option>
             </select>
-            <button id="dev-btn-unlock-ach" class="dev-btn">UNLOCK</button>
-            <button id="dev-btn-unlock-all-ach" class="dev-btn dev-btn--warn">UNLOCK ALL</button>
-            <button id="dev-btn-reset-ach" class="dev-btn dev-btn--danger">RESET LOCAL ACH</button>
+            <button id="dev-btn-unlock-ach" class="dev-btn">UNLOCK ACH</button>
+            <button id="dev-btn-unlock-all-ach" class="dev-btn dev-btn--warn">UNLOCK ALL ACH</button>
+            <button id="dev-btn-unlock-all-codex" class="dev-btn dev-btn--accent">UNLOCK ALL CODEX</button>
+            <button id="dev-btn-reset-save" class="dev-btn dev-btn--danger">RESET SAVE</button>
           </div>
           <div class="dev-quick-group">
             <span class="dev-group-label">MINIGAMES &amp; SIMS:</span>
@@ -1246,7 +1274,8 @@
         <h2 class="modal-title confirm-title">RESET SAVE DATA</h2>
         <p class="confirm-copy">
           START A NEW GAME?<br>
-          ALL UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.
+          RGB PROGRESS, ALL ACHIEVEMENTS, UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.<br><br>
+          AUDIO, DISPLAY, AND CONTROL PREFERENCES WILL BE KEPT.
         </p>
         <div class="confirm-actions">
           <button class="abort-btn" id="reset-save-confirm">RESET SAVE</button>
