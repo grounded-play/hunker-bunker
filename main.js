@@ -5801,7 +5801,7 @@ function executeDevCommand(input) {
     const cmd = parts[0].toLowerCase();
     const arg = parts.slice(1).join(' ');
 
-    let result = '';
+    let result;
     let resultType = 'success';
 
     switch (cmd) {
