@@ -6,7 +6,8 @@ import {
     markUnlocked,
     recordEnding,
     recordGameOver,
-    saveCheckpoint
+    saveCheckpoint,
+    shouldUnlockRgb
 } from './save.js';
 
 function createMemoryStorage() {
@@ -104,5 +105,20 @@ describe('recordGameOver', () => {
         save = recordGameOver(save, 'crushed');
         save = recordGameOver(save, 'crushed');
         expect(save.gameOversSeen).toEqual(['crushed']);
+    });
+});
+
+describe('shouldUnlockRgb', () => {
+    it('unlocks once the Specimen 0047 codex entry is recorded', () => {
+        expect(shouldUnlockRgb({ specimen0047Recorded: true })).toBe(true);
+    });
+
+    it('stays locked without the Specimen 0047 codex entry', () => {
+        expect(shouldUnlockRgb({ specimen0047Recorded: false })).toBe(false);
+        expect(shouldUnlockRgb({})).toBe(false);
+    });
+
+    it('also unlocks after any completed ending, per the optional later-tuning note', () => {
+        expect(shouldUnlockRgb({ specimen0047Recorded: false, anyEndingCompleted: true })).toBe(true);
     });
 });

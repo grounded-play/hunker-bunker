@@ -89,3 +89,12 @@ export function recordGameOver(save, gameOverId) {
     if (save.gameOversSeen.includes(gameOverId)) return save;
     return { ...save, gameOversSeen: [...save.gameOversSeen, gameOverId] };
 }
+
+// Canonical gate: recover the Chen confession log + the cave stasis-box
+// record, which together record the unified Specimen 0047 codex entry.
+// Optional later tuning (also implemented here): a completed Hunker Bunker
+// ending unlocks RGB too, so players who miss the two records aren't
+// permanently excluded.
+export function shouldUnlockRgb({ specimen0047Recorded = false, anyEndingCompleted = false } = {}) {
+    return Boolean(specimen0047Recorded) || Boolean(anyEndingCompleted);
+}

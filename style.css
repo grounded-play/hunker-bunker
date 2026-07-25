@@ -5194,6 +5194,100 @@ body.mission-intro-active #game-container canvas {
 
 .mission-progress-hud.hidden { display: none !important; }
 
+/* --- Unified Objective Tracker --- */
+.objective-tracker {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.7);
+  pointer-events: auto;
+  font-family: 'Outfit', sans-serif;
+  z-index: 12075;
+}
+
+.objective-tracker.hidden {
+  display: none !important;
+}
+
+.objective-tracker__item {
+  box-sizing: border-box;
+  background: rgba(11, 13, 15, 0.94);
+  border: 1.5px solid rgba(255, 180, 0, 0.75);
+  border-radius: 6px;
+  box-shadow:
+    0 0 16px rgba(255, 180, 0, 0.16),
+    inset 0 0 6px rgba(255, 180, 0, 0.06);
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 1.8);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.5);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.objective-tracker__item--prio-high {
+  border-color: rgba(255, 200, 50, 0.95);
+}
+
+.objective-tracker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 1);
+}
+
+.objective-tracker__icon {
+  font-size: var(--font-xs);
+  color: rgba(255, 200, 50, 0.95);
+  margin-right: calc(var(--vu) * 0.5);
+}
+
+.objective-tracker__label {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  color: rgba(255, 200, 50, 0.95);
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.objective-tracker__progress {
+  font-size: var(--font-xs);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.8px;
+  background: rgba(255, 200, 50, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.objective-tracker__steps {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.3);
+  margin-top: calc(var(--vu) * 0.3);
+  padding-top: calc(var(--vu) * 0.4);
+  border-top: 1px dashed rgba(255, 200, 50, 0.25);
+}
+
+.objective-tracker__step {
+  font-size: var(--font-xxs);
+  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 0.8);
+  letter-spacing: 0.8px;
+}
+
+.objective-tracker__step--done {
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: line-through;
+}
+
+.objective-tracker__check {
+  font-size: 10px;
+  color: rgba(255, 200, 50, 0.9);
+}
+
 /* Persistent loop-state cue (T1): top-center, cyan, distinct from the amber
    mission HUD. Always shows the player's next step. */
 .loop-step-hud {
@@ -6817,6 +6911,48 @@ body.mission-intro-active #game-container canvas {
   font-size: var(--font-xs);
   line-height: 1.35;
   color: rgba(232, 239, 247, 0.82);
+}
+
+/* RGB archive-sim unlock announcement: a standalone menu-level toast, not
+   part of the in-run HUD notification stack, so it gets its own class
+   rather than riding achievement-toast/commentary-toast. */
+.rgb-unlock-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--vu) * 6);
+  transform: translate(-50%, calc(var(--vu) * 2));
+  z-index: 20000;
+  width: min(calc(var(--vu) * 46), 88vw);
+  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 1.8);
+  background: rgba(9, 9, 10, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-left: 3px solid #e11d2e;
+  border-radius: 4px;
+  box-shadow: 0 calc(var(--vu) * 1.2) calc(var(--vu) * 2.4) rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.rgb-unlock-toast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.rgb-unlock-toast__kicker {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #e11d2e;
+  text-transform: uppercase;
+}
+
+.rgb-unlock-toast__title {
+  margin-top: calc(var(--vu) * 0.35);
+  font-size: var(--font-sm);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffffff;
 }
 
 .commentary-toast {

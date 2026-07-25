@@ -1,4 +1,5 @@
 import { AudioManager } from './src/audio.js';
+import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
 import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
@@ -20,6 +21,7 @@ import * as featureFlags from './src/featureFlags.js';
 import { getGifDurationMs } from './src/gifDuration.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
+import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb } from './src/minigames/rgb/save.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
@@ -924,6 +926,48 @@ const state = {
 };
 // Exposed so threeGame.js can read live key bindings without a circular import.
 window.state = state;
+
+// RGB archive-sim unlock/save state (docs/mini-games/rgb/unlock-and-integration.md).
+let rgbSave = loadRgbSave(localStorage);
+let rgbUnlockToastPending = false;
+
+function unlockRgbIfEarned({ specimen0047Recorded = false, anyEndingCompleted = false } = {}) {
+    if (rgbSave.unlocked) return false;
+    if (!shouldUnlockRgb({ specimen0047Recorded, anyEndingCompleted })) return false;
+    rgbSave = markRgbUnlocked(rgbSave);
+    saveRgbSave(localStorage, rgbSave);
+    rgbUnlockToastPending = true;
+    window.dispatchEvent(new CustomEvent('rgb-unlocked'));
+    updateArchiveSimsMenuVisibility();
+    return true;
+}
+
+function updateArchiveSimsMenuVisibility() {
+    const command = document.getElementById('archive-sims-command');
+    if (command) command.classList.toggle('hidden', !rgbSave.unlocked);
+}
+
+function maybeShowRgbUnlockToast() {
+    if (!rgbUnlockToastPending) return;
+    rgbUnlockToastPending = false;
+
+    const toast = document.createElement('div');
+    toast.className = 'rgb-unlock-toast';
+    const kicker = document.createElement('div');
+    kicker.className = 'rgb-unlock-toast__kicker';
+    kicker.textContent = 'ARCHIVE SIMULATION RECOVERED';
+    const title = document.createElement('div');
+    title.className = 'rgb-unlock-toast__title';
+    title.textContent = "RGB: RIVERSIDE GLOBAL 'BOTICS";
+    toast.append(kicker, title);
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add('visible'));
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 400);
+    }, 5200);
+}
 
 const gearSpinState = {
     rotation: 0,
@@ -3149,6 +3193,7 @@ const ALL_LORE_KEYS = [
 ];
 
 function updateMenuCommandStatuses() {
+    updateArchiveSimsMenuVisibility();
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
@@ -3668,6 +3713,7 @@ window.addEventListener('lore-terminal-read', (event) => {
         const entry = getCodexEntry('specimen_0047');
         if (entry) showBiomePrompt(`> CODEX UPDATED: ${entry.name}`);
         updateMenuCommandStatuses();
+        unlockRgbIfEarned({ specimen0047Recorded: true });
     }
 });
 
@@ -3868,14 +3914,118 @@ function hideCampQuestHUD() {
     if (hud) hud.classList.add('hidden');
 }
 
-window.addEventListener('camp-quest-progress', (event) => {
-    const { label, current, target } = event?.detail ?? {};
-    if (!label) return;
-    showCampQuestHUD(`${label}: ${current ?? 0}/${target ?? 1}`);
+// ── Single-Grammar Objective Registry & HUD Tracker ───────────
+const objectiveRegistry = new ObjectiveRegistry();
+window.objectiveRegistry = objectiveRegistry;
+objectiveRegistry.bindWindowEvents(window);
+
+function renderObjectiveTracker(activeObjectives) {
+    const trackerEl = document.getElementById('objective-tracker');
+    if (!trackerEl) return;
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (!isGameplayPhase() || !isGameplayActive || isResettingRun || !activeObjectives || activeObjectives.length === 0) {
+        trackerEl.classList.add('hidden');
+        trackerEl.replaceChildren();
+        return;
+    }
+
+    trackerEl.replaceChildren();
+    activeObjectives.forEach((obj, index) => {
+        const item = document.createElement('div');
+        item.className = `objective-tracker__item ${index === 0 ? 'objective-tracker__item--prio-high' : ''}`;
+
+        const header = document.createElement('div');
+        header.className = 'objective-tracker__header';
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'objective-tracker__label';
+        labelSpan.innerHTML = `<span class="objective-tracker__icon">◈</span>${obj.label}`;
+
+        const progSpan = document.createElement('span');
+        progSpan.className = 'objective-tracker__progress';
+        progSpan.textContent = obj.target > 1 ? `${obj.current}/${obj.target}` : (obj.current >= obj.target ? '100%' : 'ACTIVE');
+
+        header.append(labelSpan, progSpan);
+        item.appendChild(header);
+
+        if (Array.isArray(obj.steps) && obj.steps.length > 0 && index === 0) {
+            const stepsDiv = document.createElement('div');
+            stepsDiv.className = 'objective-tracker__steps';
+            obj.steps.forEach((step) => {
+                const stepRow = document.createElement('div');
+                stepRow.className = `objective-tracker__step ${step.done ? 'objective-tracker__step--done' : ''}`;
+                const check = document.createElement('span');
+                check.className = 'objective-tracker__check';
+                check.textContent = step.done ? '✓' : '◇';
+                const label = document.createElement('span');
+                label.textContent = step.label;
+                stepRow.append(check, label);
+                stepsDiv.appendChild(stepRow);
+            });
+            item.appendChild(stepsDiv);
+        }
+
+        trackerEl.appendChild(item);
+    });
+
+    trackerEl.classList.remove('hidden');
+}
+
+objectiveRegistry.onChange((active) => {
+    renderObjectiveTracker(active);
 });
 
-window.addEventListener('camp-quest-complete', () => {
+window.addEventListener('camp-quest-progress', (event) => {
+    const { questId, label, current, target, compass } = event?.detail ?? {};
+    if (!label) return;
+    showCampQuestHUD(`${label}: ${current ?? 0}/${target ?? 1}`);
+    objectiveRegistry.trackObjective({
+        id: `camp_quest:${questId ?? label}`,
+        source: 'camp-quest',
+        label,
+        current: current ?? 0,
+        target: target ?? 1,
+        priority: 40,
+        compass: compass ?? null
+    });
+});
+
+window.addEventListener('camp-quest-complete', (event) => {
+    const { questId } = event?.detail ?? {};
     hideCampQuestHUD();
+    if (questId) {
+        objectiveRegistry.resolveObjective(`camp_quest:${questId}`, 'complete');
+    }
+});
+
+window.addEventListener('black-box-marker-active', (event) => {
+    const { x, z } = event?.detail ?? {};
+    objectiveRegistry.trackObjective({
+        id: 'story:black_box',
+        source: 'black-box',
+        label: 'RECOVER BLACK BOX',
+        current: 0,
+        target: 1,
+        priority: 10,
+        compass: Number.isFinite(x) && Number.isFinite(z) ? { x, z } : null
+    });
+});
+
+window.addEventListener('black-box-recovered', () => {
+    objectiveRegistry.resolveObjective('story:black_box', 'complete');
+});
+
+window.addEventListener('player-death', () => {
+    objectiveRegistry.clear();
 });
 
 // Persistent loop-state cue (T1): always shows the next action while in a run.
@@ -4218,6 +4368,8 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
             if (menu) menu.classList.remove('hidden');
             window.game?.setPerformanceProfile?.('menu');
             transitionToMenuMusic();
+            updateArchiveSimsMenuVisibility();
+            maybeShowRgbUnlockToast();
 
             const gameContainer = document.getElementById('game-container');
             const mapBox = document.querySelector('.map-box');
