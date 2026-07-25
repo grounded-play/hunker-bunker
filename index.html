@@ -191,6 +191,10 @@
             <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
             <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
           </div>
+          <div class="menu-command hidden" id="archive-sims-command">
+            <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
+            <div class="menu-command__status" id="archive-sims-command-status">RGB</div>
+          </div>
           <div class="menu-command menu-command--fab hidden" id="fabrication-command">
             <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
             <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
@@ -1139,6 +1143,20 @@
           <button class="abort-btn" id="confirm-yes">ABORT MISSION</button>
           <button class="confirm-secondary-btn" id="confirm-no">CANCEL</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Archive Simulations submenu (RGB and future unlockable stories) -->
+    <div id="archive-sims-modal" class="modal hidden">
+      <div class="modal-content archive-sims-modal-content">
+        <h2 class="modal-title">ARCHIVE SIMULATIONS</h2>
+        <div class="archive-sim-card">
+          <div class="archive-sim-card__title">RGB: RIVERSIDE GLOBAL 'BOTICS</div>
+          <div class="archive-sim-card__status" id="archive-sim-rgb-status">NOT STARTED</div>
+          <div class="archive-sim-card__endings" id="archive-sim-rgb-endings"></div>
+          <button class="start-btn" id="archive-sim-rgb-launch">LAUNCH</button>
+        </div>
+        <button class="abort-btn" id="archive-sims-modal-close">CLOSE</button>
       </div>
     </div>
 

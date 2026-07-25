@@ -11177,3 +11177,59 @@ button.archive-log-entry:active {
   font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 1.8));
   cursor: pointer;
 }
+
+/* ── Archive Sims (RGB) title-menu integration ──────────────────────── */
+.start-btn--archive-sims {
+  background: linear-gradient(180deg, rgba(225, 29, 46, 0.18) 0%, rgba(11, 13, 15, 0.94) 100%) !important;
+  border: 1px solid rgba(225, 29, 46, 0.5) !important;
+  color: #ffd7da !important;
+  box-shadow:
+    0 4px 0 rgba(110, 14, 22, 0.88),
+    inset 0 0 0 1px rgba(255, 215, 218, 0.1) !important;
+  margin-top: calc(var(--vu) * 0.8);
+  font-size: calc(var(--vu) * 1.18) !important;
+}
+
+.start-btn--archive-sims:hover {
+  background: linear-gradient(180deg, rgba(225, 29, 46, 0.3) 0%, rgba(11, 13, 15, 0.94) 100%) !important;
+  border-color: rgba(255, 120, 130, 0.86) !important;
+  color: #fff0f1 !important;
+}
+
+.archive-sims-modal-content {
+  text-align: center;
+}
+
+.archive-sim-card {
+  margin-top: calc(var(--vu) * 3);
+  padding: calc(var(--vu) * 2.5);
+  border: 1px solid rgba(225, 29, 46, 0.4);
+  border-radius: 8px;
+  background: rgba(5, 5, 10, 0.6);
+}
+
+.archive-sim-card__title {
+  font-size: var(--font-md);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffd7da;
+}
+
+.archive-sim-card__status {
+  margin-top: calc(var(--vu) * 1);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.archive-sim-card__endings {
+  margin-top: calc(var(--vu) * 0.8);
+  font-size: var(--font-xs);
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+}
+
+.archive-sim-card .start-btn {
+  margin-top: calc(var(--vu) * 2);
+}

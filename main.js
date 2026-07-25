@@ -22,6 +22,8 @@ import { getGifDurationMs } from './src/gifDuration.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb } from './src/minigames/rgb/save.js';
+import { mountRgb } from './src/minigames/rgb/runtime.js';
+import { ENDINGS as RGB_ENDINGS } from './src/minigames/rgb/content.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
@@ -968,6 +970,58 @@ function maybeShowRgbUnlockToast() {
         setTimeout(() => toast.remove(), 400);
     }, 5200);
 }
+
+let rgbHandle = null;
+
+const RGB_ENDING_ORDER = ['system_loop', 'ashes_survival', 'open_hand'];
+
+function openArchiveSimsModal() {
+    const modal = document.getElementById('archive-sims-modal');
+    if (!modal) return;
+    const statusEl = document.getElementById('archive-sim-rgb-status');
+    const endingsEl = document.getElementById('archive-sim-rgb-endings');
+    if (statusEl) {
+        statusEl.textContent = rgbSave.checkpoint === 'parking_lot' && rgbSave.endingsSeen.length === 0
+            ? 'NOT STARTED'
+            : `IN PROGRESS — ${rgbSave.checkpoint.replace(/_/g, ' ').toUpperCase()}`;
+    }
+    if (endingsEl) {
+        const seen = RGB_ENDING_ORDER.filter((id) => rgbSave.endingsSeen.includes(id));
+        endingsEl.textContent = seen.length === 0
+            ? 'No endings discovered yet.'
+            : `Endings discovered: ${seen.map((id) => RGB_ENDINGS[id].title).join(', ')}`;
+    }
+    modal.classList.remove('hidden');
+}
+
+function closeArchiveSimsModal() {
+    document.getElementById('archive-sims-modal')?.classList.add('hidden');
+}
+
+function launchRgb() {
+    closeArchiveSimsModal();
+    if (menu) menu.classList.add('hidden');
+    const root = document.getElementById('rgb-root');
+    if (!root) return;
+    rgbHandle = mountRgb({
+        root,
+        save: rgbSave,
+        storage: localStorage,
+        onExit: exitRgb
+    });
+}
+
+function exitRgb() {
+    rgbHandle?.destroy();
+    rgbHandle = null;
+    rgbSave = loadRgbSave(localStorage);
+    updateArchiveSimsMenuVisibility();
+    if (menu) menu.classList.remove('hidden');
+}
+
+document.getElementById('archive-sims-btn')?.addEventListener('click', openArchiveSimsModal);
+document.getElementById('archive-sims-modal-close')?.addEventListener('click', closeArchiveSimsModal);
+document.getElementById('archive-sim-rgb-launch')?.addEventListener('click', launchRgb);
 
 const gearSpinState = {
     rotation: 0,
