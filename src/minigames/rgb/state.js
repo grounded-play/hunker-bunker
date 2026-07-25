@@ -59,6 +59,11 @@ export function addEvidence(state, id) {
     return { ...state, evidence: [...state.evidence, id] };
 }
 
+export function addItem(state, itemId) {
+    if (state.inventory.includes(itemId)) return state;
+    return { ...state, inventory: [...state.inventory, itemId] };
+}
+
 export function setPain(state, pain) {
     if (!PAIN_LEVELS.includes(pain)) {
         throw new Error(`Unknown pain level: ${pain}`);

@@ -4,6 +4,7 @@ import {
     createRunState,
     advanceTime,
     addEvidence,
+    addItem,
     setPain,
     applyChoice,
     completeCalibration,
@@ -81,6 +82,15 @@ describe('addEvidence', () => {
 
     it('rejects unknown evidence ids', () => {
         expect(() => addEvidence(createRunState(), 'not_real')).toThrow();
+    });
+});
+
+describe('addItem', () => {
+    it('adds a persistent story item to the inventory exactly once', () => {
+        let state = createRunState();
+        state = addItem(state, 'item_calibration_notebook');
+        state = addItem(state, 'item_calibration_notebook');
+        expect(state.inventory).toEqual(['item_calibration_notebook']);
     });
 });
 
