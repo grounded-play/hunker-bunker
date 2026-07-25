@@ -112,3 +112,57 @@ describe('clearLoadedChunksForRunReset — stale landform cache', () => {
         expect(fakeThis._chunkTemplateCache.size).toBe(0);
     });
 });
+
+describe('generatePocket — per-hole, per-run pocket layout', () => {
+    // POCKET_CELL_COUNT is 5 (an odd cell-count, like the real chunk carve's
+    // chunkCellCount=9) so the DFS start cell lands exactly on the grid's
+    // true center — see the worked arithmetic in this task's implementation
+    // note. Grid size = 5*2+1 = 11.
+    function makePocketFakeGame(runEntropy) {
+        return {
+            runEntropy,
+            globalSeedOffset: 0,
+            pocketCache: new Map(),
+            hashTile: ThreeGame.prototype.hashTile,
+            createSeededRandom: ThreeGame.prototype.createSeededRandom,
+            carveCell: ThreeGame.prototype.carveCell,
+            carvePassage: ThreeGame.prototype.carvePassage,
+            shuffleDirections: ThreeGame.prototype.shuffleDirections,
+            getWallKey: ThreeGame.prototype.getWallKey
+        };
+    }
+
+    it('is deterministic for a fixed runEntropy and hole location', () => {
+        const gameA = makePocketFakeGame(42);
+        const gameB = makePocketFakeGame(42);
+        const pocketA = ThreeGame.prototype.generatePocket.call(gameA, 10, 20);
+        const pocketB = ThreeGame.prototype.generatePocket.call(gameB, 10, 20);
+        expect(pocketA.grid.map((r) => r.join('')).join('\n'))
+            .toBe(pocketB.grid.map((r) => r.join('')).join('\n'));
+        expect(pocketA.climbPoint).toEqual(pocketB.climbPoint);
+    });
+
+    it('differs across runEntropy for the same hole location', () => {
+        const gameA = makePocketFakeGame(1);
+        const gameB = makePocketFakeGame(999999);
+        const pocketA = ThreeGame.prototype.generatePocket.call(gameA, 10, 20);
+        const pocketB = ThreeGame.prototype.generatePocket.call(gameB, 10, 20);
+        expect(pocketA.grid.map((r) => r.join('')).join('\n'))
+            .not.toBe(pocketB.grid.map((r) => r.join('')).join('\n'));
+    });
+
+    it('caches by hole location, returning the same pocket on a second fall', () => {
+        const game = makePocketFakeGame(7);
+        const first = ThreeGame.prototype.generatePocket.call(game, 5, 5);
+        const second = ThreeGame.prototype.generatePocket.call(game, 5, 5);
+        expect(second).toBe(first); // same object identity, not just equal content
+    });
+
+    it('places the player-entry center cell as open floor, and a valid, distinct climb point', () => {
+        const game = makePocketFakeGame(3);
+        const pocket = ThreeGame.prototype.generatePocket.call(game, 0, 0);
+        expect(pocket.grid[pocket.centerCell.y][pocket.centerCell.x]).toBe('.');
+        expect(pocket.grid[pocket.climbPoint.y][pocket.climbPoint.x]).toBe('.');
+        expect(pocket.climbPoint).not.toEqual(pocket.centerCell);
+    });
+});

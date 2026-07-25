@@ -33,7 +33,7 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
-import { LANDFORMS, pickLandform, applyLandform, applyRingRoadSystem, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS } from './landforms.js';
+import { LANDFORMS, pickLandform, applyLandform, applyRingRoadSystem, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
@@ -210,6 +210,7 @@ const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
 const FALL_DAMAGE_BASE = 2;
+const POCKET_CELL_COUNT = 5; // odd cell-count, matches chunkCellCount's exact-center property. Grid size = 5*2+1 = 11.
 const WALL_HP_DAMAGED = 5;
 const WALL_HP_STANDARD = 8;
 const WALL_HP_HAZARD = 11;
@@ -749,6 +750,7 @@ export class ThreeGame {
         this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
         this.cameraPlanarRight = new THREE.Vector2(-this.cameraPlanarForward.y, this.cameraPlanarForward.x).normalize();
         this.chunkCache = new Map();
+        this.pocketCache = new Map();
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
@@ -19249,6 +19251,52 @@ export class ThreeGame {
             this._chunkRoomTypeCache.set(key, classifyChunkCells(grid, this.chunkSize));
         }
         return this.chunkCache.get(key);
+    }
+
+    generatePocket(holeWorldX, holeWorldZ) {
+        if (!this.pocketCache) this.pocketCache = new Map();
+        const key = this.getWallKey(holeWorldX, holeWorldZ);
+        if (this.pocketCache.has(key)) return this.pocketCache.get(key);
+
+        const cellCount = POCKET_CELL_COUNT;
+        const size = cellCount * 2 + 1;
+        const grid = Array(size).fill(null).map(() => Array(size).fill('#'));
+        const random = this.createSeededRandom(
+            (this.hashTile(holeWorldX, holeWorldZ) ^ this.runEntropy) >>> 0
+        );
+        const startCell = Math.floor(cellCount / 2); // cell space
+        const stack = [[startCell, startCell]];
+        const visited = new Set([`${startCell},${startCell}`]);
+
+        this.carveCell(grid, startCell, startCell);
+
+        while (stack.length > 0) {
+            const [cellX, cellY] = stack[stack.length - 1];
+            const neighbors = this.shuffleDirections([
+                { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
+            ], random);
+            let carved = false;
+            for (const { dx, dy } of neighbors) {
+                const nextX = cellX + dx;
+                const nextY = cellY + dy;
+                const nKey = `${nextX},${nextY}`;
+                // Bound against cellCount (cell space), not size (grid space)
+                // — matches buildChunk's own DFS bound exactly.
+                if (nextX < 0 || nextX >= cellCount || nextY < 0 || nextY >= cellCount || visited.has(nKey)) continue;
+                this.carvePassage(grid, cellX, cellY, nextX, nextY);
+                visited.add(nKey);
+                stack.push([nextX, nextY]);
+                carved = true;
+                break;
+            }
+            if (!carved) stack.pop();
+        }
+
+        const centerCell = { x: startCell * 2 + 1, y: startCell * 2 + 1 }; // grid space
+        const climbPoint = findFarthestFloorCell(grid, centerCell.x, centerCell.y) ?? centerCell;
+        const pocket = { grid, size, centerCell, climbPoint: { x: climbPoint.x, y: climbPoint.y } };
+        this.pocketCache.set(key, pocket);
+        return pocket;
     }
 
     buildChunk(chunkX, chunkY) {
