@@ -32,7 +32,7 @@
   --scrollbar-track: rgba(6, 10, 12, 0.86);
   --scrollbar-thumb: rgba(255, 159, 28, 0.52);
   --scrollbar-thumb-hover: rgba(46, 196, 182, 0.72);
-  --design-width: 177;
+  --design-width: 160;
   --design-height: 100;
 }
 
@@ -126,8 +126,8 @@ body {
   --game-right-gutter: clamp(18px, 2.5vw, 56px);
   --game-top-gutter: clamp(54px, 8vh, 86px);
   --game-bottom-gutter: clamp(20px, 4vh, 48px);
-  width: min(var(--vw-actual, 100vw), calc(var(--vh-actual, 100dvh) * 177 / 100));
-  height: min(var(--vh-actual, 100dvh), calc(var(--vw-actual, 100vw) * 100 / 177));
+  width: min(var(--vw-actual, 100vw), calc(var(--vh-actual, 100dvh) * 160 / 100));
+  height: min(var(--vh-actual, 100dvh), calc(var(--vw-actual, 100vw) * 100 / 160));
   background: var(--bg-dark);
   position: relative;
   overflow: hidden;

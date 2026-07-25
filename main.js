@@ -21,6 +21,7 @@ import { getGifDurationMs } from './src/gifDuration.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
+import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
@@ -102,8 +103,11 @@ const pickupCountByType = {
     coin: document.getElementById('pickup-count-coin')
 };
 
+// Canonical Steam Deck-first stage: 16:10, authored against 1280x800 logical
+// pixels (docs/steam-deck-first-display-and-input-spec.md). --vu is 1/100 of
+// stage height, so one logical 1280x800 pixel is --vu / 8.
 const DESIGN_STAGE = {
-    width: 177,
+    width: 160,
     height: 100
 };
 const AUDIO_MIX_STORAGE_KEY = 'hunker_audio_mix_v1';
@@ -4727,6 +4731,18 @@ function syncStageMetrics() {
 
     const unit = Math.min(rect.width / DESIGN_STAGE.width, rect.height / DESIGN_STAGE.height);
     gameViewport.style.setProperty('--vu', `${unit}px`);
+
+    // Expose the canonical 1280x800 stage transform for logical-pixel
+    // consumers (archive sims, pointer mapping, safe-frame checks).
+    const stage = computeStageTransform(width, height);
+    window.hbStage = stage;
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty('--stage-scale', String(stage.scale));
+    rootStyle.setProperty('--stage-x', `${stage.offsetX}px`);
+    rootStyle.setProperty('--stage-y', `${stage.offsetY}px`);
+    rootStyle.setProperty('--stage-w', `${stage.stageWidth}px`);
+    rootStyle.setProperty('--stage-h', `${stage.stageHeight}px`);
+    rootStyle.setProperty('--stage-px', `${stage.stageWidth / STAGE_WIDTH}px`);
 }
 
 function refreshGameLayout() {
