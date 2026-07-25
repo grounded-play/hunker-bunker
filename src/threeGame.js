@@ -753,6 +753,8 @@ export class ThreeGame {
         this.cameraPlanarRight = new THREE.Vector2(-this.cameraPlanarForward.y, this.cameraPlanarForward.x).normalize();
         this.chunkCache = new Map();
         this.pocketCache = new Map();
+        this.pocketGroups = new Map();
+        this.isInPocket = false;
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
@@ -10816,6 +10818,9 @@ export class ThreeGame {
         this.virtualInput.z = 0;
         this.isMoving = false;
         this.isPlayerFalling = false;
+        this.isInPocket = false;
+        this._pocketHoleX = null;
+        this._pocketHoleZ = null;
         if (this.player) {
             this.player.scale.set(1, 1, 1);
             this.player.rotation.set(0, 0, 0);
@@ -11619,7 +11624,7 @@ export class ThreeGame {
                 
                 if (this.player.position.y <= -2.5) {
                     this.isPlayerFalling = false;
-                    this.takeDamage(999, 'abyss');
+                    this.enterPocket(this._fallHoleX, this._fallHoleZ);
                 }
             }
             return;
@@ -11633,6 +11638,8 @@ export class ThreeGame {
         if (this.player && this.performanceProfile === 'gameplay') {
             if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
                 this.isPlayerFalling = true;
+                this._fallHoleX = Math.round(this.player.position.x);
+                this._fallHoleZ = Math.round(this.player.position.z);
                 this.setInputEnabled(false);
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
@@ -14420,6 +14427,52 @@ export class ThreeGame {
 
         this.pocketGroups.set(key, group);
         return group;
+    }
+
+    enterPocket(holeWorldX, holeWorldZ) {
+        const damage = this.resolveFallDamage();
+        this.takeDamage(damage, 'fall');
+
+        const pocketChunkX = Math.floor(holeWorldX / this.chunkSize);
+        const pocketChunkY = Math.floor(holeWorldZ / this.chunkSize);
+        const surfaceGroup = this.chunkMeshes?.get(`${pocketChunkX},${pocketChunkY}`);
+        if (surfaceGroup) surfaceGroup.visible = false;
+
+        const group = this.mountPocket(holeWorldX, holeWorldZ);
+        if (this.scene && group.parent !== this.scene) this.scene.add(group);
+
+        this._pocketHoleX = holeWorldX;
+        this._pocketHoleZ = holeWorldZ;
+        this.isInPocket = true;
+
+        if (this.player) {
+            this.player.position.x = holeWorldX;
+            this.player.position.z = holeWorldZ;
+            this.player.position.y = POCKET_WORLD_Y;
+            this.player.scale.set(1, 1, 1);
+            this.player.rotation.set(0, 0, 0);
+        }
+        this.setInputEnabled(true);
+    }
+
+    exitPocket() {
+        if (!this.isInPocket) return;
+        const holeWorldX = this._pocketHoleX;
+        const holeWorldZ = this._pocketHoleZ;
+
+        const chunkX = Math.floor(holeWorldX / this.chunkSize);
+        const chunkY = Math.floor(holeWorldZ / this.chunkSize);
+        const surfaceGroup = this.chunkMeshes?.get(`${chunkX},${chunkY}`);
+        if (surfaceGroup) surfaceGroup.visible = true;
+
+        if (this.player) {
+            this.player.position.x = holeWorldX;
+            this.player.position.z = holeWorldZ;
+            this.player.position.y = 0;
+        }
+        this.isInPocket = false;
+        this._pocketHoleX = null;
+        this._pocketHoleZ = null;
     }
 
     mountChunk(chunkX, chunkY) {
@@ -18901,7 +18954,7 @@ export class ThreeGame {
     }
 
     canOccupyPosition(x, z) {
-        if (this.crashedShips) {
+        if (this.crashedShips && !this.isInPocket) {
             for (const ship of this.crashedShips) {
                 if (!ship.isVisible) continue;
                 // 1. Ship collision
@@ -19027,6 +19080,13 @@ export class ThreeGame {
     getTileType(worldX, worldY) {
         const tileX = Math.round(worldX);
         const tileY = Math.round(worldY);
+        if (this.isInPocket) {
+            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            if (!pocket) return '#';
+            const localX = tileX - this._pocketHoleX + pocket.centerCell.x;
+            const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
+            return pocket.grid[localY]?.[localX] ?? '#';
+        }
         if (this.bunkerBlastDoorState && tileY === 15 && tileX >= 6 && tileX <= 11) {
             return this.bunkerBlastDoorState.open ? '.' : '#';
         }
@@ -19042,6 +19102,13 @@ export class ThreeGame {
     getCachedTileType(worldX, worldY) {
         const tileX = Math.round(worldX);
         const tileY = Math.round(worldY);
+        if (this.isInPocket) {
+            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            if (!pocket) return '#';
+            const localX = tileX - this._pocketHoleX + pocket.centerCell.x;
+            const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
+            return pocket.grid[localY]?.[localX] ?? '#';
+        }
         if (this.bunkerBlastDoorState && tileY === 15 && tileX >= 6 && tileX <= 11) {
             return this.bunkerBlastDoorState.open ? '.' : '#';
         }

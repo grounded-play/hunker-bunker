@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
 import { LANDFORMS } from './landforms.js';
@@ -192,7 +192,7 @@ describe('mountPocket — pocket geometry mounting', () => {
             configureWallMesh: ThreeGame.prototype.configureWallMesh,
             getWallMaxHp: () => 8,
             createSnailDropPlacement: () => ({ worldX: 0, worldZ: 0, type: 'health', elevation: 0.2, offsetX: 0, offsetZ: 0, bobOffset: 0, rotation: 0, tiltX: 0, tiltZ: 0, scale: 0.8, shadowRadius: 0.24, collectLock: 0.34 }),
-            createPickupInstance: () => ({ userData: {}, position: { set: () => {} } })
+            createPickupInstance: () => new THREE.Object3D()
         };
     }
 
@@ -210,5 +210,123 @@ describe('mountPocket — pocket geometry mounting', () => {
         const first = ThreeGame.prototype.mountPocket.call(fakeThis, 3, 3);
         const second = ThreeGame.prototype.mountPocket.call(fakeThis, 3, 3);
         expect(second).toBe(first);
+    });
+});
+
+describe('enterPocket / exitPocket — fall resolution', () => {
+    function makeFakeThreeGameForEnter(overrides = {}) {
+        const scene = { add: () => {}, remove: () => {} };
+        return {
+            scene,
+            player: { position: { x: 10, y: -2.5, z: 20 }, scale: new THREE.Vector3(1, 1, 1), rotation: new THREE.Euler() },
+            playerVitals: { hp: 3, maxHp: 3 },
+            bank: { getState: () => ({ tier2Unlocks: {} }) },
+            isInPocket: false,
+            pocketCache: new Map(),
+            pocketGroups: new Map(),
+            chunkMeshes: new Map([['0,1', { visible: true }]]),
+            chunkSize: 19,
+            runEntropy: 55,
+            globalSeedOffset: 0,
+            wallHeight: 2,
+            wallGeometry: new THREE.BoxGeometry(1, 2, 1),
+            wallMaterial: new THREE.MeshBasicMaterial(),
+            floorGeometry: new THREE.PlaneGeometry(1, 1),
+            floorMaterial: new THREE.MeshBasicMaterial(),
+            ventGeometry: new THREE.BoxGeometry(0.48, 0.48, 0.06),
+            ventMaterial: new THREE.MeshBasicMaterial(),
+            hashTile: ThreeGame.prototype.hashTile,
+            createSeededRandom: ThreeGame.prototype.createSeededRandom,
+            carveCell: ThreeGame.prototype.carveCell,
+            carvePassage: ThreeGame.prototype.carvePassage,
+            shuffleDirections: ThreeGame.prototype.shuffleDirections,
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getWallMaxHp: () => 8,
+            configureWallMesh: ThreeGame.prototype.configureWallMesh,
+            generatePocket: ThreeGame.prototype.generatePocket,
+            mountPocket: ThreeGame.prototype.mountPocket,
+            resolveFallDamage: () => 2,
+            takeDamage: ThreeGame.prototype.takeDamage,
+            iFrameTimer: 0,
+            isPlayerDead: false, godMode: false, cinematicLock: false, _abilityImmune: false,
+            missionState: { status: 'active' },
+            showDirectionalHitIndicator: () => {},
+            triggerCameraShake: () => {},
+            emitHealthState: () => {},
+            handleDeath: () => {},
+            setInputEnabled: function (v) { this.inputEnabled = v; },
+            createSnailDropPlacement: () => ({ worldX: 0, worldZ: 0, type: 'health', elevation: 0.2, offsetX: 0, offsetZ: 0, bobOffset: 0, rotation: 0, tiltX: 0, tiltZ: 0, scale: 0.8, shadowRadius: 0.24, collectLock: 0.34 }),
+            createPickupInstance: () => new THREE.Object3D(),
+            ...overrides
+        };
+    }
+
+    let originalWindow;
+    beforeEach(() => {
+        originalWindow = globalThis.window;
+        globalThis.window = { dispatchEvent: () => {} };
+    });
+    afterEach(() => {
+        globalThis.window = originalWindow;
+    });
+
+    it('deals fall damage, hides the surface chunk, drops the player into the pocket, and re-enables input', () => {
+        const fakeThis = makeFakeThreeGameForEnter();
+        ThreeGame.prototype.enterPocket.call(fakeThis, 10, 20);
+
+        expect(fakeThis.playerVitals.hp).toBe(1); // 3 - 2 fall damage
+        expect(fakeThis.isInPocket).toBe(true);
+        expect(fakeThis.chunkMeshes.get('0,1').visible).toBe(false);
+        expect(fakeThis.inputEnabled).toBe(true);
+        expect(fakeThis.player.position.y).toBe(-6);
+        expect(fakeThis._pocketHoleX).toBe(10);
+        expect(fakeThis._pocketHoleZ).toBe(20);
+    });
+
+    it('exitPocket restores the player to the surface and shows the chunk again', () => {
+        const fakeThis = makeFakeThreeGameForEnter();
+        ThreeGame.prototype.enterPocket.call(fakeThis, 10, 20);
+
+        ThreeGame.prototype.exitPocket.call(fakeThis);
+
+        expect(fakeThis.isInPocket).toBe(false);
+        expect(fakeThis.player.position.y).toBe(0);
+        expect(fakeThis.player.position.x).toBe(10);
+        expect(fakeThis.player.position.z).toBe(20);
+        expect(fakeThis.chunkMeshes.get('0,1').visible).toBe(true);
+    });
+});
+
+describe('getTileType — pocket-aware collision redirection', () => {
+    function makeFakeThisForTileType() {
+        // A pocket whose center cell (5,5) is floor and one adjacent cell
+        // (6,5) is a wall, so a real player position maps onto both.
+        const grid = Array(11).fill(null).map(() => Array(11).fill('.'));
+        grid[5][6] = '#';
+        const pocket = { grid, size: 11, centerCell: { x: 5, y: 5 }, climbPoint: { x: 9, y: 9 } };
+        return {
+            isInPocket: true,
+            _pocketHoleX: 100,
+            _pocketHoleZ: 200,
+            pocketCache: new Map([[ThreeGame.prototype.getWallKey.call({}, 100, 200), pocket]]),
+            getWallKey: ThreeGame.prototype.getWallKey,
+            chunkSize: 19,
+            destroyedWallKeys: new Set(),
+            getOrCreateChunk: () => { throw new Error('should not touch the surface chunk system while in a pocket'); }
+        };
+    }
+
+    it('reads the pocket grid instead of the surface chunk when isInPocket is true', () => {
+        const fakeThis = makeFakeThisForTileType();
+        // World (100, 200) is the hole itself, which maps to the pocket's
+        // center cell (5,5) — open floor.
+        expect(ThreeGame.prototype.getTileType.call(fakeThis, 100, 200)).toBe('.');
+        // One world unit east maps to pocket-local (6,5) — the wall we set.
+        expect(ThreeGame.prototype.getTileType.call(fakeThis, 101, 200)).toBe('#');
+    });
+
+    it('falls back to the surface chunk system when not in a pocket', () => {
+        const fakeThis = { ...makeFakeThisForTileType(), isInPocket: false, getOrCreateChunk: () => [['.']] };
+        expect(() => ThreeGame.prototype.getTileType.call(fakeThis, 100, 200)).not.toThrow();
     });
 });
