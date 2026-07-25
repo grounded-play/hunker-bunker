@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 
 // The run got more roguelike (perfect-reload x1.25, overclock damageMult,
@@ -130,5 +130,27 @@ describe('damageSnail — whole-number damage', () => {
         ThreeGame.prototype.damageSnail.call(fakeThis, sprite, 3);
 
         expect(sprite.userData.hp).toBe(7);
+    });
+});
+
+describe('spawnDamagePip — non-numeric status text', () => {
+    // fillHoleAt reuses this same pip to show a 'SEALED' status string, not a
+    // damage number — rounding must not turn that into "-NaN" on screen.
+    it('renders a non-numeric status string unchanged instead of rounding it to NaN', () => {
+        const fillText = vi.fn();
+        const originalDocument = globalThis.document;
+        globalThis.document = {
+            createElement: () => ({
+                width: 0,
+                height: 0,
+                getContext: () => ({ fillStyle: '', font: '', textAlign: '', textBaseline: '', fillText })
+            })
+        };
+
+        const fakeThis = { scene: { add: () => {}, remove: () => {} }, transientEffects: [] };
+        ThreeGame.prototype.spawnDamagePip.call(fakeThis, 0, 0, 'SEALED');
+
+        expect(fillText).toHaveBeenCalledWith('-SEALED', 32, 32);
+        globalThis.document = originalDocument;
     });
 });

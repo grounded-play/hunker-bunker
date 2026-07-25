@@ -47,37 +47,30 @@ const PLAYER_COLORS = {
 };
 
 const PLAYER_SPRITESHEET_PATHS = {
-    SCOUT: '/Scout.full.jpeg',
-    TANK: '/Tank.full.jpeg',
-    ENGINEER: '/Eng.Full.jpeg'
+    SCOUT: '/Scout.full_v2.png',
+    TANK: '/Tank.full_v2.png',
+    ENGINEER: '/Eng.Full_v2.png'
 };
 
-const PLAYER_SPRITE_COLUMNS = 4;
-const PLAYER_SPRITE_ROWS = 4;
+const PLAYER_SPRITE_COLUMNS = 2;
+const PLAYER_SPRITE_ROWS = 8;
 const PLAYER_WALK_FRAME_COUNT = 2;
 const PLAYER_SPRITE_FRAME_REPEAT_X = 1 / PLAYER_SPRITE_COLUMNS;
 const PLAYER_SPRITE_FRAME_REPEAT_Y = 1 / PLAYER_SPRITE_ROWS;
-// Packed 8-direction sheet: each entry defines a direction cell pair
-// (row + baseColumn), where frame 0/1 are baseColumn/baseColumn+1.
+// V2 8-direction sheet: one row per direction and two opposing contact frames.
 // Octant order from atan2(axisZ, axisX):
 // +X, +X+Z, +Z, -X+Z, -X, -X-Z, -Z, +X-Z
 const PLAYER_SPRITE_DIRECTION_CELLS = Object.freeze([
-    Object.freeze({ row: 1, baseColumn: 2 }),
-    Object.freeze({ row: 3, baseColumn: 2 }),
-    Object.freeze({ row: 3, baseColumn: 0 }),
-    Object.freeze({ row: 2, baseColumn: 2 }),
-    Object.freeze({ row: 2, baseColumn: 0 }),
+    Object.freeze({ row: 0, baseColumn: 0 }),
     Object.freeze({ row: 1, baseColumn: 0 }),
-    Object.freeze({ row: 0, baseColumn: 2 }),
-    Object.freeze({ row: 0, baseColumn: 0 })
+    Object.freeze({ row: 2, baseColumn: 0 }),
+    Object.freeze({ row: 3, baseColumn: 0 }),
+    Object.freeze({ row: 4, baseColumn: 0 }),
+    Object.freeze({ row: 5, baseColumn: 0 }),
+    Object.freeze({ row: 6, baseColumn: 0 }),
+    Object.freeze({ row: 7, baseColumn: 0 })
 ]);
 const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
-const TANK_FLIPPED_DIRECTION_INDICES = new Set([4]);
-// Twin-stick paper-doll: the body sprite is cut at the waist into two stacked
-// billboards. The bottom (legs) follows movement input; the top (torso/head)
-// rotates independently to track the aim/mouse. This is the fraction of the
-// frame height that belongs to the legs.
-const PLAYER_SPRITE_WAIST_SPLIT = 0.5;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const RADAR_DISH_GRID_SIZE = 2;
@@ -615,11 +608,11 @@ const SNAIL_BIOME_TINTS = Object.freeze({
 // Crawlers nest in ruins, spitters guard crater rims. Their art is 4x4 walk
 // sheets (camp-leader layout), so they animate via UV rows, not scale flips.
 const SHEET_ENEMY_TYPES = Object.freeze({
-    alien_proto_crawler: '/alien_proto_crawler_walk.png',
-    alien_proto_spitter: '/alien_proto_spitter_walk.png',
-    boss_corrupted_scout: '/boss_corrupted_scout.png',
-    boss_corrupted_tank: '/boss_corrupted_tank.png',
-    boss_corrupted_engineer: '/boss_corrupted_engineer.png'
+    alien_proto_crawler: '/alien_proto_crawler_walk_v2.png',
+    alien_proto_spitter: '/alien_proto_spitter_walk_v2.png',
+    boss_corrupted_scout: '/boss_corrupted_scout_v2.png',
+    boss_corrupted_tank: '/boss_corrupted_tank_v2.png',
+    boss_corrupted_engineer: '/boss_corrupted_engineer_v2.png'
 });
 const PROTO_SPAWN_MAX_PER_CHUNK = 2;
 const PROTO_SPAWN_CHANCE = 0.2;
@@ -1455,7 +1448,20 @@ export class ThreeGame {
             prop_specimen_tank: this.loadKeyedSpriteTexture('/prop_specimen_tank.png', 14),
             prop_bunker_supplies: this.loadKeyedSpriteTexture('/prop_bunker_supplies.png', 14),
             prop_spore_colony: this.loadKeyedSpriteTexture('/prop_spore_colony.png', 14),
-            prop_conduit_hub: this.loadKeyedSpriteTexture('/prop_conduit_hub.png', 14)
+            prop_conduit_hub: this.loadKeyedSpriteTexture('/prop_conduit_hub.png', 14),
+            prop_biomech_pillar_left: this.loadKeyedSpriteTexture('/prop_biomech_pillar_left.png', 14),
+            prop_biomech_pillar_right: this.loadKeyedSpriteTexture('/prop_biomech_pillar_right.png', 14),
+            prop_cave_lichen: this.loadKeyedSpriteTexture('/prop_cave_lichen.png', 14),
+            prop_cave_bones: this.loadKeyedSpriteTexture('/prop_cave_bones.png', 14),
+            prop_cave_eggs_intact: this.loadKeyedSpriteTexture('/prop_cave_eggs_intact.png', 14),
+            prop_cave_eggs_hatched: this.loadKeyedSpriteTexture('/prop_cave_eggs_hatched.png', 14),
+            prop_cave_spores: this.loadKeyedSpriteTexture('/prop_cave_spores.png', 14),
+            prop_cave_webs: this.loadKeyedSpriteTexture('/prop_cave_webs.png', 14),
+            prop_cave_hive_wounded: this.loadKeyedSpriteTexture('/prop_cave_hive_wounded.png', 14),
+            prop_cave_queen_throne: this.loadKeyedSpriteTexture('/prop_cave_queen_throne.png', 14),
+            prop_camp_sandbags: this.loadKeyedSpriteTexture('/prop_camp_sandbags.png', 14),
+            prop_camp_crates: this.loadKeyedSpriteTexture('/prop_camp_crates.png', 14),
+            prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
 
         // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
@@ -1597,6 +1603,121 @@ export class ThreeGame {
                 depthWrite: false,
                 depthTest: true,
                 fog: false
+            }),
+            prop_biomech_pillar_left: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_biomech_pillar_left,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_biomech_pillar_right: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_biomech_pillar_right,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_cave_lichen: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_lichen,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x33dd77)
+            }),
+            prop_cave_bones: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_bones,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xd8ceb8)
+            }),
+            prop_cave_eggs_intact: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_eggs_intact,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x44ff88)
+            }),
+            prop_cave_eggs_hatched: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_eggs_hatched,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x33aa55)
+            }),
+            prop_cave_spores: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_spores,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x22ee88)
+            }),
+            prop_cave_webs: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_webs,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xb0a898)
+            }),
+            prop_cave_hive_wounded: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_hive_wounded,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xaa3344)
+            }),
+            prop_cave_queen_throne: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_queen_throne,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x8877aa)
+            }),
+            prop_camp_sandbags: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_camp_sandbags,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x666055)
+            }),
+            prop_camp_crates: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_camp_crates,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x777060)
+            }),
+            prop_camp_cookfire_lit: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_camp_cookfire_lit,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xff8833)
             }),
             crawler: new THREE.SpriteMaterial({
                 map: this.scatterTextures.crawler,
@@ -2466,28 +2587,27 @@ export class ThreeGame {
         this.playerShadow.scale.set(1, 1, 0.7);
         this.player.add(this.playerShadow);
 
-        // Bottom half (legs) — follows movement input. Anchored at the feet and
-        // only as tall as the waist split; shows the lower portion of the frame.
-        const legsHeight = this.playerSpriteScale * PLAYER_SPRITE_WAIST_SPLIT;
-        const torsoHeight = this.playerSpriteScale * (1 - PLAYER_SPRITE_WAIST_SPLIT);
+        // V2 sheets use complete full-body frames. The legacy fixed waist crop
+        // produced visible seams because the painted pelvis moved per pose.
         this.playerSprite = new THREE.Sprite(this.playerMaterials[this.playerType] ?? this.playerMaterials.SCOUT);
         this.playerSprite.center.set(0.5, 0);
         this.playerSprite.position.x = this.playerSpriteLead;
         this.playerSprite.position.y = this.playerHeight;
         this.playerSprite.position.z = this.playerSpriteLead;
-        this.playerSprite.scale.set(this.playerSpriteScale, legsHeight, 1);
+        this.playerSprite.scale.set(this.playerSpriteScale, this.playerSpriteScale, 1);
         this.playerSprite.renderOrder = 5;
         this.player.add(this.playerSprite);
 
-        // Top half (torso/head) — aims independently at the mouse. Stacked
-        // directly on top of the legs so the two read as one body.
+        // Retain the torso object for material/tint/cleanup compatibility, but
+        // do not render it. Aim now selects a coherent full-body direction.
         this.playerTorsoSprite = new THREE.Sprite(this.playerTorsoMaterials[this.playerType] ?? this.playerTorsoMaterials.SCOUT);
         this.playerTorsoSprite.center.set(0.5, 0);
         this.playerTorsoSprite.position.x = this.playerSpriteLead;
-        this.playerTorsoSprite.position.y = this.playerHeight + legsHeight;
+        this.playerTorsoSprite.position.y = this.playerHeight;
         this.playerTorsoSprite.position.z = this.playerSpriteLead;
-        this.playerTorsoSprite.scale.set(this.playerSpriteScale, torsoHeight, 1);
+        this.playerTorsoSprite.scale.set(this.playerSpriteScale, this.playerSpriteScale, 1);
         this.playerTorsoSprite.renderOrder = 6;
+        this.playerTorsoSprite.visible = false;
         this.player.add(this.playerTorsoSprite);
 
         // Legs face movement, torso faces aim — tracked separately.
@@ -7278,6 +7398,10 @@ export class ThreeGame {
     }
 
     applyPlayerDamageToEnemy(sprite, amount) {
+        if (sprite?.userData?.isDestructibleProp) {
+            this.damageScatterProp(sprite, amount);
+            return;
+        }
         const fight = sprite?.userData?.queenFight;
         if (fight) {
             const dealt = applyBossDamage(fight, amount);
@@ -12613,25 +12737,19 @@ export class ThreeGame {
         }
     }
 
-    // Points a texture at one vertical half of a single direction/walk frame.
-    // `half` is 'bottom' (legs) or 'top' (torso) of the waist split.
-    setSpriteHalfFrame(texture, column, row, half) {
+    // Points a texture at one complete V2 direction/walk frame. `half` remains
+    // in the signature so legacy call sites and torso materials stay harmless.
+    setSpriteHalfFrame(texture, column, row, _half) {
         const directionCell = PLAYER_SPRITE_DIRECTION_CELLS[row] ?? PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
         const frameColumn = directionCell.baseColumn + (column % PLAYER_WALK_FRAME_COUNT);
-        const shouldFlipX = this.playerType === 'TANK' && TANK_FLIPPED_DIRECTION_INDICES.has(row);
         const frameBaseY = (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y;
-        const isTop = half === 'top';
-        // Texture V increases upward, so the torso band sits above the leg band.
-        const bandFraction = isTop ? (1 - PLAYER_SPRITE_WAIST_SPLIT) : PLAYER_SPRITE_WAIST_SPLIT;
-        const bandHeight = PLAYER_SPRITE_FRAME_REPEAT_Y * bandFraction;
-        const bandOffsetY = frameBaseY + (isTop ? PLAYER_SPRITE_FRAME_REPEAT_Y * PLAYER_SPRITE_WAIST_SPLIT : 0);
         texture.repeat.set(
-            PLAYER_SPRITE_FRAME_REPEAT_X * (shouldFlipX ? -1 : 1),
-            bandHeight
+            PLAYER_SPRITE_FRAME_REPEAT_X,
+            PLAYER_SPRITE_FRAME_REPEAT_Y
         );
         texture.offset.set(
-            (frameColumn + (shouldFlipX ? 1 : 0)) * PLAYER_SPRITE_FRAME_REPEAT_X,
-            bandOffsetY
+            frameColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
+            frameBaseY
         );
     }
 
@@ -14139,6 +14257,16 @@ export class ThreeGame {
             }
         }
 
+        // Spawn room set pieces & walkable biomechanical archway pillars
+        const setPiecePlacements = this.createChunkSetPiecePlacements(chunkX, chunkY, grid);
+        for (const placement of setPiecePlacements) {
+            const propSprite = this.createScatterInstance(placement);
+            if (propSprite) {
+                group.add(propSprite);
+                this.scatterSprites.push(propSprite);
+            }
+        }
+
         const pickupPlacements = this.createChunkPickupPlacements(chunkX, chunkY, grid);
         for (const placement of pickupPlacements) {
             const pickup = this.createPickupInstance(placement);
@@ -14402,6 +14530,87 @@ export class ThreeGame {
             }
         }
 
+        return placements;
+    }
+
+    createChunkSetPiecePlacements(chunkX, chunkY, grid) {
+        const placements = [];
+        const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
+
+        for (let localY = 1; localY < this.chunkSize - 1; localY += 1) {
+            for (let localX = 1; localX < this.chunkSize - 1; localX += 1) {
+                if (grid[localY][localX] !== '.') continue;
+
+                const worldX = chunkX * this.chunkSize + localX;
+                const worldZ = chunkY * this.chunkSize + localY;
+
+                // 1) Doorways & Corridors: Walkable Archway Pillars (Left and Right pillars with walkable center)
+                const isHorizontalDoorway = grid[localY][localX - 1] === '#' && grid[localY][localX + 1] === '#';
+                const isVerticalDoorway = grid[localY - 1][localX] === '#' && grid[localY + 1][localX] === '#';
+
+                if ((isHorizontalDoorway || isVerticalDoorway) && rng() < 0.25) {
+                    const offsetX = isVerticalDoorway ? 0.42 : 0;
+                    const offsetZ = isHorizontalDoorway ? 0.42 : 0;
+
+                    placements.push({
+                        x: worldX - offsetX,
+                        z: worldZ - offsetZ,
+                        type: 'prop_biomech_pillar_left',
+                        scatterKey: `pillar_l:${worldX},${worldZ}`,
+                        scale: 1.25,
+                        elevation: 0.08,
+                        hp: 6,
+                        groupType: 'prop',
+                        opacity: 1
+                    });
+                    placements.push({
+                        x: worldX + offsetX,
+                        z: worldZ + offsetZ,
+                        type: 'prop_biomech_pillar_right',
+                        scatterKey: `pillar_r:${worldX},${worldZ}`,
+                        scale: 1.25,
+                        elevation: 0.08,
+                        hp: 6,
+                        groupType: 'prop',
+                        opacity: 1
+                    });
+                    continue;
+                }
+
+                // 2) Room Set Pieces (Destructible props)
+                const roll = rng();
+                if (roll < 0.07) {
+                    const props = [
+                        'prop_cyber_junction',
+                        'prop_specimen_tank',
+                        'prop_bunker_supplies',
+                        'prop_spore_colony',
+                        'prop_conduit_hub',
+                        'prop_cave_lichen',
+                        'prop_cave_bones',
+                        'prop_cave_eggs_intact',
+                        'prop_cave_eggs_hatched',
+                        'prop_cave_spores',
+                        'prop_cave_webs',
+                        'prop_cave_hive_wounded',
+                        'prop_camp_sandbags',
+                        'prop_camp_crates'
+                    ];
+                    const propType = props[Math.floor(rng() * props.length)];
+                    placements.push({
+                        x: worldX,
+                        z: worldZ,
+                        type: propType,
+                        scatterKey: `prop:${worldX},${worldZ}`,
+                        scale: 1.15,
+                        elevation: 0.08,
+                        hp: propType === 'prop_specimen_tank' ? 4 : 3,
+                        groupType: 'prop',
+                        opacity: 1
+                    });
+                }
+            }
+        }
         return placements;
     }
 
@@ -14980,6 +15189,39 @@ export class ThreeGame {
         const scaleX = placement.scale;
         const scaleY = placement.scale * (1.0 + placement.tiltX);
         const anchoredY = placement.elevation;
+
+        if (placement.type.startsWith('prop_')) {
+            const spriteMaterial = this.scatterMaterials[placement.type];
+            if (!spriteMaterial) return null;
+
+            const clonedMat = spriteMaterial.clone();
+            clonedMat.alphaTest = 0.06;
+
+            const sprite = new THREE.Sprite(clonedMat);
+            sprite.center.set(0.5, 0);
+            sprite.position.set(placement.x, anchoredY, placement.z);
+            sprite.scale.set(scaleX, scaleY, 1);
+            sprite.frustumCulled = false;
+            sprite.renderOrder = 4;
+            sprite.userData = {
+                isScatter: true,
+                isDestructibleProp: true,
+                propHp: placement.hp ?? 3,
+                maxPropHp: placement.hp ?? 3,
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: anchoredY,
+                elevationOffset: placement.elevation,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                burstTriggered: false,
+                burstTimer: 0,
+                phase: placement.phase ?? 0,
+                baseOpacity: placement.opacity ?? 1
+            };
+            return sprite;
+        }
 
         if (placement.type.startsWith('bunker_junk')) {
             const spriteMaterial = this.scatterMaterials[placement.type];
@@ -15965,6 +16207,37 @@ export class ThreeGame {
         }
     }
 
+    damageScatterProp(sprite, amount = 1) {
+        if (!sprite?.userData?.isDestructibleProp || sprite.userData.burstTriggered) return false;
+        const previousHp = sprite.userData.propHp ?? 3;
+        const damage = Math.max(1, Math.round(amount));
+        sprite.userData.propHp = Math.max(0, previousHp - damage);
+
+        this.spawnDamagePip(sprite.position.x, sprite.position.z, damage);
+
+        if (sprite.material?.color) {
+            sprite.material.color.setHex(0xffaa44);
+            setTimeout(() => { sprite.material?.color?.setHex(0xffffff); }, 90);
+        }
+        window.AudioManager?.play('enemy_hit_soft', { volume: 0.35 });
+
+        if (sprite.userData.propHp <= 0) {
+            sprite.userData.burstTriggered = true;
+            const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
+            this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+            if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+            window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
+
+            this.spawnCrawlerDrops(sprite);
+
+            const idx = this.scatterSprites.indexOf(sprite);
+            if (idx !== -1) this.scatterSprites.splice(idx, 1);
+            if (sprite.parent) sprite.parent.remove(sprite);
+            return true;
+        }
+        return false;
+    }
+
     damageSnail(sprite, amount = 1) {
         if (!sprite?.userData || !this.isEnemyType(sprite.userData.type) || sprite.userData.burstTriggered) return;
         const previousHp = Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : (sprite.userData.maxHp ?? SNAIL_MAX_HP);
@@ -16233,7 +16506,10 @@ export class ThreeGame {
         ctx.font = 'bold 36px "Outfit", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`-${Math.round(amount)}`, 32, 32);
+        // Also used for non-numeric status text (e.g. fillHoleAt's 'SEALED'
+        // pip) — only round when it's actually a damage number.
+        const displayAmount = Number.isFinite(amount) ? Math.round(amount) : amount;
+        ctx.fillText(`-${displayAmount}`, 32, 32);
 
         const texture = new THREE.CanvasTexture(canvas);
         const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
