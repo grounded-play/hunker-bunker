@@ -415,7 +415,14 @@ body {
   --gear-focus-x: calc(var(--vu) * 135.5);
   --gear-focus-y: calc(var(--vu) * 28);
   --gear-focus-size: calc(var(--vu) * 21);
-  --door-half-span: calc(var(--vu) * 88.5);
+  /* Half the logical stage width, so the opening-h.active exit translate
+     (translate(calc(-50% + var(--door-half-span)), -50%)) carries the
+     gear fully off the right edge in step with the doors. This was 88.5
+     (half of the old 177-wide design stage); the 16:10 Steam Deck stage
+     is 160 wide, so the correct half-span is 80 — at the old value the
+     gear only traveled ~624px of the 640px it needed to fully clear a
+     1280px-wide stage, landing it visibly stuck mid-exit near the edge. */
+  --door-half-span: calc(var(--vu) * 80);
   --gear-drop-distance: calc(var(--vu) * 50);
   --transition-scene-fade: 0;
   position: absolute;
@@ -458,7 +465,7 @@ body {
 
 .door {
   position: absolute;
-  background-image: var(--door-bg-image, url('/door.webp'));
+  background-image: var(--door-bg-image, url('/door_biomech_v2.webp'));
   background-repeat: no-repeat;
   /* border: 4px solid #1a1c1e; */
   /* Removed central borders */
@@ -652,7 +659,7 @@ body {
 #splash {
   position: absolute;
   inset: 0;
-  background: #000 url('/title_key_art.png') center center / cover no-repeat;
+  background: #000 url('/title_key_art_v2.png') center center / cover no-repeat;
   z-index: 9000;
   display: flex;
   flex-direction: column;
@@ -858,7 +865,7 @@ body {
   left: calc(var(--vu) * 4);
   right: calc(var(--vu) * 4);
   bottom: calc(var(--vu) * 4);
-  background: var(--bg-dark) url('/menu_bg.webp') center/100% 100% no-repeat;
+  background: var(--bg-dark) url('/menu_bg_v2.webp') center/100% 100% no-repeat;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: var(--gutter);
@@ -880,11 +887,17 @@ body {
 
 .menu-header-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: calc(var(--vu) * 2.5);
+  row-gap: calc(var(--vu) * 1.5);
   padding-top: calc(var(--vu) * 8.5);
   padding-right: calc(var(--vu) * 16);
   min-width: 0;
+  /* Buttons wrap onto additional rows as more unlock, rather than
+     forcing this row wider than the stage (each command is fixed-width
+     below, so overflow is purely a function of count, not label length). */
+  justify-content: flex-end;
   z-index: 100;
 }
 
@@ -892,7 +905,7 @@ body {
   width: calc(var(--vu) * 16) !important;
   min-width: calc(var(--vu) * 16) !important;
   max-width: calc(var(--vu) * 16) !important;
-  padding: calc(var(--vu) * 1.0) calc(var(--vu) * 1.1) !important;
+  padding: calc(var(--vu) * 1.0) calc(var(--vu) * 0.6) !important;
   font-size: var(--font-xs) !important;
   letter-spacing: 0.1em !important;
   white-space: nowrap;
@@ -1270,7 +1283,7 @@ body {
 
 .char-preview-door__panel {
   position: absolute;
-  background-image: var(--door-bg-image, url('/door.webp'));
+  background-image: var(--door-bg-image, url('/door_biomech_v2.webp'));
   background-repeat: no-repeat;
   background-size: calc(var(--vu) * 52) calc(var(--vu) * 52);
   box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.72);
@@ -2409,11 +2422,15 @@ input:checked+.slider:before {
 }
 
 .settings-modal-content .setting-item {
-  margin-bottom: calc(var(--vu) * 1.5) !important;
+  /* Trimmed from 1.5vu: 16 rows at 1280x800 no longer fit in the 96vh cap
+     (scrollbar-width: none hides the overflow with no visible cue that
+     more content exists below the fold) — this reclaims ~64px so every
+     row, including NEW GAME RESET, renders without scrolling. */
+  margin-bottom: calc(var(--vu) * 1.0) !important;
 }
 
 .settings-modal-content .modal-title {
-  margin-bottom: calc(var(--vu) * 1.5) !important;
+  margin-bottom: calc(var(--vu) * 1.2) !important;
 }
 
 .settings-modal-content .modal-actions {
@@ -3299,7 +3316,11 @@ input:checked+.slider:before {
 /* ── Desktop Compass HUD ───────────────────────────────────── */
 .desktop-compass {
   position: absolute;
-  top: calc(var(--vu) * 16.5);
+  /* #pickup-counter-panel (the LOOT readout) occupies the same left:4vu
+     column starting at top:12vu and runs ~28vu tall (TOTAL/MED/TECH/COIN/
+     SHELL rows) — at 16.5vu this compass rendered inside it, its ring
+     sitting directly over the TOTAL/MED text. Cleared to sit below it. */
+  top: calc(var(--vu) * 42);
   left: calc(var(--vu) * 4);
   pointer-events: none;
   font-family: 'Outfit', sans-serif;
@@ -7054,7 +7075,18 @@ body.mission-intro-active #game-container canvas {
   gap: calc(var(--vu) * 1.4);
   flex: 1 1 auto;
   min-height: 0;
-  max-height: 56vh;
+  /* This is a flex child sharing a fixed vertical budget with the header,
+     both section labels, the cosmetics row, and the hint — at 1280x800
+     that budget only has room for one full row (254px/32vu) plus a sliver
+     of the next, so a 6th weapon rendered half-cut with the card's image
+     and label missing. Capping to exactly one row height hides row 2
+     cleanly instead of showing a broken partial card; the scrollbar
+     (styled below) is the affordance that more is one scroll away. The
+     margin-bottom keeps a real gap from "EQUIPPED STEAM COSMETICS" either
+     way, since a flush 0px boundary reads as overlap regardless of what's
+     cut. */
+  margin-bottom: calc(var(--vu) * 1.2);
+  max-height: calc(var(--vu) * 32);
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(var(--roster-glow-rgb), 0.5) transparent;
@@ -7578,6 +7610,11 @@ button.archive-log-entry:active {
   font-weight: 800;
   letter-spacing: 0.08em;
   margin-bottom: calc(var(--vu) * 0.35);
+  /* Most log keys (LOG-C04, LOG-A11) are short, but a few longer content
+     ids (LOG-drop_horizon_badge) overflowed the fixed-width card with no
+     wrap/break, spilling text past its border. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .archive-log-text {
