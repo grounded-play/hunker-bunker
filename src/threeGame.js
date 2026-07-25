@@ -3302,6 +3302,7 @@ export class ThreeGame {
         this.interactWithHiveSite();
         this.interactWithCampQuestObject();
         this.interactWithHoleTile();
+        this.interactWithPocketClimbPoint();
         this.interactWithBiomechanicalDoor();
         return true;
     }
@@ -5165,27 +5166,47 @@ export class ThreeGame {
         const holePromptEl = document.getElementById('hole-hud-prompt');
         if (holePromptEl) {
             let nearHole = false;
+            let promptLabel = 'FILL HOLE';
             if (this.inputEnabled && hudActive && this.player && this.isGameplayInputActive()) {
-                const px = this.player.position.x;
-                const pz = this.player.position.z;
-                const cx = Math.round(px);
-                const cz = Math.round(pz);
-                for (let dx = -2; dx <= 2; dx++) {
-                    for (let dz = -2; dz <= 2; dz++) {
-                        const hx = cx + dx;
-                        const hz = cz + dz;
-                        if (Math.hypot(px - hx, pz - hz) <= 2.0 && this.isHoleTile(hx, hz)) {
+                if (this.isInPocket) {
+                    const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+                    const pocket = this.pocketCache?.get(key);
+                    if (pocket) {
+                        // Convert grid-local climbPoint to world space first
+                        // (see interactWithPocketClimbPoint) before comparing.
+                        const climbWorldX = this._pocketHoleX - pocket.centerCell.x + pocket.climbPoint.x;
+                        const climbWorldZ = this._pocketHoleZ - pocket.centerCell.y + pocket.climbPoint.y;
+                        const dist = Math.hypot(
+                            this.player.position.x - climbWorldX,
+                            this.player.position.z - climbWorldZ
+                        );
+                        if (dist <= 1.5) {
                             nearHole = true;
-                            break;
+                            promptLabel = 'CLIMB UP';
                         }
                     }
-                    if (nearHole) break;
+                } else {
+                    const px = this.player.position.x;
+                    const pz = this.player.position.z;
+                    const cx = Math.round(px);
+                    const cz = Math.round(pz);
+                    for (let dx = -2; dx <= 2; dx++) {
+                        for (let dz = -2; dz <= 2; dz++) {
+                            const hx = cx + dx;
+                            const hz = cz + dz;
+                            if (Math.hypot(px - hx, pz - hz) <= 2.0 && this.isHoleTile(hx, hz)) {
+                                nearHole = true;
+                                break;
+                            }
+                        }
+                        if (nearHole) break;
+                    }
                 }
             }
             if (nearHole) {
                 const actionText = holePromptEl.querySelector('.prompt-text');
                 const promptKey = holePromptEl.querySelector('.prompt-key');
-                if (actionText) actionText.textContent = 'FILL HOLE';
+                if (actionText) actionText.textContent = promptLabel;
                 if (promptKey) {
                     const promptKeyLabel = this.getPromptKeyLabel('E');
                     promptKey.textContent = promptKeyLabel;
@@ -19293,6 +19314,24 @@ export class ThreeGame {
             }
         }
         return false;
+    }
+
+    interactWithPocketClimbPoint() {
+        if (!this.isInPocket || !this.player) return false;
+        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const pocket = this.pocketCache?.get(key);
+        if (!pocket) return false;
+
+        // pocket.climbPoint is grid-local (0..size-1) — convert to world
+        // space with the same offset mountPocket used to place the pocket's
+        // group, before comparing against the player's world position.
+        const climbWorldX = this._pocketHoleX - pocket.centerCell.x + pocket.climbPoint.x;
+        const climbWorldZ = this._pocketHoleZ - pocket.centerCell.y + pocket.climbPoint.y;
+        const dist = Math.hypot(this.player.position.x - climbWorldX, this.player.position.z - climbWorldZ);
+        if (dist > 1.5) return false;
+
+        this.exitPocket();
+        return true;
     }
 
     isPlayerOverAnyHole(px, pz) {
