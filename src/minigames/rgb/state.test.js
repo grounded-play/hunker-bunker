@@ -31,7 +31,9 @@ describe('createRunState', () => {
                 marisolWitness: false,
                 marisolHarmed: false,
                 luciaCallback: false,
-                gaveUpAtKiosk: false
+                gaveUpAtKiosk: false,
+                swabCompleted: false,
+                billingCase: false
             },
             calibrationQuality: 0,
             trust4A: 0,
@@ -128,6 +130,31 @@ describe('applyChoice', () => {
     it('giving up at the kiosk sets the retryable game-over flag', () => {
         const state = applyChoice(createRunState(), 'give_up_at_kiosk');
         expect(state.flags.gaveUpAtKiosk).toBe(true);
+    });
+
+    it('replying to Lucia now marks the full message heard', () => {
+        const state = applyChoice(createRunState(), 'reply_to_lucia');
+        expect(state.flags.heardFullMessage).toBe(true);
+    });
+
+    it('speaking with Marisol notices her daycare pressure', () => {
+        const state = applyChoice(createRunState(), 'speak_with_marisol');
+        expect(state.flags.noticedMarisolPressure).toBe(true);
+    });
+
+    it('completing the compulsory swab marks it done', () => {
+        const state = applyChoice(createRunState(), 'complete_swab');
+        expect(state.flags.swabCompleted).toBe(true);
+    });
+
+    it('requesting the billing agent opens the billing case', () => {
+        const state = applyChoice(createRunState(), 'request_billing_agent');
+        expect(state.flags.billingCase).toBe(true);
+    });
+
+    it('calling Lucia records the callback', () => {
+        const state = applyChoice(createRunState(), 'call_lucia');
+        expect(state.flags.luciaCallback).toBe(true);
     });
 
     it('rejects an unknown choice id', () => {

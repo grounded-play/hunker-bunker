@@ -34,7 +34,9 @@ export function createRunState() {
             marisolWitness: false,
             marisolHarmed: false,
             luciaCallback: false,
-            gaveUpAtKiosk: false
+            gaveUpAtKiosk: false,
+            swabCompleted: false,
+            billingCase: false
         },
         calibrationQuality: 0,
         trust4A: 0,
@@ -78,6 +80,16 @@ export function applyChoice(state, choiceId) {
             return { ...state, flags: { ...state.flags, marisolWitness: false, marisolHarmed: false } };
         case 'give_up_at_kiosk':
             return { ...state, flags: { ...state.flags, gaveUpAtKiosk: true } };
+        case 'reply_to_lucia':
+            return { ...state, flags: { ...state.flags, heardFullMessage: true } };
+        case 'speak_with_marisol':
+            return { ...state, flags: { ...state.flags, noticedMarisolPressure: true } };
+        case 'complete_swab':
+            return { ...state, flags: { ...state.flags, swabCompleted: true } };
+        case 'request_billing_agent':
+            return { ...state, flags: { ...state.flags, billingCase: true } };
+        case 'call_lucia':
+            return { ...state, flags: { ...state.flags, luciaCallback: true } };
         default:
             throw new Error(`Unknown RGB choice id: ${choiceId}`);
     }
