@@ -419,7 +419,7 @@ export class DialogueManager {
         this.setInputEnabled?.(true);
     }
 
-    async startTutorialSequence({ game, touchControlsEnabled = false } = {}) {
+    async startTutorialSequence({ game } = {}) {
         if (!game || !this.tutorialPromptEl) {
             return;
         }
@@ -428,7 +428,7 @@ export class DialogueManager {
         const runId = ++this.tutorialRunId;
         this.activeTutorialRunId = runId;
 
-        await this.tutorialStepMovement(runId, game, touchControlsEnabled);
+        await this.tutorialStepMovement(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
 
         await this.tutorialStepVitals(runId);
@@ -449,10 +449,10 @@ export class DialogueManager {
         await this.tutorialStepCompass(runId);
         if (!this.isTutorialRunActive(runId)) return;
 
-        await this.tutorialStepConsole(runId, game, touchControlsEnabled);
+        await this.tutorialStepConsole(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
 
-        await this.tutorialStepConsoleAccess(runId, touchControlsEnabled);
+        await this.tutorialStepConsoleAccess(runId);
         if (!this.isTutorialRunActive(runId)) return;
 
         await this.tutorialStepDeposit(runId);
@@ -636,6 +636,10 @@ export class DialogueManager {
                 break;
             }
 
+            if (index === 0) {
+                window.AudioManager?.playVoiceForMessage(speaker, textToType);
+            }
+
             const nextText = textToType.slice(0, index + 1);
             textEl.textContent = `> ${nextText}█`;
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
@@ -643,12 +647,7 @@ export class DialogueManager {
             const isStart = (index === 0);
             const playChance = isSpace || isStart || (Math.random() < 0.22);
             if (playChance) {
-                const randomPitch = 0.55 + Math.random() * 0.95; // 0.55 to 1.5
-                window.AudioManager?.play('ui_typing', {
-                    volume: 0.1,
-                    playbackRate: randomPitch,
-                    varyPitch: false
-                });
+                window.AudioManager?.playVoiceForMessage(speaker, textToType.slice(index, index + 3));
             }
             
             let charDelay = DIALOGUE_CHAR_INTERVAL_MS;
@@ -813,12 +812,10 @@ export class DialogueManager {
         }
     }
 
-    async tutorialStepMovement(runId, game, touchControlsEnabled) {
+    async tutorialStepMovement(runId, game) {
         await this.showTutorialPrompt(runId, {
-            icon: touchControlsEnabled ? 'TAP' : 'WASD',
-            text: touchControlsEnabled
-                ? 'MOVE PAD OR ARROW INPUT — NAVIGATE THE STRUCTURE'
-                : 'WASD / ARROW KEYS — NAVIGATE THE STRUCTURE'
+            icon: 'WASD',
+            text: 'WASD / ARROW KEYS — NAVIGATE THE STRUCTURE'
         });
 
         const startPos = game.getPlayerPosition?.() ?? { x: 0, z: 0 };
@@ -918,12 +915,10 @@ export class DialogueManager {
         this.hideTutorialPrompt(runId);
     }
 
-    async tutorialStepConsole(runId, game, touchControlsEnabled) {
+    async tutorialStepConsole(runId, game) {
         await this.showTutorialPrompt(runId, {
-            icon: touchControlsEnabled ? 'TAP' : 'E',
-            text: touchControlsEnabled
-                ? "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. TAP TO UPLINK."
-                : "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. PRESS [E] TO UPLINK."
+            icon: 'E',
+            text: "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. PRESS [E] TO UPLINK."
         });
 
         const consolePrompt = document.getElementById('console-hud-prompt');
@@ -938,12 +933,10 @@ export class DialogueManager {
         this.hideTutorialPrompt(runId);
     }
 
-    async tutorialStepConsoleAccess(runId, touchControlsEnabled) {
+    async tutorialStepConsoleAccess(runId) {
         await this.showTutorialPrompt(runId, {
-            icon: touchControlsEnabled ? 'TAP' : 'E',
-            text: touchControlsEnabled
-                ? 'OPEN THE TERMINAL TO ACCESS BANKING AND THE O₂ GENERATOR MODULE.'
-                : 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING AND THE O₂ GENERATOR MODULE.'
+            icon: 'E',
+            text: 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING AND THE O₂ GENERATOR MODULE.'
         });
 
         const modal = document.getElementById('console-terminal-modal');

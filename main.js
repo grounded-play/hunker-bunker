@@ -44,23 +44,12 @@ const mainNightVisionToggle = document.getElementById('main-nightvision-toggle')
 const mainCommentaryToggle = document.getElementById('main-commentary-toggle');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
-const touchMoveControl = document.getElementById('touch-move-control');
-const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring');
-const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
-const touchCompass = touchMoveControl?.querySelector('.touch-move-control__compass');
-const touchCompassArrow = touchCompass?.querySelector('.touch-move-control__compass-arrow');
-const touchCompassRadarArrow = touchCompass?.querySelector('#touch-compass-radar-arrow');
-const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
-const touchCompassRadarDistance = touchCompass?.querySelector('#touch-compass-radar-distance');
 const desktopCompass = document.getElementById('desktop-compass');
 const desktopCompassArrow = document.getElementById('desktop-compass-arrow');
 const desktopCompassRadarArrow = document.getElementById('desktop-compass-radar-arrow');
 const desktopCompassDistance = document.getElementById('desktop-compass-distance');
 const desktopCompassRadarDistance = document.getElementById('desktop-compass-radar-distance');
 const desktopCompassRadarRow = document.getElementById('desktop-compass-radar-row');
-const touchControlsSetting = document.getElementById('touch-controls-setting');
-const mainTouchToggle = document.getElementById('main-touch-toggle');
-const orientationLock = document.getElementById('orientation-lock');
 const openAudioMixerBtn = document.getElementById('open-audio-mixer');
 const audioMixerPopup = document.getElementById('audio-mixer-popup');
 const closeAudioMixerBtn = document.getElementById('close-audio-mixer');
@@ -84,9 +73,12 @@ const campChoiceOptions = document.getElementById('camp-choice-options');
 const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
 const audioVfxSlider = document.getElementById('audio-vfx-slider');
+const audioVoiceSlider = document.getElementById('audio-voice-slider');
 const audioMasterValue = document.getElementById('audio-master-value');
 const audioMusicValue = document.getElementById('audio-music-value');
 const audioVfxValue = document.getElementById('audio-vfx-value');
+const audioVoiceValue = document.getElementById('audio-voice-value');
+const audioVoiceToggle = document.getElementById('audio-voice-toggle');
 const pickupCountTotal = document.getElementById('pickup-count-total');
 const bunkerLevelNum = document.getElementById('level-num');
 const biomeLabelEl = document.getElementById('biome-label');
@@ -116,7 +108,9 @@ const COMMENTARY_STORAGE_KEY = 'hunker_commentary_enabled';
 const DEFAULT_AUDIO_MIX = Object.freeze({
     master: 1,
     music: 1,
-    vfx: 1
+    vfx: 1,
+    voice: 1,
+    voiceEnabled: true
 });
 const STEAM_STORE_URL = 'https://store.steampowered.com/app/1247290/Hunker_Bunker/';
 const KEY_BINDINGS_STORAGE_KEY = 'hunker_key_bindings';
@@ -213,8 +207,7 @@ const STEAM_INPUT_CONFIRM_GLYPHS = Object.freeze({
     PS5Controller: 'X',
     SwitchProController: 'B',
     SwitchJoyConPair: 'B',
-    SwitchJoyConSingle: 'B',
-    MobileTouch: 'TAP'
+    SwitchJoyConSingle: 'B'
 });
 
 const STEAM_INPUT_PROMPT_IDS = Object.freeze([
@@ -317,8 +310,7 @@ window.HunkerTriggerBoot = () => {
 
 window.HunkerInputState = {
     getPromptKeyText,
-    isTouchPrompt: () => isTouchDevice(),
-    isControllerPrompt: () => !isTouchDevice() && isSteamControllerInputActive(),
+    isControllerPrompt: () => isSteamControllerInputActive(),
     getLastInputMode: () => steamInputState.lastInputMode,
     getPrimaryControllerType: () => steamInputState.primaryControllerType,
     getState: () => ({ ...steamInputState })
@@ -362,7 +354,6 @@ function isSteamControllerInputActive() {
 }
 
 function getPromptKeyText(defaultKey = 'E') {
-    if (isTouchDevice() || steamInputState.lastInputMode === 'touch') return 'TAP';
     if (isSteamControllerInputActive()) {
         return getSteamInputConfirmGlyph(steamInputState.primaryControllerType);
     }
@@ -370,7 +361,7 @@ function getPromptKeyText(defaultKey = 'E') {
 }
 
 function setLastInputMode(mode, { refresh = true } = {}) {
-    const normalized = mode === 'touch' ? 'touch' : mode === 'controller' ? 'controller' : 'keyboard';
+    const normalized = mode === 'controller' ? 'controller' : 'keyboard';
     if (steamInputState.lastInputMode === normalized) return false;
     steamInputState.lastInputMode = normalized;
     if (refresh) refreshInteractivePromptKeys();
@@ -535,7 +526,7 @@ async function openSteamGamepadTextInputForElement(element, {
     password = false
 } = {}) {
     if (!element || !window.electronAPI?.showGamepadTextInput) return false;
-    if (isTouchDevice() || !isSteamControllerInputActive()) return false;
+    if (!isSteamControllerInputActive()) return false;
     if (steamGamepadTextInputInFlight) return true;
 
     steamGamepadTextInputInFlight = true;
@@ -896,11 +887,7 @@ window.addEventListener('keydown', (event) => {
 
 window.addEventListener('pointerdown', (event) => {
     if (!event.isTrusted) return;
-    if (event.pointerType === 'touch' || event.pointerType === 'pen') {
-        setLastInputMode('touch');
-    } else if (event.pointerType === 'mouse') {
-        setLastInputMode('keyboard');
-    }
+    setLastInputMode('keyboard');
 }, true);
 
 const CONTROL_ACTIONS = Object.freeze([
@@ -928,7 +915,6 @@ const state = {
         debug: false,
         audioMix: { ...DEFAULT_AUDIO_MIX },
         fullscreen: false,
-        touchControls: false,
         nightVision: false,
         commentary: false,
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
@@ -947,7 +933,6 @@ const gearSpinState = {
 };
 
 let stageResizeObserver = null;
-let activeTouchPointerId = null;
 let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 let cutsceneManager = null;
 let dialogueManager = null;
@@ -967,83 +952,6 @@ function getActiveSuitDialogueContext() {
     };
 }
 
-function isPortraitOrientationLocked() {
-    const visualWidth = window.visualViewport?.width ?? window.innerWidth;
-    const visualHeight = window.visualViewport?.height ?? window.innerHeight;
-    return window.matchMedia('(orientation: portrait)').matches
-        || visualHeight > visualWidth;
-}
-
-function clearTouchInputState() {
-    activeTouchPointerId = null;
-    touchMoveControl?.classList.remove('active');
-    touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
-    window.game?.setVirtualInput?.(0, 0);
-    window.game?.setVirtualInputSprint?.(false);
-    const touchSprintBtn = document.getElementById('touch-sprint-btn');
-    if (touchSprintBtn) {
-        touchSprintBtn.classList.remove('sprint-active');
-        const label = touchSprintBtn.querySelector('#touch-sprint-cooldown');
-        if (label) label.textContent = 'READY';
-    }
-}
-
-function clearTouchMoveInputState() {
-    activeTouchPointerId = null;
-    touchMoveControl?.classList.remove('active');
-    touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
-    window.game?.setVirtualInput?.(0, 0);
-}
-
-function syncOrientationLockState() {
-    const locked = isPortraitOrientationLocked();
-    document.body.classList.toggle('orientation-locked', locked);
-    orientationLock?.setAttribute('aria-hidden', locked ? 'false' : 'true');
-
-    if (locked) {
-        clearTouchInputState();
-        window.game?.setVirtualInput?.(0, 0);
-        window.game?.clearGameplayInputState?.();
-    }
-}
-
-function installOrientationInputLock() {
-    if (!orientationLock) return;
-
-    window.HunkerOrientationLock = {
-        isLocked: isPortraitOrientationLocked
-    };
-
-    const blockInteraction = (event) => {
-        if (!isPortraitOrientationLocked()) return;
-
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation?.();
-    };
-
-    [
-        'pointerdown',
-        'pointermove',
-        'pointerup',
-        'pointercancel',
-        'mousedown',
-        'mouseup',
-        'click',
-        'dblclick',
-        'touchstart',
-        'touchmove',
-        'touchend',
-        'touchcancel'
-    ].forEach((eventName) => {
-        document.addEventListener(eventName, blockInteraction, true);
-    });
-
-    syncOrientationLockState();
-    window.addEventListener('resize', syncOrientationLockState);
-    window.addEventListener('orientationchange', syncOrientationLockState);
-    window.visualViewport?.addEventListener('resize', syncOrientationLockState);
-}
 let deathSequenceTimer = null;
 let damageFlashTimer = null;
 let weaponErrorTimer = null;
@@ -1217,7 +1125,9 @@ function parseStoredAudioMix(rawValue) {
         return {
             master: clampAudioMixValue(parsed.master !== undefined ? parsed.master : parsed.world),
             music: clampAudioMixValue(parsed.music),
-            vfx: clampAudioMixValue(parsed.vfx !== undefined ? parsed.vfx : parsed.sfx)
+            vfx: clampAudioMixValue(parsed.vfx !== undefined ? parsed.vfx : parsed.sfx),
+            voice: clampAudioMixValue(parsed.voice !== undefined ? parsed.voice : 1.0),
+            voiceEnabled: parsed.voiceEnabled !== undefined ? Boolean(parsed.voiceEnabled) : true
         };
     } catch {
         return null;
@@ -1228,7 +1138,9 @@ function cloneAudioMix(mix) {
     return {
         master: clampAudioMixValue(mix?.master),
         music: clampAudioMixValue(mix?.music),
-        vfx: clampAudioMixValue(mix?.vfx)
+        vfx: clampAudioMixValue(mix?.vfx),
+        voice: clampAudioMixValue(mix?.voice !== undefined ? mix.voice : 1.0),
+        voiceEnabled: mix?.voiceEnabled !== undefined ? Boolean(mix.voiceEnabled) : true
     };
 }
 
@@ -1241,7 +1153,8 @@ function syncAudioMixerUI(mix = state.settings.audioMix) {
     const controls = [
         { channel: 'master', slider: audioMasterSlider, valueEl: audioMasterValue },
         { channel: 'music', slider: audioMusicSlider, valueEl: audioMusicValue },
-        { channel: 'vfx', slider: audioVfxSlider, valueEl: audioVfxValue }
+        { channel: 'vfx', slider: audioVfxSlider, valueEl: audioVfxValue },
+        { channel: 'voice', slider: audioVoiceSlider, valueEl: audioVoiceValue }
     ];
 
     controls.forEach(({ channel, slider, valueEl }) => {
@@ -1249,6 +1162,10 @@ function syncAudioMixerUI(mix = state.settings.audioMix) {
         if (slider) slider.value = String(pct);
         if (valueEl) valueEl.textContent = `${pct}%`;
     });
+
+    if (audioVoiceToggle) {
+        audioVoiceToggle.checked = mix.voiceEnabled !== false;
+    }
 }
 
 function applyAudioMixSettings(nextMix, { persist = true } = {}) {
@@ -1323,7 +1240,8 @@ function installAudioMixerControls() {
     const sliderDefs = [
         { channel: 'master', slider: audioMasterSlider },
         { channel: 'music', slider: audioMusicSlider },
-        { channel: 'vfx', slider: audioVfxSlider }
+        { channel: 'vfx', slider: audioVfxSlider },
+        { channel: 'voice', slider: audioVoiceSlider }
     ];
 
     sliderDefs.forEach(({ channel, slider }) => {
@@ -1340,6 +1258,17 @@ function installAudioMixerControls() {
         slider.addEventListener('input', updateChannel);
         slider.addEventListener('change', updateChannel);
     });
+
+    if (audioVoiceToggle) {
+        audioVoiceToggle.addEventListener('change', (event) => {
+            draftAudioMix = {
+                ...draftAudioMix,
+                voiceEnabled: event.target.checked
+            };
+            AudioManager.setMix(draftAudioMix);
+            syncAudioMixerUI(draftAudioMix);
+        });
+    }
 }
 
 // ── Desktop control remapping ────────────────────────────────────────────────
@@ -1676,12 +1605,12 @@ window.addEventListener('weapon-upgraded', () => {
 window.addEventListener('skill-unlocked', () => {
     window.AudioManager?.play?.('fx_levelup', { volume: 0.38, bus: 'sfx' });
     syncAbilityPanelLabel();
-    syncTouchMoveControlVisibility();
+    syncHudCompassVisibility();
 });
 
 window.addEventListener('bank-updated', () => {
     syncAbilityPanelLabel();
-    syncTouchMoveControlVisibility();
+    syncHudCompassVisibility();
 });
 
 window.addEventListener('enemy-hit', (event) => {
@@ -2112,6 +2041,7 @@ function renderRadioTransmission(rawText) {
     const messageText = radioPrompt.querySelector('.radio-transmission-prompt__message');
     senderName.textContent = sender;
     messageText.textContent = text;
+    AudioManager.playVoiceForMessage({ name: sender }, text);
     radioPrompt.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         dismissRadioPrompt(radioPrompt);
@@ -3077,11 +3007,8 @@ window.addEventListener('player-respawned', () => {
     document.body.classList.remove('distress-mode', 'vitals-critical', 'player-poisoned', 'player-damage-flash', 'mission-intro-active');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
-    updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
-    updateTouchSprintButtonState({ remaining: 0, max: 1, active: false, activeProgress: 0, ability: 'sprint' });
     const scanBar = document.getElementById('scan-bar');
     if (scanBar) scanBar.style.transform = 'scaleX(1)';
-    updateTouchScanButtonState({ remaining: 0, max: 1 });
     window.game?.setInputEnabled?.(true);
 
     if (window.game?.act2?.getState?.().begun) {
@@ -3717,9 +3644,13 @@ window.addEventListener('lore-terminal-read', (event) => {
     const token = ++loreTypewriterToken;
     let charIdx = 0;
     const chars = loreText.split('');
+    AudioManager.playVoiceForMessage('BUNKER TERMINAL', loreText);
     const tick = () => {
         if (!loreTextEl || token !== loreTypewriterToken || loreModal.classList.contains('hidden')) return;
         if (charIdx < chars.length) {
+            if (charIdx > 0 && charIdx % 28 === 0) {
+                AudioManager.playVoiceForMessage('BUNKER TERMINAL', loreText.slice(charIdx, charIdx + 12));
+            }
             loreTextEl.textContent += chars[charIdx++];
             setTimeout(tick, 18);
         }
@@ -4002,57 +3933,6 @@ document.getElementById('radar-scan-panel')?.addEventListener('pointerdown', (e)
     window.game?.triggerRadarScan?.();
 });
 
-function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false } = {}) {
-    const touchBtn = document.getElementById('touch-ability-btn');
-    if (!touchBtn) return;
-
-    const clampedMax = Math.max(0.001, Number(max) || 0.001);
-    const clampedRemaining = Math.max(0, Number(remaining) || 0);
-    const cooldownProgress = active
-        ? 1
-        : Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
-
-    touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
-    touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
-    touchBtn.classList.toggle('is-ready', clampedRemaining <= 0 && !active);
-
-    if (clampedRemaining > 0) {
-        touchBtn.style.pointerEvents = 'none';
-        touchBtn.style.opacity = '0.8';
-    } else {
-        touchBtn.style.pointerEvents = 'auto';
-        touchBtn.style.opacity = '1';
-    }
-
-    const cooldownEl = document.getElementById('touch-ability-cooldown');
-    if (cooldownEl) {
-        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : '';
-    }
-}
-
-function updateTouchSprintButtonState({ remaining = 0, max = 1, active = false, activeProgress = 0, ability = '' } = {}) {
-    const sprintBtn = document.getElementById('touch-sprint-btn');
-    if (!sprintBtn) return;
-    const isSprintAbility = ability === 'sprint';
-    const clampedMax = Math.max(0.001, Number(max) || 0.001);
-    const clampedRemaining = Math.max(0, Number(remaining) || 0);
-    const clampedActiveProgress = Math.max(0, Math.min(1, Number(activeProgress) || 0));
-    const sprintActive = isSprintAbility && Boolean(active);
-    const cooldownProgress = sprintActive
-        ? Math.max(0, 1 - clampedActiveProgress)
-        : Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
-    sprintBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
-    sprintBtn.classList.toggle('sprint-active', sprintActive);
-    sprintBtn.classList.toggle('is-cooling', isSprintAbility && clampedRemaining > 0 && !sprintActive);
-    sprintBtn.classList.toggle('is-ready', isSprintAbility && clampedRemaining <= 0 && !sprintActive);
-    sprintBtn.style.pointerEvents = (isSprintAbility && clampedRemaining > 0 && !sprintActive) ? 'none' : 'auto';
-    sprintBtn.style.opacity = (isSprintAbility && clampedRemaining > 0 && !sprintActive) ? '0.8' : '1';
-    const label = sprintBtn.querySelector('#touch-sprint-cooldown');
-    if (label) {
-        label.textContent = sprintActive ? 'BURST' : (isSprintAbility && clampedRemaining > 0) ? `${Math.ceil(clampedRemaining)}s` : 'READY';
-    }
-}
-
 window.addEventListener('class-ability-activated', (event) => {
     const panel = document.getElementById('class-ability-panel');
     if (panel) panel.classList.add('class-ability-panel--active');
@@ -4074,7 +3954,7 @@ window.addEventListener('class-ability-ended', (event) => {
 });
 
 window.addEventListener('ability-cooldown-tick', (event) => {
-    const { remaining = 0, max = 1, active = false, activeProgress = 0, ability = '' } = event?.detail ?? {};
+    const { remaining = 0, max = 1, active = false, activeProgress = 0 } = event?.detail ?? {};
     const bar = document.getElementById('ability-bar');
     const panel = document.getElementById('class-ability-panel');
     const clampedMax = Math.max(0.001, Number(max) || 0.001);
@@ -4091,8 +3971,6 @@ window.addEventListener('ability-cooldown-tick', (event) => {
         panel.classList.toggle('class-ability-panel--cooling', !active && clampedRemaining > 0);
         panel.classList.toggle('class-ability-panel--ready', !active && clampedRemaining <= 0);
     }
-    updateTouchAbilityButtonState({ remaining, max, active });
-    updateTouchSprintButtonState({ remaining, max, active, activeProgress, ability });
 });
 
 window.addEventListener('scan-cooldown-tick', (event) => {
@@ -4110,34 +3988,7 @@ window.addEventListener('scan-cooldown-tick', (event) => {
         panel.classList.toggle('class-ability-panel--active', remaining > 0);
     }
 
-    updateTouchScanButtonState({ remaining, max });
 });
-
-function updateTouchScanButtonState({ remaining = 0, max = 1 } = {}) {
-    const touchBtn = document.getElementById('touch-scan-btn');
-    if (!touchBtn) return;
-
-    const clampedMax = Math.max(0.001, Number(max) || 0.001);
-    const clampedRemaining = Math.max(0, Number(remaining) || 0);
-    const cooldownProgress = Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
-
-    touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
-    touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
-    touchBtn.classList.toggle('is-ready', clampedRemaining <= 0);
-
-    if (clampedRemaining > 0) {
-        touchBtn.style.pointerEvents = 'none';
-        touchBtn.style.opacity = '0.8';
-    } else {
-        touchBtn.style.pointerEvents = 'auto';
-        touchBtn.style.opacity = '1';
-    }
-
-    const cooldownEl = document.getElementById('touch-scan-cooldown');
-    if (cooldownEl) {
-        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : '';
-    }
-}
 
 function syncAbilityPanelLabel() {
     const info = window.game?.getClassAbilityInfo?.();
@@ -4335,8 +4186,7 @@ if (gameOverTryAgain) {
                     deferChunkMount: true
                 });
                 document.getElementById('ui')?.classList.remove('hidden');
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
+                syncHudCompassVisibility();
                 return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
@@ -4364,8 +4214,7 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
         () => {
             document.getElementById('ui')?.classList.add('hidden');
             window.game?.setInputEnabled?.(false);
-            syncTouchSettingsVisibility();
-            syncTouchMoveControlVisibility();
+            syncHudCompassVisibility();
             if (menu) menu.classList.remove('hidden');
             window.game?.setPerformanceProfile?.('menu');
             transitionToMenuMusic();
@@ -4414,152 +4263,27 @@ document.getElementById('demo-end-main-menu')?.addEventListener('click', () => {
     window.location.reload();
 });
 
-function isTouchDevice() {
-    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
-    const touchPoints = navigator.maxTouchPoints > 0;
-    const touchEvents = 'ontouchstart' in window;
-    const mobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-    const narrowViewport = window.innerWidth <= 900 || window.innerHeight <= 900;
+function syncHudCompassVisibility() {
+    if (!desktopCompass) return;
 
-    return coarsePointer || touchPoints || touchEvents || (mobileUserAgent && narrowViewport);
-}
-
-function setTouchDeviceMode() {
-    const touchDevice = isTouchDevice();
-    document.body.classList.toggle('touch-device', touchDevice);
-    document.body.classList.toggle('touch-controls-enabled', touchDevice || Boolean(state.settings.touchControls));
-
-    if (mainTouchToggle) {
-        mainTouchToggle.checked = !!state.settings.touchControls;
-    }
-
-    syncTouchSettingsVisibility();
-    syncTouchMoveControlVisibility();
-}
-
-function syncTouchSettingsVisibility() {
-    if (!touchControlsSetting) return;
-    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
-    touchControlsSetting.classList.toggle('hidden', !isHUD);
-}
-
-function syncTouchMoveControlVisibility() {
-    if (!touchMoveControl) return;
-
-    const touchDevice = isTouchDevice();
-    const touchUiEnabled = touchDevice || Boolean(state.settings.touchControls);
-    document.body.classList.toggle('touch-controls-enabled', touchUiEnabled);
     const ui = document.getElementById('ui');
     const menu = document.getElementById('menu');
     const isHUD = !ui?.classList.contains('hidden');
     const isMenuHidden = menu?.classList.contains('hidden') ?? true;
     const inMissionIntro = document.body.classList.contains('mission-intro-active');
-    const showHudTouchReadouts = isHUD && isMenuHidden && !inMissionIntro;
+    const showHudReadouts = isHUD && isMenuHidden && !inMissionIntro;
 
-    touchMoveControl.classList.toggle('hidden', !showHudTouchReadouts);
-    if (desktopCompass) {
-        desktopCompass.classList.toggle('hidden', !showHudTouchReadouts);
-    }
-
-    // Show/hide the joystick ring and label based on the touchControls setting
-    const showJoystick = touchUiEnabled && state.settings.touchControls;
-    if (touchMoveRing) {
-        touchMoveRing.classList.toggle('hidden', !showJoystick);
-    }
-    const label = touchMoveControl.querySelector('.touch-move-control__label');
-    if (label) {
-        label.classList.toggle('hidden', !showJoystick);
-    }
-
-    const sprintBtn = document.getElementById('touch-sprint-btn');
-    if (sprintBtn) {
-        sprintBtn.classList.toggle('hidden', !showHudTouchReadouts);
-    }
-
-    const abilityBtn = document.getElementById('touch-ability-btn');
-    if (abilityBtn) {
-        const abilityInfo = window.game?.getClassAbilityInfo?.();
-        const specialUnlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
-        const showAbilityBtn = showHudTouchReadouts && specialUnlocked && abilityInfo?.key !== 'sprint';
-        abilityBtn.classList.toggle('hidden', !showAbilityBtn);
-    }
-
-    const scanBtn = document.getElementById('touch-scan-btn');
-    if (scanBtn) {
-        scanBtn.classList.toggle('hidden', !showHudTouchReadouts);
-    }
-
-    if (!isHUD) {
-        clearTouchInputState();
-    } else if (!showJoystick) {
-        clearTouchMoveInputState();
-    }
+    desktopCompass.classList.toggle('hidden', !showHudReadouts);
 }
 
-// Wire touch sprint button
-const touchSprintBtn = document.getElementById('touch-sprint-btn');
-if (touchSprintBtn) {
-    touchSprintBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        if (!window.game) return;
-
-        const triggered = window.game.setVirtualInputSprint?.(true);
-
-        updateTouchSprintButtonState({
-            remaining: window.game.classAbility?.cooldownRemaining ?? 0,
-            max: window.game.classAbility?.cooldownMax ?? 1,
-            active: window.game.classAbility?.active ?? false,
-            activeProgress: window.game.classAbility?.active
-                ? ((window.game.classAbility?.activeTimer ?? 0) / Math.max(0.001, window.game.classAbility?.activeDuration ?? 1))
-                : 0,
-            ability: window.game.getClassAbilityInfo?.().key
-        });
-
-        window.AudioManager?.play(triggered ? 'ui_click' : 'ui_error', { volume: 0.5, playbackRate: triggered ? 1.2 : 0.95 });
-    });
-}
-
-// Wire touch ability button
-const touchAbilityBtn = document.getElementById('touch-ability-btn');
-if (touchAbilityBtn) {
-    touchAbilityBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        window.game?.triggerClassAbility?.();
-    });
-}
-
-const touchScanBtn = document.getElementById('touch-scan-btn');
-if (touchScanBtn) {
-    touchScanBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        window.game?.triggerRadarScan?.();
-    });
-}
-
-function formatTouchCompassDistance(distance) {
+function formatCompassDistance(distance) {
     if (!Number.isFinite(distance) || distance <= 0) return '0u';
     return `${Math.round(distance)}u`;
 }
 
-function updateTouchCompass() {
-    if (!touchCompassArrow || !touchCompassDistance) return;
-
+function updateHudCompass() {
     const compassState = window.game?.getSpawnCompassState?.();
     if (!compassState) {
-        touchCompassArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
-        touchCompassArrow.style.opacity = '0.35';
-        touchCompassDistance.textContent = '0u';
-        if (touchCompassRadarArrow) {
-            touchCompassRadarArrow.classList.add('hidden');
-            touchCompassRadarArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
-            touchCompassRadarArrow.style.opacity = '0';
-        }
-        if (touchCompassRadarDistance) {
-            touchCompassRadarDistance.classList.add('hidden');
-            touchCompassRadarDistance.textContent = '';
-        }
-
-        // Reset desktop compass
         if (desktopCompassArrow) {
             desktopCompassArrow.style.transform = 'rotate(0deg)';
             desktopCompassArrow.style.opacity = '0.35';
@@ -4583,48 +4307,16 @@ function updateTouchCompass() {
 
     const angle = Number.isFinite(compassState.angle) ? compassState.angle : 0;
     const distance = Number.isFinite(compassState.distance) ? compassState.distance : 0;
-    touchCompassArrow.style.transform = `translate(-50%, -100%) rotate(${angle.toFixed(2)}deg)`;
-    touchCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
-    touchCompassDistance.textContent = formatTouchCompassDistance(distance);
-
-    // Update desktop compass
     if (desktopCompassArrow) {
         desktopCompassArrow.style.transform = `rotate(${angle.toFixed(2)}deg)`;
         desktopCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
     }
     if (desktopCompassDistance) {
-        desktopCompassDistance.textContent = formatTouchCompassDistance(distance);
+        desktopCompassDistance.textContent = formatCompassDistance(distance);
     }
 
     const radarState = compassState.radar ?? null;
     const radarActive = Boolean(radarState?.active);
-    if (touchCompassRadarArrow) {
-        if (!radarActive) {
-            touchCompassRadarArrow.classList.add('hidden');
-            touchCompassRadarArrow.style.opacity = '0';
-        } else {
-            const radarAngle = Number.isFinite(radarState.angle) ? radarState.angle : 0;
-            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
-            touchCompassRadarArrow.classList.remove('hidden');
-            touchCompassRadarArrow.style.transform = `translate(-50%, -100%) rotate(${radarAngle.toFixed(2)}deg)`;
-            touchCompassRadarArrow.style.opacity = radarDistance <= 0.05 ? '0.35' : '0.95';
-        }
-    }
-    if (touchCompassRadarDistance) {
-        if (!radarActive) {
-            touchCompassRadarDistance.classList.add('hidden');
-            touchCompassRadarDistance.textContent = '';
-        } else {
-            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
-            touchCompassRadarDistance.classList.remove('hidden');
-            touchCompassRadarDistance.textContent = radarState.mode === 'corrupt'
-                ? 'OUT OF SYNC'
-                : formatTouchCompassDistance(radarDistance);
-            touchCompassRadarDistance.style.opacity = radarDistance <= 0.05 ? '0.35' : '1';
-        }
-    }
-
-    // Update desktop compass radar
     if (desktopCompassRadarArrow) {
         if (!radarActive) {
             desktopCompassRadarArrow.classList.add('hidden');
@@ -4645,76 +4337,22 @@ function updateTouchCompass() {
             const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
             desktopCompassRadarDistance.textContent = radarState.mode === 'corrupt'
                 ? 'OUT OF SYNC'
-                : formatTouchCompassDistance(radarDistance);
+                : formatCompassDistance(radarDistance);
         } else {
             desktopCompassRadarDistance.textContent = '';
         }
     }
 }
 
-function installTouchCompass() {
-    if (!touchCompassArrow || !touchCompassDistance) return;
+function installHudCompass() {
+    if (!desktopCompassArrow || !desktopCompassDistance) return;
 
     const step = () => {
-        updateTouchCompass();
+        updateHudCompass();
         requestAnimationFrame(step);
     };
 
     requestAnimationFrame(step);
-}
-
-function installTouchMoveControl() {
-    if (!touchMoveControl || !touchMoveRing || !touchMoveThumb) return;
-
-    const maxThumbOffset = () => touchMoveRing.clientWidth * 0.22;
-
-    const resetTouchControl = () => {
-        activeTouchPointerId = null;
-        touchMoveControl.classList.remove('active');
-        touchMoveThumb.style.transform = 'translate(-50%, -50%)';
-        window.game?.setVirtualInput?.(0, 0);
-    };
-
-    const updateTouchVector = (clientX, clientY) => {
-        const rect = touchMoveRing.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const deltaX = clientX - centerX;
-        const deltaY = clientY - centerY;
-        const radius = Math.max(rect.width * 0.36, 1);
-        const distance = Math.hypot(deltaX, deltaY);
-        const clampRatio = distance > radius ? radius / distance : 1;
-        const clampedX = deltaX * clampRatio;
-        const clampedY = deltaY * clampRatio;
-        const thumbRange = maxThumbOffset();
-        const thumbScale = radius > 0 ? thumbRange / radius : 0;
-
-        touchMoveThumb.style.transform = `translate(calc(-50% + ${clampedX * thumbScale}px), calc(-50% + ${clampedY * thumbScale}px))`;
-        window.game?.setVirtualInput?.(clampedX / radius, clampedY / radius);
-    };
-
-    touchMoveRing.addEventListener('pointerdown', (event) => {
-        activeTouchPointerId = event.pointerId;
-        touchMoveControl.classList.add('active');
-        touchMoveRing.setPointerCapture(event.pointerId);
-        updateTouchVector(event.clientX, event.clientY);
-        event.preventDefault();
-    });
-
-    touchMoveRing.addEventListener('pointermove', (event) => {
-        if (event.pointerId !== activeTouchPointerId) return;
-        updateTouchVector(event.clientX, event.clientY);
-        event.preventDefault();
-    });
-
-    const releaseTouchControl = (event) => {
-        if (event.pointerId !== activeTouchPointerId) return;
-        resetTouchControl();
-    };
-
-    touchMoveRing.addEventListener('pointerup', releaseTouchControl);
-    touchMoveRing.addEventListener('pointercancel', releaseTouchControl);
-    touchMoveRing.addEventListener('lostpointercapture', resetTouchControl);
 }
 
 function syncStageMetrics() {
@@ -5014,7 +4652,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = isTouchDevice() ? 'TAP TO SKIP' : 'PRESS ANY KEY TO SKIP';
+        skipHint.textContent = 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
         let step = 'gif'; // 'gif' → 'video' → done
@@ -5198,7 +4836,7 @@ function playCutsceneVideo(base) {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = isTouchDevice() ? 'TAP TO SKIP' : 'PRESS ANY KEY TO SKIP';
+        skipHint.textContent = 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
         let guardTimer = 0;
@@ -5347,13 +4985,10 @@ async function runMissionIntroSequence() {
         if (skipBtn) skipBtn.classList.add('hidden');
 
         if (choice === 'tutorial' && !window.skipAllIntro) {
-            // Reveal HUD/touch elements for in-world tutorial prompts.
+            // Reveal HUD elements for in-world tutorial prompts.
             document.body.classList.remove('mission-intro-active');
             game?.setInputEnabled?.(true);
-            await dialogueManager?.startTutorialSequence({
-                game,
-                touchControlsEnabled: Boolean(state.settings.touchControls)
-            });
+            await dialogueManager?.startTutorialSequence({ game });
         } else {
             document.body.classList.add('hud-hidden');
             await new Promise((resolve) => {
@@ -5456,8 +5091,7 @@ if (startBtn) {
                     deferChunkMount: true
                 });
                 document.getElementById('ui').classList.remove('hidden');
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
+                syncHudCompassVisibility();
 
                 const gameContainer = document.getElementById('game-container');
                 const viewport = document.getElementById('game-viewport');
@@ -5508,8 +5142,7 @@ if (dailyOpsBtn) {
                     deferChunkMount: true
                 });
                 document.getElementById('ui')?.classList.remove('hidden');
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
+                syncHudCompassVisibility();
                 const gameContainer = document.getElementById('game-container');
                 const viewport = document.getElementById('game-viewport');
                 if (gameContainer && viewport) {
@@ -5668,11 +5301,9 @@ function openSettingsModal() {
         else abortBtn.classList.add('hidden');
     }
 
-    syncTouchSettingsVisibility();
     settingsPopup.classList.remove('hidden');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
-    if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
     if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
 
@@ -7289,15 +6920,6 @@ if (mainFsToggle) {
     });
 }
 
-if (mainTouchToggle) {
-    mainTouchToggle.addEventListener('change', (e) => {
-        state.settings.touchControls = e.target.checked;
-        e.target.checked = state.settings.touchControls;
-        localStorage.setItem('hunker_touch_controls_enabled', String(state.settings.touchControls));
-        syncTouchMoveControlVisibility();
-    });
-}
-
 if (mainCommentaryToggle) {
     mainCommentaryToggle.addEventListener('change', (e) => {
         state.settings.commentary = e.target.checked;
@@ -7754,9 +7376,6 @@ function initTacticalCursor() {
     let curScale = 1.0;
     const LERP_FACTOR = 0.15; // authentic retro mechanical delay
     let hasMoved = false;
-    let touchFadeTimeout = null;
-
-    let lastTouchTime = 0;
     const isInsideGameViewport = (clientX, clientY) => {
         const rect = gameViewport?.getBoundingClientRect();
         return !!rect
@@ -7767,9 +7386,6 @@ function initTacticalCursor() {
     };
 
     window.addEventListener('mousemove', (e) => {
-        // Ignore synthetic mousemove events triggered by touchscreen touch/taps
-        if (Date.now() - lastTouchTime < 1000) return;
-
         // Ensure clientX and clientY are valid, finite numbers
         if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
         if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
@@ -7788,71 +7404,11 @@ function initTacticalCursor() {
             return;
         }
 
-        // Ensure cursor is visible on desktop move (clearing touch fade states)
         cursor.classList.remove('cursor-fade-out');
         targetScale = 1.0;
-        if (touchFadeTimeout) {
-            clearTimeout(touchFadeTimeout);
-            touchFadeTimeout = null;
-        }
 
         if (!hasMoved) hasMoved = true;
         document.documentElement.classList.add('custom-cursor-enabled');
-    }, { passive: true });
-
-    // Instantly support touchscreen interaction: show cursor on tap/drag and fade it out nicely
-    window.addEventListener('touchstart', (e) => {
-        lastTouchTime = Date.now();
-        if (e.touches && e.touches[0]) {
-            const touch = e.touches[0];
-
-            // Snap position instantly to tapped coordinate to avoid sliding from previous location
-            mouseX = touch.clientX;
-            mouseY = touch.clientY;
-            curX = mouseX;
-            curY = mouseY;
-
-            hasMoved = true;
-            document.documentElement.classList.add('custom-cursor-enabled');
-            cursor.classList.remove('cursor-fade-out');
-            targetScale = 0.72; // Snappy touch tap compression
-
-            if (touchFadeTimeout) {
-                clearTimeout(touchFadeTimeout);
-            }
-
-            // Fade out cursor after a short delay following tap
-            touchFadeTimeout = setTimeout(() => {
-                cursor.classList.add('cursor-fade-out');
-                targetScale = 0.65; // Collapse scale on fade-out
-            }, 450);
-        }
-    }, { passive: true });
-
-    window.addEventListener('touchmove', (e) => {
-        lastTouchTime = Date.now();
-        if (e.touches && e.touches[0]) {
-            const touch = e.touches[0];
-            mouseX = touch.clientX;
-            mouseY = touch.clientY;
-
-            cursor.classList.remove('cursor-fade-out');
-            targetScale = 1.0; // scale up to 1.0 during active touch dragging
-            if (touchFadeTimeout) {
-                clearTimeout(touchFadeTimeout);
-            }
-        }
-    }, { passive: true });
-
-    window.addEventListener('touchend', () => {
-        lastTouchTime = Date.now();
-        if (touchFadeTimeout) {
-            clearTimeout(touchFadeTimeout);
-        }
-        touchFadeTimeout = setTimeout(() => {
-            cursor.classList.add('cursor-fade-out');
-            targetScale = 0.65; // Collapse scale on fade-out
-        }, 300);
     }, { passive: true });
 
     function updateCursorPosition() {
@@ -7869,7 +7425,6 @@ function initTacticalCursor() {
     requestAnimationFrame(updateCursorPosition);
 
     window.addEventListener('pointerdown', (e) => {
-        // Skip touchpointerdown events as touchscreen taps are custom-scaled via touchstart
         if (e.pointerType === 'touch') return;
 
         cursor.classList.add('cursor-clicking');
@@ -7924,15 +7479,9 @@ function initTacticalCursor() {
 document.addEventListener('DOMContentLoaded', async () => {
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     initTacticalCursor();
-    installOrientationInputLock();
     installStageLayoutSync();
-    setTouchDeviceMode();
-    installTouchMoveControl();
-    installTouchCompass();
+    installHudCompass();
     window.addEventListener('resize', refreshGameLayout);
-    window.addEventListener('orientationchange', refreshGameLayout);
-    window.addEventListener('resize', setTouchDeviceMode);
-    window.addEventListener('orientationchange', setTouchDeviceMode);
 
     setDebugMode(false);
     installAudioMixerControls();
@@ -7944,15 +7493,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateDailyOpsUI();
     updateMenuCommandStatuses();
 
-    const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
-    if (storedTouchControls !== null) {
-        state.settings.touchControls = storedTouchControls === 'true';
-    } else {
-        state.settings.touchControls = isTouchDevice();
-    }
-    if (mainTouchToggle) {
-        mainTouchToggle.checked = !!state.settings.touchControls;
-    }
+    // Touch controls were removed with the Steam Deck-first migration; clear
+    // any persisted preference so stale saves don't carry dead settings.
+    localStorage.removeItem('hunker_touch_controls_enabled');
 
     const storedNightVision = localStorage.getItem('hunker_nightvision_enabled');
     if (storedNightVision !== null) {
@@ -8175,8 +7718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    syncTouchSettingsVisibility();
-    syncTouchMoveControlVisibility();
+    syncHudCompassVisibility();
 
     let gameInitPromise = null;
 

@@ -3,8 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -545,6 +544,13 @@
           <div class="desktop-compass__ring">
             <div class="desktop-compass__arrow" id="desktop-compass-arrow"></div>
             <div class="desktop-compass__radar-arrow hidden" id="desktop-compass-radar-arrow"></div>
+            <div id="extraction-progress-ring" class="extraction-progress-ring hidden" aria-hidden="true">
+              <svg viewBox="0 0 40 40" class="extraction-ring-svg">
+                <circle class="extraction-ring-track" cx="20" cy="20" r="16"/>
+                <circle id="extraction-ring-fill" class="extraction-ring-fill" cx="20" cy="20" r="16"/>
+              </svg>
+              <div class="extraction-ring-label">LAUNCH</div>
+            </div>
           </div>
           <div class="desktop-compass__readout">
             <div class="desktop-compass__row">
@@ -771,66 +777,6 @@
       <img id="cutscene-wreck" class="cutscene-wreck hidden" alt="Crashed ship">
       <div id="cutscene-particles" class="cutscene-particles" aria-hidden="true"></div>
     </div>
-    <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
-      <div class="touch-move-control__compass" aria-hidden="true">
-          <div class="touch-move-control__compass-face">
-            <div class="touch-move-control__compass-arrow"></div>
-            <div class="touch-move-control__compass-radar-arrow hidden" id="touch-compass-radar-arrow"></div>
-            <div class="touch-move-control__compass-radar-distance hidden" id="touch-compass-radar-distance"></div>
-            <div class="touch-move-control__compass-distance">0u</div>
-            <div id="extraction-progress-ring" class="extraction-progress-ring hidden" aria-hidden="true">
-            <svg viewBox="0 0 40 40" class="extraction-ring-svg">
-              <circle class="extraction-ring-track" cx="20" cy="20" r="16"/>
-              <circle id="extraction-ring-fill" class="extraction-ring-fill" cx="20" cy="20" r="16"/>
-            </svg>
-            <div class="extraction-ring-label">LAUNCH</div>
-          </div>
-        </div>
-      </div>
-      <div class="touch-move-control__ring">
-        <div class="touch-move-control__thumb"></div>
-      </div>
-      <div class="touch-move-control__label">MOVE</div>
-    </div>
-
-    <!-- Touch Sprint Button -->
-    <button id="touch-sprint-btn" class="touch-ability-btn touch-sprint-btn hidden" aria-label="Trigger sprint burst">
-      <span class="touch-ability-btn__label" aria-hidden="true">
-        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-      </span>
-      <span class="touch-ability-btn__cooldown" id="touch-sprint-cooldown">READY</span>
-    </button>
-
-    <!-- Touch Ability Button -->
-    <button id="touch-ability-btn" class="touch-ability-btn hidden" aria-label="Use class ability">
-      <span class="touch-ability-btn__label" id="touch-ability-label" aria-hidden="true">
-        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="3" r="2.2" fill="currentColor" stroke="none"/>
-          <path d="M11 5 L8 11"/>
-          <path d="M10 8 L14 5.5" stroke-width="1.4"/>
-          <path d="M10 8 L6 10.5" stroke-width="1.4"/>
-          <path d="M8 11 L12 16 L16 18"/>
-          <path d="M8 11 L5 15 L2 13"/>
-        </svg>
-      </span>
-      <span class="touch-ability-btn__cooldown" id="touch-ability-cooldown">READY</span>
-    </button>
-
-    <!-- Touch Scan Button -->
-    <button id="touch-scan-btn" class="touch-ability-btn hidden" aria-label="Trigger radar scan">
-      <span class="touch-ability-btn__label" id="touch-scan-label" aria-hidden="true">
-        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" stroke-dasharray="3,3" />
-          <circle cx="12" cy="12" r="6" />
-          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
-          <line x1="12" y1="2" x2="12" y2="12" />
-        </svg>
-      </span>
-      <span class="touch-ability-btn__cooldown" id="touch-scan-cooldown">READY</span>
-    </button>
-
 
 
 
@@ -1228,16 +1174,6 @@
       </div>
     </div>
 
-    <!-- Orientation Lock Overlay -->
-    <div id="orientation-lock">
-      <div class="lock-content">
-        <div class="lock-icon">🔄</div>
-        <div class="lock-title">SYSTEM ERROR: PORTRAIT DETECTED</div>
-        <div class="lock-msg">PLEASE ROTATE DEVICE TO LANDSCAPE FOR TACTICAL DEPLOYMENT</div>
-        <div class="lock-scanner"></div>
-      </div>
-    </div>
-
     <!-- Diagnostic Grid Overlays -->
     <div id="calibration-overlay">
       <div class="grid-line-v line-third-v1"></div>
@@ -1316,10 +1252,6 @@
           <span>DESKTOP CONTROLS</span>
           <button type="button" class="calibrate-btn settings-action-btn" id="open-controls">REMAP</button>
         </div>
-        <div class="setting-item hidden" id="touch-controls-setting">
-          <span>TOUCH MOVE PAD</span>
-          <label class="toggle"><input type="checkbox" id="main-touch-toggle"> <span class="slider"></span></label>
-        </div>
         <div class="setting-item setting-item--operator">
           <span>OPERATOR CALLSIGN</span>
           <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
@@ -1373,6 +1305,15 @@
           <span class="audio-slider-row__label">VFX</span>
           <input type="range" id="audio-vfx-slider" min="0" max="100" step="1" value="100">
           <span class="audio-slider-row__value" id="audio-vfx-value">100%</span>
+        </label>
+        <label class="audio-slider-row" for="audio-voice-slider">
+          <span class="audio-slider-row__label">VOICE</span>
+          <input type="range" id="audio-voice-slider" min="0" max="100" step="1" value="100">
+          <span class="audio-slider-row__value" id="audio-voice-value">100%</span>
+        </label>
+        <label class="audio-slider-row" for="audio-voice-toggle" style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+          <span class="audio-slider-row__label">CHARACTER VOICE READOUTS</span>
+          <label class="toggle"><input type="checkbox" id="audio-voice-toggle" checked> <span class="slider"></span></label>
         </label>
         <div class="audio-mixer-actions">
           <button type="button" class="settings-action-btn settings-action-btn--save" id="save-audio-mix">SAVE SETTINGS</button>

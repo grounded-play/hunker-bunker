@@ -2677,10 +2677,6 @@ export class ThreeGame {
             }
 
             if (!this.isGameplayInputActive()) return;
-            const isTouchPointer = pointerType !== 'mouse';
-            if (isTouchPointer && this.isInTouchMoveControlBounds(event.clientX, event.clientY)) {
-                return;
-            }
 
             if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
                 return;
@@ -2812,18 +2808,6 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.addEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
-    }
-
-    isInTouchMoveControlBounds(clientX, clientY) {
-        const touchMoveControl = document.getElementById('touch-move-control');
-        if (!touchMoveControl || touchMoveControl.classList.contains('hidden')) return false;
-        const rect = touchMoveControl.getBoundingClientRect();
-        return (
-            clientX >= rect.left
-            && clientX <= rect.right
-            && clientY >= rect.top
-            && clientY <= rect.bottom
-        );
     }
 
     getWorldAimPoint(clientX, clientY) {
@@ -3073,19 +3057,13 @@ export class ThreeGame {
             const el = document.getElementById(id);
             return Boolean(el && !el.classList.contains('hidden'));
         };
-        return this.isOrientationLocked()
-            || document.body.classList.contains('mission-intro-active')
+        return document.body.classList.contains('mission-intro-active')
             || isVisible('console-terminal-modal')
             || isVisible('o2-generator-modal')
             || isVisible('game-over-modal')
             || isVisible('mothership-dialogue')
             || isVisible('confirm-modal')
             || isVisible('settings-popup');
-    }
-
-    isOrientationLocked() {
-        return document.body.classList.contains('orientation-locked')
-            || Boolean(window.HunkerOrientationLock?.isLocked?.());
     }
 
     clearGameplayInputState() {
@@ -3822,14 +3800,6 @@ export class ThreeGame {
             return;
         }
 
-        if (this.isOrientationLocked()) {
-            this.clearGameplayInputState();
-            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
-            this.updateHiddenPlayerMarker(now);
-            this.renderer.render(this.scene, this.camera);
-            return;
-        }
-
         if (this.performanceProfile === 'menu') {
             if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
             this.updateMenuShowcase(delta);
@@ -4490,17 +4460,9 @@ export class ThreeGame {
         }
     }
 
-    shouldUseTapPromptLabel() {
-        if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-        if (window.HunkerInputState?.isTouchPrompt?.()) return true;
-        const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
-        return coarsePointer || navigator.maxTouchPoints > 0 || ('ontouchstart' in window);
-    }
-
     getPromptKeyLabel(defaultKey = 'E') {
-        const rawLabel = window.HunkerInputState?.getPromptKeyText?.(defaultKey)
-            ?? (this.shouldUseTapPromptLabel() ? 'TAP' : defaultKey);
-        return rawLabel === 'TAP' ? 'TAP' : `PRESS ${rawLabel}`;
+        const rawLabel = window.HunkerInputState?.getPromptKeyText?.(defaultKey) ?? defaultKey;
+        return `PRESS ${rawLabel}`;
     }
 
     updateConsoles(delta, now) {
