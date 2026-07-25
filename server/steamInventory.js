@@ -232,6 +232,37 @@ export function attachSteamInventoryRoutes(app) {
     });
 
     // 4. Crafting/Exchange
+    // Fixed-recipe material requirements: itemdefid -> quantity needed.
+    // Shared by validation (does the player have enough?) and consumption
+    // (take exactly this many, not "1 per referenced stack" — that
+    // undercharged any recipe needing more than one unit from a single
+    // stack; e.g. exchanging 5x from a stack of 10 only removed 1).
+    const RECIPE_MATERIAL_REQUIREMENTS = Object.freeze({
+        [OPEN_CACHE_RECIPE_ID]: Object.freeze({ [DEEP_RELIC_CACHE_ITEMDEFID]: 1, [CACHE_KEY_ITEMDEFID]: 1 }),
+        2100: Object.freeze({ 1000: 5 }), // Carbon Fiber Decal
+        2200: Object.freeze({ 1000: 10, 1100: 2 }) // Chrome weapon finish
+    });
+
+    // Draws the recipe's required quantity of each itemdefid from the
+    // referenced material stacks, in the order given, stopping once each
+    // requirement is satisfied. Stacks not referenced by `materials` (or
+    // requiring nothing) pass through untouched.
+    function consumeMaterialsForRecipe(inv, materialItems, requirements) {
+        const referencedIds = new Set(materialItems.map((item) => item.itemId));
+        const remainingNeeded = new Map(
+            Object.entries(requirements).map(([itemdefid, qty]) => [Number(itemdefid), qty])
+        );
+
+        return inv.map((item) => {
+            if (!referencedIds.has(item.itemId)) return item;
+            const needed = remainingNeeded.get(item.itemdefid);
+            if (!needed) return item;
+            const take = Math.min(item.quantity, needed);
+            remainingNeeded.set(item.itemdefid, needed - take);
+            return { ...item, quantity: item.quantity - take };
+        }).filter((item) => item.quantity > 0);
+    }
+
     app.post('/steam/inventory/exchange', steamRouteRateLimit, steamAuthMiddleware, async (req, res) => {
         const requestId = req.body?.requestId;
         const recipeId = Number(req.body?.recipeId);
@@ -287,14 +318,10 @@ export function attachSteamInventoryRoutes(app) {
                 return res.status(400).json({ ok: false, reason: 'invalid_recipe_id' });
             }
 
-            // Consume materials
-            // Note: For mock simplicity, we assume we consume the whole instance or decrease its quantity
-            const remaining = inv.map((item) => {
-                if (materials.includes(item.itemId)) {
-                    return { ...item, quantity: item.quantity - 1 };
-                }
-                return item;
-            }).filter((item) => item.quantity > 0);
+            // Consume exactly the recipe's required quantity of each
+            // itemdefid from the referenced stacks (see
+            // consumeMaterialsForRecipe above).
+            const remaining = consumeMaterialsForRecipe(inv, materialItems, RECIPE_MATERIAL_REQUIREMENTS[recipeId]);
 
             await setMockInventory(req.steamId, remaining);
 

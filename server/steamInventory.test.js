@@ -236,6 +236,71 @@ describe('Steam Inventory API endpoints', () => {
         expect(commonFragmentsCount).toBe(0);
     });
 
+    it('POST /steam/inventory/exchange consumes the recipe quantity from a single stack, not just 1 unit (QA regression)', async () => {
+        // Real play accumulates drops into one stacked entry (mode: 'stack'
+        // in grantItemToPlayer), unlike the fixture above's five separate
+        // quantity-1 instances. Referencing that one stack once used to only
+        // decrement it by 1 regardless of the recipe's actual requirement —
+        // a stack of 10 dropped to 9 after "spending" 5 on Carbon Fiber
+        // Decal (QA manual pass, 2026-07-25).
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        const testId = '76561198000000000';
+
+        await setMockInventory(testId, [
+            { itemId: 'stacked-common', itemdefid: 1000, quantity: 10, acquiredAt: Date.now() }
+        ]);
+
+        const res = await fetch(`${baseUrl}/steam/inventory/exchange`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                ticketHex: '00112233445566778899aabbccddeeff',
+                requestId: `craft-stack-test-${Math.random()}`,
+                recipeId: 2100, // Carbon Fiber Decal, requires 5x Common Relic Fragment
+                materials: ['stacked-common']
+            })
+        });
+        expect(res.status).toBe(200);
+
+        const body = await res.json();
+        expect(body.ok).toBe(true);
+        expect(body.granted[0].itemdefid).toBe(2100);
+
+        const finalInv = getMockInventory(testId);
+        const remainingCommon = finalInv.find((i) => i.itemId === 'stacked-common');
+        expect(remainingCommon?.quantity).toBe(5);
+    });
+
+    it('POST /steam/inventory/exchange consuming 10x Common + 2x Rare from single stacks leaves the correct remainders', async () => {
+        delete process.env.HB_STEAM_PUBLISHER_KEY;
+        const testId = '76561198000000000';
+
+        await setMockInventory(testId, [
+            { itemId: 'common-stack', itemdefid: 1000, quantity: 12, acquiredAt: Date.now() },
+            { itemId: 'rare-stack', itemdefid: 1100, quantity: 3, acquiredAt: Date.now() }
+        ]);
+
+        const res = await fetch(`${baseUrl}/steam/inventory/exchange`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                ticketHex: '00112233445566778899aabbccddeeff',
+                requestId: `craft-chrome-test-${Math.random()}`,
+                recipeId: 2200, // Chrome weapon finish, requires 10x Common, 2x Rare
+                materials: ['common-stack', 'rare-stack']
+            })
+        });
+        expect(res.status).toBe(200);
+
+        const body = await res.json();
+        expect(body.ok).toBe(true);
+        expect(body.granted[0].itemdefid).toBe(2200);
+
+        const finalInv = getMockInventory(testId);
+        expect(finalInv.find((i) => i.itemId === 'common-stack')?.quantity).toBe(2);
+        expect(finalInv.find((i) => i.itemId === 'rare-stack')?.quantity).toBe(1);
+    });
+
     it('POST /steam/inventory/exchange opens a Deep Relic Cache with a Cache Key into a disclosed-table reward', async () => {
         delete process.env.HB_STEAM_PUBLISHER_KEY;
         const testId = '76561198000000000';
