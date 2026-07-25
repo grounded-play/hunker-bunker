@@ -154,3 +154,70 @@ describe('spawnDamagePip — non-numeric status text', () => {
         globalThis.document = originalDocument;
     });
 });
+
+describe('resolveFallDamage — whole-number, upgrade-gated', () => {
+    it('returns the base fall damage when fallHardening is not unlocked', () => {
+        const fakeThis = { bank: { getState: () => ({ tier2Unlocks: {} }) } };
+        const damage = ThreeGame.prototype.resolveFallDamage.call(fakeThis);
+        expect(Number.isInteger(damage)).toBe(true);
+        expect(damage).toBe(2);
+    });
+
+    it('halves fall damage (still a whole number) when fallHardening is unlocked', () => {
+        const fakeThis = { bank: { getState: () => ({ tier2Unlocks: { fallHardening: true } }) } };
+        const damage = ThreeGame.prototype.resolveFallDamage.call(fakeThis);
+        expect(Number.isInteger(damage)).toBe(true);
+        expect(damage).toBe(1);
+    });
+
+    it('never returns less than 1 even with no bank attached', () => {
+        const fakeThis = {};
+        const damage = ThreeGame.prototype.resolveFallDamage.call(fakeThis);
+        expect(damage).toBeGreaterThanOrEqual(1);
+    });
+});
+
+describe('takeDamage — fall reason respects iFrames, abyss does not', () => {
+    function makeFakeThisForTakeDamage(overrides = {}) {
+        return {
+            isPlayerDead: false,
+            godMode: false,
+            cinematicLock: false,
+            _abilityImmune: false,
+            iFrameTimer: 1.0,
+            missionState: { status: 'active' },
+            isInPocket: false,
+            playerVitals: { hp: 3, maxHp: 3 },
+            showDirectionalHitIndicator: () => {},
+            triggerCameraShake: () => {},
+            emitHealthState: () => {},
+            handleDeath: () => {},
+            ...overrides
+        };
+    }
+
+    let originalWindow;
+    beforeEach(() => {
+        originalWindow = globalThis.window;
+        globalThis.window = { dispatchEvent: () => {} };
+    });
+    afterEach(() => {
+        globalThis.window = originalWindow;
+    });
+
+    it('a fall reason is blocked while iFrameTimer is active, unlike abyss', () => {
+        const fallThis = makeFakeThisForTakeDamage();
+        ThreeGame.prototype.takeDamage.call(fallThis, 2, 'fall');
+        expect(fallThis.playerVitals.hp).toBe(3); // blocked by iFrames
+
+        const abyssThis = makeFakeThisForTakeDamage();
+        ThreeGame.prototype.takeDamage.call(abyssThis, 2, 'abyss');
+        expect(abyssThis.playerVitals.hp).toBe(1); // abyss bypasses iFrames
+    });
+
+    it('blocks all damage while isInPocket is true', () => {
+        const fakeThis = makeFakeThisForTakeDamage({ iFrameTimer: 0, isInPocket: true });
+        ThreeGame.prototype.takeDamage.call(fakeThis, 2, 'hazard');
+        expect(fakeThis.playerVitals.hp).toBe(3);
+    });
+});

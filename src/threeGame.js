@@ -47,29 +47,37 @@ const PLAYER_COLORS = {
 };
 
 const PLAYER_SPRITESHEET_PATHS = {
-    SCOUT: '/Scout.full_v2.png',
+    SCOUT: '/Scout.walk_v4.png',
     TANK: '/Tank.full_v2.png',
     ENGINEER: '/Eng.Full_v2.png'
 };
 
-const PLAYER_SPRITE_COLUMNS = 2;
-const PLAYER_SPRITE_ROWS = 8;
-const PLAYER_WALK_FRAME_COUNT = 2;
-const PLAYER_SPRITE_FRAME_REPEAT_X = 1 / PLAYER_SPRITE_COLUMNS;
-const PLAYER_SPRITE_FRAME_REPEAT_Y = 1 / PLAYER_SPRITE_ROWS;
-// V2 8-direction sheet: one row per direction and two opposing contact frames.
-// Octant order from atan2(axisZ, axisX):
-// +X, +X+Z, +Z, -X+Z, -X, -X-Z, -Z, +X-Z
-const PLAYER_SPRITE_DIRECTION_CELLS = Object.freeze([
-    Object.freeze({ row: 0, baseColumn: 0 }),
-    Object.freeze({ row: 1, baseColumn: 0 }),
-    Object.freeze({ row: 2, baseColumn: 0 }),
-    Object.freeze({ row: 3, baseColumn: 0 }),
-    Object.freeze({ row: 4, baseColumn: 0 }),
-    Object.freeze({ row: 5, baseColumn: 0 }),
-    Object.freeze({ row: 6, baseColumn: 0 }),
-    Object.freeze({ row: 7, baseColumn: 0 })
+const LEGACY_PLAYER_DIRECTION_CELLS = Object.freeze([
+    Object.freeze({ row: 1, baseColumn: 2 }), Object.freeze({ row: 3, baseColumn: 2 }),
+    Object.freeze({ row: 3, baseColumn: 0 }), Object.freeze({ row: 2, baseColumn: 2 }),
+    Object.freeze({ row: 2, baseColumn: 0 }), Object.freeze({ row: 1, baseColumn: 0 }),
+    Object.freeze({ row: 0, baseColumn: 2 }), Object.freeze({ row: 0, baseColumn: 0 })
 ]);
+const V4_PLAYER_DIRECTION_CELLS = Object.freeze(
+    Array.from({ length: 8 }, (_, row) => Object.freeze({ row, baseColumn: 0 }))
+);
+const PLAYER_SPRITE_LAYOUTS = Object.freeze({
+    SCOUT: Object.freeze({
+        columns: 8, rows: 8, walkFrames: 8,
+        directionCells: V4_PLAYER_DIRECTION_CELLS,
+        footstepFrames: Object.freeze([0, 4])
+    }),
+    TANK: Object.freeze({
+        columns: 4, rows: 4, walkFrames: 2,
+        directionCells: LEGACY_PLAYER_DIRECTION_CELLS,
+        footstepFrames: Object.freeze([1])
+    }),
+    ENGINEER: Object.freeze({
+        columns: 4, rows: 4, walkFrames: 2,
+        directionCells: LEGACY_PLAYER_DIRECTION_CELLS,
+        footstepFrames: Object.freeze([1])
+    })
+});
 const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
@@ -201,6 +209,7 @@ const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
+const FALL_DAMAGE_BASE = 2;
 const WALL_HP_DAMAGED = 5;
 const WALL_HP_STANDARD = 8;
 const WALL_HP_HAZARD = 11;
@@ -1008,16 +1017,19 @@ export class ThreeGame {
             ])
         );
 
-        Object.values(this.playerTextures).forEach((texture) => {
+        Object.entries(this.playerTextures).forEach(([type, texture]) => {
+            const layout = PLAYER_SPRITE_LAYOUTS[type] ?? PLAYER_SPRITE_LAYOUTS.SCOUT;
+            const repeatX = 1 / layout.columns;
+            const repeatY = 1 / layout.rows;
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             texture.magFilter = THREE.NearestFilter;
             texture.minFilter = THREE.NearestFilter;
-            texture.repeat.set(PLAYER_SPRITE_FRAME_REPEAT_X, PLAYER_SPRITE_FRAME_REPEAT_Y);
-            const defaultDirection = PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
+            texture.repeat.set(repeatX, repeatY);
+            const defaultDirection = layout.directionCells[PLAYER_DEFAULT_DIRECTION_INDEX];
             texture.offset.set(
-                defaultDirection.baseColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
-                (PLAYER_SPRITE_ROWS - 1 - defaultDirection.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
+                defaultDirection.baseColumn * repeatX,
+                (layout.rows - 1 - defaultDirection.row) * repeatY
             );
         });
 
@@ -2253,6 +2265,7 @@ export class ThreeGame {
         this.chunkGroups.visible = this.performanceProfile === 'gameplay';
         this.scene.add(this.chunkGroups);
         this.setupCrashedShips();
+        this.setupBunkerBlastDoor();
     }
 
     setupCrashedShips() {
@@ -2559,6 +2572,143 @@ export class ThreeGame {
         this.syncPersistentUpgrades();
         this.updateCrashedShipsVisibility(false);
         this.emitShipHealthState();
+    }
+
+    setupBunkerBlastDoor() {
+        this.bunkerBlastDoorState = {
+            open: false,
+            destroyed: false,
+            hp: 25,
+            maxHp: 25,
+            y: 1.4,
+            targetY: 1.4,
+            speed: 5.5,
+            doorWidth: 6,
+            doorZ: 15,
+            startTileX: 6,
+            endTileX: 11
+        };
+
+        // 6-wall wide Blast Door Group
+        const doorGroup = new THREE.Group();
+        doorGroup.position.set(8.5, 1.4, 15.0);
+
+        // Main heavy blast door slab (spans 6 tiles wide = 6.0 units, height = 2.8, depth = 0.72)
+        const doorGeo = new THREE.BoxGeometry(6.0, 2.8, 0.72);
+        const doorMat = new THREE.MeshStandardMaterial({
+            color: 0x1f272e,
+            roughness: 0.45,
+            metalness: 0.82
+        });
+        const doorSlab = new THREE.Mesh(doorGeo, doorMat);
+        doorSlab.castShadow = true;
+        doorSlab.receiveShadow = true;
+        doorSlab.userData = {
+            isWall: true,
+            isBunkerBlastDoor: true,
+            worldX: 8.5,
+            worldZ: 15.0,
+            wallKey: '8.5,15',
+            wallHp: 25,
+            maxWallHp: 25
+        };
+        doorGroup.add(doorSlab);
+
+        // Heavy steel reinforcement ribs across the door face
+        for (let i = -2; i <= 2; i += 2) {
+            const ribGeo = new THREE.BoxGeometry(0.35, 2.85, 0.82);
+            const ribMat = new THREE.MeshStandardMaterial({ color: 0x11161b, roughness: 0.3, metalness: 0.9 });
+            const rib = new THREE.Mesh(ribGeo, ribMat);
+            rib.position.x = i * 1.1;
+            doorGroup.add(rib);
+        }
+
+        // Glowing status bar across top of door
+        const barGeo = new THREE.BoxGeometry(5.6, 0.16, 0.78);
+        const barMat = new THREE.MeshStandardMaterial({
+            color: 0xff2200,
+            emissive: 0xff2200,
+            emissiveIntensity: 1.2
+        });
+        const barMesh = new THREE.Mesh(barGeo, barMat);
+        barMesh.position.y = 1.25;
+        doorGroup.add(barMesh);
+        this._bunkerDoorBarMat = barMat;
+
+        // Door status light
+        const statusLight = new THREE.PointLight(0xff2200, 1.5, 7.0);
+        statusLight.position.set(8.5, 2.2, 15.0);
+        this.scene.add(statusLight);
+        this._bunkerDoorStatusLight = statusLight;
+
+        this.bunkerBlastDoorGroup = doorGroup;
+        this.scene.add(doorGroup);
+
+        // --- Interactive Buttons (Interior & Exterior) ---
+        const btnBoxGeo = new THREE.BoxGeometry(0.32, 0.45, 0.18);
+        const btnBoxMat = new THREE.MeshStandardMaterial({ color: 0x11161a, metalness: 0.8, roughness: 0.4 });
+        const btnDomeGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.08, 16);
+        const btnDomeMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 1.2 });
+
+        // Interior button console (inside bunker at X=5.1, Z=14.2)
+        const intBtnGroup = new THREE.Group();
+        intBtnGroup.position.set(5.1, 1.3, 14.2);
+        const intBox = new THREE.Mesh(btnBoxGeo, btnBoxMat);
+        intBtnGroup.add(intBox);
+        const intDome = new THREE.Mesh(btnDomeGeo, btnDomeMat);
+        intDome.rotation.x = Math.PI / 2;
+        intDome.position.z = 0.09;
+        intBtnGroup.add(intDome);
+        this.scene.add(intBtnGroup);
+
+        // Exterior button console (outside bunker at X=5.1, Z=15.8)
+        const extBtnGroup = new THREE.Group();
+        extBtnGroup.position.set(5.1, 1.3, 15.8);
+        const extBox = new THREE.Mesh(btnBoxGeo, btnBoxMat);
+        extBtnGroup.add(extBox);
+        const extDome = new THREE.Mesh(btnDomeGeo, btnDomeMat);
+        extDome.rotation.x = Math.PI / 2;
+        extDome.position.z = -0.09;
+        extBtnGroup.add(extDome);
+        this.scene.add(extBtnGroup);
+
+        // 2.5D X-Ray Outline Ring for Exterior Button (subtle glow visible through walls on the hidden side!)
+        const xrayRingGeo = new THREE.RingGeometry(0.20, 0.32, 24);
+        const xrayRingMat = new THREE.MeshBasicMaterial({
+            color: 0x00e5ff,
+            transparent: true,
+            opacity: 0.85,
+            depthTest: false,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const xrayMesh = new THREE.Mesh(xrayRingGeo, xrayRingMat);
+        xrayMesh.rotation.x = -Math.PI / 4;
+        xrayMesh.position.set(5.1, 1.35, 15.8);
+        xrayMesh.renderOrder = 9992;
+        this.scene.add(xrayMesh);
+        this.exteriorButtonXrayMarker = xrayMesh;
+
+        this._bunkerButtonDomeMat = btnDomeMat;
+        this.bunkerDoorButtons = {
+            interior: { x: 5.1, z: 14.2 },
+            exterior: { x: 5.1, z: 15.8 }
+        };
+
+        // --- Fog of War Exterior Mask ---
+        const fogVeilGeo = new THREE.PlaneGeometry(36, 24);
+        const fogVeilMat = new THREE.MeshBasicMaterial({
+            color: 0x040608,
+            transparent: true,
+            opacity: 0.90,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const fogVeilMesh = new THREE.Mesh(fogVeilGeo, fogVeilMat);
+        fogVeilMesh.rotation.x = -Math.PI / 2;
+        fogVeilMesh.position.set(8.5, 0.08, 26.0);
+        this.bunkerFogVeilMesh = fogVeilMesh;
+        this.scene.add(fogVeilMesh);
     }
 
     setupPlayer() {
@@ -3132,6 +3282,7 @@ export class ThreeGame {
 
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
+        this.interactWithBunkerBlastDoorButton();
         this.interactWithConsole();
         this.interactWithO2Generator();
         this.interactWithLoreTerminal();
@@ -4255,6 +4406,7 @@ export class ThreeGame {
 
         this.updateClassAbility(delta);
         this.updateRadarScans(delta);
+        this.updateBunkerBlastDoor(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
         this.updateWeather(delta);
@@ -5037,6 +5189,178 @@ export class ThreeGame {
                 holePromptEl.classList.remove('visible');
             }
         }
+    }
+
+    updateBunkerBlastDoor(delta) {
+        if (!this.bunkerBlastDoorGroup || !this.bunkerBlastDoorState) return;
+
+        const state = this.bunkerBlastDoorState;
+        state.y = THREE.MathUtils.lerp(state.y, state.targetY, Math.min(1.0, state.speed * delta));
+        this.bunkerBlastDoorGroup.position.y = state.y;
+
+        const open = state.open;
+        const targetColor = open ? 0x00e5ff : 0xff2200;
+        if (this._bunkerDoorBarMat) {
+            this._bunkerDoorBarMat.color.setHex(targetColor);
+            this._bunkerDoorBarMat.emissive.setHex(targetColor);
+        }
+        if (this._bunkerDoorStatusLight) {
+            this._bunkerDoorStatusLight.color.setHex(targetColor);
+        }
+        if (this._bunkerButtonDomeMat) {
+            this._bunkerButtonDomeMat.color.setHex(targetColor);
+            this._bunkerButtonDomeMat.emissive.setHex(targetColor);
+        }
+
+        // Pulse subtle 2.5D X-Ray outline marker for hidden exterior wall button
+        if (this.exteriorButtonXrayMarker) {
+            const t = performance.now() * 0.004;
+            const pulseOpacity = 0.55 + Math.sin(t) * 0.35;
+            this.exteriorButtonXrayMarker.material.opacity = pulseOpacity;
+            const pulseScale = 1.0 + Math.sin(t * 1.5) * 0.08;
+            this.exteriorButtonXrayMarker.scale.set(pulseScale, pulseScale, 1.0);
+        }
+
+        // Update Fog of War exterior curtain:
+        // Obscures outside past Z >= 15 when door is closed and player is inside; dissolves when door opens or player exits.
+        if (this.bunkerFogVeilMesh && this.player) {
+            const playerZ = this.player.position.z;
+            const playerOutside = playerZ >= 15.2;
+            const targetFogOpacity = (open || playerOutside) ? 0.0 : 0.90;
+            const mat = this.bunkerFogVeilMesh.material;
+            mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetFogOpacity, Math.min(1.0, 4.0 * delta));
+            this.bunkerFogVeilMesh.visible = mat.opacity > 0.01;
+        }
+
+        // Update floating HUD prompt when player is near interior or exterior door button
+        if (this.player && this.bunkerDoorButtons && this.isGameplayInputActive()) {
+            const px = this.player.position.x;
+            const pz = this.player.position.z;
+            const intDist = Math.hypot(px - this.bunkerDoorButtons.interior.x, pz - this.bunkerDoorButtons.interior.z);
+            const extDist = Math.hypot(px - this.bunkerDoorButtons.exterior.x, pz - this.bunkerDoorButtons.exterior.z);
+
+            if (intDist <= 2.2 || extDist <= 2.2) {
+                const promptEl = document.getElementById('console-hud-prompt');
+                if (promptEl && !this.activeInteractiveConsole) {
+                    const actionText = promptEl.querySelector('.prompt-text');
+                    const promptKey = promptEl.querySelector('.prompt-key');
+                    if (actionText) {
+                        actionText.textContent = open ? 'CLOSE BLAST DOOR' : 'OPEN BLAST DOOR';
+                    }
+                    if (promptKey) {
+                        const promptKeyLabel = this.getPromptKeyLabel('E');
+                        promptKey.textContent = promptKeyLabel;
+                        promptKey.classList.toggle('prompt-key--tap', promptKeyLabel === 'TAP');
+                    }
+                    promptEl.classList.add('visible');
+                    promptEl.classList.remove('hidden');
+                }
+            }
+        }
+    }
+
+    toggleBunkerBlastDoor() {
+        if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return;
+        const state = this.bunkerBlastDoorState;
+        state.open = !state.open;
+        state.targetY = state.open ? -2.4 : 1.4;
+
+        window.AudioManager?.playMetalStress?.({
+            volume: 0.62,
+            playbackRate: state.open ? 1.25 : 0.75,
+            force: true
+        });
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.45, playbackRate: state.open ? 1.4 : 0.8, bus: 'sfx' });
+
+        this.spawnTextureBurstEffect(8.5, 15.0, {
+            textureKey: 'fx_steam_puff',
+            color: state.open ? 0x00e5ff : 0xffaa00,
+            count: 6,
+            baseScale: 0.7,
+            duration: 0.5
+        });
+
+        window.dispatchEvent(new CustomEvent('bunker-door-toggled', {
+            detail: { open: state.open }
+        }));
+    }
+
+    damageBunkerBlastDoor(amount = 1, { source = 'player' } = {}) {
+        if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return false;
+        const state = this.bunkerBlastDoorState;
+        const damage = Math.max(1, Math.round(Number(amount) || 1));
+        state.hp = Math.max(0, state.hp - damage);
+
+        if (state.hp > 0) {
+            window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.5, force: true });
+            this.spawnTextureBurstEffect(8.5, 15.0, {
+                textureKey: 'fx_steam_puff',
+                color: 0xff4400,
+                count: 4,
+                baseScale: 0.5,
+                duration: 0.35
+            });
+            window.dispatchEvent(new CustomEvent('bunker-door-damaged', {
+                detail: { hp: state.hp, maxHp: state.maxHp, source }
+            }));
+            return false;
+        }
+
+        return this.destroyBunkerBlastDoor({ source });
+    }
+
+    destroyBunkerBlastDoor({ source = 'player' } = {}) {
+        if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return false;
+        const state = this.bunkerBlastDoorState;
+        state.destroyed = true;
+        state.open = true;
+        state.targetY = -2.4;
+        state.hp = 0;
+
+        this.spawnPhysicalBurst(8.5, 15.0, { color: 0xff5500, count: 16, upward: 0.28, spread: 2.4 });
+        this.spawnTextureBurstEffect(8.5, 15.0, {
+            textureKey: 'fx_steam_puff',
+            color: 0xffaa00,
+            count: 9,
+            baseScale: 0.9,
+            duration: 0.7
+        });
+        window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.5, force: true });
+
+        window.dispatchEvent(new CustomEvent('bunker-door-destroyed', {
+            detail: { source }
+        }));
+        return true;
+    }
+
+    interactWithBunkerBlastDoorButton() {
+        if (!this.player || !this.bunkerDoorButtons || !this.isGameplayInputActive()) return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+
+        const intDist = Math.hypot(px - this.bunkerDoorButtons.interior.x, pz - this.bunkerDoorButtons.interior.z);
+        const extDist = Math.hypot(px - this.bunkerDoorButtons.exterior.x, pz - this.bunkerDoorButtons.exterior.z);
+
+        if (intDist <= 2.2 || extDist <= 2.2) {
+            this.toggleBunkerBlastDoor();
+            return true;
+        }
+        return false;
+    }
+
+    tryInteractWithBunkerDoorPointer(clientX, clientY) {
+        if (!this.bunkerDoorButtons || !this.isGameplayInputActive()) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        const distDoor = Math.hypot(worldPoint.x - 8.5, worldPoint.z - 15.0);
+        const distInt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.interior.x, worldPoint.z - this.bunkerDoorButtons.interior.z);
+        const distExt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.exterior.x, worldPoint.z - this.bunkerDoorButtons.exterior.z);
+
+        if (distDoor <= 3.2 || distInt <= 1.5 || distExt <= 1.5) {
+            return this.interactWithBunkerBlastDoorButton();
+        }
+        return false;
     }
 
     interactWithConsole() {
@@ -10327,11 +10651,18 @@ export class ThreeGame {
         }));
     }
 
+    resolveFallDamage() {
+        const hardened = Boolean(this.bank?.getState?.()?.tier2Unlocks?.fallHardening);
+        const raw = hardened ? FALL_DAMAGE_BASE / 2 : FALL_DAMAGE_BASE;
+        return Math.max(1, Math.round(raw));
+    }
+
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
         if (this.isPlayerDead) return;
         if (this.godMode) return;
         if (this.cinematicLock) return; // untouchable during scripted sequences
         if (this._abilityImmune) return;
+        if (this.isInPocket) return; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return;
         if (this.missionState?.status === 'inactive') return;
         const previousHp = this.playerVitals.hp;
@@ -10345,7 +10676,7 @@ export class ThreeGame {
 
         // The Director eases off right after the player is hurt.
         this.bunkerDirector?.notifyThreat();
-        this.triggerCameraShake(0.22, 0.4);
+        this.triggerCameraShake?.(0.22, 0.4);
         this.emitHealthState();
         window.dispatchEvent(new CustomEvent('player-damaged', {
             detail: {
@@ -11102,7 +11433,6 @@ export class ThreeGame {
                         const scanColor = isEnemy ? RADAR_DANGER_COLOR : 0x00d2ff;
                         const duration = isEnemy ? RADAR_DANGER_TRACK_SECONDS : RADAR_STANDARD_TRACK_SECONDS;
                         this.spawnRadarPingHighlight(sprite, scanColor, { duration });
-                        if (isEnemy) this.spawnEnemyXrayGhost(sprite, { duration });
                     }
                 }
 
@@ -12177,6 +12507,11 @@ export class ThreeGame {
             }
         }
 
+        // Inside main bunker crash site base (chunk 0,0 interior, z <= 15.2): always fully clear
+        if (Math.abs(x - 9) <= 7.5 && z <= 15.2) {
+            return 1.0;
+        }
+
         const generatorState = this.getO2GeneratorState?.();
         const generatorPos = this.getActiveO2GeneratorPosition?.();
         if (generatorState?.isOnline && generatorPos) {
@@ -12186,15 +12521,24 @@ export class ThreeGame {
         const distance = Math.hypot(x - this.player.position.x, z - this.player.position.z);
         if (distance <= 0.001) return 1;
 
+        if (!this.exploredTileSet) this.exploredTileSet = new Set();
+        const tileX = Math.round(x);
+        const tileZ = Math.round(z);
+        const tileKey = `${tileX},${tileZ}`;
+
         // 1. Ambient radial visibility around player
         const fadeStart = FOG_OF_WAR_CLEAR_RADIUS;
         const fadeEnd = FOG_OF_WAR_CLEAR_RADIUS + FOG_OF_WAR_FADE_RADIUS;
         let ambientVis = FOG_OF_WAR_MIN_VISIBILITY;
         if (distance <= fadeStart) {
-            ambientVis = 1;
+            if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
+                ambientVis = 1;
+            }
         } else if (distance < fadeEnd) {
-            const t = (distance - fadeStart) / Math.max(0.001, fadeEnd - fadeStart);
-            ambientVis = THREE.MathUtils.lerp(1, FOG_OF_WAR_MIN_VISIBILITY, t * t * (3 - 2 * t));
+            if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
+                const t = (distance - fadeStart) / Math.max(0.001, fadeEnd - fadeStart);
+                ambientVis = THREE.MathUtils.lerp(1, FOG_OF_WAR_MIN_VISIBILITY, t * t * (3 - 2 * t));
+            }
         }
 
         // 2. Flashlight cone visibility
@@ -12205,7 +12549,6 @@ export class ThreeGame {
             const dot = (dx * this.playerForwardDir.x + dz * this.playerForwardDir.y) / distance;
             const cosLimit = Math.cos(SUIT_CONE_LIGHT_ANGLE);
             if (dot >= cosLimit) {
-                // Check if blocked by walls
                 if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
                     const edgeFade = THREE.MathUtils.smoothstep(dot, cosLimit, cosLimit + 0.12);
                     const distanceFade = 1.0 - THREE.MathUtils.smoothstep(distance, SUIT_CONE_LIGHT_DISTANCE * 0.72, SUIT_CONE_LIGHT_DISTANCE);
@@ -12214,7 +12557,18 @@ export class ThreeGame {
             }
         }
 
-        return Math.min(1, Math.max(ambientVis, flashlightVis));
+        const currentVis = Math.min(1, Math.max(ambientVis, flashlightVis));
+        if (currentVis >= 0.65) {
+            this.exploredTileSet.add(tileKey);
+            return 1.0;
+        }
+
+        // Has player visited / explored this tile before? ("unless we've been there")
+        if (this.exploredTileSet.has(tileKey)) {
+            return 0.45;
+        }
+
+        return FOG_OF_WAR_MIN_VISIBILITY;
     }
 
     applyFogOfWarOpacity(object, visibility, { captureCurrent = false } = {}) {
@@ -12681,7 +13035,8 @@ export class ThreeGame {
 
             const dir = backpedal ? -1 : 1;
             this.animationTimer += delta * SPRITE_ANIMATION_SPEED * dir;
-            const frames = PLAYER_WALK_FRAME_COUNT;
+            const layout = PLAYER_SPRITE_LAYOUTS[this.playerType] ?? PLAYER_SPRITE_LAYOUTS.SCOUT;
+            const frames = layout.walkFrames;
             const column = ((Math.floor(this.animationTimer) % frames) + frames) % frames;
             this.updatePlayerSpriteFrame(column, this.currentFacingRow, this.torsoFacingRow);
 
@@ -12690,7 +13045,7 @@ export class ThreeGame {
             }
             if (column !== this.lastAnimationColumn) {
                 this.lastAnimationColumn = column;
-                if (column === 1) {
+                if (layout.footstepFrames.includes(column)) {
                     if (this.performanceProfile !== 'menu') {
                         window.AudioManager?.playProceduralFootstep(this.playerType);
                     }
@@ -12715,7 +13070,7 @@ export class ThreeGame {
     getFacingRow(axisX, axisZ) {
         const angle = Math.atan2(axisZ, axisX);
         const octant = Math.round(angle / (Math.PI / 4));
-        return (octant + PLAYER_SPRITE_DIRECTION_CELLS.length) % PLAYER_SPRITE_DIRECTION_CELLS.length;
+        return (octant + 8) % 8;
     }
 
     // Keeps the legs and torso billboards visually identical under status tints.
@@ -12740,15 +13095,18 @@ export class ThreeGame {
     // Points a texture at one complete V2 direction/walk frame. `half` remains
     // in the signature so legacy call sites and torso materials stay harmless.
     setSpriteHalfFrame(texture, column, row, _half) {
-        const directionCell = PLAYER_SPRITE_DIRECTION_CELLS[row] ?? PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
-        const frameColumn = directionCell.baseColumn + (column % PLAYER_WALK_FRAME_COUNT);
-        const frameBaseY = (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y;
+        const layout = PLAYER_SPRITE_LAYOUTS[this.playerType] ?? PLAYER_SPRITE_LAYOUTS.SCOUT;
+        const directionCell = layout.directionCells[row] ?? layout.directionCells[PLAYER_DEFAULT_DIRECTION_INDEX];
+        const repeatX = 1 / layout.columns;
+        const repeatY = 1 / layout.rows;
+        const frameColumn = directionCell.baseColumn + (column % layout.walkFrames);
+        const frameBaseY = (layout.rows - 1 - directionCell.row) * repeatY;
         texture.repeat.set(
-            PLAYER_SPRITE_FRAME_REPEAT_X,
-            PLAYER_SPRITE_FRAME_REPEAT_Y
+            repeatX,
+            repeatY
         );
         texture.offset.set(
-            frameColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
+            frameColumn * repeatX,
             frameBaseY
         );
     }
@@ -13839,10 +14197,20 @@ export class ThreeGame {
 
     markWallTileDestroyed(worldX, worldZ) {
         const coord = this.getChunkLocalFromWorld(worldX, worldZ);
-        this.destroyedWallKeys.add(this.getWallKey(coord.tileX, coord.tileZ));
-        const grid = this.chunkCache.get(coord.key);
+        const wallKey = this.getWallKey(coord.tileX, coord.tileZ);
+        this.destroyedWallKeys.add(wallKey);
+        const grid = this.chunkCache?.get?.(coord.key);
         if (grid?.[coord.localY]) {
             grid[coord.localY][coord.localX] = '.';
+        }
+        const wallMesh = this.findWallMeshAt?.(coord.tileX, coord.tileZ);
+        if (wallMesh) {
+            wallMesh.userData.destroyed = true;
+            wallMesh.visible = false;
+            wallMesh.parent?.remove(wallMesh);
+            if (this.wallMeshes) {
+                this.wallMeshes = this.wallMeshes.filter((candidate) => candidate !== wallMesh);
+            }
         }
         this._chunkRoomTypeCache?.delete(coord.key);
         this._chunkTemplateCache?.delete(coord.key);
@@ -13924,6 +14292,9 @@ export class ThreeGame {
 
     damageWall(wall, amount = 1, { source = 'player' } = {}) {
         if (!wall?.userData?.isWall || wall.userData.destroyed) return false;
+        if (wall?.userData?.isBunkerBlastDoor || (wall?.userData?.worldZ === 15 && wall?.userData?.worldX >= 6 && wall?.userData?.worldX <= 11)) {
+            return this.damageBunkerBlastDoor(amount, { source });
+        }
         const maxHp = Math.max(1, wall.userData.maxWallHp ?? WALL_HP_STANDARD);
         const damage = Math.max(0, Math.round(Number(amount) || 0));
         wall.userData.wallHp = Math.max(0, (wall.userData.wallHp ?? maxHp) - damage);
@@ -17351,7 +17722,7 @@ export class ThreeGame {
         sprite.userData.doorBreachTimer = (sprite.userData.doorBreachTimer ?? 0.5) - 0.016;
         if (sprite.userData.doorBreachTimer <= 0) {
             sprite.userData.doorBreachTimer = 0.5;
-            this.destroyedWallKeys.add(doorKey);
+            this.markWallTileDestroyed(doorX, doorZ);
             this.spawnGearPoofEffect(doorX, doorZ, 'bunker_junk');
             window.AudioManager?.playMetalStress?.({ volume: 0.45, playbackRate: 1.9, force: true });
         }
@@ -17369,7 +17740,7 @@ export class ThreeGame {
                 if (this.getTileType?.(tx, tz) === 'D') {
                     const doorKey = this.getWallKey ? this.getWallKey(tx, tz) : `${tx},${tz}`;
                     if (!this.destroyedWallKeys?.has(doorKey)) {
-                        this.destroyedWallKeys.add(doorKey);
+                        this.markWallTileDestroyed(tx, tz);
                         this.spawnGearPoofEffect(tx, tz, 'bunker_junk');
                         window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.8, bus: 'sfx' });
                         return true;
@@ -18577,18 +18948,32 @@ export class ThreeGame {
     }
 
     getTileType(worldX, worldY) {
-        const chunkX = Math.floor(worldX / this.chunkSize);
-        const chunkY = Math.floor(worldY / this.chunkSize);
-        const localX = worldX - chunkX * this.chunkSize;
-        const localY = worldY - chunkY * this.chunkSize;
-        return this.getOrCreateChunk(chunkX, chunkY)[localY][localX];
+        const tileX = Math.round(worldX);
+        const tileY = Math.round(worldY);
+        if (this.bunkerBlastDoorState && tileY === 15 && tileX >= 6 && tileX <= 11) {
+            return this.bunkerBlastDoorState.open ? '.' : '#';
+        }
+        const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
+        if (this.destroyedWallKeys?.has(key)) return '.';
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileY / this.chunkSize);
+        const localX = tileX - chunkX * this.chunkSize;
+        const localY = tileY - chunkY * this.chunkSize;
+        return this.getOrCreateChunk(chunkX, chunkY)?.[localY]?.[localX] ?? '.';
     }
 
     getCachedTileType(worldX, worldY) {
-        const chunkX = Math.floor(worldX / this.chunkSize);
-        const chunkY = Math.floor(worldY / this.chunkSize);
-        const localX = worldX - chunkX * this.chunkSize;
-        const localY = worldY - chunkY * this.chunkSize;
+        const tileX = Math.round(worldX);
+        const tileY = Math.round(worldY);
+        if (this.bunkerBlastDoorState && tileY === 15 && tileX >= 6 && tileX <= 11) {
+            return this.bunkerBlastDoorState.open ? '.' : '#';
+        }
+        const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
+        if (this.destroyedWallKeys?.has(key)) return '.';
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileY / this.chunkSize);
+        const localX = tileX - chunkX * this.chunkSize;
+        const localY = tileY - chunkY * this.chunkSize;
         const grid = this.chunkCache?.get?.(`${chunkX},${chunkY}`);
         return grid?.[localY]?.[localX] ?? null;
     }
@@ -18664,6 +19049,7 @@ export class ThreeGame {
 
         const chunkX = Math.floor(worldX / this.chunkSize);
         const chunkY = Math.floor(worldY / this.chunkSize);
+        if (this.bunkerBlastDoorState && chunkX === 0 && chunkY === 0) return null;
         const holeCut = this.getHoleCutForLandform(this.getChunkLandform(chunkX, chunkY));
         if (holeCut <= 0) return null;
 
@@ -19152,6 +19538,7 @@ export class ThreeGame {
     }
 
     clearSpawnArea(grid, chunkX, chunkY) {
+        if (chunkX !== 0 || chunkY !== 0) return;
         const spawn = this.getSpawnTile();
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
@@ -19160,9 +19547,16 @@ export class ThreeGame {
                 const worldY = chunkY * this.chunkSize + localY;
                 const dx = worldX - spawn.x;
                 const dy = worldY - spawn.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
+                const distance = Math.hypot(dx, dy);
+
                 if (distance <= 6.0) {
                     grid[localY][localX] = '.';
+                } else if (distance > 6.0 && distance <= 7.2) {
+                    if (localY === 15 && localX >= 6 && localX <= 11) {
+                        grid[localY][localX] = this.bunkerBlastDoorState?.open ? '.' : '#';
+                    } else {
+                        grid[localY][localX] = '#';
+                    }
                 }
             }
         }
