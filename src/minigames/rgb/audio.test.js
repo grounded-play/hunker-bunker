@@ -4,7 +4,9 @@ import { resolve } from 'node:path';
 import {
     CHAPTER_AMBIENCE,
     HOTSPOT_AUDIO,
-    RGB_AUDIO_MANIFEST
+    RGB_AUDIO_MANIFEST,
+    getDialogueSpeaker,
+    hasAuthoredVoice
 } from './audio.js';
 import { CHAPTERS } from './content.js';
 
@@ -30,5 +32,12 @@ describe('RGB audio content', () => {
             expect(hotspots.has(hotspotId), hotspotId).toBe(true);
             for (const cue of cues) expect(keys.has(cue), cue).toBe(true);
         }
+    });
+
+    it('distinguishes authored voice from auto-spoken dialogue fallback', () => {
+        expect(hasAuthoredVoice('listen_voicemail')).toBe(true);
+        expect(hasAuthoredVoice('inspect_bottle')).toBe(false);
+        expect(getDialogueSpeaker('scan_bottle')).toBe('KIOSK');
+        expect(getDialogueSpeaker('inspect_bottle')).toBe('ELIAS');
     });
 });

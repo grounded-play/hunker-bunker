@@ -63,12 +63,33 @@ export const HOTSPOT_AUDIO = Object.freeze({
     rescue_fumble: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_denied']
 });
 
+const HOTSPOT_SPEAKERS = Object.freeze({
+    listen_voicemail: 'LUCIA',
+    speak_with_marisol: 'MARISOL',
+    demand_footage: 'HR',
+    call_hr: 'HR',
+    scan_bottle: 'KIOSK',
+    request_billing_agent: 'KIOSK',
+    document_bag: 'KIOSK',
+    read_terminal: 'SYSTEM',
+    pull_alarm: 'SYSTEM'
+});
+
+export function hasAuthoredVoice(hotspotId) {
+    return (HOTSPOT_AUDIO[hotspotId] ?? []).some((key) => key.includes('_voice_'));
+}
+
+export function getDialogueSpeaker(hotspotId) {
+    return HOTSPOT_SPEAKERS[hotspotId] ?? 'ELIAS';
+}
+
 export function createRgbAudioController() {
     let ambience = null;
     let music = null;
     let activeChapter = null;
     let ready = false;
     let destroyed = false;
+    let speechToken = 0;
 
     const stopHandle = (handle) => {
         try { handle?.source?.stop(); } catch { /* already stopped */ }
@@ -79,12 +100,62 @@ export function createRgbAudioController() {
         return AudioManager.play(key, { varyPitch: false, ...options });
     };
 
+    const stopSpeech = () => {
+        speechToken += 1;
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+    };
+
+    const speakLines = (hotspotId, lines = []) => {
+        if (
+            destroyed
+            || AudioManager.globalMuted
+            || !AudioManager.voiceEnabled
+            || typeof window === 'undefined'
+            || !window.speechSynthesis
+            || typeof window.SpeechSynthesisUtterance !== 'function'
+        ) return;
+
+        stopSpeech();
+        const token = speechToken;
+        const speaker = getDialogueSpeaker(hotspotId);
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find((voice) => (
+            voice.lang?.toLowerCase().startsWith('en')
+            && (speaker === 'SYSTEM' || speaker === 'KIOSK'
+                ? /google|microsoft|english/i.test(voice.name)
+                : true)
+        )) ?? voices.find((voice) => voice.lang?.toLowerCase().startsWith('en'));
+
+        const queueNext = (index) => {
+            if (destroyed || token !== speechToken || index >= lines.length) return;
+            const utterance = new window.SpeechSynthesisUtterance(String(lines[index]));
+            utterance.voice = preferred ?? null;
+            utterance.rate = speaker === 'SYSTEM' || speaker === 'KIOSK' ? 0.88 : 0.94;
+            utterance.pitch = speaker === 'LUCIA' ? 1.12 : (speaker === 'SYSTEM' ? 0.82 : 0.96);
+            utterance.volume = Math.min(
+                1,
+                Math.max(0, AudioManager.masterVolume * AudioManager.voiceVolume)
+            );
+            utterance.onend = () => queueNext(index + 1);
+            utterance.onerror = () => queueNext(index + 1);
+            window.speechSynthesis.speak(utterance);
+        };
+        queueNext(0);
+    };
+
     return {
         async load() {
             await AudioManager.unlock();
             await AudioManager.loadAssets(RGB_AUDIO_MANIFEST);
             if (destroyed) return;
             ready = true;
+            music = play('rgb_music_epilogue_ashes', {
+                bus: 'music',
+                loop: true,
+                volume: 0.26
+            });
             if (activeChapter) this.enterChapter(activeChapter);
         },
         enterChapter(chapterId) {
@@ -97,13 +168,15 @@ export function createRgbAudioController() {
                 volume: chapterId === 'sector_four' ? 0.5 : 0.34
             });
         },
-        hotspot(hotspotId) {
+        hotspot(hotspotId, lines = []) {
+            const authoredVoice = hasAuthoredVoice(hotspotId);
             for (const key of HOTSPOT_AUDIO[hotspotId] ?? []) {
                 play(key, {
                     bus: key.includes('_voice_') ? 'voice' : 'sfx',
                     volume: key.includes('_voice_') ? 0.9 : 0.65
                 });
             }
+            if (!authoredVoice) speakLines(hotspotId, lines);
         },
         ending(endingId) {
             if (endingId !== 'ashes_survival') return;
@@ -116,6 +189,7 @@ export function createRgbAudioController() {
         },
         destroy() {
             destroyed = true;
+            stopSpeech();
             stopHandle(ambience);
             stopHandle(music);
             ambience = null;

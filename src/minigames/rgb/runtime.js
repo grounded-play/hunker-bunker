@@ -114,6 +114,7 @@ export function mountRgb({ root, save, storage, onExit }) {
     let destroyed = false;
     let resolvedEndingId = null;
     let resolvedGameOverId = null;
+    let dialogueLines = ['Select an available action to continue the archive reconstruction.'];
 
     const actionRouter = createActionRouter();
     const rgbAudio = createRgbAudioController();
@@ -205,17 +206,17 @@ export function mountRgb({ root, save, storage, onExit }) {
             bgImg.alt = '';
             stage.appendChild(bgImg);
         }
+        scene.append(stage);
+
+        const actionDeck = document.createElement('div');
+        actionDeck.className = 'rgb-action-deck';
+        actionDeck.setAttribute('aria-label', 'Available actions');
         const ready = new Set(focusableHotspots().map((h) => h.id));
         chapter.hotspots.forEach((hotspot) => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'rgb-hotspot';
             btn.textContent = hotspot.label;
-            btn.style.left = `calc(var(--stage-px, 1px) * ${hotspot.x})`;
-            btn.style.top = `calc(var(--stage-px, 1px) * ${hotspot.y})`;
-            btn.style.width = `calc(var(--stage-px, 1px) * ${hotspot.w})`;
-            btn.style.height = `calc(var(--stage-px, 1px) * ${hotspot.h})`;
-
             const isDone = hotspot.once && visited.has(hotspot.id);
             const isReady = ready.has(hotspot.id);
             btn.classList.toggle('rgb-hotspot--done', Boolean(isDone));
@@ -223,13 +224,14 @@ export function mountRgb({ root, save, storage, onExit }) {
             btn.classList.toggle('rgb-hotspot--reveal', revealHeld);
             btn.disabled = !isReady;
             btn.addEventListener('click', () => activateHotspot(hotspot));
-            stage.appendChild(btn);
+            actionDeck.appendChild(btn);
         });
-        scene.append(stage);
+        scene.append(actionDeck);
 
         const dialogue = document.createElement('div');
         dialogue.className = 'rgb-dialogue';
         dialogue.id = 'rgb-dialogue';
+        dialogue.setAttribute('aria-live', 'polite');
         scene.append(dialogue);
 
         const footer = document.createElement('div');
@@ -238,6 +240,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         scene.append(footer);
 
         root.append(scene);
+        renderDialogueLines(dialogueLines);
 
         if (mode === 'inventory') renderInventoryOverlay();
         if (mode === 'recap') renderRecapOverlay();
@@ -282,9 +285,13 @@ export function mountRgb({ root, save, storage, onExit }) {
         const dialogue = root.querySelector('#rgb-dialogue');
         if (!dialogue) return;
         dialogue.replaceChildren();
-        for (const line of lines ?? []) {
+        for (const [index, line] of (lines ?? []).entries()) {
             const p = document.createElement('p');
-            p.innerHTML = `<span class="rgb-dialogue-prompt">❯</span> ${line}`;
+            p.style.setProperty('--rgb-line-index', index);
+            const prompt = document.createElement('span');
+            prompt.className = 'rgb-dialogue-prompt';
+            prompt.textContent = '❯';
+            p.append(prompt, document.createTextNode(` ${line}`));
             dialogue.appendChild(p);
         }
     }
@@ -434,8 +441,8 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (mode !== 'scene') return;
         if (!isHotspotAvailable(hotspot, runState, visited)) return;
 
-        renderDialogueLines(hotspot.lines);
-        rgbAudio.hotspot(hotspot.id);
+        dialogueLines = [...(hotspot.lines ?? [])];
+        rgbAudio.hotspot(hotspot.id, dialogueLines);
         const priorState = runState;
         runState = applyEffects(runState, hotspot.effects);
         visited.add(hotspot.id);
@@ -480,6 +487,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         runState = { ...runState, checkpoint: chapterId };
         visited = new Set();
         focusIndex = 0;
+        dialogueLines = [`Archive reconstruction resumed: ${CHAPTERS[chapterId].title}.`];
         currentSave = saveCheckpoint(currentSave, chapterId);
         persist();
         window.dispatchEvent(new CustomEvent('rgb-checkpoint', { detail: { checkpoint: chapterId } }));
@@ -520,6 +528,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         }
         if (retryHotspot?.effects?.rescue) runState = { ...runState, rescueOutcome: null };
         if (retryHotspot?.effects?.finalChoice) runState = { ...runState, finalChoice: null };
+        dialogueLines = ['Retry restored. Select the next action.'];
         mode = 'scene';
         render();
     }
@@ -528,6 +537,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         runState = hydrateRunState(currentSave);
         visited = new Set();
         focusIndex = 0;
+        dialogueLines = [`Checkpoint restored: ${currentChapter().title}.`];
         mode = 'scene';
         render();
     }

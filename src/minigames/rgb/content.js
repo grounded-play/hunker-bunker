@@ -71,7 +71,11 @@ export const RAIL_CINEMATICS = Object.freeze({
     R9: { image: `${CINEMATIC_BASE}/rails/r9_open_hand.png` }
 });
 
-export const INTRO_CINEMATIC = Object.freeze({ video: `${CINEMATIC_BASE}/Intro.mp4` });
+export const INTRO_CINEMATIC = Object.freeze({
+    video: `${CINEMATIC_BASE}/Intro.mp4`,
+    image: `${CINEMATIC_BASE}/../backgrounds/bg_rgb_parking_lot.png`,
+    label: 'ARCHIVE SIGNAL // RIVERSIDE GLOBAL BOTICS'
+});
 
 // Resolves which cinematic beat(s), if any, play when a hotspot fires, using
 // the run state as of *before* that hotspot's own effects are applied (so a

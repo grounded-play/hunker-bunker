@@ -13,6 +13,23 @@ dist-ssr
 coverage
 *.local
 
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Local databases and sidecar files
+*.db
+*.db-*
+*.db-journal
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+server/data/*
+!server/data/.gitkeep
+
 # Claude work notes (local only)
 .claude-work/
 

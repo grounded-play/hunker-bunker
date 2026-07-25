@@ -11170,6 +11170,7 @@ button.archive-log-entry:active {
 .rgb-stage-layer {
   position: relative;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   background: #040508;
 }
@@ -11187,7 +11188,7 @@ button.archive-log-entry:active {
 }
 
 .rgb-hotspot {
-  position: absolute;
+  position: relative;
   z-index: 5;
   display: flex;
   align-items: center;
@@ -11209,6 +11210,24 @@ button.archive-log-entry:active {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0 10px rgba(225, 29, 46, 0.15);
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
   transition: all 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  width: 100%;
+  min-width: 0;
+  min-height: calc(var(--stage-px, 1px) * 48);
+  padding: calc(var(--stage-px, 1px) * 8) calc(var(--stage-px, 1px) * 12);
+  font-size: max(var(--hb-text-floor, 16px), calc(var(--stage-px, 1px) * 15));
+}
+
+.rgb-action-deck {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(calc(var(--stage-px, 1px) * 48), auto);
+  gap: calc(var(--stage-px, 1px) * 8);
+  padding: calc(var(--stage-px, 1px) * 10) var(--hb-safe-hud, 24px);
+  background: rgba(5, 6, 9, 0.97);
+  border-top: 1px solid rgba(225, 29, 46, 0.35);
+  box-shadow: 0 -6px 22px rgba(0, 0, 0, 0.62);
 }
 
 .rgb-hotspot::before {
@@ -11232,11 +11251,13 @@ button.archive-log-entry:active {
 }
 
 .rgb-hotspot--locked {
+  visibility: hidden;
   opacity: 0;
   pointer-events: none;
 }
 
 .rgb-hotspot--locked.rgb-hotspot--reveal {
+  visibility: visible;
   opacity: 0.35;
   border-style: dashed;
   border-color: rgba(225, 29, 46, 0.6);
@@ -11268,8 +11289,10 @@ button.archive-log-entry:active {
 .rgb-dialogue {
   position: relative;
   z-index: 5;
-  min-height: calc(var(--vu) * 11);
-  padding: calc(var(--vu) * 1.5) var(--hb-safe-text, 36px);
+  min-height: calc(var(--stage-px, 1px) * 96);
+  max-height: calc(var(--stage-px, 1px) * 122);
+  overflow: hidden;
+  padding: calc(var(--stage-px, 1px) * 12) var(--hb-safe-text, 36px);
   background: rgba(8, 10, 14, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -11281,8 +11304,23 @@ button.archive-log-entry:active {
   color: rgba(248, 250, 252, 0.95);
 }
 
+.rgb-dialogue p {
+  margin: 0;
+  opacity: 0;
+  transform: translateY(4px);
+  animation: rgb-dialogue-line-in 0.28s ease forwards;
+  animation-delay: calc(var(--rgb-line-index, 0) * 0.34s);
+}
+
 .rgb-dialogue p + p {
   margin-top: calc(var(--vu) * 0.5);
+}
+
+@keyframes rgb-dialogue-line-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .rgb-dialogue-prompt {
@@ -11503,6 +11541,35 @@ button.archive-log-entry:active {
   height: 100%;
   object-fit: contain;
   background: #000;
+}
+
+.rgb-cinematic__status {
+  position: absolute;
+  left: var(--hb-safe-text, 36px);
+  bottom: calc(var(--stage-px, 1px) * 54);
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.88);
+  font: 700 max(16px, calc(var(--stage-px, 1px) * 18))/1.3 'Space Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px #000;
+}
+
+.rgb-cinematic__skip {
+  position: absolute;
+  right: var(--hb-safe-hud, 24px);
+  bottom: calc(var(--stage-px, 1px) * 22);
+  z-index: 3;
+  color: rgba(255, 255, 255, 0.72);
+  font: 700 max(13px, calc(var(--stage-px, 1px) * 14))/1 'Space Mono', monospace;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 8px #000;
+}
+
+@media (max-aspect-ratio: 4 / 3) {
+  .rgb-action-deck {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* ── In-Game Dev Console Modal ─────────────────────────────────────── */

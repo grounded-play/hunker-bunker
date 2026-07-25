@@ -11,25 +11,38 @@ import { AudioManager } from '../../audio.js';
 export const IMAGE_HOLD_MS = 2600;
 export const FADE_MS = 350;
 
-function probeVideoExists(src) {
-    if (typeof fetch !== 'function') return Promise.resolve(false);
-    return fetch(src, { method: 'HEAD' })
-        .then((res) => res.ok)
-        .catch(() => false);
-}
-
 function playStep(container, step) {
     return new Promise((resolve) => {
         container.replaceChildren();
         let settled = false;
+        let fallbackTimer = 0;
         const finish = () => {
             if (settled) return;
             settled = true;
+            clearTimeout(fallbackTimer);
+            window.removeEventListener('keydown', onKey);
+            container.onclick = null;
             resolve();
         };
+        const onKey = (event) => {
+            if (event.code === 'Escape') return;
+            event.preventDefault();
+            finish();
+        };
         container.onclick = finish;
+        window.addEventListener('keydown', onKey);
+
+        const status = document.createElement('div');
+        status.className = 'rgb-cinematic__status';
+        status.textContent = step.label ?? 'ARCHIVE CINEMATIC // RESTORING SIGNAL';
+        const skip = document.createElement('div');
+        skip.className = 'rgb-cinematic__skip';
+        skip.textContent = 'PRESS ANY KEY TO SKIP';
+        container.append(status, skip);
 
         const showImage = () => {
+            if (settled) return;
+            clearTimeout(fallbackTimer);
             if (!step.image) {
                 finish();
                 return;
@@ -39,8 +52,9 @@ function playStep(container, step) {
             img.className = 'rgb-cinematic__image';
             img.src = step.image;
             img.alt = '';
-            container.append(img);
-            setTimeout(finish, IMAGE_HOLD_MS);
+            const imageSkip = skip.cloneNode(true);
+            container.append(img, imageSkip);
+            fallbackTimer = setTimeout(finish, IMAGE_HOLD_MS);
         };
 
         if (!step.video) {
@@ -48,24 +62,20 @@ function playStep(container, step) {
             return;
         }
 
-        probeVideoExists(step.video).then((exists) => {
-            if (settled) return;
-            if (!exists) {
-                showImage();
-                return;
-            }
-            const video = document.createElement('video');
-            video.className = 'rgb-cinematic__video';
-            video.src = step.video;
-            video.autoplay = true;
-            video.playsInline = true;
-            video.muted = AudioManager.globalMuted;
-            video.volume = Math.min(1, Math.max(0, AudioManager.masterVolume));
-            video.addEventListener('ended', finish);
-            video.addEventListener('error', showImage);
-            container.append(video);
-            video.play().catch(showImage);
-        });
+        const video = document.createElement('video');
+        video.className = 'rgb-cinematic__video';
+        video.src = step.video;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+        video.muted = AudioManager.globalMuted;
+        video.volume = Math.min(1, Math.max(0, AudioManager.masterVolume));
+        video.addEventListener('ended', finish);
+        video.addEventListener('error', showImage);
+        video.addEventListener('playing', () => clearTimeout(fallbackTimer), { once: true });
+        container.prepend(video);
+        fallbackTimer = setTimeout(showImage, 3000);
+        video.play().catch(showImage);
     });
 }
 
