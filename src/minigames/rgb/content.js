@@ -35,6 +35,97 @@ export const ITEMS = Object.freeze({
 
 export const CONTENT_WARNING = 'Depicts workplace injury, medical-access stress, child illness discussed off-screen, fire, and possible character death.';
 
+// Cinematic beats: choice-branch clips (docs/mini-games/rgb/cinematic-branch-prompts.md,
+// fully produced) and connective rail clips (docs/mini-games/rgb/cinematic-rail-prompts.md,
+// a work in progress — only R1-R4 have end-frame stills so far, no video for
+// any rail yet, and R5-R9 don't exist at all). Every entry declares a video
+// and/or an image; cinematicPlayer.js tries the video first and falls back
+// to holding the image when the video is missing. Entries with no video key
+// at all (the current rails) go straight to the image.
+const CINEMATIC_BASE = '/minigames/rgb/cinematics';
+
+export const BRANCH_CINEMATICS = Object.freeze({
+    'C1-A': { video: `${CINEMATIC_BASE}/C1-A.mp4`, image: `${CINEMATIC_BASE}/c1/end_answer_lucia.png` },
+    'C1-B': { video: `${CINEMATIC_BASE}/C1-B.mp4`, image: `${CINEMATIC_BASE}/c1/end_enter_now.png` },
+    'C2-A': { video: `${CINEMATIC_BASE}/C2-A.mp4`, image: `${CINEMATIC_BASE}/c2/end_honest_log.png` },
+    'C2-B': { video: `${CINEMATIC_BASE}/C2-B.mp4`, image: `${CINEMATIC_BASE}/c2/end_clean_metric.png` },
+    'C3-A': { video: `${CINEMATIC_BASE}/C3-A.mp4`, image: `${CINEMATIC_BASE}/c3/end_document_review.png` },
+    'C3-B': { video: `${CINEMATIC_BASE}/C3-B.mp4`, image: `${CINEMATIC_BASE}/c3/end_comply_review.png` },
+    'C4-A': { video: `${CINEMATIC_BASE}/C4-A.mp4`, image: `${CINEMATIC_BASE}/c4/end_record_kiosk.png` },
+    'C4-B': { video: `${CINEMATIC_BASE}/C4-B.mp4`, image: `${CINEMATIC_BASE}/c4/end_call_lucia.png` },
+    'C4-C': { video: `${CINEMATIC_BASE}/C4-C.mp4`, image: `${CINEMATIC_BASE}/c4/end_lockout.png` },
+    'C5-A': { video: `${CINEMATIC_BASE}/C5-A.mp4`, image: `${CINEMATIC_BASE}/c5/end_preserve_profile.png` },
+    'C5-B': { video: `${CINEMATIC_BASE}/C5-B.mp4`, image: `${CINEMATIC_BASE}/c5/end_expose_profile.png` },
+    'C5-C': { video: `${CINEMATIC_BASE}/C5-C.mp4`, image: `${CINEMATIC_BASE}/c5/end_sever_trunk.png` },
+    'C6-A': { video: `${CINEMATIC_BASE}/C6-A.mp4`, image: `${CINEMATIC_BASE}/c6/end_rescue.png` },
+    'C6-B': { video: `${CINEMATIC_BASE}/C6-B.mp4`, image: `${CINEMATIC_BASE}/c6/end_crushed_retry.png` }
+});
+
+// R5-R9 are intentionally absent: no asset exists yet, so no cinematic beat
+// plays at those junctures until they're produced.
+export const RAIL_CINEMATICS = Object.freeze({
+    R1: { image: `${CINEMATIC_BASE}/rails/r1_badge_entry.png` },
+    R2: { image: `${CINEMATIC_BASE}/rails/r2_collision_aftermath.png` },
+    R3: { image: `${CINEMATIC_BASE}/rails/r3_coverage_discharge.png` },
+    R4: { image: `${CINEMATIC_BASE}/rails/r4_utility_map.png` }
+});
+
+export const INTRO_CINEMATIC = Object.freeze({ video: `${CINEMATIC_BASE}/Intro.mp4` });
+
+// Resolves which cinematic beat(s), if any, play when a hotspot fires, using
+// the run state as of *before* that hotspot's own effects are applied (so a
+// gate that depends on an earlier optional choice — e.g. badge_in checking
+// whether the player replied to Lucia — reads correctly). Several of the
+// prompt book's gates (C1, C3, C4) group multiple of this content's more
+// granular optional hotspots into one binary/ternary choice; the heuristics
+// below pick the branch whose State: annotation best matches what the
+// player actually did, and are the deliberate seam between the finer-grained
+// interaction design here and the coarser branch structure in the prompt
+// book.
+export function resolveCinematicSteps(hotspotId, priorState) {
+    switch (hotspotId) {
+        case 'reply_to_lucia':
+            return ['C1-A'];
+        case 'badge_in':
+            return priorState.flags.heardFullMessage ? ['R1'] : ['C1-B', 'R1'];
+        case 'double_tap_honest':
+            return ['C2-A', 'R2'];
+        case 'double_tap_falsify':
+            return ['C2-B', 'R2'];
+        case 'proceed_to_kiosk': {
+            const documented = priorState.evidence.includes('camera_discrepancy')
+                || priorState.evidence.includes('swab_photo')
+                || priorState.flags.keptNotebook;
+            return [documented ? 'C3-A' : 'C3-B', 'R3'];
+        }
+        case 'give_up':
+            return ['C4-C'];
+        case 'follow_utility_map': {
+            const calledLuciaOnly = priorState.flags.luciaCallback
+                && !priorState.evidence.includes('kiosk_record');
+            return [calledLuciaOnly ? 'C4-B' : 'C4-A', 'R4'];
+        }
+        case 'walk_away':
+            return ['C5-A'];
+        case 'expose_profile':
+            return ['C5-B'];
+        case 'sever_trunk':
+            return ['C5-C'];
+        case 'rescue_recenter':
+            return ['C6-A'];
+        case 'rescue_fumble':
+            return ['C6-B'];
+        default:
+            return [];
+    }
+}
+
+export function resolveCinematicAssets(stepKeys) {
+    return stepKeys
+        .map((key) => BRANCH_CINEMATICS[key] ?? RAIL_CINEMATICS[key])
+        .filter(Boolean);
+}
+
 export const CHAPTERS = Object.freeze({
     parking_lot: {
         id: 'parking_lot',

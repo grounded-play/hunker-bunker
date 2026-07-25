@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { CHAPTER_ORDER, CHAPTERS, ENDINGS, GAME_OVERS } from './content.js';
+import {
+    CHAPTER_ORDER,
+    CHAPTERS,
+    ENDINGS,
+    GAME_OVERS,
+    BRANCH_CINEMATICS,
+    RAIL_CINEMATICS,
+    INTRO_CINEMATIC,
+    resolveCinematicSteps,
+    resolveCinematicAssets
+} from './content.js';
 import {
     EVIDENCE_IDS,
     PAIN_LEVELS,
@@ -99,6 +109,59 @@ describe('content shape', () => {
             const advancing = chapter.hotspots.filter((h) => h.advances);
             expect(advancing.length).toBeGreaterThan(0);
         }
+    });
+
+    it('every non-empty resolveCinematicSteps result resolves to a known cinematic asset', () => {
+        const priorState = createRunState();
+        for (const chapter of Object.values(CHAPTERS)) {
+            for (const hotspot of chapter.hotspots) {
+                const steps = resolveCinematicSteps(hotspot.id, priorState);
+                const assets = resolveCinematicAssets(steps);
+                expect(assets.length).toBe(steps.length);
+            }
+        }
+    });
+
+    it('every produced branch cinematic ships both a video and an image', () => {
+        for (const entry of Object.values(BRANCH_CINEMATICS)) {
+            expect(entry.video).toMatch(/\.mp4$/);
+            expect(entry.image).toMatch(/\.png$/);
+        }
+    });
+
+    it('rail cinematics only ship what has actually been produced (WIP)', () => {
+        for (const entry of Object.values(RAIL_CINEMATICS)) {
+            expect(entry.image).toMatch(/\.png$/);
+        }
+        expect(Object.keys(RAIL_CINEMATICS).sort()).toEqual(['R1', 'R2', 'R3', 'R4']);
+    });
+
+    it('the intro cinematic declares a video', () => {
+        expect(INTRO_CINEMATIC.video).toMatch(/Intro\.mp4$/);
+    });
+
+    it('picks the branch clip that matches what the player actually did', () => {
+        const base = createRunState();
+
+        expect(resolveCinematicSteps('badge_in', base)).toEqual(['C1-B', 'R1']);
+        const replied = { ...base, flags: { ...base.flags, heardFullMessage: true } };
+        expect(resolveCinematicSteps('badge_in', replied)).toEqual(['R1']);
+
+        expect(resolveCinematicSteps('proceed_to_kiosk', base)).toEqual(['C3-B', 'R3']);
+        const documented = { ...base, flags: { ...base.flags, keptNotebook: true } };
+        expect(resolveCinematicSteps('proceed_to_kiosk', documented)).toEqual(['C3-A', 'R3']);
+
+        expect(resolveCinematicSteps('follow_utility_map', base)).toEqual(['C4-A', 'R4']);
+        const calledOnly = { ...base, flags: { ...base.flags, luciaCallback: true } };
+        expect(resolveCinematicSteps('follow_utility_map', calledOnly)).toEqual(['C4-B', 'R4']);
+
+        expect(resolveCinematicSteps('give_up', base)).toEqual(['C4-C']);
+        expect(resolveCinematicSteps('walk_away', base)).toEqual(['C5-A']);
+        expect(resolveCinematicSteps('expose_profile', base)).toEqual(['C5-B']);
+        expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C']);
+        expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A']);
+        expect(resolveCinematicSteps('rescue_fumble', base)).toEqual(['C6-B']);
+        expect(resolveCinematicSteps('inspect_bottle', base)).toEqual([]);
     });
 
     it('every game-over retryFrom points at a real hotspot id', () => {
