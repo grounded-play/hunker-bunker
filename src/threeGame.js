@@ -211,6 +211,7 @@ const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
 const FALL_DAMAGE_BASE = 2;
 const POCKET_CELL_COUNT = 5; // odd cell-count, matches chunkCellCount's exact-center property. Grid size = 5*2+1 = 11.
+const POCKET_WORLD_Y = -6; // fixed depth below the surface (y=0)
 const WALL_HP_DAMAGED = 5;
 const WALL_HP_STANDARD = 8;
 const WALL_HP_HAZARD = 11;
@@ -222,7 +223,8 @@ const LANDFORM_SHADER_ID = {
     [LANDFORMS.FIELD]: 1,
     [LANDFORMS.CANYON]: 2,
     [LANDFORMS.CRATER]: 3,
-    [LANDFORMS.RUINS]: 4
+    [LANDFORMS.RUINS]: 4,
+    pocket: 5
 };
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
@@ -1326,9 +1328,12 @@ export class ThreeGame {
                     } else if (uLandformId > 2.5 && uLandformId < 3.5) {
                         // CRATER — scorched impact rim.
                         landformTintColor = mix(finalWallColor, vec3(0.34, 0.20, 0.14), 0.30);
-                    } else if (uLandformId > 3.5) {
+                    } else if (uLandformId > 3.5 && uLandformId < 4.5) {
                         // RUINS — soot and rust damage.
                         landformTintColor = mix(finalWallColor, vec3(0.28, 0.23, 0.20), 0.32);
+                    } else if (uLandformId > 4.5) {
+                        // POCKET — dim, damp underground concrete.
+                        landformTintColor = mix(finalWallColor, vec3(0.16, 0.17, 0.19), 0.42);
                     }
                     finalWallColor = landformTintColor;
 
@@ -14345,6 +14350,76 @@ export class ThreeGame {
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
         return true;
+    }
+
+    mountPocket(holeWorldX, holeWorldZ) {
+        if (!this.pocketGroups) this.pocketGroups = new Map();
+        const key = this.getWallKey(holeWorldX, holeWorldZ);
+        if (this.pocketGroups.has(key)) return this.pocketGroups.get(key);
+
+        const pocket = this.generatePocket(holeWorldX, holeWorldZ);
+        const group = new THREE.Group();
+        group.position.set(
+            holeWorldX - pocket.centerCell.x,
+            POCKET_WORLD_Y,
+            holeWorldZ - pocket.centerCell.y
+        );
+
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(pocket.size, pocket.size),
+            this.floorMaterial
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(pocket.centerCell.x, 0, pocket.centerCell.y);
+        group.add(floor);
+
+        for (let y = 0; y < pocket.size; y += 1) {
+            for (let x = 0; x < pocket.size; x += 1) {
+                if (pocket.grid[y][x] !== '#') continue;
+                const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                wall.position.set(x, this.wallHeight / 2, y);
+                this.configureWallMesh(wall, {
+                    chunkX: 0, chunkY: 0, localX: x, localY: y,
+                    worldX: holeWorldX + (x - pocket.centerCell.x),
+                    worldZ: holeWorldZ + (y - pocket.centerCell.y),
+                    landform: 'pocket', variant: 'standard', heightScale: 1
+                });
+                group.add(wall);
+            }
+        }
+
+        // Modest loot bump: one pickup at a random open floor cell (not the
+        // center or the climb point).
+        const floorCells = [];
+        for (let y = 0; y < pocket.size; y += 1) {
+            for (let x = 0; x < pocket.size; x += 1) {
+                if (pocket.grid[y][x] !== '.') continue;
+                if (x === pocket.centerCell.x && y === pocket.centerCell.y) continue;
+                if (x === pocket.climbPoint.x && y === pocket.climbPoint.y) continue;
+                floorCells.push({ x, y });
+            }
+        }
+        if (floorCells.length > 0) {
+            const random = this.createSeededRandom(
+                (this.hashTile(holeWorldX + 5000, holeWorldZ + 5000) ^ this.runEntropy) >>> 0
+            );
+            const pick = floorCells[Math.floor(random() * floorCells.length)];
+            const lootType = random() < 0.5 ? 'health' : 'tech';
+            const placement = this.createSnailDropPlacement(
+                pocket.centerCell.x, pocket.centerCell.y, pick.x, pick.y, lootType
+            );
+            const pickup = this.createPickupInstance(placement);
+            group.add(pickup);
+        }
+
+        // Climb-point marker, reusing the existing wall-vent asset.
+        const marker = new THREE.Mesh(this.ventGeometry, this.ventMaterial);
+        marker.position.set(pocket.climbPoint.x, 0.6, pocket.climbPoint.y);
+        marker.userData = { isPocketClimbPoint: true, worldX: holeWorldX, worldZ: holeWorldZ };
+        group.add(marker);
+
+        this.pocketGroups.set(key, group);
+        return group;
     }
 
     mountChunk(chunkX, chunkY) {

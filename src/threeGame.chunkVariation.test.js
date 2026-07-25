@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
 import { LANDFORMS } from './landforms.js';
 
@@ -164,5 +165,50 @@ describe('generatePocket — per-hole, per-run pocket layout', () => {
         expect(pocket.grid[pocket.centerCell.y][pocket.centerCell.x]).toBe('.');
         expect(pocket.grid[pocket.climbPoint.y][pocket.climbPoint.x]).toBe('.');
         expect(pocket.climbPoint).not.toEqual(pocket.centerCell);
+    });
+});
+
+describe('mountPocket — pocket geometry mounting', () => {
+    function makeFakeThreeGameForMount() {
+        return {
+            pocketCache: new Map(),
+            pocketGroups: new Map(),
+            runEntropy: 123,
+            globalSeedOffset: 0,
+            wallHeight: 2,
+            wallGeometry: new THREE.BoxGeometry(1, 2, 1),
+            wallMaterial: new THREE.MeshBasicMaterial(),
+            floorGeometry: new THREE.PlaneGeometry(1, 1),
+            floorMaterial: new THREE.MeshBasicMaterial(),
+            ventGeometry: new THREE.BoxGeometry(0.48, 0.48, 0.06),
+            ventMaterial: new THREE.MeshBasicMaterial(),
+            hashTile: ThreeGame.prototype.hashTile,
+            createSeededRandom: ThreeGame.prototype.createSeededRandom,
+            carveCell: ThreeGame.prototype.carveCell,
+            carvePassage: ThreeGame.prototype.carvePassage,
+            shuffleDirections: ThreeGame.prototype.shuffleDirections,
+            getWallKey: ThreeGame.prototype.getWallKey,
+            generatePocket: ThreeGame.prototype.generatePocket,
+            configureWallMesh: ThreeGame.prototype.configureWallMesh,
+            getWallMaxHp: () => 8,
+            createSnailDropPlacement: () => ({ worldX: 0, worldZ: 0, type: 'health', elevation: 0.2, offsetX: 0, offsetZ: 0, bobOffset: 0, rotation: 0, tiltX: 0, tiltZ: 0, scale: 0.8, shadowRadius: 0.24, collectLock: 0.34 }),
+            createPickupInstance: () => ({ userData: {}, position: { set: () => {} } })
+        };
+    }
+
+    it('mounts a group with a floor, at least one wall, and exactly one climb marker', () => {
+        const fakeThis = makeFakeThreeGameForMount();
+        const group = ThreeGame.prototype.mountPocket.call(fakeThis, 10, 10);
+
+        expect(group.children.length).toBeGreaterThan(0);
+        const climbMarkers = group.children.filter((c) => c.userData?.isPocketClimbPoint);
+        expect(climbMarkers.length).toBe(1);
+    });
+
+    it('caches the mounted group by hole location', () => {
+        const fakeThis = makeFakeThreeGameForMount();
+        const first = ThreeGame.prototype.mountPocket.call(fakeThis, 3, 3);
+        const second = ThreeGame.prototype.mountPocket.call(fakeThis, 3, 3);
+        expect(second).toBe(first);
     });
 });
