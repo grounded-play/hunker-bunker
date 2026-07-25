@@ -34,6 +34,13 @@
   --scrollbar-thumb-hover: rgba(46, 196, 182, 0.72);
   --design-width: 160;
   --design-height: 100;
+  /* Safe-frame + type floor tokens, per
+     docs/steam-deck-first-display-and-input-spec.md. Values are logical
+     1280x800-stage pixels; --stage-px converts them to host px at runtime
+     (see main.js syncStageMetrics). */
+  --hb-safe-hud: calc(32 * var(--stage-px, 1px));
+  --hb-safe-text: calc(48 * var(--stage-px, 1px));
+  --hb-text-floor: calc(18 * var(--stage-px, 1px));
 }
 
 * {
