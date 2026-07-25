@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { BankManager, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES, shellPriceOf } from './bank.js';
+import { BankManager, FOUNDRY_ACTIVATION_COST, GOAL_COSTS, O2_GENERATOR_UPGRADES, shellPriceOf, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS } from './bank.js';
 
 function createMemoryStorage() {
     const memory = new Map();
@@ -42,7 +42,8 @@ describe('BankManager', () => {
             tier2Unlocks: {
                 suitThermal: false,
                 deconFilters: false,
-                stimCache: false
+                stimCache: false,
+                fallHardening: false
             },
             weaponUpgrades: {
                 ammoCapacity: 0,
@@ -298,6 +299,15 @@ describe('BankManager', () => {
         expect(bank.unlockTier2('suitThermal')).toBe(true);
         expect(bank.upgradeWeapon('ammoCapacity')).toBe(true);
         expect(bank.getShells()).toBeLessThan(50);
+    });
+
+    it('exposes fallHardening as a tier-2 upgrade gated behind the reactor compressor', () => {
+        expect(TIER2_UPGRADE_ORDER).toContain('fallHardening');
+        expect(TIER2_UPGRADE_CONFIGS.fallHardening).toMatchObject({
+            key: 'fallHardening',
+            prereq: 'reactorCompressor'
+        });
+        expect(TIER2_UPGRADE_CONFIGS.fallHardening.cost.tech).toBeGreaterThan(0);
     });
 
     it('upgrades base systems to level 2 with resources', () => {
