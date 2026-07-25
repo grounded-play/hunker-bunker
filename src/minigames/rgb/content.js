@@ -182,8 +182,7 @@ export const CHAPTERS = Object.freeze({
                 x: 240, y: 460, w: 110, h: 100,
                 once: true,
                 lines: ['A taped box jams the belt. 4A breaks its path.', 'The arm catches his shoulder, not his skull.'],
-                effects: { pain: 'injured' },
-                advances: true
+                effects: { pain: 'injured' }
             },
             {
                 id: 'take_the_hit',
@@ -191,8 +190,7 @@ export const CHAPTERS = Object.freeze({
                 x: 240, y: 460, w: 110, h: 100,
                 once: true,
                 lines: ['A taped box jams the belt. 4A breaks its path.', 'He doesn\'t get clear in time.'],
-                effects: { pain: 'severe' },
-                advances: true
+                effects: { pain: 'severe' }
             },
             {
                 id: 'demand_footage',
@@ -231,7 +229,6 @@ export const CHAPTERS = Object.freeze({
                 x: 500, y: 580, w: 110, h: 80,
                 once: true,
                 requiresAllOf: ['complete_swab'],
-                requires: { flags: { swabCompleted: true } },
                 lines: ['INCONCLUSIVE. He photographs it before the laptop closes.'],
                 effects: { evidence: 'swab_photo', choice: 'complete_swab' }
             },
@@ -260,6 +257,15 @@ export const CHAPTERS = Object.freeze({
                 requires: { flags: { noticedMarisolPressure: true } },
                 lines: ['He remembers the pickup deadline and waves her off.'],
                 effects: { choice: 'release_marisol_from_request' }
+            },
+            {
+                id: 'proceed_to_kiosk',
+                label: 'Leave the Review Room',
+                x: 500, y: 690, w: 300, h: 70,
+                once: true,
+                requires: { painSet: true },
+                lines: ['At 6:42 PM, hours before the stated cutoff: COVERAGE TERMINATED.'],
+                advances: true
             }
         ]
     },
@@ -330,7 +336,16 @@ export const CHAPTERS = Object.freeze({
                 x: 940, y: 620, w: 110, h: 70,
                 once: true,
                 lines: ['The bag returns to holding. Her message plays again.'],
-                effects: { choice: 'give_up_at_kiosk' }
+                effects: { choice: 'give_up_at_kiosk' },
+                advances: true
+            },
+            {
+                id: 'follow_utility_map',
+                label: 'Follow the Utility Map',
+                x: 460, y: 620, w: 200, h: 70,
+                once: true,
+                lines: ['The back page of the notebook. A path back into RGB.'],
+                advances: true
             }
         ]
     },
@@ -457,16 +472,24 @@ export const ENDINGS = Object.freeze({
 });
 
 export const GAME_OVERS = Object.freeze({
+    // retryScope 'hotspot': un-visit only the terminal choice hotspots in the
+    // current chapter and clear the outcome field, so retry resumes right
+    // before the failed interaction ("Retry begins immediately before 4A
+    // enters", scene-flow.md). retryScope 'chapter': restart the whole
+    // chapter from its last persisted checkpoint ("Retry begins at the
+    // kiosk's first prompt").
     crushed: {
         id: 'crushed',
         title: 'Crushed',
         body: 'The lockdown announcement loops as smoke overtakes the scene.',
-        retryFrom: 'rescue_fumble'
+        retryFrom: 'rescue_fumble',
+        retryScope: 'hotspot'
     },
     lockout: {
         id: 'lockout',
         title: 'Lockout',
         body: 'The bag returns to holding. Lucia\'s unanswered message plays.',
-        retryFrom: 'give_up'
+        retryFrom: 'give_up',
+        retryScope: 'chapter'
     }
 });

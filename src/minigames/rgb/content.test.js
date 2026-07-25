@@ -94,6 +94,13 @@ describe('content shape', () => {
         expect(Object.keys(GAME_OVERS).sort()).toEqual(['crushed', 'lockout']);
     });
 
+    it('every chapter has at least one advancing hotspot to leave it', () => {
+        for (const chapter of Object.values(CHAPTERS)) {
+            const advancing = chapter.hotspots.filter((h) => h.advances);
+            expect(advancing.length).toBeGreaterThan(0);
+        }
+    });
+
     it('every game-over retryFrom points at a real hotspot id', () => {
         const allHotspotIds = new Set(
             Object.values(CHAPTERS).flatMap((chapter) => chapter.hotspots.map((h) => h.id))
