@@ -10958,3 +10958,222 @@ button.archive-log-entry:active {
   font-family: monospace;
   line-height: 1.3;
 }
+
+/* ── RGB: Riverside Global 'Botics (archive-sim gray-box) ──────────────
+   Monochrome + red art language (docs/mini-games/rgb/game-design.md).
+   Occupies the same 1280x800 logical stage as the rest of Hunker Bunker;
+   --stage-px converts hotspot coordinates authored in content.js. */
+
+#rgb-root {
+  position: absolute;
+  inset: 0;
+  z-index: 15000;
+  background: #05050a;
+  color: #f2f2f2;
+  font-family: 'Outfit', sans-serif;
+  overflow: hidden;
+}
+
+#rgb-root.hidden {
+  display: none;
+}
+
+.rgb-scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rgb-header {
+  padding: var(--hb-safe-hud, 24px) var(--hb-safe-hud, 24px) calc(var(--vu) * 1.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.rgb-header__title {
+  font-size: calc(var(--vu) * 4.2);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rgb-header__goal {
+  margin-top: calc(var(--vu) * 0.6);
+  font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 2));
+  color: rgba(242, 242, 242, 0.72);
+}
+
+.rgb-stage-layer {
+  position: relative;
+  flex: 1;
+}
+
+.rgb-hotspot {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: calc(var(--vu) * 0.6);
+  background: rgba(20, 20, 24, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  color: #f2f2f2;
+  font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 1.7));
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+}
+
+.rgb-hotspot--done {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
+.rgb-hotspot--locked {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.rgb-hotspot--locked.rgb-hotspot--reveal {
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.rgb-hotspot:disabled {
+  cursor: default;
+}
+
+.rgb-hotspot--focused,
+.rgb-hotspot:focus-visible {
+  border-color: #e11d2e;
+  background: rgba(225, 29, 46, 0.22);
+  outline: none;
+}
+
+.rgb-dialogue {
+  min-height: calc(var(--vu) * 10);
+  padding: calc(var(--vu) * 1.5) var(--hb-safe-text, 36px);
+  font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 2));
+  line-height: 1.5;
+  color: rgba(242, 242, 242, 0.92);
+}
+
+.rgb-dialogue p + p {
+  margin-top: calc(var(--vu) * 0.5);
+}
+
+.rgb-footer {
+  padding: calc(var(--vu) * 1) var(--hb-safe-hud, 24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: calc(var(--vu) * 1.3);
+  letter-spacing: 0.08em;
+  color: rgba(242, 242, 242, 0.5);
+  text-transform: uppercase;
+}
+
+.rgb-warning,
+.rgb-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--vu) * 2);
+  padding: var(--hb-safe-text, 36px);
+  text-align: center;
+  background: #05050a;
+}
+
+.rgb-warning__body,
+.rgb-card__body {
+  max-width: calc(var(--vu) * 70);
+  font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 2.1));
+  line-height: 1.6;
+  color: rgba(242, 242, 242, 0.88);
+}
+
+.rgb-card__title {
+  font-size: calc(var(--vu) * 5);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rgb-card--gameover .rgb-card__title {
+  color: #e11d2e;
+}
+
+.rgb-warning__continue,
+.rgb-card button {
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 3);
+  background: transparent;
+  border: 1px solid #f2f2f2;
+  border-radius: 3px;
+  color: #f2f2f2;
+  font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 1.8));
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.rgb-warning__continue:hover,
+.rgb-warning__continue:focus-visible,
+.rgb-card button:hover,
+.rgb-card button:focus-visible {
+  border-color: #e11d2e;
+  color: #e11d2e;
+  outline: none;
+}
+
+.rgb-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  padding: var(--hb-safe-text, 36px);
+  background: rgba(5, 5, 10, 0.94);
+}
+
+.rgb-overlay__title {
+  font-size: calc(var(--vu) * 3.4);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  padding-bottom: calc(var(--vu) * 0.6);
+}
+
+.rgb-overlay__empty {
+  color: rgba(242, 242, 242, 0.55);
+  font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 1.8));
+}
+
+.rgb-inventory ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.8);
+  font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 1.9));
+}
+
+.rgb-pause {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: calc(var(--vu) * 1.5);
+}
+
+.rgb-pause button {
+  padding: calc(var(--vu) * 1) calc(var(--vu) * 3);
+  background: transparent;
+  border: 1px solid #f2f2f2;
+  border-radius: 3px;
+  color: #f2f2f2;
+  font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 1.8));
+  cursor: pointer;
+}
