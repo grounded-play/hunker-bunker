@@ -1,0 +1,76 @@
+{
+  "version": 3,
+  "status": "definition",
+  "cell": {
+    "width": 256,
+    "height": 256
+  },
+  "directions": [
+    "east",
+    "southeast",
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast"
+  ],
+  "actions": {
+    "idle": {
+      "file": "Scout.idle_v3.png",
+      "columns": 4,
+      "rows": 8,
+      "fps": 2,
+      "loop": true,
+      "footsteps": []
+    },
+    "walk": {
+      "file": "Scout.walk_v3.png",
+      "columns": 8,
+      "rows": 8,
+      "fps": 10,
+      "loop": true,
+      "footsteps": [0, 4],
+      "phases": [
+        "left-contact",
+        "left-down",
+        "left-pass",
+        "left-up",
+        "right-contact",
+        "right-down",
+        "right-pass",
+        "right-up"
+      ]
+    },
+    "run": {
+      "file": "Scout.run_v3.png",
+      "columns": 8,
+      "rows": 8,
+      "fps": 14,
+      "loop": true,
+      "footsteps": [0, 4],
+      "phases": [
+        "left-strike",
+        "left-compression",
+        "left-drive",
+        "flight-right-leading",
+        "right-strike",
+        "right-compression",
+        "right-drive",
+        "flight-left-leading"
+      ]
+    }
+  },
+  "anchors": {
+    "visualCenterX": 128,
+    "groundBaselineY": 240,
+    "pelvisY": null,
+    "helmetTopY": null,
+    "muzzle": null
+  },
+  "anatomicalMarkers": {
+    "leftLeg": "cyan hip fastener and split kneepad",
+    "rightLeg": "amber hip fastener and solid kneepad"
+  },
+  "runtimeReady": false
+}

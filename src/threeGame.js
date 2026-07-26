@@ -49,8 +49,8 @@ const PLAYER_COLORS = {
 const PLAYER_SPRITESHEET_PATHS = {
     // v4 is back in anatomical review; keep the last packed fallback live.
     SCOUT: '/Scout.full_v2.png',
-    TANK: '/Tank.full_v2.png',
-    ENGINEER: '/Eng.Full_v2.png'
+    TANK: '/Tank.walk_v4.png',
+    ENGINEER: '/Eng.walk_v4.png'
 };
 
 const LEGACY_PLAYER_DIRECTION_CELLS = Object.freeze([
@@ -64,19 +64,21 @@ const V4_PLAYER_DIRECTION_CELLS = Object.freeze(
 );
 const PLAYER_SPRITE_LAYOUTS = Object.freeze({
     SCOUT: Object.freeze({
+        // Scout v4 remains in anatomical review, so the live v2 fallback must
+        // keep the original packed 4x4/two-frame contract.
+        columns: 4, rows: 4, walkFrames: 2,
+        directionCells: LEGACY_PLAYER_DIRECTION_CELLS,
+        footstepFrames: Object.freeze([1])
+    }),
+    TANK: Object.freeze({
         columns: 8, rows: 8, walkFrames: 8,
         directionCells: V4_PLAYER_DIRECTION_CELLS,
         footstepFrames: Object.freeze([0, 4])
     }),
-    TANK: Object.freeze({
-        columns: 4, rows: 4, walkFrames: 2,
-        directionCells: LEGACY_PLAYER_DIRECTION_CELLS,
-        footstepFrames: Object.freeze([1])
-    }),
     ENGINEER: Object.freeze({
-        columns: 4, rows: 4, walkFrames: 2,
-        directionCells: LEGACY_PLAYER_DIRECTION_CELLS,
-        footstepFrames: Object.freeze([1])
+        columns: 8, rows: 8, walkFrames: 8,
+        directionCells: V4_PLAYER_DIRECTION_CELLS,
+        footstepFrames: Object.freeze([0, 4])
     })
 });
 const PLAYER_DEFAULT_DIRECTION_INDEX = 2;

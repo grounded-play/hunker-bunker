@@ -118,6 +118,12 @@ as single keyed images. They are not animation sheets. These should become:
 - one dominant anatomical idea per boss, with scale readable at game camera
   distance.
 
+The shared 8-direction/8-phase production and QA rules are now defined in
+`docs/enemy-sprite-animation-contract-v4.md`. The first whole-atlas generation
+experiment was rejected because several outputs had incorrect grid dimensions
+or facing order. Live enemy paths therefore remain unchanged until isolated
+direction strips pass review.
+
 ## World asset inventory
 
 The current gameplay-facing audit found 84 immediately relevant root assets.
@@ -253,7 +259,41 @@ right-facing directions. This is acceptable for animation evaluation but not
 for final art because it reverses small suit asymmetries. The JSON sidecar
 records that limitation and deliberately leaves `runtimeReady` false.
 
+## Integrated v2 gameplay family
+
+The first runtime family is now integrated:
+
+| Runtime type | Asset | Contract |
+| --- | --- | --- |
+| Scout | `Scout.full_v2.png` | legacy-compatible packed 4 × 4 atlas |
+| Tank | `Tank.full_v2.png` | legacy-compatible packed 4 × 4 atlas |
+| Engineer | `Eng.Full_v2.png` | legacy-compatible packed 4 × 4 atlas |
+| Proto crawler | `alien_proto_crawler_walk_v2.png` | 4 × 4 directional atlas |
+| Proto spitter | `alien_proto_spitter_walk_v2.png` | 4 × 4 directional atlas |
+| Corrupted Scout | `boss_corrupted_scout_v2.png` | 4 × 4 directional atlas |
+| Corrupted Tank | `boss_corrupted_tank_v2.png` | 4 × 4 directional atlas |
+| Corrupted Engineer | `boss_corrupted_engineer_v2.png` | 4 × 4 directional atlas |
+
+Player rendering now selects complete frames. The compatibility torso sprite
+remains allocated for material/tint cleanup paths but is hidden, eliminating
+the fixed 50% waist cut.
+
+The normalized 2 × 8 masters are production intermediates only. The runtime
+`.full_v2` derivatives are repacked into the original 1024 × 1024, 4 × 4
+direction-cell arrangement and use a flat `#00ff00` background for the existing
+browser chroma-key loader.
+
+Tank and Engineer temporarily derive northeast from a mirrored northwest row.
+Scout temporarily derives west, southwest, and northwest from corresponding
+right-facing rows. These are usable runtime fallbacks with correct dimensions,
+but bespoke left/right views should replace them to preserve suit asymmetry.
+
+Static snail, fungal, Queen, and several boss assets remain single-image
+billboards. They are not included in the directional-sheet completion claim
+and require a subsequent locomotion-atlas pass.
+
 ## Review sheets
 
 - `public/art-remaster/concepts/sprites-current-contact-sheet.jpg`
 - `public/art-remaster/concepts/world-assets-current-contact-sheet.jpg`
+- `public/art-remaster/sprites-v2/sprite-family-v2-contact-sheet.png`
