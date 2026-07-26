@@ -213,8 +213,14 @@ gating convention:
    (`act2.js:789`/`941`) but mutating `s.scientist` instead of an entry in
    `s.camps`/`s.hives` — the moment an encounter resolves to `befriend`,
    alongside `ObjectiveRegistry.resolveObjective('befriend-a-snail')`.
-   Reward is a shells payout, matching the existing reward vocabulary
-   already used elsewhere for camp quests — no new reward type introduced.
+   **Correction:** an earlier draft of this doc said the reward was "a
+   shells payout" — checked against real camp-quest completion call sites
+   (`threeGame.js:9200`/`9675`) and that's not how any existing camp quest
+   pays out; they only ever move bond/world-state, no currency grant sits
+   alongside `completeCampQuest`. The scientist's quest follows that same
+   real pattern: completion is the unlocked final dialogue stage itself
+   (her last line(s), `isFinalStage` becoming true), not a currency payout
+   that doesn't exist elsewhere in this system either.
 
 The `befriend` resolution dispatches one event,
 `window.dispatchEvent(new CustomEvent('snail-befriended', { detail: {...}
