@@ -65,6 +65,28 @@ export class ObjectiveRegistry {
     }
 
     /**
+     * Toggle or set the completion status of a specific child step.
+     * @param {string} id
+     * @param {number} stepIndex
+     * @param {boolean} [doneState]
+     * @returns {boolean}
+     */
+    toggleStepDone(id, stepIndex, doneState = null) {
+        const obj = this.objectives.get(id);
+        if (!obj || !Array.isArray(obj.steps) || !obj.steps[stepIndex]) return false;
+        const currentDone = obj.steps[stepIndex].done;
+        const nextDone = typeof doneState === 'boolean' ? doneState : !currentDone;
+        if (currentDone !== nextDone) {
+            obj.steps[stepIndex].done = nextDone;
+            obj.current = obj.steps.filter((s) => s.done).length;
+            obj.updatedAt = Date.now();
+            this.notify();
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Returns active objectives sorted by priority (lowest number first).
      * @param {number} [limit=2]
      * @returns {Array<Object>}

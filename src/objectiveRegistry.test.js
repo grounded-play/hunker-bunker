@@ -92,4 +92,27 @@ describe('ObjectiveRegistry', () => {
         registry.trackObjective({ id: 'test' });
         expect(called).toBe(true);
     });
+
+    it('toggles sub-step completion status and updates current count', () => {
+        registry.trackObjective({
+            id: 'multi_step',
+            label: 'SECURE CAMP',
+            target: 2,
+            steps: [
+                { label: 'Clear Snail Nests', done: false },
+                { label: 'Talk to Leader', done: false }
+            ]
+        });
+
+        const changed = registry.toggleStepDone('multi_step', 0, true);
+        expect(changed).toBe(true);
+
+        const obj = registry.getActiveObjectives()[0];
+        expect(obj.steps[0].done).toBe(true);
+        expect(obj.current).toBe(1);
+
+        const toggledAgain = registry.toggleStepDone('multi_step', 0);
+        expect(toggledAgain).toBe(true);
+        expect(registry.getActiveObjectives()[0].steps[0].done).toBe(false);
+    });
 });
