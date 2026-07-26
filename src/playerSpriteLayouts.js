@@ -69,6 +69,18 @@ export const PLAYER_SPRITE_LAYOUTS = Object.freeze({
 
 export const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
 
+export function getDirectionIndexFromScreenAxes(screenX, screenY) {
+    const angle = Math.atan2(screenY, screenX);
+    const octant = Math.round(angle / (Math.PI / 4));
+    return (octant + 8) % 8;
+}
+
+export function getDirectionIndexFromWorldVector(worldX, worldZ, cameraRight, cameraForward) {
+    const screenX = (worldX * cameraRight.x) + (worldZ * cameraRight.y);
+    const screenY = -((worldX * cameraForward.x) + (worldZ * cameraForward.y));
+    return getDirectionIndexFromScreenAxes(screenX, screenY);
+}
+
 export function getPlayerSpriteLayout(type) {
     return PLAYER_SPRITE_LAYOUTS[type] ?? PLAYER_SPRITE_LAYOUTS.SCOUT;
 }

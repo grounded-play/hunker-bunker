@@ -1,8 +1,9 @@
 const FOUR_DIRECTION_ROWS = Object.freeze({
     south: 0,
     north: 1,
-    east: 2,
-    west: 3
+    // Authored sheets face visually right on row 3 and left on row 2.
+    east: 3,
+    west: 2
 });
 
 const directionalSheet = (path, options = {}) => Object.freeze({

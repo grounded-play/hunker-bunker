@@ -147,7 +147,7 @@ const DEFAULT_AUDIO_MIX = Object.freeze({
     voice: 1,
     voiceEnabled: true
 });
-const STEAM_STORE_URL = 'https://store.steampowered.com/app/1247290/Hunker_Bunker/';
+const STEAM_STORE_URL = 'https://store.steampowered.com/app/4957040/Hunker_Bunker/';
 const KEY_BINDINGS_STORAGE_KEY = 'hunker_key_bindings';
 // Each action has a [primary, secondary] slot. WASD + arrow keys are equivalent
 // out of the box. threeGame.js reads window.state.settings.keyBindings.
@@ -5794,6 +5794,7 @@ function executeDevCommand(input) {
                 + '  uiscale <100-150>   - Set UI accessibility scale (%)\n'
                 + '  textfloor <16-24>   - Set minimum text floor font size (px)\n'
                 + '  layout / stage      - Display canonical stage transform & viewport metrics\n'
+                + '  perf / bootlog      - Display boot timings and current renderer workload\n'
                 + '  god                 - Toggle God Mode\n'
                 + '  salvage / +$        - Grant salvage & shells\n'
                 + '  heal                - Refill Health & O₂\n'
@@ -5807,6 +5808,19 @@ function executeDevCommand(input) {
         case 'metrics':
             result = devGetLayoutMetrics();
             break;
+        case 'perf':
+        case 'bootlog': {
+            const renderer = window.game?.renderer;
+            result = `BOOT / RENDERER DIAGNOSTICS\n${bootDiagnostics
+                .map((entry) => `  +${entry.elapsedMs.toFixed(1)}ms ${entry.phase}${entry.details ? ` ${JSON.stringify(entry.details)}` : ''}`)
+                .join('\n') || '  No boot timing entries recorded.'}\n`
+                + `  Profile: ${window.game?.performanceProfile ?? 'unavailable'}\n`
+                + `  Pixel ratio: ${renderer?.getPixelRatio?.() ?? 'unavailable'}\n`
+                + `  Draw calls: ${renderer?.info?.render?.calls ?? 'unavailable'}\n`
+                + `  Triangles: ${renderer?.info?.render?.triangles ?? 'unavailable'}\n`
+                + `  Textures: ${renderer?.info?.memory?.textures ?? 'unavailable'}`;
+            break;
+        }
         case 'resolution':
         case 'res':
             result = devSetResolution(arg);
@@ -8589,6 +8603,11 @@ function initTacticalCursor() {
 
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
+    traceBootPhase('dom-content-loaded', {
+        electron: Boolean(window.electronAPI),
+        devicePixelRatio: window.devicePixelRatio
+    });
+    startBootLongTaskDiagnostics();
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
     preloadDoorAssets();
     initTacticalCursor();
@@ -8877,6 +8896,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (gameInitPromise) return gameInitPromise;
 
         gameInitPromise = (async () => {
+            traceBootPhase('gameplay-assets-start', { targetType });
             const gameplayManifest = {
                 images: [
                     '/cybersnail.png',
@@ -8967,9 +8987,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> INITIALIZING TACTICAL EXOSUIT CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
                 }
             });
+            traceBootPhase('gameplay-assets-ready', {
+                images: gameplayManifest.images.length,
+                audio: gameplayManifest.audio.length
+            });
 
+            traceBootPhase('three-module-import-start');
             const { ThreeGame } = await import('./src/threeGame.js');
+            traceBootPhase('three-module-import-ready');
             try {
+                traceBootPhase('three-constructor-start', { targetType });
                 window.game = new ThreeGame({
                     parent: 'game-container',
                     playerType: targetType,
@@ -8979,6 +9006,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     act2Manager
                 });
                 window.game.nightVision = state.settings.nightVision;
+                traceBootPhase('three-constructor-ready', {
+                    pixelRatio: window.game.renderer?.getPixelRatio?.(),
+                    profile: window.game.performanceProfile
+                });
             } catch (err) {
                 console.error('[ThreeGame init failed]', err);
                 const loaderTitle = document.querySelector('.loader-title');
@@ -9007,6 +9038,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             window.game?.emitVitalsState?.();
             ensureMissionManagers();
+            traceBootPhase('game-initialized');
 
             return window.game;
         })();
@@ -9036,12 +9068,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderLoaderLogs();
 
     // 1. Refresh Steam bridge & check backend health
+    traceBootPhase('steam-identity-check-start');
     renderLoaderLogs('> VERIFYING STEAMWORKS INTEGRATION...');
     if (loaderBar) loaderBar.style.width = '15%';
-    const steamStatus = await refreshSteamBridgeStatus().catch((err) => {
+    const steamStatus = await refreshSteamBridgeStatus({ waitForBackend: false }).catch((err) => {
         renderLoaderLogs(`> STEAM CHECK ERROR: ${err?.message ?? 'UNKNOWN ERROR'}`);
         console.error('[steam] loading-screen verification failed:', err);
         return null;
+    });
+    traceBootPhase('steam-identity-check-ready', {
+        active: Boolean(steamStatus?.info?.active),
+        reason: steamStatus?.info?.reason ?? null,
+        backend: 'async'
     });
     if (steamStatus?.info?.active) {
         renderLoaderLogs(`> STEAM LINKED: ${steamStatus.info.persona ?? 'CONNECTED'}`);
@@ -9051,6 +9089,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 2. Load core audio & image manifest
+    traceBootPhase('core-assets-start', {
+        images: manifest.images.length,
+        audio: manifest.audio.length
+    });
     await AudioManager.loadAssets(manifest, (progress, itemName) => {
         const scaledProgress = 15 + Math.round(progress * 0.45);
         if (loaderBar) loaderBar.style.width = `${scaledProgress}%`;
@@ -9059,6 +9101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderLoaderLogs(`> ${msg}...`);
         }
     });
+    traceBootPhase('core-assets-ready');
 
     renderLoaderLogs('> BOOTING TACTICAL WEBGL CORE...');
     if (loaderBar) loaderBar.style.width = '65%';
@@ -9067,9 +9110,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const autoTriggerBoot = async () => {
         if (bootInitializing) return;
         bootInitializing = true;
+        traceBootPhase('boot-triggered', { initialType });
 
         try {
             await initializeGame(initialType);
+            traceBootPhase('airlock-start');
             if (loaderBar) loaderBar.style.width = '100%';
             renderLoaderLogs('> ALL ASSETS LOADED — OPENING AIRLOCK...');
         } catch (err) {
@@ -9102,6 +9147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     setAppPhase('splash');
                                     window.game?.setLoadingPaused?.(false);
                                     transitionToMenuMusic();
+                                    finishBootDiagnostics();
                                 },
                                 null,
                                 'base'
@@ -9177,6 +9223,54 @@ window.addEventListener('lander-deployed', () => {
 // Present only inside the desktop wrapper; the web build never defines
 // electronAPI. Achievements ride the existing wave-2 event contract.
 const steamDebugStatus = document.getElementById('steam-debug-status');
+const bootDiagnostics = [];
+let bootDiagnosticOrigin = null;
+let bootLongTaskObserver = null;
+
+function traceBootPhase(phase, details = null) {
+    const now = performance.now();
+    if (bootDiagnosticOrigin === null) bootDiagnosticOrigin = now;
+    const entry = {
+        phase,
+        elapsedMs: Math.round((now - bootDiagnosticOrigin) * 10) / 10,
+        details
+    };
+    bootDiagnostics.push(entry);
+    debugLog.info('BOOT', `+${entry.elapsedMs.toFixed(1)}ms ${phase}`, details ?? undefined);
+    try {
+        performance.mark(`hb:${phase}`);
+    } catch {
+        // Performance marks are diagnostic-only.
+    }
+    return entry;
+}
+
+function startBootLongTaskDiagnostics() {
+    if (typeof PerformanceObserver === 'undefined' || bootLongTaskObserver) return;
+    try {
+        bootLongTaskObserver = new PerformanceObserver((list) => {
+            for (const task of list.getEntries()) {
+                debugLog.warn('PERF', `Long renderer task during boot: ${Math.round(task.duration)}ms`, {
+                    startMs: Math.round(task.startTime)
+                });
+            }
+        });
+        bootLongTaskObserver.observe({ type: 'longtask', buffered: true });
+    } catch {
+        bootLongTaskObserver = null;
+    }
+}
+
+function finishBootDiagnostics() {
+    traceBootPhase('boot-ready', {
+        renderer: window.game?.renderer?.info?.render ?? null,
+        pixelRatio: window.game?.renderer?.getPixelRatio?.() ?? null
+    });
+    bootLongTaskObserver?.disconnect();
+    bootLongTaskObserver = null;
+}
+
+window.__hbBootDiagnostics = bootDiagnostics;
 
 function setSteamDebugStatus(text, state = 'unknown') {
     if (!steamDebugStatus) return;
@@ -9189,8 +9283,12 @@ function formatSteamStatus(info, health) {
         ? `STEAM: ${info.persona ?? info.steamId64 ?? 'LINKED'}`
         : 'STEAM: OFFLINE';
     let backendLine = 'BACKEND: OFF';
-    if (health?.ok) {
+    if (health?.pending) {
+        backendLine = 'BACKEND: CHECKING';
+    } else if (health?.ok) {
         backendLine = health.steam?.authConfigured ? 'BACKEND: AUTH READY' : 'BACKEND: DEV';
+    } else if (health?.reason) {
+        backendLine = `BACKEND: ${String(health.reason).replace(/^steam_backend_/, '').toUpperCase()}`;
     }
     const cloud = info?.cloud;
     const cloudLine = cloud?.available
@@ -9199,7 +9297,7 @@ function formatSteamStatus(info, health) {
     return `${steamLine}\n${backendLine}\n${cloudLine}`;
 }
 
-async function refreshSteamBridgeStatus() {
+async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
     if (!window.electronAPI) {
         console.log('[STEAM] Environment: Web browser (Electron API absent)');
         setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
@@ -9208,28 +9306,33 @@ async function refreshSteamBridgeStatus() {
 
     console.log('[STEAM] Verifying Steamworks integration...');
 
-    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), 2500));
+    const identityRequest = window.electronAPI.getSteamIdentity
+        ? window.electronAPI.getSteamIdentity()
+        : window.electronAPI.getSteamInfo?.();
+    const identityTimeout = new Promise((resolve) => window.setTimeout(
+        () => resolve({ active: false, reason: 'identity_timeout' }),
+        2500
+    ));
+    const info = await Promise.race([
+        Promise.resolve(identityRequest).catch((err) => ({
+            ok: false,
+            active: false,
+            reason: 'identity_call_error',
+            message: err?.message ?? String(err)
+        })),
+        identityTimeout
+    ]);
 
-    const checkPromise = (async () => {
-        const identityRequest = window.electronAPI.getSteamIdentity
-            ? window.electronAPI.getSteamIdentity()
-            : window.electronAPI.getSteamInfo?.();
-        const [info, health] = await Promise.all([
-            Promise.resolve(identityRequest).catch((err) => ({ ok: false, active: false, reason: 'identity_call_error', message: err?.message ?? String(err) })),
-            window.electronAPI.getSteamBackendHealth?.().catch((err) => ({ ok: false, reason: 'health_call_error', message: err?.message ?? String(err) }))
-        ]);
-        return { info, health };
-    })();
-
-    const result = await Promise.race([checkPromise, timeoutPromise]);
-
-    if (result?.timeout) {
-        console.warn('[STEAM] Integration verification timed out after 2500ms. Continuing boot in offline fallback mode.');
-        setSteamDebugStatus('STEAM: TIMEOUT\nBACKEND: OFF', 'offline');
-        return { info: { active: false, reason: 'bridge_timeout' }, health: { ok: false, reason: 'bridge_timeout' } };
-    }
-
-    const { info, health } = result;
+    const healthPromise = window.electronAPI.getSteamBackendHealth
+        ? window.electronAPI.getSteamBackendHealth().catch((err) => ({
+            ok: false,
+            reason: 'health_call_error',
+            message: err?.message ?? String(err)
+        }))
+        : Promise.resolve({ ok: false, reason: 'health_unavailable' });
+    const health = waitForBackend
+        ? await healthPromise
+        : { ok: false, pending: true, reason: 'health_pending' };
 
     if (info?.active) {
         console.info(`[STEAM] Steamworks ACTIVE — Account: ${info.persona ?? 'Unknown'} (AppID: ${info.appId}, SteamID64: ${info.steamId64 ?? 'N/A'})`);
@@ -9239,7 +9342,9 @@ async function refreshSteamBridgeStatus() {
         console.warn(`[STEAM] Steamworks INACTIVE — Reason: ${info?.reason ?? 'unavailable'}${info?.message ? ` (${info.message})` : ''}`);
     }
 
-    if (health?.ok) {
+    if (health?.pending) {
+        console.info('[STEAM] Backend Service: checking asynchronously (does not gate Steam identity)');
+    } else if (health?.ok) {
         console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${health.steam?.authConfigured ?? false})`);
     } else {
         console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${health?.reason ?? 'offline'}${health?.message ? ` (${health.message})` : ''}`);
@@ -9250,6 +9355,20 @@ async function refreshSteamBridgeStatus() {
         : (info?.active || health?.ok ? 'partial' : 'offline');
     setSteamDebugStatus(formatSteamStatus(info, health), state);
     updateSteamAccountBadges(info);
+
+    if (!waitForBackend) {
+        void healthPromise.then((resolvedHealth) => {
+            const resolvedState = info?.active && resolvedHealth?.steam?.authConfigured
+                ? 'ready'
+                : (info?.active || resolvedHealth?.ok ? 'partial' : 'offline');
+            setSteamDebugStatus(formatSteamStatus(info, resolvedHealth), resolvedState);
+            if (resolvedHealth?.ok) {
+                console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${resolvedHealth.steam?.authConfigured ?? false})`);
+            } else {
+                console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${resolvedHealth?.reason ?? 'offline'}${resolvedHealth?.message ? ` (${resolvedHealth.message})` : ''}`);
+            }
+        });
+    }
     return { info, health };
 }
 

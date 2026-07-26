@@ -41,6 +41,16 @@ export default defineConfig({
   define: {
     __HB_BUILD_INFO__: JSON.stringify(buildInfo)
   },
+  plugins: [{
+    name: 'hunker-bunker-build-info',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'build-info.json',
+        source: `${JSON.stringify(buildInfo, null, 2)}\n`
+      });
+    }
+  }],
   server: {
     allowedHosts: true,
     // scratch/ holds ad-hoc Python venvs and generator scripts (not source);

@@ -322,8 +322,12 @@ function initSteam() {
     recordSteamDiagnostic('info', 'starting', `Beginning Steamworks initialization for app ${STEAM_APPID}`, {
         dev: DEV,
         cwd: process.cwd(),
+        executable: process.execPath,
         resourcesPath: process.resourcesPath,
-        packaged: app.isPackaged
+        packaged: app.isPackaged,
+        launchedWithSteamAppId: process.env.SteamAppId ?? null,
+        launchedWithSteamGameId: process.env.SteamGameId ?? null,
+        steamClientLaunch: Boolean(process.env.SteamAppId || process.env.SteamGameId)
     });
     try {
         // In dev, steamworks.js needs steam_appid.txt beside the executable's
@@ -409,9 +413,17 @@ function initSteam() {
 // them so we don't cargo-cult flags. Must run before app is ready.
 function enableOverlay() {
     try {
-        if (steam?.electronEnableSteamOverlay) steam.electronEnableSteamOverlay();
+        // Three.js already presents frames continuously. Passing true disables
+        // steamworks.js's extra 60 Hz webContents.invalidate() timer, which
+        // otherwise duplicates our render loop and wastes renderer/GPU time.
+        if (steam?.electronEnableSteamOverlay) {
+            steam.electronEnableSteamOverlay(true);
+            recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay hook enabled without redundant frame invalidation');
+        } else {
+            recordSteamDiagnostic('warn', 'overlay_unavailable', 'Steam overlay hook is unavailable because Steamworks did not initialize');
+        }
     } catch (err) {
-        console.log(`[steam] overlay hook failed: ${err?.message ?? err}`);
+        recordSteamDiagnostic('warn', 'overlay_failed', 'Steam overlay hook failed', serializeError(err));
     }
 }
 

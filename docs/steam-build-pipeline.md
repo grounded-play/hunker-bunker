@@ -105,6 +105,12 @@ steam/
   Set `STEAM_BUILD_ACCOUNT` or `STEAMCMD_PATH` to override those local
   defaults. Uploads reject uncommitted changes unless the operator
   deliberately supplies `--allow-dirty`.
+- **Revision identity**: local release commands derive
+  `v<package-version>-<12-char-commit>` automatically, compile it into the
+  loading-screen `PIPELINE` label, emit the full record as
+  `dist/build-info.json`, verify that record before depot audit/upload, and
+  use the same identity in Steamworks' build description. Uploads require a
+  clean worktree and a non-local HTTPS `HB_STEAM_BACKEND_URL`.
 - **CI**: `.github/workflows/steam-build.yml` — on tag `v*` or manual
   dispatch: matrix build (windows-latest, ubuntu-latest) → `npm ci`,
   `npm test`, `vite build`, `electron-builder --dir` → artifacts; upload

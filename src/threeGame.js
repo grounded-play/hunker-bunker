@@ -43,6 +43,7 @@ import { debugLog } from './debugConsole.js';
 import {
     PLAYER_DEFAULT_DIRECTION_INDEX,
     PLAYER_SPRITE_LAYOUTS,
+    getDirectionIndexFromWorldVector,
     getPlayerSpriteLayout
 } from './playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './spriteAtlasRuntime.js';
@@ -952,14 +953,18 @@ export class ThreeGame {
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 0, 0);
 
-        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
+        // The DOM hero picker covers most of this showroom. Avoid paying the
+        // 4x pixel cost of a 2x display before gameplay starts.
+        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
         this.gameplayPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
         this.performanceProfile = 'menu';
+        this.menuFrameIntervalMs = 1000 / 30;
+        this._lastMenuRenderAt = 0;
         this.loadingPaused = false;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         this.renderer.setPixelRatio(this.menuPixelRatio);
-        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.enabled = false;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
         this.darknessOverlay = document.createElement('canvas');
         Object.assign(this.darknessOverlay.style, {
@@ -4248,6 +4253,7 @@ export class ThreeGame {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
         this.performanceProfile = nextProfile;
+        this._lastMenuRenderAt = 0;
         this.visibleChunkRadius = nextProfile === 'gameplay'
             ? this.defaultVisibleChunkRadius
             : 0;
@@ -4293,6 +4299,7 @@ export class ThreeGame {
         if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
             this.renderer.setPixelRatio(targetPixelRatio);
         }
+        this.renderer.shadowMap.enabled = nextProfile === 'gameplay';
         this.resize();
     }
 
@@ -4363,6 +4370,14 @@ export class ThreeGame {
 
     render() {
         const now = performance.now();
+        if (this.performanceProfile === 'menu'
+            && this._lastMenuRenderAt > 0
+            && now - this._lastMenuRenderAt < this.menuFrameIntervalMs) {
+            return;
+        }
+        if (this.performanceProfile === 'menu') {
+            this._lastMenuRenderAt = now;
+        }
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
 
@@ -11787,7 +11802,7 @@ export class ThreeGame {
             moveDirZ = this.aimDirZ || 0;
         }
 
-        this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving, moveDirX, moveDirZ);
+        this.updatePlayerSpriteAnimation(moveDirX, moveDirZ, delta, isMoving, moveDirX, moveDirZ);
         // Keep night visibility centered on the player sprite under isometric camera.
         const spriteAnchorX = this.player.position.x + (this.playerSprite?.position.x ?? 0);
         const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position.z ?? 0);
@@ -13118,10 +13133,13 @@ export class ThreeGame {
         this.updatePlayerSpriteFrame(0, this.currentFacingRow, this.torsoFacingRow);
     }
 
-    getFacingRow(axisX, axisZ) {
-        const angle = Math.atan2(axisZ, axisX);
-        const octant = Math.round(angle / (Math.PI / 4));
-        return (octant + 8) % 8;
+    getFacingRow(worldX, worldZ) {
+        return getDirectionIndexFromWorldVector(
+            worldX,
+            worldZ,
+            this.cameraPlanarRight,
+            this.cameraPlanarForward
+        );
     }
 
     // Keeps the legs and torso billboards visually identical under status tints.

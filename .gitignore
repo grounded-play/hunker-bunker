@@ -60,6 +60,7 @@ scratch/
 # Electron/Steam build outputs
 dist_electron/
 steam_build_output/
+steam/app_build.generated.vdf
 steam_appid.txt
 electron/steam-config.json
 dist_soundtrack/

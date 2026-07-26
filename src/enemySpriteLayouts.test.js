@@ -20,8 +20,8 @@ describe('enemy sprite layouts', () => {
 
     it('maps movement to the authored cardinal rows', () => {
         const layout = ENEMY_SPRITE_LAYOUTS.alien_proto_crawler;
-        expect(getEnemyDirectionRow(layout, 1, 0)).toBe(2);
-        expect(getEnemyDirectionRow(layout, -1, 0)).toBe(3);
+        expect(getEnemyDirectionRow(layout, 1, 0)).toBe(3);
+        expect(getEnemyDirectionRow(layout, -1, 0)).toBe(2);
         expect(getEnemyDirectionRow(layout, 0, 1)).toBe(0);
         expect(getEnemyDirectionRow(layout, 0, -1)).toBe(1);
     });
