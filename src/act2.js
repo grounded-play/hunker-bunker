@@ -429,6 +429,18 @@ function normalizeNetworks(raw = {}) {
     };
 }
 
+// A single standalone NPC record, not part of the closed camp/hive
+// id systems — she is her own thing, the same relationship hives already
+// have to camps (a second, independent collection), just with exactly one
+// entry instead of an id-keyed array since there is only one of her.
+function normalizeScientist(raw = {}) {
+    return {
+        dialogueStage: clampInteger(raw?.dialogueStage, 0, ACT2_DIALOGUE_FINAL_STAGE, 0),
+        stageTalks: clampInteger(raw?.stageTalks, 0, 9, 0),
+        questFlags: raw?.questFlags && typeof raw.questFlags === 'object' ? { ...raw.questFlags } : {}
+    };
+}
+
 function normalizeHive(raw = {}, site = ACT2_HIVE_SITES[0]) {
     const status = ACT2_HIVE_STATUSES.includes(raw?.status) ? raw.status : 'dormant';
     return {
@@ -532,6 +544,7 @@ export function normalizeAct2State(raw = {}) {
         networks: normalizeNetworks(parsed.networks),
         camps,
         hives,
+        scientist: normalizeScientist(parsed.scientist),
         manifest: null,
         version: ACT2_STATE_VERSION
     };
@@ -951,6 +964,17 @@ export class Act2Manager {
         });
     }
 
+    // Mirrors completeCampQuest/completeHiveQuest's shape. bondDelta is
+    // accepted for signature symmetry with those two but always ignored —
+    // the scientist record has no bond field, she is a single quest-giver,
+    // not a relationship-leveled camp/hive.
+    completeScientistQuest(questId, _bondDelta = 0) {
+        return this._mutate((s) => {
+            if (!questId || s.scientist.questFlags[questId] === 'done') return;
+            s.scientist.questFlags[questId] = 'done';
+        });
+    }
+
     // Take the ally aboard. Needs earned trust; defies the queen's monopoly.
     rescueHive(id) {
         return this._mutate((s) => {
@@ -1112,9 +1136,9 @@ export class Act2Manager {
     // ── Leader dialogue ladders (Elden Ring grammar) ──
 
     _findSpeaker(s, kind, id) {
-        return kind === 'hive'
-            ? s.hives.find((h) => h.id === id)
-            : s.camps.find((c) => c.id === id);
+        if (kind === 'hive') return s.hives.find((h) => h.id === id);
+        if (kind === 'scientist') return s.scientist;
+        return s.camps.find((c) => c.id === id);
     }
 
     recordDialogueTalk(kind, id) {
