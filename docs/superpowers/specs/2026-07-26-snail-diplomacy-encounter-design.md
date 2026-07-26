@@ -160,12 +160,37 @@ snail is.
 
 ## Sidequest: the camp scientist
 
-Added as a **fourth leader-dialogue identity**, in the exact slot
-kaelen/martha/briggs already occupy — same `LEADER_DIALOGUE` structure in
-`src/data/campDialogue.js`, same `dialogueStage`/`stageTalks` persistence,
-same `talkToLeader()` routing (`threeGame.js:9407`), same
-`#mothership-dialogue` rendering via `openBriefTransmission`. No new
-dialogue plumbing is built — this is content added to an existing system.
+**Correction from an earlier draft of this doc:** the three human camp
+leaders are not interchangeable "slots" — `ACT2_CAMP_IDS` is a fixed
+3-entry array (`camp_meridian`/`camp_tallow`/`camp_vesper`), each
+deterministically mapped to one of exactly 3 class-based leader identities
+via `ACT2_CLASS_CAST`/`getClassCampOrder` (`act2.js:35-98`), and the third
+is always the boss/"inverted self" camp. There is no open fourth slot in
+that system, and extending it would mean touching the class-RPS ordering,
+world placement, and the 10-ending picker — all tightly coupled, tested,
+working machinery this feature has no reason to touch.
+
+The real precedent is **hives**: a second, independent record collection
+(`s.hives`, separate from `s.camps`) that `talkToLeader(kind, entity)`
+already branches on via its `kind` parameter
+(`kind === 'hive' ? this.getHiveRecord(entity.id) : this.getCampRecord(entity.id)`,
+`threeGame.js:9408`). The scientist becomes a **third kind**,
+`'scientist'`, with her own single standalone record (there is exactly one
+of her, so a single object, not an array-of-ids like camps/hives) living
+on act2 state as `s.scientist = { dialogueStage: 0, stageTalks: 0,
+questFlags: {} }`. `talkToLeader` gains a third branch reading/writing
+that record instead of a camp or hive one. She still reuses
+`LEADER_DIALOGUE`/`nextDialogueBeat`'s staged-dialogue *content* format
+and `openBriefTransmission`'s rendering — those are genuinely
+identity-agnostic — just not the camp-id/class-cast identity system.
+
+**Placement:** she is a second, independent NPC fixture standing at
+`camp_meridian`'s already-placed world position (read from the existing
+camp instance, not a new placement/site system) — flavor only, her
+dialogue and quest state are not stored on that camp's record. A separate
+proximity check (mirroring the existing camp-leader TALK-prompt range
+check) offers her interaction independent of whatever the camp leader
+prompt is doing at the same location.
 
 Four stages, following the established `next: {talks, level/bond/postReveal}`
 gating convention:
@@ -181,14 +206,15 @@ gating convention:
    current: 0, target: 1 })`) the moment this stage is reached. This is
    the moment the sidequest actually starts.
 4. (Final, `DIALOGUE_FINAL_STAGE`.) Gates on a new
-   `questFlags.snail_befriended === 'done'` in place of the usual
-   `postReveal` — set via the camp record's existing
-   `setCampQuestFlag`-style assignment (`camp.questFlags.snail_befriended
-   = 'done'`, mirroring `act2.js:794`'s pattern exactly) the moment an
-   encounter resolves to `befriend`, alongside
-   `ObjectiveRegistry.resolveObjective('befriend-a-snail')`. Reward is a
-   shells payout, matching the existing reward vocabulary already used
-   elsewhere for camp quests — no new reward type introduced.
+   `questFlags.snail_befriended === 'done'` on the scientist's own record,
+   in place of the usual `postReveal`. Set via a new `completeScientistQuest
+   (questId, bondDelta = 0)` on the `Act2` class, mirroring
+   `completeCampQuest`/`completeHiveQuest`'s existing shape exactly
+   (`act2.js:789`/`941`) but mutating `s.scientist` instead of an entry in
+   `s.camps`/`s.hives` — the moment an encounter resolves to `befriend`,
+   alongside `ObjectiveRegistry.resolveObjective('befriend-a-snail')`.
+   Reward is a shells payout, matching the existing reward vocabulary
+   already used elsewhere for camp quests — no new reward type introduced.
 
 The `befriend` resolution dispatches one event,
 `window.dispatchEvent(new CustomEvent('snail-befriended', { detail: {...}
