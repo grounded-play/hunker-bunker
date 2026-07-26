@@ -9005,6 +9005,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     window.HunkerTriggerBoot = autoTriggerBoot;
+    if (pendingSteamInputBoot) {
+        pendingSteamInputBoot = false;
+    }
     void autoTriggerBoot();
 });
 

@@ -719,6 +719,17 @@ body {
   margin: 0;
 }
 
+.loader-version-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xs);
+  color: var(--accent-primary);
+  opacity: 0.85;
+  letter-spacing: 2px;
+  margin-bottom: calc(var(--vu) * 1.2);
+  text-transform: uppercase;
+  text-shadow: 0 0 calc(var(--vu) * 0.8) rgba(255, 159, 28, 0.4);
+}
+
 .title-menu {
   position: absolute;
   left: calc(var(--vu) * 7);
@@ -728,6 +739,43 @@ body {
   gap: calc(var(--vu) * 0.8);
   margin: 0;
   width: calc(var(--vu) * 34);
+}
+
+#splash:not(.hidden) .title-menu {
+  animation: title-menu-slide-in 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#splash:not(.hidden) .title-menu-btn {
+  animation: title-btn-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#splash:not(.hidden) .title-menu-btn:nth-child(1) { animation-delay: 0.05s; }
+#splash:not(.hidden) .title-menu-btn:nth-child(2) { animation-delay: 0.10s; }
+#splash:not(.hidden) .title-menu-btn:nth-child(3) { animation-delay: 0.15s; }
+#splash:not(.hidden) .title-menu-btn:nth-child(4) { animation-delay: 0.20s; }
+#splash:not(.hidden) .title-menu-btn:nth-child(5) { animation-delay: 0.25s; }
+#splash:not(.hidden) .title-menu-btn:nth-child(6) { animation-delay: 0.30s; }
+
+@keyframes title-menu-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes title-btn-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .title-menu-btn {
