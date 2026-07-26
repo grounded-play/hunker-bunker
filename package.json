@@ -53,9 +53,11 @@
       "**/node_modules/steamworks.js/**/*"
     ],
     "linux": {
+      "icon": "electron/icon.png",
       "target": "dir"
     },
     "win": {
+      "icon": "electron/icon.ico",
       "target": "dir"
     }
   },

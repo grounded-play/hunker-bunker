@@ -698,6 +698,7 @@ function createWindow() {
         minWidth: 960,
         minHeight: 600,
         backgroundColor: '#0a0c0e',
+        icon: path.join(__dirname, 'icon.png'),
         autoHideMenuBar: true,
         fullscreen: !DEV,
         webPreferences: {
