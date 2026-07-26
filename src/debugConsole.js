@@ -22,10 +22,12 @@ class DebugLogger {
         this.initConsoleInterception();
         if (typeof window !== 'undefined') {
             window.hbLogger = this;
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => this.mountUI());
-            } else {
-                this.mountUI();
+            if (typeof document !== 'undefined') {
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => this.mountUI());
+                } else {
+                    this.mountUI();
+                }
             }
         }
     }
@@ -381,12 +383,14 @@ class DebugLogger {
         this.info('CMD', `> ${cmd}`);
         const parts = cmd.trim().split(/\s+/);
         const action = parts[0].toLowerCase();
-        const game = window.threeGame;
+        const win = typeof window !== 'undefined' ? window : null;
+        const game = win?.threeGame;
 
         switch (action) {
             case 'help':
                 this.info('HELP', `Available Commands:
   • help                  - Show this command manual
+  • steam [status|recheck]- Perform Steamworks integration & backend diagnostic check
   • clear                 - Clear dev log history
   • god                   - Toggle player invincibility
   • heal                  - Fully restore player Health & Oxygen
@@ -397,6 +401,35 @@ class DebugLogger {
   • fps                   - Display current WebGL performance stats
   • loglevel <level>      - Set min log level (debug|info|warn|error)
   • <js code>             - Evaluate arbitrary JavaScript expressions`);
+                break;
+
+            case 'steam':
+                this.info('STEAM', 'Executing Steamworks diagnostic check...');
+                if (typeof win?.refreshSteamBridgeStatus === 'function') {
+                    win.refreshSteamBridgeStatus().then((res) => {
+                        if (!res) {
+                            this.warn('STEAM', 'Web build detected — window.electronAPI is absent.');
+                            return;
+                        }
+                        const info = res.info ?? {};
+                        const health = res.health ?? {};
+                        this.info('STEAM', `=== STEAMWORKS DIAGNOSTIC REPORT ===
+• Desktop Shell: PRESENT
+• Steamworks Active: ${info.active ? 'YES' : 'NO (' + (info.reason || 'inactive') + ')'}
+• Persona / Account: ${info.persona ?? 'N/A'} (SteamID64: ${info.steamId64 ?? 'N/A'}, AppID: ${info.appId ?? 'N/A'})
+• Steam Deck Hardware: ${info.isSteamDeck ? 'YES' : 'NO'}
+• Steam Cloud: ${info.cloud?.available ? 'Available' : 'Unavailable'} (App: ${info.cloud?.enabledForApp}, Account: ${info.cloud?.enabledForAccount})
+• Steam Input: ${info.steamInputAvailable ? 'Ready' : 'Not Available'}
+• Backend Service: ${health.ok ? 'OK' : 'FAILED (' + (health.reason || 'unreachable') + ')'}
+• Backend Message: ${health.message ?? (health.steam?.authConfigured ? 'Auth Configured' : 'Dev Mode')}
+• Failure Message: ${info.message ?? 'None'}
+====================================`);
+                    }).catch((err) => {
+                        this.error('STEAM', `Diagnostic check error: ${err?.message ?? err}`);
+                    });
+                } else {
+                    this.warn('STEAM', 'window.refreshSteamBridgeStatus unavailable.');
+                }
                 break;
 
             case 'clear':

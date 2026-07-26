@@ -5798,6 +5798,7 @@ function executeDevCommand(input) {
                 + '  heal                - Refill Health & O₂\n'
                 + '  nuke / kill         - Clear hostiles in current sector\n'
                 + '  steam               - View Steam connection info\n'
+                + '  steamlog            - View Steam startup diagnostics\n'
                 + '  clear / cls         - Clear console log';
             break;
         case 'layout':
@@ -5866,12 +5867,30 @@ function executeDevCommand(input) {
             break;
         case 'steam':
             if (window.electronAPI?.getSteamInfo) {
-                window.electronAPI.getSteamInfo().then((info) => {
-                    logDevConsole(`Steam Identity: ${JSON.stringify(info, null, 2)}`, 'system');
-                });
+                Promise.all([
+                    window.electronAPI.getSteamInfo(),
+                    window.electronAPI.getSteamDiagnostics?.()
+                ]).then(([info, diagnostics]) => {
+                    logDevConsole(`Steam Identity: ${JSON.stringify(info, null, 2)}\nDiagnostics: ${JSON.stringify(diagnostics?.init ?? null, null, 2)}\nLog file: ${diagnostics?.logPath ?? 'unavailable'}`, 'system');
+                }).catch((err) => logDevConsole(`Steam diagnostic request failed: ${err?.message ?? err}`, 'error'));
                 result = 'Fetching Steam info...';
             } else {
                 result = 'Steam API unavailable (running in web browser).';
+            }
+            break;
+        case 'steamlog':
+        case 'steamlogs':
+            if (window.electronAPI?.getSteamDiagnostics) {
+                window.electronAPI.getSteamDiagnostics().then((diagnostics) => {
+                    const lines = diagnostics?.entries?.map((entry) => (
+                        `${entry.timestamp} +${entry.elapsedMs ?? '-'}ms [${entry.level.toUpperCase()}] ${entry.phase}: ${entry.message}`
+                        + (entry.details ? `\n${JSON.stringify(entry.details, null, 2)}` : '')
+                    )) ?? [];
+                    logDevConsole(`STEAM STARTUP DIAGNOSTICS\n${lines.join('\n') || 'No entries recorded.'}\nLog file: ${diagnostics?.logPath ?? 'unavailable'}`, diagnostics?.init?.ok ? 'system' : 'error');
+                }).catch((err) => logDevConsole(`Steam diagnostic request failed: ${err?.message ?? err}`, 'error'));
+                result = 'Fetching Steam startup log...';
+            } else {
+                result = 'Steam diagnostics unavailable (running in web browser).';
             }
             break;
         case 'clear':
@@ -5897,6 +5916,20 @@ function openDevConsoleModal() {
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
     populateDevAchievementDropdowns();
+    if (window.electronAPI?.getSteamDiagnostics) {
+        window.electronAPI.getSteamDiagnostics().then((diagnostics) => {
+            const init = diagnostics?.init ?? {};
+            const lastEntry = diagnostics?.entries?.at?.(-1);
+            logDevConsole(
+                `Steam startup: ${init.ok ? 'OK' : 'FAILED'} · phase=${init.phase ?? 'unknown'} · ${init.durationMs ?? '?'}ms`
+                + `${lastEntry ? `\nLast event: [${lastEntry.level}] ${lastEntry.phase}: ${lastEntry.message}` : ''}`
+                + `\nType 'steamlog' for the full trace. File: ${diagnostics?.logPath ?? 'unavailable'}`,
+                init.ok ? 'system' : 'error'
+            );
+        }).catch((err) => {
+            logDevConsole(`Steam diagnostics unavailable: ${err?.message ?? err}`, 'error');
+        });
+    }
 
     const resSelect = document.getElementById('dev-res-select');
     if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
@@ -9004,7 +9037,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Refresh Steam bridge & check backend health
     renderLoaderLogs('> VERIFYING STEAMWORKS INTEGRATION...');
     if (loaderBar) loaderBar.style.width = '15%';
-    await refreshSteamBridgeStatus().catch(() => null);
+    const steamStatus = await refreshSteamBridgeStatus().catch((err) => {
+        renderLoaderLogs(`> STEAM CHECK ERROR: ${err?.message ?? 'UNKNOWN ERROR'}`);
+        console.error('[steam] loading-screen verification failed:', err);
+        return null;
+    });
+    if (steamStatus?.info?.active) {
+        renderLoaderLogs(`> STEAM LINKED: ${steamStatus.info.persona ?? 'CONNECTED'}`);
+    } else {
+        const reason = steamStatus?.info?.reason ?? steamStatus?.health?.reason ?? 'OFFLINE';
+        renderLoaderLogs(`> STEAM DEGRADED: ${String(reason).toUpperCase()} — CONTINUING`);
+    }
 
     // 2. Load core audio & image manifest
     await AudioManager.loadAssets(manifest, (progress, itemName) => {
@@ -9157,17 +9200,49 @@ function formatSteamStatus(info, health) {
 
 async function refreshSteamBridgeStatus() {
     if (!window.electronAPI) {
+        console.log('[STEAM] Environment: Web browser (Electron API absent)');
         setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
         return null;
     }
 
-    const identityRequest = window.electronAPI.getSteamIdentity
-        ? window.electronAPI.getSteamIdentity()
-        : window.electronAPI.getSteamInfo?.();
-    const [info, health] = await Promise.all([
-        Promise.resolve(identityRequest).catch(() => null),
-        window.electronAPI.getSteamBackendHealth?.().catch(() => null)
-    ]);
+    console.log('[STEAM] Verifying Steamworks integration...');
+
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve({ timeout: true }), 2500));
+
+    const checkPromise = (async () => {
+        const identityRequest = window.electronAPI.getSteamIdentity
+            ? window.electronAPI.getSteamIdentity()
+            : window.electronAPI.getSteamInfo?.();
+        const [info, health] = await Promise.all([
+            Promise.resolve(identityRequest).catch((err) => ({ ok: false, active: false, reason: 'identity_call_error', message: err?.message ?? String(err) })),
+            window.electronAPI.getSteamBackendHealth?.().catch((err) => ({ ok: false, reason: 'health_call_error', message: err?.message ?? String(err) }))
+        ]);
+        return { info, health };
+    })();
+
+    const result = await Promise.race([checkPromise, timeoutPromise]);
+
+    if (result?.timeout) {
+        console.warn('[STEAM] Integration verification timed out after 2500ms. Continuing boot in offline fallback mode.');
+        setSteamDebugStatus('STEAM: TIMEOUT\nBACKEND: OFF', 'offline');
+        return { info: { active: false, reason: 'bridge_timeout' }, health: { ok: false, reason: 'bridge_timeout' } };
+    }
+
+    const { info, health } = result;
+
+    if (info?.active) {
+        console.info(`[STEAM] Steamworks ACTIVE — Account: ${info.persona ?? 'Unknown'} (AppID: ${info.appId}, SteamID64: ${info.steamId64 ?? 'N/A'})`);
+        if (info.isSteamDeck) console.info('[STEAM] Hardware: Steam Deck detected');
+        if (info.cloud?.available) console.info(`[STEAM] Cloud Sync: Available (App: ${info.cloud.enabledForApp}, Account: ${info.cloud.enabledForAccount})`);
+    } else {
+        console.warn(`[STEAM] Steamworks INACTIVE — Reason: ${info?.reason ?? 'unavailable'}${info?.message ? ` (${info.message})` : ''}`);
+    }
+
+    if (health?.ok) {
+        console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${health.steam?.authConfigured ?? false})`);
+    } else {
+        console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${health?.reason ?? 'offline'}${health?.message ? ` (${health.message})` : ''}`);
+    }
 
     const state = info?.active && health?.steam?.authConfigured
         ? 'ready'
@@ -9176,6 +9251,8 @@ async function refreshSteamBridgeStatus() {
     updateSteamAccountBadges(info);
     return { info, health };
 }
+
+window.refreshSteamBridgeStatus = refreshSteamBridgeStatus;
 
 function updateSteamAccountBadges(info) {
     const persona = info?.persona || (info?.active ? 'STEAM USER' : 'WEB AGENT');

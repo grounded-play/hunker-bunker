@@ -26,15 +26,71 @@ const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
 const STEAM_APPID = Number(process.env.HB_STEAM_APPID ?? 4957040);
 const DEFAULT_STEAM_AUTH_IDENTITY = process.env.HB_STEAM_AUTH_IDENTITY ?? 'hunker-bunker-backend';
 const STEAM_AUTH_TICKET_TTL_MS = 60 * 1000;
+const STEAM_DIAGNOSTIC_LIMIT = 200;
 
 let steam = null;
 let steamClient = null;
+let steamInitError = null;
 let mainWindow = null;
 let steamInputPhase = 'loading';
 let steamInputReady = false;
 let steamInputHandles = null;
 let steamInputPollTimer = null;
 const activeSteamAuthTickets = new Map();
+const steamDiagnostics = [];
+const steamInitState = {
+    phase: 'not_started',
+    startedAt: null,
+    completedAt: null,
+    durationMs: null,
+    ok: false
+};
+
+function serializeError(err) {
+    return {
+        name: err?.name ?? 'Error',
+        message: err?.message ?? String(err),
+        code: err?.code ?? null,
+        stack: err?.stack ?? null
+    };
+}
+
+function recordSteamDiagnostic(level, phase, message, details = null) {
+    const entry = {
+        timestamp: new Date().toISOString(),
+        elapsedMs: steamInitState.startedAt ? Date.now() - steamInitState.startedAt : null,
+        level,
+        phase,
+        message,
+        details
+    };
+    steamDiagnostics.push(entry);
+    if (steamDiagnostics.length > STEAM_DIAGNOSTIC_LIMIT) steamDiagnostics.shift();
+
+    const line = `[steam:${phase}] ${message}`;
+    (level === 'error' ? console.error : level === 'warn' ? console.warn : console.log)(line, details ?? '');
+    try {
+        const logPath = path.join(app.getPath('userData'), 'steam-debug.log');
+        fs.appendFileSync(logPath, `${JSON.stringify(entry)}\n`, 'utf8');
+    } catch (err) {
+        console.warn('[steam:diagnostics] unable to append steam-debug.log:', err?.message ?? err);
+    }
+}
+
+function getSteamDiagnosticsSnapshot() {
+    return {
+        appId: STEAM_APPID,
+        dev: DEV,
+        platform: process.platform,
+        arch: process.arch,
+        electron: process.versions.electron,
+        node: process.versions.node,
+        init: { ...steamInitState },
+        identity: getSteamIdentitySnapshot(),
+        logPath: path.join(app.getPath('userData'), 'steam-debug.log'),
+        entries: steamDiagnostics.slice()
+    };
+}
 
 function isValidActionHandle(handle) {
     return typeof handle === 'bigint' && handle !== 0n;
@@ -71,7 +127,11 @@ function getSteamIdentitySnapshot() {
     };
 
     if (!steamClient) {
-        return { ...base, reason: 'steam_unavailable' };
+        return {
+            ...base,
+            reason: 'steam_unavailable',
+            message: steamInitError ?? 'steamworks.js unavailable or Steam client not running'
+        };
     }
 
     try {
@@ -256,16 +316,40 @@ function cancelAllSteamAuthTickets() {
 }
 
 function initSteam() {
+    steamInitError = null;
+    steamInitState.phase = 'starting';
+    steamInitState.startedAt = Date.now();
+    recordSteamDiagnostic('info', 'starting', `Beginning Steamworks initialization for app ${STEAM_APPID}`, {
+        dev: DEV,
+        cwd: process.cwd(),
+        resourcesPath: process.resourcesPath,
+        packaged: app.isPackaged
+    });
     try {
         // In dev, steamworks.js needs steam_appid.txt beside the executable's
         // cwd. Never ship this file in a depot — retail launches through Steam.
         if (DEV) {
-            try { fs.writeFileSync(path.join(process.cwd(), 'steam_appid.txt'), String(STEAM_APPID)); } catch { /* best effort */ }
+            try {
+                fs.writeFileSync(path.join(process.cwd(), 'steam_appid.txt'), String(STEAM_APPID));
+                recordSteamDiagnostic('info', 'appid_file', 'Wrote development steam_appid.txt');
+            } catch (err) {
+                recordSteamDiagnostic('warn', 'appid_file', 'Could not write development steam_appid.txt', serializeError(err));
+            }
         }
+        steamInitState.phase = 'loading_module';
+        recordSteamDiagnostic('info', 'loading_module', 'Loading steamworks.js native module');
         steam = require('steamworks.js');
+        recordSteamDiagnostic('info', 'module_loaded', 'steamworks.js native module loaded');
+        steamInitState.phase = 'initializing_client';
+        recordSteamDiagnostic('info', 'initializing_client', 'Calling steam.init()', { appId: STEAM_APPID });
         steamClient = steam.init(STEAM_APPID);
-        console.log(`[steam] initialized (appid ${STEAM_APPID}) as ${steamClient.localplayer.getName()}`);
+        recordSteamDiagnostic('info', 'client_initialized', 'Steam client initialized');
         try {
+            steamInitState.phase = 'reading_identity';
+            const persona = steamClient.localplayer.getName();
+            recordSteamDiagnostic('info', 'identity_ready', `Steam identity loaded as ${persona}`);
+            steamInitState.phase = 'initializing_input';
+            recordSteamDiagnostic('info', 'initializing_input', 'Initializing Steam Input');
             steamClient.input?.init?.();
             steamInputHandles = {
                 menu: steamClient.input.getActionSet('menu'),
@@ -289,21 +373,34 @@ function initSteam() {
             const handlesAreValid = Object.values(steamInputHandles).every(isValidActionHandle);
             steamInputReady = handlesAreValid;
             if (!handlesAreValid) {
-                console.log('[steam] input initialized, but one or more action handles were missing. Check the bundled action manifest and Steamworks Steam Input settings.');
+                const invalidHandles = Object.entries(steamInputHandles)
+                    .filter(([, handle]) => !isValidActionHandle(handle))
+                    .map(([name]) => name);
+                recordSteamDiagnostic('warn', 'input_handles', 'Steam Input action handles are missing', { invalidHandles });
             } else {
                 steamInputPhase = 'loading';
-                console.log('[steam] input initialized');
+                recordSteamDiagnostic('info', 'input_ready', 'Steam Input initialized with all action handles');
             }
         } catch (err) {
             steamInputReady = false;
             steamInputHandles = null;
-            console.log(`[steam] input not available (${DEV ? 'dev' : 'no client'}): ${err?.message ?? err}`);
+            recordSteamDiagnostic('warn', 'input_failed', 'Steam Input initialization failed; game will continue', serializeError(err));
         }
+        steamInitState.phase = 'complete';
+        steamInitState.ok = true;
+        steamInitState.completedAt = Date.now();
+        steamInitState.durationMs = steamInitState.completedAt - steamInitState.startedAt;
+        recordSteamDiagnostic('info', 'complete', `Steamworks initialization completed in ${steamInitState.durationMs}ms`);
         return true;
     } catch (err) {
         steam = null;
         steamClient = null;
-        console.log(`[steam] not available (${DEV ? 'dev' : 'no client'}): ${err?.message ?? err}`);
+        steamInitError = err?.message ?? String(err);
+        steamInitState.phase = 'failed';
+        steamInitState.ok = false;
+        steamInitState.completedAt = Date.now();
+        steamInitState.durationMs = steamInitState.completedAt - steamInitState.startedAt;
+        recordSteamDiagnostic('error', 'failed', `Steamworks initialization failed after ${steamInitState.durationMs}ms; game will continue`, serializeError(err));
         return false;
     }
 }
@@ -506,6 +603,7 @@ ipcMain.on('hb:steamInputPhase', (_e, phase) => {
 });
 ipcMain.handle('hb:getSteamIdentity', () => getSteamIdentitySnapshot());
 ipcMain.handle('hb:getSteamCloudStatus', () => getSteamCloudStatusSnapshot());
+ipcMain.handle('hb:getSteamDiagnostics', () => getSteamDiagnosticsSnapshot());
 ipcMain.handle('hb:getSteamAuthTicket', async (_e, identity, timeoutSeconds = 10) => {
     if (!steamClient?.auth?.getAuthTicketForWebApi) {
         return {

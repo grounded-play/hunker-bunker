@@ -65,6 +65,7 @@ const STEAM_AUTH_IDENTITY = cleanConfigString(
     DEFAULT_STEAM_CONFIG.authIdentity
 );
 const STEAM_SESSION_REFRESH_SKEW_MS = 30 * 1000;
+const STEAM_BACKEND_TIMEOUT_MS = 5000;
 let cachedSteamSession = null;
 let pendingSteamSession = null;
 let pendingSteamSessionIdentity = null;
@@ -79,14 +80,22 @@ async function requestSteamBackend(path, { method = 'GET', body = null, headers 
     }
 
     try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), STEAM_BACKEND_TIMEOUT_MS);
         const requestHeaders = { ...headers };
         if (body) requestHeaders['content-type'] = 'application/json';
 
-        const response = await fetch(steamBackendUrl(path), {
-            method,
-            headers: Object.keys(requestHeaders).length > 0 ? requestHeaders : undefined,
-            body: body ? JSON.stringify(body) : undefined
-        });
+        let response;
+        try {
+            response = await fetch(steamBackendUrl(path), {
+                method,
+                headers: Object.keys(requestHeaders).length > 0 ? requestHeaders : undefined,
+                body: body ? JSON.stringify(body) : undefined,
+                signal: controller.signal
+            });
+        } finally {
+            clearTimeout(timeout);
+        }
         const text = await response.text();
         let data = {};
         try {
@@ -102,7 +111,8 @@ async function requestSteamBackend(path, { method = 'GET', body = null, headers 
     } catch (err) {
         return {
             ok: false,
-            reason: 'steam_backend_unreachable',
+            reason: err?.name === 'AbortError' ? 'steam_backend_timeout' : 'steam_backend_unreachable',
+            timeoutMs: err?.name === 'AbortError' ? STEAM_BACKEND_TIMEOUT_MS : undefined,
             message: err?.message ?? String(err)
         };
     }
@@ -284,6 +294,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSteamInfo: () => ipcRenderer.invoke('hb:steamInfo'),
     getSteamIdentity: () => ipcRenderer.invoke('hb:getSteamIdentity'),
     getSteamCloudStatus: () => ipcRenderer.invoke('hb:getSteamCloudStatus'),
+    getSteamDiagnostics: () => ipcRenderer.invoke('hb:getSteamDiagnostics'),
     getSteamAuthTicket: (identity = STEAM_AUTH_IDENTITY) => ipcRenderer.invoke('hb:getSteamAuthTicket', identity),
     cancelSteamAuthTicket: (handle) => ipcRenderer.invoke('hb:cancelSteamAuthTicket', handle),
     getSteamBackendHealth: () => requestSteamBackend('/health'),
