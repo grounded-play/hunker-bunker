@@ -7085,18 +7085,21 @@ body.mission-intro-active #game-container canvas {
 
 .achievements-modal-content {
   --achievement-glow-rgb: 125, 255, 90;
-  max-width: min(94vw, calc(var(--vu) * 144));
-  width: min(94vw, calc(var(--vu) * 144));
+  max-width: min(92vw, calc(var(--vu) * 138));
+  width: min(92vw, calc(var(--vu) * 138));
+  max-height: 86vh;
+  padding: calc(var(--vu) * 2.4);
   border-color: rgba(var(--achievement-glow-rgb), 0.42) !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .achievements-header {
   position: relative;
   text-align: center;
-  margin-bottom: calc(var(--vu) * 2);
+  margin-bottom: calc(var(--vu) * 1.6);
   flex: 0 0 auto;
 }
 
@@ -7113,19 +7116,19 @@ body.mission-intro-active #game-container canvas {
   font-size: var(--font-xs);
   letter-spacing: 0.08em;
   color: rgba(215, 255, 205, 0.82);
-  margin-top: calc(var(--vu) * 0.8);
+  margin-top: calc(var(--vu) * 0.6);
   min-height: 1.1em;
 }
 
 .achievements-grid {
   flex: 1 1 auto;
   min-height: 0;
-  max-height: 62vh;
+  max-height: 58vh;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--vu) * 28), 1fr));
-  gap: calc(var(--vu) * 1.2);
-  padding-right: calc(var(--vu) * 0.7);
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--vu) * 34), 1fr));
+  gap: calc(var(--vu) * 1.4);
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 1.2) calc(var(--vu) * 0.4) 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(var(--achievement-glow-rgb), 0.5) transparent;
 }
@@ -7136,14 +7139,17 @@ body.mission-intro-active #game-container canvas {
 
 .achievement-card {
   display: grid;
-  grid-template-columns: calc(var(--vu) * 7) 1fr;
-  gap: calc(var(--vu) * 1.1);
-  min-height: calc(var(--vu) * 10);
-  padding: calc(var(--vu) * 1.2);
+  grid-template-columns: calc(var(--vu) * 6.5) 1fr;
+  gap: calc(var(--vu) * 1.2);
+  min-height: calc(var(--vu) * 10.5);
+  height: auto;
+  align-items: flex-start;
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.4);
   background: rgba(var(--achievement-glow-rgb), 0.055);
   border: 1px solid rgba(var(--achievement-glow-rgb), 0.24);
   border-left-width: 3px;
   border-radius: 6px;
+  box-sizing: border-box;
 }
 
 .achievement-card--locked {
@@ -7159,6 +7165,7 @@ body.mission-intro-active #game-container canvas {
 .achievement-card__icon {
   width: calc(var(--vu) * 6.2);
   height: calc(var(--vu) * 6.2);
+  flex-shrink: 0;
   border-radius: 6px;
   border: 1px solid rgba(var(--achievement-glow-rgb), 0.35);
   background: rgba(3, 10, 7, 0.72);
@@ -7184,26 +7191,34 @@ body.mission-intro-active #game-container canvas {
 
 .achievement-card__body {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .achievement-card__title {
   font-family: 'Outfit', sans-serif;
-  font-size: var(--font-sm);
+  font-size: clamp(12px, calc(var(--vu) * 1.5), 15px);
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  line-height: 1.25;
   color: #ffffff;
+  word-break: break-word;
+  margin-bottom: calc(var(--vu) * 0.3);
 }
 
 .achievement-card__blurb {
-  margin-top: calc(var(--vu) * 0.5);
-  font-size: var(--font-xs);
-  line-height: 1.4;
+  font-size: clamp(11px, calc(var(--vu) * 1.25), 13px);
+  line-height: 1.35;
   color: rgba(232, 239, 247, 0.78);
+  margin-top: calc(var(--vu) * 0.2);
+  word-break: break-word;
 }
 
 .achievement-card__meta {
-  margin-top: calc(var(--vu) * 0.75);
-  font-size: var(--font-xs);
+  margin-top: calc(var(--vu) * 0.6);
+  font-size: clamp(11px, calc(var(--vu) * 1.25), 13px);
   font-weight: 900;
   letter-spacing: 0.08em;
   color: rgba(255, 183, 0, 0.88);
@@ -7219,7 +7234,7 @@ body.mission-intro-active #game-container canvas {
   align-items: center;
   justify-content: space-between;
   gap: calc(var(--vu) * 1.2);
-  margin-top: calc(var(--vu) * 1.6);
+  margin-top: calc(var(--vu) * 1.4);
   padding-top: calc(var(--vu) * 1.2);
   border-top: 1px solid rgba(var(--achievement-glow-rgb), 0.22);
 }

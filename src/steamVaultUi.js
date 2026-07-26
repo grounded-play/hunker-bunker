@@ -108,13 +108,12 @@ let marketEligibilityReason = null;
 let hudCardSeq = 0;
 
 export function openSteamVaultModal() {
+    initSteamVaultUI();
     const modal = document.getElementById('steam-vault-modal');
     if (!modal) return;
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
-    if (typeof loadVaultData === 'function') {
-        loadVaultData();
-    }
+    loadVaultData().catch(() => null);
 }
 
 export function showSteamDropToast(itemdefid, quantity = 1) {
@@ -194,27 +193,41 @@ export function initSteamVaultUI() {
     const closeBtn = document.getElementById('close-steam-vault-modal');
     const modal = document.getElementById('steam-vault-modal');
 
-    if (!vaultBtn || !modal) return;
+    if (!modal) return;
 
-    vaultBtn.addEventListener('click', async () => {
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden', 'false');
-        if (typeof window.showDeveloperCommentary === 'function') {
-            window.showDeveloperCommentary('steam_vault');
-        }
-        await loadVaultData();
-    });
+    if (vaultBtn && !vaultBtn.dataset.bound) {
+        vaultBtn.dataset.bound = 'true';
+        vaultBtn.addEventListener('click', async () => {
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+            if (typeof window.showDeveloperCommentary === 'function') {
+                window.showDeveloperCommentary('steam_vault');
+            }
+            await loadVaultData();
+        });
+    }
 
-    closeBtn?.addEventListener('click', () => {
+    const closeModal = () => {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
-    });
+    };
+
+    if (closeBtn && !closeBtn.dataset.bound) {
+        closeBtn.dataset.bound = 'true';
+        closeBtn.addEventListener('click', closeModal);
+    }
+
+    if (!modal.dataset.escBound) {
+        modal.dataset.escBound = 'true';
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+    }
 
     if (typeof window.setupClickOutside === 'function') {
-        window.setupClickOutside('steam-vault-modal', () => {
-            modal.classList.add('hidden');
-            modal.setAttribute('aria-hidden', 'true');
-        });
+        window.setupClickOutside('steam-vault-modal', closeModal);
     }
 
     const tabInventory = document.getElementById('vault-tab-inventory');

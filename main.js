@@ -1,3 +1,4 @@
+/* global __HB_BUILD_INFO__ */
 import { AudioManager } from './src/audio.js';
 import { debugLog } from './src/debugConsole.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
@@ -41,6 +42,7 @@ const titleAboutBtn = document.getElementById('title-about-btn');
 const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
+const loaderVersionTag = document.getElementById('loader-version-tag');
 const transitionOverlay = document.getElementById('transition-overlay');
 const loaderTitle = document.querySelector('.loader-title');
 const loaderBar = document.querySelector('.loader-bar');
@@ -48,6 +50,23 @@ const loaderStatus = document.querySelector('.loader-status');
 const loaderBriefingAvatar = document.getElementById('loader-briefing-avatar');
 const loaderBriefingAvatarImg = document.getElementById('loader-briefing-avatar-img');
 const loaderBriefingSpeaker = document.getElementById('loader-briefing-speaker');
+
+const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
+    ? __HB_BUILD_INFO__
+    : Object.freeze({
+        version: 'dev',
+        commit: 'unknown',
+        branch: 'unknown',
+        dirty: true,
+        steamBuild: ''
+    });
+const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
+const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
+if (loaderVersionTag) {
+    loaderVersionTag.textContent =
+        `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}`;
+    loaderVersionTag.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
+}
 
 const mainDebugToggle = document.getElementById('main-debug-toggle');
 const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
@@ -4947,14 +4966,21 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 // Generic fullscreen cutscene video: plays /cutscenes/{base}.webm (mp4
 // fallback, {base}-poster.jpg). Skippable, and resolves immediately when the
 // asset doesn't exist so story beats never stall on missing files.
-function playCutsceneVideo(base) {
+function playCutsceneVideo(base, options = {}) {
+    const { onDoorCutoff = null } = (typeof options === 'object' && options !== null ? options : {});
     warmCutsceneVideo(base);
 
     return new Promise((resolve) => {
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
-        overlay.style.setProperty('--class-intro-poster', `url('/cutscenes/${base}-poster.jpg')`);
+        if (base === 'DoorIntro' || base.includes('DoorIntro')) {
+            overlay.style.backgroundColor = '#000000';
+            overlay.style.setProperty('--class-intro-poster', 'none');
+        } else {
+            const posterUrl = base.includes('/') || base.endsWith('.mp4') ? '/title_key_art_v2.png' : `/cutscenes/${base}-poster.jpg`;
+            overlay.style.setProperty('--class-intro-poster', `url('${posterUrl}')`);
+        }
 
         const video = document.createElement('video');
         video.className = 'class-intro-video';
@@ -4964,20 +4990,24 @@ function playCutsceneVideo(base) {
         video.autoplay = true;
         video.controls = false;
         video.preload = 'auto';
-        video.poster = `/cutscenes/${base}-poster.jpg`;
 
-        const webm = document.createElement('source');
-        webm.src = `/cutscenes/${base}.webm`;
-        webm.type = 'video/webm';
-        let fallbackSource = webm;
-        if (video.canPlayType('video/webm')) {
-            video.append(webm);
-        } else {
-            const mp4 = document.createElement('source');
-            mp4.src = `/cutscenes/${base}.mp4`;
-            mp4.type = 'video/mp4';
-            video.append(mp4);
-            fallbackSource = mp4;
+        const sources = [];
+        if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
+            sources.push('/DoorIntro.mp4');
+        }
+        if (base.startsWith('/')) {
+            sources.push(base);
+        }
+        sources.push(`/cutscenes/${base}.webm`, `/cutscenes/${base}.mp4`, `/${base}.mp4`, `/${base}.webm`);
+
+        let primarySource = null;
+        for (const src of [...new Set(sources)]) {
+            const sourceEl = document.createElement('source');
+            sourceEl.src = src;
+            if (src.endsWith('.webm')) sourceEl.type = 'video/webm';
+            if (src.endsWith('.mp4')) sourceEl.type = 'video/mp4';
+            video.appendChild(sourceEl);
+            if (!primarySource) primarySource = sourceEl;
         }
 
         const skipHint = document.createElement('div');
@@ -4986,21 +5016,45 @@ function playCutsceneVideo(base) {
 
         let settled = false;
         let played = false;
+        let fadingOut = false;
         let guardTimer = 0;
+
         const finish = ({ skipped = false } = {}) => {
             if (settled) return;
             settled = true;
             window.clearTimeout(guardTimer);
             window.removeEventListener('keydown', onKey);
-            try { video.pause(); } catch { /* already detached */ }
+            if (typeof onDoorCutoff === 'function') {
+                onDoorCutoff();
+            }
             overlay.classList.add('is-closing');
-            window.setTimeout(() => overlay.remove(), 280);
-            resolve({ played, skipped });
+            setTimeout(() => {
+                try { video.pause(); } catch { /* already detached */ }
+                overlay.remove();
+                resolve({ played, skipped });
+            }, skipped ? 200 : 400);
         };
+
         const onKey = (event) => {
             event.preventDefault();
             finish({ skipped: true });
         };
+
+        video.addEventListener('timeupdate', () => {
+            if (!fadingOut && Number.isFinite(video.duration) && video.duration > 0) {
+                const doorCutoffTime = (base === 'DoorIntro' || base.includes('DoorIntro') || base.includes('intro'))
+                    ? Math.min(video.duration * 0.40, 3.2)
+                    : (video.duration - 0.5);
+
+                if (video.currentTime >= doorCutoffTime) {
+                    fadingOut = true;
+                    if (typeof onDoorCutoff === 'function') {
+                        onDoorCutoff();
+                    }
+                    setTimeout(() => finish({ skipped: false }), 200);
+                }
+            }
+        });
 
         video.addEventListener('ended', finish);
         video.addEventListener('error', finish);
@@ -5008,8 +5062,10 @@ function playCutsceneVideo(base) {
             played = true;
             video.style.opacity = '1';
         }, { once: true });
-        // The selected source erroring means nothing was playable (asset absent).
-        fallbackSource.addEventListener('error', finish);
+
+        if (primarySource) {
+            primarySource.addEventListener('error', finish);
+        }
         overlay.addEventListener('pointerup', finish);
         window.addEventListener('keydown', onKey);
         guardTimer = window.setTimeout(() => {
@@ -6224,6 +6280,9 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     blackBoxStore.clear();
     if (window.game) {
         window.game.clearBlackBoxMarker();
+    }
+    if (window.bankManager?.reset) {
+        window.bankManager.reset();
     }
     const removed = clearSaveData();
     window.AudioManager?.play?.('ui_click', { volume: 0.55 });
@@ -8686,6 +8745,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (titleContinueBtn) {
             titleContinueBtn.disabled = !hasSave;
             titleContinueBtn.classList.toggle('disabled', !hasSave);
+            titleContinueBtn.classList.toggle('hidden', !hasSave);
+            titleContinueBtn.style.display = hasSave ? '' : 'none';
         }
     };
     updateContinueButtonState();
@@ -8980,24 +9041,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             triggerDoorTransition(
                 () => {
                     if (loadingScreen) loadingScreen.classList.add('hidden');
+                    if (splash) splash.classList.add('hidden');
                 },
                 async () => {
-                    // Play skippable intro cutscene
-                    await playCinematicBeat({
-                        videoBase: 'scout-intro',
-                        fallback: {
-                            kicker: 'HUNKER BUNKER TACTICAL COMMAND',
-                            title: 'SUBTERRANEAN EXTRACTION ONLINE',
-                            body: 'Infinite procedural corridor network. Command modular exosuits, reclaim salvage, and extract.',
-                            allowSkip: true,
-                            images: ['/title_key_art_v2.png']
-                        }
-                    }).catch(() => null);
+                    // Play DoorIntro cutscene against solid pitch-black background.
+                    // The second door transition triggers WHILE the video is playing (at ~70% mark)
+                    // so the heavy blast doors slam shut directly over the active video.
+                    await new Promise((resolve) => {
+                        let doorStarted = false;
+                        const triggerClosingDoors = () => {
+                            if (doorStarted) return;
+                            doorStarted = true;
+                            triggerDoorTransition(
+                                () => {
+                                    if (splash) splash.classList.remove('hidden');
+                                    setAppPhase('splash');
+                                    window.game?.setLoadingPaused?.(false);
+                                    transitionToMenuMusic();
+                                },
+                                null,
+                                'base'
+                            );
+                            resolve();
+                        };
 
-                    if (splash) splash.classList.remove('hidden');
-                    setAppPhase('splash');
-                    window.game?.setLoadingPaused?.(false);
-                    transitionToMenuMusic();
+                        playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
+                            .then(triggerClosingDoors)
+                            .catch(async () => {
+                                await playCutsceneVideo('scout-intro').catch(() => null);
+                                triggerClosingDoors();
+                            });
+                    });
                 },
                 'base'
             );
@@ -9230,14 +9304,14 @@ if (window.electronAPI) {
         void refreshSteamBridgeStatus();
     }, 60000);
 
-    // Initialize Steam Vault
-    initSteamVaultUI();
-    loadVaultData();
+    loadVaultData().catch(() => null);
 } else {
     setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
 }
 
+// Initialize Steam Vault UI in all environments
+initSteamVaultUI();
+
 // ── Steam Vault & Leaderboard Frontend implementations decoupled to: ──
 // - src/steamVaultUi.js
 // - src/leaderboardUi.js
-

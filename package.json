@@ -1,6 +1,6 @@
 {
   "name": "hunker-bunker",
-  "version": "0.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -21,6 +21,8 @@
     "steam:audit-backend": "node scripts/audit-steam-backend-env.js",
     "steam:audit-backend:strict": "node scripts/audit-steam-backend-env.js --strict",
     "steam:audit-depot": "node scripts/audit-steam-depot.js",
+    "steam:prepare": "node scripts/steam-release.js",
+    "steam:upload": "node scripts/steam-release.js --upload",
     "steam:drm-wrap": "node scripts/steam-drm-wrap.js",
     "electron:build": "vite build && npm run steam:config && electron-builder --dir",
     "electron:dist": "vite build && npm run steam:config && electron-builder",
