@@ -30,6 +30,8 @@ import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
+import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
@@ -321,6 +323,9 @@ let suppressSteamInputUntilRelease = false;
 
 window.HunkerTriggerBoot = () => {
     pendingSteamInputBoot = true;
+    if (typeof window.game?.setLoadingPaused === 'function') {
+        window.game.setLoadingPaused(false);
+    }
 };
 
 window.HunkerInputState = {
@@ -2520,117 +2525,7 @@ function formatRunTime(ms) {
     return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function getGameOverLeaderboardBoard(payload = {}) {
-    if (payload.run?.dailyOps?.date) return 'daily_ops_score';
-    return 'best_run_score';
-}
 
-function getGameOverLeaderboardLabel(board) {
-    if (board === 'daily_ops_score') return 'DAILY OPS';
-    if (board === 'survival_time_seconds') return 'SURVIVAL TIME';
-    if (board === 'deepest_depth_score') return 'DEEPEST DEPTH';
-    if (board === 'fastest_extraction_ms') return 'FASTEST EXTRACTION';
-    return 'BEST RUN SCORE';
-}
-
-function setGameOverLeaderboardState(statusText, entries = [], { board = 'best_run_score', selfSteamId = null, type = 'retrieving' } = {}) {
-    const statusEl = document.getElementById('go-leaderboard-status');
-    const listEl = document.getElementById('go-leaderboard-list');
-    if (statusEl) {
-        statusEl.textContent = statusText;
-        statusEl.className = `go-leaderboard-status go-leaderboard-status--${type}`;
-    }
-    if (!listEl) return;
-
-    listEl.innerHTML = '';
-    if (!entries.length) {
-        const empty = document.createElement('div');
-        empty.className = 'go-leaderboard-row go-leaderboard-row--empty';
-        empty.textContent = 'NO RANKS AVAILABLE';
-        listEl.appendChild(empty);
-        return;
-    }
-
-    for (const entry of entries) {
-        if (entry.separator) {
-            const sep = document.createElement('div');
-            sep.className = 'go-leaderboard-row go-leaderboard-row--separator';
-            sep.textContent = '...';
-            listEl.appendChild(sep);
-            continue;
-        }
-
-        const row = document.createElement('div');
-        const isSelf = selfSteamId && String(entry.steamId64) === String(selfSteamId);
-        row.className = `go-leaderboard-row${isSelf ? ' player-self' : ''}`;
-
-        const rank = document.createElement('span');
-        rank.className = 'go-leaderboard-rank';
-        rank.textContent = `#${Number(entry.rank) || '-'}`;
-
-        const name = document.createElement('span');
-        name.className = 'go-leaderboard-name';
-        name.textContent = entry.persona || 'Agent';
-
-        const score = document.createElement('span');
-        score.className = 'go-leaderboard-score';
-        score.textContent = formatLeaderboardScore(board, Number(entry.score) || 0);
-
-        row.append(rank, name, score);
-        listEl.appendChild(row);
-    }
-}
-
-async function renderGameOverLeaderboard(payload = {}) {
-    const board = getGameOverLeaderboardBoard(payload);
-    const label = getGameOverLeaderboardLabel(board);
-    setGameOverLeaderboardState(`RETRIEVING ${label}...`, [], { board, type: 'retrieving' });
-
-    if (!window.electronAPI?.getSteamLeaderboard) {
-        setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
-        return;
-    }
-
-    try {
-        const [result, identity] = await Promise.all([
-            window.electronAPI.getSteamLeaderboard(board, 'Global', 10),
-            window.electronAPI.getSteamIdentity?.().catch(() => null)
-        ]);
-
-        if (!result?.ok) {
-            setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
-            return;
-        }
-
-        const selfSteamId = identity?.steamId64 ?? (result.mock ? '76561198000000000' : null);
-        const status = result.mock ? `${label} - DEV MOCK` : `${label} - GLOBAL TOP 10`;
-        const type = result.mock ? 'mock' : 'live';
-
-        let entries = result.entries ?? [];
-
-        // Fetch exact player rank if player is not in top 10
-        const hasSelf = entries.some(entry => selfSteamId && String(entry.steamId64) === String(selfSteamId));
-        if (!hasSelf && selfSteamId) {
-            try {
-                const aroundResult = await window.electronAPI.getSteamLeaderboard(board, 'AroundUser', 1);
-                if (aroundResult?.ok && aroundResult.entries?.length) {
-                    const selfEntry = aroundResult.entries.find(entry => String(entry.steamId64) === String(selfSteamId));
-                    if (selfEntry) {
-                        entries = [...entries];
-                        entries.push({ separator: true });
-                        entries.push(selfEntry);
-                    }
-                }
-            } catch (err) {
-                console.warn('[steam] failed to fetch player leaderboard rank:', err);
-            }
-        }
-
-        setGameOverLeaderboardState(status, entries, { board, selfSteamId, type });
-    } catch {
-        setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
-    }
-}
 
 function clearAllTimers() {
     clearTimeout(biomePromptTimer);
@@ -9027,96 +8922,90 @@ document.addEventListener('DOMContentLoaded', async () => {
     const maxLogs = 5;
     const logs = ['CONNECTING TO TACTICAL NETWORK...'];
 
-    await AudioManager.loadAssets(manifest, (progress, itemName) => {
-        if (loaderBar) loaderBar.style.width = `${progress}%`;
-        if (loaderStatus && itemName) {
-            const msg = getLoadingMessageForAsset(itemName);
-            logs.push(`> ${msg}...`);
+    const renderLoaderLogs = (newLog = null) => {
+        if (!loaderStatus) return;
+        if (newLog && !logs.includes(newLog)) {
+            logs.push(newLog);
             if (logs.length > maxLogs) {
                 logs.shift();
             }
-            loaderStatus.innerHTML = logs.map((log, idx) => {
-                const distance = logs.length - 1 - idx;
-                const opacities = [1.0, 0.65, 0.4, 0.2, 0.08];
-                const opacity = opacities[distance] ?? 0.05;
-                return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.15s ease;">${log}</div>`;
-            }).join('');
+        }
+        loaderStatus.innerHTML = logs.map((log, idx) => {
+            const distance = logs.length - 1 - idx;
+            const opacities = [1.0, 0.65, 0.4, 0.2, 0.08];
+            const opacity = opacities[distance] ?? 0.05;
+            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.15s ease;">${log}</div>`;
+        }).join('');
+    };
+
+    renderLoaderLogs();
+
+    // 1. Refresh Steam bridge & check backend health
+    renderLoaderLogs('> VERIFYING STEAMWORKS INTEGRATION...');
+    if (loaderBar) loaderBar.style.width = '15%';
+    await refreshSteamBridgeStatus().catch(() => null);
+
+    // 2. Load core audio & image manifest
+    await AudioManager.loadAssets(manifest, (progress, itemName) => {
+        const scaledProgress = 15 + Math.round(progress * 0.45);
+        if (loaderBar) loaderBar.style.width = `${scaledProgress}%`;
+        if (itemName) {
+            const msg = getLoadingMessageForAsset(itemName);
+            renderLoaderLogs(`> ${msg}...`);
         }
     });
 
-    if (loaderBar) loaderBar.style.width = `100%`;
-    if (loaderStatus) {
-        loaderStatus.style.opacity = 0;
-        setTimeout(() => {
-            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK OR PRESS ANY KEY TO INITIALIZE ]</div>`;
-            loaderStatus.style.opacity = 1;
-        }, 220);
-    }
+    renderLoaderLogs('> BOOTING TACTICAL WEBGL CORE...');
+    if (loaderBar) loaderBar.style.width = '65%';
 
-    // Preload WebGL engine and assets immediately on launch
-    initializeGame(initialType).catch((err) => console.warn('[Preload warning]', err));
-
-    let clickInitializing = false;
-    const triggerBoot = async () => {
-        if (clickInitializing) return;
-        clickInitializing = true;
-
-        if (loaderStatus) {
-            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE...</div>`;
-        }
+    let bootInitializing = false;
+    const autoTriggerBoot = async () => {
+        if (bootInitializing) return;
+        bootInitializing = true;
 
         try {
-            await AudioManager.unlock();
             await initializeGame(initialType);
+            if (loaderBar) loaderBar.style.width = '100%';
+            renderLoaderLogs('> ALL ASSETS LOADED — OPENING AIRLOCK...');
         } catch (err) {
             console.error('Initialization failed:', err);
-            clickInitializing = false;
+            bootInitializing = false;
             if (loaderStatus) {
-                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK OR PRESS ANY KEY TO RETRY INITIALIZATION ]</div>`;
+                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ SYSTEM INITIALIZATION ERROR — RETRYING... ]</div>`;
             }
             return;
         }
 
-        triggerDoorTransition(
-            () => {
-                if (loadingScreen) loadingScreen.classList.add('hidden');
-                if (splash) splash.classList.remove('hidden');
-                setAppPhase('splash');
-                window.game?.setLoadingPaused?.(false);
-                transitionToMenuMusic();
-            },
-            null,
-            'base'
-        );
+        setTimeout(() => {
+            triggerDoorTransition(
+                () => {
+                    if (loadingScreen) loadingScreen.classList.add('hidden');
+                },
+                async () => {
+                    // Play skippable intro cutscene
+                    await playCinematicBeat({
+                        videoBase: 'scout-intro',
+                        fallback: {
+                            kicker: 'HUNKER BUNKER TACTICAL COMMAND',
+                            title: 'SUBTERRANEAN EXTRACTION ONLINE',
+                            body: 'Infinite procedural corridor network. Command modular exosuits, reclaim salvage, and extract.',
+                            allowSkip: true,
+                            images: ['/title_key_art_v2.png']
+                        }
+                    }).catch(() => null);
+
+                    if (splash) splash.classList.remove('hidden');
+                    setAppPhase('splash');
+                    window.game?.setLoadingPaused?.(false);
+                    transitionToMenuMusic();
+                },
+                'base'
+            );
+        }, 180);
     };
 
-    window.HunkerTriggerBoot = triggerBoot;
-    if (pendingSteamInputBoot) {
-        pendingSteamInputBoot = false;
-        void triggerBoot();
-    }
-
-    document.body.addEventListener('click', triggerBoot);
-    window.addEventListener('keydown', triggerBoot);
-
-    // Poll gamepads for boot trigger
-    let gamepadPollInterval = setInterval(() => {
-        if (AudioManager.isUnlocked && window.game) {
-            clearInterval(gamepadPollInterval);
-            return;
-        }
-        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-        for (const gp of gamepads) {
-            if (gp) {
-                const pressed = gp.buttons.some(b => b.pressed);
-                if (pressed) {
-                    triggerBoot();
-                    clearInterval(gamepadPollInterval);
-                    break;
-                }
-            }
-        }
-    }, 100);
+    window.HunkerTriggerBoot = autoTriggerBoot;
+    void autoTriggerBoot();
 });
 
 setDebugMode(false);
@@ -9232,15 +9121,7 @@ function updateSteamAccountBadges(info) {
     if (menuBadge) menuBadge.classList.toggle('steam-account-badge--active', isOnline);
 }
 
-function openSteamVaultModal() {
-    const modal = document.getElementById('steam-vault-modal');
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    modal.setAttribute('aria-hidden', 'false');
-    if (typeof loadVaultData === 'function') {
-        loadVaultData();
-    }
-}
+
 
 function handleSteamBadgeClick() {
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
@@ -9353,646 +9234,7 @@ if (window.electronAPI) {
     setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
 }
 
-// ── Steam Vault Frontend Implementation ──
-const STEAM_ITEM_CATALOG = {
-    1000: {
-        name: 'Common Relic Fragment',
-        rarity: 'common',
-        desc: 'A shard of ancient subterranean machinery, used in basic crafting exchanges.',
-        tradable: true,
-        marketable: false,
-        img: 'https://hunkerbunker.netlify.app/economy/relic_common.png'
-    },
-    1100: {
-        name: 'Rare Relic Fragment',
-        rarity: 'rare',
-        desc: 'An intact processor core from the deep vaults, used to craft elite cosmetics.',
-        tradable: true,
-        marketable: false,
-        img: 'https://hunkerbunker.netlify.app/economy/relic_rare.png'
-    },
-    2000: {
-        name: 'Scout Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using a Scout frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_scout.png'
-    },
-    2001: {
-        name: 'Tank Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using a Tank frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_tank.png'
-    },
-    2002: {
-        name: 'Engineer Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using an Engineer frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_engineer.png'
-    },
-    2100: {
-        name: 'Carbon Fiber Decal',
-        rarity: 'rare',
-        desc: 'A high-performance weave finish for your exosuit. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/decal_carbon.png'
-    },
-    2200: {
-        name: 'Chrome Plated Sidearm',
-        rarity: 'epic',
-        desc: 'Polished high-reflectivity chrome finish for the standard sidearm. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/finish_chrome.png'
-    },
-    2003: {
-        name: 'Queen Slayer Emblem',
-        rarity: 'legendary',
-        desc: 'Awarded for defeating the Act 2 queen. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/emblem_queen_slayer.png'
-    },
-    2004: {
-        name: 'Archivist Emblem',
-        rarity: 'epic',
-        desc: 'Awarded for recovering the full bunker archive. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/emblem_archivist.png'
-    },
-    4000: {
-        name: 'Deep Relic Cache',
-        rarity: 'container',
-        desc: 'A sealed drop container. Requires a Cache Key to open — see the STORE tab for published odds.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/cache_deep_relic.png'
-    },
-    4001: {
-        name: 'Cache Key',
-        rarity: 'key',
-        desc: 'Opens a single Deep Relic Cache. Purchased with real money; never drops for free.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/cache_key.png'
-    }
-};
+// ── Steam Vault & Leaderboard Frontend implementations decoupled to: ──
+// - src/steamVaultUi.js
+// - src/leaderboardUi.js
 
-let storeCatalog = null;
-let storeOdds = [];
-let storePurchasesEnabled = false;
-let storePurchaseMode = 'disabled';
-let storeDisabledReason = 'catalog_unavailable';
-let storeHostedItemStore = null;
-
-let vaultItems = [];
-let selectedVaultItem = null;
-let marketEligibility = 'unknown';
-let marketEligibilityReason = null;
-
-// Fired from the playtime-drop interval and the victory class-patch grant —
-// both real Steam Inventory writes, so this is the only place either one
-// surfaces to the player short of opening the Vault manually.
-function showSteamDropToast(itemdefid, quantity = 1) {
-    const catalog = STEAM_ITEM_CATALOG[itemdefid];
-    if (!catalog) return;
-    const stack = document.querySelector('.hud-notification-stack');
-    if (!stack) return;
-
-    window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
-    const toast = document.createElement('div');
-    // steam-drop-toast rides the achievement-toast base but carries its own
-    // identity class: a real-inventory grant should read as more valuable
-    // than a routine achievement pop, and an achievement-toast restyle must
-    // never silently reskin Steam grants (wave-6 punch list §1.4).
-    toast.className = 'achievement-toast steam-drop-toast hud-stack-card hidden';
-    toast.setAttribute('aria-live', 'polite');
-    toast.dataset.notificationPriority = '5';
-    toast.dataset.seq = String(hudCardSeq++);
-    toast.dataset.autoDismissMs = '5600';
-    toast.dataset.removeDelayMs = '320';
-
-    const iconWrap = document.createElement('div');
-    iconWrap.className = 'achievement-toast__icon';
-    const img = document.createElement('img');
-    img.alt = '';
-    img.src = catalog.img;
-    iconWrap.append(img);
-
-    const body = document.createElement('div');
-    body.className = 'achievement-toast__body';
-    const kicker = document.createElement('div');
-    kicker.className = 'achievement-toast__kicker';
-    kicker.textContent = 'STEAM ITEM ACQUIRED';
-    const title = document.createElement('div');
-    title.className = 'achievement-toast__title';
-    title.textContent = quantity > 1 ? `${catalog.name} x${quantity}` : catalog.name;
-    const blurb = document.createElement('div');
-    blurb.className = 'achievement-toast__blurb';
-    blurb.textContent = catalog.desc;
-    body.append(kicker, title, blurb);
-    toast.append(iconWrap, body);
-    toast.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        dismissHudNotificationCard(toast);
-    });
-
-    stack.append(toast);
-    updateHudNotificationDeck();
-    toast.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        toast.classList.add('visible');
-        updateHudNotificationDeck();
-    });
-}
-
-// Renders the trusted, server-derived milestone grants (victory patch,
-// flawless/personal-best/daily-ops bonus caches) that ride along on the
-// submit-run response — see server/steamLeaderboards.js deriveAndGrantMilestones.
-// Written into the game-over screen (not the HUD toast stack, which lives
-// inside #ui and is already hidden by the time this resolves).
-function renderSteamMilestoneGrants(grants = []) {
-    const grantNote = document.getElementById('go-steam-grant-note');
-    if (!grantNote || !Array.isArray(grants) || grants.length === 0) return;
-
-    const names = grants
-        .map((item) => {
-            const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
-            const label = catalog?.name ?? `Item #${item.itemdefid}`;
-            return item.quantity > 1 ? `${label} x${item.quantity}` : label;
-        })
-        .join(', ');
-    grantNote.textContent = `STEAM ITEM UNLOCKED: ${names}`;
-    grantNote.classList.remove('hidden');
-}
-
-function initSteamVaultUI() {
-    const vaultBtn = document.getElementById('steam-vault-btn');
-    const closeBtn = document.getElementById('close-steam-vault-modal');
-    const modal = document.getElementById('steam-vault-modal');
-
-    if (!vaultBtn || !modal) return;
-
-    vaultBtn.addEventListener('click', async () => {
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden', 'false');
-        showDeveloperCommentary('steam_vault');
-        await loadVaultData();
-    });
-
-    closeBtn?.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-    });
-
-    setupClickOutside('steam-vault-modal', () => {
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-    });
-
-    const tabInventory = document.getElementById('vault-tab-inventory');
-    const tabStore = document.getElementById('vault-tab-store');
-    const inventoryLayout = document.getElementById('vault-inventory-layout');
-    const storeLayout = document.getElementById('vault-store-layout');
-
-    tabInventory?.addEventListener('click', () => {
-        tabInventory.classList.add('active');
-        tabStore?.classList.remove('active');
-        inventoryLayout?.classList.remove('hidden');
-        storeLayout?.classList.add('hidden');
-        renderInventoryGrid();
-    });
-
-    tabStore?.addEventListener('click', async () => {
-        tabStore.classList.add('active');
-        tabInventory?.classList.remove('active');
-        storeLayout?.classList.remove('hidden');
-        inventoryLayout?.classList.add('hidden');
-        await loadStoreCatalog();
-        renderStoreSkuGrid();
-        renderHostedItemStoreCta();
-        renderOddsTable();
-        updateOpenCacheAvailability();
-    });
-
-    document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
-    document.getElementById('vault-store-hosted-btn')?.addEventListener('click', openHostedSteamItemStore);
-}
-
-function isMarketEligibilityAllowed(result) {
-    return result?.allowed === true
-        || result?.allowed === 1
-        || result?.allowed === '1'
-        || result?.allowed === 'true'
-        || result?.eligibility?.allowed === true
-        || result?.eligibility?.allowed === 1
-        || result?.eligibility?.allowed === '1'
-        || result?.eligibility?.allowed === 'true';
-}
-
-function setMarketEligibilityFromResult(result) {
-    marketEligibility = result?.ok && isMarketEligibilityAllowed(result) ? 'eligible' : 'ineligible';
-    marketEligibilityReason = result?.reason ?? result?.eligibility?.reason ?? null;
-}
-
-function canOpenMarketOverlay() {
-    return marketEligibility === 'eligible';
-}
-
-function getMarketEligibilityStatusText() {
-    if (marketEligibility === 'unknown') return 'STEAM MARKET CHECK PENDING';
-    if (marketEligibilityReason === 'unsupported') return 'STEAM MARKET CHECK UNSUPPORTED';
-    if (marketEligibilityReason === 'error') return 'STEAM MARKET CHECK FAILED';
-    return 'STEAM MARKET ELIGIBILITY UNCONFIRMED';
-}
-
-async function loadVaultData() {
-    const statusEl = document.getElementById('vault-connection-status');
-    const playerEl = document.getElementById('vault-player-name');
-    const commandStatus = document.getElementById('vault-command-status');
-
-    if (window.electronAPI) {
-        // Fetch Identity
-        const identity = await window.electronAPI.getSteamIdentity().catch(() => null);
-
-        // Fetch Market Eligibility
-        const marketCheck = window.electronAPI.getSteamMarketEligibility
-            ? window.electronAPI.getSteamMarketEligibility()
-            : Promise.resolve({ ok: false, reason: 'unsupported' });
-        const marketResult = await Promise.resolve(marketCheck).catch(() => ({ ok: false, reason: 'error' }));
-        setMarketEligibilityFromResult(marketResult);
-        if (identity?.active) {
-            if (playerEl) playerEl.textContent = identity.persona ?? 'OPERATOR';
-            if (statusEl) statusEl.textContent = 'STEAM CONNECTED';
-            if (statusEl) statusEl.classList.remove('vault-status--offline');
-            if (commandStatus) commandStatus.textContent = identity.persona ?? 'ONLINE';
-        } else {
-            if (playerEl) playerEl.textContent = 'DEV MODE';
-            if (statusEl) statusEl.textContent = 'DEV FALLBACK';
-            if (commandStatus) commandStatus.textContent = 'DEV MODE';
-        }
-
-        // Fetch Inventory
-        const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
-        if (result?.ok) {
-            vaultItems = result.inventory ?? [];
-            reconcileCosmeticsOwnership(vaultItems);
-            renderInventoryGrid();
-            updateOpenCacheAvailability();
-        } else {
-            console.error('[steam-vault] failed to load inventory:', result);
-        }
-    } else {
-        setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
-        if (playerEl) playerEl.textContent = 'WEB BUILD';
-        if (statusEl) statusEl.textContent = 'OFFLINE';
-        if (commandStatus) commandStatus.textContent = 'OFFLINE';
-    }
-}
-
-function renderInventoryGrid() {
-    const grid = document.getElementById('vault-item-grid');
-    const emptyState = document.getElementById('vault-empty-state');
-
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    if (vaultItems.length === 0) {
-        emptyState?.classList.remove('hidden');
-        return;
-    }
-
-    emptyState?.classList.add('hidden');
-
-    vaultItems.forEach(item => {
-        const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
-        if (!catalog) return;
-
-        const card = document.createElement('div');
-        const rarityClass = `vault-item--${catalog.rarity}`;
-        const isSelected = selectedVaultItem && selectedVaultItem.itemId === item.itemId;
-
-        card.className = `vault-item-card ${rarityClass} ${isSelected ? 'selected' : ''}`;
-
-        const img = document.createElement('img');
-        img.className = 'vault-item-card__art';
-        img.src = catalog.img;
-        card.appendChild(img);
-
-        if (item.quantity > 1) {
-            const qty = document.createElement('div');
-            qty.className = 'vault-item-card__qty';
-            qty.textContent = `x${item.quantity}`;
-            card.appendChild(qty);
-        }
-
-        card.addEventListener('click', () => {
-            selectedVaultItem = item;
-            document.querySelectorAll('.vault-item-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            updateDetailsPanel(item);
-        });
-
-        grid.appendChild(card);
-    });
-
-    // Select first item by default if nothing selected yet
-    if (!selectedVaultItem && vaultItems.length > 0) {
-        selectedVaultItem = vaultItems[0];
-        updateDetailsPanel(selectedVaultItem);
-    }
-}
-
-function updateDetailsPanel(item) {
-    const nameEl = document.getElementById('vault-details-name');
-    const rarityEl = document.getElementById('vault-details-rarity');
-    const descEl = document.getElementById('vault-details-desc');
-    const imgEl = document.getElementById('vault-details-img');
-    const tradableEl = document.getElementById('vault-meta-tradable');
-    const marketableEl = document.getElementById('vault-meta-marketable');
-
-    const btnEquip = document.getElementById('vault-btn-equip');
-    const btnUnequip = document.getElementById('vault-btn-unequip');
-    const statusEl = document.getElementById('vault-equip-status');
-
-    if (!item) return;
-    const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
-    if (!catalog) return;
-
-    if (nameEl) nameEl.textContent = catalog.name;
-    if (rarityEl) {
-        rarityEl.textContent = catalog.rarity;
-        rarityEl.style.color = getRarityColor(catalog.rarity);
-    }
-    if (descEl) descEl.textContent = catalog.desc;
-    if (imgEl) imgEl.src = catalog.img;
-
-    if (tradableEl) {
-        tradableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.tradable ? 'active' : ''}`;
-        tradableEl.title = "Trading is handled externally through Steam.";
-        tradableEl.textContent = catalog.tradable ? 'TRADABLE' : 'NON-TRADABLE';
-    }
-    if (marketableEl) {
-        const isEligible = canOpenMarketOverlay();
-        marketableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.marketable ? 'active' : ''} ${catalog.marketable && !isEligible ? 'degraded' : ''}`;
-        marketableEl.title = "Market actions are handled externally through Steam.";
-        if (catalog.marketable && !isEligible) {
-            marketableEl.textContent = 'MARKETABLE (OFFLINE)';
-            marketableEl.title = "Market eligibility route unavailable or rejected.";
-        } else {
-            marketableEl.textContent = catalog.marketable ? 'MARKETABLE' : 'NON-MARKETABLE';
-        }
-    }
-
-    btnEquip?.classList.add('hidden');
-    btnUnequip?.classList.add('hidden');
-    if (statusEl) {
-        const quantity = Number(item.quantity) > 1 ? ` x${Number(item.quantity)}` : '';
-        statusEl.textContent = `STEAM OWNERSHIP VERIFIED${quantity}`;
-    }
-}
-
-function getRarityColor(rarity) {
-    if (rarity === 'common') return '#94a3b8';
-    if (rarity === 'uncommon') return '#22c55e';
-    if (rarity === 'rare') return '#00c8ff';
-    if (rarity === 'epic') return '#a855f7';
-    if (rarity === 'legendary') return '#eab308';
-    return '#fff';
-}
-
-function reconcileCosmeticsOwnership(inventory = []) {
-    const ownedDefIds = new Set(inventory.map(item => item.itemdefid));
-
-    const patch = localStorage.getItem('hb_equipped_patch');
-    if (patch && !ownedDefIds.has(Number(patch))) {
-        localStorage.removeItem('hb_equipped_patch');
-        console.log('[steam-vault] Unequipped unowned patch:', patch);
-    }
-
-    const decal = localStorage.getItem('hb_equipped_decal');
-    if (decal && !ownedDefIds.has(Number(decal))) {
-        localStorage.removeItem('hb_equipped_decal');
-        console.log('[steam-vault] Unequipped unowned decal:', decal);
-    }
-
-    const weapon = localStorage.getItem('hb_equipped_weapon_finish');
-    if (weapon && !ownedDefIds.has(Number(weapon))) {
-        localStorage.removeItem('hb_equipped_weapon_finish');
-        console.log('[steam-vault] Unequipped unowned weapon finish:', weapon);
-    }
-}
-
-// ── Steam Store: Cache Keys are the only real-money SKU. Deep Relic Caches
-// drop for free during play; opening one requires a Key from the store. ──
-async function loadStoreCatalog() {
-    if (!window.electronAPI?.getSteamStoreCatalog) return;
-    const result = await window.electronAPI.getSteamStoreCatalog().catch(() => null);
-    if (result?.ok) {
-        storeCatalog = result.catalog ?? [];
-        storeOdds = result.deepRelicCacheOdds ?? [];
-        storePurchasesEnabled = Boolean(result.purchasesEnabled);
-        storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
-        storeDisabledReason = result.disabledReason ?? null;
-        storeHostedItemStore = result.hostedItemStore ?? null;
-    } else {
-        storePurchasesEnabled = false;
-        storePurchaseMode = 'disabled';
-        storeDisabledReason = result?.reason ?? 'catalog_unavailable';
-        storeHostedItemStore = null;
-        console.error('[steam-store] failed to load catalog:', result);
-    }
-}
-
-function formatStoreDisabledReason(reason) {
-    if (reason === 'steam_store_disabled') return 'PURCHASES OFFLINE';
-    if (reason === 'catalog_unavailable') return 'CATALOG OFFLINE';
-    return 'UNAVAILABLE';
-}
-
-function renderStoreSkuGrid() {
-    const grid = document.getElementById('vault-store-sku-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    if (!storeCatalog || storeCatalog.length === 0) {
-        grid.innerHTML = '<div class="vault-empty-state">STORE CATALOG UNAVAILABLE</div>';
-        return;
-    }
-
-    for (const sku of storeCatalog) {
-        const card = document.createElement('div');
-        card.className = 'vault-store-sku-card';
-        const priceLabel = `$${(sku.priceUsdCents / 100).toFixed(2)}`;
-        const buttonLabel = storePurchasesEnabled
-            ? (storePurchaseMode === 'mock' ? 'DEV BUY' : 'BUY')
-            : formatStoreDisabledReason(storeDisabledReason);
-        card.innerHTML = `
-            <div class="vault-store-sku-label">${sku.label}</div>
-            <div class="vault-store-sku-price">${priceLabel}</div>
-            <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${storePurchasesEnabled ? '' : 'disabled'}>${buttonLabel}</button>
-        `;
-        const buyBtn = card.querySelector('.vault-store-buy-btn');
-        buyBtn?.addEventListener('click', () => purchaseKeys(sku.sku));
-        grid.appendChild(card);
-    }
-}
-
-function renderHostedItemStoreCta() {
-    const row = document.getElementById('vault-store-hosted');
-    const status = document.getElementById('vault-store-hosted-status');
-    const btn = document.getElementById('vault-store-hosted-btn');
-    if (!row || !status || !btn) return;
-
-    const url = storeHostedItemStore?.url;
-    const configured = Boolean(storeHostedItemStore?.enabled && url);
-    const enabled = configured && canOpenMarketOverlay();
-    row.classList.toggle('hidden', !configured);
-    btn.disabled = !enabled;
-    if (!configured) {
-        status.textContent = 'STEAM ITEM STORE OFFLINE';
-        return;
-    }
-    if (!enabled) {
-        status.textContent = getMarketEligibilityStatusText();
-        return;
-    }
-
-    const mode = storeHostedItemStore.mode === 'beta' ? 'BETA PREVIEW' : 'STEAM-HOSTED CHECKOUT';
-    status.textContent = mode;
-}
-
-async function openHostedSteamItemStore() {
-    const url = storeHostedItemStore?.url;
-    if (!url || !canOpenMarketOverlay()) {
-        renderHostedItemStoreCta();
-        return;
-    }
-    if (window.electronAPI?.openSteamOverlayToUrl) {
-        await window.electronAPI.openSteamOverlayToUrl(url);
-    } else {
-        window.open(url, '_blank', 'noopener');
-    }
-}
-
-function renderOddsTable() {
-    const table = document.getElementById('vault-store-odds-table');
-    if (!table) return;
-    table.innerHTML = '';
-
-    for (const row of storeOdds) {
-        const rowEl = document.createElement('div');
-        rowEl.className = 'vault-store-odds-row';
-        rowEl.innerHTML = `
-            <span class="vault-store-odds-item">${row.label}</span>
-            <span class="vault-store-odds-percent" style="color:${getRarityColor(row.rarity)}">${row.percent}%</span>
-        `;
-        table.appendChild(rowEl);
-    }
-}
-
-async function purchaseKeys(sku) {
-    if (!window.electronAPI?.purchaseSteamKeys) return;
-    if (!storePurchasesEnabled) {
-        const statusEl = document.getElementById('vault-store-open-status');
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Steam Store purchases are offline for this build.';
-        }
-        return;
-    }
-
-    const result = await window.electronAPI.purchaseSteamKeys(sku).catch((err) => ({ ok: false, message: err?.message }));
-
-    if (result?.ok && result.mode === 'mock') {
-        await loadVaultData();
-        updateOpenCacheAvailability();
-        return;
-    }
-
-    if (result?.ok && result.requiresConfirmation && result.confirmUrl) {
-        // Real-money purchase: hand off to the Steam Overlay for payment
-        // confirmation, then poll finalize once the player returns.
-        await window.electronAPI.openSteamOverlayToUrl(result.confirmUrl);
-        const finalized = await window.electronAPI.finalizeSteamPurchase(result.transId).catch(() => null);
-        if (finalized?.ok && finalized.status === 'completed') {
-            await loadVaultData();
-            updateOpenCacheAvailability();
-        } else {
-            console.warn('[steam-store] purchase not yet completed:', finalized);
-        }
-        return;
-    }
-
-    console.error('[steam-store] purchase failed:', result);
-}
-
-function findOwnedCacheAndKey() {
-    const cache = vaultItems.find((i) => i.itemdefid === 4000);
-    const key = vaultItems.find((i) => i.itemdefid === 4001);
-    return cache && key ? { cache, key } : null;
-}
-
-function updateOpenCacheAvailability() {
-    const statusEl = document.getElementById('vault-store-open-status');
-    const btn = document.getElementById('vault-store-open-btn');
-    const pair = findOwnedCacheAndKey();
-
-    if (pair) {
-        statusEl?.classList.add('hidden');
-        btn?.classList.remove('hidden');
-    } else {
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = 'No Cache + Key pair detected in your inventory.';
-        }
-        btn?.classList.add('hidden');
-    }
-}
-
-async function openDeepRelicCache() {
-    if (!window.electronAPI?.openSteamCache) return;
-    const pair = findOwnedCacheAndKey();
-    if (!pair) return;
-
-    const statusEl = document.getElementById('vault-store-open-status');
-    const result = await window.electronAPI.openSteamCache(pair.cache.itemId, pair.key.itemId)
-        .catch((err) => ({ ok: false, message: err?.message }));
-
-    if (result?.ok) {
-        await loadVaultData();
-        updateOpenCacheAvailability();
-        const reward = STEAM_ITEM_CATALOG[result.granted?.[0]?.itemdefid];
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
-        }
-    } else {
-        console.error('[steam-store] cache open failed:', result);
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Cache open failed — check your connection and try again.';
-        }
-    }
-}
-
-function formatLeaderboardScore(board, score) {
-    if (board === 'survival_time_seconds') {
-        const mins = Math.floor(score / 60);
-        const secs = score % 60;
-        return `${mins}m ${secs}s`;
-    }
-    if (board === 'deepest_depth_score') {
-        const tier = Math.floor(score / 100000);
-        const depth = score % 100000;
-        return `Tier ${tier} - ${depth}m`;
-    }
-    return String(score);
-}
