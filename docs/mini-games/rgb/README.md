@@ -50,6 +50,15 @@ or platform shell.
 
 ## Status
 
-This package is a design extraction only. No runtime or generated assets have
-been added. The rough source remains at `docs/story_mini_games.md` for
-provenance until the implementation is accepted.
+Implemented and playable. `src/minigames/rgb/` holds the runtime, and
+`public/minigames/rgb/` holds the produced art, cinematics, ambience, SFX, and
+voice. The rough source remains at `docs/story_mini_games.md` for provenance.
+
+Chapters are authored as **staged waves**: each wave gates on the previous one
+so at most a few choices are ever live at once, and chapter exits additionally
+gate on `requires.minVisitedOf` so a chapter cannot be skipped past the beats
+that give its decision meaning. See
+`docs/superpowers/specs/2026-07-26-rgb-chapter-flow-and-narrative-design.md`.
+
+Outstanding: three inventory icons are generated placeholders pending final
+art, listed in `public/minigames/rgb/ASSET_PROVENANCE.md`.
