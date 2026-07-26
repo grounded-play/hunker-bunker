@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
     CHAPTER_ORDER,
     CHAPTERS,
     ENDINGS,
+    ITEMS,
     GAME_OVERS,
     BRANCH_CINEMATICS,
     RAIL_CINEMATICS,
@@ -167,6 +170,25 @@ describe('content shape', () => {
         expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A']);
         expect(resolveCinematicSteps('rescue_fumble', base)).toEqual(['C6-B']);
         expect(resolveCinematicSteps('read_diagram', base)).toEqual([]);
+    });
+
+    it('ships the art every item and ending declares', () => {
+        const declared = [
+            ...Object.values(ITEMS).map((item) => item.icon),
+            ...Object.values(ENDINGS).map((ending) => ending.art),
+            ...Object.values(CHAPTERS).map((chapter) => chapter.bg)
+        ].filter(Boolean);
+
+        expect(declared.length).toBeGreaterThan(0);
+        for (const url of declared) {
+            expect(existsSync(resolve('public', url.replace(/^\//, ''))), url).toBe(true);
+        }
+    });
+
+    it('gives every item an icon so the inventory never falls back to bare text', () => {
+        for (const [id, item] of Object.entries(ITEMS)) {
+            expect(item.icon, id).toBeTruthy();
+        }
     });
 
     it('every game-over retryFrom points at a real hotspot id', () => {

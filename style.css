@@ -11555,8 +11555,144 @@ button.archive-log-entry:active {
   text-transform: uppercase;
 }
 
+/* Chapter progress sits ahead of the title so the player always knows how
+   much of the archive is left. */
+.rgb-header__progress {
+  font-family: 'Space Mono', monospace;
+  font-size: max(12px, calc(var(--vu) * 1.3));
+  letter-spacing: 0.18em;
+  color: rgba(225, 29, 46, 0.85);
+  text-transform: uppercase;
+  margin-right: calc(var(--vu) * 1.2);
+  white-space: nowrap;
+}
+
+/* Speaker attribution. Machine voices read colder and wider than people, so a
+   denial never looks like something a person chose to say. */
+.rgb-dialogue-speaker {
+  font-family: 'Space Mono', monospace;
+  font-size: max(11px, calc(var(--vu) * 1.25));
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(248, 250, 252, 0.72);
+  margin-bottom: calc(var(--vu) * 0.4);
+}
+
+.rgb-dialogue-speaker[data-speaker='KIOSK'],
+.rgb-dialogue-speaker[data-speaker='SYSTEM'],
+.rgb-dialogue-speaker[data-speaker='HR'] {
+  color: #ff3344;
+  letter-spacing: 0.28em;
+}
+
+.rgb-dialogue-speaker[data-speaker='LUCIA'] {
+  color: #c4b5fd;
+}
+
+.rgb-dialogue-speaker[data-speaker='MARISOL'] {
+  color: #fcd34d;
+}
+
+/* Hint ladder, opened with H. Sits above the dialogue rail, never over it. */
+.rgb-hints {
+  position: absolute;
+  right: var(--hb-safe-text, 36px);
+  bottom: calc(var(--stage-px, 1px) * 150);
+  z-index: 7;
+  max-width: calc(var(--stage-px, 1px) * 420);
+  padding: calc(var(--stage-px, 1px) * 12) calc(var(--stage-px, 1px) * 16);
+  background: rgba(8, 10, 14, 0.96);
+  border: 1px solid rgba(225, 29, 46, 0.42);
+  border-left: calc(var(--stage-px, 1px) * 4) solid #e11d2e;
+  border-radius: calc(var(--stage-px, 1px) * 4);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.72);
+  font-family: 'Outfit', sans-serif;
+  font-size: max(var(--hb-text-floor, 15px), calc(var(--vu) * 1.6));
+  line-height: 1.45;
+  color: rgba(248, 250, 252, 0.92);
+}
+
+.rgb-hints__title {
+  font-family: 'Space Mono', monospace;
+  font-size: max(11px, calc(var(--vu) * 1.2));
+  letter-spacing: 0.2em;
+  color: #ff3344;
+  margin-bottom: calc(var(--vu) * 0.6);
+}
+
+.rgb-hints p {
+  margin: 0 0 calc(var(--vu) * 0.6);
+}
+
+.rgb-hints p:last-of-type {
+  margin-bottom: 0;
+}
+
+.rgb-hints__exhausted {
+  margin-top: calc(var(--vu) * 0.6);
+  font-size: max(11px, calc(var(--vu) * 1.2));
+  color: var(--text-muted, rgba(203, 213, 225, 0.6));
+  font-style: italic;
+}
+
+/* Inventory as objects rather than a bulleted list. */
+.rgb-inventory__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--stage-px, 1px) * 150), 1fr));
+  gap: calc(var(--vu) * 1.6);
+  width: 100%;
+  max-width: calc(var(--stage-px, 1px) * 820);
+  margin-top: calc(var(--vu) * 1.5);
+}
+
+.rgb-inventory__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vu) * 0.7);
+  padding: calc(var(--vu) * 1);
+  background: rgba(12, 14, 18, 0.8);
+  border: 1px solid rgba(225, 29, 46, 0.35);
+  border-radius: calc(var(--stage-px, 1px) * 4);
+}
+
+.rgb-inventory__icon {
+  width: 100%;
+  max-width: calc(var(--stage-px, 1px) * 110);
+  aspect-ratio: 1;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.rgb-inventory__label {
+  font-family: 'Space Mono', monospace;
+  font-size: max(11px, calc(var(--vu) * 1.2));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.rgb-recap__heading {
+  margin-top: calc(var(--vu) * 1.4);
+  font-family: 'Space Mono', monospace;
+  font-size: max(11px, calc(var(--vu) * 1.2));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ff3344;
+}
+
+.rgb-recap ul {
+  margin: calc(var(--vu) * 0.6) 0 0;
+  padding-left: calc(var(--vu) * 2);
+  text-align: left;
+  line-height: 1.5;
+}
+
 .rgb-warning,
-.rgb-card {
+.rgb-card,
+.rgb-chapter-card {
   position: absolute;
   inset: 0;
   display: flex;
@@ -11567,6 +11703,67 @@ button.archive-log-entry:active {
   padding: var(--hb-safe-text, 36px);
   text-align: center;
   background: #05050a;
+}
+
+/* A chapter used to slam-cut from a cinematic into a live hotspot grid; this
+   gives the goal a beat to land first. */
+.rgb-chapter-card {
+  z-index: 8;
+  gap: calc(var(--vu) * 1.4);
+  animation: rgb-chapter-card-in 0.42s ease both;
+}
+
+@keyframes rgb-chapter-card-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rgb-chapter-card__eyebrow {
+  font-family: 'Space Mono', monospace;
+  font-size: max(12px, calc(var(--vu) * 1.5));
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #ff3344;
+}
+
+.rgb-chapter-card__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: calc(var(--vu) * 5.2);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f8fafc;
+  max-width: calc(var(--vu) * 78);
+}
+
+.rgb-chapter-card__goal {
+  max-width: calc(var(--vu) * 62);
+  font-family: 'Outfit', sans-serif;
+  font-size: max(var(--hb-text-floor, 17px), calc(var(--vu) * 2));
+  line-height: 1.6;
+  color: rgba(226, 232, 240, 0.82);
+}
+
+/* Ending art sits behind the card copy, dimmed so the text stays legible. */
+.rgb-card--ending {
+  overflow: hidden;
+}
+
+.rgb-card__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.42;
+  filter: contrast(1.06) brightness(0.72);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rgb-card--ending > *:not(.rgb-card__art) {
+  position: relative;
+  z-index: 1;
 }
 
 .rgb-warning__body,

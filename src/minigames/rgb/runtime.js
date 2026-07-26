@@ -6,6 +6,7 @@
 
 import {
     CHAPTERS,
+    CHAPTER_ORDER,
     ENDINGS,
     GAME_OVERS,
     ITEMS,
@@ -25,15 +26,16 @@ import {
     completeCalibration,
     chooseFinal,
     attemptRescue,
-    canExpose,
+    recordKioskAttempt,
     resolveOutcome,
     gameOver
 } from './state.js';
+import { isHotspotAvailable } from './gating.js';
 import { saveCheckpoint, recordEnding, recordGameOver, saveRgbSave } from './save.js';
 import { createActionRouter, ACTION_SETS } from '../../inputActions.js';
 import { mapBrowserGamepad } from '../../browserGamepad.js';
 import { AudioManager } from '../../audio.js';
-import { createRgbAudioController } from './audio.js';
+import { createRgbAudioController, getDialogueSpeaker } from './audio.js';
 
 const NAV_REPEAT_MS = 220;
 const STICK_THRESHOLD = 0.5;
@@ -65,25 +67,6 @@ function snapshotRun(save, runState) {
     };
 }
 
-function isHotspotAvailable(hotspot, runState, visited) {
-    if (hotspot.once && visited.has(hotspot.id)) return false;
-    for (const dep of hotspot.requiresAllOf ?? []) {
-        if (!visited.has(dep)) return false;
-    }
-    const req = hotspot.requires;
-    if (req) {
-        if (req.flags) {
-            for (const [key, expected] of Object.entries(req.flags)) {
-                if (Boolean(runState.flags[key]) !== Boolean(expected)) return false;
-            }
-        }
-        if (Number.isFinite(req.maxTimeBand) && runState.timeBand > req.maxTimeBand) return false;
-        if (req.canExpose && !canExpose(runState)) return false;
-        if (req.painSet && runState.pain === 'stable') return false;
-    }
-    return true;
-}
-
 function applyEffects(runState, effects) {
     if (!effects) return runState;
     let next = runState;
@@ -92,6 +75,7 @@ function applyEffects(runState, effects) {
     if (effects.evidence) next = addEvidence(next, effects.evidence);
     if (effects.pain) next = setPain(next, effects.pain);
     if (effects.timeCost) next = advanceTime(next, effects.timeCost);
+    if (effects.kioskAttempt) next = recordKioskAttempt(next);
     if (effects.choice) next = applyChoice(next, effects.choice);
     if (effects.calibration) {
         next = completeCalibration(next, effects.calibration.quality, effects.calibration.honest);
@@ -108,7 +92,8 @@ export function mountRgb({ root, save, storage, onExit }) {
     let currentSave = save;
     let runState = hydrateRunState(currentSave);
     let visited = new Set();
-    let mode = 'warning'; // warning | scene | inventory | recap | pause | ending | gameover | cinematic
+    // warning | chapterCard | scene | inventory | recap | pause | ending | gameover | cinematic
+    let mode = 'warning';
     let focusIndex = 0;
     let revealHeld = false;
     let lastNavAt = 0;
@@ -116,6 +101,10 @@ export function mountRgb({ root, save, storage, onExit }) {
     let resolvedEndingId = null;
     let resolvedGameOverId = null;
     let dialogueLines = ['Select an available action to continue the archive reconstruction.'];
+    let dialogueSpeaker = null;
+    // How many of the current chapter's three authored hints have been asked
+    // for. Resets per chapter; never affects endings (scene-flow.md).
+    let hintsShown = 0;
 
     const actionRouter = createActionRouter();
     const rgbAudio = createRgbAudioController();
@@ -154,10 +143,19 @@ export function mountRgb({ root, save, storage, onExit }) {
         return currentChapter().hotspots.filter((h) => isHotspotAvailable(h, runState, visited));
     }
 
+    function chapterNumber(chapterId = runState.checkpoint) {
+        return CHAPTER_ORDER.indexOf(chapterId) + 1;
+    }
+
+    function hintsEnabled() {
+        return currentSave.settings?.hints !== 'off';
+    }
+
     function render() {
         root.replaceChildren();
         if (mode === 'cinematic') return;
         if (mode === 'warning') return renderWarning();
+        if (mode === 'chapterCard') return renderChapterCard();
         if (mode === 'ending') return renderEndingCard();
         if (mode === 'gameover') return renderGameOverCard();
 
@@ -175,6 +173,10 @@ export function mountRgb({ root, save, storage, onExit }) {
         title.className = 'rgb-header__title';
         title.textContent = chapter.title;
 
+        const progress = document.createElement('div');
+        progress.className = 'rgb-header__progress';
+        progress.textContent = `CHAPTER ${chapterNumber()} OF ${CHAPTER_ORDER.length}`;
+
         const settingsBtn = document.createElement('button');
         settingsBtn.type = 'button';
         settingsBtn.className = 'calibrate-btn open-settings-btn rgb-settings-btn';
@@ -189,7 +191,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             }
         });
 
-        titleRow.append(title, settingsBtn);
+        titleRow.append(progress, title, settingsBtn);
 
         const goal = document.createElement('div');
         goal.className = 'rgb-header__goal';
@@ -240,13 +242,17 @@ export function mountRgb({ root, save, storage, onExit }) {
         dialogue.setAttribute('aria-live', 'polite');
         stage.append(dialogue);
 
+        if (hintsShown > 0) stage.append(buildHintPanel(chapter));
+
         const footer = document.createElement('div');
         footer.className = 'rgb-footer';
-        footer.textContent = 'TAB INVENTORY · HOLD Q REVEAL · R RECAP · ESC PAUSE';
+        footer.textContent = hintsEnabled()
+            ? 'TAB INVENTORY · HOLD Q REVEAL · H HINT · R RECAP · ESC PAUSE'
+            : 'TAB INVENTORY · HOLD Q REVEAL · R RECAP · ESC PAUSE';
         scene.append(footer);
 
         root.append(scene);
-        renderDialogueLines(dialogueLines);
+        renderDialogueLines(dialogueLines, dialogueSpeaker);
 
         if (mode === 'inventory') renderInventoryOverlay();
         if (mode === 'recap') renderRecapOverlay();
@@ -262,11 +268,11 @@ export function mountRgb({ root, save, storage, onExit }) {
             mode = 'cinematic';
             render();
             playCinematicSequence(cinematicLayer, [INTRO_CINEMATIC]).then(() => {
-                mode = 'scene';
+                mode = 'chapterCard';
                 render();
             });
         } else {
-            mode = 'scene';
+            mode = 'chapterCard';
             render();
         }
     }
@@ -287,10 +293,59 @@ export function mountRgb({ root, save, storage, onExit }) {
         btn.focus();
     }
 
-    function renderDialogueLines(lines) {
+    // The three authored hints per chapter escalate: what Elias notices, what
+    // the clue is, then the action outright. Asking for one never affects the
+    // ending or completion (scene-flow.md), so nothing here touches run state.
+    function buildHintPanel(chapter) {
+        const panel = document.createElement('div');
+        panel.className = 'rgb-hints';
+        panel.setAttribute('aria-live', 'polite');
+
+        const title = document.createElement('div');
+        title.className = 'rgb-hints__title';
+        const total = (chapter.hints ?? []).length;
+        title.textContent = `HINT ${Math.min(hintsShown, total)} OF ${total}`;
+        panel.append(title);
+
+        for (const hint of (chapter.hints ?? []).slice(0, hintsShown)) {
+            const p = document.createElement('p');
+            p.textContent = hint;
+            panel.append(p);
+        }
+
+        if (hintsShown >= total) {
+            const exhausted = document.createElement('div');
+            exhausted.className = 'rgb-hints__exhausted';
+            exhausted.textContent = 'No further hints for this chapter.';
+            panel.append(exhausted);
+        }
+        return panel;
+    }
+
+    function revealNextHint() {
+        if (!hintsEnabled()) return;
+        const total = (currentChapter().hints ?? []).length;
+        if (hintsShown >= total) return;
+        hintsShown += 1;
+        render();
+    }
+
+    // Machine voices (the kiosk, the mainframe, HR's script) are labelled
+    // distinctly from the people, so a denial never reads as something a
+    // person chose to say.
+    function renderDialogueLines(lines, speaker) {
         const dialogue = root.querySelector('#rgb-dialogue');
         if (!dialogue) return;
         dialogue.replaceChildren();
+
+        if (speaker) {
+            const tag = document.createElement('div');
+            tag.className = 'rgb-dialogue-speaker';
+            tag.dataset.speaker = speaker;
+            tag.textContent = speaker;
+            dialogue.appendChild(tag);
+        }
+
         for (const [index, line] of (lines ?? []).entries()) {
             const p = document.createElement('p');
             p.style.setProperty('--rgb-line-index', index);
@@ -300,6 +355,42 @@ export function mountRgb({ root, save, storage, onExit }) {
             p.append(prompt, document.createTextNode(` ${line}`));
             dialogue.appendChild(p);
         }
+    }
+
+    // A chapter used to slam-cut from a cinematic straight into a live hotspot
+    // grid. This gives the goal a beat to land before anything is clickable.
+    function renderChapterCard() {
+        const chapter = currentChapter();
+        const card = document.createElement('div');
+        card.className = 'rgb-chapter-card';
+
+        const eyebrow = document.createElement('div');
+        eyebrow.className = 'rgb-chapter-card__eyebrow';
+        eyebrow.textContent = `CHAPTER ${chapterNumber()} OF ${CHAPTER_ORDER.length}`;
+
+        const title = document.createElement('div');
+        title.className = 'rgb-chapter-card__title';
+        title.textContent = chapter.title.replace(/^Chapter \d+:\s*/, '');
+
+        const goal = document.createElement('div');
+        goal.className = 'rgb-chapter-card__goal';
+        goal.textContent = chapter.goal;
+
+        const cont = document.createElement('button');
+        cont.type = 'button';
+        cont.className = 'rgb-chapter-card__continue';
+        cont.textContent = 'CONTINUE';
+        cont.addEventListener('click', dismissChapterCard);
+
+        card.append(eyebrow, title, goal, cont);
+        root.append(card);
+        cont.focus();
+    }
+
+    function dismissChapterCard() {
+        if (mode !== 'chapterCard') return;
+        mode = 'scene';
+        render();
     }
 
     function renderInventoryOverlay() {
@@ -315,15 +406,52 @@ export function mountRgb({ root, save, storage, onExit }) {
             empty.textContent = 'Nothing carried yet.';
             overlay.append(empty);
         } else {
-            const list = document.createElement('ul');
+            const grid = document.createElement('div');
+            grid.className = 'rgb-inventory__grid';
             for (const itemId of runState.inventory) {
-                const li = document.createElement('li');
-                li.textContent = ITEMS[itemId]?.label ?? itemId;
-                list.appendChild(li);
+                const item = ITEMS[itemId];
+                const cell = document.createElement('div');
+                cell.className = 'rgb-inventory__item';
+                if (item?.icon) {
+                    const img = document.createElement('img');
+                    img.className = 'rgb-inventory__icon';
+                    img.src = item.icon;
+                    img.alt = '';
+                    cell.append(img);
+                }
+                const label = document.createElement('div');
+                label.className = 'rgb-inventory__label';
+                label.textContent = item?.label ?? itemId;
+                cell.append(label);
+                grid.append(cell);
             }
-            overlay.append(list);
+            overlay.append(grid);
         }
         root.append(overlay);
+    }
+
+    // game-design.md asks the recap to state the current goal, known facts,
+    // and consequential choices — not just counters.
+    function consequentialChoices() {
+        const { flags } = runState;
+        const lines = [];
+        if (flags.heardFullMessage) lines.push('Answered Lucia before the shift.');
+        if (flags.noticedMarisolPressure) lines.push("Noticed Marisol's pickup deadline.");
+        if (runState.calibrationQuality > 0) {
+            lines.push(flags.honestErrorLog
+                ? 'Left the calibration error visible in the log.'
+                : 'Edited the metric before review.');
+        }
+        if (flags.keptNotebook) lines.push('Kept the calibration notebook.');
+        if (flags.marisolWitness) {
+            lines.push(flags.marisolHarmed
+                ? 'Marisol stayed as a witness, and it cost her.'
+                : 'Marisol stayed as a witness.');
+        }
+        if (flags.swabCompleted) lines.push('Photographed the inconclusive swab.');
+        if (flags.billingCase) lines.push('Opened a billing case.');
+        if (flags.luciaCallback) lines.push('Called Lucia back from the kiosk.');
+        return lines;
     }
 
     function renderRecapOverlay() {
@@ -332,6 +460,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         const title = document.createElement('div');
         title.className = 'rgb-overlay__title';
         title.textContent = 'RECAP';
+
         const goal = document.createElement('div');
         goal.textContent = `Goal: ${currentChapter().goal}`;
         const pain = document.createElement('div');
@@ -339,6 +468,20 @@ export function mountRgb({ root, save, storage, onExit }) {
         const evidence = document.createElement('div');
         evidence.textContent = `Evidence gathered: ${runState.evidence.length}`;
         overlay.append(title, goal, pain, evidence);
+
+        const choices = consequentialChoices();
+        if (choices.length > 0) {
+            const heading = document.createElement('div');
+            heading.className = 'rgb-recap__heading';
+            heading.textContent = 'What you have done so far';
+            const list = document.createElement('ul');
+            for (const line of choices) {
+                const li = document.createElement('li');
+                li.textContent = line;
+                list.append(li);
+            }
+            overlay.append(heading, list);
+        }
         root.append(overlay);
     }
 
@@ -376,6 +519,14 @@ export function mountRgb({ root, save, storage, onExit }) {
         const ending = ENDINGS[resolvedEndingId];
         const card = document.createElement('div');
         card.className = 'rgb-card rgb-card--ending';
+        card.dataset.ending = ending.id;
+        if (ending.art) {
+            const art = document.createElement('img');
+            art.className = 'rgb-card__art';
+            art.src = ending.art;
+            art.alt = '';
+            card.append(art);
+        }
         const title = document.createElement('div');
         title.className = 'rgb-card__title';
         title.textContent = ending.title;
@@ -448,6 +599,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (!isHotspotAvailable(hotspot, runState, visited)) return;
 
         dialogueLines = [...(hotspot.lines ?? [])];
+        dialogueSpeaker = getDialogueSpeaker(hotspot.id);
         rgbAudio.hotspot(hotspot.id, dialogueLines);
         const priorState = runState;
         runState = applyEffects(runState, hotspot.effects);
@@ -493,12 +645,14 @@ export function mountRgb({ root, save, storage, onExit }) {
         runState = { ...runState, checkpoint: chapterId };
         visited = new Set();
         focusIndex = 0;
+        hintsShown = 0;
         dialogueLines = [`Archive reconstruction resumed: ${CHAPTERS[chapterId].title}.`];
+        dialogueSpeaker = null;
         currentSave = saveCheckpoint(currentSave, chapterId);
         persist();
         window.dispatchEvent(new CustomEvent('rgb-checkpoint', { detail: { checkpoint: chapterId } }));
         rgbAudio.enterChapter(chapterId);
-        mode = 'scene';
+        mode = 'chapterCard';
         render();
     }
 
@@ -563,6 +717,13 @@ export function mountRgb({ root, save, storage, onExit }) {
             }
             return;
         }
+        if (mode === 'chapterCard') {
+            if (code === 'Enter' || code === 'Space' || code === 'KeyE' || code === 'Escape') {
+                event.preventDefault();
+                dismissChapterCard();
+            }
+            return;
+        }
         if (mode === 'cinematic') return;
         if (code === 'KeyQ') {
             revealHeld = true;
@@ -613,6 +774,10 @@ export function mountRgb({ root, save, storage, onExit }) {
                 mode = 'inventory';
                 render();
                 break;
+            case 'KeyH':
+                event.preventDefault();
+                revealNextHint();
+                break;
             case 'KeyR':
                 mode = 'recap';
                 render();
@@ -654,6 +819,8 @@ export function mountRgb({ root, save, storage, onExit }) {
                 }
                 if (actions.inventory) { mode = 'inventory'; render(); }
                 if (actions.back) { mode = 'pause'; render(); }
+            } else if (mode === 'chapterCard') {
+                if (actions.confirm || actions.back) dismissChapterCard();
             } else if ((mode === 'inventory' || mode === 'pause') && actions.back) {
                 mode = 'scene';
                 render();

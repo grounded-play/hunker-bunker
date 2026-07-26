@@ -96,3 +96,30 @@ These shots communicate unavoidable events and transitions. They must not be
 presented with choice controls. Character identity, exact clothing color, small
 prop continuity, and Robot 4A geometry require final acceptance before video
 interpolation.
+
+## Placeholder inventory icons 01 — PENDING FINAL ART
+
+Three carried items shipped without illustrations, so the inventory rendered
+them as bare labels while the other three showed art. These are **generated
+placeholders, not final art**:
+
+```text
+items/item_temp_badge.png
+items/item_phone.png
+items/item_wire_cutters.png
+```
+
+Produced by `scripts/generate-rgb-item-placeholders.py` (Pillow, no model
+involved) at 1024×1024 to match the shipped item art's format and cream/ink
+palette. Each carries a red `PLACEHOLDER — ART PENDING` banner so it cannot be
+mistaken for finished work in a review build, and so the set is greppable:
+
+```sh
+grep -rl "PLACEHOLDER" public/minigames/rgb/ASSET_PROVENANCE.md
+```
+
+Replace all three before store submission. The finished set should match the
+ink-on-cream illustration treatment of `item_calibration_notebook.png`.
+Deleting a placeholder without replacing it fails the
+"ships the art every item and ending declares" test in
+`src/minigames/rgb/content.test.js`.

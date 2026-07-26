@@ -8,12 +8,20 @@
 //   choice: string        -> applyChoice(state, choice)
 //   evidence: string       -> addEvidence(state, evidence)
 //   item: string            -> addItem(state, item)
-//   pain: string             -> setPain(state, pain)
-//   timeCost: number          -> advanceTime(state, timeCost)
+//   items: [string]          -> addItem for each
+//   pain: string              -> setPain(state, pain)
+//   timeCost: number           -> advanceTime(state, timeCost)
+//   kioskAttempt: true          -> recordKioskAttempt(state)
 //   calibration: {quality, honest} -> completeCalibration(state, quality, honest)
 //   finalChoice: string      -> chooseFinal(state, finalChoice)
 //   rescue: {success}         -> attemptRescue(state, { success })
 // A hotspot may combine several of these (e.g. a choice plus a timeCost).
+//
+// Availability is decided by gating.js, which reads `once`, `requiresAllOf`,
+// `excludesAllOf`, and `requires`. Chapters are authored as waves: each wave
+// gates on the previous one so at most a few choices are ever live at a time,
+// and chapter exits additionally gate on `requires.minVisitedOf` so a chapter
+// cannot be skipped past the beats that give its decision meaning.
 
 export const CHAPTER_ORDER = Object.freeze([
     'parking_lot',
@@ -24,13 +32,39 @@ export const CHAPTER_ORDER = Object.freeze([
     'sector_four'
 ]);
 
+const ITEM_ART = '/minigames/rgb/items';
+
 export const ITEMS = Object.freeze({
-    item_albuterol_bottle: { id: 'item_albuterol_bottle', label: 'Empty Albuterol Bottle' },
-    item_lucia_drawing: { id: 'item_lucia_drawing', label: "Lucia's Drawing" },
-    item_calibration_notebook: { id: 'item_calibration_notebook', label: 'Calibration Notebook' },
-    item_temp_badge: { id: 'item_temp_badge', label: 'Temp Contractor Badge' },
-    item_phone: { id: 'item_phone', label: 'Cracked Phone' },
-    item_wire_cutters: { id: 'item_wire_cutters', label: 'Insulated Wire Cutters' }
+    item_albuterol_bottle: {
+        id: 'item_albuterol_bottle',
+        label: 'Empty Albuterol Bottle',
+        icon: `${ITEM_ART}/item_albuterol_bottle.png`
+    },
+    item_lucia_drawing: {
+        id: 'item_lucia_drawing',
+        label: "Lucia's Drawing",
+        icon: `${ITEM_ART}/item_lucia_drawing.png`
+    },
+    item_calibration_notebook: {
+        id: 'item_calibration_notebook',
+        label: 'Calibration Notebook',
+        icon: `${ITEM_ART}/item_calibration_notebook.png`
+    },
+    item_temp_badge: {
+        id: 'item_temp_badge',
+        label: 'Temp Contractor Badge',
+        icon: `${ITEM_ART}/item_temp_badge.png`
+    },
+    item_phone: {
+        id: 'item_phone',
+        label: 'Cracked Phone',
+        icon: `${ITEM_ART}/item_phone.png`
+    },
+    item_wire_cutters: {
+        id: 'item_wire_cutters',
+        label: 'Insulated Wire Cutters',
+        icon: `${ITEM_ART}/item_wire_cutters.png`
+    }
 });
 
 export const CONTENT_WARNING = 'Depicts workplace injury, medical-access stress, child illness discussed off-screen, fire, and possible character death.';
@@ -41,6 +75,7 @@ export const CONTENT_WARNING = 'Depicts workplace injury, medical-access stress,
 // Every entry declares a video and/or an image; cinematicPlayer.js tries the
 // video first and falls back to holding the image when the video is missing.
 const CINEMATIC_BASE = '/minigames/rgb/cinematics';
+const BACKGROUNDS = '/minigames/rgb/backgrounds';
 
 export const BRANCH_CINEMATICS = Object.freeze({
     'C1-A': { video: `${CINEMATIC_BASE}/C1-A.mp4`, image: `${CINEMATIC_BASE}/c1/end_answer_lucia.png` },
@@ -73,7 +108,7 @@ export const RAIL_CINEMATICS = Object.freeze({
 
 export const INTRO_CINEMATIC = Object.freeze({
     video: `${CINEMATIC_BASE}/Intro.mp4`,
-    image: `${CINEMATIC_BASE}/../backgrounds/bg_rgb_parking_lot.png`,
+    image: `${BACKGROUNDS}/bg_rgb_parking_lot.png`,
     label: 'ARCHIVE SIGNAL // RIVERSIDE GLOBAL BOTICS'
 });
 
@@ -142,7 +177,7 @@ export const CHAPTERS = Object.freeze({
     parking_lot: {
         id: 'parking_lot',
         title: 'Chapter 1: The Parking Lot',
-        bg: `${CINEMATIC_BASE}/../backgrounds/bg_sedan_interior.png`,
+        bg: `${BACKGROUNDS}/bg_sedan_interior.png`,
         goal: 'Take stock of the night before the shift takes it from you.',
         next: 'warehouse',
         hints: [
@@ -254,7 +289,7 @@ export const CHAPTERS = Object.freeze({
     warehouse: {
         id: 'warehouse',
         title: 'Chapter 2: Warehouse Calibration',
-        bg: `${CINEMATIC_BASE}/../backgrounds/bg_warehouse_line_4a.png`,
+        bg: `${BACKGROUNDS}/bg_warehouse_line_4a.png`,
         goal: 'Teach 4A to release and recenter an irregular load.',
         next: 'incident_review',
         hints: [
@@ -330,7 +365,7 @@ export const CHAPTERS = Object.freeze({
     incident_review: {
         id: 'incident_review',
         title: 'Chapter 3: Collision and Incident Review',
-        bg: `${CINEMATIC_BASE}/../backgrounds/bg_incident_review.png`,
+        bg: `${BACKGROUNDS}/bg_incident_review.png`,
         goal: 'Preserve evidence while the review process tries to redefine events.',
         next: 'medi_kiosk',
         hints: [
@@ -475,7 +510,7 @@ export const CHAPTERS = Object.freeze({
     medi_kiosk: {
         id: 'medi_kiosk',
         title: 'Chapter 4: Medi-Kiosk',
-        bg: `${CINEMATIC_BASE}/../backgrounds/bg_medi_kiosk.png`,
+        bg: `${BACKGROUNDS}/bg_medi_kiosk.png`,
         goal: 'Exhaust legitimate paths and decide what to do with the time that remains.',
         next: 'server_room',
         hints: [
@@ -592,7 +627,7 @@ export const CHAPTERS = Object.freeze({
     server_room: {
         id: 'server_room',
         title: 'Chapter 5: Server Room',
-        bg: `${CINEMATIC_BASE}/../backgrounds/bg_server_room.png`,
+        bg: `${BACKGROUNDS}/bg_server_room.png`,
         goal: 'Decide what to do with the training profile.',
         next: 'sector_four',
         hints: [
@@ -662,7 +697,7 @@ export const CHAPTERS = Object.freeze({
     sector_four: {
         id: 'sector_four',
         title: 'Chapter 6: Sector 4 and Epilogue',
-        bg: `${CINEMATIC_BASE}/../backgrounds/bg_sector_four.png`,
+        bg: `${BACKGROUNDS}/bg_sector_four.png`,
         goal: 'Escape the collapse using the lesson taught to 4A.',
         next: null,
         hints: [
@@ -748,17 +783,20 @@ export const ENDINGS = Object.freeze({
     system_loop: {
         id: 'system_loop',
         title: 'The System Loop',
-        body: 'Elias remains separated from RGB; the company retains his training data. Lucia\'s refill remains unresolved. 4A continues to sort with his gentle correction.'
+        body: 'Elias remains separated from RGB; the company retains his training data. Lucia\'s refill remains unresolved. 4A continues to sort with his gentle correction.',
+        art: `${CINEMATIC_BASE}/rails/r8_system_loop.png`
     },
     ashes_survival: {
         id: 'ashes_survival',
         title: 'Ashes & Survival',
-        body: '4A recalls the correction, lifts the rack, and is destroyed. Elias escapes with Lucia\'s scorched drawing as sirens approach. He is alive; the medicine and tomorrow remain unresolved.'
+        body: '4A recalls the correction, lifts the rack, and is destroyed. Elias escapes with Lucia\'s scorched drawing as sirens approach. He is alive; the medicine and tomorrow remain unresolved.',
+        art: `${BACKGROUNDS}/bg_desert_epilogue_ashes.png`
     },
     open_hand: {
         id: 'open_hand',
         title: 'Open Hand',
-        body: 'The archive reaches Marisol, a labor reporter, and a public mirror. A mutual-aid pharmacy voucher covers Lucia\'s refill.'
+        body: 'The archive reaches Marisol, a labor reporter, and a public mirror. A mutual-aid pharmacy voucher covers Lucia\'s refill.',
+        art: `${BACKGROUNDS}/bg_desert_epilogue.png`
     }
 });
 

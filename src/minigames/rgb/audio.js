@@ -184,15 +184,17 @@ export function createRgbAudioController() {
             });
         },
         hotspot(hotspotId, lines = []) {
+            stopSpeech();
             for (const key of HOTSPOT_AUDIO[hotspotId] ?? []) {
                 play(key, {
                     bus: key.includes('_voice_') ? 'voice' : 'sfx',
                     volume: key.includes('_voice_') ? 0.9 : 0.65
                 });
             }
-            // Speak the current on-screen copy. The previous chapter-level
-            // recordings repeated one fixed sentence across unrelated beats.
-            speakLines(hotspotId, lines);
+            // Synthesised narration is a fallback, not an overlay: beats with
+            // a produced recording play it alone, and everything else gets the
+            // current on-screen copy spoken.
+            if (!hasAuthoredVoice(hotspotId)) speakLines(hotspotId, lines);
         },
         ending(endingId) {
             if (endingId !== 'ashes_survival') return;
