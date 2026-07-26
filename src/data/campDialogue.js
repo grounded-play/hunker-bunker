@@ -245,11 +245,12 @@ export function leaderKeyFromName(name = '') {
     return LEADER_KEYS.find((key) => lower.includes(key)) ?? null;
 }
 
-function meetsRequirements(next = {}, ctx = {}) {
+export function meetsRequirements(next = {}, ctx = {}) {
     if ((ctx.talks ?? 0) < (next.talks ?? 0)) return false;
     if (next.level != null && (ctx.level ?? 0) < next.level) return false;
     if (next.bond != null && (ctx.bond ?? 0) < next.bond) return false;
     if (next.postReveal && !ctx.postReveal) return false;
+    if (next.questFlag && ctx.questFlags?.[next.questFlag] !== 'done') return false;
     return true;
 }
 

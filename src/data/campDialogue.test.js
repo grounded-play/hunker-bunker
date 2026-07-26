@@ -5,7 +5,8 @@ import {
     leaderKeyFromName,
     nextDialogueBeat,
     isFinalStage,
-    DIALOGUE_FINAL_STAGE
+    DIALOGUE_FINAL_STAGE,
+    meetsRequirements
 } from './campDialogue.js';
 
 describe('leader dialogue ladders', () => {
@@ -70,5 +71,17 @@ describe('leader dialogue ladders', () => {
     it('the final stage loops forever after its beats', () => {
         const beat = nextDialogueBeat('rhun', { stage: 3, talks: 9 }, { bond: 5, postReveal: true });
         expect(beat.type).toBe('loop');
+    });
+});
+
+describe('meetsRequirements', () => {
+    it('requires the named quest flag to be done', () => {
+        expect(meetsRequirements({ questFlag: 'snail_befriended' }, { questFlags: {} })).toBe(false);
+        expect(meetsRequirements({ questFlag: 'snail_befriended' }, { questFlags: { snail_befriended: 'active' } })).toBe(false);
+        expect(meetsRequirements({ questFlag: 'snail_befriended' }, { questFlags: { snail_befriended: 'done' } })).toBe(true);
+    });
+
+    it('is unaffected when next has no questFlag', () => {
+        expect(meetsRequirements({ talks: 0 }, { questFlags: {} })).toBe(true);
     });
 });
