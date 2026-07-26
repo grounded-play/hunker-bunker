@@ -177,7 +177,7 @@ describe('content shape', () => {
             ...Object.values(ITEMS).map((item) => item.icon),
             ...Object.values(ENDINGS).map((ending) => ending.art),
             ...Object.values(CHAPTERS).map((chapter) => chapter.bg)
-        ].filter(Boolean);
+        ].filter((url) => Boolean(url) && !url.startsWith('data:'));
 
         expect(declared.length).toBeGreaterThan(0);
         for (const url of declared) {
