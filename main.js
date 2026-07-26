@@ -1,4 +1,5 @@
 import { AudioManager } from './src/audio.js';
+import { debugLog } from './src/debugConsole.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
@@ -27,6 +28,8 @@ import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS } from './src/minigames/rgb/content.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
+import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
+import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
@@ -68,6 +71,11 @@ const openResetSaveBtn = document.getElementById('open-reset-save');
 const resetSaveConfirmModal = document.getElementById('reset-save-confirm-modal');
 const resetSaveConfirmBtn = document.getElementById('reset-save-confirm');
 const resetSaveCancelBtn = document.getElementById('reset-save-cancel');
+const titleQuitBtn = document.getElementById('title-quit-btn');
+const openQuitConfirmBtn = document.getElementById('open-quit-confirm');
+const quitConfirmModal = document.getElementById('quit-confirm-modal');
+const quitConfirmBtn = document.getElementById('quit-confirm-btn');
+const quitCancelBtn = document.getElementById('quit-cancel-btn');
 const campChoiceModal = document.getElementById('camp-choice-modal');
 const campChoiceCloseBtn = document.getElementById('close-camp-choice');
 const campChoiceKicker = document.getElementById('camp-choice-kicker');
@@ -182,6 +190,7 @@ function hideAllGameplayPrompts() {
 
 function setAppPhase(phase) {
     appPhase = phase;
+    debugLog.debug('PHASE', `App phase changed to: ${phase}`);
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
     if (!isGameplayPhase()) {
@@ -226,6 +235,7 @@ const STEAM_INPUT_PROMPT_IDS = Object.freeze([
 const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'confirm-modal',
     'reset-save-confirm-modal',
+    'quit-confirm-modal',
     'audio-mixer-popup',
     'save-data-popup',
     'settings-popup',
@@ -5398,6 +5408,7 @@ async function runMissionIntroSequence() {
                     },
                     // onOpened: resolve transition promise
                     () => {
+                        game?.openBunkerBlastDoor?.();
                         resolve();
                     }
                 );
@@ -6315,6 +6326,10 @@ resetSaveCancelBtn?.addEventListener('click', () => {
 });
 
 resetSaveConfirmBtn?.addEventListener('click', () => {
+    blackBoxStore.clear();
+    if (window.game) {
+        window.game.clearBlackBoxMarker();
+    }
     const removed = clearSaveData();
     window.AudioManager?.play?.('ui_click', { volume: 0.55 });
     setResetSaveConfirmOpen(false);
@@ -6324,6 +6339,39 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     console.info(`Reset save data: cleared ${removed} record(s).`);
     window.setTimeout(() => window.location.reload(), 350);
 });
+
+function setQuitConfirmOpen(open) {
+    if (!quitConfirmModal) return;
+    quitConfirmModal.classList.toggle('hidden', !open);
+    quitConfirmModal.setAttribute('aria-hidden', String(!open));
+}
+
+function openQuitConfirmModal() {
+    setQuitConfirmOpen(true);
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+}
+
+function executeQuitApplication() {
+    window.AudioManager?.play?.('ui_click', { volume: 0.55 });
+    if (window.electronAPI?.quitApp) {
+        window.electronAPI.quitApp();
+    } else {
+        try {
+            window.close();
+        } catch {
+            window.location.reload();
+        }
+    }
+}
+
+titleQuitBtn?.addEventListener('click', openQuitConfirmModal);
+openQuitConfirmBtn?.addEventListener('click', openQuitConfirmModal);
+quitCancelBtn?.addEventListener('click', () => {
+    setQuitConfirmOpen(false);
+    window.AudioManager?.play?.('ui_click', { volume: 0.45 });
+});
+quitConfirmBtn?.addEventListener('click', executeQuitApplication);
+setupClickOutside('quit-confirm-modal', () => setQuitConfirmOpen(false));
 
 // Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
@@ -7761,12 +7809,80 @@ function syncEquippedWeaponLabel() {
     if (titleEl) titleEl.textContent = loadout.getEquippedLabel(fabricator);
 }
 
-function renderRosterModal() {
+const TACTICAL_CALLSIGNS = Object.freeze([
+    'VORTEX-7', 'PHANTOM-9', 'SPECTRE-3', 'GHOST-1', 'CYPHER-5',
+    'VIPER-4', 'TITAN-2', 'APEX-8', 'NEXUS-6', 'ZERO-9', 'HAWK-3',
+    'SHADOW-5', 'RAVEN-7', 'STRIKER-4', 'BUNKER-1'
+]);
+
+function renderRosterModal(mode = 'continue') {
     const grid = document.getElementById('roster-weapon-grid');
     if (!grid) return;
     const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    setTxt('roster-callsign', profile.getCallsign());
+    const titleEl = document.getElementById('roster-title-label');
+    const confirmBtn = document.getElementById('roster-confirm-btn');
+    const callsignInput = document.getElementById('roster-callsign-input');
+    const randomizeBtn = document.getElementById('roster-randomize-btn');
+
+    if (titleEl) {
+        titleEl.textContent = mode === 'new_game'
+            ? 'NEW OPERATOR REGISTRATION'
+            : '▣ OPERATOR DOSSIER // SAVED RUN TRACKER';
+    }
+
+    if (confirmBtn) {
+        confirmBtn.textContent = mode === 'new_game'
+            ? 'CONFIRM CALLSIGN & DEPLOY'
+            : 'CONTINUE DEPLOYMENT';
+    }
+
+    if (callsignInput) {
+        callsignInput.value = profile.getCallsign();
+        callsignInput.oninput = (e) => {
+            const clean = profile.setCallsign(e.target.value);
+            e.target.value = clean;
+        };
+    }
+
+    if (randomizeBtn && !randomizeBtn._wired) {
+        randomizeBtn._wired = true;
+        randomizeBtn.addEventListener('click', () => {
+            const pick = TACTICAL_CALLSIGNS[Math.floor(Math.random() * TACTICAL_CALLSIGNS.length)];
+            profile.setCallsign(pick);
+            if (callsignInput) callsignInput.value = pick;
+            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+        });
+    }
+
+    if (confirmBtn && !confirmBtn._wired) {
+        confirmBtn._wired = true;
+        confirmBtn.addEventListener('click', () => {
+            const modal = document.getElementById('roster-modal');
+            if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+        });
+    }
+
     setTxt('roster-id', profile.getProfileId());
+
+    // Populate Run Telemetry stats
+    try {
+        const stats = window.game?.getRunStats?.() ?? {};
+        const bbState = blackBoxStore.load();
+        const depthVal = stats.depthTier ?? 0;
+        const distVal = stats.distanceTravelled ?? 0;
+        const killVal = stats.snailsKilled ?? 0;
+
+        setTxt('roster-stat-depth', `SECTOR ${depthVal}`);
+        setTxt('roster-stat-distance', `${distVal}u`);
+        setTxt('roster-stat-kills', `${killVal} HOSTILES`);
+        setTxt('roster-stat-blackbox', bbState?.active ? `RECOVERABLE (SECTOR ${bbState.depth ?? 0})` : 'NONE');
+    } catch {
+        setTxt('roster-stat-depth', 'SECTOR 0');
+        setTxt('roster-stat-distance', '0u');
+        setTxt('roster-stat-kills', '0 HOSTILES');
+        setTxt('roster-stat-blackbox', 'NONE');
+    }
 
     // Render equipped Steam cosmetics
     const patchId = localStorage.getItem('hb_equipped_patch');
@@ -7814,7 +7930,7 @@ function renderRosterModal() {
                 if (loadout.equip(recipe.id, fabricator)) {
                     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
                     syncEquippedWeaponLabel();
-                    renderRosterModal();
+                    renderRosterModal(mode);
                 } else {
                     window.AudioManager?.play?.('ui_error', { volume: 0.5 });
                 }
@@ -8073,12 +8189,7 @@ const previewSprite = document.getElementById('char-preview-sprite');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
 const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
-const PREVIEW_SPRITE_COLUMNS = 4;
-const PREVIEW_SPRITE_ROWS = 4;
-const PREVIEW_WALK_FRAME_COUNT = 2;
-const PREVIEW_FRAME_MS = 140;
-const PREVIEW_FRONT_ROW = 3;
-const PREVIEW_FRONT_BASE_COLUMN = 0;
+const PREVIEW_FRAME_MS = 110;
 const PREVIEW_DOOR_CLOSE_MS = 360;
 const PREVIEW_DOOR_HOLD_MS = 220;
 const PREVIEW_DOOR_OPEN_MS = 520;
@@ -8100,13 +8211,9 @@ charCards.forEach((card) => {
     });
 });
 
-const heroData = {
-    'SCOUT': { name: 'SCOUT', sprite: '/Scout.full.jpeg' },
-    'TANK': { name: 'TANK', sprite: '/Tank.full.jpeg' },
-    'ENGINEER': { name: 'ENGINEER', sprite: '/Eng.Full.jpeg' }
-};
+const heroData = PLAYER_SPRITE_LAYOUTS;
 
-function getPreviewSpriteImage(path) {
+function getPreviewSpriteImage(path, layout) {
     if (!path) return Promise.resolve(null);
 
     const cached = previewSpriteImages.get(path);
@@ -8141,8 +8248,9 @@ function getPreviewSpriteImage(path) {
 
             ctx.putImageData(imgData, 0, 0);
 
-            previewSpriteImages.set(path, canvas);
-            resolve(canvas);
+            const runtimeCanvas = repackGeneratedSpriteAtlas(canvas, layout);
+            previewSpriteImages.set(path, runtimeCanvas);
+            resolve(runtimeCanvas);
         };
         image.onerror = reject;
         image.src = path;
@@ -8156,14 +8264,15 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
     const data = heroData[type];
     if (!data || !previewSprite || !previewSpriteContext) return;
 
-    const image = await getPreviewSpriteImage(data.sprite).catch(() => null);
-    if (!image || !heroData[type] || heroData[type].sprite !== data.sprite) return;
+    const image = await getPreviewSpriteImage(data.path, data).catch(() => null);
+    if (!image || !heroData[type] || heroData[type].path !== data.path) return;
 
-    const frameWidth = Math.floor(image.width / PREVIEW_SPRITE_COLUMNS);
-    const frameHeight = Math.floor(image.height / PREVIEW_SPRITE_ROWS);
-    const walkFrame = ((frameIndex % PREVIEW_WALK_FRAME_COUNT) + PREVIEW_WALK_FRAME_COUNT) % PREVIEW_WALK_FRAME_COUNT;
-    const sourceX = (PREVIEW_FRONT_BASE_COLUMN + walkFrame) * frameWidth;
-    const sourceY = PREVIEW_FRONT_ROW * frameHeight;
+    const frameWidth = Math.floor(image.width / data.columns);
+    const frameHeight = Math.floor(image.height / data.rows);
+    const walkFrame = ((frameIndex % data.walkFrames) + data.walkFrames) % data.walkFrames;
+    const previewCell = data.directionCells[data.previewDirection];
+    const sourceX = (previewCell.baseColumn + walkFrame) * frameWidth;
+    const sourceY = previewCell.row * frameHeight;
 
     if (previewSprite.width !== frameWidth || previewSprite.height !== frameHeight) {
         previewSprite.width = frameWidth;
@@ -8234,7 +8343,8 @@ function startHeroPreviewAnimation() {
     if (!previewSprite || previewAnimationTimer !== null) return;
 
     previewAnimationTimer = window.setInterval(() => {
-        previewFrameIndex = (previewFrameIndex + 1) % PREVIEW_WALK_FRAME_COUNT;
+        const frameCount = getPlayerSpriteLayout(activePreviewType).walkFrames;
+        previewFrameIndex = (previewFrameIndex + 1) % frameCount;
         void renderPreviewFrame(activePreviewType, previewFrameIndex);
     }, PREVIEW_FRAME_MS);
 }
@@ -8561,8 +8671,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Hero portraits
         if (name.includes('scout.full') || name.includes('scout_ship')) return 'ESTABLISHING FAST RECON SCOUT DATA-LINK';
-        if (name.includes('tank.full') || name.includes('tank_ship')) return 'BOOTING HEAVY EXOSUIT STRENGTH BUFFERS';
-        if (name.includes('eng.full') || name.includes('engineer_ship')) return 'UPLOADING NANOBOT FABRICATOR SUB-ROUTINES';
+        if (name.includes('tank.full') || name.includes('tank.walk') || name.includes('tank_ship')) return 'BOOTING HEAVY EXOSUIT STRENGTH BUFFERS';
+        if (name.includes('eng.full') || name.includes('eng.walk') || name.includes('engineer_ship')) return 'UPLOADING NANOBOT FABRICATOR SUB-ROUTINES';
 
         // Audio / Backgrounds
         if (name.includes('.mp3') || name.includes('.wav')) return 'STABILIZING TACTICAL AUDIO MATRIX FEED';
@@ -8592,9 +8702,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/module_hull_matrix.png',
             '/module_radar_dish.png',
             '/module_reactor_compressor.png',
-            '/Scout.full.jpeg',
-            '/Tank.full.jpeg',
-            '/Eng.Full.jpeg'
+            PLAYER_SPRITE_LAYOUTS.SCOUT.path,
+            PLAYER_SPRITE_LAYOUTS.TANK.path,
+            PLAYER_SPRITE_LAYOUTS.ENGINEER.path
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
@@ -8663,16 +8773,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (mainDebugToggle) mainDebugToggle.checked = false;
 
     // Check if player has active save data to enable CONTINUE
-    const hasSave = hasAnyUnlock(achievementEngine.getState()) || localStorage.getItem('hb_profile_v1') !== null;
-    if (titleContinueBtn) {
-        titleContinueBtn.disabled = !hasSave;
-    }
+    const checkHasSaveData = () => {
+        try {
+            const bankState = window.bankManager?.getState?.() ?? {};
+            const hasBanked = (Number(bankState.tech) > 0 || Number(bankState.coin) > 0 || Number(bankState.med) > 0);
+            const hasUnlocks = hasAnyUnlock(getAchievementProgress());
+            const hasBlackBox = Boolean(blackBoxStore.load()?.active);
+            const hasRunStats = localStorage.getItem('hb_run_stats_v1') !== null || localStorage.getItem('hb_bank_v1') !== null;
+            return hasBanked || hasUnlocks || hasBlackBox || hasRunStats;
+        } catch {
+            return false;
+        }
+    };
+
+    const updateContinueButtonState = () => {
+        const hasSave = checkHasSaveData();
+        if (titleContinueBtn) {
+            titleContinueBtn.disabled = !hasSave;
+            titleContinueBtn.classList.toggle('disabled', !hasSave);
+        }
+    };
+    updateContinueButtonState();
 
     if (titleNewRunBtn) {
-        titleNewRunBtn.addEventListener('click', transitionFromTitleToMenu);
+        titleNewRunBtn.addEventListener('click', () => {
+            clearSaveData();
+            blackBoxStore.clear();
+            if (window.game) {
+                window.game.clearBlackBoxMarker();
+            }
+            updateContinueButtonState();
+            transitionFromTitleToMenu();
+            renderRosterModal('new_game');
+            const modal = document.getElementById('roster-modal');
+            if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+            document.getElementById('roster-callsign-input')?.focus?.();
+        });
     }
     if (titleContinueBtn) {
-        titleContinueBtn.addEventListener('click', transitionFromTitleToMenu);
+        titleContinueBtn.addEventListener('click', () => {
+            if (!checkHasSaveData()) return;
+            transitionFromTitleToMenu();
+            renderRosterModal('continue');
+            const modal = document.getElementById('roster-modal');
+            if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+        });
     }
     if (titleAchievementsBtn) {
         titleAchievementsBtn.addEventListener('click', openAchievementsModal);
@@ -8908,11 +9053,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 220);
     }
 
+    // Preload WebGL engine and assets immediately on launch
+    initializeGame(initialType).catch((err) => console.warn('[Preload warning]', err));
+
     let clickInitializing = false;
     const triggerBoot = async () => {
         if (clickInitializing) return;
-        if (AudioManager.isUnlocked && window.game) return;
-
         clickInitializing = true;
 
         if (loaderStatus) {
@@ -8921,8 +9067,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             await AudioManager.unlock();
-            const initialSelected = document.querySelector('.char-card.selected');
-            const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
             await initializeGame(initialType);
         } catch (err) {
             console.error('Initialization failed:', err);
@@ -9063,8 +9207,52 @@ async function refreshSteamBridgeStatus() {
         ? 'ready'
         : (info?.active || health?.ok ? 'partial' : 'offline');
     setSteamDebugStatus(formatSteamStatus(info, health), state);
+    updateSteamAccountBadges(info);
     return { info, health };
 }
+
+function updateSteamAccountBadges(info) {
+    const persona = info?.persona || (info?.active ? 'STEAM USER' : 'WEB AGENT');
+    const isOnline = Boolean(info?.active);
+    const statusText = info?.isSteamDeck ? 'STEAM DECK · ONLINE' : (isOnline ? 'STEAM CONNECTED' : 'WEB DEMO MODE');
+
+    const splashPersona = document.getElementById('splash-steam-persona');
+    const splashStatus = document.getElementById('splash-steam-status');
+    const menuPersona = document.getElementById('menu-steam-persona');
+    const menuStatus = document.getElementById('menu-steam-status');
+    const splashBadge = document.getElementById('splash-steam-badge');
+    const menuBadge = document.getElementById('menu-steam-badge');
+
+    if (splashPersona) splashPersona.textContent = persona;
+    if (splashStatus) splashStatus.textContent = statusText;
+    if (menuPersona) menuPersona.textContent = persona;
+    if (menuStatus) menuStatus.textContent = statusText;
+
+    if (splashBadge) splashBadge.classList.toggle('steam-account-badge--active', isOnline);
+    if (menuBadge) menuBadge.classList.toggle('steam-account-badge--active', isOnline);
+}
+
+function openSteamVaultModal() {
+    const modal = document.getElementById('steam-vault-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    if (typeof loadVaultData === 'function') {
+        loadVaultData();
+    }
+}
+
+function handleSteamBadgeClick() {
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    if (window.electronAPI?.openSteamOverlayToUrl) {
+        window.electronAPI.openSteamOverlayToUrl('https://steamcommunity.com/my');
+    } else {
+        openSteamVaultModal();
+    }
+}
+
+document.getElementById('splash-steam-badge')?.addEventListener('click', handleSteamBadgeClick);
+document.getElementById('menu-steam-badge')?.addEventListener('click', handleSteamBadgeClick);
 
 // Achievement keys that also grant a distinct Steam Inventory cosmetic on
 // top of the local achievement unlock/Steam stat. The achievements engine

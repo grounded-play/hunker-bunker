@@ -275,6 +275,7 @@ try {
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
+    quitApp: () => ipcRenderer.send('hb:quitApp'),
     getSaveData: () => ipcRenderer.invoke('hb:getSaveData'),
     onSaveDataChanged: (key, value) => ipcRenderer.send('hb:saveDataChanged', key, value),
     onSaveDataRemoved: (key) => ipcRenderer.send('hb:saveDataRemoved', key),

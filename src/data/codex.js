@@ -20,7 +20,7 @@ export const CODEX_ENTRIES = Object.freeze([
       blurb: 'Wind-up melee asset. Telegraphs its lunge, as required by the safety manual it then ignores.' },
     { id: 'boss_cybersnail', name: 'MILESTONE RETALIATION', category: 'HOSTILE', image: '/cutscenes/poster-art/death-combat.png',
       blurb: 'Dispatched when an operator improves the facility without filing the correct form.' },
-    { id: 'corrupted_operator', name: 'CORRUPTED OPERATOR', category: 'HOSTILE', image: '/boss_corrupted_scout.png',
+    { id: 'corrupted_operator', name: 'CORRUPTED OPERATOR', category: 'HOSTILE', image: '/boss_corrupted_scout_v2.png',
       blurb: 'A previous contractor, reabsorbed into the workforce. Still following its last mission script.' },
 
     // Infrastructure — discovered via terminals / O2 / foundry / extraction.

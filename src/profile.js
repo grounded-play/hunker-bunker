@@ -121,9 +121,12 @@ export function importSaveCode(code, storage = null) {
     return written;
 }
 
+import { blackBoxStore } from './blackBox.js';
+
 // Clear only persistent Hunker Bunker save records. Preferences such as audio
 // mix and key bindings intentionally live outside hb_* and survive a new game.
 export function clearSaveData(storage = null) {
+    try { blackBoxStore.clear(); } catch { /* best effort */ }
     const store = getStorage(storage);
     if (!store) return 0;
 

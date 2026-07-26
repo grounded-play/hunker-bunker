@@ -6692,6 +6692,167 @@ body.mission-intro-active #game-container canvas {
 .roster-section-label,
 .roster-hint { flex: 0 0 auto; }
 
+.roster-id-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1);
+  margin: calc(var(--vu) * 1) 0;
+  flex-wrap: wrap;
+}
+
+.roster-callsign-label {
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(125, 255, 90, 0.85);
+}
+
+.roster-run-telemetry {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--vu) * 16), 1fr));
+  gap: calc(var(--vu) * 0.8);
+  margin: calc(var(--vu) * 1.2) 0;
+  padding: calc(var(--vu) * 1);
+  background: rgba(125, 255, 90, 0.04);
+  border: 1px solid rgba(125, 255, 90, 0.25);
+  border-radius: 6px;
+}
+
+.roster-telemetry-chip {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.2);
+  font-size: var(--font-xs);
+  color: #e8eff7;
+}
+
+.roster-telemetry-chip .label {
+  font-size: calc(var(--font-xs) * 0.85);
+  letter-spacing: 0.12em;
+  color: rgba(125, 255, 90, 0.7);
+}
+
+.roster-telemetry-chip b {
+  font-size: var(--font-sm);
+  font-weight: 900;
+  color: #c8ffb4;
+}
+
+.roster-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: calc(var(--vu) * 1.6);
+  padding-top: calc(var(--vu) * 1);
+  border-top: 1px solid rgba(125, 255, 90, 0.2);
+  flex: 0 0 auto;
+}
+
+.roster-confirm-btn {
+  font-size: var(--font-sm) !important;
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 3) !important;
+  background: linear-gradient(180deg, #7dff5a 0%, #286018 100%) !important;
+  color: #041405 !important;
+  font-weight: 900 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 0 rgba(20, 60, 10, 0.85), 0 0 15px rgba(125, 255, 90, 0.4) !important;
+  cursor: pointer;
+}
+
+.roster-confirm-btn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 0 rgba(20, 60, 10, 0.85), 0 0 25px rgba(125, 255, 90, 0.6) !important;
+}
+
+/* ── Steam Account Badge (Home Page & Menu Header) ───────── */
+.steam-account-badge {
+  position: absolute;
+  top: calc(var(--vu) * 2.5);
+  left: calc(var(--vu) * 3);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.6);
+  background: rgba(11, 15, 20, 0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 210, 255, 0.28);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  transition: all 0.25s ease-out;
+}
+
+.steam-account-badge:hover {
+  background: rgba(14, 22, 32, 0.94);
+  border-color: rgba(0, 229, 255, 0.7);
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.steam-account-badge--active {
+  border-color: rgba(125, 255, 90, 0.45);
+}
+
+.steam-account-badge--active:hover {
+  border-color: rgba(125, 255, 90, 0.8);
+  box-shadow: 0 0 20px rgba(125, 255, 90, 0.4);
+}
+
+.steam-account-badge--menu {
+  position: relative;
+  top: auto;
+  left: auto;
+  margin-top: calc(var(--vu) * 0.5);
+  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 1.2);
+}
+
+.steam-account-badge__icon {
+  width: calc(var(--vu) * 2.8);
+  height: calc(var(--vu) * 2.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00d2ff;
+}
+
+.steam-account-badge--active .steam-account-badge__icon {
+  color: #7dff5a;
+}
+
+.steam-icon-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.steam-account-badge__info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.steam-account-badge__name {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.steam-account-badge__status {
+  font-family: 'Space Mono', monospace;
+  font-size: calc(var(--font-xs) * 0.76);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(0, 210, 255, 0.8);
+}
+
+.steam-account-badge--active .steam-account-badge__status {
+  color: rgba(125, 255, 90, 0.85);
+}
+
 /* ── Field Codex modal (doc 11 §3.2) — mirrors the roster/fab console look ── */
 .codex-modal-content {
   --codex-glow-rgb: 0, 229, 255;

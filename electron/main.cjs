@@ -8,6 +8,13 @@
 // Dev mode (ELECTRON_DEV=1) loads the Vite dev server; production loads dist/.
 
 const { app, BrowserWindow, ipcMain } = require('electron');
+
+// Force full GPU hardware acceleration and WebGL rasterization in packaged builds
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
+
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -490,6 +497,10 @@ ipcMain.on('hb:setStat', (_e, key, value) => {
         console.log(`[steam] setStat '${key}' failed: ${err?.message ?? err}`);
     }
 });
+ipcMain.on('hb:quitApp', () => {
+    flushSaveFile();
+    app.quit();
+});
 ipcMain.on('hb:steamInputPhase', (_e, phase) => {
     setSteamInputPhase(phase);
 });
@@ -595,7 +606,8 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.cjs'),
             contextIsolation: true,
             nodeIntegration: false,
-            sandbox: false // preload uses contextBridge only; sandbox off for steamworks compat
+            sandbox: false, // preload uses contextBridge only; sandbox off for steamworks compat
+            webgl: true
         }
     });
 

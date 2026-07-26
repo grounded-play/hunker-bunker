@@ -38,6 +38,19 @@ import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELI
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES } from './bossPhases.js';
+import { debugLog } from './debugConsole.js';
+import {
+    PLAYER_DEFAULT_DIRECTION_INDEX,
+    PLAYER_SPRITE_LAYOUTS,
+    getPlayerSpriteLayout
+} from './playerSpriteLayouts.js';
+import { repackGeneratedSpriteAtlas } from './spriteAtlasRuntime.js';
+import {
+    ENEMY_SPRITE_LAYOUTS,
+    STATIC_ENEMY_SPRITE_PATHS,
+    getEnemyDirectionRow,
+    getEnemySpriteLayout
+} from './enemySpriteLayouts.js';
 
 
 const PLAYER_COLORS = {
@@ -46,47 +59,10 @@ const PLAYER_COLORS = {
     ENGINEER: 0x00e5ff
 };
 
-const PLAYER_SPRITESHEET_PATHS = {
-    // v4 is back in anatomical review; keep the last packed fallback live.
-    SCOUT: '/Scout.full_v2.png',
-    TANK: '/Tank.walk_v4.png',
-    ENGINEER: '/Eng.walk_v4.png'
-};
-
-const LEGACY_PLAYER_DIRECTION_CELLS = Object.freeze([
-    Object.freeze({ row: 1, baseColumn: 2 }), Object.freeze({ row: 3, baseColumn: 2 }),
-    Object.freeze({ row: 3, baseColumn: 0 }), Object.freeze({ row: 2, baseColumn: 2 }),
-    Object.freeze({ row: 2, baseColumn: 0 }), Object.freeze({ row: 1, baseColumn: 0 }),
-    Object.freeze({ row: 0, baseColumn: 2 }), Object.freeze({ row: 0, baseColumn: 0 })
-]);
-const V4_PLAYER_DIRECTION_CELLS = Object.freeze(
-    Array.from({ length: 8 }, (_, row) => Object.freeze({ row, baseColumn: 0 }))
-);
-const PLAYER_SPRITE_LAYOUTS = Object.freeze({
-    SCOUT: Object.freeze({
-        // Scout v4 remains in anatomical review, so the live v2 fallback must
-        // keep the original packed 4x4/two-frame contract.
-        columns: 4, rows: 4, walkFrames: 2,
-        directionCells: LEGACY_PLAYER_DIRECTION_CELLS,
-        footstepFrames: Object.freeze([1])
-    }),
-    TANK: Object.freeze({
-        columns: 8, rows: 8, walkFrames: 8,
-        directionCells: V4_PLAYER_DIRECTION_CELLS,
-        footstepFrames: Object.freeze([0, 4])
-    }),
-    ENGINEER: Object.freeze({
-        columns: 8, rows: 8, walkFrames: 8,
-        directionCells: V4_PLAYER_DIRECTION_CELLS,
-        footstepFrames: Object.freeze([0, 4])
-    })
-});
-const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const RADAR_DISH_GRID_SIZE = 2;
 const RADAR_DISH_FRAME_COUNT = RADAR_DISH_GRID_SIZE * RADAR_DISH_GRID_SIZE;
-const SPRITE_ANIMATION_SPEED = 12;
 const SUIT_LIGHT_BASE_INTENSITY = 4.2;
 const SUIT_LIGHT_BASE_DISTANCE = 14.4;
 const SUIT_CONE_LIGHT_COLOR = 0xf2efe2;
@@ -619,16 +595,6 @@ const SNAIL_BIOME_TINTS = Object.freeze({
     bio:    0x88ff88
 });
 
-// Proto enemies (sprint 19 physicality lane): landform-native families.
-// Crawlers nest in ruins, spitters guard crater rims. Their art is 4x4 walk
-// sheets (camp-leader layout), so they animate via UV rows, not scale flips.
-const SHEET_ENEMY_TYPES = Object.freeze({
-    alien_proto_crawler: '/alien_proto_crawler_walk_v2.png',
-    alien_proto_spitter: '/alien_proto_spitter_walk_v2.png',
-    boss_corrupted_scout: '/boss_corrupted_scout_v2.png',
-    boss_corrupted_tank: '/boss_corrupted_tank_v2.png',
-    boss_corrupted_engineer: '/boss_corrupted_engineer_v2.png'
-});
 const PROTO_SPAWN_MAX_PER_CHUNK = 2;
 const PROTO_SPAWN_CHANCE = 0.2;
 const CAMP_CIVILIAN_SPRITES = Object.freeze(['/civilian_miner_walk.png', '/civilian_researcher_walk.png']);
@@ -715,7 +681,8 @@ export class ThreeGame {
 
         this.chunkSize = 19;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
-        this.defaultVisibleChunkRadius = 1;
+        this.disableFogOfWar = true;
+        this.defaultVisibleChunkRadius = 3;
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         this.wallHeight = 2.8;
         this.wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
@@ -743,9 +710,9 @@ export class ThreeGame {
         this.sirenDomeMaterial = new THREE.MeshBasicMaterial({ color: 0xff3333 });
         this.rubbleGeometry = new THREE.DodecahedronGeometry(1.0, 0);
 
-        this.playerRadius = 0.66;
+        this.playerRadius = 0.38;
         this.wallCollisionHalfSize = 0.30;
-        this.wallCollisionPadding = this.playerRadius * 0.88;
+        this.wallCollisionPadding = 0.18;
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = _initialStats.moveSpeed;
         this.o2DrainMult = _initialStats.o2DrainMult;
@@ -914,6 +881,9 @@ export class ThreeGame {
         this.nightVision = false;
         this._initClassAbility();
 
+        window.threeGame = this;
+        debugLog.info('ENGINE', `ThreeGame initialized | Player: ${this.playerType} | Seed: ${this.runEntropy}`);
+
         this.scale = {
             refresh: () => this.resize()
         };
@@ -1020,14 +990,14 @@ export class ThreeGame {
         const grungeRustTex = activeTerrainTextures.floorGrunge;
         const techScratchesTex = activeTerrainTextures.floorDetail;
         this.playerTextures = Object.fromEntries(
-            Object.entries(PLAYER_SPRITESHEET_PATHS).map(([type, path]) => [
+            Object.entries(PLAYER_SPRITE_LAYOUTS).map(([type, layout]) => [
                 type,
-                this.createPlayerSpriteTexture(type, path, textureLoader)
+                this.createPlayerSpriteTexture(type, layout.path, textureLoader)
             ])
         );
 
         Object.entries(this.playerTextures).forEach(([type, texture]) => {
-            const layout = PLAYER_SPRITE_LAYOUTS[type] ?? PLAYER_SPRITE_LAYOUTS.SCOUT;
+            const layout = getPlayerSpriteLayout(type);
             const repeatX = 1 / layout.columns;
             const repeatY = 1 / layout.rows;
             texture.wrapS = THREE.RepeatWrapping;
@@ -1414,20 +1384,20 @@ export class ThreeGame {
         // Most scatter assets carry alpha already. Cyber snails are keyed from black
         // so their background does not render as a dark rectangle.
         this.scatterTextures = {
-            cybersnail: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
-            cryosnail: this.loadKeyedSpriteTexture('/cryosnail.png', 14),
-            sporesnail: this.loadKeyedSpriteTexture('/sporesnail.png', 14),
-            crawler: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
+            cybersnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.cybersnail, 14),
+            cryosnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.cryosnail, 14),
+            sporesnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.sporesnail, 14),
+            crawler: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.cybersnail, 14),
             civilian_miner: this.loadKeyedSpriteTexture('/civilian_miner_walk.png', 16),
             civilian_researcher: this.loadKeyedSpriteTexture('/civilian_researcher_walk.png', 16),
-            alien_proto_crawler: this.loadKeyedSpriteTexture('/alien_proto_crawler_walk.png', 16),
-            alien_proto_spitter: this.loadKeyedSpriteTexture('/alien_proto_spitter_walk.png', 16),
-            boss_cybersnail: this.loadKeyedSpriteTexture('/boss_cybersnail.png', 14),
-            boss_cryosnail: this.loadKeyedSpriteTexture('/boss_cryosnail.png', 14),
-            boss_sporesnail: this.loadKeyedSpriteTexture('/boss_sporesnail.png', 14),
-            boss_corrupted_scout: this.loadKeyedSpriteTexture('/boss_corrupted_scout.png', 16),
-            boss_corrupted_tank: this.loadKeyedSpriteTexture('/boss_corrupted_tank.png', 16),
-            boss_corrupted_engineer: this.loadKeyedSpriteTexture('/boss_corrupted_engineer.png', 16),
+            alien_proto_crawler: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.alien_proto_crawler.path, 16),
+            alien_proto_spitter: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.alien_proto_spitter.path, 16),
+            boss_cybersnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.boss_cybersnail, 14),
+            boss_cryosnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.boss_cryosnail, 14),
+            boss_sporesnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.boss_sporesnail, 14),
+            boss_corrupted_scout: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_scout.path, 16),
+            boss_corrupted_tank: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_tank.path, 16),
+            boss_corrupted_engineer: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_engineer.path, 16),
             boss_queen: this.loadKeyedSpriteTexture('/queen_silhouette.png', 14),
             bunker_junk: this.loadScatterTexture('/bunker_junk.png', textureLoader),
             bunker_junk_uncommon: this.loadScatterTexture('/bunker_junk_uncommon.png', textureLoader),
@@ -3078,22 +3048,27 @@ export class ThreeGame {
                 return;
             }
             if (this.codeMatchesAction(event.code, 'interact')) {
+                debugLog.debug('INPUT', 'Action: INTERACT (E/Enter)');
                 this.triggerGameplayInteract();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
+                debugLog.debug('INPUT', 'Action: RELOAD (R)');
                 this.triggerGameplayReload({ manual: true });
             }
             if (this.codeMatchesAction(event.code, 'ability')) {
                 event.preventDefault();
+                debugLog.debug('INPUT', 'Action: CLASS ABILITY (Q/Space)');
                 this.triggerGameplayAbility();
             }
             if (this.codeMatchesAction(event.code, 'dash')) {
                 event.preventDefault();
+                debugLog.debug('INPUT', 'Action: DASH (Shift)');
                 this.triggerGameplayDash();
             }
             if (this.codeMatchesAction(event.code, 'scan')) {
                 event.preventDefault();
+                debugLog.debug('INPUT', 'Action: RADAR SCAN (Tab/F)');
                 this.triggerGameplayScan();
             }
             this.setKeyState(event.code, true);
@@ -3991,18 +3966,19 @@ export class ThreeGame {
 
             ctx.putImageData(imgData, 0, 0);
 
-            texture.image = canvas;
+            texture.image = repackGeneratedSpriteAtlas(canvas, getPlayerSpriteLayout(type));
             texture.needsUpdate = true;
 
             this.playerMaterials?.[type] && (this.playerMaterials[type].needsUpdate = true);
             this.refreshActivePlayerSprite(type);
         };
 
+        const safePath = this.resolveRelativeAssetPath(path);
         image.onerror = (error) => {
-            console.warn(`[ThreeGame] Failed to load player sprite ${type} from ${path}`, error);
+            console.warn(`[ThreeGame] Failed to load player sprite ${type} from ${safePath}`, error);
         };
 
-        image.src = path;
+        image.src = safePath;
 
         return texture;
     }
@@ -4020,21 +3996,23 @@ export class ThreeGame {
     }
 
     loadTerrainTexture(path, textureLoader, maxAnisotropy = 1, fallbackPath = null) {
-        const texture = textureLoader.load(path, (loadedTexture) => {
+        const safePath = this.resolveRelativeAssetPath(path);
+        const safeFallbackPath = this.resolveRelativeAssetPath(fallbackPath);
+        const texture = textureLoader.load(safePath, (loadedTexture) => {
             this.configureTerrainTexture(loadedTexture, maxAnisotropy);
         }, undefined, (error) => {
-            if (!fallbackPath || fallbackPath === path) {
-                console.warn(`[ThreeGame] Failed to load terrain texture from ${path}`, error);
+            if (!safeFallbackPath || safeFallbackPath === safePath) {
+                console.warn(`[ThreeGame] Failed to load terrain texture from ${safePath}`, error);
                 return;
             }
 
-            console.warn(`[ThreeGame] Failed to load ${path}; falling back to ${fallbackPath}`, error);
-            textureLoader.load(fallbackPath, (fallbackTexture) => {
+            console.warn(`[ThreeGame] Failed to load ${safePath}; falling back to ${safeFallbackPath}`, error);
+            textureLoader.load(safeFallbackPath, (fallbackTexture) => {
                 this.configureTerrainTexture(fallbackTexture, maxAnisotropy);
                 texture.image = fallbackTexture.image;
                 texture.needsUpdate = true;
             }, undefined, (fallbackError) => {
-                console.warn(`[ThreeGame] Failed to load terrain fallback texture from ${fallbackPath}`, fallbackError);
+                console.warn(`[ThreeGame] Failed to load terrain fallback texture from ${safeFallbackPath}`, fallbackError);
             });
         });
 
@@ -4061,8 +4039,14 @@ export class ThreeGame {
         return textures;
     }
 
+    resolveRelativeAssetPath(path) {
+        if (typeof path !== 'string' || !path) return path;
+        return path.startsWith('/') ? path.slice(1) : path;
+    }
+
     loadScatterTexture(path, textureLoader) {
-        return textureLoader.load(path, (texture) => {
+        const safePath = this.resolveRelativeAssetPath(path);
+        return textureLoader.load(safePath, (texture) => {
             texture.colorSpace = THREE.SRGBColorSpace;
             texture.minFilter = THREE.LinearMipmapLinearFilter;
             texture.magFilter = THREE.LinearFilter;
@@ -4074,11 +4058,12 @@ export class ThreeGame {
                 texture.anisotropy = Math.min(4, maxAnisotropy);
             }
         }, undefined, (error) => {
-            console.warn(`[ThreeGame] Failed to load scatter texture from ${path}`, error);
+            console.warn(`[ThreeGame] Failed to load scatter texture from ${safePath}`, error);
         });
     }
 
     loadKeyedSpriteTexture(path, threshold = 15, onLoad = null, options = {}) {
+        const safePath = this.resolveRelativeAssetPath(path);
         const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
@@ -4122,15 +4107,16 @@ export class ThreeGame {
         };
 
         image.onerror = (err) => {
-            console.error(`[ThreeGame] loadKeyedSpriteTexture: Failed to load image: ${path}`, err);
+            console.error(`[ThreeGame] loadKeyedSpriteTexture: Failed to load image: ${safePath}`, err);
         };
 
-        image.src = path;
+        image.src = safePath;
 
         return texture;
     }
 
     loadDecalTexture(path) {
+        const safePath = this.resolveRelativeAssetPath(path);
         const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
@@ -4202,10 +4188,10 @@ export class ThreeGame {
         };
 
         image.onerror = (err) => {
-            console.error(`[ThreeGame] loadDecalTexture: Failed to load image: ${path}`, err);
+            console.error(`[ThreeGame] loadDecalTexture: Failed to load image: ${safePath}`, err);
         };
 
-        image.src = path;
+        image.src = safePath;
 
         return texture;
     }
@@ -5316,6 +5302,11 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('bunker-door-toggled', {
             detail: { open: state.open }
         }));
+    }
+
+    openBunkerBlastDoor() {
+        if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.open || this.bunkerBlastDoorState.destroyed) return;
+        this.toggleBunkerBlastDoor();
     }
 
     damageBunkerBlastDoor(amount = 1, { source = 'player' } = {}) {
@@ -12278,6 +12269,13 @@ export class ThreeGame {
             this.playerEmitterGlow.material.opacity = 0.58 * lerp(1.16, 0.46, dayBlend);
         }
 
+        if (this.disableFogOfWar) {
+            this.scene.fog.near = 10000;
+            this.scene.fog.far = 50000;
+            this.updatePlayerDarkness(0);
+            return;
+        }
+
         // Keep night visibility screen-radial. Three.js fog is camera-depth
         // based in this isometric view, which makes the top of the canvas darker
         // than the bottom and makes "up-screen" flashlight aim feel weaker.
@@ -12541,7 +12539,7 @@ export class ThreeGame {
     }
 
     getFogOfWarVisibility(x, z) {
-        if (!this.player || this.nightVision) return 1;
+        if (!this.player || this.nightVision || this.disableFogOfWar) return 1;
 
         if (this.activeRadarScans) {
             for (const scan of this.activeRadarScans) {
@@ -13078,9 +13076,9 @@ export class ThreeGame {
                 this.torsoFacingRow = this.currentFacingRow;
             }
 
+            const layout = getPlayerSpriteLayout(this.playerType);
             const dir = backpedal ? -1 : 1;
-            this.animationTimer += delta * SPRITE_ANIMATION_SPEED * dir;
-            const layout = PLAYER_SPRITE_LAYOUTS[this.playerType] ?? PLAYER_SPRITE_LAYOUTS.SCOUT;
+            this.animationTimer += delta * layout.animationFps * dir;
             const frames = layout.walkFrames;
             const column = ((Math.floor(this.animationTimer) % frames) + frames) % frames;
             this.updatePlayerSpriteFrame(column, this.currentFacingRow, this.torsoFacingRow);
@@ -13140,7 +13138,7 @@ export class ThreeGame {
     // Points a texture at one complete V2 direction/walk frame. `half` remains
     // in the signature so legacy call sites and torso materials stay harmless.
     setSpriteHalfFrame(texture, column, row, _half) {
-        const layout = PLAYER_SPRITE_LAYOUTS[this.playerType] ?? PLAYER_SPRITE_LAYOUTS.SCOUT;
+        const layout = getPlayerSpriteLayout(this.playerType);
         const directionCell = layout.directionCells[row] ?? layout.directionCells[PLAYER_DEFAULT_DIRECTION_INDEX];
         const repeatX = 1 / layout.columns;
         const repeatY = 1 / layout.rows;
@@ -13860,9 +13858,10 @@ export class ThreeGame {
     }
 
     syncVisibleChunks(force = false, { prefetch = !force, processLimit = null } = {}) {
-        if (this.performanceProfile === 'menu') {
-            this.clearLoadedChunksForRunReset();
-            if (this.chunkGroups) this.chunkGroups.visible = false;
+        if (this.isInPocket) {
+            if (this.chunkGroups) {
+                this.chunkGroups.visible = false;
+            }
             return;
         }
 
@@ -14468,6 +14467,7 @@ export class ThreeGame {
         const pocketChunkY = Math.floor(holeWorldZ / this.chunkSize);
         const surfaceGroup = this.chunkMeshes?.get(`${pocketChunkX},${pocketChunkY}`);
         if (surfaceGroup) surfaceGroup.visible = false;
+        if (this.chunkGroups) this.chunkGroups.visible = false;
 
         const group = this.mountPocket(holeWorldX, holeWorldZ);
         if (this.scene && group.parent !== this.scene) this.scene.add(group);
@@ -14495,6 +14495,7 @@ export class ThreeGame {
         const chunkY = Math.floor(holeWorldZ / this.chunkSize);
         const surfaceGroup = this.chunkMeshes?.get(`${chunkX},${chunkY}`);
         if (surfaceGroup) surfaceGroup.visible = true;
+        if (this.chunkGroups) this.chunkGroups.visible = true;
 
         if (this.player) {
             this.player.position.x = holeWorldX;
@@ -14505,11 +14506,6 @@ export class ThreeGame {
         this._pocketHoleX = null;
         this._pocketHoleZ = null;
 
-        // Without this, the player lands back exactly on the hole they fell
-        // through and the very next frame's "stepped on a hole" check
-        // immediately re-triggers the fall. Sealing it behind them (the same
-        // permanent-safe mechanic as the deliberate "PRESS E — FILL HOLE"
-        // bridging action) fixes that and reads narratively fine either way.
         this.fillHoleAt(holeWorldX, holeWorldZ);
     }
 
@@ -14556,7 +14552,20 @@ export class ThreeGame {
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
 
-                if (grid[localY][localX] !== '#') continue;
+                const tileChar = grid[localY][localX];
+                if (tileChar === 'D') {
+                    const doorMesh = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    doorMesh.position.set(worldX, this.wallHeight / 2, worldZ);
+                    doorMesh.scale.set(0.88, 1, 0.35);
+                    doorMesh.castShadow = true;
+                    doorMesh.receiveShadow = true;
+                    this.configureWallMesh(doorMesh, {
+                        chunkX, chunkY, localX, localY, worldX, worldZ, landform, variant: 'door', isDoor: true
+                    });
+                    group.add(doorMesh);
+                    continue;
+                }
+                if (tileChar !== '#') continue;
 
                 const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldZ) + 999);
                 const wallTypeRoll = wallTypeRng();
@@ -15912,13 +15921,14 @@ export class ThreeGame {
             // sprite can hold an independent UV frame/facing. Cloning the
             // shared texture is unsafe here: the chroma-key canvas lands
             // async, and clones taken before it arrives stay blank.
-            const sheetPath = SHEET_ENEMY_TYPES[placement.type];
-            if (sheetPath) {
-                const sheetTex = this.loadKeyedSpriteTexture(sheetPath, 16);
+            const sheetLayout = getEnemySpriteLayout(placement.type);
+            if (sheetLayout) {
+                const sheetTex = this.loadKeyedSpriteTexture(sheetLayout.path, 16);
                 sheetTex.wrapS = THREE.RepeatWrapping;
                 sheetTex.wrapT = THREE.RepeatWrapping;
-                sheetTex.repeat.set(0.25, 0.25);
-                sheetTex.offset.set(0, 0.75); // frame 0, south-facing row
+                sheetTex.repeat.set(1 / sheetLayout.columns, 1 / sheetLayout.rows);
+                const southRow = sheetLayout.directionRows.south;
+                sheetTex.offset.set(0, (sheetLayout.rows - 1 - southRow) / sheetLayout.rows);
                 clonedMat.map = sheetTex;
             }
 
@@ -15947,7 +15957,8 @@ export class ThreeGame {
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
-                sheetSprite: Boolean(sheetPath),
+                sheetSprite: Boolean(sheetLayout),
+                sheetLayout,
                 sheetTime: 0,
                 sheetRow: 0,
                 baseY: anchoredY,
@@ -18004,23 +18015,29 @@ export class ThreeGame {
         sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
     }
 
-    // 4x4 walk-sheet UV animation (camp-leader layout: 4 frames per row,
-    // rows = S/N/E/W facings, texture rows counted from the top). Facing
-    // picks the dominant travel axis; frames step at 6 fps while moving.
+    // Layout-driven directional enemy UV animation.
     updateSheetSpriteFrame(sprite, dirX, dirZ, delta, moving = true) {
         const data = sprite.userData;
         const map = sprite.material?.map;
         if (!data?.sheetSprite || !map) return;
         if (moving) {
             data.sheetTime = (data.sheetTime ?? 0) + delta;
-            if (Math.abs(dirX) > Math.abs(dirZ)) {
-                data.sheetRow = dirX > 0 ? 2 : 3; // East / West
-            } else if (Math.abs(dirZ) > 0.001) {
-                data.sheetRow = dirZ > 0 ? 0 : 1; // South / North
-            }
+            data.sheetRow = getEnemyDirectionRow(
+                data.sheetLayout,
+                dirX,
+                dirZ,
+                data.sheetRow ?? 0
+            );
         }
-        const frame = moving ? Math.floor((data.sheetTime ?? 0) * 6) % 4 : 0;
-        map.offset.set(frame * 0.25, (3 - (data.sheetRow ?? 0)) * 0.25);
+        const layout = data.sheetLayout;
+        if (!layout) return;
+        const frame = moving
+            ? Math.floor((data.sheetTime ?? 0) * layout.animationFps) % layout.walkFrames
+            : 0;
+        map.offset.set(
+            frame / layout.columns,
+            (layout.rows - 1 - (data.sheetRow ?? 0)) / layout.rows
+        );
     }
 
     // Shoves the player and the snail apart on a contact hit and gives the
@@ -19621,6 +19638,7 @@ export class ThreeGame {
         }
 
         this.clearSpawnArea(grid, chunkX, chunkY);
+        this.clearDoorways?.(grid);
         return grid;
     }
 
@@ -19629,9 +19647,7 @@ export class ThreeGame {
     // tutorial remains legible without feeling like a wall comb.
     getChunkLandform(chunkX, chunkY) {
         if (this.performanceProfile === 'menu') return LANDFORMS.MAZE;
-        const spawnDistance = Math.hypot(chunkX, chunkY);
-        if (spawnDistance < 1) return LANDFORMS.FIELD;
-        if (spawnDistance < 2) return LANDFORMS.RUINS;
+        if (chunkX === 0 && chunkY === 0) return LANDFORMS.FIELD;
         if (!this._chunkLandformCache) this._chunkLandformCache = new Map();
         const key = `${chunkX},${chunkY}`;
         if (!this._chunkLandformCache.has(key)) {
@@ -19783,26 +19799,61 @@ export class ThreeGame {
         }
     }
 
+    clearDoorways(grid) {
+        if (!grid || !Array.isArray(grid)) return;
+        const size = grid.length;
+        for (let y = 1; y < size - 1; y++) {
+            for (let x = 1; x < size - 1; x++) {
+                if (grid[y][x] === 'D') {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const ny = y + dy;
+                            const nx = x + dx;
+                            if (ny >= 1 && ny < size - 1 && nx >= 1 && nx < size - 1) {
+                                if (grid[ny][nx] !== 'D') {
+                                    grid[ny][nx] = '.';
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     clearSpawnArea(grid, chunkX, chunkY) {
         if (chunkX !== 0 || chunkY !== 0) return;
         const spawn = this.getSpawnTile();
 
-        for (let localY = 0; localY < this.chunkSize; localY++) {
-            for (let localX = 0; localX < this.chunkSize; localX++) {
-                const worldX = chunkX * this.chunkSize + localX;
-                const worldY = chunkY * this.chunkSize + localY;
-                const dx = worldX - spawn.x;
-                const dy = worldY - spawn.y;
+        // 1. Spacious Bunker Base Hub: clear interior (localY 1 to 14, localX 1 to 17)
+        // and a generous 9.5-unit radial clearance around spawn (9, 9)
+        for (let localY = 1; localY < this.chunkSize - 1; localY++) {
+            for (let localX = 1; localX < this.chunkSize - 1; localX++) {
+                const dx = localX - spawn.x;
+                const dy = localY - spawn.y;
                 const distance = Math.hypot(dx, dy);
 
-                if (distance <= 6.0) {
+                if (localY <= 14 && localX >= 2 && localX <= 16) {
                     grid[localY][localX] = '.';
-                } else if (distance > 6.0 && distance <= 7.2) {
-                    if (localY === 15 && localX >= 6 && localX <= 11) {
-                        grid[localY][localX] = this.bunkerBlastDoorState?.open ? '.' : '#';
-                    } else {
+                } else if (distance <= 9.5) {
+                    grid[localY][localX] = '.';
+                }
+            }
+        }
+
+        // 2. Clear Blast Doorway Corridor & Control Buttons (localX: 4..13, localY: 13..18)
+        // Doorway interior (X=6..11, Y=15) is ALWAYS open floor ('.'), while solid
+        // framing wall pillars sit strictly off the edges (X <= 5 and X >= 12).
+        for (let localY = 13; localY <= 18; localY++) {
+            for (let localX = 4; localX <= 13; localX++) {
+                if (localY === 15) {
+                    if (localX <= 5 || localX >= 12) {
                         grid[localY][localX] = '#';
+                    } else {
+                        grid[localY][localX] = '.';
                     }
+                } else {
+                    grid[localY][localX] = '.';
                 }
             }
         }

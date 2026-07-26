@@ -1,16 +1,13 @@
 "DepotBuild"
 {
-    "DepotID" "4957041"
+    "DepotID" "4957042"
     "FileMapping"
     {
-        "LocalPath" "*"
-        "DepotPath" "."
+        "LocalPath" "win-unpacked/*"
+        "DepotPath" "win-unpacked"
         "recursive" "1"
     }
 
-    // Dev-only and server-only files; retail launches through Steam and the
-    // trusted backend owns production state.
-    "FileExclusion" "win-unpacked/*"
     "FileExclusion" "steam_appid.txt"
     "FileExclusion" ".env"
     "FileExclusion" ".env.*"

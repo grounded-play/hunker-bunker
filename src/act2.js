@@ -39,7 +39,7 @@ export const ACT2_CLASS_CAST = Object.freeze({
         callsign: 'VESPERS',
         title: 'Pathfinder Prior',
         sprite: '/martha_camp_walk_v2.png',
-        bossSprite: '/boss_corrupted_scout.png',
+        bossSprite: '/boss_corrupted_scout_v2.png',
         color: 0x7dff5a
     }),
     TANK: Object.freeze({
@@ -48,7 +48,7 @@ export const ACT2_CLASS_CAST = Object.freeze({
         callsign: 'BULWARK',
         title: 'Siege Commander',
         sprite: '/briggs_camp_walk_v2.png',
-        bossSprite: '/boss_corrupted_tank.png',
+        bossSprite: '/boss_corrupted_tank_v2.png',
         color: 0xffb700
     }),
     ENGINEER: Object.freeze({
@@ -57,7 +57,7 @@ export const ACT2_CLASS_CAST = Object.freeze({
         callsign: 'WRENCHLIGHT',
         title: 'Systems Overseer',
         sprite: '/kaelen_camp_walk_v2.png',
-        bossSprite: '/boss_corrupted_engineer.png',
+        bossSprite: '/boss_corrupted_engineer_v2.png',
         color: 0x00e5ff
     })
 });

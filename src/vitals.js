@@ -1,3 +1,5 @@
+import { debugLog } from './debugConsole.js';
+
 function clampPercent(value) {
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return 0;
@@ -54,6 +56,7 @@ export class VitalsHUD {
         const detail = event?.detail ?? {};
         this.state.maxHp = clampHearts(detail.maxHp, this.state.maxHp);
         this.state.hp = clampHearts(detail.hp, this.state.hp);
+        debugLog.debug('VITALS', `Health update: ${this.state.hp}/${this.state.maxHp} HP`);
         this.renderHearts();
     }
 
@@ -62,6 +65,9 @@ export class VitalsHUD {
         this.state.o2 = clampPercent(detail.o2 ?? this.state.o2);
         if (typeof detail.bubbleActive === 'boolean') {
             this.state.bubbleActive = detail.bubbleActive;
+        }
+        if (Math.round(this.state.o2) % 10 === 0 || this.state.o2 < 20) {
+            debugLog.debug('VITALS', `Oxygen level: ${Math.round(this.state.o2)}% (Bubble: ${this.state.bubbleActive})`);
         }
         this.renderO2();
     }
