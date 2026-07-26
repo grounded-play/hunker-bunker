@@ -11594,13 +11594,18 @@ button.archive-log-entry:active {
   color: #fcd34d;
 }
 
-/* Hint ladder, opened with H. Sits above the dialogue rail, never over it. */
+/* Hint ladder, opened with H. Anchored under the header rather than above the
+   dialogue rail, because the bottom of the stage is where the choice row lives
+   and a panel there covers the decision the hint is about. pointer-events stays
+   off regardless: nothing in here is clickable, so it must never swallow a
+   click meant for a hotspot. */
 .rgb-hints {
   position: absolute;
   right: var(--hb-safe-text, 36px);
-  bottom: calc(var(--stage-px, 1px) * 150);
+  top: calc(var(--stage-px, 1px) * 116);
   z-index: 7;
-  max-width: calc(var(--stage-px, 1px) * 420);
+  pointer-events: none;
+  max-width: calc(var(--stage-px, 1px) * 380);
   padding: calc(var(--stage-px, 1px) * 12) calc(var(--stage-px, 1px) * 16);
   background: rgba(8, 10, 14, 0.96);
   border: 1px solid rgba(225, 29, 46, 0.42);
@@ -11738,6 +11743,7 @@ button.archive-log-entry:active {
 
 .rgb-chapter-card__goal {
   max-width: calc(var(--vu) * 62);
+  margin-bottom: calc(var(--vu) * 1.6);
   font-family: 'Outfit', sans-serif;
   font-size: max(var(--hb-text-floor, 17px), calc(var(--vu) * 2));
   line-height: 1.6;
@@ -11786,6 +11792,7 @@ button.archive-log-entry:active {
 }
 
 .rgb-warning__continue,
+.rgb-chapter-card__continue,
 .rgb-card button {
   padding: calc(var(--vu) * 1) calc(var(--vu) * 3);
   background: rgba(12, 14, 18, 0.88);
@@ -11804,6 +11811,8 @@ button.archive-log-entry:active {
 
 .rgb-warning__continue:hover,
 .rgb-warning__continue:focus-visible,
+.rgb-chapter-card__continue:hover,
+.rgb-chapter-card__continue:focus-visible,
 .rgb-card button:hover,
 .rgb-card button:focus-visible {
   border-color: #ff3344;
