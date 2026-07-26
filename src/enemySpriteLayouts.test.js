@@ -6,10 +6,10 @@ import {
 } from './enemySpriteLayouts.js';
 
 describe('enemy sprite layouts', () => {
-    it('routes all accepted directional remasters through v2 assets', () => {
-        expect(Object.keys(ENEMY_SPRITE_LAYOUTS)).toHaveLength(5);
+    it('routes every accepted living enemy remaster through directional sheets', () => {
+        expect(Object.keys(ENEMY_SPRITE_LAYOUTS)).toHaveLength(11);
         for (const layout of Object.values(ENEMY_SPRITE_LAYOUTS)) {
-            expect(layout.path).toMatch(/_v2\.png$/);
+            expect(layout.path).toMatch(/(?:_v2|-v5)\.png$/);
             expect(layout).toMatchObject({
                 columns: 4,
                 rows: 4,
@@ -26,8 +26,22 @@ describe('enemy sprite layouts', () => {
         expect(getEnemyDirectionRow(layout, 0, -1)).toBe(1);
     });
 
-    it('does not treat unfinished assets as live layouts', () => {
-        expect(getEnemySpriteLayout('cybersnail')).toBeNull();
+    it('wires all living snail variants but rejects genuinely unfinished assets', () => {
+        for (const type of [
+            'cybersnail',
+            'cryosnail',
+            'sporesnail',
+            'boss_cybersnail',
+            'boss_cryosnail',
+            'boss_sporesnail'
+        ]) {
+            expect(getEnemySpriteLayout(type)).toMatchObject({
+                columns: 4,
+                rows: 4,
+                repackFromTransparency: true,
+                hasAlpha: true
+            });
+        }
         expect(getEnemySpriteLayout('boss_queen')).toBeNull();
     });
 });

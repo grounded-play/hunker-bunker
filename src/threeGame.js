@@ -1381,20 +1381,32 @@ export class ThreeGame {
         this.playerMaterial.depthWrite = false;
         this.pickupAssets = this.createPickupAssets();
 
-        // Most scatter assets carry alpha already. Cyber snails are keyed from black
-        // so their background does not render as a dark rectangle.
+        // Living snails use validated directional atlases. The legacy static
+        // Cybersnail remains available for the separate crawler fallback.
         this.scatterTextures = {
-            cybersnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.cybersnail, 14),
-            cryosnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.cryosnail, 14),
-            sporesnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.sporesnail, 14),
+            cybersnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.cybersnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.cybersnail
+            }),
+            cryosnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.cryosnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.cryosnail
+            }),
+            sporesnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.sporesnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.sporesnail
+            }),
             crawler: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.cybersnail, 14),
             civilian_miner: this.loadKeyedSpriteTexture('/civilian_miner_walk.png', 16),
             civilian_researcher: this.loadKeyedSpriteTexture('/civilian_researcher_walk.png', 16),
             alien_proto_crawler: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.alien_proto_crawler.path, 16),
             alien_proto_spitter: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.alien_proto_spitter.path, 16),
-            boss_cybersnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.boss_cybersnail, 14),
-            boss_cryosnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.boss_cryosnail, 14),
-            boss_sporesnail: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.boss_sporesnail, 14),
+            boss_cybersnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_cybersnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.boss_cybersnail
+            }),
+            boss_cryosnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_cryosnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.boss_cryosnail
+            }),
+            boss_sporesnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_sporesnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.boss_sporesnail
+            }),
             boss_corrupted_scout: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_scout.path, 16),
             boss_corrupted_tank: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_tank.path, 16),
             boss_corrupted_engineer: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_engineer.path, 16),
@@ -4095,11 +4107,13 @@ export class ThreeGame {
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            applyBlackChromaKey(imgData, { threshold });
+            if (!options?.layout?.hasAlpha) {
+                applyBlackChromaKey(imgData, { threshold });
+            }
 
             ctx.putImageData(imgData, 0, 0);
             
-            texture.image = canvas;
+            texture.image = repackGeneratedSpriteAtlas(canvas, options?.layout);
             texture.needsUpdate = true;
             if (onLoad) {
                 onLoad(texture);
@@ -6220,12 +6234,6 @@ export class ThreeGame {
 
         for (const cardConfig of GOAL_CARD_CONFIGS) {
             this.renderGoalCard(ship, bankState, cardConfig);
-        }
-        // The tier-2 and weapons card sections are retired: the Bunker Tree
-        // (skills tab) renders those systems as branches now. The sections
-        // stay in the DOM so nothing dangles, but never show again.
-        for (const id of ['tier2-section', 'weapons-section']) {
-            document.getElementById(id)?.classList.add('hidden');
         }
         this.renderTerminalEventPanel();
 
@@ -15923,7 +15931,9 @@ export class ThreeGame {
             // async, and clones taken before it arrives stay blank.
             const sheetLayout = getEnemySpriteLayout(placement.type);
             if (sheetLayout) {
-                const sheetTex = this.loadKeyedSpriteTexture(sheetLayout.path, 16);
+                const sheetTex = this.loadKeyedSpriteTexture(sheetLayout.path, 16, null, {
+                    layout: sheetLayout
+                });
                 sheetTex.wrapS = THREE.RepeatWrapping;
                 sheetTex.wrapT = THREE.RepeatWrapping;
                 sheetTex.repeat.set(1 / sheetLayout.columns, 1 / sheetLayout.rows);
