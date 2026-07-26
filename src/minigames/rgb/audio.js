@@ -36,32 +36,59 @@ export const CHAPTER_AMBIENCE = Object.freeze({
     sector_four: 'rgb_amb_sector_fire'
 });
 
+// Beats with a produced voice clip play it; every other beat falls back to
+// synthesised narration in runtime.js. hasAuthoredVoice() is what keeps the
+// two from talking over each other.
 export const HOTSPOT_AUDIO = Object.freeze({
+    listen_voicemail: ['rgb_voice_lucia'],
+    speak_with_marisol: ['rgb_voice_marisol_ch1'],
+    inspect_bottle: ['rgb_voice_elias_ch1'],
+    observe_4a: ['rgb_voice_elias_ch2', 'rgb_sfx_4a_servo'],
     select_joint: ['rgb_sfx_4a_servo'],
     apply_pressure: ['rgb_sfx_4a_servo'],
     double_tap_honest: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
     double_tap_falsify: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
+    demand_footage: ['rgb_voice_hr_ch3'],
+    brace_for_impact: ['rgb_voice_elias_ch3'],
+    take_the_hit: ['rgb_voice_elias_ch3'],
     proceed_to_kiosk: ['rgb_sfx_ui_denied'],
-    scan_bottle: ['rgb_sfx_ui_denied'],
+    scan_bottle: ['rgb_voice_kiosk_ch4', 'rgb_sfx_ui_denied'],
+    document_bag: ['rgb_voice_elias_ch4'],
     give_up: ['rgb_sfx_ui_denied'],
+    read_terminal: ['rgb_voice_system_ch5'],
+    attempt_delete: ['rgb_sfx_ui_denied'],
     walk_away: ['rgb_sfx_ui_denied'],
     expose_profile: ['rgb_sfx_ui_approved'],
     sever_trunk: ['rgb_sfx_ui_denied'],
+    pull_alarm: ['rgb_voice_system_ch6'],
     rescue_recenter: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
+    rescue_recenter_weak: ['rgb_sfx_4a_servo'],
+    rescue_recenter_again: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
     rescue_fumble: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_denied']
 });
 
 const HOTSPOT_SPEAKERS = Object.freeze({
     listen_voicemail: 'LUCIA',
+    call_lucia: 'LUCIA',
     speak_with_marisol: 'MARISOL',
+    request_marisol_witness: 'MARISOL',
+    release_marisol_from_request: 'MARISOL',
     demand_footage: 'HR',
     call_hr: 'HR',
     scan_bottle: 'KIOSK',
+    view_paycheck: 'KIOSK',
     request_billing_agent: 'KIOSK',
     document_bag: 'KIOSK',
+    check_balance: 'SYSTEM',
+    badge_in: 'SYSTEM',
     read_terminal: 'SYSTEM',
+    attempt_delete: 'SYSTEM',
     pull_alarm: 'SYSTEM'
 });
+
+// Exposed so a test can prove every attributed line belongs to a beat that
+// still exists — speaker labels are easy to orphan when chapters are restaged.
+export const SPEAKER_HOTSPOT_IDS = Object.freeze(Object.keys(HOTSPOT_SPEAKERS));
 
 export function hasAuthoredVoice(hotspotId) {
     return (HOTSPOT_AUDIO[hotspotId] ?? []).some((key) => key.includes('_voice_'));

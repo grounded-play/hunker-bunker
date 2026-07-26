@@ -89,12 +89,16 @@ export const INTRO_CINEMATIC = Object.freeze({
 // book.
 export function resolveCinematicSteps(hotspotId, priorState) {
     switch (hotspotId) {
+        // C1-A/C1-B play on the fork itself; R1 (the badge reader) plays when
+        // Elias actually crosses into the building. Previously the fork fired
+        // both its branch clip and R1 while `badge_in` had no hotspot at all,
+        // so the badge beat was unreachable and R1 landed a scene early.
         case 'reply_to_lucia':
-            return ['C1-A', 'R1'];
+            return ['C1-A'];
         case 'enter_now':
-            return ['C1-B', 'R1'];
+            return ['C1-B'];
         case 'badge_in':
-            return priorState.flags.heardFullMessage ? ['R1'] : ['C1-B', 'R1'];
+            return ['R1'];
         case 'double_tap_honest':
             return ['C2-A', 'R2'];
         case 'double_tap_falsify':
@@ -119,6 +123,7 @@ export function resolveCinematicSteps(hotspotId, priorState) {
         case 'sever_trunk':
             return ['C5-C', 'R6', 'R7'];
         case 'rescue_recenter':
+        case 'rescue_recenter_again':
             return ['C6-A'];
         case 'rescue_fumble':
             return ['C6-B'];
@@ -138,7 +143,7 @@ export const CHAPTERS = Object.freeze({
         id: 'parking_lot',
         title: 'Chapter 1: The Parking Lot',
         bg: `${CINEMATIC_BASE}/../backgrounds/bg_sedan_interior.png`,
-        goal: 'Lucia is calling. Decide whether Elias answers or enters the shift now.',
+        goal: 'Take stock of the night before the shift takes it from you.',
         next: 'warehouse',
         hints: [
             "That empty bottle on the seat is the whole shift, before the shift even starts.",
@@ -146,19 +151,81 @@ export const CHAPTERS = Object.freeze({
             'Badge in at the reader once the bottle, the balance, and the message are all read.'
         ],
         hotspots: [
+            // Wave A: the arithmetic of the night, before anyone asks Elias
+            // to do anything. scene-flow.md's required beats 1-3.
+            {
+                id: 'inspect_bottle',
+                label: 'Empty Albuterol Bottle',
+                x: 180, y: 300, w: 200, h: 90,
+                once: true,
+                lines: [
+                    'Two doses left, the label says. There has been one for a week.',
+                    'Refill ready for pickup: $286.40.'
+                ],
+                effects: { item: 'item_albuterol_bottle' }
+            },
+            {
+                id: 'check_balance',
+                label: 'Check the Balance',
+                x: 420, y: 300, w: 200, h: 90,
+                once: true,
+                lines: [
+                    'Available balance: $19.12.',
+                    'Benefits active until 11:59 PM, the portal says. It says that every day.'
+                ],
+                effects: { item: 'item_phone' }
+            },
+            {
+                id: 'listen_voicemail',
+                label: "Lucia's Message",
+                x: 660, y: 300, w: 200, h: 90,
+                once: true,
+                lines: [
+                    'Hi Dad. Mom says don\'t forget the purple one.',
+                    'The blue one tastes bad and makes my hands shaky.',
+                    'I drew Robot 4A, but I gave him shoes because he looks cold.'
+                ]
+            },
+            // Wave B: the drawing and the notebook are one object — he folds
+            // her robot into the book he calibrates with.
+            {
+                id: 'inspect_drawing',
+                label: 'The Drawing and the Notebook',
+                x: 420, y: 430, w: 260, h: 90,
+                once: true,
+                requiresAllOf: ['inspect_bottle', 'check_balance', 'listen_voicemail'],
+                lines: [
+                    'A smiling sorting arm in sneakers, beside a figure labelled DAD.',
+                    'He folds it into the calibration notebook and buttons the jacket over both.'
+                ],
+                effects: { items: ['item_lucia_drawing', 'item_calibration_notebook', 'item_temp_badge'] }
+            },
+            // Wave C: optional, and the only place noticedMarisolPressure is
+            // ever set — it decides whether asking her to stay in Chapter 3
+            // costs her the daycare fee.
+            {
+                id: 'speak_with_marisol',
+                label: 'Marisol',
+                x: 940, y: 430, w: 200, h: 90,
+                once: true,
+                requiresAllOf: ['inspect_drawing'],
+                lines: [
+                    '"You look like hell, Eli." "That\'s my good side."',
+                    'She checks her phone twice while she says it. Pickup is at seven.'
+                ],
+                effects: { choice: 'speak_with_marisol' }
+            },
+            // Wave D: the fork. Neither option leaves the lot — badge_in does.
             {
                 id: 'reply_to_lucia',
                 label: 'Answer Lucia',
                 x: 238, y: 590, w: 330, h: 72,
                 once: true,
                 choice: true,
+                requiresAllOf: ['inspect_drawing'],
+                excludesAllOf: ['enter_now'],
                 lines: ['He answers. For seven seconds, the shift can wait.'],
-                effects: {
-                    items: ['item_albuterol_bottle', 'item_phone', 'item_calibration_notebook', 'item_temp_badge'],
-                    choice: 'reply_to_lucia',
-                    timeCost: 1
-                },
-                advances: true
+                effects: { choice: 'reply_to_lucia', timeCost: 1 }
             },
             {
                 id: 'enter_now',
@@ -166,10 +233,19 @@ export const CHAPTERS = Object.freeze({
                 x: 712, y: 590, w: 330, h: 72,
                 once: true,
                 choice: true,
-                lines: ['He locks the phone and steps into the heat.'],
-                effects: {
-                    items: ['item_albuterol_bottle', 'item_phone', 'item_calibration_notebook', 'item_temp_badge']
-                },
+                requiresAllOf: ['inspect_drawing'],
+                excludesAllOf: ['reply_to_lucia'],
+                lines: ['He locks the phone and steps into the heat.']
+            },
+            // Wave E: scene-flow.md's required beat 5, and the trigger the
+            // cinematic book already scripted for R1.
+            {
+                id: 'badge_in',
+                label: 'Badge In',
+                x: 500, y: 690, w: 300, h: 70,
+                once: true,
+                requires: { minVisitedOf: { ids: ['reply_to_lucia', 'enter_now'], count: 1 } },
+                lines: ['TEMP CONTRACTOR. The reader flashes red: ACCESS GRANTED.'],
                 advances: true
             }
         ]
@@ -187,11 +263,25 @@ export const CHAPTERS = Object.freeze({
             'Select the joint, then apply pressure, then double-tap to finish.'
         ],
         hotspots: [
+            // The game's thesis, stated once in plain numbers, before any
+            // puzzle asks the player to care about the machine.
+            {
+                id: 'observe_4a',
+                label: 'Sorting Arm 4A',
+                x: 540, y: 250, w: 200, h: 90,
+                once: true,
+                lines: [
+                    'Titanium sorting arm. Asset value $4.8 million.',
+                    'The terminal lists its operator at $16.50 an hour.',
+                    'It closes on an irregular box and crushes it flat.'
+                ]
+            },
             {
                 id: 'read_diagram',
                 label: 'Notebook Diagram',
                 x: 260, y: 460, w: 100, h: 90,
                 once: true,
+                requiresAllOf: ['observe_4a'],
                 lines: ['DOUBLE TAP = RELEASE PRESSURE / RECENTER.']
             },
             {
@@ -216,6 +306,8 @@ export const CHAPTERS = Object.freeze({
                 x: 500, y: 610, w: 130, h: 60,
                 once: true,
                 requiresAllOf: ['apply_pressure'],
+                excludesAllOf: ['double_tap_falsify'],
+                choice: true,
                 lines: ['The claw releases, recenters, sorts clean.', 'The metric counter still shows the miss. He leaves it.'],
                 effects: { calibration: { quality: 2, honest: true } },
                 advances: true
@@ -226,6 +318,8 @@ export const CHAPTERS = Object.freeze({
                 x: 650, y: 610, w: 130, h: 60,
                 once: true,
                 requiresAllOf: ['apply_pressure'],
+                excludesAllOf: ['double_tap_honest'],
+                choice: true,
                 lines: ['The claw releases, recenters, sorts clean.', 'He edits the metric before anyone reviews it.'],
                 effects: { calibration: { quality: 2, honest: false } },
                 advances: true
@@ -245,94 +339,133 @@ export const CHAPTERS = Object.freeze({
             'Photograph the reader before the laptop closes.'
         ],
         hotspots: [
+            // Wave A: the collision. Inevitable; the choice is only how much
+            // of it Elias takes. Exclusive, so the player cannot do both.
             {
                 id: 'brace_for_impact',
                 label: 'Brace',
                 x: 240, y: 460, w: 110, h: 100,
                 once: true,
+                choice: true,
+                excludesAllOf: ['take_the_hit'],
                 lines: ['A taped box jams the belt. 4A breaks its path.', 'The arm catches his shoulder, not his skull.'],
                 effects: { pain: 'injured' }
             },
             {
                 id: 'take_the_hit',
                 label: "Don't Flinch",
-                x: 240, y: 460, w: 110, h: 100,
+                x: 400, y: 460, w: 110, h: 100,
                 once: true,
+                choice: true,
+                excludesAllOf: ['brace_for_impact'],
                 lines: ['A taped box jams the belt. 4A breaks its path.', 'He doesn\'t get clear in time.'],
                 effects: { pain: 'severe' }
             },
+            // Wave B: the review room proper. Only opens once the collision
+            // has resolved, so the room is never live during the accident.
             {
                 id: 'demand_footage',
                 label: 'Demand Footage',
-                x: 500, y: 460, w: 110, h: 90,
+                x: 260, y: 460, w: 150, h: 90,
                 once: true,
+                requires: { painSet: true },
                 lines: ['"Point of contact is neutral until review is complete."', 'The two seconds before impact are missing. He notes it.'],
                 effects: { evidence: 'camera_discrepancy' }
             },
             {
-                id: 'keep_notebook',
-                label: 'Keep the Notebook',
-                x: 660, y: 460, w: 110, h: 90,
-                once: true,
-                lines: ['He keeps it in his jacket, not on the desk.'],
-                effects: { choice: 'keep_notebook' }
-            },
-            {
-                id: 'surrender_notebook',
-                label: 'Surrender the Notebook',
-                x: 780, y: 460, w: 110, h: 90,
-                once: true,
-                lines: ['He hands it over. HR keeps files, they say.'],
-                effects: { choice: 'surrender_notebook' }
-            },
-            {
                 id: 'complete_swab',
                 label: 'Compulsory Swab',
-                x: 500, y: 580, w: 110, h: 80,
+                x: 500, y: 460, w: 150, h: 90,
                 once: true,
+                requires: { painSet: true },
                 lines: ['The reader blinks, waiting.']
             },
             {
+                id: 'call_marisol',
+                label: 'Call for Marisol',
+                x: 740, y: 460, w: 150, h: 90,
+                once: true,
+                requires: { painSet: true },
+                lines: ['Her daycare fee has already started ticking.']
+            },
+            // Wave C: the consequences of Wave B, each gated on the beat that
+            // makes it meaningful.
+            {
                 id: 'photograph_result',
                 label: 'Photograph the Reader',
-                x: 500, y: 580, w: 110, h: 80,
+                x: 500, y: 570, w: 150, h: 80,
                 once: true,
                 requiresAllOf: ['complete_swab'],
                 lines: ['INCONCLUSIVE. He photographs it before the laptop closes.'],
                 effects: { evidence: 'swab_photo', choice: 'complete_swab' }
             },
             {
-                id: 'call_marisol',
-                label: 'Call for Marisol',
-                x: 940, y: 460, w: 120, h: 90,
-                once: true,
-                lines: ['Her daycare fee has already started ticking.']
-            },
-            {
                 id: 'request_marisol_witness',
                 label: 'Ask Her to Stay',
-                x: 940, y: 570, w: 120, h: 60,
+                x: 740, y: 570, w: 150, h: 80,
                 once: true,
+                choice: true,
                 requiresAllOf: ['call_marisol'],
+                excludesAllOf: ['release_marisol_from_request'],
                 lines: ['She stays. It costs her.'],
                 effects: { choice: 'request_marisol_witness' }
             },
             {
                 id: 'release_marisol_from_request',
                 label: 'Release Her',
-                x: 1080, y: 570, w: 120, h: 60,
+                x: 940, y: 570, w: 150, h: 80,
                 once: true,
+                choice: true,
                 requiresAllOf: ['call_marisol'],
+                excludesAllOf: ['request_marisol_witness'],
                 requires: { flags: { noticedMarisolPressure: true } },
                 lines: ['He remembers the pickup deadline and waves her off.'],
                 effects: { choice: 'release_marisol_from_request' }
             },
             {
+                id: 'keep_notebook',
+                label: 'Keep the Notebook',
+                x: 140, y: 570, w: 150, h: 80,
+                once: true,
+                choice: true,
+                requires: { painSet: true },
+                excludesAllOf: ['surrender_notebook'],
+                lines: ['He keeps it in his jacket, not on the desk.'],
+                effects: { choice: 'keep_notebook' }
+            },
+            {
+                id: 'surrender_notebook',
+                label: 'Surrender the Notebook',
+                x: 310, y: 570, w: 150, h: 80,
+                once: true,
+                choice: true,
+                requires: { painSet: true },
+                excludesAllOf: ['keep_notebook'],
+                lines: ['He hands it over. HR keeps files, they say.'],
+                effects: { choice: 'surrender_notebook' }
+            },
+            // Wave D: the exit. Requires the collision to have resolved and
+            // at least two of the room's beats to have been played, so the
+            // chapter cannot be skipped straight through.
+            {
                 id: 'proceed_to_kiosk',
                 label: 'Leave the Review Room',
                 x: 500, y: 690, w: 300, h: 70,
                 once: true,
-                requires: { painSet: true },
+                requires: {
+                    painSet: true,
+                    minVisitedOf: {
+                        ids: [
+                            'demand_footage',
+                            'complete_swab',
+                            'photograph_result',
+                            'call_marisol',
+                            'keep_notebook',
+                            'surrender_notebook'
+                        ],
+                        count: 2
+                    }
+                },
                 lines: ['At 6:42 PM, hours before the stated cutoff: COVERAGE TERMINATED.'],
                 advances: true
             }
@@ -351,70 +484,106 @@ export const CHAPTERS = Object.freeze({
             'GIVE UP only if you mean it — there\'s no undoing it.'
         ],
         hotspots: [
+            // Wave A: the kiosk states the situation before the player is
+            // asked to respond to it.
             {
                 id: 'scan_bottle',
                 label: 'Scan the Bottle',
-                x: 300, y: 480, w: 110, h: 100,
+                x: 300, y: 480, w: 160, h: 100,
                 once: true,
                 lines: ['COVERAGE TERMINATED 6:42 PM.', 'Final pay: $14.00, after deductions.'],
-                effects: { evidence: 'kiosk_record' }
+                effects: { evidence: 'kiosk_record', kioskAttempt: true }
             },
+            // Wave B: every legitimate avenue. Each one is a denial, and each
+            // counts toward having genuinely tried.
             {
                 id: 'view_paycheck',
                 label: 'Itemized Paycheck',
-                x: 460, y: 480, w: 110, h: 100,
+                x: 480, y: 480, w: 160, h: 100,
                 once: true,
                 requiresAllOf: ['scan_bottle'],
                 lines: ['Productivity variance. Equipment delay. $14.00 net.'],
-                effects: { evidence: 'payroll_record' }
+                effects: { evidence: 'payroll_record', kioskAttempt: true }
             },
             {
                 id: 'request_billing_agent',
                 label: 'Request Billing Agent',
-                x: 620, y: 480, w: 110, h: 100,
+                x: 660, y: 480, w: 160, h: 100,
                 once: true,
+                requiresAllOf: ['scan_bottle'],
                 requires: { maxTimeBand: 2 },
                 lines: ['Wait time: forty-seven minutes.'],
-                effects: { choice: 'request_billing_agent' }
+                effects: { choice: 'request_billing_agent', kioskAttempt: true }
             },
             {
                 id: 'call_hr',
                 label: 'Call HR',
-                x: 780, y: 480, w: 110, h: 100,
+                x: 840, y: 480, w: 160, h: 100,
                 once: true,
+                requiresAllOf: ['scan_bottle'],
                 lines: ['"Separation pending review." No further comment.'],
-                effects: { timeCost: 1 }
+                effects: { timeCost: 1, kioskAttempt: true }
             },
             {
                 id: 'call_lucia',
                 label: 'Call Lucia',
-                x: 940, y: 480, w: 110, h: 100,
+                x: 1020, y: 480, w: 160, h: 100,
                 once: true,
+                requiresAllOf: ['scan_bottle'],
                 lines: ['"I\'m still at work, baby. I know."'],
-                effects: { choice: 'call_lucia' }
+                effects: { choice: 'call_lucia', kioskAttempt: true }
             },
             {
                 id: 'document_bag',
                 label: 'Document the Bag',
-                x: 300, y: 620, w: 200, h: 70,
+                x: 300, y: 600, w: 200, h: 70,
                 once: true,
-                lines: ['Three inches away, behind reinforced glass.', '"Command not recognized."']
+                requiresAllOf: ['scan_bottle'],
+                lines: ['Three inches away, behind reinforced glass.', '"Command not recognized."'],
+                effects: { kioskAttempt: true }
+            },
+            // Wave C: only after the chapter has actually been played. Its
+            // argument is that nothing legitimate works — the player has to
+            // have watched that happen for either exit to land.
+            {
+                id: 'follow_utility_map',
+                label: 'Follow the Utility Map',
+                x: 460, y: 700, w: 240, h: 70,
+                once: true,
+                requires: {
+                    minVisitedOf: {
+                        ids: [
+                            'view_paycheck',
+                            'request_billing_agent',
+                            'call_hr',
+                            'call_lucia',
+                            'document_bag'
+                        ],
+                        count: 3
+                    }
+                },
+                lines: ['The back page of the notebook. A path back into RGB.'],
+                advances: true
             },
             {
                 id: 'give_up',
                 label: 'GIVE UP',
-                x: 940, y: 620, w: 110, h: 70,
+                x: 740, y: 700, w: 200, h: 70,
                 once: true,
+                requires: {
+                    minVisitedOf: {
+                        ids: [
+                            'view_paycheck',
+                            'request_billing_agent',
+                            'call_hr',
+                            'call_lucia',
+                            'document_bag'
+                        ],
+                        count: 3
+                    }
+                },
                 lines: ['The bag returns to holding. Her message plays again.'],
                 effects: { choice: 'give_up_at_kiosk' },
-                advances: true
-            },
-            {
-                id: 'follow_utility_map',
-                label: 'Follow the Utility Map',
-                x: 460, y: 620, w: 200, h: 70,
-                once: true,
-                lines: ['The back page of the notebook. A path back into RGB.'],
                 advances: true
             }
         ]
@@ -435,27 +604,42 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'read_terminal',
                 label: 'Mainframe Terminal',
-                x: 500, y: 420, w: 160, h: 140,
+                x: 500, y: 400, w: 160, h: 140,
                 once: true,
                 lines: ['TRAINING MODEL: SORT_ARM_4A', 'HUMAN CALIBRATION SOURCE: ELIAS MORALES'],
                 effects: { evidence: 'training_profile' }
             },
+            // The chapter's emotional pivot, previously buried as one line
+            // inside walk_away. It is the reason the three exits differ.
+            {
+                id: 'attempt_delete',
+                label: 'Delete the Profile',
+                x: 500, y: 555, w: 160, h: 70,
+                once: true,
+                requiresAllOf: ['read_terminal'],
+                lines: [
+                    'ADMIN LOCK. ACCESS DENIED.',
+                    'They will not even let him take his own ghost back.'
+                ]
+            },
             {
                 id: 'walk_away',
                 label: 'Leave the Profile Intact',
-                x: 320, y: 620, w: 160, h: 70,
+                x: 200, y: 690, w: 200, h: 70,
                 once: true,
-                requiresAllOf: ['read_terminal'],
-                lines: ['ADMIN LOCK. ACCESS DENIED. He steps back from the terminal.'],
+                choice: true,
+                requiresAllOf: ['attempt_delete'],
+                lines: ['He steps back from the terminal.'],
                 effects: { finalChoice: 'preserve' },
                 advances: true
             },
             {
                 id: 'expose_profile',
                 label: 'Copy and Transmit',
-                x: 560, y: 620, w: 160, h: 70,
+                x: 540, y: 690, w: 200, h: 70,
                 once: true,
-                requiresAllOf: ['read_terminal'],
+                choice: true,
+                requiresAllOf: ['attempt_delete'],
                 requires: { canExpose: true },
                 lines: ['The token has a window. He copies fast.'],
                 effects: { finalChoice: 'expose' },
@@ -464,10 +648,11 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'sever_trunk',
                 label: 'Sever the Data Trunk',
-                x: 800, y: 620, w: 160, h: 70,
+                x: 880, y: 690, w: 200, h: 70,
                 once: true,
-                requiresAllOf: ['read_terminal'],
-                lines: ['Deletion denied. He reaches for the insulated cutters instead.'],
+                choice: true,
+                requiresAllOf: ['attempt_delete'],
+                lines: ['He reaches for the insulated cutters instead.'],
                 effects: { finalChoice: 'sever', item: 'item_wire_cutters' },
                 advances: true
             }
@@ -489,32 +674,66 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'pull_alarm',
                 label: 'Fire Alarm',
-                x: 300, y: 460, w: 110, h: 90,
+                x: 300, y: 440, w: 160, h: 90,
                 once: true,
                 lines: ['The system says to wait. He pulls it anyway.']
             },
             {
                 id: 'cross_to_rack',
                 label: 'Cross the Floor',
-                x: 500, y: 460, w: 110, h: 90,
+                x: 560, y: 440, w: 160, h: 90,
                 once: true,
                 requiresAllOf: ['pull_alarm'],
                 lines: ['A rack collapses. Lucia\'s drawing lands just out of reach.']
             },
+            // The payoff for Chapter 2. An honest error log earns trust4A 2
+            // and 4A recalls the correction on the first attempt; a falsified
+            // metric earns 1, and the lift takes a second pass. Both reach the
+            // same ending — weak calibration costs an action, never the
+            // outcome, per "resources create pressure, not moral judgment".
             {
                 id: 'rescue_recenter',
                 label: 'Tap. Tap.',
-                x: 700, y: 460, w: 110, h: 90,
+                x: 820, y: 440, w: 160, h: 90,
                 once: true,
                 requiresAllOf: ['cross_to_rack'],
-                lines: ['Same joint, same pressure. 4A releases, recenters, lifts.'],
+                requires: { minTrust4A: 2 },
+                lines: [
+                    'Same joint, same pressure.',
+                    '4A releases, recenters, finds the centre of gravity, and lifts.'
+                ],
+                effects: { rescue: { success: true } },
+                advances: true
+            },
+            {
+                id: 'rescue_recenter_weak',
+                label: 'Tap. Tap.',
+                x: 820, y: 440, w: 160, h: 90,
+                once: true,
+                requiresAllOf: ['cross_to_rack'],
+                requires: { maxTrust4A: 1 },
+                lines: [
+                    'Same joint, same pressure. The servo hunts, uncertain.',
+                    'The clean metric he filed is the one it learned from. It grips short.'
+                ]
+            },
+            {
+                id: 'rescue_recenter_again',
+                label: 'Again. Tap. Tap.',
+                x: 820, y: 560, w: 160, h: 90,
+                once: true,
+                requiresAllOf: ['rescue_recenter_weak'],
+                lines: [
+                    'He finds the joint one more time and holds it.',
+                    '4A releases, shifts two inches, and lifts.'
+                ],
                 effects: { rescue: { success: true } },
                 advances: true
             },
             {
                 id: 'rescue_fumble',
                 label: 'Grab the Chassis',
-                x: 700, y: 570, w: 110, h: 60,
+                x: 560, y: 560, w: 160, h: 90,
                 once: true,
                 requiresAllOf: ['cross_to_rack'],
                 lines: ['4A grips the wrong point. LOAD INSTABILITY.'],

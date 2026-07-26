@@ -146,8 +146,11 @@ describe('content shape', () => {
     it('picks the branch clip that matches what the player actually did', () => {
         const base = createRunState();
 
-        expect(resolveCinematicSteps('enter_now', base)).toEqual(['C1-B', 'R1']);
-        expect(resolveCinematicSteps('reply_to_lucia', base)).toEqual(['C1-A', 'R1']);
+        // The fork plays its own branch clip; R1 is the badge reader and
+        // belongs to the beat where Elias actually walks in.
+        expect(resolveCinematicSteps('enter_now', base)).toEqual(['C1-B']);
+        expect(resolveCinematicSteps('reply_to_lucia', base)).toEqual(['C1-A']);
+        expect(resolveCinematicSteps('badge_in', base)).toEqual(['R1']);
 
         expect(resolveCinematicSteps('proceed_to_kiosk', base)).toEqual(['C3-B', 'R3']);
         const documented = { ...base, flags: { ...base.flags, keptNotebook: true } };

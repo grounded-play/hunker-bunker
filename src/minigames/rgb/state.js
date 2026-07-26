@@ -100,6 +100,13 @@ export function applyChoice(state, choiceId) {
     }
 }
 
+// Counts the legitimate avenues Elias has exhausted at the kiosk. Chapter 4's
+// exits read this so the transaction only closes after an explicit set of
+// attempts, never because the player idled in a menu (scene-flow.md).
+export function recordKioskAttempt(state) {
+    return { ...state, kioskAttempts: state.kioskAttempts + 1 };
+}
+
 export function completeCalibration(state, quality, honest) {
     const calibrationQuality = Math.max(0, Math.min(2, Number(quality) || 0));
     return {

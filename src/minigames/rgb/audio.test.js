@@ -6,7 +6,8 @@ import {
     HOTSPOT_AUDIO,
     RGB_AUDIO_MANIFEST,
     getDialogueSpeaker,
-    hasAuthoredVoice
+    hasAuthoredVoice,
+    SPEAKER_HOTSPOT_IDS
 } from './audio.js';
 import { CHAPTERS } from './content.js';
 
@@ -34,10 +35,29 @@ describe('RGB audio content', () => {
         }
     });
 
-    it('uses current-line generated speech instead of repeated chapter recordings', () => {
+    it('reports authored voice only for beats that ship a recording', () => {
+        expect(hasAuthoredVoice('listen_voicemail')).toBe(true);
+        expect(hasAuthoredVoice('scan_bottle')).toBe(true);
+        // No recording; runtime.js narrates these with synthesised speech.
         expect(hasAuthoredVoice('reply_to_lucia')).toBe(false);
-        expect(hasAuthoredVoice('scan_bottle')).toBe(false);
+        expect(hasAuthoredVoice('select_joint')).toBe(false);
+    });
+
+    it('attributes lines to the speaker who says them', () => {
         expect(getDialogueSpeaker('scan_bottle')).toBe('KIOSK');
+        expect(getDialogueSpeaker('listen_voicemail')).toBe('LUCIA');
+        expect(getDialogueSpeaker('speak_with_marisol')).toBe('MARISOL');
+        expect(getDialogueSpeaker('demand_footage')).toBe('HR');
+        expect(getDialogueSpeaker('read_terminal')).toBe('SYSTEM');
         expect(getDialogueSpeaker('reply_to_lucia')).toBe('ELIAS');
+    });
+
+    it('routes every speaker label to a hotspot that exists', () => {
+        const hotspots = new Set(
+            Object.values(CHAPTERS).flatMap((chapter) => chapter.hotspots.map((hotspot) => hotspot.id))
+        );
+        for (const hotspotId of SPEAKER_HOTSPOT_IDS) {
+            expect(hotspots.has(hotspotId), hotspotId).toBe(true);
+        }
     });
 });
