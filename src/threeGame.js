@@ -9426,9 +9426,9 @@ export class ThreeGame {
             this.act2.recordDialogueTalk(kind, entity.id);
         } else if (beat.type === 'death_beat') {
             if (kind === 'hive') {
-                this.act2.setHiveQuestFlag(entity.id, 'seen_death_beat');
+                this.act2.completeHiveQuest(entity.id, 'seen_death_beat', 0);
             } else {
-                this.act2.setCampQuestFlag(entity.id, 'seen_death_beat');
+                this.act2.completeCampQuest(entity.id, 'seen_death_beat', 0);
             }
         }
         window.dispatchEvent(new CustomEvent('leader-dialogue', {
