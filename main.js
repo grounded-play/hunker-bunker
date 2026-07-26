@@ -1,5 +1,6 @@
 /* global __HB_BUILD_INFO__ */
 import { AudioManager } from './src/audio.js';
+import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
@@ -3229,7 +3230,7 @@ function openArchiveLogDetail(key) {
 
     if (keyEl) keyEl.textContent = window.game?.getLoreTitle?.(key) ?? `LOG-${key}`;
     if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
-    if (portraitEl) portraitEl.src = lorePortraitSrc(key);
+    if (portraitEl) portraitEl.src = assetUrl(lorePortraitSrc(key));
 
     const metadata = LORE_METADATA[key];
     const dateEl = document.getElementById('archive-log-detail-date');
@@ -3289,7 +3290,7 @@ function buildArchiveModal() {
                 img.loading = 'lazy';
                 img.decoding = 'async';
                 img.alt = '';
-                img.src = lorePortraitSrc(key);
+                img.src = assetUrl(lorePortraitSrc(key));
                 avatar.appendChild(img);
             } else {
                 avatar.classList.add('archive-log-avatar--locked');
@@ -3380,7 +3381,7 @@ function showAchievementToast(unlock) {
     iconWrap.className = 'achievement-toast__icon';
     const img = document.createElement('img');
     img.alt = '';
-    img.src = `/ach_${unlock.icon ?? unlock.key}.png`;
+    img.src = assetUrl(`/ach_${unlock.icon ?? unlock.key}.png`);
     const fallback = document.createElement('span');
     fallback.textContent = 'ACH';
     img.addEventListener('error', () => {
@@ -3486,7 +3487,7 @@ function renderAchievementsModal() {
         icon.className = 'achievement-card__icon';
         const img = document.createElement('img');
         img.alt = '';
-        img.src = `/ach_${def.icon ?? def.key}.png`;
+        img.src = assetUrl(`/ach_${def.icon ?? def.key}.png`);
         const fallback = document.createElement('span');
         fallback.textContent = secretLocked ? '???' : (def.title.match(/[A-Z0-9]/g)?.slice(0, 3).join('') || 'ACH');
         img.addEventListener('error', () => {
@@ -4676,7 +4677,7 @@ function showTacticalOverlay({
         loaderBriefingSpeaker.classList.toggle('hidden', !speaker);
     }
     if (loaderBriefingAvatarImg && avatar) {
-        loaderBriefingAvatarImg.src = avatar;
+        loaderBriefingAvatarImg.src = assetUrl(avatar);
     }
     loaderBriefingAvatar?.classList.toggle('hidden', !avatar);
     loadingScreen?.classList.remove('hidden');
@@ -4764,7 +4765,7 @@ function warmCutsceneImage(src) {
     if (!src || cutsceneImagePreloadCache.has(src)) return;
     const image = new Image();
     image.decoding = 'async';
-    image.src = src;
+    image.src = assetUrl(src);
     cutsceneImagePreloadCache.set(src, image);
 }
 
@@ -4780,8 +4781,8 @@ function warmCutsceneVideo(base) {
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    video.poster = `/cutscenes/${base}-poster.jpg`;
-    video.src = source;
+    video.poster = assetUrl(`/cutscenes/${base}-poster.jpg`);
+    video.src = assetUrl(source);
     video.load();
     cutsceneVideoPreloadCache.set(source, video);
 }
@@ -4813,7 +4814,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
-        overlay.style.setProperty('--class-intro-poster', `url('/cutscenes/${webmBase}-poster.jpg')`);
+        overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${webmBase}-poster.jpg`)}')`);
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
@@ -4894,7 +4895,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         gifImg.className = 'class-intro-video';
         gifImg.style.objectFit = 'cover';
         gifImg.alt = '';
-        gifImg.src = gifSrc;
+        gifImg.src = assetUrl(gifSrc);
         gifImg.addEventListener('error', startVideoStep, { once: true });
         overlay.append(gifImg, skipHint);
         host.appendChild(overlay);
@@ -4923,10 +4924,10 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         videoElement.autoplay = true;
         videoElement.controls = false;
         videoElement.preload = 'auto';
-        videoElement.poster = `/cutscenes/${webmBase}-poster.jpg`;
+        videoElement.poster = assetUrl(`/cutscenes/${webmBase}-poster.jpg`);
 
         const webmSource = document.createElement('source');
-        webmSource.src = `/cutscenes/${webmBase}.webm`;
+        webmSource.src = assetUrl(`/cutscenes/${webmBase}.webm`);
         webmSource.type = 'video/webm';
 
         // Keep the GIF asset as preload-only; the visible intro is the WebM
@@ -4935,7 +4936,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             videoElement.append(webmSource);
         } else {
             const mp4Fallback = document.createElement('source');
-            mp4Fallback.src = `/cutscenes/${webmBase}.mp4`;
+            mp4Fallback.src = assetUrl(`/cutscenes/${webmBase}.mp4`);
             mp4Fallback.type = 'video/mp4';
             videoElement.append(mp4Fallback);
         }
@@ -4979,7 +4980,7 @@ function playCutsceneVideo(base, options = {}) {
             overlay.style.setProperty('--class-intro-poster', 'none');
         } else {
             const posterUrl = base.includes('/') || base.endsWith('.mp4') ? '/title_key_art_v2.png' : `/cutscenes/${base}-poster.jpg`;
-            overlay.style.setProperty('--class-intro-poster', `url('${posterUrl}')`);
+            overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(posterUrl)}')`);
         }
 
         const video = document.createElement('video');
@@ -5003,7 +5004,7 @@ function playCutsceneVideo(base, options = {}) {
         let primarySource = null;
         for (const src of [...new Set(sources)]) {
             const sourceEl = document.createElement('source');
-            sourceEl.src = src;
+            sourceEl.src = assetUrl(src);
             if (src.endsWith('.webm')) sourceEl.type = 'video/webm';
             if (src.endsWith('.mp4')) sourceEl.type = 'video/mp4';
             video.appendChild(sourceEl);
@@ -5101,12 +5102,12 @@ function playCinematicStills(rawSpec = {}) {
         const frameA = document.createElement('img');
         frameA.className = 'cinematic-still-frame is-active';
         frameA.alt = '';
-        if (spec.images[0]) frameA.src = spec.images[0];
+        if (spec.images[0]) frameA.src = assetUrl(spec.images[0]);
 
         const frameB = document.createElement('img');
         frameB.className = 'cinematic-still-frame';
         frameB.alt = '';
-        if (spec.images[1]) frameB.src = spec.images[1];
+        if (spec.images[1]) frameB.src = assetUrl(spec.images[1]);
 
         const shade = document.createElement('div');
         shade.className = 'cinematic-still-shade';
@@ -6678,8 +6679,8 @@ function renderFabricationModal() {
         const art = document.createElement('div');
         art.className = 'fab-card__art';
         const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
-        img.addEventListener('error', () => { img.src = '/bunker_junk_rare.png'; }, { once: true });
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
+        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
         art.appendChild(img);
         const rarityTag = document.createElement('span');
         rarityTag.className = 'fab-card__rarity';
@@ -6868,7 +6869,7 @@ function openCodexDetailModal(id) {
     if (name) name.textContent = entry.name;
     if (blurb) blurb.textContent = entry.blurb;
     if (img) {
-        img.src = entry.image || '/favicon.png';
+        img.src = assetUrl(entry.image || '/favicon.png');
         img.alt = entry.name;
     }
 
@@ -7895,8 +7896,8 @@ function renderRosterModal(mode = 'continue') {
         const art = document.createElement('div');
         art.className = 'roster-weapon__art';
         const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
-        img.addEventListener('error', () => { img.src = '/bunker_junk_rare.png'; }, { once: true });
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
+        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
         art.appendChild(img);
         card.appendChild(art);
 
@@ -8025,14 +8026,14 @@ function getDoorImage(key) {
         'win': '/door_alien.png',
         'lose': '/door_rust.png'
     };
-    if (key === 'win') return SPECIAL_DOORS.win;
-    if (key === 'lose') return SPECIAL_DOORS.lose;
-    if (key === 'base') return SPECIAL_DOORS.base;
-    if (CLASS_DOORS[key]) return CLASS_DOORS[key];
+    if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
+    if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
+    if (key === 'base') return assetUrl(SPECIAL_DOORS.base);
+    if (CLASS_DOORS[key]) return assetUrl(CLASS_DOORS[key]);
 
     // Automatically determine door image based on active/preview class
     const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
-    return CLASS_DOORS[activeClass] || SPECIAL_DOORS.base;
+    return assetUrl(CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
 }
 
 function preloadDoorAssets() {
@@ -8048,7 +8049,7 @@ function preloadDoorAssets() {
 
     for (const src of doorImages) {
         const img = new Image();
-        img.src = src;
+        img.src = assetUrl(src);
     }
 
     try {
@@ -8240,7 +8241,7 @@ function getPreviewSpriteImage(path, layout) {
             resolve(runtimeCanvas);
         };
         image.onerror = reject;
-        image.src = path;
+        image.src = assetUrl(path);
     });
 
     previewSpriteImages.set(path, imagePromise);

@@ -36,6 +36,7 @@ import { createActionRouter, ACTION_SETS } from '../../inputActions.js';
 import { mapBrowserGamepad } from '../../browserGamepad.js';
 import { AudioManager } from '../../audio.js';
 import { createRgbAudioController, getDialogueSpeaker } from './audio.js';
+import { assetUrl } from '../../assetUrl.js';
 
 const NAV_REPEAT_MS = 220;
 const STICK_THRESHOLD = 0.5;
@@ -205,7 +206,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (chapter.bg) {
             const bgImg = document.createElement('img');
             bgImg.className = 'rgb-stage-bg';
-            bgImg.src = chapter.bg;
+            bgImg.src = assetUrl(chapter.bg);
             bgImg.alt = '';
             stage.appendChild(bgImg);
         }
@@ -415,7 +416,7 @@ export function mountRgb({ root, save, storage, onExit }) {
                 if (item?.icon) {
                     const img = document.createElement('img');
                     img.className = 'rgb-inventory__icon';
-                    img.src = item.icon;
+                    img.src = assetUrl(item.icon);
                     img.alt = '';
                     cell.append(img);
                 }
@@ -523,7 +524,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (ending.art) {
             const art = document.createElement('img');
             art.className = 'rgb-card__art';
-            art.src = ending.art;
+            art.src = assetUrl(ending.art);
             art.alt = '';
             card.append(art);
         }

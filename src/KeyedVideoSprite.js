@@ -34,7 +34,7 @@ export class KeyedVideoSprite {
 
         try {
             this.video = document.createElement('video');
-            this.video.src = this.videoPath;
+            this.video.src = assetUrl(this.videoPath);
             this.video.crossOrigin = 'anonymous';
             this.video.playsInline = true;
             this.video.muted = true;
@@ -142,3 +142,4 @@ export class KeyedVideoSprite {
         }
     }
 }
+import { assetUrl } from './assetUrl.js';

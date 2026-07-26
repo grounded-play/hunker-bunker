@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
+import { assetUrl } from './assetUrl.js';
 
 const LEADER_SPRITESHEETS = {
     'Commander Briggs': '/briggs_camp_walk_v2.png',
@@ -115,7 +116,7 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
         applyFallbackToTexture(texture, fallbackCanvas);
         if (onLoad) onLoad(texture);
     };
-    image.src = path;
+    image.src = assetUrl(path);
     return texture;
 }
 

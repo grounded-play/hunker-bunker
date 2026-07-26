@@ -605,7 +605,7 @@ export class DialogueManager {
                     <div class="mothership-line__text"></div>
                 </div>
             `;
-            row.querySelector('.mothership-line__portrait').src = speaker.portrait;
+            row.querySelector('.mothership-line__portrait').src = assetUrl(speaker.portrait);
             row.querySelector('.mothership-line__speaker').textContent = speaker.name;
         }
 
@@ -747,7 +747,7 @@ export class DialogueManager {
 
             if (stablePortraitEl) {
                 const img = stablePortraitEl.querySelector('.dialogue-stable-portrait__img');
-                if (img) img.src = speakerInfo.portrait;
+                if (img) img.src = assetUrl(speakerInfo.portrait);
                 const nameEl = stablePortraitEl.querySelector('.dialogue-stable-portrait__name');
                 if (nameEl) nameEl.textContent = speakerInfo.name;
                 stablePortraitEl.classList.remove('hidden');
@@ -1221,3 +1221,4 @@ function playQueenSting() {
         void err;
     }
 }
+import { assetUrl } from './assetUrl.js';

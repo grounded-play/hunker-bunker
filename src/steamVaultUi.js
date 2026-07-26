@@ -135,7 +135,7 @@ export function showSteamDropToast(itemdefid, quantity = 1) {
     iconWrap.className = 'achievement-toast__icon';
     const img = document.createElement('img');
     img.alt = '';
-    img.src = catalog.img;
+    img.src = assetUrl(catalog.img);
     iconWrap.append(img);
 
     const body = document.createElement('div');
@@ -356,7 +356,7 @@ export function renderInventoryGrid() {
 
         const img = document.createElement('img');
         img.className = 'vault-item-card__art';
-        img.src = catalog.img;
+        img.src = assetUrl(catalog.img);
         card.appendChild(img);
 
         if (item.quantity > 1) {
@@ -404,7 +404,7 @@ export function updateDetailsPanel(item) {
         rarityEl.style.color = getRarityColor(catalog.rarity);
     }
     if (descEl) descEl.textContent = catalog.desc;
-    if (imgEl) imgEl.src = catalog.img;
+    if (imgEl) imgEl.src = assetUrl(catalog.img);
 
     if (tradableEl) {
         tradableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.tradable ? 'active' : ''}`;
@@ -650,3 +650,4 @@ export async function openDeepRelicCache() {
         }
     }
 }
+import { assetUrl } from './assetUrl.js';

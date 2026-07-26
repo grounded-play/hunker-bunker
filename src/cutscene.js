@@ -76,8 +76,8 @@ export class CutsceneManager {
         this.overlayEl.setAttribute('aria-hidden', 'false');
         this.overlayEl.classList.add('is-active');
 
-        this.shipEl.src = preparedSprite;
-        this.wreckEl.src = preparedWreck ?? preparedSprite;
+        this.shipEl.src = assetUrl(preparedSprite);
+        this.wreckEl.src = assetUrl(preparedWreck ?? preparedSprite);
         this.shipEl.style.opacity = '0';
         this.shipEl.style.transition = 'none';
         this.wreckEl.classList.add('hidden');
@@ -347,7 +347,7 @@ export class CutsceneManager {
             };
 
             image.onerror = () => resolve(spritePath);
-            image.src = spritePath;
+            image.src = assetUrl(spritePath);
         });
 
         this.spriteCache.set(spritePath, prepared);
@@ -376,3 +376,4 @@ export class CutsceneManager {
         element.style.transform = transform;
     }
 }
+import { assetUrl } from './assetUrl.js';

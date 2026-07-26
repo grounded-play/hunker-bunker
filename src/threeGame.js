@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
@@ -4052,8 +4053,7 @@ export class ThreeGame {
     }
 
     resolveRelativeAssetPath(path) {
-        if (typeof path !== 'string' || !path) return path;
-        return path.startsWith('/') ? path.slice(1) : path;
+        return assetUrl(path);
     }
 
     loadScatterTexture(path, textureLoader) {

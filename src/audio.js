@@ -158,7 +158,7 @@ export class AudioManager {
                     updateProgress(url);
                     resolve();
                 };
-                img.src = url;
+                img.src = assetUrl(url);
             });
         });
 
@@ -189,7 +189,7 @@ export class AudioManager {
     }
 
     static async decodeAudioAsset(url) {
-        const response = await fetch(url);
+        const response = await fetch(assetUrl(url));
         if (!response.ok) {
             throw new Error(`HTTP ${response.status} while loading ${url}`);
         }
@@ -987,3 +987,4 @@ export class AudioManager {
 }
 
 AudioManager.init();
+import { assetUrl } from './assetUrl.js';

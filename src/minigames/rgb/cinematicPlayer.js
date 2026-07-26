@@ -8,6 +8,7 @@
 // destroy a clip while the player is trying to interact with the scene.
 
 import { AudioManager } from '../../audio.js';
+import { assetUrl } from '../../assetUrl.js';
 
 export const IMAGE_HOLD_MS = 2600;
 export const FADE_MS = 350;
@@ -56,7 +57,7 @@ function playStep(container, step) {
             container.replaceChildren();
             const img = document.createElement('img');
             img.className = 'rgb-cinematic__image';
-            img.src = step.image;
+            img.src = assetUrl(step.image);
             img.alt = '';
             const imageSkip = skip.cloneNode(true);
             imageSkip.addEventListener('click', (event) => {
@@ -74,7 +75,7 @@ function playStep(container, step) {
 
         const video = document.createElement('video');
         video.className = 'rgb-cinematic__video';
-        video.src = step.video;
+        video.src = assetUrl(step.video);
         video.autoplay = true;
         video.playsInline = true;
         video.preload = 'auto';
