@@ -24,7 +24,7 @@
     "steam:prepare": "node scripts/steam-release.js",
     "steam:upload": "node scripts/steam-release.js --upload",
     "steam:drm-wrap": "node scripts/steam-drm-wrap.js",
-    "electron:build": "vite build && npm run steam:config && electron-builder --dir",
+    "electron:build": "vite build && npm run steam:config && electron-builder --dir --linux --win",
     "electron:dist": "vite build && npm run steam:config && electron-builder",
     "lighthouse:setup": "npx -y @puppeteer/browsers install chrome@stable",
     "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun",
