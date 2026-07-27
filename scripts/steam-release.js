@@ -3,6 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { syncSteamInputToDepotRoot } from './build-steam-input-configs.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = new Set(process.argv.slice(2));
@@ -82,6 +83,7 @@ if (!skipBuild) {
     if (!skipTests) run('npm', ['test'], releaseEnv, 'test suite');
     run('npm', ['run', 'package-soundtrack'], releaseEnv, 'Soundtrack packaging');
     run('npm', ['run', 'electron:build'], releaseEnv, 'Electron build');
+    syncSteamInputToDepotRoot();
 
     const builtInfoPath = path.join(repoRoot, 'dist', 'build-info.json');
     requirePath('dist/build-info.json', 'Build metadata is missing');

@@ -239,6 +239,25 @@ function buildControllerConfig(controllerType) {
 `;
 }
 
+export function syncSteamInputToDepotRoot({ repo = repoRoot } = {}) {
+    const distElectron = path.join(repo, 'dist_electron');
+    if (!fs.existsSync(distElectron)) return;
+    const manifestSrc = path.join(repo, 'steam', 'steam_input_manifest.vdf');
+    if (fs.existsSync(manifestSrc)) {
+        fs.copyFileSync(manifestSrc, path.join(distElectron, 'steam_input_manifest.vdf'));
+    }
+    const configsSrc = path.join(repo, 'steam', 'controller_configs');
+    const configsDest = path.join(distElectron, 'controller_configs');
+    if (fs.existsSync(configsSrc)) {
+        fs.mkdirSync(configsDest, { recursive: true });
+        for (const file of fs.readdirSync(configsSrc)) {
+            if (file.endsWith('.vdf')) {
+                fs.copyFileSync(path.join(configsSrc, file), path.join(configsDest, file));
+            }
+        }
+    }
+}
+
 export function buildSteamInputConfigs({ destination = outputDir } = {}) {
     fs.mkdirSync(destination, { recursive: true });
     const outputs = [];
@@ -248,6 +267,7 @@ export function buildSteamInputConfigs({ destination = outputDir } = {}) {
         fs.writeFileSync(outputPath, buildControllerConfig(controllerType), 'utf8');
         outputs.push(outputPath);
     }
+    syncSteamInputToDepotRoot();
     return outputs;
 }
 
