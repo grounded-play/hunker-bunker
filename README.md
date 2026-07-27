@@ -40,9 +40,8 @@ Steamworks, hardware, and backend acceptance before release claims are final.
 - Recover prior contractors' black boxes, then deal with what followed them.
 - Discover lore terminals, physical drops, camps, hives, Queen signals, and
   multiple ending vectors.
-- Prepare for Steam through Electron, Steam Input, Steam Cloud save-file
-  bridging, achievements/stats hooks, inventory/backend scaffolding, and
-  dashboard handoff docs.
+- Monitor background events and performance using the integrated **Dev Telemetry Console (`~`)**.
+- Access **Steam Vault** inventory items, achievements, and Steamworks integration features.
 
 ## Current Status
 
@@ -52,10 +51,11 @@ Steamworks, hardware, and backend acceptance before release claims are final.
 | Core extraction loop | Implemented | O2 pressure, salvage banking, upgrades, black-box recovery, bosses, and run summaries are active. |
 | Classes | Implemented | Scout uses Sprint Burst, Tank uses Brace, Engineer uses Reroute. |
 | Story state | Implemented and expanding | Camps, hives, Queen status, eggs, manifest rules, and ending selection are modeled in code. |
-| Camp quests | In progress | Six named camp quests are now wired with HUD progress and tests, but still need play/balance acceptance. |
-| Steam/Electron | Code-backed, not fully accepted | Electron shell, Steam Input, save bridge, achievements/stats forwarding, and backend helpers exist. Real Steam dashboard setup and hardware passes remain. |
-| Steam Cloud / Inventory / Store | Scaffolded | Dashboard, live backend, MicroTxn approval, and two-machine Cloud sync are not yet proven. |
-| Multiplayer | Experimental only | Socket.io relay exists for local prototyping. The shipped Steam/browser game should be treated as single-player. |
+| Dev & Diagnostics (`~`) | Implemented | Live telemetry console with category filters (`INPUT`, `LOAD`, `AUDIO`, `GAME`, `STEAM`, `FETCH`, `SYS`, `UNCAUGHT`), DOM click capture, hotkey tracking, and fetch latency timing. |
+| Audio & Cutscenes | Implemented | Seamless WebAudio sound engine, video intro crossfades, and smooth blast-door audio fade-outs. |
+| Steam Vault / UI | Implemented | Modal catalog UI, Steam drop toasts, milestone grants, and item inventory scaffolding. |
+| Steam/Electron | Code-backed | Electron shell, Steam Input, save bridge, achievements/stats forwarding, and backend helpers exist. |
+| Multiplayer | Experimental only | Socket.io relay exists for local prototyping. Shipped game is single-player. |
 
 ## Operators
 
@@ -98,7 +98,7 @@ npm run preview           # Preview a production web build
 ## Validation
 
 ```bash
-npm test                  # Vitest unit tests
+npm test                  # Vitest unit tests (14 test suites, 112+ tests passing)
 npm run test:e2e          # Playwright browser tests
 npm run lint              # ESLint
 npm run build             # Production web build
@@ -128,6 +128,7 @@ Controls can be remapped in-game.
 | Class ability | `F` | Ability action |
 | Radar scan | `Q` | Scan action |
 | Sprint | `Shift` | Sprint action / touch sprint |
+| Dev Console / Telemetry | `~` (Tilde) | Toggle diagnostic log overlay |
 | Settings / menus | Mouse or keyboard focus | Controller menu navigation where supported |
 
 ## Architecture
@@ -140,9 +141,10 @@ graph TD
     B --> E[src/act2.js camps, hives, manifest, endings]
     B --> F[src/audio.js + src/dialogue.js + src/cutscene.js presentation]
     B --> G[src/bank.js + src/skillTree.js progression]
-    A --> H[electron/main.cjs + electron/preload.cjs optional desktop shell]
-    H --> I[steamworks.js optional Steam bridge]
-    H --> J[server/* trusted backend routes]
+    A --> H[src/debugConsole.js dev telemetry overlay]
+    A --> I[src/steamVaultUi.js inventory modal]
+    A --> J[electron/main.cjs + electron/preload.cjs desktop shell]
+    J --> K[steamworks.js optional Steam bridge]
 ```
 
 Key directories:
@@ -151,6 +153,9 @@ Key directories:
 | --- | --- |
 | `main.js` | Browser UI, HUDs, menus, dialogue surfaces, Steam/frontend event glue. |
 | `src/threeGame.js` | Core Three.js game runtime, world mounting, combat, camps, hives, and interactions. |
+| `src/debugConsole.js` | In-game tactical dev console (`~`), DOM/hotkey input capture, fetch interceptors, and background logging. |
+| `src/steamVaultUi.js` | Steam Vault inventory modal, catalog rendering, and Steam drop toasts. |
+| `src/audio.js` | WebAudio sound engine, soundtrack crossfading, SFX buses, and mute controls. |
 | `src/data/` | Dialogue, codex, enemies, missions, loot, quests, and run modifier data. |
 | `server/` | Backend routes for Steam auth, leaderboards, inventory, store, and persistence. |
 | `electron/` | Desktop shell, Steamworks bridge, save-file bridge, and preload API. |

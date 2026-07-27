@@ -63,10 +63,15 @@ const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
     });
 const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
 const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
+const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}`;
 if (loaderVersionTag) {
-    loaderVersionTag.textContent =
-        `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}`;
+    loaderVersionTag.textContent = canonicalVersionText;
     loaderVersionTag.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
+}
+const aboutSysVer = document.getElementById('about-modal-sys-ver');
+if (aboutSysVer) {
+    aboutSysVer.textContent = canonicalVersionText;
+    aboutSysVer.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
 }
 
 const mainDebugToggle = document.getElementById('main-debug-toggle');
