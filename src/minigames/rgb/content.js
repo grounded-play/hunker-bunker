@@ -363,6 +363,7 @@ export const CHAPTERS = Object.freeze({
         id: 'incident_review',
         title: 'Chapter 3: Collision and Incident Review',
         bg: `${BACKGROUNDS}/bg_incident_review.png`,
+        initialEffects: { pain: 'injured' },
         goal: 'Preserve evidence while the review process tries to redefine events.',
         next: 'medi_kiosk',
         hints: [
@@ -371,53 +372,49 @@ export const CHAPTERS = Object.freeze({
             'Photograph the reader before the laptop closes.'
         ],
         hotspots: [
-            // Wave A: the collision. Inevitable; the choice is only how much
-            // of it Elias takes. Exclusive, so the player cannot do both.
-            {
-                id: 'brace_for_impact',
-                label: 'Brace',
-                x: 240, y: 460, w: 110, h: 100,
-                once: true,
-                choice: true,
-                excludesAllOf: ['take_the_hit'],
-                lines: ['A taped box jams the belt. 4A breaks its path.', 'The arm catches his shoulder, not his skull.'],
-                effects: { pain: 'injured' }
-            },
-            {
-                id: 'take_the_hit',
-                label: "Don't Flinch",
-                x: 400, y: 460, w: 110, h: 100,
-                once: true,
-                choice: true,
-                excludesAllOf: ['brace_for_impact'],
-                lines: ['A taped box jams the belt. 4A breaks its path.', 'He doesn\'t get clear in time.'],
-                effects: { pain: 'severe' }
-            },
-            // Wave B: the review room proper. Only opens once the collision
-            // has resolved, so the room is never live during the accident.
+            // R2 already showed the collision. This scene begins inside the
+            // pictured review room with the visible laptop.
             {
                 id: 'demand_footage',
-                label: 'Demand Footage',
-                x: 260, y: 460, w: 150, h: 90,
+                label: 'Review the Footage',
+                object: true,
+                x: 500, y: 530, w: 225, h: 205,
                 once: true,
-                requires: { painSet: true },
-                lines: ['"Point of contact is neutral until review is complete."', 'The two seconds before impact are missing. He notes it.'],
+                lines: ['"Point of contact is neutral until review is complete."', 'The footage begins at impact. The preceding two seconds are missing.'],
                 effects: { evidence: 'camera_discrepancy' }
+            },
+            {
+                id: 'challenge_neutral_language',
+                label: 'Challenge “Neutral”',
+                x: 285, y: 610, w: 320, h: 70,
+                once: true,
+                choice: true,
+                requiresAllOf: ['demand_footage'],
+                lines: ['"You got a neutral word for bleeding?"']
             },
             {
                 id: 'complete_swab',
                 label: 'Compulsory Swab',
-                x: 500, y: 460, w: 150, h: 90,
+                x: 675, y: 610, w: 320, h: 70,
                 once: true,
-                requires: { painSet: true },
+                choice: true,
+                requiresAllOf: ['challenge_neutral_language'],
                 lines: ['The reader blinks, waiting.']
             },
             {
                 id: 'call_marisol',
                 label: 'Call for Marisol',
-                x: 740, y: 460, w: 150, h: 90,
+                object: true,
+                inventoryAction: true,
+                icon: `${ITEM_ART}/item_phone.png`,
+                x: 40, y: 565, w: 190, h: 105,
                 once: true,
-                requiresAllOf: ['complete_swab'],
+                requires: {
+                    minVisitedOf: {
+                        ids: ['keep_notebook', 'surrender_notebook'],
+                        count: 1
+                    }
+                },
                 lines: ['Her daycare fee has already started ticking.']
             },
             // Wave C: the consequences of Wave B, each gated on the beat that
@@ -425,7 +422,10 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'photograph_result',
                 label: 'Photograph the Reader',
-                x: 500, y: 570, w: 150, h: 80,
+                object: true,
+                inventoryAction: true,
+                icon: `${ITEM_ART}/item_phone.png`,
+                x: 40, y: 565, w: 190, h: 105,
                 once: true,
                 requiresAllOf: ['complete_swab'],
                 lines: ['INCONCLUSIVE. He photographs it before the laptop closes.'],
@@ -434,7 +434,7 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'request_marisol_witness',
                 label: 'Ask Her to Stay',
-                x: 740, y: 570, w: 150, h: 80,
+                x: 285, y: 610, w: 320, h: 70,
                 once: true,
                 choice: true,
                 requiresAllOf: ['call_marisol'],
@@ -445,7 +445,7 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'release_marisol_from_request',
                 label: 'Release Her',
-                x: 940, y: 570, w: 150, h: 80,
+                x: 675, y: 610, w: 320, h: 70,
                 once: true,
                 choice: true,
                 requiresAllOf: ['call_marisol'],
@@ -456,10 +456,10 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'keep_notebook',
                 label: 'Keep the Notebook',
-                x: 140, y: 570, w: 150, h: 80,
+                x: 285, y: 610, w: 320, h: 70,
                 once: true,
                 choice: true,
-                requiresAllOf: ['demand_footage'],
+                requiresAllOf: ['photograph_result'],
                 excludesAllOf: ['surrender_notebook'],
                 lines: ['He keeps it in his jacket, not on the desk.'],
                 effects: { choice: 'keep_notebook' }
@@ -467,10 +467,10 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'surrender_notebook',
                 label: 'Surrender the Notebook',
-                x: 310, y: 570, w: 150, h: 80,
+                x: 675, y: 610, w: 320, h: 70,
                 once: true,
                 choice: true,
-                requiresAllOf: ['demand_footage'],
+                requiresAllOf: ['photograph_result'],
                 excludesAllOf: ['keep_notebook'],
                 lines: ['He hands it over. HR keeps files, they say.'],
                 effects: { choice: 'surrender_notebook' }
@@ -486,15 +486,8 @@ export const CHAPTERS = Object.freeze({
                 requires: {
                     painSet: true,
                     minVisitedOf: {
-                        ids: [
-                            'demand_footage',
-                            'complete_swab',
-                            'photograph_result',
-                            'call_marisol',
-                            'keep_notebook',
-                            'surrender_notebook'
-                        ],
-                        count: 2
+                        ids: ['keep_notebook', 'surrender_notebook'],
+                        count: 1
                     }
                 },
                 lines: ['At 6:42 PM, hours before the stated cutoff: COVERAGE TERMINATED.'],

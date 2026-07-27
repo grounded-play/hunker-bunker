@@ -513,6 +513,7 @@ class DebugLogger {
   • biome <active|cryo|bio>- Force environment biome transition
   • fps                   - Display current WebGL performance stats
   • loglevel <level>      - Set min log level (debug|info|warn|error)
+  • resetachievements confirm - Reset Steam stats/achievements for THIS logged-in account (QA builds only, HB_QA_TOOLS_ENABLED=1)
   • <js code>             - Evaluate arbitrary JavaScript expressions`);
                 break;
 

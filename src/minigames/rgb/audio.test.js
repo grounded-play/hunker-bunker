@@ -43,6 +43,8 @@ describe('RGB audio content', () => {
         expect(hasAuthoredVoice('select_joint')).toBe(false);
         expect(hasAuthoredVoice('observe_4a')).toBe(false);
         expect(hasAuthoredVoice('apply_pressure')).toBe(true);
+        expect(hasAuthoredVoice('demand_footage')).toBe(true);
+        expect(hasAuthoredVoice('challenge_neutral_language')).toBe(true);
     });
 
     it('attributes lines to the speaker who says them', () => {

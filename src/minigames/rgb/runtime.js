@@ -92,6 +92,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
     let currentSave = save;
     let runState = hydrateRunState(currentSave);
+    runState = applyEffects(runState, CHAPTERS[runState.checkpoint]?.initialEffects);
     let visited = new Set();
     // warning | chapterCard | scene | inventory | recap | pause | ending | gameover | cinematic
     let mode = 'warning';
@@ -694,6 +695,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
     function transitionToChapter(chapterId) {
         runState = { ...runState, checkpoint: chapterId };
+        runState = applyEffects(runState, CHAPTERS[chapterId]?.initialEffects);
         visited = new Set();
         focusIndex = 0;
         hintsShown = 0;
