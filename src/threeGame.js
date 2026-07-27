@@ -8923,6 +8923,9 @@ export class ThreeGame {
         if (quest.id === 'reactor_venting') {
             this._activeCampQuest.kind = 'interact';
             this.spawnReactorVentingObjects(camp);
+        } else if (quest.id.startsWith('hive_archive_ch')) {
+            this._activeCampQuest.kind = 'pickup';
+            this.spawnHiveArchiveObject(camp, quest);
         } else if (quest.id === 'lost_probe') {
             this._activeCampQuest.kind = 'pickup';
             this.spawnLostProbeObject(camp);
@@ -9031,6 +9034,21 @@ export class ThreeGame {
         }
         const { x, z } = this.findCampQuestSpawnSpot(camp, 0, 1);
         const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: 0 });
+        if (sprite) this._activeCampQuest.props.push(sprite);
+    }
+
+    spawnHiveArchiveObject(camp, _quest) {
+        const hivePos = this.hives && this.hives.length > 0 ? this.hives[0].pos : null;
+        let x, z;
+        if (hivePos) {
+            x = hivePos.x + 2;
+            z = hivePos.z + 2;
+        } else {
+            const spot = this.findCampQuestSpawnSpot(camp, 0, 1);
+            x = spot.x;
+            z = spot.z;
+        }
+        const sprite = this.spawnCampQuestMarkerProp(camp, { type: 'quest_prop', x, z, index: 0, scale: 1.2 });
         if (sprite) this._activeCampQuest.props.push(sprite);
     }
 
@@ -9278,6 +9296,12 @@ export class ThreeGame {
             this.applyWeaponUpgrades();
         }
         window.AudioManager?.play?.('class_lock', { volume: 0.55 });
+        if (aq.quest.id.startsWith('hive_archive_ch')) {
+            const chapterId = aq.quest.chapterId || 'parking_lot';
+            window.dispatchEvent(new CustomEvent('rgb-chapter-archive-recovered', {
+                detail: { campId: aq.campId, questId: aq.quest.id, chapterId, label: aq.quest.label }
+            }));
+        }
         window.dispatchEvent(new CustomEvent('camp-quest-complete', {
             detail: { campId: aq.campId, questId: aq.quest.id, label: aq.quest.label }
         }));
@@ -15201,6 +15225,12 @@ export class ThreeGame {
     createChunkSetPiecePlacements(chunkX, chunkY, grid) {
         const placements = [];
         const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
+        // Room set pieces used to roll independently on every open floor
+        // cell, scattering just as often into 1-wide corridors as into
+        // actual rooms. Gating the roll to chamber-classified cells keeps
+        // corridors clear and guarantees dressing concentrates where a
+        // player would expect it — inside rooms.
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
 
         for (let localY = 1; localY < this.chunkSize - 1; localY += 1) {
             for (let localX = 1; localX < this.chunkSize - 1; localX += 1) {
@@ -15242,9 +15272,9 @@ export class ThreeGame {
                     continue;
                 }
 
-                // 2) Room Set Pieces (Destructible props)
+                // 2) Room Set Pieces (Destructible props) — chamber cells only
                 const roll = rng();
-                if (roll < 0.07) {
+                if (roll < 0.07 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
                     const props = [
                         'prop_cyber_junction',
                         'prop_specimen_tank',
