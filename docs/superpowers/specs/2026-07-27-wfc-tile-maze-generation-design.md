@@ -29,7 +29,10 @@ downstream consumers of that grid (collision, rendering, radar, pickups,
 *how* the MAZE landform's grid gets filled, not a new rendering or collision
 system. `buildChunk` (`src/threeGame.js:19822`) still returns the same
 19×19 array of `'#'`/`'.'` (plus existing special chars like `'D'`) it does
-today.
+today. WFC additionally records lightweight deterministic chunk metadata in
+a separate cache: resolved tile IDs, room footprints, decoration anchors,
+and reserved landmark footprints. Population systems consume that metadata;
+collision remains grid-driven.
 
 ### Global Constraints
 
@@ -50,7 +53,8 @@ today.
   chunk (0,0). `FIELD`/`CANYON`/`CRATER`/`RUINS` (`src/landforms.js:41-366`)
   keep their existing dedicated functions, unchanged. They were not the
   source of the "square rooms" complaint — only the MAZE landform's plaza
-  carving is.
+  carving is. The landmark-spacing planner in §7 may choose positions across
+  landforms, but it does not replace those landforms' terrain generation.
 
 ---
 
@@ -89,15 +93,13 @@ width-3 gap convention `applyCanyonLandform` already established
 compatible only if they're byte-identical (`OPEN3`↔`OPEN3` or
 `CLOSED`↔`CLOSED`), so the shared border row/column is always written
 consistently no matter which neighboring tile "wins" the overwrite — this
-makes compatibility checking (and authoring new tiles) trivial, at the cost
-of giving up per-portal offset variety within a tile (see §4's explicit
-trade-off note).
+makes compatibility checking (and authoring new tiles) trivial.
 
 The catalog must include at least one tile compatible with `CLOSED` on all
 four sides (a self-contained room with no forced exits) and at least one
 `corridor-cross` compatible with `OPEN3` on all four sides, so a solvable
-lattice always exists for any combination of fixed border constraints — this
-is what makes the bounded-retry fallback in §3 essentially unreachable in
+9-cell lattice always exists purely from interior compatibility — this is
+what makes the bounded-retry fallback in §3 essentially unreachable in
 practice rather than a real failure path.
 
 `Canyon-impassable`: interior is solid wall, sockets `OPEN3` on the two
@@ -110,23 +112,18 @@ into this same socket vocabulary later.
 
 ### 3. WFC collapse
 
-New file `src/wfcGenerator.js`, exporting `collapseChunkLattice(random,
-borderConstraints)`:
+New file `src/wfcGenerator.js`, exporting `collapseChunkLattice(random)`.
+The lattice is generated **self-contained**, with no outward chunk-border
+constraint at all — see §4 for why this is a deliberate simplification, not
+an oversight:
 
-1. Each of the 9 lattice cells starts with the full catalog, filtered to
-   tiles whose outward-facing sockets on the chunk border match
-   `borderConstraints`. Each chunk edge has 3 lattice cells along it; only
-   the **middle** one carries a real outward constraint (`OPEN3` if that
-   edge is open, `CLOSED` if not — see §4). The other 2 cells on that edge
-   are always corner cells, always `CLOSED` outward on both their
-   chunk-border-facing sides, matching today's behavior of the chunk border
-   staying walled except at portals (`ensureChunkPortals`,
-   `src/threeGame.js:19984`).
+1. Each of the 9 lattice cells starts with the full catalog.
 2. Standard WFC loop: pick the lowest-entropy undetermined cell (seeded
    random tie-break), collapse it to one tile (weighted by a per-tile
    weight, same shape as `LANDFORM_WEIGHTS`, `src/landforms.js:23-27`),
    propagate the resulting socket constraints to its up-to-4 lattice
-   neighbors, repeat until every cell is resolved.
+   neighbors (interior lattice edges only — never the chunk border), repeat
+   until every cell is resolved.
 3. On contradiction (a cell's domain empties), retry the full 9-cell
    collapse with a re-derived seed, up to 5 attempts.
 4. If still unresolved after 5 attempts, fall back to a hardcoded
@@ -153,25 +150,31 @@ anywhere across the 9-cell-wide border via `getEdgeOpening`
 range (`localX 4..13`) — the two have no relationship, so the door frequently
 opens onto a wall.
 
-Under the tile system, a chunk border's opening is only ever `CLOSED` or
-`OPEN3` **centered on the middle lattice slot** of that edge (lattice index
-1 of 0/1/2). This is an explicit simplification versus today's 9-position
-offset — call it out plainly: **portals lose fine-grained offset variety in
-exchange for every open edge being trivially predictable** (always centered),
-which is what makes a hardcoded doorway corridor able to reliably target it.
-`getEdgeOpening` keeps deciding open/closed per edge (unchanged seeded
-roll); only the *position* becomes fixed-center instead of
-`offset * 2 + 1` — its returned `offset` field is no longer consumed for
-placement under this system and becomes dead weight the implementation plan
-should either drop or repurpose (e.g. as an extra seed input), not silently
-leave half-wired.
+`getEdgeOpening`/`ensureChunkPortals` are shared by every landform (`buildChunk`,
+`src/threeGame.js:19884-19885`, runs them before the landform branch) — the
+spec's own scope boundary rules out changing their behavior, since that
+would silently reshape FIELD/CANYON/CRATER/RUINS portals too, not just MAZE.
+So instead of teaching the WFC lattice to negotiate with the chunk border at
+all, MAZE chunks adopt the **exact same reconciliation FIELD/CANYON/CRATER/
+RUINS already use**: `connectPortalsInward` (`src/landforms.js:416-434`)
+tunnels a straight lane from wherever `ensureChunkPortals` actually opened
+the border inward until it reaches floor. Today this only runs in
+`buildChunk`'s non-MAZE branch (`src/threeGame.js:19901-19904`); extend that
+call to run for MAZE too, right after WFC stamping. Nothing about
+`getEdgeOpening`, `ensureChunkPortals`, or portal offset variety changes for
+*any* landform — the WFC lattice itself carries no border constraint (§3),
+so a border-facing tile may already open exactly where the portal lands
+(free connection) or may not (tunneled through, same as today's landforms).
+Either way is fine; `connectPortalsInward` was written precisely to not care
+which.
 
 Chunk (0,0) itself becomes an **authored fixed layout**, not WFC-random —
 a new `buildCrashSiteChunk()` alongside `buildChunk`. Its south doorway is
-carved *from* the resolved south border constraint (always center-lattice
-per the paragraph above) rather than the old fixed `localX 4..13` — single
-source of truth, can't drift out of alignment. A regression test asserts the
-carved doorway always contains the true south portal's local X.
+carved *from* `ensureChunkPortals`' actual resolved south offset
+(`openings.south.offset`, the same value `getEdgeOpening` already computes)
+instead of the old fixed `localX 4..13` — single source of truth, can't
+drift out of alignment. A regression test asserts the carved doorway always
+contains the true south portal's local X, for every seed.
 
 ### 5. Tutorial ring around the crash site
 
@@ -205,6 +208,102 @@ the new source of room/corridor shape and width. Both functions stay in the
 codebase for `RUINS` and other landforms that still use them
 (`src/threeGame.js:19905-19925`).
 
+### 7. Room population, landmarks, and set dressing
+
+The WFC result must not stop at empty floor geometry. Each resolved meta-tile
+also contributes authored placement metadata so population knows which cells
+form a room, which must stay clear for navigation, and which may hold props.
+
+Extend catalog entries with optional population data:
+
+```js
+{
+    // Existing id/category/pattern/sockets fields omitted.
+    roomRole: 'generic' | 'camp' | 'nest' | 'cave' | 'reward' | 'story',
+    anchors: [
+        { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 2 },
+        { id: 'back-wall-a', x: 2, y: 1, kind: 'large-prop', clearance: 1 },
+        { id: 'scatter-a', x: 1, y: 4, kind: 'small-prop', clearance: 0 }
+    ],
+    decorationSet: 'bunker' | 'cryo' | 'bio' | 'camp' | 'nest' | 'cave',
+    populationBudget: { large: 1, small: 3, pickup: 1, enemy: 0 }
+}
+```
+
+Anchors are local to the 7×7 tile and validated against its pattern. A
+placement is valid only when its cell and clearance halo are floor and it
+does not overlap a socket lane, protected lattice boundary, portal approach,
+doorway corridor, another reservation, or the crash-site safe radius.
+Multi-slot rooms merge anchor lists and deduplicate their shared border.
+
+`collapseChunkLattice` returns the grid and resolved tile metadata.
+`buildChunk` keeps returning the grid publicly and stores metadata in a
+chunk-keyed cache for `createChunkSetPiecePlacements`,
+`createChunkScatterPlacements`, `createChunkPickupPlacements`, landmarks,
+and room templates. `classifyChunkCells` remains the fallback for non-WFC
+landforms; WFC rooms use authored footprints instead of inferring a chamber
+from each individual floor cell's neighbor count.
+
+#### Decoration-set rules
+
+- Every authored room receives its base decoration pass. A room cannot be
+  silently skipped because random scatter exhausted the chunk budget.
+- Place the required signature piece first, then large props, small dressing,
+  pickups, and enemies. Every pass consumes one shared reservation map.
+- `bunker`: biomechanical arches/pillars, cyber junction, specimen tank,
+  bunker supplies, conduit hub, cables, gravel, and bolts.
+- `cryo`: bunker base pieces plus lichen, frozen bodies, icicles, shards,
+  coolant, and stasis-bay pieces.
+- `bio`: biomechanical arches, spore colonies, resin sacs, moss/slime,
+  spores, and organic bodies.
+- `camp`: sandbags facing entrances, a lit cookfire at the social anchor,
+  wall-side crate/supply clusters, then civilian and quest anchors. The
+  cookfire and interaction center retain a walkable ring.
+- `nest`: eggs, hatched eggs, resin sacs, webs, spores, wounded-hive
+  dressing, and biomechanical pillars. Clusters favor walls while the
+  interaction/fight center and exits stay clear.
+- `cave`: lichen/web boundary dressing, bones/spores at secondary anchors,
+  egg clusters deeper inside, and the wounded hive or queen throne only at
+  its explicit story anchor.
+
+Existing templates (`armory`, `ops_center`, `agent_wreckage`, `stasis_bay`,
+`the_nest`) become overlays on compatible WFC rooms instead of independent
+random scatter. Each template declares required anchor kinds and a minimum
+footprint. If a selected room cannot satisfy them, deterministically choose
+another compatible room; never drop the template's signature props.
+
+Set-piece variants remain seeded with `runEntropy`, but required pieces,
+clearance, and reservations are deterministic for a fixed run. Density is
+capped per room as well as per chunk so one large chamber cannot consume all
+props and leave the other rooms empty.
+
+#### Spreading caves, camps, nests, and unique sites
+
+Create one deterministic site planner shared by the cave entrance, survivor
+camps, hive/nest sites, foundry, and other unique world-space landmarks. It
+operates in chunk coordinates first, then chooses a room/clearing anchor:
+
+1. Apply each site's existing radial, depth, story, and biome requirements.
+2. Reject the crash-site/tutorial ring unless the site belongs there.
+3. Enforce pairwise minimum chunk and world distances. Camps stay on their
+   broad outer ring; nests/hives use the nearer interleaved bearings; the
+   finale cave remains beyond its story depth. Unique sites cannot share a
+   chunk.
+4. Prefer a compatible WFC `landmark` anchor in MAZE chunks. FIELD/CRATER
+   retain their clearing search. Reject impassable landforms and any
+   footprint whose full clearance disk is not walkable.
+5. Reserve the complete footprint before scatter, pickups, enemies, quest
+   props, or room templates run. Dress the remaining room with the matching
+   decoration set.
+6. Use bounded deterministic retries and then an authored separated
+   fallback. Fallback may relax preferred landform/biome, but never
+   walkability, portal clearance, unique-chunk ownership, or separation.
+
+Persisted camp/hive positions are validated against the current grid on
+load. Valid positions never move. An invalid legacy position relocates once
+to the nearest compatible anchor and is immediately saved, preventing sites
+from remaining inside new WFC walls or blocking corridors after migration.
+
 ---
 
 ### Testing
@@ -217,10 +316,15 @@ in `src/generator.test.js`/`src/landforms.test.js`:
 - **Catalog self-consistency**: every tile's declared sockets match its
   actual `pattern` border cells (an `OPEN3` socket really is `# # . . . # #`
   in the pattern, not just a label).
-- **Compatibility completeness**: for every socket type pairing that can
-  occur at a chunk border, at least one catalog tile exists that satisfies
-  it on all constrained sides (guarantees §3's fallback path is untested
-  dead code, not a silent common case).
+- **Compatibility completeness**: for every socket type, at least one pair
+  of catalog tiles exists that connects through it on an interior lattice
+  edge (guarantees §3's fallback path is untested dead code, not a silent
+  common case).
+- **Portal reconciliation**: for every seeded chunk with an open border
+  (any offset `getEdgeOpening` can produce), `connectPortalsInward` always
+  reaches WFC floor from that exact offset — mirrors the existing
+  `connectPortalsInward` tests in `src/landforms.test.js:283-296` extended
+  to MAZE-landform grids.
 - **Full-chunk reachability** for N seeded chunk coordinates: every floor
   cell reachable from every open chunk-border portal, mirroring the
   existing `chunkVariation.test.js` model.
@@ -232,6 +336,19 @@ in `src/generator.test.js`/`src/landforms.test.js`:
   (the exact bug this phase fixes — must never regress silently).
 - **Tutorial ring**: chunks at Chebyshev distance 1 from (0,0) never select
   a non-`tutorial` tile.
+- **Room population coverage**: every resolved room has a reservation map
+  and receives its signature decoration and minimum population budget;
+  corridor-only tiles never receive room-scale set pieces.
+- **Decoration clearance**: props never occupy sockets, portals, doorway
+  approaches, landmark interaction rings, or another placement's halo.
+- **Decoration-set completeness**: bunker/cryo/bio/camp/nest/cave sets all
+  have compatible anchors, and fixed-seed snapshots include camp cookfires,
+  nest egg/resin clusters, and cave story pieces.
+- **Landmark separation**: across N run seeds, camps, nests/hives, cave,
+  foundry, and other unique sites occupy distinct chunks, meet minimum
+  distances, and resolve to fully walkable footprints.
+- **Legacy-site migration**: an invalid persisted site relocates once while
+  an already-valid persisted site does not move.
 
 ### Out of scope (explicitly deferred to Phase 2 below, not forgotten)
 
@@ -250,9 +367,6 @@ in `src/generator.test.js`/`src/landforms.test.js`:
   dedicated functions in `src/landforms.js` are untouched — the complaints
   driving this phase were specifically about the MAZE landform and the
   crash site.
-- **Portal offset variety.** Deliberately traded away (see §4) in favor of
-  predictable, always-centered openings. Could be revisited later if it
-  reads as too uniform in practice, but isn't a stated goal here.
 
 ---
 
@@ -422,6 +536,13 @@ neither blocks the other's implementation order.
      never enter `this.scatterSprites`, so they can't be seen or targeted
      from the surface (the isolation this track is fixing, applied in the
      other direction too).
+4. **Dress pocket rooms through the same reservation pipeline.** Pocket WFC
+   tiles emit normal room anchors but use a dedicated `pocket` budget: one
+   guaranteed signature prop, 2-4 biome-compatible small props, the
+   registered reward pickup, and pocket-enemy anchors. Reserve portal/exit
+   clearance and the center-cell return route first. This prevents rebuilt
+   13×13 pockets from becoming larger but still empty and ties their look to
+   the surface biome that spawned the hole.
 
 ---
 
@@ -441,6 +562,9 @@ as Phase 1 and `src/threeGame.holeTiles.test.js`:
   reachable 13×13 grid (BFS from `centerCell`, same reachability model as
   Phase 1's tests) with at least one multi-cell-wide room, not a uniformly
   1-wide maze.
+- **Pocket dressing**: every pocket has its signature prop, registered
+  reward, small-prop budget, and enemy anchors without blocking the
+  center-to-exit route.
 - **Elevation continuity**: for a chunk containing a `Ramp` tile,
   `getTerrainHeightAt` returns a monotonic gradient (no discontinuous
   jumps) walking across the ramp's footprint from its `ground` to its
