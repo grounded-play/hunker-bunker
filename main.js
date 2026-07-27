@@ -1039,6 +1039,9 @@ function launchRgb(chapter = null) {
     if (menu) menu.classList.add('hidden');
     const root = document.getElementById('rgb-root');
     if (!root) return;
+    // The archive fully covers the Three.js canvas. Stop rendering the hidden
+    // menu scene so video decode/compositing gets the GPU without contention.
+    window.game?.setLoadingPaused?.(true);
     if (chapter && typeof chapter === 'string') {
         rgbSave = {
             ...rgbSave,
@@ -1056,6 +1059,7 @@ function launchRgb(chapter = null) {
 function exitRgb() {
     rgbHandle?.destroy();
     rgbHandle = null;
+    window.game?.setLoadingPaused?.(false);
     rgbSave = loadRgbSave(localStorage);
     updateArchiveSimsMenuVisibility();
     if (menu) menu.classList.remove('hidden');
@@ -7556,6 +7560,25 @@ window.addEventListener('leader-dialogue', (event) => {
     if (beatType === 'advance') {
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
     }
+    if (leaderName === 'Dr. Okonkwo-Vass' && beatType === 'advance' && event?.detail?.stage === 2) {
+        objectiveRegistry.trackObjective({
+            id: 'befriend-a-snail',
+            source: 'camp-quest',
+            label: 'BEFRIEND A SNAIL',
+            current: 0,
+            target: 1
+        });
+    }
+});
+
+document.getElementById('snail-encounter-fight-btn')?.addEventListener('click', () => {
+    window.game?.handleSnailEncounterFight?.();
+});
+document.getElementById('snail-encounter-talk-btn')?.addEventListener('click', () => {
+    window.game?.handleSnailEncounterTalk?.();
+});
+document.getElementById('snail-encounter-flee-btn')?.addEventListener('click', () => {
+    window.game?.handleSnailEncounterFlee?.();
 });
 
 window.addEventListener('camp-final-resolved', (event) => {

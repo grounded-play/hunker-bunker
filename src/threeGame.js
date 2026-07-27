@@ -25,6 +25,13 @@ import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDi
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
 import { computeTrailPosition } from './companionFollow.js';
+import {
+    createEncounter,
+    resolveFight,
+    resolveTalk,
+    resolveFlee,
+    SNAIL_ENCOUNTER_CONSTANTS
+} from './snailEncounter.js';
 import { cappedPixelRatio } from './renderScale.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine } from './data/dialogueLines.js';
@@ -756,6 +763,12 @@ export class ThreeGame {
         // encounter.md) specifically so a chunk falling out of the resident
         // radius as the player travels can't dispose of one mid-follow.
         this.companions = [];
+        // Non-null while the paused Fight/Talk/Flee overlay is open — see
+        // openSnailEncounter. hasBlockingGameplayOverlay checks the DOM
+        // modal's visibility, not this field directly; this is the actual
+        // battle state (src/snailEncounter.js) driving it.
+        this.encounterState = null;
+        this._encounterSprite = null;
         this.depletedGearPileKeys = new Set();
         this.transientEffects = [];
         this.hitstopTimer = 0;
@@ -18236,6 +18249,115 @@ export class ThreeGame {
         }
     }
 
+    openSnailEncounter(sprite) {
+        this.encounterState = createEncounter({
+            snailType: sprite.userData.type,
+            snailHp: sprite.userData.hp ?? SNAIL_MAX_HP,
+            snailMaxHp: sprite.userData.maxHp ?? SNAIL_MAX_HP
+        });
+        this._encounterSprite = sprite;
+        this.renderSnailEncounter([`A ${sprite.userData.type.toUpperCase()} BLOCKS YOUR PATH.`]);
+        const modal = document.getElementById('snail-encounter-modal');
+        modal?.classList.remove('hidden');
+        modal?.setAttribute('aria-hidden', 'false');
+    }
+
+    closeSnailEncounter() {
+        const modal = document.getElementById('snail-encounter-modal');
+        modal?.classList.add('hidden');
+        modal?.setAttribute('aria-hidden', 'true');
+        this.encounterState = null;
+        this._encounterSprite = null;
+    }
+
+    renderSnailEncounter(logLines = []) {
+        const state = this.encounterState;
+        if (!state) return;
+        const hpFill = document.getElementById('snail-encounter-hp-fill');
+        const resolveFill = document.getElementById('snail-encounter-resolve-fill');
+        const log = document.getElementById('snail-encounter-log');
+        if (hpFill) hpFill.style.width = `${Math.max(0, (state.snailHp / state.snailMaxHp) * 100)}%`;
+        if (resolveFill) resolveFill.style.width = `${Math.max(0, (state.resolve / state.resolveMax) * 100)}%`;
+        if (log) log.textContent = logLines.filter(Boolean).join(' ');
+    }
+
+    handleSnailEncounterFight() {
+        if (!this.encounterState || !this._encounterSprite) return;
+        const result = resolveFight(this.encounterState, {
+            playerDamage: SNAIL_ENCOUNTER_CONSTANTS.FIGHT_PLAYER_DAMAGE,
+            snailDamage: SNAIL_ENCOUNTER_CONSTANTS.SNAIL_COUNTER_DAMAGE
+        });
+        this.encounterState = result.state;
+        if (result.snailDamageTaken > 0) {
+            this.applyPlayerDamageToEnemy(this._encounterSprite, result.snailDamageTaken);
+        }
+        if (result.playerDamageTaken > 0) {
+            this.takeDamage(result.playerDamageTaken, this._encounterSprite.userData.type,
+                this._encounterSprite.position.x, this._encounterSprite.position.z);
+        }
+        this.renderSnailEncounter([
+            `YOU STRIKE. -${result.snailDamageTaken} HP.`,
+            result.playerDamageTaken > 0 ? `IT COUNTERS. -${result.playerDamageTaken} HP.` : ''
+        ]);
+        this.resolveSnailEncounterOutcome();
+    }
+
+    handleSnailEncounterTalk() {
+        if (!this.encounterState || !this._encounterSprite) return;
+        const infectionStage = this.act2?.getState?.().infectionStage ?? null;
+        const result = resolveTalk(this.encounterState, { infectionStage });
+        this.encounterState = result.state;
+        if (result.backfired) {
+            this.takeDamage(SNAIL_ENCOUNTER_CONSTANTS.SNAIL_COUNTER_DAMAGE, this._encounterSprite.userData.type,
+                this._encounterSprite.position.x, this._encounterSprite.position.z);
+            this.renderSnailEncounter(['IT HISSES AND LUNGES.']);
+        } else {
+            this.renderSnailEncounter([`IT HESITATES. RESOLVE +${result.resolveGained}.`]);
+        }
+        this.resolveSnailEncounterOutcome();
+    }
+
+    handleSnailEncounterFlee() {
+        if (!this.encounterState) return;
+        this.encounterState = resolveFlee(this.encounterState).state;
+        this.resolveSnailEncounterOutcome();
+    }
+
+    resolveSnailEncounterOutcome() {
+        const state = this.encounterState;
+        const sprite = this._encounterSprite;
+        if (!state?.outcome || !sprite) return;
+
+        if (state.outcome === 'befriend') {
+            sprite.userData.isCompanion = true;
+            sprite.userData.encounterResolved = true;
+            // Reparent out of the chunk-streaming system entirely — a
+            // companion that stayed a child of its spawn chunk would be
+            // disposed the moment that chunk falls out of the resident
+            // radius as the player travels (the same failure class corpses
+            // hit and were fixed for; see this.corpses' declaration
+            // comment). Chunk children already carry absolute world
+            // coordinates (no group-level position offset), so this needs
+            // no coordinate conversion.
+            this.scene.add(sprite);
+            this.companions = this.companions.filter((c) => c.sprite !== sprite);
+            this.companions.push({ sprite, assistCooldown: 0 });
+            this.act2?.completeScientistQuest?.('snail_befriended');
+            window.dispatchEvent(new CustomEvent('snail-befriended', {
+                detail: { snailType: sprite.userData.type }
+            }));
+            window.dispatchEvent(new CustomEvent('objective-resolved', {
+                detail: { id: 'befriend-a-snail' }
+            }));
+        }
+        // 'fled': no sprite state change — can be re-triggered later.
+        // 'fight_win': no extra handling needed — applyPlayerDamageToEnemy
+        // already ran damageSnail's full death/loot/corpse path when the
+        // killing blow was dealt in handleSnailEncounterFight.
+
+        this.closeSnailEncounter();
+    }
+
     updateSnailBehavior(sprite, delta, activeShip) {
         const data = sprite.userData;
         if (data.type === 'boss_queen') {
@@ -18493,6 +18615,17 @@ export class ThreeGame {
                     window.AudioManager?.play('ui_scan_ping', { volume: 0.48, playbackRate: 0.42 });
                 }
             }
+        }
+
+        const isDiplomaticSnail = !data.isBoss
+            && ['cybersnail', 'cryosnail', 'sporesnail'].includes(data.type)
+            && this.isAct2Active()
+            && !data.isCompanion
+            && !data.encounterResolved;
+        if (isDiplomaticSnail && this.player && !this.isPlayerDead && !this.encounterState
+            && Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z) <= SNAIL_ATTACK_RADIUS) {
+            this.openSnailEncounter(sprite);
+            return;
         }
 
         const attackRadius = SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
