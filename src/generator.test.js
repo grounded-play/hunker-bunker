@@ -53,4 +53,15 @@ describe('MarkovGenerator', () => {
 
     expect(generator.findMatches(generator.rules[0])).toEqual([{ x: 1, y: 1 }]);
   });
+
+  describe('protectedCells', () => {
+    it('never rewrites a cell inside protectedCells', () => {
+      const generator = new MarkovGenerator(4, 1, () => 0.4);
+      generator.grid = [['.', '#', '#', '.']];
+      generator.protectedCells = new Set(['1,0']); // the '#' at x=1 is protected
+      generator.addRule(['.#'], ['..'], 1.0);
+      generator.run(10);
+      expect(generator.grid[0][1]).toBe('#');
+    });
+  });
 });

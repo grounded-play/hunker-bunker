@@ -27,9 +27,11 @@ function makeFakeChunkGame(runEntropy, overrides = {}) {
         ensureChunkPortals: ThreeGame.prototype.ensureChunkPortals,
         getEdgeOpening: ThreeGame.prototype.getEdgeOpening,
         runMarkovPass: ThreeGame.prototype.runMarkovPass,
+        runMazeDetailPass: ThreeGame.prototype.runMazeDetailPass,
         widenChunkCorridors: ThreeGame.prototype.widenChunkCorridors,
         clearSpawnArea: ThreeGame.prototype.clearSpawnArea,
         getSpawnTile: ThreeGame.prototype.getSpawnTile,
+        isInTutorialRing: ThreeGame.prototype.isInTutorialRing,
         getChunkLandform: () => LANDFORMS.MAZE,
         getRunCardEffects: () => ({}),
         ...overrides

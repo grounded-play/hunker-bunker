@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
+import { collapseChunkLattice, stampLattice } from './wfcGenerator.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
@@ -19823,66 +19824,78 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu') {
             return Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('.'));
         }
-        const grid = Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('#'));
+
+        const landform = this.getChunkLandform(chunkX, chunkY);
         // Mix in per-run entropy: hashTile alone is constant for a given
         // chunk coordinate, which made every run carve the identical maze at
         // a given depth. Same pattern as chooseFoundryDiscoveryPosition.
         const random = this.createSeededRandom(((this.hashTile(chunkX + 1000, chunkY - 1000) + 101) ^ this.runEntropy) >>> 0);
-        const centerCell = Math.floor(this.chunkCellCount / 2);
-        const stack = [[centerCell, centerCell]];
-        const visited = new Set([`${centerCell},${centerCell}`]);
 
-        this.carveCell(grid, centerCell, centerCell);
+        let grid;
+        if (landform === LANDFORMS.MAZE) {
+            // WFC tile catalog (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md
+            // §1-3) replaces the old DFS-carve+erosion pipeline for MAZE
+            // chunks — see §6 for why non-MAZE landforms are unaffected.
+            const lattice = collapseChunkLattice(random, { tutorialOnly: this.isInTutorialRing(chunkX, chunkY) });
+            grid = stampLattice(lattice, this.chunkSize);
+        } else {
+            grid = Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('#'));
+            const centerCell = Math.floor(this.chunkCellCount / 2);
+            const stack = [[centerCell, centerCell]];
+            const visited = new Set([`${centerCell},${centerCell}`]);
 
-        while (stack.length > 0) {
-            const [cellX, cellY] = stack[stack.length - 1];
-            const neighbors = this.shuffleDirections([
-                { dx: 1, dy: 0 },
-                { dx: -1, dy: 0 },
-                { dx: 0, dy: 1 },
-                { dx: 0, dy: -1 }
-            ], random);
-            let carved = false;
+            this.carveCell(grid, centerCell, centerCell);
 
-            for (const { dx, dy } of neighbors) {
-                const nextX = cellX + dx;
-                const nextY = cellY + dy;
-                const key = `${nextX},${nextY}`;
+            while (stack.length > 0) {
+                const [cellX, cellY] = stack[stack.length - 1];
+                const neighbors = this.shuffleDirections([
+                    { dx: 1, dy: 0 },
+                    { dx: -1, dy: 0 },
+                    { dx: 0, dy: 1 },
+                    { dx: 0, dy: -1 }
+                ], random);
+                let carved = false;
 
-                if (
-                    nextX < 0 ||
-                    nextX >= this.chunkCellCount ||
-                    nextY < 0 ||
-                    nextY >= this.chunkCellCount ||
-                    visited.has(key)
-                ) {
-                    continue;
+                for (const { dx, dy } of neighbors) {
+                    const nextX = cellX + dx;
+                    const nextY = cellY + dy;
+                    const key = `${nextX},${nextY}`;
+
+                    if (
+                        nextX < 0 ||
+                        nextX >= this.chunkCellCount ||
+                        nextY < 0 ||
+                        nextY >= this.chunkCellCount ||
+                        visited.has(key)
+                    ) {
+                        continue;
+                    }
+
+                    this.carvePassage(grid, cellX, cellY, nextX, nextY);
+                    visited.add(key);
+                    stack.push([nextX, nextY]);
+                    carved = true;
+                    break;
                 }
 
-                this.carvePassage(grid, cellX, cellY, nextX, nextY);
-                visited.add(key);
-                stack.push([nextX, nextY]);
-                carved = true;
-                break;
+                if (!carved) {
+                    stack.pop();
+                }
             }
 
-            if (!carved) {
-                stack.pop();
-            }
-        }
-
-        // Landforms reshape the carved maze before portals are punched, so
-        // every chunk still connects to its neighbors at the same offsets.
-        const landform = this.getChunkLandform(chunkX, chunkY);
-        if (landform !== LANDFORMS.MAZE) {
+            // Landforms reshape the carved maze before portals are punched,
+            // so every chunk still connects to its neighbors at the same
+            // offsets.
             applyLandform(grid, landform, random);
             const routeBlocks = this.getRunCardEffects().routeBlocks ?? {};
             if (landform === LANDFORMS.CANYON && routeBlocks.landform === LANDFORMS.CANYON) {
                 applyCanyonCollapse(grid, random, routeBlocks.sealedGapCount ?? 0);
             }
         }
+
         applyRingRoadSystem(grid, chunkX, chunkY, this.chunkSize);
         this.ensureChunkPortals(grid, chunkX, chunkY);
+
         // Walls tracing a carved plaza silhouette. openMazeTerrain fills
         // this and shields them from its own soften/fill; every later
         // erosion pass here (widen, trim) honors it too — otherwise the
@@ -19890,14 +19903,21 @@ export class ThreeGame {
         // before the chunk ever renders (wave-6 punch list §2c).
         const plazaHalo = new Set();
         if (landform === LANDFORMS.MAZE) {
-            this.runMarkovPass(grid, random);
-            openMazeTerrain(grid, random, {
-                plazaCount: 7,
-                floorTarget: 0.80,
-                minRadius: 2.4,
-                maxRadius: 4.5,
-                protectedCells: plazaHalo
-            });
+            // A WFC-resolved chunk's own border tiles may not open exactly
+            // where ensureChunkPortals put the real portal — reuse the same
+            // reconciliation FIELD/CANYON/CRATER/RUINS already rely on
+            // instead of teaching WFC about chunk-border constraints (spec
+            // §4).
+            connectPortalsInward(grid);
+            const boundary = new Set();
+            const stride = 6; // TILE_SIZE - 1, matches wfcGenerator's stamping stride
+            for (let i = 0; i < this.chunkSize; i += 1) {
+                for (const line of [0, stride, stride * 2, stride * 3]) {
+                    boundary.add(`${i},${line}`);
+                    boundary.add(`${line},${i}`);
+                }
+            }
+            this.runMazeDetailPass(grid, random, boundary);
         } else {
             // A ridge or crater rim can sit flush behind a portal opening —
             // tunnel inward so entrances never dead-end.
@@ -19915,36 +19935,48 @@ export class ThreeGame {
         // Widening erodes the deliberate structures (field outcrops, canyon
         // ridges, and especially the crater rim — the open bowl beside the
         // ring lets widen chew straight through it), so it only runs where
-        // the corridors come from the maze carve. Maze chunks get a second
-        // pass so the lanes breathe a little more for the player radius.
-        if (landform === LANDFORMS.MAZE || landform === LANDFORMS.RUINS) {
-            const widenPasses = landform === LANDFORMS.MAZE ? 3 : 2;
-            for (let pass = 0; pass < widenPasses; pass++) {
+        // the corridors come from the maze carve. The WFC tile catalog is
+        // now the source of MAZE room/corridor shape and width, so MAZE no
+        // longer runs this erosion pass either.
+        if (landform === LANDFORMS.RUINS) {
+            for (let pass = 0; pass < 2; pass++) {
                 this.widenChunkCorridors(grid, plazaHalo);
             }
         }
 
         // Trim interior walls that already border floor so corridor mouths
-        // open up without spraying isolated holes into sealed rooms.
-        for (let y = 2; y < this.chunkSize - 2; y++) {
-            for (let x = 2; x < this.chunkSize - 2; x++) {
-                if (grid[y][x] !== '#') continue;
-                if (plazaHalo.has(`${x},${y}`)) continue;
-                const openNeighbors =
-                    (grid[y - 1][x] === '.') +
-                    (grid[y + 1][x] === '.') +
-                    (grid[y][x - 1] === '.') +
-                    (grid[y][x + 1] === '.');
-                if (openNeighbors < 2) continue;
+        // open up without spraying isolated holes into sealed rooms. MAZE
+        // chunks skip this too — see above.
+        if (landform !== LANDFORMS.MAZE) {
+            for (let y = 2; y < this.chunkSize - 2; y++) {
+                for (let x = 2; x < this.chunkSize - 2; x++) {
+                    if (grid[y][x] !== '#') continue;
+                    if (plazaHalo.has(`${x},${y}`)) continue;
+                    const openNeighbors =
+                        (grid[y - 1][x] === '.') +
+                        (grid[y + 1][x] === '.') +
+                        (grid[y][x - 1] === '.') +
+                        (grid[y][x + 1] === '.');
+                    if (openNeighbors < 2) continue;
 
-                const carveChance = 0.28 + openNeighbors * 0.13;
-                if (random() < carveChance) grid[y][x] = '.';
+                    const carveChance = 0.28 + openNeighbors * 0.13;
+                    if (random() < carveChance) grid[y][x] = '.';
+                }
             }
         }
 
         this.clearSpawnArea(grid, chunkX, chunkY);
         this.clearDoorways?.(grid);
         return grid;
+    }
+
+    // The two-chunk ring around the crash site: Chebyshev distance 1 from
+    // (0,0). MAZE chunks here draw only from the tutorial-flagged tile
+    // subset (bigger, single-branch, generously spaced) so the first steps
+    // outside the bunker stay legible before full variety kicks in further
+    // out.
+    isInTutorialRing(chunkX, chunkY) {
+        return Math.max(Math.abs(chunkX), Math.abs(chunkY)) === 1;
     }
 
     // Seeded landform per chunk. The two-chunk ring around the crash site
@@ -20034,6 +20066,29 @@ export class ThreeGame {
         generator.addRule(['.', '#'], ['.', '.'], 0.15);
         generator.addRule(['#', '.'], ['.', '.'], 0.15);
         generator.run(24);
+
+        for (let y = 0; y < this.chunkSize; y++) {
+            for (let x = 0; x < this.chunkSize; x++) {
+                grid[y][x] = generator.grid[y][x];
+            }
+        }
+    }
+
+    // MarkovJr-style texture/detail pass on top of a WFC-stamped MAZE grid
+    // (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md
+    // §6): wall-thickness variation and small nibbles, never touching a
+    // lattice-tile border cell so the WFC connectivity guarantee can't be
+    // eroded away — the exact bug class the old widen/trim erosion passes
+    // had.
+    runMazeDetailPass(grid, random, protectedCells) {
+        const generator = new MarkovGenerator(this.chunkSize, this.chunkSize, random);
+        generator.grid = grid.map((row) => [...row]);
+        generator.protectedCells = protectedCells;
+        generator.addRule(['.#'], ['..'], 0.12);
+        generator.addRule(['#.'], ['..'], 0.12);
+        generator.addRule(['.', '#'], ['.', '.'], 0.12);
+        generator.addRule(['#', '.'], ['.', '.'], 0.12);
+        generator.run(30);
 
         for (let y = 0; y < this.chunkSize; y++) {
             for (let x = 0; x < this.chunkSize; x++) {
