@@ -3316,6 +3316,7 @@ export class ThreeGame {
         this.interactWithBlackBox();
         this.interactWithCaveEntrance();
         this.interactWithAct2Camp();
+        this.interactWithScientist();
         this.interactWithHiveSite();
         this.interactWithCampQuestObject();
         this.interactWithHoleTile();
@@ -7891,6 +7892,7 @@ export class ThreeGame {
         this.updateCampCivilians(delta);
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
+        this.updateScientistPromptState();
     }
 
     // Camp defense turrets: friendly artillery in Act 1, the first hostile
@@ -8759,6 +8761,10 @@ export class ThreeGame {
         return this.act2?.getState?.().camps.find((c) => c.id === id) ?? null;
     }
 
+    getScientistRecord() {
+        return this.act2?.getState?.().scientist ?? null;
+    }
+
     getCampById(id) {
         return this.camps.find((camp) => camp.id === id) ?? null;
     }
@@ -9433,6 +9439,7 @@ export class ThreeGame {
     // talk/stage movement, and play it through the brief transmission panel.
     leaderKeyFor(kind, entity) {
         if (kind === 'hive') return entity.characterId || leaderKeyFromName(entity.label);
+        if (kind === 'scientist') return 'scientist';
         return leaderKeyFromName(entity.leaderName ?? '');
     }
 
@@ -9464,7 +9471,9 @@ export class ThreeGame {
     }
 
     talkToLeader(kind, entity) {
-        const record = kind === 'hive' ? this.getHiveRecord(entity.id) : this.getCampRecord(entity.id);
+        const record = kind === 'hive' ? this.getHiveRecord(entity.id)
+            : kind === 'scientist' ? this.getScientistRecord()
+                : this.getCampRecord(entity.id);
         const beat = this.peekDialogueBeat(kind, entity, record);
         if (!beat) return false;
         const achievementState = window.achievementEngine?.getState?.() ?? {};
@@ -9623,6 +9632,36 @@ export class ThreeGame {
         } else {
             window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
         }
+    }
+
+    // Dr. Okonkwo-Vass is a second, independent NPC fixture placed at
+    // camp_meridian's already-solved world position — not part of that
+    // camp's own record or prompt (see getScientistRecord), just
+    // physically standing nearby. Offset so the two can't overlap or be
+    // confused for one interact target.
+    getScientistWorldPosition() {
+        const meridian = this.camps?.find((c) => c.id === 'camp_meridian');
+        if (!meridian) return null;
+        return { x: meridian.pos.x + 1.6, z: meridian.pos.z + 1.6 };
+    }
+
+    interactWithScientist() {
+        if (!this.isGameplayInputActive() || !this.player || !this.act2 || !this.isAct2Active()) return false;
+        const pos = this.getScientistWorldPosition();
+        if (!pos) return false;
+        const dist = Math.hypot(this.player.position.x - pos.x, this.player.position.z - pos.z);
+        if (dist > 2.0) return false;
+        return this.talkToLeader('scientist', { id: 'scientist', leaderName: 'Dr. Okonkwo-Vass' });
+    }
+
+    updateScientistPromptState() {
+        const promptEl = document.getElementById('scientist-hud-prompt');
+        if (!promptEl) return;
+        const pos = this.isAct2Active() ? this.getScientistWorldPosition() : null;
+        const near = pos && this.player
+            ? Math.hypot(this.player.position.x - pos.x, this.player.position.z - pos.z) <= 2.0
+            : false;
+        promptEl.classList.toggle('hidden', !near);
     }
 
     interactWithAct2Camp() {
