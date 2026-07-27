@@ -24,6 +24,8 @@ import { HiveSite } from './hiveSite.js';
 import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
+import { computeTrailPosition } from './companionFollow.js';
+import { cappedPixelRatio } from './renderScale.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
@@ -748,6 +750,12 @@ export class ThreeGame {
         // array from chunk registries every frame, which silently dropped
         // scene-attached corpses (no decay, no collection).
         this.corpses = [];
+        // Companions (befriended snails) follow this same rule and for the
+        // same reason: they're reparented to the scene root when created
+        // (Task 8 of docs/superpowers/plans/2026-07-26-snail-diplomacy-
+        // encounter.md) specifically so a chunk falling out of the resident
+        // radius as the player travels can't dispose of one mid-follow.
+        this.companions = [];
         this.depletedGearPileKeys = new Set();
         this.transientEffects = [];
         this.hitstopTimer = 0;
@@ -955,8 +963,8 @@ export class ThreeGame {
 
         // The DOM hero picker covers most of this showroom. Avoid paying the
         // 4x pixel cost of a 2x display before gameplay starts.
-        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
-        this.gameplayPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+        this.menuPixelRatio = 1;
+        this.gameplayPixelRatio = 1;
         this.performanceProfile = 'menu';
         this.menuFrameIntervalMs = 1000 / 30;
         this._lastMenuRenderAt = 0;
@@ -4222,6 +4230,27 @@ export class ThreeGame {
         const aspect = width / height;
         const viewSize = 6.8;
 
+        this.menuPixelRatio = cappedPixelRatio({
+            width,
+            height,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            maxPixelRatio: 1.25,
+            maxFramebufferPixels: 2_500_000
+        });
+        this.gameplayPixelRatio = cappedPixelRatio({
+            width,
+            height,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            maxPixelRatio: 1.5,
+            maxFramebufferPixels: 5_000_000
+        });
+        const targetPixelRatio = this.performanceProfile === 'gameplay'
+            ? this.gameplayPixelRatio
+            : this.menuPixelRatio;
+        if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
+            this.renderer.setPixelRatio(targetPixelRatio);
+        }
+
         this.camera.left = -viewSize * aspect;
         this.camera.right = viewSize * aspect;
         this.camera.top = viewSize;
@@ -4448,6 +4477,7 @@ export class ThreeGame {
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
+        this.updateCompanions(delta);
         this.updateCorpses(delta);
         this.updateLoreDrops(delta);
         this.updateBuildSiteBeacon(now);
@@ -10897,6 +10927,7 @@ export class ThreeGame {
             this._caveAnomalySignaled = false;
             this.resetAct2World();
             this.clearCorpses();
+            this.clearCompanions();
             this.clearLoreDrops();
             this._hiveKinKills = 0;
             this._tankShockGuardUsed = false;
@@ -12437,7 +12468,10 @@ export class ThreeGame {
         if (!overlay || !ctx || !this.player || !this.camera) return;
         const w = this.container.clientWidth || 1;
         const h = this.container.clientHeight || 1;
-        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        // Match the WebGL framebuffer scale. A separate 2x fullscreen canvas
+        // doubled the memory/bandwidth hit precisely on the high-DPI PCs that
+        // already needed the render budget most.
+        const dpr = Math.max(0.65, this.renderer?.getPixelRatio?.() || 1);
         const targetW = Math.max(1, Math.round(w * dpr));
         const targetH = Math.max(1, Math.round(h * dpr));
         if (overlay.width !== targetW || overlay.height !== targetH) {
@@ -17033,6 +17067,14 @@ export class ThreeGame {
         this.corpses = [];
     }
 
+    clearCompanions() {
+        for (const companion of this.companions ?? []) {
+            companion.sprite?.parent?.remove(companion.sprite);
+            companion.sprite?.material?.dispose?.();
+        }
+        this.companions = [];
+    }
+
     // Shells bank instantly (no extraction risk) — they are the body-count
     // currency, so losing them on death would double-punish melee classes.
     collectSnailShell(corpse) {
@@ -18133,6 +18175,65 @@ export class ThreeGame {
 
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
+    }
+
+    // Companions (befriended snails, src/snailEncounter.js's 'befriend'
+    // outcome) follow the player and periodically damage nearby hostile
+    // snails. One companion at a time — see design doc's Companion section.
+    updateCompanions(delta) {
+        if (!this.player || this.isPlayerDead || !Array.isArray(this.companions) || this.companions.length === 0) return;
+
+        const TRAIL_DISTANCE = 1.6;
+        const MOVE_SPEED = 1.6;
+        const ASSIST_RADIUS = 2.2;
+        const ASSIST_DAMAGE = 1;
+        const ASSIST_COOLDOWN = 1.5;
+
+        const facingLen = Math.hypot(this.aimDirX ?? 0, this.aimDirZ ?? 0);
+        const facing = facingLen > 0.0001
+            ? { dirX: this.aimDirX, dirZ: this.aimDirZ }
+            : { dirX: 0, dirZ: 1 };
+
+        for (const companion of this.companions) {
+            const sprite = companion.sprite;
+            if (!sprite?.userData) continue;
+
+            const trail = computeTrailPosition(this.player.position, facing, TRAIL_DISTANCE);
+            const toTrailX = trail.x - sprite.position.x;
+            const toTrailZ = trail.z - sprite.position.z;
+            const dist = Math.hypot(toTrailX, toTrailZ);
+            if (dist > 0.05) {
+                const step = Math.min(dist, MOVE_SPEED * delta);
+                const dirX = toTrailX / dist;
+                const dirZ = toTrailZ / dist;
+                const nextX = sprite.position.x + dirX * step;
+                const nextZ = sprite.position.z + dirZ * step;
+                if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                    sprite.position.x = nextX;
+                    sprite.position.z = nextZ;
+                }
+                this.faceSpriteFromDir(sprite, dirX, toTrailX);
+            }
+
+            companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
+            if (companion.assistCooldown <= 0) {
+                let nearestHostile = null;
+                let nearestDist = ASSIST_RADIUS;
+                for (const other of this.scatterSprites) {
+                    if (other === sprite || other.userData?.isCompanion) continue;
+                    if (!['cybersnail', 'cryosnail', 'sporesnail'].includes(other.userData?.type)) continue;
+                    const d = Math.hypot(other.position.x - sprite.position.x, other.position.z - sprite.position.z);
+                    if (d < nearestDist) {
+                        nearestDist = d;
+                        nearestHostile = other;
+                    }
+                }
+                if (nearestHostile) {
+                    this.applyPlayerDamageToEnemy(nearestHostile, ASSIST_DAMAGE);
+                    companion.assistCooldown = ASSIST_COOLDOWN;
+                }
+            }
+        }
     }
 
     updateSnailBehavior(sprite, delta, activeShip) {
