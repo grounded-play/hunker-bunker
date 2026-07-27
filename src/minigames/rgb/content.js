@@ -416,6 +416,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'call_marisol',
                 label: 'Marisol Waiting',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c3/marisol_waiting.png`, label: 'MARISOL // DAYCARE CLOCK RUNNING' },
                 x: 920, y: 290, w: 135, h: 295,
                 once: true,
                 requires: {

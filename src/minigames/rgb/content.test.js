@@ -146,6 +146,19 @@ describe('content shape', () => {
         expect(INTRO_CINEMATIC.video).toMatch(/Intro\.mp4$/);
     });
 
+    it('ships every declared cinematic video and fallback image', () => {
+        const urls = [
+            INTRO_CINEMATIC.video,
+            INTRO_CINEMATIC.image,
+            ...Object.values(BRANCH_CINEMATICS).flatMap((entry) => [entry.video, entry.image]),
+            ...Object.values(RAIL_CINEMATICS).flatMap((entry) => [entry.video, entry.image])
+        ].filter(Boolean);
+
+        for (const url of urls) {
+            expect(existsSync(resolve('public', url.replace(/^\//, ''))), url).toBe(true);
+        }
+    });
+
     it('picks the branch clip that matches what the player actually did', () => {
         const base = createRunState();
 
@@ -203,6 +216,15 @@ describe('content shape', () => {
                     .filter(Boolean)
             );
             expect(authoredImages.size, chapterId).toBeGreaterThanOrEqual(2);
+        }
+    });
+
+    it('gives every object interaction an authored cutaway', () => {
+        for (const chapter of Object.values(CHAPTERS)) {
+            for (const hotspot of chapter.hotspots.filter((entry) => entry.object)) {
+                expect(hotspot.cutaway?.image, `${chapter.id}:${hotspot.id}`).toBeTruthy();
+                expect(hotspot.cutaway?.label, `${chapter.id}:${hotspot.id}`).toBeTruthy();
+            }
         }
     });
 

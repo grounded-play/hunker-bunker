@@ -15,6 +15,16 @@ function unlockedSave() {
     };
 }
 
+async function completeObjectCutaway(page, label) {
+    await page.locator('.rgb-hotspot', { hasText: label }).click();
+    const action = page.locator('.rgb-dialogue__take');
+    for (let step = 0; step < 2; step += 1) {
+        if (!await action.isVisible().catch(() => false)) break;
+        await action.click();
+    }
+    await expect(page.locator('.rgb-stage-layer--cutaway')).toHaveCount(0);
+}
+
 test.describe('RGB archive simulation', () => {
     test('unlocked save shows the menu entry, launches, and completes chapter 1 into a persisted checkpoint', async ({ page }) => {
         await page.goto('/');
@@ -32,6 +42,9 @@ test.describe('RGB archive simulation', () => {
         }, { key: RGB_SAVE_KEY, save: unlockedSave() });
         await page.reload();
         await bootToOperatorMenu(page);
+        if (await page.locator('#roster-modal').isVisible()) {
+            await page.locator('#close-roster-modal').click();
+        }
 
         await expect(archiveBtn).toBeVisible();
         await archiveBtn.click();
@@ -45,13 +58,19 @@ test.describe('RGB archive simulation', () => {
 
         await page.locator('.rgb-warning__continue').click();
         await page.locator('.rgb-cinematic__skip').click();
+        await page.locator('.rgb-chapter-card__continue').click();
         await expect(page.locator('.rgb-header__title')).toHaveText(/Chapter 1/);
 
         await expect(page.locator('.rgb-stage-bg')).toHaveAttribute('src', /bg_sedan_interior/);
+        await completeObjectCutaway(page, 'Empty Albuterol Bottle');
+        await completeObjectCutaway(page, 'Check the Balance');
+        await completeObjectCutaway(page, "Lucia's Message");
+        await completeObjectCutaway(page, 'The Drawing and the Notebook');
         await page.locator('.rgb-hotspot', { hasText: 'Answer Lucia' }).click();
         await page.locator('.rgb-cinematic__skip').click();
         await page.waitForTimeout(400);
         await page.locator('.rgb-cinematic__skip').click();
+        await page.locator('.rgb-chapter-card__continue').click();
         await expect(page.locator('.rgb-header__title')).toHaveText(/Chapter 2/);
 
         const savedCheckpoint = await page.evaluate((key) => {
@@ -61,9 +80,10 @@ test.describe('RGB archive simulation', () => {
 
         await page.keyboard.press('Tab');
         await expect(page.locator('.rgb-inventory')).toBeVisible();
-        await expect(page.locator('.rgb-inventory li')).toHaveCount(4);
+        await expect(page.locator('.rgb-inventory__item')).toHaveCount(5);
         await page.keyboard.press('Tab');
 
+        await completeObjectCutaway(page, 'Sorting Arm 4A');
         await page.locator('.rgb-hotspot', { hasText: 'Notebook Diagram' }).click();
     });
 });
