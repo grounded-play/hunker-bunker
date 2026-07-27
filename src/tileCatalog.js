@@ -148,6 +148,44 @@ const ROOM_ALCOVE_BASE = {
     ]
 };
 
+const ROOM_ROLE_VARIANTS = [
+    {
+        ...ROOM_ALCOVE_BASE,
+        id: 'room-utility',
+        tutorial: false,
+        weight: 0.75,
+        roomRole: 'utility',
+        decorationSet: 'bunker'
+    },
+    {
+        ...ROOM_ALCOVE_BASE,
+        id: 'room-medical',
+        tutorial: false,
+        weight: 0.6,
+        roomRole: 'medical',
+        decorationSet: 'cryo',
+        populationBudget: { large: 1, small: 2, pickup: 2, enemy: 0 }
+    },
+    {
+        ...ROOM_ALCOVE_BASE,
+        id: 'room-nest',
+        tutorial: false,
+        weight: 0.55,
+        roomRole: 'nest',
+        decorationSet: 'nest',
+        populationBudget: { large: 1, small: 4, pickup: 1, enemy: 1 }
+    },
+    {
+        ...ROOM_ALCOVE_BASE,
+        id: 'room-camp-cache',
+        tutorial: false,
+        weight: 0.5,
+        roomRole: 'camp',
+        decorationSet: 'camp',
+        populationBudget: { large: 1, small: 3, pickup: 2, enemy: 0 }
+    }
+];
+
 const CORRIDOR_STRAIGHT_BASE = {
     id: 'corridor-straight',
     category: 'corridor-straight',
@@ -363,6 +401,7 @@ const LADDER_BASE = {
 export const TILE_CATALOG = Object.freeze([
     SOLID_FILL,
     ...withRotations(ROOM_ALCOVE_BASE, ['s', 'w', 'n', 'e']),
+    ...ROOM_ROLE_VARIANTS.flatMap((room) => withRotations(room, ['s', 'w', 'n', 'e'])),
     ...withRotations(CORRIDOR_STRAIGHT_BASE, ['ns', 'ew']),
     ...withRotations(CORRIDOR_TURN_BASE, ['ne', 'es', 'sw', 'wn']),
     ...withRotations(CORRIDOR_T_BASE, ['nes', 'esw', 'swn', 'wne']),

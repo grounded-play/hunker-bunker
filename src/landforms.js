@@ -21,9 +21,9 @@ export const LANDFORMS = Object.freeze({
 // Weights lean on the biome fantasy while keeping hard pillar mazes as a
 // discovery beat instead of the default traversal texture.
 const LANDFORM_WEIGHTS = Object.freeze({
-    active: Object.freeze({ maze: 0.18, field: 0.28, canyon: 0.16, crater: 0.20, ruins: 0.18 }),
-    cryo: Object.freeze({ maze: 0.16, field: 0.13, canyon: 0.38, crater: 0.15, ruins: 0.18 }),
-    bio: Object.freeze({ maze: 0.14, field: 0.36, canyon: 0.10, crater: 0.22, ruins: 0.18 })
+    active: Object.freeze({ maze: 0.58, field: 0.10, canyon: 0.10, crater: 0.12, ruins: 0.10 }),
+    cryo: Object.freeze({ maze: 0.52, field: 0.07, canyon: 0.22, crater: 0.08, ruins: 0.11 }),
+    bio: Object.freeze({ maze: 0.50, field: 0.13, canyon: 0.07, crater: 0.16, ruins: 0.14 })
 });
 
 export function pickLandform(random, biome = 'active') {

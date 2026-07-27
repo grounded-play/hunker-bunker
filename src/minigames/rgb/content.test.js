@@ -132,14 +132,16 @@ describe('content shape', () => {
         }
     });
 
-    it('rail cinematics ship video clips for R1-R8 and image fallbacks for R1-R9', () => {
+    it('rail cinematics ship video clips for R1-R8 and image fallbacks for every rail', () => {
         for (const [key, entry] of Object.entries(RAIL_CINEMATICS)) {
             expect(entry.image).toMatch(/\.png$/);
-            if (key !== 'R9') {
+            if (!['R9', 'R10'].includes(key)) {
                 expect(entry.video).toMatch(/\.mp4$/);
             }
         }
-        expect(Object.keys(RAIL_CINEMATICS).sort()).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9']);
+        expect(Object.keys(RAIL_CINEMATICS).sort()).toEqual([
+            'R1', 'R10', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'
+        ]);
     });
 
     it('the intro cinematic declares a video', () => {
@@ -178,7 +180,7 @@ describe('content shape', () => {
         expect(resolveCinematicSteps('walk_away', base)).toEqual(['C5-A', 'R8']);
         expect(resolveCinematicSteps('expose_profile', base)).toEqual(['C5-B', 'R9']);
         expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C', 'R6', 'R7']);
-        expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A']);
+        expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A', 'R10']);
         expect(resolveCinematicSteps('rescue_fumble', base)).toEqual(['C6-B']);
         expect(resolveCinematicSteps('read_diagram', base)).toEqual([]);
     });
@@ -245,6 +247,20 @@ describe('content shape', () => {
         expect(byId.walk_away.excludesAllOf).toContain('inspect_cutters');
         expect(byId.expose_profile.excludesAllOf).toContain('inspect_cutters');
         expect(byId.sever_trunk.requiresAllOf).toContain('inspect_cutters');
+    });
+
+    it('restores the missing narrative setup beats before each major choice', () => {
+        const parking = Object.fromEntries(CHAPTERS.parking_lot.hotspots.map((h) => [h.id, h]));
+        const warehouse = Object.fromEntries(CHAPTERS.warehouse.hotspots.map((h) => [h.id, h]));
+        const kiosk = Object.fromEntries(CHAPTERS.medi_kiosk.hotspots.map((h) => [h.id, h]));
+        const server = Object.fromEntries(CHAPTERS.server_room.hotspots.map((h) => [h.id, h]));
+
+        expect(parking.reply_to_lucia.requiresAllOf).toContain('speak_with_marisol');
+        expect(warehouse.double_tap_honest.requiresAllOf).toContain('observe_sensor_sweep');
+        expect(kiosk.request_billing_agent.requiresAllOf).toContain('deposit_partial_pay');
+        expect(server.walk_away.requiresAllOf).toContain('inspect_extinguisher');
+        expect(server.expose_profile.requiresAllOf).toContain('inspect_extinguisher');
+        expect(server.inspect_cutters.requiresAllOf).toContain('inspect_extinguisher');
     });
 
     it('gives every item an icon so the inventory never falls back to bare text', () => {

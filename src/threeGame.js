@@ -45,7 +45,8 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
-import { LANDFORMS, pickLandform, applyLandform, applyRingRoadSystem, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
+import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
+import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
@@ -100,10 +101,6 @@ const RADAR_DANGER_COLOR = 0xff3344;
 const RADAR_HOLE_SCAN_PADDING = 2.25;
 const FOUNDRY_DISCOVERY_MIN_DISTANCE = 38;
 const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
-// The Act-1 finale cave spawns well past the BIO-sector reactor site (z≈176)
-// so recovering the "final ship component" is a genuine expedition.
-const CAVE_DISCOVERY_MIN_DISTANCE = 205;
-const CAVE_DISCOVERY_MAX_DISTANCE = 245;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
@@ -4263,8 +4260,8 @@ export class ThreeGame {
             width,
             height,
             devicePixelRatio: window.devicePixelRatio || 1,
-            maxPixelRatio: 1.5,
-            maxFramebufferPixels: 5_000_000
+            maxPixelRatio: 1.35,
+            maxFramebufferPixels: 3_600_000
         });
         const targetPixelRatio = this.performanceProfile === 'gameplay'
             ? this.gameplayPixelRatio
@@ -7596,22 +7593,10 @@ export class ThreeGame {
 
     chooseCaveEntrancePosition() {
         const anchor = this.getBiomeAnchorPosition();
-        const random = this.createSeededRandom((this.hashTile(
-            Math.round(anchor.x) + 101,
-            Math.round(anchor.z) + 47
-        ) ^ this.runEntropy) >>> 0);
-        // Bias outward (+z), the same direction the build-site ladder pushes.
-        const outwardAngles = [Math.PI * 0.5, Math.PI * 0.36, Math.PI * 0.64, Math.PI * 0.5];
-        for (let attempt = 0; attempt < 96; attempt += 1) {
-            const dist = THREE.MathUtils.lerp(CAVE_DISCOVERY_MIN_DISTANCE, CAVE_DISCOVERY_MAX_DISTANCE, random());
-            const angle = outwardAngles[attempt % outwardAngles.length] + (random() - 0.5) * Math.PI * 0.4;
-            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
-            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
-            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
-                return { x: tileX, z: tileZ };
-            }
-        }
-        return { x: Math.round(anchor.x), z: Math.round(anchor.z + CAVE_DISCOVERY_MIN_DISTANCE) };
+        return this.chooseProgressionSitePosition(
+            getProgressionSlot('finalCave'),
+            (this.hashTile(Math.round(anchor.x) + 101, Math.round(anchor.z) + 47) ^ this.runEntropy) >>> 0
+        );
     }
 
     revealCaveEntrance({ instant = false } = {}) {
@@ -8165,37 +8150,30 @@ export class ThreeGame {
         return roomTypes?.[localZ]?.[localX] === ROOM_TYPES.CHAMBER;
     }
 
-    chooseHiveSitePosition(index) {
+    chooseProgressionSitePosition(slot, seed) {
         const anchor = this.getBiomeAnchorPosition();
-        const random = this.createSeededRandom((this.hashTile(
-            Math.round(anchor.x) - 173 - index * 31,
-            Math.round(anchor.z) + 137 + index * 17
-        ) ^ this.runEntropy) >>> 0);
-        // Fanned between the camps on the bisector bearings, and kept to a
-        // distinctly CLOSER ring than the camps (camps are 70-120u out): the
-        // anomalies were always underfoot, the player just read them as
-        // terrain. The old 45-90u band overlapped the camp band and the wide
-        // ±31.5° jitter could swing a hive right onto a camp bearing, so
-        // hives kept reading as "in the way" on every trek to a camp — the
-        // tighter jitter here keeps them on the between-camp bearings.
-        const baseAngle = [Math.PI * 0.45, Math.PI * 1.1, Math.PI * 1.75][index % 3];
+        const target = progressionWorldTarget(anchor, slot);
+        const random = this.createSeededRandom(seed);
         for (let attempt = 0; attempt < 96; attempt += 1) {
-            const dist = THREE.MathUtils.lerp(40, 60, random());
-            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.2;
-            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
-            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
-            // First half of attempts insist on a natural clearing or a real
-            // room chamber — same bar as chooseCampPosition — before
-            // relaxing so placement never fails.
+            const radius = 2 + (attempt / 95) * 14;
+            const angle = random() * Math.PI * 2;
+            const tileX = Math.round(target.x + Math.cos(angle) * radius * random());
+            const tileZ = Math.round(target.z + Math.sin(angle) * radius * random());
             if (attempt < 48 && !this.isGoodSitePosition(tileX, tileZ)) continue;
             if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
                 return { x: tileX, z: tileZ };
             }
         }
-        return {
-            x: Math.round(anchor.x + Math.cos(baseAngle) * 40),
-            z: Math.round(anchor.z + Math.sin(baseAngle) * 40)
-        };
+        return target;
+    }
+
+    chooseHiveSitePosition(index) {
+        const anchor = this.getBiomeAnchorPosition();
+        const seed = (this.hashTile(
+            Math.round(anchor.x) - 173 - index * 31,
+            Math.round(anchor.z) + 137 + index * 17
+        ) ^ this.runEntropy) >>> 0;
+        return this.chooseProgressionSitePosition(getProgressionSlot('hive', index), seed);
     }
 
     ensureHiveSites() {
@@ -8539,30 +8517,11 @@ export class ThreeGame {
 
     chooseCampPosition(index) {
         const anchor = this.getBiomeAnchorPosition();
-        const random = this.createSeededRandom((this.hashTile(
+        const seed = (this.hashTile(
             Math.round(anchor.x) + 211 + index * 13,
             Math.round(anchor.z) + 89 - index * 7
-        ) ^ this.runEntropy) >>> 0);
-        // Three camps fanned around the base, each a real trek apart.
-        // Early attempts insist on a crater/field clearing or a real MAZE
-        // room chamber — camps read as authored when they sit in a natural
-        // clearing or an actual room instead of a bare maze corridor — then
-        // the requirement relaxes so placement never fails.
-        const baseAngle = [Math.PI * 0.12, Math.PI * 0.78, Math.PI * 1.42][index % 3];
-        for (let attempt = 0; attempt < 96; attempt += 1) {
-            const dist = THREE.MathUtils.lerp(70, 120, random());
-            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
-            const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
-            const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
-            if (attempt < 48 && !this.isGoodSitePosition(tileX, tileZ)) continue;
-            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
-                return { x: tileX, z: tileZ };
-            }
-        }
-        return {
-            x: Math.round(anchor.x + Math.cos(baseAngle) * 70),
-            z: Math.round(anchor.z + Math.sin(baseAngle) * 70)
-        };
+        ) ^ this.runEntropy) >>> 0;
+        return this.chooseProgressionSitePosition(getProgressionSlot('camp', index), seed);
     }
 
     ensureAct2Camps() {
@@ -14064,6 +14023,16 @@ export class ThreeGame {
 
         const centerChunkX = Math.floor(this.player.position.x / this.chunkSize);
         const centerChunkY = Math.floor(this.player.position.z / this.chunkSize);
+        const visibilityKey = `${centerChunkX},${centerChunkY}:${this.visibleChunkRadius}`;
+        // This runs from the animation loop. Walking every loaded chunk to
+        // rebuild registries is only necessary when the visible set changes
+        // or a queued mount still needs work.
+        if (!force
+            && this._lastChunkVisibilityKey === visibilityKey
+            && (this.pendingChunkMounts?.length ?? 0) === 0) {
+            return;
+        }
+        this._lastChunkVisibilityKey = visibilityKey;
         this.updateDepthTierProgress(centerChunkX, centerChunkY);
         const needed = new Set();
         const resident = new Set();
@@ -14796,9 +14765,12 @@ export class ThreeGame {
 
                 const tileChar = grid[localY][localX];
                 if (tileChar === 'D') {
+                    const horizontal = grid[localY]?.[localX - 1] === '#'
+                        || grid[localY]?.[localX + 1] === '#';
                     const doorMesh = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
                     doorMesh.position.set(worldX, this.wallHeight / 2, worldZ);
                     doorMesh.scale.set(0.88, 1, 0.35);
+                    if (!horizontal) doorMesh.rotation.y = Math.PI / 2;
                     doorMesh.castShadow = true;
                     doorMesh.receiveShadow = true;
                     this.configureWallMesh(doorMesh, {
@@ -15447,23 +15419,26 @@ export class ThreeGame {
 
                 // 2) Room Set Pieces (Destructible props) — chamber cells only
                 const roll = rng();
-                if (roll < 0.07 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
-                    const props = [
-                        'prop_cyber_junction',
-                        'prop_specimen_tank',
-                        'prop_bunker_supplies',
-                        'prop_spore_colony',
-                        'prop_conduit_hub',
-                        'prop_cave_lichen',
-                        'prop_cave_bones',
-                        'prop_cave_eggs_intact',
-                        'prop_cave_eggs_hatched',
-                        'prop_cave_spores',
-                        'prop_cave_webs',
-                        'prop_cave_hive_wounded',
-                        'prop_camp_sandbags',
-                        'prop_camp_crates'
-                    ];
+                if (roll < 0.12 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
+                    const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+                    const propPalettes = {
+                        active: [
+                            'prop_cyber_junction', 'prop_specimen_tank',
+                            'prop_bunker_supplies', 'prop_conduit_hub',
+                            'prop_camp_sandbags', 'prop_camp_crates'
+                        ],
+                        cryo: [
+                            'prop_specimen_tank', 'prop_cave_lichen',
+                            'prop_cave_bones', 'prop_bunker_supplies',
+                            'prop_conduit_hub'
+                        ],
+                        bio: [
+                            'prop_spore_colony', 'prop_cave_eggs_intact',
+                            'prop_cave_eggs_hatched', 'prop_cave_spores',
+                            'prop_cave_webs', 'prop_cave_hive_wounded'
+                        ]
+                    };
+                    const props = propPalettes[biomeKey] ?? propPalettes.active;
                     const propType = props[Math.floor(rng() * props.length)];
                     placements.push({
                         x: worldX,
@@ -16269,6 +16244,13 @@ export class ThreeGame {
             let speed = _enemyStats.speed;
             if (Number.isFinite(placement.maxHp)) {
                 maxHp = Math.max(1, Math.floor(placement.maxHp));
+            }
+            if (!isBoss) {
+                const anchor = this.getBiomeAnchorPosition();
+                const depth = Math.hypot(placement.x - anchor.x, placement.z - anchor.z);
+                const threatScale = getDepthThreatScale(depth);
+                maxHp = Math.max(1, Math.round(maxHp * threatScale.hp));
+                speed *= threatScale.speed;
             }
 
             sprite.userData = {
@@ -20113,7 +20095,6 @@ export class ThreeGame {
             }
         }
 
-        applyRingRoadSystem(grid, chunkX, chunkY, this.chunkSize);
         this.ensureChunkPortals(grid, chunkX, chunkY);
 
         // Walls tracing a carved plaza silhouette. openMazeTerrain fills
@@ -20190,6 +20171,7 @@ export class ThreeGame {
         } else {
             this.clearSpawnArea(grid, chunkX, chunkY);
         }
+        ThreeGame.prototype.addRoomThresholdDoors.call(this, grid, random, chunkX, chunkY);
         this.clearDoorways?.(grid);
         if (
             landform === LANDFORMS.MAZE
@@ -20401,19 +20383,49 @@ export class ThreeGame {
         for (let y = 1; y < size - 1; y++) {
             for (let x = 1; x < size - 1; x++) {
                 if (grid[y][x] === 'D') {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        for (let dx = -1; dx <= 1; dx++) {
-                            const ny = y + dy;
-                            const nx = x + dx;
-                            if (ny >= 1 && ny < size - 1 && nx >= 1 && nx < size - 1) {
-                                if (grid[ny][nx] !== 'D') {
-                                    grid[ny][nx] = '.';
-                                }
-                            }
-                        }
+                    const horizontalScore = Number(grid[y]?.[x - 2] === '#') + Number(grid[y]?.[x + 2] === '#');
+                    const verticalScore = Number(grid[y - 2]?.[x] === '#') + Number(grid[y + 2]?.[x] === '#');
+                    const horizontal = horizontalScore >= verticalScore;
+                    // Preserve the authored room/corridor shape and only add
+                    // structural jambs. Clearing a 3x3 plaza here was what
+                    // dissolved rooms into one continuous open plan.
+                    if (horizontal) {
+                        grid[y][x - 1] = '#';
+                        grid[y][x + 1] = '#';
+                    } else {
+                        grid[y - 1][x] = '#';
+                        grid[y + 1][x] = '#';
                     }
                 }
             }
+        }
+    }
+
+    addRoomThresholdDoors(grid, random, chunkX, chunkY) {
+        if (!grid || chunkX === 0 && chunkY === 0) return;
+        const candidates = [];
+        for (let y = 2; y < grid.length - 2; y += 1) {
+            for (let x = 2; x < grid[y].length - 2; x += 1) {
+                if (grid[y][x] !== '.') continue;
+                const horizontalJambs = grid[y][x - 1] === '#' && grid[y][x + 1] === '#'
+                    && grid[y - 1][x] === '.' && grid[y + 1][x] === '.';
+                const verticalJambs = grid[y - 1][x] === '#' && grid[y + 1][x] === '#'
+                    && grid[y][x - 1] === '.' && grid[y][x + 1] === '.';
+                if (!horizontalJambs && !verticalJambs) continue;
+                candidates.push({ x, y });
+            }
+        }
+        const maxDoors = Math.min(3, 1 + getDepthTier(chunkX, chunkY));
+        const placedDoors = [];
+        for (let placed = 0; placed < maxDoors && candidates.length > 0; placed += 1) {
+            const index = Math.floor(random() * candidates.length);
+            const [candidate] = candidates.splice(index, 1);
+            if (placedDoors.some((other) => Math.hypot(other.x - candidate.x, other.y - candidate.y) < 4)) {
+                placed -= 1;
+                continue;
+            }
+            grid[candidate.y][candidate.x] = 'D';
+            placedDoors.push(candidate);
         }
     }
 

@@ -7,6 +7,7 @@
 import {
     CHAPTERS,
     CHAPTER_ORDER,
+    CHAPTER_FLOWCHARTS,
     ENDINGS,
     GAME_OVERS,
     ITEMS,
@@ -35,6 +36,7 @@ import {
     saveCheckpoint,
     recordEnding,
     recordGameOver,
+    recordDiscoveredBeat,
     saveRgbSave,
     unlockChapter,
     saveChapterSnapshot,
@@ -223,6 +225,8 @@ export function mountRgb({ root, save, storage, onExit }) {
     }
 
     function recordRouteBeat(hotspot) {
+        save = recordDiscoveredBeat(save, hotspot.id);
+        saveRgbSave(localStorage, save);
         const beat = ROUTE_BEATS[hotspot.id];
         if (!beat || runState.routeHistory.some((entry) => entry.hotspotId === hotspot.id)) return;
         runState = {
@@ -237,6 +241,77 @@ export function mountRgb({ root, save, storage, onExit }) {
                 }
             ]
         };
+    }
+
+    function renderChapterFlowchart(chapterId) {
+        const flowchartData = CHAPTER_FLOWCHARTS[chapterId ?? runState.checkpoint];
+        if (!flowchartData) return null;
+
+        const container = document.createElement('div');
+        container.className = 'rgb-flowchart';
+
+        const header = document.createElement('div');
+        header.className = 'rgb-flowchart__header';
+        header.innerHTML = `<span>FLOWCHART</span> <strong>${flowchartData.title.toUpperCase()}</strong>`;
+
+        const tree = document.createElement('div');
+        tree.className = 'rgb-flowchart__tree';
+
+        const waves = {};
+        for (const node of flowchartData.nodes) {
+            waves[node.wave] = waves[node.wave] || [];
+            waves[node.wave].push(node);
+        }
+
+        const discoveredSet = new Set(save.discoveredBeats ?? []);
+        const currentRunSet = new Set(runState.routeHistory.map((e) => e.hotspotId).concat(Array.from(visited)));
+
+        Object.keys(waves).sort((a, b) => Number(a) - Number(b)).forEach((waveNum) => {
+            const waveCol = document.createElement('div');
+            waveCol.className = `rgb-flowchart__wave rgb-flowchart__wave--${waveNum}`;
+
+            const waveTag = document.createElement('div');
+            waveTag.className = 'rgb-flowchart__wave-tag';
+            waveTag.textContent = `WAVE ${waveNum}`;
+            waveCol.append(waveTag);
+
+            for (const node of waves[waveNum]) {
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'rgb-flowchart__node';
+
+                const isCurrent = currentRunSet.has(node.id);
+                const isPast = !isCurrent && discoveredSet.has(node.id);
+
+                if (isCurrent) {
+                    nodeEl.classList.add('rgb-flowchart__node--current');
+                    if (node.isChoice) nodeEl.classList.add('rgb-flowchart__node--choice');
+                    nodeEl.innerHTML = `
+                        <div class="rgb-flowchart__badge">${node.branch ? `${node.branch} · ACTIVE` : 'ACTIVE RUN'}</div>
+                        <div class="rgb-flowchart__title">${node.label}</div>
+                        ${node.consequence ? `<div class="rgb-flowchart__desc">${node.consequence}</div>` : ''}
+                    `;
+                } else if (isPast) {
+                    nodeEl.classList.add('rgb-flowchart__node--discovered');
+                    nodeEl.innerHTML = `
+                        <div class="rgb-flowchart__badge rgb-flowchart__badge--past">${node.branch ? `${node.branch} · PAST RUN` : 'PAST RUN'}</div>
+                        <div class="rgb-flowchart__title">${node.label}</div>
+                        ${node.consequence ? `<div class="rgb-flowchart__desc">${node.consequence}</div>` : ''}
+                    `;
+                } else {
+                    nodeEl.classList.add('rgb-flowchart__node--hidden');
+                    nodeEl.innerHTML = `
+                        <div class="rgb-flowchart__badge rgb-flowchart__badge--hidden">${node.branch ? `${node.branch} · LOCKED` : 'UNEXPLORED'}</div>
+                        <div class="rgb-flowchart__title">??? UNDISCOVERED PATH ???</div>
+                        <div class="rgb-flowchart__desc">Explore alternative choices in another run to reveal.</div>
+                    `;
+                }
+                waveCol.append(nodeEl);
+            }
+            tree.append(waveCol);
+        });
+
+        container.append(header, tree);
+        return container;
     }
 
     function render() {
@@ -698,6 +773,12 @@ export function mountRgb({ root, save, storage, onExit }) {
             ? runState.evidence.map((id) => EVIDENCE_LABELS[id] ?? id).join(' · ')
             : 'No evidence preserved yet.';
 
+        const flowchartHeading = document.createElement('div');
+        flowchartHeading.className = 'rgb-recap__heading';
+        flowchartHeading.textContent = 'NARRATIVE BRANCH TREE & UNLOCKED PATHS';
+
+        const flowchartEl = renderChapterFlowchart(runState.checkpoint);
+
         const close = document.createElement('button');
         close.type = 'button';
         close.className = 'rgb-recap__close';
@@ -707,7 +788,11 @@ export function mountRgb({ root, save, storage, onExit }) {
             render();
         });
 
-        overlay.append(title, intro, status, rail, heading, timeline, evidenceHeading, evidenceList, close);
+        overlay.append(title, intro, status, rail, heading, timeline, evidenceHeading, evidenceList);
+        if (flowchartEl) {
+            overlay.append(flowchartHeading, flowchartEl);
+        }
+        overlay.append(close);
         root.append(overlay);
         close.focus();
     }
@@ -760,11 +845,18 @@ export function mountRgb({ root, save, storage, onExit }) {
         const body = document.createElement('div');
         body.className = 'rgb-card__body';
         body.textContent = ending.body;
+
+        const flowchartEl = renderChapterFlowchart(runState.checkpoint);
+
         const exitBtn = document.createElement('button');
         exitBtn.type = 'button';
         exitBtn.textContent = 'EXIT SIMULATION';
         exitBtn.addEventListener('click', handleExit);
-        card.append(title, body, exitBtn);
+        card.append(title, body);
+        if (flowchartEl) {
+            card.append(flowchartEl);
+        }
+        card.append(exitBtn);
         root.append(card);
         exitBtn.focus();
     }

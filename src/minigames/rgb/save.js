@@ -16,6 +16,7 @@ function createDefaultSave() {
         chapterSnapshots: {},
         endingsSeen: [],
         gameOversSeen: [],
+        discoveredBeats: [],
         settings: { hints: 'standard' },
         run: {
             timeBand: 0,
@@ -52,6 +53,9 @@ function migrateRgbSave(raw) {
         chapterSnapshots,
         endingsSeen: Array.isArray(raw.endingsSeen) ? [...new Set(raw.endingsSeen)] : [],
         gameOversSeen: Array.isArray(raw.gameOversSeen) ? [...new Set(raw.gameOversSeen)] : [],
+        discoveredBeats: Array.isArray(raw.discoveredBeats)
+            ? [...new Set(raw.discoveredBeats.filter((id) => typeof id === 'string'))]
+            : [],
         settings: {
             hints: typeof raw.settings?.hints === 'string' ? raw.settings.hints : fallback.settings.hints
         },
@@ -139,6 +143,13 @@ export function recordEnding(save, endingId) {
 export function recordGameOver(save, gameOverId) {
     if (save.gameOversSeen.includes(gameOverId)) return save;
     return { ...save, gameOversSeen: [...save.gameOversSeen, gameOverId] };
+}
+
+export function recordDiscoveredBeat(save, beatId) {
+    if (!beatId || typeof beatId !== 'string') return save;
+    const discovered = save.discoveredBeats ?? [];
+    if (discovered.includes(beatId)) return save;
+    return { ...save, discoveredBeats: [...discovered, beatId] };
 }
 
 // Canonical gate: recover the Chen confession log + the cave stasis-box

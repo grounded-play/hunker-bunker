@@ -12455,6 +12455,137 @@ button.archive-log-entry:active {
   outline-offset: 2px;
 }
 
+/* Detroit: Become Human Style Narrative Flowchart */
+.rgb-flowchart {
+  margin: calc(var(--vu) * 1.5) 0;
+  padding: calc(var(--vu) * 1.2);
+  background: rgba(15, 18, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+}
+
+.rgb-flowchart__header {
+  font-family: 'Space Mono', monospace;
+  font-size: max(12px, calc(var(--vu) * 1.2));
+  color: #a0aec0;
+  display: flex;
+  gap: calc(var(--vu) * 0.8);
+  align-items: center;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
+  padding-bottom: calc(var(--vu) * 0.6);
+}
+
+.rgb-flowchart__header strong {
+  color: #ff3344;
+}
+
+.rgb-flowchart__tree {
+  display: flex;
+  flex-direction: row;
+  gap: calc(var(--vu) * 1.5);
+  overflow-x: auto;
+  padding: calc(var(--vu) * 0.8) 0;
+}
+
+.rgb-flowchart__wave {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  min-width: 190px;
+  flex-shrink: 0;
+}
+
+.rgb-flowchart__wave-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: max(10px, calc(var(--vu) * 0.9));
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 3px;
+  align-self: flex-start;
+}
+
+.rgb-flowchart__node {
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1);
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+/* Active Run Node */
+.rgb-flowchart__node--current {
+  background: rgba(225, 29, 46, 0.18);
+  border: 1px solid #e11d2e;
+  box-shadow: 0 0 10px rgba(225, 29, 46, 0.3);
+}
+
+.rgb-flowchart__node--current .rgb-flowchart__badge {
+  color: #ff3344;
+  font-weight: 800;
+  font-size: max(9px, calc(var(--vu) * 0.8));
+}
+
+.rgb-flowchart__node--current .rgb-flowchart__title {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: max(12px, calc(var(--vu) * 1.1));
+}
+
+.rgb-flowchart__node--current .rgb-flowchart__desc {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: max(10px, calc(var(--vu) * 0.9));
+}
+
+/* Past Run Discovered Node */
+.rgb-flowchart__node--discovered {
+  background: rgba(45, 55, 72, 0.4);
+  border: 1px solid rgba(160, 174, 192, 0.4);
+  opacity: 0.85;
+}
+
+.rgb-flowchart__node--discovered .rgb-flowchart__badge--past {
+  color: #cbd5e0;
+  font-size: max(9px, calc(var(--vu) * 0.8));
+}
+
+.rgb-flowchart__node--discovered .rgb-flowchart__title {
+  color: #e2e8f0;
+  font-size: max(11px, calc(var(--vu) * 1));
+}
+
+.rgb-flowchart__node--discovered .rgb-flowchart__desc {
+  color: rgba(226, 232, 240, 0.6);
+  font-size: max(10px, calc(var(--vu) * 0.85));
+}
+
+/* Undiscovered / Hidden Node */
+.rgb-flowchart__node--hidden {
+  background: rgba(20, 24, 32, 0.6);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  opacity: 0.6;
+}
+
+.rgb-flowchart__node--hidden .rgb-flowchart__badge--hidden {
+  color: #718096;
+  font-size: max(9px, calc(var(--vu) * 0.8));
+}
+
+.rgb-flowchart__node--hidden .rgb-flowchart__title {
+  color: #a0aec0;
+  font-style: italic;
+  font-size: max(11px, calc(var(--vu) * 0.95));
+}
+
+.rgb-flowchart__node--hidden .rgb-flowchart__desc {
+  color: #4a5568;
+  font-size: max(9px, calc(var(--vu) * 0.8));
+}
+
 @media (max-width: 760px) {
   .rgb-recap__status,
   .rgb-route-timeline {
@@ -12992,4 +13123,68 @@ button.archive-log-entry:active {
   font-family: 'Space Mono', monospace;
   font-size: 12px;
   outline: none;
+}
+
+/* Gameplay HUD readability pass: keep the center of the playfield clear,
+   reduce oversized panels, and make related status blocks read as one rail. */
+@media (min-width: 901px) {
+  .hud-header {
+    top: clamp(14px, calc(var(--vu) * 2), 24px);
+    left: clamp(190px, 16vw, 270px);
+    right: clamp(52px, calc(var(--vu) * 7), 82px);
+    padding-right: 0;
+    gap: clamp(6px, calc(var(--vu) * 0.8), 12px);
+  }
+
+  .weapon-status-panel,
+  .ship-status-panel,
+  .vitals-panel--topbar,
+  .class-ability-panel {
+    min-height: 36px;
+    padding: 6px 10px;
+    background: rgba(5, 9, 12, 0.82);
+    backdrop-filter: blur(5px);
+  }
+
+  .class-ability-panel {
+    max-width: 118px;
+  }
+
+  .level-indicator {
+    top: clamp(14px, calc(var(--vu) * 2), 24px);
+    left: clamp(14px, calc(var(--vu) * 2), 24px);
+    padding: 8px 12px;
+    font-size: clamp(16px, calc(var(--vu) * 1.9), 22px);
+    background: rgba(5, 9, 12, 0.82);
+    backdrop-filter: blur(5px);
+  }
+
+  .pickup-counter-panel {
+    top: clamp(104px, calc(var(--vu) * 12), 136px);
+    left: clamp(14px, calc(var(--vu) * 2), 24px);
+    width: clamp(112px, calc(var(--vu) * 14), 150px);
+    padding: 10px 12px;
+    font-size: clamp(12px, calc(var(--vu) * 1.45), 15px);
+    background: rgba(5, 9, 12, 0.82);
+    backdrop-filter: blur(5px);
+  }
+
+  .pickup-counter-panel__row {
+    padding: 4px 0;
+  }
+
+  .desktop-compass {
+    top: auto;
+    bottom: clamp(18px, calc(var(--vu) * 3), 34px);
+    left: clamp(14px, calc(var(--vu) * 2), 24px);
+    width: clamp(170px, calc(var(--vu) * 19), 220px);
+    padding: 9px 12px;
+    background: rgba(5, 12, 16, 0.84);
+    backdrop-filter: blur(5px);
+  }
+
+  .desktop-compass__ring {
+    width: clamp(48px, calc(var(--vu) * 6), 64px);
+    height: clamp(48px, calc(var(--vu) * 6), 64px);
+  }
 }

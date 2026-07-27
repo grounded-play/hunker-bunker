@@ -42,6 +42,9 @@ condition is met. Its progress is saved separately from an active bunker run.
   first/end frames, and start-to-end video prompts
 - [On-rails cinematic prompts](cinematic-rail-prompts.md): unavoidable
   connective shots before, between, and after player choices
+- [Video-to-still transition bible](video-to-still-transition-bible.md):
+  first-frame, action, landing-frame, return, branch, and convergence map for
+  producing continuous motion around every playable interstitial
 
 RGB inherits the game-wide
 [Steam Deck-first display and input specification](../../steam-deck-first-display-and-input-spec.md).

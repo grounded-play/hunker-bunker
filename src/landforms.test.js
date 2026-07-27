@@ -93,8 +93,8 @@ describe('pickLandform', () => {
         };
         const active = tally('active');
         expect(Object.keys(active).length).toBe(5);
-        expect(active[LANDFORMS.MAZE]).toBeLessThan(active[LANDFORMS.FIELD]);
-        expect(active[LANDFORMS.MAZE]).toBeLessThan(active[LANDFORMS.CRATER]);
+        expect(active[LANDFORMS.MAZE]).toBeGreaterThan(active[LANDFORMS.FIELD]);
+        expect(active[LANDFORMS.MAZE]).toBeGreaterThan(active[LANDFORMS.CRATER]);
         expect(tally('cryo')[LANDFORMS.CANYON]).toBeGreaterThan(active[LANDFORMS.CANYON]);
         expect(tally('bio')[LANDFORMS.FIELD]).toBeGreaterThan(active[LANDFORMS.FIELD]);
     });

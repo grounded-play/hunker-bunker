@@ -10,6 +10,7 @@ import {
     getChapterSnapshot,
     recordEnding,
     recordGameOver,
+    recordDiscoveredBeat,
     saveCheckpoint,
     shouldUnlockRgb
 } from './save.js';
@@ -40,6 +41,7 @@ describe('loadRgbSave', () => {
             chapterSnapshots: {},
             endingsSeen: [],
             gameOversSeen: [],
+            discoveredBeats: [],
             settings: { hints: 'standard' },
             run: {
                 timeBand: 0,
@@ -143,6 +145,16 @@ describe('recordGameOver', () => {
         save = recordGameOver(save, 'crushed');
         save = recordGameOver(save, 'crushed');
         expect(save.gameOversSeen).toEqual(['crushed']);
+    });
+});
+
+describe('recordDiscoveredBeat', () => {
+    it('adds a discovered beat id uniquely across runs', () => {
+        let save = loadRgbSave(createMemoryStorage());
+        save = recordDiscoveredBeat(save, 'reply_to_lucia');
+        save = recordDiscoveredBeat(save, 'reply_to_lucia');
+        save = recordDiscoveredBeat(save, 'enter_now');
+        expect(save.discoveredBeats).toEqual(['reply_to_lucia', 'enter_now']);
     });
 });
 

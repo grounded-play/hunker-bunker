@@ -31,7 +31,7 @@ function reachableFloorCount(grid) {
     const floorCells = [];
     for (let y = 0; y < grid.length; y += 1) {
         for (let x = 0; x < grid[y].length; x += 1) {
-            if (grid[y][x] === '.') floorCells.push([x, y]);
+            if (grid[y][x] !== '#') floorCells.push([x, y]);
         }
     }
     if (floorCells.length === 0) return { floorCount: 0, reachable: 0 };
@@ -45,7 +45,7 @@ function reachableFloorCount(grid) {
             const ny = y + dy;
             const key = `${nx},${ny}`;
             if (ny < 0 || ny >= grid.length || nx < 0 || nx >= grid[ny].length || seen.has(key)) continue;
-            if (grid[ny][nx] !== '.') continue;
+            if (grid[ny][nx] === '#') continue;
             seen.add(key);
             stack.push([nx, ny]);
         }
