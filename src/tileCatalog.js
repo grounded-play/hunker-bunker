@@ -55,19 +55,25 @@ function withRotations(base, orientationIds) {
 const O = SOCKET.OPEN3;
 const C = SOCKET.CLOSED;
 
-const ROOM_CLOSED = {
-    id: 'room-closed',
-    category: 'room',
+// CLOSED on every side means nothing can ever open a door into this tile —
+// any floor here would be a permanently sealed, unreachable pocket (a real
+// bug this catalog used to have: a floor-filled "room-closed" tile broke
+// the full-chunk reachability guarantee the moment WFC placed it). Solid
+// rock filler has no floor to strand, so it's the only sound way to satisfy
+// the "at least one tile CLOSED on all four sides" catalog requirement.
+const SOLID_FILL = {
+    id: 'solid-fill',
+    category: 'solid',
     tutorial: true,
-    weight: 1,
+    weight: 0.6,
     sockets: { n: C, e: C, s: C, w: C },
     pattern: [
         '#######',
-        '#.....#',
-        '#.....#',
-        '#.....#',
-        '#.....#',
-        '#.....#',
+        '#######',
+        '#######',
+        '#######',
+        '#######',
+        '#######',
         '#######'
     ]
 };
@@ -192,7 +198,7 @@ const CANYON_IMPASSABLE_BASE = {
 };
 
 export const TILE_CATALOG = Object.freeze([
-    ROOM_CLOSED,
+    SOLID_FILL,
     ...withRotations(ROOM_ALCOVE_BASE, ['s', 'w', 'n', 'e']),
     ...withRotations(CORRIDOR_STRAIGHT_BASE, ['ns', 'ew']),
     ...withRotations(CORRIDOR_TURN_BASE, ['ne', 'es', 'sw', 'wn']),

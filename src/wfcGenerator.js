@@ -1,8 +1,9 @@
-import { TILE_CATALOG, SOCKET, oppositeSide, TILE_SIZE } from './tileCatalog.js';
+import { TILE_CATALOG, oppositeSide, TILE_SIZE } from './tileCatalog.js';
 
 export const LATTICE_SIZE = 3;
 const CELL_COUNT = LATTICE_SIZE * LATTICE_SIZE;
 const MAX_ATTEMPTS = 5;
+const CHUNK_SIZE = (TILE_SIZE - 1) * LATTICE_SIZE + 1; // 19, matches ThreeGame's chunkSize
 
 function neighborsOf(index) {
     const mx = index % LATTICE_SIZE;
@@ -76,56 +77,65 @@ function attemptCollapse(random, catalog) {
     return domains.map((domain) => domain[0]);
 }
 
-function isFullyConnected(lattice) {
-    const seen = new Set([0]);
-    const stack = [0];
-    while (stack.length > 0) {
-        const current = stack.pop();
-        for (const { index: neighborIndex, side } of NEIGHBOR_CACHE[current]) {
-            if (seen.has(neighborIndex)) continue;
-            if (lattice[current].sockets[side] !== SOCKET.OPEN3) continue;
-            seen.add(neighborIndex);
-            stack.push(neighborIndex);
+// Lattice-level socket matching (checked during propagation above) only
+// guarantees adjacent tiles *could* connect — it does NOT guarantee a
+// tile's own interior connects its open sides to each other. Most authored
+// tiles do (a room/corridor's floor always reaches every one of its own
+// sockets), but canyon-impassable deliberately doesn't: its north and south
+// notches are separated by solid wall, by design (spec §2). So the only
+// sound way to confirm the whole chunk is actually walkable end-to-end is a
+// real flood fill over the stamped grid, not a graph walk over lattice
+// sockets.
+function isGridFullyConnected(grid) {
+    const size = grid.length;
+    let start = null;
+    let floorCount = 0;
+    for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+            if (grid[y][x] === '.') {
+                floorCount += 1;
+                if (!start) start = [x, y];
+            }
         }
     }
-    return seen.size === CELL_COUNT;
+    if (!start) return false;
+
+    const seen = new Set([`${start[0]},${start[1]}`]);
+    const stack = [start];
+    while (stack.length > 0) {
+        const [x, y] = stack.pop();
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = x + dx;
+            const ny = y + dy;
+            const key = `${nx},${ny}`;
+            if (ny < 0 || ny >= size || nx < 0 || nx >= size || seen.has(key)) continue;
+            if (grid[ny][nx] !== '.') continue;
+            seen.add(key);
+            stack.push([nx, ny]);
+        }
+    }
+    return seen.size === floorCount;
 }
 
-function fallbackLattice(tutorialOnly) {
+// One known-good, always-connected, always-self-consistent 3x3 arrangement
+// (solid-fill corners, straight corridors on the edge-mids, a cross at the
+// center) — same fallback philosophy as ensureChunkPortals's "no edges
+// open, force east" (src/threeGame.js:19992-19994). Used regardless of
+// tutorialOnly: this is a last-resort safety net that should be essentially
+// unreachable in practice (see the catalog-completeness test in
+// tileCatalog.test.js), so it isn't worth maintaining a second, smaller
+// tutorial-only variant just to keep corridor-cross out of it.
+function fallbackLattice() {
     const catalogById = new Map(TILE_CATALOG.map((tile) => [tile.id, tile]));
-    const roomClosed = catalogById.get('room-closed');
-
-    if (tutorialOnly) {
-        // A closed-room center means every corridor stub touching it must
-        // face the center with its CLOSED side and open away from it.
-        const alcoveN = catalogById.get('room-alcove-n');
-        const alcoveS = catalogById.get('room-alcove-s');
-        const alcoveE = catalogById.get('room-alcove-e');
-        const alcoveW = catalogById.get('room-alcove-w');
-        return [
-            roomClosed, alcoveN, roomClosed,
-            alcoveW, roomClosed, alcoveE,
-            roomClosed, alcoveS, roomClosed
-        ];
-    }
-
+    const solidFill = catalogById.get('solid-fill');
     const straightNS = catalogById.get('corridor-straight-ns');
     const straightEW = catalogById.get('corridor-straight-ew');
     const cross = catalogById.get('corridor-cross');
     return [
-        roomClosed, straightNS, roomClosed,
+        solidFill, straightNS, solidFill,
         straightEW, cross, straightEW,
-        roomClosed, straightNS, roomClosed
+        solidFill, straightNS, solidFill
     ];
-}
-
-export function collapseChunkLattice(random, { tutorialOnly = false } = {}) {
-    const catalog = tutorialOnly ? TILE_CATALOG.filter((tile) => tile.tutorial) : TILE_CATALOG;
-    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
-        const result = attemptCollapse(random, catalog);
-        if (result && isFullyConnected(result)) return result;
-    }
-    return fallbackLattice(tutorialOnly);
 }
 
 export function stampLattice(lattice, chunkSize) {
@@ -144,4 +154,14 @@ export function stampLattice(lattice, chunkSize) {
         }
     }
     return grid;
+}
+
+export function collapseChunkLattice(random, { tutorialOnly = false } = {}) {
+    const catalog = tutorialOnly ? TILE_CATALOG.filter((tile) => tile.tutorial) : TILE_CATALOG;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+        const result = attemptCollapse(random, catalog);
+        if (!result) continue;
+        if (isGridFullyConnected(stampLattice(result, CHUNK_SIZE))) return result;
+    }
+    return fallbackLattice();
 }
