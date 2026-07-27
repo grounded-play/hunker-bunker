@@ -21,6 +21,7 @@ function makeFakePlacementGame(runEntropy) {
         createSeededRandom: ThreeGame.prototype.createSeededRandom,
         isSnailTileWalkable: () => true,
         canOccupyPosition: () => true,
+        isGoodSitePosition: ThreeGame.prototype.isGoodSitePosition,
         // Every chunk qualifies as a camp clearing so the camp path exercises
         // its normal (non-fallback) placement branch.
         getChunkLandform: () => 'crater'

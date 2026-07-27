@@ -8117,6 +8117,25 @@ export class ThreeGame {
         this.updateHivePrompt();
     }
 
+    // Shared quality gate for camp/hive placement: a natural CRATER/FIELD
+    // clearing always qualifies (reads as authored), and — now that MAZE
+    // chunks have real authored rooms instead of eroded maze cells — a
+    // MAZE chunk qualifies too if the candidate tile lands inside a
+    // chamber, giving unique sites more placement variety while still
+    // guaranteeing they never land in a bare 1-wide corridor.
+    isGoodSitePosition(tileX, tileZ) {
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileZ / this.chunkSize);
+        const landform = this.getChunkLandform(chunkX, chunkY);
+        if (landform === LANDFORMS.CRATER || landform === LANDFORMS.FIELD) return true;
+        if (landform !== LANDFORMS.MAZE) return false;
+
+        const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
+        const localX = ((tileX % this.chunkSize) + this.chunkSize) % this.chunkSize;
+        const localZ = ((tileZ % this.chunkSize) + this.chunkSize) % this.chunkSize;
+        return roomTypes?.[localZ]?.[localX] === ROOM_TYPES.CHAMBER;
+    }
+
     chooseHiveSitePosition(index) {
         const anchor = this.getBiomeAnchorPosition();
         const random = this.createSeededRandom((this.hashTile(
@@ -8136,6 +8155,10 @@ export class ThreeGame {
             const angle = baseAngle + (random() - 0.5) * Math.PI * 0.2;
             const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
             const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
+            // First half of attempts insist on a natural clearing or a real
+            // room chamber — same bar as chooseCampPosition — before
+            // relaxing so placement never fails.
+            if (attempt < 48 && !this.isGoodSitePosition(tileX, tileZ)) continue;
             if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
                 return { x: tileX, z: tileZ };
             }
@@ -8492,22 +8515,17 @@ export class ThreeGame {
             Math.round(anchor.z) + 89 - index * 7
         ) ^ this.runEntropy) >>> 0);
         // Three camps fanned around the base, each a real trek apart.
-        // Early attempts insist on a crater or field chunk — camps read as
-        // authored when they sit in a natural clearing instead of maze
-        // corridors — then the requirement relaxes so placement never fails.
+        // Early attempts insist on a crater/field clearing or a real MAZE
+        // room chamber — camps read as authored when they sit in a natural
+        // clearing or an actual room instead of a bare maze corridor — then
+        // the requirement relaxes so placement never fails.
         const baseAngle = [Math.PI * 0.12, Math.PI * 0.78, Math.PI * 1.42][index % 3];
         for (let attempt = 0; attempt < 96; attempt += 1) {
             const dist = THREE.MathUtils.lerp(70, 120, random());
             const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
             const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
             const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
-            if (attempt < 48) {
-                const landform = this.getChunkLandform(
-                    Math.floor(tileX / this.chunkSize),
-                    Math.floor(tileZ / this.chunkSize)
-                );
-                if (landform !== LANDFORMS.CRATER && landform !== LANDFORMS.FIELD) continue;
-            }
+            if (attempt < 48 && !this.isGoodSitePosition(tileX, tileZ)) continue;
             if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
                 return { x: tileX, z: tileZ };
             }
