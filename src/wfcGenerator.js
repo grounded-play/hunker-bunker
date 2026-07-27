@@ -48,7 +48,7 @@ function shuffle(items, random) {
 // 2x2 lattice (pockets) can never produce degree > 2 regardless — every
 // cell only has 2 possible neighbors there — so this same function is safe
 // to reuse for pockets even with the (degree-2-capped) tutorial catalog.
-function buildBranchingSpanningTree(random, neighborCache, cellCount) {
+function buildBranchingSpanningTree(random, neighborCache, _cellCount) {
     const openEdges = new Set();
     const visited = new Set([0]);
     const stack = [0];
@@ -195,6 +195,12 @@ export function collapsePocketLattice(random) {
     const lattice = [];
     for (let index = 0; index < cellCount; index += 1) {
         const required = requiredSocketsFor(index, openEdges, POCKET_NEIGHBOR_CACHE);
+        const mx = index % POCKET_LATTICE_SIZE;
+        const my = Math.floor(index / POCKET_LATTICE_SIZE);
+        if (mx === 0) required.w = SOCKET.CLOSED;
+        if (mx === POCKET_LATTICE_SIZE - 1) required.e = SOCKET.CLOSED;
+        if (my === 0) required.n = SOCKET.CLOSED;
+        if (my === POCKET_LATTICE_SIZE - 1) required.s = SOCKET.CLOSED;
         lattice.push(pickTileForCell(required, catalog, random));
     }
     return lattice;

@@ -8370,6 +8370,7 @@ function spawnSmoke(x, y, count, isVertical = true) {
 // Character Selection Logic
 const charCards = document.querySelectorAll('.char-card');
 const previewSprite = document.getElementById('char-preview-sprite');
+const previewFallback = document.getElementById('char-preview-fallback');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
 const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -8383,6 +8384,11 @@ let previewDoorTimer = null;
 let pendingPreviewType = null;
 let activePreviewType = 'TANK';
 const previewSpriteImages = new Map();
+const PREVIEW_PORTRAITS = Object.freeze({
+    SCOUT: '/Scout.full_v2.png',
+    TANK: '/Tank.full_v2.png',
+    ENGINEER: '/Eng.Full_v2.png'
+});
 
 charCards.forEach((card) => {
     card.setAttribute('role', 'button');
@@ -8449,7 +8455,10 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
     if (!data || !previewSprite || !previewSpriteContext) return;
 
     const image = await getPreviewSpriteImage(data.path, data).catch(() => null);
-    if (!image || !heroData[type] || heroData[type].path !== data.path) return;
+    if (!image || !heroData[type] || heroData[type].path !== data.path) {
+        previewFallback?.classList.remove('hidden');
+        return;
+    }
 
     const frameWidth = Math.floor(image.width / data.columns);
     const frameHeight = Math.floor(image.height / data.rows);
@@ -8476,6 +8485,7 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
         frameWidth,
         frameHeight
     );
+    previewFallback?.classList.add('hidden');
 
 }
 
@@ -8485,6 +8495,10 @@ function syncHeroPreview(type) {
 
     activePreviewType = type;
     if (previewName) previewName.textContent = data.name;
+    if (previewFallback) {
+        previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
+        previewFallback.classList.remove('hidden');
+    }
     previewFrameIndex = 0;
     void renderPreviewFrame(type, previewFrameIndex);
 

@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
-import { collapseChunkLattice, stampLattice } from './wfcGenerator.js';
+import { collapseChunkLattice, collapsePocketLattice, stampLattice } from './wfcGenerator.js';
+import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
@@ -201,7 +202,7 @@ const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
 const FALL_DAMAGE_BASE = 2;
-const POCKET_CELL_COUNT = 5; // odd cell-count, matches chunkCellCount's exact-center property. Grid size = 5*2+1 = 11.
+const POCKET_GRID_SIZE = 13; // 2x2 overlapping 7x7 WFC tiles: 7 + 7 - 1.
 const POCKET_WORLD_Y = -6; // fixed depth below the surface (y=0)
 const WALL_HP_DAMAGED = 5;
 const WALL_HP_STANDARD = 8;
@@ -3422,13 +3423,15 @@ export class ThreeGame {
     }
 
     getTerrainHeightAt(worldX, worldZ) {
-        const chunkX = Math.floor((worldX + this.chunkSize / 2) / this.chunkSize);
-        const chunkY = Math.floor((worldZ + this.chunkSize / 2) / this.chunkSize);
+        const tileX = Math.round(worldX);
+        const tileZ = Math.round(worldZ);
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileZ / this.chunkSize);
         const key = `${chunkX},${chunkY}`;
         const chunk = this.chunkCache?.get(key);
         if (!chunk || !chunk.heightmap) return TERRAIN_HEIGHTS.GROUND;
-        const localX = Math.floor(worldX - (chunkX * this.chunkSize - this.chunkSize / 2));
-        const localZ = Math.floor(worldZ - (chunkY * this.chunkSize - this.chunkSize / 2));
+        const localX = tileX - chunkX * this.chunkSize;
+        const localZ = tileZ - chunkY * this.chunkSize;
         if (localZ < 0 || localZ >= chunk.heightmap.length || localX < 0 || localX >= chunk.heightmap[0].length) {
             return TERRAIN_HEIGHTS.GROUND;
         }
@@ -11768,15 +11771,14 @@ export class ThreeGame {
         }
 
         if (this.o2BubbleObjects?.ring?.visible && !this.o2StartupSequenceActive) {
-            const t = performance.now() * 0.001;
             const ringBaseScale = Math.max(0.01, generatorState.radius / O2_GENERATOR_RING_BASE_RADIUS);
-            const pulse = ringBaseScale * (0.97 + Math.sin(t * 2.2) * 0.06);
-            const opacity = 0.16 + Math.sin(t * 2.6) * 0.06;
+            const pulse = ringBaseScale;
+            const opacity = 0.16;
             this.o2BubbleObjects.ring.scale.set(pulse, pulse, 1);
             this.o2BubbleObjects.ring.material.opacity = opacity;
             this.o2BubbleObjects.fill.scale.set(pulse, pulse, 1);
-            this.o2BubbleObjects.fill.material.opacity = O2_SAFE_FILL_OPACITY + Math.sin(t * 2.1) * 0.035;
-            this.o2BubbleObjects.light.intensity = 1.35 + Math.sin(t * 2.4) * 0.18;
+            this.o2BubbleObjects.fill.material.opacity = O2_SAFE_FILL_OPACITY;
+            this.o2BubbleObjects.light.intensity = 1.35;
         }
 
         this.o2DispatchTimer += delta;
@@ -11807,7 +11809,12 @@ export class ThreeGame {
                 
                 if (this.player.position.y <= -2.5) {
                     this.isPlayerFalling = false;
-                    this.enterPocket(this._fallHoleX, this._fallHoleZ);
+                    if (this._fallIsLethal) {
+                        this._fallIsLethal = false;
+                        this.handleDeath('pit-fall');
+                    } else {
+                        this.enterPocket(this._fallHoleX, this._fallHoleZ);
+                    }
                 }
             }
             return;
@@ -11830,6 +11837,7 @@ export class ThreeGame {
                 this.isPlayerFalling = true;
                 this._fallHoleX = Math.round(this.player.position.x);
                 this._fallHoleZ = Math.round(this.player.position.z);
+                this._fallIsLethal = this.getTileType(this._fallHoleX, this._fallHoleZ) === VERTICAL_TILE.PIT;
                 this.setInputEnabled(false);
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
@@ -11861,7 +11869,11 @@ export class ThreeGame {
 
         if (this.player) {
             const targetHeight = this.getTerrainHeightAt(this.player.position.x, this.player.position.z);
-            this.player.position.y = THREE.MathUtils.lerp(this.player.position.y, targetHeight * 0.05 + 0.06, 12 * delta);
+            this.player.position.y = THREE.MathUtils.lerp(
+                this.player.position.y,
+                targetHeight + 0.06,
+                1 - Math.exp(-delta * 12)
+            );
         }
 
         if (this.player && this.inRunLootDrops?.length) {
@@ -14610,12 +14622,14 @@ export class ThreeGame {
                 floorCells.push({ x, y });
             }
         }
+        const pocketRandom = this.createSeededRandom(
+            (this.hashTile(holeWorldX + 5000, holeWorldZ + 5000) ^ this.runEntropy) >>> 0
+        );
+        let rewardCell = null;
         if (floorCells.length > 0) {
-            const random = this.createSeededRandom(
-                (this.hashTile(holeWorldX + 5000, holeWorldZ + 5000) ^ this.runEntropy) >>> 0
-            );
-            const pick = floorCells[Math.floor(random() * floorCells.length)];
-            const lootType = random() < 0.5 ? 'health' : 'tech';
+            const pick = floorCells[Math.floor(pocketRandom() * floorCells.length)];
+            rewardCell = pick;
+            const lootType = pocketRandom() < 0.5 ? 'health' : 'tech';
             const placement = this.createSnailDropPlacement(
                 pocket.centerCell.x, pocket.centerCell.y, pick.x, pick.y, lootType
             );
@@ -14626,6 +14640,45 @@ export class ThreeGame {
             // it the pocket's loot is visible but permanently uncollectable.
             this.pickupMeshes.push(pickup);
         }
+
+        // A pocket is a small authored room, not an empty maze with one
+        // floating reward. Dress several distinct floor anchors while keeping
+        // entry, reward, and climb cells clear. These are pocket-local group
+        // children and never enter the surface scatter registry.
+        const dressingCandidates = floorCells.filter(({ x, y }) => (
+            !(x === rewardCell?.x && y === rewardCell?.y)
+            && Math.hypot(x - pocket.centerCell.x, y - pocket.centerCell.y) > 1.8
+            && Math.hypot(x - pocket.climbPoint.x, y - pocket.climbPoint.y) > 1.8
+        ));
+        const dressingTypes = ['prop_conduit_hub', 'bunker_junk_uncommon', 'scatter_gravel', 'bio_spores'];
+        const pocketDecorations = [];
+        for (let index = 0; index < Math.min(4, dressingCandidates.length); index += 1) {
+            const selectedIndex = Math.floor(pocketRandom() * dressingCandidates.length);
+            const [cell] = dressingCandidates.splice(selectedIndex, 1);
+            const placement = {
+                x: cell.x,
+                z: cell.y,
+                type: dressingTypes[index],
+                scatterKey: `pocket:${key}:${index}`,
+                scale: index === 0 ? 0.9 : 0.62 + pocketRandom() * 0.2,
+                rotation: pocketRandom() * Math.PI * 2,
+                tiltX: 0,
+                tiltZ: 0,
+                elevation: 0.08,
+                groupType: 'pocket-decoration',
+                opacity: 0.92,
+                phase: pocketRandom() * Math.PI * 2
+            };
+            const decoration = this.createScatterInstance?.(placement);
+            if (!decoration) continue;
+            group.add(decoration);
+            pocketDecorations.push(decoration);
+        }
+        group.userData.pocketContent = {
+            signaturePlaced: pocketDecorations.length > 0,
+            decorationCount: pocketDecorations.length,
+            rewardCount: rewardCell ? 1 : 0
+        };
 
         // Climb-point marker, reusing the existing wall-vent asset.
         const marker = new THREE.Mesh(this.ventGeometry, this.ventMaterial);
@@ -14741,6 +14794,35 @@ export class ThreeGame {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform, variant: 'door', isDoor: true
                     });
                     group.add(doorMesh);
+                    continue;
+                }
+                if (tileChar === VERTICAL_TILE.PIT) {
+                    const pit = new THREE.Mesh(this.floorGeometry, this.holeMaterial);
+                    pit.rotation.x = -Math.PI / 2;
+                    pit.position.set(worldX, 0.012, worldZ);
+                    pit.receiveShadow = true;
+                    pit.userData = { isLethalPit: true, worldX, worldZ };
+                    group.add(pit);
+                    continue;
+                }
+                if (
+                    tileChar === VERTICAL_TILE.RAMP
+                    || tileChar === VERTICAL_TILE.BRIDGE
+                    || tileChar === VERTICAL_TILE.LADDER
+                ) {
+                    const deck = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
+                    deck.rotation.x = -Math.PI / 2;
+                    deck.position.set(worldX, grid.heightmap?.[localY]?.[localX] ?? 0, worldZ);
+                    deck.receiveShadow = true;
+                    deck.userData = {
+                        isElevatedTraversal: true,
+                        traversalType: tileChar === VERTICAL_TILE.RAMP
+                            ? 'ramp'
+                            : tileChar === VERTICAL_TILE.LADDER
+                                ? 'ladder'
+                                : 'bridge'
+                    };
+                    group.add(deck);
                     continue;
                 }
                 if (tileChar !== '#') continue;
@@ -19030,9 +19112,7 @@ export class ThreeGame {
                 const opacityPulse = 0.7 + Math.sin(time * 2.1 + phase) * 0.3;
                 child.material.opacity = opacityPulse;
                 const light = child.children.find((c) => c.isPointLight);
-                if (light) {
-                    light.intensity = opacityPulse * 1.8;
-                }
+                if (light) light.intensity = 1.25;
             } else if (child.userData.type === 'prop_hive_resin_sac') {
                 const phase = child.userData.phase ?? 0;
                 const pulse = 0.92 + Math.sin(time * 1.9 + phase) * 0.08;
@@ -19150,9 +19230,7 @@ export class ThreeGame {
         // Pulse the shared hazard-siren dome material (one update for every siren,
         // instead of dozens of per-wall dynamic PointLights).
         if (this.sirenDomeMaterial) {
-            const pulse = 0.5 + 0.5 * Math.sin(time * 6.0);
-            const r = 0.55 + 0.45 * pulse;
-            this.sirenDomeMaterial.color.setRGB(r, 0.12 * pulse, 0.12 * pulse);
+            this.sirenDomeMaterial.color.setRGB(0.82, 0.08, 0.08);
         }
     }
 
@@ -19637,6 +19715,16 @@ export class ThreeGame {
         const tileType = requireCached
             ? this.getCachedTileType(worldX, worldY)
             : this.getTileType(worldX, worldY);
+        if (tileType === VERTICAL_TILE.PIT) {
+            return {
+                x: tileX,
+                z: tileY,
+                scale: 1,
+                rotationZ: 0,
+                fallRadius: 0.48,
+                lethal: true
+            };
+        }
         if (tileType !== '#') return null;
 
         const chunkX = Math.floor(worldX / this.chunkSize);
@@ -19866,43 +19954,30 @@ export class ThreeGame {
         const key = this.getWallKey(holeWorldX, holeWorldZ);
         if (this.pocketCache.has(key)) return this.pocketCache.get(key);
 
-        const cellCount = POCKET_CELL_COUNT;
-        const size = cellCount * 2 + 1;
-        const grid = Array(size).fill(null).map(() => Array(size).fill('#'));
         const random = this.createSeededRandom(
             (this.hashTile(holeWorldX, holeWorldZ) ^ this.runEntropy) >>> 0
         );
-        const startCell = Math.floor(cellCount / 2); // cell space
-        const stack = [[startCell, startCell]];
-        const visited = new Set([`${startCell},${startCell}`]);
-
-        this.carveCell(grid, startCell, startCell);
-
-        while (stack.length > 0) {
-            const [cellX, cellY] = stack[stack.length - 1];
-            const neighbors = this.shuffleDirections([
-                { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
-            ], random);
-            let carved = false;
-            for (const { dx, dy } of neighbors) {
-                const nextX = cellX + dx;
-                const nextY = cellY + dy;
-                const nKey = `${nextX},${nextY}`;
-                // Bound against cellCount (cell space), not size (grid space)
-                // — matches buildChunk's own DFS bound exactly.
-                if (nextX < 0 || nextX >= cellCount || nextY < 0 || nextY >= cellCount || visited.has(nKey)) continue;
-                this.carvePassage(grid, cellX, cellY, nextX, nextY);
-                visited.add(nKey);
-                stack.push([nextX, nextY]);
-                carved = true;
-                break;
+        const lattice = collapsePocketLattice(random);
+        const grid = stampLattice(lattice, POCKET_GRID_SIZE);
+        const geometricCenter = (POCKET_GRID_SIZE - 1) / 2;
+        const floorCells = [];
+        for (let y = 0; y < POCKET_GRID_SIZE; y += 1) {
+            for (let x = 0; x < POCKET_GRID_SIZE; x += 1) {
+                if (grid[y][x] === '.') floorCells.push({ x, y });
             }
-            if (!carved) stack.pop();
         }
-
-        const centerCell = { x: startCell * 2 + 1, y: startCell * 2 + 1 }; // grid space
+        const centerCell = floorCells.reduce((best, cell) => {
+            const distance = Math.hypot(cell.x - geometricCenter, cell.y - geometricCenter);
+            return !best || distance < best.distance ? { ...cell, distance } : best;
+        }, null) ?? { x: geometricCenter, y: geometricCenter };
         const climbPoint = findFarthestFloorCell(grid, centerCell.x, centerCell.y) ?? centerCell;
-        const pocket = { grid, size, centerCell, climbPoint: { x: climbPoint.x, y: climbPoint.y } };
+        const pocket = {
+            grid,
+            lattice,
+            size: POCKET_GRID_SIZE,
+            centerCell: { x: centerCell.x, y: centerCell.y },
+            climbPoint: { x: climbPoint.x, y: climbPoint.y }
+        };
         this.pocketCache.set(key, pocket);
         return pocket;
     }
@@ -19919,12 +19994,13 @@ export class ThreeGame {
         const random = this.createSeededRandom(((this.hashTile(chunkX + 1000, chunkY - 1000) + 101) ^ this.runEntropy) >>> 0);
 
         let grid;
+        let mazeLattice = null;
         if (landform === LANDFORMS.MAZE) {
             // WFC tile catalog (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md
             // §1-3) replaces the old DFS-carve+erosion pipeline for MAZE
             // chunks — see §6 for why non-MAZE landforms are unaffected.
-            const lattice = collapseChunkLattice(random, { tutorialOnly: this.isInTutorialRing(chunkX, chunkY) });
-            grid = stampLattice(lattice, this.chunkSize);
+            mazeLattice = collapseChunkLattice(random, { tutorialOnly: this.isInTutorialRing(chunkX, chunkY) });
+            grid = stampLattice(mazeLattice, this.chunkSize);
         } else {
             grid = Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('#'));
             const centerCell = Math.floor(this.chunkCellCount / 2);
@@ -20054,6 +20130,13 @@ export class ThreeGame {
 
         this.clearSpawnArea(grid, chunkX, chunkY);
         this.clearDoorways?.(grid);
+        if (
+            landform === LANDFORMS.MAZE
+            && mazeLattice
+            && !this.isInTutorialRing(chunkX, chunkY)
+        ) {
+            applyVerticalBridgeFeature(grid, mazeLattice, random);
+        }
         return grid;
     }
 

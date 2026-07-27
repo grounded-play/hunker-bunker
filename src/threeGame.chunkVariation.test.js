@@ -117,10 +117,8 @@ describe('clearLoadedChunksForRunReset — stale landform cache', () => {
 });
 
 describe('generatePocket — per-hole, per-run pocket layout', () => {
-    // POCKET_CELL_COUNT is 5 (an odd cell-count, like the real chunk carve's
-    // chunkCellCount=9) so the DFS start cell lands exactly on the grid's
-    // true center — see the worked arithmetic in this task's implementation
-    // note. Grid size = 5*2+1 = 11.
+    // Phase 2 replaces the old 11x11 one-cell DFS maze with two overlapping
+    // 7x7 WFC tiles per axis: 7 + 7 - 1 = 13.
     function makePocketFakeGame(runEntropy) {
         return {
             runEntropy,
@@ -167,6 +165,23 @@ describe('generatePocket — per-hole, per-run pocket layout', () => {
         expect(pocket.grid[pocket.centerCell.y][pocket.centerCell.x]).toBe('.');
         expect(pocket.grid[pocket.climbPoint.y][pocket.climbPoint.x]).toBe('.');
         expect(pocket.climbPoint).not.toEqual(pocket.centerCell);
+    });
+
+    it('builds a 13x13 WFC pocket with a multi-cell-wide room', () => {
+        const game = makePocketFakeGame(13);
+        const pocket = ThreeGame.prototype.generatePocket.call(game, 2, 8);
+        expect(pocket.size).toBe(13);
+        expect(pocket.grid).toHaveLength(13);
+        expect(pocket.lattice).toHaveLength(4);
+
+        const hasWideRoom = pocket.grid.some((row, y) => row.some((_cell, x) => (
+            y + 2 < pocket.size
+            && x + 2 < pocket.size
+            && pocket.grid.slice(y, y + 3).every((candidateRow) => (
+                candidateRow.slice(x, x + 3).every((cell) => cell === '.')
+            ))
+        )));
+        expect(hasWideRoom).toBe(true);
     });
 });
 

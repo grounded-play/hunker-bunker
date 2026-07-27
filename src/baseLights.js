@@ -65,7 +65,7 @@ export class BaseLights {
                 light,
                 bulb,
                 igniteAt: i * STAGGER_DELAY,
-                seed: Math.random() * 100,
+                seed: i * 0.61803398875,
                 on: false
             });
         }
@@ -155,9 +155,10 @@ export class BaseLights {
                 f.light.intensity = intensity;
                 f.bulb.material.opacity = 0;
             } else {
-                // Settled: gentle idle flicker so the base feels alive.
-                const idle = 1 + Math.sin((this.elapsed + f.seed) * 2.1) * 0.06;
-                f.light.intensity = FIXTURE_MAX_INTENSITY * idle;
+                // Keep gameplay illumination stable after the one-shot
+                // ignition. Continuous intensity modulation read as global
+                // exposure flicker when several fixtures overlapped.
+                f.light.intensity = FIXTURE_MAX_INTENSITY;
                 f.bulb.material.opacity = 0;
             }
         }

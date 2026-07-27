@@ -1319,6 +1319,22 @@ body {
   transform: translateY(calc(var(--vu) * 0.25)) scale(1.3);
 }
 
+.char-preview-fallback {
+  position: absolute;
+  inset: 4% 8% 0;
+  z-index: 1;
+  width: 84%;
+  height: 96%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 0 12px var(--sprite-glow, rgba(255, 255, 255, 0.25)));
+}
+
+#char-preview-sprite {
+  position: relative;
+  z-index: 2;
+}
+
 .char-preview-stage::after {
   content: '';
   position: absolute;

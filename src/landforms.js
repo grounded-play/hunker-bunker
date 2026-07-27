@@ -464,6 +464,13 @@ export function generateHeightmapGrid(grid, landform = LANDFORMS.MAZE, random = 
             }
         }
     }
+    if (grid.verticalHeightmap) {
+        for (let y = 0; y < size; y += 1) {
+            for (let x = 0; x < size; x += 1) {
+                const authoredHeight = grid.verticalHeightmap[y]?.[x];
+                if (Number.isFinite(authoredHeight)) heightmap[y][x] = authoredHeight;
+            }
+        }
+    }
     return heightmap;
 }
-
