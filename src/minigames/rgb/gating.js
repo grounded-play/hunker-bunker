@@ -9,6 +9,7 @@
 //   excludesAllOf: [id]      -> no listed hotspot may have been visited
 //   requires: {
 //     flags: { key: bool }     -> run flags must match
+//     items: [id]              -> every item must be in inventory
 //     maxTimeBand: n           -> hidden once time pressure passes n
 //     canExpose: true          -> the expose evidence threshold is met
 //     painSet: true            -> the collision has resolved to a pain level
@@ -39,6 +40,9 @@ export function isHotspotAvailable(hotspot, runState, visited) {
         for (const [key, expected] of Object.entries(req.flags)) {
             if (Boolean(runState.flags[key]) !== Boolean(expected)) return false;
         }
+    }
+    for (const itemId of req.items ?? []) {
+        if (!runState.inventory.includes(itemId)) return false;
     }
     if (Number.isFinite(req.maxTimeBand) && runState.timeBand > req.maxTimeBand) return false;
     if (req.canExpose && !canExpose(runState)) return false;

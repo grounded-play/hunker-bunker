@@ -106,6 +106,7 @@ function playChapter(chapter, startState = createRunState(), { preferId = null }
         }
         visited.add(next.id);
         runState = applyEffects(runState, next.effects);
+        for (const itemId of next.pickup?.items ?? []) runState = addItem(runState, itemId);
     }
 
     return { reachedExits, runState, visited };
@@ -218,7 +219,7 @@ describe('calibration pays off in the finale', () => {
 
     it('offers exactly one first-attempt rescue for any calibration', () => {
         const chapter = CHAPTERS.sector_four;
-        const crossed = new Set(['pull_alarm', 'cross_to_rack']);
+        const crossed = new Set(['assess_lockdown', 'reach_drawing']);
         for (const state of [honest, falsified, createRunState()]) {
             const open = chapter.hotspots
                 .filter((h) => h.id.startsWith('rescue_recenter'))

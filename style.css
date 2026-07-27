@@ -11901,6 +11901,31 @@ button.archive-log-entry:active {
   outline-offset: 2px;
 }
 
+.rgb-dialogue--incident-review {
+  left: var(--hb-safe-text, 36px);
+  right: auto;
+  top: calc(var(--stage-px, 1px) * 120);
+  bottom: auto;
+  width: calc(var(--stage-px, 1px) * 455);
+  min-height: calc(var(--stage-px, 1px) * 110);
+  max-height: calc(var(--stage-px, 1px) * 230);
+}
+
+.rgb-dialogue--server-room {
+  left: var(--hb-safe-text, 36px);
+  right: var(--hb-safe-text, 36px);
+  top: calc(var(--stage-px, 1px) * 108);
+  bottom: auto;
+  min-height: calc(var(--stage-px, 1px) * 82);
+  max-height: calc(var(--stage-px, 1px) * 115);
+}
+
+.rgb-dialogue--sector-four {
+  left: var(--hb-safe-text, 36px);
+  right: auto;
+  width: calc(var(--stage-px, 1px) * 570);
+}
+
 .rgb-dialogue p {
   margin: 0;
   opacity: 0;

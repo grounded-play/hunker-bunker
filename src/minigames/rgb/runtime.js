@@ -256,6 +256,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const dialogue = document.createElement('div');
         dialogue.className = 'rgb-dialogue';
+        if (chapter.dialogueClass) dialogue.classList.add(chapter.dialogueClass);
         dialogue.id = 'rgb-dialogue';
         dialogue.setAttribute('aria-live', 'polite');
         stage.append(dialogue);

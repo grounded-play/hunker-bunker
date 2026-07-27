@@ -37,7 +37,7 @@ describe('RGB audio content', () => {
 
     it('reports authored voice only for beats that ship a recording', () => {
         expect(hasAuthoredVoice('listen_voicemail')).toBe(true);
-        expect(hasAuthoredVoice('scan_bottle')).toBe(true);
+        expect(hasAuthoredVoice('scan_bottle')).toBe(false);
         // No recording; runtime.js narrates these with synthesised speech.
         expect(hasAuthoredVoice('reply_to_lucia')).toBe(false);
         expect(hasAuthoredVoice('select_joint')).toBe(false);
@@ -45,6 +45,8 @@ describe('RGB audio content', () => {
         expect(hasAuthoredVoice('apply_pressure')).toBe(true);
         expect(hasAuthoredVoice('demand_footage')).toBe(true);
         expect(hasAuthoredVoice('challenge_neutral_language')).toBe(true);
+        expect(hasAuthoredVoice('document_bag')).toBe(true);
+        expect(hasAuthoredVoice('ask_kiosk_release')).toBe(true);
     });
 
     it('attributes lines to the speaker who says them', () => {

@@ -49,15 +49,16 @@ export const HOTSPOT_AUDIO = Object.freeze({
     demand_footage: ['rgb_voice_hr_ch3'],
     challenge_neutral_language: ['rgb_voice_elias_ch3'],
     proceed_to_kiosk: ['rgb_sfx_ui_denied'],
-    scan_bottle: ['rgb_voice_kiosk_ch4', 'rgb_sfx_ui_denied'],
+    scan_bottle: ['rgb_sfx_ui_denied'],
     document_bag: ['rgb_voice_elias_ch4'],
+    ask_kiosk_release: ['rgb_voice_kiosk_ch4', 'rgb_sfx_ui_denied'],
     give_up: ['rgb_sfx_ui_denied'],
     read_terminal: ['rgb_voice_system_ch5'],
     attempt_delete: ['rgb_sfx_ui_denied'],
     walk_away: ['rgb_sfx_ui_denied'],
     expose_profile: ['rgb_sfx_ui_approved'],
     sever_trunk: ['rgb_sfx_ui_denied'],
-    pull_alarm: ['rgb_voice_system_ch6'],
+    assess_lockdown: ['rgb_voice_system_ch6'],
     rescue_recenter: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
     rescue_recenter_weak: ['rgb_sfx_4a_servo'],
     rescue_recenter_again: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
@@ -74,11 +75,11 @@ const HOTSPOT_SPEAKERS = Object.freeze({
     scan_bottle: 'KIOSK',
     view_paycheck: 'KIOSK',
     request_billing_agent: 'KIOSK',
-    document_bag: 'KIOSK',
+    ask_kiosk_release: 'KIOSK',
     check_balance: 'SYSTEM',
     read_terminal: 'SYSTEM',
     attempt_delete: 'SYSTEM',
-    pull_alarm: 'SYSTEM'
+    assess_lockdown: 'SYSTEM'
 });
 
 // Exposed so a test can prove every attributed line belongs to a beat that

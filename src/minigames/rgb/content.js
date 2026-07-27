@@ -362,7 +362,8 @@ export const CHAPTERS = Object.freeze({
     incident_review: {
         id: 'incident_review',
         title: 'Chapter 3: Collision and Incident Review',
-        bg: `${BACKGROUNDS}/bg_incident_review.png`,
+        bg: `${BACKGROUNDS}/bg_incident_review_v2.png`,
+        dialogueClass: 'rgb-dialogue--incident-review',
         initialEffects: { pain: 'injured' },
         goal: 'Preserve evidence while the review process tries to redefine events.',
         next: 'medi_kiosk',
@@ -395,19 +396,17 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'complete_swab',
                 label: 'Compulsory Swab',
-                x: 675, y: 610, w: 320, h: 70,
+                object: true,
+                x: 640, y: 630, w: 125, h: 140,
                 once: true,
-                choice: true,
                 requiresAllOf: ['challenge_neutral_language'],
                 lines: ['The reader blinks, waiting.']
             },
             {
                 id: 'call_marisol',
-                label: 'Call for Marisol',
+                label: 'Marisol Waiting',
                 object: true,
-                inventoryAction: true,
-                icon: `${ITEM_ART}/item_phone.png`,
-                x: 40, y: 565, w: 190, h: 105,
+                x: 920, y: 290, w: 135, h: 295,
                 once: true,
                 requires: {
                     minVisitedOf: {
@@ -423,13 +422,22 @@ export const CHAPTERS = Object.freeze({
                 id: 'photograph_result',
                 label: 'Photograph the Reader',
                 object: true,
-                inventoryAction: true,
                 icon: `${ITEM_ART}/item_phone.png`,
-                x: 40, y: 565, w: 190, h: 105,
+                x: 865, y: 700, w: 105, h: 80,
                 once: true,
                 requiresAllOf: ['complete_swab'],
                 lines: ['INCONCLUSIVE. He photographs it before the laptop closes.'],
                 effects: { evidence: 'swab_photo', choice: 'complete_swab' }
+            },
+            {
+                id: 'inspect_notebook_review',
+                label: 'Calibration Notebook',
+                object: true,
+                icon: `${ITEM_ART}/item_calibration_notebook.png`,
+                x: 735, y: 675, w: 160, h: 115,
+                once: true,
+                requiresAllOf: ['photograph_result'],
+                lines: ['HR reaches toward the notebook. Elias keeps one hand beside it.']
             },
             {
                 id: 'request_marisol_witness',
@@ -459,7 +467,7 @@ export const CHAPTERS = Object.freeze({
                 x: 285, y: 610, w: 320, h: 70,
                 once: true,
                 choice: true,
-                requiresAllOf: ['photograph_result'],
+                requiresAllOf: ['inspect_notebook_review'],
                 excludesAllOf: ['surrender_notebook'],
                 lines: ['He keeps it in his jacket, not on the desk.'],
                 effects: { choice: 'keep_notebook' }
@@ -470,7 +478,7 @@ export const CHAPTERS = Object.freeze({
                 x: 675, y: 610, w: 320, h: 70,
                 once: true,
                 choice: true,
-                requiresAllOf: ['photograph_result'],
+                requiresAllOf: ['inspect_notebook_review'],
                 excludesAllOf: ['keep_notebook'],
                 lines: ['He hands it over. HR keeps files, they say.'],
                 effects: { choice: 'surrender_notebook' }
@@ -513,8 +521,9 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'scan_bottle',
                 label: 'Scan the Bottle',
+                object: true,
                 icon: `${ITEM_ART}/item_albuterol_bottle.png`,
-                x: 300, y: 480, w: 160, h: 100,
+                x: 610, y: 405, w: 160, h: 115,
                 once: true,
                 lines: ['COVERAGE TERMINATED 6:42 PM.', 'Final pay: $14.00, after deductions.'],
                 effects: { evidence: 'kiosk_record', kioskAttempt: true }
@@ -524,7 +533,8 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'view_paycheck',
                 label: 'Itemized Paycheck',
-                x: 480, y: 480, w: 160, h: 100,
+                object: true,
+                x: 645, y: 210, w: 225, h: 195,
                 once: true,
                 requiresAllOf: ['scan_bottle'],
                 lines: ['Productivity variance. Equipment delay. $14.00 net.'],
@@ -533,7 +543,8 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'request_billing_agent',
                 label: 'Request Billing Agent',
-                x: 660, y: 480, w: 160, h: 100,
+                object: true,
+                x: 645, y: 210, w: 225, h: 195,
                 once: true,
                 requiresAllOf: ['view_paycheck'],
                 requires: { maxTimeBand: 2 },
@@ -543,28 +554,48 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'call_hr',
                 label: 'Call HR',
-                x: 840, y: 480, w: 160, h: 100,
+                object: true,
+                inventoryAction: true,
+                icon: `${ITEM_ART}/item_phone.png`,
+                x: 40, y: 565, w: 190, h: 105,
                 once: true,
-                requiresAllOf: ['view_paycheck'],
+                requiresAllOf: ['request_billing_agent'],
                 lines: ['"Separation pending review." No further comment.'],
                 effects: { timeCost: 1, kioskAttempt: true }
             },
             {
                 id: 'call_lucia',
                 label: 'Call Lucia',
-                x: 1020, y: 480, w: 160, h: 100,
+                object: true,
+                inventoryAction: true,
+                icon: `${ITEM_ART}/item_phone.png`,
+                x: 40, y: 565, w: 190, h: 105,
                 once: true,
-                requiresAllOf: ['document_bag'],
+                requiresAllOf: ['call_hr', 'ask_kiosk_release'],
                 lines: ['"I\'m still at work, baby. I know."'],
                 effects: { choice: 'call_lucia', kioskAttempt: true }
             },
             {
                 id: 'document_bag',
                 label: 'Document the Bag',
-                x: 300, y: 600, w: 200, h: 70,
+                object: true,
+                x: 895, y: 275, w: 165, h: 215,
                 once: true,
-                requiresAllOf: ['scan_bottle'],
-                lines: ['Three inches away, behind reinforced glass.', '"Command not recognized."'],
+                requiresAllOf: ['view_paycheck'],
+                lines: [
+                    'Three inches away, behind reinforced glass.',
+                    '"She needs it tonight. When she can\'t breathe, she gets scared. And being scared makes it worse."'
+                ],
+                effects: { kioskAttempt: true }
+            },
+            {
+                id: 'ask_kiosk_release',
+                label: 'Request the Bag',
+                object: true,
+                x: 895, y: 375, w: 165, h: 120,
+                once: true,
+                requiresAllOf: ['document_bag'],
+                lines: ['"Command not recognized."'],
                 effects: { kioskAttempt: true }
             },
             // Wave C: only after the chapter has actually been played. Its
@@ -575,6 +606,7 @@ export const CHAPTERS = Object.freeze({
                 label: 'Follow the Utility Map',
                 x: 460, y: 700, w: 240, h: 70,
                 once: true,
+                requiresAllOf: ['call_lucia'],
                 requires: {
                     minVisitedOf: {
                         ids: [
@@ -582,7 +614,8 @@ export const CHAPTERS = Object.freeze({
                             'request_billing_agent',
                             'call_hr',
                             'call_lucia',
-                            'document_bag'
+                            'document_bag',
+                            'ask_kiosk_release'
                         ],
                         count: 3
                     }
@@ -595,6 +628,7 @@ export const CHAPTERS = Object.freeze({
                 label: 'GIVE UP',
                 x: 740, y: 700, w: 200, h: 70,
                 once: true,
+                requiresAllOf: ['call_lucia'],
                 requires: {
                     minVisitedOf: {
                         ids: [
@@ -602,7 +636,8 @@ export const CHAPTERS = Object.freeze({
                             'request_billing_agent',
                             'call_hr',
                             'call_lucia',
-                            'document_bag'
+                            'document_bag',
+                            'ask_kiosk_release'
                         ],
                         count: 3
                     }
@@ -618,6 +653,7 @@ export const CHAPTERS = Object.freeze({
         id: 'server_room',
         title: 'Chapter 5: Server Room',
         bg: `${BACKGROUNDS}/bg_server_room.png`,
+        dialogueClass: 'rgb-dialogue--server-room',
         goal: 'Decide what to do with the training profile.',
         next: 'sector_four',
         hints: [
@@ -629,7 +665,8 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'read_terminal',
                 label: 'Mainframe Terminal',
-                x: 500, y: 400, w: 160, h: 140,
+                object: true,
+                x: 495, y: 210, w: 280, h: 465,
                 once: true,
                 lines: ['TRAINING MODEL: SORT_ARM_4A', 'HUMAN CALIBRATION SOURCE: ELIAS MORALES'],
                 effects: { evidence: 'training_profile' }
@@ -639,21 +676,31 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'attempt_delete',
                 label: 'Delete the Profile',
-                x: 500, y: 555, w: 160, h: 70,
+                object: true,
+                x: 495, y: 210, w: 280, h: 465,
                 once: true,
                 requiresAllOf: ['read_terminal'],
+                lines: ['ADMIN LOCK. ACCESS DENIED.']
+            },
+            {
+                id: 'inspect_battery_pallet',
+                label: 'Battery Pallet',
+                object: true,
+                x: 845, y: 455, w: 375, h: 335,
+                once: true,
+                requiresAllOf: ['attempt_delete'],
                 lines: [
-                    'ADMIN LOCK. ACCESS DENIED.',
-                    'They will not even let him take his own ghost back.'
+                    'They will not even let him take his own ghost back.',
+                    'Scanner batteries stacked against dry cardboard. No clearance from the cable run.'
                 ]
             },
             {
                 id: 'walk_away',
-                label: 'Leave the Profile Intact',
-                x: 200, y: 690, w: 200, h: 70,
+                label: 'Exit — Leave It Intact',
+                object: true,
+                x: 870, y: 170, w: 160, h: 230,
                 once: true,
-                choice: true,
-                requiresAllOf: ['attempt_delete'],
+                requiresAllOf: ['inspect_battery_pallet'],
                 lines: ['He steps back from the terminal.'],
                 effects: { finalChoice: 'preserve' },
                 advances: true
@@ -661,24 +708,39 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'expose_profile',
                 label: 'Copy and Transmit',
-                x: 540, y: 690, w: 200, h: 70,
+                object: true,
+                x: 495, y: 210, w: 280, h: 465,
                 once: true,
-                choice: true,
-                requiresAllOf: ['attempt_delete'],
+                requiresAllOf: ['inspect_battery_pallet'],
                 requires: { canExpose: true },
                 lines: ['The token has a window. He copies fast.'],
                 effects: { finalChoice: 'expose' },
                 advances: true
             },
             {
+                id: 'inspect_cutters',
+                label: 'Insulated Cutters',
+                object: true,
+                icon: `${ITEM_ART}/item_wire_cutters.png`,
+                x: 60, y: 560, w: 330, h: 155,
+                once: true,
+                requiresAllOf: ['inspect_battery_pallet'],
+                lines: ['Insulated maintenance cutters. Heavy enough for the primary trunk.'],
+                pickup: {
+                    items: ['item_wire_cutters'],
+                    label: 'Take Cutters'
+                }
+            },
+            {
                 id: 'sever_trunk',
                 label: 'Sever the Data Trunk',
-                x: 880, y: 690, w: 200, h: 70,
+                object: true,
+                x: 270, y: 190, w: 215, h: 535,
                 once: true,
-                choice: true,
-                requiresAllOf: ['attempt_delete'],
+                requiresAllOf: ['inspect_cutters'],
+                requires: { items: ['item_wire_cutters'] },
                 lines: ['He reaches for the insulated cutters instead.'],
-                effects: { finalChoice: 'sever', item: 'item_wire_cutters' },
+                effects: { finalChoice: 'sever' },
                 advances: true
             }
         ]
@@ -687,29 +749,33 @@ export const CHAPTERS = Object.freeze({
     sector_four: {
         id: 'sector_four',
         title: 'Chapter 6: Sector 4 and Epilogue',
-        bg: `${BACKGROUNDS}/bg_sector_four.png`,
+        bg: `${CINEMATIC_BASE}/rails/r7_pinned_before_rescue.png`,
+        dialogueClass: 'rgb-dialogue--sector-four',
         goal: 'Escape the collapse using the lesson taught to 4A.',
         next: null,
         hints: [
-            'Pull the alarm before anything else.',
-            'The rack has him. 4A is gripping the wrong point.',
+            'The lockdown order and the fire disagree. The rack already has him.',
+            'Lucia\'s drawing points back to the lesson 4A learned.',
             'Same joint, same pressure, same double tap as the warehouse floor.'
         ],
         hotspots: [
             {
-                id: 'pull_alarm',
-                label: 'Fire Alarm',
-                x: 300, y: 440, w: 160, h: 90,
+                id: 'assess_lockdown',
+                label: 'Lockdown Door',
+                object: true,
+                x: 955, y: 145, w: 155, h: 250,
                 once: true,
-                lines: ['The system says to wait. He pulls it anyway.']
+                lines: ['THERMAL WARNING IN SECTOR 4. REMAIN AT YOUR STATION.']
             },
             {
-                id: 'cross_to_rack',
-                label: 'Cross the Floor',
-                x: 560, y: 440, w: 160, h: 90,
+                id: 'reach_drawing',
+                label: "Lucia's Drawing",
+                object: true,
+                icon: `${ITEM_ART}/item_lucia_drawing.png`,
+                x: 755, y: 645, w: 225, h: 125,
                 once: true,
-                requiresAllOf: ['pull_alarm'],
-                lines: ['A rack collapses. Lucia\'s drawing lands just out of reach.']
+                requiresAllOf: ['assess_lockdown'],
+                lines: ['Just beyond his fingers: the joint diagram, the shoes she drew on 4A, and DAD.']
             },
             // The payoff for Chapter 2. An honest error log earns trust4A 2
             // and 4A recalls the correction on the first attempt; a falsified
@@ -719,9 +785,10 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'rescue_recenter',
                 label: 'Tap. Tap.',
-                x: 820, y: 440, w: 160, h: 90,
+                object: true,
+                x: 625, y: 130, w: 210, h: 205,
                 once: true,
-                requiresAllOf: ['cross_to_rack'],
+                requiresAllOf: ['reach_drawing'],
                 requires: { minTrust4A: 2 },
                 lines: [
                     'Same joint, same pressure.',
@@ -733,9 +800,10 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'rescue_recenter_weak',
                 label: 'Tap. Tap.',
-                x: 820, y: 440, w: 160, h: 90,
+                object: true,
+                x: 625, y: 130, w: 210, h: 205,
                 once: true,
-                requiresAllOf: ['cross_to_rack'],
+                requiresAllOf: ['reach_drawing'],
                 requires: { maxTrust4A: 1 },
                 lines: [
                     'Same joint, same pressure. The servo hunts, uncertain.',
@@ -745,7 +813,8 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'rescue_recenter_again',
                 label: 'Again. Tap. Tap.',
-                x: 820, y: 560, w: 160, h: 90,
+                object: true,
+                x: 625, y: 130, w: 210, h: 205,
                 once: true,
                 requiresAllOf: ['rescue_recenter_weak'],
                 lines: [
@@ -758,9 +827,10 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'rescue_fumble',
                 label: 'Grab the Chassis',
-                x: 560, y: 560, w: 160, h: 90,
+                object: true,
+                x: 1060, y: 35, w: 215, h: 355,
                 once: true,
-                requiresAllOf: ['cross_to_rack'],
+                requiresAllOf: ['reach_drawing'],
                 lines: ['4A grips the wrong point. LOAD INSTABILITY.'],
                 effects: { rescue: { success: false } },
                 advances: true

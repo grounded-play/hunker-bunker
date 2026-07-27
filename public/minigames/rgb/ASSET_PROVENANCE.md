@@ -33,6 +33,22 @@ These are first-pass production concepts. Files with animated subjects baked
 into the plate must be separated or regenerated as clean plates before runtime
 animation.
 
+## Incident-review interaction plate 02
+
+`backgrounds/bg_incident_review_v2.png` was created on 2026-07-26 with the
+built-in OpenAI image-generation tool as a non-destructive edit of
+`bg_incident_review.png`, then normalized to the required 1280×800 stage.
+
+Edit direction: preserve the original room, framing, HR representative, Elias,
+laptop, warehouse activity, halftone treatment, and monochrome fluorescent
+palette; add four clearly separated interactive story elements—a tabletop swab
+reader, Elias's calibration notebook, his cracked phone, and Marisol waiting
+beyond the glass. No new foreground characters or camera changes.
+
+The v2 plate exists specifically so the review gameplay can target visible
+objects instead of placing abstract buttons over empty table space. The
+original BG-05 remains in the repository as the untouched source plate.
+
 ## Cinematic branch end frames 01
 
 Fourteen choice-specific end frames were generated with the built-in OpenAI
