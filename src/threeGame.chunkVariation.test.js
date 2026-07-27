@@ -175,6 +175,7 @@ describe('mountPocket — pocket geometry mounting', () => {
         return {
             pocketCache: new Map(),
             pocketGroups: new Map(),
+            pickupMeshes: [],
             runEntropy: 123,
             globalSeedOffset: 0,
             wallHeight: 2,
@@ -226,6 +227,7 @@ describe('enterPocket / exitPocket — fall resolution', () => {
             isInPocket: false,
             pocketCache: new Map(),
             pocketGroups: new Map(),
+            pickupMeshes: [],
             chunkMeshes: new Map([['0,1', { visible: true }]]),
             chunkSize: 19,
             runEntropy: 55,

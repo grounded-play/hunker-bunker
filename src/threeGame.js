@@ -4482,44 +4482,59 @@ export class ThreeGame {
 
         this.updateClassAbility(delta);
         this.updateRadarScans(delta);
-        this.updateBunkerBlastDoor(delta);
         this.updatePlayer(delta);
-        this.updateBiomeEnvironment({ delta });
-        this.updateWeather(delta);
-        this.updateDayNightCycle(delta);
-        this.updateTerminalClockTick(now);
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
         this._lastFrameDeltaForChunkMounts = delta;
         this.syncVisibleChunks();
-        this.updatePickups(delta, now);
-        this.updateScatter(delta, now);
         this.updateCompanions(delta);
-        this.updateCorpses(delta);
-        this.updateLoreDrops(delta);
-        this.updateBuildSiteBeacon(now);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
-        this.updateConsoles(delta, now);
-        this.updateLoreTerminals();
         this.updateVitals(delta);
         this.updateO2StartupSequence(delta);
-        this.baseLights?.update(delta);
-        this.foundry?.update(delta);
-        this.updateFoundryPrompt();
-        this.updateCaveEntrance(delta);
-        this.updateAct2(delta);
-        this.updateCamps(delta);
-        this.updateHiveSites(delta);
-        this.updateInfectionPressure(delta);
-        this.updateHazardZoneDamage(delta);
-        this.updateCampQuest(delta);
-        this.updateShipVisualState(now);
-        this.updateBlackBoxMarker(delta);
-        this.updateRunModifierEffects(delta);
-        this.updateBunkerDirector(delta);
         this.updateLoopStep();
+        // Surface-only systems: enemy AI, hazards, and prompts that key off
+        // X/Z proximity to the player with no notion of Y/isInPocket
+        // (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-
+        // design.md, Phase 2 §1). Since enterPocket only ever changes
+        // player.position.y — X/Z stay identical to the hole's surface
+        // coordinates — every one of these kept firing against surface
+        // content directly "above" a player who was mechanically elsewhere.
+        // Pausing them here, following the same short-circuit pattern
+        // hasBlockingGameplayOverlay already uses above for cinematics, is
+        // far lower-risk than patching each proximity check individually in
+        // a 20k-line file.
+        if (!this.isInPocket) {
+            this.updateBunkerBlastDoor(delta);
+            this.updateBiomeEnvironment({ delta });
+            this.updateWeather(delta);
+            this.updateDayNightCycle(delta);
+            this.updateTerminalClockTick(now);
+            this.updatePickups(delta, now);
+            this.updateScatter(delta, now);
+            this.updateCorpses(delta);
+            this.updateLoreDrops(delta);
+            this.updateBuildSiteBeacon(now);
+            this.updateConsoles(delta, now);
+            this.updateLoreTerminals();
+            this.baseLights?.update(delta);
+            this.foundry?.update(delta);
+            this.updateFoundryPrompt();
+            this.updateCaveEntrance(delta);
+            this.updateAct2(delta);
+            this.updateCamps(delta);
+            this.updateHiveSites(delta);
+            this.updateInfectionPressure(delta);
+            this.updateHazardZoneDamage(delta);
+            this.updateCampQuest(delta);
+            this.updateShipVisualState(now);
+            this.updateBlackBoxMarker(delta);
+            this.updateRunModifierEffects(delta);
+            this.updateBunkerDirector(delta);
+        } else {
+            this.updatePocketContent(delta, now);
+        }
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -14606,6 +14621,10 @@ export class ThreeGame {
             );
             const pickup = this.createPickupInstance(placement);
             group.add(pickup);
+            // Every other pickup-creation call site does this immediately —
+            // updatePickups only ever iterates this.pickupMeshes, so without
+            // it the pocket's loot is visible but permanently uncollectable.
+            this.pickupMeshes.push(pickup);
         }
 
         // Climb-point marker, reusing the existing wall-vent asset.
@@ -18867,6 +18886,26 @@ export class ThreeGame {
                 mat.dispose();
             }
         });
+    }
+
+    // Drives pocket-local content while isInPocket, in place of the
+    // surface-only systems render() pauses above. Reuses updatePickups'
+    // exact magnetism/collection logic (sound, VFX, inventory) rather than
+    // duplicating it, but scoped to only this pocket's own pickups — the
+    // flat this.pickupMeshes list mixes surface and pocket pickups, and
+    // updatePickups' distance check is X/Z-only, so calling it unscoped
+    // here could match a surface pickup sitting near the hole's X/Z even
+    // though the player is at a completely different Y.
+    updatePocketContent(delta, now) {
+        if (!this.player) return;
+        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const group = this.pocketGroups?.get(key);
+        if (!group) return;
+
+        const allPickups = this.pickupMeshes;
+        this.pickupMeshes = allPickups.filter((mesh) => group.children.includes(mesh));
+        this.updatePickups(delta, now);
+        this.pickupMeshes = allPickups;
     }
 
     updateScatter(delta, now) {
