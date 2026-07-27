@@ -195,6 +195,36 @@ describe('content shape', () => {
         }
     });
 
+    it('gives every later chapter multiple authored narrative inserts', () => {
+        for (const chapterId of ['incident_review', 'medi_kiosk', 'server_room', 'sector_four']) {
+            const authoredImages = new Set(
+                CHAPTERS[chapterId].hotspots
+                    .map((hotspot) => hotspot.cutaway?.image)
+                    .filter(Boolean)
+            );
+            expect(authoredImages.size, chapterId).toBeGreaterThanOrEqual(2);
+        }
+    });
+
+    it('paces the incident review through one decision pair at a time', () => {
+        const chapter = CHAPTERS.incident_review;
+        const byId = Object.fromEntries(chapter.hotspots.map((hotspot) => [hotspot.id, hotspot]));
+        expect(byId.call_marisol.requires.minVisitedOf.ids).toEqual(['keep_notebook', 'surrender_notebook']);
+        expect(byId.proceed_to_kiosk.requires.minVisitedOf.ids).toEqual([
+            'request_marisol_witness',
+            'release_marisol_from_request'
+        ]);
+        expect(byId.challenge_neutral_language.choice).not.toBe(true);
+    });
+
+    it('turns taking the cutters into a committed server-room route', () => {
+        const chapter = CHAPTERS.server_room;
+        const byId = Object.fromEntries(chapter.hotspots.map((hotspot) => [hotspot.id, hotspot]));
+        expect(byId.walk_away.excludesAllOf).toContain('inspect_cutters');
+        expect(byId.expose_profile.excludesAllOf).toContain('inspect_cutters');
+        expect(byId.sever_trunk.requiresAllOf).toContain('inspect_cutters');
+    });
+
     it('gives every item an icon so the inventory never falls back to bare text', () => {
         for (const [id, item] of Object.entries(ITEMS)) {
             expect(item.icon, id).toBeTruthy();
