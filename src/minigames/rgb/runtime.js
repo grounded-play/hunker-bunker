@@ -103,6 +103,7 @@ export function mountRgb({ root, save, storage, onExit }) {
     let resolvedGameOverId = null;
     let dialogueLines = ['Select an available action to continue the archive reconstruction.'];
     let dialogueSpeaker = null;
+    let pendingPickup = null;
     // How many of the current chapter's three authored hints have been asked
     // for. Resets per chapter; never affects endings (scene-flow.md).
     let hintsShown = 0;
@@ -219,7 +220,9 @@ export function mountRgb({ root, save, storage, onExit }) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'rgb-hotspot';
-            const itemId = hotspot.effects?.item ?? hotspot.effects?.items?.[0];
+            const itemId = hotspot.pickup?.items?.[0]
+                ?? hotspot.effects?.item
+                ?? hotspot.effects?.items?.[0];
             const iconSrc = hotspot.icon ?? ITEMS[itemId]?.icon;
             if (iconSrc) {
                 const icon = document.createElement('img');
@@ -237,6 +240,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             btn.style.setProperty('--rgb-w', hotspot.w ?? 180);
             btn.style.setProperty('--rgb-h', hotspot.h ?? 56);
             btn.classList.toggle('rgb-hotspot--choice', Boolean(hotspot.choice));
+            btn.classList.toggle('rgb-hotspot--object', Boolean(hotspot.object));
             const isDone = hotspot.once && visited.has(hotspot.id);
             const isReady = ready.has(hotspot.id);
             btn.classList.toggle('rgb-hotspot--done', Boolean(isDone));
@@ -369,6 +373,30 @@ export function mountRgb({ root, save, storage, onExit }) {
             p.append(prompt, document.createTextNode(` ${line}`));
             dialogue.appendChild(p);
         }
+
+        if (pendingPickup) {
+            const take = document.createElement('button');
+            take.type = 'button';
+            take.className = 'rgb-dialogue__take';
+            take.textContent = pendingPickup.label ?? 'TAKE';
+            take.addEventListener('click', takePendingPickup);
+            dialogue.append(take);
+        }
+
+        requestAnimationFrame(() => {
+            dialogue.scrollTop = dialogue.scrollHeight;
+        });
+    }
+
+    function takePendingPickup() {
+        if (!pendingPickup) return;
+        const itemIds = pendingPickup.items ?? [];
+        for (const itemId of itemIds) runState = addItem(runState, itemId);
+        const labels = itemIds.map((itemId) => ITEMS[itemId]?.label ?? itemId);
+        pendingPickup = null;
+        dialogueLines = [...dialogueLines, `Added to inventory: ${labels.join(', ')}.`];
+        persist();
+        render();
     }
 
     // A chapter used to slam-cut from a cinematic straight into a live hotspot
@@ -614,6 +642,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         dialogueLines = [...(hotspot.lines ?? [])];
         dialogueSpeaker = getDialogueSpeaker(hotspot.id);
+        pendingPickup = hotspot.pickup ? { ...hotspot.pickup } : null;
         rgbAudio.hotspot(hotspot.id, dialogueLines);
         const priorState = runState;
         runState = applyEffects(runState, hotspot.effects);

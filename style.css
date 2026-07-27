@@ -11733,6 +11733,42 @@ button.archive-log-entry:active {
   min-width: 0;
 }
 
+.rgb-hotspot--object {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.rgb-hotspot--object::before,
+.rgb-hotspot--object .rgb-hotspot__icon,
+.rgb-hotspot--object .rgb-hotspot__label {
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+
+.rgb-hotspot--object:hover,
+.rgb-hotspot--object:focus-visible,
+.rgb-hotspot--object.rgb-hotspot--focused {
+  background: rgba(225, 29, 46, 0.16);
+  border-color: rgba(255, 51, 68, 0.9);
+  box-shadow: inset 0 0 24px rgba(225, 29, 46, 0.22), 0 0 18px rgba(225, 29, 46, 0.3);
+  transform: none;
+}
+
+.rgb-hotspot--object:hover::before,
+.rgb-hotspot--object:focus-visible::before,
+.rgb-hotspot--object.rgb-hotspot--focused::before,
+.rgb-hotspot--object:hover .rgb-hotspot__icon,
+.rgb-hotspot--object:focus-visible .rgb-hotspot__icon,
+.rgb-hotspot--object.rgb-hotspot--focused .rgb-hotspot__icon,
+.rgb-hotspot--object:hover .rgb-hotspot__label,
+.rgb-hotspot--object:focus-visible .rgb-hotspot__label,
+.rgb-hotspot--object.rgb-hotspot--focused .rgb-hotspot__label {
+  opacity: 1;
+}
+
 .rgb-action-deck {
   position: absolute;
   inset: 0;
@@ -11817,7 +11853,9 @@ button.archive-log-entry:active {
   z-index: 5;
   min-height: calc(var(--stage-px, 1px) * 96);
   max-height: calc(var(--stage-px, 1px) * 104);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: smooth;
   padding: calc(var(--stage-px, 1px) * 12) var(--hb-safe-text, 36px);
   background: linear-gradient(90deg, rgba(8, 10, 14, 0.96), rgba(8, 10, 14, 0.82));
   backdrop-filter: blur(8px);
@@ -11830,6 +11868,27 @@ button.archive-log-entry:active {
   font-size: max(var(--hb-text-floor, 18px), calc(var(--vu) * 2.1));
   line-height: 1.5;
   color: rgba(248, 250, 252, 0.95);
+}
+
+.rgb-dialogue__take {
+  display: block;
+  margin: calc(var(--stage-px, 1px) * 10) 0 0 auto;
+  padding: calc(var(--stage-px, 1px) * 8) calc(var(--stage-px, 1px) * 16);
+  border: 1px solid #ff3344;
+  border-radius: 4px;
+  background: rgba(225, 29, 46, 0.22);
+  color: #fff;
+  font: 800 max(15px, calc(var(--stage-px, 1px) * 15))/1 'Outfit', sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.rgb-dialogue__take:hover,
+.rgb-dialogue__take:focus-visible {
+  background: #e11d2e;
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
 }
 
 .rgb-dialogue p {

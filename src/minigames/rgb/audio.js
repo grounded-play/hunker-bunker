@@ -41,7 +41,6 @@ export const CHAPTER_AMBIENCE = Object.freeze({
 // two from talking over each other.
 export const HOTSPOT_AUDIO = Object.freeze({
     listen_voicemail: ['rgb_voice_lucia'],
-    inspect_bottle: ['rgb_voice_elias_ch1'],
     observe_4a: ['rgb_voice_elias_ch2', 'rgb_sfx_4a_servo'],
     select_joint: ['rgb_sfx_4a_servo'],
     apply_pressure: ['rgb_sfx_4a_servo'],

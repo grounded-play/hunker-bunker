@@ -4860,12 +4860,35 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointerUp);
-            if (videoElement) {
-                try { videoElement.pause(); } catch { /* ignore */ }
-            }
             overlay.classList.add('is-closing');
-            window.setTimeout(() => overlay.remove(), 280);
-            resolve();
+
+            window.setTimeout(() => {
+                overlay.style.display = 'none';
+                if (videoElement && !videoElement.paused && videoElement.volume > 0 && !videoElement.muted) {
+                    const startVol = videoElement.volume;
+                    const fadeDurationMs = 1800;
+                    const fadeStart = performance.now();
+                    const fadeTimer = setInterval(() => {
+                        const elapsed = performance.now() - fadeStart;
+                        const progress = Math.min(1, elapsed / fadeDurationMs);
+                        try {
+                            videoElement.volume = Math.max(0, startVol * (1 - progress));
+                        } catch { /* ignore */ }
+                        if (progress >= 1) {
+                            clearInterval(fadeTimer);
+                            try { videoElement.pause(); } catch { /* ignore */ }
+                            videoElement.remove();
+                            overlay.remove();
+                        }
+                    }, 30);
+                } else {
+                    if (videoElement) {
+                        try { videoElement.pause(); } catch { /* ignore */ }
+                    }
+                    overlay.remove();
+                }
+                resolve();
+            }, 280);
         }
 
         function onKey(event) {
@@ -5049,11 +5072,32 @@ function playCutsceneVideo(base, options = {}) {
                 onDoorCutoff();
             }
             overlay.classList.add('is-closing');
+
             setTimeout(() => {
-                try { video.pause(); } catch { /* already detached */ }
-                overlay.remove();
+                overlay.style.display = 'none';
+                if (video && !video.paused && video.volume > 0 && !video.muted) {
+                    const startVol = video.volume;
+                    const fadeDurationMs = skipped ? 400 : 1800;
+                    const fadeStart = performance.now();
+                    const fadeTimer = setInterval(() => {
+                        const elapsed = performance.now() - fadeStart;
+                        const progress = Math.min(1, elapsed / fadeDurationMs);
+                        try {
+                            video.volume = Math.max(0, startVol * (1 - progress));
+                        } catch { /* ignore */ }
+                        if (progress >= 1) {
+                            clearInterval(fadeTimer);
+                            try { video.pause(); } catch { /* ignore */ }
+                            video.remove();
+                            overlay.remove();
+                        }
+                    }, 30);
+                } else {
+                    try { video.pause(); } catch { /* ignore */ }
+                    overlay.remove();
+                }
                 resolve({ played, skipped });
-            }, skipped ? 200 : 400);
+            }, skipped ? 150 : 280);
         };
 
         const onKey = (event) => {

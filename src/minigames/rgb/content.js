@@ -187,31 +187,42 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'inspect_bottle',
                 label: 'Empty Albuterol Bottle',
-                x: 180, y: 300, w: 200, h: 90,
+                object: true,
+                x: 570, y: 315, w: 105, h: 155,
                 once: true,
                 lines: [
                     'Two doses left, the label says. There has been one for a week.',
                     'Refill ready for pickup: $286.40.'
                 ],
-                effects: { item: 'item_albuterol_bottle' }
+                pickup: {
+                    items: ['item_albuterol_bottle'],
+                    label: 'Take Bottle'
+                }
             },
             {
                 id: 'check_balance',
                 label: 'Check the Balance',
-                x: 420, y: 300, w: 200, h: 90,
+                object: true,
+                icon: `${ITEM_ART}/item_phone.png`,
+                x: 505, y: 425, w: 120, h: 115,
                 once: true,
                 lines: [
                     'Available balance: $19.12.',
                     'Benefits active until 11:59 PM, the portal says. It says that every day.'
                 ],
-                effects: { item: 'item_phone' }
+                pickup: {
+                    items: ['item_phone'],
+                    label: 'Keep Phone'
+                }
             },
             {
                 id: 'listen_voicemail',
                 label: "Lucia's Message",
+                object: true,
                 icon: `${ITEM_ART}/item_phone.png`,
-                x: 660, y: 300, w: 200, h: 90,
+                x: 505, y: 425, w: 120, h: 115,
                 once: true,
+                requiresAllOf: ['check_balance'],
                 lines: [
                     'Hi Dad. Mom says don\'t forget the purple one.',
                     'The blue one tastes bad and makes my hands shaky.',
@@ -223,14 +234,19 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'inspect_drawing',
                 label: 'The Drawing and the Notebook',
-                x: 420, y: 430, w: 260, h: 90,
+                object: true,
+                icon: `${ITEM_ART}/item_lucia_drawing.png`,
+                x: 30, y: 420, w: 435, h: 285,
                 once: true,
                 requiresAllOf: ['inspect_bottle', 'check_balance', 'listen_voicemail'],
                 lines: [
                     'A smiling sorting arm in sneakers, beside a figure labelled DAD.',
                     'He folds it into the calibration notebook and buttons the jacket over both.'
                 ],
-                effects: { items: ['item_lucia_drawing', 'item_calibration_notebook', 'item_temp_badge'] }
+                pickup: {
+                    items: ['item_lucia_drawing', 'item_calibration_notebook', 'item_temp_badge'],
+                    label: 'Pocket Drawing & Notebook'
+                }
             },
             // The fork exits the sedan. Its branch clip flows directly into
             // R1's walk across the lot and badge scan, so the player is never
