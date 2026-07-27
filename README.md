@@ -24,7 +24,7 @@
 
 | Ice-Locked Perimeter | Subterranean Tactical Run | Hostile Sector Contacts |
 | :---: | :---: | :---: |
-| <img src="public/cutscenes/cave-reveal-poster.jpg" alt="Sector Zero Perimeter" width="380"> | <img src="public/hunker_bunker_hero.png" alt="Tactical Run" width="380"> | <img src="public/cutscenes/poster-art/death-combat.png" alt="Hostile Contacts" width="380"> |
+| <img src="public/title_key_art_v2.png" alt="Sector Zero Perimeter" width="380"> | <img src="public/hunker_bunker_hero.png" alt="Tactical Run" width="380"> | <img src="public/cutscenes/poster-art/death-combat.png" alt="Hostile Contacts" width="380"> |
 
 ---
 
@@ -34,8 +34,8 @@
 - **3 Exosuit Classes**: Distinct playstyles for **Scout** (Speed & Recon), **Tank** (Endurance & Armor), and **Engineer** (Systems & Terminals).
 - **Deep Progression**: Bank salvage between runs, research skill tree nodes, craft specialized medkits, and unlock weapons.
 - **Branching Decisions & Extraction**: Navigate survivor encounters, discover underground signals, and determine your mission outcome.
-- **In-Game Dev Console (`~`)**: Real-time diagnostic telemetry, event interceptors, input logs, and audio/network monitors.
-- **Steam & Desktop Ready**: Built-in Electron wrapper, Steam Input binding layer, Steam Cloud saves, and Steam Vault inventory scaffolding.
+- **Live Steamworks Integration**: 5 trusted backend leaderboards, Steam Cloud Auto-Cloud saves, Steam Vault Inventory Service, and 23 Steam Achievements.
+- **In-Game Dev & QA Console (`~`)**: Real-time diagnostic telemetry, event interceptors, audio/network monitors, and QA cheat commands (`resetachievements`).
 
 ---
 
@@ -43,17 +43,8 @@
 
 | SCOUT | TANK | ENGINEER |
 | :---: | :---: | :---: |
-| <img src="public/cutscenes/scout-intro-poster.jpg" alt="Scout class poster" width="240"> | <img src="public/cutscenes/tank-intro-poster.jpg" alt="Tank class poster" width="240"> | <img src="public/cutscenes/engineer-intro-poster.jpg" alt="Engineer class poster" width="240"> |
+| <img src="public/Scout.Intro.gif" alt="Scout Class Exosuit" width="240"> | <img src="public/Tank.Intro.gif" alt="Tank Class Exosuit" width="240"> | <img src="public/Eng.Intro.gif" alt="Engineer Class Exosuit" width="240"> |
 | **Active Ability**: Sprint Burst<br>Fast recon & high-risk salvage runs. | **Active Ability**: Heavy Brace<br>Absorbs punishment & clears corridors. | **Active Ability**: Systems Reroute<br>Hacks terminals & maximizes extraction. |
-
----
-
-## 👁️ Factions of Sector Zero
-
-| Queen | Meridian | Tallow | Vesper |
-| :---: | :---: | :---: | :---: |
-| <img src="public/lore_portraits/queen_00.webp" alt="Queen" width="130"> | <img src="public/lore_portraits/meridian_kaelen.png" alt="Kaelen" width="130"> | <img src="public/lore_portraits/tallow_martha.png" alt="Martha" width="130"> | <img src="public/lore_portraits/vesper_briggs.png" alt="Briggs" width="130"> |
-| *The hivemind below.* | *Tech-scavengers & order.* | *Hydro-cultists & mercy.* | *Barricade mercenaries.* |
 
 ---
 
@@ -101,20 +92,17 @@ npm run build    # Compile production WebGL bundle
 
 ## 🛠️ Tech Architecture
 
-```mermaid
-graph TD
-    A[index.html + main.js UI Shell] --> B[src/threeGame.js WebGL Runtime]
-    B --> C[src/generator.js Procedural World Engine]
-    B --> D[src/director.js Threat & Pressure Systems]
-    B --> E[src/audio.js WebAudio Soundscape]
-    A --> F[src/debugConsole.js Live Telemetry ~]
-    A --> G[electron/ Desktop Shell & Steam Bridge]
-```
+- **WebGL 3D Engine**: Powered by **Three.js** (r184) with procedural dungeon generation, dynamic fog of war, and WebAudio spatial soundscapes.
+- **Desktop & Steam Shell**: Built with **Electron** featuring native **Steamworks** integration for Steam Cloud saves, Steam Input, and 23 Steam Achievements.
+- **Trusted Relay Server**: Node.js & Express server running in **Docker Compose** behind **Caddy** (`steam.tuesdaycinema.club`), enforcing verified score validation for 5 Steam Leaderboards.
+
 
 ---
 
-## 📄 License & Community
+## 📄 License & Contact
 
 Distributed under the **MIT License**. Built with ❤️ by **Tuesday Cinema Club**.
 
-Join our community on **[Discord](https://discord.gg/XXwwz3rauu)** to report bugs, discuss builds, and test upcoming releases!
+- 💬 **Discord**: [Join Server](https://discord.gg/XXwwz3rauu)
+- 📧 **Support & Contact**: [Support@TuesdayCinema.Club](mailto:Support@TuesdayCinema.Club)
+
