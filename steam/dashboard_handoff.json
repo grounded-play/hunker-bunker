@@ -7,6 +7,18 @@
     "electronAppId": "com.icecave.hunkerbunker",
     "productName": "Hunker Bunker"
   },
+  "soundtrack": {
+    "appId": 4957680,
+    "title": "Hunker Bunker Soundtrack",
+    "packageType": "Free on demand",
+    "depotId": 4957681,
+    "artist": "Government Name",
+    "genre": "Soundtrack / Industrial Ambient / Chiptune",
+    "tracks": 5,
+    "contentDir": "dist_soundtrack",
+    "appBuildVdf": "steam/soundtrack_app_build.vdf",
+    "depotBuildVdf": "steam/depot_build_soundtrack.vdf"
+  },
   "depots": {
     "contentDepotId": 4957041,
     "currentModel": "single content depot",

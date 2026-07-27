@@ -79,6 +79,7 @@ if (upload && dirty && !allowDirty) {
 
 if (!skipBuild) {
     if (!skipTests) run('npm', ['test'], releaseEnv, 'test suite');
+    run('npm', ['run', 'package-soundtrack'], releaseEnv, 'Soundtrack packaging');
     run('npm', ['run', 'electron:build'], releaseEnv, 'Electron build');
 }
 
@@ -136,6 +137,29 @@ if (upload) {
         ], releaseEnv, 'Steam upload');
     } finally {
         fs.rmSync(generatedAppBuild, { force: true });
+    }
+
+    const soundtrackTemplate = path.join(repoRoot, 'steam', 'soundtrack_app_build.vdf');
+    if (fs.existsSync(soundtrackTemplate)) {
+        const generatedSoundtrackBuild = path.join(repoRoot, 'steam', 'soundtrack_app_build.generated.vdf');
+        const soundtrackDesc = `Hunker Bunker Soundtrack ${buildId} ${branch}`.replace(/["\r\n]/g, '-');
+        const generatedSoundtrackBody = fs.readFileSync(soundtrackTemplate, 'utf8').replace(
+            /"Desc"\s+"[^"]*"/,
+            `"Desc" "${soundtrackDesc}"`
+        );
+        fs.writeFileSync(generatedSoundtrackBuild, generatedSoundtrackBody, 'utf8');
+        console.log(`[steam-release] Soundtrack build description: ${soundtrackDesc}`);
+        try {
+            run(steamCmd, [
+                '+login',
+                account,
+                '+run_app_build',
+                generatedSoundtrackBuild,
+                '+quit'
+            ], releaseEnv, 'Steam soundtrack upload');
+        } finally {
+            fs.rmSync(generatedSoundtrackBuild, { force: true });
+        }
     }
 }
 

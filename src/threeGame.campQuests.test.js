@@ -123,18 +123,18 @@ describe('getNextCampQuest', () => {
         expect(quest).toBeNull();
     });
 
-    it('skips done quests and offers the camp\'s second quest next', () => {
+    it('skips done quests and offers the camp\'s sub-mission quest next', () => {
         const fakeThis = makeFakeThis();
         const quest = ThreeGame.prototype.getNextCampQuest.call(
             fakeThis, 'camp_meridian', { bond: 2, questFlags: { reactor_venting: 'done' } }
         );
-        expect(quest?.id).toBe('lost_probe');
+        expect(quest?.id).toBe('hive_archive_ch1');
     });
 
     it('returns null once every quest for the camp is done', () => {
         const fakeThis = makeFakeThis();
         const quest = ThreeGame.prototype.getNextCampQuest.call(
-            fakeThis, 'camp_meridian', { bond: 4, questFlags: { reactor_venting: 'done', lost_probe: 'done' } }
+            fakeThis, 'camp_meridian', { bond: 4, questFlags: { reactor_venting: 'done', hive_archive_ch1: 'done', lost_probe: 'done' } }
         );
         expect(quest).toBeNull();
     });
@@ -236,6 +236,25 @@ describe('acceptCampQuest / advanceCampQuestProgress / resolveCampQuestCompletio
         ThreeGame.prototype.resolveCampQuestCompletion.call(fakeThis);
 
         expect(fakeThis.applyWeaponUpgrades).toHaveBeenCalledTimes(1);
+    });
+
+    it('dispatches rgb-chapter-archive-recovered event when an Archive Sub-Mission completes', () => {
+        const camp = makeCamp({ id: 'camp_meridian' });
+        const fakeThis = makeFakeThis({ camp });
+        fakeThis._activeCampQuest = {
+            campId: 'camp_meridian',
+            quest: { id: 'hive_archive_ch1', label: 'HIVE ARCHIVE CH. 1', chapterId: 'parking_lot' },
+            kind: 'pickup',
+            current: 1,
+            target: 1,
+            props: []
+        };
+
+        ThreeGame.prototype.resolveCampQuestCompletion.call(fakeThis);
+
+        const recovered = eventsOfType('rgb-chapter-archive-recovered');
+        expect(recovered).toHaveLength(1);
+        expect(recovered[0].detail.chapterId).toBe('parking_lot');
     });
 
     it('does not recompute weapon upgrades for a non-Armory-Breach completion', () => {

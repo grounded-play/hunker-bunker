@@ -12,6 +12,8 @@ function createDefaultSave() {
         version: CURRENT_VERSION,
         unlocked: false,
         checkpoint: 'parking_lot',
+        unlockedChapters: ['parking_lot'],
+        chapterSnapshots: {},
         endingsSeen: [],
         gameOversSeen: [],
         settings: { hints: 'standard' },
@@ -36,10 +38,18 @@ function migrateRgbSave(raw) {
     }
 
     const fallback = createDefaultSave();
+    const unlockedChapters = Array.isArray(raw.unlockedChapters) && raw.unlockedChapters.length > 0
+        ? [...new Set(raw.unlockedChapters)]
+        : fallback.unlockedChapters;
+
+    const chapterSnapshots = isPlainObject(raw.chapterSnapshots) ? { ...raw.chapterSnapshots } : {};
+
     return {
         version: CURRENT_VERSION,
         unlocked: Boolean(raw.unlocked),
         checkpoint: typeof raw.checkpoint === 'string' ? raw.checkpoint : fallback.checkpoint,
+        unlockedChapters,
+        chapterSnapshots,
         endingsSeen: Array.isArray(raw.endingsSeen) ? [...new Set(raw.endingsSeen)] : [],
         gameOversSeen: Array.isArray(raw.gameOversSeen) ? [...new Set(raw.gameOversSeen)] : [],
         settings: {
@@ -77,7 +87,44 @@ export function saveRgbSave(storage, save) {
 }
 
 export function markUnlocked(save) {
-    return { ...save, unlocked: true };
+    const chapters = save.unlockedChapters?.includes('parking_lot')
+        ? save.unlockedChapters
+        : ['parking_lot', ...(save.unlockedChapters ?? [])];
+    return { ...save, unlocked: true, unlockedChapters: chapters };
+}
+
+export function unlockChapter(save, chapterId) {
+    if (!chapterId) return save;
+    const existing = save.unlockedChapters ?? ['parking_lot'];
+    if (existing.includes(chapterId)) return { ...save, unlocked: true };
+    return {
+        ...save,
+        unlocked: true,
+        unlockedChapters: [...existing, chapterId]
+    };
+}
+
+export function isChapterUnlocked(save, chapterId) {
+    if (!save.unlocked) return false;
+    return (save.unlockedChapters ?? ['parking_lot']).includes(chapterId);
+}
+
+export function saveChapterSnapshot(save, chapterId, runState) {
+    if (!chapterId || !runState) return save;
+    const snapshots = { ...(save.chapterSnapshots ?? {}) };
+    snapshots[chapterId] = {
+        timeBand: runState.timeBand ?? 0,
+        pain: runState.pain ?? 'stable',
+        evidence: Array.isArray(runState.evidence) ? [...runState.evidence] : [],
+        inventory: Array.isArray(runState.inventory) ? [...runState.inventory] : [],
+        routeHistory: Array.isArray(runState.routeHistory) ? [...runState.routeHistory] : [],
+        flags: isPlainObject(runState.flags) ? { ...runState.flags } : {}
+    };
+    return { ...save, chapterSnapshots: snapshots };
+}
+
+export function getChapterSnapshot(save, chapterId) {
+    return save.chapterSnapshots?.[chapterId] ?? null;
 }
 
 export function saveCheckpoint(save, checkpoint) {
@@ -102,3 +149,4 @@ export function recordGameOver(save, gameOverId) {
 export function shouldUnlockRgb({ specimen0047Recorded = false, anyEndingCompleted = false } = {}) {
     return Boolean(specimen0047Recorded) || Boolean(anyEndingCompleted);
 }
+

@@ -85,6 +85,14 @@ function packageSoundtrack() {
     fs.writeFileSync(path.join(distDir, 'TRACKLIST.txt'), metadataText, 'utf8');
     console.log('\nGenerated: TRACKLIST.txt');
     
+    // Embed ID3v2 tags and album artwork into MP3 files
+    try {
+        console.log('\n--- Embedding ID3 Tags & Album Cover Art into MP3 files ---');
+        execSync('python3 scripts/tag_mp3_files.py', { cwd: rootDir, stdio: 'inherit' });
+    } catch (err) {
+        console.warn(`Warning: Could not embed ID3 tags: ${err.message}`);
+    }
+    
     // Zip the files
     const zipFilename = 'hunker-bunker-soundtrack.zip';
     const zipPath = path.join(rootDir, zipFilename);

@@ -1,20 +1,26 @@
 import { TILE_CATALOG, SOCKET, TILE_SIZE } from './tileCatalog.js';
 
 export const LATTICE_SIZE = 3;
-const CELL_COUNT = LATTICE_SIZE * LATTICE_SIZE;
+export const POCKET_LATTICE_SIZE = 2;
 
-function neighborsOf(index) {
-    const mx = index % LATTICE_SIZE;
-    const my = Math.floor(index / LATTICE_SIZE);
+function neighborsOf(index, latticeSize) {
+    const mx = index % latticeSize;
+    const my = Math.floor(index / latticeSize);
     const list = [];
     if (mx > 0) list.push({ index: index - 1, side: 'w' });
-    if (mx < LATTICE_SIZE - 1) list.push({ index: index + 1, side: 'e' });
-    if (my > 0) list.push({ index: index - LATTICE_SIZE, side: 'n' });
-    if (my < LATTICE_SIZE - 1) list.push({ index: index + LATTICE_SIZE, side: 's' });
+    if (mx < latticeSize - 1) list.push({ index: index + 1, side: 'e' });
+    if (my > 0) list.push({ index: index - latticeSize, side: 'n' });
+    if (my < latticeSize - 1) list.push({ index: index + latticeSize, side: 's' });
     return list;
 }
 
-const NEIGHBOR_CACHE = Array.from({ length: CELL_COUNT }, (_, i) => neighborsOf(i));
+function buildNeighborCache(latticeSize) {
+    const cellCount = latticeSize * latticeSize;
+    return Array.from({ length: cellCount }, (_, i) => neighborsOf(i, latticeSize));
+}
+
+const NEIGHBOR_CACHE = buildNeighborCache(LATTICE_SIZE);
+const POCKET_NEIGHBOR_CACHE = buildNeighborCache(POCKET_LATTICE_SIZE);
 
 function edgeKey(a, b) {
     return a < b ? `${a}-${b}` : `${b}-${a}`;
@@ -29,24 +35,26 @@ function shuffle(items, random) {
     return copy;
 }
 
-// A random spanning tree over the 9-cell lattice graph, built the same way
-// this codebase already carves mazes elsewhere (shuffled-neighbor
-// recursive backtracker, ThreeGame.prototype.carveCell/carvePassage). A
-// tree is connected by definition, so this — not WFC's local
-// arc-consistency, which only guarantees *pairwise* compatibility and
-// fragments constantly with a catalog this sparse (many tiles have only 1
-// or 2 open sides) — is what actually guarantees the whole chunk is
-// walkable end-to-end. Cell degree is naturally unbounded here (a
-// backtracker commonly revisits a cell to branch off a second or third
-// direction), which is fine: the full catalog has a matching tile for
-// every possible open-side count (0 through 4).
-function buildBranchingSpanningTree(random) {
+// A random spanning tree over the lattice graph, built the same way this
+// codebase already carves mazes elsewhere (shuffled-neighbor recursive
+// backtracker, ThreeGame.prototype.carveCell/carvePassage). A tree is
+// connected by definition, so this — not WFC's local arc-consistency,
+// which only guarantees *pairwise* compatibility and fragments constantly
+// with a catalog this sparse (many tiles have only 1 or 2 open sides) — is
+// what actually guarantees the whole chunk is walkable end-to-end. Cell
+// degree is naturally unbounded here (a backtracker commonly revisits a
+// cell to branch off a second or third direction), which is fine: the full
+// catalog has a matching tile for every possible open-side count (0-4). A
+// 2x2 lattice (pockets) can never produce degree > 2 regardless — every
+// cell only has 2 possible neighbors there — so this same function is safe
+// to reuse for pockets even with the (degree-2-capped) tutorial catalog.
+function buildBranchingSpanningTree(random, neighborCache, cellCount) {
     const openEdges = new Set();
     const visited = new Set([0]);
     const stack = [0];
     while (stack.length > 0) {
         const current = stack[stack.length - 1];
-        const neighbors = shuffle(NEIGHBOR_CACHE[current], random);
+        const neighbors = shuffle(neighborCache[current], random);
         let advanced = false;
         for (const { index: next } of neighbors) {
             if (visited.has(next)) continue;
@@ -72,20 +80,21 @@ function buildBranchingSpanningTree(random) {
 const HAMILTONIAN_START_CELLS = [0, 2, 4, 6, 8];
 
 // A degree-capped spanning tree (a simple path visiting all 9 cells,
-// i.e. a Hamiltonian path) — required for tutorialOnly generation, whose
-// tile subset (solid-fill/alcove/straight/turn) tops out at 2 open sides
-// per tile and has no T-junction or 4-way tile to satisfy a branching
-// tree's degree-3/4 nodes. Real backtracking search (not retry-from-
-// scratch): undoes the last step and tries a different neighbor when a
-// branch dead-ends.
+// i.e. a Hamiltonian path) — required for tutorialOnly chunk generation,
+// whose tile subset (solid-fill/alcove/straight/turn) tops out at 2 open
+// sides per tile and has no T-junction or 4-way tile to satisfy a
+// branching tree's degree-3/4 nodes. Real backtracking search (not
+// retry-from-scratch): undoes the last step and tries a different
+// neighbor when a branch dead-ends.
 function buildHamiltonianPath(random) {
     const start = HAMILTONIAN_START_CELLS[Math.floor(random() * HAMILTONIAN_START_CELLS.length)];
-    const visited = new Array(CELL_COUNT).fill(false);
+    const cellCount = LATTICE_SIZE * LATTICE_SIZE;
+    const visited = new Array(cellCount).fill(false);
     visited[start] = true;
     const path = [start];
 
     const walk = () => {
-        if (path.length === CELL_COUNT) return true;
+        if (path.length === cellCount) return true;
         const current = path[path.length - 1];
         const neighbors = shuffle(NEIGHBOR_CACHE[current], random);
         for (const { index: next } of neighbors) {
@@ -109,11 +118,11 @@ function buildHamiltonianPath(random) {
 
 // Every side a cell borders another lattice cell gets a hard requirement
 // (OPEN3 if the tree connects them, CLOSED otherwise); a side facing the
-// outer chunk border is left out of the map entirely (free — portal
-// reconciliation, not tile choice, decides what happens there; see spec §4).
-function requiredSocketsFor(index, openEdges) {
+// outer edge (chunk border, or — for pockets — simply "outside the
+// self-contained room") is left out of the map entirely (free).
+function requiredSocketsFor(index, openEdges, neighborCache) {
     const required = {};
-    for (const { index: neighborIndex, side } of NEIGHBOR_CACHE[index]) {
+    for (const { index: neighborIndex, side } of neighborCache[index]) {
         required[side] = openEdges.has(edgeKey(index, neighborIndex)) ? SOCKET.OPEN3 : SOCKET.CLOSED;
     }
     return required;
@@ -149,30 +158,58 @@ function pickTileForCell(required, catalog, random) {
 // investigation found no placement of it that's both selectable by
 // pickTileForCell AND fully reachable: whichever of its two matching sides
 // isn't required open by the spanning tree necessarily faces the outer
-// chunk border, and that notch's floor then has nothing connecting to it.
-// It stays defined in tileCatalog.js as a building block for Phase 2, which
-// needs to place it with elevation-aware logic anyway (a canyon tile is
-// only meaningful once a Ramp/Bridge can actually cross it).
+// edge, and that notch's floor then has nothing connecting to it. It stays
+// defined in tileCatalog.js as a building block for Phase 2, which needs
+// to place it with elevation-aware logic anyway (a canyon tile is only
+// meaningful once a Ramp/Bridge can actually cross it).
 const SELECTABLE_CATALOG = TILE_CATALOG.filter((tile) => tile.category !== 'canyon-impassable');
 
 export function collapseChunkLattice(random, { tutorialOnly = false } = {}) {
     const catalog = tutorialOnly ? SELECTABLE_CATALOG.filter((tile) => tile.tutorial) : SELECTABLE_CATALOG;
-    const openEdges = tutorialOnly ? buildHamiltonianPath(random) : buildBranchingSpanningTree(random);
+    const cellCount = LATTICE_SIZE * LATTICE_SIZE;
+    const openEdges = tutorialOnly
+        ? buildHamiltonianPath(random)
+        : buildBranchingSpanningTree(random, NEIGHBOR_CACHE, cellCount);
 
     const lattice = [];
-    for (let index = 0; index < CELL_COUNT; index += 1) {
-        const required = requiredSocketsFor(index, openEdges);
+    for (let index = 0; index < cellCount; index += 1) {
+        const required = requiredSocketsFor(index, openEdges, NEIGHBOR_CACHE);
         lattice.push(pickTileForCell(required, catalog, random));
     }
     return lattice;
 }
 
+// A pocket has no neighboring chunks, so it's always generated from the
+// tutorial-flagged catalog subset (calmer, roomier shapes suit a small
+// self-contained bonus space better than a corridor-cross-heavy roll) on a
+// 2x2 lattice — 13x13 stamped (7+7-1), up from the old raw DFS maze's
+// 11x11, matching Phase 1's bigger-tile philosophy. A 2x2 lattice can never
+// need a degree > 2 tile (each cell has at most 2 possible neighbors), so
+// the plain branching-tree builder is used directly — no Hamiltonian-path
+// parity concern exists at this size.
+export function collapsePocketLattice(random) {
+    const catalog = SELECTABLE_CATALOG.filter((tile) => tile.tutorial);
+    const cellCount = POCKET_LATTICE_SIZE * POCKET_LATTICE_SIZE;
+    const openEdges = buildBranchingSpanningTree(random, POCKET_NEIGHBOR_CACHE, cellCount);
+
+    const lattice = [];
+    for (let index = 0; index < cellCount; index += 1) {
+        const required = requiredSocketsFor(index, openEdges, POCKET_NEIGHBOR_CACHE);
+        lattice.push(pickTileForCell(required, catalog, random));
+    }
+    return lattice;
+}
+
+// latticeSize is derived from lattice.length rather than taken as a
+// parameter, so this works unmodified for both collapseChunkLattice's 3x3
+// output and collapsePocketLattice's 2x2 output.
 export function stampLattice(lattice, chunkSize) {
+    const latticeSize = Math.round(Math.sqrt(lattice.length));
     const grid = Array.from({ length: chunkSize }, () => Array(chunkSize).fill('#'));
     const stride = TILE_SIZE - 1; // tiles overlap by 1 cell on shared borders
-    for (let my = 0; my < LATTICE_SIZE; my += 1) {
-        for (let mx = 0; mx < LATTICE_SIZE; mx += 1) {
-            const tile = lattice[my * LATTICE_SIZE + mx];
+    for (let my = 0; my < latticeSize; my += 1) {
+        for (let mx = 0; mx < latticeSize; mx += 1) {
+            const tile = lattice[my * latticeSize + mx];
             const originX = mx * stride;
             const originY = my * stride;
             for (let r = 0; r < TILE_SIZE; r += 1) {

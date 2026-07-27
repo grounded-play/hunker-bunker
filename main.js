@@ -25,9 +25,9 @@ import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import * as featureFlags from './src/featureFlags.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
-import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb } from './src/minigames/rgb/save.js';
+import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
-import { ENDINGS as RGB_ENDINGS } from './src/minigames/rgb/content.js';
+import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
 import { getGifDurationMs } from './src/gifDuration.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
@@ -1052,6 +1052,7 @@ function openArchiveSimsModal() {
     if (!modal) return;
     const statusEl = document.getElementById('archive-sim-rgb-status');
     const endingsEl = document.getElementById('archive-sim-rgb-endings');
+    const chaptersEl = document.getElementById('archive-sim-rgb-chapters');
     if (statusEl) {
         statusEl.textContent = rgbSave.checkpoint === 'parking_lot' && rgbSave.endingsSeen.length === 0
             ? 'NOT STARTED'
@@ -1062,6 +1063,28 @@ function openArchiveSimsModal() {
         endingsEl.textContent = seen.length === 0
             ? 'No endings discovered yet.'
             : `Endings discovered: ${seen.map((id) => RGB_ENDINGS[id].title).join(', ')}`;
+    }
+    if (chaptersEl) {
+        chaptersEl.replaceChildren();
+        for (let i = 0; i < RGB_CHAPTER_ORDER.length; i += 1) {
+            const chId = RGB_CHAPTER_ORDER[i];
+            const chTitle = RGB_CHAPTERS[chId]?.title ?? chId;
+            const isUnlocked = isRgbChapterUnlocked(rgbSave, chId);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `start-btn archive-sim-chapter-btn ${isUnlocked ? 'unlocked' : 'locked'}`;
+            btn.style.margin = '4px 0';
+            btn.style.display = 'block';
+            btn.style.width = '100%';
+            btn.textContent = isUnlocked
+                ? `▶ START ${chTitle.toUpperCase()}`
+                : `🔒 ${chTitle.toUpperCase()} [RECOVER IN CAMP SUB-MISSION]`;
+            btn.disabled = !isUnlocked;
+            if (isUnlocked) {
+                btn.addEventListener('click', () => launchRgb(chId));
+            }
+            chaptersEl.appendChild(btn);
+        }
     }
     modal.classList.remove('hidden');
 }
@@ -1106,9 +1129,19 @@ function exitRgb(resumeGame = null) {
     if (menu) menu.classList.remove('hidden');
 }
 
+window.addEventListener('rgb-chapter-archive-recovered', (e) => {
+    const chapterId = e.detail?.chapterId;
+    if (chapterId) {
+        rgbSave = unlockRgbChapter(rgbSave, chapterId);
+        saveRgbSave(localStorage, rgbSave);
+        rgbUnlockToastPending = true;
+        updateArchiveSimsMenuVisibility();
+    }
+});
+
 document.getElementById('archive-sims-btn')?.addEventListener('click', openArchiveSimsModal);
 document.getElementById('archive-sims-modal-close')?.addEventListener('click', closeArchiveSimsModal);
-document.getElementById('archive-sim-rgb-launch')?.addEventListener('click', launchRgb);
+document.getElementById('archive-sim-rgb-launch')?.addEventListener('click', () => launchRgb());
 
 const gearSpinState = {
     rotation: 0,

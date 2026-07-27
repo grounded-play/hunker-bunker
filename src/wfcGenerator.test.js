@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { collapseChunkLattice, stampLattice, LATTICE_SIZE } from './wfcGenerator.js';
+import { collapseChunkLattice, collapsePocketLattice, stampLattice, LATTICE_SIZE, POCKET_LATTICE_SIZE } from './wfcGenerator.js';
 import { TILE_SIZE } from './tileCatalog.js';
 
 function seededRandom(seed) {
@@ -10,6 +10,36 @@ function seededRandom(seed) {
         state ^= state << 5;
         return (state >>> 0) / 4294967296;
     };
+}
+
+function isGridFullyConnected(grid) {
+    const size = grid.length;
+    let start = null;
+    let floorCount = 0;
+    for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+            if (grid[y][x] === '.') {
+                floorCount += 1;
+                if (!start) start = [x, y];
+            }
+        }
+    }
+    if (!start) return false;
+    const seen = new Set([`${start[0]},${start[1]}`]);
+    const stack = [start];
+    while (stack.length > 0) {
+        const [x, y] = stack.pop();
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = x + dx;
+            const ny = y + dy;
+            const key = `${nx},${ny}`;
+            if (ny < 0 || ny >= size || nx < 0 || nx >= size || seen.has(key)) continue;
+            if (grid[ny][nx] !== '.') continue;
+            seen.add(key);
+            stack.push([nx, ny]);
+        }
+    }
+    return seen.size === floorCount;
 }
 
 function assertLatticeCompatible(lattice) {
@@ -136,5 +166,51 @@ describe('stampLattice', () => {
             }
             expect(seen.size, `seed ${seed}`).toBe(floorCells.length);
         }
+    });
+});
+
+describe('collapsePocketLattice', () => {
+    it('always resolves all 4 cells to a tutorial-flagged tile', () => {
+        for (let seed = 1; seed <= 200; seed += 1) {
+            const lattice = collapsePocketLattice(seededRandom(seed));
+            expect(lattice).toHaveLength(POCKET_LATTICE_SIZE * POCKET_LATTICE_SIZE);
+            for (const tile of lattice) {
+                expect(tile, `seed ${seed}`).toBeTruthy();
+                expect(tile.tutorial, `seed ${seed}: ${tile.id}`).toBe(true);
+            }
+        }
+    });
+
+    it('stamps to a fully reachable 13x13 grid with at least one multi-cell-wide room, not a uniformly 1-wide maze', () => {
+        const pocketSize = (TILE_SIZE - 1) * POCKET_LATTICE_SIZE + 1; // 13
+        expect(pocketSize).toBe(13);
+
+        let sawWideRoom = false;
+        for (let seed = 1; seed <= 200; seed += 1) {
+            const grid = stampLattice(collapsePocketLattice(seededRandom(seed)), pocketSize);
+            expect(grid).toHaveLength(pocketSize);
+            expect(isGridFullyConnected(grid), `seed ${seed}`).toBe(true);
+
+            // Any 3x3 all-floor block proves this isn't a uniformly
+            // 1-wide corridor maze like the old raw DFS carve.
+            for (let y = 0; y + 2 < pocketSize && !sawWideRoom; y += 1) {
+                for (let x = 0; x + 2 < pocketSize && !sawWideRoom; x += 1) {
+                    let allFloor = true;
+                    for (let dy = 0; dy < 3 && allFloor; dy += 1) {
+                        for (let dx = 0; dx < 3; dx += 1) {
+                            if (grid[y + dy][x + dx] !== '.') { allFloor = false; break; }
+                        }
+                    }
+                    if (allFloor) sawWideRoom = true;
+                }
+            }
+        }
+        expect(sawWideRoom).toBe(true);
+    });
+
+    it('is deterministic for a fixed seed', () => {
+        const a = collapsePocketLattice(seededRandom(9)).map((t) => t.id);
+        const b = collapsePocketLattice(seededRandom(9)).map((t) => t.id);
+        expect(a).toEqual(b);
     });
 });

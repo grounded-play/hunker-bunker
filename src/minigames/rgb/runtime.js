@@ -31,7 +31,15 @@ import {
     gameOver
 } from './state.js';
 import { isHotspotAvailable } from './gating.js';
-import { saveCheckpoint, recordEnding, recordGameOver, saveRgbSave } from './save.js';
+import {
+    saveCheckpoint,
+    recordEnding,
+    recordGameOver,
+    saveRgbSave,
+    unlockChapter,
+    saveChapterSnapshot,
+    getChapterSnapshot
+} from './save.js';
 import { createActionRouter, ACTION_SETS } from '../../inputActions.js';
 import { mapBrowserGamepad } from '../../browserGamepad.js';
 import { AudioManager } from '../../audio.js';
@@ -71,6 +79,21 @@ const EVIDENCE_LABELS = Object.freeze({
 
 function hydrateRunState(save) {
     const base = createRunState();
+    const snapshot = getChapterSnapshot(save, save.checkpoint);
+    if (snapshot) {
+        return {
+            ...base,
+            checkpoint: save.checkpoint,
+            timeBand: Number.isFinite(snapshot.timeBand) ? snapshot.timeBand : save.run.timeBand,
+            pain: typeof snapshot.pain === 'string' ? snapshot.pain : save.run.pain,
+            evidence: Array.isArray(snapshot.evidence) ? [...snapshot.evidence] : [...save.run.evidence],
+            inventory: Array.isArray(snapshot.inventory) ? [...snapshot.inventory] : [...save.run.inventory],
+            routeHistory: Array.isArray(snapshot.routeHistory)
+                ? snapshot.routeHistory.map((e) => ({ ...e }))
+                : [...(save.run.routeHistory ?? [])],
+            flags: { ...base.flags, ...save.run.flags, ...(snapshot.flags ?? {}) }
+        };
+    }
     return {
         ...base,
         checkpoint: save.checkpoint,
@@ -870,6 +893,8 @@ export function mountRgb({ root, save, storage, onExit }) {
         dialogueLines = [`Archive reconstruction resumed: ${CHAPTERS[chapterId].title}.`];
         dialogueSpeaker = null;
         currentSave = saveCheckpoint(currentSave, chapterId);
+        currentSave = unlockChapter(currentSave, chapterId);
+        currentSave = saveChapterSnapshot(currentSave, chapterId, runState);
         persist();
         window.dispatchEvent(new CustomEvent('rgb-checkpoint', { detail: { checkpoint: chapterId } }));
         rgbAudio.enterChapter(chapterId);
