@@ -20201,13 +20201,23 @@ export class ThreeGame {
             }
         }
 
-        // 2. Clear Blast Doorway Corridor & Control Buttons (localX: 4..13, localY: 13..18)
-        // Doorway interior (X=6..11, Y=15) is ALWAYS open floor ('.'), while solid
-        // framing wall pillars sit strictly off the edges (X <= 5 and X >= 12).
+        // 2. Blast Doorway Corridor: centered on the REAL south portal
+        // offset (ensureChunkPortals/getEdgeOpening), not a fixed column
+        // range — a fixed range could miss wherever the seeded portal
+        // actually opens ("the door isn't to anywhere" bug this fixes).
+        // Doorway interior is ALWAYS open floor, while solid framing wall
+        // pillars sit strictly off its edges.
+        const southOpening = this.getEdgeOpening('horizontal', chunkX, chunkY + 1);
+        const doorCenterX = southOpening.open
+            ? southOpening.offset * 2 + 1
+            : Math.floor(this.chunkCellCount / 2) * 2 + 1;
+        const doorMinX = Math.max(1, doorCenterX - 4);
+        const doorMaxX = Math.min(this.chunkSize - 2, doorCenterX + 4);
+
         for (let localY = 13; localY <= 18; localY++) {
-            for (let localX = 4; localX <= 13; localX++) {
+            for (let localX = doorMinX; localX <= doorMaxX; localX++) {
                 if (localY === 15) {
-                    if (localX <= 5 || localX >= 12) {
+                    if (localX <= doorCenterX - 3 || localX >= doorCenterX + 3) {
                         grid[localY][localX] = '#';
                     } else {
                         grid[localY][localX] = '.';
