@@ -242,6 +242,21 @@ function buildControllerConfig(controllerType) {
 export function syncSteamInputToDepotRoot({ repo = repoRoot } = {}) {
     const distElectron = path.join(repo, 'dist_electron');
     if (!fs.existsSync(distElectron)) return;
+
+    const linuxUnpacked = path.join(distElectron, 'linux-unpacked');
+    if (fs.existsSync(linuxUnpacked)) {
+        const electronBin = path.join(linuxUnpacked, 'electron');
+        const targetBin = path.join(linuxUnpacked, 'hunker-bunker');
+        if (fs.existsSync(electronBin) && !fs.existsSync(targetBin)) {
+            try {
+                fs.copyFileSync(electronBin, targetBin);
+                fs.chmodSync(targetBin, 0o755);
+            } catch (err) {
+                console.warn('[steam-input] could not copy hunker-bunker binary:', err?.message ?? err);
+            }
+        }
+    }
+
     const manifestSrc = path.join(repo, 'steam', 'steam_input_manifest.vdf');
     if (fs.existsSync(manifestSrc)) {
         fs.copyFileSync(manifestSrc, path.join(distElectron, 'steam_input_manifest.vdf'));

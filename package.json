@@ -39,6 +39,7 @@
   "build": {
     "appId": "com.icecave.hunkerbunker",
     "productName": "Hunker Bunker",
+    "executableName": "hunker-bunker",
     "directories": {
       "output": "dist_electron"
     },
@@ -64,6 +65,7 @@
       "dist/**/*.webm"
     ],
     "linux": {
+      "executableName": "hunker-bunker",
       "icon": "electron/icon.png",
       "target": "dir"
     },

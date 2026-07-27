@@ -15,6 +15,11 @@ app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
 
+if (process.platform === 'linux') {
+    app.commandLine.appendSwitch('no-sandbox');
+    app.commandLine.appendSwitch('disable-gpu-sandbox');
+}
+
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
@@ -412,14 +417,16 @@ function initSteam() {
 
 // The Steam overlay needs specific Chromium switches; steamworks.js wraps
 // them so we don't cargo-cult flags. Must run before app is ready.
+// Note: electronEnableSteamOverlay appends 'in-process-gpu', which breaks
+// Mesa/Wayland GPU rendering on Linux/SteamOS. On Linux, Steam's LD_PRELOAD
+// overlay hook handles rendering without in-process-gpu.
 function enableOverlay() {
     try {
-        // Three.js already presents frames continuously. Passing true disables
-        // steamworks.js's extra 60 Hz webContents.invalidate() timer, which
-        // otherwise duplicates our render loop and wastes renderer/GPU time.
-        if (steam?.electronEnableSteamOverlay) {
+        if (steam?.electronEnableSteamOverlay && process.platform === 'win32') {
             steam.electronEnableSteamOverlay(true);
             recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay hook enabled without redundant frame invalidation');
+        } else if (process.platform === 'linux') {
+            recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay active via Linux LD_PRELOAD hook');
         } else {
             recordSteamDiagnostic('warn', 'overlay_unavailable', 'Steam overlay hook is unavailable because Steamworks did not initialize');
         }
