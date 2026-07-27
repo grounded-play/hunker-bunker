@@ -371,6 +371,7 @@ function initSteam() {
                 reload: steamClient.input.getDigitalAction('reload'),
                 ability: steamClient.input.getDigitalAction('ability'),
                 scan: steamClient.input.getDigitalAction('scan'),
+                sprint: steamClient.input.getDigitalAction('sprint'),
                 pause: steamClient.input.getDigitalAction('pause')
             };
 
@@ -452,6 +453,7 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             reload: isValidActionHandle(actionHandles.reload) ? controller.isDigitalActionPressed(actionHandles.reload) : false,
             ability: isValidActionHandle(actionHandles.ability) ? controller.isDigitalActionPressed(actionHandles.ability) : false,
             scan: isValidActionHandle(actionHandles.scan) ? controller.isDigitalActionPressed(actionHandles.scan) : false,
+            sprint: isValidActionHandle(actionHandles.sprint) ? controller.isDigitalActionPressed(actionHandles.sprint) : false,
             pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
         }
         : {

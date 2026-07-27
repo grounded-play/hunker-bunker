@@ -2,6 +2,34 @@
 {
     "configurations"
     {
+        "controller_neptune"
+        {
+            "0" { "path" "controller_configs/controller_neptune.vdf" }
+        }
+        "controller_xboxone"
+        {
+            "0" { "path" "controller_configs/controller_xboxone.vdf" }
+        }
+        "controller_xbox360"
+        {
+            "0" { "path" "controller_configs/controller_xbox360.vdf" }
+        }
+        "controller_ps4"
+        {
+            "0" { "path" "controller_configs/controller_ps4.vdf" }
+        }
+        "controller_ps5"
+        {
+            "0" { "path" "controller_configs/controller_ps5.vdf" }
+        }
+        "controller_switch_pro"
+        {
+            "0" { "path" "controller_configs/controller_switch_pro.vdf" }
+        }
+        "controller_generic"
+        {
+            "0" { "path" "controller_configs/controller_generic.vdf" }
+        }
     }
     "actions"
     {

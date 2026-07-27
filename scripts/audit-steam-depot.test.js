@@ -61,4 +61,17 @@ describe('auditSteamVdfs', () => {
     it('requires app/depot ids and steam_appid exclusions', () => {
         expect(auditSteamVdfs()).toEqual([]);
     });
+
+    it('rejects an action manifest without bundled controller configurations', () => {
+        const dir = makeTempDir();
+        fs.cpSync(path.join(process.cwd(), 'steam'), dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'steam_input_manifest.vdf'), '"Action Manifest" { "configurations" { } }');
+
+        expect(auditSteamVdfs({ steamDir: dir })).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                file: 'steam/steam_input_manifest.vdf',
+                reason: 'Steam Input manifest has no bundled default controller configurations.'
+            })
+        ]));
+    });
 });

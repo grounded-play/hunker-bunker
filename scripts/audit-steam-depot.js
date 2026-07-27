@@ -92,6 +92,7 @@ export function auditSteamVdfs({ steamDir = path.join(repoRoot, 'steam') } = {})
     const failures = [];
     const appBuild = readTextIfExists(path.join(steamDir, 'app_build.vdf'));
     const contentDepot = readTextIfExists(path.join(steamDir, 'depot_build_content.vdf'));
+    const inputManifest = readTextIfExists(path.join(steamDir, 'steam_input_manifest.vdf'));
 
     if (!appBuild) {
         failures.push({ file: 'steam/app_build.vdf', reason: 'Missing Steam app build VDF.' });
@@ -122,6 +123,55 @@ export function auditSteamVdfs({ steamDir = path.join(repoRoot, 'steam') } = {})
         }
         if (!/"FileExclusion"\s+"steam_appid\.txt"/.test(depotBody)) {
             failures.push({ file: label, reason: 'Depot VDF must exclude steam_appid.txt.' });
+        }
+    }
+
+    if (!inputManifest) {
+        failures.push({ file: 'steam/steam_input_manifest.vdf', reason: 'Missing bundled Steam Input action manifest.' });
+    } else {
+        const manifestBody = stripVdfComments(inputManifest);
+        const configPaths = [...manifestBody.matchAll(/"path"\s+"([^"]+\.vdf)"/g)]
+            .map((match) => match[1]);
+        const requiredTypes = ['controller_neptune', 'controller_xboxone', 'controller_ps5'];
+
+        if (configPaths.length === 0) {
+            failures.push({
+                file: 'steam/steam_input_manifest.vdf',
+                reason: 'Steam Input manifest has no bundled default controller configurations.'
+            });
+        }
+        for (const controllerType of requiredTypes) {
+            if (!new RegExp(`"${controllerType}"\\s*\\{`).test(manifestBody)) {
+                failures.push({
+                    file: 'steam/steam_input_manifest.vdf',
+                    reason: `Steam Input manifest must provide a ${controllerType} configuration.`
+                });
+            }
+        }
+
+        for (const relativeConfigPath of configPaths) {
+            const configPath = path.resolve(steamDir, relativeConfigPath);
+            const configBody = readTextIfExists(configPath);
+            const relativeLabel = `steam/${relativeConfigPath.split(path.sep).join('/')}`;
+            if (!configBody) {
+                failures.push({ file: relativeLabel, reason: 'Referenced Steam Input controller configuration is missing.' });
+                continue;
+            }
+            for (const actionSet of ['menu', 'gameplay', 'archive']) {
+                if (!new RegExp(`"name"\\s+"${actionSet}"`).test(configBody)) {
+                    failures.push({
+                        file: relativeLabel,
+                        reason: `Controller configuration is missing the ${actionSet} action-set preset.`
+                    });
+                }
+                if (!new RegExp(`game_action\\s+${actionSet}\\s+`).test(configBody)
+                    && !new RegExp(`"${actionSet}"\\s+"[^"]+"`).test(configBody)) {
+                    failures.push({
+                        file: relativeLabel,
+                        reason: `Controller configuration has no native bindings for the ${actionSet} action set.`
+                    });
+                }
+            }
         }
     }
 

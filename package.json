@@ -24,11 +24,12 @@
     "steam:audit-backend": "node scripts/audit-steam-backend-env.js",
     "steam:audit-backend:strict": "node scripts/audit-steam-backend-env.js --strict",
     "steam:audit-depot": "node scripts/audit-steam-depot.js",
+    "steam:input-configs": "node scripts/build-steam-input-configs.js",
     "steam:prepare": "node scripts/steam-release.js",
     "steam:upload": "node scripts/steam-release.js --upload",
     "steam:drm-wrap": "node scripts/steam-drm-wrap.js",
-    "electron:build": "npm run build && npm run steam:config && electron-builder --dir --linux --win",
-    "electron:dist": "npm run build && npm run steam:config && electron-builder",
+    "electron:build": "npm run build && npm run steam:config && npm run steam:input-configs && electron-builder --dir --linux --win",
+    "electron:dist": "npm run build && npm run steam:config && npm run steam:input-configs && electron-builder",
     "lighthouse:setup": "npx -y @puppeteer/browsers install chrome@stable",
     "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun",
     "package-soundtrack": "node scripts/package-soundtrack.js",
@@ -44,6 +45,10 @@
       {
         "from": "steam/steam_input_manifest.vdf",
         "to": "steam_input_manifest.vdf"
+      },
+      {
+        "from": "steam/controller_configs",
+        "to": "controller_configs"
       }
     ],
     "files": [
