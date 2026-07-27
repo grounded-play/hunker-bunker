@@ -636,6 +636,38 @@ class DebugLogger {
                 }
                 break;
 
+            case 'resetachievements':
+                // QA/beta only — electron/main.cjs only registers the IPC
+                // handler this calls when the build was launched with
+                // HB_QA_TOOLS_ENABLED=1 (e.g. a Steam beta branch launch
+                // option). Resets the Steam account currently logged into
+                // THIS running game — there is no remote reset for a
+                // different account. Requires "confirm" since it's a real
+                // action against a real Steam profile, not local run state
+                // like the other cheats here.
+                if (parts[1]?.toLowerCase() !== 'confirm') {
+                    this.warn('QA', 'This resets ALL Steam stats and achievements for the currently logged-in account. Type: resetachievements confirm');
+                    break;
+                }
+                if (!win?.electronAPI?.resetAchievements) {
+                    this.warn('QA', 'Not available — no desktop Steam bridge in this build.');
+                    break;
+                }
+                win.electronAPI.resetAchievements().then((result) => {
+                    if (result?.ok) {
+                        this.info('QA', 'Steam stats and achievements reset for the current account.');
+                    } else if (result?.reason === 'qa_tools_disabled') {
+                        this.warn('QA', 'Disabled in this build — launch with HB_QA_TOOLS_ENABLED=1 to enable.');
+                    } else if (result?.reason === 'steam_not_active') {
+                        this.warn('QA', 'Steamworks is not active — is Steam running and logged in?');
+                    } else {
+                        this.error('QA', `Reset failed: ${result?.message ?? result?.reason ?? 'unknown error'}`);
+                    }
+                }).catch((err) => {
+                    this.error('QA', `Reset failed: ${err?.message ?? err}`);
+                });
+                break;
+
             default:
                 // Fallback: evaluate JS via indirect eval
                 try {

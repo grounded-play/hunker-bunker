@@ -606,6 +606,30 @@ ipcMain.on('hb:setStat', (_e, key, value) => {
         console.log(`[steam] setStat '${key}' failed: ${err?.message ?? err}`);
     }
 });
+
+// QA/beta-only achievement reset. Off by default in every build, including
+// the public Steam depot — only a build launched with HB_QA_TOOLS_ENABLED=1
+// registers this at all (e.g. via a Steam beta branch's launch options), so
+// the capability doesn't exist for a normal player even if they find the ~
+// console. ISteamUserStats::ResetAllStats only ever affects the Steam
+// account currently logged into the running game — there is no remote way
+// to reset a different account's achievements; the QA tester (or someone on
+// their machine, logged in as them) has to trigger this themselves.
+function qaToolsEnabled() {
+    return process.env.HB_QA_TOOLS_ENABLED === '1';
+}
+ipcMain.handle('hb:qaToolsEnabled', () => qaToolsEnabled());
+ipcMain.handle('hb:resetAchievements', () => {
+    if (!qaToolsEnabled()) return { ok: false, reason: 'qa_tools_disabled' };
+    if (!steamClient) return { ok: false, reason: 'steam_not_active' };
+    try {
+        const ok = steamClient.stats.resetAll(true);
+        steamClient.stats.store();
+        return { ok: Boolean(ok) };
+    } catch (err) {
+        return { ok: false, reason: 'exception', message: err?.message ?? String(err) };
+    }
+});
 ipcMain.on('hb:quitApp', () => {
     flushSaveFile();
     app.quit();

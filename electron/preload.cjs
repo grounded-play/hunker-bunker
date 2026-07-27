@@ -294,6 +294,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getSteamInfo: () => ipcRenderer.invoke('hb:steamInfo'),
     getSteamIdentity: () => ipcRenderer.invoke('hb:getSteamIdentity'),
     getSteamCloudStatus: () => ipcRenderer.invoke('hb:getSteamCloudStatus'),
+    getQaToolsEnabled: () => ipcRenderer.invoke('hb:qaToolsEnabled'),
+    resetAchievements: () => ipcRenderer.invoke('hb:resetAchievements'),
     getSteamDiagnostics: () => ipcRenderer.invoke('hb:getSteamDiagnostics'),
     getSteamAuthTicket: (identity = STEAM_AUTH_IDENTITY) => ipcRenderer.invoke('hb:getSteamAuthTicket', identity),
     cancelSteamAuthTicket: (handle) => ipcRenderer.invoke('hb:cancelSteamAuthTicket', handle),
