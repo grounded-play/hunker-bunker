@@ -3598,7 +3598,8 @@ export class ThreeGame {
             || isVisible('game-over-modal')
             || isVisible('mothership-dialogue')
             || isVisible('confirm-modal')
-            || isVisible('settings-popup');
+            || isVisible('settings-popup')
+            || isVisible('snail-encounter-modal');
     }
 
     clearGameplayInputState() {

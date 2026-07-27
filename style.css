@@ -4942,6 +4942,90 @@ body.mission-intro-active #game-container canvas {
   transition: transform 300ms cubic-bezier(0.2, 0.7, 0.25, 1), opacity 260ms ease-out;
 }
 
+.snail-encounter-panel {
+  width: min(calc(var(--vu) * 90), 92%);
+  padding: calc(var(--vu) * 2);
+  background: rgba(8, 10, 14, 0.96);
+  border: 1px solid rgba(225, 29, 46, 0.5);
+  border-radius: 8px;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+}
+
+.snail-encounter-header {
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: calc(var(--vu) * 1.2);
+  color: #ff3344;
+}
+
+.snail-encounter-log {
+  min-height: calc(var(--vu) * 4);
+  margin-bottom: calc(var(--vu) * 1.2);
+  line-height: 1.5;
+}
+
+.snail-encounter-bars {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.6);
+  margin-bottom: calc(var(--vu) * 1.4);
+}
+
+.snail-encounter-bar-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 0.8);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85em;
+}
+
+.snail-encounter-bar {
+  flex: 1;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.snail-encounter-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #ff3344;
+  transition: width 0.2s ease;
+}
+
+.snail-encounter-bar-fill--resolve {
+  background: #7dff5a;
+}
+
+.snail-encounter-actions {
+  display: flex;
+  gap: calc(var(--vu) * 1);
+}
+
+.snail-encounter-actions button {
+  flex: 1;
+  padding: calc(var(--vu) * 1);
+  background: rgba(12, 14, 18, 0.88);
+  border: 1px solid rgba(225, 29, 46, 0.65);
+  border-radius: 6px;
+  color: #f8fafc;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.snail-encounter-actions button:hover,
+.snail-encounter-actions button:focus-visible {
+  border-color: #ff3344;
+  background: rgba(225, 29, 46, 0.35);
+  outline: none;
+}
+
 .mothership-close-btn {
   z-index: 102;
   border-color: rgba(var(--terminal-glow-rgb), 0.45) !important;

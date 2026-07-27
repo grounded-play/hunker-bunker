@@ -1628,6 +1628,30 @@
       </div>
     </div>
 
+    <div id="snail-encounter-modal" class="modal hidden" aria-hidden="true">
+      <div class="snail-encounter-panel">
+        <div class="snail-encounter-header">
+          <span id="snail-encounter-title">ENCOUNTER</span>
+        </div>
+        <div id="snail-encounter-log" class="snail-encounter-log" aria-live="polite"></div>
+        <div class="snail-encounter-bars">
+          <div class="snail-encounter-bar-row">
+            <span>SNAIL HP</span>
+            <div class="snail-encounter-bar"><div id="snail-encounter-hp-fill" class="snail-encounter-bar-fill"></div></div>
+          </div>
+          <div class="snail-encounter-bar-row">
+            <span>RESOLVE</span>
+            <div class="snail-encounter-bar"><div id="snail-encounter-resolve-fill" class="snail-encounter-bar-fill snail-encounter-bar-fill--resolve"></div></div>
+          </div>
+        </div>
+        <div class="snail-encounter-actions">
+          <button type="button" id="snail-encounter-fight-btn">FIGHT</button>
+          <button type="button" id="snail-encounter-talk-btn">TALK</button>
+          <button type="button" id="snail-encounter-flee-btn">FLEE</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Door Transition Overlay (Top Layer) -->
     <div id="transition-overlay">
       <div id="door-top" class="door"></div>
