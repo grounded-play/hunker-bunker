@@ -260,6 +260,10 @@ export function initSteamVaultUI() {
 
     document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
     document.getElementById('vault-store-hosted-btn')?.addEventListener('click', openHostedSteamItemStore);
+    document.getElementById('vault-btn-view-market')?.addEventListener('click', () => {
+        if (!window.electronAPI?.openSteamOverlayToUrl) return;
+        window.electronAPI.openSteamOverlayToUrl('https://steamcommunity.com/market/search?appid=4957040');
+    });
 }
 
 function isMarketEligibilityAllowed(result) {
@@ -395,6 +399,7 @@ export function updateDetailsPanel(item) {
 
     const btnEquip = document.getElementById('vault-btn-equip');
     const btnUnequip = document.getElementById('vault-btn-unequip');
+    const btnViewMarket = document.getElementById('vault-btn-view-market');
     const statusEl = document.getElementById('vault-equip-status');
 
     if (!item) return;
@@ -424,6 +429,10 @@ export function updateDetailsPanel(item) {
         } else {
             marketableEl.textContent = catalog.marketable ? 'MARKETABLE' : 'NON-MARKETABLE';
         }
+    }
+    if (btnViewMarket) {
+        const canView = Boolean(catalog.marketable) && canOpenMarketOverlay();
+        btnViewMarket.classList.toggle('hidden', !canView);
     }
 
     btnEquip?.classList.add('hidden');

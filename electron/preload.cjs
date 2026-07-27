@@ -304,6 +304,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     submitSteamRunScore,
     refreshSteamInventory: () => withSteamSessionGet('/steam/inventory'),
     triggerSteamPlaytimeDrop: () => withSteamSession('/steam/inventory/trigger-drop'),
+    requestSteamPromoGrant: (classType, requestId = `promo-${Date.now()}-${Math.random().toString(36).slice(2)}`) => (
+        withSteamSession('/steam/inventory/grant-promo', { classType, outcome: 'victory', requestId })
+    ),
     requestSteamMilestoneGrant: (milestone, runKey) => withSteamSession('/steam/inventory/grant-milestone', { milestone, runKey }),
     exchangeSteamInventory: (recipeId, materials) => withSteamSession('/steam/inventory/exchange', { recipeId, materials }),
     getSteamMarketEligibility: () => withSteamSessionGet('/steam/market/eligibility'),

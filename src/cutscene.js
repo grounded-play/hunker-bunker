@@ -13,6 +13,9 @@ const CUTSCENE_TIMING = Object.freeze({
     fadeOutMs: 3000,
     finishMs: 3200
 });
+const INITIAL_STAR_COUNT = 48;
+const STREAM_STAR_BATCH = 2;
+const STREAM_STAR_INTERVAL_MS = 80;
 
 export class CutsceneManager {
     constructor({
@@ -243,16 +246,16 @@ export class CutsceneManager {
 
         const spawn = () => {
             if (this.activeRunId !== runId || !this.starfieldEl) return;
-            for (let index = 0; index < 7; index++) {
+            for (let index = 0; index < STREAM_STAR_BATCH; index++) {
                 this.spawnStar(width, height);
             }
         };
 
-        for (let index = 0; index < 120; index++) {
+        for (let index = 0; index < INITIAL_STAR_COUNT; index++) {
             this.spawnStar(width, height);
         }
 
-        this.starStreamTimer = window.setInterval(spawn, 34);
+        this.starStreamTimer = window.setInterval(spawn, STREAM_STAR_INTERVAL_MS);
     }
 
     stopStarField() {

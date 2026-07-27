@@ -23,12 +23,12 @@ import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import * as featureFlags from './src/featureFlags.js';
-import { getGifDurationMs } from './src/gifDuration.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS } from './src/minigames/rgb/content.js';
+import { getGifDurationMs } from './src/gifDuration.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
@@ -1014,6 +1014,36 @@ function maybeShowRgbUnlockToast() {
 }
 
 let rgbHandle = null;
+let fullscreenVideoSuspendDepth = 0;
+let fullscreenVideoWasPaused = false;
+let fullscreenVideoCanvasVisibility = '';
+
+function suspendGameForFullscreenVideo() {
+    const game = window.game;
+    if (fullscreenVideoSuspendDepth === 0) {
+        fullscreenVideoWasPaused = Boolean(game?.loadingPaused);
+        const canvas = game?.renderer?.domElement;
+        if (canvas) {
+            fullscreenVideoCanvasVisibility = canvas.style.visibility;
+            canvas.style.visibility = 'hidden';
+        }
+        game?.setLoadingPaused?.(true);
+    }
+    fullscreenVideoSuspendDepth += 1;
+
+    let resumed = false;
+    return () => {
+        if (resumed) return;
+        resumed = true;
+        fullscreenVideoSuspendDepth = Math.max(0, fullscreenVideoSuspendDepth - 1);
+        if (fullscreenVideoSuspendDepth > 0) return;
+
+        const activeGame = window.game;
+        const canvas = activeGame?.renderer?.domElement;
+        if (canvas) canvas.style.visibility = fullscreenVideoCanvasVisibility;
+        activeGame?.setLoadingPaused?.(fullscreenVideoWasPaused);
+    };
+}
 
 const RGB_ENDING_ORDER = ['system_loop', 'ashes_survival', 'open_hand'];
 
@@ -1045,27 +1075,32 @@ function launchRgb(chapter = null) {
     if (menu) menu.classList.add('hidden');
     const root = document.getElementById('rgb-root');
     if (!root) return;
-    // The archive fully covers the Three.js canvas. Stop rendering the hidden
-    // menu scene so video decode/compositing gets the GPU without contention.
-    window.game?.setLoadingPaused?.(true);
+    // The archive fully covers the Three.js canvas. Stop both rendering and
+    // WebGL compositing so its fullscreen videos have exclusive GPU time.
+    const resumeGame = suspendGameForFullscreenVideo();
     if (chapter && typeof chapter === 'string') {
         rgbSave = {
             ...rgbSave,
             checkpoint: chapter
         };
     }
-    rgbHandle = mountRgb({
-        root,
-        save: rgbSave,
-        storage: localStorage,
-        onExit: exitRgb
-    });
+    try {
+        rgbHandle = mountRgb({
+            root,
+            save: rgbSave,
+            storage: localStorage,
+            onExit: () => exitRgb(resumeGame)
+        });
+    } catch (error) {
+        resumeGame();
+        throw error;
+    }
 }
 
-function exitRgb() {
+function exitRgb(resumeGame = null) {
     rgbHandle?.destroy();
     rgbHandle = null;
-    window.game?.setLoadingPaused?.(false);
+    resumeGame?.();
     rgbSave = loadRgbSave(localStorage);
     updateArchiveSimsMenuVisibility();
     if (menu) menu.classList.remove('hidden');
@@ -4838,7 +4873,7 @@ const CLASS_INTRO_GIFS = Object.freeze({
     ENGINEER: '/Eng.Intro.gif'
 });
 const CLASS_INTRO_GIF_VISIBLE_MS = 7750;
-const CLASS_INTRO_GIF_LOOP_GUARD_MS = 250; // keep a safety margin before the loop boundary
+const CLASS_INTRO_GIF_LOOP_GUARD_MS = 250;
 
 function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
@@ -4851,6 +4886,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             resolve();
             return;
         }
+        const resumeGame = suspendGameForFullscreenVideo();
 
         if (typeof window !== 'undefined' && window.hbLog) {
             window.hbLog('AUDIO', 'info', `Starting intro cutscene sequence for ${playerType}`);
@@ -4867,7 +4903,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         skipHint.textContent = 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
-        let step = 'gif'; // 'gif' → 'video' → done
+        let step = 'gif';
         let gifTimer = null;
         let guardTimer = null;
         let videoElement = null;
@@ -4888,7 +4924,6 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         function cleanupAndResolve() {
             if (settled) return;
             settled = true;
-            step = 'done';
             clearTimers();
             if (checkSkipInterval) {
                 clearInterval(checkSkipInterval);
@@ -4900,29 +4935,17 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
             window.setTimeout(() => {
                 overlay.style.display = 'none';
-                if (videoElement && !videoElement.paused && videoElement.volume > 0 && !videoElement.muted) {
-                    const startVol = videoElement.volume;
-                    const fadeDurationMs = 1800;
-                    const fadeStart = performance.now();
-                    const fadeTimer = setInterval(() => {
-                        const elapsed = performance.now() - fadeStart;
-                        const progress = Math.min(1, elapsed / fadeDurationMs);
-                        try {
-                            videoElement.volume = Math.max(0, startVol * (1 - progress));
-                        } catch { /* ignore */ }
-                        if (progress >= 1) {
-                            clearInterval(fadeTimer);
-                            try { videoElement.pause(); } catch { /* ignore */ }
-                            videoElement.remove();
-                            overlay.remove();
-                        }
-                    }, 30);
-                } else {
-                    if (videoElement) {
-                        try { videoElement.pause(); } catch { /* ignore */ }
-                    }
-                    overlay.remove();
+                if (videoElement) {
+                    try {
+                        videoElement.pause();
+                        videoElement.removeAttribute('src');
+                        videoElement.replaceChildren();
+                        videoElement.load();
+                    } catch { /* ignore */ }
+                    videoElement.remove();
                 }
+                overlay.remove();
+                resumeGame();
                 resolve();
             }, 280);
         }
@@ -4948,7 +4971,6 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
         }, 50);
 
-        // ── Step 1: the class intro GIF, then the launch WebM ──
         function startVideoStep() {
             if (settled || step === 'video') return;
             step = 'video';
@@ -4960,6 +4982,8 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             buildVideo();
         }
 
+        // Preserve the authored GIF → video sequence. Three.js remains
+        // suspended for both stages so GIF decoding does not contend with it.
         gifImg = document.createElement('img');
         gifImg.className = 'class-intro-video';
         gifImg.style.objectFit = 'cover';
@@ -4971,7 +4995,6 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         const gifShownAt = performance.now();
         gifTimer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_VISIBLE_MS);
 
-        // Cut to the video right before the GIF would wrap to frame one.
         void getGifDurationMs(gifSrc).then((durationMs) => {
             if (settled || step !== 'gif' || !durationMs) return;
             const elapsed = performance.now() - gifShownAt;
@@ -4979,9 +5002,8 @@ function playClassIntroSequence(playerType = 'SCOUT') {
                 CLASS_INTRO_GIF_VISIBLE_MS,
                 Math.max(0, durationMs - CLASS_INTRO_GIF_LOOP_GUARD_MS)
             );
-            const remaining = safeVisibleMs - elapsed;
             window.clearTimeout(gifTimer);
-            gifTimer = window.setTimeout(startVideoStep, Math.max(0, remaining));
+            gifTimer = window.setTimeout(startVideoStep, Math.max(0, safeVisibleMs - elapsed));
         });
 
         function buildVideo() {
@@ -5000,8 +5022,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         webmSource.src = assetUrl(`/cutscenes/${webmBase}.webm`);
         webmSource.type = 'video/webm';
 
-        // Keep the GIF asset as preload-only; the visible intro is the WebM
-        // one-shot cutscene so it never loops.
+        // The intro is a one-shot cutscene and never loops.
         if (videoElement.canPlayType('video/webm')) {
             videoElement.append(webmSource);
         } else {
@@ -5046,6 +5067,7 @@ function playCutsceneVideo(base, options = {}) {
     window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
+        const resumeGame = suspendGameForFullscreenVideo();
         if (typeof window !== 'undefined' && window.hbLog) {
             window.hbLog('AUDIO', 'info', `Playing cutscene video: ${base}`);
         }
@@ -5111,27 +5133,15 @@ function playCutsceneVideo(base, options = {}) {
 
             setTimeout(() => {
                 overlay.style.display = 'none';
-                if (video && !video.paused && video.volume > 0 && !video.muted) {
-                    const startVol = video.volume;
-                    const fadeDurationMs = skipped ? 400 : 1800;
-                    const fadeStart = performance.now();
-                    const fadeTimer = setInterval(() => {
-                        const elapsed = performance.now() - fadeStart;
-                        const progress = Math.min(1, elapsed / fadeDurationMs);
-                        try {
-                            video.volume = Math.max(0, startVol * (1 - progress));
-                        } catch { /* ignore */ }
-                        if (progress >= 1) {
-                            clearInterval(fadeTimer);
-                            try { video.pause(); } catch { /* ignore */ }
-                            video.remove();
-                            overlay.remove();
-                        }
-                    }, 30);
-                } else {
-                    try { video.pause(); } catch { /* ignore */ }
-                    overlay.remove();
-                }
+                try {
+                    video.pause();
+                    video.removeAttribute('src');
+                    video.replaceChildren();
+                    video.load();
+                } catch { /* ignore */ }
+                video.remove();
+                overlay.remove();
+                resumeGame();
                 resolve({ played, skipped });
             }, skipped ? 150 : 280);
         };
@@ -5398,6 +5408,7 @@ async function runMissionIntroSequence() {
     missionFlowRunning = true;
     document.body.classList.add('mission-intro-active');
     const game = window.game;
+    let resumeIntroRendering = suspendGameForFullscreenVideo();
     const playerType = getSelectedHeroType();
 
     game?.setInputEnabled?.(false);
@@ -5445,6 +5456,11 @@ async function runMissionIntroSequence() {
         if (!window.skipAllIntro) {
             choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
         }
+
+        // The authored cinematic sequence is complete. Resume before the
+        // blast doors reveal the live game world.
+        resumeIntroRendering?.();
+        resumeIntroRendering = null;
 
         if (skipBtn) skipBtn.classList.add('hidden');
 
@@ -5503,6 +5519,7 @@ async function runMissionIntroSequence() {
         // Start gameplay background music and loop ambience now that intro sequences are finished
         window.AudioManager?.startAmbience?.();
     } finally {
+        resumeIntroRendering?.();
         document.body.classList.remove('mission-intro-active');
         document.body.classList.remove('hud-hidden');
         game?.setInputEnabled?.(true);
@@ -7819,17 +7836,27 @@ async function runAct2DepartureSequence(detail = {}) {
     const vector = detail.endingVector ?? game?.act2?.getEndingVector?.() ?? act2Manager?.getEndingVector?.();
     const ending = vector?.ending ?? null;
     const videoBase = ACT2_ENDING_CUTSCENES[ending] ?? 'act3-departure';
+    const classType = game?.playerType ?? getSelectedHeroType();
     recordAchievementRunEnd({
         ...(detail.runStats ?? game?.getRunStats?.() ?? {}),
         outcome: 'victory',
         ending,
         runMs: Date.now() - runStartTime,
-        classType: game?.playerType ?? getSelectedHeroType()
+        classType
     }, { delayMs: 900 });
+    if (window.electronAPI?.requestSteamPromoGrant) {
+        window.electronAPI.requestSteamPromoGrant(classType)
+            .then((result) => {
+                (result?.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
+            })
+            .catch((err) => {
+                console.log(`[steam] victory promo grant skipped: ${err?.message ?? err}`);
+            });
+    }
     game?.setCinematicLock?.(true);
     AudioManager.play('door_gears_spin', { volume: 0.5, playbackRate: 0.7 });
     await dialogueManager?.openBriefTransmission({
-        playerType: game?.playerType ?? getSelectedHeroType(),
+        playerType: classType,
         lines: [...getAct2EndingLines(ending)]
     });
     await playCinematicBeat({
