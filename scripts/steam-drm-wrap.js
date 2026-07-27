@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * scripts/steam-drm-wrap.js
  * Automated wrapper and runbook runner for Valve Steamworks DRM tool.

@@ -26,8 +26,11 @@ function readGit(gitArgs, fallback = 'unknown') {
     }
 }
 
-function run(command, commandArgs, env = process.env) {
-    console.log(`[steam-release] ${command} ${commandArgs.join(' ')}`);
+function run(command, commandArgs, env = process.env, label = 'release subprocess') {
+    // Do not log the executable or arguments here. The Steam upload command
+    // can originate in environment configuration and its arguments may
+    // contain credentials or other sensitive values.
+    console.log(`[steam-release] starting ${label}`);
     const result = spawnSync(command, commandArgs, {
         cwd: repoRoot,
         env,
@@ -75,8 +78,8 @@ if (upload && dirty && !allowDirty) {
 }
 
 if (!skipBuild) {
-    if (!skipTests) run('npm', ['test'], releaseEnv);
-    run('npm', ['run', 'electron:build'], releaseEnv);
+    if (!skipTests) run('npm', ['test'], releaseEnv, 'test suite');
+    run('npm', ['run', 'electron:build'], releaseEnv, 'Electron build');
 }
 
 const builtInfoPath = path.join(repoRoot, 'dist', 'build-info.json');
@@ -97,7 +100,7 @@ for (const [key, expected] of Object.entries({
 }
 console.log(`[steam-release] verified dist/build-info.json (${buildId})`);
 
-run('npm', ['run', 'steam:audit-depot'], releaseEnv);
+run('npm', ['run', 'steam:audit-depot'], releaseEnv, 'Steam depot audit');
 
 if (upload) {
     if (Boolean(readGit(['status', '--porcelain'], ''))) {
@@ -130,7 +133,7 @@ if (upload) {
             '+run_app_build',
             generatedAppBuild,
             '+quit'
-        ], releaseEnv);
+        ], releaseEnv, 'Steam upload');
     } finally {
         fs.rmSync(generatedAppBuild, { force: true });
     }
