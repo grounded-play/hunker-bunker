@@ -14,21 +14,17 @@
 </p>
 
 > **Crash in. Scavenge O2. Upgrade your suit. Survive the depths.**  
-> **Hunker Bunker** is a retro-futuristic tactical survival game where you navigate ice-locked subterranean corridors, balance failing life support, recover lost black boxes, and choose what leaves the planet with you.
+> **Hunker Bunker** is a retro-futuristic tactical survival game where you navigate ice-locked subterranean corridors, balance failing life support, uncover lost telemetry, and decide what leaves the planet with you.
 
 🎮 **[Play Live Browser Build](https://hunkerbunker.netlify.app/)** • 💬 **[Join Discord Server](https://discord.gg/XXwwz3rauu)** • 📜 **[Steam Readiness Specs](docs/steam-docs-master-index.md)**
 
 ---
 
-## 📸 Tactical Gallery
+## 📸 Sector Zero Teaser
 
-| WebGL Field Combat | Black Box Recovery | Hive Site Encounter |
+| Ice-Locked Perimeter | Subterranean Tactical Run | Hostile Sector Contacts |
 | :---: | :---: | :---: |
-| <img src="public/hunker_bunker_hero.png" alt="WebGL Field Run" width="380"> | <img src="public/cutscenes/poster-art/event-black-box-recovered.png" alt="Black Box Recovery" width="380"> | <img src="public/cutscenes/poster-art/event-queen-encounter.png" alt="Hive Encounter" width="380"> |
-
-| Foundry Discovery | Extraction Flight | Deep Brood Exodus |
-| :---: | :---: | :---: |
-| <img src="public/cutscenes/poster-art/event-foundry-discovered.png" alt="Foundry Discovery" width="380"> | <img src="public/ending_scorchedsky_cockpit.png" alt="Scorched Sky Cockpit" width="380"> | <img src="public/ending_fullbrood_ship.png" alt="Full Brood Ship" width="380"> |
+| <img src="public/cutscenes/cave-reveal-poster.jpg" alt="Sector Zero Perimeter" width="380"> | <img src="public/hunker_bunker_hero.png" alt="Tactical Run" width="380"> | <img src="public/cutscenes/poster-art/death-combat.png" alt="Hostile Contacts" width="380"> |
 
 ---
 
@@ -37,7 +33,7 @@
 - **Procedural Bunker Runs**: WebGL-powered isometric corridors with dynamic fog of war, environmental hazards, and O2 survival pressure.
 - **3 Exosuit Classes**: Distinct playstyles for **Scout** (Speed & Recon), **Tank** (Endurance & Armor), and **Engineer** (Systems & Terminals).
 - **Deep Progression**: Bank salvage between runs, research skill tree nodes, craft specialized medkits, and unlock weapons.
-- **Multiple Factions & Endings**: Navigate survivor camps (Meridian, Tallow, Vesper), decide the fate of alien hives, and choose your extraction manifest.
+- **Branching Decisions & Extraction**: Navigate survivor encounters, discover underground signals, and determine your mission outcome.
 - **In-Game Dev Console (`~`)**: Real-time diagnostic telemetry, event interceptors, input logs, and audio/network monitors.
 - **Steam & Desktop Ready**: Built-in Electron wrapper, Steam Input binding layer, Steam Cloud saves, and Steam Vault inventory scaffolding.
 
