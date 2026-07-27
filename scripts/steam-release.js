@@ -10,6 +10,7 @@ const upload = args.has('--upload');
 const skipBuild = args.has('--skip-build');
 const skipTests = args.has('--skip-tests');
 const allowDirty = args.has('--allow-dirty');
+const includeSoundtrack = args.has('--soundtrack') || process.env.HB_STEAM_INCLUDE_SOUNDTRACK === '1';
 const packageJson = JSON.parse(
     fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')
 );
@@ -140,7 +141,7 @@ if (upload) {
     }
 
     const soundtrackTemplate = path.join(repoRoot, 'steam', 'soundtrack_app_build.vdf');
-    if (fs.existsSync(soundtrackTemplate) && process.env.HB_STEAM_SKIP_SOUNDTRACK !== '1') {
+    if (fs.existsSync(soundtrackTemplate) && includeSoundtrack) {
         const generatedSoundtrackBuild = path.join(repoRoot, 'steam', 'soundtrack_app_build.generated.vdf');
         const soundtrackDesc = `Hunker Bunker Soundtrack ${buildId} ${branch}`.replace(/["\r\n]/g, '-');
         const generatedSoundtrackBody = fs.readFileSync(soundtrackTemplate, 'utf8').replace(
