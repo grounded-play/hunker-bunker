@@ -41,6 +41,18 @@ export default defineConfig({
   define: {
     __HB_BUILD_INFO__: JSON.stringify(buildInfo)
   },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three')) {
+            return 'vendor-three';
+          }
+        }
+      }
+    }
+  },
   plugins: [{
     name: 'hunker-bunker-build-info',
     generateBundle() {
