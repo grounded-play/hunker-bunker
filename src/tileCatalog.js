@@ -185,6 +185,11 @@ const CANYON_IMPASSABLE_BASE = {
     category: 'canyon-impassable',
     tutorial: false,
     weight: 0.5,
+    // Its two OPEN3 sockets sit at opposite ends of a solid-wall interior —
+    // they never connect to each other inside this tile (that's what makes
+    // it genuinely impassable). wfcGenerator.js must never treat it as a
+    // pass-through connector between two other cells.
+    throughConnects: false,
     sockets: { n: O, e: C, s: O, w: C },
     pattern: [
         '##...##',
