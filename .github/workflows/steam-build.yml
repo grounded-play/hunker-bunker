@@ -10,6 +10,9 @@ permissions:
 
 on:
   push:
+    branches:
+      - main
+      - 'dev/**'
     tags: ['v*']
   workflow_dispatch:
   pull_request:
@@ -21,6 +24,9 @@ on:
       - 'style.css'
       - 'package.json'
       - 'vite.config.js'
+      - 'scripts/**'
+      - 'steam/**'
+      - '.github/workflows/steam-build.yml'
 
 jobs:
   package:
@@ -40,7 +46,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
+      - name: Build revision-stamped web payload
+        run: npm run build
+        env:
+          HB_BUILD_COMMIT: ${{ github.sha }}
+          HB_BUILD_BRANCH: ${{ github.head_ref || github.ref_name }}
+          HB_BUILD_DIRTY: "0"
+          HB_STEAM_BUILD_ID: gh-${{ github.run_number }}.${{ github.run_attempt }}
+          HB_BUILD_TIMESTAMP: ${{ github.event.head_commit.timestamp }}
       - run: npm run steam:config
         env:
           HB_STEAM_BACKEND_URL: ${{ vars.HB_STEAM_BACKEND_URL }}

@@ -5,12 +5,13 @@ import {
     leaderKeyFromName,
     nextDialogueBeat,
     isFinalStage,
-    DIALOGUE_FINAL_STAGE
+    DIALOGUE_FINAL_STAGE,
+    meetsRequirements
 } from './campDialogue.js';
 
 describe('leader dialogue ladders', () => {
-    it('all six leaders have four stages with beats and loop lines', () => {
-        expect(LEADER_KEYS).toHaveLength(6);
+    it('all seven leaders have four stages with beats and loop lines', () => {
+        expect(LEADER_KEYS).toHaveLength(7);
         for (const key of LEADER_KEYS) {
             const ladder = LEADER_DIALOGUE[key];
             expect(ladder.stages).toHaveLength(DIALOGUE_FINAL_STAGE + 1);
@@ -70,5 +71,54 @@ describe('leader dialogue ladders', () => {
     it('the final stage loops forever after its beats', () => {
         const beat = nextDialogueBeat('rhun', { stage: 3, talks: 9 }, { bond: 5, postReveal: true });
         expect(beat.type).toBe('loop');
+    });
+});
+
+describe('scientist dialogue ladder', () => {
+    it('stage 0 offers beats before advancing', () => {
+        const beat = nextDialogueBeat('scientist', { stage: 0, talks: 0 }, { questFlags: {} });
+        expect(beat.type).toBe('beat');
+        expect(beat.lines.length).toBeGreaterThan(0);
+    });
+
+    it('stage 1 requires postReveal to advance to stage 2', () => {
+        const ctx = { questFlags: {}, postReveal: false };
+        const stage1BeatCount = LEADER_DIALOGUE.scientist.stages[1].beats.length;
+        const atLoop = nextDialogueBeat('scientist', { stage: 1, talks: stage1BeatCount }, ctx);
+        expect(atLoop.type).toBe('loop');
+        const withReveal = nextDialogueBeat('scientist', { stage: 1, talks: stage1BeatCount }, { ...ctx, postReveal: true });
+        expect(withReveal.type).toBe('advance');
+        expect(withReveal.stage).toBe(2);
+    });
+
+    it('stage 2 registers the quest and stage 3 stays locked without the quest flag', () => {
+        const stage2BeatCount = LEADER_DIALOGUE.scientist.stages[2].beats.length;
+        const ctx = { questFlags: {}, postReveal: true };
+        const atLoop = nextDialogueBeat('scientist', { stage: 2, talks: stage2BeatCount }, ctx);
+        expect(atLoop.type).toBe('loop');
+    });
+
+    it('stage 3 unlocks once snail_befriended is done', () => {
+        const stage2BeatCount = LEADER_DIALOGUE.scientist.stages[2].beats.length;
+        const ctx = { questFlags: { snail_befriended: 'done' }, postReveal: true };
+        const advanced = nextDialogueBeat('scientist', { stage: 2, talks: stage2BeatCount }, ctx);
+        expect(advanced.type).toBe('advance');
+        expect(advanced.stage).toBe(3);
+    });
+
+    it('is registered in LEADER_KEYS', () => {
+        expect(LEADER_KEYS).toContain('scientist');
+    });
+});
+
+describe('meetsRequirements', () => {
+    it('requires the named quest flag to be done', () => {
+        expect(meetsRequirements({ questFlag: 'snail_befriended' }, { questFlags: {} })).toBe(false);
+        expect(meetsRequirements({ questFlag: 'snail_befriended' }, { questFlags: { snail_befriended: 'active' } })).toBe(false);
+        expect(meetsRequirements({ questFlag: 'snail_befriended' }, { questFlags: { snail_befriended: 'done' } })).toBe(true);
+    });
+
+    it('is unaffected when next has no questFlag', () => {
+        expect(meetsRequirements({ talks: 0 }, { questFlags: {} })).toBe(true);
     });
 });

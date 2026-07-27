@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { applyBlackChromaKey } from './textureKeying.js';
+import { assetUrl } from './assetUrl.js';
 
 const ALIEN_SPRITESHEETS = {
     'hive_suture': '/alien_nahl_walk.png',
@@ -82,7 +83,7 @@ function loadAlienKeyedTexture(path, threshold = 15, fallbackCanvas = null) {
             }
             texture.needsUpdate = true;
         };
-        img.src = path;
+        img.src = assetUrl(path);
     }
 
     return texture;

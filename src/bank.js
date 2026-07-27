@@ -285,7 +285,8 @@ export const MAX_O2_GENERATOR_LEVEL = O2_GENERATOR_UPGRADES.length;
 export const TIER2_UPGRADE_ORDER = Object.freeze([
     'suitThermal',
     'deconFilters',
-    'stimCache'
+    'stimCache',
+    'fallHardening'
 ]);
 
 export const TIER2_UPGRADE_CONFIGS = Object.freeze({
@@ -311,6 +312,13 @@ export const TIER2_UPGRADE_CONFIGS = Object.freeze({
         label: 'EMERGENCY STIM CACHE',
         desc: 'Each run starts with a STIM PACK in your kit. Use [F] for 3s immunity.',
         cost: Object.freeze({ tech: 60, coin: 25 }),
+        prereq: 'reactorCompressor'
+    }),
+    fallHardening: Object.freeze({
+        key: 'fallHardening',
+        label: 'IMPACT DAMPENERS',
+        desc: 'Halves fall damage — survive a second fall through a hole in the same run.',
+        cost: Object.freeze({ tech: 70, coin: 18 }),
         prereq: 'reactorCompressor'
     })
 });
@@ -342,7 +350,8 @@ function createDefaultState() {
         tier2Unlocks: {
             suitThermal: false,
             deconFilters: false,
-            stimCache: false
+            stimCache: false,
+            fallHardening: false
         },
         weaponUpgrades: createDefaultWeaponUpgrades(),
         unlockedSkills: [],

@@ -123,14 +123,48 @@ function reachableFloorCells(grid) {
     return seen.size;
 }
 
+export function findFarthestFloorCell(grid, startX, startY) {
+    if (grid[startY]?.[startX] !== '.') return null;
+
+    const seen = new Set([`${startX},${startY}`]);
+    let queue = [{ x: startX, y: startY, distance: 0 }];
+    let farthest = { x: startX, y: startY, distance: 0 };
+
+    while (queue.length) {
+        const next = [];
+        for (const cell of queue) {
+            if (cell.distance > farthest.distance) farthest = cell;
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                const nx = cell.x + dx;
+                const ny = cell.y + dy;
+                const key = `${nx},${ny}`;
+                if (ny < 0 || ny >= grid.length || nx < 0 || nx >= grid[ny].length) continue;
+                if (grid[ny][nx] !== '.' || seen.has(key)) continue;
+                seen.add(key);
+                next.push({ x: nx, y: ny, distance: cell.distance + 1 });
+            }
+        }
+        queue = next;
+    }
+
+    return farthest;
+}
+
 export function openMazeTerrain(grid, random, {
     plazaCount = 6,
     floorTarget = 0.76,
     minRadius = 2.2,
-    maxRadius = 4.2
+    maxRadius = 4.2,
+    // Optional out-param: a Set that receives "x,y" keys for every wall cell
+    // forming a carved plaza's boundary. The soften/fill passes below skip
+    // these cells, and the caller can keep honoring the set through its own
+    // later erosion passes (widen/trim) — otherwise the shaped silhouettes
+    // carved here get blindly eaten back into blobs (wave-6 punch list §2c).
+    protectedCells = null
 } = {}) {
     const size = grid.length;
     if (size < 7) return 0;
+    const halo = protectedCells instanceof Set ? protectedCells : new Set();
 
     let carved = 0;
     const carve = (x, y) => {
@@ -172,6 +206,7 @@ export function openMazeTerrain(grid, random, {
         const radiusX = minRadius + random() * (maxRadius - minRadius);
         const radiusY = minRadius + random() * (maxRadius - minRadius);
         const shape = plazaShapeRoll();
+        const insideCells = new Set();
         for (let y = Math.floor(center.y - radiusY); y <= Math.ceil(center.y + radiusY); y += 1) {
             for (let x = Math.floor(center.x - radiusX); x <= Math.ceil(center.x + radiusX); x += 1) {
                 const dx = (x - center.x) / radiusX;
@@ -191,7 +226,26 @@ export function openMazeTerrain(grid, random, {
                 } else {
                     inside = (dx * dx) + (dy * dy) <= 1;
                 }
-                if (inside) carve(x, y);
+                if (inside) {
+                    carve(x, y);
+                    insideCells.add(`${x},${y}`);
+                }
+            }
+        }
+        // The silhouette only reads if the walls tracing it survive: every
+        // wall cell 4-adjacent to this plaza's interior joins the protected
+        // halo. Plaza-on-plaza overlap stays allowed (a later plaza may
+        // carve into an earlier halo — compound rooms are deliberate); the
+        // stale halo key is harmless since every later pass only acts on
+        // cells that are still walls.
+        for (const key of insideCells) {
+            const [cx, cy] = key.split(',').map(Number);
+            for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                const nx = cx + dx;
+                const ny = cy + dy;
+                if (nx < 1 || ny < 1 || nx >= size - 1 || ny >= size - 1) continue;
+                const nKey = `${nx},${ny}`;
+                if (!insideCells.has(nKey) && grid[ny][nx] === '#') halo.add(nKey);
             }
         }
     }
@@ -200,6 +254,7 @@ export function openMazeTerrain(grid, random, {
     for (let y = 2; y < size - 2; y += 1) {
         for (let x = 2; x < size - 2; x += 1) {
             if (grid[y][x] !== '#') continue;
+            if (halo.has(`${x},${y}`)) continue;
             const openNeighbors =
                 (grid[y - 1][x] === '.') +
                 (grid[y + 1][x] === '.') +
@@ -224,6 +279,7 @@ export function openMazeTerrain(grid, random, {
         for (let y = 2; y < size - 2; y += 1) {
             for (let x = 2; x < size - 2; x += 1) {
                 if (grid[y][x] !== '#') continue;
+                if (halo.has(`${x},${y}`)) continue;
                 const touchesFloor =
                     grid[y - 1][x] === '.' ||
                     grid[y + 1][x] === '.' ||
@@ -309,6 +365,39 @@ function applyRuinsLandform(grid, random) {
     }
 }
 
+export function applyRingRoadSystem(grid, chunkX, chunkY, chunkSize = 19) {
+    const half = (chunkSize - 1) / 2;
+    for (let localY = 0; localY < chunkSize; localY++) {
+        for (let localX = 0; localX < chunkSize; localX++) {
+            const worldX = chunkX * chunkSize + (localX - half);
+            const worldZ = chunkY * chunkSize + (localY - half);
+            const r = Math.hypot(worldX, worldZ);
+            
+            // Concentric Ring Road radii: Inner (10), Mid (24), Outer (40)
+            const isInnerRing = Math.abs(r - 10) < 0.85;
+            const isMidRing = Math.abs(r - 24) < 0.95;
+            const isOuterRing = Math.abs(r - 40) < 1.1;
+            
+            // Radial avenues along cardinal & diagonal axes
+            const isRadialAvenue = Math.abs(worldX) <= 1 || Math.abs(worldZ) <= 1 || Math.abs(Math.abs(worldX) - Math.abs(worldZ)) <= 1;
+
+            if (isInnerRing || isMidRing || isOuterRing || isRadialAvenue) {
+                // Keep chunk borders intact if not a portal
+                if (localX > 0 && localX < chunkSize - 1 && localY > 0 && localY < chunkSize - 1) {
+                    // Seeded Biomechanical Door placement at ring/radial intersections
+                    const hash = Math.abs((worldX * 17 + worldZ * 31) % 19);
+                    if ((isInnerRing || isMidRing || isOuterRing) && hash === 0) {
+                        grid[localY][localX] = 'D'; // Biomechanical Door Gate
+                    } else {
+                        grid[localY][localX] = '.'; // Carve Ring Road Floor
+                    }
+                }
+            }
+        }
+    }
+    return grid;
+}
+
 export function applyLandform(grid, landform, random) {
     switch (landform) {
         case LANDFORMS.FIELD: applyFieldLandform(grid, random); break;
@@ -343,3 +432,38 @@ export function connectPortalsInward(grid) {
     }
     return grid;
 }
+
+export const TERRAIN_HEIGHTS = Object.freeze({
+    GROUND: 0,
+    TERRACE: 1.5,
+    HIGH_PLATEAU: 3.0
+});
+
+export function generateHeightmapGrid(grid, landform = LANDFORMS.MAZE, random = Math.random) {
+    const size = grid.length;
+    const heightmap = Array.from({ length: size }, () => Array(size).fill(TERRAIN_HEIGHTS.GROUND));
+
+    for (let y = 1; y < size - 1; y++) {
+        for (let x = 1; x < size - 1; x++) {
+            if (grid[y][x] === '#') {
+                if (landform === LANDFORMS.CANYON) {
+                    heightmap[y][x] = TERRAIN_HEIGHTS.TERRACE;
+                } else if (landform === LANDFORMS.CRATER) {
+                    const center = (size - 1) / 2;
+                    const r = Math.hypot(x - center, y - center);
+                    heightmap[y][x] = r > 4.8 ? TERRAIN_HEIGHTS.HIGH_PLATEAU : TERRAIN_HEIGHTS.TERRACE;
+                } else if (landform === LANDFORMS.RUINS) {
+                    heightmap[y][x] = random() < 0.4 ? TERRAIN_HEIGHTS.TERRACE : TERRAIN_HEIGHTS.GROUND;
+                } else {
+                    heightmap[y][x] = TERRAIN_HEIGHTS.TERRACE;
+                }
+            } else {
+                if (landform === LANDFORMS.FIELD && (x <= 3 || x >= size - 4 || y <= 3 || y >= size - 4)) {
+                    heightmap[y][x] = random() < 0.35 ? TERRAIN_HEIGHTS.TERRACE : TERRAIN_HEIGHTS.GROUND;
+                }
+            }
+        }
+    }
+    return heightmap;
+}
+

@@ -1,0 +1,2658 @@
+{
+  "version": 5,
+  "classId": "TANK",
+  "identityMaster": "../sprite-v4/tank/identity/Tank.front-idle-master.png",
+  "grid": {
+    "columns": 8,
+    "rows": 8,
+    "cellWidth": 256,
+    "cellHeight": 256
+  },
+  "directionOrder": [
+    "east",
+    "southeast",
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast"
+  ],
+  "phaseOrder": [
+    "left-contact",
+    "left-down",
+    "left-pass",
+    "left-up",
+    "right-contact",
+    "right-down",
+    "right-pass",
+    "right-up"
+  ],
+  "productionRule": "render and approve one frame at a time; assemble only accepted frames",
+  "frames": [
+    {
+      "frameNumber": 1,
+      "frameId": "east.left-contact",
+      "atlas": {
+        "row": 0,
+        "column": 0,
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/east/00-left-contact.png",
+      "direction": {
+        "id": "east",
+        "view": "strict right profile",
+        "travel": "screen-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-contact",
+        "support": "left entering",
+        "strike": "left",
+        "swing": "right trailing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right trailing toe at y=236",
+        "legs": "left heel 34 px ahead of pelvis; right toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict right profile, traveling screen-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 0: left-contact. Support: left entering. Swing: right trailing. Leg geometry: left heel 34 px ahead of pelvis; right toe 25 px behind. Sole placement: left sole at y=240; right trailing toe at y=236. Arms: right arm forward; left arm rear. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 2,
+      "frameId": "east.left-down",
+      "atlas": {
+        "row": 0,
+        "column": 1,
+        "x": 256,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/east/01-left-down.png",
+      "direction": {
+        "id": "east",
+        "view": "strict right profile",
+        "travel": "screen-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-down",
+        "support": "left loaded",
+        "strike": "none",
+        "swing": "right heel lifting",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px low",
+        "sole": "left sole at y=240; right heel at y=228",
+        "legs": "left knee visibly compressed; right toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict right profile, traveling screen-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 1: left-down. Support: left loaded. Swing: right heel lifting. Leg geometry: left knee visibly compressed; right toe remains behind. Sole placement: left sole at y=240; right heel at y=228. Arms: right arm forward; left arm rear. Pelvis: 3 px low. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 3,
+      "frameId": "east.left-pass",
+      "atlas": {
+        "row": 0,
+        "column": 2,
+        "x": 512,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/east/02-left-pass.png",
+      "direction": {
+        "id": "east",
+        "view": "strict right profile",
+        "travel": "screen-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-pass",
+        "support": "left planted",
+        "strike": "none",
+        "swing": "right passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right boot bottom at y=220",
+        "legs": "right knee beside left knee; right boot beside left ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict right profile, traveling screen-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 2: left-pass. Support: left planted. Swing: right passing airborne. Leg geometry: right knee beside left knee; right boot beside left ankle. Sole placement: left sole at y=240; right boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 4,
+      "frameId": "east.left-up",
+      "atlas": {
+        "row": 0,
+        "column": 3,
+        "x": 768,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/east/03-left-up.png",
+      "direction": {
+        "id": "east",
+        "view": "strict right profile",
+        "travel": "screen-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-up",
+        "support": "left tall",
+        "strike": "none",
+        "swing": "right advancing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px high",
+        "sole": "left sole at y=240; right boot bottom at y=214",
+        "legs": "right knee 24 px ahead; left support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict right profile, traveling screen-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 3: left-up. Support: left tall. Swing: right advancing. Leg geometry: right knee 24 px ahead; left support leg extended. Sole placement: left sole at y=240; right boot bottom at y=214. Arms: left arm forward; right arm rear. Pelvis: 3 px high. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 5,
+      "frameId": "east.right-contact",
+      "atlas": {
+        "row": 0,
+        "column": 4,
+        "x": 1024,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/east/04-right-contact.png",
+      "direction": {
+        "id": "east",
+        "view": "strict right profile",
+        "travel": "screen-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-contact",
+        "support": "right entering",
+        "strike": "right",
+        "swing": "left trailing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left trailing toe at y=236",
+        "legs": "right heel 34 px ahead of pelvis; left toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict right profile, traveling screen-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 4: right-contact. Support: right entering. Swing: left trailing. Leg geometry: right heel 34 px ahead of pelvis; left toe 25 px behind. Sole placement: right sole at y=240; left trailing toe at y=236. Arms: left arm forward; right arm rear. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 6,
+      "frameId": "east.right-down",
+      "atlas": {
+        "row": 0,
+        "column": 5,
+        "x": 1280,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/east/05-right-down.png",
+      "direction": {
+        "id": "east",
+        "view": "strict right profile",
+        "travel": "screen-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-down",
+        "support": "right loaded",
+        "strike": "none",
+        "swing": "left heel lifting",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px low",
+        "sole": "right sole at y=240; left heel at y=228",
+        "legs": "right knee visibly compressed; left toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict right profile, traveling screen-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 5: right-down. Support: right loaded. Swing: left heel lifting. Leg geometry: right knee visibly compressed; left toe remains behind. Sole placement: right sole at y=240; left heel at y=228. Arms: left arm forward; right arm rear. Pelvis: 3 px low. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 7,
+      "frameId": "east.right-pass",
+      "atlas": {
+        "row": 0,
+        "column": 6,
+        "x": 1536,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/east/06-right-pass.png",
+      "direction": {
+        "id": "east",
+        "view": "strict right profile",
+        "travel": "screen-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-pass",
+        "support": "right planted",
+        "strike": "none",
+        "swing": "left passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left boot bottom at y=220",
+        "legs": "left knee beside right knee; left boot beside right ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict right profile, traveling screen-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 6: right-pass. Support: right planted. Swing: left passing airborne. Leg geometry: left knee beside right knee; left boot beside right ankle. Sole placement: right sole at y=240; left boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 8,
+      "frameId": "east.right-up",
+      "atlas": {
+        "row": 0,
+        "column": 7,
+        "x": 1792,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/east/07-right-up.png",
+      "direction": {
+        "id": "east",
+        "view": "strict right profile",
+        "travel": "screen-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-up",
+        "support": "right tall",
+        "strike": "none",
+        "swing": "left advancing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px high",
+        "sole": "right sole at y=240; left boot bottom at y=214",
+        "legs": "left knee 24 px ahead; right support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict right profile, traveling screen-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 7: right-up. Support: right tall. Swing: left advancing. Leg geometry: left knee 24 px ahead; right support leg extended. Sole placement: right sole at y=240; left boot bottom at y=214. Arms: right arm forward; left arm rear. Pelvis: 3 px high. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 9,
+      "frameId": "southeast.left-contact",
+      "atlas": {
+        "row": 1,
+        "column": 0,
+        "x": 0,
+        "y": 256,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southeast/00-left-contact.png",
+      "direction": {
+        "id": "southeast",
+        "view": "front-right three-quarter",
+        "travel": "down-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-contact",
+        "support": "left entering",
+        "strike": "left",
+        "swing": "right trailing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right trailing toe at y=236",
+        "legs": "left heel 34 px ahead of pelvis; right toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-right three-quarter, traveling down-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 0: left-contact. Support: left entering. Swing: right trailing. Leg geometry: left heel 34 px ahead of pelvis; right toe 25 px behind. Sole placement: left sole at y=240; right trailing toe at y=236. Arms: right arm forward; left arm rear. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 10,
+      "frameId": "southeast.left-down",
+      "atlas": {
+        "row": 1,
+        "column": 1,
+        "x": 256,
+        "y": 256,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southeast/01-left-down.png",
+      "direction": {
+        "id": "southeast",
+        "view": "front-right three-quarter",
+        "travel": "down-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-down",
+        "support": "left loaded",
+        "strike": "none",
+        "swing": "right heel lifting",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px low",
+        "sole": "left sole at y=240; right heel at y=228",
+        "legs": "left knee visibly compressed; right toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-right three-quarter, traveling down-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 1: left-down. Support: left loaded. Swing: right heel lifting. Leg geometry: left knee visibly compressed; right toe remains behind. Sole placement: left sole at y=240; right heel at y=228. Arms: right arm forward; left arm rear. Pelvis: 3 px low. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 11,
+      "frameId": "southeast.left-pass",
+      "atlas": {
+        "row": 1,
+        "column": 2,
+        "x": 512,
+        "y": 256,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southeast/02-left-pass.png",
+      "direction": {
+        "id": "southeast",
+        "view": "front-right three-quarter",
+        "travel": "down-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-pass",
+        "support": "left planted",
+        "strike": "none",
+        "swing": "right passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right boot bottom at y=220",
+        "legs": "right knee beside left knee; right boot beside left ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-right three-quarter, traveling down-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 2: left-pass. Support: left planted. Swing: right passing airborne. Leg geometry: right knee beside left knee; right boot beside left ankle. Sole placement: left sole at y=240; right boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 12,
+      "frameId": "southeast.left-up",
+      "atlas": {
+        "row": 1,
+        "column": 3,
+        "x": 768,
+        "y": 256,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southeast/03-left-up.png",
+      "direction": {
+        "id": "southeast",
+        "view": "front-right three-quarter",
+        "travel": "down-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-up",
+        "support": "left tall",
+        "strike": "none",
+        "swing": "right advancing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px high",
+        "sole": "left sole at y=240; right boot bottom at y=214",
+        "legs": "right knee 24 px ahead; left support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-right three-quarter, traveling down-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 3: left-up. Support: left tall. Swing: right advancing. Leg geometry: right knee 24 px ahead; left support leg extended. Sole placement: left sole at y=240; right boot bottom at y=214. Arms: left arm forward; right arm rear. Pelvis: 3 px high. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 13,
+      "frameId": "southeast.right-contact",
+      "atlas": {
+        "row": 1,
+        "column": 4,
+        "x": 1024,
+        "y": 256,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southeast/04-right-contact.png",
+      "direction": {
+        "id": "southeast",
+        "view": "front-right three-quarter",
+        "travel": "down-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-contact",
+        "support": "right entering",
+        "strike": "right",
+        "swing": "left trailing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left trailing toe at y=236",
+        "legs": "right heel 34 px ahead of pelvis; left toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-right three-quarter, traveling down-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 4: right-contact. Support: right entering. Swing: left trailing. Leg geometry: right heel 34 px ahead of pelvis; left toe 25 px behind. Sole placement: right sole at y=240; left trailing toe at y=236. Arms: left arm forward; right arm rear. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 14,
+      "frameId": "southeast.right-down",
+      "atlas": {
+        "row": 1,
+        "column": 5,
+        "x": 1280,
+        "y": 256,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southeast/05-right-down.png",
+      "direction": {
+        "id": "southeast",
+        "view": "front-right three-quarter",
+        "travel": "down-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-down",
+        "support": "right loaded",
+        "strike": "none",
+        "swing": "left heel lifting",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px low",
+        "sole": "right sole at y=240; left heel at y=228",
+        "legs": "right knee visibly compressed; left toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-right three-quarter, traveling down-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 5: right-down. Support: right loaded. Swing: left heel lifting. Leg geometry: right knee visibly compressed; left toe remains behind. Sole placement: right sole at y=240; left heel at y=228. Arms: left arm forward; right arm rear. Pelvis: 3 px low. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 15,
+      "frameId": "southeast.right-pass",
+      "atlas": {
+        "row": 1,
+        "column": 6,
+        "x": 1536,
+        "y": 256,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southeast/06-right-pass.png",
+      "direction": {
+        "id": "southeast",
+        "view": "front-right three-quarter",
+        "travel": "down-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-pass",
+        "support": "right planted",
+        "strike": "none",
+        "swing": "left passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left boot bottom at y=220",
+        "legs": "left knee beside right knee; left boot beside right ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-right three-quarter, traveling down-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 6: right-pass. Support: right planted. Swing: left passing airborne. Leg geometry: left knee beside right knee; left boot beside right ankle. Sole placement: right sole at y=240; left boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 16,
+      "frameId": "southeast.right-up",
+      "atlas": {
+        "row": 1,
+        "column": 7,
+        "x": 1792,
+        "y": 256,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southeast/07-right-up.png",
+      "direction": {
+        "id": "southeast",
+        "view": "front-right three-quarter",
+        "travel": "down-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-up",
+        "support": "right tall",
+        "strike": "none",
+        "swing": "left advancing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px high",
+        "sole": "right sole at y=240; left boot bottom at y=214",
+        "legs": "left knee 24 px ahead; right support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-right three-quarter, traveling down-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 7: right-up. Support: right tall. Swing: left advancing. Leg geometry: left knee 24 px ahead; right support leg extended. Sole placement: right sole at y=240; left boot bottom at y=214. Arms: right arm forward; left arm rear. Pelvis: 3 px high. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 17,
+      "frameId": "south.left-contact",
+      "atlas": {
+        "row": 2,
+        "column": 0,
+        "x": 0,
+        "y": 512,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/south/00-left-contact.png",
+      "direction": {
+        "id": "south",
+        "view": "direct front",
+        "travel": "toward viewer",
+        "nearSide": "front"
+      },
+      "phase": {
+        "id": "left-contact",
+        "support": "left entering",
+        "strike": "left",
+        "swing": "right trailing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right trailing toe at y=236",
+        "legs": "left heel 34 px ahead of pelvis; right toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct front, traveling toward viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 0: left-contact. Support: left entering. Swing: right trailing. Leg geometry: left heel 34 px ahead of pelvis; right toe 25 px behind. Sole placement: left sole at y=240; right trailing toe at y=236. Arms: right arm forward; left arm rear. Pelvis: neutral. Near-side read: front. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 18,
+      "frameId": "south.left-down",
+      "atlas": {
+        "row": 2,
+        "column": 1,
+        "x": 256,
+        "y": 512,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/south/01-left-down.png",
+      "direction": {
+        "id": "south",
+        "view": "direct front",
+        "travel": "toward viewer",
+        "nearSide": "front"
+      },
+      "phase": {
+        "id": "left-down",
+        "support": "left loaded",
+        "strike": "none",
+        "swing": "right heel lifting",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px low",
+        "sole": "left sole at y=240; right heel at y=228",
+        "legs": "left knee visibly compressed; right toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct front, traveling toward viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 1: left-down. Support: left loaded. Swing: right heel lifting. Leg geometry: left knee visibly compressed; right toe remains behind. Sole placement: left sole at y=240; right heel at y=228. Arms: right arm forward; left arm rear. Pelvis: 3 px low. Near-side read: front. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 19,
+      "frameId": "south.left-pass",
+      "atlas": {
+        "row": 2,
+        "column": 2,
+        "x": 512,
+        "y": 512,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/south/02-left-pass.png",
+      "direction": {
+        "id": "south",
+        "view": "direct front",
+        "travel": "toward viewer",
+        "nearSide": "front"
+      },
+      "phase": {
+        "id": "left-pass",
+        "support": "left planted",
+        "strike": "none",
+        "swing": "right passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right boot bottom at y=220",
+        "legs": "right knee beside left knee; right boot beside left ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct front, traveling toward viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 2: left-pass. Support: left planted. Swing: right passing airborne. Leg geometry: right knee beside left knee; right boot beside left ankle. Sole placement: left sole at y=240; right boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: front. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 20,
+      "frameId": "south.left-up",
+      "atlas": {
+        "row": 2,
+        "column": 3,
+        "x": 768,
+        "y": 512,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/south/03-left-up.png",
+      "direction": {
+        "id": "south",
+        "view": "direct front",
+        "travel": "toward viewer",
+        "nearSide": "front"
+      },
+      "phase": {
+        "id": "left-up",
+        "support": "left tall",
+        "strike": "none",
+        "swing": "right advancing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px high",
+        "sole": "left sole at y=240; right boot bottom at y=214",
+        "legs": "right knee 24 px ahead; left support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct front, traveling toward viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 3: left-up. Support: left tall. Swing: right advancing. Leg geometry: right knee 24 px ahead; left support leg extended. Sole placement: left sole at y=240; right boot bottom at y=214. Arms: left arm forward; right arm rear. Pelvis: 3 px high. Near-side read: front. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 21,
+      "frameId": "south.right-contact",
+      "atlas": {
+        "row": 2,
+        "column": 4,
+        "x": 1024,
+        "y": 512,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/south/04-right-contact.png",
+      "direction": {
+        "id": "south",
+        "view": "direct front",
+        "travel": "toward viewer",
+        "nearSide": "front"
+      },
+      "phase": {
+        "id": "right-contact",
+        "support": "right entering",
+        "strike": "right",
+        "swing": "left trailing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left trailing toe at y=236",
+        "legs": "right heel 34 px ahead of pelvis; left toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct front, traveling toward viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 4: right-contact. Support: right entering. Swing: left trailing. Leg geometry: right heel 34 px ahead of pelvis; left toe 25 px behind. Sole placement: right sole at y=240; left trailing toe at y=236. Arms: left arm forward; right arm rear. Pelvis: neutral. Near-side read: front. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 22,
+      "frameId": "south.right-down",
+      "atlas": {
+        "row": 2,
+        "column": 5,
+        "x": 1280,
+        "y": 512,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/south/05-right-down.png",
+      "direction": {
+        "id": "south",
+        "view": "direct front",
+        "travel": "toward viewer",
+        "nearSide": "front"
+      },
+      "phase": {
+        "id": "right-down",
+        "support": "right loaded",
+        "strike": "none",
+        "swing": "left heel lifting",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px low",
+        "sole": "right sole at y=240; left heel at y=228",
+        "legs": "right knee visibly compressed; left toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct front, traveling toward viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 5: right-down. Support: right loaded. Swing: left heel lifting. Leg geometry: right knee visibly compressed; left toe remains behind. Sole placement: right sole at y=240; left heel at y=228. Arms: left arm forward; right arm rear. Pelvis: 3 px low. Near-side read: front. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 23,
+      "frameId": "south.right-pass",
+      "atlas": {
+        "row": 2,
+        "column": 6,
+        "x": 1536,
+        "y": 512,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/south/06-right-pass.png",
+      "direction": {
+        "id": "south",
+        "view": "direct front",
+        "travel": "toward viewer",
+        "nearSide": "front"
+      },
+      "phase": {
+        "id": "right-pass",
+        "support": "right planted",
+        "strike": "none",
+        "swing": "left passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left boot bottom at y=220",
+        "legs": "left knee beside right knee; left boot beside right ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct front, traveling toward viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 6: right-pass. Support: right planted. Swing: left passing airborne. Leg geometry: left knee beside right knee; left boot beside right ankle. Sole placement: right sole at y=240; left boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: front. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 24,
+      "frameId": "south.right-up",
+      "atlas": {
+        "row": 2,
+        "column": 7,
+        "x": 1792,
+        "y": 512,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/south/07-right-up.png",
+      "direction": {
+        "id": "south",
+        "view": "direct front",
+        "travel": "toward viewer",
+        "nearSide": "front"
+      },
+      "phase": {
+        "id": "right-up",
+        "support": "right tall",
+        "strike": "none",
+        "swing": "left advancing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px high",
+        "sole": "right sole at y=240; left boot bottom at y=214",
+        "legs": "left knee 24 px ahead; right support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct front, traveling toward viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 7: right-up. Support: right tall. Swing: left advancing. Leg geometry: left knee 24 px ahead; right support leg extended. Sole placement: right sole at y=240; left boot bottom at y=214. Arms: right arm forward; left arm rear. Pelvis: 3 px high. Near-side read: front. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 25,
+      "frameId": "southwest.left-contact",
+      "atlas": {
+        "row": 3,
+        "column": 0,
+        "x": 0,
+        "y": 768,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southwest/00-left-contact.png",
+      "direction": {
+        "id": "southwest",
+        "view": "front-left three-quarter",
+        "travel": "down-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-contact",
+        "support": "left entering",
+        "strike": "left",
+        "swing": "right trailing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right trailing toe at y=236",
+        "legs": "left heel 34 px ahead of pelvis; right toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-left three-quarter, traveling down-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 0: left-contact. Support: left entering. Swing: right trailing. Leg geometry: left heel 34 px ahead of pelvis; right toe 25 px behind. Sole placement: left sole at y=240; right trailing toe at y=236. Arms: right arm forward; left arm rear. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 26,
+      "frameId": "southwest.left-down",
+      "atlas": {
+        "row": 3,
+        "column": 1,
+        "x": 256,
+        "y": 768,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southwest/01-left-down.png",
+      "direction": {
+        "id": "southwest",
+        "view": "front-left three-quarter",
+        "travel": "down-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-down",
+        "support": "left loaded",
+        "strike": "none",
+        "swing": "right heel lifting",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px low",
+        "sole": "left sole at y=240; right heel at y=228",
+        "legs": "left knee visibly compressed; right toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-left three-quarter, traveling down-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 1: left-down. Support: left loaded. Swing: right heel lifting. Leg geometry: left knee visibly compressed; right toe remains behind. Sole placement: left sole at y=240; right heel at y=228. Arms: right arm forward; left arm rear. Pelvis: 3 px low. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 27,
+      "frameId": "southwest.left-pass",
+      "atlas": {
+        "row": 3,
+        "column": 2,
+        "x": 512,
+        "y": 768,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southwest/02-left-pass.png",
+      "direction": {
+        "id": "southwest",
+        "view": "front-left three-quarter",
+        "travel": "down-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-pass",
+        "support": "left planted",
+        "strike": "none",
+        "swing": "right passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right boot bottom at y=220",
+        "legs": "right knee beside left knee; right boot beside left ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-left three-quarter, traveling down-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 2: left-pass. Support: left planted. Swing: right passing airborne. Leg geometry: right knee beside left knee; right boot beside left ankle. Sole placement: left sole at y=240; right boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 28,
+      "frameId": "southwest.left-up",
+      "atlas": {
+        "row": 3,
+        "column": 3,
+        "x": 768,
+        "y": 768,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southwest/03-left-up.png",
+      "direction": {
+        "id": "southwest",
+        "view": "front-left three-quarter",
+        "travel": "down-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-up",
+        "support": "left tall",
+        "strike": "none",
+        "swing": "right advancing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px high",
+        "sole": "left sole at y=240; right boot bottom at y=214",
+        "legs": "right knee 24 px ahead; left support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-left three-quarter, traveling down-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 3: left-up. Support: left tall. Swing: right advancing. Leg geometry: right knee 24 px ahead; left support leg extended. Sole placement: left sole at y=240; right boot bottom at y=214. Arms: left arm forward; right arm rear. Pelvis: 3 px high. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 29,
+      "frameId": "southwest.right-contact",
+      "atlas": {
+        "row": 3,
+        "column": 4,
+        "x": 1024,
+        "y": 768,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southwest/04-right-contact.png",
+      "direction": {
+        "id": "southwest",
+        "view": "front-left three-quarter",
+        "travel": "down-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-contact",
+        "support": "right entering",
+        "strike": "right",
+        "swing": "left trailing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left trailing toe at y=236",
+        "legs": "right heel 34 px ahead of pelvis; left toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-left three-quarter, traveling down-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 4: right-contact. Support: right entering. Swing: left trailing. Leg geometry: right heel 34 px ahead of pelvis; left toe 25 px behind. Sole placement: right sole at y=240; left trailing toe at y=236. Arms: left arm forward; right arm rear. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 30,
+      "frameId": "southwest.right-down",
+      "atlas": {
+        "row": 3,
+        "column": 5,
+        "x": 1280,
+        "y": 768,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southwest/05-right-down.png",
+      "direction": {
+        "id": "southwest",
+        "view": "front-left three-quarter",
+        "travel": "down-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-down",
+        "support": "right loaded",
+        "strike": "none",
+        "swing": "left heel lifting",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px low",
+        "sole": "right sole at y=240; left heel at y=228",
+        "legs": "right knee visibly compressed; left toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-left three-quarter, traveling down-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 5: right-down. Support: right loaded. Swing: left heel lifting. Leg geometry: right knee visibly compressed; left toe remains behind. Sole placement: right sole at y=240; left heel at y=228. Arms: left arm forward; right arm rear. Pelvis: 3 px low. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 31,
+      "frameId": "southwest.right-pass",
+      "atlas": {
+        "row": 3,
+        "column": 6,
+        "x": 1536,
+        "y": 768,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southwest/06-right-pass.png",
+      "direction": {
+        "id": "southwest",
+        "view": "front-left three-quarter",
+        "travel": "down-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-pass",
+        "support": "right planted",
+        "strike": "none",
+        "swing": "left passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left boot bottom at y=220",
+        "legs": "left knee beside right knee; left boot beside right ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-left three-quarter, traveling down-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 6: right-pass. Support: right planted. Swing: left passing airborne. Leg geometry: left knee beside right knee; left boot beside right ankle. Sole placement: right sole at y=240; left boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 32,
+      "frameId": "southwest.right-up",
+      "atlas": {
+        "row": 3,
+        "column": 7,
+        "x": 1792,
+        "y": 768,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/southwest/07-right-up.png",
+      "direction": {
+        "id": "southwest",
+        "view": "front-left three-quarter",
+        "travel": "down-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-up",
+        "support": "right tall",
+        "strike": "none",
+        "swing": "left advancing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px high",
+        "sole": "right sole at y=240; left boot bottom at y=214",
+        "legs": "left knee 24 px ahead; right support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, front-left three-quarter, traveling down-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 7: right-up. Support: right tall. Swing: left advancing. Leg geometry: left knee 24 px ahead; right support leg extended. Sole placement: right sole at y=240; left boot bottom at y=214. Arms: right arm forward; left arm rear. Pelvis: 3 px high. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 33,
+      "frameId": "west.left-contact",
+      "atlas": {
+        "row": 4,
+        "column": 0,
+        "x": 0,
+        "y": 1024,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/west/00-left-contact.png",
+      "direction": {
+        "id": "west",
+        "view": "strict left profile",
+        "travel": "screen-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-contact",
+        "support": "left entering",
+        "strike": "left",
+        "swing": "right trailing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right trailing toe at y=236",
+        "legs": "left heel 34 px ahead of pelvis; right toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict left profile, traveling screen-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 0: left-contact. Support: left entering. Swing: right trailing. Leg geometry: left heel 34 px ahead of pelvis; right toe 25 px behind. Sole placement: left sole at y=240; right trailing toe at y=236. Arms: right arm forward; left arm rear. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 34,
+      "frameId": "west.left-down",
+      "atlas": {
+        "row": 4,
+        "column": 1,
+        "x": 256,
+        "y": 1024,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/west/01-left-down.png",
+      "direction": {
+        "id": "west",
+        "view": "strict left profile",
+        "travel": "screen-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-down",
+        "support": "left loaded",
+        "strike": "none",
+        "swing": "right heel lifting",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px low",
+        "sole": "left sole at y=240; right heel at y=228",
+        "legs": "left knee visibly compressed; right toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict left profile, traveling screen-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 1: left-down. Support: left loaded. Swing: right heel lifting. Leg geometry: left knee visibly compressed; right toe remains behind. Sole placement: left sole at y=240; right heel at y=228. Arms: right arm forward; left arm rear. Pelvis: 3 px low. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 35,
+      "frameId": "west.left-pass",
+      "atlas": {
+        "row": 4,
+        "column": 2,
+        "x": 512,
+        "y": 1024,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/west/02-left-pass.png",
+      "direction": {
+        "id": "west",
+        "view": "strict left profile",
+        "travel": "screen-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-pass",
+        "support": "left planted",
+        "strike": "none",
+        "swing": "right passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right boot bottom at y=220",
+        "legs": "right knee beside left knee; right boot beside left ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict left profile, traveling screen-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 2: left-pass. Support: left planted. Swing: right passing airborne. Leg geometry: right knee beside left knee; right boot beside left ankle. Sole placement: left sole at y=240; right boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 36,
+      "frameId": "west.left-up",
+      "atlas": {
+        "row": 4,
+        "column": 3,
+        "x": 768,
+        "y": 1024,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/west/03-left-up.png",
+      "direction": {
+        "id": "west",
+        "view": "strict left profile",
+        "travel": "screen-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-up",
+        "support": "left tall",
+        "strike": "none",
+        "swing": "right advancing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px high",
+        "sole": "left sole at y=240; right boot bottom at y=214",
+        "legs": "right knee 24 px ahead; left support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict left profile, traveling screen-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 3: left-up. Support: left tall. Swing: right advancing. Leg geometry: right knee 24 px ahead; left support leg extended. Sole placement: left sole at y=240; right boot bottom at y=214. Arms: left arm forward; right arm rear. Pelvis: 3 px high. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 37,
+      "frameId": "west.right-contact",
+      "atlas": {
+        "row": 4,
+        "column": 4,
+        "x": 1024,
+        "y": 1024,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/west/04-right-contact.png",
+      "direction": {
+        "id": "west",
+        "view": "strict left profile",
+        "travel": "screen-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-contact",
+        "support": "right entering",
+        "strike": "right",
+        "swing": "left trailing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left trailing toe at y=236",
+        "legs": "right heel 34 px ahead of pelvis; left toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict left profile, traveling screen-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 4: right-contact. Support: right entering. Swing: left trailing. Leg geometry: right heel 34 px ahead of pelvis; left toe 25 px behind. Sole placement: right sole at y=240; left trailing toe at y=236. Arms: left arm forward; right arm rear. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 38,
+      "frameId": "west.right-down",
+      "atlas": {
+        "row": 4,
+        "column": 5,
+        "x": 1280,
+        "y": 1024,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/west/05-right-down.png",
+      "direction": {
+        "id": "west",
+        "view": "strict left profile",
+        "travel": "screen-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-down",
+        "support": "right loaded",
+        "strike": "none",
+        "swing": "left heel lifting",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px low",
+        "sole": "right sole at y=240; left heel at y=228",
+        "legs": "right knee visibly compressed; left toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict left profile, traveling screen-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 5: right-down. Support: right loaded. Swing: left heel lifting. Leg geometry: right knee visibly compressed; left toe remains behind. Sole placement: right sole at y=240; left heel at y=228. Arms: left arm forward; right arm rear. Pelvis: 3 px low. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 39,
+      "frameId": "west.right-pass",
+      "atlas": {
+        "row": 4,
+        "column": 6,
+        "x": 1536,
+        "y": 1024,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/west/06-right-pass.png",
+      "direction": {
+        "id": "west",
+        "view": "strict left profile",
+        "travel": "screen-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-pass",
+        "support": "right planted",
+        "strike": "none",
+        "swing": "left passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left boot bottom at y=220",
+        "legs": "left knee beside right knee; left boot beside right ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict left profile, traveling screen-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 6: right-pass. Support: right planted. Swing: left passing airborne. Leg geometry: left knee beside right knee; left boot beside right ankle. Sole placement: right sole at y=240; left boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 40,
+      "frameId": "west.right-up",
+      "atlas": {
+        "row": 4,
+        "column": 7,
+        "x": 1792,
+        "y": 1024,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/west/07-right-up.png",
+      "direction": {
+        "id": "west",
+        "view": "strict left profile",
+        "travel": "screen-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-up",
+        "support": "right tall",
+        "strike": "none",
+        "swing": "left advancing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px high",
+        "sole": "right sole at y=240; left boot bottom at y=214",
+        "legs": "left knee 24 px ahead; right support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, strict left profile, traveling screen-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 7: right-up. Support: right tall. Swing: left advancing. Leg geometry: left knee 24 px ahead; right support leg extended. Sole placement: right sole at y=240; left boot bottom at y=214. Arms: right arm forward; left arm rear. Pelvis: 3 px high. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 41,
+      "frameId": "northwest.left-contact",
+      "atlas": {
+        "row": 5,
+        "column": 0,
+        "x": 0,
+        "y": 1280,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northwest/00-left-contact.png",
+      "direction": {
+        "id": "northwest",
+        "view": "rear-left three-quarter",
+        "travel": "up-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-contact",
+        "support": "left entering",
+        "strike": "left",
+        "swing": "right trailing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right trailing toe at y=236",
+        "legs": "left heel 34 px ahead of pelvis; right toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-left three-quarter, traveling up-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 0: left-contact. Support: left entering. Swing: right trailing. Leg geometry: left heel 34 px ahead of pelvis; right toe 25 px behind. Sole placement: left sole at y=240; right trailing toe at y=236. Arms: right arm forward; left arm rear. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 42,
+      "frameId": "northwest.left-down",
+      "atlas": {
+        "row": 5,
+        "column": 1,
+        "x": 256,
+        "y": 1280,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northwest/01-left-down.png",
+      "direction": {
+        "id": "northwest",
+        "view": "rear-left three-quarter",
+        "travel": "up-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-down",
+        "support": "left loaded",
+        "strike": "none",
+        "swing": "right heel lifting",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px low",
+        "sole": "left sole at y=240; right heel at y=228",
+        "legs": "left knee visibly compressed; right toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-left three-quarter, traveling up-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 1: left-down. Support: left loaded. Swing: right heel lifting. Leg geometry: left knee visibly compressed; right toe remains behind. Sole placement: left sole at y=240; right heel at y=228. Arms: right arm forward; left arm rear. Pelvis: 3 px low. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 43,
+      "frameId": "northwest.left-pass",
+      "atlas": {
+        "row": 5,
+        "column": 2,
+        "x": 512,
+        "y": 1280,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northwest/02-left-pass.png",
+      "direction": {
+        "id": "northwest",
+        "view": "rear-left three-quarter",
+        "travel": "up-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-pass",
+        "support": "left planted",
+        "strike": "none",
+        "swing": "right passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right boot bottom at y=220",
+        "legs": "right knee beside left knee; right boot beside left ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-left three-quarter, traveling up-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 2: left-pass. Support: left planted. Swing: right passing airborne. Leg geometry: right knee beside left knee; right boot beside left ankle. Sole placement: left sole at y=240; right boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 44,
+      "frameId": "northwest.left-up",
+      "atlas": {
+        "row": 5,
+        "column": 3,
+        "x": 768,
+        "y": 1280,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northwest/03-left-up.png",
+      "direction": {
+        "id": "northwest",
+        "view": "rear-left three-quarter",
+        "travel": "up-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "left-up",
+        "support": "left tall",
+        "strike": "none",
+        "swing": "right advancing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px high",
+        "sole": "left sole at y=240; right boot bottom at y=214",
+        "legs": "right knee 24 px ahead; left support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-left three-quarter, traveling up-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 3: left-up. Support: left tall. Swing: right advancing. Leg geometry: right knee 24 px ahead; left support leg extended. Sole placement: left sole at y=240; right boot bottom at y=214. Arms: left arm forward; right arm rear. Pelvis: 3 px high. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 45,
+      "frameId": "northwest.right-contact",
+      "atlas": {
+        "row": 5,
+        "column": 4,
+        "x": 1024,
+        "y": 1280,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northwest/04-right-contact.png",
+      "direction": {
+        "id": "northwest",
+        "view": "rear-left three-quarter",
+        "travel": "up-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-contact",
+        "support": "right entering",
+        "strike": "right",
+        "swing": "left trailing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left trailing toe at y=236",
+        "legs": "right heel 34 px ahead of pelvis; left toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-left three-quarter, traveling up-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 4: right-contact. Support: right entering. Swing: left trailing. Leg geometry: right heel 34 px ahead of pelvis; left toe 25 px behind. Sole placement: right sole at y=240; left trailing toe at y=236. Arms: left arm forward; right arm rear. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 46,
+      "frameId": "northwest.right-down",
+      "atlas": {
+        "row": 5,
+        "column": 5,
+        "x": 1280,
+        "y": 1280,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northwest/05-right-down.png",
+      "direction": {
+        "id": "northwest",
+        "view": "rear-left three-quarter",
+        "travel": "up-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-down",
+        "support": "right loaded",
+        "strike": "none",
+        "swing": "left heel lifting",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px low",
+        "sole": "right sole at y=240; left heel at y=228",
+        "legs": "right knee visibly compressed; left toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-left three-quarter, traveling up-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 5: right-down. Support: right loaded. Swing: left heel lifting. Leg geometry: right knee visibly compressed; left toe remains behind. Sole placement: right sole at y=240; left heel at y=228. Arms: left arm forward; right arm rear. Pelvis: 3 px low. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 47,
+      "frameId": "northwest.right-pass",
+      "atlas": {
+        "row": 5,
+        "column": 6,
+        "x": 1536,
+        "y": 1280,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northwest/06-right-pass.png",
+      "direction": {
+        "id": "northwest",
+        "view": "rear-left three-quarter",
+        "travel": "up-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-pass",
+        "support": "right planted",
+        "strike": "none",
+        "swing": "left passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left boot bottom at y=220",
+        "legs": "left knee beside right knee; left boot beside right ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-left three-quarter, traveling up-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 6: right-pass. Support: right planted. Swing: left passing airborne. Leg geometry: left knee beside right knee; left boot beside right ankle. Sole placement: right sole at y=240; left boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 48,
+      "frameId": "northwest.right-up",
+      "atlas": {
+        "row": 5,
+        "column": 7,
+        "x": 1792,
+        "y": 1280,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northwest/07-right-up.png",
+      "direction": {
+        "id": "northwest",
+        "view": "rear-left three-quarter",
+        "travel": "up-left",
+        "nearSide": "left"
+      },
+      "phase": {
+        "id": "right-up",
+        "support": "right tall",
+        "strike": "none",
+        "swing": "left advancing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px high",
+        "sole": "right sole at y=240; left boot bottom at y=214",
+        "legs": "left knee 24 px ahead; right support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-left three-quarter, traveling up-left. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 7: right-up. Support: right tall. Swing: left advancing. Leg geometry: left knee 24 px ahead; right support leg extended. Sole placement: right sole at y=240; left boot bottom at y=214. Arms: right arm forward; left arm rear. Pelvis: 3 px high. Near-side read: left. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 49,
+      "frameId": "north.left-contact",
+      "atlas": {
+        "row": 6,
+        "column": 0,
+        "x": 0,
+        "y": 1536,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/north/00-left-contact.png",
+      "direction": {
+        "id": "north",
+        "view": "direct back",
+        "travel": "away from viewer",
+        "nearSide": "back"
+      },
+      "phase": {
+        "id": "left-contact",
+        "support": "left entering",
+        "strike": "left",
+        "swing": "right trailing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right trailing toe at y=236",
+        "legs": "left heel 34 px ahead of pelvis; right toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct back, traveling away from viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 0: left-contact. Support: left entering. Swing: right trailing. Leg geometry: left heel 34 px ahead of pelvis; right toe 25 px behind. Sole placement: left sole at y=240; right trailing toe at y=236. Arms: right arm forward; left arm rear. Pelvis: neutral. Near-side read: back. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 50,
+      "frameId": "north.left-down",
+      "atlas": {
+        "row": 6,
+        "column": 1,
+        "x": 256,
+        "y": 1536,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/north/01-left-down.png",
+      "direction": {
+        "id": "north",
+        "view": "direct back",
+        "travel": "away from viewer",
+        "nearSide": "back"
+      },
+      "phase": {
+        "id": "left-down",
+        "support": "left loaded",
+        "strike": "none",
+        "swing": "right heel lifting",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px low",
+        "sole": "left sole at y=240; right heel at y=228",
+        "legs": "left knee visibly compressed; right toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct back, traveling away from viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 1: left-down. Support: left loaded. Swing: right heel lifting. Leg geometry: left knee visibly compressed; right toe remains behind. Sole placement: left sole at y=240; right heel at y=228. Arms: right arm forward; left arm rear. Pelvis: 3 px low. Near-side read: back. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 51,
+      "frameId": "north.left-pass",
+      "atlas": {
+        "row": 6,
+        "column": 2,
+        "x": 512,
+        "y": 1536,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/north/02-left-pass.png",
+      "direction": {
+        "id": "north",
+        "view": "direct back",
+        "travel": "away from viewer",
+        "nearSide": "back"
+      },
+      "phase": {
+        "id": "left-pass",
+        "support": "left planted",
+        "strike": "none",
+        "swing": "right passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right boot bottom at y=220",
+        "legs": "right knee beside left knee; right boot beside left ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct back, traveling away from viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 2: left-pass. Support: left planted. Swing: right passing airborne. Leg geometry: right knee beside left knee; right boot beside left ankle. Sole placement: left sole at y=240; right boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: back. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 52,
+      "frameId": "north.left-up",
+      "atlas": {
+        "row": 6,
+        "column": 3,
+        "x": 768,
+        "y": 1536,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/north/03-left-up.png",
+      "direction": {
+        "id": "north",
+        "view": "direct back",
+        "travel": "away from viewer",
+        "nearSide": "back"
+      },
+      "phase": {
+        "id": "left-up",
+        "support": "left tall",
+        "strike": "none",
+        "swing": "right advancing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px high",
+        "sole": "left sole at y=240; right boot bottom at y=214",
+        "legs": "right knee 24 px ahead; left support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct back, traveling away from viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 3: left-up. Support: left tall. Swing: right advancing. Leg geometry: right knee 24 px ahead; left support leg extended. Sole placement: left sole at y=240; right boot bottom at y=214. Arms: left arm forward; right arm rear. Pelvis: 3 px high. Near-side read: back. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 53,
+      "frameId": "north.right-contact",
+      "atlas": {
+        "row": 6,
+        "column": 4,
+        "x": 1024,
+        "y": 1536,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/north/04-right-contact.png",
+      "direction": {
+        "id": "north",
+        "view": "direct back",
+        "travel": "away from viewer",
+        "nearSide": "back"
+      },
+      "phase": {
+        "id": "right-contact",
+        "support": "right entering",
+        "strike": "right",
+        "swing": "left trailing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left trailing toe at y=236",
+        "legs": "right heel 34 px ahead of pelvis; left toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct back, traveling away from viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 4: right-contact. Support: right entering. Swing: left trailing. Leg geometry: right heel 34 px ahead of pelvis; left toe 25 px behind. Sole placement: right sole at y=240; left trailing toe at y=236. Arms: left arm forward; right arm rear. Pelvis: neutral. Near-side read: back. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 54,
+      "frameId": "north.right-down",
+      "atlas": {
+        "row": 6,
+        "column": 5,
+        "x": 1280,
+        "y": 1536,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/north/05-right-down.png",
+      "direction": {
+        "id": "north",
+        "view": "direct back",
+        "travel": "away from viewer",
+        "nearSide": "back"
+      },
+      "phase": {
+        "id": "right-down",
+        "support": "right loaded",
+        "strike": "none",
+        "swing": "left heel lifting",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px low",
+        "sole": "right sole at y=240; left heel at y=228",
+        "legs": "right knee visibly compressed; left toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct back, traveling away from viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 5: right-down. Support: right loaded. Swing: left heel lifting. Leg geometry: right knee visibly compressed; left toe remains behind. Sole placement: right sole at y=240; left heel at y=228. Arms: left arm forward; right arm rear. Pelvis: 3 px low. Near-side read: back. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 55,
+      "frameId": "north.right-pass",
+      "atlas": {
+        "row": 6,
+        "column": 6,
+        "x": 1536,
+        "y": 1536,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/north/06-right-pass.png",
+      "direction": {
+        "id": "north",
+        "view": "direct back",
+        "travel": "away from viewer",
+        "nearSide": "back"
+      },
+      "phase": {
+        "id": "right-pass",
+        "support": "right planted",
+        "strike": "none",
+        "swing": "left passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left boot bottom at y=220",
+        "legs": "left knee beside right knee; left boot beside right ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct back, traveling away from viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 6: right-pass. Support: right planted. Swing: left passing airborne. Leg geometry: left knee beside right knee; left boot beside right ankle. Sole placement: right sole at y=240; left boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: back. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 56,
+      "frameId": "north.right-up",
+      "atlas": {
+        "row": 6,
+        "column": 7,
+        "x": 1792,
+        "y": 1536,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/north/07-right-up.png",
+      "direction": {
+        "id": "north",
+        "view": "direct back",
+        "travel": "away from viewer",
+        "nearSide": "back"
+      },
+      "phase": {
+        "id": "right-up",
+        "support": "right tall",
+        "strike": "none",
+        "swing": "left advancing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px high",
+        "sole": "right sole at y=240; left boot bottom at y=214",
+        "legs": "left knee 24 px ahead; right support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, direct back, traveling away from viewer. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 7: right-up. Support: right tall. Swing: left advancing. Leg geometry: left knee 24 px ahead; right support leg extended. Sole placement: right sole at y=240; left boot bottom at y=214. Arms: right arm forward; left arm rear. Pelvis: 3 px high. Near-side read: back. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 57,
+      "frameId": "northeast.left-contact",
+      "atlas": {
+        "row": 7,
+        "column": 0,
+        "x": 0,
+        "y": 1792,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northeast/00-left-contact.png",
+      "direction": {
+        "id": "northeast",
+        "view": "rear-right three-quarter",
+        "travel": "up-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-contact",
+        "support": "left entering",
+        "strike": "left",
+        "swing": "right trailing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right trailing toe at y=236",
+        "legs": "left heel 34 px ahead of pelvis; right toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-right three-quarter, traveling up-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 0: left-contact. Support: left entering. Swing: right trailing. Leg geometry: left heel 34 px ahead of pelvis; right toe 25 px behind. Sole placement: left sole at y=240; right trailing toe at y=236. Arms: right arm forward; left arm rear. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 58,
+      "frameId": "northeast.left-down",
+      "atlas": {
+        "row": 7,
+        "column": 1,
+        "x": 256,
+        "y": 1792,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northeast/01-left-down.png",
+      "direction": {
+        "id": "northeast",
+        "view": "rear-right three-quarter",
+        "travel": "up-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-down",
+        "support": "left loaded",
+        "strike": "none",
+        "swing": "right heel lifting",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px low",
+        "sole": "left sole at y=240; right heel at y=228",
+        "legs": "left knee visibly compressed; right toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-right three-quarter, traveling up-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 1: left-down. Support: left loaded. Swing: right heel lifting. Leg geometry: left knee visibly compressed; right toe remains behind. Sole placement: left sole at y=240; right heel at y=228. Arms: right arm forward; left arm rear. Pelvis: 3 px low. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 59,
+      "frameId": "northeast.left-pass",
+      "atlas": {
+        "row": 7,
+        "column": 2,
+        "x": 512,
+        "y": 1792,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northeast/02-left-pass.png",
+      "direction": {
+        "id": "northeast",
+        "view": "rear-right three-quarter",
+        "travel": "up-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-pass",
+        "support": "left planted",
+        "strike": "none",
+        "swing": "right passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "left sole at y=240; right boot bottom at y=220",
+        "legs": "right knee beside left knee; right boot beside left ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-right three-quarter, traveling up-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 2: left-pass. Support: left planted. Swing: right passing airborne. Leg geometry: right knee beside left knee; right boot beside left ankle. Sole placement: left sole at y=240; right boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 60,
+      "frameId": "northeast.left-up",
+      "atlas": {
+        "row": 7,
+        "column": 3,
+        "x": 768,
+        "y": 1792,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northeast/03-left-up.png",
+      "direction": {
+        "id": "northeast",
+        "view": "rear-right three-quarter",
+        "travel": "up-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "left-up",
+        "support": "left tall",
+        "strike": "none",
+        "swing": "right advancing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px high",
+        "sole": "left sole at y=240; right boot bottom at y=214",
+        "legs": "right knee 24 px ahead; left support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-right three-quarter, traveling up-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 3: left-up. Support: left tall. Swing: right advancing. Leg geometry: right knee 24 px ahead; left support leg extended. Sole placement: left sole at y=240; right boot bottom at y=214. Arms: left arm forward; right arm rear. Pelvis: 3 px high. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 61,
+      "frameId": "northeast.right-contact",
+      "atlas": {
+        "row": 7,
+        "column": 4,
+        "x": 1024,
+        "y": 1792,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northeast/04-right-contact.png",
+      "direction": {
+        "id": "northeast",
+        "view": "rear-right three-quarter",
+        "travel": "up-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-contact",
+        "support": "right entering",
+        "strike": "right",
+        "swing": "left trailing",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left trailing toe at y=236",
+        "legs": "right heel 34 px ahead of pelvis; left toe 25 px behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-right three-quarter, traveling up-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 4: right-contact. Support: right entering. Swing: left trailing. Leg geometry: right heel 34 px ahead of pelvis; left toe 25 px behind. Sole placement: right sole at y=240; left trailing toe at y=236. Arms: left arm forward; right arm rear. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 62,
+      "frameId": "northeast.right-down",
+      "atlas": {
+        "row": 7,
+        "column": 5,
+        "x": 1280,
+        "y": 1792,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northeast/05-right-down.png",
+      "direction": {
+        "id": "northeast",
+        "view": "rear-right three-quarter",
+        "travel": "up-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-down",
+        "support": "right loaded",
+        "strike": "none",
+        "swing": "left heel lifting",
+        "arms": "left arm forward; right arm rear",
+        "pelvis": "3 px low",
+        "sole": "right sole at y=240; left heel at y=228",
+        "legs": "right knee visibly compressed; left toe remains behind"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-right three-quarter, traveling up-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 5: right-down. Support: right loaded. Swing: left heel lifting. Leg geometry: right knee visibly compressed; left toe remains behind. Sole placement: right sole at y=240; left heel at y=228. Arms: left arm forward; right arm rear. Pelvis: 3 px low. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 63,
+      "frameId": "northeast.right-pass",
+      "atlas": {
+        "row": 7,
+        "column": 6,
+        "x": 1536,
+        "y": 1792,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northeast/06-right-pass.png",
+      "direction": {
+        "id": "northeast",
+        "view": "rear-right three-quarter",
+        "travel": "up-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-pass",
+        "support": "right planted",
+        "strike": "none",
+        "swing": "left passing airborne",
+        "arms": "both arms near neutral",
+        "pelvis": "neutral",
+        "sole": "right sole at y=240; left boot bottom at y=220",
+        "legs": "left knee beside right knee; left boot beside right ankle"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-right three-quarter, traveling up-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 6: right-pass. Support: right planted. Swing: left passing airborne. Leg geometry: left knee beside right knee; left boot beside right ankle. Sole placement: right sole at y=240; left boot bottom at y=220. Arms: both arms near neutral. Pelvis: neutral. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    },
+    {
+      "frameNumber": 64,
+      "frameId": "northeast.right-up",
+      "atlas": {
+        "row": 7,
+        "column": 7,
+        "x": 1792,
+        "y": 1792,
+        "width": 256,
+        "height": 256
+      },
+      "output": "frames/northeast/07-right-up.png",
+      "direction": {
+        "id": "northeast",
+        "view": "rear-right three-quarter",
+        "travel": "up-right",
+        "nearSide": "right"
+      },
+      "phase": {
+        "id": "right-up",
+        "support": "right tall",
+        "strike": "none",
+        "swing": "left advancing",
+        "arms": "right arm forward; left arm rear",
+        "pelvis": "3 px high",
+        "sole": "right sole at y=240; left boot bottom at y=214",
+        "legs": "left knee 24 px ahead; right support leg extended"
+      },
+      "anchors": {
+        "visualCenterX": 128,
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "helmetTop": "match identity master exactly",
+        "scale": "match every accepted frame in this class"
+      },
+      "markers": {
+        "left": "cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light",
+        "right": "amber circular hip, amber solid kneepad without seam, amber ankle light"
+      },
+      "prompt": "One isolated Tank game-sprite pose, rear-right three-quarter, traveling up-right. adult masculine heavy Tank; short wide stride; strong weight compression. Phase 7: right-up. Support: right tall. Swing: left advancing. Leg geometry: left knee 24 px ahead; right support leg extended. Sole placement: right sole at y=240; left boot bottom at y=214. Arms: right arm forward; left arm rear. Pelvis: 3 px high. Near-side read: right. Anatomical left markers: cyan circular hip, cyan split kneepad with vertical seam, cyan ankle light. Anatomical right markers: amber circular hip, amber solid kneepad without seam, amber ankle light. Exactly one complete figure in a 256x256 cell; center x=128; ground baseline y=240. Identity, armor, backpack, proportions, camera elevation and lighting locked to master. Flat chroma background; no shadow, floor, text, crop, extra limbs or detached boots."
+    }
+  ]
+}

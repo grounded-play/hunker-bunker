@@ -439,6 +439,9 @@ export function applyAchievementEvent(rawState, name, detail = {}, now = Date.no
         if (!definitionUnlocked(state, def)) continue;
         state.unlocked[def.key] = { unlockedAt: now };
         newUnlocks.push(def);
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('ACH', 'info', `🏆 ACHIEVEMENT UNLOCKED: ${def.title} (${def.key})`);
+        }
     }
 
     delete state._lastEvent;
@@ -447,6 +450,9 @@ export function applyAchievementEvent(rawState, name, detail = {}, now = Date.no
 }
 
 export function recordEvent(name, detail = {}, { storage = null, now = Date.now() } = {}) {
+    if (typeof window !== 'undefined' && window.hbLog) {
+        window.hbLog('ACH', 'debug', `Achievement event recorded: ${name}`, detail);
+    }
     const store = getStorage(storage);
     const current = loadAchievements(store);
     const result = applyAchievementEvent(current, name, detail, now);

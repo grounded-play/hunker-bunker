@@ -1,6 +1,8 @@
 {
   "name": "hunker-bunker",
-  "version": "0.0.0",
+  "version": "2.1.0",
+  "description": "A biomechanical survival roguelike set beneath the frozen surface of Cocytus IV.",
+  "author": "Tuesday Cinema Club",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -8,7 +10,9 @@
     "dev": "vite --host",
     "server": "nodemon server/index.js",
     "server:start": "node server/index.js",
-    "build": "vite build",
+    "server:nonprod": "cross-env HB_DB_BACKEND=sqlite HB_DB_SQLITE_PATH=server/data/hunker-bunker-nonprod.sqlite HB_STEAM_STORE_ENABLED=1 HB_STEAM_MICROTXN_ENABLED=1 HB_STEAM_STORE_MOCK_PURCHASES=1 nodemon server/index.js",
+    "build": "vite build && npm run audit:build-media",
+    "audit:build-media": "node scripts/audit-build-media.js",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
@@ -20,11 +24,15 @@
     "steam:audit-backend": "node scripts/audit-steam-backend-env.js",
     "steam:audit-backend:strict": "node scripts/audit-steam-backend-env.js --strict",
     "steam:audit-depot": "node scripts/audit-steam-depot.js",
-    "electron:build": "vite build && npm run steam:config && electron-builder --dir",
-    "electron:dist": "vite build && npm run steam:config && electron-builder",
+    "steam:prepare": "node scripts/steam-release.js",
+    "steam:upload": "node scripts/steam-release.js --upload",
+    "steam:drm-wrap": "node scripts/steam-drm-wrap.js",
+    "electron:build": "npm run build && npm run steam:config && electron-builder --dir --linux --win",
+    "electron:dist": "npm run build && npm run steam:config && electron-builder",
     "lighthouse:setup": "npx -y @puppeteer/browsers install chrome@stable",
     "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun",
-    "package-soundtrack": "node scripts/package-soundtrack.js"
+    "package-soundtrack": "node scripts/package-soundtrack.js",
+    "cinematics:stills": "node scripts/build-cinematic-still-videos.js"
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",
@@ -45,12 +53,16 @@
     ],
     "asar": true,
     "asarUnpack": [
-      "**/node_modules/steamworks.js/**/*"
+      "**/node_modules/steamworks.js/**/*",
+      "dist/**/*.mp4",
+      "dist/**/*.webm"
     ],
     "linux": {
+      "icon": "electron/icon.png",
       "target": "dir"
     },
     "win": {
+      "icon": "electron/icon.ico",
       "target": "dir"
     }
   },

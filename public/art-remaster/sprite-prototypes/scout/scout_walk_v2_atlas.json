@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "status": "prototype",
+  "image": "scout_walk_v2_atlas.png",
+  "canvas": {
+    "width": 512,
+    "height": 2048
+  },
+  "grid": {
+    "columns": 2,
+    "rows": 8,
+    "cellWidth": 256,
+    "cellHeight": 256
+  },
+  "framesPerDirection": 2,
+  "frameMeaning": [
+    "left-foot-contact",
+    "right-foot-contact"
+  ],
+  "directionRows": [
+    "east",
+    "southeast",
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast"
+  ],
+  "anchors": {
+    "feetBaselineY": 244,
+    "visualCenterX": 128
+  },
+  "derivedByMirroring": [
+    "southwest",
+    "west",
+    "northwest"
+  ],
+  "runtimeReady": false,
+  "notes": [
+    "Transparent RGBA atlas with deterministic 256px cells.",
+    "Mirrored rows must eventually be replaced with authored asymmetric suit views.",
+    "Contact-leg semantics require final manual verification before runtime routing.",
+    "Use as a full-body sprite; do not crop at a fixed waist boundary."
+  ]
+}

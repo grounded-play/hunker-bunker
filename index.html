@@ -3,8 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -37,12 +36,52 @@
 
 <body>
   <script>
-    // Desktop shell save bridge (no-op on the web). The preload already
-    // restored save.json into localStorage before this ran; here we patch
-    // the write path so every hb_* change mirrors to disk, which Steam
-    // Auto-Cloud syncs. See docs/steam-build-pipeline.md.
-    if (window.electronAPI) {
-      (function () {
+    // Desktop shell save bridge & asset path normalizer for file:// protocol
+    (function () {
+      function normalizeAssetUrl(url) {
+        if (typeof url === 'string' && url.length > 1 && url.startsWith('/') && !url.startsWith('//')) {
+          return url.slice(1);
+        }
+        return url;
+      }
+
+      var origFetch = window.fetch;
+      if (origFetch) {
+        window.fetch = function (input, init) {
+          if (typeof input === 'string') {
+            input = normalizeAssetUrl(input);
+          } else if (input && typeof input === 'object' && typeof input.url === 'string') {
+            input = new Request(normalizeAssetUrl(input.url), input);
+          }
+          return origFetch.call(this, input, init);
+        };
+      }
+
+      var imgDescriptor = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+      if (imgDescriptor && imgDescriptor.set) {
+        Object.defineProperty(HTMLImageElement.prototype, 'src', {
+          get: imgDescriptor.get,
+          set: function (val) {
+            imgDescriptor.set.call(this, normalizeAssetUrl(val));
+          },
+          configurable: true,
+          enumerable: true
+        });
+      }
+
+      var audioDescriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
+      if (audioDescriptor && audioDescriptor.set) {
+        Object.defineProperty(HTMLMediaElement.prototype, 'src', {
+          get: audioDescriptor.get,
+          set: function (val) {
+            audioDescriptor.set.call(this, normalizeAssetUrl(val));
+          },
+          configurable: true,
+          enumerable: true
+        });
+      }
+
+      if (window.electronAPI) {
         var origSet = Storage.prototype.setItem;
         var origRemove = Storage.prototype.removeItem;
         Storage.prototype.setItem = function (key, value) {
@@ -57,8 +96,8 @@
             window.electronAPI.onSaveDataRemoved(key);
           }
         };
-      })();
-    }
+      }
+    })();
   </script>
   <div id="game-viewport">
     <button id="global-skip-intro-btn" class="global-skip-btn hidden">SKIP INTRO</button>
@@ -68,12 +107,19 @@
     <div id="debug-toolbar">
       <div id="fps-counter">FPS: --</div>
       <div id="steam-debug-status" class="steam-debug-status" data-state="unknown">STEAM: --</div>
-      <button id="toggle-typo" class="debug-btn">
+      <button id="toggle-typo" class="debug-btn" title="Toggle typography debug mode">
         <span style="font-size: var(--font-sm); color: var(--accent-secondary);">T</span>
         <span style="font-size: var(--font-xs); color: var(--text-muted); margin-left: 4px;">T</span>
       </button>
       <button id="debug-grant-resources" class="debug-btn" title="Grant test salvage and shells">+$</button>
       <button id="debug-god-mode" class="debug-btn" title="Toggle god mode">GOD</button>
+      <button id="debug-open-console" class="debug-btn" title="Open Dev Console (`~`)">&gt;_</button>
+      <button id="debug-launch-rgb" class="debug-btn" title="Launch RGB Minigame">◈ RGB</button>
+      <select id="debug-achievement-select" class="dev-select" title="Trigger Steam Achievement">
+        <option value="">-- UNLOCK ACH --</option>
+      </select>
+      <button id="debug-unlock-all-ach" class="dev-btn dev-btn--warn" title="Unlock All Achievements">★ ACH ALL</button>
+      <button id="debug-unlock-all-codex" class="dev-btn dev-btn--accent" title="Unlock All Codex Entries">❑ CODEX ALL</button>
     </div>
     <div id="cabinet-bezel"></div>
 
@@ -85,11 +131,13 @@
           <div class="loader-briefing-avatar__scanline"></div>
         </div>
         <div class="loader-title">INITIALIZING SYSTEMS</div>
+        <div class="loader-version-tag" id="loader-version-tag">BUILD DEV // LOADING REVISION…</div>
         <div class="loader-bar-container">
           <div class="loader-bar"></div>
         </div>
         <div class="loader-briefing-speaker hidden" id="loader-briefing-speaker">MOTHERSHIP COMMAND</div>
         <div class="loader-status">CONNECTING TO TACTICAL NETWORK...</div>
+        <div class="loader-debug-hint" style="font-size: 10px; color: var(--text-muted, #556677); margin-top: 8px; letter-spacing: 1px; text-transform: uppercase;">[ PRESS ~ FOR DEV CONSOLE ]</div>
       </div>
     </div>
 
@@ -97,6 +145,19 @@
 
     <!-- Splash Screen (Monolithic) -->
     <div id="splash" class="hidden">
+      <!-- Steam Account Profile Badge -->
+      <div id="splash-steam-badge" class="steam-account-badge" title="Click to open Steam Overlay profile">
+        <div class="steam-account-badge__icon">
+          <svg class="steam-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2a10 10 0 0 0-10 10c0 4.7 3.2 8.6 7.6 9.6l3-4.3a3.3 3.3 0 0 1-.3-1.3c0-.3 0-.6.1-.9L9 13a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 1 9 8a2.5 2.5 0 0 1 2.5 2.5c0 .3 0 .6-.1.9l3.4 2.2c.4-.2.9-.3 1.4-.3a3.5 3.5 0 1 1-3.5 3.5c0-.4.1-.8.2-1.2l-2.9 4.1A10 10 0 0 0 12 22a10 10 0 0 0 10-10A10 10 0 0 0 12 2z"/>
+          </svg>
+        </div>
+        <div class="steam-account-badge__info">
+          <span class="steam-account-badge__name" id="splash-steam-persona">STEAM OFFLINE</span>
+          <span class="steam-account-badge__status" id="splash-steam-status">NOT CONNECTED</span>
+        </div>
+      </div>
+
       <div class="splash-content">
         <div class="splash-title">HUNKER BUNKER</div>
         <div class="splash-subtitle">TACTICAL COMMAND v2.0</div>
@@ -107,6 +168,7 @@
           <button class="title-menu-btn" id="title-achievements-btn">ACHIEVEMENTS</button>
           <button class="title-menu-btn" id="title-settings-btn">SETTINGS</button>
           <button class="title-menu-btn" id="title-about-btn">ABOUT</button>
+          <button class="title-menu-btn title-menu-btn--quit" id="title-quit-btn">QUIT GAME</button>
         </div>
       </div>
     </div>
@@ -140,8 +202,8 @@
             </div>
 
             <div class="credits-section">
-              <div class="credits-role">AI SYSTEM DESIGN PARTNER</div>
-              <div class="credits-name">Antigravity AI (Google DeepMind)</div>
+              <div class="credits-role">DISCORD COMMUNITY</div>
+              <div class="credits-name"><a href="https://discord.gg/XXwwz3rauu" target="_blank" rel="noopener noreferrer">JOIN DISCORD SERVER</a></div>
             </div>
 
             <div class="credits-section">
@@ -151,7 +213,6 @@
 
             <div class="credits-section special-thanks">
               <div class="credits-role">SPECIAL THANKS</div>
-              <div class="credits-name">Google DeepMind Advanced Agentic Coding Team</div>
               <div class="credits-name">Our Amazing Community & Players</div>
             </div>
           </div>
@@ -160,7 +221,7 @@
         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-subtle); text-align: center;">
           <span
             style="font-size: var(--font-sm); font-weight: 900; letter-spacing: 1px; display: block; margin-bottom: 2px; color: var(--text-main);">THANK YOU FOR DEPLOYING</span>
-          <span style="font-size: var(--font-xs); color: var(--text-muted); letter-spacing: 2px;">SYS VER: 2.1.0 // ACTIVE</span>
+          <span id="about-modal-sys-ver" style="font-size: var(--font-xs); color: var(--text-muted); letter-spacing: 2px;">SYS VER: 2.1.0 // ACTIVE</span>
         </div>
       </div>
     </div>
@@ -174,6 +235,17 @@
       <div class="header-bar">
         <div class="title-group">
           <h1 class="title-small">HUNKER BUNKER</h1>
+          <div id="menu-steam-badge" class="steam-account-badge steam-account-badge--menu" title="Click to open Steam Overlay profile">
+            <div class="steam-account-badge__icon">
+              <svg class="steam-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2a10 10 0 0 0-10 10c0 4.7 3.2 8.6 7.6 9.6l3-4.3a3.3 3.3 0 0 1-.3-1.3c0-.3 0-.6.1-.9L9 13a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 1 9 8a2.5 2.5 0 0 1 2.5 2.5c0 .3 0 .6-.1.9l3.4 2.2c.4-.2.9-.3 1.4-.3a3.5 3.5 0 1 1-3.5 3.5c0-.4.1-.8.2-1.2l-2.9 4.1A10 10 0 0 0 12 22a10 10 0 0 0 10-10A10 10 0 0 0 12 2z"/>
+              </svg>
+            </div>
+            <div class="steam-account-badge__info">
+              <span class="steam-account-badge__name" id="menu-steam-persona">STEAM OFFLINE</span>
+              <span class="steam-account-badge__status" id="menu-steam-status">NOT CONNECTED</span>
+            </div>
+          </div>
         </div>
         <div class="menu-header-actions">
           <div class="menu-command">
@@ -191,6 +263,10 @@
           <div class="menu-command hidden" id="achievements-command">
             <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
             <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
+          </div>
+          <div class="menu-command hidden" id="archive-sims-command">
+            <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
+            <div class="menu-command__status" id="archive-sims-command-status">RGB</div>
           </div>
           <div class="menu-command menu-command--fab hidden" id="fabrication-command">
             <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
@@ -247,7 +323,7 @@
                   <span class="hero-stat-compact-value" id="hero-stat-spd-val">FAST</span>
                 </div>
                 <div class="hero-stat-compact-row">
-                  <span class="hero-stat-compact-label">O₂ USE</span>
+                  <span class="hero-stat-compact-label" aria-label="O2 Consumption Rate — Lower is Better" title="O₂ Consumption Rate — Lower value means suit oxygen drains slower">O₂ USE</span>
                   <div class="hero-stat-pips" id="hero-stat-o2"></div>
                   <span class="hero-stat-compact-value" id="hero-stat-o2-val">LOW</span>
                 </div>
@@ -310,6 +386,13 @@
         <div class="action-row__left">
           <button class="start-btn" id="start-game">INITIALIZE</button>
         </div>
+        <!-- Career stats: all-time personal bests, independent of the
+             per-class scores in the Selection Stack. -->
+        <div class="career-stats" id="career-stats-row">
+          <span class="career-stat" id="career-stat-longest-run">◈ LONGEST RUN: 00:00</span>
+          <span class="career-stat" id="career-stat-deepest-depth">◈ DEEPEST DEPTH: SURFACE</span>
+          <span class="career-stat" id="career-stat-deaths">◈ DEATHS: 0</span>
+        </div>
         <!-- Death-thread to the base (doc 11 §4.D): a prior contractor's black box. -->
         <div class="last-contractor hidden" id="last-contractor"></div>
       </div>
@@ -349,16 +432,25 @@
       </div>
     </div>
 
-    <!-- Operator Roster Modal -->
+    <!-- Operator Roster & Agent Dossier Modal -->
     <div id="roster-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content roster-modal-content">
         <div class="terminal-scanline"></div>
         <div class="roster-header">
           <button class="close-modal" id="close-roster-modal">×</button>
-          <div class="roster-title">▣ OPERATOR ROSTER</div>
+          <div class="roster-title" id="roster-title-label">▣ OPERATOR DOSSIER // DEPLOYMENT TELEMETRY</div>
           <div class="roster-id-row">
-            <span class="roster-callsign" id="roster-callsign">AGENT</span>
+            <label class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
+            <input type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
+            <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign">🎲 RANDOM</button>
             <span class="roster-id" id="roster-id">op-—</span>
+          </div>
+          <!-- Run Telemetry Summary Block -->
+          <div id="roster-run-telemetry" class="roster-run-telemetry">
+            <div class="roster-telemetry-chip"><span class="label">DEEPEST SECTOR:</span> <b id="roster-stat-depth">SECTOR 0</b></div>
+            <div class="roster-telemetry-chip"><span class="label">TOTAL DISTANCE:</span> <b id="roster-stat-distance">0u</b></div>
+            <div class="roster-telemetry-chip"><span class="label">HOSTILES:</span> <b id="roster-stat-kills">0 ELIMINATED</b></div>
+            <div class="roster-telemetry-chip"><span class="label">BLACK BOX:</span> <b id="roster-stat-blackbox">NONE</b></div>
           </div>
           <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
         </div>
@@ -377,6 +469,9 @@
           </div>
         </div>
         <div class="roster-hint" id="roster-hint">Fabricate weapons in the FAB BAY to equip them here. Customize cosmetics in the STEAM VAULT.</div>
+        <div class="roster-footer-actions">
+          <button type="button" class="start-btn roster-confirm-btn" id="roster-confirm-btn">CONFIRM & DEPLOY</button>
+        </div>
       </div>
     </div>
 
@@ -391,6 +486,26 @@
           <div id="codex-summary" class="codex-summary">ENTRIES RECOVERED: 0 / 0</div>
         </div>
         <div id="codex-grid" class="codex-grid"></div>
+      </div>
+    </div>
+
+    <!-- Codex Entry Detail Modal -->
+    <div id="codex-detail-modal" class="modal codex-detail-modal hidden" aria-hidden="true">
+      <div class="modal-content codex-detail-content">
+        <div class="terminal-scanline"></div>
+        <button class="close-modal" id="close-codex-detail-modal" aria-label="Close codex entry">×</button>
+        <div class="codex-detail-header">
+          <div class="codex-detail-kicker" id="codex-detail-kicker">❑ FIELD INTEL RECORD</div>
+          <div class="codex-detail-title" id="codex-detail-name">CYBERSNAIL</div>
+          <div class="codex-detail-status">ENTRY RECOVERED // READ-ONLY DOSSIER</div>
+        </div>
+        <div class="codex-detail-body">
+          <div class="codex-detail-image-wrap">
+            <img id="codex-detail-img" class="codex-detail-img" src="" alt="Codex Intel Image" />
+            <div class="codex-detail-scanline"></div>
+          </div>
+          <div class="codex-detail-text" id="codex-detail-blurb"></div>
+        </div>
       </div>
     </div>
 
@@ -449,6 +564,7 @@
               </div>
               <div class="vault-details-actions">
                 <span class="vault-equip-status" id="vault-equip-status">READ-ONLY STEAM INVENTORY</span>
+                <button class="start-btn vault-btn-view-market hidden" id="vault-btn-view-market">VIEW IN STEAM MARKET</button>
               </div>
             </div>
           </div>
@@ -545,6 +661,13 @@
           <div class="desktop-compass__ring">
             <div class="desktop-compass__arrow" id="desktop-compass-arrow"></div>
             <div class="desktop-compass__radar-arrow hidden" id="desktop-compass-radar-arrow"></div>
+            <div id="extraction-progress-ring" class="extraction-progress-ring hidden" aria-hidden="true">
+              <svg viewBox="0 0 40 40" class="extraction-ring-svg">
+                <circle class="extraction-ring-track" cx="20" cy="20" r="16"/>
+                <circle id="extraction-ring-fill" class="extraction-ring-fill" cx="20" cy="20" r="16"/>
+              </svg>
+              <div class="extraction-ring-label">LAUNCH</div>
+            </div>
           </div>
           <div class="desktop-compass__readout">
             <div class="desktop-compass__row">
@@ -771,66 +894,6 @@
       <img id="cutscene-wreck" class="cutscene-wreck hidden" alt="Crashed ship">
       <div id="cutscene-particles" class="cutscene-particles" aria-hidden="true"></div>
     </div>
-    <div id="touch-move-control" class="touch-move-control hidden" aria-label="Movement control">
-      <div class="touch-move-control__compass" aria-hidden="true">
-          <div class="touch-move-control__compass-face">
-            <div class="touch-move-control__compass-arrow"></div>
-            <div class="touch-move-control__compass-radar-arrow hidden" id="touch-compass-radar-arrow"></div>
-            <div class="touch-move-control__compass-radar-distance hidden" id="touch-compass-radar-distance"></div>
-            <div class="touch-move-control__compass-distance">0u</div>
-            <div id="extraction-progress-ring" class="extraction-progress-ring hidden" aria-hidden="true">
-            <svg viewBox="0 0 40 40" class="extraction-ring-svg">
-              <circle class="extraction-ring-track" cx="20" cy="20" r="16"/>
-              <circle id="extraction-ring-fill" class="extraction-ring-fill" cx="20" cy="20" r="16"/>
-            </svg>
-            <div class="extraction-ring-label">LAUNCH</div>
-          </div>
-        </div>
-      </div>
-      <div class="touch-move-control__ring">
-        <div class="touch-move-control__thumb"></div>
-      </div>
-      <div class="touch-move-control__label">MOVE</div>
-    </div>
-
-    <!-- Touch Sprint Button -->
-    <button id="touch-sprint-btn" class="touch-ability-btn touch-sprint-btn hidden" aria-label="Trigger sprint burst">
-      <span class="touch-ability-btn__label" aria-hidden="true">
-        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-      </span>
-      <span class="touch-ability-btn__cooldown" id="touch-sprint-cooldown">READY</span>
-    </button>
-
-    <!-- Touch Ability Button -->
-    <button id="touch-ability-btn" class="touch-ability-btn hidden" aria-label="Use class ability">
-      <span class="touch-ability-btn__label" id="touch-ability-label" aria-hidden="true">
-        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="3" r="2.2" fill="currentColor" stroke="none"/>
-          <path d="M11 5 L8 11"/>
-          <path d="M10 8 L14 5.5" stroke-width="1.4"/>
-          <path d="M10 8 L6 10.5" stroke-width="1.4"/>
-          <path d="M8 11 L12 16 L16 18"/>
-          <path d="M8 11 L5 15 L2 13"/>
-        </svg>
-      </span>
-      <span class="touch-ability-btn__cooldown" id="touch-ability-cooldown">READY</span>
-    </button>
-
-    <!-- Touch Scan Button -->
-    <button id="touch-scan-btn" class="touch-ability-btn hidden" aria-label="Trigger radar scan">
-      <span class="touch-ability-btn__label" id="touch-scan-label" aria-hidden="true">
-        <svg class="run-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" stroke-dasharray="3,3" />
-          <circle cx="12" cy="12" r="6" />
-          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
-          <line x1="12" y1="2" x2="12" y2="12" />
-        </svg>
-      </span>
-      <span class="touch-ability-btn__cooldown" id="touch-scan-cooldown">READY</span>
-    </button>
-
 
 
 
@@ -900,9 +963,19 @@
         <span class="prompt-text">OPEN FAB BAY</span>
       </div>
 
+      <div id="scientist-hud-prompt" class="lore-hud-prompt hud-action-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">TALK TO DR. OKONKWO-VASS</span>
+      </div>
+
       <div id="black-box-hud-prompt" class="lore-hud-prompt black-box-hud-prompt hidden">
         <span class="prompt-key">PRESS E</span>
         <span class="prompt-text">RECOVER BLACK BOX</span>
+      </div>
+
+      <div id="hole-hud-prompt" class="lore-hud-prompt hole-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">FILL HOLE</span>
       </div>
 
       <div id="mission-progress-hud" class="mission-progress-hud hidden" aria-live="polite">
@@ -914,12 +987,92 @@
         <span class="mission-progress-hud__icon">◈</span>
         <span id="camp-quest-text" class="mission-progress-hud__text">QUEST ACTIVE</span>
       </div>
+
+      <!-- Unified Objective Tracker HUD -->
+      <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
     </div>
 
     <!-- Persistent loop-state cue: always shows the next thing to do -->
     <div id="loop-step-hud" class="loop-step-hud hidden" aria-live="polite">
       <span class="loop-step-hud__chevron" aria-hidden="true">▸</span>
       <span id="loop-step-text" class="loop-step-hud__text">DEPLOYING</span>
+    </div>
+
+    <!-- In-Game Dev Console Modal -->
+    <div id="dev-console-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content dev-console-content">
+        <div class="terminal-scanline"></div>
+        <div class="dev-console-header">
+          <button class="close-modal" id="close-dev-console">×</button>
+          <div class="dev-console-title">&gt;_ DEV CONSOLE // SYSTEM OVERRIDE</div>
+          <div class="dev-console-subtitle">STEAM &amp; MINIGAME TEST HARNESS</div>
+        </div>
+        <div class="dev-console-quick-actions">
+          <div class="dev-quick-group">
+            <span class="dev-group-label">ACHIEVEMENTS &amp; CODEX:</span>
+            <select id="dev-ach-dropdown" class="dev-select">
+              <option value="">Select Achievement...</option>
+            </select>
+            <button id="dev-btn-unlock-ach" class="dev-btn">UNLOCK ACH</button>
+            <button id="dev-btn-unlock-all-ach" class="dev-btn dev-btn--warn">UNLOCK ALL ACH</button>
+            <button id="dev-btn-unlock-all-codex" class="dev-btn dev-btn--accent">UNLOCK ALL CODEX</button>
+            <button id="dev-btn-reset-save" class="dev-btn dev-btn--danger">RESET SAVE</button>
+          </div>
+          <div class="dev-quick-group">
+            <span class="dev-group-label">MINIGAMES &amp; SIMS:</span>
+            <button id="dev-btn-launch-rgb" class="dev-btn dev-btn--accent">LAUNCH RGB (START)</button>
+            <select id="dev-rgb-chapter-select" class="dev-select">
+              <option value="parking_lot">Ch 1: Parking Lot</option>
+              <option value="warehouse">Ch 2: Warehouse</option>
+              <option value="incident_review">Ch 3: Incident Review</option>
+              <option value="medi_kiosk">Ch 4: Medi-Kiosk</option>
+              <option value="server_room">Ch 5: Server Room</option>
+              <option value="sector_four">Ch 6: Sector 4</option>
+            </select>
+            <button id="dev-btn-jump-rgb-chapter" class="dev-btn">JUMP CHAPTER</button>
+          </div>
+          <div class="dev-quick-group">
+            <span class="dev-group-label">GAMEPLAY &amp; SALVAGE:</span>
+            <button id="dev-btn-god" class="dev-btn">TOGGLE GOD</button>
+            <button id="dev-btn-resources" class="dev-btn">+$ SALVAGE</button>
+            <button id="dev-btn-heal" class="dev-btn">+HP / O₂</button>
+            <button id="dev-btn-nuke" class="dev-btn">KILL SNAILS</button>
+          </div>
+          <div class="dev-quick-group">
+            <span class="dev-group-label">STAGE &amp; ACCESSIBILITY:</span>
+            <select id="dev-res-select" class="dev-select">
+              <option value="auto">Auto (Window)</option>
+              <option value="deck" selected>Deck 800p (16:10)</option>
+              <option value="720p">720p HD (16:9)</option>
+              <option value="1080p">1080p FHD (16:9)</option>
+              <option value="1440p">1440p QHD (16:9)</option>
+              <option value="4k">4K UHD (16:9)</option>
+            </select>
+            <select id="dev-uiscale-select" class="dev-select">
+              <option value="100" selected>Scale 100%</option>
+              <option value="115">Scale 115%</option>
+              <option value="130">Scale 130%</option>
+              <option value="150">Scale 150%</option>
+            </select>
+            <select id="dev-textfloor-select" class="dev-select">
+              <option value="16">Floor 16px</option>
+              <option value="18" selected>Floor 18px</option>
+              <option value="20">Floor 20px</option>
+              <option value="22">Floor 22px</option>
+              <option value="24">Floor 24px</option>
+            </select>
+            <button id="dev-btn-layout" class="dev-btn">LAYOUT METRICS</button>
+          </div>
+        </div>
+        <div class="dev-console-log" id="dev-console-log">
+          <div class="dev-log-line system">&gt; HUNKER BUNKER DEV CONSOLE ACTIVE. Type 'help' for available commands.</div>
+        </div>
+        <div class="dev-console-input-row">
+          <span class="dev-prompt">&gt;</span>
+          <input type="text" id="dev-console-input" class="dev-input" placeholder="Type command (e.g. help, unlock quick_study, rgb server_room, god, salvage)..." autocomplete="off" spellcheck="false" />
+          <button id="dev-console-submit" class="dev-btn dev-btn--submit">RUN</button>
+        </div>
+      </div>
     </div>
 
     <!-- Holographic Retro Terminal Console Modal -->
@@ -1193,16 +1346,46 @@
       </div>
     </div>
 
+    <!-- Archive Simulations submenu (RGB and future unlockable stories) -->
+    <div id="archive-sims-modal" class="modal hidden">
+      <div class="modal-content archive-sims-modal-content">
+        <h2 class="modal-title">ARCHIVE SIMULATIONS</h2>
+        <div class="archive-sim-card">
+          <div class="archive-sim-card__title">RGB: RIVERSIDE GLOBAL 'BOTICS</div>
+          <div class="archive-sim-card__status" id="archive-sim-rgb-status">NOT STARTED</div>
+          <div class="archive-sim-card__endings" id="archive-sim-rgb-endings"></div>
+          <button class="start-btn" id="archive-sim-rgb-launch">LAUNCH</button>
+        </div>
+        <button class="abort-btn" id="archive-sims-modal-close">CLOSE</button>
+      </div>
+    </div>
+
     <div id="reset-save-confirm-modal" class="modal critical-modal hidden" aria-hidden="true">
       <div class="modal-content confirm-modal-content">
         <h2 class="modal-title confirm-title">RESET SAVE DATA</h2>
         <p class="confirm-copy">
           START A NEW GAME?<br>
-          ALL UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.
+          RGB PROGRESS, ALL ACHIEVEMENTS, UNLOCKS, BANKED SALVAGE, CODEX, FABRICATIONS, BEST SCORES, AND PROFILE DATA WILL BE CLEARED ON THIS DEVICE.<br><br>
+          AUDIO, DISPLAY, AND CONTROL PREFERENCES WILL BE KEPT.
         </p>
         <div class="confirm-actions">
           <button class="abort-btn" id="reset-save-confirm">RESET SAVE</button>
           <button class="confirm-secondary-btn" id="reset-save-cancel">CANCEL</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quit Game Confirmation Modal -->
+    <div id="quit-confirm-modal" class="modal critical-modal hidden" aria-hidden="true">
+      <div class="modal-content confirm-modal-content">
+        <h2 class="modal-title confirm-title">QUIT HUNKER BUNKER</h2>
+        <p class="confirm-copy">
+          EXIT APPLICATION?<br>
+          ARE YOU SURE YOU WANT TO QUIT? ANY UNSAVED PROGRESS IN AN ACTIVE RUN WILL BE LOST.
+        </p>
+        <div class="confirm-actions">
+          <button class="abort-btn" id="quit-confirm-btn">CONFIRM QUIT</button>
+          <button class="confirm-secondary-btn" id="quit-cancel-btn">CANCEL</button>
         </div>
       </div>
     </div>
@@ -1225,16 +1408,6 @@
         </div>
 
         <div class="camp-choice-options" id="camp-choice-options"></div>
-      </div>
-    </div>
-
-    <!-- Orientation Lock Overlay -->
-    <div id="orientation-lock">
-      <div class="lock-content">
-        <div class="lock-icon">🔄</div>
-        <div class="lock-title">SYSTEM ERROR: PORTRAIT DETECTED</div>
-        <div class="lock-msg">PLEASE ROTATE DEVICE TO LANDSCAPE FOR TACTICAL DEPLOYMENT</div>
-        <div class="lock-scanner"></div>
       </div>
     </div>
 
@@ -1285,6 +1458,36 @@
           <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
         </div>
         <div class="setting-item">
+          <span>STAGE RESOLUTION</span>
+          <select id="setting-resolution" class="settings-select">
+            <option value="auto">AUTO (WINDOW FIT)</option>
+            <option value="deck" selected>STEAM DECK (1280×800 - 16:10)</option>
+            <option value="720p">720p HD (1280×720 - 16:9)</option>
+            <option value="1080p">1080p FHD (1920×1080 - 16:9)</option>
+            <option value="1440p">1440p QHD (2560×1440 - 16:9)</option>
+            <option value="4k">4K UHD (3840×2160 - 16:9)</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span>UI ACCESSIBILITY SCALE</span>
+          <select id="setting-ui-scale" class="settings-select">
+            <option value="100" selected>100% (STANDARD)</option>
+            <option value="115">115% (LARGE)</option>
+            <option value="130">130% (EXTRA LARGE)</option>
+            <option value="150">150% (MAX ACCESSIBILITY)</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <span>MINIMUM TEXT FLOOR</span>
+          <select id="setting-text-floor" class="settings-select">
+            <option value="16">16px (COMPACT)</option>
+            <option value="18" selected>18px (DECK DEFAULT)</option>
+            <option value="20">20px (LARGE)</option>
+            <option value="22">22px (EXTRA LARGE)</option>
+            <option value="24">24px (MAX CLARITY)</option>
+          </select>
+        </div>
+        <div class="setting-item">
           <span>TEXT SPEED</span>
           <select id="setting-text-speed" class="settings-select">
             <option value="normal">NORMAL</option>
@@ -1316,10 +1519,6 @@
           <span>DESKTOP CONTROLS</span>
           <button type="button" class="calibrate-btn settings-action-btn" id="open-controls">REMAP</button>
         </div>
-        <div class="setting-item hidden" id="touch-controls-setting">
-          <span>TOUCH MOVE PAD</span>
-          <label class="toggle"><input type="checkbox" id="main-touch-toggle"> <span class="slider"></span></label>
-        </div>
         <div class="setting-item setting-item--operator">
           <span>OPERATOR CALLSIGN</span>
           <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
@@ -1331,6 +1530,10 @@
         <div class="setting-item setting-item--action setting-item--danger">
           <span>NEW GAME RESET</span>
           <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save">RESET</button>
+        </div>
+        <div class="setting-item setting-item--action setting-item--danger">
+          <span>EXIT APPLICATION</span>
+          <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm">QUIT GAME</button>
         </div>
 
         <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">
@@ -1373,6 +1576,15 @@
           <span class="audio-slider-row__label">VFX</span>
           <input type="range" id="audio-vfx-slider" min="0" max="100" step="1" value="100">
           <span class="audio-slider-row__value" id="audio-vfx-value">100%</span>
+        </label>
+        <label class="audio-slider-row" for="audio-voice-slider">
+          <span class="audio-slider-row__label">VOICE</span>
+          <input type="range" id="audio-voice-slider" min="0" max="100" step="1" value="100">
+          <span class="audio-slider-row__value" id="audio-voice-value">100%</span>
+        </label>
+        <label class="audio-slider-row" for="audio-voice-toggle" style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+          <span class="audio-slider-row__label">CHARACTER VOICE READOUTS</span>
+          <label class="toggle"><input type="checkbox" id="audio-voice-toggle" checked> <span class="slider"></span></label>
         </label>
         <div class="audio-mixer-actions">
           <button type="button" class="settings-action-btn settings-action-btn--save" id="save-audio-mix">SAVE SETTINGS</button>
@@ -1428,6 +1640,30 @@
       </div>
     </div>
 
+    <div id="snail-encounter-modal" class="modal hidden" aria-hidden="true">
+      <div class="snail-encounter-panel">
+        <div class="snail-encounter-header">
+          <span id="snail-encounter-title">ENCOUNTER</span>
+        </div>
+        <div id="snail-encounter-log" class="snail-encounter-log" aria-live="polite"></div>
+        <div class="snail-encounter-bars">
+          <div class="snail-encounter-bar-row">
+            <span>SNAIL HP</span>
+            <div class="snail-encounter-bar"><div id="snail-encounter-hp-fill" class="snail-encounter-bar-fill"></div></div>
+          </div>
+          <div class="snail-encounter-bar-row">
+            <span>RESOLVE</span>
+            <div class="snail-encounter-bar"><div id="snail-encounter-resolve-fill" class="snail-encounter-bar-fill snail-encounter-bar-fill--resolve"></div></div>
+          </div>
+        </div>
+        <div class="snail-encounter-actions">
+          <button type="button" id="snail-encounter-fight-btn">FIGHT</button>
+          <button type="button" id="snail-encounter-talk-btn">TALK</button>
+          <button type="button" id="snail-encounter-flee-btn">FLEE</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Door Transition Overlay (Top Layer) -->
     <div id="transition-overlay">
       <div id="door-top" class="door"></div>
@@ -1442,6 +1678,11 @@
         </div>
       </div>
     </div>
+
+    <!-- RGB: Riverside Global 'Botics — archive-sim mount point. Occupies
+         the same logical stage/focus/input shell as the rest of the game
+         (docs/mini-games/rgb/README.md); mounted/destroyed by main.js. -->
+    <div id="rgb-root" class="hidden"></div>
 
   </div>
 

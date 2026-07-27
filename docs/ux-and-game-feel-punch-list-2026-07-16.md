@@ -28,11 +28,14 @@ distinct notification/dialogue/overlay mechanisms). Ranked findings:
    toast = green, tutorial = orange, mission-progress = amber. Steam item
    drops (real economic value) are visually identical to routine
    achievement pops.
-3. **Priority inversion during onboarding**: achievement/Steam toasts
+3. ~~**Priority inversion during onboarding**: achievement/Steam toasts
    (`dataset.notificationPriority = '5'`) always outrank tutorial prompts
-   (`'15'`) in the shared deck — a new player mid-tutorial who unlocks
-   something gets the achievement card shown before the tutorial guidance
-   they actually need next.
+   (`'15'`) in the shared deck~~ — **stale as of 2026-07-17**: the
+   tutorial prompt (`#tutorial-prompt`, `index.html:853`) no longer lives
+   in `.hud-notification-stack` at all, so it can't be outranked inside
+   the deck. No priority-15 card remains in `main.js`. The *general*
+   deck-vs-tutorial visual competition is still item #2's problem, but
+   this specific inversion no longer exists.
 4. **Steam item-drop toast has no CSS identity of its own** — it borrows
    `.achievement-toast` wholesale (`main.js:8322`), so it can't be styled
    distinctly and any future achievement-toast restyle unintentionally

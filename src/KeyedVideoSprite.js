@@ -33,8 +33,11 @@ export class KeyedVideoSprite {
         }
 
         try {
+            if (typeof window !== 'undefined' && window.hbLog) {
+                window.hbLog('LOAD', 'info', `KeyedVideoSprite init: ${this.videoPath}`);
+            }
             this.video = document.createElement('video');
-            this.video.src = this.videoPath;
+            this.video.src = assetUrl(this.videoPath);
             this.video.crossOrigin = 'anonymous';
             this.video.playsInline = true;
             this.video.muted = true;
@@ -48,6 +51,9 @@ export class KeyedVideoSprite {
 
             this.video.addEventListener('error', (err) => {
                 console.warn(`KeyedVideoSprite failed to load video ${this.videoPath}:`, err);
+                if (typeof window !== 'undefined' && window.hbLog) {
+                    window.hbLog('LOAD', 'warn', `KeyedVideoSprite video error: ${this.videoPath}`);
+                }
                 this._initFailed = true;
             });
 
@@ -142,3 +148,4 @@ export class KeyedVideoSprite {
         }
     }
 }
+import { assetUrl } from './assetUrl.js';

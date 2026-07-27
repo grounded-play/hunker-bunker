@@ -1,9 +1,15 @@
+/* global __HB_BUILD_INFO__ */
 import { AudioManager } from './src/audio.js';
+import { assetUrl } from './src/assetUrl.js';
+import { debugLog } from './src/debugConsole.js';
+import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
 import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
+import { DEPTH_TIER_NAMES } from './src/data/loot.js';
+import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec } from './src/cinematicFallback.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
@@ -17,10 +23,18 @@ import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
 import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import * as featureFlags from './src/featureFlags.js';
-import { getGifDurationMs } from './src/gifDuration.js';
-import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock } from './src/achievements.js';
+import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
+import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb } from './src/minigames/rgb/save.js';
+import { mountRgb } from './src/minigames/rgb/runtime.js';
+import { ENDINGS as RGB_ENDINGS } from './src/minigames/rgb/content.js';
+import { getGifDurationMs } from './src/gifDuration.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
+import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
+import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
+import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
+import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
@@ -30,6 +44,7 @@ const titleAboutBtn = document.getElementById('title-about-btn');
 const splash = document.getElementById('splash');
 const menu = document.getElementById('menu');
 const loadingScreen = document.getElementById('loading-screen');
+const loaderVersionTag = document.getElementById('loader-version-tag');
 const transitionOverlay = document.getElementById('transition-overlay');
 const loaderTitle = document.querySelector('.loader-title');
 const loaderBar = document.querySelector('.loader-bar');
@@ -38,28 +53,39 @@ const loaderBriefingAvatar = document.getElementById('loader-briefing-avatar');
 const loaderBriefingAvatarImg = document.getElementById('loader-briefing-avatar-img');
 const loaderBriefingSpeaker = document.getElementById('loader-briefing-speaker');
 
+const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
+    ? __HB_BUILD_INFO__
+    : Object.freeze({
+        version: 'dev',
+        commit: 'unknown',
+        branch: 'unknown',
+        dirty: true,
+        steamBuild: ''
+    });
+const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
+const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
+const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}`;
+if (loaderVersionTag) {
+    loaderVersionTag.textContent = canonicalVersionText;
+    loaderVersionTag.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
+}
+const aboutSysVer = document.getElementById('about-modal-sys-ver');
+if (aboutSysVer) {
+    aboutSysVer.textContent = canonicalVersionText;
+    aboutSysVer.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
+}
+
 const mainDebugToggle = document.getElementById('main-debug-toggle');
 const mainNightVisionToggle = document.getElementById('main-nightvision-toggle');
 const mainCommentaryToggle = document.getElementById('main-commentary-toggle');
 const gameViewport = document.getElementById('game-viewport');
 const gameStageContainer = document.getElementById('game-container');
-const touchMoveControl = document.getElementById('touch-move-control');
-const touchMoveRing = touchMoveControl?.querySelector('.touch-move-control__ring');
-const touchMoveThumb = touchMoveControl?.querySelector('.touch-move-control__thumb');
-const touchCompass = touchMoveControl?.querySelector('.touch-move-control__compass');
-const touchCompassArrow = touchCompass?.querySelector('.touch-move-control__compass-arrow');
-const touchCompassRadarArrow = touchCompass?.querySelector('#touch-compass-radar-arrow');
-const touchCompassDistance = touchCompass?.querySelector('.touch-move-control__compass-distance');
-const touchCompassRadarDistance = touchCompass?.querySelector('#touch-compass-radar-distance');
 const desktopCompass = document.getElementById('desktop-compass');
 const desktopCompassArrow = document.getElementById('desktop-compass-arrow');
 const desktopCompassRadarArrow = document.getElementById('desktop-compass-radar-arrow');
 const desktopCompassDistance = document.getElementById('desktop-compass-distance');
 const desktopCompassRadarDistance = document.getElementById('desktop-compass-radar-distance');
 const desktopCompassRadarRow = document.getElementById('desktop-compass-radar-row');
-const touchControlsSetting = document.getElementById('touch-controls-setting');
-const mainTouchToggle = document.getElementById('main-touch-toggle');
-const orientationLock = document.getElementById('orientation-lock');
 const openAudioMixerBtn = document.getElementById('open-audio-mixer');
 const audioMixerPopup = document.getElementById('audio-mixer-popup');
 const closeAudioMixerBtn = document.getElementById('close-audio-mixer');
@@ -73,6 +99,11 @@ const openResetSaveBtn = document.getElementById('open-reset-save');
 const resetSaveConfirmModal = document.getElementById('reset-save-confirm-modal');
 const resetSaveConfirmBtn = document.getElementById('reset-save-confirm');
 const resetSaveCancelBtn = document.getElementById('reset-save-cancel');
+const titleQuitBtn = document.getElementById('title-quit-btn');
+const openQuitConfirmBtn = document.getElementById('open-quit-confirm');
+const quitConfirmModal = document.getElementById('quit-confirm-modal');
+const quitConfirmBtn = document.getElementById('quit-confirm-btn');
+const quitCancelBtn = document.getElementById('quit-cancel-btn');
 const campChoiceModal = document.getElementById('camp-choice-modal');
 const campChoiceCloseBtn = document.getElementById('close-camp-choice');
 const campChoiceKicker = document.getElementById('camp-choice-kicker');
@@ -83,9 +114,12 @@ const campChoiceOptions = document.getElementById('camp-choice-options');
 const audioMasterSlider = document.getElementById('audio-master-slider');
 const audioMusicSlider = document.getElementById('audio-music-slider');
 const audioVfxSlider = document.getElementById('audio-vfx-slider');
+const audioVoiceSlider = document.getElementById('audio-voice-slider');
 const audioMasterValue = document.getElementById('audio-master-value');
 const audioMusicValue = document.getElementById('audio-music-value');
 const audioVfxValue = document.getElementById('audio-vfx-value');
+const audioVoiceValue = document.getElementById('audio-voice-value');
+const audioVoiceToggle = document.getElementById('audio-voice-toggle');
 const pickupCountTotal = document.getElementById('pickup-count-total');
 const bunkerLevelNum = document.getElementById('level-num');
 const biomeLabelEl = document.getElementById('biome-label');
@@ -102,8 +136,11 @@ const pickupCountByType = {
     coin: document.getElementById('pickup-count-coin')
 };
 
+// Canonical Steam Deck-first stage: 16:10, authored against 1280x800 logical
+// pixels (docs/steam-deck-first-display-and-input-spec.md). --vu is 1/100 of
+// stage height, so one logical 1280x800 pixel is --vu / 8.
 const DESIGN_STAGE = {
-    width: 177,
+    width: 160,
     height: 100
 };
 const AUDIO_MIX_STORAGE_KEY = 'hunker_audio_mix_v1';
@@ -112,9 +149,11 @@ const COMMENTARY_STORAGE_KEY = 'hunker_commentary_enabled';
 const DEFAULT_AUDIO_MIX = Object.freeze({
     master: 1,
     music: 1,
-    vfx: 1
+    vfx: 1,
+    voice: 1,
+    voiceEnabled: true
 });
-const STEAM_STORE_URL = 'https://store.steampowered.com/app/1247290/Hunker_Bunker/';
+const STEAM_STORE_URL = 'https://store.steampowered.com/app/4957040/Hunker_Bunker/';
 const KEY_BINDINGS_STORAGE_KEY = 'hunker_key_bindings';
 // Each action has a [primary, secondary] slot. WASD + arrow keys are equivalent
 // out of the box. threeGame.js reads window.state.settings.keyBindings.
@@ -179,6 +218,7 @@ function hideAllGameplayPrompts() {
 
 function setAppPhase(phase) {
     appPhase = phase;
+    debugLog.debug('PHASE', `App phase changed to: ${phase}`);
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
     if (!isGameplayPhase()) {
@@ -209,8 +249,7 @@ const STEAM_INPUT_CONFIRM_GLYPHS = Object.freeze({
     PS5Controller: 'X',
     SwitchProController: 'B',
     SwitchJoyConPair: 'B',
-    SwitchJoyConSingle: 'B',
-    MobileTouch: 'TAP'
+    SwitchJoyConSingle: 'B'
 });
 
 const STEAM_INPUT_PROMPT_IDS = Object.freeze([
@@ -224,6 +263,7 @@ const STEAM_INPUT_PROMPT_IDS = Object.freeze([
 const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'confirm-modal',
     'reset-save-confirm-modal',
+    'quit-confirm-modal',
     'audio-mixer-popup',
     'save-data-popup',
     'settings-popup',
@@ -309,12 +349,14 @@ let suppressSteamInputUntilRelease = false;
 
 window.HunkerTriggerBoot = () => {
     pendingSteamInputBoot = true;
+    if (typeof window.game?.setLoadingPaused === 'function') {
+        window.game.setLoadingPaused(false);
+    }
 };
 
 window.HunkerInputState = {
     getPromptKeyText,
-    isTouchPrompt: () => isTouchDevice(),
-    isControllerPrompt: () => !isTouchDevice() && isSteamControllerInputActive(),
+    isControllerPrompt: () => isSteamControllerInputActive(),
     getLastInputMode: () => steamInputState.lastInputMode,
     getPrimaryControllerType: () => steamInputState.primaryControllerType,
     getState: () => ({ ...steamInputState })
@@ -358,7 +400,6 @@ function isSteamControllerInputActive() {
 }
 
 function getPromptKeyText(defaultKey = 'E') {
-    if (isTouchDevice() || steamInputState.lastInputMode === 'touch') return 'TAP';
     if (isSteamControllerInputActive()) {
         return getSteamInputConfirmGlyph(steamInputState.primaryControllerType);
     }
@@ -366,7 +407,7 @@ function getPromptKeyText(defaultKey = 'E') {
 }
 
 function setLastInputMode(mode, { refresh = true } = {}) {
-    const normalized = mode === 'touch' ? 'touch' : mode === 'controller' ? 'controller' : 'keyboard';
+    const normalized = mode === 'controller' ? 'controller' : 'keyboard';
     if (steamInputState.lastInputMode === normalized) return false;
     steamInputState.lastInputMode = normalized;
     if (refresh) refreshInteractivePromptKeys();
@@ -531,7 +572,7 @@ async function openSteamGamepadTextInputForElement(element, {
     password = false
 } = {}) {
     if (!element || !window.electronAPI?.showGamepadTextInput) return false;
-    if (isTouchDevice() || !isSteamControllerInputActive()) return false;
+    if (!isSteamControllerInputActive()) return false;
     if (steamGamepadTextInputInFlight) return true;
 
     steamGamepadTextInputInFlight = true;
@@ -892,11 +933,7 @@ window.addEventListener('keydown', (event) => {
 
 window.addEventListener('pointerdown', (event) => {
     if (!event.isTrusted) return;
-    if (event.pointerType === 'touch' || event.pointerType === 'pen') {
-        setLastInputMode('touch');
-    } else if (event.pointerType === 'mouse') {
-        setLastInputMode('keyboard');
-    }
+    setLastInputMode('keyboard');
 }, true);
 
 const CONTROL_ACTIONS = Object.freeze([
@@ -924,7 +961,6 @@ const state = {
         debug: false,
         audioMix: { ...DEFAULT_AUDIO_MIX },
         fullscreen: false,
-        touchControls: false,
         nightVision: false,
         commentary: false,
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
@@ -935,6 +971,145 @@ const state = {
 // Exposed so threeGame.js can read live key bindings without a circular import.
 window.state = state;
 
+// RGB archive-sim unlock/save state (docs/mini-games/rgb/unlock-and-integration.md).
+let rgbSave = loadRgbSave(localStorage);
+let rgbUnlockToastPending = false;
+
+function unlockRgbIfEarned({ specimen0047Recorded = false, anyEndingCompleted = false } = {}) {
+    if (rgbSave.unlocked) return false;
+    if (!shouldUnlockRgb({ specimen0047Recorded, anyEndingCompleted })) return false;
+    rgbSave = markRgbUnlocked(rgbSave);
+    saveRgbSave(localStorage, rgbSave);
+    rgbUnlockToastPending = true;
+    window.dispatchEvent(new CustomEvent('rgb-unlocked'));
+    updateArchiveSimsMenuVisibility();
+    return true;
+}
+
+function updateArchiveSimsMenuVisibility() {
+    const command = document.getElementById('archive-sims-command');
+    if (command) command.classList.toggle('hidden', !rgbSave.unlocked);
+}
+
+function maybeShowRgbUnlockToast() {
+    if (!rgbUnlockToastPending) return;
+    rgbUnlockToastPending = false;
+
+    const toast = document.createElement('div');
+    toast.className = 'rgb-unlock-toast';
+    const kicker = document.createElement('div');
+    kicker.className = 'rgb-unlock-toast__kicker';
+    kicker.textContent = 'ARCHIVE SIMULATION RECOVERED';
+    const title = document.createElement('div');
+    title.className = 'rgb-unlock-toast__title';
+    title.textContent = "RGB: RIVERSIDE GLOBAL 'BOTICS";
+    toast.append(kicker, title);
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add('visible'));
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 400);
+    }, 5200);
+}
+
+let rgbHandle = null;
+let fullscreenVideoSuspendDepth = 0;
+let fullscreenVideoWasPaused = false;
+let fullscreenVideoCanvasVisibility = '';
+
+function suspendGameForFullscreenVideo() {
+    const game = window.game;
+    if (fullscreenVideoSuspendDepth === 0) {
+        fullscreenVideoWasPaused = Boolean(game?.loadingPaused);
+        const canvas = game?.renderer?.domElement;
+        if (canvas) {
+            fullscreenVideoCanvasVisibility = canvas.style.visibility;
+            canvas.style.visibility = 'hidden';
+        }
+        game?.setLoadingPaused?.(true);
+    }
+    fullscreenVideoSuspendDepth += 1;
+
+    let resumed = false;
+    return () => {
+        if (resumed) return;
+        resumed = true;
+        fullscreenVideoSuspendDepth = Math.max(0, fullscreenVideoSuspendDepth - 1);
+        if (fullscreenVideoSuspendDepth > 0) return;
+
+        const activeGame = window.game;
+        const canvas = activeGame?.renderer?.domElement;
+        if (canvas) canvas.style.visibility = fullscreenVideoCanvasVisibility;
+        activeGame?.setLoadingPaused?.(fullscreenVideoWasPaused);
+    };
+}
+
+const RGB_ENDING_ORDER = ['system_loop', 'ashes_survival', 'open_hand'];
+
+function openArchiveSimsModal() {
+    const modal = document.getElementById('archive-sims-modal');
+    if (!modal) return;
+    const statusEl = document.getElementById('archive-sim-rgb-status');
+    const endingsEl = document.getElementById('archive-sim-rgb-endings');
+    if (statusEl) {
+        statusEl.textContent = rgbSave.checkpoint === 'parking_lot' && rgbSave.endingsSeen.length === 0
+            ? 'NOT STARTED'
+            : `IN PROGRESS — ${rgbSave.checkpoint.replace(/_/g, ' ').toUpperCase()}`;
+    }
+    if (endingsEl) {
+        const seen = RGB_ENDING_ORDER.filter((id) => rgbSave.endingsSeen.includes(id));
+        endingsEl.textContent = seen.length === 0
+            ? 'No endings discovered yet.'
+            : `Endings discovered: ${seen.map((id) => RGB_ENDINGS[id].title).join(', ')}`;
+    }
+    modal.classList.remove('hidden');
+}
+
+function closeArchiveSimsModal() {
+    document.getElementById('archive-sims-modal')?.classList.add('hidden');
+}
+
+function launchRgb(chapter = null) {
+    closeArchiveSimsModal();
+    if (menu) menu.classList.add('hidden');
+    const root = document.getElementById('rgb-root');
+    if (!root) return;
+    // The archive fully covers the Three.js canvas. Stop both rendering and
+    // WebGL compositing so its fullscreen videos have exclusive GPU time.
+    const resumeGame = suspendGameForFullscreenVideo();
+    if (chapter && typeof chapter === 'string') {
+        rgbSave = {
+            ...rgbSave,
+            checkpoint: chapter
+        };
+    }
+    try {
+        rgbHandle = mountRgb({
+            root,
+            save: rgbSave,
+            storage: localStorage,
+            onExit: () => exitRgb(resumeGame)
+        });
+    } catch (error) {
+        resumeGame();
+        throw error;
+    }
+}
+
+function exitRgb(resumeGame = null) {
+    rgbHandle?.destroy();
+    rgbHandle = null;
+    resumeGame?.();
+    rgbSave = loadRgbSave(localStorage);
+    updateArchiveSimsMenuVisibility();
+    if (menu) menu.classList.remove('hidden');
+}
+
+document.getElementById('archive-sims-btn')?.addEventListener('click', openArchiveSimsModal);
+document.getElementById('archive-sims-modal-close')?.addEventListener('click', closeArchiveSimsModal);
+document.getElementById('archive-sim-rgb-launch')?.addEventListener('click', launchRgb);
+
 const gearSpinState = {
     rotation: 0,
     velocity: 0,
@@ -943,7 +1118,6 @@ const gearSpinState = {
 };
 
 let stageResizeObserver = null;
-let activeTouchPointerId = null;
 let draftAudioMix = { ...DEFAULT_AUDIO_MIX };
 let cutsceneManager = null;
 let dialogueManager = null;
@@ -963,83 +1137,6 @@ function getActiveSuitDialogueContext() {
     };
 }
 
-function isPortraitOrientationLocked() {
-    const visualWidth = window.visualViewport?.width ?? window.innerWidth;
-    const visualHeight = window.visualViewport?.height ?? window.innerHeight;
-    return window.matchMedia('(orientation: portrait)').matches
-        || visualHeight > visualWidth;
-}
-
-function clearTouchInputState() {
-    activeTouchPointerId = null;
-    touchMoveControl?.classList.remove('active');
-    touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
-    window.game?.setVirtualInput?.(0, 0);
-    window.game?.setVirtualInputSprint?.(false);
-    const touchSprintBtn = document.getElementById('touch-sprint-btn');
-    if (touchSprintBtn) {
-        touchSprintBtn.classList.remove('sprint-active');
-        const label = touchSprintBtn.querySelector('#touch-sprint-cooldown');
-        if (label) label.textContent = 'READY';
-    }
-}
-
-function clearTouchMoveInputState() {
-    activeTouchPointerId = null;
-    touchMoveControl?.classList.remove('active');
-    touchMoveThumb?.style.setProperty('transform', 'translate(-50%, -50%)');
-    window.game?.setVirtualInput?.(0, 0);
-}
-
-function syncOrientationLockState() {
-    const locked = isPortraitOrientationLocked();
-    document.body.classList.toggle('orientation-locked', locked);
-    orientationLock?.setAttribute('aria-hidden', locked ? 'false' : 'true');
-
-    if (locked) {
-        clearTouchInputState();
-        window.game?.setVirtualInput?.(0, 0);
-        window.game?.clearGameplayInputState?.();
-    }
-}
-
-function installOrientationInputLock() {
-    if (!orientationLock) return;
-
-    window.HunkerOrientationLock = {
-        isLocked: isPortraitOrientationLocked
-    };
-
-    const blockInteraction = (event) => {
-        if (!isPortraitOrientationLocked()) return;
-
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation?.();
-    };
-
-    [
-        'pointerdown',
-        'pointermove',
-        'pointerup',
-        'pointercancel',
-        'mousedown',
-        'mouseup',
-        'click',
-        'dblclick',
-        'touchstart',
-        'touchmove',
-        'touchend',
-        'touchcancel'
-    ].forEach((eventName) => {
-        document.addEventListener(eventName, blockInteraction, true);
-    });
-
-    syncOrientationLockState();
-    window.addEventListener('resize', syncOrientationLockState);
-    window.addEventListener('orientationchange', syncOrientationLockState);
-    window.visualViewport?.addEventListener('resize', syncOrientationLockState);
-}
 let deathSequenceTimer = null;
 let damageFlashTimer = null;
 let weaponErrorTimer = null;
@@ -1139,6 +1236,33 @@ function refreshCharBestScores() {
     }
 }
 
+// All-time personal bests, independent of the per-class scores above —
+// longest/deepest/deaths already persist in achievementEngine's stats and
+// arcManager's signals for their own purposes (achievement checks, arc
+// transitions); this just reads and displays them, no new tracking.
+function refreshCareerStats() {
+    const longestEl = document.getElementById('career-stat-longest-run');
+    const depthEl = document.getElementById('career-stat-deepest-depth');
+    const deathsEl = document.getElementById('career-stat-deaths');
+    if (!longestEl && !depthEl && !deathsEl) return;
+
+    const stats = achievementEngine.getState().stats;
+    if (longestEl) {
+        const totalSeconds = Math.floor((stats.maxRunMs ?? 0) / 1000);
+        const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const ss = String(totalSeconds % 60).padStart(2, '0');
+        longestEl.textContent = `◈ LONGEST RUN: ${mm}:${ss}`;
+    }
+    if (deathsEl) {
+        deathsEl.textContent = `◈ DEATHS: ${stats.totalDeaths ?? 0}`;
+    }
+    if (depthEl) {
+        const tier = arcManager.getState().signals.deepestDepthTier ?? 0;
+        const name = DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, tier))] ?? 'SURFACE';
+        depthEl.textContent = `◈ DEEPEST DEPTH: ${name}`;
+    }
+}
+
 function recomputePickupTotal() {
     pickupCounterState.total = Math.max(
         0,
@@ -1213,7 +1337,9 @@ function parseStoredAudioMix(rawValue) {
         return {
             master: clampAudioMixValue(parsed.master !== undefined ? parsed.master : parsed.world),
             music: clampAudioMixValue(parsed.music),
-            vfx: clampAudioMixValue(parsed.vfx !== undefined ? parsed.vfx : parsed.sfx)
+            vfx: clampAudioMixValue(parsed.vfx !== undefined ? parsed.vfx : parsed.sfx),
+            voice: clampAudioMixValue(parsed.voice !== undefined ? parsed.voice : 1.0),
+            voiceEnabled: parsed.voiceEnabled !== undefined ? Boolean(parsed.voiceEnabled) : true
         };
     } catch {
         return null;
@@ -1224,7 +1350,9 @@ function cloneAudioMix(mix) {
     return {
         master: clampAudioMixValue(mix?.master),
         music: clampAudioMixValue(mix?.music),
-        vfx: clampAudioMixValue(mix?.vfx)
+        vfx: clampAudioMixValue(mix?.vfx),
+        voice: clampAudioMixValue(mix?.voice !== undefined ? mix.voice : 1.0),
+        voiceEnabled: mix?.voiceEnabled !== undefined ? Boolean(mix.voiceEnabled) : true
     };
 }
 
@@ -1237,7 +1365,8 @@ function syncAudioMixerUI(mix = state.settings.audioMix) {
     const controls = [
         { channel: 'master', slider: audioMasterSlider, valueEl: audioMasterValue },
         { channel: 'music', slider: audioMusicSlider, valueEl: audioMusicValue },
-        { channel: 'vfx', slider: audioVfxSlider, valueEl: audioVfxValue }
+        { channel: 'vfx', slider: audioVfxSlider, valueEl: audioVfxValue },
+        { channel: 'voice', slider: audioVoiceSlider, valueEl: audioVoiceValue }
     ];
 
     controls.forEach(({ channel, slider, valueEl }) => {
@@ -1245,6 +1374,10 @@ function syncAudioMixerUI(mix = state.settings.audioMix) {
         if (slider) slider.value = String(pct);
         if (valueEl) valueEl.textContent = `${pct}%`;
     });
+
+    if (audioVoiceToggle) {
+        audioVoiceToggle.checked = mix.voiceEnabled !== false;
+    }
 }
 
 function applyAudioMixSettings(nextMix, { persist = true } = {}) {
@@ -1319,7 +1452,8 @@ function installAudioMixerControls() {
     const sliderDefs = [
         { channel: 'master', slider: audioMasterSlider },
         { channel: 'music', slider: audioMusicSlider },
-        { channel: 'vfx', slider: audioVfxSlider }
+        { channel: 'vfx', slider: audioVfxSlider },
+        { channel: 'voice', slider: audioVoiceSlider }
     ];
 
     sliderDefs.forEach(({ channel, slider }) => {
@@ -1336,6 +1470,17 @@ function installAudioMixerControls() {
         slider.addEventListener('input', updateChannel);
         slider.addEventListener('change', updateChannel);
     });
+
+    if (audioVoiceToggle) {
+        audioVoiceToggle.addEventListener('change', (event) => {
+            draftAudioMix = {
+                ...draftAudioMix,
+                voiceEnabled: event.target.checked
+            };
+            AudioManager.setMix(draftAudioMix);
+            syncAudioMixerUI(draftAudioMix);
+        });
+    }
 }
 
 // ── Desktop control remapping ────────────────────────────────────────────────
@@ -1672,12 +1817,12 @@ window.addEventListener('weapon-upgraded', () => {
 window.addEventListener('skill-unlocked', () => {
     window.AudioManager?.play?.('fx_levelup', { volume: 0.38, bus: 'sfx' });
     syncAbilityPanelLabel();
-    syncTouchMoveControlVisibility();
+    syncHudCompassVisibility();
 });
 
 window.addEventListener('bank-updated', () => {
     syncAbilityPanelLabel();
-    syncTouchMoveControlVisibility();
+    syncHudCompassVisibility();
 });
 
 window.addEventListener('enemy-hit', (event) => {
@@ -2108,6 +2253,7 @@ function renderRadioTransmission(rawText) {
     const messageText = radioPrompt.querySelector('.radio-transmission-prompt__message');
     senderName.textContent = sender;
     messageText.textContent = text;
+    AudioManager.playVoiceForMessage({ name: sender }, text);
     radioPrompt.addEventListener('pointerdown', (event) => {
         event.preventDefault();
         dismissRadioPrompt(radioPrompt);
@@ -2283,9 +2429,9 @@ function triggerDamageFlash(event) {
 
 // ---- Hero select stat pips ----
 const HERO_DISPLAY_STATS = {
-    SCOUT:    { spdPips: 5, o2Pips: 2, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'LOW',    lootLabel: 'WIDE',  detail: 'SPRINT BURST // WIDE SALVAGE MAGNET', demoLabel: 'SCOUT DEMO // SPRINT' },
-    TANK:     { spdPips: 2, o2Pips: 5, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'HIGH',   lootLabel: 'SHORT', detail: 'BRACE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
-    ENGINEER: { spdPips: 4, o2Pips: 4, lootPips: 4, color: '#00e5ff', spdLabel: 'NORMAL', o2Label: 'NORMAL', lootLabel: 'NORMAL', detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
+    SCOUT:    { spdPips: 5, o2Pips: 4, lootPips: 5, color: '#7dff5a', spdLabel: 'FAST',   o2Label: 'HIGH',   lootLabel: 'WIDE',  detail: 'SPRINT BURST // WIDE SALVAGE MAGNET', demoLabel: 'SCOUT DEMO // SPRINT' },
+    TANK:     { spdPips: 2, o2Pips: 2, lootPips: 2, color: '#ffb700', spdLabel: 'SLOW',   o2Label: 'LOW',    lootLabel: 'SHORT', detail: 'BRACE // LOW O₂ DRAIN', demoLabel: 'TANK DEMO // BRACE' },
+    ENGINEER: { spdPips: 3, o2Pips: 3, lootPips: 3, color: '#00e5ff', spdLabel: 'MED',    o2Label: 'MED',    lootLabel: 'MED',   detail: 'REROUTE UTILITY // 20% CONSOLE DISCOUNT', demoLabel: 'ENGINEER DEMO // REROUTE' }
 };
 const HERO_STAT_TOTAL = 5;
 const heroStatValueTimers = new WeakMap();
@@ -2471,117 +2617,7 @@ function formatRunTime(ms) {
     return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function getGameOverLeaderboardBoard(payload = {}) {
-    if (payload.run?.dailyOps?.date) return 'daily_ops_score';
-    return 'best_run_score';
-}
 
-function getGameOverLeaderboardLabel(board) {
-    if (board === 'daily_ops_score') return 'DAILY OPS';
-    if (board === 'survival_time_seconds') return 'SURVIVAL TIME';
-    if (board === 'deepest_depth_score') return 'DEEPEST DEPTH';
-    if (board === 'fastest_extraction_ms') return 'FASTEST EXTRACTION';
-    return 'BEST RUN SCORE';
-}
-
-function setGameOverLeaderboardState(statusText, entries = [], { board = 'best_run_score', selfSteamId = null, type = 'retrieving' } = {}) {
-    const statusEl = document.getElementById('go-leaderboard-status');
-    const listEl = document.getElementById('go-leaderboard-list');
-    if (statusEl) {
-        statusEl.textContent = statusText;
-        statusEl.className = `go-leaderboard-status go-leaderboard-status--${type}`;
-    }
-    if (!listEl) return;
-
-    listEl.innerHTML = '';
-    if (!entries.length) {
-        const empty = document.createElement('div');
-        empty.className = 'go-leaderboard-row go-leaderboard-row--empty';
-        empty.textContent = 'NO RANKS AVAILABLE';
-        listEl.appendChild(empty);
-        return;
-    }
-
-    for (const entry of entries) {
-        if (entry.separator) {
-            const sep = document.createElement('div');
-            sep.className = 'go-leaderboard-row go-leaderboard-row--separator';
-            sep.textContent = '...';
-            listEl.appendChild(sep);
-            continue;
-        }
-
-        const row = document.createElement('div');
-        const isSelf = selfSteamId && String(entry.steamId64) === String(selfSteamId);
-        row.className = `go-leaderboard-row${isSelf ? ' player-self' : ''}`;
-
-        const rank = document.createElement('span');
-        rank.className = 'go-leaderboard-rank';
-        rank.textContent = `#${Number(entry.rank) || '-'}`;
-
-        const name = document.createElement('span');
-        name.className = 'go-leaderboard-name';
-        name.textContent = entry.persona || 'Agent';
-
-        const score = document.createElement('span');
-        score.className = 'go-leaderboard-score';
-        score.textContent = formatLeaderboardScore(board, Number(entry.score) || 0);
-
-        row.append(rank, name, score);
-        listEl.appendChild(row);
-    }
-}
-
-async function renderGameOverLeaderboard(payload = {}) {
-    const board = getGameOverLeaderboardBoard(payload);
-    const label = getGameOverLeaderboardLabel(board);
-    setGameOverLeaderboardState(`RETRIEVING ${label}...`, [], { board, type: 'retrieving' });
-
-    if (!window.electronAPI?.getSteamLeaderboard) {
-        setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
-        return;
-    }
-
-    try {
-        const [result, identity] = await Promise.all([
-            window.electronAPI.getSteamLeaderboard(board, 'Global', 10),
-            window.electronAPI.getSteamIdentity?.().catch(() => null)
-        ]);
-
-        if (!result?.ok) {
-            setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
-            return;
-        }
-
-        const selfSteamId = identity?.steamId64 ?? (result.mock ? '76561198000000000' : null);
-        const status = result.mock ? `${label} - DEV MOCK` : `${label} - GLOBAL TOP 10`;
-        const type = result.mock ? 'mock' : 'live';
-
-        let entries = result.entries ?? [];
-
-        // Fetch exact player rank if player is not in top 10
-        const hasSelf = entries.some(entry => selfSteamId && String(entry.steamId64) === String(selfSteamId));
-        if (!hasSelf && selfSteamId) {
-            try {
-                const aroundResult = await window.electronAPI.getSteamLeaderboard(board, 'AroundUser', 1);
-                if (aroundResult?.ok && aroundResult.entries?.length) {
-                    const selfEntry = aroundResult.entries.find(entry => String(entry.steamId64) === String(selfSteamId));
-                    if (selfEntry) {
-                        entries = [...entries];
-                        entries.push({ separator: true });
-                        entries.push(selfEntry);
-                    }
-                }
-            } catch (err) {
-                console.warn('[steam] failed to fetch player leaderboard rank:', err);
-            }
-        }
-
-        setGameOverLeaderboardState(status, entries, { board, selfSteamId, type });
-    } catch {
-        setGameOverLeaderboardState('LEADERBOARD OFFLINE - SCORE BANKED LOCALLY', [], { board, type: 'offline' });
-    }
-}
 
 function clearAllTimers() {
     clearTimeout(biomePromptTimer);
@@ -2754,6 +2790,9 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         refreshCharBestScores();
     }
     if (newBest) newBest.classList.toggle('hidden', !isNewBest);
+    // Unconditional (unlike the per-class best above): longest run, deepest
+    // depth, and death count each track their own best independent of score.
+    refreshCareerStats();
 
     // World seed display
     const seedRow = document.getElementById('go-seed-row');
@@ -3018,7 +3057,7 @@ function runDeathSequence(event) {
     document.body.classList.add('player-dead-flash');
     playPlayerDeathCue(deathReason);
 
-    deathSequenceTimer = window.setTimeout(() => {
+    deathSequenceTimer = window.setTimeout(async () => {
         document.body.classList.remove('player-dead-flash');
         deathSequenceTimer = null;
 
@@ -3034,6 +3073,11 @@ function runDeathSequence(event) {
             runMs: Date.now() - runStartTime,
             classType: window.game?.playerType ?? getSelectedHeroType()
         }, { delayMs: 2200 });
+        const deathCinematic = getDeathCinematicSpec(deathReason);
+        await playCinematicBeat({
+            videoBase: deathCinematic.id,
+            fallback: deathCinematic
+        });
         triggerDoorTransition(
             () => {
                 showGameOverScreen(stats, { isVictory: false, deathReason });
@@ -3073,11 +3117,8 @@ window.addEventListener('player-respawned', () => {
     document.body.classList.remove('distress-mode', 'vitals-critical', 'player-poisoned', 'player-damage-flash', 'mission-intro-active');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
-    updateTouchAbilityButtonState({ remaining: 0, max: 1, active: false });
-    updateTouchSprintButtonState({ remaining: 0, max: 1, active: false, activeProgress: 0, ability: 'sprint' });
     const scanBar = document.getElementById('scan-bar');
     if (scanBar) scanBar.style.transform = 'scaleX(1)';
-    updateTouchScanButtonState({ remaining: 0, max: 1 });
     window.game?.setInputEnabled?.(true);
 
     if (window.game?.act2?.getState?.().begun) {
@@ -3218,6 +3259,7 @@ const ALL_LORE_KEYS = [
 ];
 
 function updateMenuCommandStatuses() {
+    updateArchiveSimsMenuVisibility();
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
@@ -3263,7 +3305,7 @@ function openArchiveLogDetail(key) {
 
     if (keyEl) keyEl.textContent = window.game?.getLoreTitle?.(key) ?? `LOG-${key}`;
     if (textEl) textEl.textContent = window.game?.getLoreText?.(key) ?? '[LOG TEXT UNAVAILABLE — RETURN TO BUNKER]';
-    if (portraitEl) portraitEl.src = lorePortraitSrc(key);
+    if (portraitEl) portraitEl.src = assetUrl(lorePortraitSrc(key));
 
     const metadata = LORE_METADATA[key];
     const dateEl = document.getElementById('archive-log-detail-date');
@@ -3323,7 +3365,7 @@ function buildArchiveModal() {
                 img.loading = 'lazy';
                 img.decoding = 'async';
                 img.alt = '';
-                img.src = lorePortraitSrc(key);
+                img.src = assetUrl(lorePortraitSrc(key));
                 avatar.appendChild(img);
             } else {
                 avatar.classList.add('archive-log-avatar--locked');
@@ -3414,7 +3456,7 @@ function showAchievementToast(unlock) {
     iconWrap.className = 'achievement-toast__icon';
     const img = document.createElement('img');
     img.alt = '';
-    img.src = `/ach_${unlock.icon ?? unlock.key}.png`;
+    img.src = assetUrl(`/ach_${unlock.icon ?? unlock.key}.png`);
     const fallback = document.createElement('span');
     fallback.textContent = 'ACH';
     img.addEventListener('error', () => {
@@ -3520,7 +3562,7 @@ function renderAchievementsModal() {
         icon.className = 'achievement-card__icon';
         const img = document.createElement('img');
         img.alt = '';
-        img.src = `/ach_${def.icon ?? def.key}.png`;
+        img.src = assetUrl(`/ach_${def.icon ?? def.key}.png`);
         const fallback = document.createElement('span');
         fallback.textContent = secretLocked ? '???' : (def.title.match(/[A-Z0-9]/g)?.slice(0, 3).join('') || 'ACH');
         img.addEventListener('error', () => {
@@ -3713,9 +3755,13 @@ window.addEventListener('lore-terminal-read', (event) => {
     const token = ++loreTypewriterToken;
     let charIdx = 0;
     const chars = loreText.split('');
+    AudioManager.playVoiceForMessage('BUNKER TERMINAL', loreText);
     const tick = () => {
         if (!loreTextEl || token !== loreTypewriterToken || loreModal.classList.contains('hidden')) return;
         if (charIdx < chars.length) {
+            if (charIdx > 0 && charIdx % 28 === 0) {
+                AudioManager.playVoiceForMessage('BUNKER TERMINAL', loreText.slice(charIdx, charIdx + 12));
+            }
             loreTextEl.textContent += chars[charIdx++];
             setTimeout(tick, 18);
         }
@@ -3733,6 +3779,7 @@ window.addEventListener('lore-terminal-read', (event) => {
         const entry = getCodexEntry('specimen_0047');
         if (entry) showBiomePrompt(`> CODEX UPDATED: ${entry.name}`);
         updateMenuCommandStatuses();
+        unlockRgbIfEarned({ specimen0047Recorded: true });
     }
 });
 
@@ -3933,14 +3980,118 @@ function hideCampQuestHUD() {
     if (hud) hud.classList.add('hidden');
 }
 
-window.addEventListener('camp-quest-progress', (event) => {
-    const { label, current, target } = event?.detail ?? {};
-    if (!label) return;
-    showCampQuestHUD(`${label}: ${current ?? 0}/${target ?? 1}`);
+// ── Single-Grammar Objective Registry & HUD Tracker ───────────
+const objectiveRegistry = new ObjectiveRegistry();
+window.objectiveRegistry = objectiveRegistry;
+objectiveRegistry.bindWindowEvents(window);
+
+function renderObjectiveTracker(activeObjectives) {
+    const trackerEl = document.getElementById('objective-tracker');
+    if (!trackerEl) return;
+
+    const ui = document.getElementById('ui');
+    const menu = document.getElementById('menu');
+    const gameOverModal = document.getElementById('game-over-modal');
+    const splash = document.getElementById('splash');
+    const isGameplayActive = ui && !ui.classList.contains('hidden') &&
+                             (!menu || menu.classList.contains('hidden')) &&
+                             (!gameOverModal || gameOverModal.classList.contains('hidden')) &&
+                             (!splash || splash.classList.contains('hidden'));
+
+    if (!isGameplayPhase() || !isGameplayActive || isResettingRun || !activeObjectives || activeObjectives.length === 0) {
+        trackerEl.classList.add('hidden');
+        trackerEl.replaceChildren();
+        return;
+    }
+
+    trackerEl.replaceChildren();
+    activeObjectives.forEach((obj, index) => {
+        const item = document.createElement('div');
+        item.className = `objective-tracker__item ${index === 0 ? 'objective-tracker__item--prio-high' : ''}`;
+
+        const header = document.createElement('div');
+        header.className = 'objective-tracker__header';
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'objective-tracker__label';
+        labelSpan.innerHTML = `<span class="objective-tracker__icon">◈</span>${obj.label}`;
+
+        const progSpan = document.createElement('span');
+        progSpan.className = 'objective-tracker__progress';
+        progSpan.textContent = obj.target > 1 ? `${obj.current}/${obj.target}` : (obj.current >= obj.target ? '100%' : 'ACTIVE');
+
+        header.append(labelSpan, progSpan);
+        item.appendChild(header);
+
+        if (Array.isArray(obj.steps) && obj.steps.length > 0 && index === 0) {
+            const stepsDiv = document.createElement('div');
+            stepsDiv.className = 'objective-tracker__steps';
+            obj.steps.forEach((step) => {
+                const stepRow = document.createElement('div');
+                stepRow.className = `objective-tracker__step ${step.done ? 'objective-tracker__step--done' : ''}`;
+                const check = document.createElement('span');
+                check.className = 'objective-tracker__check';
+                check.textContent = step.done ? '✓' : '◇';
+                const label = document.createElement('span');
+                label.textContent = step.label;
+                stepRow.append(check, label);
+                stepsDiv.appendChild(stepRow);
+            });
+            item.appendChild(stepsDiv);
+        }
+
+        trackerEl.appendChild(item);
+    });
+
+    trackerEl.classList.remove('hidden');
+}
+
+objectiveRegistry.onChange((active) => {
+    renderObjectiveTracker(active);
 });
 
-window.addEventListener('camp-quest-complete', () => {
+window.addEventListener('camp-quest-progress', (event) => {
+    const { questId, label, current, target, compass } = event?.detail ?? {};
+    if (!label) return;
+    showCampQuestHUD(`${label}: ${current ?? 0}/${target ?? 1}`);
+    objectiveRegistry.trackObjective({
+        id: `camp_quest:${questId ?? label}`,
+        source: 'camp-quest',
+        label,
+        current: current ?? 0,
+        target: target ?? 1,
+        priority: 40,
+        compass: compass ?? null
+    });
+});
+
+window.addEventListener('camp-quest-complete', (event) => {
+    const { questId } = event?.detail ?? {};
     hideCampQuestHUD();
+    if (questId) {
+        objectiveRegistry.resolveObjective(`camp_quest:${questId}`, 'complete');
+    }
+});
+
+window.addEventListener('black-box-marker-active', (event) => {
+    const { x, z } = event?.detail ?? {};
+    objectiveRegistry.trackObjective({
+        id: 'story:black_box',
+        source: 'black-box',
+        label: 'RECOVER BLACK BOX',
+        current: 0,
+        target: 1,
+        priority: 10,
+        compass: Number.isFinite(x) && Number.isFinite(z) ? { x, z } : null
+    });
+});
+
+window.addEventListener('black-box-recovered', () => {
+    objectiveRegistry.resolveObjective('story:black_box', 'complete');
+});
+
+window.addEventListener('player-death', () => {
+    objectiveRegistry.clear();
 });
 
 // Persistent loop-state cue (T1): always shows the next action while in a run.
@@ -3998,57 +4149,6 @@ document.getElementById('radar-scan-panel')?.addEventListener('pointerdown', (e)
     window.game?.triggerRadarScan?.();
 });
 
-function updateTouchAbilityButtonState({ remaining = 0, max = 1, active = false } = {}) {
-    const touchBtn = document.getElementById('touch-ability-btn');
-    if (!touchBtn) return;
-
-    const clampedMax = Math.max(0.001, Number(max) || 0.001);
-    const clampedRemaining = Math.max(0, Number(remaining) || 0);
-    const cooldownProgress = active
-        ? 1
-        : Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
-
-    touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
-    touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
-    touchBtn.classList.toggle('is-ready', clampedRemaining <= 0 && !active);
-
-    if (clampedRemaining > 0) {
-        touchBtn.style.pointerEvents = 'none';
-        touchBtn.style.opacity = '0.8';
-    } else {
-        touchBtn.style.pointerEvents = 'auto';
-        touchBtn.style.opacity = '1';
-    }
-
-    const cooldownEl = document.getElementById('touch-ability-cooldown');
-    if (cooldownEl) {
-        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : '';
-    }
-}
-
-function updateTouchSprintButtonState({ remaining = 0, max = 1, active = false, activeProgress = 0, ability = '' } = {}) {
-    const sprintBtn = document.getElementById('touch-sprint-btn');
-    if (!sprintBtn) return;
-    const isSprintAbility = ability === 'sprint';
-    const clampedMax = Math.max(0.001, Number(max) || 0.001);
-    const clampedRemaining = Math.max(0, Number(remaining) || 0);
-    const clampedActiveProgress = Math.max(0, Math.min(1, Number(activeProgress) || 0));
-    const sprintActive = isSprintAbility && Boolean(active);
-    const cooldownProgress = sprintActive
-        ? Math.max(0, 1 - clampedActiveProgress)
-        : Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
-    sprintBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
-    sprintBtn.classList.toggle('sprint-active', sprintActive);
-    sprintBtn.classList.toggle('is-cooling', isSprintAbility && clampedRemaining > 0 && !sprintActive);
-    sprintBtn.classList.toggle('is-ready', isSprintAbility && clampedRemaining <= 0 && !sprintActive);
-    sprintBtn.style.pointerEvents = (isSprintAbility && clampedRemaining > 0 && !sprintActive) ? 'none' : 'auto';
-    sprintBtn.style.opacity = (isSprintAbility && clampedRemaining > 0 && !sprintActive) ? '0.8' : '1';
-    const label = sprintBtn.querySelector('#touch-sprint-cooldown');
-    if (label) {
-        label.textContent = sprintActive ? 'BURST' : (isSprintAbility && clampedRemaining > 0) ? `${Math.ceil(clampedRemaining)}s` : 'READY';
-    }
-}
-
 window.addEventListener('class-ability-activated', (event) => {
     const panel = document.getElementById('class-ability-panel');
     if (panel) panel.classList.add('class-ability-panel--active');
@@ -4070,7 +4170,7 @@ window.addEventListener('class-ability-ended', (event) => {
 });
 
 window.addEventListener('ability-cooldown-tick', (event) => {
-    const { remaining = 0, max = 1, active = false, activeProgress = 0, ability = '' } = event?.detail ?? {};
+    const { remaining = 0, max = 1, active = false, activeProgress = 0 } = event?.detail ?? {};
     const bar = document.getElementById('ability-bar');
     const panel = document.getElementById('class-ability-panel');
     const clampedMax = Math.max(0.001, Number(max) || 0.001);
@@ -4087,8 +4187,6 @@ window.addEventListener('ability-cooldown-tick', (event) => {
         panel.classList.toggle('class-ability-panel--cooling', !active && clampedRemaining > 0);
         panel.classList.toggle('class-ability-panel--ready', !active && clampedRemaining <= 0);
     }
-    updateTouchAbilityButtonState({ remaining, max, active });
-    updateTouchSprintButtonState({ remaining, max, active, activeProgress, ability });
 });
 
 window.addEventListener('scan-cooldown-tick', (event) => {
@@ -4106,34 +4204,7 @@ window.addEventListener('scan-cooldown-tick', (event) => {
         panel.classList.toggle('class-ability-panel--active', remaining > 0);
     }
 
-    updateTouchScanButtonState({ remaining, max });
 });
-
-function updateTouchScanButtonState({ remaining = 0, max = 1 } = {}) {
-    const touchBtn = document.getElementById('touch-scan-btn');
-    if (!touchBtn) return;
-
-    const clampedMax = Math.max(0.001, Number(max) || 0.001);
-    const clampedRemaining = Math.max(0, Number(remaining) || 0);
-    const cooldownProgress = Math.max(0, Math.min(1, 1 - (clampedRemaining / clampedMax)));
-
-    touchBtn.style.setProperty('--ability-cooldown-progress', String(cooldownProgress));
-    touchBtn.classList.toggle('is-cooling', clampedRemaining > 0);
-    touchBtn.classList.toggle('is-ready', clampedRemaining <= 0);
-
-    if (clampedRemaining > 0) {
-        touchBtn.style.pointerEvents = 'none';
-        touchBtn.style.opacity = '0.8';
-    } else {
-        touchBtn.style.pointerEvents = 'auto';
-        touchBtn.style.opacity = '1';
-    }
-
-    const cooldownEl = document.getElementById('touch-scan-cooldown');
-    if (cooldownEl) {
-        cooldownEl.textContent = clampedRemaining > 0 ? `${clampedRemaining.toFixed(1)}s` : '';
-    }
-}
 
 function syncAbilityPanelLabel() {
     const info = window.game?.getClassAbilityInfo?.();
@@ -4331,8 +4402,7 @@ if (gameOverTryAgain) {
                     deferChunkMount: true
                 });
                 document.getElementById('ui')?.classList.remove('hidden');
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
+                syncHudCompassVisibility();
                 return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
@@ -4360,11 +4430,12 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
         () => {
             document.getElementById('ui')?.classList.add('hidden');
             window.game?.setInputEnabled?.(false);
-            syncTouchSettingsVisibility();
-            syncTouchMoveControlVisibility();
+            syncHudCompassVisibility();
             if (menu) menu.classList.remove('hidden');
             window.game?.setPerformanceProfile?.('menu');
             transitionToMenuMusic();
+            updateArchiveSimsMenuVisibility();
+            maybeShowRgbUnlockToast();
 
             const gameContainer = document.getElementById('game-container');
             const mapBox = document.querySelector('.map-box');
@@ -4410,152 +4481,27 @@ document.getElementById('demo-end-main-menu')?.addEventListener('click', () => {
     window.location.reload();
 });
 
-function isTouchDevice() {
-    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
-    const touchPoints = navigator.maxTouchPoints > 0;
-    const touchEvents = 'ontouchstart' in window;
-    const mobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(navigator.userAgent);
-    const narrowViewport = window.innerWidth <= 900 || window.innerHeight <= 900;
+function syncHudCompassVisibility() {
+    if (!desktopCompass) return;
 
-    return coarsePointer || touchPoints || touchEvents || (mobileUserAgent && narrowViewport);
-}
-
-function setTouchDeviceMode() {
-    const touchDevice = isTouchDevice();
-    document.body.classList.toggle('touch-device', touchDevice);
-    document.body.classList.toggle('touch-controls-enabled', touchDevice || Boolean(state.settings.touchControls));
-
-    if (mainTouchToggle) {
-        mainTouchToggle.checked = !!state.settings.touchControls;
-    }
-
-    syncTouchSettingsVisibility();
-    syncTouchMoveControlVisibility();
-}
-
-function syncTouchSettingsVisibility() {
-    if (!touchControlsSetting) return;
-    const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
-    touchControlsSetting.classList.toggle('hidden', !isHUD);
-}
-
-function syncTouchMoveControlVisibility() {
-    if (!touchMoveControl) return;
-
-    const touchDevice = isTouchDevice();
-    const touchUiEnabled = touchDevice || Boolean(state.settings.touchControls);
-    document.body.classList.toggle('touch-controls-enabled', touchUiEnabled);
     const ui = document.getElementById('ui');
     const menu = document.getElementById('menu');
     const isHUD = !ui?.classList.contains('hidden');
     const isMenuHidden = menu?.classList.contains('hidden') ?? true;
     const inMissionIntro = document.body.classList.contains('mission-intro-active');
-    const showHudTouchReadouts = isHUD && isMenuHidden && !inMissionIntro;
+    const showHudReadouts = isHUD && isMenuHidden && !inMissionIntro;
 
-    touchMoveControl.classList.toggle('hidden', !showHudTouchReadouts);
-    if (desktopCompass) {
-        desktopCompass.classList.toggle('hidden', !showHudTouchReadouts);
-    }
-
-    // Show/hide the joystick ring and label based on the touchControls setting
-    const showJoystick = touchUiEnabled && state.settings.touchControls;
-    if (touchMoveRing) {
-        touchMoveRing.classList.toggle('hidden', !showJoystick);
-    }
-    const label = touchMoveControl.querySelector('.touch-move-control__label');
-    if (label) {
-        label.classList.toggle('hidden', !showJoystick);
-    }
-
-    const sprintBtn = document.getElementById('touch-sprint-btn');
-    if (sprintBtn) {
-        sprintBtn.classList.toggle('hidden', !showHudTouchReadouts);
-    }
-
-    const abilityBtn = document.getElementById('touch-ability-btn');
-    if (abilityBtn) {
-        const abilityInfo = window.game?.getClassAbilityInfo?.();
-        const specialUnlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
-        const showAbilityBtn = showHudTouchReadouts && specialUnlocked && abilityInfo?.key !== 'sprint';
-        abilityBtn.classList.toggle('hidden', !showAbilityBtn);
-    }
-
-    const scanBtn = document.getElementById('touch-scan-btn');
-    if (scanBtn) {
-        scanBtn.classList.toggle('hidden', !showHudTouchReadouts);
-    }
-
-    if (!isHUD) {
-        clearTouchInputState();
-    } else if (!showJoystick) {
-        clearTouchMoveInputState();
-    }
+    desktopCompass.classList.toggle('hidden', !showHudReadouts);
 }
 
-// Wire touch sprint button
-const touchSprintBtn = document.getElementById('touch-sprint-btn');
-if (touchSprintBtn) {
-    touchSprintBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        if (!window.game) return;
-
-        const triggered = window.game.setVirtualInputSprint?.(true);
-
-        updateTouchSprintButtonState({
-            remaining: window.game.classAbility?.cooldownRemaining ?? 0,
-            max: window.game.classAbility?.cooldownMax ?? 1,
-            active: window.game.classAbility?.active ?? false,
-            activeProgress: window.game.classAbility?.active
-                ? ((window.game.classAbility?.activeTimer ?? 0) / Math.max(0.001, window.game.classAbility?.activeDuration ?? 1))
-                : 0,
-            ability: window.game.getClassAbilityInfo?.().key
-        });
-
-        window.AudioManager?.play(triggered ? 'ui_click' : 'ui_error', { volume: 0.5, playbackRate: triggered ? 1.2 : 0.95 });
-    });
-}
-
-// Wire touch ability button
-const touchAbilityBtn = document.getElementById('touch-ability-btn');
-if (touchAbilityBtn) {
-    touchAbilityBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        window.game?.triggerClassAbility?.();
-    });
-}
-
-const touchScanBtn = document.getElementById('touch-scan-btn');
-if (touchScanBtn) {
-    touchScanBtn.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        window.game?.triggerRadarScan?.();
-    });
-}
-
-function formatTouchCompassDistance(distance) {
+function formatCompassDistance(distance) {
     if (!Number.isFinite(distance) || distance <= 0) return '0u';
     return `${Math.round(distance)}u`;
 }
 
-function updateTouchCompass() {
-    if (!touchCompassArrow || !touchCompassDistance) return;
-
+function updateHudCompass() {
     const compassState = window.game?.getSpawnCompassState?.();
     if (!compassState) {
-        touchCompassArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
-        touchCompassArrow.style.opacity = '0.35';
-        touchCompassDistance.textContent = '0u';
-        if (touchCompassRadarArrow) {
-            touchCompassRadarArrow.classList.add('hidden');
-            touchCompassRadarArrow.style.transform = 'translate(-50%, -100%) rotate(0deg)';
-            touchCompassRadarArrow.style.opacity = '0';
-        }
-        if (touchCompassRadarDistance) {
-            touchCompassRadarDistance.classList.add('hidden');
-            touchCompassRadarDistance.textContent = '';
-        }
-
-        // Reset desktop compass
         if (desktopCompassArrow) {
             desktopCompassArrow.style.transform = 'rotate(0deg)';
             desktopCompassArrow.style.opacity = '0.35';
@@ -4579,48 +4525,16 @@ function updateTouchCompass() {
 
     const angle = Number.isFinite(compassState.angle) ? compassState.angle : 0;
     const distance = Number.isFinite(compassState.distance) ? compassState.distance : 0;
-    touchCompassArrow.style.transform = `translate(-50%, -100%) rotate(${angle.toFixed(2)}deg)`;
-    touchCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
-    touchCompassDistance.textContent = formatTouchCompassDistance(distance);
-
-    // Update desktop compass
     if (desktopCompassArrow) {
         desktopCompassArrow.style.transform = `rotate(${angle.toFixed(2)}deg)`;
         desktopCompassArrow.style.opacity = distance <= 0.05 ? '0.35' : '1';
     }
     if (desktopCompassDistance) {
-        desktopCompassDistance.textContent = formatTouchCompassDistance(distance);
+        desktopCompassDistance.textContent = formatCompassDistance(distance);
     }
 
     const radarState = compassState.radar ?? null;
     const radarActive = Boolean(radarState?.active);
-    if (touchCompassRadarArrow) {
-        if (!radarActive) {
-            touchCompassRadarArrow.classList.add('hidden');
-            touchCompassRadarArrow.style.opacity = '0';
-        } else {
-            const radarAngle = Number.isFinite(radarState.angle) ? radarState.angle : 0;
-            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
-            touchCompassRadarArrow.classList.remove('hidden');
-            touchCompassRadarArrow.style.transform = `translate(-50%, -100%) rotate(${radarAngle.toFixed(2)}deg)`;
-            touchCompassRadarArrow.style.opacity = radarDistance <= 0.05 ? '0.35' : '0.95';
-        }
-    }
-    if (touchCompassRadarDistance) {
-        if (!radarActive) {
-            touchCompassRadarDistance.classList.add('hidden');
-            touchCompassRadarDistance.textContent = '';
-        } else {
-            const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
-            touchCompassRadarDistance.classList.remove('hidden');
-            touchCompassRadarDistance.textContent = radarState.mode === 'corrupt'
-                ? 'OUT OF SYNC'
-                : formatTouchCompassDistance(radarDistance);
-            touchCompassRadarDistance.style.opacity = radarDistance <= 0.05 ? '0.35' : '1';
-        }
-    }
-
-    // Update desktop compass radar
     if (desktopCompassRadarArrow) {
         if (!radarActive) {
             desktopCompassRadarArrow.classList.add('hidden');
@@ -4641,92 +4555,71 @@ function updateTouchCompass() {
             const radarDistance = Number.isFinite(radarState.distance) ? radarState.distance : 0;
             desktopCompassRadarDistance.textContent = radarState.mode === 'corrupt'
                 ? 'OUT OF SYNC'
-                : formatTouchCompassDistance(radarDistance);
+                : formatCompassDistance(radarDistance);
         } else {
             desktopCompassRadarDistance.textContent = '';
         }
     }
 }
 
-function installTouchCompass() {
-    if (!touchCompassArrow || !touchCompassDistance) return;
+function installHudCompass() {
+    if (!desktopCompassArrow || !desktopCompassDistance) return;
 
     const step = () => {
-        updateTouchCompass();
+        updateHudCompass();
         requestAnimationFrame(step);
     };
 
     requestAnimationFrame(step);
 }
 
-function installTouchMoveControl() {
-    if (!touchMoveControl || !touchMoveRing || !touchMoveThumb) return;
-
-    const maxThumbOffset = () => touchMoveRing.clientWidth * 0.22;
-
-    const resetTouchControl = () => {
-        activeTouchPointerId = null;
-        touchMoveControl.classList.remove('active');
-        touchMoveThumb.style.transform = 'translate(-50%, -50%)';
-        window.game?.setVirtualInput?.(0, 0);
-    };
-
-    const updateTouchVector = (clientX, clientY) => {
-        const rect = touchMoveRing.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const deltaX = clientX - centerX;
-        const deltaY = clientY - centerY;
-        const radius = Math.max(rect.width * 0.36, 1);
-        const distance = Math.hypot(deltaX, deltaY);
-        const clampRatio = distance > radius ? radius / distance : 1;
-        const clampedX = deltaX * clampRatio;
-        const clampedY = deltaY * clampRatio;
-        const thumbRange = maxThumbOffset();
-        const thumbScale = radius > 0 ? thumbRange / radius : 0;
-
-        touchMoveThumb.style.transform = `translate(calc(-50% + ${clampedX * thumbScale}px), calc(-50% + ${clampedY * thumbScale}px))`;
-        window.game?.setVirtualInput?.(clampedX / radius, clampedY / radius);
-    };
-
-    touchMoveRing.addEventListener('pointerdown', (event) => {
-        activeTouchPointerId = event.pointerId;
-        touchMoveControl.classList.add('active');
-        touchMoveRing.setPointerCapture(event.pointerId);
-        updateTouchVector(event.clientX, event.clientY);
-        event.preventDefault();
-    });
-
-    touchMoveRing.addEventListener('pointermove', (event) => {
-        if (event.pointerId !== activeTouchPointerId) return;
-        updateTouchVector(event.clientX, event.clientY);
-        event.preventDefault();
-    });
-
-    const releaseTouchControl = (event) => {
-        if (event.pointerId !== activeTouchPointerId) return;
-        resetTouchControl();
-    };
-
-    touchMoveRing.addEventListener('pointerup', releaseTouchControl);
-    touchMoveRing.addEventListener('pointercancel', releaseTouchControl);
-    touchMoveRing.addEventListener('lostpointercapture', resetTouchControl);
-}
-
 function syncStageMetrics() {
     if (!gameViewport) return;
 
-    // Set actual window dimensions as CSS variables to override standard dvh/vw on mobile fullscreen
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    const targetRes = state?.settings?.resolutionPreset;
+    if (targetRes && targetRes !== 'auto') {
+        const presets = {
+            'deck': { w: 1280, h: 800 },
+            '720p': { w: 1280, h: 720 },
+            '1080p': { w: 1920, h: 1080 },
+            '1440p': { w: 2560, h: 1440 },
+            '4k': { w: 3840, h: 2160 }
+        };
+        const selected = presets[targetRes];
+        if (selected) {
+            width = selected.w;
+            height = selected.h;
+        }
+    }
+
     document.documentElement.style.setProperty('--vw-actual', `${width}px`);
     document.documentElement.style.setProperty('--vh-actual', `${height}px`);
 
     const rect = gameViewport.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
-    const unit = Math.min(rect.width / DESIGN_STAGE.width, rect.height / DESIGN_STAGE.height);
+    const uiScaleMultiplier = (Number(state?.settings?.uiScale) || 100) / 100;
+    const baseUnit = Math.min(rect.width / DESIGN_STAGE.width, rect.height / DESIGN_STAGE.height);
+    const unit = baseUnit * uiScaleMultiplier;
     gameViewport.style.setProperty('--vu', `${unit}px`);
+
+    const textFloor = Number(state?.settings?.textFloor) || 18;
+    document.documentElement.style.setProperty('--hb-text-floor', `${textFloor}px`);
+
+    // Expose the canonical 1280x800 stage transform for logical-pixel
+    // consumers (archive sims, pointer mapping, safe-frame checks).
+    const stage = computeStageTransform(width, height);
+    window.hbStage = stage;
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty('--stage-scale', String(stage.scale));
+    rootStyle.setProperty('--stage-x', `${stage.offsetX}px`);
+    rootStyle.setProperty('--stage-y', `${stage.offsetY}px`);
+    rootStyle.setProperty('--stage-w', `${stage.stageWidth}px`);
+    rootStyle.setProperty('--stage-h', `${stage.stageHeight}px`);
+    rootStyle.setProperty('--stage-px', `${stage.stageWidth / STAGE_WIDTH}px`);
 }
 
 function refreshGameLayout() {
@@ -4859,7 +4752,7 @@ function showTacticalOverlay({
         loaderBriefingSpeaker.classList.toggle('hidden', !speaker);
     }
     if (loaderBriefingAvatarImg && avatar) {
-        loaderBriefingAvatarImg.src = avatar;
+        loaderBriefingAvatarImg.src = assetUrl(avatar);
     }
     loaderBriefingAvatar?.classList.toggle('hidden', !avatar);
     loadingScreen?.classList.remove('hidden');
@@ -4938,14 +4831,16 @@ const cutsceneImagePreloadCache = new Map();
 const cutsceneVideoPreloadCache = new Map();
 
 function getCutsceneVideoHost() {
-    return document.getElementById('game-container') ?? document.body;
+    return document.getElementById('game-viewport')
+        ?? document.getElementById('game-container')
+        ?? document.body;
 }
 
 function warmCutsceneImage(src) {
     if (!src || cutsceneImagePreloadCache.has(src)) return;
     const image = new Image();
     image.decoding = 'async';
-    image.src = src;
+    image.src = assetUrl(src);
     cutsceneImagePreloadCache.set(src, image);
 }
 
@@ -4961,8 +4856,8 @@ function warmCutsceneVideo(base) {
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    video.poster = `/cutscenes/${base}-poster.jpg`;
-    video.src = source;
+    video.poster = assetUrl(`/cutscenes/${base}-poster.jpg`);
+    video.src = assetUrl(source);
     video.load();
     cutsceneVideoPreloadCache.set(source, video);
 }
@@ -4978,30 +4873,37 @@ const CLASS_INTRO_GIFS = Object.freeze({
     ENGINEER: '/Eng.Intro.gif'
 });
 const CLASS_INTRO_GIF_VISIBLE_MS = 7750;
-const CLASS_INTRO_GIF_LOOP_GUARD_MS = 250; // keep a safety margin before the loop boundary
+const CLASS_INTRO_GIF_LOOP_GUARD_MS = 250;
 
 function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
     const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
     warmClassIntroMedia(playerType);
+    window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
         if (window.skipAllIntro) {
             resolve();
             return;
         }
+        const resumeGame = suspendGameForFullscreenVideo();
+
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Starting intro cutscene sequence for ${playerType}`);
+        }
+        window.AudioManager?.play?.('amb_metal_stress1', { volume: 0.65, bus: 'world', varyPitch: false });
 
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
-        overlay.style.setProperty('--class-intro-poster', `url('/cutscenes/${webmBase}-poster.jpg')`);
+        overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${webmBase}-poster.jpg`)}')`);
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = isTouchDevice() ? 'TAP TO SKIP' : 'PRESS ANY KEY TO SKIP';
+        skipHint.textContent = 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
-        let step = 'gif'; // 'gif' → 'video' → done
+        let step = 'gif';
         let gifTimer = null;
         let guardTimer = null;
         let videoElement = null;
@@ -5022,7 +4924,6 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         function cleanupAndResolve() {
             if (settled) return;
             settled = true;
-            step = 'done';
             clearTimers();
             if (checkSkipInterval) {
                 clearInterval(checkSkipInterval);
@@ -5030,12 +4931,23 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
             window.removeEventListener('keydown', onKey);
             overlay.removeEventListener('pointerup', onPointerUp);
-            if (videoElement) {
-                try { videoElement.pause(); } catch { /* ignore */ }
-            }
             overlay.classList.add('is-closing');
-            window.setTimeout(() => overlay.remove(), 280);
-            resolve();
+
+            window.setTimeout(() => {
+                overlay.style.display = 'none';
+                if (videoElement) {
+                    try {
+                        videoElement.pause();
+                        videoElement.removeAttribute('src');
+                        videoElement.replaceChildren();
+                        videoElement.load();
+                    } catch { /* ignore */ }
+                    videoElement.remove();
+                }
+                overlay.remove();
+                resumeGame();
+                resolve();
+            }, 280);
         }
 
         function onKey(event) {
@@ -5059,7 +4971,6 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
         }, 50);
 
-        // ── Step 1: the class intro GIF, then the launch WebM ──
         function startVideoStep() {
             if (settled || step === 'video') return;
             step = 'video';
@@ -5071,18 +4982,19 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             buildVideo();
         }
 
+        // Preserve the authored GIF → video sequence. Three.js remains
+        // suspended for both stages so GIF decoding does not contend with it.
         gifImg = document.createElement('img');
         gifImg.className = 'class-intro-video';
         gifImg.style.objectFit = 'cover';
         gifImg.alt = '';
-        gifImg.src = gifSrc;
+        gifImg.src = assetUrl(gifSrc);
         gifImg.addEventListener('error', startVideoStep, { once: true });
         overlay.append(gifImg, skipHint);
         host.appendChild(overlay);
         const gifShownAt = performance.now();
         gifTimer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_VISIBLE_MS);
 
-        // Cut to the video right before the GIF would wrap to frame one.
         void getGifDurationMs(gifSrc).then((durationMs) => {
             if (settled || step !== 'gif' || !durationMs) return;
             const elapsed = performance.now() - gifShownAt;
@@ -5090,9 +5002,8 @@ function playClassIntroSequence(playerType = 'SCOUT') {
                 CLASS_INTRO_GIF_VISIBLE_MS,
                 Math.max(0, durationMs - CLASS_INTRO_GIF_LOOP_GUARD_MS)
             );
-            const remaining = safeVisibleMs - elapsed;
             window.clearTimeout(gifTimer);
-            gifTimer = window.setTimeout(startVideoStep, Math.max(0, remaining));
+            gifTimer = window.setTimeout(startVideoStep, Math.max(0, safeVisibleMs - elapsed));
         });
 
         function buildVideo() {
@@ -5100,23 +5011,23 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         videoElement.className = 'class-intro-video';
         videoElement.style.opacity = '0';
         videoElement.playsInline = true;
-        videoElement.muted = true;
+        videoElement.muted = Boolean(window.AudioManager?.globalMuted);
+        videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
         videoElement.autoplay = true;
         videoElement.controls = false;
         videoElement.preload = 'auto';
-        videoElement.poster = `/cutscenes/${webmBase}-poster.jpg`;
+        videoElement.poster = assetUrl(`/cutscenes/${webmBase}-poster.jpg`);
 
         const webmSource = document.createElement('source');
-        webmSource.src = `/cutscenes/${webmBase}.webm`;
+        webmSource.src = assetUrl(`/cutscenes/${webmBase}.webm`);
         webmSource.type = 'video/webm';
 
-        // Keep the GIF asset as preload-only; the visible intro is the WebM
-        // one-shot cutscene so it never loops.
+        // The intro is a one-shot cutscene and never loops.
         if (videoElement.canPlayType('video/webm')) {
             videoElement.append(webmSource);
         } else {
             const mp4Fallback = document.createElement('source');
-            mp4Fallback.src = `/cutscenes/${webmBase}.mp4`;
+            mp4Fallback.src = assetUrl(`/cutscenes/${webmBase}.mp4`);
             mp4Fallback.type = 'video/mp4';
             videoElement.append(mp4Fallback);
         }
@@ -5139,7 +5050,10 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         videoElement.addEventListener('ended', cleanupAndResolve);
         videoElement.addEventListener('error', cleanupAndResolve);
 
-        videoElement.play().catch(cleanupAndResolve);
+        videoElement.play().catch(() => {
+            videoElement.muted = true;
+            return videoElement.play();
+        }).catch(cleanupAndResolve);
         }
     });
 }
@@ -5147,67 +5061,122 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 // Generic fullscreen cutscene video: plays /cutscenes/{base}.webm (mp4
 // fallback, {base}-poster.jpg). Skippable, and resolves immediately when the
 // asset doesn't exist so story beats never stall on missing files.
-function playCutsceneVideo(base) {
+function playCutsceneVideo(base, options = {}) {
+    const { onDoorCutoff = null } = (typeof options === 'object' && options !== null ? options : {});
     warmCutsceneVideo(base);
+    window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
+        const resumeGame = suspendGameForFullscreenVideo();
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Playing cutscene video: ${base}`);
+        }
+
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
-        overlay.style.setProperty('--class-intro-poster', `url('/cutscenes/${base}-poster.jpg')`);
+        if (base === 'DoorIntro' || base.includes('DoorIntro')) {
+            overlay.style.backgroundColor = '#000000';
+            overlay.style.setProperty('--class-intro-poster', 'none');
+        } else {
+            const posterUrl = base.includes('/') || base.endsWith('.mp4') ? '/title_key_art_v2.png' : `/cutscenes/${base}-poster.jpg`;
+            overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(posterUrl)}')`);
+        }
 
         const video = document.createElement('video');
         video.className = 'class-intro-video';
         video.style.opacity = '0';
         video.playsInline = true;
-        video.muted = true;
+        video.muted = Boolean(window.AudioManager?.globalMuted);
+        video.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
         video.autoplay = true;
         video.controls = false;
         video.preload = 'auto';
-        video.poster = `/cutscenes/${base}-poster.jpg`;
 
-        const webm = document.createElement('source');
-        webm.src = `/cutscenes/${base}.webm`;
-        webm.type = 'video/webm';
-        let fallbackSource = webm;
-        if (video.canPlayType('video/webm')) {
-            video.append(webm);
-        } else {
-            const mp4 = document.createElement('source');
-            mp4.src = `/cutscenes/${base}.mp4`;
-            mp4.type = 'video/mp4';
-            video.append(mp4);
-            fallbackSource = mp4;
+        const sources = [];
+        if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
+            sources.push('/DoorIntro.mp4');
+        }
+        if (base.startsWith('/')) {
+            sources.push(base);
+        }
+        sources.push(`/cutscenes/${base}.webm`, `/cutscenes/${base}.mp4`, `/${base}.mp4`, `/${base}.webm`);
+
+        let primarySource = null;
+        for (const src of [...new Set(sources)]) {
+            const sourceEl = document.createElement('source');
+            sourceEl.src = assetUrl(src);
+            if (src.endsWith('.webm')) sourceEl.type = 'video/webm';
+            if (src.endsWith('.mp4')) sourceEl.type = 'video/mp4';
+            video.appendChild(sourceEl);
+            if (!primarySource) primarySource = sourceEl;
         }
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = isTouchDevice() ? 'TAP TO SKIP' : 'PRESS ANY KEY TO SKIP';
+        skipHint.textContent = 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
+        let played = false;
+        let fadingOut = false;
         let guardTimer = 0;
-        const finish = () => {
+
+        const finish = ({ skipped = false } = {}) => {
             if (settled) return;
             settled = true;
             window.clearTimeout(guardTimer);
             window.removeEventListener('keydown', onKey);
-            try { video.pause(); } catch { /* already detached */ }
+            if (typeof onDoorCutoff === 'function') {
+                onDoorCutoff();
+            }
             overlay.classList.add('is-closing');
-            window.setTimeout(() => overlay.remove(), 280);
-            resolve();
+
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                try {
+                    video.pause();
+                    video.removeAttribute('src');
+                    video.replaceChildren();
+                    video.load();
+                } catch { /* ignore */ }
+                video.remove();
+                overlay.remove();
+                resumeGame();
+                resolve({ played, skipped });
+            }, skipped ? 150 : 280);
         };
+
         const onKey = (event) => {
             event.preventDefault();
-            finish();
+            finish({ skipped: true });
         };
+
+        video.addEventListener('timeupdate', () => {
+            if (!fadingOut && Number.isFinite(video.duration) && video.duration > 0) {
+                const doorCutoffTime = (base === 'DoorIntro' || base.includes('DoorIntro') || base.includes('intro'))
+                    ? Math.min(video.duration * 0.40, 3.2)
+                    : (video.duration - 0.5);
+
+                if (video.currentTime >= doorCutoffTime) {
+                    fadingOut = true;
+                    if (typeof onDoorCutoff === 'function') {
+                        onDoorCutoff();
+                    }
+                    setTimeout(() => finish({ skipped: false }), 200);
+                }
+            }
+        });
 
         video.addEventListener('ended', finish);
         video.addEventListener('error', finish);
         video.addEventListener('loadeddata', () => {
+            played = true;
             video.style.opacity = '1';
         }, { once: true });
-        // The selected source erroring means nothing was playable (asset absent).
-        fallbackSource.addEventListener('error', finish);
+
+        if (primarySource) {
+            primarySource.addEventListener('error', finish);
+        }
         overlay.addEventListener('pointerup', finish);
         window.addEventListener('keydown', onKey);
         guardTimer = window.setTimeout(() => {
@@ -5215,14 +5184,173 @@ function playCutsceneVideo(base) {
         }, 4000);
         video.addEventListener('playing', () => {
             window.clearTimeout(guardTimer);
+            played = true;
             video.style.opacity = '1';
         });
 
         overlay.append(video, skipHint);
         host.appendChild(overlay);
-        video.play().catch(finish);
+        video.play().catch(() => {
+            video.muted = true;
+            return video.play();
+        }).catch(finish);
     });
 }
+
+function playCinematicStills(rawSpec = {}) {
+    const spec = normalizeCinematicStillSpec(rawSpec);
+    if (!spec.images.length && !spec.title && !spec.body) {
+        return Promise.resolve({ skipped: false });
+    }
+
+    return new Promise((resolve) => {
+        const host = getCutsceneVideoHost();
+        const overlay = document.createElement('div');
+        overlay.className = `cinematic-still-overlay cinematic-still-overlay--${spec.tone}`;
+        overlay.style.setProperty('--cinematic-still-fit', spec.fit);
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', spec.title);
+
+        const frameA = document.createElement('img');
+        frameA.className = 'cinematic-still-frame is-active';
+        frameA.alt = '';
+        if (spec.images[0]) frameA.src = assetUrl(spec.images[0]);
+
+        const frameB = document.createElement('img');
+        frameB.className = 'cinematic-still-frame';
+        frameB.alt = '';
+        if (spec.images[1]) frameB.src = assetUrl(spec.images[1]);
+
+        const shade = document.createElement('div');
+        shade.className = 'cinematic-still-shade';
+
+        const copy = document.createElement('div');
+        copy.className = 'cinematic-still-copy';
+        const kicker = document.createElement('div');
+        kicker.className = 'cinematic-still-kicker';
+        kicker.textContent = spec.kicker;
+        const title = document.createElement('div');
+        title.className = 'cinematic-still-title';
+        title.textContent = spec.title;
+        const body = document.createElement('div');
+        body.className = 'cinematic-still-body';
+        body.textContent = spec.body;
+        copy.append(kicker, title);
+        if (spec.body) copy.append(body);
+
+        const skip = document.createElement('button');
+        skip.type = 'button';
+        skip.className = 'class-intro-skip cinematic-still-skip';
+        skip.textContent = spec.allowSkip ? 'PRESS ANY KEY TO CONTINUE' : '';
+        skip.disabled = !spec.allowSkip;
+
+        overlay.append(frameA);
+        if (spec.images[1]) overlay.append(frameB);
+        overlay.append(shade, copy, skip);
+        host.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('is-open'));
+
+        let settled = false;
+        let frameTimer = 0;
+        let finishTimer = 0;
+        const finish = (skipped = false) => {
+            if (settled) return;
+            settled = true;
+            window.clearTimeout(frameTimer);
+            window.clearTimeout(finishTimer);
+            window.removeEventListener('keydown', onKey);
+            overlay.removeEventListener('pointerup', onPointer);
+            skip.removeEventListener('click', onSkipClick);
+            overlay.classList.add('is-closing');
+            window.setTimeout(() => overlay.remove(), 320);
+            resolve({ skipped });
+        };
+        const onKey = (event) => {
+            if (!spec.allowSkip) return;
+            event.preventDefault();
+            finish(true);
+        };
+        const onPointer = (event) => {
+            if (!spec.allowSkip) return;
+            event.preventDefault();
+            finish(true);
+        };
+        const onSkipClick = (event) => {
+            event.preventDefault();
+            finish(true);
+        };
+
+        if (spec.allowSkip) {
+            window.addEventListener('keydown', onKey);
+            overlay.addEventListener('pointerup', onPointer);
+            skip.addEventListener('click', onSkipClick);
+            skip.focus({ preventScroll: true });
+        }
+        if (spec.images[1]) {
+            frameTimer = window.setTimeout(() => {
+                frameA.classList.remove('is-active');
+                frameB.classList.add('is-active');
+                overlay.classList.add('is-second-frame');
+            }, Math.min(spec.frameMs, spec.durationMs - 600));
+        }
+        finishTimer = window.setTimeout(() => finish(false), spec.durationMs);
+    });
+}
+
+async function playCinematicBeat({
+    videoBase = null,
+    fallback = null
+} = {}) {
+    if (videoBase) {
+        const result = await playCutsceneVideo(videoBase);
+        if (result?.played || result?.skipped) return result;
+    }
+    return playCinematicStills(fallback ?? {});
+}
+
+let cinematicEventQueue = Promise.resolve();
+const seenSessionCinematicEvents = new Set();
+
+function queueCinematicEvent(options = {}) {
+    cinematicEventQueue = cinematicEventQueue
+        .catch(() => undefined)
+        .then(async () => {
+            window.game?.setCinematicLock?.(true);
+            try {
+                return await playCinematicBeat(options);
+            } finally {
+                window.game?.setCinematicLock?.(false);
+            }
+        });
+    return cinematicEventQueue;
+}
+
+window.addEventListener('cinematic-event', (event) => {
+    const detail = event?.detail ?? {};
+    void queueCinematicEvent({
+        videoBase: detail.videoBase ?? null,
+        fallback: detail.fallback ?? detail
+    });
+});
+
+function playAuthoredEventOnce(eventId, { videoBase = null } = {}) {
+    if (seenSessionCinematicEvents.has(eventId)) return;
+    const fallback = getEventCinematicSpec(eventId);
+    if (!fallback) return;
+    seenSessionCinematicEvents.add(eventId);
+    void queueCinematicEvent({ videoBase, fallback });
+}
+
+window.addEventListener('foundry-discovered', () => {
+    playAuthoredEventOnce('foundry_discovered', { videoBase: 'event-foundry-discovered' });
+});
+window.addEventListener('black-box-recovered', () => {
+    playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });
+});
+window.addEventListener('queen-fight-started', () => {
+    playAuthoredEventOnce('queen_encounter', { videoBase: 'event-queen-encounter' });
+});
 
 // ── Act 2 run intro: the queen replaces the Mothership handshake ──
 function repairInterruptedCaveReveal() {
@@ -5280,6 +5408,7 @@ async function runMissionIntroSequence() {
     missionFlowRunning = true;
     document.body.classList.add('mission-intro-active');
     const game = window.game;
+    let resumeIntroRendering = suspendGameForFullscreenVideo();
     const playerType = getSelectedHeroType();
 
     game?.setInputEnabled?.(false);
@@ -5328,16 +5457,18 @@ async function runMissionIntroSequence() {
             choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
         }
 
+        // The authored cinematic sequence is complete. Resume before the
+        // blast doors reveal the live game world.
+        resumeIntroRendering?.();
+        resumeIntroRendering = null;
+
         if (skipBtn) skipBtn.classList.add('hidden');
 
         if (choice === 'tutorial' && !window.skipAllIntro) {
-            // Reveal HUD/touch elements for in-world tutorial prompts.
+            // Reveal HUD elements for in-world tutorial prompts.
             document.body.classList.remove('mission-intro-active');
             game?.setInputEnabled?.(true);
-            await dialogueManager?.startTutorialSequence({
-                game,
-                touchControlsEnabled: Boolean(state.settings.touchControls)
-            });
+            await dialogueManager?.startTutorialSequence({ game });
         } else {
             document.body.classList.add('hud-hidden');
             await new Promise((resolve) => {
@@ -5348,6 +5479,7 @@ async function runMissionIntroSequence() {
                     },
                     // onOpened: resolve transition promise
                     () => {
+                        game?.openBunkerBlastDoor?.();
                         resolve();
                     }
                 );
@@ -5387,6 +5519,7 @@ async function runMissionIntroSequence() {
         // Start gameplay background music and loop ambience now that intro sequences are finished
         window.AudioManager?.startAmbience?.();
     } finally {
+        resumeIntroRendering?.();
         document.body.classList.remove('mission-intro-active');
         document.body.classList.remove('hud-hidden');
         game?.setInputEnabled?.(true);
@@ -5440,8 +5573,7 @@ if (startBtn) {
                     deferChunkMount: true
                 });
                 document.getElementById('ui').classList.remove('hidden');
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
+                syncHudCompassVisibility();
 
                 const gameContainer = document.getElementById('game-container');
                 const viewport = document.getElementById('game-viewport');
@@ -5492,8 +5624,7 @@ if (dailyOpsBtn) {
                     deferChunkMount: true
                 });
                 document.getElementById('ui')?.classList.remove('hidden');
-                syncTouchSettingsVisibility();
-                syncTouchMoveControlVisibility();
+                syncHudCompassVisibility();
                 const gameContainer = document.getElementById('game-container');
                 const viewport = document.getElementById('game-viewport');
                 if (gameContainer && viewport) {
@@ -5569,6 +5700,516 @@ debugGodModeBtn?.addEventListener('click', () => {
     debugGodModeBtn.classList.toggle('debug-btn--active', debugGodModeActive);
     debugGodModeBtn.textContent = debugGodModeActive ? 'GOD✓' : 'GOD';
     showBiomePrompt(`> DEBUG: GOD MODE ${debugGodModeActive ? 'ONLINE' : 'OFFLINE'}.`);
+});
+
+// ── Dev Console & Steam Test Harness ────────────────────────────
+function logDevConsole(text, type = 'normal') {
+    const logContainer = document.getElementById('dev-console-log');
+    if (!logContainer) return;
+    const line = document.createElement('div');
+    line.className = `dev-log-line ${type}`;
+    line.textContent = text;
+    logContainer.appendChild(line);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+function devUnlockAchievement(key) {
+    if (!key) return 'No achievement key specified.';
+    const def = ACHIEVEMENT_DEFS.find((d) => d.key === key || d.title.toLowerCase() === key.toLowerCase());
+    const targetKey = def ? def.key : key;
+    const targetTitle = def ? def.title : key;
+
+    const state = achievementEngine.getState();
+    state.unlocked[targetKey] = { unlockedAt: Date.now() };
+    saveAchievements(state, localStorage);
+    renderAchievementsModal();
+    updateMenuCommandStatuses();
+
+    window.dispatchEvent(new CustomEvent('achievement-unlocked', {
+        detail: { key: targetKey, title: targetTitle }
+    }));
+    if (window.electronAPI?.unlockAchievement) {
+        window.electronAPI.unlockAchievement(targetKey);
+    }
+    return `Unlocked achievement: ${targetTitle} (${targetKey})`;
+}
+
+function devUnlockAllAchievements() {
+    let count = 0;
+    for (const def of ACHIEVEMENT_DEFS) {
+        devUnlockAchievement(def.key);
+        count++;
+    }
+    return `Unlocked all ${count} achievements locally & sent to Steam.`;
+}
+
+function devUnlockAllCodex() {
+    let count = 0;
+    for (const entry of CODEX_ENTRIES) {
+        discoverCodex(entry.id, { debugUnlocked: true });
+        count++;
+    }
+    updateMenuCommandStatuses();
+    if (!document.getElementById('codex-modal')?.classList.contains('hidden')) renderCodexModal();
+    return `Unlocked all ${count} codex intel records.`;
+}
+
+function devResetAchievements() {
+    const state = achievementEngine.getState();
+    state.unlocked = {};
+    saveAchievements(state, localStorage);
+    renderAchievementsModal();
+    updateMenuCommandStatuses();
+    return 'Cleared all unlocked achievements from local save.';
+}
+
+function devGrantResources() {
+    bankManager.deposit({ tech: 250, coin: 150, med: 75 });
+    bankManager.addShells(75);
+    window.game?.healPlayer?.(99);
+    window.game?.adjustOxygen?.(100);
+    window.game?.renderConsoleBanking?.(window.game?.activeInteractiveConsole);
+    renderFabricationModal();
+    updateMenuCommandStatuses();
+    return 'Granted 250 Tech, 150 Coin, 75 Med, 75 Shells, Max HP & Max O₂.';
+}
+
+function devToggleGodMode() {
+    debugGodModeActive = !debugGodModeActive;
+    window.game?.setGodMode?.(debugGodModeActive);
+    if (debugGodModeBtn) {
+        debugGodModeBtn.classList.toggle('debug-btn--active', debugGodModeActive);
+        debugGodModeBtn.textContent = debugGodModeActive ? 'GOD✓' : 'GOD';
+    }
+    return `God mode ${debugGodModeActive ? 'ONLINE (Invulnerable)' : 'OFFLINE'}.`;
+}
+
+function devHealPlayer() {
+    window.game?.healPlayer?.(999);
+    window.game?.adjustOxygen?.(999);
+    return 'Player fully healed and O₂ refilled.';
+}
+
+function devKillSnails() {
+    const killed = window.game?.purgeHostiles?.() ?? 0;
+    return `Purged hostiles from current sector (${killed} removed).`;
+}
+
+function devLaunchRgb(chapter = null) {
+    closeDevConsoleModal();
+    launchRgb(chapter);
+    return `Launched RGB minigame${chapter ? ` at chapter '${chapter}'` : ''}.`;
+}
+
+function persistSettings() {
+    try {
+        if (state.settings.resolutionPreset) {
+            localStorage.setItem('hb_resolution_preset', state.settings.resolutionPreset);
+        }
+        if (state.settings.uiScale) {
+            localStorage.setItem('hb_ui_scale', String(state.settings.uiScale));
+        }
+        if (state.settings.textFloor) {
+            localStorage.setItem('hb_text_floor', String(state.settings.textFloor));
+        }
+    } catch {
+        // best-effort persistence
+    }
+}
+
+function devSetResolution(preset) {
+    const validPresets = ['auto', 'deck', '720p', '1080p', '1440p', '4k'];
+    const p = String(preset || '').toLowerCase();
+    if (!validPresets.includes(p)) {
+        return `Invalid resolution preset '${preset}'. Valid options: ${validPresets.join(', ')}`;
+    }
+    state.settings.resolutionPreset = p;
+    persistSettings();
+    refreshGameLayout();
+
+    const devSelect = document.getElementById('dev-res-select');
+    if (devSelect) devSelect.value = p;
+    const settingsSelect = document.getElementById('setting-resolution');
+    if (settingsSelect) settingsSelect.value = p;
+
+    return `Target resolution preset set to '${p}'. Layout refreshed.`;
+}
+
+function devSetUiScale(scalePct) {
+    const scale = parseInt(scalePct, 10);
+    if (isNaN(scale) || scale < 80 || scale > 200) {
+        return 'Invalid UI scale. Enter a percentage between 80 and 200.';
+    }
+    state.settings.uiScale = scale;
+    persistSettings();
+    refreshGameLayout();
+
+    const devSelect = document.getElementById('dev-uiscale-select');
+    if (devSelect) devSelect.value = String(scale);
+    const settingsSelect = document.getElementById('setting-ui-scale');
+    if (settingsSelect) settingsSelect.value = String(scale);
+
+    return `UI Accessibility scale set to ${scale}%. Layout refreshed.`;
+}
+
+function devSetTextFloor(px) {
+    const floor = parseInt(px, 10);
+    if (isNaN(floor) || floor < 12 || floor > 36) {
+        return 'Invalid text floor. Enter a pixel value between 12 and 36.';
+    }
+    state.settings.textFloor = floor;
+    persistSettings();
+    refreshGameLayout();
+
+    const devSelect = document.getElementById('dev-textfloor-select');
+    if (devSelect) devSelect.value = String(floor);
+    const settingsSelect = document.getElementById('setting-text-floor');
+    if (settingsSelect) settingsSelect.value = String(floor);
+
+    return `Minimum text floor set to ${floor}px. CSS --hb-text-floor updated.`;
+}
+
+function devGetLayoutMetrics() {
+    const st = window.hbStage || computeStageTransform(window.innerWidth, window.innerHeight);
+    const preset = state.settings.resolutionPreset || 'deck';
+    const uiScale = state.settings.uiScale || 100;
+    const textFloor = state.settings.textFloor || 18;
+    const vu = document.getElementById('game-viewport')?.style.getPropertyValue('--vu') || 'calculated';
+
+    return `STAGE LAYOUT METRICS:\n`
+        + `  Window Size:     ${window.innerWidth} × ${window.innerHeight}\n`
+        + `  Logical Stage:   1280 × 800 (16:10 Deck reference stage)\n`
+        + `  Transform Scale: ${(st.scale ?? 1).toFixed(4)}x\n`
+        + `  Stage Offsets:   X=${(st.offsetX ?? 0).toFixed(1)}px, Y=${(st.offsetY ?? 0).toFixed(1)}px\n`
+        + `  Stage Bounds:    ${(st.stageWidth ?? 1280).toFixed(1)}px × ${(st.stageHeight ?? 800).toFixed(1)}px\n`
+        + `  Viewport Unit:   --vu = ${vu}\n`
+        + `  Min Text Floor:  --hb-text-floor = ${textFloor}px\n`
+        + `  UI Scale Multi:  ${uiScale}%\n`
+        + `  Res Preset:      ${preset}`;
+}
+
+function executeDevCommand(input) {
+    const raw = String(input ?? '').trim();
+    if (!raw) return;
+    logDevConsole(`> ${raw}`, 'system');
+
+    const parts = raw.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const arg = parts.slice(1).join(' ');
+
+    let result;
+    let resultType = 'success';
+
+    switch (cmd) {
+        case 'help':
+        case 'commands':
+        case '?':
+            result = 'Available commands:\n'
+                + '  unlock <key>        - Unlock specific achievement\n'
+                + '  unlock_all          - Unlock all achievements\n'
+                + '  reset_ach           - Clear local achievement unlocks\n'
+                + '  reset_save          - Confirm a full save, RGB, and achievement reset\n'
+                + '  rgb [chapter]       - Launch RGB minigame (parking_lot, warehouse, incident_review, medi_kiosk, server_room, sector_four)\n'
+                + '  resolution <preset> - Set target resolution preset (auto, deck, 720p, 1080p, 1440p, 4k)\n'
+                + '  uiscale <100-150>   - Set UI accessibility scale (%)\n'
+                + '  textfloor <16-24>   - Set minimum text floor font size (px)\n'
+                + '  layout / stage      - Display canonical stage transform & viewport metrics\n'
+                + '  perf / bootlog      - Display boot timings and current renderer workload\n'
+                + '  god                 - Toggle God Mode\n'
+                + '  salvage / +$        - Grant salvage & shells\n'
+                + '  heal                - Refill Health & O₂\n'
+                + '  nuke / kill         - Clear hostiles in current sector\n'
+                + '  steam               - View Steam connection info\n'
+                + '  steamlog            - View Steam startup diagnostics\n'
+                + '  clear / cls         - Clear console log';
+            break;
+        case 'layout':
+        case 'stage':
+        case 'metrics':
+            result = devGetLayoutMetrics();
+            break;
+        case 'perf':
+        case 'bootlog': {
+            const renderer = window.game?.renderer;
+            result = `BOOT / RENDERER DIAGNOSTICS\n${bootDiagnostics
+                .map((entry) => `  +${entry.elapsedMs.toFixed(1)}ms ${entry.phase}${entry.details ? ` ${JSON.stringify(entry.details)}` : ''}`)
+                .join('\n') || '  No boot timing entries recorded.'}\n`
+                + `  Profile: ${window.game?.performanceProfile ?? 'unavailable'}\n`
+                + `  Pixel ratio: ${renderer?.getPixelRatio?.() ?? 'unavailable'}\n`
+                + `  Draw calls: ${renderer?.info?.render?.calls ?? 'unavailable'}\n`
+                + `  Triangles: ${renderer?.info?.render?.triangles ?? 'unavailable'}\n`
+                + `  Textures: ${renderer?.info?.memory?.textures ?? 'unavailable'}`;
+            break;
+        }
+        case 'resolution':
+        case 'res':
+            result = devSetResolution(arg);
+            break;
+        case 'uiscale':
+        case 'scale':
+            result = devSetUiScale(arg);
+            break;
+        case 'textfloor':
+        case 'fontfloor':
+            result = devSetTextFloor(arg);
+            break;
+        case 'unlock':
+        case 'ach':
+        case 'achievement':
+            result = devUnlockAchievement(arg);
+            break;
+        case 'unlock_all':
+        case 'ach_all':
+        case 'unlockall':
+            result = devUnlockAllAchievements();
+            break;
+        case 'codex_all':
+        case 'codexall':
+        case 'unlock_codex':
+            result = devUnlockAllCodex();
+            break;
+        case 'reset_ach':
+        case 'resetach':
+            result = devResetAchievements();
+            break;
+        case 'reset_save':
+        case 'resetsave':
+            closeDevConsoleModal();
+            openFullSaveResetConfirm();
+            result = 'Full save reset confirmation opened.';
+            break;
+        case 'rgb':
+        case 'minigame':
+            result = devLaunchRgb(arg || null);
+            break;
+        case 'god':
+            result = devToggleGodMode();
+            break;
+        case 'salvage':
+        case 'resources':
+        case '+$':
+            result = devGrantResources();
+            break;
+        case 'heal':
+        case 'hp':
+        case 'o2':
+            result = devHealPlayer();
+            break;
+        case 'nuke':
+        case 'kill':
+        case 'kill_all':
+            result = devKillSnails();
+            break;
+        case 'steam':
+            if (window.electronAPI?.getSteamInfo) {
+                Promise.all([
+                    window.electronAPI.getSteamInfo(),
+                    window.electronAPI.getSteamDiagnostics?.()
+                ]).then(([info, diagnostics]) => {
+                    logDevConsole(`Steam Identity: ${JSON.stringify(info, null, 2)}\nDiagnostics: ${JSON.stringify(diagnostics?.init ?? null, null, 2)}\nLog file: ${diagnostics?.logPath ?? 'unavailable'}`, 'system');
+                }).catch((err) => logDevConsole(`Steam diagnostic request failed: ${err?.message ?? err}`, 'error'));
+                result = 'Fetching Steam info...';
+            } else {
+                result = 'Steam API unavailable (running in web browser).';
+            }
+            break;
+        case 'steamlog':
+        case 'steamlogs':
+            if (window.electronAPI?.getSteamDiagnostics) {
+                window.electronAPI.getSteamDiagnostics().then((diagnostics) => {
+                    const lines = diagnostics?.entries?.map((entry) => (
+                        `${entry.timestamp} +${entry.elapsedMs ?? '-'}ms [${entry.level.toUpperCase()}] ${entry.phase}: ${entry.message}`
+                        + (entry.details ? `\n${JSON.stringify(entry.details, null, 2)}` : '')
+                    )) ?? [];
+                    logDevConsole(`STEAM STARTUP DIAGNOSTICS\n${lines.join('\n') || 'No entries recorded.'}\nLog file: ${diagnostics?.logPath ?? 'unavailable'}`, diagnostics?.init?.ok ? 'system' : 'error');
+                }).catch((err) => logDevConsole(`Steam diagnostic request failed: ${err?.message ?? err}`, 'error'));
+                result = 'Fetching Steam startup log...';
+            } else {
+                result = 'Steam diagnostics unavailable (running in web browser).';
+            }
+            break;
+        case 'clear':
+        case 'cls': {
+            const logContainer = document.getElementById('dev-console-log');
+            if (logContainer) logContainer.replaceChildren();
+            logDevConsole('> Console log cleared.', 'system');
+            return;
+        }
+        default:
+            result = `Unknown command '${cmd}'. Type 'help' for command list.`;
+            resultType = 'error';
+            break;
+    }
+
+    logDevConsole(result, resultType);
+}
+
+function openDevConsoleModal() {
+    setDebugMode(true);
+    const modal = document.getElementById('dev-console-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    populateDevAchievementDropdowns();
+    if (window.electronAPI?.getSteamDiagnostics) {
+        window.electronAPI.getSteamDiagnostics().then((diagnostics) => {
+            const init = diagnostics?.init ?? {};
+            const lastEntry = diagnostics?.entries?.at?.(-1);
+            logDevConsole(
+                `Steam startup: ${init.ok ? 'OK' : 'FAILED'} · phase=${init.phase ?? 'unknown'} · ${init.durationMs ?? '?'}ms`
+                + `${lastEntry ? `\nLast event: [${lastEntry.level}] ${lastEntry.phase}: ${lastEntry.message}` : ''}`
+                + `\nType 'steamlog' for the full trace. File: ${diagnostics?.logPath ?? 'unavailable'}`,
+                init.ok ? 'system' : 'error'
+            );
+        }).catch((err) => {
+            logDevConsole(`Steam diagnostics unavailable: ${err?.message ?? err}`, 'error');
+        });
+    }
+
+    const resSelect = document.getElementById('dev-res-select');
+    if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
+    const uiScaleSelect = document.getElementById('dev-uiscale-select');
+    if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
+    const textFloorSelect = document.getElementById('dev-textfloor-select');
+    if (textFloorSelect) textFloorSelect.value = String(state.settings.textFloor || 18);
+
+    const input = document.getElementById('dev-console-input');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+}
+
+function closeDevConsoleModal() {
+    const modal = document.getElementById('dev-console-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+function populateDevAchievementDropdowns() {
+    const toolbarSelect = document.getElementById('debug-achievement-select');
+    const modalSelect = document.getElementById('dev-ach-dropdown');
+    if (toolbarSelect && toolbarSelect.options.length <= 1) {
+        for (const def of ACHIEVEMENT_DEFS) {
+            const opt = document.createElement('option');
+            opt.value = def.key;
+            opt.textContent = `${def.title} (${def.key})`;
+            toolbarSelect.appendChild(opt);
+        }
+    }
+    if (modalSelect && modalSelect.options.length <= 1) {
+        for (const def of ACHIEVEMENT_DEFS) {
+            const opt = document.createElement('option');
+            opt.value = def.key;
+            opt.textContent = `${def.title} (${def.key})`;
+            modalSelect.appendChild(opt);
+        }
+    }
+}
+
+// Dev Console UI Bindings
+document.getElementById('debug-open-console')?.addEventListener('click', openDevConsoleModal);
+document.getElementById('debug-launch-rgb')?.addEventListener('click', () => launchRgb());
+document.getElementById('debug-achievement-select')?.addEventListener('change', (e) => {
+    const key = e.target.value;
+    if (key) {
+        const res = devUnlockAchievement(key);
+        showBiomePrompt(`> DEBUG: ${res}`);
+        e.target.value = '';
+    }
+});
+
+document.getElementById('close-dev-console')?.addEventListener('click', closeDevConsoleModal);
+
+document.getElementById('dev-btn-unlock-ach')?.addEventListener('click', () => {
+    const select = document.getElementById('dev-ach-dropdown');
+    if (select?.value) {
+        const res = devUnlockAchievement(select.value);
+        logDevConsole(res, 'success');
+    } else {
+        logDevConsole('Please select an achievement from the dropdown.', 'error');
+    }
+});
+document.getElementById('debug-unlock-all-ach')?.addEventListener('click', () => {
+    const res = devUnlockAllAchievements();
+    showBiomePrompt(`> DEBUG: ${res}`);
+});
+document.getElementById('debug-unlock-all-codex')?.addEventListener('click', () => {
+    const res = devUnlockAllCodex();
+    showBiomePrompt(`> DEBUG: ${res}`);
+});
+document.getElementById('dev-btn-unlock-all-ach')?.addEventListener('click', () => {
+    const res = devUnlockAllAchievements();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-unlock-all-codex')?.addEventListener('click', () => {
+    const res = devUnlockAllCodex();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-reset-save')?.addEventListener('click', () => {
+    closeDevConsoleModal();
+    openFullSaveResetConfirm();
+});
+document.getElementById('dev-btn-launch-rgb')?.addEventListener('click', () => {
+    const res = devLaunchRgb();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-jump-rgb-chapter')?.addEventListener('click', () => {
+    const select = document.getElementById('dev-rgb-chapter-select');
+    const res = devLaunchRgb(select?.value || null);
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-god')?.addEventListener('click', () => {
+    const res = devToggleGodMode();
+    logDevConsole(res, 'system');
+});
+document.getElementById('dev-btn-resources')?.addEventListener('click', () => {
+    const res = devGrantResources();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-heal')?.addEventListener('click', () => {
+    const res = devHealPlayer();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-nuke')?.addEventListener('click', () => {
+    const res = devKillSnails();
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-res-select')?.addEventListener('change', (e) => {
+    const res = devSetResolution(e.target.value);
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-uiscale-select')?.addEventListener('change', (e) => {
+    const res = devSetUiScale(e.target.value);
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-textfloor-select')?.addEventListener('change', (e) => {
+    const res = devSetTextFloor(e.target.value);
+    logDevConsole(res, 'success');
+});
+document.getElementById('dev-btn-layout')?.addEventListener('click', () => {
+    const res = devGetLayoutMetrics();
+    logDevConsole(res, 'system');
+});
+
+const devConsoleInput = document.getElementById('dev-console-input');
+const devConsoleSubmit = document.getElementById('dev-console-submit');
+
+devConsoleSubmit?.addEventListener('click', () => {
+    if (devConsoleInput) {
+        executeDevCommand(devConsoleInput.value);
+        devConsoleInput.value = '';
+    }
+});
+
+devConsoleInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        executeDevCommand(devConsoleInput.value);
+        devConsoleInput.value = '';
+    }
 });
 
 if (fpsDisplay) {
@@ -5652,13 +6293,20 @@ function openSettingsModal() {
         else abortBtn.classList.add('hidden');
     }
 
-    syncTouchSettingsVisibility();
     settingsPopup.classList.remove('hidden');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
-    if (mainTouchToggle) mainTouchToggle.checked = !!state.settings.touchControls;
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
     if (mainCommentaryToggle) mainCommentaryToggle.checked = !!state.settings.commentary;
+
+    const resSelect = document.getElementById('setting-resolution');
+    if (resSelect) resSelect.value = state.settings.resolutionPreset || 'deck';
+
+    const uiScaleSelect = document.getElementById('setting-ui-scale');
+    if (uiScaleSelect) uiScaleSelect.value = String(state.settings.uiScale || 100);
+
+    const textFloorSelect = document.getElementById('setting-text-floor');
+    if (textFloorSelect) textFloorSelect.value = String(state.settings.textFloor || 18);
 
     const txtSpeedSelect = document.getElementById('setting-text-speed');
     if (txtSpeedSelect) txtSpeedSelect.value = state.settings.textSpeed || 'normal';
@@ -5680,6 +6328,16 @@ function openSettingsModal() {
     setSaveDataOpen(false);
     setResetSaveConfirmOpen(false);
 }
+
+document.getElementById('setting-resolution')?.addEventListener('change', (e) => {
+    devSetResolution(e.target.value);
+});
+document.getElementById('setting-ui-scale')?.addEventListener('change', (e) => {
+    devSetUiScale(e.target.value);
+});
+document.getElementById('setting-text-floor')?.addEventListener('change', (e) => {
+    devSetTextFloor(e.target.value);
+});
 
 if (settingsBtns.length > 0 && settingsPopup) {
     settingsBtns.forEach(btn => {
@@ -5772,12 +6430,14 @@ saveDataCode?.addEventListener('focus', () => {
     });
 });
 
-openResetSaveBtn?.addEventListener('click', () => {
+function openFullSaveResetConfirm() {
     setAudioMixerOpen(false);
     setSaveDataOpen(false);
     setResetSaveConfirmOpen(true);
     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-});
+}
+
+openResetSaveBtn?.addEventListener('click', openFullSaveResetConfirm);
 
 resetSaveCancelBtn?.addEventListener('click', () => {
     setResetSaveConfirmOpen(false);
@@ -5785,6 +6445,13 @@ resetSaveCancelBtn?.addEventListener('click', () => {
 });
 
 resetSaveConfirmBtn?.addEventListener('click', () => {
+    blackBoxStore.clear();
+    if (window.game) {
+        window.game.clearBlackBoxMarker();
+    }
+    if (window.bankManager?.reset) {
+        window.bankManager.reset();
+    }
     const removed = clearSaveData();
     window.AudioManager?.play?.('ui_click', { volume: 0.55 });
     setResetSaveConfirmOpen(false);
@@ -5795,9 +6462,64 @@ resetSaveConfirmBtn?.addEventListener('click', () => {
     window.setTimeout(() => window.location.reload(), 350);
 });
 
-// Global Escape Key Listener for Modals
+function setQuitConfirmOpen(open) {
+    if (!quitConfirmModal) return;
+    quitConfirmModal.classList.toggle('hidden', !open);
+    quitConfirmModal.setAttribute('aria-hidden', String(!open));
+}
+
+function openQuitConfirmModal() {
+    setQuitConfirmOpen(true);
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+}
+
+function executeQuitApplication() {
+    window.AudioManager?.play?.('ui_click', { volume: 0.55 });
+    if (window.electronAPI?.quitApp) {
+        window.electronAPI.quitApp();
+    } else {
+        try {
+            window.close();
+        } catch {
+            window.location.reload();
+        }
+    }
+}
+
+titleQuitBtn?.addEventListener('click', openQuitConfirmModal);
+openQuitConfirmBtn?.addEventListener('click', openQuitConfirmModal);
+quitCancelBtn?.addEventListener('click', () => {
+    setQuitConfirmOpen(false);
+    window.AudioManager?.play?.('ui_click', { volume: 0.45 });
+});
+quitConfirmBtn?.addEventListener('click', executeQuitApplication);
+setupClickOutside('quit-confirm-modal', () => setQuitConfirmOpen(false));
+
+// Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
+    if (event.code === 'Backquote' || event.key === '`' || event.key === '~') {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag === 'input' && document.activeElement?.id !== 'dev-console-input') {
+            return;
+        }
+        if (activeTag === 'textarea') return;
+        event.preventDefault();
+        const devModal = document.getElementById('dev-console-modal');
+        if (devModal && !devModal.classList.contains('hidden')) {
+            closeDevConsoleModal();
+        } else {
+            openDevConsoleModal();
+        }
+        return;
+    }
+
     if (event.key === 'Escape') {
+        const devModal = document.getElementById('dev-console-modal');
+        if (devModal && !devModal.classList.contains('hidden')) {
+            closeDevConsoleModal();
+            event.preventDefault();
+            return;
+        }
         const dialogueModal = document.getElementById('mothership-dialogue');
         if (dialogueModal && !dialogueModal.classList.contains('hidden')) {
             return; // Let DialogueManager handle its own Escape key
@@ -5926,7 +6648,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 // Click Outside Helper to Close Modals
-const setupClickOutside = (modalId, closeAction) => {
+function setupClickOutside(modalId, closeAction) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.addEventListener('click', (event) => {
@@ -5935,7 +6657,9 @@ const setupClickOutside = (modalId, closeAction) => {
             }
         });
     }
-};
+}
+
+setupClickOutside('dev-console-modal', closeDevConsoleModal);
 
 setupClickOutside('about-modal', () => {
     const aboutModal = document.getElementById('about-modal');
@@ -6089,8 +6813,8 @@ function renderFabricationModal() {
         const art = document.createElement('div');
         art.className = 'fab-card__art';
         const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
-        img.addEventListener('error', () => { img.src = '/bunker_junk_rare.png'; }, { once: true });
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
+        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
         art.appendChild(img);
         const rarityTag = document.createElement('span');
         rarityTag.className = 'fab-card__rarity';
@@ -6219,10 +6943,12 @@ function closeFabricationModal() {
 }
 
 function refreshFabAccess() {
+    const fabCmd = document.getElementById('fabrication-command');
+    if (!fabCmd) return;
+    const activated = bankManager.isFoundryActivated();
+    fabCmd.classList.toggle('hidden', !activated);
     const btn = document.getElementById('fabrication-btn');
-    if (!btn) return;
-    document.getElementById('fabrication-command')?.classList.add('hidden');
-    btn.textContent = bankManager.isFoundryActivated() ? '◇ FAB BAY' : '◇ ACTIVATE FAB';
+    if (btn) btn.textContent = '◇ FAB BAY';
     updateMenuCommandStatuses();
 }
 
@@ -6263,6 +6989,39 @@ window.addEventListener('black-box-recovered', () => discoverCodex('black_box'))
 window.addEventListener('elevator-sequence-started', () => discoverCodex('elevator_down'));
 window.addEventListener('codex-discover', (e) => discoverCodex(e?.detail?.id, e?.detail?.metadata));
 
+function openCodexDetailModal(id) {
+    const entry = getCodexEntry(id);
+    if (!entry || !codexStore.has(id)) return;
+
+    const modal = document.getElementById('codex-detail-modal');
+    const kicker = document.getElementById('codex-detail-kicker');
+    const name = document.getElementById('codex-detail-name');
+    const img = document.getElementById('codex-detail-img');
+    const blurb = document.getElementById('codex-detail-blurb');
+
+    if (kicker) kicker.textContent = `❑ ${entry.category} INTEL RECORD`;
+    if (name) name.textContent = entry.name;
+    if (blurb) blurb.textContent = entry.blurb;
+    if (img) {
+        img.src = assetUrl(entry.image || '/favicon.png');
+        img.alt = entry.name;
+    }
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+    AudioManager?.play?.('ui_click', { volume: 0.6 });
+}
+
+function closeCodexDetailModal() {
+    const modal = document.getElementById('codex-detail-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
 function renderCodexModal() {
     const grid = document.getElementById('codex-grid');
     const summary = document.getElementById('codex-summary');
@@ -6279,10 +7038,23 @@ function renderCodexModal() {
         for (const entry of CODEX_ENTRIES.filter((x) => x.category === category)) {
             const known = codexStore.has(entry.id);
             const card = document.createElement('div');
-            card.className = `codex-card${known ? '' : ' codex-card--locked'}`;
-            card.innerHTML = known
-                ? `<div class="codex-card__name">${entry.name}</div><div class="codex-card__blurb">${entry.blurb}</div>`
-                : `<div class="codex-card__name">??? — UNCATALOGUED</div><div class="codex-card__blurb">Encounter this in the field to recover its record.</div>`;
+            card.className = `codex-card${known ? ' codex-card--unlocked' : ' codex-card--locked'}`;
+            if (known) {
+                card.innerHTML = `
+                    <div class="codex-card__header">
+                      <div class="codex-card__name">${entry.name}</div>
+                      <span class="codex-card__icon" title="View Intel Dossier & Artwork">🔍</span>
+                    </div>
+                    <div class="codex-card__blurb">${entry.blurb}</div>
+                    <div class="codex-card__hint">CLICK TO VIEW INTEL DOSSIER & ARTWORK</div>
+                `;
+                card.addEventListener('click', () => openCodexDetailModal(entry.id));
+            } else {
+                card.innerHTML = `
+                    <div class="codex-card__name">??? — UNCATALOGUED</div>
+                    <div class="codex-card__blurb">Encounter this in the field to recover its record.</div>
+                `;
+            }
             section.appendChild(card);
         }
         grid.appendChild(section);
@@ -6299,7 +7071,9 @@ function closeCodexModal() {
 }
 document.getElementById('codex-btn')?.addEventListener('click', openCodexModal);
 document.getElementById('close-codex-modal')?.addEventListener('click', closeCodexModal);
+document.getElementById('close-codex-detail-modal')?.addEventListener('click', closeCodexDetailModal);
 setupClickOutside('codex-modal', closeCodexModal);
+setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
@@ -6515,6 +7289,19 @@ const ACT2_ENDING_TITLES = Object.freeze({
     outed_escape: 'OUTED ESCAPE',
     failed_carrier: 'FAILED CARRIER',
     empty_husk: 'EMPTY HUSK'
+});
+
+const ACT2_ENDING_STILLS = Object.freeze({
+    full_brood: ['/ending_fullbrood_ship.png'],
+    clean_escape: ['/ending_cleanescape_cabin.png'],
+    mixed_crew: ['/ending_mixedcrew_cabin.png'],
+    carriers_bargain: ['/ending_carriersbargain_eggs.png'],
+    scorched_sky: ['/ending_scorchedsky_cockpit.png'],
+    mothership_infection: ['/ach_ending_mothership_infection.jpg'],
+    alien_exodus: ['/ach_ending_alien_exodus.jpg'],
+    outed_escape: ['/ach_ending_outed_escape.jpg'],
+    failed_carrier: ['/ach_ending_failed_carrier.jpg'],
+    empty_husk: ['/ach_ending_empty_husk.jpg']
 });
 
 function formatStoryToken(value = '') {
@@ -6889,6 +7676,25 @@ window.addEventListener('leader-dialogue', (event) => {
     if (beatType === 'advance') {
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.4, playbackRate: 0.9 });
     }
+    if (leaderName === 'Dr. Okonkwo-Vass' && beatType === 'advance' && event?.detail?.stage === 2) {
+        objectiveRegistry.trackObjective({
+            id: 'befriend-a-snail',
+            source: 'camp-quest',
+            label: 'BEFRIEND A SNAIL',
+            current: 0,
+            target: 1
+        });
+    }
+});
+
+document.getElementById('snail-encounter-fight-btn')?.addEventListener('click', () => {
+    window.game?.handleSnailEncounterFight?.();
+});
+document.getElementById('snail-encounter-talk-btn')?.addEventListener('click', () => {
+    window.game?.handleSnailEncounterTalk?.();
+});
+document.getElementById('snail-encounter-flee-btn')?.addEventListener('click', () => {
+    window.game?.handleSnailEncounterFlee?.();
 });
 
 window.addEventListener('camp-final-resolved', (event) => {
@@ -7030,20 +7836,41 @@ async function runAct2DepartureSequence(detail = {}) {
     const vector = detail.endingVector ?? game?.act2?.getEndingVector?.() ?? act2Manager?.getEndingVector?.();
     const ending = vector?.ending ?? null;
     const videoBase = ACT2_ENDING_CUTSCENES[ending] ?? 'act3-departure';
+    const classType = game?.playerType ?? getSelectedHeroType();
     recordAchievementRunEnd({
         ...(detail.runStats ?? game?.getRunStats?.() ?? {}),
         outcome: 'victory',
         ending,
         runMs: Date.now() - runStartTime,
-        classType: game?.playerType ?? getSelectedHeroType()
+        classType
     }, { delayMs: 900 });
+    if (window.electronAPI?.requestSteamPromoGrant) {
+        window.electronAPI.requestSteamPromoGrant(classType)
+            .then((result) => {
+                (result?.granted ?? []).forEach((item) => showSteamDropToast(item.itemdefid, item.quantity));
+            })
+            .catch((err) => {
+                console.log(`[steam] victory promo grant skipped: ${err?.message ?? err}`);
+            });
+    }
     game?.setCinematicLock?.(true);
     AudioManager.play('door_gears_spin', { volume: 0.5, playbackRate: 0.7 });
     await dialogueManager?.openBriefTransmission({
-        playerType: game?.playerType ?? getSelectedHeroType(),
+        playerType: classType,
         lines: [...getAct2EndingLines(ending)]
     });
-    await playCutsceneVideo(videoBase);
+    await playCinematicBeat({
+        videoBase,
+        fallback: {
+            id: `ending-${ending ?? 'departure'}`,
+            kicker: 'ENDING VECTOR // RECORDED',
+            title: ACT2_ENDING_TITLES[ending] ?? 'THE VESSEL CLEARS THE ICE',
+            body: 'The manifest is sealed. Everything aboard will live with the choice.',
+            images: ACT2_ENDING_STILLS[ending] ?? ['/ship_wreckage.png'],
+            durationMs: 4200,
+            tone: 'ending'
+        }
+    });
     await showActThreeTeaseCard(ending);
     game?.setCinematicLock?.(false);
     returnToMainMenuFromRun({ doorKey: 'lose' });
@@ -7133,12 +7960,80 @@ function syncEquippedWeaponLabel() {
     if (titleEl) titleEl.textContent = loadout.getEquippedLabel(fabricator);
 }
 
-function renderRosterModal() {
+const TACTICAL_CALLSIGNS = Object.freeze([
+    'VORTEX-7', 'PHANTOM-9', 'SPECTRE-3', 'GHOST-1', 'CYPHER-5',
+    'VIPER-4', 'TITAN-2', 'APEX-8', 'NEXUS-6', 'ZERO-9', 'HAWK-3',
+    'SHADOW-5', 'RAVEN-7', 'STRIKER-4', 'BUNKER-1'
+]);
+
+function renderRosterModal(mode = 'continue') {
     const grid = document.getElementById('roster-weapon-grid');
     if (!grid) return;
     const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    setTxt('roster-callsign', profile.getCallsign());
+    const titleEl = document.getElementById('roster-title-label');
+    const confirmBtn = document.getElementById('roster-confirm-btn');
+    const callsignInput = document.getElementById('roster-callsign-input');
+    const randomizeBtn = document.getElementById('roster-randomize-btn');
+
+    if (titleEl) {
+        titleEl.textContent = mode === 'new_game'
+            ? 'NEW OPERATOR REGISTRATION'
+            : '▣ OPERATOR DOSSIER // SAVED RUN TRACKER';
+    }
+
+    if (confirmBtn) {
+        confirmBtn.textContent = mode === 'new_game'
+            ? 'CONFIRM CALLSIGN & DEPLOY'
+            : 'CONTINUE DEPLOYMENT';
+    }
+
+    if (callsignInput) {
+        callsignInput.value = profile.getCallsign();
+        callsignInput.oninput = (e) => {
+            const clean = profile.setCallsign(e.target.value);
+            e.target.value = clean;
+        };
+    }
+
+    if (randomizeBtn && !randomizeBtn._wired) {
+        randomizeBtn._wired = true;
+        randomizeBtn.addEventListener('click', () => {
+            const pick = TACTICAL_CALLSIGNS[Math.floor(Math.random() * TACTICAL_CALLSIGNS.length)];
+            profile.setCallsign(pick);
+            if (callsignInput) callsignInput.value = pick;
+            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+        });
+    }
+
+    if (confirmBtn && !confirmBtn._wired) {
+        confirmBtn._wired = true;
+        confirmBtn.addEventListener('click', () => {
+            const modal = document.getElementById('roster-modal');
+            if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+            window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+        });
+    }
+
     setTxt('roster-id', profile.getProfileId());
+
+    // Populate Run Telemetry stats
+    try {
+        const stats = window.game?.getRunStats?.() ?? {};
+        const bbState = blackBoxStore.load();
+        const depthVal = stats.depthTier ?? 0;
+        const distVal = stats.distanceTravelled ?? 0;
+        const killVal = stats.snailsKilled ?? 0;
+
+        setTxt('roster-stat-depth', `SECTOR ${depthVal}`);
+        setTxt('roster-stat-distance', `${distVal}u`);
+        setTxt('roster-stat-kills', `${killVal} HOSTILES`);
+        setTxt('roster-stat-blackbox', bbState?.active ? `RECOVERABLE (SECTOR ${bbState.depth ?? 0})` : 'NONE');
+    } catch {
+        setTxt('roster-stat-depth', 'SECTOR 0');
+        setTxt('roster-stat-distance', '0u');
+        setTxt('roster-stat-kills', '0 HOSTILES');
+        setTxt('roster-stat-blackbox', 'NONE');
+    }
 
     // Render equipped Steam cosmetics
     const patchId = localStorage.getItem('hb_equipped_patch');
@@ -7164,8 +8059,8 @@ function renderRosterModal() {
         const art = document.createElement('div');
         art.className = 'roster-weapon__art';
         const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = recipe.art;
-        img.addEventListener('error', () => { img.src = '/bunker_junk_rare.png'; }, { once: true });
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
+        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
         art.appendChild(img);
         card.appendChild(art);
 
@@ -7186,7 +8081,7 @@ function renderRosterModal() {
                 if (loadout.equip(recipe.id, fabricator)) {
                     window.AudioManager?.play?.('ui_click', { volume: 0.5 });
                     syncEquippedWeaponLabel();
-                    renderRosterModal();
+                    renderRosterModal(mode);
                 } else {
                     window.AudioManager?.play?.('ui_error', { volume: 0.5 });
                 }
@@ -7273,15 +8168,6 @@ if (mainFsToggle) {
     });
 }
 
-if (mainTouchToggle) {
-    mainTouchToggle.addEventListener('change', (e) => {
-        state.settings.touchControls = e.target.checked;
-        e.target.checked = state.settings.touchControls;
-        localStorage.setItem('hunker_touch_controls_enabled', String(state.settings.touchControls));
-        syncTouchMoveControlVisibility();
-    });
-}
-
 if (mainCommentaryToggle) {
     mainCommentaryToggle.addEventListener('change', (e) => {
         state.settings.commentary = e.target.checked;
@@ -7299,18 +8185,41 @@ function getDoorImage(key) {
         'ENGINEER': '/door_cryo.png'
     };
     const SPECIAL_DOORS = {
-        'base': '/door.webp',
+        'base': '/door_biomech_v2.webp',
         'win': '/door_alien.png',
         'lose': '/door_rust.png'
     };
-    if (key === 'win') return SPECIAL_DOORS.win;
-    if (key === 'lose') return SPECIAL_DOORS.lose;
-    if (key === 'base') return SPECIAL_DOORS.base;
-    if (CLASS_DOORS[key]) return CLASS_DOORS[key];
+    if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
+    if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
+    if (key === 'base') return assetUrl(SPECIAL_DOORS.base);
+    if (CLASS_DOORS[key]) return assetUrl(CLASS_DOORS[key]);
 
     // Automatically determine door image based on active/preview class
     const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
-    return CLASS_DOORS[activeClass] || SPECIAL_DOORS.base;
+    return assetUrl(CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
+}
+
+function preloadDoorAssets() {
+    const doorImages = [
+        '/door_biomech_v2.webp',
+        '/door_bio.png',
+        '/door_nuclear.png',
+        '/door_cryo.png',
+        '/door_alien.png',
+        '/door_rust.png',
+        '/ship_wreckage.png'
+    ];
+
+    for (const src of doorImages) {
+        const img = new Image();
+        img.src = assetUrl(src);
+    }
+
+    try {
+        AudioManager.preload?.(['ui_boot1', 'door_slam_vertical', 'door_gears_spin', 'door_slide_horiz']);
+    } catch {
+        // best-effort audio preload
+    }
 }
 
 function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
@@ -7326,7 +8235,11 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     }
 
     const doorImg = getDoorImage(doorKey);
+    const preloader = new Image();
+    preloader.src = doorImg;
     overlay.style.setProperty('--door-bg-image', `url('${doorImg}')`);
+
+    syncStageMetrics();
 
     // 1. Prepare for vertical close
     overlay.classList.add('visible');
@@ -7336,11 +8249,13 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     // Force reflow
     void overlay.offsetWidth;
 
-    // 2. Start closing
+    // 2. Start closing after double RAF frame-settle
     requestAnimationFrame(() => {
-        overlay.classList.add('active');
-        AudioManager.play('door_slam_vertical', { volume: 0.4 });
-        AudioManager.play('door_gears_spin', { volume: 0.25 });
+        requestAnimationFrame(() => {
+            overlay.classList.add('active');
+            AudioManager.play('door_slam_vertical', { volume: 0.4 });
+            AudioManager.play('door_gears_spin', { volume: 0.25 });
+        });
     });
 
     // 3. Once closed, swap content and prepare horizontal open
@@ -7356,19 +8271,23 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
             // Force reflow
             void overlay.offsetWidth;
 
-            // 4. Start opening after a small "hold" gap
-            setTimeout(() => {
-                spawnSmoke(0, 0, 30, false); // Separation smoke
-                overlay.classList.add('active');
-                AudioManager.play('door_slide_horiz', { volume: 0.4 });
-                AudioManager.play('door_gears_spin', { volume: 0.25 });
-                if (onOpened) onOpened();
-            }, openingHoldMs);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    // 4. Start opening after a small "hold" gap
+                    setTimeout(() => {
+                        spawnSmoke(0, 0, 30, false); // Separation smoke
+                        overlay.classList.add('active');
+                        AudioManager.play('door_slide_horiz', { volume: 0.4 });
+                        AudioManager.play('door_gears_spin', { volume: 0.25 });
+                        if (onOpened) onOpened();
+                    }, openingHoldMs);
 
-            // 5. Cleanup
-            setTimeout(() => {
-                overlay.classList.remove('visible', 'opening-h', 'active');
-            }, openingHoldMs + 900);
+                    // 5. Cleanup
+                    setTimeout(() => {
+                        overlay.classList.remove('visible', 'opening-h', 'active');
+                    }, openingHoldMs + 900);
+                });
+            });
         };
 
         if (waitForClosedWork) {
@@ -7421,12 +8340,7 @@ const previewSprite = document.getElementById('char-preview-sprite');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
 const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
-const PREVIEW_SPRITE_COLUMNS = 4;
-const PREVIEW_SPRITE_ROWS = 4;
-const PREVIEW_WALK_FRAME_COUNT = 2;
-const PREVIEW_FRAME_MS = 140;
-const PREVIEW_FRONT_ROW = 3;
-const PREVIEW_FRONT_BASE_COLUMN = 0;
+const PREVIEW_FRAME_MS = 110;
 const PREVIEW_DOOR_CLOSE_MS = 360;
 const PREVIEW_DOOR_HOLD_MS = 220;
 const PREVIEW_DOOR_OPEN_MS = 520;
@@ -7448,13 +8362,9 @@ charCards.forEach((card) => {
     });
 });
 
-const heroData = {
-    'SCOUT': { name: 'SCOUT', sprite: '/Scout.full.jpeg' },
-    'TANK': { name: 'TANK', sprite: '/Tank.full.jpeg' },
-    'ENGINEER': { name: 'ENGINEER', sprite: '/Eng.Full.jpeg' }
-};
+const heroData = PLAYER_SPRITE_LAYOUTS;
 
-function getPreviewSpriteImage(path) {
+function getPreviewSpriteImage(path, layout) {
     if (!path) return Promise.resolve(null);
 
     const cached = previewSpriteImages.get(path);
@@ -7489,11 +8399,12 @@ function getPreviewSpriteImage(path) {
 
             ctx.putImageData(imgData, 0, 0);
 
-            previewSpriteImages.set(path, canvas);
-            resolve(canvas);
+            const runtimeCanvas = repackGeneratedSpriteAtlas(canvas, layout);
+            previewSpriteImages.set(path, runtimeCanvas);
+            resolve(runtimeCanvas);
         };
         image.onerror = reject;
-        image.src = path;
+        image.src = assetUrl(path);
     });
 
     previewSpriteImages.set(path, imagePromise);
@@ -7504,14 +8415,15 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
     const data = heroData[type];
     if (!data || !previewSprite || !previewSpriteContext) return;
 
-    const image = await getPreviewSpriteImage(data.sprite).catch(() => null);
-    if (!image || !heroData[type] || heroData[type].sprite !== data.sprite) return;
+    const image = await getPreviewSpriteImage(data.path, data).catch(() => null);
+    if (!image || !heroData[type] || heroData[type].path !== data.path) return;
 
-    const frameWidth = Math.floor(image.width / PREVIEW_SPRITE_COLUMNS);
-    const frameHeight = Math.floor(image.height / PREVIEW_SPRITE_ROWS);
-    const walkFrame = ((frameIndex % PREVIEW_WALK_FRAME_COUNT) + PREVIEW_WALK_FRAME_COUNT) % PREVIEW_WALK_FRAME_COUNT;
-    const sourceX = (PREVIEW_FRONT_BASE_COLUMN + walkFrame) * frameWidth;
-    const sourceY = PREVIEW_FRONT_ROW * frameHeight;
+    const frameWidth = Math.floor(image.width / data.columns);
+    const frameHeight = Math.floor(image.height / data.rows);
+    const walkFrame = ((frameIndex % data.walkFrames) + data.walkFrames) % data.walkFrames;
+    const previewCell = data.directionCells[data.previewDirection];
+    const sourceX = (previewCell.baseColumn + walkFrame) * frameWidth;
+    const sourceY = previewCell.row * frameHeight;
 
     if (previewSprite.width !== frameWidth || previewSprite.height !== frameHeight) {
         previewSprite.width = frameWidth;
@@ -7582,7 +8494,8 @@ function startHeroPreviewAnimation() {
     if (!previewSprite || previewAnimationTimer !== null) return;
 
     previewAnimationTimer = window.setInterval(() => {
-        previewFrameIndex = (previewFrameIndex + 1) % PREVIEW_WALK_FRAME_COUNT;
+        const frameCount = getPlayerSpriteLayout(activePreviewType).walkFrames;
+        previewFrameIndex = (previewFrameIndex + 1) % frameCount;
         void renderPreviewFrame(activePreviewType, previewFrameIndex);
     }, PREVIEW_FRAME_MS);
 }
@@ -7738,9 +8651,6 @@ function initTacticalCursor() {
     let curScale = 1.0;
     const LERP_FACTOR = 0.15; // authentic retro mechanical delay
     let hasMoved = false;
-    let touchFadeTimeout = null;
-
-    let lastTouchTime = 0;
     const isInsideGameViewport = (clientX, clientY) => {
         const rect = gameViewport?.getBoundingClientRect();
         return !!rect
@@ -7751,9 +8661,6 @@ function initTacticalCursor() {
     };
 
     window.addEventListener('mousemove', (e) => {
-        // Ignore synthetic mousemove events triggered by touchscreen touch/taps
-        if (Date.now() - lastTouchTime < 1000) return;
-
         // Ensure clientX and clientY are valid, finite numbers
         if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
         if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
@@ -7772,71 +8679,11 @@ function initTacticalCursor() {
             return;
         }
 
-        // Ensure cursor is visible on desktop move (clearing touch fade states)
         cursor.classList.remove('cursor-fade-out');
         targetScale = 1.0;
-        if (touchFadeTimeout) {
-            clearTimeout(touchFadeTimeout);
-            touchFadeTimeout = null;
-        }
 
         if (!hasMoved) hasMoved = true;
         document.documentElement.classList.add('custom-cursor-enabled');
-    }, { passive: true });
-
-    // Instantly support touchscreen interaction: show cursor on tap/drag and fade it out nicely
-    window.addEventListener('touchstart', (e) => {
-        lastTouchTime = Date.now();
-        if (e.touches && e.touches[0]) {
-            const touch = e.touches[0];
-
-            // Snap position instantly to tapped coordinate to avoid sliding from previous location
-            mouseX = touch.clientX;
-            mouseY = touch.clientY;
-            curX = mouseX;
-            curY = mouseY;
-
-            hasMoved = true;
-            document.documentElement.classList.add('custom-cursor-enabled');
-            cursor.classList.remove('cursor-fade-out');
-            targetScale = 0.72; // Snappy touch tap compression
-
-            if (touchFadeTimeout) {
-                clearTimeout(touchFadeTimeout);
-            }
-
-            // Fade out cursor after a short delay following tap
-            touchFadeTimeout = setTimeout(() => {
-                cursor.classList.add('cursor-fade-out');
-                targetScale = 0.65; // Collapse scale on fade-out
-            }, 450);
-        }
-    }, { passive: true });
-
-    window.addEventListener('touchmove', (e) => {
-        lastTouchTime = Date.now();
-        if (e.touches && e.touches[0]) {
-            const touch = e.touches[0];
-            mouseX = touch.clientX;
-            mouseY = touch.clientY;
-
-            cursor.classList.remove('cursor-fade-out');
-            targetScale = 1.0; // scale up to 1.0 during active touch dragging
-            if (touchFadeTimeout) {
-                clearTimeout(touchFadeTimeout);
-            }
-        }
-    }, { passive: true });
-
-    window.addEventListener('touchend', () => {
-        lastTouchTime = Date.now();
-        if (touchFadeTimeout) {
-            clearTimeout(touchFadeTimeout);
-        }
-        touchFadeTimeout = setTimeout(() => {
-            cursor.classList.add('cursor-fade-out');
-            targetScale = 0.65; // Collapse scale on fade-out
-        }, 300);
     }, { passive: true });
 
     function updateCursorPosition() {
@@ -7853,7 +8700,6 @@ function initTacticalCursor() {
     requestAnimationFrame(updateCursorPosition);
 
     window.addEventListener('pointerdown', (e) => {
-        // Skip touchpointerdown events as touchscreen taps are custom-scaled via touchstart
         if (e.pointerType === 'touch') return;
 
         cursor.classList.add('cursor-clicking');
@@ -7906,17 +8752,17 @@ function initTacticalCursor() {
 
 // Initial State Setup
 document.addEventListener('DOMContentLoaded', async () => {
+    traceBootPhase('dom-content-loaded', {
+        electron: Boolean(window.electronAPI),
+        devicePixelRatio: window.devicePixelRatio
+    });
+    startBootLongTaskDiagnostics();
     window.AudioManager = AudioManager; // Expose globally for the 3D engine/Telemeters
+    preloadDoorAssets();
     initTacticalCursor();
-    installOrientationInputLock();
     installStageLayoutSync();
-    setTouchDeviceMode();
-    installTouchMoveControl();
-    installTouchCompass();
+    installHudCompass();
     window.addEventListener('resize', refreshGameLayout);
-    window.addEventListener('orientationchange', refreshGameLayout);
-    window.addEventListener('resize', setTouchDeviceMode);
-    window.addEventListener('orientationchange', setTouchDeviceMode);
 
     setDebugMode(false);
     installAudioMixerControls();
@@ -7925,18 +8771,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadKeyBindings();
     setupControlsModal();
     refreshCharBestScores();
+    refreshCareerStats();
     updateDailyOpsUI();
     updateMenuCommandStatuses();
 
-    const storedTouchControls = localStorage.getItem('hunker_touch_controls_enabled');
-    if (storedTouchControls !== null) {
-        state.settings.touchControls = storedTouchControls === 'true';
-    } else {
-        state.settings.touchControls = isTouchDevice();
-    }
-    if (mainTouchToggle) {
-        mainTouchToggle.checked = !!state.settings.touchControls;
-    }
+    // Touch controls were removed with the Steam Deck-first migration; clear
+    // any persisted preference so stale saves don't carry dead settings.
+    localStorage.removeItem('hunker_touch_controls_enabled');
 
     const storedNightVision = localStorage.getItem('hunker_nightvision_enabled');
     if (storedNightVision !== null) {
@@ -7987,8 +8828,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Hero portraits
         if (name.includes('scout.full') || name.includes('scout_ship')) return 'ESTABLISHING FAST RECON SCOUT DATA-LINK';
-        if (name.includes('tank.full') || name.includes('tank_ship')) return 'BOOTING HEAVY EXOSUIT STRENGTH BUFFERS';
-        if (name.includes('eng.full') || name.includes('engineer_ship')) return 'UPLOADING NANOBOT FABRICATOR SUB-ROUTINES';
+        if (name.includes('tank.full') || name.includes('tank.walk') || name.includes('tank_ship')) return 'BOOTING HEAVY EXOSUIT STRENGTH BUFFERS';
+        if (name.includes('eng.full') || name.includes('eng.walk') || name.includes('engineer_ship')) return 'UPLOADING NANOBOT FABRICATOR SUB-ROUTINES';
 
         // Audio / Backgrounds
         if (name.includes('.mp3') || name.includes('.wav')) return 'STABILIZING TACTICAL AUDIO MATRIX FEED';
@@ -8018,9 +8859,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/module_hull_matrix.png',
             '/module_radar_dish.png',
             '/module_reactor_compressor.png',
-            '/Scout.full.jpeg',
-            '/Tank.full.jpeg',
-            '/Eng.Full.jpeg'
+            PLAYER_SPRITE_LAYOUTS.SCOUT.path,
+            PLAYER_SPRITE_LAYOUTS.TANK.path,
+            PLAYER_SPRITE_LAYOUTS.ENGINEER.path
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
@@ -8089,16 +8930,53 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (mainDebugToggle) mainDebugToggle.checked = false;
 
     // Check if player has active save data to enable CONTINUE
-    const hasSave = hasAnyUnlock(achievementEngine.getState()) || localStorage.getItem('hb_profile_v1') !== null;
-    if (titleContinueBtn) {
-        titleContinueBtn.disabled = !hasSave;
-    }
+    const checkHasSaveData = () => {
+        try {
+            const bankState = window.bankManager?.getState?.() ?? {};
+            const hasBanked = (Number(bankState.tech) > 0 || Number(bankState.coin) > 0 || Number(bankState.med) > 0);
+            const hasUnlocks = hasAnyUnlock(getAchievementProgress());
+            const hasBlackBox = Boolean(blackBoxStore.load()?.active);
+            const hasRunStats = localStorage.getItem('hb_run_stats_v1') !== null || localStorage.getItem('hb_bank_v1') !== null;
+            return hasBanked || hasUnlocks || hasBlackBox || hasRunStats;
+        } catch {
+            return false;
+        }
+    };
+
+    const updateContinueButtonState = () => {
+        const hasSave = checkHasSaveData();
+        if (titleContinueBtn) {
+            titleContinueBtn.disabled = !hasSave;
+            titleContinueBtn.classList.toggle('disabled', !hasSave);
+            titleContinueBtn.classList.toggle('hidden', !hasSave);
+            titleContinueBtn.style.display = hasSave ? '' : 'none';
+        }
+    };
+    updateContinueButtonState();
 
     if (titleNewRunBtn) {
-        titleNewRunBtn.addEventListener('click', transitionFromTitleToMenu);
+        titleNewRunBtn.addEventListener('click', () => {
+            clearSaveData();
+            blackBoxStore.clear();
+            if (window.game) {
+                window.game.clearBlackBoxMarker();
+            }
+            updateContinueButtonState();
+            transitionFromTitleToMenu();
+            renderRosterModal('new_game');
+            const modal = document.getElementById('roster-modal');
+            if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+            document.getElementById('roster-callsign-input')?.focus?.();
+        });
     }
     if (titleContinueBtn) {
-        titleContinueBtn.addEventListener('click', transitionFromTitleToMenu);
+        titleContinueBtn.addEventListener('click', () => {
+            if (!checkHasSaveData()) return;
+            transitionFromTitleToMenu();
+            renderRosterModal('continue');
+            const modal = document.getElementById('roster-modal');
+            if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+        });
     }
     if (titleAchievementsBtn) {
         titleAchievementsBtn.addEventListener('click', openAchievementsModal);
@@ -8159,8 +9037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    syncTouchSettingsVisibility();
-    syncTouchMoveControlVisibility();
+    syncHudCompassVisibility();
 
     let gameInitPromise = null;
 
@@ -8169,6 +9046,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (gameInitPromise) return gameInitPromise;
 
         gameInitPromise = (async () => {
+            traceBootPhase('gameplay-assets-start', { targetType });
             const gameplayManifest = {
                 images: [
                     '/cybersnail.png',
@@ -8259,9 +9137,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> INITIALIZING TACTICAL EXOSUIT CORE... (${Math.round(progress)}%)<br><span style="font-size: var(--font-xs); color: var(--text-muted);">> ${msg}...</span></div>`;
                 }
             });
+            traceBootPhase('gameplay-assets-ready', {
+                images: gameplayManifest.images.length,
+                audio: gameplayManifest.audio.length
+            });
 
+            traceBootPhase('three-module-import-start');
             const { ThreeGame } = await import('./src/threeGame.js');
+            traceBootPhase('three-module-import-ready');
             try {
+                traceBootPhase('three-constructor-start', { targetType });
                 window.game = new ThreeGame({
                     parent: 'game-container',
                     playerType: targetType,
@@ -8271,6 +9156,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     act2Manager
                 });
                 window.game.nightVision = state.settings.nightVision;
+                traceBootPhase('three-constructor-ready', {
+                    pixelRatio: window.game.renderer?.getPixelRatio?.(),
+                    profile: window.game.performanceProfile
+                });
             } catch (err) {
                 console.error('[ThreeGame init failed]', err);
                 const loaderTitle = document.querySelector('.loader-title');
@@ -8299,6 +9188,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             window.game?.emitVitalsState?.();
             ensureMissionManagers();
+            traceBootPhase('game-initialized');
 
             return window.game;
         })();
@@ -8309,97 +9199,130 @@ document.addEventListener('DOMContentLoaded', async () => {
     const maxLogs = 5;
     const logs = ['CONNECTING TO TACTICAL NETWORK...'];
 
-    await AudioManager.loadAssets(manifest, (progress, itemName) => {
-        if (loaderBar) loaderBar.style.width = `${progress}%`;
-        if (loaderStatus && itemName) {
-            const msg = getLoadingMessageForAsset(itemName);
-            logs.push(`> ${msg}...`);
+    const renderLoaderLogs = (newLog = null) => {
+        if (!loaderStatus) return;
+        if (newLog && !logs.includes(newLog)) {
+            logs.push(newLog);
             if (logs.length > maxLogs) {
                 logs.shift();
             }
-            loaderStatus.innerHTML = logs.map((log, idx) => {
-                const distance = logs.length - 1 - idx;
-                const opacities = [1.0, 0.65, 0.4, 0.2, 0.08];
-                const opacity = opacities[distance] ?? 0.05;
-                return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.15s ease;">${log}</div>`;
-            }).join('');
         }
-    });
-
-    if (loaderBar) loaderBar.style.width = `100%`;
-    if (loaderStatus) {
-        loaderStatus.style.opacity = 0;
-        setTimeout(() => {
-            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK OR PRESS ANY KEY TO INITIALIZE ]</div>`;
-            loaderStatus.style.opacity = 1;
-        }, 220);
-    }
-
-    let clickInitializing = false;
-    const triggerBoot = async () => {
-        if (clickInitializing) return;
-        if (AudioManager.isUnlocked && window.game) return;
-
-        clickInitializing = true;
-
-        if (loaderStatus) {
-            loaderStatus.innerHTML = `<div style="opacity: 1.0; animation: tactical-pulse 1s infinite ease-in-out;">> BOOTING TACTICAL WEBGL CORE...</div>`;
-        }
-
-        try {
-            await AudioManager.unlock();
-            const initialSelected = document.querySelector('.char-card.selected');
-            const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
-            await initializeGame(initialType);
-        } catch (err) {
-            console.error('Initialization failed:', err);
-            clickInitializing = false;
-            if (loaderStatus) {
-                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ CLICK OR PRESS ANY KEY TO RETRY INITIALIZATION ]</div>`;
-            }
-            return;
-        }
-
-        triggerDoorTransition(
-            () => {
-                if (loadingScreen) loadingScreen.classList.add('hidden');
-                if (splash) splash.classList.remove('hidden');
-                setAppPhase('splash');
-                window.game?.setLoadingPaused?.(false);
-                transitionToMenuMusic();
-            },
-            null,
-            'base'
-        );
+        loaderStatus.innerHTML = logs.map((log, idx) => {
+            const distance = logs.length - 1 - idx;
+            const opacities = [1.0, 0.65, 0.4, 0.2, 0.08];
+            const opacity = opacities[distance] ?? 0.05;
+            return `<div style="opacity: ${opacity}; line-height: 1.4; transition: opacity 0.15s ease;">${log}</div>`;
+        }).join('');
     };
 
-    window.HunkerTriggerBoot = triggerBoot;
-    if (pendingSteamInputBoot) {
-        pendingSteamInputBoot = false;
-        void triggerBoot();
+    renderLoaderLogs();
+
+    // 1. Refresh Steam bridge & check backend health
+    traceBootPhase('steam-identity-check-start');
+    renderLoaderLogs('> VERIFYING STEAMWORKS INTEGRATION...');
+    if (loaderBar) loaderBar.style.width = '15%';
+    const steamStatus = await refreshSteamBridgeStatus({ waitForBackend: false }).catch((err) => {
+        renderLoaderLogs(`> STEAM CHECK ERROR: ${err?.message ?? 'UNKNOWN ERROR'}`);
+        console.error('[steam] loading-screen verification failed:', err);
+        return null;
+    });
+    traceBootPhase('steam-identity-check-ready', {
+        active: Boolean(steamStatus?.info?.active),
+        reason: steamStatus?.info?.reason ?? null,
+        backend: 'async'
+    });
+    if (steamStatus?.info?.active) {
+        renderLoaderLogs(`> STEAM LINKED: ${steamStatus.info.persona ?? 'CONNECTED'}`);
+    } else {
+        const reason = steamStatus?.info?.reason ?? steamStatus?.health?.reason ?? 'OFFLINE';
+        renderLoaderLogs(`> STEAM DEGRADED: ${String(reason).toUpperCase()} — CONTINUING`);
     }
 
-    document.body.addEventListener('click', triggerBoot);
-    window.addEventListener('keydown', triggerBoot);
+    // 2. Load core audio & image manifest
+    traceBootPhase('core-assets-start', {
+        images: manifest.images.length,
+        audio: manifest.audio.length
+    });
+    await AudioManager.loadAssets(manifest, (progress, itemName) => {
+        const scaledProgress = 15 + Math.round(progress * 0.45);
+        if (loaderBar) loaderBar.style.width = `${scaledProgress}%`;
+        if (itemName) {
+            const msg = getLoadingMessageForAsset(itemName);
+            renderLoaderLogs(`> ${msg}...`);
+        }
+    });
+    traceBootPhase('core-assets-ready');
 
-    // Poll gamepads for boot trigger
-    let gamepadPollInterval = setInterval(() => {
-        if (AudioManager.isUnlocked && window.game) {
-            clearInterval(gamepadPollInterval);
+    renderLoaderLogs('> BOOTING TACTICAL WEBGL CORE...');
+    if (loaderBar) loaderBar.style.width = '65%';
+
+    let bootInitializing = false;
+    const autoTriggerBoot = async () => {
+        if (bootInitializing) return;
+        bootInitializing = true;
+        traceBootPhase('boot-triggered', { initialType });
+
+        try {
+            await initializeGame(initialType);
+            traceBootPhase('airlock-start');
+            if (loaderBar) loaderBar.style.width = '100%';
+            renderLoaderLogs('> ALL ASSETS LOADED — OPENING AIRLOCK...');
+        } catch (err) {
+            console.error('Initialization failed:', err);
+            bootInitializing = false;
+            if (loaderStatus) {
+                loaderStatus.innerHTML = `<div style="opacity: 1.0; color: var(--accent-secondary); animation: tactical-pulse 2s infinite ease-in-out;">[ SYSTEM INITIALIZATION ERROR — RETRYING... ]</div>`;
+            }
             return;
         }
-        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-        for (const gp of gamepads) {
-            if (gp) {
-                const pressed = gp.buttons.some(b => b.pressed);
-                if (pressed) {
-                    triggerBoot();
-                    clearInterval(gamepadPollInterval);
-                    break;
-                }
-            }
-        }
-    }, 100);
+
+        setTimeout(() => {
+            triggerDoorTransition(
+                () => {
+                    if (loadingScreen) loadingScreen.classList.add('hidden');
+                    if (splash) splash.classList.add('hidden');
+                },
+                async () => {
+                    // Play DoorIntro cutscene against solid pitch-black background.
+                    // The second door transition triggers WHILE the video is playing (at ~70% mark)
+                    // so the heavy blast doors slam shut directly over the active video.
+                    await new Promise((resolve) => {
+                        let doorStarted = false;
+                        const triggerClosingDoors = () => {
+                            if (doorStarted) return;
+                            doorStarted = true;
+                            triggerDoorTransition(
+                                () => {
+                                    if (splash) splash.classList.remove('hidden');
+                                    setAppPhase('splash');
+                                    window.game?.setLoadingPaused?.(false);
+                                    transitionToMenuMusic();
+                                    finishBootDiagnostics();
+                                },
+                                null,
+                                'base'
+                            );
+                            resolve();
+                        };
+
+                        playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
+                            .then(triggerClosingDoors)
+                            .catch(async () => {
+                                await playCutsceneVideo('scout-intro').catch(() => null);
+                                triggerClosingDoors();
+                            });
+                    });
+                },
+                'base'
+            );
+        }, 180);
+    };
+
+    window.HunkerTriggerBoot = autoTriggerBoot;
+    if (pendingSteamInputBoot) {
+        pendingSteamInputBoot = false;
+    }
+    void autoTriggerBoot();
 });
 
 setDebugMode(false);
@@ -8450,6 +9373,54 @@ window.addEventListener('lander-deployed', () => {
 // Present only inside the desktop wrapper; the web build never defines
 // electronAPI. Achievements ride the existing wave-2 event contract.
 const steamDebugStatus = document.getElementById('steam-debug-status');
+const bootDiagnostics = [];
+let bootDiagnosticOrigin = null;
+let bootLongTaskObserver = null;
+
+function traceBootPhase(phase, details = null) {
+    const now = performance.now();
+    if (bootDiagnosticOrigin === null) bootDiagnosticOrigin = now;
+    const entry = {
+        phase,
+        elapsedMs: Math.round((now - bootDiagnosticOrigin) * 10) / 10,
+        details
+    };
+    bootDiagnostics.push(entry);
+    debugLog.info('BOOT', `+${entry.elapsedMs.toFixed(1)}ms ${phase}`, details ?? undefined);
+    try {
+        performance.mark(`hb:${phase}`);
+    } catch {
+        // Performance marks are diagnostic-only.
+    }
+    return entry;
+}
+
+function startBootLongTaskDiagnostics() {
+    if (typeof PerformanceObserver === 'undefined' || bootLongTaskObserver) return;
+    try {
+        bootLongTaskObserver = new PerformanceObserver((list) => {
+            for (const task of list.getEntries()) {
+                debugLog.warn('PERF', `Long renderer task during boot: ${Math.round(task.duration)}ms`, {
+                    startMs: Math.round(task.startTime)
+                });
+            }
+        });
+        bootLongTaskObserver.observe({ type: 'longtask', buffered: true });
+    } catch {
+        bootLongTaskObserver = null;
+    }
+}
+
+function finishBootDiagnostics() {
+    traceBootPhase('boot-ready', {
+        renderer: window.game?.renderer?.info?.render ?? null,
+        pixelRatio: window.game?.renderer?.getPixelRatio?.() ?? null
+    });
+    bootLongTaskObserver?.disconnect();
+    bootLongTaskObserver = null;
+}
+
+window.__hbBootDiagnostics = bootDiagnostics;
 
 function setSteamDebugStatus(text, state = 'unknown') {
     if (!steamDebugStatus) return;
@@ -8462,8 +9433,12 @@ function formatSteamStatus(info, health) {
         ? `STEAM: ${info.persona ?? info.steamId64 ?? 'LINKED'}`
         : 'STEAM: OFFLINE';
     let backendLine = 'BACKEND: OFF';
-    if (health?.ok) {
+    if (health?.pending) {
+        backendLine = 'BACKEND: CHECKING';
+    } else if (health?.ok) {
         backendLine = health.steam?.authConfigured ? 'BACKEND: AUTH READY' : 'BACKEND: DEV';
+    } else if (health?.reason) {
+        backendLine = `BACKEND: ${String(health.reason).replace(/^steam_backend_/, '').toUpperCase()}`;
     }
     const cloud = info?.cloud;
     const cloudLine = cloud?.available
@@ -8472,26 +9447,117 @@ function formatSteamStatus(info, health) {
     return `${steamLine}\n${backendLine}\n${cloudLine}`;
 }
 
-async function refreshSteamBridgeStatus() {
+async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
     if (!window.electronAPI) {
+        console.log('[STEAM] Environment: Web browser (Electron API absent)');
         setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
         return null;
     }
 
+    console.log('[STEAM] Verifying Steamworks integration...');
+
     const identityRequest = window.electronAPI.getSteamIdentity
         ? window.electronAPI.getSteamIdentity()
         : window.electronAPI.getSteamInfo?.();
-    const [info, health] = await Promise.all([
-        Promise.resolve(identityRequest).catch(() => null),
-        window.electronAPI.getSteamBackendHealth?.().catch(() => null)
+    const identityTimeout = new Promise((resolve) => window.setTimeout(
+        () => resolve({ active: false, reason: 'identity_timeout' }),
+        2500
+    ));
+    const info = await Promise.race([
+        Promise.resolve(identityRequest).catch((err) => ({
+            ok: false,
+            active: false,
+            reason: 'identity_call_error',
+            message: err?.message ?? String(err)
+        })),
+        identityTimeout
     ]);
+
+    const healthPromise = window.electronAPI.getSteamBackendHealth
+        ? window.electronAPI.getSteamBackendHealth().catch((err) => ({
+            ok: false,
+            reason: 'health_call_error',
+            message: err?.message ?? String(err)
+        }))
+        : Promise.resolve({ ok: false, reason: 'health_unavailable' });
+    const health = waitForBackend
+        ? await healthPromise
+        : { ok: false, pending: true, reason: 'health_pending' };
+
+    if (info?.active) {
+        console.info(`[STEAM] Steamworks ACTIVE — Account: ${info.persona ?? 'Unknown'} (AppID: ${info.appId}, SteamID64: ${info.steamId64 ?? 'N/A'})`);
+        if (info.isSteamDeck) console.info('[STEAM] Hardware: Steam Deck detected');
+        if (info.cloud?.available) console.info(`[STEAM] Cloud Sync: Available (App: ${info.cloud.enabledForApp}, Account: ${info.cloud.enabledForAccount})`);
+    } else {
+        console.warn(`[STEAM] Steamworks INACTIVE — Reason: ${info?.reason ?? 'unavailable'}${info?.message ? ` (${info.message})` : ''}`);
+    }
+
+    if (health?.pending) {
+        console.info('[STEAM] Backend Service: checking asynchronously (does not gate Steam identity)');
+    } else if (health?.ok) {
+        console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${health.steam?.authConfigured ?? false})`);
+    } else {
+        console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${health?.reason ?? 'offline'}${health?.message ? ` (${health.message})` : ''}`);
+    }
 
     const state = info?.active && health?.steam?.authConfigured
         ? 'ready'
         : (info?.active || health?.ok ? 'partial' : 'offline');
     setSteamDebugStatus(formatSteamStatus(info, health), state);
+    updateSteamAccountBadges(info);
+
+    if (!waitForBackend) {
+        void healthPromise.then((resolvedHealth) => {
+            const resolvedState = info?.active && resolvedHealth?.steam?.authConfigured
+                ? 'ready'
+                : (info?.active || resolvedHealth?.ok ? 'partial' : 'offline');
+            setSteamDebugStatus(formatSteamStatus(info, resolvedHealth), resolvedState);
+            if (resolvedHealth?.ok) {
+                console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${resolvedHealth.steam?.authConfigured ?? false})`);
+            } else {
+                console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${resolvedHealth?.reason ?? 'offline'}${resolvedHealth?.message ? ` (${resolvedHealth.message})` : ''}`);
+            }
+        });
+    }
     return { info, health };
 }
+
+window.refreshSteamBridgeStatus = refreshSteamBridgeStatus;
+
+function updateSteamAccountBadges(info) {
+    const persona = info?.persona || (info?.active ? 'STEAM USER' : 'WEB AGENT');
+    const isOnline = Boolean(info?.active);
+    const statusText = info?.isSteamDeck ? 'STEAM DECK · ONLINE' : (isOnline ? 'STEAM CONNECTED' : 'WEB DEMO MODE');
+
+    const splashPersona = document.getElementById('splash-steam-persona');
+    const splashStatus = document.getElementById('splash-steam-status');
+    const menuPersona = document.getElementById('menu-steam-persona');
+    const menuStatus = document.getElementById('menu-steam-status');
+    const splashBadge = document.getElementById('splash-steam-badge');
+    const menuBadge = document.getElementById('menu-steam-badge');
+
+    if (splashPersona) splashPersona.textContent = persona;
+    if (splashStatus) splashStatus.textContent = statusText;
+    if (menuPersona) menuPersona.textContent = persona;
+    if (menuStatus) menuStatus.textContent = statusText;
+
+    if (splashBadge) splashBadge.classList.toggle('steam-account-badge--active', isOnline);
+    if (menuBadge) menuBadge.classList.toggle('steam-account-badge--active', isOnline);
+}
+
+
+
+function handleSteamBadgeClick() {
+    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+    if (window.electronAPI?.openSteamOverlayToUrl) {
+        window.electronAPI.openSteamOverlayToUrl('https://steamcommunity.com/my');
+    } else {
+        openSteamVaultModal();
+    }
+}
+
+document.getElementById('splash-steam-badge')?.addEventListener('click', handleSteamBadgeClick);
+document.getElementById('menu-steam-badge')?.addEventListener('click', handleSteamBadgeClick);
 
 // Achievement keys that also grant a distinct Steam Inventory cosmetic on
 // top of the local achievement unlock/Steam stat. The achievements engine
@@ -8585,649 +9651,14 @@ if (window.electronAPI) {
         void refreshSteamBridgeStatus();
     }, 60000);
 
-    // Initialize Steam Vault
-    initSteamVaultUI();
-    loadVaultData();
+    loadVaultData().catch(() => null);
 } else {
     setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
 }
 
-// ── Steam Vault Frontend Implementation ──
-const STEAM_ITEM_CATALOG = {
-    1000: {
-        name: 'Common Relic Fragment',
-        rarity: 'common',
-        desc: 'A shard of ancient subterranean machinery, used in basic crafting exchanges.',
-        tradable: true,
-        marketable: false,
-        img: 'https://hunkerbunker.netlify.app/economy/relic_common.png'
-    },
-    1100: {
-        name: 'Rare Relic Fragment',
-        rarity: 'rare',
-        desc: 'An intact processor core from the deep vaults, used to craft elite cosmetics.',
-        tradable: true,
-        marketable: false,
-        img: 'https://hunkerbunker.netlify.app/economy/relic_rare.png'
-    },
-    2000: {
-        name: 'Scout Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using a Scout frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_scout.png'
-    },
-    2001: {
-        name: 'Tank Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using a Tank frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_tank.png'
-    },
-    2002: {
-        name: 'Engineer Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using an Engineer frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_engineer.png'
-    },
-    2100: {
-        name: 'Carbon Fiber Decal',
-        rarity: 'rare',
-        desc: 'A high-performance weave finish for your exosuit. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/decal_carbon.png'
-    },
-    2200: {
-        name: 'Chrome Plated Sidearm',
-        rarity: 'epic',
-        desc: 'Polished high-reflectivity chrome finish for the standard sidearm. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/finish_chrome.png'
-    },
-    2003: {
-        name: 'Queen Slayer Emblem',
-        rarity: 'legendary',
-        desc: 'Awarded for defeating the Act 2 queen. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/emblem_queen_slayer.png'
-    },
-    2004: {
-        name: 'Archivist Emblem',
-        rarity: 'epic',
-        desc: 'Awarded for recovering the full bunker archive. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/emblem_archivist.png'
-    },
-    4000: {
-        name: 'Deep Relic Cache',
-        rarity: 'container',
-        desc: 'A sealed drop container. Requires a Cache Key to open — see the STORE tab for published odds.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/cache_deep_relic.png'
-    },
-    4001: {
-        name: 'Cache Key',
-        rarity: 'key',
-        desc: 'Opens a single Deep Relic Cache. Purchased with real money; never drops for free.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/cache_key.png'
-    }
-};
-
-let storeCatalog = null;
-let storeOdds = [];
-let storePurchasesEnabled = false;
-let storePurchaseMode = 'disabled';
-let storeDisabledReason = 'catalog_unavailable';
-let storeHostedItemStore = null;
-
-let vaultItems = [];
-let selectedVaultItem = null;
-let marketEligibility = 'unknown';
-let marketEligibilityReason = null;
-
-// Fired from the playtime-drop interval and the victory class-patch grant —
-// both real Steam Inventory writes, so this is the only place either one
-// surfaces to the player short of opening the Vault manually.
-function showSteamDropToast(itemdefid, quantity = 1) {
-    const catalog = STEAM_ITEM_CATALOG[itemdefid];
-    if (!catalog) return;
-    const stack = document.querySelector('.hud-notification-stack');
-    if (!stack) return;
-
-    window.AudioManager?.play?.('fx_achievement', { volume: 0.35, bus: 'sfx' });
-    const toast = document.createElement('div');
-    toast.className = 'achievement-toast hud-stack-card hidden';
-    toast.setAttribute('aria-live', 'polite');
-    toast.dataset.notificationPriority = '5';
-    toast.dataset.seq = String(hudCardSeq++);
-    toast.dataset.autoDismissMs = '5600';
-    toast.dataset.removeDelayMs = '320';
-
-    const iconWrap = document.createElement('div');
-    iconWrap.className = 'achievement-toast__icon';
-    const img = document.createElement('img');
-    img.alt = '';
-    img.src = catalog.img;
-    iconWrap.append(img);
-
-    const body = document.createElement('div');
-    body.className = 'achievement-toast__body';
-    const kicker = document.createElement('div');
-    kicker.className = 'achievement-toast__kicker';
-    kicker.textContent = 'STEAM ITEM ACQUIRED';
-    const title = document.createElement('div');
-    title.className = 'achievement-toast__title';
-    title.textContent = quantity > 1 ? `${catalog.name} x${quantity}` : catalog.name;
-    const blurb = document.createElement('div');
-    blurb.className = 'achievement-toast__blurb';
-    blurb.textContent = catalog.desc;
-    body.append(kicker, title, blurb);
-    toast.append(iconWrap, body);
-    toast.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        dismissHudNotificationCard(toast);
-    });
-
-    stack.append(toast);
-    updateHudNotificationDeck();
-    toast.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        toast.classList.add('visible');
-        updateHudNotificationDeck();
-    });
-}
-
-// Renders the trusted, server-derived milestone grants (victory patch,
-// flawless/personal-best/daily-ops bonus caches) that ride along on the
-// submit-run response — see server/steamLeaderboards.js deriveAndGrantMilestones.
-// Written into the game-over screen (not the HUD toast stack, which lives
-// inside #ui and is already hidden by the time this resolves).
-function renderSteamMilestoneGrants(grants = []) {
-    const grantNote = document.getElementById('go-steam-grant-note');
-    if (!grantNote || !Array.isArray(grants) || grants.length === 0) return;
-
-    const names = grants
-        .map((item) => {
-            const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
-            const label = catalog?.name ?? `Item #${item.itemdefid}`;
-            return item.quantity > 1 ? `${label} x${item.quantity}` : label;
-        })
-        .join(', ');
-    grantNote.textContent = `STEAM ITEM UNLOCKED: ${names}`;
-    grantNote.classList.remove('hidden');
-}
-
-function initSteamVaultUI() {
-    const vaultBtn = document.getElementById('steam-vault-btn');
-    const closeBtn = document.getElementById('close-steam-vault-modal');
-    const modal = document.getElementById('steam-vault-modal');
-
-    if (!vaultBtn || !modal) return;
-
-    vaultBtn.addEventListener('click', async () => {
-        modal.classList.remove('hidden');
-        modal.setAttribute('aria-hidden', 'false');
-        showDeveloperCommentary('steam_vault');
-        await loadVaultData();
-    });
-
-    closeBtn?.addEventListener('click', () => {
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-    });
-
-    setupClickOutside('steam-vault-modal', () => {
-        modal.classList.add('hidden');
-        modal.setAttribute('aria-hidden', 'true');
-    });
-
-    const tabInventory = document.getElementById('vault-tab-inventory');
-    const tabStore = document.getElementById('vault-tab-store');
-    const inventoryLayout = document.getElementById('vault-inventory-layout');
-    const storeLayout = document.getElementById('vault-store-layout');
-
-    tabInventory?.addEventListener('click', () => {
-        tabInventory.classList.add('active');
-        tabStore?.classList.remove('active');
-        inventoryLayout?.classList.remove('hidden');
-        storeLayout?.classList.add('hidden');
-        renderInventoryGrid();
-    });
-
-    tabStore?.addEventListener('click', async () => {
-        tabStore.classList.add('active');
-        tabInventory?.classList.remove('active');
-        storeLayout?.classList.remove('hidden');
-        inventoryLayout?.classList.add('hidden');
-        await loadStoreCatalog();
-        renderStoreSkuGrid();
-        renderHostedItemStoreCta();
-        renderOddsTable();
-        updateOpenCacheAvailability();
-    });
-
-    document.getElementById('vault-store-open-btn')?.addEventListener('click', openDeepRelicCache);
-    document.getElementById('vault-store-hosted-btn')?.addEventListener('click', openHostedSteamItemStore);
-}
-
-function isMarketEligibilityAllowed(result) {
-    return result?.allowed === true
-        || result?.allowed === 1
-        || result?.allowed === '1'
-        || result?.allowed === 'true'
-        || result?.eligibility?.allowed === true
-        || result?.eligibility?.allowed === 1
-        || result?.eligibility?.allowed === '1'
-        || result?.eligibility?.allowed === 'true';
-}
-
-function setMarketEligibilityFromResult(result) {
-    marketEligibility = result?.ok && isMarketEligibilityAllowed(result) ? 'eligible' : 'ineligible';
-    marketEligibilityReason = result?.reason ?? result?.eligibility?.reason ?? null;
-}
-
-function canOpenMarketOverlay() {
-    return marketEligibility === 'eligible';
-}
-
-function getMarketEligibilityStatusText() {
-    if (marketEligibility === 'unknown') return 'STEAM MARKET CHECK PENDING';
-    if (marketEligibilityReason === 'unsupported') return 'STEAM MARKET CHECK UNSUPPORTED';
-    if (marketEligibilityReason === 'error') return 'STEAM MARKET CHECK FAILED';
-    return 'STEAM MARKET ELIGIBILITY UNCONFIRMED';
-}
-
-async function loadVaultData() {
-    const statusEl = document.getElementById('vault-connection-status');
-    const playerEl = document.getElementById('vault-player-name');
-    const commandStatus = document.getElementById('vault-command-status');
-
-    if (window.electronAPI) {
-        // Fetch Identity
-        const identity = await window.electronAPI.getSteamIdentity().catch(() => null);
-
-        // Fetch Market Eligibility
-        const marketCheck = window.electronAPI.getSteamMarketEligibility
-            ? window.electronAPI.getSteamMarketEligibility()
-            : Promise.resolve({ ok: false, reason: 'unsupported' });
-        const marketResult = await Promise.resolve(marketCheck).catch(() => ({ ok: false, reason: 'error' }));
-        setMarketEligibilityFromResult(marketResult);
-        if (identity?.active) {
-            if (playerEl) playerEl.textContent = identity.persona ?? 'OPERATOR';
-            if (statusEl) statusEl.textContent = 'STEAM CONNECTED';
-            if (statusEl) statusEl.classList.remove('vault-status--offline');
-            if (commandStatus) commandStatus.textContent = identity.persona ?? 'ONLINE';
-        } else {
-            if (playerEl) playerEl.textContent = 'DEV MODE';
-            if (statusEl) statusEl.textContent = 'DEV FALLBACK';
-            if (commandStatus) commandStatus.textContent = 'DEV MODE';
-        }
-
-        // Fetch Inventory
-        const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
-        if (result?.ok) {
-            vaultItems = result.inventory ?? [];
-            reconcileCosmeticsOwnership(vaultItems);
-            renderInventoryGrid();
-            updateOpenCacheAvailability();
-        } else {
-            console.error('[steam-vault] failed to load inventory:', result);
-        }
-    } else {
-        setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
-        if (playerEl) playerEl.textContent = 'WEB BUILD';
-        if (statusEl) statusEl.textContent = 'OFFLINE';
-        if (commandStatus) commandStatus.textContent = 'OFFLINE';
-    }
-}
-
-function renderInventoryGrid() {
-    const grid = document.getElementById('vault-item-grid');
-    const emptyState = document.getElementById('vault-empty-state');
-
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    if (vaultItems.length === 0) {
-        emptyState?.classList.remove('hidden');
-        return;
-    }
-
-    emptyState?.classList.add('hidden');
-
-    vaultItems.forEach(item => {
-        const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
-        if (!catalog) return;
-
-        const card = document.createElement('div');
-        const rarityClass = `vault-item--${catalog.rarity}`;
-        const isSelected = selectedVaultItem && selectedVaultItem.itemId === item.itemId;
-
-        card.className = `vault-item-card ${rarityClass} ${isSelected ? 'selected' : ''}`;
-
-        const img = document.createElement('img');
-        img.className = 'vault-item-card__art';
-        img.src = catalog.img;
-        card.appendChild(img);
-
-        if (item.quantity > 1) {
-            const qty = document.createElement('div');
-            qty.className = 'vault-item-card__qty';
-            qty.textContent = `x${item.quantity}`;
-            card.appendChild(qty);
-        }
-
-        card.addEventListener('click', () => {
-            selectedVaultItem = item;
-            document.querySelectorAll('.vault-item-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            updateDetailsPanel(item);
-        });
-
-        grid.appendChild(card);
-    });
-
-    // Select first item by default if nothing selected yet
-    if (!selectedVaultItem && vaultItems.length > 0) {
-        selectedVaultItem = vaultItems[0];
-        updateDetailsPanel(selectedVaultItem);
-    }
-}
-
-function updateDetailsPanel(item) {
-    const nameEl = document.getElementById('vault-details-name');
-    const rarityEl = document.getElementById('vault-details-rarity');
-    const descEl = document.getElementById('vault-details-desc');
-    const imgEl = document.getElementById('vault-details-img');
-    const tradableEl = document.getElementById('vault-meta-tradable');
-    const marketableEl = document.getElementById('vault-meta-marketable');
-
-    const btnEquip = document.getElementById('vault-btn-equip');
-    const btnUnequip = document.getElementById('vault-btn-unequip');
-    const statusEl = document.getElementById('vault-equip-status');
-
-    if (!item) return;
-    const catalog = STEAM_ITEM_CATALOG[item.itemdefid];
-    if (!catalog) return;
-
-    if (nameEl) nameEl.textContent = catalog.name;
-    if (rarityEl) {
-        rarityEl.textContent = catalog.rarity;
-        rarityEl.style.color = getRarityColor(catalog.rarity);
-    }
-    if (descEl) descEl.textContent = catalog.desc;
-    if (imgEl) imgEl.src = catalog.img;
-
-    if (tradableEl) {
-        tradableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.tradable ? 'active' : ''}`;
-        tradableEl.title = "Trading is handled externally through Steam.";
-        tradableEl.textContent = catalog.tradable ? 'TRADABLE' : 'NON-TRADABLE';
-    }
-    if (marketableEl) {
-        const isEligible = canOpenMarketOverlay();
-        marketableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.marketable ? 'active' : ''} ${catalog.marketable && !isEligible ? 'degraded' : ''}`;
-        marketableEl.title = "Market actions are handled externally through Steam.";
-        if (catalog.marketable && !isEligible) {
-            marketableEl.textContent = 'MARKETABLE (OFFLINE)';
-            marketableEl.title = "Market eligibility route unavailable or rejected.";
-        } else {
-            marketableEl.textContent = catalog.marketable ? 'MARKETABLE' : 'NON-MARKETABLE';
-        }
-    }
-
-    btnEquip?.classList.add('hidden');
-    btnUnequip?.classList.add('hidden');
-    if (statusEl) {
-        const quantity = Number(item.quantity) > 1 ? ` x${Number(item.quantity)}` : '';
-        statusEl.textContent = `STEAM OWNERSHIP VERIFIED${quantity}`;
-    }
-}
-
-function getRarityColor(rarity) {
-    if (rarity === 'common') return '#94a3b8';
-    if (rarity === 'uncommon') return '#22c55e';
-    if (rarity === 'rare') return '#00c8ff';
-    if (rarity === 'epic') return '#a855f7';
-    if (rarity === 'legendary') return '#eab308';
-    return '#fff';
-}
-
-function reconcileCosmeticsOwnership(inventory = []) {
-    const ownedDefIds = new Set(inventory.map(item => item.itemdefid));
-
-    const patch = localStorage.getItem('hb_equipped_patch');
-    if (patch && !ownedDefIds.has(Number(patch))) {
-        localStorage.removeItem('hb_equipped_patch');
-        console.log('[steam-vault] Unequipped unowned patch:', patch);
-    }
-
-    const decal = localStorage.getItem('hb_equipped_decal');
-    if (decal && !ownedDefIds.has(Number(decal))) {
-        localStorage.removeItem('hb_equipped_decal');
-        console.log('[steam-vault] Unequipped unowned decal:', decal);
-    }
-
-    const weapon = localStorage.getItem('hb_equipped_weapon_finish');
-    if (weapon && !ownedDefIds.has(Number(weapon))) {
-        localStorage.removeItem('hb_equipped_weapon_finish');
-        console.log('[steam-vault] Unequipped unowned weapon finish:', weapon);
-    }
-}
-
-// ── Steam Store: Cache Keys are the only real-money SKU. Deep Relic Caches
-// drop for free during play; opening one requires a Key from the store. ──
-async function loadStoreCatalog() {
-    if (!window.electronAPI?.getSteamStoreCatalog) return;
-    const result = await window.electronAPI.getSteamStoreCatalog().catch(() => null);
-    if (result?.ok) {
-        storeCatalog = result.catalog ?? [];
-        storeOdds = result.deepRelicCacheOdds ?? [];
-        storePurchasesEnabled = Boolean(result.purchasesEnabled);
-        storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
-        storeDisabledReason = result.disabledReason ?? null;
-        storeHostedItemStore = result.hostedItemStore ?? null;
-    } else {
-        storePurchasesEnabled = false;
-        storePurchaseMode = 'disabled';
-        storeDisabledReason = result?.reason ?? 'catalog_unavailable';
-        storeHostedItemStore = null;
-        console.error('[steam-store] failed to load catalog:', result);
-    }
-}
-
-function formatStoreDisabledReason(reason) {
-    if (reason === 'steam_store_disabled') return 'PURCHASES OFFLINE';
-    if (reason === 'catalog_unavailable') return 'CATALOG OFFLINE';
-    return 'UNAVAILABLE';
-}
-
-function renderStoreSkuGrid() {
-    const grid = document.getElementById('vault-store-sku-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
-
-    if (!storeCatalog || storeCatalog.length === 0) {
-        grid.innerHTML = '<div class="vault-empty-state">STORE CATALOG UNAVAILABLE</div>';
-        return;
-    }
-
-    for (const sku of storeCatalog) {
-        const card = document.createElement('div');
-        card.className = 'vault-store-sku-card';
-        const priceLabel = `$${(sku.priceUsdCents / 100).toFixed(2)}`;
-        const buttonLabel = storePurchasesEnabled
-            ? (storePurchaseMode === 'mock' ? 'DEV BUY' : 'BUY')
-            : formatStoreDisabledReason(storeDisabledReason);
-        card.innerHTML = `
-            <div class="vault-store-sku-label">${sku.label}</div>
-            <div class="vault-store-sku-price">${priceLabel}</div>
-            <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${storePurchasesEnabled ? '' : 'disabled'}>${buttonLabel}</button>
-        `;
-        const buyBtn = card.querySelector('.vault-store-buy-btn');
-        buyBtn?.addEventListener('click', () => purchaseKeys(sku.sku));
-        grid.appendChild(card);
-    }
-}
-
-function renderHostedItemStoreCta() {
-    const row = document.getElementById('vault-store-hosted');
-    const status = document.getElementById('vault-store-hosted-status');
-    const btn = document.getElementById('vault-store-hosted-btn');
-    if (!row || !status || !btn) return;
-
-    const url = storeHostedItemStore?.url;
-    const configured = Boolean(storeHostedItemStore?.enabled && url);
-    const enabled = configured && canOpenMarketOverlay();
-    row.classList.toggle('hidden', !configured);
-    btn.disabled = !enabled;
-    if (!configured) {
-        status.textContent = 'STEAM ITEM STORE OFFLINE';
-        return;
-    }
-    if (!enabled) {
-        status.textContent = getMarketEligibilityStatusText();
-        return;
-    }
-
-    const mode = storeHostedItemStore.mode === 'beta' ? 'BETA PREVIEW' : 'STEAM-HOSTED CHECKOUT';
-    status.textContent = mode;
-}
-
-async function openHostedSteamItemStore() {
-    const url = storeHostedItemStore?.url;
-    if (!url || !canOpenMarketOverlay()) {
-        renderHostedItemStoreCta();
-        return;
-    }
-    if (window.electronAPI?.openSteamOverlayToUrl) {
-        await window.electronAPI.openSteamOverlayToUrl(url);
-    } else {
-        window.open(url, '_blank', 'noopener');
-    }
-}
-
-function renderOddsTable() {
-    const table = document.getElementById('vault-store-odds-table');
-    if (!table) return;
-    table.innerHTML = '';
-
-    for (const row of storeOdds) {
-        const rowEl = document.createElement('div');
-        rowEl.className = 'vault-store-odds-row';
-        rowEl.innerHTML = `
-            <span class="vault-store-odds-item">${row.label}</span>
-            <span class="vault-store-odds-percent" style="color:${getRarityColor(row.rarity)}">${row.percent}%</span>
-        `;
-        table.appendChild(rowEl);
-    }
-}
-
-async function purchaseKeys(sku) {
-    if (!window.electronAPI?.purchaseSteamKeys) return;
-    if (!storePurchasesEnabled) {
-        const statusEl = document.getElementById('vault-store-open-status');
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Steam Store purchases are offline for this build.';
-        }
-        return;
-    }
-
-    const result = await window.electronAPI.purchaseSteamKeys(sku).catch((err) => ({ ok: false, message: err?.message }));
-
-    if (result?.ok && result.mode === 'mock') {
-        await loadVaultData();
-        updateOpenCacheAvailability();
-        return;
-    }
-
-    if (result?.ok && result.requiresConfirmation && result.confirmUrl) {
-        // Real-money purchase: hand off to the Steam Overlay for payment
-        // confirmation, then poll finalize once the player returns.
-        await window.electronAPI.openSteamOverlayToUrl(result.confirmUrl);
-        const finalized = await window.electronAPI.finalizeSteamPurchase(result.transId).catch(() => null);
-        if (finalized?.ok && finalized.status === 'completed') {
-            await loadVaultData();
-            updateOpenCacheAvailability();
-        } else {
-            console.warn('[steam-store] purchase not yet completed:', finalized);
-        }
-        return;
-    }
-
-    console.error('[steam-store] purchase failed:', result);
-}
-
-function findOwnedCacheAndKey() {
-    const cache = vaultItems.find((i) => i.itemdefid === 4000);
-    const key = vaultItems.find((i) => i.itemdefid === 4001);
-    return cache && key ? { cache, key } : null;
-}
-
-function updateOpenCacheAvailability() {
-    const statusEl = document.getElementById('vault-store-open-status');
-    const btn = document.getElementById('vault-store-open-btn');
-    const pair = findOwnedCacheAndKey();
-
-    if (pair) {
-        statusEl?.classList.add('hidden');
-        btn?.classList.remove('hidden');
-    } else {
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = 'No Cache + Key pair detected in your inventory.';
-        }
-        btn?.classList.add('hidden');
-    }
-}
-
-async function openDeepRelicCache() {
-    if (!window.electronAPI?.openSteamCache) return;
-    const pair = findOwnedCacheAndKey();
-    if (!pair) return;
-
-    const statusEl = document.getElementById('vault-store-open-status');
-    const result = await window.electronAPI.openSteamCache(pair.cache.itemId, pair.key.itemId)
-        .catch((err) => ({ ok: false, message: err?.message }));
-
-    if (result?.ok) {
-        await loadVaultData();
-        updateOpenCacheAvailability();
-        const reward = STEAM_ITEM_CATALOG[result.granted?.[0]?.itemdefid];
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
-        }
-    } else {
-        console.error('[steam-store] cache open failed:', result);
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = 'Cache open failed — check your connection and try again.';
-        }
-    }
-}
-
-function formatLeaderboardScore(board, score) {
-    if (board === 'survival_time_seconds') {
-        const mins = Math.floor(score / 60);
-        const secs = score % 60;
-        return `${mins}m ${secs}s`;
-    }
-    if (board === 'deepest_depth_score') {
-        const tier = Math.floor(score / 100000);
-        const depth = score % 100000;
-        return `Tier ${tier} - ${depth}m`;
-    }
-    return String(score);
-}
+// Initialize Steam Vault UI in all environments
+initSteamVaultUI();
+
+// ── Steam Vault & Leaderboard Frontend implementations decoupled to: ──
+// - src/steamVaultUi.js
+// - src/leaderboardUi.js

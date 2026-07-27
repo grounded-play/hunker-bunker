@@ -1,7 +1,38 @@
-// src/audio.js
-
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-export const audioCtx = new AudioContext();
+const AudioContextClass = (typeof window !== 'undefined' ? window.AudioContext || window.webkitAudioContext : null) || globalThis.AudioContext || class MockAudioCtx {
+    constructor() {
+        this.destination = {};
+        this.currentTime = 0;
+        this.state = 'running';
+    }
+    createGain() {
+        return {
+            gain: { value: 1, setTargetAtTime: () => {}, setValueAtTime: () => {}, linearRampToValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
+            connect: () => {}
+        };
+    }
+    createOscillator() {
+        return {
+            type: 'sine',
+            frequency: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
+            connect: () => {},
+            start: () => {},
+            stop: () => {}
+        };
+    }
+    createBiquadFilter() {
+        return {
+            type: 'lowpass',
+            frequency: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
+            Q: { setValueAtTime: () => {} },
+            connect: () => {}
+        };
+    }
+    createBufferSource() {
+        return { buffer: null, playbackRate: { value: 1 }, detune: { value: 0 }, connect: () => {}, start: () => {}, stop: () => {} };
+    }
+    resume() { return Promise.resolve(); }
+};
+export const audioCtx = new AudioContextClass();
 
 export class AudioManager {
     static buffers = {};
@@ -18,9 +49,13 @@ export class AudioManager {
     static sfxGain = audioCtx.createGain();
     static worldGain = audioCtx.createGain();
     static musicGain = audioCtx.createGain();
+    static voiceGain = audioCtx.createGain();
     // Tension multiplier sits between the music sources and the user music
     // slider (musicGain) so runtime intensity and the user mix no longer fight.
     static musicTensionGain = audioCtx.createGain();
+
+    static voiceVolume = 1.0;
+    static voiceEnabled = true;
 
     static isUnlocked = false;
     static randInterval = null;
@@ -36,6 +71,7 @@ export class AudioManager {
         this.sfxGain.connect(this.masterGain);
         this.worldGain.connect(this.masterGain);
         this.musicGain.connect(this.masterGain);
+        this.voiceGain.connect(this.masterGain);
         this.musicTensionGain.connect(this.musicGain);
 
         // Base volume mix
@@ -43,6 +79,7 @@ export class AudioManager {
         this.sfxGain.gain.value = 1.0;
         this.worldGain.gain.value = 1.0;
         this.musicGain.gain.value = 1.0;
+        this.voiceGain.gain.value = 1.0;
         // Start mid-tension so music is clearly audible from the first frame.
         this.musicTensionGain.gain.value = 0.6;
     }
@@ -53,12 +90,18 @@ export class AudioManager {
                 await audioCtx.resume();
             }
             this.isUnlocked = true;
+            if (typeof window !== 'undefined' && window.hbLog) {
+                window.hbLog('AUDIO', 'info', 'AudioContext unlocked', { state: audioCtx.state });
+            }
         }
     }
 
     static toggleMute(muted) {
         this.globalMuted = muted;
         this.masterGain.gain.setTargetAtTime(muted ? 0 : this.masterVolume, audioCtx.currentTime, 0.1);
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Global mute set to: ${muted}`);
+        }
     }
 
     static setChannelVolume(channel, volume = 1.0) {
@@ -75,12 +118,15 @@ export class AudioManager {
 
         const gainNode = channel === 'music'
             ? this.musicGain
-            : (channel === 'vfx' || channel === 'sfx')
-                ? this.sfxGain
-                : null;
+            : channel === 'voice'
+                ? this.voiceGain
+                : (channel === 'vfx' || channel === 'sfx')
+                    ? this.sfxGain
+                    : null;
 
         if (!gainNode) return;
         gainNode.gain.setTargetAtTime(clamped, audioCtx.currentTime, 0.05);
+        if (channel === 'voice') this.voiceVolume = clamped;
     }
 
     static setMix(mix = {}) {
@@ -88,6 +134,8 @@ export class AudioManager {
         else if (mix.world !== undefined) this.setChannelVolume('master', mix.world);
 
         if (mix.music !== undefined) this.setChannelVolume('music', mix.music);
+        if (mix.voice !== undefined) this.setChannelVolume('voice', mix.voice);
+        if (mix.voiceEnabled !== undefined) this.voiceEnabled = Boolean(mix.voiceEnabled);
 
         if (mix.vfx !== undefined) this.setChannelVolume('vfx', mix.vfx);
         else if (mix.sfx !== undefined) this.setChannelVolume('vfx', mix.sfx);
@@ -96,6 +144,9 @@ export class AudioManager {
     static async loadAssets(manifest, onProgress) {
         const total = manifest.audio.length + manifest.images.length;
         let loaded = 0;
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Loading assets manifest (${manifest.audio.length} audio, ${manifest.images.length} images)`);
+        }
 
         const updateProgress = (itemName) => {
             loaded++;
@@ -116,7 +167,7 @@ export class AudioManager {
                     updateProgress(url);
                     resolve();
                 };
-                img.src = url;
+                img.src = assetUrl(url);
             });
         });
 
@@ -144,10 +195,13 @@ export class AudioManager {
         });
 
         await Promise.all([...imagePromises, ...audioPromises]);
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Asset manifest loading finished (${loaded}/${total} loaded)`);
+        }
     }
 
     static async decodeAudioAsset(url) {
-        const response = await fetch(url);
+        const response = await fetch(assetUrl(url));
         if (!response.ok) {
             throw new Error(`HTTP ${response.status} while loading ${url}`);
         }
@@ -171,6 +225,10 @@ export class AudioManager {
         // Pick a random variation
         const selectedKey = matchingKeys[Math.floor(Math.random() * matchingKeys.length)];
 
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'debug', `Play audio clip [${key}] -> ${selectedKey}`);
+        }
+
         const source = audioCtx.createBufferSource();
         source.buffer = this.buffers[selectedKey];
         
@@ -183,10 +241,12 @@ export class AudioManager {
         const requestedBus = typeof options.bus === 'string' ? options.bus.toLowerCase() : null;
         const inferredBus = key.startsWith('amb_')
             ? 'world'
-            : key.startsWith('mainbg_')
-                ? 'music'
-                : (options.isBg ? 'music' : 'sfx');
-        const bus = requestedBus === 'world' || requestedBus === 'music' || requestedBus === 'sfx'
+            : key.startsWith('voice_')
+                ? 'voice'
+                : key.startsWith('mainbg_')
+                    ? 'music'
+                    : (options.isBg ? 'music' : 'sfx');
+        const bus = requestedBus === 'world' || requestedBus === 'music' || requestedBus === 'sfx' || requestedBus === 'voice'
             ? requestedBus
             : inferredBus;
 
@@ -215,12 +275,106 @@ export class AudioManager {
             lastNode.connect(this.worldGain); // Environment/ambient loops use the world bus
         } else if (bus === 'music') {
             lastNode.connect(this.musicTensionGain); // Music routes through the tension multiplier
+        } else if (bus === 'voice') {
+            lastNode.connect(this.voiceGain); // Character Voice Audio bus
         } else {
             lastNode.connect(this.sfxGain);
         }
 
         source.start(0);
         return { source, gainNode, panner };
+    }
+
+    static playVoiceForMessage(speakerInfo = {}, messageText = '') {
+        if (this.globalMuted || !this.isUnlocked || !this.voiceEnabled) return null;
+        if (this.voiceGain.gain.value <= 0.001) return null;
+
+        const speakerName = String(typeof speakerInfo === 'string' ? speakerInfo : (speakerInfo.name || speakerInfo.speaker || '')).toUpperCase();
+        const text = String(messageText || (typeof speakerInfo === 'object' ? speakerInfo.cleanText || speakerInfo.text || '' : '')).trim();
+
+        // 1. Check if an authored voice track buffer exists in AudioManager.buffers
+        const textLower = text.toLowerCase();
+        let targetKey = null;
+
+        if (textLower.includes('purple one') || textLower.includes('drew robot 4a')) targetKey = 'voice_lucia_message';
+        else if (textLower.includes('you look like hell')) targetKey = 'voice_marisol_ch1_01';
+        else if (textLower.includes('good side')) targetKey = 'voice_elias_ch1_01';
+        else if (textLower.includes('not harder. smarter')) targetKey = 'voice_elias_ch2_01';
+        else if (textLower.includes('point of contact is neutral')) targetKey = 'voice_hr_ch3_01';
+        else if (textLower.includes('neutral word for bleeding')) targetKey = 'voice_elias_ch3_01';
+        else if (textLower.includes('she needs it tonight')) targetKey = 'voice_elias_ch4_01';
+        else if (textLower.includes('command not recognized')) targetKey = 'voice_kiosk_ch4_01';
+        else if (textLower.includes('training model sort arm 4a')) targetKey = 'voice_system_ch5_01';
+        else if (textLower.includes('thermal warning in sector 4')) targetKey = 'voice_system_ch6_01';
+
+        if (targetKey && this.buffers[targetKey]) {
+            return this.play(targetKey, { bus: 'voice', volume: 1.0, varyPitch: false });
+        }
+
+        // 2. Character-Matched Procedural Voice Vocalizer
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+
+        osc.connect(filter);
+        osc2.connect(filter);
+        filter.connect(gainNode);
+        gainNode.connect(this.voiceGain);
+
+        let baseFreq = 220;
+        let endFreq = 180;
+        let waveType = 'sine';
+        let filterFreq = 1200;
+        let duration = 0.14;
+
+        if (speakerName.includes('MOTHERSHIP')) {
+            baseFreq = 380; endFreq = 260; waveType = 'sawtooth'; filterFreq = 1400; duration = 0.16;
+        } else if (speakerName.includes('EXOSUIT') || speakerName.includes('SYSTEM')) {
+            baseFreq = 520; endFreq = 440; waveType = 'triangle'; filterFreq = 2200; duration = 0.12;
+        } else if (speakerName.includes('BUNKER') || speakerName.includes('FACILITIES')) {
+            baseFreq = 160; endFreq = 130; waveType = 'square'; filterFreq = 800; duration = 0.22;
+        } else if (speakerName.includes('QUEEN')) {
+            baseFreq = 310; endFreq = 220; waveType = 'sine'; filterFreq = 3000; duration = 0.28;
+        } else if (speakerName.includes('TANK')) {
+            baseFreq = 110; endFreq = 95; waveType = 'triangle'; filterFreq = 650; duration = 0.18;
+        } else if (speakerName.includes('SCOUT')) {
+            baseFreq = 680; endFreq = 840; waveType = 'sine'; filterFreq = 2800; duration = 0.10;
+        } else if (speakerName.includes('ENGINEER')) {
+            baseFreq = 440; endFreq = 360; waveType = 'square'; filterFreq = 1600; duration = 0.13;
+        } else if (speakerName.includes('MARTHA') || speakerName.includes('MARISOL')) {
+            baseFreq = 340; endFreq = 310; waveType = 'sine'; filterFreq = 1800; duration = 0.15;
+        } else if (speakerName.includes('BRIGGS') || speakerName.includes('KAELEN')) {
+            baseFreq = 170; endFreq = 150; waveType = 'triangle'; filterFreq = 1100; duration = 0.16;
+        }
+
+        const pitchShift = 0.94 + Math.random() * 0.12;
+        baseFreq *= pitchShift;
+        endFreq *= pitchShift;
+
+        osc.type = waveType;
+        osc.frequency.setValueAtTime(baseFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(baseFreq * 1.5, now);
+        osc2.frequency.exponentialRampToValueAtTime(endFreq * 1.5, now + duration);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(filterFreq, now);
+        filter.Q.setValueAtTime(4.0, now);
+
+        gainNode.gain.setValueAtTime(0.001, now);
+        gainNode.gain.linearRampToValueAtTime(0.25, now + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.start(now);
+        osc2.start(now);
+        osc.stop(now + duration + 0.02);
+        osc2.stop(now + duration + 0.02);
+
+        return { source: osc, gainNode };
     }
 
     static _isGameplayAudioContext() {
@@ -849,3 +1003,4 @@ export class AudioManager {
 }
 
 AudioManager.init();
+import { assetUrl } from './assetUrl.js';

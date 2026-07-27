@@ -108,4 +108,93 @@ describe('isHoleTile / mountChunk agreement', () => {
 
         expect(fakeThis.spawnHoleDangerOutline).toHaveBeenCalledTimes(callCount);
     });
+
+    it('allows filling hole tiles, marking them safe and updating state', () => {
+        const fakeThis = makeFakeHoleGame();
+        fakeThis.getWallKey = ThreeGame.prototype.getWallKey;
+        fakeThis.isHoleTile = ThreeGame.prototype.isHoleTile;
+        const hole = findFirstHole(fakeThis);
+
+        expect(fakeThis.isHoleTile(hole.x, hole.y)).toBe(true);
+
+        const filled = ThreeGame.prototype.fillHoleAt.call(fakeThis, hole.x, hole.y);
+
+        expect(filled).toBe(true);
+        expect(fakeThis.filledHoleKeys.has(`${hole.x},${hole.y}`)).toBe(true);
+        expect(fakeThis.isHoleTile(hole.x, hole.y)).toBe(false);
+    });
+
+    it('defaults enemy X-ray ghost to natural sprite material color instead of red injury tint', () => {
+        const fakeThis = {
+            scene: { add: vi.fn() },
+            transientEffects: []
+        };
+        const sprite = {
+            isSprite: true,
+            scale: { copy: vi.fn() },
+            position: { copy: vi.fn() },
+            material: {
+                map: {},
+                color: { getHex: () => 0xffffff }
+            }
+        };
+
+        ThreeGame.prototype.spawnEnemyXrayGhost.call(fakeThis, sprite);
+
+        expect(fakeThis.scene.add).toHaveBeenCalled();
+        const createdGhost = fakeThis.scene.add.mock.calls[0][0];
+        expect(createdGhost.material.color.getHex()).toBe(0xffffff);
+    });
+});
+
+describe('interactWithPocketClimbPoint', () => {
+    // pocket.climbPoint is in pocket-grid-local space (0..size-1), not world
+    // space — the same offset math mountPocket uses to place the group
+    // (worldX = holeWorldX - centerCell.x + gridX) has to convert it before
+    // comparing against the player's world position. With centerCell (5,5)
+    // and climbPoint (9,5), a hole at world (10,20) puts the climb point at
+    // world (10 - 5 + 9, 20 - 5 + 5) = (14, 20).
+    function makePocketCacheEntry() {
+        return new Map([['10,20', {
+            climbPoint: { x: 9, y: 5 },
+            centerCell: { x: 5, y: 5 }
+        }]]);
+    }
+
+    it('does nothing when not in a pocket', () => {
+        const fakeThis = { isInPocket: false, exitPocket: vi.fn() };
+        const result = ThreeGame.prototype.interactWithPocketClimbPoint.call(fakeThis);
+        expect(result).toBe(false);
+        expect(fakeThis.exitPocket).not.toHaveBeenCalled();
+    });
+
+    it('calls exitPocket when standing near the climb point in world space', () => {
+        const fakeThis = {
+            isInPocket: true,
+            player: { position: { x: 14, z: 20 } }, // the converted world position, see note above
+            pocketCache: makePocketCacheEntry(),
+            _pocketHoleX: 10,
+            _pocketHoleZ: 20,
+            getWallKey: ThreeGame.prototype.getWallKey,
+            exitPocket: vi.fn()
+        };
+        const result = ThreeGame.prototype.interactWithPocketClimbPoint.call(fakeThis);
+        expect(result).toBe(true);
+        expect(fakeThis.exitPocket).toHaveBeenCalled();
+    });
+
+    it('does nothing when in a pocket but too far from the climb point', () => {
+        const fakeThis = {
+            isInPocket: true,
+            player: { position: { x: 0, z: 0 } }, // far from world (14, 20)
+            pocketCache: makePocketCacheEntry(),
+            _pocketHoleX: 10,
+            _pocketHoleZ: 20,
+            getWallKey: ThreeGame.prototype.getWallKey,
+            exitPocket: vi.fn()
+        };
+        const result = ThreeGame.prototype.interactWithPocketClimbPoint.call(fakeThis);
+        expect(result).toBe(false);
+        expect(fakeThis.exitPocket).not.toHaveBeenCalled();
+    });
 });

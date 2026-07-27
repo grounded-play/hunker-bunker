@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain } from './landforms.js';
+import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, findFarthestFloorCell } from './landforms.js';
 
 const SIZE = 19;
 
@@ -247,6 +247,37 @@ describe('openMazeTerrain', () => {
         // The diagonal (0.667, 0.667) is outside both arms.
         expect(grid[11][11]).toBe('#');
     });
+
+    it('shields plaza boundary walls from the soften and fill passes (wave-6 §2c)', () => {
+        const grid = singleFloorCellGrid();
+        // Same deterministic diamond as above (center idx0, radii 0.5/0.5,
+        // shape roll 0.5), but with a fallback of 0 so every subsequent
+        // soften roll fires (0 < every soften chance) and the fill loop
+        // picks candidate index 0 forever — maximum blind erosion pressure.
+        // floorTarget 1 makes the fill loop run until candidates run out.
+        const random = sequenceRandom([0, 0.5, 0.5, 0.5], 0);
+        const protectedCells = new Set();
+        openMazeTerrain(grid, random, {
+            plazaCount: 1,
+            floorTarget: 1,
+            minRadius: 2,
+            maxRadius: 4,
+            protectedCells
+        });
+
+        // The diamond's diagonal boundary wall survives — pre-fix, soften
+        // alone carved it on the first pass (grid[11][11] neighbors floor,
+        // and random()=0 beats every chance threshold).
+        expect(protectedCells.size).toBeGreaterThan(0);
+        expect(grid[11][11]).toBe('#');
+        // With the whole rest of the grid solid, every soften/fill candidate
+        // was a boundary wall — so the diamond stayed pristine and the fill
+        // loop stopped instead of eroding the silhouette to hit its target.
+        for (const key of protectedCells) {
+            const [x, y] = key.split(',').map(Number);
+            expect(grid[y][x]).toBe('#');
+        }
+    });
 });
 
 describe('connectPortalsInward', () => {
@@ -261,5 +292,36 @@ describe('connectPortalsInward', () => {
         connectPortalsInward(grid);
         // The portal row is now carved all the way to the arena.
         for (let x = 0; x <= 6; x++) expect(grid[9][x]).toBe('.');
+    });
+});
+
+describe('findFarthestFloorCell', () => {
+    function makeOpenGrid(size) {
+        return Array.from({ length: size }, () => Array(size).fill('.'));
+    }
+
+    it('returns null when the start cell is not open floor', () => {
+        const grid = makeOpenGrid(5);
+        grid[2][2] = '#';
+        expect(findFarthestFloorCell(grid, 2, 2)).toBeNull();
+    });
+
+    it('finds the corner farthest from the center in an open room', () => {
+        const grid = makeOpenGrid(9);
+        const result = findFarthestFloorCell(grid, 4, 4);
+        expect(result).not.toBeNull();
+        // Every corner is equidistant (Manhattan-BFS) at distance 8 from center.
+        expect(result.distance).toBe(8);
+        expect([0, 8]).toContain(result.x);
+        expect([0, 8]).toContain(result.y);
+    });
+
+    it('routes around walls instead of returning straight-line distance', () => {
+        // A single row gap forces a detour around a dividing wall.
+        const grid = makeOpenGrid(5);
+        for (let y = 0; y < 5; y += 1) grid[y][2] = '#';
+        grid[4][2] = '.'; // one gap at the bottom row
+        const result = findFarthestFloorCell(grid, 0, 0);
+        expect(result).toEqual({ x: 4, y: 0, distance: 12 });
     });
 });

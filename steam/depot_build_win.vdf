@@ -1,0 +1,20 @@
+"DepotBuild"
+{
+    "DepotID" "4957042"
+    "FileMapping"
+    {
+        "LocalPath" "win-unpacked/*"
+        "DepotPath" "win-unpacked"
+        "recursive" "1"
+    }
+
+    "FileExclusion" "steam_appid.txt"
+    "FileExclusion" ".env"
+    "FileExclusion" ".env.*"
+    "FileExclusion" "db_storage.json"
+    "FileExclusion" "db_storage.json.tmp"
+    "FileExclusion" "*.pem"
+    "FileExclusion" "*.p12"
+    "FileExclusion" "*.pfx"
+    "FileExclusion" "*.key"
+}

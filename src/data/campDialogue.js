@@ -225,6 +225,42 @@ export const LEADER_DIALOGUE = Object.freeze({
                 loop: 'Rhun: I am your wall. Point me at something.'
             }
         ]
+    },
+    scientist: {
+        label: 'DR. OKONKWO-VASS',
+        stages: [
+            {
+                beats: [
+                    ['OKONKWO-VASS: YOU MOVE LIKE SOMEONE WHO HASN\'T BEEN BITTEN YET.', 'OKONKWO-VASS: I STUDY THE SHELLED ONES. THEY\'RE NOT AS SIMPLE AS THE REPORTS SAY.'],
+                    ['OKONKWO-VASS: EVERY CAMP LOGS THEM AS VERMIN. I THINK THAT\'S LAZY SCIENCE.']
+                ],
+                loop: 'OKONKWO-VASS: COME BACK WHEN YOU\'VE SEEN MORE OF THEM. I WANT DATA, NOT STORIES.',
+                next: { talks: 2 }
+            },
+            {
+                beats: [
+                    ['OKONKWO-VASS: HERE\'S MY THEORY. THEY DON\'T HATE US. THEY READ US.', 'OKONKWO-VASS: SOMETHING ABOUT WHAT WE CARRY. CHEMICAL, MAYBE. I CAN\'T TEST IT FROM HERE.'],
+                    ['OKONKWO-VASS: IF YOU EVER CHANGE — AND OUT HERE, PEOPLE DO — WATCH HOW THEY LOOK AT YOU.']
+                ],
+                loop: 'OKONKWO-VASS: STILL WAITING ON SOMETHING TO CHANGE, OPERATOR. THE DREAM TURNING OVER, THEY SAY.',
+                next: { talks: 2, postReveal: true }
+            },
+            {
+                beats: [
+                    ['OKONKWO-VASS: YOU\'RE DIFFERENT NOW. I CAN SEE IT ON YOU.', 'OKONKWO-VASS: SO HERE\'S THE ASK. DON\'T KILL ONE. TALK TO ONE. PROVE ME RIGHT.'],
+                    ['OKONKWO-VASS: IF I\'M WRONG, YOU LOSE NOTHING BUT A FEW MINUTES. IF I\'M RIGHT...']
+                ],
+                loop: 'OKONKWO-VASS: FIND ONE. STAND YOUR GROUND. SEE WHAT IT DOES.',
+                next: { talks: 1, questFlag: 'snail_befriended' }
+            },
+            {
+                beats: [
+                    ['OKONKWO-VASS: IT WORKED. IT ACTUALLY WORKED.', 'OKONKWO-VASS: I\'VE SPENT TWO YEARS CALLING THEM PESTS. I OWE THEM AN APOLOGY I CAN\'T GIVE.'],
+                    ['OKONKWO-VASS: WHATEVER YOU\'RE BECOMING, OPERATOR — IT LISTENS BETTER THAN WE DO.']
+                ],
+                loop: 'OKONKWO-VASS: GO CARE FOR YOUR NEW FRIEND. THAT\'S THE WHOLE PAPER, RIGHT THERE.'
+            }
+        ]
     }
 });
 
@@ -245,11 +281,12 @@ export function leaderKeyFromName(name = '') {
     return LEADER_KEYS.find((key) => lower.includes(key)) ?? null;
 }
 
-function meetsRequirements(next = {}, ctx = {}) {
+export function meetsRequirements(next = {}, ctx = {}) {
     if ((ctx.talks ?? 0) < (next.talks ?? 0)) return false;
     if (next.level != null && (ctx.level ?? 0) < next.level) return false;
     if (next.bond != null && (ctx.bond ?? 0) < next.bond) return false;
     if (next.postReveal && !ctx.postReveal) return false;
+    if (next.questFlag && ctx.questFlags?.[next.questFlag] !== 'done') return false;
     return true;
 }
 

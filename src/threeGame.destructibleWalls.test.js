@@ -104,4 +104,32 @@ describe('destructible wall grid persistence', () => {
         expect(fakeThis._wallDecals).toEqual([otherDecal]);
         expect(fakeThis.transientEffects).toEqual([otherDecal]);
     });
+
+    it('clones shared material and shifts color and emissive when damaged', () => {
+        const sharedMat = { clone: vi.fn(() => ({ color: { getHex: () => 0x808b96, copy: vi.fn().mockReturnThis(), lerp: vi.fn() }, emissive: { setHex: vi.fn() }, emissiveIntensity: 0 })) };
+        const wall = {
+            userData: { isWall: true, wallHp: 10, maxWallHp: 10, worldX: 2, worldZ: 3 },
+            material: sharedMat
+        };
+        const fakeThis = {
+            wallMaterial: sharedMat,
+            updateWallDamageColor: ThreeGame.prototype.updateWallDamageColor,
+            destroyWall: vi.fn()
+        };
+
+        const result = call('damageWall', fakeThis, wall, 5);
+
+        expect(result).toBe(false);
+        expect(wall.userData.wallHp).toBe(5);
+        expect(sharedMat.clone).toHaveBeenCalled();
+        expect(wall.material.emissive.setHex).toHaveBeenCalledWith(0xff2200);
+        expect(wall.material.emissiveIntensity).toBeGreaterThan(0);
+    });
+
+    it('tunes door HP lower than standard walls for quick breaching', () => {
+        const fakeThis = {};
+        const doorHp = call('getWallMaxHp', fakeThis, { variant: 'door', isDoor: true, heightScale: 1 });
+        expect(doorHp).toBeLessThan(5);
+        expect(doorHp).toBe(3);
+    });
 });

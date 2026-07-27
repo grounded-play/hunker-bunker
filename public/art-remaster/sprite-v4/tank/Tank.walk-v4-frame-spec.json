@@ -1,0 +1,2287 @@
+{
+  "version": 4,
+  "character": "TANK",
+  "purpose": "explicit anatomical truth table for every walk-atlas cell",
+  "identityMaster": "identity/Tank.front-idle-master.png",
+  "atlas": "Tank.walk_v4.png",
+  "grid": {
+    "columns": 8,
+    "rows": 8,
+    "cellWidth": 256,
+    "cellHeight": 256
+  },
+  "directionOrder": [
+    "east",
+    "southeast",
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast"
+  ],
+  "phaseOrder": [
+    "left-contact",
+    "left-down",
+    "left-pass",
+    "left-up",
+    "right-contact",
+    "right-down",
+    "right-pass",
+    "right-up"
+  ],
+  "legMarkers": {
+    "left": {
+      "hip": "cyan-circular-fastener",
+      "knee": "cyan-split-kneepad-with-vertical-seam",
+      "ankle": "cyan-ankle-light"
+    },
+    "right": {
+      "hip": "amber-circular-fastener",
+      "knee": "amber-solid-kneepad-without-seam",
+      "ankle": "amber-ankle-light"
+    }
+  },
+  "frames": [
+    {
+      "atlasRow": 0,
+      "atlasColumn": 0,
+      "frameId": "east.left-contact",
+      "direction": "east",
+      "view": "strict-right-profile",
+      "travelScreen": "right",
+      "phase": "left-contact",
+      "supportLeg": "left-entering",
+      "strikeFoot": "left",
+      "airborneFoot": null,
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 0,
+      "atlasColumn": 1,
+      "frameId": "east.left-down",
+      "direction": "east",
+      "view": "strict-right-profile",
+      "travelScreen": "right",
+      "phase": "left-down",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right-heel",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 0,
+      "atlasColumn": 2,
+      "frameId": "east.left-pass",
+      "direction": "east",
+      "view": "strict-right-profile",
+      "travelScreen": "right",
+      "phase": "left-pass",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 0,
+      "atlasColumn": 3,
+      "frameId": "east.left-up",
+      "direction": "east",
+      "view": "strict-right-profile",
+      "travelScreen": "right",
+      "phase": "left-up",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 0,
+      "atlasColumn": 4,
+      "frameId": "east.right-contact",
+      "direction": "east",
+      "view": "strict-right-profile",
+      "travelScreen": "right",
+      "phase": "right-contact",
+      "supportLeg": "right-entering",
+      "strikeFoot": "right",
+      "airborneFoot": null,
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 0,
+      "atlasColumn": 5,
+      "frameId": "east.right-down",
+      "direction": "east",
+      "view": "strict-right-profile",
+      "travelScreen": "right",
+      "phase": "right-down",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left-heel",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 0,
+      "atlasColumn": 6,
+      "frameId": "east.right-pass",
+      "direction": "east",
+      "view": "strict-right-profile",
+      "travelScreen": "right",
+      "phase": "right-pass",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 0,
+      "atlasColumn": 7,
+      "frameId": "east.right-up",
+      "direction": "east",
+      "view": "strict-right-profile",
+      "travelScreen": "right",
+      "phase": "right-up",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 1,
+      "atlasColumn": 0,
+      "frameId": "southeast.left-contact",
+      "direction": "southeast",
+      "view": "front-right-three-quarter",
+      "travelScreen": "down-right",
+      "phase": "left-contact",
+      "supportLeg": "left-entering",
+      "strikeFoot": "left",
+      "airborneFoot": null,
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 1,
+      "atlasColumn": 1,
+      "frameId": "southeast.left-down",
+      "direction": "southeast",
+      "view": "front-right-three-quarter",
+      "travelScreen": "down-right",
+      "phase": "left-down",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right-heel",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 1,
+      "atlasColumn": 2,
+      "frameId": "southeast.left-pass",
+      "direction": "southeast",
+      "view": "front-right-three-quarter",
+      "travelScreen": "down-right",
+      "phase": "left-pass",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 1,
+      "atlasColumn": 3,
+      "frameId": "southeast.left-up",
+      "direction": "southeast",
+      "view": "front-right-three-quarter",
+      "travelScreen": "down-right",
+      "phase": "left-up",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 1,
+      "atlasColumn": 4,
+      "frameId": "southeast.right-contact",
+      "direction": "southeast",
+      "view": "front-right-three-quarter",
+      "travelScreen": "down-right",
+      "phase": "right-contact",
+      "supportLeg": "right-entering",
+      "strikeFoot": "right",
+      "airborneFoot": null,
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 1,
+      "atlasColumn": 5,
+      "frameId": "southeast.right-down",
+      "direction": "southeast",
+      "view": "front-right-three-quarter",
+      "travelScreen": "down-right",
+      "phase": "right-down",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left-heel",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 1,
+      "atlasColumn": 6,
+      "frameId": "southeast.right-pass",
+      "direction": "southeast",
+      "view": "front-right-three-quarter",
+      "travelScreen": "down-right",
+      "phase": "right-pass",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 1,
+      "atlasColumn": 7,
+      "frameId": "southeast.right-up",
+      "direction": "southeast",
+      "view": "front-right-three-quarter",
+      "travelScreen": "down-right",
+      "phase": "right-up",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 2,
+      "atlasColumn": 0,
+      "frameId": "south.left-contact",
+      "direction": "south",
+      "view": "direct-front",
+      "travelScreen": "down",
+      "phase": "left-contact",
+      "supportLeg": "left-entering",
+      "strikeFoot": "left",
+      "airborneFoot": null,
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 2,
+      "atlasColumn": 1,
+      "frameId": "south.left-down",
+      "direction": "south",
+      "view": "direct-front",
+      "travelScreen": "down",
+      "phase": "left-down",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right-heel",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 2,
+      "atlasColumn": 2,
+      "frameId": "south.left-pass",
+      "direction": "south",
+      "view": "direct-front",
+      "travelScreen": "down",
+      "phase": "left-pass",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 2,
+      "atlasColumn": 3,
+      "frameId": "south.left-up",
+      "direction": "south",
+      "view": "direct-front",
+      "travelScreen": "down",
+      "phase": "left-up",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 2,
+      "atlasColumn": 4,
+      "frameId": "south.right-contact",
+      "direction": "south",
+      "view": "direct-front",
+      "travelScreen": "down",
+      "phase": "right-contact",
+      "supportLeg": "right-entering",
+      "strikeFoot": "right",
+      "airborneFoot": null,
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 2,
+      "atlasColumn": 5,
+      "frameId": "south.right-down",
+      "direction": "south",
+      "view": "direct-front",
+      "travelScreen": "down",
+      "phase": "right-down",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left-heel",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 2,
+      "atlasColumn": 6,
+      "frameId": "south.right-pass",
+      "direction": "south",
+      "view": "direct-front",
+      "travelScreen": "down",
+      "phase": "right-pass",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 2,
+      "atlasColumn": 7,
+      "frameId": "south.right-up",
+      "direction": "south",
+      "view": "direct-front",
+      "travelScreen": "down",
+      "phase": "right-up",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 3,
+      "atlasColumn": 0,
+      "frameId": "southwest.left-contact",
+      "direction": "southwest",
+      "view": "front-left-three-quarter",
+      "travelScreen": "down-left",
+      "phase": "left-contact",
+      "supportLeg": "left-entering",
+      "strikeFoot": "left",
+      "airborneFoot": null,
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 3,
+      "atlasColumn": 1,
+      "frameId": "southwest.left-down",
+      "direction": "southwest",
+      "view": "front-left-three-quarter",
+      "travelScreen": "down-left",
+      "phase": "left-down",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right-heel",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 3,
+      "atlasColumn": 2,
+      "frameId": "southwest.left-pass",
+      "direction": "southwest",
+      "view": "front-left-three-quarter",
+      "travelScreen": "down-left",
+      "phase": "left-pass",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 3,
+      "atlasColumn": 3,
+      "frameId": "southwest.left-up",
+      "direction": "southwest",
+      "view": "front-left-three-quarter",
+      "travelScreen": "down-left",
+      "phase": "left-up",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 3,
+      "atlasColumn": 4,
+      "frameId": "southwest.right-contact",
+      "direction": "southwest",
+      "view": "front-left-three-quarter",
+      "travelScreen": "down-left",
+      "phase": "right-contact",
+      "supportLeg": "right-entering",
+      "strikeFoot": "right",
+      "airborneFoot": null,
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 3,
+      "atlasColumn": 5,
+      "frameId": "southwest.right-down",
+      "direction": "southwest",
+      "view": "front-left-three-quarter",
+      "travelScreen": "down-left",
+      "phase": "right-down",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left-heel",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 3,
+      "atlasColumn": 6,
+      "frameId": "southwest.right-pass",
+      "direction": "southwest",
+      "view": "front-left-three-quarter",
+      "travelScreen": "down-left",
+      "phase": "right-pass",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 3,
+      "atlasColumn": 7,
+      "frameId": "southwest.right-up",
+      "direction": "southwest",
+      "view": "front-left-three-quarter",
+      "travelScreen": "down-left",
+      "phase": "right-up",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 4,
+      "atlasColumn": 0,
+      "frameId": "west.left-contact",
+      "direction": "west",
+      "view": "strict-left-profile",
+      "travelScreen": "left",
+      "phase": "left-contact",
+      "supportLeg": "left-entering",
+      "strikeFoot": "left",
+      "airborneFoot": null,
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 4,
+      "atlasColumn": 1,
+      "frameId": "west.left-down",
+      "direction": "west",
+      "view": "strict-left-profile",
+      "travelScreen": "left",
+      "phase": "left-down",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right-heel",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 4,
+      "atlasColumn": 2,
+      "frameId": "west.left-pass",
+      "direction": "west",
+      "view": "strict-left-profile",
+      "travelScreen": "left",
+      "phase": "left-pass",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 4,
+      "atlasColumn": 3,
+      "frameId": "west.left-up",
+      "direction": "west",
+      "view": "strict-left-profile",
+      "travelScreen": "left",
+      "phase": "left-up",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 4,
+      "atlasColumn": 4,
+      "frameId": "west.right-contact",
+      "direction": "west",
+      "view": "strict-left-profile",
+      "travelScreen": "left",
+      "phase": "right-contact",
+      "supportLeg": "right-entering",
+      "strikeFoot": "right",
+      "airborneFoot": null,
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 4,
+      "atlasColumn": 5,
+      "frameId": "west.right-down",
+      "direction": "west",
+      "view": "strict-left-profile",
+      "travelScreen": "left",
+      "phase": "right-down",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left-heel",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 4,
+      "atlasColumn": 6,
+      "frameId": "west.right-pass",
+      "direction": "west",
+      "view": "strict-left-profile",
+      "travelScreen": "left",
+      "phase": "right-pass",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 4,
+      "atlasColumn": 7,
+      "frameId": "west.right-up",
+      "direction": "west",
+      "view": "strict-left-profile",
+      "travelScreen": "left",
+      "phase": "right-up",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 5,
+      "atlasColumn": 0,
+      "frameId": "northwest.left-contact",
+      "direction": "northwest",
+      "view": "rear-left-three-quarter",
+      "travelScreen": "up-left",
+      "phase": "left-contact",
+      "supportLeg": "left-entering",
+      "strikeFoot": "left",
+      "airborneFoot": null,
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 5,
+      "atlasColumn": 1,
+      "frameId": "northwest.left-down",
+      "direction": "northwest",
+      "view": "rear-left-three-quarter",
+      "travelScreen": "up-left",
+      "phase": "left-down",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right-heel",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 5,
+      "atlasColumn": 2,
+      "frameId": "northwest.left-pass",
+      "direction": "northwest",
+      "view": "rear-left-three-quarter",
+      "travelScreen": "up-left",
+      "phase": "left-pass",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 5,
+      "atlasColumn": 3,
+      "frameId": "northwest.left-up",
+      "direction": "northwest",
+      "view": "rear-left-three-quarter",
+      "travelScreen": "up-left",
+      "phase": "left-up",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 5,
+      "atlasColumn": 4,
+      "frameId": "northwest.right-contact",
+      "direction": "northwest",
+      "view": "rear-left-three-quarter",
+      "travelScreen": "up-left",
+      "phase": "right-contact",
+      "supportLeg": "right-entering",
+      "strikeFoot": "right",
+      "airborneFoot": null,
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 5,
+      "atlasColumn": 5,
+      "frameId": "northwest.right-down",
+      "direction": "northwest",
+      "view": "rear-left-three-quarter",
+      "travelScreen": "up-left",
+      "phase": "right-down",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left-heel",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 5,
+      "atlasColumn": 6,
+      "frameId": "northwest.right-pass",
+      "direction": "northwest",
+      "view": "rear-left-three-quarter",
+      "travelScreen": "up-left",
+      "phase": "right-pass",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 5,
+      "atlasColumn": 7,
+      "frameId": "northwest.right-up",
+      "direction": "northwest",
+      "view": "rear-left-three-quarter",
+      "travelScreen": "up-left",
+      "phase": "right-up",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 6,
+      "atlasColumn": 0,
+      "frameId": "north.left-contact",
+      "direction": "north",
+      "view": "direct-back",
+      "travelScreen": "up",
+      "phase": "left-contact",
+      "supportLeg": "left-entering",
+      "strikeFoot": "left",
+      "airborneFoot": null,
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 6,
+      "atlasColumn": 1,
+      "frameId": "north.left-down",
+      "direction": "north",
+      "view": "direct-back",
+      "travelScreen": "up",
+      "phase": "left-down",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right-heel",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 6,
+      "atlasColumn": 2,
+      "frameId": "north.left-pass",
+      "direction": "north",
+      "view": "direct-back",
+      "travelScreen": "up",
+      "phase": "left-pass",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 6,
+      "atlasColumn": 3,
+      "frameId": "north.left-up",
+      "direction": "north",
+      "view": "direct-back",
+      "travelScreen": "up",
+      "phase": "left-up",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 6,
+      "atlasColumn": 4,
+      "frameId": "north.right-contact",
+      "direction": "north",
+      "view": "direct-back",
+      "travelScreen": "up",
+      "phase": "right-contact",
+      "supportLeg": "right-entering",
+      "strikeFoot": "right",
+      "airborneFoot": null,
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 6,
+      "atlasColumn": 5,
+      "frameId": "north.right-down",
+      "direction": "north",
+      "view": "direct-back",
+      "travelScreen": "up",
+      "phase": "right-down",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left-heel",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 6,
+      "atlasColumn": 6,
+      "frameId": "north.right-pass",
+      "direction": "north",
+      "view": "direct-back",
+      "travelScreen": "up",
+      "phase": "right-pass",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 6,
+      "atlasColumn": 7,
+      "frameId": "north.right-up",
+      "direction": "north",
+      "view": "direct-back",
+      "travelScreen": "up",
+      "phase": "right-up",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 7,
+      "atlasColumn": 0,
+      "frameId": "northeast.left-contact",
+      "direction": "northeast",
+      "view": "rear-right-three-quarter",
+      "travelScreen": "up-right",
+      "phase": "left-contact",
+      "supportLeg": "left-entering",
+      "strikeFoot": "left",
+      "airborneFoot": null,
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 7,
+      "atlasColumn": 1,
+      "frameId": "northeast.left-down",
+      "direction": "northeast",
+      "view": "rear-right-three-quarter",
+      "travelScreen": "up-right",
+      "phase": "left-down",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right-heel",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 7,
+      "atlasColumn": 2,
+      "frameId": "northeast.left-pass",
+      "direction": "northeast",
+      "view": "rear-right-three-quarter",
+      "travelScreen": "up-right",
+      "phase": "left-pass",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 7,
+      "atlasColumn": 3,
+      "frameId": "northeast.left-up",
+      "direction": "northeast",
+      "view": "rear-right-three-quarter",
+      "travelScreen": "up-right",
+      "phase": "left-up",
+      "supportLeg": "left",
+      "strikeFoot": null,
+      "airborneFoot": "right",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 7,
+      "atlasColumn": 4,
+      "frameId": "northeast.right-contact",
+      "direction": "northeast",
+      "view": "rear-right-three-quarter",
+      "travelScreen": "up-right",
+      "phase": "right-contact",
+      "supportLeg": "right-entering",
+      "strikeFoot": "right",
+      "airborneFoot": null,
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 7,
+      "atlasColumn": 5,
+      "frameId": "northeast.right-down",
+      "direction": "northeast",
+      "view": "rear-right-three-quarter",
+      "travelScreen": "up-right",
+      "phase": "right-down",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left-heel",
+      "forwardArm": "left",
+      "rearArm": "right",
+      "pelvisLevel": "low",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 7,
+      "atlasColumn": 6,
+      "frameId": "northeast.right-pass",
+      "direction": "northeast",
+      "view": "rear-right-three-quarter",
+      "travelScreen": "up-right",
+      "phase": "right-pass",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "neutral",
+      "rearArm": "neutral",
+      "pelvisLevel": "neutral",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    },
+    {
+      "atlasRow": 7,
+      "atlasColumn": 7,
+      "frameId": "northeast.right-up",
+      "direction": "northeast",
+      "view": "rear-right-three-quarter",
+      "travelScreen": "up-right",
+      "phase": "right-up",
+      "supportLeg": "right",
+      "strikeFoot": null,
+      "airborneFoot": "left",
+      "forwardArm": "right",
+      "rearArm": "left",
+      "pelvisLevel": "high",
+      "anatomicalMarkers": {
+        "left": {
+          "hip": "cyan-circular-fastener",
+          "knee": "cyan-split-kneepad-with-vertical-seam",
+          "ankle": "cyan-ankle-light"
+        },
+        "right": {
+          "hip": "amber-circular-fastener",
+          "knee": "amber-solid-kneepad-without-seam",
+          "ankle": "amber-ankle-light"
+        }
+      },
+      "movementCharacter": "short, wide, heavy compression",
+      "invariants": {
+        "helmetTopY": "locked-to-class-anchor",
+        "pelvisX": 128,
+        "groundBaselineY": 240,
+        "scale": "locked",
+        "costume": "identity/Tank.front-idle-master.png"
+      }
+    }
+  ]
+}

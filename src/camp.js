@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
+import { assetUrl } from './assetUrl.js';
 
 const LEADER_SPRITESHEETS = {
     'Commander Briggs': '/briggs_camp_walk_v2.png',
@@ -9,9 +10,9 @@ const LEADER_SPRITESHEETS = {
 };
 
 const LEADER_BOSS_SPRITESHEETS = {
-    'Commander Briggs': '/boss_corrupted_tank.png',
-    'Sister Martha': '/boss_corrupted_scout.png',
-    'Overseer Kaelen': '/boss_corrupted_engineer.png'
+    'Commander Briggs': '/boss_corrupted_tank_v2.png',
+    'Sister Martha': '/boss_corrupted_scout_v2.png',
+    'Overseer Kaelen': '/boss_corrupted_engineer_v2.png'
 };
 
 function makeLeaderFallbackCanvas({ color = 0xffe9b0, isBoss = false, label = '?' } = {}) {
@@ -115,7 +116,7 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
         applyFallbackToTexture(texture, fallbackCanvas);
         if (onLoad) onLoad(texture);
     };
-    image.src = path;
+    image.src = assetUrl(path);
     return texture;
 }
 
@@ -756,7 +757,7 @@ export class SurvivorCamp {
         if (this.npcSprite && this.npcMaterial) {
             const useBossSheet = this.leaderIsBoss || next === 'turned';
             const sheetPath = useBossSheet
-                ? (this.leaderInfo?.bossSprite ?? LEADER_BOSS_SPRITESHEETS[this.leaderName] ?? '/boss_corrupted_scout.png')
+                ? (this.leaderInfo?.bossSprite ?? LEADER_BOSS_SPRITESHEETS[this.leaderName] ?? '/boss_corrupted_scout_v2.png')
                 : (this.leaderInfo?.sprite ?? LEADER_SPRITESHEETS[this.leaderName] ?? '/martha_camp_walk.png');
             if (sheetPath !== this.npcSpritePath) {
                 this.npcSpritePath = sheetPath;

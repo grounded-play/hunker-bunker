@@ -13,6 +13,9 @@ const CUTSCENE_TIMING = Object.freeze({
     fadeOutMs: 3000,
     finishMs: 3200
 });
+const INITIAL_STAR_COUNT = 48;
+const STREAM_STAR_BATCH = 2;
+const STREAM_STAR_INTERVAL_MS = 80;
 
 export class CutsceneManager {
     constructor({
@@ -76,8 +79,8 @@ export class CutsceneManager {
         this.overlayEl.setAttribute('aria-hidden', 'false');
         this.overlayEl.classList.add('is-active');
 
-        this.shipEl.src = preparedSprite;
-        this.wreckEl.src = preparedWreck ?? preparedSprite;
+        this.shipEl.src = assetUrl(preparedSprite);
+        this.wreckEl.src = assetUrl(preparedWreck ?? preparedSprite);
         this.shipEl.style.opacity = '0';
         this.shipEl.style.transition = 'none';
         this.wreckEl.classList.add('hidden');
@@ -243,16 +246,16 @@ export class CutsceneManager {
 
         const spawn = () => {
             if (this.activeRunId !== runId || !this.starfieldEl) return;
-            for (let index = 0; index < 7; index++) {
+            for (let index = 0; index < STREAM_STAR_BATCH; index++) {
                 this.spawnStar(width, height);
             }
         };
 
-        for (let index = 0; index < 120; index++) {
+        for (let index = 0; index < INITIAL_STAR_COUNT; index++) {
             this.spawnStar(width, height);
         }
 
-        this.starStreamTimer = window.setInterval(spawn, 34);
+        this.starStreamTimer = window.setInterval(spawn, STREAM_STAR_INTERVAL_MS);
     }
 
     stopStarField() {
@@ -347,7 +350,7 @@ export class CutsceneManager {
             };
 
             image.onerror = () => resolve(spritePath);
-            image.src = spritePath;
+            image.src = assetUrl(spritePath);
         });
 
         this.spriteCache.set(spritePath, prepared);
@@ -376,3 +379,4 @@ export class CutsceneManager {
         element.style.transform = transform;
     }
 }
+import { assetUrl } from './assetUrl.js';

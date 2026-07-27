@@ -17,5 +17,6 @@
     "Depots"
     {
         "4957041" "depot_build_content.vdf"
+        "4957042" "depot_build_win.vdf"
     }
 }

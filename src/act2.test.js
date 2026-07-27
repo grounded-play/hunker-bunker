@@ -781,3 +781,51 @@ describe('dialogue stages and finals', () => {
         expect(hive.status).toBe('bonded');
     });
 });
+
+describe('scientist state slice', () => {
+    it('normalizeAct2State includes a scientist record with defaults', () => {
+        const state = normalizeAct2State({});
+        expect(state.scientist).toEqual({
+            dialogueStage: 0,
+            stageTalks: 0,
+            questFlags: {}
+        });
+    });
+
+    it('preserves a persisted scientist record', () => {
+        const state = normalizeAct2State({
+            scientist: { dialogueStage: 2, stageTalks: 1, questFlags: { snail_befriended: 'done' } }
+        });
+        expect(state.scientist).toEqual({
+            dialogueStage: 2,
+            stageTalks: 1,
+            questFlags: { snail_befriended: 'done' }
+        });
+    });
+});
+
+describe('Act2Manager scientist dialogue', () => {
+    const boot = () => new Act2Manager({ storage: memoryStorage() });
+
+    it('recordDialogueTalk and advanceDialogueStage work for kind "scientist"', () => {
+        const m = boot();
+        m.recordDialogueTalk('scientist', 'scientist');
+        expect(m.getState().scientist.stageTalks).toBe(1);
+        m.advanceDialogueStage('scientist', 'scientist');
+        expect(m.getState().scientist.dialogueStage).toBe(1);
+        expect(m.getState().scientist.stageTalks).toBe(1);
+    });
+
+    it('completeScientistQuest marks the named flag done', () => {
+        const m = boot();
+        m.completeScientistQuest('snail_befriended');
+        expect(m.getState().scientist.questFlags.snail_befriended).toBe('done');
+    });
+
+    it('completeScientistQuest is idempotent', () => {
+        const m = boot();
+        m.completeScientistQuest('snail_befriended');
+        m.completeScientistQuest('snail_befriended');
+        expect(m.getState().scientist.questFlags.snail_befriended).toBe('done');
+    });
+});

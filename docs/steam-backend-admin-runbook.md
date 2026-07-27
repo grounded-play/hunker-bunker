@@ -299,6 +299,36 @@ work:
 6. Only after a successful beta soak, consider multiple backend instances with a
    server database such as Postgres.
 
+## Resetting achievements for a QA/beta tester
+
+`ISteamUserStats::ResetAllStats` only ever resets the Steam account that is
+*currently logged into the running game*. There is no server-side or
+remote way to reset a different Steam user's achievements — the tester (or
+someone at their machine, logged in as them) has to trigger it themselves,
+while the game is running under their account.
+
+The game exposes this as a debug-console command, gated so it does not
+exist in a normal player's build:
+
+1. Launch the build with `HB_QA_TOOLS_ENABLED=1` set in the environment —
+   the cleanest way is a Steam beta branch's own launch options, so only
+   testers opted into that branch ever have the capability. The public
+   default branch should never set this.
+2. In the running game, open the debug console (`~`) and run:
+
+   ```text
+   resetachievements confirm
+   ```
+
+3. This calls `steamClient.stats.resetAll(true)` in the Electron main
+   process and re-stores stats. It requires the `confirm` argument because,
+   unlike this console's other cheats, it's a real, immediate action against
+   the tester's real Steam profile, not local run state.
+
+If `HB_QA_TOOLS_ENABLED` is not set, the IPC handler backing this command is
+never registered at all — the console reports it as disabled rather than
+silently doing nothing.
+
 ## Pre-release acceptance
 
 - `npm run steam:audit-backend:strict` passes with production env.

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import { BaseLights } from './baseLights.js';
@@ -23,6 +24,15 @@ import { HiveSite } from './hiveSite.js';
 import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
+import { computeTrailPosition } from './companionFollow.js';
+import {
+    createEncounter,
+    resolveFight,
+    resolveTalk,
+    resolveFlee,
+    SNAIL_ENCOUNTER_CONSTANTS
+} from './snailEncounter.js';
+import { cappedPixelRatio } from './renderScale.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
 import { getDialogueLine } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
@@ -33,10 +43,25 @@ import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
-import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain } from './landforms.js';
+import { LANDFORMS, pickLandform, applyLandform, applyRingRoadSystem, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
+import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
 import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES } from './bossPhases.js';
+import { debugLog } from './debugConsole.js';
+import {
+    PLAYER_DEFAULT_DIRECTION_INDEX,
+    PLAYER_SPRITE_LAYOUTS,
+    getDirectionIndexFromWorldVector,
+    getPlayerSpriteLayout
+} from './playerSpriteLayouts.js';
+import { repackGeneratedSpriteAtlas } from './spriteAtlasRuntime.js';
+import {
+    ENEMY_SPRITE_LAYOUTS,
+    STATIC_ENEMY_SPRITE_PATHS,
+    getEnemyDirectionRow,
+    getEnemySpriteLayout
+} from './enemySpriteLayouts.js';
 
 
 const PLAYER_COLORS = {
@@ -45,43 +70,10 @@ const PLAYER_COLORS = {
     ENGINEER: 0x00e5ff
 };
 
-const PLAYER_SPRITESHEET_PATHS = {
-    SCOUT: '/Scout.full.jpeg',
-    TANK: '/Tank.full.jpeg',
-    ENGINEER: '/Eng.Full.jpeg'
-};
-
-const PLAYER_SPRITE_COLUMNS = 4;
-const PLAYER_SPRITE_ROWS = 4;
-const PLAYER_WALK_FRAME_COUNT = 2;
-const PLAYER_SPRITE_FRAME_REPEAT_X = 1 / PLAYER_SPRITE_COLUMNS;
-const PLAYER_SPRITE_FRAME_REPEAT_Y = 1 / PLAYER_SPRITE_ROWS;
-// Packed 8-direction sheet: each entry defines a direction cell pair
-// (row + baseColumn), where frame 0/1 are baseColumn/baseColumn+1.
-// Octant order from atan2(axisZ, axisX):
-// +X, +X+Z, +Z, -X+Z, -X, -X-Z, -Z, +X-Z
-const PLAYER_SPRITE_DIRECTION_CELLS = Object.freeze([
-    Object.freeze({ row: 1, baseColumn: 2 }),
-    Object.freeze({ row: 3, baseColumn: 2 }),
-    Object.freeze({ row: 3, baseColumn: 0 }),
-    Object.freeze({ row: 2, baseColumn: 2 }),
-    Object.freeze({ row: 2, baseColumn: 0 }),
-    Object.freeze({ row: 1, baseColumn: 0 }),
-    Object.freeze({ row: 0, baseColumn: 2 }),
-    Object.freeze({ row: 0, baseColumn: 0 })
-]);
-const PLAYER_DEFAULT_DIRECTION_INDEX = 2;
-const TANK_FLIPPED_DIRECTION_INDICES = new Set([4]);
-// Twin-stick paper-doll: the body sprite is cut at the waist into two stacked
-// billboards. The bottom (legs) follows movement input; the top (torso/head)
-// rotates independently to track the aim/mouse. This is the fraction of the
-// frame height that belongs to the legs.
-const PLAYER_SPRITE_WAIST_SPLIT = 0.5;
 const BUILD_STRUCTURE_GRID_SIZE = 2;
 const BUILD_STRUCTURE_FRAME_REPEAT = 1 / BUILD_STRUCTURE_GRID_SIZE;
 const RADAR_DISH_GRID_SIZE = 2;
 const RADAR_DISH_FRAME_COUNT = RADAR_DISH_GRID_SIZE * RADAR_DISH_GRID_SIZE;
-const SPRITE_ANIMATION_SPEED = 12;
 const SUIT_LIGHT_BASE_INTENSITY = 4.2;
 const SUIT_LIGHT_BASE_DISTANCE = 14.4;
 const SUIT_CONE_LIGHT_COLOR = 0xf2efe2;
@@ -207,10 +199,23 @@ const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
+const FALL_DAMAGE_BASE = 2;
+const POCKET_CELL_COUNT = 5; // odd cell-count, matches chunkCellCount's exact-center property. Grid size = 5*2+1 = 11.
+const POCKET_WORLD_Y = -6; // fixed depth below the surface (y=0)
 const WALL_HP_DAMAGED = 5;
 const WALL_HP_STANDARD = 8;
 const WALL_HP_HAZARD = 11;
 const WALL_HP_CANYON_BONUS = 5;
+// Matches the tinting branches in wallMaterial's fragment shader
+// (configureWallMesh sets uLandformId per-mesh via onBeforeRender).
+const LANDFORM_SHADER_ID = {
+    [LANDFORMS.MAZE]: 0,
+    [LANDFORMS.FIELD]: 1,
+    [LANDFORMS.CANYON]: 2,
+    [LANDFORMS.CRATER]: 3,
+    [LANDFORMS.RUINS]: 4,
+    pocket: 5
+};
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
 
@@ -365,6 +370,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     interact: ['KeyE', null],
     reload: ['KeyR', null],
     ability: ['KeyF', null],
+    dash: ['Space', 'ShiftLeft'],
     scan: ['KeyQ', null],
     sprint: ['ShiftLeft', 'ShiftRight']
 });
@@ -600,16 +606,6 @@ const SNAIL_BIOME_TINTS = Object.freeze({
     bio:    0x88ff88
 });
 
-// Proto enemies (sprint 19 physicality lane): landform-native families.
-// Crawlers nest in ruins, spitters guard crater rims. Their art is 4x4 walk
-// sheets (camp-leader layout), so they animate via UV rows, not scale flips.
-const SHEET_ENEMY_TYPES = Object.freeze({
-    alien_proto_crawler: '/alien_proto_crawler_walk.png',
-    alien_proto_spitter: '/alien_proto_spitter_walk.png',
-    boss_corrupted_scout: '/boss_corrupted_scout.png',
-    boss_corrupted_tank: '/boss_corrupted_tank.png',
-    boss_corrupted_engineer: '/boss_corrupted_engineer.png'
-});
 const PROTO_SPAWN_MAX_PER_CHUNK = 2;
 const PROTO_SPAWN_CHANCE = 0.2;
 const CAMP_CIVILIAN_SPRITES = Object.freeze(['/civilian_miner_walk.png', '/civilian_researcher_walk.png']);
@@ -696,7 +692,8 @@ export class ThreeGame {
 
         this.chunkSize = 19;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
-        this.defaultVisibleChunkRadius = 1;
+        this.disableFogOfWar = true;
+        this.defaultVisibleChunkRadius = 3;
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         this.wallHeight = 2.8;
         this.wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
@@ -724,9 +721,9 @@ export class ThreeGame {
         this.sirenDomeMaterial = new THREE.MeshBasicMaterial({ color: 0xff3333 });
         this.rubbleGeometry = new THREE.DodecahedronGeometry(1.0, 0);
 
-        this.playerRadius = 0.66;
+        this.playerRadius = 0.38;
         this.wallCollisionHalfSize = 0.30;
-        this.wallCollisionPadding = this.playerRadius * 0.88;
+        this.wallCollisionPadding = 0.18;
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = _initialStats.moveSpeed;
         this.o2DrainMult = _initialStats.o2DrainMult;
@@ -736,6 +733,9 @@ export class ThreeGame {
         this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
         this.cameraPlanarRight = new THREE.Vector2(-this.cameraPlanarForward.y, this.cameraPlanarForward.x).normalize();
         this.chunkCache = new Map();
+        this.pocketCache = new Map();
+        this.pocketGroups = new Map();
+        this.isInPocket = false;
         this.chunkMeshes = new Map();
         this.chunkGroups = new THREE.Group();
         this._chunkTemplateCache = new Map();
@@ -757,6 +757,18 @@ export class ThreeGame {
         // array from chunk registries every frame, which silently dropped
         // scene-attached corpses (no decay, no collection).
         this.corpses = [];
+        // Companions (befriended snails) follow this same rule and for the
+        // same reason: they're reparented to the scene root when created
+        // (Task 8 of docs/superpowers/plans/2026-07-26-snail-diplomacy-
+        // encounter.md) specifically so a chunk falling out of the resident
+        // radius as the player travels can't dispose of one mid-follow.
+        this.companions = [];
+        // Non-null while the paused Fight/Talk/Flee overlay is open — see
+        // openSnailEncounter. hasBlockingGameplayOverlay checks the DOM
+        // modal's visibility, not this field directly; this is the actual
+        // battle state (src/snailEncounter.js) driving it.
+        this.encounterState = null;
+        this._encounterSprite = null;
         this.depletedGearPileKeys = new Set();
         this.transientEffects = [];
         this.hitstopTimer = 0;
@@ -836,6 +848,18 @@ export class ThreeGame {
         this.isPlayerDead = false;
         this.o2DispatchTimer = 0;
         this.footstepTimer = 0;
+        this.isDashing = false;
+        this.dashTimer = 0;
+        this.dashCooldownTimer = 0;
+        this.dashDirX = 1;
+        this.dashDirZ = 0;
+        this.iFrameTimer = 0;
+        this.perfectReloadBuffTimer = 0;
+        this.recoilBloom = 0;
+        this.runOverclocks = [];
+        this.runRelics = [];
+        this.activeSynergies = [];
+        this.inRunLootDrops = [];
         this.snailsKilledThisRun = 0;
         this.runStartTime = Date.now();
         this._threatAudioTimer = 0;
@@ -880,6 +904,9 @@ export class ThreeGame {
         this.nightVision = false;
         this._initClassAbility();
 
+        window.threeGame = this;
+        debugLog.info('ENGINE', `ThreeGame initialized | Player: ${this.playerType} | Seed: ${this.runEntropy}`);
+
         this.scale = {
             refresh: () => this.resize()
         };
@@ -917,6 +944,11 @@ export class ThreeGame {
         // most once per site per run — and never again once collected.
         this.loreDrops = [];
         this._loreDropSitesSpawned = new Set();
+        // Lore keys read at a terminal this session — lets the compass's
+        // lore branch move on to the NEXT unread log instead of pointing at
+        // one the player just read (wave-6 punch list: lore had no
+        // compass/radar hint at all).
+        this._readLoreKeys = new Set();
         // Hive swarm sites: the alien mirror of the camps.
         this.hives = [];
         this._hiveSitesReady = false;
@@ -942,14 +974,18 @@ export class ThreeGame {
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 0, 0);
 
-        this.menuPixelRatio = Math.min(window.devicePixelRatio || 1, 2.0);
-        this.gameplayPixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+        // The DOM hero picker covers most of this showroom. Avoid paying the
+        // 4x pixel cost of a 2x display before gameplay starts.
+        this.menuPixelRatio = 1;
+        this.gameplayPixelRatio = 1;
         this.performanceProfile = 'menu';
+        this.menuFrameIntervalMs = 1000 / 30;
+        this._lastMenuRenderAt = 0;
         this.loadingPaused = false;
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         this.renderer.setPixelRatio(this.menuPixelRatio);
-        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.enabled = false;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
         this.darknessOverlay = document.createElement('canvas');
         Object.assign(this.darknessOverlay.style, {
@@ -981,22 +1017,25 @@ export class ThreeGame {
         const grungeRustTex = activeTerrainTextures.floorGrunge;
         const techScratchesTex = activeTerrainTextures.floorDetail;
         this.playerTextures = Object.fromEntries(
-            Object.entries(PLAYER_SPRITESHEET_PATHS).map(([type, path]) => [
+            Object.entries(PLAYER_SPRITE_LAYOUTS).map(([type, layout]) => [
                 type,
-                this.createPlayerSpriteTexture(type, path, textureLoader)
+                this.createPlayerSpriteTexture(type, layout.path, textureLoader)
             ])
         );
 
-        Object.values(this.playerTextures).forEach((texture) => {
+        Object.entries(this.playerTextures).forEach(([type, texture]) => {
+            const layout = getPlayerSpriteLayout(type);
+            const repeatX = 1 / layout.columns;
+            const repeatY = 1 / layout.rows;
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             texture.magFilter = THREE.NearestFilter;
             texture.minFilter = THREE.NearestFilter;
-            texture.repeat.set(PLAYER_SPRITE_FRAME_REPEAT_X, PLAYER_SPRITE_FRAME_REPEAT_Y);
-            const defaultDirection = PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
+            texture.repeat.set(repeatX, repeatY);
+            const defaultDirection = layout.directionCells[PLAYER_DEFAULT_DIRECTION_INDEX];
             texture.offset.set(
-                defaultDirection.baseColumn * PLAYER_SPRITE_FRAME_REPEAT_X,
-                (PLAYER_SPRITE_ROWS - 1 - defaultDirection.row) * PLAYER_SPRITE_FRAME_REPEAT_Y
+                defaultDirection.baseColumn * repeatX,
+                (layout.rows - 1 - defaultDirection.row) * repeatY
             );
         });
 
@@ -1158,6 +1197,10 @@ export class ThreeGame {
             shader.uniforms.tBioWallTop = { value: bioTerrainTextures.wallTop };
             shader.uniforms.tBioWallGrunge = { value: bioTerrainTextures.wallGrunge };
             shader.uniforms.uShipWorldPos = { value: this.biomeShipAnchor };
+            // Set per-mesh right before each wall's draw call (see
+            // configureWallMesh's onBeforeRender) so one shared material can
+            // still read as a distinct wall type per landform.
+            shader.uniforms.uLandformId = { value: 0 };
             this.wallShaderUniforms = shader.uniforms;
 
             // Inject world position and world normal varyings in vertex shader
@@ -1192,6 +1235,18 @@ export class ThreeGame {
                 uniform sampler2D tBioWallTop;
                 uniform sampler2D tBioWallGrunge;
                 uniform vec2 uShipWorldPos;
+                uniform float uLandformId;
+
+                // Cheap deterministic per-tile hash — every wall used to read
+                // identical (same flat color, same texture), so dense wall
+                // regions blurred into one undifferentiated gray slab instead
+                // of individual blocks. Tile-quantized so a whole wall face
+                // shares one value instead of noise per-pixel.
+                float hbWallTileHash(vec2 p) {
+                    p = fract(p * vec2(123.34, 456.21));
+                    p += dot(p, p + 45.32);
+                    return fract(p.x * p.y);
+                }
                 ${shader.fragmentShader}
             `;
 
@@ -1261,6 +1316,34 @@ export class ThreeGame {
 
                     vec3 finalWallColor = mix(bunkerBlended, cryoBlended, cryoMix);
                     finalWallColor = mix(finalWallColor, bioBlended, bioMix);
+
+                    // Landform tint: same bunker-metal texture, biased per
+                    // archetype so a canyon ridge, a crater rim, and a maze
+                    // corridor no longer render as the exact same wall.
+                    vec3 landformTintColor = finalWallColor;
+                    if (uLandformId > 0.5 && uLandformId < 1.5) {
+                        // FIELD — dusty, sun-bleached outcrop rock.
+                        landformTintColor = mix(finalWallColor, vec3(0.58, 0.50, 0.36), 0.22);
+                    } else if (uLandformId > 1.5 && uLandformId < 2.5) {
+                        // CANYON — cold stone ridge.
+                        landformTintColor = mix(finalWallColor, vec3(0.40, 0.46, 0.56), 0.30);
+                    } else if (uLandformId > 2.5 && uLandformId < 3.5) {
+                        // CRATER — scorched impact rim.
+                        landformTintColor = mix(finalWallColor, vec3(0.34, 0.20, 0.14), 0.30);
+                    } else if (uLandformId > 3.5 && uLandformId < 4.5) {
+                        // RUINS — soot and rust damage.
+                        landformTintColor = mix(finalWallColor, vec3(0.28, 0.23, 0.20), 0.32);
+                    } else if (uLandformId > 4.5) {
+                        // POCKET — dim, damp underground concrete.
+                        landformTintColor = mix(finalWallColor, vec3(0.16, 0.17, 0.19), 0.42);
+                    }
+                    finalWallColor = landformTintColor;
+
+                    // Per-tile wear jitter breaks the "one flat slab" read
+                    // when several wall tiles sit side by side.
+                    float tileWear = hbWallTileHash(floor(vWorldPos.xz) + 0.5);
+                    finalWallColor *= mix(0.85, 1.15, tileWear);
+
                     diffuseColor *= vec4(finalWallColor, 1.0);
                 #endif
                 `
@@ -1325,23 +1408,35 @@ export class ThreeGame {
         this.playerMaterial.depthWrite = false;
         this.pickupAssets = this.createPickupAssets();
 
-        // Most scatter assets carry alpha already. Cyber snails are keyed from black
-        // so their background does not render as a dark rectangle.
+        // Living snails use validated directional atlases. The legacy static
+        // Cybersnail remains available for the separate crawler fallback.
         this.scatterTextures = {
-            cybersnail: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
-            cryosnail: this.loadKeyedSpriteTexture('/cryosnail.png', 14),
-            sporesnail: this.loadKeyedSpriteTexture('/sporesnail.png', 14),
-            crawler: this.loadKeyedSpriteTexture('/cybersnail.png', 14),
+            cybersnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.cybersnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.cybersnail
+            }),
+            cryosnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.cryosnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.cryosnail
+            }),
+            sporesnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.sporesnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.sporesnail
+            }),
+            crawler: this.loadKeyedSpriteTexture(STATIC_ENEMY_SPRITE_PATHS.cybersnail, 14),
             civilian_miner: this.loadKeyedSpriteTexture('/civilian_miner_walk.png', 16),
             civilian_researcher: this.loadKeyedSpriteTexture('/civilian_researcher_walk.png', 16),
-            alien_proto_crawler: this.loadKeyedSpriteTexture('/alien_proto_crawler_walk.png', 16),
-            alien_proto_spitter: this.loadKeyedSpriteTexture('/alien_proto_spitter_walk.png', 16),
-            boss_cybersnail: this.loadKeyedSpriteTexture('/boss_cybersnail.png', 14),
-            boss_cryosnail: this.loadKeyedSpriteTexture('/boss_cryosnail.png', 14),
-            boss_sporesnail: this.loadKeyedSpriteTexture('/boss_sporesnail.png', 14),
-            boss_corrupted_scout: this.loadKeyedSpriteTexture('/boss_corrupted_scout.png', 16),
-            boss_corrupted_tank: this.loadKeyedSpriteTexture('/boss_corrupted_tank.png', 16),
-            boss_corrupted_engineer: this.loadKeyedSpriteTexture('/boss_corrupted_engineer.png', 16),
+            alien_proto_crawler: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.alien_proto_crawler.path, 16),
+            alien_proto_spitter: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.alien_proto_spitter.path, 16),
+            boss_cybersnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_cybersnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.boss_cybersnail
+            }),
+            boss_cryosnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_cryosnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.boss_cryosnail
+            }),
+            boss_sporesnail: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_sporesnail.path, 14, null, {
+                layout: ENEMY_SPRITE_LAYOUTS.boss_sporesnail
+            }),
+            boss_corrupted_scout: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_scout.path, 16),
+            boss_corrupted_tank: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_tank.path, 16),
+            boss_corrupted_engineer: this.loadKeyedSpriteTexture(ENEMY_SPRITE_LAYOUTS.boss_corrupted_engineer.path, 16),
             boss_queen: this.loadKeyedSpriteTexture('/queen_silhouette.png', 14),
             bunker_junk: this.loadScatterTexture('/bunker_junk.png', textureLoader),
             bunker_junk_uncommon: this.loadScatterTexture('/bunker_junk_uncommon.png', textureLoader),
@@ -1375,7 +1470,31 @@ export class ThreeGame {
             sporesnail_dead: this.loadKeyedSpriteTexture('/sporesnail_dead.png', 14),
             boss_cybersnail_dead: this.loadKeyedSpriteTexture('/boss_cybersnail_dead.png', 14),
             boss_cryosnail_dead: this.loadKeyedSpriteTexture('/boss_cryosnail_dead.png', 14),
-            boss_sporesnail_dead: this.loadKeyedSpriteTexture('/boss_sporesnail_dead.png', 14)
+            boss_sporesnail_dead: this.loadKeyedSpriteTexture('/boss_sporesnail_dead.png', 14),
+            fungal_spore_vent: this.loadKeyedSpriteTexture('/fungal_spore_vent.png', 14),
+            mycelium_stalker: this.loadKeyedSpriteTexture('/mycelium_stalker.png', 14),
+            bio_charger: this.loadKeyedSpriteTexture('/bio_charger.png', 14),
+            spore_mortar: this.loadKeyedSpriteTexture('/spore_mortar.png', 14),
+            door_biomechanical: this.loadKeyedSpriteTexture('/door_biomechanical.png', 14),
+            prop_biomech_arch: this.loadKeyedSpriteTexture('/prop_biomech_arch.png', 14),
+            prop_cyber_junction: this.loadKeyedSpriteTexture('/prop_cyber_junction.png', 14),
+            prop_specimen_tank: this.loadKeyedSpriteTexture('/prop_specimen_tank.png', 14),
+            prop_bunker_supplies: this.loadKeyedSpriteTexture('/prop_bunker_supplies.png', 14),
+            prop_spore_colony: this.loadKeyedSpriteTexture('/prop_spore_colony.png', 14),
+            prop_conduit_hub: this.loadKeyedSpriteTexture('/prop_conduit_hub.png', 14),
+            prop_biomech_pillar_left: this.loadKeyedSpriteTexture('/prop_biomech_pillar_left.png', 14),
+            prop_biomech_pillar_right: this.loadKeyedSpriteTexture('/prop_biomech_pillar_right.png', 14),
+            prop_cave_lichen: this.loadKeyedSpriteTexture('/prop_cave_lichen.png', 14),
+            prop_cave_bones: this.loadKeyedSpriteTexture('/prop_cave_bones.png', 14),
+            prop_cave_eggs_intact: this.loadKeyedSpriteTexture('/prop_cave_eggs_intact.png', 14),
+            prop_cave_eggs_hatched: this.loadKeyedSpriteTexture('/prop_cave_eggs_hatched.png', 14),
+            prop_cave_spores: this.loadKeyedSpriteTexture('/prop_cave_spores.png', 14),
+            prop_cave_webs: this.loadKeyedSpriteTexture('/prop_cave_webs.png', 14),
+            prop_cave_hive_wounded: this.loadKeyedSpriteTexture('/prop_cave_hive_wounded.png', 14),
+            prop_cave_queen_throne: this.loadKeyedSpriteTexture('/prop_cave_queen_throne.png', 14),
+            prop_camp_sandbags: this.loadKeyedSpriteTexture('/prop_camp_sandbags.png', 14),
+            prop_camp_crates: this.loadKeyedSpriteTexture('/prop_camp_crates.png', 14),
+            prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
 
         // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
@@ -1429,6 +1548,209 @@ export class ThreeGame {
                 depthWrite: false,
                 depthTest: true,
                 fog: false
+            }),
+            fungal_spore_vent: new THREE.SpriteMaterial({
+                map: this.scatterTextures.fungal_spore_vent,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            mycelium_stalker: new THREE.SpriteMaterial({
+                map: this.scatterTextures.mycelium_stalker,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            bio_charger: new THREE.SpriteMaterial({
+                map: this.scatterTextures.bio_charger,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            spore_mortar: new THREE.SpriteMaterial({
+                map: this.scatterTextures.spore_mortar,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            door_biomechanical: new THREE.SpriteMaterial({
+                map: this.scatterTextures.door_biomechanical,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_biomech_arch: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_biomech_arch,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_cyber_junction: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cyber_junction,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_specimen_tank: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_specimen_tank,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_bunker_supplies: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_bunker_supplies,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_spore_colony: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_spore_colony,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_conduit_hub: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_conduit_hub,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_biomech_pillar_left: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_biomech_pillar_left,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_biomech_pillar_right: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_biomech_pillar_right,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            }),
+            prop_cave_lichen: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_lichen,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x33dd77)
+            }),
+            prop_cave_bones: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_bones,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xd8ceb8)
+            }),
+            prop_cave_eggs_intact: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_eggs_intact,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x44ff88)
+            }),
+            prop_cave_eggs_hatched: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_eggs_hatched,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x33aa55)
+            }),
+            prop_cave_spores: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_spores,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x22ee88)
+            }),
+            prop_cave_webs: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_webs,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xb0a898)
+            }),
+            prop_cave_hive_wounded: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_hive_wounded,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xaa3344)
+            }),
+            prop_cave_queen_throne: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_cave_queen_throne,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x8877aa)
+            }),
+            prop_camp_sandbags: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_camp_sandbags,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x666055)
+            }),
+            prop_camp_crates: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_camp_crates,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0x777060)
+            }),
+            prop_camp_cookfire_lit: new THREE.SpriteMaterial({
+                map: this.scatterTextures.prop_camp_cookfire_lit,
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false,
+                color: new THREE.Color(0xff8833)
             }),
             crawler: new THREE.SpriteMaterial({
                 map: this.scatterTextures.crawler,
@@ -1964,6 +2286,7 @@ export class ThreeGame {
         this.chunkGroups.visible = this.performanceProfile === 'gameplay';
         this.scene.add(this.chunkGroups);
         this.setupCrashedShips();
+        this.setupBunkerBlastDoor();
     }
 
     setupCrashedShips() {
@@ -2272,6 +2595,143 @@ export class ThreeGame {
         this.emitShipHealthState();
     }
 
+    setupBunkerBlastDoor() {
+        this.bunkerBlastDoorState = {
+            open: false,
+            destroyed: false,
+            hp: 25,
+            maxHp: 25,
+            y: 1.4,
+            targetY: 1.4,
+            speed: 5.5,
+            doorWidth: 6,
+            doorZ: 15,
+            startTileX: 6,
+            endTileX: 11
+        };
+
+        // 6-wall wide Blast Door Group
+        const doorGroup = new THREE.Group();
+        doorGroup.position.set(8.5, 1.4, 15.0);
+
+        // Main heavy blast door slab (spans 6 tiles wide = 6.0 units, height = 2.8, depth = 0.72)
+        const doorGeo = new THREE.BoxGeometry(6.0, 2.8, 0.72);
+        const doorMat = new THREE.MeshStandardMaterial({
+            color: 0x1f272e,
+            roughness: 0.45,
+            metalness: 0.82
+        });
+        const doorSlab = new THREE.Mesh(doorGeo, doorMat);
+        doorSlab.castShadow = true;
+        doorSlab.receiveShadow = true;
+        doorSlab.userData = {
+            isWall: true,
+            isBunkerBlastDoor: true,
+            worldX: 8.5,
+            worldZ: 15.0,
+            wallKey: '8.5,15',
+            wallHp: 25,
+            maxWallHp: 25
+        };
+        doorGroup.add(doorSlab);
+
+        // Heavy steel reinforcement ribs across the door face
+        for (let i = -2; i <= 2; i += 2) {
+            const ribGeo = new THREE.BoxGeometry(0.35, 2.85, 0.82);
+            const ribMat = new THREE.MeshStandardMaterial({ color: 0x11161b, roughness: 0.3, metalness: 0.9 });
+            const rib = new THREE.Mesh(ribGeo, ribMat);
+            rib.position.x = i * 1.1;
+            doorGroup.add(rib);
+        }
+
+        // Glowing status bar across top of door
+        const barGeo = new THREE.BoxGeometry(5.6, 0.16, 0.78);
+        const barMat = new THREE.MeshStandardMaterial({
+            color: 0xff2200,
+            emissive: 0xff2200,
+            emissiveIntensity: 1.2
+        });
+        const barMesh = new THREE.Mesh(barGeo, barMat);
+        barMesh.position.y = 1.25;
+        doorGroup.add(barMesh);
+        this._bunkerDoorBarMat = barMat;
+
+        // Door status light
+        const statusLight = new THREE.PointLight(0xff2200, 1.5, 7.0);
+        statusLight.position.set(8.5, 2.2, 15.0);
+        this.scene.add(statusLight);
+        this._bunkerDoorStatusLight = statusLight;
+
+        this.bunkerBlastDoorGroup = doorGroup;
+        this.scene.add(doorGroup);
+
+        // --- Interactive Buttons (Interior & Exterior) ---
+        const btnBoxGeo = new THREE.BoxGeometry(0.32, 0.45, 0.18);
+        const btnBoxMat = new THREE.MeshStandardMaterial({ color: 0x11161a, metalness: 0.8, roughness: 0.4 });
+        const btnDomeGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.08, 16);
+        const btnDomeMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 1.2 });
+
+        // Interior button console (inside bunker at X=5.1, Z=14.2)
+        const intBtnGroup = new THREE.Group();
+        intBtnGroup.position.set(5.1, 1.3, 14.2);
+        const intBox = new THREE.Mesh(btnBoxGeo, btnBoxMat);
+        intBtnGroup.add(intBox);
+        const intDome = new THREE.Mesh(btnDomeGeo, btnDomeMat);
+        intDome.rotation.x = Math.PI / 2;
+        intDome.position.z = 0.09;
+        intBtnGroup.add(intDome);
+        this.scene.add(intBtnGroup);
+
+        // Exterior button console (outside bunker at X=5.1, Z=15.8)
+        const extBtnGroup = new THREE.Group();
+        extBtnGroup.position.set(5.1, 1.3, 15.8);
+        const extBox = new THREE.Mesh(btnBoxGeo, btnBoxMat);
+        extBtnGroup.add(extBox);
+        const extDome = new THREE.Mesh(btnDomeGeo, btnDomeMat);
+        extDome.rotation.x = Math.PI / 2;
+        extDome.position.z = -0.09;
+        extBtnGroup.add(extDome);
+        this.scene.add(extBtnGroup);
+
+        // 2.5D X-Ray Outline Ring for Exterior Button (subtle glow visible through walls on the hidden side!)
+        const xrayRingGeo = new THREE.RingGeometry(0.20, 0.32, 24);
+        const xrayRingMat = new THREE.MeshBasicMaterial({
+            color: 0x00e5ff,
+            transparent: true,
+            opacity: 0.85,
+            depthTest: false,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const xrayMesh = new THREE.Mesh(xrayRingGeo, xrayRingMat);
+        xrayMesh.rotation.x = -Math.PI / 4;
+        xrayMesh.position.set(5.1, 1.35, 15.8);
+        xrayMesh.renderOrder = 9992;
+        this.scene.add(xrayMesh);
+        this.exteriorButtonXrayMarker = xrayMesh;
+
+        this._bunkerButtonDomeMat = btnDomeMat;
+        this.bunkerDoorButtons = {
+            interior: { x: 5.1, z: 14.2 },
+            exterior: { x: 5.1, z: 15.8 }
+        };
+
+        // --- Fog of War Exterior Mask ---
+        const fogVeilGeo = new THREE.PlaneGeometry(36, 24);
+        const fogVeilMat = new THREE.MeshBasicMaterial({
+            color: 0x040608,
+            transparent: true,
+            opacity: 0.90,
+            depthWrite: false,
+            side: THREE.DoubleSide
+        });
+        const fogVeilMesh = new THREE.Mesh(fogVeilGeo, fogVeilMat);
+        fogVeilMesh.rotation.x = -Math.PI / 2;
+        fogVeilMesh.position.set(8.5, 0.08, 26.0);
+        this.bunkerFogVeilMesh = fogVeilMesh;
+        this.scene.add(fogVeilMesh);
+    }
+
     setupPlayer() {
         this.player = new THREE.Group();
 
@@ -2298,28 +2758,27 @@ export class ThreeGame {
         this.playerShadow.scale.set(1, 1, 0.7);
         this.player.add(this.playerShadow);
 
-        // Bottom half (legs) — follows movement input. Anchored at the feet and
-        // only as tall as the waist split; shows the lower portion of the frame.
-        const legsHeight = this.playerSpriteScale * PLAYER_SPRITE_WAIST_SPLIT;
-        const torsoHeight = this.playerSpriteScale * (1 - PLAYER_SPRITE_WAIST_SPLIT);
+        // V2 sheets use complete full-body frames. The legacy fixed waist crop
+        // produced visible seams because the painted pelvis moved per pose.
         this.playerSprite = new THREE.Sprite(this.playerMaterials[this.playerType] ?? this.playerMaterials.SCOUT);
         this.playerSprite.center.set(0.5, 0);
         this.playerSprite.position.x = this.playerSpriteLead;
         this.playerSprite.position.y = this.playerHeight;
         this.playerSprite.position.z = this.playerSpriteLead;
-        this.playerSprite.scale.set(this.playerSpriteScale, legsHeight, 1);
+        this.playerSprite.scale.set(this.playerSpriteScale, this.playerSpriteScale, 1);
         this.playerSprite.renderOrder = 5;
         this.player.add(this.playerSprite);
 
-        // Top half (torso/head) — aims independently at the mouse. Stacked
-        // directly on top of the legs so the two read as one body.
+        // Retain the torso object for material/tint/cleanup compatibility, but
+        // do not render it. Aim now selects a coherent full-body direction.
         this.playerTorsoSprite = new THREE.Sprite(this.playerTorsoMaterials[this.playerType] ?? this.playerTorsoMaterials.SCOUT);
         this.playerTorsoSprite.center.set(0.5, 0);
         this.playerTorsoSprite.position.x = this.playerSpriteLead;
-        this.playerTorsoSprite.position.y = this.playerHeight + legsHeight;
+        this.playerTorsoSprite.position.y = this.playerHeight;
         this.playerTorsoSprite.position.z = this.playerSpriteLead;
-        this.playerTorsoSprite.scale.set(this.playerSpriteScale, torsoHeight, 1);
+        this.playerTorsoSprite.scale.set(this.playerSpriteScale, this.playerSpriteScale, 1);
         this.playerTorsoSprite.renderOrder = 6;
+        this.playerTorsoSprite.visible = false;
         this.player.add(this.playerTorsoSprite);
 
         // Legs face movement, torso faces aim — tracked separately.
@@ -2628,18 +3087,27 @@ export class ThreeGame {
                 return;
             }
             if (this.codeMatchesAction(event.code, 'interact')) {
+                debugLog.debug('INPUT', 'Action: INTERACT (E/Enter)');
                 this.triggerGameplayInteract();
             }
             if (this.codeMatchesAction(event.code, 'reload')) {
                 event.preventDefault();
+                debugLog.debug('INPUT', 'Action: RELOAD (R)');
                 this.triggerGameplayReload({ manual: true });
             }
             if (this.codeMatchesAction(event.code, 'ability')) {
                 event.preventDefault();
+                debugLog.debug('INPUT', 'Action: CLASS ABILITY (Q/Space)');
                 this.triggerGameplayAbility();
+            }
+            if (this.codeMatchesAction(event.code, 'dash')) {
+                event.preventDefault();
+                debugLog.debug('INPUT', 'Action: DASH (Shift)');
+                this.triggerGameplayDash();
             }
             if (this.codeMatchesAction(event.code, 'scan')) {
                 event.preventDefault();
+                debugLog.debug('INPUT', 'Action: RADAR SCAN (Tab/F)');
                 this.triggerGameplayScan();
             }
             this.setKeyState(event.code, true);
@@ -2672,10 +3140,6 @@ export class ThreeGame {
             }
 
             if (!this.isGameplayInputActive()) return;
-            const isTouchPointer = pointerType !== 'mouse';
-            if (isTouchPointer && this.isInTouchMoveControlBounds(event.clientX, event.clientY)) {
-                return;
-            }
 
             if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
                 return;
@@ -2809,18 +3273,6 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
     }
 
-    isInTouchMoveControlBounds(clientX, clientY) {
-        const touchMoveControl = document.getElementById('touch-move-control');
-        if (!touchMoveControl || touchMoveControl.classList.contains('hidden')) return false;
-        const rect = touchMoveControl.getBoundingClientRect();
-        return (
-            clientX >= rect.left
-            && clientX <= rect.right
-            && clientY >= rect.top
-            && clientY <= rect.bottom
-        );
-    }
-
     getWorldAimPoint(clientX, clientY) {
         const rect = this.renderer.domElement.getBoundingClientRect();
         const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -2856,6 +3308,7 @@ export class ThreeGame {
 
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
+        this.interactWithBunkerBlastDoorButton();
         this.interactWithConsole();
         this.interactWithO2Generator();
         this.interactWithLoreTerminal();
@@ -2863,8 +3316,12 @@ export class ThreeGame {
         this.interactWithBlackBox();
         this.interactWithCaveEntrance();
         this.interactWithAct2Camp();
+        this.interactWithScientist();
         this.interactWithHiveSite();
         this.interactWithCampQuestObject();
+        this.interactWithHoleTile();
+        this.interactWithPocketClimbPoint();
+        this.interactWithBiomechanicalDoor();
         return true;
     }
 
@@ -2875,14 +3332,106 @@ export class ThreeGame {
 
     triggerGameplayAbility() {
         if (!this.isGameplayInputActive()) return false;
+        debugLog.info('GAME', `Triggered class ability (${this.playerType})`);
         this.triggerClassAbility();
         return true;
     }
 
     triggerGameplayScan() {
         if (!this.isGameplayInputActive()) return false;
+        debugLog.info('GAME', 'Triggered radar scan');
         this.triggerRadarScan();
         return true;
+    }
+
+    triggerGameplayDash() {
+        if (!this.isGameplayInputActive()) return false;
+        if (this.dashCooldownTimer > 0 || this.isDashing) return false;
+
+        let dirX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
+        let dirZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
+
+        if (!dirX && !dirZ) {
+            dirX = this.aimDirX || 1;
+            dirZ = this.aimDirZ || 0;
+        }
+
+        const len = Math.hypot(dirX, dirZ);
+        if (len > 0) {
+            dirX /= len;
+            dirZ /= len;
+        } else {
+            dirX = 1;
+            dirZ = 0;
+        }
+
+        debugLog.info('GAME', `Triggered dash (${dirX.toFixed(2)}, ${dirZ.toFixed(2)})`);
+        this.isDashing = true;
+        this.dashTimer = 0.22;
+        this.dashCooldownTimer = 1.1;
+        this.dashDirX = dirX;
+        this.dashDirZ = dirZ;
+        this.iFrameTimer = 0.25;
+
+        this.triggerCameraShake?.(0.08, 0.15);
+        window.AudioManager?.play?.('metal_stress', { volume: 0.4, playbackRate: 1.8 });
+        if (this.player) {
+            this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x33ffff, count: 12, upward: 0.2 });
+        }
+        window.dispatchEvent(new CustomEvent('player-dashed', { detail: { dirX, dirZ } }));
+        return true;
+    }
+
+    equipRunDrop(drop) {
+        if (!drop) return;
+        if (drop.type === 'overclock') {
+            this.runOverclocks.push(drop);
+        } else {
+            this.runRelics.push(drop);
+        }
+        this.activeSynergies = computeActiveSynergies([...this.runOverclocks, ...this.runRelics]);
+        window.AudioManager?.play?.('ui_confirm', { volume: 0.8 });
+        window.dispatchEvent(new CustomEvent('in-run-drop-equipped', { detail: { drop, synergies: this.activeSynergies } }));
+    }
+
+    getRunDropsInfo() {
+        return {
+            overclocks: this.runOverclocks,
+            relics: this.runRelics,
+            synergies: this.activeSynergies,
+            poolOverclocks: WEAPON_OVERCLOCKS,
+            poolRelics: SUIT_RELICS
+        };
+    }
+
+    spawnPhysicalLootDrop(x, z, item) {
+        if (!item || !this.scene) return;
+        const mesh = new THREE.Mesh(
+            this.rewardGlowGeometry,
+            new THREE.MeshBasicMaterial({
+                color: item.rarity === 'corrupted' ? 0xff2244 : (item.rarity === 'mythic' ? 0xffaa00 : 0x00e5ff),
+                side: THREE.DoubleSide
+            })
+        );
+        mesh.position.set(x, 0.05, z);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.userData = { item, isLootPickup: true };
+        this.scene.add(mesh);
+        this.inRunLootDrops.push(mesh);
+    }
+
+    getTerrainHeightAt(worldX, worldZ) {
+        const chunkX = Math.floor((worldX + this.chunkSize / 2) / this.chunkSize);
+        const chunkY = Math.floor((worldZ + this.chunkSize / 2) / this.chunkSize);
+        const key = `${chunkX},${chunkY}`;
+        const chunk = this.chunkCache?.get(key);
+        if (!chunk || !chunk.heightmap) return TERRAIN_HEIGHTS.GROUND;
+        const localX = Math.floor(worldX - (chunkX * this.chunkSize - this.chunkSize / 2));
+        const localZ = Math.floor(worldZ - (chunkY * this.chunkSize - this.chunkSize / 2));
+        if (localZ < 0 || localZ >= chunk.heightmap.length || localX < 0 || localX >= chunk.heightmap[0].length) {
+            return TERRAIN_HEIGHTS.GROUND;
+        }
+        return chunk.heightmap[localZ][localX] ?? TERRAIN_HEIGHTS.GROUND;
     }
 
     setControllerAimVector(x = 0, y = 0) {
@@ -3068,19 +3617,14 @@ export class ThreeGame {
             const el = document.getElementById(id);
             return Boolean(el && !el.classList.contains('hidden'));
         };
-        return this.isOrientationLocked()
-            || document.body.classList.contains('mission-intro-active')
+        return document.body.classList.contains('mission-intro-active')
             || isVisible('console-terminal-modal')
             || isVisible('o2-generator-modal')
             || isVisible('game-over-modal')
             || isVisible('mothership-dialogue')
             || isVisible('confirm-modal')
-            || isVisible('settings-popup');
-    }
-
-    isOrientationLocked() {
-        return document.body.classList.contains('orientation-locked')
-            || Boolean(window.HunkerOrientationLock?.isLocked?.());
+            || isVisible('settings-popup')
+            || isVisible('snail-encounter-modal');
     }
 
     clearGameplayInputState() {
@@ -3215,6 +3759,41 @@ export class ThreeGame {
         };
     }
 
+    getCampCompassState() {
+        if (!this.player) return null;
+
+        const camps = (this.camps ?? []).filter(c => !c.discovered);
+        if (!camps.length) return null;
+
+        let nearestCamp = null;
+        let minDist = Infinity;
+        for (const camp of camps) {
+            const cx = camp.worldX ?? camp.x ?? 0;
+            const cz = camp.worldZ ?? camp.z ?? 0;
+            const d = Math.hypot(cx - this.player.position.x, cz - this.player.position.z);
+            if (d < minDist) {
+                minDist = d;
+                nearestCamp = { ...camp, worldX: cx, worldZ: cz };
+            }
+        }
+        if (!nearestCamp) return null;
+
+        const toCampX = nearestCamp.worldX - this.player.position.x;
+        const toCampZ = nearestCamp.worldZ - this.player.position.z;
+        const screenX = (toCampX * this.cameraPlanarRight.x) + (toCampZ * this.cameraPlanarRight.y);
+        const screenY = (toCampX * this.cameraPlanarForward.x) + (toCampZ * this.cameraPlanarForward.y);
+        const angle = minDist > 0.0001
+            ? THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY))
+            : 0;
+
+        return {
+            id: nearestCamp.id ?? nearestCamp.name,
+            name: nearestCamp.name ?? 'SURVIVOR CAMP',
+            angle,
+            distance: minDist
+        };
+    }
+
     getSpawnCompassState() {
         if (!this.player) return null;
 
@@ -3234,7 +3813,6 @@ export class ThreeGame {
         let distance = Math.hypot(toTargetX, toTargetZ);
 
         if (activeShip) {
-            // Subtract the console collision threshold so that distance reads 0 when standing right next to it
             const collisionRadius = 0.42 + this.playerRadius * 0.7;
             distance = Math.max(0, distance - collisionRadius);
         }
@@ -3248,7 +3826,8 @@ export class ThreeGame {
         return {
             angle,
             distance,
-            radar: this.getRadarCompassState()
+            radar: this.getRadarCompassState(),
+            camp: this.getCampCompassState()
         };
     }
 
@@ -3431,18 +4010,19 @@ export class ThreeGame {
 
             ctx.putImageData(imgData, 0, 0);
 
-            texture.image = canvas;
+            texture.image = repackGeneratedSpriteAtlas(canvas, getPlayerSpriteLayout(type));
             texture.needsUpdate = true;
 
             this.playerMaterials?.[type] && (this.playerMaterials[type].needsUpdate = true);
             this.refreshActivePlayerSprite(type);
         };
 
+        const safePath = this.resolveRelativeAssetPath(path);
         image.onerror = (error) => {
-            console.warn(`[ThreeGame] Failed to load player sprite ${type} from ${path}`, error);
+            console.warn(`[ThreeGame] Failed to load player sprite ${type} from ${safePath}`, error);
         };
 
-        image.src = path;
+        image.src = safePath;
 
         return texture;
     }
@@ -3460,21 +4040,23 @@ export class ThreeGame {
     }
 
     loadTerrainTexture(path, textureLoader, maxAnisotropy = 1, fallbackPath = null) {
-        const texture = textureLoader.load(path, (loadedTexture) => {
+        const safePath = this.resolveRelativeAssetPath(path);
+        const safeFallbackPath = this.resolveRelativeAssetPath(fallbackPath);
+        const texture = textureLoader.load(safePath, (loadedTexture) => {
             this.configureTerrainTexture(loadedTexture, maxAnisotropy);
         }, undefined, (error) => {
-            if (!fallbackPath || fallbackPath === path) {
-                console.warn(`[ThreeGame] Failed to load terrain texture from ${path}`, error);
+            if (!safeFallbackPath || safeFallbackPath === safePath) {
+                console.warn(`[ThreeGame] Failed to load terrain texture from ${safePath}`, error);
                 return;
             }
 
-            console.warn(`[ThreeGame] Failed to load ${path}; falling back to ${fallbackPath}`, error);
-            textureLoader.load(fallbackPath, (fallbackTexture) => {
+            console.warn(`[ThreeGame] Failed to load ${safePath}; falling back to ${safeFallbackPath}`, error);
+            textureLoader.load(safeFallbackPath, (fallbackTexture) => {
                 this.configureTerrainTexture(fallbackTexture, maxAnisotropy);
                 texture.image = fallbackTexture.image;
                 texture.needsUpdate = true;
             }, undefined, (fallbackError) => {
-                console.warn(`[ThreeGame] Failed to load terrain fallback texture from ${fallbackPath}`, fallbackError);
+                console.warn(`[ThreeGame] Failed to load terrain fallback texture from ${safeFallbackPath}`, fallbackError);
             });
         });
 
@@ -3501,8 +4083,13 @@ export class ThreeGame {
         return textures;
     }
 
+    resolveRelativeAssetPath(path) {
+        return assetUrl(path);
+    }
+
     loadScatterTexture(path, textureLoader) {
-        return textureLoader.load(path, (texture) => {
+        const safePath = this.resolveRelativeAssetPath(path);
+        return textureLoader.load(safePath, (texture) => {
             texture.colorSpace = THREE.SRGBColorSpace;
             texture.minFilter = THREE.LinearMipmapLinearFilter;
             texture.magFilter = THREE.LinearFilter;
@@ -3514,11 +4101,12 @@ export class ThreeGame {
                 texture.anisotropy = Math.min(4, maxAnisotropy);
             }
         }, undefined, (error) => {
-            console.warn(`[ThreeGame] Failed to load scatter texture from ${path}`, error);
+            console.warn(`[ThreeGame] Failed to load scatter texture from ${safePath}`, error);
         });
     }
 
     loadKeyedSpriteTexture(path, threshold = 15, onLoad = null, options = {}) {
+        const safePath = this.resolveRelativeAssetPath(path);
         const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
@@ -3550,11 +4138,13 @@ export class ThreeGame {
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            applyBlackChromaKey(imgData, { threshold });
+            if (!options?.layout?.hasAlpha) {
+                applyBlackChromaKey(imgData, { threshold });
+            }
 
             ctx.putImageData(imgData, 0, 0);
             
-            texture.image = canvas;
+            texture.image = repackGeneratedSpriteAtlas(canvas, options?.layout);
             texture.needsUpdate = true;
             if (onLoad) {
                 onLoad(texture);
@@ -3562,15 +4152,16 @@ export class ThreeGame {
         };
 
         image.onerror = (err) => {
-            console.error(`[ThreeGame] loadKeyedSpriteTexture: Failed to load image: ${path}`, err);
+            console.error(`[ThreeGame] loadKeyedSpriteTexture: Failed to load image: ${safePath}`, err);
         };
 
-        image.src = path;
+        image.src = safePath;
 
         return texture;
     }
 
     loadDecalTexture(path) {
+        const safePath = this.resolveRelativeAssetPath(path);
         const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
@@ -3642,10 +4233,10 @@ export class ThreeGame {
         };
 
         image.onerror = (err) => {
-            console.error(`[ThreeGame] loadDecalTexture: Failed to load image: ${path}`, err);
+            console.error(`[ThreeGame] loadDecalTexture: Failed to load image: ${safePath}`, err);
         };
 
-        image.src = path;
+        image.src = safePath;
 
         return texture;
     }
@@ -3655,6 +4246,27 @@ export class ThreeGame {
         const height = this.container.clientHeight || 1;
         const aspect = width / height;
         const viewSize = 6.8;
+
+        this.menuPixelRatio = cappedPixelRatio({
+            width,
+            height,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            maxPixelRatio: 1.25,
+            maxFramebufferPixels: 2_500_000
+        });
+        this.gameplayPixelRatio = cappedPixelRatio({
+            width,
+            height,
+            devicePixelRatio: window.devicePixelRatio || 1,
+            maxPixelRatio: 1.5,
+            maxFramebufferPixels: 5_000_000
+        });
+        const targetPixelRatio = this.performanceProfile === 'gameplay'
+            ? this.gameplayPixelRatio
+            : this.menuPixelRatio;
+        if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
+            this.renderer.setPixelRatio(targetPixelRatio);
+        }
 
         this.camera.left = -viewSize * aspect;
         this.camera.right = viewSize * aspect;
@@ -3688,6 +4300,7 @@ export class ThreeGame {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
         this.performanceProfile = nextProfile;
+        this._lastMenuRenderAt = 0;
         this.visibleChunkRadius = nextProfile === 'gameplay'
             ? this.defaultVisibleChunkRadius
             : 0;
@@ -3733,6 +4346,7 @@ export class ThreeGame {
         if (Math.abs(this.renderer.getPixelRatio() - targetPixelRatio) > 0.001) {
             this.renderer.setPixelRatio(targetPixelRatio);
         }
+        this.renderer.shadowMap.enabled = nextProfile === 'gameplay';
         this.resize();
     }
 
@@ -3803,6 +4417,14 @@ export class ThreeGame {
 
     render() {
         const now = performance.now();
+        if (this.performanceProfile === 'menu'
+            && this._lastMenuRenderAt > 0
+            && now - this._lastMenuRenderAt < this.menuFrameIntervalMs) {
+            return;
+        }
+        if (this.performanceProfile === 'menu') {
+            this._lastMenuRenderAt = now;
+        }
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
 
@@ -3814,14 +4436,6 @@ export class ThreeGame {
 
         if (this.loadingPaused) {
             if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
-            return;
-        }
-
-        if (this.isOrientationLocked()) {
-            this.clearGameplayInputState();
-            if (this.darknessOverlay) this.darknessOverlay.style.opacity = '0';
-            this.updateHiddenPlayerMarker(now);
-            this.renderer.render(this.scene, this.camera);
             return;
         }
 
@@ -3867,6 +4481,7 @@ export class ThreeGame {
 
         this.updateClassAbility(delta);
         this.updateRadarScans(delta);
+        this.updateBunkerBlastDoor(delta);
         this.updatePlayer(delta);
         this.updateBiomeEnvironment({ delta });
         this.updateWeather(delta);
@@ -3879,6 +4494,7 @@ export class ThreeGame {
         this.syncVisibleChunks();
         this.updatePickups(delta, now);
         this.updateScatter(delta, now);
+        this.updateCompanions(delta);
         this.updateCorpses(delta);
         this.updateLoreDrops(delta);
         this.updateBuildSiteBeacon(now);
@@ -4475,6 +5091,7 @@ export class ThreeGame {
                 this.player.position.z - sprite.position.z
             );
             if (dist < 2.2) {
+                this._readLoreKeys.add(sprite.userData.loreKey);
                 window.dispatchEvent(new CustomEvent('lore-terminal-read', {
                     detail: { loreKey: sprite.userData.loreKey, loreText: sprite.userData.loreText }
                 }));
@@ -4484,17 +5101,9 @@ export class ThreeGame {
         }
     }
 
-    shouldUseTapPromptLabel() {
-        if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-        if (window.HunkerInputState?.isTouchPrompt?.()) return true;
-        const coarsePointer = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
-        return coarsePointer || navigator.maxTouchPoints > 0 || ('ontouchstart' in window);
-    }
-
     getPromptKeyLabel(defaultKey = 'E') {
-        const rawLabel = window.HunkerInputState?.getPromptKeyText?.(defaultKey)
-            ?? (this.shouldUseTapPromptLabel() ? 'TAP' : defaultKey);
-        return rawLabel === 'TAP' ? 'TAP' : `PRESS ${rawLabel}`;
+        const rawLabel = window.HunkerInputState?.getPromptKeyText?.(defaultKey) ?? defaultKey;
+        return `PRESS ${rawLabel}`;
     }
 
     updateConsoles(delta, now) {
@@ -4619,6 +5228,240 @@ export class ThreeGame {
                 }
             }
         }
+
+        const holePromptEl = document.getElementById('hole-hud-prompt');
+        if (holePromptEl) {
+            let nearHole = false;
+            let promptLabel = 'FILL HOLE';
+            if (this.inputEnabled && hudActive && this.player && this.isGameplayInputActive()) {
+                if (this.isInPocket) {
+                    const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+                    const pocket = this.pocketCache?.get(key);
+                    if (pocket) {
+                        // Convert grid-local climbPoint to world space first
+                        // (see interactWithPocketClimbPoint) before comparing.
+                        const climbWorldX = this._pocketHoleX - pocket.centerCell.x + pocket.climbPoint.x;
+                        const climbWorldZ = this._pocketHoleZ - pocket.centerCell.y + pocket.climbPoint.y;
+                        const dist = Math.hypot(
+                            this.player.position.x - climbWorldX,
+                            this.player.position.z - climbWorldZ
+                        );
+                        if (dist <= 1.5) {
+                            nearHole = true;
+                            promptLabel = 'CLIMB UP';
+                        }
+                    }
+                } else {
+                    const px = this.player.position.x;
+                    const pz = this.player.position.z;
+                    const cx = Math.round(px);
+                    const cz = Math.round(pz);
+                    for (let dx = -2; dx <= 2; dx++) {
+                        for (let dz = -2; dz <= 2; dz++) {
+                            const hx = cx + dx;
+                            const hz = cz + dz;
+                            if (Math.hypot(px - hx, pz - hz) <= 2.0 && this.isHoleTile(hx, hz)) {
+                                nearHole = true;
+                                break;
+                            }
+                        }
+                        if (nearHole) break;
+                    }
+                }
+            }
+            if (nearHole) {
+                const actionText = holePromptEl.querySelector('.prompt-text');
+                const promptKey = holePromptEl.querySelector('.prompt-key');
+                if (actionText) actionText.textContent = promptLabel;
+                if (promptKey) {
+                    const promptKeyLabel = this.getPromptKeyLabel('E');
+                    promptKey.textContent = promptKeyLabel;
+                    promptKey.classList.toggle('prompt-key--tap', promptKeyLabel === 'TAP');
+                }
+                holePromptEl.classList.add('visible');
+                holePromptEl.classList.remove('hidden');
+            } else {
+                holePromptEl.classList.add('hidden');
+                holePromptEl.classList.remove('visible');
+            }
+        }
+    }
+
+    updateBunkerBlastDoor(delta) {
+        if (!this.bunkerBlastDoorGroup || !this.bunkerBlastDoorState) return;
+
+        const state = this.bunkerBlastDoorState;
+        state.y = THREE.MathUtils.lerp(state.y, state.targetY, Math.min(1.0, state.speed * delta));
+        this.bunkerBlastDoorGroup.position.y = state.y;
+
+        const open = state.open;
+        const targetColor = open ? 0x00e5ff : 0xff2200;
+        if (this._bunkerDoorBarMat) {
+            this._bunkerDoorBarMat.color.setHex(targetColor);
+            this._bunkerDoorBarMat.emissive.setHex(targetColor);
+        }
+        if (this._bunkerDoorStatusLight) {
+            this._bunkerDoorStatusLight.color.setHex(targetColor);
+        }
+        if (this._bunkerButtonDomeMat) {
+            this._bunkerButtonDomeMat.color.setHex(targetColor);
+            this._bunkerButtonDomeMat.emissive.setHex(targetColor);
+        }
+
+        // Pulse subtle 2.5D X-Ray outline marker for hidden exterior wall button
+        if (this.exteriorButtonXrayMarker) {
+            const t = performance.now() * 0.004;
+            const pulseOpacity = 0.55 + Math.sin(t) * 0.35;
+            this.exteriorButtonXrayMarker.material.opacity = pulseOpacity;
+            const pulseScale = 1.0 + Math.sin(t * 1.5) * 0.08;
+            this.exteriorButtonXrayMarker.scale.set(pulseScale, pulseScale, 1.0);
+        }
+
+        // Update Fog of War exterior curtain:
+        // Obscures outside past Z >= 15 when door is closed and player is inside; dissolves when door opens or player exits.
+        if (this.bunkerFogVeilMesh && this.player) {
+            const playerZ = this.player.position.z;
+            const playerOutside = playerZ >= 15.2;
+            const targetFogOpacity = (open || playerOutside) ? 0.0 : 0.90;
+            const mat = this.bunkerFogVeilMesh.material;
+            mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetFogOpacity, Math.min(1.0, 4.0 * delta));
+            this.bunkerFogVeilMesh.visible = mat.opacity > 0.01;
+        }
+
+        // Update floating HUD prompt when player is near interior or exterior door button
+        if (this.player && this.bunkerDoorButtons && this.isGameplayInputActive()) {
+            const px = this.player.position.x;
+            const pz = this.player.position.z;
+            const intDist = Math.hypot(px - this.bunkerDoorButtons.interior.x, pz - this.bunkerDoorButtons.interior.z);
+            const extDist = Math.hypot(px - this.bunkerDoorButtons.exterior.x, pz - this.bunkerDoorButtons.exterior.z);
+
+            if (intDist <= 2.2 || extDist <= 2.2) {
+                const promptEl = document.getElementById('console-hud-prompt');
+                if (promptEl && !this.activeInteractiveConsole) {
+                    const actionText = promptEl.querySelector('.prompt-text');
+                    const promptKey = promptEl.querySelector('.prompt-key');
+                    if (actionText) {
+                        actionText.textContent = open ? 'CLOSE BLAST DOOR' : 'OPEN BLAST DOOR';
+                    }
+                    if (promptKey) {
+                        const promptKeyLabel = this.getPromptKeyLabel('E');
+                        promptKey.textContent = promptKeyLabel;
+                        promptKey.classList.toggle('prompt-key--tap', promptKeyLabel === 'TAP');
+                    }
+                    promptEl.classList.add('visible');
+                    promptEl.classList.remove('hidden');
+                }
+            }
+        }
+    }
+
+    toggleBunkerBlastDoor() {
+        if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return;
+        const state = this.bunkerBlastDoorState;
+        state.open = !state.open;
+        state.targetY = state.open ? -2.4 : 1.4;
+
+        window.AudioManager?.playMetalStress?.({
+            volume: 0.62,
+            playbackRate: state.open ? 1.25 : 0.75,
+            force: true
+        });
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.45, playbackRate: state.open ? 1.4 : 0.8, bus: 'sfx' });
+
+        this.spawnTextureBurstEffect(8.5, 15.0, {
+            textureKey: 'fx_steam_puff',
+            color: state.open ? 0x00e5ff : 0xffaa00,
+            count: 6,
+            baseScale: 0.7,
+            duration: 0.5
+        });
+
+        window.dispatchEvent(new CustomEvent('bunker-door-toggled', {
+            detail: { open: state.open }
+        }));
+    }
+
+    openBunkerBlastDoor() {
+        if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.open || this.bunkerBlastDoorState.destroyed) return;
+        this.toggleBunkerBlastDoor();
+    }
+
+    damageBunkerBlastDoor(amount = 1, { source = 'player' } = {}) {
+        if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return false;
+        const state = this.bunkerBlastDoorState;
+        const damage = Math.max(1, Math.round(Number(amount) || 1));
+        state.hp = Math.max(0, state.hp - damage);
+
+        if (state.hp > 0) {
+            window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.5, force: true });
+            this.spawnTextureBurstEffect(8.5, 15.0, {
+                textureKey: 'fx_steam_puff',
+                color: 0xff4400,
+                count: 4,
+                baseScale: 0.5,
+                duration: 0.35
+            });
+            window.dispatchEvent(new CustomEvent('bunker-door-damaged', {
+                detail: { hp: state.hp, maxHp: state.maxHp, source }
+            }));
+            return false;
+        }
+
+        return this.destroyBunkerBlastDoor({ source });
+    }
+
+    destroyBunkerBlastDoor({ source = 'player' } = {}) {
+        if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return false;
+        const state = this.bunkerBlastDoorState;
+        state.destroyed = true;
+        state.open = true;
+        state.targetY = -2.4;
+        state.hp = 0;
+
+        this.spawnPhysicalBurst(8.5, 15.0, { color: 0xff5500, count: 16, upward: 0.28, spread: 2.4 });
+        this.spawnTextureBurstEffect(8.5, 15.0, {
+            textureKey: 'fx_steam_puff',
+            color: 0xffaa00,
+            count: 9,
+            baseScale: 0.9,
+            duration: 0.7
+        });
+        window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.5, force: true });
+
+        window.dispatchEvent(new CustomEvent('bunker-door-destroyed', {
+            detail: { source }
+        }));
+        return true;
+    }
+
+    interactWithBunkerBlastDoorButton() {
+        if (!this.player || !this.bunkerDoorButtons || !this.isGameplayInputActive()) return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+
+        const intDist = Math.hypot(px - this.bunkerDoorButtons.interior.x, pz - this.bunkerDoorButtons.interior.z);
+        const extDist = Math.hypot(px - this.bunkerDoorButtons.exterior.x, pz - this.bunkerDoorButtons.exterior.z);
+
+        if (intDist <= 2.2 || extDist <= 2.2) {
+            this.toggleBunkerBlastDoor();
+            return true;
+        }
+        return false;
+    }
+
+    tryInteractWithBunkerDoorPointer(clientX, clientY) {
+        if (!this.bunkerDoorButtons || !this.isGameplayInputActive()) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        const distDoor = Math.hypot(worldPoint.x - 8.5, worldPoint.z - 15.0);
+        const distInt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.interior.x, worldPoint.z - this.bunkerDoorButtons.interior.z);
+        const distExt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.exterior.x, worldPoint.z - this.bunkerDoorButtons.exterior.z);
+
+        if (distDoor <= 3.2 || distInt <= 1.5 || distExt <= 1.5) {
+            return this.interactWithBunkerBlastDoorButton();
+        }
+        return false;
     }
 
     interactWithConsole() {
@@ -5455,12 +6298,6 @@ export class ThreeGame {
         for (const cardConfig of GOAL_CARD_CONFIGS) {
             this.renderGoalCard(ship, bankState, cardConfig);
         }
-        // The tier-2 and weapons card sections are retired: the Bunker Tree
-        // (skills tab) renders those systems as branches now. The sections
-        // stay in the DOM so nothing dangles, but never show again.
-        for (const id of ['tier2-section', 'weapons-section']) {
-            document.getElementById(id)?.classList.add('hidden');
-        }
         this.renderTerminalEventPanel();
 
         // Hide active / unlocked sections below
@@ -6056,6 +6893,21 @@ export class ThreeGame {
         card.dataset.branch = node.branch;
         card.style.gridRow = String(node.row);
         card.style.gridColumn = String(node.col);
+        // Keyboard/controller access (wave-6 punch list §4c): every card is
+        // focusable; arrow keys move spatially via the grid-container keydown
+        // handler (handleSkillTreeNavKey), Enter/Space buys. Focus/hover also
+        // traces the node's prereq connectors so "what do I need for this"
+        // reads on the graph, not just in the gate text.
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', `${node.label} ${node.maxLevel > 1
+            ? `level ${state.level} of ${node.maxLevel}`
+            : (state.unlocked ? 'unlocked' : (state.available ? 'available' : 'locked'))}`);
+        const trace = (on) => this.traceSkillNodePrereqPaths(node.id, on);
+        card.addEventListener('focus', () => trace(true));
+        card.addEventListener('blur', () => trace(false));
+        card.addEventListener('pointerenter', () => trace(true));
+        card.addEventListener('pointerleave', () => trace(false));
 
         const branchTag = document.createElement('div');
         branchTag.className = `skill-node-branch skill-node-branch--${node.branch}`;
@@ -6102,6 +6954,72 @@ export class ThreeGame {
         return card;
     }
 
+    // Highlight the connector paths feeding a node — the "what do I need
+    // for this" preview the gate text alone never gave (wave-6 §4c).
+    traceSkillNodePrereqPaths(nodeId, on) {
+        const grid = document.getElementById('skills-tree-grid');
+        if (!grid) return;
+        for (const path of grid.querySelectorAll(`[data-child-id="${nodeId}"]`)) {
+            path.classList.toggle('skill-graph-path--trace', Boolean(on));
+        }
+    }
+
+    // Spatial arrow-key movement over the tree's real row/col topology —
+    // pure logic (no DOM) so it's unit-testable, and so navigation follows
+    // the grid the player SEES instead of DOM insertion order.
+    findSkillTreeNeighbor(nodeId, key, nodes = this._skillTreeNodes ?? []) {
+        const current = nodes.find((n) => n.id === nodeId);
+        if (!current) return null;
+        const filters = {
+            ArrowDown: (n) => n.row > current.row,
+            ArrowUp: (n) => n.row < current.row,
+            ArrowRight: (n) => n.col > current.col,
+            ArrowLeft: (n) => n.col < current.col
+        };
+        const filter = filters[key];
+        if (!filter) return null;
+        const isVertical = key === 'ArrowDown' || key === 'ArrowUp';
+        let best = null;
+        let bestScore = Infinity;
+        for (const node of nodes) {
+            if (node.id === nodeId || !filter(node)) continue;
+            const rowDist = Math.abs(node.row - current.row);
+            const colDist = Math.abs(node.col - current.col);
+            const primary = isVertical ? rowDist : colDist;
+            const perpendicular = isVertical ? colDist : rowDist;
+            // Nearest along the movement axis wins; perpendicular drift is
+            // penalized harder so Down doesn't skip a row to stay in-column
+            // and Right doesn't leap to a far-away row.
+            const score = primary * 2 + perpendicular * 3;
+            if (score < bestScore) {
+                bestScore = score;
+                best = node;
+            }
+        }
+        return best?.id ?? null;
+    }
+
+    handleSkillTreeNavKey(event) {
+        const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key);
+        const isActivate = event.key === 'Enter' || event.key === ' ';
+        if (!isArrow && !isActivate) return;
+        const card = event.target?.closest?.('.skill-node-card');
+        if (!card) return;
+        if (isActivate) {
+            // A focused buy button already handles Enter/Space natively.
+            if (event.target.classList?.contains('skill-node-btn')) return;
+            event.preventDefault();
+            card.querySelector('.skill-node-btn')?.click();
+            return;
+        }
+        event.preventDefault();
+        const nextId = this.findSkillTreeNeighbor(card.dataset.nodeId, event.key);
+        if (!nextId) return;
+        document.getElementById('skills-tree-grid')
+            ?.querySelector(`[data-node-id="${nextId}"]`)
+            ?.focus();
+    }
+
     renderSkillGraphConnectors(gridContainer, connectors, stateById, cardById) {
         if (!gridContainer) return;
         gridContainer.querySelector('.skills-tree-connectors')?.remove();
@@ -6131,6 +7049,8 @@ export class ThreeGame {
 
             const path = document.createElementNS(svgNs, 'path');
             path.classList.add('skill-graph-path');
+            path.dataset.childId = connector.childId;
+            path.dataset.parentId = connector.parentId;
             if (connector.mode === 'any') path.classList.add('skill-graph-path--any');
             if (this.isTreeNodeActive(stateById.get(connector.parentId))) {
                 path.classList.add('unlocked-flow');
@@ -6156,6 +7076,19 @@ export class ThreeGame {
         const nodeById = new Map(nodes.map((node) => [node.id, node]));
         const stateById = new Map();
 
+        // Keyboard nav state: remember which node held focus so a purchase
+        // re-render doesn't dump the keyboard user back to nowhere, expose
+        // the node list to the spatial-arrow handler, and bind that handler
+        // once (the container outlives every re-render).
+        const focusedNodeId = gridContainer.contains(document.activeElement)
+            ? (document.activeElement.closest?.('[data-node-id]')?.dataset?.nodeId ?? null)
+            : null;
+        this._skillTreeNodes = nodes;
+        if (!this._skillTreeNavBound) {
+            this._skillTreeNavBound = true;
+            gridContainer.addEventListener('keydown', (event) => this.handleSkillTreeNavKey(event));
+        }
+
         gridContainer.innerHTML = '';
         gridContainer.style.setProperty('--skill-tree-columns', String(tree.graph?.columns ?? 7));
         gridContainer.style.setProperty('--skill-tree-rows', String(tree.graph?.rows ?? 13));
@@ -6172,12 +7105,19 @@ export class ThreeGame {
             countEl.textContent = `${tree.playerClass} BUNKER TREE: ${activeCount}/${nodes.length} ONLINE (${readyCount} READY) | COMBAT LV: ${progression.combatUnlocked}/${progression.combatTotal} | BALANCE: ◈ ${this.bank.getShells()} SHELLS`;
         }
 
+        // Row-major append order: the CSS grid places cards by explicit
+        // row/col style regardless of DOM order, but TAB follows DOM order —
+        // appending branch-by-branch made Tab leap between distant columns
+        // (wave-6 §4c). Sorting by (row, col) makes Tab sweep the grid the
+        // way the eye reads it.
         const cardById = new Map();
-        for (const node of nodes) {
+        const appendOrder = [...nodes].sort((a, b) => (a.row - b.row) || (a.col - b.col));
+        for (const node of appendOrder) {
             const card = this.buildTreeNodeCard(ship, node, stateById.get(node.id));
             cardById.set(node.id, card);
             gridContainer.appendChild(card);
         }
+        if (focusedNodeId) cardById.get(focusedNodeId)?.focus();
 
         if (matrix) {
             matrix.innerHTML = '';
@@ -6877,6 +7817,10 @@ export class ThreeGame {
     }
 
     applyPlayerDamageToEnemy(sprite, amount) {
+        if (sprite?.userData?.isDestructibleProp) {
+            this.damageScatterProp(sprite, amount);
+            return;
+        }
         const fight = sprite?.userData?.queenFight;
         if (fight) {
             const dealt = applyBossDamage(fight, amount);
@@ -6951,6 +7895,7 @@ export class ThreeGame {
         this.updateCampCivilians(delta);
         this.updateCampTurrets(delta, phase);
         this.updateCampPrompt(phase);
+        this.updateScientistPromptState();
     }
 
     // Camp defense turrets: friendly artillery in Act 1, the first hostile
@@ -7177,12 +8122,17 @@ export class ThreeGame {
             Math.round(anchor.x) - 173 - index * 31,
             Math.round(anchor.z) + 137 + index * 17
         ) ^ this.runEntropy) >>> 0);
-        // Fanned between the camps, slightly closer in — the anomalies were
-        // always underfoot, the player just read them as terrain.
+        // Fanned between the camps on the bisector bearings, and kept to a
+        // distinctly CLOSER ring than the camps (camps are 70-120u out): the
+        // anomalies were always underfoot, the player just read them as
+        // terrain. The old 45-90u band overlapped the camp band and the wide
+        // ±31.5° jitter could swing a hive right onto a camp bearing, so
+        // hives kept reading as "in the way" on every trek to a camp — the
+        // tighter jitter here keeps them on the between-camp bearings.
         const baseAngle = [Math.PI * 0.45, Math.PI * 1.1, Math.PI * 1.75][index % 3];
         for (let attempt = 0; attempt < 96; attempt += 1) {
-            const dist = THREE.MathUtils.lerp(45, 90, random());
-            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.35;
+            const dist = THREE.MathUtils.lerp(40, 60, random());
+            const angle = baseAngle + (random() - 0.5) * Math.PI * 0.2;
             const tileX = Math.round(anchor.x + Math.cos(angle) * dist);
             const tileZ = Math.round(anchor.z + Math.sin(angle) * dist);
             if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
@@ -7190,8 +8140,8 @@ export class ThreeGame {
             }
         }
         return {
-            x: Math.round(anchor.x + Math.cos(baseAngle) * 45),
-            z: Math.round(anchor.z + Math.sin(baseAngle) * 45)
+            x: Math.round(anchor.x + Math.cos(baseAngle) * 40),
+            z: Math.round(anchor.z + Math.sin(baseAngle) * 40)
         };
     }
 
@@ -7812,6 +8762,10 @@ export class ThreeGame {
 
     getCampRecord(id) {
         return this.act2?.getState?.().camps.find((c) => c.id === id) ?? null;
+    }
+
+    getScientistRecord() {
+        return this.act2?.getState?.().scientist ?? null;
     }
 
     getCampById(id) {
@@ -8488,6 +9442,7 @@ export class ThreeGame {
     // talk/stage movement, and play it through the brief transmission panel.
     leaderKeyFor(kind, entity) {
         if (kind === 'hive') return entity.characterId || leaderKeyFromName(entity.label);
+        if (kind === 'scientist') return 'scientist';
         return leaderKeyFromName(entity.leaderName ?? '');
     }
 
@@ -8519,7 +9474,9 @@ export class ThreeGame {
     }
 
     talkToLeader(kind, entity) {
-        const record = kind === 'hive' ? this.getHiveRecord(entity.id) : this.getCampRecord(entity.id);
+        const record = kind === 'hive' ? this.getHiveRecord(entity.id)
+            : kind === 'scientist' ? this.getScientistRecord()
+                : this.getCampRecord(entity.id);
         const beat = this.peekDialogueBeat(kind, entity, record);
         if (!beat) return false;
         const achievementState = window.achievementEngine?.getState?.() ?? {};
@@ -8540,9 +9497,9 @@ export class ThreeGame {
             this.act2.recordDialogueTalk(kind, entity.id);
         } else if (beat.type === 'death_beat') {
             if (kind === 'hive') {
-                this.act2.setHiveQuestFlag(entity.id, 'seen_death_beat');
+                this.act2.completeHiveQuest(entity.id, 'seen_death_beat', 0);
             } else {
-                this.act2.setCampQuestFlag(entity.id, 'seen_death_beat');
+                this.act2.completeCampQuest(entity.id, 'seen_death_beat', 0);
             }
         }
         window.dispatchEvent(new CustomEvent('leader-dialogue', {
@@ -8678,6 +9635,36 @@ export class ThreeGame {
         } else {
             window.dispatchEvent(new CustomEvent('camp-prompt-clear'));
         }
+    }
+
+    // Dr. Okonkwo-Vass is a second, independent NPC fixture placed at
+    // camp_meridian's already-solved world position — not part of that
+    // camp's own record or prompt (see getScientistRecord), just
+    // physically standing nearby. Offset so the two can't overlap or be
+    // confused for one interact target.
+    getScientistWorldPosition() {
+        const meridian = this.camps?.find((c) => c.id === 'camp_meridian');
+        if (!meridian) return null;
+        return { x: meridian.pos.x + 1.6, z: meridian.pos.z + 1.6 };
+    }
+
+    interactWithScientist() {
+        if (!this.isGameplayInputActive() || !this.player || !this.act2 || !this.isAct2Active()) return false;
+        const pos = this.getScientistWorldPosition();
+        if (!pos) return false;
+        const dist = Math.hypot(this.player.position.x - pos.x, this.player.position.z - pos.z);
+        if (dist > 2.0) return false;
+        return this.talkToLeader('scientist', { id: 'scientist', leaderName: 'Dr. Okonkwo-Vass' });
+    }
+
+    updateScientistPromptState() {
+        const promptEl = document.getElementById('scientist-hud-prompt');
+        if (!promptEl) return;
+        const pos = this.isAct2Active() ? this.getScientistWorldPosition() : null;
+        const near = pos && this.player
+            ? Math.hypot(this.player.position.x - pos.x, this.player.position.z - pos.z) <= 2.0
+            : false;
+        promptEl.classList.toggle('hidden', !near);
     }
 
     interactWithAct2Camp() {
@@ -9500,7 +10487,8 @@ export class ThreeGame {
     damageShip(ship, amount = 1, reason = 'impact') {
         if (!ship) return;
         const prevHp = Number.isFinite(ship.hp) ? ship.hp : ship.maxHp;
-        ship.hp = Math.max(0, prevHp - Math.max(0, amount));
+        const damage = Math.max(0, Math.round(amount));
+        ship.hp = Math.max(0, prevHp - damage);
         if (ship.hp === prevHp) return;
         if (reason !== 'friendly-fire') this.triggerCameraShake(0.12, 0.25);
 
@@ -9549,6 +10537,35 @@ export class ThreeGame {
         return THREE.MathUtils.radToDeg(Math.atan2(screenX, screenY));
     }
 
+    // Nearest unread log within `radius`: mounted lore terminals whose key
+    // hasn't been read this session, plus uncollected physical lore drops
+    // (this.loreDrops only ever holds uncollected ones — collection removes
+    // the entry). Skips anything under 2u — once the player is standing at
+    // it, the interact prompt takes over and the compass should move on.
+    getNearbyUnreadLoreTarget(radius = 28) {
+        if (!this.player) return null;
+        let nearest = null;
+        let nearestDistance = radius;
+        const consider = (x, z) => {
+            const dx = x - this.player.position.x;
+            const dz = z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            if (distance >= nearestDistance || distance < 2.0) return;
+            nearestDistance = distance;
+            nearest = { dx, dz, distance };
+        };
+        for (const sprite of this.scatterSprites) {
+            if (sprite.userData?.type !== 'lore_terminal' || !sprite.parent) continue;
+            if (this._readLoreKeys?.has(sprite.userData.loreKey)) continue;
+            consider(sprite.position.x, sprite.position.z);
+        }
+        for (const entry of this.loreDrops ?? []) {
+            if (!entry?.sprite) continue;
+            consider(entry.sprite.position.x, entry.sprite.position.z);
+        }
+        return nearest;
+    }
+
     getRadarCompassState() {
         if (!this.player) {
             return { active: false, angle: 0, distance: 0 };
@@ -9557,6 +10574,22 @@ export class ThreeGame {
         if (performance.now() < (this._compassCorruptUntil ?? 0)) {
             const jitter = Math.sin(performance.now() * 0.018) * 80;
             return { active: true, mode: 'corrupt', label: 'SIGNAL CORRUPT', angle: jitter, distance: 0 };
+        }
+
+        const regTarget = typeof window !== 'undefined' ? window.objectiveRegistry?.getCompassTarget?.() : null;
+        if (regTarget && regTarget.priority < 50) {
+            const rdx = regTarget.x - this.player.position.x;
+            const rdz = regTarget.z - this.player.position.z;
+            const rdist = Math.hypot(rdx, rdz);
+            if (rdist > 0.5) {
+                return {
+                    active: true,
+                    mode: regTarget.source ?? 'objective',
+                    label: regTarget.label,
+                    angle: this.planarAngleTo(rdx, rdz, rdist),
+                    distance: rdist
+                };
+            }
         }
 
         if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
@@ -9656,6 +10689,25 @@ export class ThreeGame {
         }
         this._meridianCompassLock = null;
 
+        // A genuinely nearby unread log (terminal or physical drop) gets a
+        // pointer before the radar gate — story-critical beats, camp quests,
+        // and undiscovered camp/hive beacons all still outrank it above, but
+        // lore was the ONE interactable with no compass hint at all (wave-6
+        // punch list §3a). The tight radius keeps this a "something worth
+        // reading is close" nudge, not a cross-map drag toward optional
+        // content, and deliberately sits before the radarNode gate so
+        // un-upgraded players get the nudge too.
+        const loreTarget = this.getNearbyUnreadLoreTarget();
+        if (loreTarget) {
+            return {
+                active: true,
+                mode: 'lore',
+                label: 'LOG SIGNAL',
+                angle: this.planarAngleTo(loreTarget.dx, loreTarget.dz, loreTarget.distance),
+                distance: loreTarget.distance
+            };
+        }
+
         // General salvage scanning still needs the radar upgrade; camp and hive
         // beacons above are deliberate Act 1 side signals.
         if (!this.hasUpgrade('radarNode')) {
@@ -9732,14 +10784,23 @@ export class ThreeGame {
         }));
     }
 
+    resolveFallDamage() {
+        const hardened = Boolean(this.bank?.getState?.()?.tier2Unlocks?.fallHardening);
+        const raw = hardened ? FALL_DAMAGE_BASE / 2 : FALL_DAMAGE_BASE;
+        return Math.max(1, Math.round(raw));
+    }
+
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
         if (this.isPlayerDead) return;
         if (this.godMode) return;
         if (this.cinematicLock) return; // untouchable during scripted sequences
         if (this._abilityImmune) return;
+        if (this.isInPocket) return; // untouchable while resolving a fall inside a pocket
+        if (this.iFrameTimer > 0 && reason !== 'abyss') return;
         if (this.missionState?.status === 'inactive') return;
         const previousHp = this.playerVitals.hp;
-        this.playerVitals.hp = Math.max(0, this.playerVitals.hp - Math.max(0, amount));
+        const damage = Math.max(0, Math.round(amount));
+        this.playerVitals.hp = Math.max(0, this.playerVitals.hp - damage);
         if (this.playerVitals.hp === previousHp) return;
 
         if (sourceX != null && sourceZ != null) {
@@ -9748,7 +10809,7 @@ export class ThreeGame {
 
         // The Director eases off right after the player is hurt.
         this.bunkerDirector?.notifyThreat();
-        this.triggerCameraShake(0.22, 0.4);
+        this.triggerCameraShake?.(0.22, 0.4);
         this.emitHealthState();
         window.dispatchEvent(new CustomEvent('player-damaged', {
             detail: {
@@ -9856,6 +10917,7 @@ export class ThreeGame {
         this.chunkCache.clear();
         this._chunkRoomTypeCache?.clear();
         this._chunkTemplateCache?.clear();
+        this._chunkLandformCache?.clear();
         this.destroyedWallKeys.clear();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys.clear();
@@ -9880,6 +10942,9 @@ export class ThreeGame {
         this.virtualInput.z = 0;
         this.isMoving = false;
         this.isPlayerFalling = false;
+        this.isInPocket = false;
+        this._pocketHoleX = null;
+        this._pocketHoleZ = null;
         if (this.player) {
             this.player.scale.set(1, 1, 1);
             this.player.rotation.set(0, 0, 0);
@@ -9917,6 +10982,7 @@ export class ThreeGame {
             this._caveAnomalySignaled = false;
             this.resetAct2World();
             this.clearCorpses();
+            this.clearCompanions();
             this.clearLoreDrops();
             this._hiveKinKills = 0;
             this._tankShockGuardUsed = false;
@@ -10314,7 +11380,7 @@ export class ThreeGame {
     // enemy of that type permanently); it clones the same texture into a
     // temporary sprite instead, tracks the target's position/scale each
     // frame, and disposes with the same ping lifetime.
-    spawnEnemyXrayGhost(sprite, { duration = RADAR_DANGER_TRACK_SECONDS, colorHex = RADAR_DANGER_COLOR } = {}) {
+    spawnEnemyXrayGhost(sprite, { duration = RADAR_DANGER_TRACK_SECONDS, colorHex = sprite?.material?.color ? sprite.material.color.getHex() : 0xffffff } = {}) {
         const sourceMap = sprite?.material?.map;
         if (!sprite?.isSprite || !sourceMap) return;
 
@@ -10504,7 +11570,6 @@ export class ThreeGame {
                         const scanColor = isEnemy ? RADAR_DANGER_COLOR : 0x00d2ff;
                         const duration = isEnemy ? RADAR_DANGER_TRACK_SECONDS : RADAR_STANDARD_TRACK_SECONDS;
                         this.spawnRadarPingHighlight(sprite, scanColor, { duration });
-                        if (isEnemy) this.spawnEnemyXrayGhost(sprite, { duration, colorHex: RADAR_DANGER_COLOR });
                     }
                 }
 
@@ -10684,7 +11749,7 @@ export class ThreeGame {
                 
                 if (this.player.position.y <= -2.5) {
                     this.isPlayerFalling = false;
-                    this.takeDamage(999, 'abyss');
+                    this.enterPocket(this._fallHoleX, this._fallHoleZ);
                 }
             }
             return;
@@ -10694,14 +11759,65 @@ export class ThreeGame {
             this.clearGameplayInputState();
         }
 
-        // Check if player stepped on a hole
-        if (this.player && this.performanceProfile === 'gameplay') {
+        // Check if player stepped on a hole. Skipped entirely while inside a
+        // pocket — pockets have no holes of their own, but the pocket-aware
+        // getTileType redirect returns '#' for any out-of-bounds pocket-local
+        // lookup, and the surrounding surface-only hole-roll logic could
+        // otherwise misfire using the real-world coordinates that happen to
+        // still be under the player while underground (caught via the
+        // in-browser verification pass: this spuriously fired near the
+        // climb point, which sits close to the pocket's edge by design).
+        if (this.player && this.performanceProfile === 'gameplay' && !this.isInPocket) {
             if (this.isPlayerOverAnyHole(this.player.position.x, this.player.position.z)) {
                 this.isPlayerFalling = true;
+                this._fallHoleX = Math.round(this.player.position.x);
+                this._fallHoleZ = Math.round(this.player.position.z);
                 this.setInputEnabled(false);
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
                 return;
+            }
+        }
+
+        // Update kinetic control timers
+        this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
+        this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
+        this.perfectReloadBuffTimer = Math.max(0, (this.perfectReloadBuffTimer ?? 0) - delta);
+        this.recoilBloom = Math.max(0, (this.recoilBloom ?? 0) - 1.2 * delta);
+
+        if (this.isDashing && this.player) {
+            this.dashTimer -= delta;
+            const dashSpeed = 16.0;
+            const stepX = this.dashDirX * dashSpeed * delta;
+            const stepZ = this.dashDirZ * dashSpeed * delta;
+            if (this.canOccupyPosition(this.player.position.x + stepX, this.player.position.z)) {
+                this.player.position.x += stepX;
+            }
+            if (this.canOccupyPosition(this.player.position.x, this.player.position.z + stepZ)) {
+                this.player.position.z += stepZ;
+            }
+            if (this.dashTimer <= 0) {
+                this.isDashing = false;
+            }
+        }
+
+        if (this.player) {
+            const targetHeight = this.getTerrainHeightAt(this.player.position.x, this.player.position.z);
+            this.player.position.y = THREE.MathUtils.lerp(this.player.position.y, targetHeight * 0.05 + 0.06, 12 * delta);
+        }
+
+        if (this.player && this.inRunLootDrops?.length) {
+            for (let i = this.inRunLootDrops.length - 1; i >= 0; i--) {
+                const dropMesh = this.inRunLootDrops[i];
+                if (!dropMesh) continue;
+                const dist = Math.hypot(this.player.position.x - dropMesh.position.x, this.player.position.z - dropMesh.position.z);
+                if (dist < 0.85) {
+                    this.scene?.remove(dropMesh);
+                    dropMesh.geometry?.dispose?.();
+                    dropMesh.material?.dispose?.();
+                    this.inRunLootDrops.splice(i, 1);
+                    this.equipRunDrop(dropMesh.userData.item);
+                }
             }
         }
 
@@ -10773,7 +11889,7 @@ export class ThreeGame {
             moveDirZ = this.aimDirZ || 0;
         }
 
-        this.updatePlayerSpriteAnimation(screenAxisX, screenAxisZ, delta, isMoving, moveDirX, moveDirZ);
+        this.updatePlayerSpriteAnimation(moveDirX, moveDirZ, delta, isMoving, moveDirX, moveDirZ);
         // Keep night visibility centered on the player sprite under isometric camera.
         const spriteAnchorX = this.player.position.x + (this.playerSprite?.position.x ?? 0);
         const spriteAnchorZ = this.player.position.z + (this.playerSprite?.position.z ?? 0);
@@ -11263,6 +12379,13 @@ export class ThreeGame {
             this.playerEmitterGlow.material.opacity = 0.58 * lerp(1.16, 0.46, dayBlend);
         }
 
+        if (this.disableFogOfWar) {
+            this.scene.fog.near = 10000;
+            this.scene.fog.far = 50000;
+            this.updatePlayerDarkness(0);
+            return;
+        }
+
         // Keep night visibility screen-radial. Three.js fog is camera-depth
         // based in this isometric view, which makes the top of the canvas darker
         // than the bottom and makes "up-screen" flashlight aim feel weaker.
@@ -11400,7 +12523,10 @@ export class ThreeGame {
         if (!overlay || !ctx || !this.player || !this.camera) return;
         const w = this.container.clientWidth || 1;
         const h = this.container.clientHeight || 1;
-        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        // Match the WebGL framebuffer scale. A separate 2x fullscreen canvas
+        // doubled the memory/bandwidth hit precisely on the high-DPI PCs that
+        // already needed the render budget most.
+        const dpr = Math.max(0.65, this.renderer?.getPixelRatio?.() || 1);
         const targetW = Math.max(1, Math.round(w * dpr));
         const targetH = Math.max(1, Math.round(h * dpr));
         if (overlay.width !== targetW || overlay.height !== targetH) {
@@ -11526,7 +12652,7 @@ export class ThreeGame {
     }
 
     getFogOfWarVisibility(x, z) {
-        if (!this.player || this.nightVision) return 1;
+        if (!this.player || this.nightVision || this.disableFogOfWar) return 1;
 
         if (this.activeRadarScans) {
             for (const scan of this.activeRadarScans) {
@@ -11535,6 +12661,11 @@ export class ThreeGame {
                     return 1.0;
                 }
             }
+        }
+
+        // Inside main bunker crash site base (chunk 0,0 interior, z <= 15.2): always fully clear
+        if (Math.abs(x - 9) <= 7.5 && z <= 15.2) {
+            return 1.0;
         }
 
         const generatorState = this.getO2GeneratorState?.();
@@ -11546,15 +12677,24 @@ export class ThreeGame {
         const distance = Math.hypot(x - this.player.position.x, z - this.player.position.z);
         if (distance <= 0.001) return 1;
 
+        if (!this.exploredTileSet) this.exploredTileSet = new Set();
+        const tileX = Math.round(x);
+        const tileZ = Math.round(z);
+        const tileKey = `${tileX},${tileZ}`;
+
         // 1. Ambient radial visibility around player
         const fadeStart = FOG_OF_WAR_CLEAR_RADIUS;
         const fadeEnd = FOG_OF_WAR_CLEAR_RADIUS + FOG_OF_WAR_FADE_RADIUS;
         let ambientVis = FOG_OF_WAR_MIN_VISIBILITY;
         if (distance <= fadeStart) {
-            ambientVis = 1;
+            if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
+                ambientVis = 1;
+            }
         } else if (distance < fadeEnd) {
-            const t = (distance - fadeStart) / Math.max(0.001, fadeEnd - fadeStart);
-            ambientVis = THREE.MathUtils.lerp(1, FOG_OF_WAR_MIN_VISIBILITY, t * t * (3 - 2 * t));
+            if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
+                const t = (distance - fadeStart) / Math.max(0.001, fadeEnd - fadeStart);
+                ambientVis = THREE.MathUtils.lerp(1, FOG_OF_WAR_MIN_VISIBILITY, t * t * (3 - 2 * t));
+            }
         }
 
         // 2. Flashlight cone visibility
@@ -11565,7 +12705,6 @@ export class ThreeGame {
             const dot = (dx * this.playerForwardDir.x + dz * this.playerForwardDir.y) / distance;
             const cosLimit = Math.cos(SUIT_CONE_LIGHT_ANGLE);
             if (dot >= cosLimit) {
-                // Check if blocked by walls
                 if (!this.hasWallBetween(this.player.position.x, this.player.position.z, x, z)) {
                     const edgeFade = THREE.MathUtils.smoothstep(dot, cosLimit, cosLimit + 0.12);
                     const distanceFade = 1.0 - THREE.MathUtils.smoothstep(distance, SUIT_CONE_LIGHT_DISTANCE * 0.72, SUIT_CONE_LIGHT_DISTANCE);
@@ -11574,7 +12713,18 @@ export class ThreeGame {
             }
         }
 
-        return Math.min(1, Math.max(ambientVis, flashlightVis));
+        const currentVis = Math.min(1, Math.max(ambientVis, flashlightVis));
+        if (currentVis >= 0.65) {
+            this.exploredTileSet.add(tileKey);
+            return 1.0;
+        }
+
+        // Has player visited / explored this tile before? ("unless we've been there")
+        if (this.exploredTileSet.has(tileKey)) {
+            return 0.45;
+        }
+
+        return FOG_OF_WAR_MIN_VISIBILITY;
     }
 
     applyFogOfWarOpacity(object, visibility, { captureCurrent = false } = {}) {
@@ -12039,9 +13189,10 @@ export class ThreeGame {
                 this.torsoFacingRow = this.currentFacingRow;
             }
 
+            const layout = getPlayerSpriteLayout(this.playerType);
             const dir = backpedal ? -1 : 1;
-            this.animationTimer += delta * SPRITE_ANIMATION_SPEED * dir;
-            const frames = PLAYER_WALK_FRAME_COUNT;
+            this.animationTimer += delta * layout.animationFps * dir;
+            const frames = layout.walkFrames;
             const column = ((Math.floor(this.animationTimer) % frames) + frames) % frames;
             this.updatePlayerSpriteFrame(column, this.currentFacingRow, this.torsoFacingRow);
 
@@ -12050,7 +13201,7 @@ export class ThreeGame {
             }
             if (column !== this.lastAnimationColumn) {
                 this.lastAnimationColumn = column;
-                if (column === 1) {
+                if (layout.footstepFrames.includes(column)) {
                     if (this.performanceProfile !== 'menu') {
                         window.AudioManager?.playProceduralFootstep(this.playerType);
                     }
@@ -12072,10 +13223,13 @@ export class ThreeGame {
         this.updatePlayerSpriteFrame(0, this.currentFacingRow, this.torsoFacingRow);
     }
 
-    getFacingRow(axisX, axisZ) {
-        const angle = Math.atan2(axisZ, axisX);
-        const octant = Math.round(angle / (Math.PI / 4));
-        return (octant + PLAYER_SPRITE_DIRECTION_CELLS.length) % PLAYER_SPRITE_DIRECTION_CELLS.length;
+    getFacingRow(worldX, worldZ) {
+        return getDirectionIndexFromWorldVector(
+            worldX,
+            worldZ,
+            this.cameraPlanarRight,
+            this.cameraPlanarForward
+        );
     }
 
     // Keeps the legs and torso billboards visually identical under status tints.
@@ -12097,25 +13251,22 @@ export class ThreeGame {
         }
     }
 
-    // Points a texture at one vertical half of a single direction/walk frame.
-    // `half` is 'bottom' (legs) or 'top' (torso) of the waist split.
-    setSpriteHalfFrame(texture, column, row, half) {
-        const directionCell = PLAYER_SPRITE_DIRECTION_CELLS[row] ?? PLAYER_SPRITE_DIRECTION_CELLS[PLAYER_DEFAULT_DIRECTION_INDEX];
-        const frameColumn = directionCell.baseColumn + (column % PLAYER_WALK_FRAME_COUNT);
-        const shouldFlipX = this.playerType === 'TANK' && TANK_FLIPPED_DIRECTION_INDICES.has(row);
-        const frameBaseY = (PLAYER_SPRITE_ROWS - 1 - directionCell.row) * PLAYER_SPRITE_FRAME_REPEAT_Y;
-        const isTop = half === 'top';
-        // Texture V increases upward, so the torso band sits above the leg band.
-        const bandFraction = isTop ? (1 - PLAYER_SPRITE_WAIST_SPLIT) : PLAYER_SPRITE_WAIST_SPLIT;
-        const bandHeight = PLAYER_SPRITE_FRAME_REPEAT_Y * bandFraction;
-        const bandOffsetY = frameBaseY + (isTop ? PLAYER_SPRITE_FRAME_REPEAT_Y * PLAYER_SPRITE_WAIST_SPLIT : 0);
+    // Points a texture at one complete V2 direction/walk frame. `half` remains
+    // in the signature so legacy call sites and torso materials stay harmless.
+    setSpriteHalfFrame(texture, column, row, _half) {
+        const layout = getPlayerSpriteLayout(this.playerType);
+        const directionCell = layout.directionCells[row] ?? layout.directionCells[PLAYER_DEFAULT_DIRECTION_INDEX];
+        const repeatX = 1 / layout.columns;
+        const repeatY = 1 / layout.rows;
+        const frameColumn = directionCell.baseColumn + (column % layout.walkFrames);
+        const frameBaseY = (layout.rows - 1 - directionCell.row) * repeatY;
         texture.repeat.set(
-            PLAYER_SPRITE_FRAME_REPEAT_X * (shouldFlipX ? -1 : 1),
-            bandHeight
+            repeatX,
+            repeatY
         );
         texture.offset.set(
-            (frameColumn + (shouldFlipX ? 1 : 0)) * PLAYER_SPRITE_FRAME_REPEAT_X,
-            bandOffsetY
+            frameColumn * repeatX,
+            frameBaseY
         );
     }
 
@@ -12272,13 +13423,41 @@ export class ThreeGame {
     spawnPlayerShot(normX, normZ) {
         const classDamage = CLASS_STATS[this.playerType]?.projectileDamage ?? PROJECTILE_DAMAGE;
         const bonuses = this.weaponUpgradeBonuses ?? null;
-        const damage = classDamage + (bonuses?.shotDamage ?? 0);
+        let damage = classDamage + (bonuses?.shotDamage ?? 0);
+
+        if (this.perfectReloadBuffTimer > 0) {
+            damage *= 1.25;
+        }
+
+        let extraBullets = 0;
+        let spreadAngle = 0.20;
+        for (const mod of this.runOverclocks ?? []) {
+            if (mod.stats?.damageMult) damage *= mod.stats.damageMult;
+            if (mod.stats?.extraBullets) extraBullets += mod.stats.extraBullets;
+            if (mod.stats?.spreadAngle) spreadAngle = mod.stats.spreadAngle;
+        }
+
+        const playerHeight = this.getTerrainHeightAt(this.player?.position?.x ?? 0, this.player?.position?.z ?? 0);
+        if (playerHeight > 0) {
+            damage *= 1.15; // High-Ground +15% Damage Advantage!
+        }
+
+        // Stacked multipliers (reload, overclocks, high-ground) can land on a
+        // fractional value — round to a whole hit, never dealing less than 1.
+        damage = Math.max(1, Math.round(damage));
+
         let speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
         if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
             speed *= 1.20;
         }
-        const shotAmount = FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0;
-        const spreads = MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
+
+        this.recoilBloom = Math.min(0.8, (this.recoilBloom ?? 0) + 0.15);
+        this.triggerCameraShake?.(0.04, 0.08);
+
+        const shotAmount = (FEATURE_MULTISHOT ? (bonuses?.shotAmount ?? 0) : 0) + extraBullets;
+        const spreads = extraBullets > 0
+            ? [-spreadAngle, 0, spreadAngle]
+            : MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
 
         const fireOne = (dx, dz) => {
             this.spawnProjectile({
@@ -12795,9 +13974,10 @@ export class ThreeGame {
     }
 
     syncVisibleChunks(force = false, { prefetch = !force, processLimit = null } = {}) {
-        if (this.performanceProfile === 'menu') {
-            this.clearLoadedChunksForRunReset();
-            if (this.chunkGroups) this.chunkGroups.visible = false;
+        if (this.isInPocket) {
+            if (this.chunkGroups) {
+                this.chunkGroups.visible = false;
+            }
             return;
         }
 
@@ -13108,7 +14288,8 @@ export class ThreeGame {
         };
     }
 
-    getWallMaxHp({ landform = null, variant = 'standard', heightScale = 1 } = {}) {
+    getWallMaxHp({ landform = null, variant = 'standard', isDoor = false, heightScale = 1 } = {}) {
+        if (variant === 'door' || isDoor) return 3;
         let hp = WALL_HP_STANDARD;
         if (variant === 'damaged') hp = WALL_HP_DAMAGED;
         if (variant === 'hazard') hp = WALL_HP_HAZARD;
@@ -13146,6 +14327,17 @@ export class ThreeGame {
             worldX,
             worldZ
         };
+        // wallMaterial is shared across every wall mesh in the game, so a
+        // per-landform look can't come from a per-mesh material/uniform swap
+        // — instead, stamp the shared shader's uniform right before this
+        // specific mesh draws (a standard three.js one-material-many-looks
+        // trick). Safe because WebGL draw calls are synchronous.
+        const landformShaderId = LANDFORM_SHADER_ID[landform] ?? 0;
+        wall.onBeforeRender = () => {
+            if (this.wallShaderUniforms) {
+                this.wallShaderUniforms.uLandformId.value = landformShaderId;
+            }
+        };
         return wall;
     }
 
@@ -13165,10 +14357,20 @@ export class ThreeGame {
 
     markWallTileDestroyed(worldX, worldZ) {
         const coord = this.getChunkLocalFromWorld(worldX, worldZ);
-        this.destroyedWallKeys.add(this.getWallKey(coord.tileX, coord.tileZ));
-        const grid = this.chunkCache.get(coord.key);
+        const wallKey = this.getWallKey(coord.tileX, coord.tileZ);
+        this.destroyedWallKeys.add(wallKey);
+        const grid = this.chunkCache?.get?.(coord.key);
         if (grid?.[coord.localY]) {
             grid[coord.localY][coord.localX] = '.';
+        }
+        const wallMesh = this.findWallMeshAt?.(coord.tileX, coord.tileZ);
+        if (wallMesh) {
+            wallMesh.userData.destroyed = true;
+            wallMesh.visible = false;
+            wallMesh.parent?.remove(wallMesh);
+            if (this.wallMeshes) {
+                this.wallMeshes = this.wallMeshes.filter((candidate) => candidate !== wallMesh);
+            }
         }
         this._chunkRoomTypeCache?.delete(coord.key);
         this._chunkTemplateCache?.delete(coord.key);
@@ -13221,21 +14423,54 @@ export class ThreeGame {
         return true;
     }
 
+    updateWallDamageColor(wall) {
+        if (!wall?.userData?.isWall || wall.userData.destroyed) return;
+        const maxHp = Math.max(1, wall.userData.maxWallHp ?? WALL_HP_STANDARD);
+        const hp = Math.max(0, wall.userData.wallHp ?? maxHp);
+        const damageRatio = Math.min(1, Math.max(0, 1 - hp / maxHp));
+        if (damageRatio <= 0) return;
+
+        if (wall.material === this.wallMaterial) {
+            wall.material = this.wallMaterial.clone();
+        }
+
+        if (!wall.userData.originalColorHex && wall.material?.color) {
+            wall.userData.originalColorHex = wall.material.color.getHex();
+        }
+
+        if (wall.material?.color) {
+            const baseColor = new THREE.Color(wall.userData.originalColorHex ?? 0x808b96);
+            const targetColor = new THREE.Color(0xff3300);
+            wall.material.color.copy(baseColor).lerp(targetColor, damageRatio * 0.75);
+        }
+
+        if (wall.material?.emissive) {
+            wall.material.emissive.setHex(0xff2200);
+            wall.material.emissiveIntensity = damageRatio * 0.85;
+        }
+    }
+
     damageWall(wall, amount = 1, { source = 'player' } = {}) {
         if (!wall?.userData?.isWall || wall.userData.destroyed) return false;
+        if (wall?.userData?.isBunkerBlastDoor || (wall?.userData?.worldZ === 15 && wall?.userData?.worldX >= 6 && wall?.userData?.worldX <= 11)) {
+            return this.damageBunkerBlastDoor(amount, { source });
+        }
         const maxHp = Math.max(1, wall.userData.maxWallHp ?? WALL_HP_STANDARD);
-        const damage = Math.max(0, Number(amount) || 0);
+        const damage = Math.max(0, Math.round(Number(amount) || 0));
         wall.userData.wallHp = Math.max(0, (wall.userData.wallHp ?? maxHp) - damage);
         if (wall.userData.wallHp > 0) {
-            window.dispatchEvent(new CustomEvent('wall-damaged', {
-                detail: {
-                    source,
-                    x: wall.userData.worldX,
-                    z: wall.userData.worldZ,
-                    hp: wall.userData.wallHp,
-                    maxHp
-                }
-            }));
+            this.updateWallDamageColor(wall);
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent?.(new CustomEvent('wall-damaged', {
+                    detail: {
+                        source,
+                        x: wall.userData.worldX,
+                        z: wall.userData.worldZ,
+                        hp: wall.userData.wallHp,
+                        maxHp
+                    }
+                }));
+            }
             return false;
         }
         return this.destroyWall(wall, { source });
@@ -13268,6 +14503,126 @@ export class ThreeGame {
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
         return true;
+    }
+
+    mountPocket(holeWorldX, holeWorldZ) {
+        if (!this.pocketGroups) this.pocketGroups = new Map();
+        const key = this.getWallKey(holeWorldX, holeWorldZ);
+        if (this.pocketGroups.has(key)) return this.pocketGroups.get(key);
+
+        const pocket = this.generatePocket(holeWorldX, holeWorldZ);
+        const group = new THREE.Group();
+        group.position.set(
+            holeWorldX - pocket.centerCell.x,
+            POCKET_WORLD_Y,
+            holeWorldZ - pocket.centerCell.y
+        );
+
+        const floor = new THREE.Mesh(
+            new THREE.PlaneGeometry(pocket.size, pocket.size),
+            this.floorMaterial
+        );
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.set(pocket.centerCell.x, 0, pocket.centerCell.y);
+        group.add(floor);
+
+        for (let y = 0; y < pocket.size; y += 1) {
+            for (let x = 0; x < pocket.size; x += 1) {
+                if (pocket.grid[y][x] !== '#') continue;
+                const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                wall.position.set(x, this.wallHeight / 2, y);
+                this.configureWallMesh(wall, {
+                    chunkX: 0, chunkY: 0, localX: x, localY: y,
+                    worldX: holeWorldX + (x - pocket.centerCell.x),
+                    worldZ: holeWorldZ + (y - pocket.centerCell.y),
+                    landform: 'pocket', variant: 'standard', heightScale: 1
+                });
+                group.add(wall);
+            }
+        }
+
+        // Modest loot bump: one pickup at a random open floor cell (not the
+        // center or the climb point).
+        const floorCells = [];
+        for (let y = 0; y < pocket.size; y += 1) {
+            for (let x = 0; x < pocket.size; x += 1) {
+                if (pocket.grid[y][x] !== '.') continue;
+                if (x === pocket.centerCell.x && y === pocket.centerCell.y) continue;
+                if (x === pocket.climbPoint.x && y === pocket.climbPoint.y) continue;
+                floorCells.push({ x, y });
+            }
+        }
+        if (floorCells.length > 0) {
+            const random = this.createSeededRandom(
+                (this.hashTile(holeWorldX + 5000, holeWorldZ + 5000) ^ this.runEntropy) >>> 0
+            );
+            const pick = floorCells[Math.floor(random() * floorCells.length)];
+            const lootType = random() < 0.5 ? 'health' : 'tech';
+            const placement = this.createSnailDropPlacement(
+                pocket.centerCell.x, pocket.centerCell.y, pick.x, pick.y, lootType
+            );
+            const pickup = this.createPickupInstance(placement);
+            group.add(pickup);
+        }
+
+        // Climb-point marker, reusing the existing wall-vent asset.
+        const marker = new THREE.Mesh(this.ventGeometry, this.ventMaterial);
+        marker.position.set(pocket.climbPoint.x, 0.6, pocket.climbPoint.y);
+        marker.userData = { isPocketClimbPoint: true, worldX: holeWorldX, worldZ: holeWorldZ };
+        group.add(marker);
+
+        this.pocketGroups.set(key, group);
+        return group;
+    }
+
+    enterPocket(holeWorldX, holeWorldZ) {
+        const damage = this.resolveFallDamage();
+        this.takeDamage(damage, 'fall');
+
+        const pocketChunkX = Math.floor(holeWorldX / this.chunkSize);
+        const pocketChunkY = Math.floor(holeWorldZ / this.chunkSize);
+        const surfaceGroup = this.chunkMeshes?.get(`${pocketChunkX},${pocketChunkY}`);
+        if (surfaceGroup) surfaceGroup.visible = false;
+        if (this.chunkGroups) this.chunkGroups.visible = false;
+
+        const group = this.mountPocket(holeWorldX, holeWorldZ);
+        if (this.scene && group.parent !== this.scene) this.scene.add(group);
+
+        this._pocketHoleX = holeWorldX;
+        this._pocketHoleZ = holeWorldZ;
+        this.isInPocket = true;
+
+        if (this.player) {
+            this.player.position.x = holeWorldX;
+            this.player.position.z = holeWorldZ;
+            this.player.position.y = POCKET_WORLD_Y;
+            this.player.scale.set(1, 1, 1);
+            this.player.rotation.set(0, 0, 0);
+        }
+        this.setInputEnabled(true);
+    }
+
+    exitPocket() {
+        if (!this.isInPocket) return;
+        const holeWorldX = this._pocketHoleX;
+        const holeWorldZ = this._pocketHoleZ;
+
+        const chunkX = Math.floor(holeWorldX / this.chunkSize);
+        const chunkY = Math.floor(holeWorldZ / this.chunkSize);
+        const surfaceGroup = this.chunkMeshes?.get(`${chunkX},${chunkY}`);
+        if (surfaceGroup) surfaceGroup.visible = true;
+        if (this.chunkGroups) this.chunkGroups.visible = true;
+
+        if (this.player) {
+            this.player.position.x = holeWorldX;
+            this.player.position.z = holeWorldZ;
+            this.player.position.y = 0;
+        }
+        this.isInPocket = false;
+        this._pocketHoleX = null;
+        this._pocketHoleZ = null;
+
+        this.fillHoleAt(holeWorldX, holeWorldZ);
     }
 
     mountChunk(chunkX, chunkY) {
@@ -13313,12 +14668,34 @@ export class ThreeGame {
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
 
-                if (grid[localY][localX] !== '#') continue;
+                const tileChar = grid[localY][localX];
+                if (tileChar === 'D') {
+                    const doorMesh = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    doorMesh.position.set(worldX, this.wallHeight / 2, worldZ);
+                    doorMesh.scale.set(0.88, 1, 0.35);
+                    doorMesh.castShadow = true;
+                    doorMesh.receiveShadow = true;
+                    this.configureWallMesh(doorMesh, {
+                        chunkX, chunkY, localX, localY, worldX, worldZ, landform, variant: 'door', isDoor: true
+                    });
+                    group.add(doorMesh);
+                    continue;
+                }
+                if (tileChar !== '#') continue;
 
                 const wallTypeRng = this.createSeededRandom(this.hashTile(worldX, worldZ) + 999);
                 const wallTypeRoll = wallTypeRng();
 
                 if (wallTypeRoll < holeCut) {
+                    if (this.filledHoleKeys?.has(this.getWallKey(worldX, worldZ))) {
+                        const filledMesh = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
+                        filledMesh.rotation.x = -Math.PI / 2;
+                        filledMesh.position.set(worldX, 0.005, worldZ);
+                        filledMesh.receiveShadow = true;
+                        filledMesh.userData = { isFilledHolePatch: true, wallKey: this.getWallKey(worldX, worldZ) };
+                        group.add(filledMesh);
+                        continue;
+                    }
                     const holeInfo = this.getHoleVisualInfo(worldX, worldZ);
                     if (!holeInfo) continue;
                     // Hole / Pit (flat on the ground)
@@ -13329,6 +14706,28 @@ export class ThreeGame {
                     holeMesh.position.set(holeInfo.x, 0.005, holeInfo.z);
                     holeMesh.receiveShadow = true;
                     group.add(holeMesh);
+
+                    // Seeded chance (~40%) to spawn a Fungal Spore Vent (Stage 1 Fungal Enemy) on hole tiles
+                    if (wallTypeRng() < 0.40) {
+                        const placement = {
+                            x: worldX,
+                            z: worldZ,
+                            type: 'fungal_spore_vent',
+                            scatterKey: `vent:${worldX},${worldZ}`,
+                            scale: 1.1,
+                            rotation: 0,
+                            tiltX: 0,
+                            tiltZ: 0,
+                            elevation: 0.08,
+                            groupType: 'enemy',
+                            opacity: 1
+                        };
+                        const vent = this.createScatterInstance(placement);
+                        if (vent) {
+                            group.add(vent);
+                            this.scatterSprites.push(vent);
+                        }
+                    }
                 } else if (wallTypeRoll < hazardCut) {
                     // Hazard Wall (pulsing warning siren)
                     const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
@@ -13519,6 +14918,16 @@ export class ThreeGame {
             const scatter = this.createScatterInstance(placement);
             if (scatter) {
                 group.add(scatter);
+            }
+        }
+
+        // Spawn room set pieces & walkable biomechanical archway pillars
+        const setPiecePlacements = this.createChunkSetPiecePlacements(chunkX, chunkY, grid);
+        for (const placement of setPiecePlacements) {
+            const propSprite = this.createScatterInstance(placement);
+            if (propSprite) {
+                group.add(propSprite);
+                this.scatterSprites.push(propSprite);
             }
         }
 
@@ -13785,6 +15194,87 @@ export class ThreeGame {
             }
         }
 
+        return placements;
+    }
+
+    createChunkSetPiecePlacements(chunkX, chunkY, grid) {
+        const placements = [];
+        const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
+
+        for (let localY = 1; localY < this.chunkSize - 1; localY += 1) {
+            for (let localX = 1; localX < this.chunkSize - 1; localX += 1) {
+                if (grid[localY][localX] !== '.') continue;
+
+                const worldX = chunkX * this.chunkSize + localX;
+                const worldZ = chunkY * this.chunkSize + localY;
+
+                // 1) Doorways & Corridors: Walkable Archway Pillars (Left and Right pillars with walkable center)
+                const isHorizontalDoorway = grid[localY][localX - 1] === '#' && grid[localY][localX + 1] === '#';
+                const isVerticalDoorway = grid[localY - 1][localX] === '#' && grid[localY + 1][localX] === '#';
+
+                if ((isHorizontalDoorway || isVerticalDoorway) && rng() < 0.25) {
+                    const offsetX = isVerticalDoorway ? 0.42 : 0;
+                    const offsetZ = isHorizontalDoorway ? 0.42 : 0;
+
+                    placements.push({
+                        x: worldX - offsetX,
+                        z: worldZ - offsetZ,
+                        type: 'prop_biomech_pillar_left',
+                        scatterKey: `pillar_l:${worldX},${worldZ}`,
+                        scale: 1.25,
+                        elevation: 0.08,
+                        hp: 6,
+                        groupType: 'prop',
+                        opacity: 1
+                    });
+                    placements.push({
+                        x: worldX + offsetX,
+                        z: worldZ + offsetZ,
+                        type: 'prop_biomech_pillar_right',
+                        scatterKey: `pillar_r:${worldX},${worldZ}`,
+                        scale: 1.25,
+                        elevation: 0.08,
+                        hp: 6,
+                        groupType: 'prop',
+                        opacity: 1
+                    });
+                    continue;
+                }
+
+                // 2) Room Set Pieces (Destructible props)
+                const roll = rng();
+                if (roll < 0.07) {
+                    const props = [
+                        'prop_cyber_junction',
+                        'prop_specimen_tank',
+                        'prop_bunker_supplies',
+                        'prop_spore_colony',
+                        'prop_conduit_hub',
+                        'prop_cave_lichen',
+                        'prop_cave_bones',
+                        'prop_cave_eggs_intact',
+                        'prop_cave_eggs_hatched',
+                        'prop_cave_spores',
+                        'prop_cave_webs',
+                        'prop_cave_hive_wounded',
+                        'prop_camp_sandbags',
+                        'prop_camp_crates'
+                    ];
+                    const propType = props[Math.floor(rng() * props.length)];
+                    placements.push({
+                        x: worldX,
+                        z: worldZ,
+                        type: propType,
+                        scatterKey: `prop:${worldX},${worldZ}`,
+                        scale: 1.15,
+                        elevation: 0.08,
+                        hp: propType === 'prop_specimen_tank' ? 4 : 3,
+                        groupType: 'prop',
+                        opacity: 1
+                    });
+                }
+            }
+        }
         return placements;
     }
 
@@ -14364,6 +15854,39 @@ export class ThreeGame {
         const scaleY = placement.scale * (1.0 + placement.tiltX);
         const anchoredY = placement.elevation;
 
+        if (placement.type.startsWith('prop_')) {
+            const spriteMaterial = this.scatterMaterials[placement.type];
+            if (!spriteMaterial) return null;
+
+            const clonedMat = spriteMaterial.clone();
+            clonedMat.alphaTest = 0.06;
+
+            const sprite = new THREE.Sprite(clonedMat);
+            sprite.center.set(0.5, 0);
+            sprite.position.set(placement.x, anchoredY, placement.z);
+            sprite.scale.set(scaleX, scaleY, 1);
+            sprite.frustumCulled = false;
+            sprite.renderOrder = 4;
+            sprite.userData = {
+                isScatter: true,
+                isDestructibleProp: true,
+                propHp: placement.hp ?? 3,
+                maxPropHp: placement.hp ?? 3,
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: anchoredY,
+                elevationOffset: placement.elevation,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                burstTriggered: false,
+                burstTimer: 0,
+                phase: placement.phase ?? 0,
+                baseOpacity: placement.opacity ?? 1
+            };
+            return sprite;
+        }
+
         if (placement.type.startsWith('bunker_junk')) {
             const spriteMaterial = this.scatterMaterials[placement.type];
             if (!spriteMaterial) return null;
@@ -14514,13 +16037,16 @@ export class ThreeGame {
             // sprite can hold an independent UV frame/facing. Cloning the
             // shared texture is unsafe here: the chroma-key canvas lands
             // async, and clones taken before it arrives stay blank.
-            const sheetPath = SHEET_ENEMY_TYPES[placement.type];
-            if (sheetPath) {
-                const sheetTex = this.loadKeyedSpriteTexture(sheetPath, 16);
+            const sheetLayout = getEnemySpriteLayout(placement.type);
+            if (sheetLayout) {
+                const sheetTex = this.loadKeyedSpriteTexture(sheetLayout.path, 16, null, {
+                    layout: sheetLayout
+                });
                 sheetTex.wrapS = THREE.RepeatWrapping;
                 sheetTex.wrapT = THREE.RepeatWrapping;
-                sheetTex.repeat.set(0.25, 0.25);
-                sheetTex.offset.set(0, 0.75); // frame 0, south-facing row
+                sheetTex.repeat.set(1 / sheetLayout.columns, 1 / sheetLayout.rows);
+                const southRow = sheetLayout.directionRows.south;
+                sheetTex.offset.set(0, (sheetLayout.rows - 1 - southRow) / sheetLayout.rows);
                 clonedMat.map = sheetTex;
             }
 
@@ -14549,7 +16075,8 @@ export class ThreeGame {
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
-                sheetSprite: Boolean(sheetPath),
+                sheetSprite: Boolean(sheetLayout),
+                sheetLayout,
                 sheetTime: 0,
                 sheetRow: 0,
                 baseY: anchoredY,
@@ -15348,10 +16875,42 @@ export class ThreeGame {
         }
     }
 
+    damageScatterProp(sprite, amount = 1) {
+        if (!sprite?.userData?.isDestructibleProp || sprite.userData.burstTriggered) return false;
+        const previousHp = sprite.userData.propHp ?? 3;
+        const damage = Math.max(1, Math.round(amount));
+        sprite.userData.propHp = Math.max(0, previousHp - damage);
+
+        this.spawnDamagePip(sprite.position.x, sprite.position.z, damage);
+
+        if (sprite.material?.color) {
+            sprite.material.color.setHex(0xffaa44);
+            setTimeout(() => { sprite.material?.color?.setHex(0xffffff); }, 90);
+        }
+        window.AudioManager?.play('enemy_hit_soft', { volume: 0.35 });
+
+        if (sprite.userData.propHp <= 0) {
+            sprite.userData.burstTriggered = true;
+            const isBio = sprite.userData.type?.includes?.('spore') || sprite.userData.type?.includes?.('specimen');
+            this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, isBio ? 'bio_spores' : 'bunker_junk');
+            if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+            window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
+
+            this.spawnCrawlerDrops(sprite);
+
+            const idx = this.scatterSprites.indexOf(sprite);
+            if (idx !== -1) this.scatterSprites.splice(idx, 1);
+            if (sprite.parent) sprite.parent.remove(sprite);
+            return true;
+        }
+        return false;
+    }
+
     damageSnail(sprite, amount = 1) {
         if (!sprite?.userData || !this.isEnemyType(sprite.userData.type) || sprite.userData.burstTriggered) return;
         const previousHp = Number.isFinite(sprite.userData.hp) ? sprite.userData.hp : (sprite.userData.maxHp ?? SNAIL_MAX_HP);
-        const damage = Math.max(0, amount);
+        const raw = Math.max(0, amount);
+        const damage = raw > 0 ? Math.max(1, Math.round(raw)) : 0;
         if (damage <= 0) return;
         sprite.userData.hp = Math.max(0, previousHp - damage);
         if (sprite.userData.hp === previousHp) return;
@@ -15402,8 +16961,12 @@ export class ThreeGame {
                 }));
             }
         }
-        // Shells are no longer granted on the kill itself — the player has to
-        // walk over the corpse to claim them (collectSnailShell).
+        const isElite = Boolean(sprite.userData.enraged || sprite.userData.isSentinel);
+        const isBossEnemy = Boolean(sprite.userData.isHiveHarvestBoss || sprite.userData.isBoss);
+        const drop = rollEnemyLootDrop(Math.random, { isElite, isBoss: isBossEnemy });
+        if (drop) {
+            this.spawnPhysicalLootDrop?.(sprite.position?.x ?? 0, sprite.position?.z ?? 0, drop);
+        }
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
@@ -15559,6 +17122,14 @@ export class ThreeGame {
         this.corpses = [];
     }
 
+    clearCompanions() {
+        for (const companion of this.companions ?? []) {
+            companion.sprite?.parent?.remove(companion.sprite);
+            companion.sprite?.material?.dispose?.();
+        }
+        this.companions = [];
+    }
+
     // Shells bank instantly (no extraction risk) — they are the body-count
     // currency, so losing them on death would double-punish melee classes.
     collectSnailShell(corpse) {
@@ -15611,7 +17182,10 @@ export class ThreeGame {
         ctx.font = 'bold 36px "Outfit", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`-${amount}`, 32, 32);
+        // Also used for non-numeric status text (e.g. fillHoleAt's 'SEALED'
+        // pip) — only round when it's actually a damage number.
+        const displayAmount = Number.isFinite(amount) ? Math.round(amount) : amount;
+        ctx.fillText(`-${displayAmount}`, 32, 32);
 
         const texture = new THREE.CanvasTexture(canvas);
         const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
@@ -16306,6 +17880,182 @@ export class ThreeGame {
         }
     }
 
+    updateFungalSporeVentBehavior(sprite, delta) {
+        const data = sprite.userData;
+        if (!this.player || this.isPlayerDead) return;
+
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const distToPlayer = Math.hypot(dx, dz);
+
+        // Stage 1 -> Stage 2 transition: Trigger eruption if player gets close (<=3.2) or vent takes damage
+        const currentHp = Number.isFinite(data.hp) ? data.hp : 6;
+        if (distToPlayer <= 3.2 || currentHp < 6) {
+            this.eruptFungalVent(sprite);
+            return;
+        }
+
+        // Periodic Spore Pod lobbing
+        data.sporeTimer = (data.sporeTimer ?? 2.8) - delta;
+        if (data.sporeTimer <= 0) {
+            data.sporeTimer = 3.5 + Math.random() * 1.5;
+            if (distToPlayer <= 9.0) {
+                this.spawnProjectile({
+                    x: sprite.position.x,
+                    z: sprite.position.z,
+                    vx: (dx / distToPlayer) * 4.2,
+                    vz: (dz / distToPlayer) * 4.2,
+                    ttl: 2.2,
+                    damage: 1,
+                    radius: 0.32,
+                    isEnemy: true,
+                    options: { color: 0x55ff55, glowColor: 0x22aa22 }
+                });
+                this.spawnGearPoofEffect(sprite.position.x, sprite.position.z, 'bio_spores');
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.22, playbackRate: 0.65, bus: 'sfx' });
+            }
+        }
+    }
+
+    eruptFungalVent(sprite) {
+        const x = sprite.position.x;
+        const z = sprite.position.z;
+        const parent = sprite.parent || this.scene;
+
+        // Visual and sound effects for Stage 2 emergence
+        this.spawnGearPoofEffect(x, z, 'bio_spores');
+        this.spawnToxicSporePuddle(x, z, false);
+        window.AudioManager?.playMetalStress?.({ volume: 0.55, playbackRate: 2.1, force: true });
+
+        // Remove static vent sprite
+        const idx = this.scatterSprites.indexOf(sprite);
+        if (idx !== -1) this.scatterSprites.splice(idx, 1);
+        if (sprite.parent) sprite.parent.remove(sprite);
+
+        // Erupt Stage 2: Mycelium Stalker
+        const placement = {
+            x,
+            z,
+            type: 'mycelium_stalker',
+            scatterKey: `stalker:${Date.now()}:${Math.random()}`,
+            scale: 1.15,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.08,
+            groupType: 'enemy',
+            opacity: 1
+        };
+        const stalker = this.createScatterInstance(placement);
+        if (stalker) {
+            parent.add(stalker);
+            this.scatterSprites.push(stalker);
+        }
+    }
+
+    updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
+        const data = sprite.userData;
+        if (!this.player || this.isPlayerDead) return;
+
+        const dx = this.player.position.x - sprite.position.x;
+        const dz = this.player.position.z - sprite.position.z;
+        const distToPlayer = Math.hypot(dx, dz);
+
+        const accel = isStalker ? 19.0 : 15.0;
+        const maxSpeed = isStalker ? 2.3 : 2.7;
+        const friction = 0.88;
+
+        data.vx = (data.vx ?? 0) * Math.pow(friction, delta * 60);
+        data.vz = (data.vz ?? 0) * Math.pow(friction, delta * 60);
+
+        if (distToPlayer > 0.1) {
+            const dirX = dx / distToPlayer;
+            const dirZ = dz / distToPlayer;
+
+            // Momentum acceleration towards player
+            data.vx += dirX * accel * delta;
+            data.vz += dirZ * accel * delta;
+
+            const currentSpeed = Math.hypot(data.vx, data.vz);
+            if (currentSpeed > maxSpeed) {
+                data.vx = (data.vx / currentSpeed) * maxSpeed;
+                data.vz = (data.vz / currentSpeed) * maxSpeed;
+            }
+        }
+
+        const nextX = sprite.position.x + data.vx * delta;
+        const nextZ = sprite.position.z + data.vz * delta;
+
+        // Collision & door breaching physics
+        if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+            sprite.position.x = nextX;
+            sprite.position.z = nextZ;
+        } else {
+            // Wall sliding check along X and Z axes
+            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(sprite.position.z))) {
+                sprite.position.x = nextX;
+                data.vz *= 0.4;
+            } else if (this.isSnailTileWalkable(Math.round(sprite.position.x), Math.round(nextZ))) {
+                sprite.position.z = nextZ;
+                data.vx *= 0.4;
+            } else {
+                // Check if blocked by closed Biomechanical Door
+                this.tryEnemyBreachDoor(sprite, Math.round(nextX), Math.round(nextZ));
+                data.vx = 0;
+                data.vz = 0;
+            }
+        }
+
+        this.faceSpriteFromDir(sprite, data.vx, dx);
+
+        // Contact attack check
+        if (distToPlayer <= 0.95 && (data.attackCooldown ?? 0) <= 0) {
+            data.attackCooldown = 1.0;
+            this.takeDamage(isStalker ? 1 : 2, isStalker ? 'mycelium_stalker' : 'bio_charger', sprite.position.x, sprite.position.z);
+            if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+            window.AudioManager?.playMetalStress?.({ volume: 0.35, playbackRate: 1.4, force: true });
+        } else {
+            data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
+        }
+    }
+
+    tryEnemyBreachDoor(sprite, doorX, doorZ) {
+        if (!this.getTileType || this.getTileType(doorX, doorZ) !== 'D') return;
+        const doorKey = this.getWallKey ? this.getWallKey(doorX, doorZ) : `${doorX},${doorZ}`;
+        if (this.destroyedWallKeys?.has(doorKey)) return;
+
+        sprite.userData.doorBreachTimer = (sprite.userData.doorBreachTimer ?? 0.5) - 0.016;
+        if (sprite.userData.doorBreachTimer <= 0) {
+            sprite.userData.doorBreachTimer = 0.5;
+            this.markWallTileDestroyed(doorX, doorZ);
+            this.spawnGearPoofEffect(doorX, doorZ, 'bunker_junk');
+            window.AudioManager?.playMetalStress?.({ volume: 0.45, playbackRate: 1.9, force: true });
+        }
+    }
+
+    interactWithBiomechanicalDoor() {
+        if (!this.player || this.isPlayerDead) return false;
+        const px = Math.round(this.player.position.x);
+        const pz = Math.round(this.player.position.z);
+
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const tx = px + dx;
+                const tz = pz + dz;
+                if (this.getTileType?.(tx, tz) === 'D') {
+                    const doorKey = this.getWallKey ? this.getWallKey(tx, tz) : `${tx},${tz}`;
+                    if (!this.destroyedWallKeys?.has(doorKey)) {
+                        this.markWallTileDestroyed(tx, tz);
+                        this.spawnGearPoofEffect(tx, tz, 'bunker_junk');
+                        window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.8, bus: 'sfx' });
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     spawnCrawlerDrops(sprite) {
         const parent = sprite?.parent;
         if (!parent) return;
@@ -16391,23 +18141,29 @@ export class ThreeGame {
         sprite.scale.set(Math.abs(data.baseScaleX) * facingSign, data.baseScaleY, 1);
     }
 
-    // 4x4 walk-sheet UV animation (camp-leader layout: 4 frames per row,
-    // rows = S/N/E/W facings, texture rows counted from the top). Facing
-    // picks the dominant travel axis; frames step at 6 fps while moving.
+    // Layout-driven directional enemy UV animation.
     updateSheetSpriteFrame(sprite, dirX, dirZ, delta, moving = true) {
         const data = sprite.userData;
         const map = sprite.material?.map;
         if (!data?.sheetSprite || !map) return;
         if (moving) {
             data.sheetTime = (data.sheetTime ?? 0) + delta;
-            if (Math.abs(dirX) > Math.abs(dirZ)) {
-                data.sheetRow = dirX > 0 ? 2 : 3; // East / West
-            } else if (Math.abs(dirZ) > 0.001) {
-                data.sheetRow = dirZ > 0 ? 0 : 1; // South / North
-            }
+            data.sheetRow = getEnemyDirectionRow(
+                data.sheetLayout,
+                dirX,
+                dirZ,
+                data.sheetRow ?? 0
+            );
         }
-        const frame = moving ? Math.floor((data.sheetTime ?? 0) * 6) % 4 : 0;
-        map.offset.set(frame * 0.25, (3 - (data.sheetRow ?? 0)) * 0.25);
+        const layout = data.sheetLayout;
+        if (!layout) return;
+        const frame = moving
+            ? Math.floor((data.sheetTime ?? 0) * layout.animationFps) % layout.walkFrames
+            : 0;
+        map.offset.set(
+            frame / layout.columns,
+            (layout.rows - 1 - (data.sheetRow ?? 0)) / layout.rows
+        );
     }
 
     // Shoves the player and the snail apart on a contact hit and gives the
@@ -16474,6 +18230,174 @@ export class ThreeGame {
 
         data.pathNodes = null;
         data.pathRetargetTimer = 0;
+    }
+
+    // Companions (befriended snails, src/snailEncounter.js's 'befriend'
+    // outcome) follow the player and periodically damage nearby hostile
+    // snails. One companion at a time — see design doc's Companion section.
+    updateCompanions(delta) {
+        if (!this.player || this.isPlayerDead || !Array.isArray(this.companions) || this.companions.length === 0) return;
+
+        const TRAIL_DISTANCE = 1.6;
+        const MOVE_SPEED = 1.6;
+        const ASSIST_RADIUS = 2.2;
+        const ASSIST_DAMAGE = 1;
+        const ASSIST_COOLDOWN = 1.5;
+
+        const facingLen = Math.hypot(this.aimDirX ?? 0, this.aimDirZ ?? 0);
+        const facing = facingLen > 0.0001
+            ? { dirX: this.aimDirX, dirZ: this.aimDirZ }
+            : { dirX: 0, dirZ: 1 };
+
+        for (const companion of this.companions) {
+            const sprite = companion.sprite;
+            if (!sprite?.userData) continue;
+
+            const trail = computeTrailPosition(this.player.position, facing, TRAIL_DISTANCE);
+            const toTrailX = trail.x - sprite.position.x;
+            const toTrailZ = trail.z - sprite.position.z;
+            const dist = Math.hypot(toTrailX, toTrailZ);
+            if (dist > 0.05) {
+                const step = Math.min(dist, MOVE_SPEED * delta);
+                const dirX = toTrailX / dist;
+                const dirZ = toTrailZ / dist;
+                const nextX = sprite.position.x + dirX * step;
+                const nextZ = sprite.position.z + dirZ * step;
+                if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+                    sprite.position.x = nextX;
+                    sprite.position.z = nextZ;
+                }
+                this.faceSpriteFromDir(sprite, dirX, toTrailX);
+            }
+
+            companion.assistCooldown = Math.max(0, (companion.assistCooldown ?? 0) - delta);
+            if (companion.assistCooldown <= 0) {
+                let nearestHostile = null;
+                let nearestDist = ASSIST_RADIUS;
+                for (const other of this.scatterSprites) {
+                    if (other === sprite || other.userData?.isCompanion) continue;
+                    if (!['cybersnail', 'cryosnail', 'sporesnail'].includes(other.userData?.type)) continue;
+                    const d = Math.hypot(other.position.x - sprite.position.x, other.position.z - sprite.position.z);
+                    if (d < nearestDist) {
+                        nearestDist = d;
+                        nearestHostile = other;
+                    }
+                }
+                if (nearestHostile) {
+                    this.applyPlayerDamageToEnemy(nearestHostile, ASSIST_DAMAGE);
+                    companion.assistCooldown = ASSIST_COOLDOWN;
+                }
+            }
+        }
+    }
+
+    openSnailEncounter(sprite) {
+        this.encounterState = createEncounter({
+            snailType: sprite.userData.type,
+            snailHp: sprite.userData.hp ?? SNAIL_MAX_HP,
+            snailMaxHp: sprite.userData.maxHp ?? SNAIL_MAX_HP
+        });
+        this._encounterSprite = sprite;
+        this.renderSnailEncounter([`A ${sprite.userData.type.toUpperCase()} BLOCKS YOUR PATH.`]);
+        const modal = document.getElementById('snail-encounter-modal');
+        modal?.classList.remove('hidden');
+        modal?.setAttribute('aria-hidden', 'false');
+    }
+
+    closeSnailEncounter() {
+        const modal = document.getElementById('snail-encounter-modal');
+        modal?.classList.add('hidden');
+        modal?.setAttribute('aria-hidden', 'true');
+        this.encounterState = null;
+        this._encounterSprite = null;
+    }
+
+    renderSnailEncounter(logLines = []) {
+        const state = this.encounterState;
+        if (!state) return;
+        const hpFill = document.getElementById('snail-encounter-hp-fill');
+        const resolveFill = document.getElementById('snail-encounter-resolve-fill');
+        const log = document.getElementById('snail-encounter-log');
+        if (hpFill) hpFill.style.width = `${Math.max(0, (state.snailHp / state.snailMaxHp) * 100)}%`;
+        if (resolveFill) resolveFill.style.width = `${Math.max(0, (state.resolve / state.resolveMax) * 100)}%`;
+        if (log) log.textContent = logLines.filter(Boolean).join(' ');
+    }
+
+    handleSnailEncounterFight() {
+        if (!this.encounterState || !this._encounterSprite) return;
+        const result = resolveFight(this.encounterState, {
+            playerDamage: SNAIL_ENCOUNTER_CONSTANTS.FIGHT_PLAYER_DAMAGE,
+            snailDamage: SNAIL_ENCOUNTER_CONSTANTS.SNAIL_COUNTER_DAMAGE
+        });
+        this.encounterState = result.state;
+        if (result.snailDamageTaken > 0) {
+            this.applyPlayerDamageToEnemy(this._encounterSprite, result.snailDamageTaken);
+        }
+        if (result.playerDamageTaken > 0) {
+            this.takeDamage(result.playerDamageTaken, this._encounterSprite.userData.type,
+                this._encounterSprite.position.x, this._encounterSprite.position.z);
+        }
+        this.renderSnailEncounter([
+            `YOU STRIKE. -${result.snailDamageTaken} HP.`,
+            result.playerDamageTaken > 0 ? `IT COUNTERS. -${result.playerDamageTaken} HP.` : ''
+        ]);
+        this.resolveSnailEncounterOutcome();
+    }
+
+    handleSnailEncounterTalk() {
+        if (!this.encounterState || !this._encounterSprite) return;
+        const infectionStage = this.act2?.getState?.().infectionStage ?? null;
+        const result = resolveTalk(this.encounterState, { infectionStage });
+        this.encounterState = result.state;
+        if (result.backfired) {
+            this.takeDamage(SNAIL_ENCOUNTER_CONSTANTS.SNAIL_COUNTER_DAMAGE, this._encounterSprite.userData.type,
+                this._encounterSprite.position.x, this._encounterSprite.position.z);
+            this.renderSnailEncounter(['IT HISSES AND LUNGES.']);
+        } else {
+            this.renderSnailEncounter([`IT HESITATES. RESOLVE +${result.resolveGained}.`]);
+        }
+        this.resolveSnailEncounterOutcome();
+    }
+
+    handleSnailEncounterFlee() {
+        if (!this.encounterState) return;
+        this.encounterState = resolveFlee(this.encounterState).state;
+        this.resolveSnailEncounterOutcome();
+    }
+
+    resolveSnailEncounterOutcome() {
+        const state = this.encounterState;
+        const sprite = this._encounterSprite;
+        if (!state?.outcome || !sprite) return;
+
+        if (state.outcome === 'befriend') {
+            sprite.userData.isCompanion = true;
+            sprite.userData.encounterResolved = true;
+            // Reparent out of the chunk-streaming system entirely — a
+            // companion that stayed a child of its spawn chunk would be
+            // disposed the moment that chunk falls out of the resident
+            // radius as the player travels (the same failure class corpses
+            // hit and were fixed for; see this.corpses' declaration
+            // comment). Chunk children already carry absolute world
+            // coordinates (no group-level position offset), so this needs
+            // no coordinate conversion.
+            this.scene.add(sprite);
+            this.companions = this.companions.filter((c) => c.sprite !== sprite);
+            this.companions.push({ sprite, assistCooldown: 0 });
+            this.act2?.completeScientistQuest?.('snail_befriended');
+            window.dispatchEvent(new CustomEvent('snail-befriended', {
+                detail: { snailType: sprite.userData.type }
+            }));
+            window.dispatchEvent(new CustomEvent('objective-resolved', {
+                detail: { id: 'befriend-a-snail' }
+            }));
+        }
+        // 'fled': no sprite state change — can be re-triggered later.
+        // 'fight_win': no extra handling needed — applyPlayerDamageToEnemy
+        // already ran damageSnail's full death/loot/corpse path when the
+        // killing blow was dealt in handleSnailEncounterFight.
+
+        this.closeSnailEncounter();
     }
 
     updateSnailBehavior(sprite, delta, activeShip) {
@@ -16735,6 +18659,17 @@ export class ThreeGame {
             }
         }
 
+        const isDiplomaticSnail = !data.isBoss
+            && ['cybersnail', 'cryosnail', 'sporesnail'].includes(data.type)
+            && this.isAct2Active()
+            && !data.isCompanion
+            && !data.encounterResolved;
+        if (isDiplomaticSnail && this.player && !this.isPlayerDead && !this.encounterState
+            && Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z) <= SNAIL_ATTACK_RADIUS) {
+            this.openSnailEncounter(sprite);
+            return;
+        }
+
         const attackRadius = SNAIL_ATTACK_RADIUS * (data.isBoss ? 2.4 : 1.0);
         if (distanceToTarget <= attackRadius && data.attackCooldown <= 0) {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
@@ -16757,7 +18692,7 @@ export class ThreeGame {
     }
 
     isEnemyType(type) {
-        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer', 'alien_proto_crawler', 'alien_proto_spitter', 'boss_queen'].includes(type);
+        return ['cybersnail', 'cryosnail', 'sporesnail', 'boss_cybersnail', 'boss_cryosnail', 'boss_sporesnail', 'sentinel', 'crawler', 'boss_corrupted_scout', 'boss_corrupted_tank', 'boss_corrupted_engineer', 'alien_proto_crawler', 'alien_proto_spitter', 'boss_queen', 'fungal_spore_vent', 'mycelium_stalker', 'bio_charger', 'spore_mortar'].includes(type);
     }
 
     isSentinel(type) {
@@ -17032,9 +18967,15 @@ export class ThreeGame {
                     this.updateSentinelBehavior(child, delta);
                 }
             } else if (this.isEnemyType(child.userData.type)) {
-                child.position.y = baseY + Math.sin(time * 4 + child.userData.phase) * 0.04;
-                child.material.opacity = child.userData.baseOpacity;
-                this.updateSnailBehavior(child, delta, activeShip);
+                child.position.y = baseY + Math.sin(time * 4 + (child.userData.phase ?? 0)) * 0.04;
+                child.material.opacity = child.userData.baseOpacity ?? 1;
+                if (child.userData.type === 'fungal_spore_vent') {
+                    this.updateFungalSporeVentBehavior(child, delta);
+                } else if (child.userData.type === 'mycelium_stalker' || child.userData.type === 'bio_charger') {
+                    this.updateChargerOrStalkerBehavior(child, delta, { isStalker: child.userData.type === 'mycelium_stalker' });
+                } else {
+                    this.updateSnailBehavior(child, delta, activeShip);
+                }
 
                 // Distance-based trail spawning
                 if (!child.userData.burstTriggered) {
@@ -17373,7 +19314,7 @@ export class ThreeGame {
     }
 
     canOccupyPosition(x, z) {
-        if (this.crashedShips) {
+        if (this.crashedShips && !this.isInPocket) {
             for (const ship of this.crashedShips) {
                 if (!ship.isVisible) continue;
                 // 1. Ship collision
@@ -17497,18 +19438,46 @@ export class ThreeGame {
     }
 
     getTileType(worldX, worldY) {
-        const chunkX = Math.floor(worldX / this.chunkSize);
-        const chunkY = Math.floor(worldY / this.chunkSize);
-        const localX = worldX - chunkX * this.chunkSize;
-        const localY = worldY - chunkY * this.chunkSize;
-        return this.getOrCreateChunk(chunkX, chunkY)[localY][localX];
+        const tileX = Math.round(worldX);
+        const tileY = Math.round(worldY);
+        if (this.isInPocket) {
+            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            if (!pocket) return '#';
+            const localX = tileX - this._pocketHoleX + pocket.centerCell.x;
+            const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
+            return pocket.grid[localY]?.[localX] ?? '#';
+        }
+        if (this.bunkerBlastDoorState && tileY === 15 && tileX >= 6 && tileX <= 11) {
+            return this.bunkerBlastDoorState.open ? '.' : '#';
+        }
+        const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
+        if (this.destroyedWallKeys?.has(key)) return '.';
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileY / this.chunkSize);
+        const localX = tileX - chunkX * this.chunkSize;
+        const localY = tileY - chunkY * this.chunkSize;
+        return this.getOrCreateChunk(chunkX, chunkY)?.[localY]?.[localX] ?? '.';
     }
 
     getCachedTileType(worldX, worldY) {
-        const chunkX = Math.floor(worldX / this.chunkSize);
-        const chunkY = Math.floor(worldY / this.chunkSize);
-        const localX = worldX - chunkX * this.chunkSize;
-        const localY = worldY - chunkY * this.chunkSize;
+        const tileX = Math.round(worldX);
+        const tileY = Math.round(worldY);
+        if (this.isInPocket) {
+            const pocket = this.pocketCache?.get(this.getWallKey(this._pocketHoleX, this._pocketHoleZ));
+            if (!pocket) return '#';
+            const localX = tileX - this._pocketHoleX + pocket.centerCell.x;
+            const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
+            return pocket.grid[localY]?.[localX] ?? '#';
+        }
+        if (this.bunkerBlastDoorState && tileY === 15 && tileX >= 6 && tileX <= 11) {
+            return this.bunkerBlastDoorState.open ? '.' : '#';
+        }
+        const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
+        if (this.destroyedWallKeys?.has(key)) return '.';
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileY / this.chunkSize);
+        const localX = tileX - chunkX * this.chunkSize;
+        const localY = tileY - chunkY * this.chunkSize;
         const grid = this.chunkCache?.get?.(`${chunkX},${chunkY}`);
         return grid?.[localY]?.[localX] ?? null;
     }
@@ -17572,6 +19541,11 @@ export class ThreeGame {
     }
 
     getHoleVisualInfo(worldX, worldY, { requireCached = false } = {}) {
+        const tileX = Math.round(worldX);
+        const tileY = Math.round(worldY);
+        const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
+        if (this.filledHoleKeys?.has(key)) return null;
+
         const tileType = requireCached
             ? this.getCachedTileType(worldX, worldY)
             : this.getTileType(worldX, worldY);
@@ -17579,6 +19553,7 @@ export class ThreeGame {
 
         const chunkX = Math.floor(worldX / this.chunkSize);
         const chunkY = Math.floor(worldY / this.chunkSize);
+        if (this.bunkerBlastDoorState && chunkX === 0 && chunkY === 0) return null;
         const holeCut = this.getHoleCutForLandform(this.getChunkLandform(chunkX, chunkY));
         if (holeCut <= 0) return null;
 
@@ -17599,6 +19574,103 @@ export class ThreeGame {
 
     isHoleTile(worldX, worldY) {
         return Boolean(this.getHoleVisualInfo(worldX, worldY));
+    }
+
+    fillHoleAt(worldX, worldZ) {
+        const tileX = Math.round(worldX);
+        const tileZ = Math.round(worldZ);
+        if (!this.filledHoleKeys) this.filledHoleKeys = new Set();
+        const key = this.getWallKey ? this.getWallKey(tileX, tileZ) : `${tileX},${tileZ}`;
+        if (this.filledHoleKeys.has(key)) return false;
+        if (!this.isHoleTile(tileX, tileZ)) return false;
+
+        this.filledHoleKeys.add(key);
+
+        if (this.chunkMeshes) {
+            for (const group of this.chunkMeshes.values()) {
+                if (!group?.children) continue;
+                for (let i = group.children.length - 1; i >= 0; i--) {
+                    const child = group.children[i];
+                    if (child.material === this.holeMaterial) {
+                        const dx = Math.abs(child.position.x - tileX);
+                        const dz = Math.abs(child.position.z - tileZ);
+                        if (dx < 0.9 && dz < 0.9) {
+                            group.remove(child);
+                            child.geometry?.dispose?.();
+
+                            const filledPatch = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
+                            filledPatch.rotation.x = -Math.PI / 2;
+                            filledPatch.position.set(tileX, 0.005, tileZ);
+                            filledPatch.receiveShadow = true;
+                            filledPatch.userData = { isFilledHolePatch: true, wallKey: key };
+                            group.add(filledPatch);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        this.spawnPhysicalBurst?.(tileX, tileZ, {
+            color: 0x7c6853,
+            count: 14,
+            upward: 0.22,
+            spread: 1.2
+        });
+        this.spawnTextureBurstEffect?.(tileX, tileZ, {
+            textureKey: 'fx_steam_puff',
+            color: 0xa8937d,
+            count: 4,
+            baseScale: 0.6,
+            duration: 0.5,
+            speed: 0.2,
+            rise: 0.15
+        });
+        if (typeof window !== 'undefined') {
+            window.AudioManager?.playMetalStress?.({ volume: 0.4, playbackRate: 0.8, force: true });
+            window.dispatchEvent?.(new CustomEvent('hole-filled', {
+                detail: { x: tileX, z: tileZ }
+            }));
+        }
+        this.spawnDamagePip?.(tileX, tileZ, 'SEALED');
+        return true;
+    }
+
+    interactWithHoleTile() {
+        if (!this.isGameplayInputActive() || !this.player) return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        const cx = Math.round(px);
+        const cz = Math.round(pz);
+
+        for (let dx = -2; dx <= 2; dx++) {
+            for (let dz = -2; dz <= 2; dz++) {
+                const hx = cx + dx;
+                const hz = cz + dz;
+                if (Math.hypot(px - hx, pz - hz) <= 2.0 && this.isHoleTile(hx, hz)) {
+                    return this.fillHoleAt(hx, hz);
+                }
+            }
+        }
+        return false;
+    }
+
+    interactWithPocketClimbPoint() {
+        if (!this.isInPocket || !this.player) return false;
+        const key = this.getWallKey(this._pocketHoleX, this._pocketHoleZ);
+        const pocket = this.pocketCache?.get(key);
+        if (!pocket) return false;
+
+        // pocket.climbPoint is grid-local (0..size-1) — convert to world
+        // space with the same offset mountPocket used to place the pocket's
+        // group, before comparing against the player's world position.
+        const climbWorldX = this._pocketHoleX - pocket.centerCell.x + pocket.climbPoint.x;
+        const climbWorldZ = this._pocketHoleZ - pocket.centerCell.y + pocket.climbPoint.y;
+        const dist = Math.hypot(this.player.position.x - climbWorldX, this.player.position.z - climbWorldZ);
+        if (dist > 1.5) return false;
+
+        this.exitPocket();
+        return true;
     }
 
     isPlayerOverAnyHole(px, pz) {
@@ -17648,8 +19720,9 @@ export class ThreeGame {
         }
         if (!hasChamber) { this._chunkTemplateCache.set(key, null); return null; }
 
-        // 7% chance per eligible chunk — seeded
-        const rng = this.createSeededRandom(this.hashTile(chunkX * 997 + 13, chunkY * 1009 + 7));
+        // 7% chance per eligible chunk — seeded, mixed with per-run entropy so
+        // the "what's there" content reshuffles run to run, not just layout.
+        const rng = this.createSeededRandom((this.hashTile(chunkX * 997 + 13, chunkY * 1009 + 7) ^ this.runEntropy) >>> 0);
         if (rng() > 0.07) { this._chunkTemplateCache.set(key, null); return null; }
 
         const biomeKey = this.getBiomeKeyForWorldPosition(
@@ -17689,7 +19762,10 @@ export class ThreeGame {
                     if (evicted >= toEvict) break;
                 }
             }
-            const grid = this.applyDestroyedWallsToGrid(this.buildChunk(chunkX, chunkY), chunkX, chunkY);
+            const rawGrid = this.buildChunk(chunkX, chunkY);
+            const landform = rawGrid.landform ?? LANDFORMS.MAZE;
+            const grid = this.applyDestroyedWallsToGrid(rawGrid, chunkX, chunkY);
+            grid.heightmap = generateHeightmapGrid(grid, landform);
             this.chunkCache.set(key, grid);
             if (!this._chunkRoomTypeCache) this._chunkRoomTypeCache = new Map();
             this._chunkRoomTypeCache.set(key, classifyChunkCells(grid, this.chunkSize));
@@ -17697,12 +19773,61 @@ export class ThreeGame {
         return this.chunkCache.get(key);
     }
 
+    generatePocket(holeWorldX, holeWorldZ) {
+        if (!this.pocketCache) this.pocketCache = new Map();
+        const key = this.getWallKey(holeWorldX, holeWorldZ);
+        if (this.pocketCache.has(key)) return this.pocketCache.get(key);
+
+        const cellCount = POCKET_CELL_COUNT;
+        const size = cellCount * 2 + 1;
+        const grid = Array(size).fill(null).map(() => Array(size).fill('#'));
+        const random = this.createSeededRandom(
+            (this.hashTile(holeWorldX, holeWorldZ) ^ this.runEntropy) >>> 0
+        );
+        const startCell = Math.floor(cellCount / 2); // cell space
+        const stack = [[startCell, startCell]];
+        const visited = new Set([`${startCell},${startCell}`]);
+
+        this.carveCell(grid, startCell, startCell);
+
+        while (stack.length > 0) {
+            const [cellX, cellY] = stack[stack.length - 1];
+            const neighbors = this.shuffleDirections([
+                { dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }
+            ], random);
+            let carved = false;
+            for (const { dx, dy } of neighbors) {
+                const nextX = cellX + dx;
+                const nextY = cellY + dy;
+                const nKey = `${nextX},${nextY}`;
+                // Bound against cellCount (cell space), not size (grid space)
+                // — matches buildChunk's own DFS bound exactly.
+                if (nextX < 0 || nextX >= cellCount || nextY < 0 || nextY >= cellCount || visited.has(nKey)) continue;
+                this.carvePassage(grid, cellX, cellY, nextX, nextY);
+                visited.add(nKey);
+                stack.push([nextX, nextY]);
+                carved = true;
+                break;
+            }
+            if (!carved) stack.pop();
+        }
+
+        const centerCell = { x: startCell * 2 + 1, y: startCell * 2 + 1 }; // grid space
+        const climbPoint = findFarthestFloorCell(grid, centerCell.x, centerCell.y) ?? centerCell;
+        const pocket = { grid, size, centerCell, climbPoint: { x: climbPoint.x, y: climbPoint.y } };
+        this.pocketCache.set(key, pocket);
+        return pocket;
+    }
+
     buildChunk(chunkX, chunkY) {
         if (this.performanceProfile === 'menu') {
             return Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('.'));
         }
         const grid = Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('#'));
-        const random = this.createSeededRandom(this.hashTile(chunkX + 1000, chunkY - 1000) + 101);
+        // Mix in per-run entropy: hashTile alone is constant for a given
+        // chunk coordinate, which made every run carve the identical maze at
+        // a given depth. Same pattern as chooseFoundryDiscoveryPosition.
+        const random = this.createSeededRandom(((this.hashTile(chunkX + 1000, chunkY - 1000) + 101) ^ this.runEntropy) >>> 0);
         const centerCell = Math.floor(this.chunkCellCount / 2);
         const stack = [[centerCell, centerCell]];
         const visited = new Set([`${centerCell},${centerCell}`]);
@@ -17756,14 +19881,22 @@ export class ThreeGame {
                 applyCanyonCollapse(grid, random, routeBlocks.sealedGapCount ?? 0);
             }
         }
+        applyRingRoadSystem(grid, chunkX, chunkY, this.chunkSize);
         this.ensureChunkPortals(grid, chunkX, chunkY);
+        // Walls tracing a carved plaza silhouette. openMazeTerrain fills
+        // this and shields them from its own soften/fill; every later
+        // erosion pass here (widen, trim) honors it too — otherwise the
+        // diamond/cross/ellipse rooms get blindly eaten back into blobs
+        // before the chunk ever renders (wave-6 punch list §2c).
+        const plazaHalo = new Set();
         if (landform === LANDFORMS.MAZE) {
             this.runMarkovPass(grid, random);
             openMazeTerrain(grid, random, {
                 plazaCount: 7,
                 floorTarget: 0.80,
                 minRadius: 2.4,
-                maxRadius: 4.5
+                maxRadius: 4.5,
+                protectedCells: plazaHalo
             });
         } else {
             // A ridge or crater rim can sit flush behind a portal opening —
@@ -17774,7 +19907,8 @@ export class ThreeGame {
                     plazaCount: 5,
                     floorTarget: 0.82,
                     minRadius: 2.0,
-                    maxRadius: 3.6
+                    maxRadius: 3.6,
+                    protectedCells: plazaHalo
                 });
             }
         }
@@ -17786,7 +19920,7 @@ export class ThreeGame {
         if (landform === LANDFORMS.MAZE || landform === LANDFORMS.RUINS) {
             const widenPasses = landform === LANDFORMS.MAZE ? 3 : 2;
             for (let pass = 0; pass < widenPasses; pass++) {
-                this.widenChunkCorridors(grid);
+                this.widenChunkCorridors(grid, plazaHalo);
             }
         }
 
@@ -17795,6 +19929,7 @@ export class ThreeGame {
         for (let y = 2; y < this.chunkSize - 2; y++) {
             for (let x = 2; x < this.chunkSize - 2; x++) {
                 if (grid[y][x] !== '#') continue;
+                if (plazaHalo.has(`${x},${y}`)) continue;
                 const openNeighbors =
                     (grid[y - 1][x] === '.') +
                     (grid[y + 1][x] === '.') +
@@ -17808,6 +19943,7 @@ export class ThreeGame {
         }
 
         this.clearSpawnArea(grid, chunkX, chunkY);
+        this.clearDoorways?.(grid);
         return grid;
     }
 
@@ -17816,9 +19952,7 @@ export class ThreeGame {
     // tutorial remains legible without feeling like a wall comb.
     getChunkLandform(chunkX, chunkY) {
         if (this.performanceProfile === 'menu') return LANDFORMS.MAZE;
-        const spawnDistance = Math.hypot(chunkX, chunkY);
-        if (spawnDistance < 1) return LANDFORMS.FIELD;
-        if (spawnDistance < 2) return LANDFORMS.RUINS;
+        if (chunkX === 0 && chunkY === 0) return LANDFORMS.FIELD;
         if (!this._chunkLandformCache) this._chunkLandformCache = new Map();
         const key = `${chunkX},${chunkY}`;
         if (!this._chunkLandformCache.has(key)) {
@@ -17826,7 +19960,7 @@ export class ThreeGame {
                 chunkX * this.chunkSize + this.chunkSize * 0.5,
                 chunkY * this.chunkSize + this.chunkSize * 0.5
             );
-            const random = this.createSeededRandom(this.hashTile(chunkX * 977 + 61, chunkY * 613 + 37));
+            const random = this.createSeededRandom((this.hashTile(chunkX * 977 + 61, chunkY * 613 + 37) ^ this.runEntropy) >>> 0);
             this._chunkLandformCache.set(key, pickLandform(random, biome));
         }
         return this._chunkLandformCache.get(key);
@@ -17908,8 +20042,15 @@ export class ThreeGame {
         }
     }
 
-    widenChunkCorridors(grid) {
+    widenChunkCorridors(grid, protectedCells = null) {
         const widened = grid.map((row) => [...row]);
+        // Cells in protectedCells (plaza silhouette walls, see generateChunk)
+        // never open — widening is pure erosion, so skipping them can't
+        // break connectivity, it only leaves the shaped room edges intact.
+        const open = (wy, wx) => {
+            if (protectedCells?.has(`${wx},${wy}`)) return;
+            widened[wy][wx] = '.';
+        };
 
         for (let y = 1; y < this.chunkSize - 1; y++) {
             for (let x = 1; x < this.chunkSize - 1; x++) {
@@ -17921,20 +20062,20 @@ export class ThreeGame {
                 const downOpen = grid[y + 1][x] === '.';
 
                 if (leftOpen && rightOpen) {
-                    widened[y - 1][x] = '.';
-                    widened[y + 1][x] = '.';
+                    open(y - 1, x);
+                    open(y + 1, x);
                 }
 
                 if (upOpen && downOpen) {
-                    widened[y][x - 1] = '.';
-                    widened[y][x + 1] = '.';
+                    open(y, x - 1);
+                    open(y, x + 1);
                 }
 
                 if ((leftOpen || rightOpen) && (upOpen || downOpen)) {
-                    widened[y - 1][x] = '.';
-                    widened[y + 1][x] = '.';
-                    widened[y][x - 1] = '.';
-                    widened[y][x + 1] = '.';
+                    open(y - 1, x);
+                    open(y + 1, x);
+                    open(y, x - 1);
+                    open(y, x + 1);
                 }
 
                 // True dead ends (exactly one open neighbor) never satisfy any
@@ -17946,11 +20087,11 @@ export class ThreeGame {
                 const openCount = (leftOpen ? 1 : 0) + (rightOpen ? 1 : 0) + (upOpen ? 1 : 0) + (downOpen ? 1 : 0);
                 if (openCount === 1) {
                     if (leftOpen || rightOpen) {
-                        widened[y - 1][x] = '.';
-                        widened[y + 1][x] = '.';
+                        open(y - 1, x);
+                        open(y + 1, x);
                     } else {
-                        widened[y][x - 1] = '.';
-                        widened[y][x + 1] = '.';
+                        open(y, x - 1);
+                        open(y, x + 1);
                     }
                 }
             }
@@ -17963,17 +20104,60 @@ export class ThreeGame {
         }
     }
 
+    clearDoorways(grid) {
+        if (!grid || !Array.isArray(grid)) return;
+        const size = grid.length;
+        for (let y = 1; y < size - 1; y++) {
+            for (let x = 1; x < size - 1; x++) {
+                if (grid[y][x] === 'D') {
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const ny = y + dy;
+                            const nx = x + dx;
+                            if (ny >= 1 && ny < size - 1 && nx >= 1 && nx < size - 1) {
+                                if (grid[ny][nx] !== 'D') {
+                                    grid[ny][nx] = '.';
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     clearSpawnArea(grid, chunkX, chunkY) {
+        if (chunkX !== 0 || chunkY !== 0) return;
         const spawn = this.getSpawnTile();
 
-        for (let localY = 0; localY < this.chunkSize; localY++) {
-            for (let localX = 0; localX < this.chunkSize; localX++) {
-                const worldX = chunkX * this.chunkSize + localX;
-                const worldY = chunkY * this.chunkSize + localY;
-                const dx = worldX - spawn.x;
-                const dy = worldY - spawn.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance <= 6.0) {
+        // 1. Spacious Bunker Base Hub: clear interior (localY 1 to 14, localX 1 to 17)
+        // and a generous 9.5-unit radial clearance around spawn (9, 9)
+        for (let localY = 1; localY < this.chunkSize - 1; localY++) {
+            for (let localX = 1; localX < this.chunkSize - 1; localX++) {
+                const dx = localX - spawn.x;
+                const dy = localY - spawn.y;
+                const distance = Math.hypot(dx, dy);
+
+                if (localY <= 14 && localX >= 2 && localX <= 16) {
+                    grid[localY][localX] = '.';
+                } else if (distance <= 9.5) {
+                    grid[localY][localX] = '.';
+                }
+            }
+        }
+
+        // 2. Clear Blast Doorway Corridor & Control Buttons (localX: 4..13, localY: 13..18)
+        // Doorway interior (X=6..11, Y=15) is ALWAYS open floor ('.'), while solid
+        // framing wall pillars sit strictly off the edges (X <= 5 and X >= 12).
+        for (let localY = 13; localY <= 18; localY++) {
+            for (let localX = 4; localX <= 13; localX++) {
+                if (localY === 15) {
+                    if (localX <= 5 || localX >= 12) {
+                        grid[localY][localX] = '#';
+                    } else {
+                        grid[localY][localX] = '.';
+                    }
+                } else {
                     grid[localY][localX] = '.';
                 }
             }

@@ -96,6 +96,21 @@ steam/
 - Upload: `steamcmd +login <builder> +run_app_build .../app_build.vdf`.
   Use a **dedicated builder account** with only "Edit App Metadata +
   Publish" on this app, never the owner login.
+- **Local authenticated release**: `npm run steam:prepare` runs tests,
+  packages the current platform, and audits the depot without uploading.
+  Once both `dist_electron/linux-unpacked/` and
+  `dist_electron/win-unpacked/` are present, `npm run steam:upload` repeats
+  those gates and ends by running:
+  `steamcmd +login TuesdayCinemaClub +run_app_build <absolute app_build.vdf> +quit`.
+  Set `STEAM_BUILD_ACCOUNT` or `STEAMCMD_PATH` to override those local
+  defaults. Uploads reject uncommitted changes unless the operator
+  deliberately supplies `--allow-dirty`.
+- **Revision identity**: local release commands derive
+  `v<package-version>-<12-char-commit>` automatically, compile it into the
+  loading-screen `PIPELINE` label, emit the full record as
+  `dist/build-info.json`, verify that record before depot audit/upload, and
+  use the same identity in Steamworks' build description. Uploads require a
+  clean worktree and a non-local HTTPS `HB_STEAM_BACKEND_URL`.
 - **CI**: `.github/workflows/steam-build.yml` — on tag `v*` or manual
   dispatch: matrix build (windows-latest, ubuntu-latest) → `npm ci`,
   `npm test`, `vite build`, `electron-builder --dir` → artifacts; upload
@@ -150,3 +165,7 @@ steam/
   game from `file://` with saves persisting across restarts.
 - CI: the workflow's package job is the gate — a PR that breaks packaging
   fails visibly before any Steam upload is attempted.
+- Every Vite payload is revision-stamped. PR and tag builds display the
+  GitHub SHA, source branch, and `gh-<run>.<attempt>` in the loading screen;
+  local builds display the current 12-character commit and a `-dirty`
+  suffix when applicable.

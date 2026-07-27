@@ -72,7 +72,7 @@ export async function getGifDurationMs(src) {
     if (durationCache.has(src)) return durationCache.get(src);
     let duration = null;
     try {
-        const response = await fetch(src);
+        const response = await fetch(assetUrl(src));
         if (response.ok) {
             duration = gifDurationFromBytes(new Uint8Array(await response.arrayBuffer()));
         }
@@ -82,3 +82,4 @@ export async function getGifDurationMs(src) {
     durationCache.set(src, duration);
     return duration;
 }
+import { assetUrl } from './assetUrl.js';

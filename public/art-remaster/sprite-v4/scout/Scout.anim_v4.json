@@ -1,0 +1,98 @@
+{
+  "version": 4,
+  "character": "SCOUT",
+  "status": "rejected-anatomical-rebuild-in-progress",
+  "cell": {
+    "width": 256,
+    "height": 256
+  },
+  "directions": [
+    "east",
+    "southeast",
+    "south",
+    "southwest",
+    "west",
+    "northwest",
+    "north",
+    "northeast"
+  ],
+  "clips": {
+    "walk": {
+      "file": "Scout.walk_v4.png",
+      "columns": 8,
+      "rows": 8,
+      "fps": 10,
+      "loop": true,
+      "phases": [
+        "left-contact",
+        "left-down",
+        "left-pass",
+        "left-up",
+        "right-contact",
+        "right-down",
+        "right-pass",
+        "right-up"
+      ],
+      "footsteps": [0, 4],
+      "runtimeReady": false
+    },
+    "idle": {
+      "file": "actions/Scout.idle_v4.png",
+      "columns": 4,
+      "rows": 8,
+      "fps": 2,
+      "loop": true,
+      "runtimeReady": false
+    },
+    "run": {
+      "file": "actions/Scout.run_v4.png",
+      "columns": 8,
+      "rows": 8,
+      "fps": 14,
+      "loop": true,
+      "footsteps": [0, 4],
+      "runtimeReady": false
+    },
+    "aim_fire": {
+      "file": "actions/Scout.aim-fire_v4.png",
+      "columns": 6,
+      "rows": 8,
+      "fps": 12,
+      "loop": false,
+      "eventFrames": {
+        "projectile": 3
+      },
+      "runtimeReady": false
+    },
+    "interact": {
+      "file": "actions/Scout.interact_v4.png",
+      "columns": 6,
+      "rows": 8,
+      "fps": 10,
+      "loop": false,
+      "runtimeReady": false
+    },
+    "hurt": {
+      "file": "actions/Scout.hurt_v4.png",
+      "columns": 4,
+      "rows": 8,
+      "fps": 12,
+      "loop": false,
+      "runtimeReady": false
+    },
+    "death": {
+      "file": "actions/Scout.death_v4.png",
+      "columns": 8,
+      "rows": 8,
+      "fps": 10,
+      "loop": false,
+      "holdLastFrame": true,
+      "runtimeReady": false
+    }
+  },
+  "anchors": {
+    "visualCenterX": 128,
+    "groundBaselineY": 240
+  },
+  "runtimeReady": false
+}

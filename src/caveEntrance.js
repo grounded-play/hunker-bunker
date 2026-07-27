@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { assetUrl } from './assetUrl.js';
 
 // ── Organic Cave Entrance (in-world structure) ────────────────
 // Act 1 finale (Sprint 18 §5.2): once the ship-rebuild ladder completes, one
@@ -116,7 +117,7 @@ export class CaveEntrance {
                     }
                     texture.needsUpdate = true;
                 };
-                img.src = path;
+                img.src = assetUrl(path);
             }
             return texture;
         };
