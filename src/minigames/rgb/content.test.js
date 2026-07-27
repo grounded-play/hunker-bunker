@@ -174,12 +174,24 @@ describe('content shape', () => {
         const declared = [
             ...Object.values(ITEMS).map((item) => item.icon),
             ...Object.values(ENDINGS).map((ending) => ending.art),
-            ...Object.values(CHAPTERS).map((chapter) => chapter.bg)
+            ...Object.values(CHAPTERS).map((chapter) => chapter.bg),
+            ...Object.values(CHAPTERS).flatMap((chapter) => (
+                chapter.hotspots.map((hotspot) => hotspot.cutaway?.image)
+            ))
         ].filter((url) => Boolean(url) && !url.startsWith('data:'));
 
         expect(declared.length).toBeGreaterThan(0);
         for (const url of declared) {
             expect(existsSync(resolve('public', url.replace(/^\//, ''))), url).toBe(true);
+        }
+    });
+
+    it('gives Chapter 1 object interactions authored cutaways', () => {
+        const objectHotspots = CHAPTERS.parking_lot.hotspots.filter((hotspot) => hotspot.object);
+        expect(objectHotspots.length).toBeGreaterThan(0);
+        for (const hotspot of objectHotspots) {
+            expect(hotspot.cutaway?.image, hotspot.id).toMatch(/\/interstitials\/c1\/.+\.png$/);
+            expect(hotspot.cutaway?.label, hotspot.id).toBeTruthy();
         }
     });
 

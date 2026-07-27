@@ -40,6 +40,34 @@ import { assetUrl } from '../../assetUrl.js';
 
 const NAV_REPEAT_MS = 220;
 const STICK_THRESHOLD = 0.5;
+const ROUTE_BEATS = Object.freeze({
+    reply_to_lucia: { axis: 'FAMILY', choice: 'ANSWERED LUCIA', consequence: 'The shift started late; Lucia was heard.' },
+    enter_now: { axis: 'FAMILY', choice: 'ENTERED NOW', consequence: 'The clock won the first decision.' },
+    double_tap_honest: { axis: 'TRUTH', choice: 'LEFT THE ERROR VISIBLE', consequence: '4A learned trust; the miss remained reviewable.' },
+    double_tap_falsify: { axis: 'TRUTH', choice: 'CLEANED THE METRIC', consequence: 'The numbers improved; the record did not.' },
+    request_marisol_witness: { axis: 'SOLIDARITY', choice: 'ASKED MARISOL TO STAY', consequence: 'Her testimony may help, but staying has a cost.' },
+    release_marisol_from_request: { axis: 'SOLIDARITY', choice: 'RELEASED MARISOL', consequence: 'She kept her own deadline; Elias lost a witness.' },
+    keep_notebook: { axis: 'EVIDENCE', choice: 'KEPT THE NOTEBOOK', consequence: 'The calibration record remains available later.' },
+    surrender_notebook: { axis: 'EVIDENCE', choice: 'SURRENDERED THE NOTEBOOK', consequence: 'Review controls the physical record.' },
+    request_billing_agent: { axis: 'ACCESS', choice: 'OPENED A BILLING CASE', consequence: 'A formal trail now exists.' },
+    call_lucia: { axis: 'FAMILY', choice: 'CALLED LUCIA BACK', consequence: 'The callback changes what the kiosk exit means.' },
+    give_up: { axis: 'ACCESS', choice: 'GAVE UP AT THE KIOSK', consequence: 'The treatment remained locked.' },
+    follow_utility_map: { axis: 'ACCESS', choice: 'FOLLOWED THE UTILITY MAP', consequence: 'Elias chose an unauthorized route forward.' },
+    walk_away: { axis: 'SYSTEM', choice: 'PRESERVED THE PROFILE', consequence: '4A survives inside the system loop.' },
+    expose_profile: { axis: 'SYSTEM', choice: 'EXPOSED THE PROFILE', consequence: 'The evidence route depends on what was preserved.' },
+    sever_trunk: { axis: 'SYSTEM', choice: 'SEVERED THE TRUNK', consequence: '4A is freed only if Elias can complete the rescue.' },
+    rescue_recenter: { axis: 'RESCUE', choice: 'RECENTERED 4A', consequence: 'The practiced calibration became a rescue action.' },
+    rescue_recenter_again: { axis: 'RESCUE', choice: 'RECENTERED 4A AGAIN', consequence: 'Persistence kept the rescue route alive.' },
+    rescue_fumble: { axis: 'RESCUE', choice: 'GRABBED THE CHASSIS', consequence: 'Force replaced calibration at the final moment.' }
+});
+
+const EVIDENCE_LABELS = Object.freeze({
+    camera_discrepancy: 'Missing pre-impact footage',
+    swab_photo: 'Inconclusive swab photograph',
+    payroll_record: 'Itemized payroll record',
+    kiosk_record: 'Medi-kiosk denial record',
+    training_profile: '4A training profile'
+});
 
 function hydrateRunState(save) {
     const base = createRunState();
@@ -50,6 +78,7 @@ function hydrateRunState(save) {
         pain: save.run.pain,
         evidence: [...save.run.evidence],
         inventory: [...save.run.inventory],
+        routeHistory: [...(save.run.routeHistory ?? [])],
         flags: { ...base.flags, ...save.run.flags }
     };
 }
@@ -63,6 +92,7 @@ function snapshotRun(save, runState) {
             pain: runState.pain,
             evidence: [...runState.evidence],
             inventory: [...runState.inventory],
+            routeHistory: [...runState.routeHistory],
             flags: { ...runState.flags }
         }
     };
@@ -105,6 +135,7 @@ export function mountRgb({ root, save, storage, onExit }) {
     let dialogueLines = ['Select an available action to continue the archive reconstruction.'];
     let dialogueSpeaker = null;
     let pendingPickup = null;
+    let activeCutaway = null;
     // How many of the current chapter's three authored hints have been asked
     // for. Resets per chapter; never affects endings (scene-flow.md).
     let hintsShown = 0;
@@ -154,6 +185,37 @@ export function mountRgb({ root, save, storage, onExit }) {
         return currentSave.settings?.hints !== 'off';
     }
 
+    function cutawayForHotspot(hotspot) {
+        if (hotspot.cutaway) return { zoom: 1, ...hotspot.cutaway };
+        if (!hotspot.object) return null;
+        const centerX = ((hotspot.x ?? 0) + (hotspot.w ?? 180) / 2) / 1280 * 100;
+        const centerY = ((hotspot.y ?? 0) + (hotspot.h ?? 56) / 2) / 800 * 100;
+        return {
+            image: currentChapter().bg,
+            label: hotspot.label,
+            focusX: Math.max(8, Math.min(92, centerX)),
+            focusY: Math.max(8, Math.min(92, centerY)),
+            zoom: hotspot.cutawayZoom ?? 1.65
+        };
+    }
+
+    function recordRouteBeat(hotspot) {
+        const beat = ROUTE_BEATS[hotspot.id];
+        if (!beat || runState.routeHistory.some((entry) => entry.hotspotId === hotspot.id)) return;
+        runState = {
+            ...runState,
+            routeHistory: [
+                ...runState.routeHistory,
+                {
+                    hotspotId: hotspot.id,
+                    chapterId: runState.checkpoint,
+                    chapter: chapterNumber(),
+                    ...beat
+                }
+            ]
+        };
+    }
+
     function render() {
         root.replaceChildren();
         if (mode === 'warning') return renderWarning();
@@ -193,7 +255,17 @@ export function mountRgb({ root, save, storage, onExit }) {
             }
         });
 
-        titleRow.append(progress, title, settingsBtn);
+        const pathBtn = document.createElement('button');
+        pathBtn.type = 'button';
+        pathBtn.className = 'rgb-path-btn';
+        pathBtn.textContent = `PATH ${runState.routeHistory.length}`;
+        pathBtn.setAttribute('aria-label', 'Open path history and recap');
+        pathBtn.addEventListener('click', () => {
+            mode = 'recap';
+            render();
+        });
+
+        titleRow.append(progress, title, pathBtn, settingsBtn);
 
         const goal = document.createElement('div');
         goal.className = 'rgb-header__goal';
@@ -204,17 +276,31 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const stage = document.createElement('div');
         stage.className = 'rgb-stage-layer';
-        if (chapter.bg) {
+        stage.classList.toggle('rgb-stage-layer--cutaway', Boolean(activeCutaway));
+        const stageImage = activeCutaway?.image ?? chapter.bg;
+        if (stageImage) {
             const bgImg = document.createElement('img');
             bgImg.className = 'rgb-stage-bg';
-            bgImg.src = assetUrl(chapter.bg);
+            bgImg.src = assetUrl(stageImage);
             bgImg.alt = '';
+            if (activeCutaway) {
+                bgImg.style.setProperty('--rgb-cutaway-x', `${activeCutaway.focusX ?? 50}%`);
+                bgImg.style.setProperty('--rgb-cutaway-y', `${activeCutaway.focusY ?? 50}%`);
+                bgImg.style.setProperty('--rgb-cutaway-zoom', activeCutaway.zoom ?? 1);
+            }
             stage.appendChild(bgImg);
+        }
+        if (activeCutaway?.label) {
+            const cutawayLabel = document.createElement('div');
+            cutawayLabel.className = 'rgb-cutaway-label';
+            cutawayLabel.textContent = activeCutaway.label;
+            stage.append(cutawayLabel);
         }
         scene.append(stage);
 
         const actionDeck = document.createElement('div');
         actionDeck.className = 'rgb-action-deck';
+        actionDeck.classList.toggle('rgb-action-deck--cutaway', Boolean(activeCutaway));
         actionDeck.setAttribute('aria-label', 'Available actions');
         const ready = new Set(focusableHotspots().map((h) => h.id));
         chapter.hotspots.forEach((hotspot) => {
@@ -384,11 +470,25 @@ export function mountRgb({ root, save, storage, onExit }) {
             take.textContent = pendingPickup.label ?? 'TAKE';
             take.addEventListener('click', takePendingPickup);
             dialogue.append(take);
+        } else if (activeCutaway) {
+            const back = document.createElement('button');
+            back.type = 'button';
+            back.className = 'rgb-dialogue__take rgb-dialogue__return';
+            back.textContent = 'RETURN TO SCENE';
+            back.addEventListener('click', dismissCutaway);
+            dialogue.append(back);
         }
 
         requestAnimationFrame(() => {
             dialogue.scrollTop = dialogue.scrollHeight;
         });
+    }
+
+    function dismissCutaway() {
+        activeCutaway = null;
+        dialogueLines = ['Select an available action to continue the archive reconstruction.'];
+        dialogueSpeaker = null;
+        render();
     }
 
     function takePendingPickup() {
@@ -504,30 +604,89 @@ export function mountRgb({ root, save, storage, onExit }) {
         overlay.className = 'rgb-overlay rgb-recap';
         const title = document.createElement('div');
         title.className = 'rgb-overlay__title';
-        title.textContent = 'RECAP';
+        title.textContent = 'YOUR PATH';
 
-        const goal = document.createElement('div');
-        goal.textContent = `Goal: ${currentChapter().goal}`;
-        const pain = document.createElement('div');
-        pain.textContent = `Elias: ${runState.pain}`;
-        const evidence = document.createElement('div');
-        evidence.textContent = `Evidence gathered: ${runState.evidence.length}`;
-        overlay.append(title, goal, pain, evidence);
+        const intro = document.createElement('div');
+        intro.className = 'rgb-recap__intro';
+        intro.textContent = `Current objective — ${currentChapter().goal}`;
 
-        const choices = consequentialChoices();
-        if (choices.length > 0) {
-            const heading = document.createElement('div');
-            heading.className = 'rgb-recap__heading';
-            heading.textContent = 'What you have done so far';
-            const list = document.createElement('ul');
-            for (const line of choices) {
-                const li = document.createElement('li');
-                li.textContent = line;
-                list.append(li);
-            }
-            overlay.append(heading, list);
+        const status = document.createElement('div');
+        status.className = 'rgb-recap__status';
+        const statusItems = [
+            ['ELIAS', runState.pain],
+            ['TIME', runState.timeBand],
+            ['4A TRUST', String(runState.trust4A ?? 0)],
+            ['EVIDENCE', String(runState.evidence.length)]
+        ];
+        for (const [label, value] of statusItems) {
+            const chip = document.createElement('div');
+            chip.className = 'rgb-recap__status-chip';
+            chip.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+            status.append(chip);
         }
+
+        const rail = document.createElement('div');
+        rail.className = 'rgb-route-rail';
+        const currentIndex = CHAPTER_ORDER.indexOf(runState.checkpoint);
+        CHAPTER_ORDER.forEach((chapterId, index) => {
+            const node = document.createElement('div');
+            node.className = 'rgb-route-node';
+            node.classList.add(index < currentIndex
+                ? 'rgb-route-node--complete'
+                : index === currentIndex
+                    ? 'rgb-route-node--current'
+                    : 'rgb-route-node--future');
+            node.innerHTML = `<span>${index + 1}</span><strong>${CHAPTERS[chapterId].title}</strong>`;
+            rail.append(node);
+        });
+
+        const heading = document.createElement('div');
+        heading.className = 'rgb-recap__heading';
+        heading.textContent = 'DECISIONS THAT CHANGED THIS RUN';
+
+        const timeline = document.createElement('div');
+        timeline.className = 'rgb-route-timeline';
+        for (const entry of runState.routeHistory) {
+            const card = document.createElement('article');
+            card.className = 'rgb-route-entry';
+            card.innerHTML = `
+                <div class="rgb-route-entry__meta">CH ${entry.chapter} · ${entry.axis}</div>
+                <div class="rgb-route-entry__choice">${entry.choice}</div>
+                <div class="rgb-route-entry__consequence">${entry.consequence}</div>
+            `;
+            timeline.append(card);
+        }
+        if (runState.routeHistory.length === 0) {
+            const legacyChoices = consequentialChoices();
+            const empty = document.createElement('div');
+            empty.className = 'rgb-overlay__empty';
+            empty.textContent = legacyChoices.length > 0
+                ? legacyChoices.join(' ')
+                : 'Your first consequential decision will appear here.';
+            timeline.append(empty);
+        }
+
+        const evidenceHeading = document.createElement('div');
+        evidenceHeading.className = 'rgb-recap__heading';
+        evidenceHeading.textContent = 'EVIDENCE PRESERVED';
+        const evidenceList = document.createElement('div');
+        evidenceList.className = 'rgb-recap__evidence';
+        evidenceList.textContent = runState.evidence.length > 0
+            ? runState.evidence.map((id) => EVIDENCE_LABELS[id] ?? id).join(' · ')
+            : 'No evidence preserved yet.';
+
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'rgb-recap__close';
+        close.textContent = 'RETURN TO SCENE';
+        close.addEventListener('click', () => {
+            mode = 'scene';
+            render();
+        });
+
+        overlay.append(title, intro, status, rail, heading, timeline, evidenceHeading, evidenceList, close);
         root.append(overlay);
+        close.focus();
     }
 
     function renderPauseOverlay() {
@@ -619,6 +778,10 @@ export function mountRgb({ root, save, storage, onExit }) {
     }
 
     function applyFocus() {
+        if (activeCutaway) {
+            root.querySelector('.rgb-dialogue__take')?.focus();
+            return;
+        }
         const list = focusableHotspots();
         if (list.length === 0) return;
         focusIndex = Math.max(0, Math.min(focusIndex, list.length - 1));
@@ -646,9 +809,11 @@ export function mountRgb({ root, save, storage, onExit }) {
         dialogueLines = [...(hotspot.lines ?? [])];
         dialogueSpeaker = getDialogueSpeaker(hotspot.id);
         pendingPickup = hotspot.pickup ? { ...hotspot.pickup } : null;
+        activeCutaway = cutawayForHotspot(hotspot);
         rgbAudio.hotspot(hotspot.id, dialogueLines);
         const priorState = runState;
         runState = applyEffects(runState, hotspot.effects);
+        recordRouteBeat(hotspot);
         visited.add(hotspot.id);
         persist();
 
@@ -679,6 +844,7 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const cinematicSteps = resolveCinematicSteps(hotspot.id, priorState);
         if (cinematicSteps.length > 0) {
+            activeCutaway = null;
             mode = 'cinematic';
             const scene = root.querySelector('.rgb-scene');
             scene?.classList.add('rgb-scene--cinematic');
@@ -700,6 +866,7 @@ export function mountRgb({ root, save, storage, onExit }) {
         visited = new Set();
         focusIndex = 0;
         hintsShown = 0;
+        activeCutaway = null;
         dialogueLines = [`Archive reconstruction resumed: ${CHAPTERS[chapterId].title}.`];
         dialogueSpeaker = null;
         currentSave = saveCheckpoint(currentSave, chapterId);
@@ -801,6 +968,16 @@ export function mountRgb({ root, save, storage, onExit }) {
             return;
         }
         if (mode !== 'scene') return;
+        if (activeCutaway) {
+            if (code === 'Enter' || code === 'Space' || code === 'KeyE') {
+                event.preventDefault();
+                root.querySelector('.rgb-dialogue__take')?.click();
+            } else if (code === 'Escape') {
+                event.preventDefault();
+                dismissCutaway();
+            }
+            return;
+        }
 
         switch (code) {
             case 'ArrowUp':
@@ -861,6 +1038,12 @@ export function mountRgb({ root, save, storage, onExit }) {
             const { actions } = actionRouter.deriveActions(pad);
             const now = performance.now();
             if (mode === 'scene') {
+                if (activeCutaway) {
+                    if (actions.confirm) root.querySelector('.rgb-dialogue__take')?.click();
+                    if (actions.back) dismissCutaway();
+                    gamepadFrame = requestAnimationFrame(pollGamepad);
+                    return;
+                }
                 const magX = Math.abs(actions.focus.x);
                 const magY = Math.abs(actions.focus.y);
                 if (now - lastNavAt > NAV_REPEAT_MS && (magX > STICK_THRESHOLD || magY > STICK_THRESHOLD)) {
@@ -875,7 +1058,7 @@ export function mountRgb({ root, save, storage, onExit }) {
                 if (actions.back) { mode = 'pause'; render(); }
             } else if (mode === 'chapterCard') {
                 if (actions.confirm || actions.back) dismissChapterCard();
-            } else if ((mode === 'inventory' || mode === 'pause') && actions.back) {
+            } else if ((mode === 'inventory' || mode === 'recap' || mode === 'pause') && actions.back) {
                 mode = 'scene';
                 render();
             }

@@ -20,6 +20,7 @@ function createDefaultSave() {
             pain: 'stable',
             evidence: [],
             inventory: [],
+            routeHistory: [],
             flags: {}
         }
     };
@@ -49,6 +50,9 @@ function migrateRgbSave(raw) {
             pain: typeof raw.run?.pain === 'string' ? raw.run.pain : fallback.run.pain,
             evidence: Array.isArray(raw.run?.evidence) ? [...raw.run.evidence] : [],
             inventory: Array.isArray(raw.run?.inventory) ? [...raw.run.inventory] : [],
+            routeHistory: Array.isArray(raw.run?.routeHistory)
+                ? raw.run.routeHistory.filter(isPlainObject).map((entry) => ({ ...entry }))
+                : [],
             flags: isPlainObject(raw.run?.flags) ? { ...raw.run.flags } : {}
         }
     };

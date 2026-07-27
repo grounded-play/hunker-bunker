@@ -40,6 +40,7 @@ describe('loadRgbSave', () => {
                 pain: 'stable',
                 evidence: [],
                 inventory: [],
+                routeHistory: [],
                 flags: {}
             }
         });

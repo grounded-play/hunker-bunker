@@ -76,6 +76,7 @@ export const CONTENT_WARNING = 'Depicts workplace injury, medical-access stress,
 // video first and falls back to holding the image when the video is missing.
 const CINEMATIC_BASE = '/minigames/rgb/cinematics';
 const BACKGROUNDS = '/minigames/rgb/backgrounds';
+const INTERSTITIALS = '/minigames/rgb/interstitials';
 
 export const BRANCH_CINEMATICS = Object.freeze({
     'C1-A': { video: `${CINEMATIC_BASE}/C1-A.mp4`, image: `${CINEMATIC_BASE}/c1/end_answer_lucia.png` },
@@ -188,6 +189,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'inspect_bottle',
                 label: 'Empty Albuterol Bottle',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/inspect_albuterol.png`, label: 'MEDICATION // ONE DOSE REMAINS' },
                 x: 570, y: 315, w: 105, h: 155,
                 once: true,
                 lines: [
@@ -203,6 +205,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'check_balance',
                 label: 'Check the Balance',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/check_phone.png`, label: 'ACCOUNT BALANCE // INSUFFICIENT' },
                 icon: `${ITEM_ART}/item_phone.png`,
                 x: 505, y: 425, w: 120, h: 115,
                 once: true,
@@ -219,6 +222,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'listen_voicemail',
                 label: "Lucia's Message",
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/check_phone.png`, label: 'VOICEMAIL // LUCIA' },
                 icon: `${ITEM_ART}/item_phone.png`,
                 x: 505, y: 425, w: 120, h: 115,
                 once: true,
@@ -235,6 +239,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'inspect_drawing',
                 label: 'The Drawing and the Notebook',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/inspect_drawing_notebook.png`, label: 'LUCIA + UNIT 4A' },
                 icon: `${ITEM_ART}/item_lucia_drawing.png`,
                 x: 30, y: 420, w: 435, h: 285,
                 once: true,
@@ -295,6 +300,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'observe_4a',
                 label: 'Sorting Arm 4A',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c2/observe_4a_crush.png`, label: 'UNIT 4A // GRIP ERROR' },
                 x: 555, y: 95, w: 615, h: 615,
                 once: true,
                 lines: [
@@ -308,6 +314,7 @@ export const CHAPTERS = Object.freeze({
                 label: 'Notebook Diagram',
                 object: true,
                 inventoryAction: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/inspect_drawing_notebook.png`, label: 'CALIBRATION NOTE // DOUBLE TAP' },
                 icon: `${ITEM_ART}/item_calibration_notebook.png`,
                 x: 35, y: 575, w: 190, h: 105,
                 once: true,
@@ -318,6 +325,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'select_joint',
                 label: "4A's Joint",
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c2/calibrate_joint.png`, label: 'PIVOT OFFSET // TWO INCHES' },
                 x: 940, y: 385, w: 225, h: 305,
                 once: true,
                 requiresAllOf: ['read_diagram'],
@@ -327,6 +335,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'apply_pressure',
                 label: 'Apply Light Pressure',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c2/calibrate_joint.png`, label: 'MANUAL RECENTER // LIGHT PRESSURE' },
                 x: 940, y: 385, w: 225, h: 305,
                 once: true,
                 requiresAllOf: ['select_joint'],
