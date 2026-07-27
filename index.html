@@ -162,8 +162,27 @@
         <div class="splash-title">HUNKER BUNKER</div>
         <div class="splash-subtitle">TACTICAL COMMAND v2.0</div>
 
+        <section id="title-profile-hud" class="title-profile-hud hidden" aria-label="Current operator profile">
+          <img id="title-profile-portrait" class="title-profile-hud__portrait" src="/Tank.full_v2.png" alt="" />
+          <div class="title-profile-hud__body">
+            <div class="title-profile-hud__kicker">ACTIVE OPERATOR PROFILE</div>
+            <div class="title-profile-hud__identity">
+              <span id="title-profile-callsign">AGENT</span>
+              <span class="ui-separator">//</span>
+              <span id="title-profile-class">TANK</span>
+            </div>
+            <div class="title-profile-hud__stats">
+              <span id="career-stat-longest-run">LONGEST 00:00</span>
+              <span id="career-stat-deepest-depth">DEPTH SURFACE</span>
+              <span id="career-stat-deaths">DEATHS 0</span>
+              <span id="title-profile-best">CLASS BEST 0000</span>
+            </div>
+          </div>
+        </section>
+
         <div class="title-menu">
           <button class="title-menu-btn" id="title-continue-btn" disabled>CONTINUE</button>
+          <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn">SWITCH CLASS</button>
           <button class="title-menu-btn" id="title-newrun-btn">NEW RUN</button>
           <button class="title-menu-btn" id="title-achievements-btn">ACHIEVEMENTS</button>
           <button class="title-menu-btn" id="title-settings-btn">SETTINGS</button>
@@ -386,13 +405,6 @@
       <div class="action-row">
         <div class="action-row__left">
           <button class="start-btn" id="start-game">INITIALIZE</button>
-        </div>
-        <!-- Career stats: all-time personal bests, independent of the
-             per-class scores in the Selection Stack. -->
-        <div class="career-stats" id="career-stats-row">
-          <span class="career-stat" id="career-stat-longest-run">◈ LONGEST RUN: 00:00</span>
-          <span class="career-stat" id="career-stat-deepest-depth">◈ DEEPEST DEPTH: SURFACE</span>
-          <span class="career-stat" id="career-stat-deaths">◈ DEATHS: 0</span>
         </div>
         <!-- Death-thread to the base (doc 11 §4.D): a prior contractor's black box. -->
         <div class="last-contractor hidden" id="last-contractor"></div>

@@ -37,6 +37,7 @@ import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToas
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
+const titleSwitchClassBtn = document.getElementById('title-switch-class-btn');
 const titleNewRunBtn = document.getElementById('title-newrun-btn');
 const titleAchievementsBtn = document.getElementById('title-achievements-btn');
 const titleSettingsBtn = document.getElementById('title-settings-btn');
@@ -52,6 +53,22 @@ const loaderStatus = document.querySelector('.loader-status');
 const loaderBriefingAvatar = document.getElementById('loader-briefing-avatar');
 const loaderBriefingAvatarImg = document.getElementById('loader-briefing-avatar-img');
 const loaderBriefingSpeaker = document.getElementById('loader-briefing-speaker');
+const ACTIVE_CLASS_KEY = 'hb_active_class_v1';
+const PLAYABLE_CLASSES = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
+
+function getSavedHeroType() {
+    try {
+        const saved = localStorage.getItem(ACTIVE_CLASS_KEY);
+        return PLAYABLE_CLASSES.includes(saved) ? saved : 'TANK';
+    } catch {
+        return 'TANK';
+    }
+}
+
+function saveHeroType(type) {
+    if (!PLAYABLE_CLASSES.includes(type)) return;
+    try { localStorage.setItem(ACTIVE_CLASS_KEY, type); } catch { /* storage unavailable */ }
+}
 
 const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
     ? __HB_BUILD_INFO__
@@ -1284,16 +1301,37 @@ function refreshCareerStats() {
         const totalSeconds = Math.floor((stats.maxRunMs ?? 0) / 1000);
         const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
         const ss = String(totalSeconds % 60).padStart(2, '0');
-        longestEl.textContent = `◈ LONGEST RUN: ${mm}:${ss}`;
+        longestEl.textContent = `LONGEST ${mm}:${ss}`;
     }
     if (deathsEl) {
-        deathsEl.textContent = `◈ DEATHS: ${stats.totalDeaths ?? 0}`;
+        deathsEl.textContent = `DEATHS ${stats.totalDeaths ?? 0}`;
     }
     if (depthEl) {
         const tier = arcManager.getState().signals.deepestDepthTier ?? 0;
         const name = DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, tier))] ?? 'SURFACE';
-        depthEl.textContent = `◈ DEEPEST DEPTH: ${name}`;
+        depthEl.textContent = `DEPTH ${name}`;
     }
+}
+
+function refreshTitleProfileHud(hasSave = true) {
+    const hud = document.getElementById('title-profile-hud');
+    if (!hud) return;
+    hud.classList.toggle('hidden', !hasSave);
+    if (!hasSave) return;
+
+    const playerType = getSavedHeroType();
+    const callsignEl = document.getElementById('title-profile-callsign');
+    const classEl = document.getElementById('title-profile-class');
+    const portraitEl = document.getElementById('title-profile-portrait');
+    const bestEl = document.getElementById('title-profile-best');
+    if (callsignEl) callsignEl.textContent = profile.getCallsign();
+    if (classEl) classEl.textContent = playerType;
+    if (portraitEl) portraitEl.src = assetUrl(PREVIEW_PORTRAITS[playerType] ?? PREVIEW_PORTRAITS.TANK);
+    if (bestEl) {
+        const best = Number(localStorage.getItem(`hb_best_score_${playerType}`) ?? 0);
+        bestEl.textContent = `CLASS BEST ${String(best).padStart(4, '0')}`;
+    }
+    refreshCareerStats();
 }
 
 function recomputePickupTotal() {
@@ -4705,7 +4743,7 @@ function installStageLayoutSync() {
 
 function getSelectedHeroType() {
     const selected = document.querySelector('.char-card.selected');
-    return selected?.getAttribute('data-type') || window.game?.playerType || 'SCOUT';
+    return selected?.getAttribute('data-type') || window.game?.playerType || getSavedHeroType();
 }
 
 function resolveCutsceneImpactPoint() {
@@ -5582,51 +5620,51 @@ const transitionFromTitleToMenu = () => {
     );
 };
 
-if (titleNewRunBtn) {
-    titleNewRunBtn.addEventListener('click', transitionFromTitleToMenu);
-}
-if (titleContinueBtn) {
-    titleContinueBtn.addEventListener('click', transitionFromTitleToMenu);
+function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
+    const playerType = getSelectedHeroType();
+    saveHeroType(playerType);
+    triggerDoorTransition(
+        () => {
+            showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
+            splash?.classList.add('hidden');
+            menu?.classList.add('hidden');
+            setAppPhase('gameplay');
+            window.game?.setPerformanceProfile?.('gameplay');
+            window.game?.updatePlayerType?.(playerType, { poof: false, emitWorldEvents: false });
+            resetRunToStartingState({
+                resetBank,
+                skipEffects: true,
+                snailSpawnEnabled: true,
+                purgeSnails: false,
+                deferChunkMount: true
+            });
+            document.getElementById('ui')?.classList.remove('hidden');
+            syncHudCompassVisibility();
+
+            const gameContainer = document.getElementById('game-container');
+            const viewport = document.getElementById('game-viewport');
+            if (gameContainer && viewport) {
+                viewport.insertBefore(gameContainer, document.getElementById('ui'));
+                gameContainer.classList.add('fullscreen-mode');
+                queueGameLayoutRefresh();
+            }
+            return prepareGameplayForDialogue({ loaderOverDoor: true });
+        },
+        () => {
+            if (playIntro) {
+                void runMissionIntroSequence();
+            } else {
+                window.game?.setInputEnabled?.(true);
+            }
+        },
+        undefined,
+        { waitForClosedWork: true, openingHoldMs: 160 }
+    );
 }
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        triggerDoorTransition(
-            () => {
-                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
-                if (menu) menu.classList.add('hidden');
-                setAppPhase('gameplay');
-                window.game?.setPerformanceProfile?.('gameplay');
-                window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
-                resetRunToStartingState({
-                    resetBank: true,
-                    skipEffects: true,
-                    snailSpawnEnabled: true,
-                    purgeSnails: false,
-                    deferChunkMount: true
-                });
-                document.getElementById('ui').classList.remove('hidden');
-                syncHudCompassVisibility();
-
-                const gameContainer = document.getElementById('game-container');
-                const viewport = document.getElementById('game-viewport');
-                if (gameContainer && viewport) {
-                    viewport.insertBefore(gameContainer, document.getElementById('ui'));
-                    gameContainer.classList.add('fullscreen-mode');
-                    queueGameLayoutRefresh();
-                }
-
-                // Keep the doors closed while the world build + shader warm-up
-                // runs, with the progress readout mounted over the door face.
-                return prepareGameplayForDialogue({ loaderOverDoor: true });
-            },
-            () => {
-                void runMissionIntroSequence();
-            },
-            undefined,
-            { waitForClosedWork: true, openingHoldMs: 160 }
-            // Defaults to active class door
-        );
+        launchStandardRun({ resetBank: true, playIntro: true });
     });
 }
 
@@ -8635,6 +8673,8 @@ charCards.forEach(card => {
         // Update Preview
         const type = card.getAttribute('data-type');
         if (heroData[type]) {
+            saveHeroType(type);
+            refreshTitleProfileHud(true);
             warmClassIntroMedia(type);
             triggerHeroPreviewSwap(type);
             updateHeroStats(type);
@@ -8964,9 +9004,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Initialize preview with first selected
+    // Restore the last deployed class before initializing the selection UI.
+    const savedHeroType = getSavedHeroType();
+    charCards.forEach((card) => {
+        const selected = card.getAttribute('data-type') === savedHeroType;
+        card.classList.toggle('selected', selected);
+        card.setAttribute('aria-pressed', String(selected));
+    });
+
+    // Initialize preview with the current profile class.
     const initialSelected = document.querySelector('.char-card.selected');
-    const initialType = initialSelected?.getAttribute('data-type') || 'SCOUT';
+    const initialType = initialSelected?.getAttribute('data-type') || savedHeroType;
     setActiveAmmoCapacity(initialType, { clampExisting: true });
     if (initialSelected && heroData[initialType]) {
         warmClassIntroMedia(initialType);
@@ -8998,6 +9046,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             titleContinueBtn.classList.toggle('hidden', !hasSave);
             titleContinueBtn.style.display = hasSave ? '' : 'none';
         }
+        if (titleSwitchClassBtn) {
+            titleSwitchClassBtn.classList.toggle('hidden', !hasSave);
+        }
+        refreshTitleProfileHud(hasSave);
     };
     updateContinueButtonState();
 
@@ -9019,10 +9071,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (titleContinueBtn) {
         titleContinueBtn.addEventListener('click', () => {
             if (!checkHasSaveData()) return;
+            launchStandardRun({ resetBank: false, playIntro: false });
+        });
+    }
+    if (titleSwitchClassBtn) {
+        titleSwitchClassBtn.addEventListener('click', () => {
+            if (!checkHasSaveData()) return;
             transitionFromTitleToMenu();
-            renderRosterModal('continue');
-            const modal = document.getElementById('roster-modal');
-            if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
         });
     }
     if (titleAchievementsBtn) {
