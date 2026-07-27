@@ -234,8 +234,18 @@ function hideAllGameplayPrompts() {
 }
 
 function setAppPhase(phase) {
+    const previousPhase = appPhase;
     appPhase = phase;
-    debugLog.debug('PHASE', `App phase changed to: ${phase}`);
+    window.__hbAppPhase = phase;
+    const phaseLabels = {
+        boot: 'BOOTSTRAP — renderer and account services starting',
+        splash: 'TITLE READY — awaiting operator command',
+        menu: 'LOADOUT CONSOLE — operator configuration active',
+        gameplay: 'DEPLOYMENT — live simulation and input active',
+        gameover: 'RUN COMPLETE — telemetry finalized',
+        'demo-end': 'DEMO COMPLETE — session awaiting operator command'
+    };
+    debugLog.info('PHASE', `${previousPhase ?? 'none'} -> ${phase}: ${phaseLabels[phase] ?? 'application state changed'}`);
     syncSteamInputPhase();
     syncSteamTimelinePhase(phase);
     if (!isGameplayPhase()) {
@@ -4869,18 +4879,34 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;
 
-    showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: loaderOverDoor });
+    let announcedStage = '';
+    const announceDeploymentStage = (stage, status, progress) => {
+        showRunLoadingScreen(status, progress, { overDoor: loaderOverDoor });
+        if (announcedStage !== stage) {
+            announcedStage = stage;
+            debugLog.info('STARTUP', `${stage} — ${status}`);
+        }
+    };
+    announceDeploymentStage('PROFILE', 'VALIDATING OPERATOR PROFILE AND LOADOUT...', 0);
     game.setLoadingPaused?.(true);
     try {
+        announceDeploymentStage('VIEWPORT', 'CALIBRATING VIEWPORT AND INPUT...', 6);
         await settleGameLayoutForWarmup();
+        announceDeploymentStage('WORLD', 'GENERATING SECTOR TOPOLOGY...', 10);
         await game.prepareVisibleChunksForGameplay({
             batchSize: 3,
             onProgress: (progress) => {
                 const pct = Math.round(Math.max(0, Math.min(1, progress)) * 100);
-                showRunLoadingScreen(`DOWNLOADING SECTOR PILLAR TOPOGRAPHY... ${pct}%`, pct, { overDoor: loaderOverDoor });
+                if (pct < 70) {
+                    announceDeploymentStage('WORLD', `GENERATING SECTOR TOPOLOGY... ${pct}%`, pct);
+                } else if (pct < 94) {
+                    announceDeploymentStage('MOUNT', `MOUNTING TERRAIN, ROOMS, AND ENCOUNTERS... ${pct}%`, pct);
+                } else {
+                    announceDeploymentStage('RENDER', `WARMING MATERIALS AND LIGHTING... ${pct}%`, pct);
+                }
             }
         });
-        showRunLoadingScreen('DEPLOYMENT SYNC COMPLETE', 100, { overDoor: loaderOverDoor });
+        announceDeploymentStage('READY', 'DEPLOYMENT READY — TRANSFERRING CONTROL', 100);
         await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));
     } finally {
         game.setLoadingPaused?.(false);
