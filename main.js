@@ -4808,12 +4808,18 @@ function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
     const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
     warmClassIntroMedia(playerType);
+    window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
         if (window.skipAllIntro) {
             resolve();
             return;
         }
+
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Starting intro cutscene sequence for ${playerType}`);
+        }
+        window.AudioManager?.play?.('amb_metal_stress1', { volume: 0.65, bus: 'world', varyPitch: false });
 
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
@@ -4924,7 +4930,8 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         videoElement.className = 'class-intro-video';
         videoElement.style.opacity = '0';
         videoElement.playsInline = true;
-        videoElement.muted = true;
+        videoElement.muted = Boolean(window.AudioManager?.globalMuted);
+        videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
         videoElement.autoplay = true;
         videoElement.controls = false;
         videoElement.preload = 'auto';
@@ -4963,7 +4970,10 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         videoElement.addEventListener('ended', cleanupAndResolve);
         videoElement.addEventListener('error', cleanupAndResolve);
 
-        videoElement.play().catch(cleanupAndResolve);
+        videoElement.play().catch(() => {
+            videoElement.muted = true;
+            return videoElement.play();
+        }).catch(cleanupAndResolve);
         }
     });
 }
@@ -4974,8 +4984,13 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 function playCutsceneVideo(base, options = {}) {
     const { onDoorCutoff = null } = (typeof options === 'object' && options !== null ? options : {});
     warmCutsceneVideo(base);
+    window.AudioManager?.unlock?.();
 
     return new Promise((resolve) => {
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Playing cutscene video: ${base}`);
+        }
+
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
@@ -4991,7 +5006,8 @@ function playCutsceneVideo(base, options = {}) {
         video.className = 'class-intro-video';
         video.style.opacity = '0';
         video.playsInline = true;
-        video.muted = true;
+        video.muted = Boolean(window.AudioManager?.globalMuted);
+        video.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
         video.autoplay = true;
         video.controls = false;
         video.preload = 'auto';
@@ -5084,7 +5100,10 @@ function playCutsceneVideo(base, options = {}) {
 
         overlay.append(video, skipHint);
         host.appendChild(overlay);
-        video.play().catch(finish);
+        video.play().catch(() => {
+            video.muted = true;
+            return video.play();
+        }).catch(finish);
     });
 }
 
