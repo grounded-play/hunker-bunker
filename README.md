@@ -6,6 +6,7 @@
 
 [![Presubmit CI](https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml/badge.svg)](https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status)](https://app.netlify.com/projects/hunkerbunker/deploys)
+[![Discord Community](https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white)](https://linktr.ee/Tuesday_Cinema_Club)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Three.js](https://img.shields.io/badge/Three.js-r184-00e5ff.svg?logo=three.js)](https://threejs.org/)
 [![Electron](https://img.shields.io/badge/Electron-43.1-47848f.svg?logo=electron)](https://www.electronjs.org/)
@@ -15,7 +16,7 @@
 into an ice-locked bunker, keeping a failing exosuit alive, and deciding what
 gets to leave the planet with you.
 
-[Play the live browser build](https://hunkerbunker.netlify.app/) | [Steam planning index](docs/steam-docs-master-index.md) | [Current open gaps](docs/things-we-missed.md)
+[Play the live browser build](https://hunkerbunker.netlify.app/) | [Discord Community](https://linktr.ee/Tuesday_Cinema_Club) | [Steam planning index](docs/steam-docs-master-index.md) | [Current open gaps](docs/things-we-missed.md)
 
 You command Scout, Tank, and Engineer operators through procedural bunker
 corridors, hostile biomes, survivor camps, alien hives, black-box recovery

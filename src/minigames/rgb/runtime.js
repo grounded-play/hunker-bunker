@@ -241,6 +241,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             btn.style.setProperty('--rgb-h', hotspot.h ?? 56);
             btn.classList.toggle('rgb-hotspot--choice', Boolean(hotspot.choice));
             btn.classList.toggle('rgb-hotspot--object', Boolean(hotspot.object));
+            btn.classList.toggle('rgb-hotspot--inventory-action', Boolean(hotspot.inventoryAction));
             const isDone = hotspot.once && visited.has(hotspot.id);
             const isReady = ready.has(hotspot.id);
             btn.classList.toggle('rgb-hotspot--done', Boolean(isDone));

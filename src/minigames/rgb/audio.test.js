@@ -41,6 +41,8 @@ describe('RGB audio content', () => {
         // No recording; runtime.js narrates these with synthesised speech.
         expect(hasAuthoredVoice('reply_to_lucia')).toBe(false);
         expect(hasAuthoredVoice('select_joint')).toBe(false);
+        expect(hasAuthoredVoice('observe_4a')).toBe(false);
+        expect(hasAuthoredVoice('apply_pressure')).toBe(true);
     });
 
     it('attributes lines to the speaker who says them', () => {

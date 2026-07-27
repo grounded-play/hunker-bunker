@@ -11769,6 +11769,16 @@ button.archive-log-entry:active {
   opacity: 1;
 }
 
+.rgb-hotspot--inventory-action {
+  background: rgba(8, 10, 14, 0.68);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.rgb-hotspot--inventory-action .rgb-hotspot__icon {
+  width: calc(var(--stage-px, 1px) * 68);
+  height: calc(var(--stage-px, 1px) * 68);
+}
+
 .rgb-action-deck {
   position: absolute;
   inset: 0;

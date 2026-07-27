@@ -294,7 +294,8 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'observe_4a',
                 label: 'Sorting Arm 4A',
-                x: 540, y: 250, w: 200, h: 90,
+                object: true,
+                x: 555, y: 95, w: 615, h: 615,
                 once: true,
                 lines: [
                     'Titanium sorting arm. Asset value $4.8 million.',
@@ -305,8 +306,10 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'read_diagram',
                 label: 'Notebook Diagram',
+                object: true,
+                inventoryAction: true,
                 icon: `${ITEM_ART}/item_calibration_notebook.png`,
-                x: 260, y: 460, w: 100, h: 90,
+                x: 35, y: 575, w: 190, h: 105,
                 once: true,
                 requiresAllOf: ['observe_4a'],
                 lines: ['DOUBLE TAP = RELEASE PRESSURE / RECENTER.']
@@ -314,7 +317,8 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'select_joint',
                 label: "4A's Joint",
-                x: 560, y: 420, w: 120, h: 140,
+                object: true,
+                x: 940, y: 385, w: 225, h: 305,
                 once: true,
                 requiresAllOf: ['read_diagram'],
                 lines: ['Two inches left of where it wants to grip.']
@@ -322,7 +326,8 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'apply_pressure',
                 label: 'Apply Light Pressure',
-                x: 560, y: 420, w: 120, h: 140,
+                object: true,
+                x: 940, y: 385, w: 225, h: 305,
                 once: true,
                 requiresAllOf: ['select_joint'],
                 lines: ['Not harder. Smarter.']
@@ -330,7 +335,7 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'double_tap_honest',
                 label: 'Double Tap — Log the Error',
-                x: 500, y: 610, w: 130, h: 60,
+                x: 235, y: 610, w: 350, h: 70,
                 once: true,
                 requiresAllOf: ['apply_pressure'],
                 excludesAllOf: ['double_tap_falsify'],
@@ -342,7 +347,7 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'double_tap_falsify',
                 label: 'Double Tap — Clean the Log',
-                x: 650, y: 610, w: 130, h: 60,
+                x: 695, y: 610, w: 350, h: 70,
                 once: true,
                 requiresAllOf: ['apply_pressure'],
                 excludesAllOf: ['double_tap_honest'],
