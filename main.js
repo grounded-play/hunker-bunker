@@ -8,6 +8,7 @@ import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES
 import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from './src/profile.js';
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
+import { DEPTH_TIER_NAMES } from './src/data/loot.js';
 import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec } from './src/cinematicFallback.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
@@ -1197,6 +1198,33 @@ function refreshCharBestScores() {
         const best = Number(localStorage.getItem(`hb_best_score_${cls}`) ?? 0);
         const formattedScore = String(best).padStart(4, '0');
         el.textContent = `◈ BEST: ${formattedScore} PTS`;
+    }
+}
+
+// All-time personal bests, independent of the per-class scores above —
+// longest/deepest/deaths already persist in achievementEngine's stats and
+// arcManager's signals for their own purposes (achievement checks, arc
+// transitions); this just reads and displays them, no new tracking.
+function refreshCareerStats() {
+    const longestEl = document.getElementById('career-stat-longest-run');
+    const depthEl = document.getElementById('career-stat-deepest-depth');
+    const deathsEl = document.getElementById('career-stat-deaths');
+    if (!longestEl && !depthEl && !deathsEl) return;
+
+    const stats = achievementEngine.getState().stats;
+    if (longestEl) {
+        const totalSeconds = Math.floor((stats.maxRunMs ?? 0) / 1000);
+        const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const ss = String(totalSeconds % 60).padStart(2, '0');
+        longestEl.textContent = `◈ LONGEST RUN: ${mm}:${ss}`;
+    }
+    if (deathsEl) {
+        deathsEl.textContent = `◈ DEATHS: ${stats.totalDeaths ?? 0}`;
+    }
+    if (depthEl) {
+        const tier = arcManager.getState().signals.deepestDepthTier ?? 0;
+        const name = DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, tier))] ?? 'SURFACE';
+        depthEl.textContent = `◈ DEEPEST DEPTH: ${name}`;
     }
 }
 
@@ -2727,6 +2755,9 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         refreshCharBestScores();
     }
     if (newBest) newBest.classList.toggle('hidden', !isNewBest);
+    // Unconditional (unlike the per-class best above): longest run, deepest
+    // depth, and death count each track their own best independent of score.
+    refreshCareerStats();
 
     // World seed display
     const seedRow = document.getElementById('go-seed-row');
@@ -8713,6 +8744,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadKeyBindings();
     setupControlsModal();
     refreshCharBestScores();
+    refreshCareerStats();
     updateDailyOpsUI();
     updateMenuCommandStatuses();
 
