@@ -140,7 +140,7 @@ if (upload) {
     }
 
     const soundtrackTemplate = path.join(repoRoot, 'steam', 'soundtrack_app_build.vdf');
-    if (fs.existsSync(soundtrackTemplate)) {
+    if (fs.existsSync(soundtrackTemplate) && process.env.HB_STEAM_SKIP_SOUNDTRACK !== '1') {
         const generatedSoundtrackBuild = path.join(repoRoot, 'steam', 'soundtrack_app_build.generated.vdf');
         const soundtrackDesc = `Hunker Bunker Soundtrack ${buildId} ${branch}`.replace(/["\r\n]/g, '-');
         const generatedSoundtrackBody = fs.readFileSync(soundtrackTemplate, 'utf8').replace(
@@ -157,6 +157,16 @@ if (upload) {
                 generatedSoundtrackBuild,
                 '+quit'
             ], releaseEnv, 'Steam soundtrack upload');
+            console.log(`[steam-release] uploaded soundtrack ${commit} through steam/soundtrack_app_build.vdf`);
+        } catch (err) {
+            console.error(`\n[steam-release] WARNING: Soundtrack upload failed for AppID 4957680.`);
+            console.error(`To fix this in Steamworks:`);
+            console.error(`  1. Ensure account '${account}' has 'Edit App Metadata' & 'SteamPipe Upload' permissions granted for AppID 4957680.`);
+            console.error(`  2. In Steamworks (App 4957680 > SteamPipe > Depots), verify Depot 4957681 is added and click 'Save'.`);
+            console.error(`  3. Click 'Publishing' -> 'Publish Changes' on App 4957680 in Steamworks at least once.\n`);
+            if (process.env.HB_STEAM_REQUIRE_SOUNDTRACK === '1') {
+                throw err;
+            }
         } finally {
             fs.rmSync(generatedSoundtrackBuild, { force: true });
         }

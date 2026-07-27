@@ -27,6 +27,7 @@
     "steam:input-configs": "node scripts/build-steam-input-configs.js",
     "steam:prepare": "node scripts/steam-release.js",
     "steam:upload": "node scripts/steam-release.js --upload",
+    "steam:upload-soundtrack": "node scripts/steam-release.js --upload --skip-build",
     "steam:drm-wrap": "node scripts/steam-drm-wrap.js",
     "electron:build": "npm run build && npm run steam:config && npm run steam:input-configs && electron-builder --dir --linux --win",
     "electron:dist": "npm run build && npm run steam:config && npm run steam:input-configs && electron-builder",
