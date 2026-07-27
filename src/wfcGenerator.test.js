@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { collapseChunkLattice, collapsePocketLattice, stampLattice, LATTICE_SIZE, POCKET_LATTICE_SIZE } from './wfcGenerator.js';
+import { collapseChunkLattice, collapsePocketLattice, stampLattice, extractChunkWfcMetadata, LATTICE_SIZE, POCKET_LATTICE_SIZE } from './wfcGenerator.js';
 import { TILE_SIZE } from './tileCatalog.js';
 
 function seededRandom(seed) {
@@ -212,5 +212,23 @@ describe('collapsePocketLattice', () => {
         const a = collapsePocketLattice(seededRandom(9)).map((t) => t.id);
         const b = collapsePocketLattice(seededRandom(9)).map((t) => t.id);
         expect(a).toEqual(b);
+    });
+});
+
+describe('extractChunkWfcMetadata', () => {
+    it('extracts room footprints and translates anchor coordinates to 19x19 chunk space', () => {
+        const lattice = collapseChunkLattice(seededRandom(12));
+        const metadata = extractChunkWfcMetadata(lattice, 19);
+        expect(metadata).toBeTruthy();
+        expect(Array.isArray(metadata.rooms)).toBe(true);
+        expect(Array.isArray(metadata.anchors)).toBe(true);
+
+        for (const anchor of metadata.anchors) {
+            expect(anchor.localX).toBeGreaterThanOrEqual(0);
+            expect(anchor.localX).toBeLessThan(19);
+            expect(anchor.localY).toBeGreaterThanOrEqual(0);
+            expect(anchor.localY).toBeLessThan(19);
+            expect(anchor.decorationSet).toBeTruthy();
+        }
     });
 });

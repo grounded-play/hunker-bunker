@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
-import { collapseChunkLattice, collapsePocketLattice, stampLattice } from './wfcGenerator.js';
+import { collapseChunkLattice, collapsePocketLattice, stampLattice, extractChunkWfcMetadata } from './wfcGenerator.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
@@ -736,6 +736,7 @@ export class ThreeGame {
         this.cameraPlanarRight = new THREE.Vector2(-this.cameraPlanarForward.y, this.cameraPlanarForward.x).normalize();
         this.chunkCache = new Map();
         this.pocketCache = new Map();
+        this.wfcMetadataCache = new Map();
         this.pocketGroups = new Map();
         this.isInPocket = false;
         this.chunkMeshes = new Map();
@@ -8148,6 +8149,16 @@ export class ThreeGame {
         if (landform === LANDFORMS.CRATER || landform === LANDFORMS.FIELD) return true;
         if (landform !== LANDFORMS.MAZE) return false;
 
+        const key = `${chunkX},${chunkY}`;
+        const meta = this.wfcMetadataCache?.get(key);
+        if (meta?.anchors && Array.isArray(meta.anchors)) {
+            const localX = ((tileX % this.chunkSize) + this.chunkSize) % this.chunkSize;
+            const localZ = ((tileZ % this.chunkSize) + this.chunkSize) % this.chunkSize;
+            if (meta.anchors.some((a) => a.kind === 'landmark' && Math.abs(a.localX - localX) <= 1 && Math.abs(a.localY - localZ) <= 1)) {
+                return true;
+            }
+        }
+
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const localX = ((tileX % this.chunkSize) + this.chunkSize) % this.chunkSize;
         const localZ = ((tileZ % this.chunkSize) + this.chunkSize) % this.chunkSize;
@@ -8564,7 +8575,7 @@ export class ThreeGame {
                 playerType: this.playerType
             });
             let { x, z } = record;
-            if (!Number.isFinite(x) || !Number.isFinite(z)) {
+            if (!Number.isFinite(x) || !Number.isFinite(z) || !this.isSnailTileWalkable(x, z)) {
                 const site = this.chooseCampPosition(index);
                 x = site.x;
                 z = site.z;
@@ -15344,6 +15355,48 @@ export class ThreeGame {
     createChunkSetPiecePlacements(chunkX, chunkY, grid) {
         const placements = [];
         const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
+        const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const reservedCells = new Set();
+
+        if (wfcMeta?.anchors && Array.isArray(wfcMeta.anchors)) {
+            const DECORATION_PROPS = {
+                bunker: ['prop_cyber_junction', 'prop_specimen_tank', 'prop_bunker_supplies', 'prop_conduit_hub'],
+                cryo: ['prop_specimen_tank', 'prop_cave_lichen', 'prop_bunker_supplies'],
+                bio: ['prop_spore_colony', 'prop_cave_spores', 'prop_cave_webs'],
+                camp: ['prop_camp_sandbags', 'prop_camp_crates'],
+                nest: ['prop_cave_eggs_intact', 'prop_cave_eggs_hatched', 'prop_cave_webs'],
+                cave: ['prop_cave_lichen', 'prop_cave_bones', 'prop_cave_spores', 'prop_cave_hive_wounded']
+            };
+
+            for (const anchor of wfcMeta.anchors) {
+                const { localX, localY, decorationSet, kind } = anchor;
+                if (localX < 1 || localX >= this.chunkSize - 1 || localY < 1 || localY >= this.chunkSize - 1) continue;
+                if (grid[localY]?.[localX] !== '.') continue;
+
+                const cellKey = `${localX},${localY}`;
+                if (reservedCells.has(cellKey)) continue;
+
+                const worldX = chunkX * this.chunkSize + localX;
+                const worldZ = chunkY * this.chunkSize + localY;
+                const setProps = DECORATION_PROPS[decorationSet] || DECORATION_PROPS.bunker;
+                const propType = setProps[Math.floor(rng() * setProps.length)];
+
+                placements.push({
+                    x: worldX,
+                    z: worldZ,
+                    type: propType,
+                    scatterKey: `wfc_anchor:${worldX},${worldZ}`,
+                    scale: kind === 'large-prop' ? 1.3 : 1.15,
+                    elevation: 0.08,
+                    hp: propType === 'prop_specimen_tank' ? 4 : 3,
+                    groupType: 'prop',
+                    opacity: 1
+                });
+
+                reservedCells.add(cellKey);
+            }
+        }
+
         // Room set pieces used to roll independently on every open floor
         // cell, scattering just as often into 1-wide corridors as into
         // actual rooms. Gating the roll to chamber-classified cells keeps
@@ -15354,6 +15407,7 @@ export class ThreeGame {
         for (let localY = 1; localY < this.chunkSize - 1; localY += 1) {
             for (let localX = 1; localX < this.chunkSize - 1; localX += 1) {
                 if (grid[localY][localX] !== '.') continue;
+                if (reservedCells.has(`${localX},${localY}`)) continue;
 
                 const worldX = chunkX * this.chunkSize + localX;
                 const worldZ = chunkY * this.chunkSize + localY;
@@ -20001,6 +20055,9 @@ export class ThreeGame {
             // chunks — see §6 for why non-MAZE landforms are unaffected.
             mazeLattice = collapseChunkLattice(random, { tutorialOnly: this.isInTutorialRing(chunkX, chunkY) });
             grid = stampLattice(mazeLattice, this.chunkSize);
+            if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
+            const metadata = extractChunkWfcMetadata(mazeLattice, this.chunkSize);
+            this.wfcMetadataCache.set(`${chunkX},${chunkY}`, metadata);
         } else {
             grid = Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('#'));
             const centerCell = Math.floor(this.chunkCellCount / 2);
@@ -20128,7 +20185,11 @@ export class ThreeGame {
             }
         }
 
-        this.clearSpawnArea(grid, chunkX, chunkY);
+        if (chunkX === 0 && chunkY === 0) {
+            this.buildCrashSiteChunk(grid, chunkX, chunkY);
+        } else {
+            this.clearSpawnArea(grid, chunkX, chunkY);
+        }
         this.clearDoorways?.(grid);
         if (
             landform === LANDFORMS.MAZE
@@ -20137,6 +20198,11 @@ export class ThreeGame {
         ) {
             applyVerticalBridgeFeature(grid, mazeLattice, random);
         }
+        return grid;
+    }
+
+    buildCrashSiteChunk(grid, chunkX = 0, chunkY = 0) {
+        this.clearSpawnArea(grid, chunkX, chunkY);
         return grid;
     }
 

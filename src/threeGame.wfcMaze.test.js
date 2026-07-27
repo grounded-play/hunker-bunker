@@ -67,11 +67,23 @@ describe('buildChunk — WFC MAZE generation', () => {
     });
 
     it('is deterministic for a fixed seed and varies across runEntropy', () => {
-        const gridA = ThreeGame.prototype.buildChunk.call(makeFakeGame(1), 3, -2);
-        const gridB = ThreeGame.prototype.buildChunk.call(makeFakeGame(1), 3, -2);
+        const gameA = makeFakeGame(1);
+        const gridA = ThreeGame.prototype.buildChunk.call(gameA, 3, -2);
+        const gameB = makeFakeGame(1);
+        const gridB = ThreeGame.prototype.buildChunk.call(gameB, 3, -2);
         expect(gridA).toEqual(gridB);
 
-        const gridC = ThreeGame.prototype.buildChunk.call(makeFakeGame(2), 3, -2);
+        const gameC = makeFakeGame(2);
+        const gridC = ThreeGame.prototype.buildChunk.call(gameC, 3, -2);
         expect(gridC).not.toEqual(gridA);
+    });
+
+    it('populates wfcMetadataCache with rooms and anchors for MAZE chunks', () => {
+        const game = makeFakeGame(42);
+        ThreeGame.prototype.buildChunk.call(game, 4, 4);
+        const meta = game.wfcMetadataCache.get('4,4');
+        expect(meta).toBeTruthy();
+        expect(Array.isArray(meta.rooms)).toBe(true);
+        expect(Array.isArray(meta.anchors)).toBe(true);
     });
 });

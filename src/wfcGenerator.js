@@ -162,7 +162,8 @@ function pickTileForCell(required, catalog, random) {
 // defined in tileCatalog.js as a building block for Phase 2, which needs
 // to place it with elevation-aware logic anyway (a canyon tile is only
 // meaningful once a Ramp/Bridge can actually cross it).
-const SELECTABLE_CATALOG = TILE_CATALOG.filter((tile) => tile.category !== 'canyon-impassable');
+const VERTICAL_ONLY_CATEGORIES = new Set(['canyon-impassable', 'ramp', 'bridge', 'ladder']);
+const SELECTABLE_CATALOG = TILE_CATALOG.filter((tile) => !VERTICAL_ONLY_CATEGORIES.has(tile.category));
 
 export function collapseChunkLattice(random, { tutorialOnly = false } = {}) {
     const catalog = tutorialOnly ? SELECTABLE_CATALOG.filter((tile) => tile.tutorial) : SELECTABLE_CATALOG;
@@ -226,4 +227,55 @@ export function stampLattice(lattice, chunkSize) {
         }
     }
     return grid;
+}
+
+export function extractChunkWfcMetadata(lattice, _chunkSize = 19) {
+    if (!Array.isArray(lattice)) return null;
+    const latticeSize = Math.round(Math.sqrt(lattice.length));
+    const stride = TILE_SIZE - 1;
+    const rooms = [];
+    const anchors = [];
+
+    for (let my = 0; my < latticeSize; my += 1) {
+        for (let mx = 0; mx < latticeSize; mx += 1) {
+            const index = my * latticeSize + mx;
+            const tile = lattice[index];
+            const originX = mx * stride;
+            const originY = my * stride;
+
+            if (tile.category === 'room') {
+                rooms.push({
+                    latticeIndex: index,
+                    mx,
+                    my,
+                    originX,
+                    originY,
+                    tileId: tile.id,
+                    roomRole: tile.roomRole || 'generic',
+                    decorationSet: tile.decorationSet || 'bunker',
+                    populationBudget: tile.populationBudget || { large: 1, small: 3, pickup: 1, enemy: 0 }
+                });
+            }
+
+            if (Array.isArray(tile.anchors)) {
+                for (const anchor of tile.anchors) {
+                    anchors.push({
+                        ...anchor,
+                        latticeIndex: index,
+                        tileId: tile.id,
+                        localX: originX + anchor.x,
+                        localY: originY + anchor.y,
+                        decorationSet: tile.decorationSet || 'bunker',
+                        roomRole: tile.roomRole || 'generic'
+                    });
+                }
+            }
+        }
+    }
+
+    return {
+        lattice,
+        rooms,
+        anchors
+    };
 }

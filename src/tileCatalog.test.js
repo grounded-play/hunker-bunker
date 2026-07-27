@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SOCKET, TILE_SIZE, TILE_CATALOG, rotatePatternCW, rotateSocketsCW, oppositeSide } from './tileCatalog.js';
+import { SOCKET, TILE_SIZE, TILE_CATALOG, rotatePatternCW, rotateSocketsCW, rotateAnchorsCW, oppositeSide } from './tileCatalog.js';
 
 describe('rotatePatternCW', () => {
     it('rotates a 3x3 pattern 90 degrees clockwise', () => {
@@ -12,6 +12,19 @@ describe('rotateSocketsCW', () => {
     it('maps north<-west, east<-north, south<-east, west<-south', () => {
         const sockets = { n: 'A', e: 'B', s: 'C', w: 'D' };
         expect(rotateSocketsCW(sockets)).toEqual({ n: 'D', e: 'A', s: 'B', w: 'C' });
+    });
+});
+
+describe('rotateAnchorsCW', () => {
+    it('transforms anchor coordinates 90 degrees CW within 7x7 grid', () => {
+        const anchors = [
+            { id: 'center', x: 3, y: 3 },
+            { id: 'top-left', x: 1, y: 1 }
+        ];
+        expect(rotateAnchorsCW(anchors)).toEqual([
+            { id: 'center', x: 3, y: 3 },
+            { id: 'top-left', x: 5, y: 1 }
+        ]);
     });
 });
 
@@ -34,16 +47,29 @@ describe('TILE_CATALOG self-consistency', () => {
 
     it('every declared socket matches the tile pattern border exactly', () => {
         const OPEN3_ROW = '##...##';
+        const LADDER_ROW = '###.###';
         const CLOSED_ROW = '#######';
         for (const tile of TILE_CATALOG) {
             const northRow = tile.pattern[0];
             const southRow = tile.pattern[TILE_SIZE - 1];
             const westCol = tile.pattern.map((row) => row[0]).join('');
             const eastCol = tile.pattern.map((row) => row[TILE_SIZE - 1]).join('');
-            expect(northRow, `${tile.id} north`).toBe(tile.sockets.n === SOCKET.OPEN3 ? OPEN3_ROW : CLOSED_ROW);
-            expect(southRow, `${tile.id} south`).toBe(tile.sockets.s === SOCKET.OPEN3 ? OPEN3_ROW : CLOSED_ROW);
-            expect(westCol, `${tile.id} west`).toBe(tile.sockets.w === SOCKET.OPEN3 ? OPEN3_ROW : CLOSED_ROW);
-            expect(eastCol, `${tile.id} east`).toBe(tile.sockets.e === SOCKET.OPEN3 ? OPEN3_ROW : CLOSED_ROW);
+
+            const isOpen = (side) => (
+                tile.sockets[side] === SOCKET.OPEN3 ||
+                tile.elevationSockets?.ground?.[side] === SOCKET.OPEN3 ||
+                tile.elevationSockets?.elevated?.[side] === SOCKET.OPEN3
+            );
+
+            const expectedRow = (side) => {
+                if (!isOpen(side)) return CLOSED_ROW;
+                return tile.category === 'ladder' ? LADDER_ROW : OPEN3_ROW;
+            };
+
+            expect(northRow, `${tile.id} north`).toBe(expectedRow('n'));
+            expect(southRow, `${tile.id} south`).toBe(expectedRow('s'));
+            expect(westCol, `${tile.id} west`).toBe(expectedRow('w'));
+            expect(eastCol, `${tile.id} east`).toBe(expectedRow('e'));
         }
     });
 
@@ -60,7 +86,13 @@ describe('TILE_CATALOG self-consistency', () => {
         expect(new Set(ids).size).toBe(ids.length);
     });
 
-    it('every tile has a positive weight', () => {
-        for (const tile of TILE_CATALOG) expect(tile.weight, tile.id).toBeGreaterThan(0);
+    it('every tile has a positive weight and valid population metadata', () => {
+        for (const tile of TILE_CATALOG) {
+            expect(tile.weight, tile.id).toBeGreaterThan(0);
+            expect(tile.roomRole, tile.id).toBeTruthy();
+            expect(tile.decorationSet, tile.id).toBeTruthy();
+            expect(tile.populationBudget, tile.id).toBeDefined();
+            expect(Array.isArray(tile.anchors), tile.id).toBe(true);
+        }
     });
 });
