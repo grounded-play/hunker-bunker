@@ -17,9 +17,10 @@ version of the existing MarkovJr-style rewrite engine. This targets four
 concrete complaints from actual play: rooms reading as uniform blobs, the
 crash-site exit corridor not reliably connecting to the next chunk, tiles
 feeling too small/thin, and walls/gaps sitting too close together as a side
-effect of erosion passes. **Phase 2** (a separate future spec) adds real
-vertical traversal — ramps, bridges, ladders, and a genuinely impassable
-canyon tile — on top of the tile vocabulary this phase establishes.
+effect of erosion passes. **Phase 2** (below, in this same document) adds
+real vertical traversal — Ramp, Bridge, and Ladder tiles that let a player
+actually cross the `canyon-impassable` tile this phase introduces — on top
+of the socket vocabulary established here.
 
 **Architecture:** No change to the grid representation (`'#'`/`'.'` character
 grid), chunk size (`this.chunkSize = 19`, `src/threeGame.js:693`), or the
@@ -232,7 +233,7 @@ in `src/generator.test.js`/`src/landforms.test.js`:
 - **Tutorial ring**: chunks at Chebyshev distance 1 from (0,0) never select
   a non-`tutorial` tile.
 
-### Out of scope (explicitly deferred to Phase 2, not forgotten)
+### Out of scope (explicitly deferred to Phase 2 below, not forgotten)
 
 - **Ramp, Bridge, and Ladder tiles**, and any real player-facing crossing of
   a `canyon-impassable` tile. Phase 1 only reserves the socket vocabulary
