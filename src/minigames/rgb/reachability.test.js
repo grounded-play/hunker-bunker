@@ -191,12 +191,13 @@ describe('pacing gates hold', () => {
         expect(isHotspotAvailable(exit, injured, new Set(['brace_for_impact']))).toBe(false);
     });
 
-    it('the parking lot cannot be left without taking the fork', () => {
+    it('the parking lot exits are unavailable before the authored setup beats', () => {
         const chapter = CHAPTERS.parking_lot;
-        const badge = chapter.hotspots.find((h) => h.id === 'badge_in');
+        const exits = chapter.hotspots.filter((h) => h.advances);
         const explored = new Set(['inspect_bottle', 'check_balance', 'listen_voicemail', 'inspect_drawing']);
-        expect(isHotspotAvailable(badge, createRunState(), explored)).toBe(false);
-        expect(isHotspotAvailable(badge, createRunState(), new Set([...explored, 'enter_now']))).toBe(true);
+        expect(exits).toHaveLength(2);
+        expect(exits.every((exit) => isHotspotAvailable(exit, createRunState(), new Set()))).toBe(false);
+        expect(exits.every((exit) => isHotspotAvailable(exit, createRunState(), explored))).toBe(true);
     });
 });
 

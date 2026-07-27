@@ -3332,12 +3332,14 @@ export class ThreeGame {
 
     triggerGameplayAbility() {
         if (!this.isGameplayInputActive()) return false;
+        debugLog.info('GAME', `Triggered class ability (${this.playerType})`);
         this.triggerClassAbility();
         return true;
     }
 
     triggerGameplayScan() {
         if (!this.isGameplayInputActive()) return false;
+        debugLog.info('GAME', 'Triggered radar scan');
         this.triggerRadarScan();
         return true;
     }
@@ -3363,6 +3365,7 @@ export class ThreeGame {
             dirZ = 0;
         }
 
+        debugLog.info('GAME', `Triggered dash (${dirX.toFixed(2)}, ${dirZ.toFixed(2)})`);
         this.isDashing = true;
         this.dashTimer = 0.22;
         this.dashCooldownTimer = 1.1;

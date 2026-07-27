@@ -46,7 +46,6 @@ describe('RGB audio content', () => {
     it('attributes lines to the speaker who says them', () => {
         expect(getDialogueSpeaker('scan_bottle')).toBe('KIOSK');
         expect(getDialogueSpeaker('listen_voicemail')).toBe('LUCIA');
-        expect(getDialogueSpeaker('speak_with_marisol')).toBe('MARISOL');
         expect(getDialogueSpeaker('demand_footage')).toBe('HR');
         expect(getDialogueSpeaker('read_terminal')).toBe('SYSTEM');
         expect(getDialogueSpeaker('reply_to_lucia')).toBe('ELIAS');

@@ -6,10 +6,11 @@
 class DebugLogger {
     constructor() {
         this.logs = [];
-        this.maxLogs = 1000;
+        this.maxLogs = 2500;
         this.subscribers = new Set();
         this.visible = false;
         this.currentFilter = 'ALL';
+        this.categoryFilter = 'ALL';
         this.searchTerm = '';
         this.autoScroll = true;
         this.commandHistory = [];
@@ -20,8 +21,20 @@ class DebugLogger {
         this.levelOrder = { debug: 0, info: 1, warn: 2, error: 3 };
 
         this.initConsoleInterception();
+        this.initUncaughtErrorHandlers();
+        this.initFetchInterception();
+        this.initGlobalInputTelemetry();
+
         if (typeof window !== 'undefined') {
             window.hbLogger = this;
+            window.hbLog = (category, level, message, ...details) => {
+                const lvl = (level || 'info').toLowerCase();
+                if (typeof this[lvl] === 'function') {
+                    this[lvl](category || 'SYS', message, ...details);
+                } else {
+                    this.info(category || 'SYS', message, ...details);
+                }
+            };
             if (typeof document !== 'undefined') {
                 if (document.readyState === 'loading') {
                     document.addEventListener('DOMContentLoaded', () => this.mountUI());
@@ -65,6 +78,84 @@ class DebugLogger {
             origDebug(...args);
             this.pushLog('debug', 'DEBUG', args);
         };
+    }
+
+    initUncaughtErrorHandlers() {
+        if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+
+        window.addEventListener('error', (event) => {
+            const errorMsg = event.error ? (event.error.stack || event.error.message || String(event.error)) : (event.message || 'Script error');
+            const source = event.filename ? `${event.filename}:${event.lineno}:${event.colno}` : 'unknown';
+            this.pushLog('error', 'UNCAUGHT', [`Runtime Error: ${errorMsg} (${source})`]);
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            const reason = event.reason ? (event.reason.stack || event.reason.message || String(event.reason)) : 'Unhandled promise rejection';
+            this.pushLog('error', 'UNCAUGHT', [`Unhandled Rejection: ${reason}`]);
+        });
+    }
+
+    initFetchInterception() {
+        if (typeof window === 'undefined' || !window.fetch) return;
+        const origFetch = window.fetch;
+        if (origFetch.__hb_wrapped) return;
+
+        const logger = this;
+        const wrappedFetch = function (input, init) {
+            const url = typeof input === 'string' ? input : (input && input.url ? input.url : String(input));
+            const method = (init && init.method) ? init.method.toUpperCase() : 'GET';
+            const startTime = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+
+            logger.pushLog('debug', 'FETCH', [`-> ${method} ${url}`]);
+
+            return origFetch.call(this, input, init).then(response => {
+                const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+                const duration = Math.round(now - startTime);
+                const level = response.ok ? 'debug' : 'warn';
+                logger.pushLog(level, 'FETCH', [`<- ${method} ${url} [${response.status} ${response.statusText}] (${duration}ms)`]);
+                return response;
+            }).catch(err => {
+                const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+                const duration = Math.round(now - startTime);
+                logger.pushLog('error', 'FETCH', [`X- ${method} ${url} FAILED: ${err.message || err} (${duration}ms)`]);
+                throw err;
+            });
+        };
+
+        wrappedFetch.__hb_wrapped = true;
+        window.fetch = wrappedFetch;
+    }
+
+    initGlobalInputTelemetry() {
+        if (typeof window === 'undefined' || typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
+
+        // Mouse click telemetry
+        document.addEventListener('click', (e) => {
+            if (this.visible && this.overlayEl && this.overlayEl.contains(e.target)) {
+                return; // Ignore clicks inside dev console itself
+            }
+            const target = e.target;
+            if (!target) return;
+
+            const tag = target.tagName ? target.tagName.toLowerCase() : 'el';
+            const id = target.id ? `#${target.id}` : '';
+            const className = target.className && typeof target.className === 'string' ? `.${target.className.trim().split(/\s+/).join('.')}` : '';
+            let text = target.textContent ? target.textContent.trim().replace(/\s+/g, ' ').slice(0, 30) : '';
+            if (text) text = ` "${text}"`;
+
+            this.pushLog('debug', 'INPUT', [`Click -> <${tag}${id}${className}>${text}`]);
+        }, { capture: true, passive: true });
+
+        // Action Hotkeys telemetry (Q, F, R, Space, Esc, Tab)
+        const trackKeys = new Set(['KeyQ', 'KeyF', 'KeyR', 'Space', 'Escape', 'Tab', 'KeyE', 'KeyM']);
+        window.addEventListener('keydown', (e) => {
+            if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable)) {
+                return;
+            }
+            if (trackKeys.has(e.code)) {
+                this.pushLog('debug', 'INPUT', [`Hotkey -> [${e.code}] (${e.key})`]);
+            }
+        }, { capture: true, passive: true });
     }
 
     formatArgs(args) {
@@ -182,7 +273,18 @@ class DebugLogger {
                     <button id="hb-filter-info" class="hb-cmd-btn">INFO</button>
                     <button id="hb-filter-warn" class="hb-cmd-btn">WARN</button>
                     <button id="hb-filter-error" class="hb-cmd-btn">ERROR</button>
-                    <input id="hb-console-search" type="text" placeholder="Filter logs..." style="background: #121820; border: 1px solid #334455; color: #fff; padding: 2px 6px; border-radius: 3px; width: 140px; font-size: 11px;" />
+                    <select id="hb-console-cat-filter" class="hb-cmd-btn" style="background: #121820; color: #00f0ff; border-color: #334455; padding: 2px 4px;">
+                        <option value="ALL">CAT: ALL</option>
+                        <option value="INPUT">INPUT</option>
+                        <option value="LOAD">LOAD</option>
+                        <option value="AUDIO">AUDIO</option>
+                        <option value="GAME">GAME</option>
+                        <option value="STEAM">STEAM</option>
+                        <option value="FETCH">FETCH</option>
+                        <option value="SYS">SYS</option>
+                        <option value="UNCAUGHT">UNCAUGHT</option>
+                    </select>
+                    <input id="hb-console-search" type="text" placeholder="Filter logs..." style="background: #121820; border: 1px solid #334455; color: #fff; padding: 2px 6px; border-radius: 3px; width: 130px; font-size: 11px;" />
                     <button id="hb-console-autoscroll" class="hb-cmd-btn active">AUTO-SCROLL: ON</button>
                     <button id="hb-console-clear" class="hb-cmd-btn">CLEAR</button>
                     <button id="hb-console-close" style="background: none; border: none; color: #ff5566; font-weight: bold; cursor: pointer; font-size: 14px; padding: 0 4px;">✕</button>
@@ -265,6 +367,14 @@ class DebugLogger {
                 this.renderAllLogs();
             };
         });
+
+        const catFilterSelect = overlay.querySelector('#hb-console-cat-filter');
+        if (catFilterSelect) {
+            catFilterSelect.onchange = () => {
+                this.categoryFilter = catFilterSelect.value;
+                this.renderAllLogs();
+            };
+        }
 
         this.searchEl.oninput = () => {
             this.searchTerm = this.searchEl.value.toLowerCase();
@@ -358,6 +468,9 @@ class DebugLogger {
 
     matchesFilter(entry) {
         if (this.currentFilter !== 'ALL' && entry.level.toUpperCase() !== this.currentFilter) {
+            return false;
+        }
+        if (this.categoryFilter && this.categoryFilter !== 'ALL' && entry.category.toUpperCase() !== this.categoryFilter) {
             return false;
         }
         if (this.searchTerm) {

@@ -19,6 +19,9 @@ function findActiveRuns(length, isActive) {
  */
 export function repackGeneratedSpriteAtlas(sourceCanvas, layout) {
     if (!layout?.repackFromTransparency) return sourceCanvas;
+    if (typeof window !== 'undefined' && window.hbLog) {
+        window.hbLog('LOAD', 'info', `Repacking sprite atlas: ${layout?.name || 'unnamed'}`);
+    }
 
     const sourceContext = sourceCanvas.getContext('2d', { willReadFrequently: true });
     const { width, height } = sourceCanvas;

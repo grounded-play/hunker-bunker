@@ -13,17 +13,26 @@ import { assetUrl } from '../../assetUrl.js';
 export const IMAGE_HOLD_MS = 2600;
 export const FADE_MS = 350;
 
-function playStep(container, step) {
+function playStep(container, step, mediaStack) {
     return new Promise((resolve) => {
-        container.replaceChildren();
         let settled = false;
         let fallbackTimer = 0;
+        let activeMedia = null;
+        const replaceMedia = (media) => {
+            const previousVideo = mediaStack.querySelector('video');
+            if (previousVideo && previousVideo !== media) previousVideo.pause();
+            activeMedia = media;
+            mediaStack.replaceChildren(media);
+        };
         const finish = () => {
             if (settled) return;
             settled = true;
             clearTimeout(fallbackTimer);
+            if (activeMedia?.tagName === 'VIDEO') activeMedia.pause();
             window.removeEventListener('keydown', onKey);
             container.onclick = null;
+            status.remove();
+            skip.remove();
             resolve();
         };
         const onKey = (event) => {
@@ -54,17 +63,13 @@ function playStep(container, step) {
                 finish();
                 return;
             }
-            container.replaceChildren();
             const img = document.createElement('img');
             img.className = 'rgb-cinematic__image';
             img.src = assetUrl(step.image);
             img.alt = '';
-            const imageSkip = skip.cloneNode(true);
-            imageSkip.addEventListener('click', (event) => {
-                event.stopPropagation();
-                finish();
-            });
-            container.append(img, imageSkip);
+            img.addEventListener('load', () => {
+                replaceMedia(img);
+            }, { once: true });
             fallbackTimer = setTimeout(finish, IMAGE_HOLD_MS);
         };
 
@@ -83,8 +88,12 @@ function playStep(container, step) {
         video.volume = Math.min(1, Math.max(0, AudioManager.masterVolume));
         video.addEventListener('ended', finish);
         video.addEventListener('error', showImage);
-        video.addEventListener('playing', () => clearTimeout(fallbackTimer), { once: true });
-        container.prepend(video);
+        video.addEventListener('playing', () => {
+            clearTimeout(fallbackTimer);
+            // Keep the previous clip's final frame visible until the next clip
+            // has decoded and is genuinely playing.
+            replaceMedia(video);
+        }, { once: true });
         fallbackTimer = setTimeout(showImage, 3000);
         video.play().catch(showImage);
     });
@@ -94,14 +103,27 @@ function wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function playCinematicSequence(container, steps) {
+export async function playCinematicSequence(container, steps, {
+    background = null,
+    transitionDelayMs = 0
+} = {}) {
     if (!container || !steps || steps.length === 0) return;
+    container.replaceChildren();
+    if (background) {
+        const backdrop = document.createElement('img');
+        backdrop.className = 'rgb-cinematic__backdrop';
+        backdrop.src = assetUrl(background);
+        backdrop.alt = '';
+        container.append(backdrop);
+    }
+    const mediaStack = document.createElement('div');
+    mediaStack.className = 'rgb-cinematic__media-stack';
+    container.append(mediaStack);
     container.classList.remove('hidden');
+    if (transitionDelayMs > 0) await wait(transitionDelayMs);
+    container.classList.add('rgb-cinematic--visible');
     for (const step of steps) {
-        container.classList.remove('rgb-cinematic--visible');
-        await wait(FADE_MS);
-        container.classList.add('rgb-cinematic--visible');
-        await playStep(container, step);
+        await playStep(container, step, mediaStack);
     }
     container.classList.remove('rgb-cinematic--visible');
     await wait(FADE_MS);

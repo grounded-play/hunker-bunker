@@ -11720,6 +11720,19 @@ button.archive-log-entry:active {
   font-size: max(var(--hb-text-floor, 16px), calc(var(--stage-px, 1px) * 15));
 }
 
+.rgb-hotspot__icon {
+  width: calc(var(--stage-px, 1px) * 42);
+  height: calc(var(--stage-px, 1px) * 42);
+  flex: 0 0 auto;
+  margin-right: calc(var(--stage-px, 1px) * 9);
+  object-fit: contain;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.8));
+}
+
+.rgb-hotspot__label {
+  min-width: 0;
+}
+
 .rgb-action-deck {
   position: absolute;
   inset: 0;
@@ -11751,11 +11764,9 @@ button.archive-log-entry:active {
 }
 
 .rgb-hotspot--done {
-  opacity: 0.4;
-  border-style: dashed;
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(10, 10, 14, 0.6);
-  box-shadow: none;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .rgb-hotspot--done::before {
@@ -12247,7 +12258,7 @@ button.archive-log-entry:active {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #000;
+  background: transparent;
   opacity: 0;
   transition: opacity 0.35s ease;
   cursor: pointer;
@@ -12262,11 +12273,49 @@ button.archive-log-entry:active {
 }
 
 .rgb-cinematic__video,
-.rgb-cinematic__image {
+.rgb-cinematic__image,
+.rgb-cinematic__backdrop,
+.rgb-cinematic__media-stack {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  background: #000;
+}
+
+.rgb-cinematic__backdrop {
+  z-index: 0;
+  object-fit: cover;
+  filter: contrast(1.08) brightness(0.82);
+}
+
+.rgb-cinematic__media-stack {
+  z-index: 1;
+}
+
+.rgb-cinematic__video,
+.rgb-cinematic__image {
+  object-fit: cover;
+  background: transparent;
+}
+
+.rgb-scene--cinematic .rgb-header {
+  opacity: 0;
+  transform: translateY(-110%);
+}
+
+.rgb-scene--cinematic .rgb-action-deck,
+.rgb-scene--cinematic .rgb-dialogue,
+.rgb-scene--cinematic .rgb-footer {
+  opacity: 0;
+  transform: translateY(80px);
+  pointer-events: none;
+}
+
+.rgb-header,
+.rgb-action-deck,
+.rgb-dialogue,
+.rgb-footer {
+  transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .rgb-cinematic__status {

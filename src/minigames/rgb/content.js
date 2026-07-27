@@ -124,16 +124,12 @@ export const INTRO_CINEMATIC = Object.freeze({
 // book.
 export function resolveCinematicSteps(hotspotId, priorState) {
     switch (hotspotId) {
-        // C1-A/C1-B play on the fork itself; R1 (the badge reader) plays when
-        // Elias actually crosses into the building. Previously the fork fired
-        // both its branch clip and R1 while `badge_in` had no hotspot at all,
-        // so the badge beat was unreachable and R1 landed a scene early.
+        // The C1 fork leaves the sedan, then R1 carries the same uninterrupted
+        // action across the lot and through the badge reader.
         case 'reply_to_lucia':
-            return ['C1-A'];
+            return ['C1-A', 'R1'];
         case 'enter_now':
-            return ['C1-B'];
-        case 'badge_in':
-            return ['R1'];
+            return ['C1-B', 'R1'];
         case 'double_tap_honest':
             return ['C2-A', 'R2'];
         case 'double_tap_falsify':
@@ -213,6 +209,7 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'listen_voicemail',
                 label: "Lucia's Message",
+                icon: `${ITEM_ART}/item_phone.png`,
                 x: 660, y: 300, w: 200, h: 90,
                 once: true,
                 lines: [
@@ -235,22 +232,9 @@ export const CHAPTERS = Object.freeze({
                 ],
                 effects: { items: ['item_lucia_drawing', 'item_calibration_notebook', 'item_temp_badge'] }
             },
-            // Wave C: optional, and the only place noticedMarisolPressure is
-            // ever set — it decides whether asking her to stay in Chapter 3
-            // costs her the daycare fee.
-            {
-                id: 'speak_with_marisol',
-                label: 'Marisol',
-                x: 940, y: 430, w: 200, h: 90,
-                once: true,
-                requiresAllOf: ['inspect_drawing'],
-                lines: [
-                    '"You look like hell, Eli." "That\'s my good side."',
-                    'She checks her phone twice while she says it. Pickup is at seven.'
-                ],
-                effects: { choice: 'speak_with_marisol' }
-            },
-            // Wave D: the fork. Neither option leaves the lot — badge_in does.
+            // The fork exits the sedan. Its branch clip flows directly into
+            // R1's walk across the lot and badge scan, so the player is never
+            // returned to the car to click a redundant "Badge In" button.
             {
                 id: 'reply_to_lucia',
                 label: 'Answer Lucia',
@@ -260,7 +244,8 @@ export const CHAPTERS = Object.freeze({
                 requiresAllOf: ['inspect_drawing'],
                 excludesAllOf: ['enter_now'],
                 lines: ['He answers. For seven seconds, the shift can wait.'],
-                effects: { choice: 'reply_to_lucia', timeCost: 1 }
+                effects: { choice: 'reply_to_lucia', timeCost: 1 },
+                advances: true
             },
             {
                 id: 'enter_now',
@@ -270,17 +255,7 @@ export const CHAPTERS = Object.freeze({
                 choice: true,
                 requiresAllOf: ['inspect_drawing'],
                 excludesAllOf: ['reply_to_lucia'],
-                lines: ['He locks the phone and steps into the heat.']
-            },
-            // Wave E: scene-flow.md's required beat 5, and the trigger the
-            // cinematic book already scripted for R1.
-            {
-                id: 'badge_in',
-                label: 'Badge In',
-                x: 500, y: 690, w: 300, h: 70,
-                once: true,
-                requires: { minVisitedOf: { ids: ['reply_to_lucia', 'enter_now'], count: 1 } },
-                lines: ['TEMP CONTRACTOR. The reader flashes red: ACCESS GRANTED.'],
+                lines: ['He locks the phone and steps into the heat.'],
                 advances: true
             }
         ]
@@ -314,6 +289,7 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'read_diagram',
                 label: 'Notebook Diagram',
+                icon: `${ITEM_ART}/item_calibration_notebook.png`,
                 x: 260, y: 460, w: 100, h: 90,
                 once: true,
                 requiresAllOf: ['observe_4a'],
@@ -420,7 +396,7 @@ export const CHAPTERS = Object.freeze({
                 label: 'Call for Marisol',
                 x: 740, y: 460, w: 150, h: 90,
                 once: true,
-                requires: { painSet: true },
+                requiresAllOf: ['complete_swab'],
                 lines: ['Her daycare fee has already started ticking.']
             },
             // Wave C: the consequences of Wave B, each gated on the beat that
@@ -453,7 +429,6 @@ export const CHAPTERS = Object.freeze({
                 choice: true,
                 requiresAllOf: ['call_marisol'],
                 excludesAllOf: ['request_marisol_witness'],
-                requires: { flags: { noticedMarisolPressure: true } },
                 lines: ['He remembers the pickup deadline and waves her off.'],
                 effects: { choice: 'release_marisol_from_request' }
             },
@@ -463,7 +438,7 @@ export const CHAPTERS = Object.freeze({
                 x: 140, y: 570, w: 150, h: 80,
                 once: true,
                 choice: true,
-                requires: { painSet: true },
+                requiresAllOf: ['demand_footage'],
                 excludesAllOf: ['surrender_notebook'],
                 lines: ['He keeps it in his jacket, not on the desk.'],
                 effects: { choice: 'keep_notebook' }
@@ -474,7 +449,7 @@ export const CHAPTERS = Object.freeze({
                 x: 310, y: 570, w: 150, h: 80,
                 once: true,
                 choice: true,
-                requires: { painSet: true },
+                requiresAllOf: ['demand_footage'],
                 excludesAllOf: ['keep_notebook'],
                 lines: ['He hands it over. HR keeps files, they say.'],
                 effects: { choice: 'surrender_notebook' }
@@ -524,6 +499,7 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'scan_bottle',
                 label: 'Scan the Bottle',
+                icon: `${ITEM_ART}/item_albuterol_bottle.png`,
                 x: 300, y: 480, w: 160, h: 100,
                 once: true,
                 lines: ['COVERAGE TERMINATED 6:42 PM.', 'Final pay: $14.00, after deductions.'],
@@ -545,7 +521,7 @@ export const CHAPTERS = Object.freeze({
                 label: 'Request Billing Agent',
                 x: 660, y: 480, w: 160, h: 100,
                 once: true,
-                requiresAllOf: ['scan_bottle'],
+                requiresAllOf: ['view_paycheck'],
                 requires: { maxTimeBand: 2 },
                 lines: ['Wait time: forty-seven minutes.'],
                 effects: { choice: 'request_billing_agent', kioskAttempt: true }
@@ -555,7 +531,7 @@ export const CHAPTERS = Object.freeze({
                 label: 'Call HR',
                 x: 840, y: 480, w: 160, h: 100,
                 once: true,
-                requiresAllOf: ['scan_bottle'],
+                requiresAllOf: ['view_paycheck'],
                 lines: ['"Separation pending review." No further comment.'],
                 effects: { timeCost: 1, kioskAttempt: true }
             },
@@ -564,7 +540,7 @@ export const CHAPTERS = Object.freeze({
                 label: 'Call Lucia',
                 x: 1020, y: 480, w: 160, h: 100,
                 once: true,
-                requiresAllOf: ['scan_bottle'],
+                requiresAllOf: ['document_bag'],
                 lines: ['"I\'m still at work, baby. I know."'],
                 effects: { choice: 'call_lucia', kioskAttempt: true }
             },

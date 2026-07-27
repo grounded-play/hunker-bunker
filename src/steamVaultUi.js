@@ -108,6 +108,9 @@ let marketEligibilityReason = null;
 let hudCardSeq = 0;
 
 export function openSteamVaultModal() {
+    if (typeof window !== 'undefined' && window.hbLog) {
+        window.hbLog('STEAM', 'info', 'Steam Vault modal opened');
+    }
     initSteamVaultUI();
     const modal = document.getElementById('steam-vault-modal');
     if (!modal) return;

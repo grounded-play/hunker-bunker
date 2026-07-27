@@ -41,7 +41,6 @@ export const CHAPTER_AMBIENCE = Object.freeze({
 // two from talking over each other.
 export const HOTSPOT_AUDIO = Object.freeze({
     listen_voicemail: ['rgb_voice_lucia'],
-    speak_with_marisol: ['rgb_voice_marisol_ch1'],
     inspect_bottle: ['rgb_voice_elias_ch1'],
     observe_4a: ['rgb_voice_elias_ch2', 'rgb_sfx_4a_servo'],
     select_joint: ['rgb_sfx_4a_servo'],
@@ -70,7 +69,6 @@ export const HOTSPOT_AUDIO = Object.freeze({
 const HOTSPOT_SPEAKERS = Object.freeze({
     listen_voicemail: 'LUCIA',
     call_lucia: 'LUCIA',
-    speak_with_marisol: 'MARISOL',
     request_marisol_witness: 'MARISOL',
     release_marisol_from_request: 'MARISOL',
     demand_footage: 'HR',
@@ -80,7 +78,6 @@ const HOTSPOT_SPEAKERS = Object.freeze({
     request_billing_agent: 'KIOSK',
     document_bag: 'KIOSK',
     check_balance: 'SYSTEM',
-    badge_in: 'SYSTEM',
     read_terminal: 'SYSTEM',
     attempt_delete: 'SYSTEM',
     pull_alarm: 'SYSTEM'

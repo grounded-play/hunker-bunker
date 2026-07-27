@@ -34,7 +34,6 @@ Parking Lot
 **Optional choices**
 
 - Reply to Lucia now, costing a time band but preserving the full voice message.
-- Speak with Marisol and notice her daycare deadline.
 - Inspect the safety poster and security drone for later evidence context.
 
 **Carry-forward:** `heard_full_message`, `noticed_marisol_pressure`,
@@ -140,4 +139,3 @@ Each puzzle has three authored hints:
 3. The required hotspot and action are shown directly.
 
 Hints have no effect on endings or completion rewards.
-

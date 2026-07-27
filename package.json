@@ -53,7 +53,9 @@
     ],
     "asar": true,
     "asarUnpack": [
-      "**/node_modules/steamworks.js/**/*"
+      "**/node_modules/steamworks.js/**/*",
+      "dist/**/*.mp4",
+      "dist/**/*.webm"
     ],
     "linux": {
       "icon": "electron/icon.png",

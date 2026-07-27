@@ -90,12 +90,18 @@ export class AudioManager {
                 await audioCtx.resume();
             }
             this.isUnlocked = true;
+            if (typeof window !== 'undefined' && window.hbLog) {
+                window.hbLog('AUDIO', 'info', 'AudioContext unlocked', { state: audioCtx.state });
+            }
         }
     }
 
     static toggleMute(muted) {
         this.globalMuted = muted;
         this.masterGain.gain.setTargetAtTime(muted ? 0 : this.masterVolume, audioCtx.currentTime, 0.1);
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Global mute set to: ${muted}`);
+        }
     }
 
     static setChannelVolume(channel, volume = 1.0) {
@@ -138,6 +144,9 @@ export class AudioManager {
     static async loadAssets(manifest, onProgress) {
         const total = manifest.audio.length + manifest.images.length;
         let loaded = 0;
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Loading assets manifest (${manifest.audio.length} audio, ${manifest.images.length} images)`);
+        }
 
         const updateProgress = (itemName) => {
             loaded++;
@@ -186,6 +195,9 @@ export class AudioManager {
         });
 
         await Promise.all([...imagePromises, ...audioPromises]);
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'info', `Asset manifest loading finished (${loaded}/${total} loaded)`);
+        }
     }
 
     static async decodeAudioAsset(url) {
@@ -212,6 +224,10 @@ export class AudioManager {
 
         // Pick a random variation
         const selectedKey = matchingKeys[Math.floor(Math.random() * matchingKeys.length)];
+
+        if (typeof window !== 'undefined' && window.hbLog) {
+            window.hbLog('AUDIO', 'debug', `Play audio clip [${key}] -> ${selectedKey}`);
+        }
 
         const source = audioCtx.createBufferSource();
         source.buffer = this.buffers[selectedKey];

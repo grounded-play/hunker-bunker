@@ -74,4 +74,27 @@ describe('debugConsole', () => {
         expect(logs.some(l => l.message.includes('STEAMWORKS DIAGNOSTIC REPORT'))).toBe(true);
         expect(logs.some(l => l.message.includes('TestPlayer'))).toBe(true);
     });
+
+    it('exposes window.hbLog helper and filters by category', () => {
+        globalThis.window.hbLog('AUDIO', 'info', 'Audio track started');
+        globalThis.window.hbLog('GAME', 'debug', 'Player took 10 damage');
+
+        const logs = debugLog.logs;
+        expect(logs.some(l => l.category === 'AUDIO' && l.message.includes('Audio track started'))).toBe(true);
+        expect(logs.some(l => l.category === 'GAME' && l.message.includes('Player took 10 damage'))).toBe(true);
+
+        const audioLog = logs.find(l => l.category === 'AUDIO');
+        debugLog.categoryFilter = 'AUDIO';
+        expect(debugLog.matchesFilter(audioLog)).toBe(true);
+
+        const gameLog = logs.find(l => l.category === 'GAME');
+        expect(debugLog.matchesFilter(gameLog)).toBe(false);
+
+        debugLog.categoryFilter = 'ALL';
+        expect(debugLog.matchesFilter(gameLog)).toBe(true);
+    });
+
+    it('has expanded maxLogs capacity of 2500', () => {
+        expect(debugLog.maxLogs).toBe(2500);
+    });
 });

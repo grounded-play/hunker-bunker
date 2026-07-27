@@ -154,7 +154,6 @@ export function mountRgb({ root, save, storage, onExit }) {
 
     function render() {
         root.replaceChildren();
-        if (mode === 'cinematic') return;
         if (mode === 'warning') return renderWarning();
         if (mode === 'chapterCard') return renderChapterCard();
         if (mode === 'ending') return renderEndingCard();
@@ -220,7 +219,19 @@ export function mountRgb({ root, save, storage, onExit }) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'rgb-hotspot';
-            btn.textContent = hotspot.label;
+            const itemId = hotspot.effects?.item ?? hotspot.effects?.items?.[0];
+            const iconSrc = hotspot.icon ?? ITEMS[itemId]?.icon;
+            if (iconSrc) {
+                const icon = document.createElement('img');
+                icon.className = 'rgb-hotspot__icon';
+                icon.src = assetUrl(iconSrc);
+                icon.alt = '';
+                btn.append(icon);
+            }
+            const label = document.createElement('span');
+            label.className = 'rgb-hotspot__label';
+            label.textContent = hotspot.label;
+            btn.append(label);
             btn.style.setProperty('--rgb-x', hotspot.x ?? 0);
             btn.style.setProperty('--rgb-y', hotspot.y ?? 0);
             btn.style.setProperty('--rgb-w', hotspot.w ?? 180);
@@ -267,8 +278,10 @@ export function mountRgb({ root, save, storage, onExit }) {
             && currentSave.run.inventory.length === 0;
         if (isFreshStart) {
             mode = 'cinematic';
-            render();
-            playCinematicSequence(cinematicLayer, [INTRO_CINEMATIC]).then(() => {
+            root.replaceChildren();
+            playCinematicSequence(cinematicLayer, [INTRO_CINEMATIC], {
+                background: INTRO_CINEMATIC.image
+            }).then(() => {
                 mode = 'chapterCard';
                 render();
             });
@@ -635,8 +648,15 @@ export function mountRgb({ root, save, storage, onExit }) {
         const cinematicSteps = resolveCinematicSteps(hotspot.id, priorState);
         if (cinematicSteps.length > 0) {
             mode = 'cinematic';
-            render();
-            playCinematicSequence(cinematicLayer, resolveCinematicAssets(cinematicSteps)).then(proceed);
+            const scene = root.querySelector('.rgb-scene');
+            scene?.classList.add('rgb-scene--cinematic');
+            playCinematicSequence(cinematicLayer, resolveCinematicAssets(cinematicSteps), {
+                background: currentChapter().bg,
+                transitionDelayMs: 320
+            }).then(() => {
+                scene?.classList.remove('rgb-scene--cinematic');
+                proceed();
+            });
         } else {
             proceed();
         }
