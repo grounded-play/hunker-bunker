@@ -81,25 +81,25 @@ if (!skipBuild) {
     if (!skipTests) run('npm', ['test'], releaseEnv, 'test suite');
     run('npm', ['run', 'package-soundtrack'], releaseEnv, 'Soundtrack packaging');
     run('npm', ['run', 'electron:build'], releaseEnv, 'Electron build');
-}
 
-const builtInfoPath = path.join(repoRoot, 'dist', 'build-info.json');
-requirePath('dist/build-info.json', 'Build metadata is missing');
-const builtInfo = JSON.parse(fs.readFileSync(builtInfoPath, 'utf8'));
-for (const [key, expected] of Object.entries({
-    version: packageJson.version,
-    commit,
-    branch,
-    dirty,
-    steamBuild: buildId
-})) {
-    if (builtInfo[key] !== expected) {
-        throw new Error(
-            `Build metadata mismatch for ${key}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(builtInfo[key])}`
-        );
+    const builtInfoPath = path.join(repoRoot, 'dist', 'build-info.json');
+    requirePath('dist/build-info.json', 'Build metadata is missing');
+    const builtInfo = JSON.parse(fs.readFileSync(builtInfoPath, 'utf8'));
+    for (const [key, expected] of Object.entries({
+        version: packageJson.version,
+        commit,
+        branch,
+        dirty,
+        steamBuild: buildId
+    })) {
+        if (builtInfo[key] !== expected) {
+            throw new Error(
+                `Build metadata mismatch for ${key}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(builtInfo[key])}`
+            );
+        }
     }
+    console.log(`[steam-release] verified dist/build-info.json (${buildId})`);
 }
-console.log(`[steam-release] verified dist/build-info.json (${buildId})`);
 
 run('npm', ['run', 'steam:audit-depot'], releaseEnv, 'Steam depot audit');
 
