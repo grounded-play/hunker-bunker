@@ -22,13 +22,13 @@
 
 ## 📸 Tactical Gallery
 
-| Field Combat & Oxygen Depletion | Bunker Tech & Upgrade Tree | Survivor Camps & Factions |
+| WebGL Field Combat | Black Box Recovery | Hive Site Encounter |
 | :---: | :---: | :---: |
-| <img src="steam/store/steam_screenshot_01_en.png" alt="Field combat run" width="380"> | <img src="steam/store/steam_screenshot_03_en.png" alt="Bunker skill tree terminal" width="380"> | <img src="steam/store/steam_screenshot_02_en.png" alt="Survivor camp encounter" width="380"> |
+| <img src="public/hunker_bunker_hero.png" alt="WebGL Field Run" width="380"> | <img src="public/cutscenes/poster-art/event-black-box-recovered.png" alt="Black Box Recovery" width="380"> | <img src="public/cutscenes/poster-art/event-queen-encounter.png" alt="Hive Encounter" width="380"> |
 
-| Black Box Archive Recovery | Hive Sites & Specimen-0047 |
-| :---: | :---: |
-| <img src="steam/store/steam_screenshot_04_en.png" alt="Lore archive terminal" width="380"> | <img src="steam/store/steam_screenshot_05_en.png" alt="Queen hive fight" width="380"> |
+| Foundry Discovery | Extraction Flight | Deep Brood Exodus |
+| :---: | :---: | :---: |
+| <img src="public/cutscenes/poster-art/event-foundry-discovered.png" alt="Foundry Discovery" width="380"> | <img src="public/ending_scorchedsky_cockpit.png" alt="Scorched Sky Cockpit" width="380"> | <img src="public/ending_fullbrood_ship.png" alt="Full Brood Ship" width="380"> |
 
 ---
 

@@ -40,10 +40,9 @@ function applyEffects(runState, effects) {
     return next;
 }
 
-// Some beats are gated on progress earned in an earlier chapter: Chapter 3's
-// "Release Her" needs the pickup deadline noticed back in the parking lot, and
-// Chapter 5's "Copy and Transmit" needs evidence collected across Chapters 3
-// and 4. Reachability therefore has to be judged from a player who did
+// Some beats are gated on progress earned in an earlier chapter: Chapter 5's
+// "Copy and Transmit" needs evidence collected across Chapters 3 and 4.
+// Reachability therefore has to be judged from a player who did
 // everything available beforehand, not from a blank slate.
 //
 // Calibration is the one carried value with two incompatible readings — an
@@ -90,7 +89,7 @@ function seedVariantsFor(chapterId) {
 // it exits — the same order a player following the fiction would take.
 // Returns the ids of the advancing hotspots that became reachable.
 function playChapter(chapter, startState = createRunState(), { preferId = null } = {}) {
-    let runState = startState;
+    let runState = applyEffects(startState, chapter.initialEffects);
     const visited = new Set();
     const reachedExits = [];
 
@@ -188,7 +187,7 @@ describe('pacing gates hold', () => {
         const chapter = CHAPTERS.incident_review;
         const exit = chapter.hotspots.find((h) => h.id === 'proceed_to_kiosk');
         const injured = setPain(createRunState(), 'injured');
-        expect(isHotspotAvailable(exit, injured, new Set(['brace_for_impact']))).toBe(false);
+        expect(isHotspotAvailable(exit, injured, new Set(['demand_footage']))).toBe(false);
     });
 
     it('the parking lot exits are unavailable before the authored setup beats', () => {
