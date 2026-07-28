@@ -71,6 +71,8 @@ export async function bootToOperatorMenu(page) {
 // wave-5 doc logged). No fixed wait fixes that. Actively unblock
 // whichever control is on screen each tick until input is actually live.
 export async function startRunAndSkipIntro(page) {
+    await page.evaluate(() => { window.skipAllIntro = true; }).catch(() => {});
+
     const rosterConfirm = page.locator('#roster-confirm-btn');
     const startGame = page.locator('#start-game');
 
@@ -84,14 +86,15 @@ export async function startRunAndSkipIntro(page) {
         }
     }
 
-    await page.evaluate(() => { window.skipAllIntro = true; }).catch(() => {});
-
     const skipBtn = page.locator('#global-skip-intro-btn');
     const dialogueSkipChoice = page.locator('#mothership-choice-skip');
     const deadline = Date.now() + 45_000;
     let ready = false;
     while (Date.now() < deadline) {
-        ready = await page.evaluate(() => window.game?.inputEnabled === true).catch(() => false);
+        ready = await page.evaluate(() => {
+            window.skipAllIntro = true;
+            return window.game?.inputEnabled === true;
+        }).catch(() => false);
         if (ready) break;
         if (await skipBtn.isVisible().catch(() => false)) {
             await skipBtn.click({ timeout: 1_000 }).catch(() => {});
