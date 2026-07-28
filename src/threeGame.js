@@ -214,6 +214,8 @@ const PROJECTILE_SPEED = 13.4;
 const PROJECTILE_TTL = 1.15;
 const PROJECTILE_RADIUS = 0.16;
 const PROJECTILE_DAMAGE = 1;
+const TURRET_RANGE = 8.0;
+const TURRET_DAMAGE = 1;
 const FALL_DAMAGE_BASE = 2;
 const POCKET_GRID_SIZE = 13; // 2x2 overlapping 7x7 WFC tiles: 7 + 7 - 1.
 const POCKET_WORLD_Y = -6; // fixed depth below the surface (y=0)
@@ -776,6 +778,8 @@ export class ThreeGame {
         this._sprintMoveSpeedMult = 1.0;
         this._sprintO2DrainMult = 1.0;
         this._wasSprinting = false;
+        this.activeTurret = null;
+        this.turretCooldownTimer = 0;
         this.cameraLift = 10;
         this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
         this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
@@ -4568,6 +4572,7 @@ export class ThreeGame {
 
         this.updateSprintState(delta);
         this.updateTankRegen(delta);
+        this.updateEngineerTurret(delta);
         this.updateRadarScans(delta);
         this.updatePlayer(delta);
         this.updateWeaponState(delta);
@@ -11516,6 +11521,7 @@ export class ThreeGame {
         Object.assign(this, this.resolveClassPassiveStats(this.playerType));
         this.turretCooldownTimer = this.turretInterval;
         this.turretActiveTimer = 0;
+        this.despawnEngineerTurret();
         this.tankRegenTimer = 0;
     }
 
@@ -11833,6 +11839,101 @@ export class ThreeGame {
             },
             dispose() { mesh.material.dispose(); mesh.geometry.dispose(); }
         });
+    }
+
+    findNearestEnemyWithinRange(x, z, range) {
+        let nearest = null;
+        let nearestDist = range;
+        for (const sprite of this.scatterSprites) {
+            if (!sprite?.parent) continue;
+            if (!this.isEnemyType(sprite.userData?.type)) continue;
+            if (sprite.userData?.burstTriggered) continue;
+            const dist = Math.hypot(sprite.position.x - x, sprite.position.z - z);
+            if (dist <= nearestDist) {
+                nearest = sprite;
+                nearestDist = dist;
+            }
+        }
+        return nearest;
+    }
+
+    deployEngineerTurret() {
+        const color = PLAYER_COLORS[this.playerType] ?? 0xffe08f;
+        const base = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.22, 0.26, 0.18, 8),
+            new THREE.MeshBasicMaterial({ color: 0x222222 })
+        );
+        const barrel = new THREE.Mesh(
+            new THREE.ConeGeometry(0.1, 0.5, 6),
+            new THREE.MeshBasicMaterial({ color })
+        );
+        barrel.rotation.x = Math.PI / 2;
+        barrel.position.y = 0.2;
+        const group = new THREE.Group();
+        group.add(base, barrel);
+        group.position.set(this.player.position.x, 0.3, this.player.position.z);
+        this.scene.add(group);
+
+        this.activeTurret = { mesh: group, timer: this.turretDuration, fireTimer: this.turretFireInterval };
+        window.AudioManager?.play('fx_engineer_turret', { volume: 0.48, bus: 'sfx' });
+    }
+
+    despawnEngineerTurret() {
+        if (!this.activeTurret) return;
+        const mesh = this.activeTurret.mesh;
+        mesh?.parent?.remove(mesh);
+        mesh?.traverse?.((child) => {
+            child.material?.dispose?.();
+            child.geometry?.dispose?.();
+        });
+        this.activeTurret = null;
+    }
+
+    fireEngineerTurret() {
+        if (!this.activeTurret?.mesh) return;
+        const tx = this.activeTurret.mesh.position.x;
+        const tz = this.activeTurret.mesh.position.z;
+        const target = this.findNearestEnemyWithinRange(tx, tz, TURRET_RANGE);
+        if (!target) return;
+        const dx = target.position.x - tx;
+        const dz = target.position.z - tz;
+        const len = Math.hypot(dx, dz) || 1;
+        this.spawnProjectile({
+            x: tx,
+            z: tz,
+            vx: (dx / len) * PROJECTILE_SPEED,
+            vz: (dz / len) * PROJECTILE_SPEED,
+            ttl: PROJECTILE_TTL,
+            damage: TURRET_DAMAGE,
+            radius: PROJECTILE_RADIUS
+        });
+    }
+
+    updateEngineerTurret(delta) {
+        if (this.playerType !== 'ENGINEER') return;
+        if (this.activeTurret) {
+            this.activeTurret.timer -= delta;
+            this.activeTurret.fireTimer -= delta;
+            if (this.activeTurret.fireTimer <= 0) {
+                this.activeTurret.fireTimer = this.turretFireInterval;
+                this.fireEngineerTurret();
+            }
+            if (this.activeTurret.timer <= 0) {
+                this.despawnEngineerTurret();
+                this.turretCooldownTimer = this.turretInterval;
+            }
+            window.dispatchEvent(new CustomEvent('engineer-turret-tick', {
+                detail: { remaining: Math.max(0, this.activeTurret?.timer ?? 0), max: this.turretDuration, active: Boolean(this.activeTurret) }
+            }));
+            return;
+        }
+        this.turretCooldownTimer = Math.max(0, (this.turretCooldownTimer ?? this.turretInterval) - delta);
+        window.dispatchEvent(new CustomEvent('engineer-turret-tick', {
+            detail: { remaining: this.turretCooldownTimer, max: this.turretInterval, active: false }
+        }));
+        if (this.turretCooldownTimer <= 0) {
+            this.deployEngineerTurret();
+        }
     }
 
     updateSprintState(_delta) {

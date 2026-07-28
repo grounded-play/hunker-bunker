@@ -220,3 +220,121 @@ describe('updateTankRegen — TANK passive regeneration', () => {
         expect(fakeThis.playerVitals.hp).toBe(1);
     });
 });
+
+describe('findNearestEnemyWithinRange', () => {
+    function makeSprite(x, z, type = 'cybersnail') {
+        return { parent: {}, position: { x, z }, userData: { type } };
+    }
+
+    it('returns the closest enemy-type sprite within range', () => {
+        const near = makeSprite(1, 0);
+        const far = makeSprite(5, 0);
+        const fakeThis = {
+            scatterSprites: [far, near],
+            isEnemyType: ThreeGame.prototype.isEnemyType
+        };
+        const result = ThreeGame.prototype.findNearestEnemyWithinRange.call(fakeThis, 0, 0, 8);
+        expect(result).toBe(near);
+    });
+
+    it('ignores sprites outside the search range', () => {
+        const tooFar = makeSprite(20, 0);
+        const fakeThis = {
+            scatterSprites: [tooFar],
+            isEnemyType: ThreeGame.prototype.isEnemyType
+        };
+        expect(ThreeGame.prototype.findNearestEnemyWithinRange.call(fakeThis, 0, 0, 8)).toBeNull();
+    });
+
+    it('ignores non-enemy sprites', () => {
+        const loot = makeSprite(1, 0, 'weapon_pickup');
+        const fakeThis = {
+            scatterSprites: [loot],
+            isEnemyType: ThreeGame.prototype.isEnemyType
+        };
+        expect(ThreeGame.prototype.findNearestEnemyWithinRange.call(fakeThis, 0, 0, 8)).toBeNull();
+    });
+});
+
+describe('fireEngineerTurret', () => {
+    it('spawns a player-faction projectile aimed at the nearest enemy', () => {
+        const shots = [];
+        const fakeThis = {
+            activeTurret: { mesh: { position: { x: 0, z: 0 } } },
+            scatterSprites: [{ parent: {}, position: { x: 3, z: 4 }, userData: { type: 'cybersnail' } }],
+            isEnemyType: ThreeGame.prototype.isEnemyType,
+            findNearestEnemyWithinRange: ThreeGame.prototype.findNearestEnemyWithinRange,
+            spawnProjectile: (opts) => shots.push(opts)
+        };
+        ThreeGame.prototype.fireEngineerTurret.call(fakeThis);
+        expect(shots.length).toBe(1);
+        expect(shots[0].isEnemy).not.toBe(true);
+        expect(shots[0].vx).toBeCloseTo(shots[0].vz * (3 / 4), 2);
+    });
+
+    it('does not fire when there is no enemy in range', () => {
+        const shots = [];
+        const fakeThis = {
+            activeTurret: { mesh: { position: { x: 0, z: 0 } } },
+            scatterSprites: [],
+            isEnemyType: ThreeGame.prototype.isEnemyType,
+            findNearestEnemyWithinRange: ThreeGame.prototype.findNearestEnemyWithinRange,
+            spawnProjectile: (opts) => shots.push(opts)
+        };
+        ThreeGame.prototype.fireEngineerTurret.call(fakeThis);
+        expect(shots.length).toBe(0);
+    });
+});
+
+describe('updateEngineerTurret — deploy/despawn cycle', () => {
+    function makeFakeThis(overrides = {}) {
+        return {
+            playerType: 'ENGINEER',
+            activeTurret: null,
+            turretCooldownTimer: 20,
+            turretInterval: 20,
+            turretFireInterval: 1.2,
+            turretDuration: 6,
+            player: { position: { x: 0, z: 0 } },
+            scene: { add: () => {} },
+            scatterSprites: [],
+            isEnemyType: ThreeGame.prototype.isEnemyType,
+            findNearestEnemyWithinRange: ThreeGame.prototype.findNearestEnemyWithinRange,
+            spawnProjectile: () => {},
+            despawnEngineerTurret: ThreeGame.prototype.despawnEngineerTurret,
+            deployEngineerTurret: ThreeGame.prototype.deployEngineerTurret,
+            fireEngineerTurret: ThreeGame.prototype.fireEngineerTurret,
+            ...overrides
+        };
+    }
+
+    let originalWindow;
+    beforeEach(() => {
+        originalWindow = globalThis.window;
+        globalThis.window = { dispatchEvent: () => {}, AudioManager: { play: () => {} } };
+    });
+    afterEach(() => {
+        globalThis.window = originalWindow;
+    });
+
+    it('deploys a turret once the redeploy timer reaches 0', () => {
+        const fakeThis = makeFakeThis({ turretCooldownTimer: 0.01 });
+        ThreeGame.prototype.updateEngineerTurret.call(fakeThis, 0.02);
+        expect(fakeThis.activeTurret).not.toBeNull();
+    });
+
+    it('does nothing for non-ENGINEER classes', () => {
+        const fakeThis = makeFakeThis({ playerType: 'TANK', turretCooldownTimer: 0 });
+        ThreeGame.prototype.updateEngineerTurret.call(fakeThis, 1);
+        expect(fakeThis.activeTurret).toBeNull();
+    });
+
+    it('despawns the turret and resets the cooldown once its duration expires', () => {
+        const fakeThis = makeFakeThis({
+            activeTurret: { mesh: { position: { x: 0, z: 0 }, parent: null }, timer: 0.01, fireTimer: 5 }
+        });
+        ThreeGame.prototype.updateEngineerTurret.call(fakeThis, 0.02);
+        expect(fakeThis.activeTurret).toBeNull();
+        expect(fakeThis.turretCooldownTimer).toBe(20);
+    });
+});

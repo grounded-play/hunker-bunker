@@ -19,7 +19,7 @@ const SURFACE_ONLY_METHODS = [
 ];
 
 const ALWAYS_ON_METHODS = [
-    'updateSprintState', 'updateTankRegen', 'updateRadarScans', 'updatePlayer', 'updateWeaponState', 'updateProjectiles',
+    'updateSprintState', 'updateTankRegen', 'updateEngineerTurret', 'updateRadarScans', 'updatePlayer', 'updateWeaponState', 'updateProjectiles',
     'updateCamera', 'syncVisibleChunks', 'updateCompanions', 'updateTransientEffects',
     'updateHiddenPlayerMarker', 'updateVitals', 'updateO2StartupSequence', 'updateLoopStep'
 ];
