@@ -36,8 +36,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
         }),
         Object.freeze({
             id: 'scout_special_unlock',
-            label: 'UNLOCK SPRINT BURST',
-            desc: 'Unlocks Class Special Ability: Sprint Burst [F]. Move 3.0x speed, 2.0x O2 drain.',
+            label: 'EVASIVE INSTINCT',
+            desc: 'EVASIVE passive strengthened: enemy slow/freeze effect duration reduced by 75% (up from 50%).',
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['scout_speed_1', 'scout_ammo_1']),
             prereqMode: 'any',
@@ -47,7 +47,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'scout_special_upgrade_1',
             label: 'WINDRUNNER',
-            desc: 'Sprint Burst duration increased by +1.0s.',
+            desc: 'Reload speed bonus increased to -35% (from -20%).',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['scout_special_unlock']),
             requiredGoal: 'reactorCompressor',
