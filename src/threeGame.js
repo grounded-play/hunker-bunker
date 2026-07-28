@@ -4567,6 +4567,7 @@ export class ThreeGame {
         }
 
         this.updateSprintState(delta);
+        this.updateTankRegen(delta);
         this.updateRadarScans(delta);
         this.updatePlayer(delta);
         this.updateWeaponState(delta);
@@ -11121,6 +11122,11 @@ export class ThreeGame {
         if (this.isInPocket) return; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return;
         if (this.missionState?.status === 'inactive') return;
+        if (this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
+            window.AudioManager?.play('fx_tank_shockwave', { volume: 0.4, bus: 'sfx' });
+            window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason } }));
+            return;
+        }
         const previousHp = this.playerVitals.hp;
         const damage = Math.max(0, Math.round(amount));
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - damage);
@@ -11837,6 +11843,21 @@ export class ThreeGame {
             if (typeof window !== 'undefined') window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
         }
         this._wasSprinting = active;
+    }
+
+    updateTankRegen(delta) {
+        if (this.playerType !== 'TANK' || !this.tankRegenEnabled) return;
+        if (this.playerVitals.hp >= this.playerVitals.maxHp) {
+            this.tankRegenTimer = 0;
+            return;
+        }
+        this.tankRegenTimer = (this.tankRegenTimer ?? 0) + delta;
+        if (this.tankRegenTimer >= 60) {
+            this.tankRegenTimer = 0;
+            this.playerVitals.hp = Math.min(this.playerVitals.maxHp, this.playerVitals.hp + 1);
+            this.emitHealthState();
+            window.dispatchEvent(new CustomEvent('player-regen', { detail: { hp: this.playerVitals.hp } }));
+        }
     }
 
     applyPlayerSlow(duration) {
