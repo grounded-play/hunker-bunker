@@ -369,6 +369,8 @@ function initSteam() {
                 menuRight: steamClient.input.getDigitalAction('menu_right'),
                 menuConfirm: steamClient.input.getDigitalAction('menu_confirm'),
                 menuBack: steamClient.input.getDigitalAction('menu_back'),
+                menuTabLeft: steamClient.input.getDigitalAction('menu_tab_left'),
+                menuTabRight: steamClient.input.getDigitalAction('menu_tab_right'),
                 move: steamClient.input.getAnalogAction('move'),
                 camera: steamClient.input.getAnalogAction('camera'),
                 fire: steamClient.input.getDigitalAction('fire'),
@@ -469,7 +471,9 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             menuLeft: isValidActionHandle(actionHandles.menuLeft) ? controller.isDigitalActionPressed(actionHandles.menuLeft) : false,
             menuRight: isValidActionHandle(actionHandles.menuRight) ? controller.isDigitalActionPressed(actionHandles.menuRight) : false,
             menuConfirm: isValidActionHandle(actionHandles.menuConfirm) ? controller.isDigitalActionPressed(actionHandles.menuConfirm) : false,
-            menuBack: isValidActionHandle(actionHandles.menuBack) ? controller.isDigitalActionPressed(actionHandles.menuBack) : false
+            menuBack: isValidActionHandle(actionHandles.menuBack) ? controller.isDigitalActionPressed(actionHandles.menuBack) : false,
+            menuTabLeft: isValidActionHandle(actionHandles.menuTabLeft) ? controller.isDigitalActionPressed(actionHandles.menuTabLeft) : false,
+            menuTabRight: isValidActionHandle(actionHandles.menuTabRight) ? controller.isDigitalActionPressed(actionHandles.menuTabRight) : false
         };
 
     const moveMagnitude = Math.hypot(Number(moveVector?.x) || 0, Number(moveVector?.y) || 0);

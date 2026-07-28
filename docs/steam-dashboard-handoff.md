@@ -1,6 +1,6 @@
 # Steam Dashboard Handoff
 
-Generated: 2026-07-16.
+Generated: 2026-07-28.
 
 This is the copy/paste packet for Steamworks dashboard work that cannot be
 completed from the repo. Keep it in sync with code by running:
@@ -49,11 +49,11 @@ Create these in Steamworks, then copy the generated leaderboard IDs back into
 
 | API Name | Sort Method | Display Type | Upload Method | Dashboard ID |
 | --- | --- | --- | --- | --- |
-| `best_run_score` | Descending | Numeric | KeepBest | <fill after Steamworks creation> |
-| `daily_ops_score` | Descending | Numeric | KeepBest | <fill after Steamworks creation> |
-| `fastest_extraction_ms` | Ascending | Milliseconds | KeepBest | <fill after Steamworks creation> |
-| `deepest_depth_score` | Descending | Numeric | KeepBest | <fill after Steamworks creation> |
-| `survival_time_seconds` | Descending | Seconds | KeepBest | <fill after Steamworks creation> |
+| `best_run_score` | Descending | Numeric | KeepBest | 20504740 |
+| `daily_ops_score` | Descending | Numeric | KeepBest | 20504746 |
+| `fastest_extraction_ms` | Ascending | Milliseconds | KeepBest | 20504747 |
+| `deepest_depth_score` | Descending | Numeric | KeepBest | 20504750 |
+| `survival_time_seconds` | Descending | Seconds | KeepBest | 20504754 |
 
 Backend env template after IDs exist:
 

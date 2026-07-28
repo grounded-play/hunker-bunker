@@ -94,13 +94,21 @@ function findAchievementAsset(icon, locked = false) {
     return candidates.find(relativeIfExists) ?? '';
 }
 
+const ASSIGNED_LEADERBOARD_IDS = Object.freeze({
+    best_run_score: 20504740,
+    daily_ops_score: 20504746,
+    fastest_extraction_ms: 20504747,
+    deepest_depth_score: 20504750,
+    survival_time_seconds: 20504754
+});
+
 function buildLeaderboardRows() {
     return Object.values(STEAM_LEADERBOARD_DEFS).map((def) => ({
         apiName: def.name,
         sortMethod: def.sortmethod,
         displayType: def.displaytype,
         uploadScoreMethod: def.scoreMethod,
-        dashboardId: '<fill after Steamworks creation>'
+        dashboardId: ASSIGNED_LEADERBOARD_IDS[def.name] ?? '<fill after Steamworks creation>'
     }));
 }
 

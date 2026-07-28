@@ -67,9 +67,12 @@ other's docs. Newest/most-authoritative docs first in each section.
   Written against the current JSON-file storage model — see Wave 5's
   Codex-lane note about the real-DB migration this will need an update
   for once that lands.
+- **[`steam-backend-deploy-docker-caddy.md`](./steam-backend-deploy-docker-caddy.md)** —
+  the Docker Compose & Caddy deploy runbook for self-hosted execution behind
+  `https://steam.tuesdaycinema.club` (container setup, Caddy reverse proxy,
+  secrets, and backup procedure).
 - [`steam-backend-deploy-flyio.md`](./steam-backend-deploy-flyio.md) —
-  the Fly.io deploy runbook (app creation, volume, secrets, the deploy
-  workflow). Still blocked on the owner actually running these commands.
+  legacy/alternative Fly.io cloud deploy guide.
 
 ## Steam economy, achievements, store assets
 

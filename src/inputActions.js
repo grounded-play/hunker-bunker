@@ -21,12 +21,15 @@ const NEUTRAL_PAD = Object.freeze({
     dash: false,
     scan: false,
     pause: false,
+    toggleMap: false,
     menuUp: false,
     menuDown: false,
     menuLeft: false,
     menuRight: false,
     menuConfirm: false,
-    menuBack: false
+    menuBack: false,
+    menuTabLeft: false,
+    menuTabRight: false
 });
 
 export function createActionRouter() {
@@ -48,9 +51,10 @@ export function createActionRouter() {
             right: edge('menu_right', pad.menuRight),
             confirm: edge('menu_confirm', pad.menuConfirm),
             back: edge('menu_back', pad.menuBack),
-            // Browser-gamepad fallback: LB (scan) / RB (fire) act as tab keys.
-            tabLeft: edge('menu_tab_left', pad.scan),
-            tabRight: edge('menu_tab_right', pad.fire),
+            // Dedicated bumper fields (kept separate from scan/fire/menuBack,
+            // which share buttons with each other in the browser fallback).
+            tabLeft: edge('menu_tab_left', pad.menuTabLeft),
+            tabRight: edge('menu_tab_right', pad.menuTabRight),
             pause: edge('menu_pause', pad.pause)
         };
     }

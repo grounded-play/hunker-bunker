@@ -1,18 +1,31 @@
+import { getMazeLandmark } from './mazeExpedition.js';
+
 // Ordered world-depth plan. Landmarks share one outward (+Z) expedition
 // spine while lateral offsets create readable side branches.
+function slotFor(id, role) {
+    const landmark = getMazeLandmark(id);
+    return Object.freeze({
+        distance: landmark.depth,
+        lateral: landmark.lateral,
+        level: landmark.level,
+        landmarkId: id,
+        role
+    });
+}
+
 export const WORLD_PROGRESSION_SLOTS = Object.freeze({
     camp: Object.freeze([
-        Object.freeze({ distance: 38, lateral: -5, role: 'foothold' }),
-        Object.freeze({ distance: 72, lateral: 7, role: 'crossroads' }),
-        Object.freeze({ distance: 108, lateral: -4, role: 'last_shelter' })
+        slotFor('camp_meridian', 'foothold'),
+        slotFor('camp_tallow', 'crossroads'),
+        slotFor('camp_vesper', 'last_shelter')
     ]),
     hive: Object.freeze([
-        Object.freeze({ distance: 92, lateral: -18, role: 'branch' }),
-        Object.freeze({ distance: 128, lateral: 17, role: 'deep_branch' }),
-        Object.freeze({ distance: 146, lateral: -15, role: 'deep_branch' })
+        slotFor('hive_suture', 'branch'),
+        slotFor('hive_relay', 'deep_branch'),
+        slotFor('hive_carapace', 'deep_branch')
     ]),
-    mothershipCave: Object.freeze({ distance: 182, lateral: 8, role: 'mothership_cave' }),
-    finalCave: Object.freeze({ distance: 224, lateral: -3, role: 'final_cave' })
+    mothershipCave: slotFor('final_shelter', 'mothership_cave'),
+    finalCave: slotFor('queen_chamber', 'final_cave')
 });
 
 export function getProgressionSlot(kind, index = 0) {

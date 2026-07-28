@@ -58,12 +58,19 @@ export function mapBrowserGamepad(gamepad, {
         scan: readButton(buttons, 1) || readButton(buttons, 11) || readButton(buttons, 8),
         sprint: readButton(buttons, 4) || readButton(buttons, 6) || readButton(buttons, 10),
         pause: readButton(buttons, 9),
+        toggleMap: readButton(buttons, 8) || readButton(buttons, 16),
         menuUp: readButton(buttons, 12) || menuY < 0,
         menuDown: readButton(buttons, 13) || menuY > 0,
         menuLeft: readButton(buttons, 14) || menuX < 0,
         menuRight: readButton(buttons, 15) || menuX > 0,
         menuConfirm: readButton(buttons, 0),
-        menuBack: readButton(buttons, 1) || readButton(buttons, 8)
+        menuBack: readButton(buttons, 1) || readButton(buttons, 8),
+        // Dedicated bumpers for menu tab navigation, mirroring the "menu" action
+        // set's left_bumper/right_bumper bindings in controller_neptune.vdf. Kept
+        // separate from scan/fire/menuBack (which share buttons 1 and 8) so a
+        // single back press can't also flip the active tab.
+        menuTabLeft: readButton(buttons, 4),
+        menuTabRight: readButton(buttons, 5)
     };
 
     mapped.active = Boolean(
@@ -72,6 +79,7 @@ export function mapBrowserGamepad(gamepad, {
         || mapped.scan || mapped.sprint || mapped.pause
         || mapped.menuUp || mapped.menuDown || mapped.menuLeft || mapped.menuRight
         || mapped.menuConfirm || mapped.menuBack
+        || mapped.menuTabLeft || mapped.menuTabRight
     );
 
     return mapped;

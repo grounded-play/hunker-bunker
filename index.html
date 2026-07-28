@@ -607,6 +607,64 @@
       </div>
     </div>
 
+    <!-- Full-Screen Tactical Map Overlay Modal -->
+    <div id="tactical-map-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content tactical-map-modal-content">
+        <div class="terminal-scanline"></div>
+        <div class="tactical-map-header">
+          <button class="close-modal" id="close-tactical-map-modal" aria-label="Close Tactical Map">×</button>
+          <div class="tactical-map-title">◈ TACTICAL BLUEPRINT OVERLAY</div>
+          <div class="tactical-map-subtitle" id="tactical-map-subtitle">GRID SECTOR 01 // EXPLORATION ACTIVE</div>
+        </div>
+        <div class="tactical-map-body">
+          <div class="tactical-map-canvas-wrap">
+            <canvas id="tactical-map-canvas" width="960" height="600"></canvas>
+            <div class="tactical-map-scanline"></div>
+          </div>
+          <div class="tactical-map-sidebar">
+            <div class="tactical-map-legend-title">BLUEPRINT LEGEND</div>
+            <div class="tactical-map-legend-item">
+              <span class="legend-chip legend-chip--player">▲</span>
+              <span>OPERATOR POSITION</span>
+            </div>
+            <div class="tactical-map-legend-item">
+              <span class="legend-chip legend-chip--explored">█</span>
+              <span>DISCOVERED ROOM</span>
+            </div>
+            <div class="tactical-map-legend-item">
+              <span class="legend-chip legend-chip--unexplored">░</span>
+              <span>SHROUDED FOG-OF-WAR</span>
+            </div>
+            <div class="tactical-map-legend-item">
+              <span class="legend-chip legend-chip--camp">⛺</span>
+              <span>SURVIVOR CAMP</span>
+            </div>
+            <div class="tactical-map-legend-item">
+              <span class="legend-chip legend-chip--hive">⚡</span>
+              <span>HIVE SITE</span>
+            </div>
+            <div class="tactical-map-legend-item">
+              <span class="legend-chip legend-chip--objective">★</span>
+              <span>ACTIVE OBJECTIVE</span>
+            </div>
+            <div class="tactical-map-stats">
+              <div class="map-stat-row">
+                <span class="map-stat-label">EXPLORED TILES:</span>
+                <span class="map-stat-val" id="map-stat-tiles">0</span>
+              </div>
+              <div class="map-stat-row">
+                <span class="map-stat-label">ACTIVE SIGNALS:</span>
+                <span class="map-stat-val" id="map-stat-signals">0</span>
+              </div>
+            </div>
+            <div class="tactical-map-keyhints">
+              <span>[M] / [TAB] / [ESC] TOGGLE OVERLAY</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Demo End Modal -->
     <div id="demo-end-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content demo-end-content">
@@ -1654,10 +1712,27 @@
       </div>
     </div>
 
+    <canvas id="snail-encounter-canvas" class="snail-encounter-canvas"></canvas>
+
     <div id="snail-encounter-modal" class="modal hidden" aria-hidden="true">
       <div class="snail-encounter-panel">
         <div class="snail-encounter-header">
           <span id="snail-encounter-title">ENCOUNTER</span>
+        </div>
+        <div class="snail-encounter-stage" id="snail-encounter-stage">
+          <div class="snail-combatant snail-combatant--player" id="snail-encounter-player-card">
+            <div class="snail-combatant-avatar-wrap">
+              <img id="snail-encounter-player-img" src="/Scout.full_v2.png" alt="Player Chassis" class="snail-combatant-img" />
+            </div>
+            <span id="snail-encounter-player-name" class="snail-combatant-name">OPERATOR</span>
+          </div>
+          <div class="snail-encounter-vs">VS</div>
+          <div class="snail-combatant snail-combatant--enemy" id="snail-encounter-enemy-card">
+            <div class="snail-combatant-avatar-wrap">
+              <img id="snail-encounter-enemy-img" src="/cybersnail.png" alt="Snail Combatant" class="snail-combatant-img" />
+            </div>
+            <span id="snail-encounter-enemy-name" class="snail-combatant-name">CYBERSNAIL</span>
+          </div>
         </div>
         <div id="snail-encounter-log" class="snail-encounter-log" aria-live="polite"></div>
         <div class="snail-encounter-bars">
@@ -1673,6 +1748,7 @@
         <div class="snail-encounter-actions">
           <button type="button" id="snail-encounter-fight-btn">FIGHT</button>
           <button type="button" id="snail-encounter-talk-btn">TALK</button>
+          <button type="button" id="snail-encounter-custom-btn" class="hidden">RECRUIT</button>
           <button type="button" id="snail-encounter-flee-btn">FLEE</button>
         </div>
       </div>

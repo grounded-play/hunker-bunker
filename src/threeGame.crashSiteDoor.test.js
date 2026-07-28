@@ -1,40 +1,42 @@
 import { describe, expect, it } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 
-function makeFakeGame(edgeOpening) {
+function makeFakeGame() {
     return {
         performanceProfile: 'gameplay',
         chunkSize: 19,
         chunkCellCount: 9,
-        getSpawnTile: ThreeGame.prototype.getSpawnTile,
-        getEdgeOpening: () => edgeOpening
+        getSpawnTile: ThreeGame.prototype.getSpawnTile
     };
 }
 
 describe('clearSpawnArea — door/portal alignment', () => {
-    // Covers every possible offset getEdgeOpening can produce
-    // (offset = hash % chunkCellCount, chunkCellCount = 9), directly
-    // stubbed rather than relying on incidental hash distribution — the
-    // real bug (localX 4..13 hardcoded, but portalX = offset*2+1 ranges
-    // over 1,3,...,17) needs offset 0, 1, 7, or 8 to reproduce, which a
-    // small sample of real hash outputs isn't guaranteed to hit.
-    it('the carved south doorway always contains the real south portal column, for every possible offset', () => {
-        for (let offset = 0; offset < 9; offset += 1) {
-            const game = makeFakeGame({ open: true, offset });
-            const grid = Array(19).fill(null).map(() => Array(19).fill('#'));
-            ThreeGame.prototype.clearSpawnArea.call(game, grid, 0, 0);
-
-            const portalX = offset * 2 + 1;
-            expect(grid[18][portalX], `offset ${offset}`).toBe('.');
-        }
-    });
-
-    it('falls back to the chunk center column when the south edge is closed', () => {
-        const game = makeFakeGame({ open: false, offset: 0 });
-        const grid = Array(19).fill(null).map(() => Array(19).fill('#'));
+    it('authors one circular room with its only exit centered on the north/top wall', () => {
+        const game = makeFakeGame();
+        const grid = Array(19).fill(null).map(() => Array(19).fill('.'));
         ThreeGame.prototype.clearSpawnArea.call(game, grid, 0, 0);
 
-        const centerX = Math.floor(game.chunkCellCount / 2) * 2 + 1;
-        expect(grid[18][centerX]).toBe('.');
+        expect(grid[0].slice(8, 11)).toEqual(['.', '.', '.']);
+        for (let x = 0; x < 19; x += 1) {
+            if (x >= 8 && x <= 10) continue;
+            expect(grid[0][x], `north edge x=${x}`).toBe('#');
+        }
+        expect(grid[9][9]).toBe('.');
+        expect(grid[1][1]).toBe('#');
+        expect(grid[17][17]).toBe('#');
+        expect(grid[18].every((cell) => cell === '#')).toBe(true);
+        expect(grid.every((row) => row[0] === '#')).toBe(true);
+        expect(grid.every((row) => row[18] === '#')).toBe(true);
+    });
+
+    it('forces the shared north edge portal to the authored hallway center', () => {
+        const game = {
+            chunkCellCount: 9,
+            hashTile: () => 99
+        };
+        expect(ThreeGame.prototype.getEdgeOpening.call(game, 'horizontal', 0, 0)).toEqual({
+            open: true,
+            offset: 4
+        });
     });
 });

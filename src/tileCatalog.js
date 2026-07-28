@@ -148,6 +148,125 @@ const ROOM_ALCOVE_BASE = {
     ]
 };
 
+const ROOM_THROUGH_BASE = {
+    id: 'room-through',
+    category: 'room',
+    tutorial: true,
+    weight: 0.9,
+    roomRole: 'generic',
+    decorationSet: 'bunker',
+    populationBudget: { large: 1, small: 3, pickup: 1, enemy: 1 },
+    anchors: [
+        { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 1 },
+        { id: 'left-wall', x: 1, y: 3, kind: 'large-prop', clearance: 0 },
+        { id: 'right-wall', x: 5, y: 3, kind: 'small-prop', clearance: 0 }
+    ],
+    sockets: { n: O, e: C, s: O, w: C },
+    pattern: [
+        '##...##',
+        '#.....#',
+        '#.....#',
+        '#.....#',
+        '#.....#',
+        '#.....#',
+        '##...##'
+    ]
+};
+
+const ROOM_COMPACT_BASE = {
+    id: 'room-compact',
+    category: 'room',
+    tutorial: true,
+    weight: 0.7,
+    roomRole: 'utility',
+    decorationSet: 'bunker',
+    populationBudget: { large: 1, small: 1, pickup: 1, enemy: 0 },
+    anchors: [
+        { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 1 }
+    ],
+    sockets: { n: C, e: C, s: O, w: C },
+    pattern: [
+        '#######',
+        '#######',
+        '##...##',
+        '##...##',
+        '##...##',
+        '##...##',
+        '##...##'
+    ]
+};
+
+const ROOM_CORNER_BASE = {
+    id: 'room-corner',
+    category: 'room',
+    tutorial: true,
+    weight: 0.75,
+    roomRole: 'generic',
+    decorationSet: 'bunker',
+    populationBudget: { large: 1, small: 3, pickup: 1, enemy: 1 },
+    anchors: [
+        { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 1 },
+        { id: 'closed-corner', x: 1, y: 5, kind: 'large-prop', clearance: 0 }
+    ],
+    sockets: { n: O, e: O, s: C, w: C },
+    pattern: [
+        '##...##',
+        '#.....#',
+        '#......',
+        '#......',
+        '#......',
+        '#.....#',
+        '#######'
+    ]
+};
+
+const ROOM_JUNCTION_BASE = {
+    id: 'room-junction',
+    category: 'room',
+    tutorial: false,
+    weight: 0.5,
+    roomRole: 'generic',
+    decorationSet: 'bunker',
+    populationBudget: { large: 1, small: 4, pickup: 1, enemy: 2 },
+    anchors: [
+        { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 1 },
+        { id: 'closed-wall', x: 1, y: 3, kind: 'large-prop', clearance: 0 }
+    ],
+    sockets: { n: O, e: O, s: O, w: C },
+    pattern: [
+        '##...##',
+        '#.....#',
+        '#......',
+        '#......',
+        '#......',
+        '#.....#',
+        '##...##'
+    ]
+};
+
+const ROOM_HUB = {
+    id: 'room-hub',
+    category: 'room',
+    tutorial: false,
+    weight: 0.28,
+    roomRole: 'generic',
+    decorationSet: 'bunker',
+    populationBudget: { large: 1, small: 4, pickup: 1, enemy: 2 },
+    anchors: [
+        { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 1 }
+    ],
+    sockets: { n: O, e: O, s: O, w: O },
+    pattern: [
+        '##...##',
+        '#.....#',
+        '.......',
+        '.......',
+        '.......',
+        '#.....#',
+        '##...##'
+    ]
+};
+
 const ROOM_ROLE_VARIANTS = [
     {
         ...ROOM_ALCOVE_BASE,
@@ -228,6 +347,27 @@ const CORRIDOR_TURN_BASE = {
     ]
 };
 
+const CORRIDOR_NARROW_BASE = {
+    id: 'corridor-narrow',
+    category: 'corridor-straight',
+    tutorial: true,
+    weight: 0.72,
+    roomRole: 'generic',
+    decorationSet: 'bunker',
+    populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
+    anchors: [],
+    sockets: { n: O, e: C, s: O, w: C },
+    pattern: [
+        '##...##',
+        '###.###',
+        '###.###',
+        '###.###',
+        '###.###',
+        '###.###',
+        '##...##'
+    ]
+};
+
 const CORRIDOR_T_BASE = {
     id: 'corridor-t',
     category: 'corridor-t',
@@ -270,10 +410,31 @@ const CORRIDOR_CROSS = {
     ]
 };
 
+const CANYON_WALKWAY_BASE = {
+    id: 'canyon-walkway',
+    category: 'canyon-walkway',
+    tutorial: false,
+    weight: 0.32,
+    roomRole: 'generic',
+    decorationSet: 'cave',
+    populationBudget: { large: 0, small: 1, pickup: 0, enemy: 0 },
+    anchors: [],
+    sockets: { n: O, e: C, s: O, w: C },
+    pattern: [
+        '##...##',
+        '##...##',
+        '#X...X#',
+        '#X...X#',
+        '#X...X#',
+        '##...##',
+        '##...##'
+    ]
+};
+
 const DEADEND_BASE = {
     id: 'deadend',
     category: 'deadend',
-    tutorial: false,
+    tutorial: true,
     weight: 0.5,
     roomRole: 'reward',
     decorationSet: 'bunker',
@@ -401,11 +562,18 @@ const LADDER_BASE = {
 export const TILE_CATALOG = Object.freeze([
     SOLID_FILL,
     ...withRotations(ROOM_ALCOVE_BASE, ['s', 'w', 'n', 'e']),
+    ...withRotations(ROOM_COMPACT_BASE, ['s', 'w', 'n', 'e']),
+    ...withRotations(ROOM_THROUGH_BASE, ['ns', 'ew']),
+    ...withRotations(ROOM_CORNER_BASE, ['ne', 'es', 'sw', 'wn']),
+    ...withRotations(ROOM_JUNCTION_BASE, ['nes', 'esw', 'swn', 'wne']),
+    ROOM_HUB,
     ...ROOM_ROLE_VARIANTS.flatMap((room) => withRotations(room, ['s', 'w', 'n', 'e'])),
     ...withRotations(CORRIDOR_STRAIGHT_BASE, ['ns', 'ew']),
+    ...withRotations(CORRIDOR_NARROW_BASE, ['ns', 'ew']),
     ...withRotations(CORRIDOR_TURN_BASE, ['ne', 'es', 'sw', 'wn']),
     ...withRotations(CORRIDOR_T_BASE, ['nes', 'esw', 'swn', 'wne']),
     CORRIDOR_CROSS,
+    ...withRotations(CANYON_WALKWAY_BASE, ['ns', 'ew']),
     ...withRotations(DEADEND_BASE, ['n', 'e', 's', 'w']),
     ...withRotations(CANYON_IMPASSABLE_BASE, ['ns', 'ew']),
     ...withRotations(RAMP_BASE, ['n', 'e', 's', 'w']),

@@ -152,88 +152,57 @@ through:
 
 Steam leaderboards, inventory, marketplace-adjacent features, and paid item
 flows cannot be trusted from the client. They require a backend reachable over
-HTTPS.
+HTTPS (`https://steam.tuesdaycinema.club`).
+
+### Primary Deployment Target: Self-Hosted Docker Compose + Caddy
+
+The primary production architecture runs a Node.js Express container behind a Caddy reverse proxy on a dedicated host at `https://steam.tuesdaycinema.club`. (Fly.io configuration is maintained as a fallback/alternative cloud deployment).
 
 ### Already Implemented
 
 - `Dockerfile`
-- `fly.toml`
-- `docs/steam-backend-deploy-flyio.md`
+- `docker-compose.yml`
+- `Caddyfile`
+- `docs/steam-backend-deploy-docker-caddy.md`
+- `electron/steam-config.json` (baked with `https://steam.tuesdaycinema.club`)
 - `.dockerignore`
-- `.github/workflows/steam-backend-deploy.yml`
-- `/health`
+- `/health` endpoint
 - `npm run steam:audit-backend`
 - `npm run steam:audit-backend:strict`
-- `HB_DB_STORAGE_PATH` support in `server/db.js`
-- Storage durability status in `/health`
-- Session token support
-- Rate limits
+- SQLite durability backend support in `server/db.js`
+- Rate limits & HMAC session signing
 
 ### Needs
 
-1. Choose or confirm the real Fly app name.
-2. Create the Fly app:
+1. Set environment variables on the host:
 
    ```bash
-   fly apps create <real-app-name>
+   HB_STEAM_APPID=4957040
+   HB_STEAM_PUBLISHER_KEY=<publisher web api key>
+   HB_SESSION_SECRET=<long random string>
+   HB_ALLOWED_ORIGINS=app://-,https://steam.tuesdaycinema.club,http://localhost:3000,http://localhost:5173
+   HB_STEAM_LEADERBOARD_IDS=<board:id list>
+   HB_DB_BACKEND=sqlite
+   HB_STEAM_MICROTXN_ENABLED=0
+   HB_STEAM_STORE_ENABLED=0
+   HB_STEAM_STORE_MOCK_PURCHASES=0
    ```
 
-3. Update `fly.toml`:
-
-   ```toml
-   app = "<real-app-name>"
-   ```
-
-4. Create a persistent volume:
-
-   ```bash
-   fly volumes create hb_data --size 1 --region iad
-   ```
-
-5. Set secrets on Fly:
-
-   ```bash
-   fly secrets set \
-     HB_STEAM_PUBLISHER_KEY=<publisher web api key> \
-     HB_SESSION_SECRET=<long random string> \
-     HB_ALLOWED_ORIGINS=<allowed origins> \
-     HB_STEAM_LEADERBOARD_IDS=<board:id list>
-   ```
-
-6. Decide Store flags:
-
-   ```bash
-   fly secrets set \
-     HB_STEAM_MICROTXN_ENABLED=0 \
-     HB_STEAM_STORE_ENABLED=0 \
-     HB_STEAM_STORE_MOCK_PURCHASES=0
-   ```
-
-7. Run strict audit locally or in CI:
+2. Run strict audit locally:
 
    ```bash
    npm run steam:audit-backend:strict
    ```
 
-8. Deploy:
+3. Deploy via Docker Compose:
 
    ```bash
-   fly deploy
+   docker compose up -d --build
    ```
-
-   Or run the `steam-backend-deploy` GitHub Actions workflow after setting:
-
-   - `FLY_API_TOKEN`
-   - `HB_STEAM_PUBLISHER_KEY`
-   - `HB_SESSION_SECRET`
-   - `HB_ALLOWED_ORIGINS`
-   - `HB_STEAM_LEADERBOARD_IDS`
-   - `HB_STEAM_MICROTXN_ENABLED`
-   - `HB_STEAM_STORE_ENABLED`
 
 ### Acceptance
 
-- `curl https://<backend>/health` returns `ok: true`.
+- `curl https://steam.tuesdaycinema.club/health` returns `ok: true`.
 - Health reports:
   - `steam.authConfigured: true`
   - `storage.durable: true`
@@ -392,20 +361,12 @@ renderer should only send run facts. The backend decides the canonical score.
 - Mock fallback when no publisher key is configured.
 - Server-side milestone grants tied to validated run payloads.
 
-### Steamworks Needs
+### Steamworks Leaderboards
 
-Create leaderboards matching code definitions:
-
-- `best_run_score`
-- `survival_time_seconds`
-- `deepest_depth_score`
-- `daily_ops_score`
-- `fastest_extraction_ms`
-
-Then set:
+The 5 matching leaderboards have already been created in Steamworks with the following assigned IDs:
 
 ```text
-HB_STEAM_LEADERBOARD_IDS=best_run_score:<id>,survival_time_seconds:<id>,deepest_depth_score:<id>,daily_ops_score:<id>,fastest_extraction_ms:<id>
+HB_STEAM_LEADERBOARD_IDS=best_run_score:20504740,daily_ops_score:20504746,fastest_extraction_ms:20504747,deepest_depth_score:20504750,survival_time_seconds:20504754
 ```
 
 ### Code/UX Needs

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ThreeGame } from './threeGame.js';
+import { EXTERIOR_CANYON_TILE, ThreeGame } from './threeGame.js';
 
 function call(method, fakeThis, ...args) {
     return ThreeGame.prototype[method].call(fakeThis, ...args);
@@ -78,6 +78,48 @@ describe('destructible wall grid persistence', () => {
         call('applyDestroyedWallsToGrid', fakeThis, grid, 0, 0);
 
         expect(grid[5][4]).toBe('.');
+    });
+
+    it('classifies a room-shell wall as exterior but preserves interior dividers', () => {
+        const grid = makeGrid(7);
+        grid[3][2] = '.';
+        const fakeThis = {
+            chunkSize: 7,
+            chunkCache: new Map([['0,0', grid]]),
+            getChunkLocalFromWorld: ThreeGame.prototype.getChunkLocalFromWorld
+        };
+
+        expect(call('isExteriorWallTile', fakeThis, 3, 3)).toBe(true);
+
+        grid[3][4] = '.';
+        expect(call('isExteriorWallTile', fakeThis, 3, 3)).toBe(false);
+    });
+
+    it('turns a breached exterior wall into a persistent lethal canyon tile', () => {
+        const grid = makeGrid(7);
+        grid[3][2] = '.';
+        const fakeThis = {
+            chunkSize: 7,
+            chunkCache: new Map([['0,0', grid]]),
+            destroyedWallKeys: new Set(),
+            destroyedExteriorWallKeys: new Set(),
+            _chunkRoomTypeCache: new Map(),
+            _chunkTemplateCache: new Map(),
+            wallMeshes: [],
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getChunkLocalFromWorld: ThreeGame.prototype.getChunkLocalFromWorld,
+            isExteriorWallTile: ThreeGame.prototype.isExteriorWallTile
+        };
+
+        const result = call('markWallTileDestroyed', fakeThis, 3, 3);
+
+        expect(result.exterior).toBe(true);
+        expect(grid[3][3]).toBe(EXTERIOR_CANYON_TILE);
+        expect(fakeThis.destroyedExteriorWallKeys.has('3,3')).toBe(true);
+
+        const rebuilt = makeGrid(7);
+        call('applyDestroyedWallsToGrid', fakeThis, rebuilt, 0, 0);
+        expect(rebuilt[3][3]).toBe(EXTERIOR_CANYON_TILE);
     });
 
     it('removes existing wall decals when their wall is destroyed', () => {

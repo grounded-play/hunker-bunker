@@ -1,4 +1,5 @@
 import { TILE_CATALOG, SOCKET, TILE_SIZE } from './tileCatalog.js';
+import { buildRoomInstances } from './roomGeometry.js';
 
 export const LATTICE_SIZE = 3;
 export const POCKET_LATTICE_SIZE = 2;
@@ -128,13 +129,47 @@ function requiredSocketsFor(index, openEdges, neighborCache) {
     return required;
 }
 
+function buildRoomHallRoles(openEdges, neighborCache, random) {
+    const roles = new Array(neighborCache.length).fill(null);
+    const hallwayRun = new Array(neighborCache.length).fill(0);
+    const queue = [0];
+    roles[0] = 'room';
+
+    while (queue.length > 0) {
+        const current = queue.shift();
+        for (const { index: next } of neighborCache[current]) {
+            if (!openEdges.has(edgeKey(current, next)) || roles[next]) continue;
+
+            if (roles[current] === 'room') {
+                // A room door always opens into an approach hallway.
+                roles[next] = 'hallway';
+                hallwayRun[next] = 1;
+            } else {
+                // Hallways may chain, but continuation becomes exponentially
+                // less likely with every consecutive hallway:
+                // run 1 = 45%, run 2 = 20%, run 3 = 9%, ...
+                const continuationChance = Math.exp(-0.8 * hallwayRun[current]);
+                const continuesHallway = random() < continuationChance;
+                roles[next] = continuesHallway ? 'hallway' : 'room';
+                hallwayRun[next] = continuesHallway ? hallwayRun[current] + 1 : 0;
+            }
+            queue.push(next);
+        }
+    }
+
+    return roles;
+}
+
 function matchesRequirement(tile, required) {
     return Object.entries(required).every(([side, value]) => tile.sockets[side] === value);
 }
 
-function pickTileForCell(required, catalog, random) {
+function pickTileForCell(required, catalog, random, predicate = null) {
     const requiredOpenCount = Object.values(required).filter((v) => v === SOCKET.OPEN3).length;
-    let candidates = catalog.filter((tile) => matchesRequirement(tile, required));
+    let candidates = catalog.filter((tile) => (
+        matchesRequirement(tile, required)
+        && (!predicate || predicate(tile))
+    ));
     // A tile whose open sides don't actually connect to each other inside
     // its own footprint (canyon-impassable, by design — see tileCatalog.js)
     // can only safely satisfy a single required connection. If the tree
@@ -164,6 +199,32 @@ function pickTileForCell(required, catalog, random) {
 // meaningful once a Ramp/Bridge can actually cross it).
 const VERTICAL_ONLY_CATEGORIES = new Set(['canyon-impassable', 'ramp', 'bridge', 'ladder']);
 const SELECTABLE_CATALOG = TILE_CATALOG.filter((tile) => !VERTICAL_ONLY_CATEGORIES.has(tile.category));
+const HALLWAY_CATEGORIES = new Set([
+    'corridor-straight',
+    'corridor-turn',
+    'corridor-t',
+    'corridor-cross',
+    'canyon-walkway',
+    'deadend'
+]);
+
+function isRoomTile(tile) {
+    return tile.category === 'room';
+}
+
+function isHallwayTile(tile) {
+    return HALLWAY_CATEGORIES.has(tile.category);
+}
+
+function roomHasNoExteriorDoor(tile, index, latticeSize) {
+    const x = index % latticeSize;
+    const y = Math.floor(index / latticeSize);
+    if (x === 0 && tile.sockets.w !== SOCKET.CLOSED) return false;
+    if (x === latticeSize - 1 && tile.sockets.e !== SOCKET.CLOSED) return false;
+    if (y === 0 && tile.sockets.n !== SOCKET.CLOSED) return false;
+    if (y === latticeSize - 1 && tile.sockets.s !== SOCKET.CLOSED) return false;
+    return true;
+}
 
 export function collapseChunkLattice(random, { tutorialOnly = false } = {}) {
     const catalog = tutorialOnly ? SELECTABLE_CATALOG.filter((tile) => tile.tutorial) : SELECTABLE_CATALOG;
@@ -171,11 +232,28 @@ export function collapseChunkLattice(random, { tutorialOnly = false } = {}) {
     const openEdges = tutorialOnly
         ? buildHamiltonianPath(random)
         : buildBranchingSpanningTree(random, NEIGHBOR_CACHE, cellCount);
+    const roles = buildRoomHallRoles(openEdges, NEIGHBOR_CACHE, random);
 
     const lattice = [];
     for (let index = 0; index < cellCount; index += 1) {
         const required = requiredSocketsFor(index, openEdges, NEIGHBOR_CACHE);
-        lattice.push(pickTileForCell(required, catalog, random));
+        const wantsRoom = roles[index] === 'room';
+        let tile = pickTileForCell(
+            required,
+            catalog,
+            random,
+            wantsRoom
+                ? (tile) => isRoomTile(tile) && roomHasNoExteriorDoor(tile, index, LATTICE_SIZE)
+                : isHallwayTile
+        );
+        // If a requested room shape is unavailable in a restricted catalog
+        // (notably the degree-capped tutorial set), a hallway is the safe
+        // fallback: it can lengthen an approach but can never create a room
+        // door that opens directly into another room.
+        if (!tile && wantsRoom) {
+            tile = pickTileForCell(required, catalog, random, isHallwayTile);
+        }
+        lattice.push(tile);
     }
     return lattice;
 }
@@ -229,7 +307,7 @@ export function stampLattice(lattice, chunkSize) {
     return grid;
 }
 
-export function extractChunkWfcMetadata(lattice, _chunkSize = 19) {
+export function extractChunkWfcMetadata(lattice, chunkSize = 19, { chunkX = 0, chunkY = 0 } = {}) {
     if (!Array.isArray(lattice)) return null;
     const latticeSize = Math.round(Math.sqrt(lattice.length));
     const stride = TILE_SIZE - 1;
@@ -276,6 +354,8 @@ export function extractChunkWfcMetadata(lattice, _chunkSize = 19) {
     return {
         lattice,
         rooms,
-        anchors
+        anchors,
+        roomInstances: buildRoomInstances(lattice, { chunkX, chunkY, chunkSize }),
+        generationVersion: 2
     };
 }

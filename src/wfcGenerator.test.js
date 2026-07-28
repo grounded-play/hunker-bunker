@@ -103,6 +103,86 @@ describe('collapseChunkLattice', () => {
             }
         }
     });
+
+    it('puts a hallway beyond every open room door while allowing hallway chains', () => {
+        const hallwayCategories = new Set([
+            'corridor-straight',
+            'corridor-turn',
+            'corridor-t',
+            'corridor-cross',
+            'canyon-walkway',
+            'deadend'
+        ]);
+        for (let seed = 1; seed <= 200; seed += 1) {
+            const lattice = collapseChunkLattice(seededRandom(seed));
+            for (let index = 0; index < lattice.length; index += 1) {
+                const x = index % LATTICE_SIZE;
+                const y = Math.floor(index / LATTICE_SIZE);
+                const tile = lattice[index];
+                if (tile.category !== 'room') continue;
+                for (const [side, dx, dy] of [
+                    ['n', 0, -1],
+                    ['e', 1, 0],
+                    ['s', 0, 1],
+                    ['w', -1, 0]
+                ]) {
+                    if (tile.sockets[side] !== 'OPEN3') continue;
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx < 0 || nx >= LATTICE_SIZE || ny < 0 || ny >= LATTICE_SIZE) continue;
+                    const neighbor = lattice[ny * LATTICE_SIZE + nx];
+                    expect(
+                        hallwayCategories.has(neighbor.category),
+                        `seed ${seed}, room ${index} ${side} -> ${neighbor.id}`
+                    ).toBe(true);
+                }
+            }
+        }
+    });
+
+    it('sometimes generates consecutive hallways instead of forced alternation', () => {
+        const hallwayCategories = new Set([
+            'corridor-straight',
+            'corridor-turn',
+            'corridor-t',
+            'corridor-cross',
+            'canyon-walkway',
+            'deadend'
+        ]);
+        let sawHallwayChain = false;
+        for (let seed = 1; seed <= 200 && !sawHallwayChain; seed += 1) {
+            const lattice = collapseChunkLattice(seededRandom(seed));
+            for (let y = 0; y < LATTICE_SIZE; y += 1) {
+                for (let x = 0; x < LATTICE_SIZE; x += 1) {
+                    const index = y * LATTICE_SIZE + x;
+                    if (!hallwayCategories.has(lattice[index].category)) continue;
+                    if (x + 1 < LATTICE_SIZE
+                        && lattice[index].sockets.e === 'OPEN3'
+                        && hallwayCategories.has(lattice[index + 1].category)) {
+                        sawHallwayChain = true;
+                    }
+                    if (y + 1 < LATTICE_SIZE
+                        && lattice[index].sockets.s === 'OPEN3'
+                        && hallwayCategories.has(lattice[index + LATTICE_SIZE].category)) {
+                        sawHallwayChain = true;
+                    }
+                }
+            }
+        }
+        expect(sawHallwayChain).toBe(true);
+    });
+
+    it('varies room footprints and hallway widths across procedural layouts', () => {
+        const ids = new Set();
+        for (let seed = 1; seed <= 300; seed += 1) {
+            for (const tile of collapseChunkLattice(seededRandom(seed))) ids.add(tile.id);
+        }
+        expect([...ids].some((id) => id.startsWith('room-compact'))).toBe(true);
+        expect([...ids].some((id) => id.startsWith('room-alcove'))).toBe(true);
+        expect([...ids].some((id) => id.startsWith('corridor-narrow'))).toBe(true);
+        expect([...ids].some((id) => id.startsWith('corridor-straight'))).toBe(true);
+        expect([...ids].some((id) => id.startsWith('canyon-walkway'))).toBe(true);
+    });
 });
 
 describe('stampLattice', () => {

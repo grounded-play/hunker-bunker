@@ -1,23 +1,11 @@
 {
-  "generatedAt": "2026-07-16T23:04:28.369Z",
+  "generatedAt": "2026-07-28T17:56:53.279Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
     "packageName": "hunker-bunker",
     "electronAppId": "com.icecave.hunkerbunker",
     "productName": "Hunker Bunker"
-  },
-  "soundtrack": {
-    "appId": 4957680,
-    "title": "Hunker Bunker Soundtrack",
-    "packageType": "Free on demand",
-    "depotId": 4957681,
-    "artist": "Government Name",
-    "genre": "Soundtrack / Industrial Ambient / Chiptune",
-    "tracks": 5,
-    "contentDir": "dist_soundtrack",
-    "appBuildVdf": "steam/soundtrack_app_build.vdf",
-    "depotBuildVdf": "steam/depot_build_soundtrack.vdf"
   },
   "depots": {
     "contentDepotId": 4957041,
@@ -40,35 +28,35 @@
       "sortMethod": "Descending",
       "displayType": "Numeric",
       "uploadScoreMethod": "KeepBest",
-      "dashboardId": "<fill after Steamworks creation>"
+      "dashboardId": 20504740
     },
     {
       "apiName": "daily_ops_score",
       "sortMethod": "Descending",
       "displayType": "Numeric",
       "uploadScoreMethod": "KeepBest",
-      "dashboardId": "<fill after Steamworks creation>"
+      "dashboardId": 20504746
     },
     {
       "apiName": "fastest_extraction_ms",
       "sortMethod": "Ascending",
       "displayType": "Milliseconds",
       "uploadScoreMethod": "KeepBest",
-      "dashboardId": "<fill after Steamworks creation>"
+      "dashboardId": 20504747
     },
     {
       "apiName": "deepest_depth_score",
       "sortMethod": "Descending",
       "displayType": "Numeric",
       "uploadScoreMethod": "KeepBest",
-      "dashboardId": "<fill after Steamworks creation>"
+      "dashboardId": 20504750
     },
     {
       "apiName": "survival_time_seconds",
       "sortMethod": "Descending",
       "displayType": "Seconds",
       "uploadScoreMethod": "KeepBest",
-      "dashboardId": "<fill after Steamworks creation>"
+      "dashboardId": 20504754
     }
   ],
   "leaderboardEnvTemplate": "best_run_score:<best_run_score_id>,daily_ops_score:<daily_ops_score_id>,fastest_extraction_ms:<fastest_extraction_ms_id>,deepest_depth_score:<deepest_depth_score_id>,survival_time_seconds:<survival_time_seconds_id>",

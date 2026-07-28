@@ -5134,6 +5134,143 @@ body.mission-intro-active #game-container canvas {
   outline: none;
 }
 
+/* Snail Encounter Transition Canvas Overlay */
+.snail-encounter-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9998;
+  pointer-events: none;
+  display: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Snail Encounter Dual Combatant Viewport */
+.snail-encounter-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 1.5);
+  margin-bottom: calc(var(--vu) * 1.5);
+  padding: calc(var(--vu) * 1.2);
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.9) 0%, rgba(3, 7, 18, 0.98) 100%);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 8px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 0 15px rgba(34, 197, 94, 0.15);
+  overflow: hidden;
+}
+
+.snail-combatant {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--vu) * 0.5);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.snail-combatant--player {
+  animation: combatantZoomPlayer 0.6s ease-out forwards;
+}
+
+.snail-combatant--enemy {
+  animation: combatantZoomEnemy 0.6s ease-out forwards;
+}
+
+.snail-combatant-avatar-wrap {
+  width: min(120px, 22vw);
+  height: min(120px, 22vw);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(225, 29, 46, 0.4);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(225, 29, 46, 0.2);
+  overflow: hidden;
+  animation: combatantBob 3s ease-in-out infinite alternate;
+}
+
+.snail-combatant--player .snail-combatant-avatar-wrap {
+  border-color: rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 12px rgba(74, 222, 128, 0.25);
+}
+
+.snail-combatant-avatar-wrap--npc {
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.35) !important;
+}
+
+.snail-combatant-avatar-wrap--hive {
+  border-color: rgba(168, 85, 247, 0.6) !important;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.35) !important;
+}
+
+.snail-combatant-img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+}
+
+.snail-combatant-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.snail-encounter-vs {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.2em;
+  font-weight: 900;
+  color: #ff3344;
+  text-shadow: 0 0 10px rgba(255, 51, 68, 0.8);
+  animation: vsPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes combatantZoomPlayer {
+  0% { opacity: 0; transform: scale(0.3) translateX(-60px); }
+  100% { opacity: 1; transform: scale(1) translateX(0); }
+}
+
+@keyframes combatantZoomEnemy {
+  0% { opacity: 0; transform: scale(0.3) translateX(60px); }
+  100% { opacity: 1; transform: scale(1) translateX(0); }
+}
+
+@keyframes combatantBob {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+@keyframes vsPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.25); opacity: 1; }
+}
+
+.snail-combatant-hit {
+  animation: combatantHitFlash 0.35s ease-in-out;
+}
+
+.snail-combatant-shimmer {
+  animation: combatantResolveShimmer 0.5s ease-in-out;
+}
+
+@keyframes combatantHitFlash {
+  0% { filter: brightness(2) drop-shadow(0 0 15px #ff3344); transform: scale(1.15); }
+  50% { filter: brightness(0.5); }
+  100% { filter: none; transform: scale(1); }
+}
+
+@keyframes combatantResolveShimmer {
+  0% { filter: brightness(1.5) drop-shadow(0 0 15px #4ade80); }
+  100% { filter: none; }
+}
+
 .mothership-close-btn {
   z-index: 102;
   border-color: rgba(var(--terminal-glow-rgb), 0.45) !important;
@@ -13201,3 +13338,148 @@ button.archive-log-entry:active {
     height: clamp(48px, calc(var(--vu) * 6), 64px);
   }
 }
+
+/* Tactical Map Blueprint Overlay Modal & Glassmorphic UI */
+.tactical-map-modal-content {
+  width: min(1080px, 94vw);
+  max-height: 90vh;
+  padding: 24px;
+  background: rgba(8, 14, 22, 0.94);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  box-shadow: 0 0 32px rgba(0, 229, 255, 0.15), 0 20px 40px rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tactical-map-header {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  padding-bottom: 12px;
+  position: relative;
+}
+
+.tactical-map-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #00e5ff;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+}
+
+.tactical-map-subtitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.8rem;
+  color: #88aacc;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+.tactical-map-body {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 20px;
+  min-height: 480px;
+}
+
+.tactical-map-canvas-wrap {
+  position: relative;
+  background: rgba(4, 8, 14, 0.95);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#tactical-map-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tactical-map-scanline {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.03) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+}
+
+.tactical-map-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: rgba(12, 20, 32, 0.7);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.tactical-map-legend-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.tactical-map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem;
+  color: #d0e0f0;
+}
+
+.legend-chip {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.legend-chip--player { background: #00ffaa; color: #000000; }
+.legend-chip--explored { background: #00e5ff; color: #000000; }
+.legend-chip--unexplored { background: #1a2636; color: #556677; }
+.legend-chip--camp { background: #ffaa00; color: #000000; }
+.legend-chip--hive { background: #ff0055; color: #ffffff; }
+.legend-chip--objective { background: #a040ff; color: #ffffff; }
+
+.tactical-map-stats {
+  margin-top: auto;
+  border-top: 1px solid rgba(0, 229, 255, 0.2);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.map-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.map-stat-label { color: #7799bb; }
+.map-stat-val { color: #00e5ff; font-weight: 700; }
+
+.tactical-map-keyhints {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  color: #557799;
+  text-align: center;
+  margin-top: 8px;
+}
+

@@ -801,8 +801,12 @@ function handleSteamMenuInput(controller) {
         || Boolean(controller.menuDown && !prev.menuDown)
         || Boolean(controller.menuLeft && !prev.menuLeft)
         || Boolean(controller.menuRight && !prev.menuRight);
-    const tabLeft = Boolean((controller.sprint || controller.scan || controller.menuTabLeft) && !(prev.sprint || prev.scan || prev.menuTabLeft));
-    const tabRight = Boolean((controller.fire || controller.menuTabRight) && !(prev.fire || prev.menuTabRight));
+    // menuTabLeft/menuTabRight are dedicated bumper fields (native Steam Input's
+    // "menu" action set, or browserGamepad.js's fallback). Don't fall back to
+    // scan/fire/sprint here: those share physical buttons with menuBack in the
+    // browser fallback, so a single back press would also flip the active tab.
+    const tabLeft = Boolean(controller.menuTabLeft && !prev.menuTabLeft);
+    const tabRight = Boolean(controller.menuTabRight && !prev.menuTabRight);
 
     const activeElement = document.activeElement;
     const rangeAdjusted = Boolean(activeElement && isRangeInputElement(activeElement) && (
@@ -839,9 +843,8 @@ function handleSteamMenuInput(controller) {
         menuRight: Boolean(controller.menuRight),
         menuConfirm: Boolean(controller.menuConfirm),
         menuBack: Boolean(controller.menuBack),
-        sprint: Boolean(controller.sprint),
-        scan: Boolean(controller.scan),
-        fire: Boolean(controller.fire)
+        menuTabLeft: Boolean(controller.menuTabLeft),
+        menuTabRight: Boolean(controller.menuTabRight)
     });
 }
 
@@ -6647,6 +6650,146 @@ quitCancelBtn?.addEventListener('click', () => {
 quitConfirmBtn?.addEventListener('click', executeQuitApplication);
 setupClickOutside('quit-confirm-modal', () => setQuitConfirmOpen(false));
 
+// ── Tactical Blueprint Map Overlay Render & Modal Toggle ──────
+function drawTacticalMapOverlay() {
+    const canvas = document.getElementById('tactical-map-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.fillStyle = '#04080e';
+    ctx.fillRect(0, 0, width, height);
+
+    const mapState = window.game?.getTacticalMapState?.() ?? {
+        player: { x: 0, z: 0, rotation: 0 },
+        exploredCells: [],
+        landmarks: [],
+        stats: { totalExplored: 0, activeLandmarks: 0 }
+    };
+
+    const exploredCells = mapState.exploredCells ?? [];
+    const landmarks = mapState.landmarks ?? [];
+    const player = mapState.player ?? { x: 0, z: 0, rotation: 0 };
+
+    const tileStatEl = document.getElementById('map-stat-tiles');
+    if (tileStatEl) tileStatEl.textContent = String(exploredCells.length);
+    const signalStatEl = document.getElementById('map-stat-signals');
+    if (signalStatEl) signalStatEl.textContent = String(landmarks.length);
+
+    let minGx = -4, maxGx = 4, minGz = -4, maxGz = 4;
+    for (const cell of exploredCells) {
+        minGx = Math.min(minGx, cell.gx);
+        maxGx = Math.max(maxGx, cell.gx);
+        minGz = Math.min(minGz, cell.gz);
+        maxGz = Math.max(maxGz, cell.gz);
+    }
+
+    const rangeX = Math.max(8, maxGx - minGx + 3);
+    const rangeZ = Math.max(8, maxGz - minGz + 3);
+    const cellW = width / rangeX;
+    const cellH = height / rangeZ;
+    const cellSize = Math.min(cellW, cellH);
+
+    const offsetX = (width - rangeX * cellSize) / 2 - minGx * cellSize + cellSize;
+    const offsetY = (height - rangeZ * cellSize) / 2 - minGz * cellSize + cellSize;
+
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= width; x += cellSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+    for (let y = 0; y <= height; y += cellSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+
+    for (const cell of exploredCells) {
+        const cx = cell.gx * cellSize + offsetX;
+        const cy = cell.gz * cellSize + offsetY;
+
+        ctx.fillStyle = 'rgba(0, 229, 255, 0.25)';
+        ctx.fillRect(cx, cy, cellSize - 2, cellSize - 2);
+
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx, cy, cellSize - 2, cellSize - 2);
+    }
+
+    for (const landmark of landmarks) {
+        const lx = landmark.gx * cellSize + offsetX + cellSize / 2;
+        const ly = landmark.gz * cellSize + offsetY + cellSize / 2;
+
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (landmark.type === 'camp') {
+            ctx.fillStyle = '#ffaa00';
+            ctx.fillText('⛺', lx, ly);
+        } else if (landmark.type === 'hive') {
+            ctx.fillStyle = '#ff0055';
+            ctx.fillText('⚡', lx, ly);
+        } else {
+            ctx.fillStyle = '#a040ff';
+            ctx.fillText('★', lx, ly);
+        }
+
+        ctx.fillStyle = '#d0e0f0';
+        ctx.font = '10px Space Mono, monospace';
+        ctx.fillText(landmark.label ?? '', lx, ly + 14);
+    }
+
+    const px = Math.floor((player.x + 7.5) / 15) * cellSize + offsetX + cellSize / 2;
+    const py = Math.floor((player.z + 7.5) / 15) * cellSize + offsetY + cellSize / 2;
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(player.rotation ?? 0);
+
+    ctx.fillStyle = '#00ffaa';
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.lineTo(7, 8);
+    ctx.lineTo(-7, 8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+function toggleTacticalMapModal(forceState) {
+    const modal = document.getElementById('tactical-map-modal');
+    if (!modal) return;
+
+    const isHidden = modal.classList.contains('hidden');
+    const shouldOpen = typeof forceState === 'boolean' ? forceState : isHidden;
+
+    if (shouldOpen) {
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+        drawTacticalMapOverlay();
+    } else {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+}
+
+document.getElementById('close-tactical-map-modal')?.addEventListener('click', () => toggleTacticalMapModal(false));
+setupClickOutside('tactical-map-modal', () => toggleTacticalMapModal(false));
+
 // Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
     if (event.code === 'Backquote' || event.key === '`' || event.key === '~') {
@@ -6665,7 +6808,22 @@ document.addEventListener('keydown', (event) => {
         return;
     }
 
+    if (event.code === 'KeyM' || (event.key === 'Tab' && !event.ctrlKey && !event.altKey)) {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag !== 'input' && activeTag !== 'textarea') {
+            event.preventDefault();
+            toggleTacticalMapModal();
+            return;
+        }
+    }
+
     if (event.key === 'Escape') {
+        const tacticalMapModal = document.getElementById('tactical-map-modal');
+        if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
+            toggleTacticalMapModal(false);
+            event.preventDefault();
+            return;
+        }
         const devModal = document.getElementById('dev-console-modal');
         if (devModal && !devModal.classList.contains('hidden')) {
             closeDevConsoleModal();
@@ -7844,6 +8002,9 @@ document.getElementById('snail-encounter-fight-btn')?.addEventListener('click', 
 });
 document.getElementById('snail-encounter-talk-btn')?.addEventListener('click', () => {
     window.game?.handleSnailEncounterTalk?.();
+});
+document.getElementById('snail-encounter-custom-btn')?.addEventListener('click', () => {
+    window.game?.handleSnailEncounterCustom?.();
 });
 document.getElementById('snail-encounter-flee-btn')?.addEventListener('click', () => {
     window.game?.handleSnailEncounterFlee?.();

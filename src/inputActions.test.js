@@ -21,6 +21,8 @@ function padSnapshot(overrides = {}) {
         menuRight: false,
         menuConfirm: false,
         menuBack: false,
+        menuTabLeft: false,
+        menuTabRight: false,
         ...overrides
     };
 }
@@ -86,7 +88,7 @@ describe('createActionRouter', () => {
 
     it('maps menu navigation with edge triggering and bumper tabs', () => {
         const router = createActionRouter();
-        const held = padSnapshot({ menuUp: true, menuConfirm: true, scan: true, fire: true });
+        const held = padSnapshot({ menuUp: true, menuConfirm: true, menuTabLeft: true, menuTabRight: true });
         const first = router.deriveActions(held).actions;
         expect(first.up).toBe(true);
         expect(first.confirm).toBe(true);
@@ -95,6 +97,17 @@ describe('createActionRouter', () => {
         const second = router.deriveActions(held).actions;
         expect(second.up).toBe(false);
         expect(second.confirm).toBe(false);
+    });
+
+    it('does not treat back/scan as tab navigation, since they share a physical button in the browser fallback', () => {
+        // mapBrowserGamepad's east face button (index 1) drives both `scan` and
+        // `menuBack` at once. Tab navigation must stay off dedicated bumper
+        // fields so a single back press can't also flip the active tab.
+        const router = createActionRouter();
+        const { actions } = router.deriveActions(padSnapshot({ menuBack: true, scan: true }));
+        expect(actions.back).toBe(true);
+        expect(actions.tabLeft).toBe(false);
+        expect(actions.tabRight).toBe(false);
     });
 
     it('passes the gameplay snapshot through untouched in the gameplay set', () => {
