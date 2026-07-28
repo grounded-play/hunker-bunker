@@ -116,9 +116,9 @@ const PICKUP_TYPES = [
     { type: 'coin', weight: 0.12 }
 ];
 const CLASS_STATS = {
-    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, abilityKey: 'sprint',    abilityLabel: 'SPRINT BURST', abilityCooldown: 8,  abilityDuration: 1.5, unlockSkill: 'scout_special_unlock' },
-    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, abilityKey: 'fortify',   abilityLabel: 'BRACE',        abilityCooldown: 10, abilityDuration: 2.0, unlockSkill: 'tank_special_unlock' },
-    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, abilityKey: 'overclock', abilityLabel: 'REROUTE',      abilityCooldown: 11, abilityDuration: 2.5, unlockSkill: 'engineer_special_unlock' }
+    SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload.' },
+    TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, passiveName: 'BULWARK', passiveDescription: 'Chance to fully block incoming damage.' },
+    ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'AUTO-TURRET', passiveDescription: 'Periodically deploys an automated turret that fires on nearby enemies.' }
 };
 
 const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
@@ -10819,6 +10819,40 @@ export class ThreeGame {
         const hardened = Boolean(this.bank?.getState?.()?.tier2Unlocks?.fallHardening);
         const raw = hardened ? FALL_DAMAGE_BASE / 2 : FALL_DAMAGE_BASE;
         return Math.max(1, Math.round(raw));
+    }
+
+    resolveClassPassiveStats(playerType) {
+        const bank = this.bank;
+        const unlocked = (id) => Boolean(bank && bank.isSkillUnlocked && bank.isSkillUnlocked(id));
+        const stats = {
+            slowResistMult: 1.0,
+            reloadSpeedMult: 1.0,
+            blockChance: 0,
+            tankRegenEnabled: false,
+            turretInterval: 0,
+            turretFireInterval: 0,
+            turretDuration: 0
+        };
+        if (playerType === 'SCOUT') {
+            stats.slowResistMult = 0.5;
+            stats.reloadSpeedMult = 0.8;
+            if (unlocked('scout_special_unlock')) stats.slowResistMult = 0.25;
+            if (unlocked('scout_special_upgrade_1')) stats.reloadSpeedMult = 0.65;
+            if (unlocked('scout_special_upgrade_2')) stats.slowResistMult = 0;
+        } else if (playerType === 'TANK') {
+            stats.blockChance = 0.2;
+            if (unlocked('tank_special_unlock')) stats.blockChance = 0.3;
+            if (unlocked('tank_special_upgrade_1')) stats.blockChance = 0.4;
+            if (unlocked('tank_special_upgrade_2')) stats.tankRegenEnabled = true;
+        } else if (playerType === 'ENGINEER') {
+            stats.turretInterval = 20;
+            stats.turretFireInterval = 1.2;
+            stats.turretDuration = 6;
+            if (unlocked('engineer_special_unlock')) stats.turretDuration = 9;
+            if (unlocked('engineer_special_upgrade_1')) stats.turretFireInterval = 0.9;
+            if (unlocked('engineer_special_upgrade_2')) stats.turretInterval = 15;
+        }
+        return stats;
     }
 
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
