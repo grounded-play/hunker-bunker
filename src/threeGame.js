@@ -7,8 +7,19 @@ import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { planChunkRoomPopulation } from './roomPopulation.js';
 import { planChunkRoomEncounters } from './roomEncounters.js';
-import { planProceduralDoors, stampDoorRecords, transitionDoorState } from './proceduralDoors.js';
-import { createAccessState, isGateRequirementMet } from './accessControl.js';
+import {
+    planProceduralDoors,
+    restoreDoorStates,
+    serializeDoorStates,
+    stampDoorRecords,
+    transitionDoorState
+} from './proceduralDoors.js';
+import {
+    createAccessState,
+    grantAccess,
+    isGateRequirementMet,
+    serializeAccessState
+} from './accessControl.js';
 import { planSafeGates } from './mazeGates.js';
 import { extractChunkPortals, buildWorldRouteGraph, reachableChunkKeys } from './worldRoutePlanner.js';
 import { BaseLights } from './baseLights.js';
@@ -234,6 +245,19 @@ const ROOM_WALL_STYLE_ID = Object.freeze({
     'bio-hive': 9,
     'bio-nest': 10,
     'camp-fortified': 11
+});
+const ROOM_FLOOR_STYLE_COLOR = Object.freeze({
+    'bunker-standard': 0x7a858c,
+    'bunker-utility': 0x4d8790,
+    'bunker-medical': 0xa9c7c5,
+    'bunker-security': 0x874638,
+    'bunker-storage': 0x806a42,
+    'cryo-rough': 0x527da2,
+    'cryo-tile': 0x88bdd2,
+    'bio-resin': 0x4d3656,
+    'bio-hive': 0x3b5a37,
+    camp: 0x796044,
+    storage: 0x78633e
 });
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
@@ -726,6 +750,7 @@ export class ThreeGame {
         this.terrainStepGeometry = new THREE.BoxGeometry(1, 0.08, 1);
         this.rewardGlowGeometry = new THREE.CircleGeometry(1, 24);
         this.rewardGlowMaterials = new Map();
+        this.roomFloorMaterials = new Map();
         this.pillarGeometry = new THREE.CylinderGeometry(0.16, 0.16, this.wallHeight, 8);
         this.bracketGeometry = new THREE.BoxGeometry(0.8, 0.08, 0.12);
         this.ventGeometry = new THREE.BoxGeometry(0.48, 0.48, 0.06);
@@ -3387,6 +3412,7 @@ export class ThreeGame {
         if (!this.isGameplayInputActive()) return false;
         this.interactWithBunkerBlastDoorButton();
         this.interactWithProceduralDoor();
+        this.interactWithMazeAccessSource();
         this.interactWithConsole();
         this.interactWithO2Generator();
         this.interactWithLoreTerminal();
@@ -5584,6 +5610,8 @@ export class ThreeGame {
         const unlocked = isGateRequirementMet(nearest.door.lock, this.mazeAccessState);
         const next = transitionDoorState(nearest.door, 'toggle', unlocked);
         this.proceduralDoorStates.set(next.id, next);
+        const mesh = this.proceduralDoorMeshes.get(next.id);
+        if (mesh && unlocked) mesh.userData.indestructible = false;
         if (!unlocked && next.lock) {
             window.dispatchEvent(new CustomEvent('maze-gate-denied', {
                 detail: { doorId: next.id, requirement: next.lock, message: next.lock.label }
@@ -5597,6 +5625,37 @@ export class ThreeGame {
             });
         }
         return true;
+    }
+
+    interactWithMazeAccessSource() {
+        if (!this.player || !this.isGameplayInputActive()) return false;
+        for (const metadata of this.wfcMetadataCache?.values?.() ?? []) {
+            for (const source of metadata.accessSources ?? []) {
+                if (!Number.isFinite(source.localX) || !Number.isFinite(source.localY)) continue;
+                const [chunkX, chunkY] = metadata.roomInstances?.[0]?.chunkKey?.split(',').map(Number) ?? [];
+                if (!Number.isFinite(chunkX) || !Number.isFinite(chunkY)) continue;
+                const worldX = chunkX * this.chunkSize + source.localX;
+                const worldZ = chunkY * this.chunkSize + source.localY;
+                if (Math.hypot(this.player.position.x - worldX, this.player.position.z - worldZ) > 1.8) continue;
+                const granted = grantAccess(this.mazeAccessState, source.requirement);
+                if (granted) {
+                    window.dispatchEvent(new CustomEvent('maze-access-granted', {
+                        detail: {
+                            sourceId: source.id,
+                            requirement: source.requirement,
+                            message: `${source.requirement.label} — ACCESS GRANTED`
+                        }
+                    }));
+                    window.AudioManager?.play?.('ui_scan_ping', {
+                        volume: 0.52,
+                        playbackRate: 1.35,
+                        bus: 'sfx'
+                    });
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     updateProceduralDoors(delta) {
@@ -11168,6 +11227,12 @@ export class ThreeGame {
         this._chunkRoomTypeCache?.clear();
         this._chunkTemplateCache?.clear();
         this._chunkLandformCache?.clear();
+        this.wfcMetadataCache?.clear();
+        this.proceduralDoorStates?.clear();
+        this.proceduralDoorMeshes?.clear();
+        this.worldRouteRecords?.clear();
+        this.reachableGeneratedChunkKeys = new Set();
+        this.mazeAccessState = createAccessState();
         this.destroyedWallKeys.clear();
         this.destroyedExteriorWallKeys?.clear();
         this.pendingChunkMounts = [];
@@ -14539,6 +14604,64 @@ export class ThreeGame {
         group.add(glow);
     }
 
+    getRoomFloorMaterial(style, biome = BIOME_KEYS.ACTIVE) {
+        const key = `${biome}:${style}`;
+        if (this.roomFloorMaterials.has(key)) return this.roomFloorMaterials.get(key);
+        const texture = this.biomeTerrainTextures?.[biome]?.floorBase
+            ?? this.biomeTerrainTextures?.[BIOME_KEYS.ACTIVE]?.floorBase;
+        const material = new THREE.MeshStandardMaterial({
+            map: texture,
+            color: ROOM_FLOOR_STYLE_COLOR[style] ?? 0x718088,
+            roughness: 0.82,
+            metalness: biome === BIOME_KEYS.ACTIVE ? 0.24 : 0.08,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1
+        });
+        this.roomFloorMaterials.set(key, material);
+        return material;
+    }
+
+    addRoomSurfaceOverlays(group, chunkX, chunkY, metadata) {
+        const rooms = metadata?.roomInstances ?? [];
+        if (rooms.length === 0) return;
+        const byStyle = new Map();
+        for (const room of rooms) {
+            const style = room.themeConfig?.floorStyle ?? 'bunker-standard';
+            if (!byStyle.has(style)) byStyle.set(style, []);
+            byStyle.get(style).push(...room.interior);
+        }
+        const centerX = chunkX * this.chunkSize + this.chunkSize * 0.5;
+        const centerZ = chunkY * this.chunkSize + this.chunkSize * 0.5;
+        const biome = this.getBiomeKeyForWorldPosition(centerX, centerZ);
+        const matrix = new THREE.Matrix4();
+        const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+        for (const [style, cells] of byStyle) {
+            if (cells.length === 0) continue;
+            const mesh = new THREE.InstancedMesh(
+                this.floorGeometry,
+                this.getRoomFloorMaterial(style, biome),
+                cells.length
+            );
+            cells.forEach((cell, index) => {
+                matrix.compose(
+                    new THREE.Vector3(
+                        chunkX * this.chunkSize + cell.x,
+                        0.009,
+                        chunkY * this.chunkSize + cell.y
+                    ),
+                    rotation,
+                    new THREE.Vector3(1, 1, 1)
+                );
+                mesh.setMatrixAt(index, matrix);
+            });
+            mesh.instanceMatrix.needsUpdate = true;
+            mesh.receiveShadow = true;
+            mesh.userData = { isRoomFloorOverlay: true, roomFloorStyle: style };
+            group.add(mesh);
+        }
+    }
+
     getWallKey(worldX, worldZ) {
         return `${Math.round(worldX)},${Math.round(worldZ)}`;
     }
@@ -14707,6 +14830,12 @@ export class ThreeGame {
 
     destroyWall(wall, { source = 'player', burstColor = 0xb8c2c9, force = false } = {}) {
         if (!wall?.userData?.isWall || wall.userData.destroyed) return false;
+        if (wall.userData.isProceduralDoor && wall.userData.proceduralDoorId) {
+            const door = this.proceduralDoorStates.get(wall.userData.proceduralDoorId);
+            this.refreshMazeAccessState();
+            if (door?.lock && !isGateRequirementMet(door.lock, this.mazeAccessState) && !force) return false;
+            if (door) this.proceduralDoorStates.set(door.id, transitionDoorState(door, 'destroy', true));
+        }
         if (wall.userData.indestructible && !force) return false;
 
         const worldX = Number.isFinite(wall.userData.worldX) ? wall.userData.worldX : wall.position.x;
@@ -15029,6 +15158,12 @@ export class ThreeGame {
         );
         chunkFloor.receiveShadow = true;
         group.add(chunkFloor);
+        this.addRoomSurfaceOverlays(
+            group,
+            chunkX,
+            chunkY,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
         this.addTerrainStepDressing(group, chunkX, chunkY, grid, landform);
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
@@ -15062,6 +15197,10 @@ export class ThreeGame {
                     doorMesh.userData.isProceduralDoor = true;
                     doorMesh.userData.proceduralDoorId = persistedDoor?.id ?? null;
                     doorMesh.userData.doorStyle = persistedDoor?.style ?? 'bunker';
+                    doorMesh.userData.indestructible = Boolean(
+                        persistedDoor?.lock
+                        && !isGateRequirementMet(persistedDoor.lock, this.mazeAccessState)
+                    );
                     if (persistedDoor?.id) {
                         doorMesh.position.y = persistedDoor.state === 'open' || persistedDoor.state === 'destroyed'
                             ? -this.wallHeight
@@ -15491,6 +15630,22 @@ export class ThreeGame {
         const spawn = this.getSpawnTile();
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const candidates = [];
+        const plannedRoomPickups = (this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
+            .flatMap((room) => (room.populationPlan?.placements ?? [])
+                .filter((placement) => placement.kind === 'pickup')
+                .map((placement) => ({
+                    localX: placement.x,
+                    localY: placement.y,
+                    worldX: chunkX * this.chunkSize + placement.x,
+                    worldZ: chunkY * this.chunkSize + placement.y,
+                    roomType: ROOM_TYPES.CHAMBER,
+                    edgeDistance: Math.min(
+                        placement.x,
+                        placement.y,
+                        this.chunkSize - 1 - placement.x,
+                        this.chunkSize - 1 - placement.y
+                    )
+                })));
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
@@ -15517,11 +15672,17 @@ export class ThreeGame {
         }
 
         if (candidates.length < 10) {
-            return [];
+            return plannedRoomPickups.map((candidate) => (
+                this.buildPickupPlacement(candidate, random, depthLootConfig.legendaryBoost)
+            ));
         }
 
         const occupied = new Set();
         const placements = [];
+        for (const candidate of plannedRoomPickups) {
+            occupied.add(`${candidate.localX},${candidate.localY}`);
+            placements.push(this.buildPickupPlacement(candidate, random, depthLootConfig.legendaryBoost));
+        }
         const basePlacements = Math.min(
             Math.max(5, Math.round(candidates.length * 0.08)),
             12
@@ -20476,6 +20637,48 @@ export class ThreeGame {
         return pick[0];
     }
 
+    getMazeDebugSnapshot(chunkX, chunkY) {
+        const key = `${chunkX},${chunkY}`;
+        if (!this.chunkCache.has(key)) this.getOrCreateChunk(chunkX, chunkY);
+        const metadata = this.wfcMetadataCache?.get(key);
+        if (!metadata) return null;
+        return {
+            generationVersion: metadata.generationVersion,
+            chunkKey: key,
+            rooms: (metadata.roomInstances ?? []).map((room) => ({
+                id: room.id,
+                tileId: room.tileId,
+                role: room.role,
+                theme: room.theme,
+                sizeClass: room.sizeClass,
+                doors: room.doors,
+                navigation: room.navigation,
+                population: room.populationPlan,
+                encounter: room.encounter
+            })),
+            doors: metadata.doors ?? [],
+            gates: metadata.gates ?? [],
+            accessSources: metadata.accessSources ?? [],
+            portals: this.worldRouteRecords?.get(key)?.portals ?? null,
+            reachableFromShip: this.reachableGeneratedChunkKeys?.has(key) ?? false
+        };
+    }
+
+    getMazePersistenceState() {
+        return {
+            generationVersion: 2,
+            access: serializeAccessState(this.mazeAccessState),
+            doors: serializeDoorStates(this.proceduralDoorStates)
+        };
+    }
+
+    restoreMazePersistenceState(raw) {
+        if (!raw || raw.generationVersion !== 2) return false;
+        this.mazeAccessState = createAccessState(raw.access);
+        this.proceduralDoorStates = restoreDoorStates(raw.doors);
+        return true;
+    }
+
     getOrCreateChunk(chunkX, chunkY) {
         const key = `${chunkX},${chunkY}`;
         if (!this.chunkCache.has(key)) {
@@ -20756,7 +20959,20 @@ export class ThreeGame {
             );
             mazeMetadata.doors = gatePlan.doors;
             mazeMetadata.gates = gatePlan.gates;
-            mazeMetadata.accessSources = gatePlan.accessSources;
+            mazeMetadata.accessSources = gatePlan.accessSources.map((source) => {
+                const sourceRoom = mazeMetadata.roomInstances.find((room) => room.id === source.roomId);
+                const signature = sourceRoom?.populationPlan?.placements
+                    ?.find((placement) => placement.kind === 'signature');
+                if (signature) {
+                    signature.type = 'lore_terminal';
+                    signature.accessRequirement = source.requirement;
+                }
+                return {
+                    ...source,
+                    localX: signature?.x ?? sourceRoom?.interior?.[0]?.x,
+                    localY: signature?.y ?? sourceRoom?.interior?.[0]?.y
+                };
+            });
             if (!this.proceduralDoorStates) this.proceduralDoorStates = new Map();
             for (const door of gatePlan.doors) {
                 const persisted = this.proceduralDoorStates.get(door.id);
@@ -21130,6 +21346,7 @@ export class ThreeGame {
             Object.values(textureSet ?? {}).forEach((texture) => texture?.dispose?.());
         });
         this.floorMaterial?.dispose?.();
+        for (const material of this.roomFloorMaterials?.values?.() ?? []) material?.dispose?.();
         Object.values(this.exteriorCanyonMaterials ?? {}).forEach((material) => material?.dispose?.());
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();

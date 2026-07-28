@@ -62,3 +62,11 @@ export function transitionDoorState(door, action, unlocked = true) {
     if (action === 'close' || action === 'toggle') return { ...door, state: 'closed' };
     return door;
 }
+
+export function serializeDoorStates(states) {
+    return [...(states?.values?.() ?? [])].map((door) => ({ ...door }));
+}
+
+export function restoreDoorStates(records) {
+    return new Map((records ?? []).map((door) => [door.id, { ...door }]));
+}

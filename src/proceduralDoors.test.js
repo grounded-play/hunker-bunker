@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { planProceduralDoors, stampDoorRecords, transitionDoorState } from './proceduralDoors.js';
+import {
+    planProceduralDoors,
+    restoreDoorStates,
+    serializeDoorStates,
+    stampDoorRecords,
+    transitionDoorState
+} from './proceduralDoors.js';
 
 describe('procedural doors', () => {
     const room = {
@@ -24,5 +30,10 @@ describe('procedural doors', () => {
         const locked = { state: 'closed', lock: { type: 'power', id: 'grid' } };
         expect(transitionDoorState(locked, 'toggle', false).state).toBe('locked');
         expect(transitionDoorState(locked, 'toggle', true).state).toBe('open');
+    });
+
+    it('round-trips persistent door state', () => {
+        const states = new Map([['door', { id: 'door', state: 'open', hp: 4 }]]);
+        expect(restoreDoorStates(serializeDoorStates(states))).toEqual(states);
     });
 });
