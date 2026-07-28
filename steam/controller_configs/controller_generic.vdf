@@ -391,6 +391,26 @@
                         }
                     }
                 } }
+            "button_select" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay toggle_map, Tactical Map"
+                        }
+                    }
+                } }
+            "button_back" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay toggle_map, Tactical Map"
+                        }
+                    }
+                } }
             "button_back_left" { "activators"
                 {
                     "Full_Press"

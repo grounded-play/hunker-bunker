@@ -1,5 +1,6 @@
 import { TILE_CATALOG, SOCKET, TILE_SIZE } from './tileCatalog.js';
 import { buildRoomInstances } from './roomGeometry.js';
+import { injectBoundedLoops } from './mazeTopology.js';
 
 export const LATTICE_SIZE = 3;
 export const POCKET_LATTICE_SIZE = 2;
@@ -226,13 +227,25 @@ function roomHasNoExteriorDoor(tile, index, latticeSize) {
     return true;
 }
 
-export function collapseChunkLattice(random, { tutorialOnly = false } = {}) {
+export function collapseChunkLattice(random, {
+    tutorialOnly = false,
+    depthTier = 0,
+    loopChance = null,
+    maxLoops = null
+} = {}) {
     const catalog = tutorialOnly ? SELECTABLE_CATALOG.filter((tile) => tile.tutorial) : SELECTABLE_CATALOG;
     const cellCount = LATTICE_SIZE * LATTICE_SIZE;
-    const openEdges = tutorialOnly
+    let openEdges = tutorialOnly
         ? buildHamiltonianPath(random)
         : buildBranchingSpanningTree(random, NEIGHBOR_CACHE, cellCount);
     const roles = buildRoomHallRoles(openEdges, NEIGHBOR_CACHE, random);
+    if (!tutorialOnly) {
+        openEdges = injectBoundedLoops(openEdges, NEIGHBOR_CACHE, roles, random, {
+            chance: loopChance ?? Math.min(0.65, 0.24 + Math.max(0, depthTier) * 0.08),
+            maxLoops: maxLoops ?? (depthTier >= 3 ? 2 : 1),
+            minCycleLength: 4
+        });
+    }
 
     const lattice = [];
     for (let index = 0; index < cellCount; index += 1) {

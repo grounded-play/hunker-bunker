@@ -68,6 +68,7 @@
                 "scan" "#ActionScan"
                 "sprint" "#ActionSprint"
                 "pause" "#ActionPause"
+                "toggle_map" "#ActionToggleMap"
             }
         }
         "archive"
@@ -113,6 +114,7 @@
             "ActionScan" "Scan"
             "ActionSprint" "Sprint"
             "ActionPause" "Pause"
+            "ActionToggleMap" "Tactical Map"
             "ActionArchiveFocus" "Move Focus"
             "ActionArchiveConfirm" "Inspect / Confirm"
             "ActionArchiveInventory" "Inventory"

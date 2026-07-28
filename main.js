@@ -896,6 +896,9 @@ function handleSteamGameplayInput(controller) {
     if (controller.pause && !prev.pause) {
         triggerControllerPauseAction();
     }
+    if (controller.toggleMap && !prev.toggleMap) {
+        toggleTacticalMapModal();
+    }
     if (controller.sprint && !prev.sprint) {
         window.game?.setVirtualInputSprint?.(true);
     }
@@ -908,6 +911,7 @@ function handleSteamGameplayInput(controller) {
         ability: Boolean(controller.ability),
         scan: Boolean(controller.scan),
         pause: Boolean(controller.pause),
+        toggleMap: Boolean(controller.toggleMap),
         sprint: Boolean(controller.sprint),
         moveX,
         moveY,
@@ -1030,7 +1034,8 @@ const CONTROL_ACTIONS = Object.freeze([
     { id: 'reload', label: 'RELOAD' },
     { id: 'ability', label: 'EXOSUIT ACTION' },
     { id: 'scan', label: 'RADAR SCAN' },
-    { id: 'sprint', label: 'SPRINT BURST' }
+    { id: 'sprint', label: 'SPRINT BURST' },
+    { id: 'map', label: 'TACTICAL MAP' }
 ]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';

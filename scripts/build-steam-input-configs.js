@@ -164,6 +164,8 @@ function buildControllerConfig(controllerType) {
             left_bumper: ['sprint', 'Sprint'],
             right_bumper: ['fire', 'Fire'],
             button_menu: ['pause', 'Pause'],
+            button_select: ['toggle_map', 'Tactical Map'],
+            button_back: ['toggle_map', 'Tactical Map'],
             button_back_left: ['sprint', 'Sprint'],
             button_back_right: ['interact', 'Interact']
         }),

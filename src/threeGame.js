@@ -217,6 +217,20 @@ const LANDFORM_SHADER_ID = {
     [LANDFORMS.RUINS]: 4,
     pocket: 5
 };
+const ROOM_WALL_STYLE_ID = Object.freeze({
+    'bunker-standard': 0,
+    'bunker-utility': 1,
+    'bunker-medical': 2,
+    'bunker-security': 3,
+    'bunker-storage': 4,
+    'cryo-rough': 5,
+    'cryo-clean': 6,
+    'cryo-lab': 7,
+    'bio-resin': 8,
+    'bio-hive': 9,
+    'bio-nest': 10,
+    'camp-fortified': 11
+});
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
 
@@ -1205,6 +1219,7 @@ export class ThreeGame {
             // configureWallMesh's onBeforeRender) so one shared material can
             // still read as a distinct wall type per landform.
             shader.uniforms.uLandformId = { value: 0 };
+            shader.uniforms.uRoomStyleId = { value: 0 };
             this.wallShaderUniforms = shader.uniforms;
 
             // Inject world position and world normal varyings in vertex shader
@@ -1240,6 +1255,7 @@ export class ThreeGame {
                 uniform sampler2D tBioWallGrunge;
                 uniform vec2 uShipWorldPos;
                 uniform float uLandformId;
+                uniform float uRoomStyleId;
 
                 // Cheap deterministic per-tile hash — every wall used to read
                 // identical (same flat color, same texture), so dense wall
@@ -1342,6 +1358,25 @@ export class ThreeGame {
                         landformTintColor = mix(finalWallColor, vec3(0.16, 0.17, 0.19), 0.42);
                     }
                     finalWallColor = landformTintColor;
+
+                    // Room-specific treatment layered over biome identity.
+                    // Styles share the biome textures but alter paint,
+                    // cleanliness, oxidation, resin, and security accents.
+                    if (uRoomStyleId > 0.5 && uRoomStyleId < 1.5) {
+                        finalWallColor = mix(finalWallColor, vec3(0.20, 0.42, 0.48), 0.28);
+                    } else if (uRoomStyleId > 1.5 && uRoomStyleId < 2.5) {
+                        finalWallColor = mix(finalWallColor, vec3(0.66, 0.78, 0.76), 0.32);
+                    } else if (uRoomStyleId > 2.5 && uRoomStyleId < 3.5) {
+                        finalWallColor = mix(finalWallColor, vec3(0.42, 0.16, 0.12), 0.34);
+                    } else if (uRoomStyleId > 3.5 && uRoomStyleId < 4.5) {
+                        finalWallColor = mix(finalWallColor, vec3(0.38, 0.31, 0.20), 0.28);
+                    } else if (uRoomStyleId > 5.5 && uRoomStyleId < 7.5) {
+                        finalWallColor = mix(finalWallColor, vec3(0.62, 0.82, 0.94), 0.30);
+                    } else if (uRoomStyleId > 7.5 && uRoomStyleId < 10.5) {
+                        finalWallColor = mix(finalWallColor, vec3(0.24, 0.10, 0.28), 0.34);
+                    } else if (uRoomStyleId > 10.5) {
+                        finalWallColor = mix(finalWallColor, vec3(0.34, 0.25, 0.16), 0.30);
+                    }
 
                     // Per-tile wear jitter breaks the "one flat slab" read
                     // when several wall tiles sit side by side.
@@ -14489,9 +14524,17 @@ export class ThreeGame {
         // specific mesh draws (a standard three.js one-material-many-looks
         // trick). Safe because WebGL draw calls are synchronous.
         const landformShaderId = LANDFORM_SHADER_ID[landform] ?? 0;
+        const roomMetadata = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
+        const room = roomMetadata?.roomInstances?.find((candidate) => (
+            candidate.wallCells?.some((cell) => cell.x === localX && cell.y === localY)
+        ));
+        const roomStyleId = ROOM_WALL_STYLE_ID[room?.themeConfig?.wallStyle] ?? 0;
+        wall.userData.roomId = room?.id ?? null;
+        wall.userData.roomWallStyle = room?.themeConfig?.wallStyle ?? null;
         wall.onBeforeRender = () => {
             if (this.wallShaderUniforms) {
                 this.wallShaderUniforms.uLandformId.value = landformShaderId;
+                this.wallShaderUniforms.uRoomStyleId.value = roomStyleId;
             }
         };
         return wall;
@@ -20408,7 +20451,10 @@ export class ThreeGame {
             // WFC tile catalog (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md
             // §1-3) replaces the old DFS-carve+erosion pipeline for MAZE
             // chunks — see §6 for why non-MAZE landforms are unaffected.
-            mazeLattice = collapseChunkLattice(random, { tutorialOnly: this.isInTutorialRing(chunkX, chunkY) });
+            mazeLattice = collapseChunkLattice(random, {
+                tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
+                depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0
+            });
             grid = stampLattice(mazeLattice, this.chunkSize);
             if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
             mazeMetadata = extractChunkWfcMetadata(mazeLattice, this.chunkSize, { chunkX, chunkY });
