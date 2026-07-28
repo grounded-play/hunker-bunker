@@ -57,7 +57,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'scout_special_upgrade_2',
             label: 'FAST RECOVERY',
-            desc: 'Sprint Burst cooldown reduced by -2.0s.',
+            desc: 'EVASIVE passive fully negates enemy slow/freeze effects.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['scout_special_unlock']),
             requiredGoal: 'reactorCompressor',
@@ -92,8 +92,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
         }),
         Object.freeze({
             id: 'tank_special_unlock',
-            label: 'UNLOCK BRACE',
-            desc: 'Unlocks Class Special Ability: Brace [F]. Stops movement, grants invulnerability.',
+            label: 'HARDENED BULWARK',
+            desc: 'BULWARK passive strengthened: block chance increased to 30% (from 20%).',
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['tank_damage_1', 'tank_o2_efficiency']),
             prereqMode: 'any',
@@ -103,7 +103,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'tank_special_upgrade_1',
             label: 'IRON WALL',
-            desc: 'Brace duration increased by +1.5s.',
+            desc: 'BULWARK block chance increased to 40%.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['tank_special_unlock']),
             requiredGoal: 'reactorCompressor',
