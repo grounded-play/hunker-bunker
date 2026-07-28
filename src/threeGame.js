@@ -897,6 +897,7 @@ export class ThreeGame {
         this.weaponClipAmmo = this.weaponClipSize;
         this.weaponReloading = false;
         this.weaponReloadTimer = 0;
+        this.weaponReloadDuration = WEAPON_RELOAD_DURATION;
         this.weaponAmmoRefillTimer = 0;
         this.weaponFireCooldown = 0;
         this.isPlayerDead = false;
@@ -10646,7 +10647,7 @@ export class ThreeGame {
 
     emitWeaponClipState() {
         const reloadProgress = this.weaponReloading
-            ? Math.max(0, Math.min(1, 1 - (this.weaponReloadTimer / WEAPON_RELOAD_DURATION)))
+            ? Math.max(0, Math.min(1, 1 - (this.weaponReloadTimer / (this.weaponReloadDuration || WEAPON_RELOAD_DURATION))))
             : 0;
         const autoRefillInterval = this.getAmmoRefillInterval();
         const autoRefillProgress = Number.isFinite(autoRefillInterval)
@@ -11836,6 +11837,10 @@ export class ThreeGame {
             if (typeof window !== 'undefined') window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
         }
         this._wasSprinting = active;
+    }
+
+    applyPlayerSlow(duration) {
+        this.playerSlowTimer = duration * (this.slowResistMult ?? 1.0);
     }
 
     updateVitals(delta) {
@@ -13590,7 +13595,8 @@ export class ThreeGame {
         const refillAmount = Math.min(missingAmmo, availableAmmo);
         if (refillAmount <= 0) return false;
         this.weaponReloading = true;
-        this.weaponReloadTimer = WEAPON_RELOAD_DURATION;
+        this.weaponReloadDuration = WEAPON_RELOAD_DURATION * (this.reloadSpeedMult ?? 1.0);
+        this.weaponReloadTimer = this.weaponReloadDuration;
         this.emitWeaponClipState();
         window.AudioManager?.play('weapon_reload', { volume: 0.52 });
         return true;
@@ -19274,7 +19280,7 @@ export class ThreeGame {
                         const d = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
                         if (d <= 4.5) {
                             this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z);
-                            this.playerSlowTimer = 3.0; // slowed for 3 seconds
+                            this.applyPlayerSlow(3.0); // slowed for 3 seconds (SCOUT passive reduces this)
                         }
                     }
                     window.AudioManager?.play('ui_scan_ping', { volume: 0.45, playbackRate: 0.38 });
@@ -19350,7 +19356,7 @@ export class ThreeGame {
                     window.AudioManager?.playMetalStress?.({ volume: 0.52, playbackRate: 0.8, force: true });
                 } else if (data.type === 'boss_corrupted_engineer' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 6.0;
-                    this.playerSlowTimer = 2.5; // Jam and slow
+                    this.applyPlayerSlow(2.5); // Jam and slow (SCOUT passive reduces this)
                     const parent = sprite.parent;
                     if (parent) {
                         const tx = sprite.position.x + (Math.random() - 0.5) * 2;
@@ -19403,7 +19409,7 @@ export class ThreeGame {
                 this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
                 this.applySnailContactKnockback(sprite, data);
                 if (data.type === 'cryosnail') {
-                    this.playerSlowTimer = 2.5; // Cryosnail slows player on hit
+                    this.applyPlayerSlow(2.5); // Cryosnail slows player on hit (SCOUT passive reduces this)
                 }
             } else if (activeShip) {
                 this.damageShip(activeShip, damage, data.type);

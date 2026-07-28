@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 
 function makeFakeBank(unlockedIds = []) {
@@ -65,5 +65,62 @@ describe('resolveClassPassiveStats', () => {
         const fakeThis = {};
         const stats = ThreeGame.prototype.resolveClassPassiveStats.call(fakeThis, 'SCOUT');
         expect(stats.slowResistMult).toBeCloseTo(0.5);
+    });
+});
+
+describe('applyPlayerSlow — SCOUT passive slow-resistance', () => {
+    it('applies the full duration when slowResistMult is 1.0 (non-Scout default)', () => {
+        const fakeThis = { slowResistMult: 1.0, playerSlowTimer: 0 };
+        ThreeGame.prototype.applyPlayerSlow.call(fakeThis, 3.0);
+        expect(fakeThis.playerSlowTimer).toBeCloseTo(3.0);
+    });
+
+    it('halves the duration for SCOUT base passive (slowResistMult 0.5)', () => {
+        const fakeThis = { slowResistMult: 0.5, playerSlowTimer: 0 };
+        ThreeGame.prototype.applyPlayerSlow.call(fakeThis, 3.0);
+        expect(fakeThis.playerSlowTimer).toBeCloseTo(1.5);
+    });
+
+    it('applies zero duration once SCOUT has full immunity (slowResistMult 0)', () => {
+        const fakeThis = { slowResistMult: 0, playerSlowTimer: 0 };
+        ThreeGame.prototype.applyPlayerSlow.call(fakeThis, 2.5);
+        expect(fakeThis.playerSlowTimer).toBe(0);
+    });
+});
+
+describe('startReload — SCOUT passive reload speed', () => {
+    function makeFakeThis(overrides = {}) {
+        return {
+            weaponReloading: false,
+            weaponClipSize: 8,
+            weaponClipAmmo: 2,
+            reloadSpeedMult: 1.0,
+            getAvailableAmmo: () => 10,
+            emitWeaponClipState: () => {},
+            ...overrides
+        };
+    }
+
+    let originalWindow;
+    beforeEach(() => {
+        originalWindow = globalThis.window;
+        globalThis.window = { AudioManager: { play: () => {} } };
+    });
+    afterEach(() => {
+        globalThis.window = originalWindow;
+    });
+
+    it('uses the full WEAPON_RELOAD_DURATION when reloadSpeedMult is 1.0', () => {
+        const fakeThis = makeFakeThis();
+        ThreeGame.prototype.startReload.call(fakeThis);
+        expect(fakeThis.weaponReloadDuration).toBeCloseTo(1.25);
+        expect(fakeThis.weaponReloadTimer).toBeCloseTo(1.25);
+    });
+
+    it('shortens reload duration for SCOUT (reloadSpeedMult 0.8)', () => {
+        const fakeThis = makeFakeThis({ reloadSpeedMult: 0.8 });
+        ThreeGame.prototype.startReload.call(fakeThis);
+        expect(fakeThis.weaponReloadDuration).toBeCloseTo(1.0);
+        expect(fakeThis.weaponReloadTimer).toBeCloseTo(1.0);
     });
 });
