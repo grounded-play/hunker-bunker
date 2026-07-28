@@ -6196,25 +6196,8 @@ body.mission-intro-active #game-container canvas {
   display: none;
 }
 
-/* Exosuit Special locked style */
-.class-ability-panel.class-ability-panel--locked {
-  border-color: rgba(239, 68, 68, 0.3) !important;
-  background: rgba(20, 10, 10, 0.85) !important;
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.class-ability-panel.class-ability-panel--locked .class-ability-panel__key {
-  border-color: rgba(239, 68, 68, 0.4) !important;
-  color: #ef4444 !important;
-}
-
-.class-ability-panel.class-ability-panel--locked .class-ability-panel__name {
-  color: #f87171 !important;
-}
-
-.class-ability-panel.class-ability-panel--locked .class-ability-panel__bar {
-  background: #ef4444 !important;
+.class-ability-panel.class-ability-panel--static .class-ability-panel__bar-track {
+  display: none;
 }
 
 .loop-step-hud.hidden { display: none !important; }
@@ -9895,52 +9878,6 @@ button.archive-log-entry:active {
   animation: sentinel-warning-flash 0.28s ease-out forwards;
 }
 
-/* ── Class Ability Viewport Effects ────────────────────────── */
-#game-viewport.ability-active-sprint::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse 70% 50% at center, transparent 50%, rgba(125, 255, 90, 0.06) 100%);
-  animation: sprint-vignette 0.18s linear infinite alternate;
-  z-index: 3;
-}
-
-@keyframes sprint-vignette {
-  from { opacity: 0.6; }
-  to   { opacity: 1; }
-}
-
-#game-viewport.ability-active-fortify::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse 60% 60% at center, rgba(255, 183, 0, 0.06) 0%, rgba(255, 183, 0, 0.12) 100%);
-  animation: fortify-pulse 0.5s ease-in-out infinite alternate;
-  z-index: 3;
-}
-
-@keyframes fortify-pulse {
-  from { opacity: 0.7; }
-  to   { opacity: 1; }
-}
-
-#game-viewport.ability-active-overclock::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(ellipse 70% 70% at center, transparent 40%, rgba(0, 229, 255, 0.05) 100%);
-  animation: overclock-glow 0.8s ease-in-out infinite alternate;
-  z-index: 3;
-}
-
-@keyframes overclock-glow {
-  from { opacity: 0.5; }
-  to   { opacity: 1; }
-}
-
 /* Credits Styles */
 .credits-modal-content {
   padding: calc(var(--vu) * 4) calc(var(--vu) * 5) calc(var(--vu) * 3) calc(var(--vu) * 5) !important;
@@ -13482,4 +13419,3 @@ button.archive-log-entry:active {
   text-align: center;
   margin-top: 8px;
 }
-

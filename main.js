@@ -887,9 +887,6 @@ function handleSteamGameplayInput(controller) {
     if (controller.reload && !prev.reload) {
         window.game?.triggerGameplayReload?.({ manual: true });
     }
-    if (controller.ability && !prev.ability) {
-        window.game?.triggerClassAbility?.();
-    }
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
     }
@@ -899,16 +896,13 @@ function handleSteamGameplayInput(controller) {
     if (controller.toggleMap && !prev.toggleMap) {
         toggleTacticalMapModal();
     }
-    if (controller.sprint && !prev.sprint) {
-        window.game?.setVirtualInputSprint?.(true);
-    }
+    window.game?.setVirtualInputSprint?.(Boolean(controller.sprint));
 
     updateControllerInputMemory(controller, {
         ...prev,
         fire: Boolean(controller.fire),
         interact: Boolean(controller.interact),
         reload: Boolean(controller.reload),
-        ability: Boolean(controller.ability),
         scan: Boolean(controller.scan),
         pause: Boolean(controller.pause),
         toggleMap: Boolean(controller.toggleMap),
@@ -4283,46 +4277,20 @@ window.addEventListener('mission-objective-complete', () => {
     hideMissionProgressHUD();
 });
 
-document.getElementById('class-ability-panel')?.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    window.game?.triggerClassAbility?.();
-});
-
 document.getElementById('radar-scan-panel')?.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     window.game?.triggerRadarScan?.();
 });
 
-window.addEventListener('class-ability-activated', (event) => {
-    const panel = document.getElementById('class-ability-panel');
-    if (panel) panel.classList.add('class-ability-panel--active');
-    const { ability } = event?.detail ?? {};
-    const viewport = document.getElementById('game-viewport');
-    if (viewport) {
-        viewport.classList.add(`ability-active-${ability}`);
-    }
-});
-
-window.addEventListener('class-ability-ended', (event) => {
-    const panel = document.getElementById('class-ability-panel');
-    if (panel) {
-        panel.classList.remove('class-ability-panel--active');
-    }
-    const { ability } = event?.detail ?? {};
-    const viewport = document.getElementById('game-viewport');
-    if (viewport) viewport.classList.remove(`ability-active-${ability}`);
-});
-
-window.addEventListener('ability-cooldown-tick', (event) => {
-    const { remaining = 0, max = 1, active = false, activeProgress = 0 } = event?.detail ?? {};
+window.addEventListener('engineer-turret-tick', (event) => {
+    const { remaining = 0, max = 1, active = false } = event?.detail ?? {};
     const bar = document.getElementById('ability-bar');
     const panel = document.getElementById('class-ability-panel');
     const clampedMax = Math.max(0.001, Number(max) || 0.001);
     const clampedRemaining = Math.max(0, Number(remaining) || 0);
-    const clampedActiveProgress = Math.max(0, Math.min(1, Number(activeProgress) || 0));
     if (bar) {
         const fillPct = active
-            ? 1 - clampedActiveProgress
+            ? (clampedRemaining / clampedMax)
             : 1 - (clampedRemaining / clampedMax);
         bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
     }
@@ -4351,19 +4319,18 @@ window.addEventListener('scan-cooldown-tick', (event) => {
 });
 
 function syncAbilityPanelLabel() {
-    const info = window.game?.getClassAbilityInfo?.();
-    const label = info?.label ?? 'SPRINT BURST';
+    const info = window.game?.getClassPassiveInfo?.();
+    const name = info?.name ?? 'EVASIVE';
+    const description = info?.description ?? '';
     const nameEl = document.getElementById('ability-name');
-    if (nameEl) nameEl.textContent = label;
+    if (nameEl) nameEl.textContent = name;
     const panel = document.getElementById('class-ability-panel');
     if (panel) {
-        panel.title = `${label} [F]`;
-        const unlocked = window.game?.isSpecialAbilityUnlocked?.() ?? true;
-        panel.classList.toggle('hidden', !unlocked);
-        panel.classList.toggle('class-ability-panel--locked', !unlocked);
-        if (!unlocked) {
-            panel.title = `${label} [LOCKED — TAB SKILLS]`;
-            if (nameEl) nameEl.textContent = `${label} (LOCKED)`;
+        panel.title = description;
+        const isEngineer = window.game?.playerType === 'ENGINEER';
+        panel.classList.toggle('class-ability-panel--static', !isEngineer);
+        if (!isEngineer) {
+            panel.classList.remove('class-ability-panel--active', 'class-ability-panel--cooling', 'class-ability-panel--ready');
         }
     }
 }
