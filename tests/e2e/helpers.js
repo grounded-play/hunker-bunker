@@ -84,6 +84,8 @@ export async function startRunAndSkipIntro(page) {
         }
     }
 
+    await page.evaluate(() => { window.skipAllIntro = true; }).catch(() => {});
+
     const skipBtn = page.locator('#global-skip-intro-btn');
     const dialogueSkipChoice = page.locator('#mothership-choice-skip');
     const deadline = Date.now() + 45_000;
