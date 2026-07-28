@@ -5,8 +5,11 @@ import {
     MAZE_GENERATION_RULES,
     MAZE_ROOM_TILES,
     RADIAL_SITE_RULES,
+    computeReachableRings,
+    computeRingWalkDistances,
     generateRadialMazeExpedition,
     validateRadialMazeExpedition,
+    validateRingProgression,
     validateMazeExpedition
 } from './mazeExpedition.js';
 
@@ -62,5 +65,52 @@ describe('long maze expedition plan', () => {
                     .toBeGreaterThanOrEqual(8);
             }
         }
+    });
+});
+
+describe('radial ring crossing gates are provably non-bypassable', () => {
+    it('reaches only ring 0 and 1 with every blocker locked', () => {
+        const plan = generateRadialMazeExpedition(1);
+        expect(computeReachableRings(plan, new Set())).toEqual(new Set([0, 1]));
+    });
+
+    it('unlocking a blocker opens exactly its own ring, never an ahead-of-schedule one', () => {
+        const plan = generateRadialMazeExpedition(1);
+        const reachableAfterFirst = computeReachableRings(plan, new Set(['ring-1-gate']));
+        expect(reachableAfterFirst).toEqual(new Set([0, 1, 2]));
+        const reachableAfterFirstTwo = computeReachableRings(plan, new Set(['ring-1-gate', 'ring-2-gate']));
+        expect(reachableAfterFirstTwo).toEqual(new Set([0, 1, 2, 3]));
+    });
+
+    it('reaches every ring once all blockers are unlocked', () => {
+        const plan = generateRadialMazeExpedition(1);
+        const allBlockerIds = new Set(plan.blockers.map((blocker) => blocker.id));
+        expect(computeReachableRings(plan, allBlockerIds)).toEqual(new Set([0, 1, 2, 3, 4, 5]));
+    });
+
+    it('increases shortest walk distance strictly outward by ring', () => {
+        const plan = generateRadialMazeExpedition(1);
+        const distances = computeRingWalkDistances(plan);
+        for (let ring = 1; ring <= 5; ring += 1) {
+            expect(distances.get(ring), `ring ${ring}`).toBeGreaterThan(distances.get(ring - 1));
+        }
+    });
+
+    it('holds ring-progression non-bypass and distance invariants across 2,000 seeds', () => {
+        for (let seed = 1; seed <= 2000; seed += 1) {
+            const plan = generateRadialMazeExpedition(seed);
+            expect(validateRingProgression(plan), `seed ${seed}`).toEqual({ valid: true, errors: [] });
+        }
+    });
+
+    it('flags a plan whose blocker fails to gate its ring', () => {
+        const plan = generateRadialMazeExpedition(1);
+        const broken = {
+            ...plan,
+            edges: plan.edges.map((edge) => (edge.blockerId === 'ring-2-gate' ? { ...edge, blockerId: null } : edge))
+        };
+        const result = validateRingProgression(broken);
+        expect(result.valid).toBe(false);
+        expect(result.errors).toContain('ring 3 reachable before ring-2-gate is unlocked');
     });
 });

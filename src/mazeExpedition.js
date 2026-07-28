@@ -146,6 +146,138 @@ export function generateRadialMazeExpedition(seed = 1) {
     };
 }
 
+function ringNodeIds(ring) {
+    return ring === 0 ? ['o2_ship'] : [`ring-${ring}-spiral`, `ring-${ring}-loop`];
+}
+
+// Undirected graph over the plan's abstract ring/spiral/loop nodes. An edge
+// gated by a blocker is only included once that blocker's id is present in
+// unlockedBlockerIds — this is what lets us prove a locked ring is actually
+// unreachable rather than merely "intended" to be gated.
+export function buildRingCrossingGraph(plan, unlockedBlockerIds = new Set()) {
+    const adjacency = new Map();
+    const addEdge = (a, b) => {
+        if (!adjacency.has(a)) adjacency.set(a, new Set());
+        if (!adjacency.has(b)) adjacency.set(b, new Set());
+        adjacency.get(a).add(b);
+        adjacency.get(b).add(a);
+    };
+    for (const edge of plan?.edges ?? []) {
+        if (edge.blockerId && !unlockedBlockerIds.has(edge.blockerId)) continue;
+        addEdge(edge.from, edge.to);
+    }
+    return adjacency;
+}
+
+export function computeReachableRings(plan, unlockedBlockerIds = new Set()) {
+    const graph = buildRingCrossingGraph(plan, unlockedBlockerIds);
+    const seen = new Set(['o2_ship']);
+    const queue = ['o2_ship'];
+    while (queue.length > 0) {
+        const current = queue.shift();
+        for (const next of graph.get(current) ?? []) {
+            if (seen.has(next)) continue;
+            seen.add(next);
+            queue.push(next);
+        }
+    }
+    const reachableRings = new Set();
+    for (let ring = 0; ring <= 5; ring += 1) {
+        if (ringNodeIds(ring).some((id) => seen.has(id))) reachableRings.add(ring);
+    }
+    return reachableRings;
+}
+
+// Shortest weighted walk (edge weight = minSteps) from the ship to each
+// ring, computed on the fully-unlocked graph. This validates the macro
+// plan's *designed* distance ordering (Phase 6.4); it is not yet the
+// physically-realized WFC corridor distance, which requires projecting
+// these route reservations into generated chunks (Phase 6.1/6.3, not done).
+export function computeRingWalkDistances(plan) {
+    const blockerIds = new Set((plan?.blockers ?? []).map((blocker) => blocker.id));
+    const graph = buildRingCrossingGraph(plan, blockerIds);
+    const weights = new Map();
+    for (const edge of plan?.edges ?? []) {
+        const weight = Number.isFinite(edge.minSteps) ? edge.minSteps : 1;
+        weights.set(`${edge.from}|${edge.to}`, weight);
+        weights.set(`${edge.to}|${edge.from}`, weight);
+    }
+    const distances = new Map([['o2_ship', 0]]);
+    const unvisited = new Set(graph.keys());
+    unvisited.add('o2_ship');
+    while (unvisited.size > 0) {
+        let currentNode = null;
+        let currentDist = Infinity;
+        for (const node of unvisited) {
+            const dist = distances.get(node) ?? Infinity;
+            if (dist < currentDist) {
+                currentDist = dist;
+                currentNode = node;
+            }
+        }
+        if (currentNode === null) break;
+        unvisited.delete(currentNode);
+        for (const next of graph.get(currentNode) ?? []) {
+            const weight = weights.get(`${currentNode}|${next}`) ?? 1;
+            const alt = currentDist + weight;
+            if (alt < (distances.get(next) ?? Infinity)) distances.set(next, alt);
+        }
+    }
+    const ringDistances = new Map();
+    for (let ring = 0; ring <= 5; ring += 1) {
+        const candidates = ringNodeIds(ring).map((id) => distances.get(id) ?? Infinity);
+        ringDistances.set(ring, Math.min(...candidates));
+    }
+    return ringDistances;
+}
+
+// Proves the plan's ring blockers actually gate progression rather than
+// merely existing alongside it: locked rings are unreachable, each blocker
+// unlocks exactly its own ring (no early opens), everything is reachable
+// once fully unlocked, and shortest walk distance increases ring-over-ring.
+export function validateRingProgression(plan) {
+    const errors = [];
+    const blockers = plan?.blockers ?? [];
+
+    const lockedReachable = computeReachableRings(plan, new Set());
+    for (const blocker of blockers) {
+        if (lockedReachable.has(blocker.blocksRing)) {
+            errors.push(`ring ${blocker.blocksRing} reachable despite locked blocker ${blocker.id}`);
+        }
+    }
+
+    const sortedBlockers = [...blockers].sort((a, b) => a.ring - b.ring);
+    const unlocked = new Set();
+    for (const blocker of sortedBlockers) {
+        unlocked.add(blocker.id);
+        const reachable = computeReachableRings(plan, unlocked);
+        if (!reachable.has(blocker.blocksRing)) {
+            errors.push(`unlocking ${blocker.id} did not open ring ${blocker.blocksRing}`);
+        }
+        for (const stillLocked of blockers.filter((candidate) => !unlocked.has(candidate.id))) {
+            if (reachable.has(stillLocked.blocksRing)) {
+                errors.push(`ring ${stillLocked.blocksRing} reachable before ${stillLocked.id} is unlocked`);
+            }
+        }
+    }
+
+    const allUnlocked = computeReachableRings(plan, new Set(blockers.map((blocker) => blocker.id)));
+    for (let ring = 0; ring <= 5; ring += 1) {
+        if (!allUnlocked.has(ring)) errors.push(`ring ${ring} is unreachable even with every blocker unlocked`);
+    }
+
+    const distances = computeRingWalkDistances(plan);
+    for (let ring = 1; ring <= 5; ring += 1) {
+        const previous = distances.get(ring - 1);
+        const current = distances.get(ring);
+        if (!(current > previous)) {
+            errors.push(`ring ${ring} walk distance (${current}) does not exceed ring ${ring - 1} (${previous})`);
+        }
+    }
+
+    return { valid: errors.length === 0, errors };
+}
+
 export function getRadialSite(plan, id) {
     return plan?.nodes?.find((node) => node.id === id) ?? null;
 }
