@@ -71,7 +71,12 @@ export async function bootToOperatorMenu(page) {
 // wave-5 doc logged). No fixed wait fixes that. Actively unblock
 // whichever control is on screen each tick until input is actually live.
 export async function startRunAndSkipIntro(page) {
-    await page.locator('#start-game').click();
+    const rosterConfirm = page.locator('#roster-confirm-btn');
+    if (await rosterConfirm.isVisible().catch(() => false)) {
+        await rosterConfirm.click();
+    } else {
+        await page.locator('#start-game').click();
+    }
     const skipBtn = page.locator('#global-skip-intro-btn');
     const dialogueSkipChoice = page.locator('#mothership-choice-skip');
     const deadline = Date.now() + 45_000;
