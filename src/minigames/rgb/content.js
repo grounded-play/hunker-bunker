@@ -78,6 +78,33 @@ const CINEMATIC_BASE = '/minigames/rgb/cinematics';
 const BACKGROUNDS = '/minigames/rgb/backgrounds';
 const INTERSTITIALS = '/minigames/rgb/interstitials';
 
+const CINEMATIC_NARRATION = Object.freeze({
+    'C1-A': 'Elias answers Lucia before leaving the car, choosing to hear her even as the shift clock keeps running.',
+    'C1-B': 'Elias leaves the unanswered phone in the car and crosses the lot before the clock can count him late.',
+    'C2-A': 'He leaves the calibration error visible. The record stays honest, and 4A is allowed to learn from the correction.',
+    'C2-B': 'He cleans the failed movement from the metric. The dashboard improves, but 4A loses the lesson.',
+    'C3-A': 'Elias carries the discrepancy and preserved evidence out of review toward the medical kiosk.',
+    'C3-B': 'Review closes around the company version of events, and Elias is discharged toward the kiosk without the full record.',
+    'C4-A': 'The kiosk refuses every legitimate request. Elias records the denial, opens the notebook, and finds a utility route back inside RGB.',
+    'C4-B': 'Lucia is still waiting. Elias opens the notebook and chooses the utility route back inside RGB.',
+    'C4-C': 'Elias gives up. The medication returns to holding while Lucia’s message plays unanswered.',
+    'C5-A': 'Elias leaves his training profile intact. The system keeps using his labor after it has discarded him.',
+    'C5-B': 'Elias copies and transmits the profile before the access window closes.',
+    'C5-C': 'Elias severs the primary data trunk. The cut starts a cascading electrical fire and forces him toward Sector Four.',
+    'C6-A': '4A recalls the corrected joint movement, lifts the rack, and frees Elias from the collapse.',
+    'C6-B': '4A grips the wrong point. The load shifts, the rack falls, and the rescue fails.',
+    R1: 'Elias crosses the parking lot and badges into the warehouse.',
+    R2: 'The calibration shift ends in a collision, leaving the line and Elias under review.',
+    R3: 'RGB terminates Elias’s coverage and directs him to the automated medical kiosk.',
+    R4: 'The notebook map traces a maintenance conduit behind the kiosk.',
+    R5: 'Elias follows the unauthorized route back beneath the RGB facility.',
+    R6: 'The severed trunk ignites the battery pallet and sends fire through the server room.',
+    R7: 'The collapse pins Elias in Sector Four as 4A approaches through the smoke.',
+    R8: 'Elias walks away while the preserved profile continues training the system.',
+    R9: 'The transmitted evidence leaves RGB’s network and reaches people outside the company.',
+    R10: 'The damaged system destroys 4A after the robot completes the rescue.'
+});
+
 export const BRANCH_CINEMATICS = Object.freeze({
     'C1-A': { video: `${CINEMATIC_BASE}/C1-A.mp4`, image: `${CINEMATIC_BASE}/c1/end_answer_lucia.png` },
     'C1-B': { video: `${CINEMATIC_BASE}/C1-B.mp4`, image: `${CINEMATIC_BASE}/c1/end_enter_now.png` },
@@ -111,7 +138,8 @@ export const RAIL_CINEMATICS = Object.freeze({
 export const INTRO_CINEMATIC = Object.freeze({
     video: `${CINEMATIC_BASE}/Intro.mp4`,
     image: `${BACKGROUNDS}/bg_rgb_parking_lot.png`,
-    label: 'ARCHIVE SIGNAL // RIVERSIDE GLOBAL BOTICS'
+    label: 'ARCHIVE SIGNAL // RIVERSIDE GLOBAL BOTICS',
+    narration: 'The archive rewinds to the beginning. Elias Morales sits outside Riverside Global Botics before the shift that will cost him his job, his medical coverage, and nearly his life.'
 });
 
 // Resolves which cinematic beat(s), if any, play when a hotspot fires, using
@@ -147,14 +175,14 @@ export function resolveCinematicSteps(hotspotId, priorState) {
         case 'follow_utility_map': {
             const calledLuciaOnly = priorState.flags.luciaCallback
                 && !priorState.evidence.includes('kiosk_record');
-            return [calledLuciaOnly ? 'C4-B' : 'C4-A', 'R4', 'R5'];
+            return [calledLuciaOnly ? 'C4-B' : 'C4-A'];
         }
         case 'walk_away':
             return ['C5-A', 'R8'];
         case 'expose_profile':
             return ['C5-B', 'R9'];
         case 'sever_trunk':
-            return ['C5-C', 'R6', 'R7'];
+            return ['C5-C', 'R6'];
         case 'rescue_recenter':
         case 'rescue_recenter_again':
             return ['C6-A', 'R10'];
@@ -167,7 +195,10 @@ export function resolveCinematicSteps(hotspotId, priorState) {
 
 export function resolveCinematicAssets(stepKeys) {
     return stepKeys
-        .map((key) => BRANCH_CINEMATICS[key] ?? RAIL_CINEMATICS[key])
+        .map((key) => {
+            const asset = BRANCH_CINEMATICS[key] ?? RAIL_CINEMATICS[key];
+            return asset ? { ...asset, id: key, narration: CINEMATIC_NARRATION[key] } : null;
+        })
         .filter(Boolean);
 }
 
@@ -616,7 +647,7 @@ export const CHAPTERS = Object.freeze({
                 inventoryAction: true,
                 cutaway: { image: `${INTERSTITIALS}/c4/call_lucia.png`, label: 'HR // SEPARATION PENDING REVIEW' },
                 icon: `${ITEM_ART}/item_phone.png`,
-                x: 40, y: 565, w: 190, h: 105,
+                x: 40, y: 430, w: 190, h: 105,
                 once: true,
                 requiresAllOf: ['request_billing_agent'],
                 lines: ['"Separation pending review." No further comment.'],
@@ -629,7 +660,7 @@ export const CHAPTERS = Object.freeze({
                 inventoryAction: true,
                 cutaway: { image: `${INTERSTITIALS}/c4/call_lucia.png`, label: 'LUCIA // STILL WAITING' },
                 icon: `${ITEM_ART}/item_phone.png`,
-                x: 40, y: 565, w: 190, h: 105,
+                x: 40, y: 430, w: 190, h: 105,
                 once: true,
                 requiresAllOf: ['call_hr', 'ask_kiosk_release'],
                 lines: ['"I\'m still at work, baby. I know."'],

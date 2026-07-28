@@ -198,6 +198,10 @@ export function createRgbAudioController() {
             // current on-screen copy spoken.
             if (!hasAuthoredVoice(hotspotId)) speakLines(hotspotId, lines);
         },
+        narrate(lines = []) {
+            const copy = Array.isArray(lines) ? lines : [lines];
+            speakLines('narrator', [...new Set(copy.map((line) => String(line).trim()).filter(Boolean))]);
+        },
         ending(endingId) {
             if (endingId !== 'ashes_survival') return;
             stopHandle(music);

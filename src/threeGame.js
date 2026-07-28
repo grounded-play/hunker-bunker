@@ -2,7 +2,13 @@ import * as THREE from 'three';
 import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
-import { collapseChunkLattice, collapsePocketLattice, stampLattice, extractChunkWfcMetadata } from './wfcGenerator.js';
+import {
+    addCanyonVoidAroundWalkable,
+    collapseChunkLattice,
+    collapsePocketLattice,
+    stampLattice,
+    extractChunkWfcMetadata
+} from './wfcGenerator.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { planChunkRoomPopulation } from './roomPopulation.js';
@@ -60,6 +66,7 @@ import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
+import { generateRadialMazeExpedition, getRadialSite } from './mazeExpedition.js';
 import { ExplorationTracker } from './mapSystem.js';
 
 export const EXTERIOR_CANYON_TILE = 'X';
@@ -732,15 +739,16 @@ const ROOM_TEMPLATE_CONFIGS = Object.freeze({
 });
 
 function classifyChunkCells(grid, chunkSize) {
+    const isWalkable = (char) => ['.', 'D', 'R', 'B', 'L'].includes(char);
     const roomTypes = Array.from({ length: chunkSize }, () => Array(chunkSize).fill(null));
     for (let y = 0; y < chunkSize; y++) {
         for (let x = 0; x < chunkSize; x++) {
-            if (grid[y][x] === '#') continue;
+            if (!isWalkable(grid[y][x])) continue;
             let floorNeighbors = 0;
-            if (y > 0 && grid[y - 1][x] !== '#') floorNeighbors++;
-            if (y < chunkSize - 1 && grid[y + 1][x] !== '#') floorNeighbors++;
-            if (x > 0 && grid[y][x - 1] !== '#') floorNeighbors++;
-            if (x < chunkSize - 1 && grid[y][x + 1] !== '#') floorNeighbors++;
+            if (y > 0 && isWalkable(grid[y - 1][x])) floorNeighbors++;
+            if (y < chunkSize - 1 && isWalkable(grid[y + 1][x])) floorNeighbors++;
+            if (x > 0 && isWalkable(grid[y][x - 1])) floorNeighbors++;
+            if (x < chunkSize - 1 && isWalkable(grid[y][x + 1])) floorNeighbors++;
             if (floorNeighbors <= 1) roomTypes[y][x] = ROOM_TYPES.DEAD_END;
             else if (floorNeighbors === 2) roomTypes[y][x] = ROOM_TYPES.CORRIDOR;
             else if (floorNeighbors === 3) roomTypes[y][x] = ROOM_TYPES.JUNCTION;
@@ -748,6 +756,31 @@ function classifyChunkCells(grid, chunkSize) {
         }
     }
     return roomTypes;
+}
+
+function isChunkTraversalConnected(grid) {
+    const walkable = (char) => ['.', 'D', 'R', 'B', 'L'].includes(char);
+    const cells = [];
+    for (let y = 0; y < grid.length; y += 1) {
+        for (let x = 0; x < grid[y].length; x += 1) {
+            if (walkable(grid[y][x])) cells.push({ x, y });
+        }
+    }
+    if (cells.length === 0) return false;
+    const seen = new Set([`${cells[0].x},${cells[0].y}`]);
+    const stack = [cells[0]];
+    while (stack.length > 0) {
+        const current = stack.pop();
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const x = current.x + dx;
+            const y = current.y + dy;
+            const key = `${x},${y}`;
+            if (seen.has(key) || !walkable(grid[y]?.[x])) continue;
+            seen.add(key);
+            stack.push({ x, y });
+        }
+    }
+    return seen.size === cells.length;
 }
 
 export class ThreeGame {
@@ -2769,18 +2802,17 @@ export class ThreeGame {
             y: 1.4,
             targetY: 1.4,
             speed: 5.5,
-            doorWidth: 6,
-            doorZ: 15,
-            startTileX: 6,
-            endTileX: 11
+            doorWidth: 3,
+            doorZ: 3,
+            startTileX: 8,
+            endTileX: 10
         };
 
-        // 6-wall wide Blast Door Group
+        // Three-tile blast door across the crash room's only north hallway.
         const doorGroup = new THREE.Group();
-        doorGroup.position.set(8.5, 1.4, 15.0);
+        doorGroup.position.set(9, 1.4, 3);
 
-        // Main heavy blast door slab (spans 6 tiles wide = 6.0 units, height = 2.8, depth = 0.72)
-        const doorGeo = new THREE.BoxGeometry(6.0, 2.8, 0.72);
+        const doorGeo = new THREE.BoxGeometry(3, 2.8, 0.72);
         const doorMat = new THREE.MeshStandardMaterial({
             color: 0x1f272e,
             roughness: 0.45,
@@ -2792,25 +2824,25 @@ export class ThreeGame {
         doorSlab.userData = {
             isWall: true,
             isBunkerBlastDoor: true,
-            worldX: 8.5,
-            worldZ: 15.0,
-            wallKey: '8.5,15',
+            worldX: 9,
+            worldZ: 3,
+            wallKey: '9,3',
             wallHp: 25,
             maxWallHp: 25
         };
         doorGroup.add(doorSlab);
 
         // Heavy steel reinforcement ribs across the door face
-        for (let i = -2; i <= 2; i += 2) {
+        for (let i = -1; i <= 1; i += 1) {
             const ribGeo = new THREE.BoxGeometry(0.35, 2.85, 0.82);
             const ribMat = new THREE.MeshStandardMaterial({ color: 0x11161b, roughness: 0.3, metalness: 0.9 });
             const rib = new THREE.Mesh(ribGeo, ribMat);
-            rib.position.x = i * 1.1;
+            rib.position.x = i * 0.9;
             doorGroup.add(rib);
         }
 
         // Glowing status bar across top of door
-        const barGeo = new THREE.BoxGeometry(5.6, 0.16, 0.78);
+        const barGeo = new THREE.BoxGeometry(2.7, 0.16, 0.78);
         const barMat = new THREE.MeshStandardMaterial({
             color: 0xff2200,
             emissive: 0xff2200,
@@ -2823,7 +2855,7 @@ export class ThreeGame {
 
         // Door status light
         const statusLight = new THREE.PointLight(0xff2200, 1.5, 7.0);
-        statusLight.position.set(8.5, 2.2, 15.0);
+        statusLight.position.set(9, 2.2, 3);
         this.scene.add(statusLight);
         this._bunkerDoorStatusLight = statusLight;
 
@@ -2836,9 +2868,9 @@ export class ThreeGame {
         const btnDomeGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.08, 16);
         const btnDomeMat = new THREE.MeshStandardMaterial({ color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 1.2 });
 
-        // Interior button console (inside bunker at X=5.1, Z=14.2)
+        // Interior button console, just inside the north wall.
         const intBtnGroup = new THREE.Group();
-        intBtnGroup.position.set(5.1, 1.3, 14.2);
+        intBtnGroup.position.set(7.1, 1.3, 4.2);
         const intBox = new THREE.Mesh(btnBoxGeo, btnBoxMat);
         intBtnGroup.add(intBox);
         const intDome = new THREE.Mesh(btnDomeGeo, btnDomeMat);
@@ -2847,9 +2879,9 @@ export class ThreeGame {
         intBtnGroup.add(intDome);
         this.scene.add(intBtnGroup);
 
-        // Exterior button console (outside bunker at X=5.1, Z=15.8)
+        // Exterior button console, in the hallway beyond the door.
         const extBtnGroup = new THREE.Group();
-        extBtnGroup.position.set(5.1, 1.3, 15.8);
+        extBtnGroup.position.set(7.1, 1.3, 1.8);
         const extBox = new THREE.Mesh(btnBoxGeo, btnBoxMat);
         extBtnGroup.add(extBox);
         const extDome = new THREE.Mesh(btnDomeGeo, btnDomeMat);
@@ -2870,31 +2902,16 @@ export class ThreeGame {
         });
         const xrayMesh = new THREE.Mesh(xrayRingGeo, xrayRingMat);
         xrayMesh.rotation.x = -Math.PI / 4;
-        xrayMesh.position.set(5.1, 1.35, 15.8);
+        xrayMesh.position.set(7.1, 1.35, 1.8);
         xrayMesh.renderOrder = 9992;
         this.scene.add(xrayMesh);
         this.exteriorButtonXrayMarker = xrayMesh;
 
         this._bunkerButtonDomeMat = btnDomeMat;
         this.bunkerDoorButtons = {
-            interior: { x: 5.1, z: 14.2 },
-            exterior: { x: 5.1, z: 15.8 }
+            interior: { x: 7.1, z: 4.2 },
+            exterior: { x: 7.1, z: 1.8 }
         };
-
-        // --- Fog of War Exterior Mask ---
-        const fogVeilGeo = new THREE.PlaneGeometry(36, 24);
-        const fogVeilMat = new THREE.MeshBasicMaterial({
-            color: 0x040608,
-            transparent: true,
-            opacity: 0.90,
-            depthWrite: false,
-            side: THREE.DoubleSide
-        });
-        const fogVeilMesh = new THREE.Mesh(fogVeilGeo, fogVeilMat);
-        fogVeilMesh.rotation.x = -Math.PI / 2;
-        fogVeilMesh.position.set(8.5, 0.08, 26.0);
-        this.bunkerFogVeilMesh = fogVeilMesh;
-        this.scene.add(fogVeilMesh);
     }
 
     setupPlayer() {
@@ -5481,17 +5498,6 @@ export class ThreeGame {
             this.exteriorButtonXrayMarker.scale.set(pulseScale, pulseScale, 1.0);
         }
 
-        // Update Fog of War exterior curtain:
-        // Obscures outside past Z >= 15 when door is closed and player is inside; dissolves when door opens or player exits.
-        if (this.bunkerFogVeilMesh && this.player) {
-            const playerZ = this.player.position.z;
-            const playerOutside = playerZ >= 15.2;
-            const targetFogOpacity = (open || playerOutside) ? 0.0 : 0.90;
-            const mat = this.bunkerFogVeilMesh.material;
-            mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetFogOpacity, Math.min(1.0, 4.0 * delta));
-            this.bunkerFogVeilMesh.visible = mat.opacity > 0.01;
-        }
-
         // Update floating HUD prompt when player is near interior or exterior door button
         if (this.player && this.bunkerDoorButtons && this.isGameplayInputActive()) {
             const px = this.player.position.x;
@@ -5532,7 +5538,7 @@ export class ThreeGame {
         });
         window.AudioManager?.play?.('ui_scan_ping', { volume: 0.45, playbackRate: state.open ? 1.4 : 0.8, bus: 'sfx' });
 
-        this.spawnTextureBurstEffect(8.5, 15.0, {
+        this.spawnTextureBurstEffect(state.doorCenterX ?? 9, state.doorZ, {
             textureKey: 'fx_steam_puff',
             color: state.open ? 0x00e5ff : 0xffaa00,
             count: 6,
@@ -5550,6 +5556,20 @@ export class ThreeGame {
         this.toggleBunkerBlastDoor();
     }
 
+    resetBunkerBlastDoor() {
+        const state = this.bunkerBlastDoorState;
+        if (!state) return;
+        state.open = false;
+        state.destroyed = false;
+        state.hp = state.maxHp;
+        state.y = 1.4;
+        state.targetY = 1.4;
+        if (this.bunkerBlastDoorGroup) {
+            this.bunkerBlastDoorGroup.position.y = state.y;
+            this.bunkerBlastDoorGroup.visible = true;
+        }
+    }
+
     damageBunkerBlastDoor(amount = 1, { source = 'player' } = {}) {
         if (!this.bunkerBlastDoorState || this.bunkerBlastDoorState.destroyed) return false;
         const state = this.bunkerBlastDoorState;
@@ -5558,7 +5578,7 @@ export class ThreeGame {
 
         if (state.hp > 0) {
             window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.5, force: true });
-            this.spawnTextureBurstEffect(8.5, 15.0, {
+            this.spawnTextureBurstEffect(state.doorCenterX ?? 9, state.doorZ, {
                 textureKey: 'fx_steam_puff',
                 color: 0xff4400,
                 count: 4,
@@ -5582,8 +5602,8 @@ export class ThreeGame {
         state.targetY = -2.4;
         state.hp = 0;
 
-        this.spawnPhysicalBurst(8.5, 15.0, { color: 0xff5500, count: 16, upward: 0.28, spread: 2.4 });
-        this.spawnTextureBurstEffect(8.5, 15.0, {
+        this.spawnPhysicalBurst(state.doorCenterX ?? 9, state.doorZ, { color: 0xff5500, count: 16, upward: 0.28, spread: 2.4 });
+        this.spawnTextureBurstEffect(state.doorCenterX ?? 9, state.doorZ, {
             textureKey: 'fx_steam_puff',
             color: 0xffaa00,
             count: 9,
@@ -5632,7 +5652,9 @@ export class ThreeGame {
         const localX = worldX - chunkX * this.chunkSize;
         const localY = worldZ - chunkY * this.chunkSize;
         const record = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.doors
-            ?.find((door) => door.localX === localX && door.localY === localY);
+            ?.find((door) => (
+                door.localX === localX && door.localY === localY
+            ) || door.cells?.some((cell) => cell.x === localX && cell.y === localY));
         return record ? (this.proceduralDoorStates.get(record.id) ?? record) : null;
     }
 
@@ -7843,9 +7865,11 @@ export class ThreeGame {
 
     chooseCaveEntrancePosition() {
         const anchor = this.getBiomeAnchorPosition();
-        return this.chooseProgressionSitePosition(
+        const seed = (this.hashTile(Math.round(anchor.x) + 101, Math.round(anchor.z) + 47) ^ this.runEntropy) >>> 0;
+        return this.chooseRadialSitePosition?.('queen_chamber', seed)
+            ?? this.chooseProgressionSitePosition(
             getProgressionSlot('finalCave'),
-            (this.hashTile(Math.round(anchor.x) + 101, Math.round(anchor.z) + 47) ^ this.runEntropy) >>> 0
+            seed
         );
     }
 
@@ -8417,13 +8441,43 @@ export class ThreeGame {
         return target;
     }
 
-    chooseHiveSitePosition(index) {
+    getRadialMazePlan() {
+        if (!this.radialMazePlan) {
+            this.radialMazePlan = generateRadialMazeExpedition(
+                ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0
+            );
+        }
+        return this.radialMazePlan;
+    }
+
+    chooseRadialSitePosition(siteId, seed) {
+        const site = getRadialSite(this.getRadialMazePlan(), siteId);
+        if (!site) return null;
+        return this.chooseProgressionSitePosition({
+            lateral: site.x,
+            distance: site.z,
+            ring: site.ring,
+            landmarkId: site.id
+        }, seed);
+    }
+
+    isSiteOnPlannedRing(x, z, siteId) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
+        const site = getRadialSite(this.getRadialMazePlan(), siteId);
+        if (!site) return true;
+        const anchor = this.getBiomeAnchorPosition();
+        const actualRadius = Math.hypot(x - anchor.x, z - anchor.z);
+        return Math.abs(actualRadius - site.radius) <= 22;
+    }
+
+    chooseHiveSitePosition(index, siteId = null) {
         const anchor = this.getBiomeAnchorPosition();
         const seed = (this.hashTile(
             Math.round(anchor.x) - 173 - index * 31,
             Math.round(anchor.z) + 137 + index * 17
         ) ^ this.runEntropy) >>> 0;
-        return this.chooseProgressionSitePosition(getProgressionSlot('hive', index), seed);
+        return this.chooseRadialSitePosition?.(siteId ?? ACT2_HIVE_SITES[index]?.id, seed)
+            ?? this.chooseProgressionSitePosition(getProgressionSlot('hive', index), seed);
     }
 
     ensureHiveSites() {
@@ -8437,8 +8491,8 @@ export class ThreeGame {
                 characterId: site?.characterId ?? ''
             });
             let { x, z } = record;
-            if (!Number.isFinite(x) || !Number.isFinite(z)) {
-                const spot = this.chooseHiveSitePosition(index);
+            if (!this.isSiteOnPlannedRing(x, z, record.id)) {
+                const spot = this.chooseHiveSitePosition(index, record.id);
                 x = spot.x;
                 z = spot.z;
                 this.act2.setHivePosition(record.id, x, z);
@@ -8765,13 +8819,14 @@ export class ThreeGame {
         return true;
     }
 
-    chooseCampPosition(index) {
+    chooseCampPosition(index, siteId = null) {
         const anchor = this.getBiomeAnchorPosition();
         const seed = (this.hashTile(
             Math.round(anchor.x) + 211 + index * 13,
             Math.round(anchor.z) + 89 - index * 7
         ) ^ this.runEntropy) >>> 0;
-        return this.chooseProgressionSitePosition(getProgressionSlot('camp', index), seed);
+        return this.chooseRadialSitePosition?.(siteId ?? this.act2?.getState?.().camps?.[index]?.id, seed)
+            ?? this.chooseProgressionSitePosition(getProgressionSlot('camp', index), seed);
     }
 
     ensureAct2Camps() {
@@ -8784,8 +8839,11 @@ export class ThreeGame {
                 playerType: this.playerType
             });
             let { x, z } = record;
-            if (!Number.isFinite(x) || !Number.isFinite(z) || !this.isSnailTileWalkable(x, z)) {
-                const site = this.chooseCampPosition(index);
+            if (
+                !this.isSiteOnPlannedRing(x, z, record.id)
+                || !this.isSnailTileWalkable(x, z)
+            ) {
+                const site = this.chooseCampPosition(index, record.id);
                 x = site.x;
                 z = site.z;
                 this.act2.setCampPosition(record.id, x, z);
@@ -11307,6 +11365,7 @@ export class ThreeGame {
         this._chunkRoomTypeCache?.clear();
         this._chunkTemplateCache?.clear();
         this._chunkLandformCache?.clear();
+        this.radialMazePlan = null;
         this.wfcMetadataCache?.clear();
         this.proceduralDoorStates?.clear();
         this.proceduralDoorMeshes?.clear();
@@ -11353,6 +11412,7 @@ export class ThreeGame {
         this.updatePlayerForwardLight(1, { immediate: true });
 
         if (resetRunState) {
+            this.resetBunkerBlastDoor();
             this.runStartTime = Date.now();
             this.totalDistanceTravelled = 0;
             this.maxDepthTierReached = 0;
@@ -15244,6 +15304,15 @@ export class ThreeGame {
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
         );
         this.addTerrainStepDressing(group, chunkX, chunkY, grid, landform);
+        if (landform === LANDFORMS.MAZE) {
+            this.addWfcDebugOverlay(
+                group,
+                chunkX,
+                chunkY,
+                this.wfcMetadataCache?.get(`${chunkX},${chunkY}`),
+                grid
+            );
+        }
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
@@ -15257,19 +15326,30 @@ export class ThreeGame {
                     continue;
                 }
                 if (tileChar === 'D') {
-                    const horizontal = grid[localY]?.[localX - 1] === '#'
-                        || grid[localY]?.[localX + 1] === '#';
+                    const doorRecord = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.doors
+                        ?.find((door) => (
+                            door.localX === localX && door.localY === localY
+                        ) || door.cells?.some((cell) => cell.x === localX && cell.y === localY));
+                    // A blast-width doorway occupies three collision cells but
+                    // is rendered and animated as one solid slab at its center.
+                    if (doorRecord && (doorRecord.localX !== localX || doorRecord.localY !== localY)) {
+                        continue;
+                    }
+                    const horizontal = doorRecord
+                        ? doorRecord.orientation === 'horizontal'
+                        : grid[localY]?.[localX - 1] === '#' || grid[localY]?.[localX + 1] === '#';
                     const doorMesh = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
                     doorMesh.position.set(worldX, this.wallHeight / 2, worldZ);
-                    doorMesh.scale.set(0.88, 1, 0.35);
-                    if (!horizontal) doorMesh.rotation.y = Math.PI / 2;
+                    doorMesh.scale.set(
+                        horizontal ? 2.8 : 0.35,
+                        1,
+                        horizontal ? 0.35 : 2.8
+                    );
                     doorMesh.castShadow = true;
                     doorMesh.receiveShadow = true;
                     this.configureWallMesh(doorMesh, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform, variant: 'door', isDoor: true
                     });
-                    const doorRecord = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.doors
-                        ?.find((door) => door.localX === localX && door.localY === localY);
                     const persistedDoor = doorRecord
                         ? (this.proceduralDoorStates.get(doorRecord.id) ?? doorRecord)
                         : null;
@@ -20382,7 +20462,12 @@ export class ThreeGame {
             const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
             return pocket.grid[localY]?.[localX] ?? '#';
         }
-        if (this.bunkerBlastDoorState && tileY === 15 && tileX >= 6 && tileX <= 11) {
+        if (
+            this.bunkerBlastDoorState
+            && tileY === this.bunkerBlastDoorState.doorZ
+            && tileX >= this.bunkerBlastDoorState.startTileX
+            && tileX <= this.bunkerBlastDoorState.endTileX
+        ) {
             return this.bunkerBlastDoorState.open ? '.' : '#';
         }
         const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
@@ -20411,7 +20496,12 @@ export class ThreeGame {
             const localY = tileY - this._pocketHoleZ + pocket.centerCell.y;
             return pocket.grid[localY]?.[localX] ?? '#';
         }
-        if (this.bunkerBlastDoorState && tileY === 15 && tileX >= 6 && tileX <= 11) {
+        if (
+            this.bunkerBlastDoorState
+            && tileY === this.bunkerBlastDoorState.doorZ
+            && tileX >= this.bunkerBlastDoorState.startTileX
+            && tileX <= this.bunkerBlastDoorState.endTileX
+        ) {
             return this.bunkerBlastDoorState.open ? '.' : '#';
         }
         const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
@@ -20724,6 +20814,8 @@ export class ThreeGame {
         return {
             generationVersion: metadata.generationVersion,
             chunkKey: key,
+            seamErrors: metadata.seamErrors ?? [],
+            radial: metadata.radial ?? null,
             rooms: (metadata.roomInstances ?? []).map((room) => ({
                 id: room.id,
                 tileId: room.tileId,
@@ -20741,6 +20833,164 @@ export class ThreeGame {
             portals: this.worldRouteRecords?.get(key)?.portals ?? null,
             reachableFromShip: this.reachableGeneratedChunkKeys?.has(key) ?? false
         };
+    }
+
+    setMazeDebugVisible(visible) {
+        for (const chunk of this.chunkMeshes?.values?.() ?? []) {
+            const overlay = chunk.getObjectByName?.('wfc-debug-overlay');
+            if (overlay) overlay.visible = Boolean(visible);
+        }
+    }
+
+    addWfcDebugOverlay(group, chunkX, chunkY, metadata, grid) {
+        if (!group || !metadata?.lattice || !grid) return;
+        const overlay = new THREE.Group();
+        overlay.name = 'wfc-debug-overlay';
+        overlay.visible = typeof document !== 'undefined'
+            && document.body.classList.contains('show-debug');
+
+        if (!this.wfcDebugPlaneGeometry) {
+            this.wfcDebugPlaneGeometry = new THREE.PlaneGeometry(0.76, 0.76);
+            this.wfcDebugMaterials = {
+                room: new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.48, depthWrite: false }),
+                hall: new THREE.MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.42, depthWrite: false }),
+                wall: new THREE.MeshBasicMaterial({ color: 0xff2bd6, transparent: true, opacity: 0.72, depthWrite: false }),
+                door: new THREE.MeshBasicMaterial({ color: 0x36ff72, transparent: true, opacity: 0.9, depthWrite: false }),
+                canyon: new THREE.MeshBasicMaterial({ color: 0x287cff, transparent: true, opacity: 0.68, depthWrite: false }),
+                seam: new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.82 }),
+                seamError: new THREE.LineBasicMaterial({ color: 0xff2020, transparent: true, opacity: 1 })
+            };
+        }
+
+        const roomCells = new Set((metadata.roomInstances ?? [])
+            .flatMap((room) => room.footprint ?? [])
+            .map((cell) => `${cell.x},${cell.y}`));
+        const socketCells = new Set((metadata.roomInstances ?? [])
+            .flatMap((room) => room.navigation?.doorLanes ?? [])
+            .map((cell) => `${cell.x},${cell.y}`));
+        const cellsByKind = { room: [], hall: [], wall: [], door: [], canyon: [] };
+        for (let localY = 0; localY < this.chunkSize; localY += 1) {
+            for (let localX = 0; localX < this.chunkSize; localX += 1) {
+                const char = grid[localY]?.[localX];
+                const key = `${localX},${localY}`;
+                if (char === EXTERIOR_CANYON_TILE) cellsByKind.canyon.push({ localX, localY, y: 0.055 });
+                else if (char === 'D' || socketCells.has(key)) cellsByKind.door.push({ localX, localY, y: 0.075 });
+                else if (char === '#') cellsByKind.wall.push({ localX, localY, y: this.wallHeight + 0.08 });
+                else if (roomCells.has(key)) cellsByKind.room.push({ localX, localY, y: 0.065 });
+                else cellsByKind.hall.push({ localX, localY, y: 0.06 });
+            }
+        }
+
+        const matrix = new THREE.Matrix4();
+        const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+        for (const [kind, cells] of Object.entries(cellsByKind)) {
+            if (cells.length === 0) continue;
+            const mesh = new THREE.InstancedMesh(
+                this.wfcDebugPlaneGeometry,
+                this.wfcDebugMaterials[kind],
+                cells.length
+            );
+            cells.forEach((cell, index) => {
+                matrix.compose(
+                    new THREE.Vector3(
+                        chunkX * this.chunkSize + cell.localX,
+                        cell.y,
+                        chunkY * this.chunkSize + cell.localY
+                    ),
+                    rotation,
+                    new THREE.Vector3(1, 1, 1)
+                );
+                mesh.setMatrixAt(index, matrix);
+            });
+            mesh.renderOrder = 100;
+            mesh.frustumCulled = false;
+            overlay.add(mesh);
+        }
+
+        const stride = 6;
+        const seamMaterial = (metadata.seamErrors?.length ?? 0) > 0
+            ? this.wfcDebugMaterials.seamError
+            : this.wfcDebugMaterials.seam;
+        for (let my = 0; my < 3; my += 1) {
+            for (let mx = 0; mx < 3; mx += 1) {
+                const x0 = chunkX * this.chunkSize + mx * stride - 0.48;
+                const z0 = chunkY * this.chunkSize + my * stride - 0.48;
+                const x1 = x0 + 6.96;
+                const z1 = z0 + 6.96;
+                const geometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(x0, 0.11, z0),
+                    new THREE.Vector3(x1, 0.11, z0),
+                    new THREE.Vector3(x1, 0.11, z1),
+                    new THREE.Vector3(x0, 0.11, z1)
+                ]);
+                const line = new THREE.LineLoop(geometry, seamMaterial);
+                line.renderOrder = 101;
+                overlay.add(line);
+            }
+        }
+
+        const makeFloorLabel = (text, color, width = 5.4, height = 1.25) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 768;
+            canvas.height = 160;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(2, 7, 10, 0.86)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 10;
+            ctx.strokeRect(6, 6, canvas.width - 12, canvas.height - 12);
+            ctx.fillStyle = color;
+            ctx.font = 'bold 54px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const fitted = text.length > 23 ? `${text.slice(0, 22)}…` : text;
+            ctx.fillText(fitted, canvas.width / 2, canvas.height / 2);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.minFilter = THREE.LinearFilter;
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                depthWrite: false,
+                depthTest: false,
+                side: THREE.DoubleSide
+            });
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+            plane.rotation.x = -Math.PI / 2;
+            plane.renderOrder = 104;
+            plane.userData.isWfcDebugLabel = true;
+            return plane;
+        };
+
+        // One readable name plate per 7x7 WFC source tile.
+        for (let index = 0; index < metadata.lattice.length; index += 1) {
+            const tile = metadata.lattice[index];
+            const mx = index % 3;
+            const my = Math.floor(index / 3);
+            const label = makeFloorLabel(tile.id ?? `tile-${index}`, '#00e5ff');
+            label.position.set(
+                chunkX * this.chunkSize + mx * stride + 3,
+                0.14,
+                chunkY * this.chunkSize + my * stride + 3
+            );
+            overlay.add(label);
+        }
+
+        // Door plates sit over the full three-cell threshold and show which
+        // socket side generated the connection.
+        for (const door of metadata.doors ?? []) {
+            const arrow = { n: '↑', s: '↓', e: '→', w: '←' }[door.side] ?? '↔';
+            const label = makeFloorLabel(`DOOR ${door.side?.toUpperCase() ?? ''} ${arrow}`, '#36ff72', 2.9, 0.72);
+            label.position.set(
+                chunkX * this.chunkSize + door.localX,
+                0.17,
+                chunkY * this.chunkSize + door.localY
+            );
+            label.rotation.z = door.orientation === 'vertical' ? Math.PI / 2 : 0;
+            overlay.add(label);
+        }
+        group.add(overlay);
     }
 
     getMazePersistenceState() {
@@ -20837,13 +21087,49 @@ export class ThreeGame {
             // WFC tile catalog (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md
             // §1-3) replaces the old DFS-carve+erosion pipeline for MAZE
             // chunks — see §6 for why non-MAZE landforms are unaffected.
+            const radialPlan = this.getRadialMazePlan?.();
+            const radialAnchor = this.getBiomeAnchorPosition?.() ?? { x: 0, z: 0 };
+            const chunkWorldX = chunkX * this.chunkSize + this.chunkSize * 0.5 - radialAnchor.x;
+            const chunkWorldZ = chunkY * this.chunkSize + this.chunkSize * 0.5 - radialAnchor.z;
+            const radialTargets = [
+                ...(radialPlan?.roomClusters ?? []),
+                ...(radialPlan?.nodes ?? []).filter((node) => node.ring > 0)
+            ];
+            const nearestRadialRoom = radialTargets.reduce((nearest, target) => {
+                const distance = Math.hypot(chunkWorldX - target.x, chunkWorldZ - target.z);
+                return distance < nearest ? distance : nearest;
+            }, Infinity);
+            // Room-cluster chunks collapse toward room/hall alternation;
+            // connective spiral chunks permit two- and three-tile hall runs.
+            const hallwayContinuation = nearestRadialRoom <= this.chunkSize * 0.9
+                ? 0.16
+                : 0.72;
             mazeLattice = collapseChunkLattice(random, {
                 tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
-                depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0
+                depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                hallwayContinuation
             });
             grid = stampLattice(mazeLattice, this.chunkSize);
             if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
             mazeMetadata = extractChunkWfcMetadata(mazeLattice, this.chunkSize, { chunkX, chunkY });
+            if (radialPlan) {
+                const radialDistance = Math.hypot(chunkWorldX, chunkWorldZ);
+                const ring = radialPlan.radii.reduce((best, radius, index) => (
+                    Math.abs(radialDistance - radius) < Math.abs(radialDistance - radialPlan.radii[best])
+                        ? index
+                        : best
+                ), 0);
+                const nearestBlocker = radialPlan.blockers.reduce((best, blocker) => {
+                    const distance = Math.hypot(chunkWorldX - blocker.x, chunkWorldZ - blocker.z);
+                    return !best || distance < best.distance ? { ...blocker, distance } : best;
+                }, null);
+                mazeMetadata.radial = {
+                    ring,
+                    roomClusterDistance: nearestRadialRoom,
+                    mode: nearestRadialRoom <= this.chunkSize * 0.9 ? 'room-cluster' : 'spiral-connector',
+                    blocker: nearestBlocker?.distance <= this.chunkSize ? nearestBlocker : null
+                };
+            }
             this.wfcMetadataCache.set(`${chunkX},${chunkY}`, mazeMetadata);
         } else {
             grid = Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('#'));
@@ -20989,7 +21275,11 @@ export class ThreeGame {
             && mazeLattice
             && !this.isInTutorialRing(chunkX, chunkY)
         ) {
+            const beforeVerticalFeature = grid.map((row) => [...row]);
             applyVerticalBridgeFeature(grid, mazeLattice, random);
+            if (!isChunkTraversalConnected(grid)) {
+                for (let y = 0; y < grid.length; y += 1) grid[y] = beforeVerticalFeature[y];
+            }
         }
         if (landform === LANDFORMS.MAZE && mazeMetadata?.roomInstances) {
             const chunkCenterX = chunkX * this.chunkSize + this.chunkSize * 0.5;
@@ -21023,8 +21313,10 @@ export class ThreeGame {
             }));
             mazeMetadata.encounterPlans = encounterPlans;
             const plannedDoors = planProceduralDoors(mazeMetadata.roomInstances, roomRandom, {
-                tutorial: this.isInTutorialRing(chunkX, chunkY)
+                tutorial: this.isInTutorialRing(chunkX, chunkY),
+                forceAtLeastOne: Boolean(mazeMetadata.radial?.blocker)
             });
+            const radialBlocker = mazeMetadata.radial?.blocker;
             const gatePlan = planSafeGates(
                 mazeLattice,
                 mazeMetadata.roomInstances,
@@ -21033,7 +21325,15 @@ export class ThreeGame {
                 {
                     biome,
                     depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
-                    tutorial: this.isInTutorialRing(chunkX, chunkY)
+                    tutorial: this.isInTutorialRing(chunkX, chunkY),
+                    forceGate: Boolean(radialBlocker),
+                    forcedRequirement: radialBlocker
+                        ? {
+                            type: 'objective',
+                            id: radialBlocker.missionId,
+                            label: radialBlocker.feature.replace(/_/g, ' ').toUpperCase()
+                        }
+                        : null
                 }
             );
             mazeMetadata.doors = gatePlan.doors;
@@ -21059,6 +21359,9 @@ export class ThreeGame {
             }
             stampDoorRecords(grid, gatePlan.doors);
             this.clearDoorways?.(grid);
+        }
+        if (landform === LANDFORMS.MAZE) {
+            addCanyonVoidAroundWalkable(grid);
         }
         const chunkRouteRecord = {
             key: `${chunkX},${chunkY}`,
@@ -21283,6 +21586,11 @@ export class ThreeGame {
         for (let y = 1; y < size - 1; y++) {
             for (let x = 1; x < size - 1; x++) {
                 if (grid[y][x] === 'D') {
+                    const partOfWideDoor = grid[y]?.[x - 1] === 'D'
+                        || grid[y]?.[x + 1] === 'D'
+                        || grid[y - 1]?.[x] === 'D'
+                        || grid[y + 1]?.[x] === 'D';
+                    if (partOfWideDoor) continue;
                     const horizontalScore = Number(grid[y]?.[x - 2] === '#') + Number(grid[y]?.[x + 2] === '#');
                     const verticalScore = Number(grid[y - 2]?.[x] === '#') + Number(grid[y + 2]?.[x] === '#');
                     const horizontal = horizontalScore >= verticalScore;

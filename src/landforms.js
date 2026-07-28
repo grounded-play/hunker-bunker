@@ -418,7 +418,13 @@ export function connectPortalsInward(grid) {
     const carveInward = (x, y, dx, dy) => {
         let cx = x;
         let cy = y;
-        while (cx > 0 && cx < size - 1 && cy > 0 && cy < size - 1 && grid[cy][cx] === '#') {
+        while (
+            cx > 0
+            && cx < size - 1
+            && cy > 0
+            && cy < size - 1
+            && (grid[cy][cx] === '#' || grid[cy][cx] === 'X')
+        ) {
             grid[cy][cx] = '.';
             cx += dx;
             cy += dy;

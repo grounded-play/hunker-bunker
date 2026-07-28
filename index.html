@@ -107,6 +107,15 @@
     <div id="debug-toolbar">
       <div id="fps-counter">FPS: --</div>
       <div id="steam-debug-status" class="steam-debug-status" data-state="unknown">STEAM: --</div>
+      <div class="maze-debug-legend" aria-label="Maze topology debug legend">
+        <strong>WFC TOPOLOGY</strong>
+        <span><i data-kind="room"></i>ROOM FLOOR</span>
+        <span><i data-kind="hall"></i>HALL FLOOR</span>
+        <span><i data-kind="wall"></i>WALL TOP</span>
+        <span><i data-kind="door"></i>DOOR / SOCKET</span>
+        <span><i data-kind="canyon"></i>CANYON</span>
+        <small>FLOOR LABEL = WFC TILE · GREEN PLATE/ARROW = 3-WIDE DOOR SOCKET · WHITE = TILE SEAM · RED = BAD SEAM</small>
+      </div>
       <button id="toggle-typo" class="debug-btn" title="Toggle typography debug mode">
         <span style="font-size: var(--font-sm); color: var(--accent-secondary);">T</span>
         <span style="font-size: var(--font-xs); color: var(--text-muted); margin-left: 4px;">T</span>
@@ -163,7 +172,7 @@
         <div class="splash-subtitle">TACTICAL COMMAND v2.0</div>
 
         <section id="title-profile-hud" class="title-profile-hud hidden" aria-label="Current operator profile">
-          <img id="title-profile-portrait" class="title-profile-hud__portrait" src="/Tank.full_v2.png" alt="" />
+          <canvas id="title-profile-portrait" class="title-profile-hud__portrait" width="128" height="128" aria-hidden="true"></canvas>
           <div class="title-profile-hud__body">
             <div class="title-profile-hud__kicker">ACTIVE OPERATOR PROFILE</div>
             <div class="title-profile-hud__identity">

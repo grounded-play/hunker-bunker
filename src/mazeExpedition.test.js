@@ -4,6 +4,9 @@ import {
     MAZE_EXPEDITION_NODES,
     MAZE_GENERATION_RULES,
     MAZE_ROOM_TILES,
+    RADIAL_SITE_RULES,
+    generateRadialMazeExpedition,
+    validateRadialMazeExpedition,
     validateMazeExpedition
 } from './mazeExpedition.js';
 
@@ -34,5 +37,30 @@ describe('long maze expedition plan', () => {
         const result = validateMazeExpedition(MAZE_EXPEDITION_NODES, broken);
         expect(result.valid).toBe(false);
         expect(result.errors).toContain('queen_chamber is not on the guaranteed critical route');
+    });
+
+    it('generates deterministic radial rings with the required camp and hive distribution', () => {
+        const a = generateRadialMazeExpedition(8128);
+        const b = generateRadialMazeExpedition(8128);
+        const c = generateRadialMazeExpedition(8129);
+        expect(a).toEqual(b);
+        expect(c).not.toEqual(a);
+        expect(validateRadialMazeExpedition(a)).toEqual({ valid: true, errors: [] });
+        for (const [id, rule] of Object.entries(RADIAL_SITE_RULES)) {
+            expect(a.nodes.find((node) => node.id === id)?.ring).toBe(rule.ring);
+        }
+    });
+
+    it('fills every ring with room clusters and gates outward rings with missions', () => {
+        for (let seed = 1; seed <= 100; seed += 1) {
+            const plan = generateRadialMazeExpedition(seed);
+            expect(validateRadialMazeExpedition(plan), `seed ${seed}`).toEqual({ valid: true, errors: [] });
+            expect(plan.blockers).toHaveLength(4);
+            expect(plan.blockers.every((blocker) => blocker.locked && blocker.missionId)).toBe(true);
+            for (let ring = 1; ring <= 5; ring += 1) {
+                expect(plan.roomClusters.filter((cluster) => cluster.ring === ring).length)
+                    .toBeGreaterThanOrEqual(8);
+            }
+        }
     });
 });

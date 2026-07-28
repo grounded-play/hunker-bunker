@@ -51,7 +51,9 @@ function requirementFor(biome, depthTier) {
 export function planSafeGates(lattice, rooms, doors, random, {
     biome = 'active',
     depthTier = 0,
-    tutorial = false
+    tutorial = false,
+    forcedRequirement = null,
+    forceGate = false
 } = {}) {
     if (tutorial || depthTier < 1 || !lattice?.length) return { doors, gates: [], accessSources: [] };
     const edges = buildLatticeEdges(lattice);
@@ -63,7 +65,7 @@ export function planSafeGates(lattice, rooms, doors, random, {
         const key = edgeKey(room.latticeIndex, doorway.neighborIndex);
         return edges.has(key) && isBridgeEdge(lattice.length, edges, key);
     });
-    if (candidates.length === 0 || random() > Math.min(0.5, 0.16 + depthTier * 0.08)) {
+    if (candidates.length === 0 || (!forceGate && random() > Math.min(0.5, 0.16 + depthTier * 0.08))) {
         return { doors, gates: [], accessSources: [] };
     }
 
@@ -80,7 +82,7 @@ export function planSafeGates(lattice, rooms, doors, random, {
     const sourceRoom = (rooms ?? []).find((candidate) => preGateNodes.has(candidate.latticeIndex));
     if (!sourceRoom) return { doors, gates: [], accessSources: [] };
 
-    const requirement = requirementFor(biome, depthTier);
+    const requirement = forcedRequirement ?? requirementFor(biome, depthTier);
     const gate = {
         id: `${selected.id}:gate`,
         doorId: selected.id,

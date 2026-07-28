@@ -1380,6 +1380,35 @@ function refreshCareerStats() {
     }
 }
 
+async function renderTitleProfilePortrait(playerType) {
+    const portraitCanvas = document.getElementById('title-profile-portrait');
+    const layout = PLAYER_SPRITE_LAYOUTS[playerType] ?? PLAYER_SPRITE_LAYOUTS.TANK;
+    const context = portraitCanvas?.getContext?.('2d');
+    if (!portraitCanvas || !context || !layout) return;
+
+    const image = await getPreviewSpriteImage(layout.path, layout).catch(() => null);
+    if (!image) return;
+
+    const frameWidth = Math.floor(image.width / layout.columns);
+    const frameHeight = Math.floor(image.height / layout.rows);
+    const previewCell = layout.directionCells[layout.previewDirection];
+    portraitCanvas.width = frameWidth;
+    portraitCanvas.height = frameHeight;
+    context.clearRect(0, 0, frameWidth, frameHeight);
+    context.imageSmoothingEnabled = false;
+    context.drawImage(
+        image,
+        previewCell.baseColumn * frameWidth,
+        previewCell.row * frameHeight,
+        frameWidth,
+        frameHeight,
+        0,
+        0,
+        frameWidth,
+        frameHeight
+    );
+}
+
 function refreshTitleProfileHud(hasSave = true) {
     const hud = document.getElementById('title-profile-hud');
     if (!hud) return;
@@ -1393,7 +1422,7 @@ function refreshTitleProfileHud(hasSave = true) {
     const bestEl = document.getElementById('title-profile-best');
     if (callsignEl) callsignEl.textContent = profile.getCallsign();
     if (classEl) classEl.textContent = playerType;
-    if (portraitEl) portraitEl.src = assetUrl(PREVIEW_PORTRAITS[playerType] ?? PREVIEW_PORTRAITS.TANK);
+    if (portraitEl) void renderTitleProfilePortrait(playerType);
     if (bestEl) {
         const best = Number(localStorage.getItem(`hb_best_score_${playerType}`) ?? 0);
         bestEl.textContent = `CLASS BEST ${String(best).padStart(4, '0')}`;
@@ -4936,6 +4965,11 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
                 }
             }
         });
+        announceDeploymentStage('PRESENT', 'PRESENTING FIRST RENDERED SECTOR FRAME...', 98);
+        game.setLoadingPaused?.(false);
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        game.renderer?.render?.(game.scene, game.camera);
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         announceDeploymentStage('READY', 'DEPLOYMENT READY — TRANSFERRING CONTROL', 100);
         await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));
     } finally {
@@ -5606,7 +5640,6 @@ async function runMissionIntroSequence() {
                     },
                     // onOpened: resolve transition promise
                     () => {
-                        game?.openBunkerBlastDoor?.();
                         resolve();
                     }
                 );
@@ -5789,6 +5822,7 @@ function setDebugMode(active) {
     } else {
         document.body.classList.remove('show-debug');
     }
+    window.game?.setMazeDebugVisible?.(active);
 }
 
 // FPS Counter (Debug Tool)
@@ -8564,7 +8598,12 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         overlay.classList.add('active');
                         AudioManager.play('door_slide_horiz', { volume: 0.4 });
                         AudioManager.play('door_gears_spin', { volume: 0.25 });
-                        if (onOpened) onOpened();
+                        // Opening owns the reveal. Do not transfer control or
+                        // start intro work until the panels have visibly
+                        // completed their 800ms travel.
+                        setTimeout(() => {
+                            if (onOpened) onOpened();
+                        }, 800);
                     }, openingHoldMs);
 
                     // 5. Cleanup

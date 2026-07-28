@@ -13,7 +13,7 @@ function doorChanceForRoom(room) {
     return 0.34;
 }
 
-export function planProceduralDoors(rooms, random, { tutorial = false } = {}) {
+export function planProceduralDoors(rooms, random, { tutorial = false, forceAtLeastOne = false } = {}) {
     const records = [];
     const occupied = new Set();
     for (const room of rooms ?? []) {
@@ -29,6 +29,31 @@ export function planProceduralDoors(rooms, random, { tutorial = false } = {}) {
                 chunkKey: room.chunkKey,
                 localX: center.x,
                 localY: center.y,
+                cells: doorway.cells.map((cell) => ({ x: cell.x, y: cell.y })),
+                side: doorway.side,
+                orientation: SIDE_ORIENTATION[doorway.side],
+                style: room.themeConfig?.doorStyle ?? 'bunker',
+                state: 'closed',
+                lock: null,
+                hp: tutorial ? 3 : 6,
+                maxHp: tutorial ? 3 : 6,
+                autoClose: false
+            });
+        }
+    }
+    if (forceAtLeastOne && records.length === 0) {
+        const room = (rooms ?? []).find((candidate) => candidate.doors?.length);
+        const doorway = room?.doors?.[0];
+        const center = doorway?.cells?.[Math.floor((doorway.cells?.length ?? 1) / 2)];
+        if (room && doorway && center) {
+            records.push({
+                id: doorway.id,
+                roomId: room.id,
+                chunkKey: room.chunkKey,
+                localX: center.x,
+                localY: center.y,
+                cells: doorway.cells.map((cell) => ({ x: cell.x, y: cell.y })),
+                side: doorway.side,
                 orientation: SIDE_ORIENTATION[doorway.side],
                 style: room.themeConfig?.doorStyle ?? 'bunker',
                 state: 'closed',
@@ -44,8 +69,13 @@ export function planProceduralDoors(rooms, random, { tutorial = false } = {}) {
 
 export function stampDoorRecords(grid, records) {
     for (const door of records ?? []) {
-        if (grid?.[door.localY]?.[door.localX] === '.') {
-            grid[door.localY][door.localX] = 'D';
+        const cells = door.cells?.length
+            ? door.cells
+            : [{ x: door.localX, y: door.localY }];
+        for (const cell of cells) {
+            if (grid?.[cell.y]?.[cell.x] === '.') {
+                grid[cell.y][cell.x] = 'D';
+            }
         }
     }
     return grid;

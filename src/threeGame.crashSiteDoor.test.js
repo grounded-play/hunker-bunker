@@ -29,6 +29,54 @@ describe('clearSpawnArea — door/portal alignment', () => {
         expect(grid.every((row) => row[18] === '#')).toBe(true);
     });
 
+    it('starts the north blast door closed across that three-wide hallway', () => {
+        const game = {
+            scene: { add: () => {} }
+        };
+        ThreeGame.prototype.setupBunkerBlastDoor.call(game);
+
+        expect(game.bunkerBlastDoorState).toMatchObject({
+            open: false,
+            destroyed: false,
+            doorZ: 3,
+            startTileX: 8,
+            endTileX: 10,
+            targetY: 1.4
+        });
+        expect(game.bunkerDoorButtons.interior.z).toBeGreaterThan(game.bunkerBlastDoorState.doorZ);
+        expect(game.bunkerDoorButtons.exterior.z).toBeLessThan(game.bunkerBlastDoorState.doorZ);
+        expect(game.bunkerFogVeilMesh).toBeUndefined();
+    });
+
+    it('resets a previously opened or destroyed blast door to its closed run-start state', () => {
+        const game = {
+            bunkerBlastDoorState: {
+                open: true,
+                destroyed: true,
+                hp: 0,
+                maxHp: 25,
+                y: -2.4,
+                targetY: -2.4
+            },
+            bunkerBlastDoorGroup: {
+                position: { y: -2.4 },
+                visible: false
+            }
+        };
+
+        ThreeGame.prototype.resetBunkerBlastDoor.call(game);
+
+        expect(game.bunkerBlastDoorState).toMatchObject({
+            open: false,
+            destroyed: false,
+            hp: 25,
+            y: 1.4,
+            targetY: 1.4
+        });
+        expect(game.bunkerBlastDoorGroup.position.y).toBe(1.4);
+        expect(game.bunkerBlastDoorGroup.visible).toBe(true);
+    });
+
     it('forces the shared north edge portal to the authored hallway center', () => {
         const game = {
             chunkCellCount: 9,

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { collapseChunkLattice, collapsePocketLattice, stampLattice, extractChunkWfcMetadata, LATTICE_SIZE, POCKET_LATTICE_SIZE } from './wfcGenerator.js';
+import {
+    addCanyonVoidAroundWalkable,
+    collapseChunkLattice,
+    collapsePocketLattice,
+    stampLattice,
+    extractChunkWfcMetadata,
+    validateLatticeSeams,
+    LATTICE_SIZE,
+    POCKET_LATTICE_SIZE
+} from './wfcGenerator.js';
 import { TILE_SIZE } from './tileCatalog.js';
 
 function seededRandom(seed) {
@@ -183,9 +192,26 @@ describe('collapseChunkLattice', () => {
         expect([...ids].some((id) => id.startsWith('corridor-straight'))).toBe(true);
         expect([...ids].some((id) => id.startsWith('canyon-walkway'))).toBe(true);
     });
+
+    it('guarantees a canyon-lined hallway when the topology has a compatible approach', () => {
+        for (let seed = 1; seed <= 200; seed += 1) {
+            const lattice = collapseChunkLattice(seededRandom(seed));
+            const compatibleHallExists = lattice.some((tile) => (
+                tile.category === 'canyon-walkway'
+            ));
+            expect(compatibleHallExists, `seed ${seed}`).toBe(true);
+        }
+    });
 });
 
 describe('stampLattice', () => {
+    it('aligns every shared tile pattern and three-cell doorway socket exactly', () => {
+        for (let seed = 1; seed <= 500; seed += 1) {
+            const lattice = collapseChunkLattice(seededRandom(seed));
+            expect(validateLatticeSeams(lattice), `seed ${seed}`).toEqual([]);
+        }
+    });
+
     it('produces a chunkSize x chunkSize grid matching each tile pattern at its lattice origin', () => {
         const lattice = collapseChunkLattice(seededRandom(7));
         const chunkSize = (TILE_SIZE - 1) * LATTICE_SIZE + 1; // 19
@@ -245,6 +271,35 @@ describe('stampLattice', () => {
                 }
             }
             expect(seen.size, `seed ${seed}`).toBe(floorCells.length);
+        }
+    });
+
+    it('carves canyon behind a retained wall band around generated traversal', () => {
+        const chunkSize = (TILE_SIZE - 1) * LATTICE_SIZE + 1;
+        for (let seed = 1; seed <= 100; seed += 1) {
+            const grid = stampLattice(collapseChunkLattice(seededRandom(seed)), chunkSize);
+            const authoredCanyons = new Set();
+            for (let y = 0; y < chunkSize; y += 1) {
+                for (let x = 0; x < chunkSize; x += 1) {
+                    if (grid[y][x] === 'X') authoredCanyons.add(`${x},${y}`);
+                }
+            }
+            addCanyonVoidAroundWalkable(grid);
+            const canyonCells = [];
+            for (let y = 0; y < chunkSize; y += 1) {
+                for (let x = 0; x < chunkSize; x += 1) {
+                    if (grid[y][x] !== 'X') continue;
+                    canyonCells.push({ x, y });
+                    if (authoredCanyons.has(`${x},${y}`)) continue;
+                    for (let dy = -1; dy <= 1; dy += 1) {
+                        for (let dx = -1; dx <= 1; dx += 1) {
+                            expect(grid[y + dy]?.[x + dx], `seed ${seed}, canyon ${x},${y}`)
+                                .not.toBe('.');
+                        }
+                    }
+                }
+            }
+            expect(canyonCells.length, `seed ${seed}`).toBeGreaterThan(0);
         }
     });
 });

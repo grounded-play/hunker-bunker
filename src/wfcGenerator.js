@@ -130,7 +130,7 @@ function requiredSocketsFor(index, openEdges, neighborCache) {
     return required;
 }
 
-function buildRoomHallRoles(openEdges, neighborCache, random) {
+function buildRoomHallRoles(openEdges, neighborCache, random, hallwayContinuation = 0.45) {
     const roles = new Array(neighborCache.length).fill(null);
     const hallwayRun = new Array(neighborCache.length).fill(0);
     const queue = [0];
@@ -149,7 +149,10 @@ function buildRoomHallRoles(openEdges, neighborCache, random) {
                 // Hallways may chain, but continuation becomes exponentially
                 // less likely with every consecutive hallway:
                 // run 1 = 45%, run 2 = 20%, run 3 = 9%, ...
-                const continuationChance = Math.exp(-0.8 * hallwayRun[current]);
+                const continuationChance = Math.min(
+                    0.92,
+                    Math.max(0.05, hallwayContinuation) * Math.exp(-0.45 * Math.max(0, hallwayRun[current] - 1))
+                );
                 const continuesHallway = random() < continuationChance;
                 roles[next] = continuesHallway ? 'hallway' : 'room';
                 hallwayRun[next] = continuesHallway ? hallwayRun[current] + 1 : 0;
@@ -231,14 +234,15 @@ export function collapseChunkLattice(random, {
     tutorialOnly = false,
     depthTier = 0,
     loopChance = null,
-    maxLoops = null
+    maxLoops = null,
+    hallwayContinuation = 0.45
 } = {}) {
     const catalog = tutorialOnly ? SELECTABLE_CATALOG.filter((tile) => tile.tutorial) : SELECTABLE_CATALOG;
     const cellCount = LATTICE_SIZE * LATTICE_SIZE;
     let openEdges = tutorialOnly
         ? buildHamiltonianPath(random)
         : buildBranchingSpanningTree(random, NEIGHBOR_CACHE, cellCount);
-    const roles = buildRoomHallRoles(openEdges, NEIGHBOR_CACHE, random);
+    const roles = buildRoomHallRoles(openEdges, NEIGHBOR_CACHE, random, hallwayContinuation);
     if (!tutorialOnly) {
         openEdges = injectBoundedLoops(openEdges, NEIGHBOR_CACHE, roles, random, {
             chance: loopChance ?? Math.min(0.65, 0.24 + Math.max(0, depthTier) * 0.08),
@@ -246,6 +250,27 @@ export function collapseChunkLattice(random, {
             minCycleLength: 4
         });
     }
+
+    // Reserve one compatible approach hall for a canyon-lined traversal.
+    // Previously canyon tiles only participated through their low catalog
+    // weight, so many complete sectors contained no canyon at all despite
+    // the maze art contract calling for rooms separated by exposed chasms.
+    const canyonEligible = [];
+    if (!tutorialOnly) {
+        for (let index = 0; index < cellCount; index += 1) {
+            if (roles[index] !== 'hallway') continue;
+            const required = requiredSocketsFor(index, openEdges, NEIGHBOR_CACHE);
+            const candidates = SELECTABLE_CATALOG.filter((tile) => (
+                tile.category === 'canyon-walkway'
+                && matchesRequirement(tile, required)
+                && tile.throughConnects !== false
+            ));
+            if (candidates.length > 0) canyonEligible.push(index);
+        }
+    }
+    const canyonIndex = canyonEligible.length > 0
+        ? canyonEligible[Math.floor(random() * canyonEligible.length)]
+        : -1;
 
     const lattice = [];
     for (let index = 0; index < cellCount; index += 1) {
@@ -255,7 +280,9 @@ export function collapseChunkLattice(random, {
             required,
             catalog,
             random,
-            wantsRoom
+            index === canyonIndex
+                ? (candidate) => candidate.category === 'canyon-walkway'
+                : wantsRoom
                 ? (tile) => isRoomTile(tile) && roomHasNoExteriorDoor(tile, index, LATTICE_SIZE)
                 : isHallwayTile
         );
@@ -265,6 +292,13 @@ export function collapseChunkLattice(random, {
         // door that opens directly into another room.
         if (!tile && wantsRoom) {
             tile = pickTileForCell(required, catalog, random, isHallwayTile);
+        }
+        // Never return an undefined lattice cell. A role-specific catalog miss
+        // is allowed to degrade to any topologically valid traversable tile;
+        // stamping undefined was the source of opaque "WFC maze failure"
+        // crashes in production seeds.
+        if (!tile) {
+            tile = pickTileForCell(required, catalog, random);
         }
         lattice.push(tile);
     }
@@ -320,6 +354,73 @@ export function stampLattice(lattice, chunkSize) {
     return grid;
 }
 
+export function validateLatticeSeams(lattice) {
+    if (!Array.isArray(lattice)) return ['lattice is not an array'];
+    const latticeSize = Math.round(Math.sqrt(lattice.length));
+    const errors = [];
+    const check = (aIndex, bIndex, sideA, sideB) => {
+        const a = lattice[aIndex];
+        const b = lattice[bIndex];
+        if (!a || !b) {
+            errors.push(`missing tile at seam ${aIndex}:${sideA}-${bIndex}:${sideB}`);
+            return;
+        }
+        if (a.sockets?.[sideA] !== b.sockets?.[sideB]) {
+            errors.push(`socket mismatch ${aIndex}:${sideA}-${bIndex}:${sideB}`);
+        }
+        const aLane = sideA === 'e'
+            ? a.pattern.map((row) => row[TILE_SIZE - 1])
+            : [...a.pattern[TILE_SIZE - 1]];
+        const bLane = sideB === 'w'
+            ? b.pattern.map((row) => row[0])
+            : [...b.pattern[0]];
+        if (aLane.join('') !== bLane.join('')) {
+            errors.push(`pattern mismatch ${aIndex}:${sideA}-${bIndex}:${sideB}`);
+        }
+    };
+    for (let y = 0; y < latticeSize; y += 1) {
+        for (let x = 0; x < latticeSize; x += 1) {
+            const index = y * latticeSize + x;
+            if (x + 1 < latticeSize) check(index, index + 1, 'e', 'w');
+            if (y + 1 < latticeSize) check(index, index + latticeSize, 's', 'n');
+        }
+    }
+    return errors;
+}
+
+// Turn unused solid rock into a canyon backdrop while retaining the first
+// solid cell beside every traversable cell as a bunker wall. This produces a
+// consistent floor -> wall -> canyon cross-section around rooms and halls,
+// without allowing a lethal tile to replace a doorway or break connectivity.
+export function addCanyonVoidAroundWalkable(grid) {
+    if (!Array.isArray(grid) || grid.length === 0) return grid;
+    const height = grid.length;
+    const width = grid[0]?.length ?? 0;
+    const source = grid.map((row) => [...row]);
+    const walkable = (char) => ['.', 'D', 'R', 'B', 'L'].includes(char);
+    const hasWalkableWithin = (x, y, radius) => {
+        for (let dy = -radius; dy <= radius; dy += 1) {
+            for (let dx = -radius; dx <= radius; dx += 1) {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+                if (walkable(source[ny][nx])) return true;
+            }
+        }
+        return false;
+    };
+
+    for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+            if (source[y][x] !== '#') continue;
+            const touchesPath = hasWalkableWithin(x, y, 1);
+            if (touchesPath) continue; // retain the visible/collidable wall band
+            if (hasWalkableWithin(x, y, 2)) grid[y][x] = 'X';
+        }
+    }
+    return grid;
+}
+
 export function extractChunkWfcMetadata(lattice, chunkSize = 19, { chunkX = 0, chunkY = 0 } = {}) {
     if (!Array.isArray(lattice)) return null;
     const latticeSize = Math.round(Math.sqrt(lattice.length));
@@ -366,6 +467,7 @@ export function extractChunkWfcMetadata(lattice, chunkSize = 19, { chunkX = 0, c
 
     return {
         lattice,
+        seamErrors: validateLatticeSeams(lattice),
         rooms,
         anchors,
         roomInstances: buildRoomInstances(lattice, { chunkX, chunkY, chunkSize }),

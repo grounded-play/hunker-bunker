@@ -688,15 +688,15 @@ export class DialogueManager {
             cleanText = text.replace(/^MOTHERSHIP:\s*/, '');
         } else if (text.startsWith('SISTER MARTHA:')) {
             name = 'SISTER MARTHA';
-            portrait = '/lore_portraits/tallow_martha.png';
+            portrait = '/lore_portraits/tallow_martha.webp';
             cleanText = text.replace(/^SISTER MARTHA:\s*/, '');
         } else if (text.startsWith('COMMANDER BRIGGS:')) {
             name = 'COMMANDER BRIGGS';
-            portrait = '/lore_portraits/vesper_briggs.png';
+            portrait = '/lore_portraits/vesper_briggs.webp';
             cleanText = text.replace(/^COMMANDER BRIGGS:\s*/, '');
         } else if (text.startsWith('OVERSEER KAELEN:')) {
             name = 'OVERSEER KAELEN';
-            portrait = '/lore_portraits/meridian_kaelen.png';
+            portrait = '/lore_portraits/meridian_kaelen.jpg';
             cleanText = text.replace(/^OVERSEER KAELEN:\s*/, '');
         } else if (/^(KAELEN|MARTHA|BRIGGS|NAHL|VEY|RHUN):/.test(text)) {
             const speakerMap = {

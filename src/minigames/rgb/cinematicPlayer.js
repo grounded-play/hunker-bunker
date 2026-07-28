@@ -13,7 +13,7 @@ import { assetUrl } from '../../assetUrl.js';
 export const IMAGE_HOLD_MS = 2600;
 export const FADE_MS = 350;
 
-function playStep(container, step, mediaStack) {
+function playStep(container, step, mediaStack, onNarration) {
     return new Promise((resolve) => {
         let settled = false;
         let fallbackTimer = 0;
@@ -32,6 +32,7 @@ function playStep(container, step, mediaStack) {
             window.removeEventListener('keydown', onKey);
             container.onclick = null;
             status.remove();
+            narration.remove();
             skip.remove();
             resolve();
         };
@@ -45,6 +46,9 @@ function playStep(container, step, mediaStack) {
         const status = document.createElement('div');
         status.className = 'rgb-cinematic__status';
         status.textContent = step.label ?? 'ARCHIVE CINEMATIC // RESTORING SIGNAL';
+        const narration = document.createElement('div');
+        narration.className = 'rgb-cinematic__narration';
+        narration.textContent = step.narration ?? 'The archive advances to the next reconstructed scene.';
         const skip = document.createElement('div');
         skip.className = 'rgb-cinematic__skip';
         skip.textContent = 'PRESS A KEY TO SKIP';
@@ -54,7 +58,8 @@ function playStep(container, step, mediaStack) {
             event.stopPropagation();
             finish();
         });
-        container.append(status, skip);
+        container.append(status, narration, skip);
+        onNarration?.(narration.textContent, step);
 
         const showImage = () => {
             if (settled) return;
@@ -105,7 +110,8 @@ function wait(ms) {
 
 export async function playCinematicSequence(container, steps, {
     background = null,
-    transitionDelayMs = 0
+    transitionDelayMs = 0,
+    onNarration = null
 } = {}) {
     if (!container || !steps || steps.length === 0) return;
     container.replaceChildren();
@@ -123,7 +129,7 @@ export async function playCinematicSequence(container, steps, {
     if (transitionDelayMs > 0) await wait(transitionDelayMs);
     container.classList.add('rgb-cinematic--visible');
     for (const step of steps) {
-        await playStep(container, step, mediaStack);
+        await playStep(container, step, mediaStack, onNarration);
     }
     container.classList.remove('rgb-cinematic--visible');
     await wait(FADE_MS);

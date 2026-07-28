@@ -1,5 +1,177 @@
-// Authored macro plan for the long maze. Terrain remains seed-varied, while
-// these reservations keep major story rooms ordered, spaced, and connected.
+// Seeded macro plan for the radial labyrinth. Story identities and allowed
+// rings are fixed; angles, room clusters, spiral ingress points, blockers,
+// and route lengths are generated per run.
+
+export const RADIAL_RING_RADII = Object.freeze([0, 42, 78, 118, 160, 205]);
+export const RADIAL_SITE_RULES = Object.freeze({
+    camp_meridian: Object.freeze({ kind: 'camp', ring: 1 }),
+    camp_tallow: Object.freeze({ kind: 'camp', ring: 2 }),
+    camp_vesper: Object.freeze({ kind: 'camp', ring: 3 }),
+    hive_suture: Object.freeze({ kind: 'hive_threshold', ring: 2 }),
+    hive_relay: Object.freeze({ kind: 'hive_threshold', ring: 3 }),
+    hive_carapace: Object.freeze({ kind: 'hive_threshold', ring: 4 }),
+    queen_chamber: Object.freeze({ kind: 'mother_hive', ring: 5 })
+});
+
+export const RING_BLOCKER_FEATURES = Object.freeze([
+    Object.freeze({ type: 'collapsed_bridge', mission: 'restore_canyon_crossing' }),
+    Object.freeze({ type: 'blast_bulkhead', mission: 'restore_ring_power' }),
+    Object.freeze({ type: 'hive_membrane', mission: 'clear_infested_threshold' }),
+    Object.freeze({ type: 'flooded_service_tunnel', mission: 'restart_drainage_pumps' })
+]);
+
+function seededRandom(seed) {
+    let state = (Number(seed) >>> 0) || 1;
+    return () => {
+        state ^= state << 13;
+        state ^= state >>> 17;
+        state ^= state << 5;
+        return (state >>> 0) / 4294967296;
+    };
+}
+
+function polarPoint(radius, angle) {
+    return {
+        x: Math.round(Math.cos(angle) * radius),
+        z: Math.round(Math.sin(angle) * radius)
+    };
+}
+
+export function generateRadialMazeExpedition(seed = 1) {
+    const random = seededRandom(seed);
+    const phase = random() * Math.PI * 2;
+    const nodes = [{
+        id: 'o2_ship',
+        kind: 'o2_ship',
+        ring: 0,
+        angle: phase,
+        x: 0,
+        z: 0,
+        required: true
+    }];
+    const occupiedAngles = new Map();
+
+    for (const [id, rule] of Object.entries(RADIAL_SITE_RULES)) {
+        const peers = occupiedAngles.get(rule.ring) ?? [];
+        let angle = phase + rule.ring * 1.37 + (random() - 0.5) * 1.4;
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+            const separated = peers.every((other) => {
+                const delta = Math.abs(Math.atan2(Math.sin(angle - other), Math.cos(angle - other)));
+                return delta >= 0.9;
+            });
+            if (separated) break;
+            angle += 0.72 + random() * 0.42;
+        }
+        peers.push(angle);
+        occupiedAngles.set(rule.ring, peers);
+        const radius = RADIAL_RING_RADII[rule.ring] + Math.round((random() - 0.5) * 10);
+        nodes.push({
+            id,
+            kind: rule.kind,
+            ring: rule.ring,
+            angle,
+            radius,
+            ...polarPoint(radius, angle),
+            level: Math.min(2, Math.max(0, rule.ring - 1)),
+            required: id !== 'hive_suture'
+        });
+    }
+
+    const roomClusters = [];
+    for (let ring = 1; ring <= 5; ring += 1) {
+        const count = 8 + ring * 3;
+        const radius = RADIAL_RING_RADII[ring];
+        for (let index = 0; index < count; index += 1) {
+            const spiralProgress = index / count;
+            const angle = phase + ring * 1.37 + spiralProgress * Math.PI * 2
+                + (random() - 0.5) * 0.32;
+            const radialDrift = (spiralProgress - 0.5) * (12 + ring * 4);
+            const clusterRadius = radius + radialDrift + (random() - 0.5) * 8;
+            roomClusters.push({
+                id: `ring-${ring}-room-${index}`,
+                ring,
+                angle,
+                ...polarPoint(clusterRadius, angle),
+                size: index === 0 || random() < 0.58 ? 'large' : 'standard',
+                roomCount: 2 + Math.floor(random() * (2 + Math.min(3, ring))),
+                role: index % 4 === 0 ? 'junction' : index % 3 === 0 ? 'mission' : 'room'
+            });
+        }
+    }
+
+    const blockers = [];
+    for (let ring = 1; ring <= 4; ring += 1) {
+        const feature = RING_BLOCKER_FEATURES[(ring - 1 + Math.floor(random() * 2)) % RING_BLOCKER_FEATURES.length];
+        const angle = phase + ring * 1.37 + 0.35 + (random() - 0.5) * 0.38;
+        const radius = (RADIAL_RING_RADII[ring] + RADIAL_RING_RADII[ring + 1]) / 2;
+        blockers.push({
+            id: `ring-${ring}-gate`,
+            ring,
+            blocksRing: ring + 1,
+            angle,
+            ...polarPoint(radius, angle),
+            feature: feature.type,
+            missionId: feature.mission,
+            locked: true
+        });
+    }
+
+    const edges = [];
+    for (let ring = 1; ring <= 5; ring += 1) {
+        edges.push({
+            from: ring === 1 ? 'o2_ship' : `ring-${ring - 1}-spiral`,
+            to: `ring-${ring}-spiral`,
+            kind: 'spiral',
+            ring,
+            minSteps: 5 + ring * 3,
+            blockerId: ring > 1 ? `ring-${ring - 1}-gate` : null
+        });
+        edges.push({
+            from: `ring-${ring}-spiral`,
+            to: `ring-${ring}-loop`,
+            kind: 'ring',
+            ring,
+            minSteps: 8 + ring * 4
+        });
+    }
+
+    return {
+        seed: Number(seed) >>> 0,
+        phase,
+        radii: [...RADIAL_RING_RADII],
+        nodes,
+        roomClusters,
+        blockers,
+        edges
+    };
+}
+
+export function getRadialSite(plan, id) {
+    return plan?.nodes?.find((node) => node.id === id) ?? null;
+}
+
+export function validateRadialMazeExpedition(plan) {
+    const errors = [];
+    const nodes = plan?.nodes ?? [];
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+    for (const [id, rule] of Object.entries(RADIAL_SITE_RULES)) {
+        const node = byId.get(id);
+        if (!node) errors.push(`missing radial site ${id}`);
+        else if (node.ring !== rule.ring) errors.push(`${id} must be on ring ${rule.ring}`);
+    }
+    if ((plan?.blockers ?? []).length !== 4) errors.push('rings 2-5 require four mission blockers');
+    for (let ring = 1; ring <= 5; ring += 1) {
+        const clusters = (plan?.roomClusters ?? []).filter((cluster) => cluster.ring === ring);
+        if (clusters.length < 8) errors.push(`ring ${ring} does not contain enough room clusters`);
+        if (!clusters.some((cluster) => cluster.size === 'large')) {
+            errors.push(`ring ${ring} requires at least one large room cluster`);
+        }
+    }
+    for (const blocker of plan?.blockers ?? []) {
+        if (!blocker.missionId || !blocker.feature) errors.push(`${blocker.id} is not mission-backed`);
+    }
+    return { valid: errors.length === 0, errors };
+}
 
 export const MAZE_ROOM_TILES = Object.freeze({
     o2_ship: Object.freeze({

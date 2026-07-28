@@ -197,6 +197,43 @@ body {
   color: rgba(255, 150, 150, 0.88);
 }
 
+.maze-debug-legend {
+  width: 168px;
+  display: grid;
+  gap: 4px;
+  padding: 7px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.78);
+  color: rgba(255, 255, 255, 0.84);
+  font: 700 10px/1.25 'Space Mono', monospace;
+}
+
+.maze-debug-legend strong,
+.maze-debug-legend small {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.maze-debug-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.maze-debug-legend i {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  background: #fff;
+}
+
+.maze-debug-legend i[data-kind="room"] { background: #00e5ff; }
+.maze-debug-legend i[data-kind="hall"] { background: #ffb020; }
+.maze-debug-legend i[data-kind="wall"] { background: #ff2bd6; }
+.maze-debug-legend i[data-kind="door"] { background: #36ff72; }
+.maze-debug-legend i[data-kind="canyon"] { background: #287cff; }
+
 .debug-btn {
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--border-subtle);
@@ -476,7 +513,7 @@ body {
   overflow: visible;
 }
 
-#transition-overlay.active .door {
+#transition-overlay .door {
   transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
 }
 
@@ -12997,6 +13034,21 @@ button.archive-log-entry:active {
   font: 700 max(16px, calc(var(--stage-px, 1px) * 18))/1.3 'Space Mono', monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  text-shadow: 0 2px 8px #000;
+}
+
+.rgb-cinematic__narration {
+  position: absolute;
+  left: var(--hb-safe-text, 36px);
+  right: var(--hb-safe-text, 36px);
+  bottom: calc(var(--stage-px, 1px) * 86);
+  z-index: 3;
+  max-width: calc(var(--stage-px, 1px) * 900);
+  padding: calc(var(--stage-px, 1px) * 12) calc(var(--stage-px, 1px) * 16);
+  border-left: calc(var(--stage-px, 1px) * 4) solid #e11d2e;
+  background: linear-gradient(90deg, rgba(5, 7, 11, 0.94), rgba(5, 7, 11, 0.68));
+  color: rgba(255, 255, 255, 0.96);
+  font: 700 max(17px, calc(var(--stage-px, 1px) * 19))/1.42 'Outfit', sans-serif;
   text-shadow: 0 2px 8px #000;
 }
 

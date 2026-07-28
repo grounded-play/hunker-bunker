@@ -79,6 +79,22 @@ const EVIDENCE_LABELS = Object.freeze({
     training_profile: '4A training profile'
 });
 
+const SCENE_INTROS = Object.freeze({
+    parking_lot: 'Elias is in his sedan before the night shift. Check the medicine bottle, his balance, Lucia’s message, and the notebook before entering RGB.',
+    warehouse: 'Inside the warehouse, Elias must calibrate robot 4A while the production clock measures every movement.',
+    incident_review: 'After the collision, company review asks Elias to choose what enters the official record and what disappears.',
+    medi_kiosk: 'His employment and coverage terminated, Elias faces an automated kiosk holding Lucia’s medication behind glass.',
+    server_room: 'The utility route leads to RGB’s server room, where Elias discovers that his own work trained 4A.',
+    sector_four: 'The severed trunk has caused a fire and collapse. Elias is pinned in Sector Four while 4A approaches through the smoke.'
+});
+
+function uniqueLines(lines = []) {
+    const seen = new Set();
+    return lines
+        .map((line) => String(line ?? '').trim())
+        .filter((line) => line && !seen.has(line) && seen.add(line));
+}
+
 function hydrateRunState(save) {
     const base = createRunState();
     const snapshot = getChapterSnapshot(save, save.checkpoint);
@@ -465,13 +481,14 @@ export function mountRgb({ root, save, storage, onExit }) {
     }
 
     function dismissWarning() {
-        const isFreshStart = currentSave.checkpoint === 'parking_lot'
-            && currentSave.run.inventory.length === 0;
-        if (isFreshStart) {
+        // Loading or restarting Chapter 1 always restores the authored intro;
+        // retained inventory in an archive save must not suppress the opening.
+        if (currentSave.checkpoint === 'parking_lot') {
             mode = 'cinematic';
             root.replaceChildren();
             playCinematicSequence(cinematicLayer, [INTRO_CINEMATIC], {
-                background: INTRO_CINEMATIC.image
+                background: INTRO_CINEMATIC.image,
+                onNarration: (line) => rgbAudio.narrate(line)
             }).then(() => {
                 mode = 'chapterCard';
                 render();
@@ -551,7 +568,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             dialogue.appendChild(tag);
         }
 
-        for (const [index, line] of (lines ?? []).entries()) {
+        for (const [index, line] of uniqueLines(lines).entries()) {
             const p = document.createElement('p');
             p.style.setProperty('--rgb-line-index', index);
             const prompt = document.createElement('span');
@@ -584,8 +601,12 @@ export function mountRgb({ root, save, storage, onExit }) {
 
     function dismissCutaway() {
         activeCutaway = null;
-        dialogueLines = ['Select an available action to continue the archive reconstruction.'];
-        dialogueSpeaker = null;
+        dialogueLines = [
+            `Back in ${currentChapter().title.replace(/^Chapter \d+:\s*/, '')}.`,
+            SCENE_INTROS[runState.checkpoint]
+        ];
+        dialogueSpeaker = 'NARRATOR';
+        rgbAudio.narrate(dialogueLines);
         render();
     }
 
@@ -633,6 +654,9 @@ export function mountRgb({ root, save, storage, onExit }) {
     function dismissChapterCard() {
         if (mode !== 'chapterCard') return;
         mode = 'scene';
+        dialogueLines = [SCENE_INTROS[runState.checkpoint] ?? currentChapter().goal];
+        dialogueSpeaker = 'NARRATOR';
+        rgbAudio.narrate(dialogueLines);
         render();
     }
 
@@ -921,12 +945,15 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (mode !== 'scene') return;
         if (!isHotspotAvailable(hotspot, runState, visited)) return;
 
-        dialogueLines = [...(hotspot.lines ?? [])];
+        dialogueLines = uniqueLines(hotspot.lines ?? []);
         dialogueSpeaker = getDialogueSpeaker(hotspot.id);
         pendingPickup = hotspot.pickup ? { ...hotspot.pickup } : null;
         activeCutaway = cutawayForHotspot(hotspot);
-        rgbAudio.hotspot(hotspot.id, dialogueLines);
         const priorState = runState;
+        const cinematicSteps = resolveCinematicSteps(hotspot.id, priorState);
+        // Cinematic choices receive purpose-written narration over the moving
+        // image. Ordinary scene/cutaway actions speak their displayed lines.
+        if (cinematicSteps.length === 0) rgbAudio.hotspot(hotspot.id, dialogueLines);
         runState = applyEffects(runState, hotspot.effects);
         recordRouteBeat(hotspot);
         visited.add(hotspot.id);
@@ -957,7 +984,6 @@ export function mountRgb({ root, save, storage, onExit }) {
             render();
         };
 
-        const cinematicSteps = resolveCinematicSteps(hotspot.id, priorState);
         if (cinematicSteps.length > 0) {
             activeCutaway = null;
             mode = 'cinematic';
@@ -965,7 +991,8 @@ export function mountRgb({ root, save, storage, onExit }) {
             scene?.classList.add('rgb-scene--cinematic');
             playCinematicSequence(cinematicLayer, resolveCinematicAssets(cinematicSteps), {
                 background: currentChapter().bg,
-                transitionDelayMs: 320
+                transitionDelayMs: 320,
+                onNarration: (line) => rgbAudio.narrate(line)
             }).then(() => {
                 scene?.classList.remove('rgb-scene--cinematic');
                 proceed();
@@ -1026,7 +1053,12 @@ export function mountRgb({ root, save, storage, onExit }) {
         }
         if (retryHotspot?.effects?.rescue) runState = { ...runState, rescueOutcome: null };
         if (retryHotspot?.effects?.finalChoice) runState = { ...runState, finalChoice: null };
-        dialogueLines = ['Retry restored. Select the next action.'];
+        dialogueLines = [
+            'The archive rewinds to the last recoverable action.',
+            SCENE_INTROS[runState.checkpoint]
+        ];
+        dialogueSpeaker = 'NARRATOR';
+        rgbAudio.narrate(dialogueLines);
         mode = 'scene';
         render();
     }
@@ -1035,7 +1067,13 @@ export function mountRgb({ root, save, storage, onExit }) {
         runState = hydrateRunState(currentSave);
         visited = new Set();
         focusIndex = 0;
-        dialogueLines = [`Checkpoint restored: ${currentChapter().title}.`];
+        dialogueLines = [
+            `Checkpoint restored: ${currentChapter().title}.`,
+            SCENE_INTROS[runState.checkpoint]
+        ];
+        dialogueSpeaker = 'NARRATOR';
+        rgbAudio.enterChapter(runState.checkpoint);
+        rgbAudio.narrate(dialogueLines);
         mode = 'scene';
         render();
     }

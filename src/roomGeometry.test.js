@@ -19,10 +19,10 @@ describe('room geometry', () => {
         }
     });
 
-    it('distinguishes compact and large room footprints', () => {
+    it('classifies the enlarged room footprints as large', () => {
         const compact = TILE_CATALOG.find((tile) => tile.id === 'room-compact-s');
         const hub = TILE_CATALOG.find((tile) => tile.id === 'room-hub');
-        expect(inferRoomSizeClass(compact)).toBe('compact');
+        expect(inferRoomSizeClass(compact)).toBe('large');
         expect(inferRoomSizeClass(hub)).toBe('large');
     });
 

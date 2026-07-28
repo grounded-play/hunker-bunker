@@ -177,7 +177,7 @@ const ROOM_COMPACT_BASE = {
     id: 'room-compact',
     category: 'room',
     tutorial: true,
-    weight: 0.7,
+    weight: 0.42,
     roomRole: 'utility',
     decorationSet: 'bunker',
     populationBudget: { large: 1, small: 1, pickup: 1, enemy: 0 },
@@ -187,11 +187,11 @@ const ROOM_COMPACT_BASE = {
     sockets: { n: C, e: C, s: O, w: C },
     pattern: [
         '#######',
-        '#######',
-        '##...##',
-        '##...##',
-        '##...##',
-        '##...##',
+        '#.....#',
+        '#.....#',
+        '#.....#',
+        '#.....#',
+        '#.....#',
         '##...##'
     ]
 };
@@ -309,7 +309,7 @@ const CORRIDOR_STRAIGHT_BASE = {
     id: 'corridor-straight',
     category: 'corridor-straight',
     tutorial: true,
-    weight: 1.4,
+    weight: 0.7,
     roomRole: 'generic',
     decorationSet: 'bunker',
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
@@ -351,7 +351,7 @@ const CORRIDOR_NARROW_BASE = {
     id: 'corridor-narrow',
     category: 'corridor-straight',
     tutorial: true,
-    weight: 0.72,
+    weight: 2.1,
     roomRole: 'generic',
     decorationSet: 'bunker',
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },

@@ -125,6 +125,17 @@ describe('content shape', () => {
         }
     });
 
+    it('gives every resolved cinematic explanatory narration', () => {
+        const keys = [
+            ...Object.keys(BRANCH_CINEMATICS),
+            ...Object.keys(RAIL_CINEMATICS)
+        ];
+        for (const asset of resolveCinematicAssets(keys)) {
+            expect(asset.narration).toBeTruthy();
+        }
+        expect(INTRO_CINEMATIC.narration).toBeTruthy();
+    });
+
     it('every produced branch cinematic ships both a video and an image', () => {
         for (const entry of Object.values(BRANCH_CINEMATICS)) {
             expect(entry.video).toMatch(/\.mp4$/);
@@ -172,14 +183,14 @@ describe('content shape', () => {
         const documented = { ...base, flags: { ...base.flags, keptNotebook: true } };
         expect(resolveCinematicSteps('proceed_to_kiosk', documented)).toEqual(['C3-A', 'R3']);
 
-        expect(resolveCinematicSteps('follow_utility_map', base)).toEqual(['C4-A', 'R4', 'R5']);
+        expect(resolveCinematicSteps('follow_utility_map', base)).toEqual(['C4-A']);
         const calledOnly = { ...base, flags: { ...base.flags, luciaCallback: true } };
-        expect(resolveCinematicSteps('follow_utility_map', calledOnly)).toEqual(['C4-B', 'R4', 'R5']);
+        expect(resolveCinematicSteps('follow_utility_map', calledOnly)).toEqual(['C4-B']);
 
         expect(resolveCinematicSteps('give_up', base)).toEqual(['C4-C']);
         expect(resolveCinematicSteps('walk_away', base)).toEqual(['C5-A', 'R8']);
         expect(resolveCinematicSteps('expose_profile', base)).toEqual(['C5-B', 'R9']);
-        expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C', 'R6', 'R7']);
+        expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C', 'R6']);
         expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A', 'R10']);
         expect(resolveCinematicSteps('rescue_fumble', base)).toEqual(['C6-B']);
         expect(resolveCinematicSteps('read_diagram', base)).toEqual([]);
