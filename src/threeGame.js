@@ -278,6 +278,20 @@ const ROOM_FLOOR_MATERIAL_FAMILY = Object.freeze({
     camp: 'utility',
     storage: 'utility'
 });
+const GENERATED_ROOM_PROP_PATHS = Object.freeze({
+    prop_medical_bed: '/prop_medical_bed.png',
+    prop_surgical_cart: '/prop_surgical_cart.png',
+    prop_diagnostic_console: '/prop_diagnostic_console.png',
+    prop_broken_specimen_tank: '/prop_broken_specimen_tank.png',
+    prop_fusion_generator: '/prop_fusion_generator.png',
+    prop_engineering_bench: '/prop_engineering_bench.png',
+    prop_security_locker: '/prop_security_locker.png',
+    prop_security_barricade: '/prop_security_barricade.png',
+    prop_cryo_sleep_pod: '/prop_cryo_sleep_pod.png',
+    prop_ruptured_coolant_pump: '/prop_ruptured_coolant_pump.png',
+    prop_alien_respiratory_vent: '/prop_alien_respiratory_vent.png',
+    prop_alien_feeding_basin: '/prop_alien_feeding_basin.png'
+});
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
 
@@ -1604,6 +1618,9 @@ export class ThreeGame {
             prop_camp_crates: this.loadKeyedSpriteTexture('/prop_camp_crates.png', 14),
             prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
+        for (const [type, path] of Object.entries(GENERATED_ROOM_PROP_PATHS)) {
+            this.scatterTextures[type] = this.loadKeyedSpriteTexture(path, 14);
+        }
 
         // 2x2 (4-frame) animated build-structure sheet for build #3 (Note 7).
         // Dedicated texture so UV frame-stepping is isolated; LinearFilter (no
@@ -2214,6 +2231,16 @@ export class ThreeGame {
                 fog: false
             })
         };
+        for (const type of Object.keys(GENERATED_ROOM_PROP_PATHS)) {
+            this.scatterMaterials[type] = new THREE.SpriteMaterial({
+                map: this.scatterTextures[type],
+                transparent: true,
+                alphaTest: 0.06,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            });
+        }
         this.scatterPlaneMaterials = {
             bunker_junk: new THREE.MeshBasicMaterial({
                 map: this.scatterTextures.bunker_junk,
@@ -16690,8 +16717,8 @@ export class ThreeGame {
                 type: 'lore_terminal',
                 scatterKey: placement.scatterKey,
                 baseY: anchoredY,
-                loreKey: logEntry.key,
-                loreText: logEntry.text,
+                loreKey: logEntry?.key ?? `LOG-${biomeKey}-${Math.floor(placement.phase * 100)}`,
+                loreText: logEntry?.text ?? 'RECOVERED TELEMETRY LOG.',
                 baseOpacity: 1,
                 phase: placement.phase ?? 0
             };
