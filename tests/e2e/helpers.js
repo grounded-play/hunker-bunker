@@ -78,13 +78,9 @@ export async function startRunAndSkipIntro(page) {
 
     if (await rosterConfirm.isVisible().catch(() => false)) {
         await rosterConfirm.click();
-    } else if (await startGame.isVisible().catch(() => false)) {
-        await startGame.click();
-        await page.waitForTimeout(300);
-        if (await rosterConfirm.isVisible().catch(() => false)) {
-            await rosterConfirm.click();
-        }
+        await page.waitForTimeout(200);
     }
+    await startGame.click();
 
     const skipBtn = page.locator('#global-skip-intro-btn');
     const dialogueSkipChoice = page.locator('#mothership-choice-skip');
