@@ -130,7 +130,13 @@ function requiredSocketsFor(index, openEdges, neighborCache) {
     return required;
 }
 
-function buildRoomHallRoles(openEdges, neighborCache, random, hallwayContinuation = 0.45) {
+function buildRoomHallRoles(
+    openEdges,
+    neighborCache,
+    random,
+    hallwayContinuation = 0.45,
+    minimumHallwayRun = 2
+) {
     const roles = new Array(neighborCache.length).fill(null);
     const hallwayRun = new Array(neighborCache.length).fill(0);
     const queue = [0];
@@ -142,18 +148,19 @@ function buildRoomHallRoles(openEdges, neighborCache, random, hallwayContinuatio
             if (!openEdges.has(edgeKey(current, next)) || roles[next]) continue;
 
             if (roles[current] === 'room') {
-                // A room door always opens into an approach hallway.
+                // A room door always opens into a long approach hallway.
                 roles[next] = 'hallway';
                 hallwayRun[next] = 1;
             } else {
-                // Hallways may chain, but continuation becomes exponentially
-                // less likely with every consecutive hallway:
-                // run 1 = 45%, run 2 = 20%, run 3 = 9%, ...
+                // Corridors must read as journeys between chambers rather
+                // than one square connector. Guarantee two 7x7 source tiles
+                // after a room, then vary the remaining run by seed.
                 const continuationChance = Math.min(
                     0.92,
                     Math.max(0.05, hallwayContinuation) * Math.exp(-0.45 * Math.max(0, hallwayRun[current] - 1))
                 );
-                const continuesHallway = random() < continuationChance;
+                const continuesHallway = hallwayRun[current] < minimumHallwayRun
+                    || random() < continuationChance;
                 roles[next] = continuesHallway ? 'hallway' : 'room';
                 hallwayRun[next] = continuesHallway ? hallwayRun[current] + 1 : 0;
             }
@@ -235,14 +242,21 @@ export function collapseChunkLattice(random, {
     depthTier = 0,
     loopChance = null,
     maxLoops = null,
-    hallwayContinuation = 0.45
+    hallwayContinuation = 0.45,
+    minimumHallwayRun = 2
 } = {}) {
     const catalog = tutorialOnly ? SELECTABLE_CATALOG.filter((tile) => tile.tutorial) : SELECTABLE_CATALOG;
     const cellCount = LATTICE_SIZE * LATTICE_SIZE;
     let openEdges = tutorialOnly
         ? buildHamiltonianPath(random)
         : buildBranchingSpanningTree(random, NEIGHBOR_CACHE, cellCount);
-    const roles = buildRoomHallRoles(openEdges, NEIGHBOR_CACHE, random, hallwayContinuation);
+    const roles = buildRoomHallRoles(
+        openEdges,
+        NEIGHBOR_CACHE,
+        random,
+        hallwayContinuation,
+        minimumHallwayRun
+    );
     if (!tutorialOnly) {
         openEdges = injectBoundedLoops(openEdges, NEIGHBOR_CACHE, roles, random, {
             chance: loopChance ?? Math.min(0.65, 0.24 + Math.max(0, depthTier) * 0.08),

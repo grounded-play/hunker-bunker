@@ -196,6 +196,60 @@ const ROOM_COMPACT_BASE = {
     ]
 };
 
+// A wide, shallow chamber. Rotations turn the same authored footprint into
+// vertical long rooms, so successive WFC picks do not all read as squares.
+const ROOM_RECTANGLE_BASE = {
+    id: 'room-rectangle',
+    category: 'room',
+    tutorial: true,
+    weight: 0.82,
+    roomRole: 'generic',
+    decorationSet: 'bunker',
+    populationBudget: { large: 1, small: 3, pickup: 1, enemy: 1 },
+    anchors: [
+        { id: 'center', x: 3, y: 4, kind: 'landmark', clearance: 1 },
+        { id: 'wide-wall-left', x: 1, y: 3, kind: 'small-prop', clearance: 0 },
+        { id: 'wide-wall-right', x: 5, y: 3, kind: 'small-prop', clearance: 0 }
+    ],
+    sockets: { n: C, e: C, s: O, w: C },
+    pattern: [
+        '#######',
+        '#######',
+        '#.....#',
+        '#.....#',
+        '#.....#',
+        '#.....#',
+        '##...##'
+    ]
+};
+
+// A proper bent/L-shaped chamber rather than a square room with two doors.
+// Its two broad wings make the turn happen inside the room footprint.
+const ROOM_BENT_BASE = {
+    id: 'room-bent',
+    category: 'room',
+    tutorial: false,
+    weight: 0.72,
+    roomRole: 'generic',
+    decorationSet: 'bunker',
+    populationBudget: { large: 1, small: 4, pickup: 1, enemy: 1 },
+    anchors: [
+        { id: 'bend', x: 3, y: 3, kind: 'landmark', clearance: 1 },
+        { id: 'north-wing', x: 3, y: 1, kind: 'small-prop', clearance: 0 },
+        { id: 'east-wing', x: 5, y: 3, kind: 'small-prop', clearance: 0 }
+    ],
+    sockets: { n: O, e: O, s: C, w: C },
+    pattern: [
+        '##...##',
+        '##...##',
+        '##.....',
+        '#......',
+        '#......',
+        '#...###',
+        '#######'
+    ]
+};
+
 const ROOM_CORNER_BASE = {
     id: 'room-corner',
     category: 'room',
@@ -609,7 +663,9 @@ export const TILE_CATALOG = Object.freeze([
     SOLID_FILL,
     ...withRotations(ROOM_ALCOVE_BASE, ['s', 'w', 'n', 'e']),
     ...withRotations(ROOM_COMPACT_BASE, ['s', 'w', 'n', 'e']),
+    ...withRotations(ROOM_RECTANGLE_BASE, ['s', 'w', 'n', 'e']),
     ...withRotations(ROOM_THROUGH_BASE, ['ns', 'ew']),
+    ...withRotations(ROOM_BENT_BASE, ['ne', 'es', 'sw', 'wn']),
     ...withRotations(ROOM_CORNER_BASE, ['ne', 'es', 'sw', 'wn']),
     ...withRotations(ROOM_JUNCTION_BASE, ['nes', 'esw', 'swn', 'wne']),
     ROOM_HUB,
