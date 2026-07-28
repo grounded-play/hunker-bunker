@@ -260,6 +260,24 @@ const ROOM_FLOOR_STYLE_COLOR = Object.freeze({
     camp: 0x796044,
     storage: 0x78633e
 });
+const ROOM_MATERIAL_ATLAS_SLOT = Object.freeze({
+    utility: Object.freeze({ x: 0, y: 0.5 }),
+    medical: Object.freeze({ x: 0.5, y: 0.5 }),
+    cryo: Object.freeze({ x: 0, y: 0 }),
+    bio: Object.freeze({ x: 0.5, y: 0 })
+});
+const ROOM_FLOOR_MATERIAL_FAMILY = Object.freeze({
+    'bunker-utility': 'utility',
+    'bunker-medical': 'medical',
+    'bunker-security': 'utility',
+    'bunker-storage': 'utility',
+    'cryo-rough': 'cryo',
+    'cryo-tile': 'cryo',
+    'bio-resin': 'bio',
+    'bio-hive': 'bio',
+    camp: 'utility',
+    storage: 'utility'
+});
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
 
@@ -1068,6 +1086,16 @@ export class ThreeGame {
         const maxAnisotropy = this.renderer.capabilities.getMaxAnisotropy();
         this.maxTextureAnisotropy = maxAnisotropy;
         this.biomeTerrainTextures = this.createBiomeTerrainTextures(textureLoader, maxAnisotropy);
+        this.roomWallMaterialAtlas = this.loadTerrainTexture(
+            '/room_wall_material_atlas_v1.png',
+            textureLoader,
+            maxAnisotropy
+        );
+        this.roomFloorMaterialAtlas = this.loadTerrainTexture(
+            '/room_floor_material_atlas_v1.png',
+            textureLoader,
+            maxAnisotropy
+        );
         const activeTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.ACTIVE];
         const cryoTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.CRYO];
         const bioTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.BIO];
@@ -1255,6 +1283,7 @@ export class ThreeGame {
             shader.uniforms.tBioWallSide = { value: bioTerrainTextures.wallSide };
             shader.uniforms.tBioWallTop = { value: bioTerrainTextures.wallTop };
             shader.uniforms.tBioWallGrunge = { value: bioTerrainTextures.wallGrunge };
+            shader.uniforms.tRoomWallAtlas = { value: this.roomWallMaterialAtlas };
             shader.uniforms.uShipWorldPos = { value: this.biomeShipAnchor };
             // Set per-mesh right before each wall's draw call (see
             // configureWallMesh's onBeforeRender) so one shared material can
@@ -1294,6 +1323,7 @@ export class ThreeGame {
                 uniform sampler2D tBioWallSide;
                 uniform sampler2D tBioWallTop;
                 uniform sampler2D tBioWallGrunge;
+                uniform sampler2D tRoomWallAtlas;
                 uniform vec2 uShipWorldPos;
                 uniform float uLandformId;
                 uniform float uRoomStyleId;
@@ -1400,23 +1430,21 @@ export class ThreeGame {
                     }
                     finalWallColor = landformTintColor;
 
-                    // Room-specific treatment layered over biome identity.
-                    // Styles share the biome textures but alter paint,
-                    // cleanliness, oxidation, resin, and security accents.
+                    // Dedicated authored room materials replace the biome
+                    // surface; unthemed walls retain biome blending.
+                    vec2 roomUv = fract(uvX) * 0.5;
                     if (uRoomStyleId > 0.5 && uRoomStyleId < 1.5) {
-                        finalWallColor = mix(finalWallColor, vec3(0.20, 0.42, 0.48), 0.28);
+                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.0, 0.5)).rgb;
                     } else if (uRoomStyleId > 1.5 && uRoomStyleId < 2.5) {
-                        finalWallColor = mix(finalWallColor, vec3(0.66, 0.78, 0.76), 0.32);
-                    } else if (uRoomStyleId > 2.5 && uRoomStyleId < 3.5) {
-                        finalWallColor = mix(finalWallColor, vec3(0.42, 0.16, 0.12), 0.34);
-                    } else if (uRoomStyleId > 3.5 && uRoomStyleId < 4.5) {
-                        finalWallColor = mix(finalWallColor, vec3(0.38, 0.31, 0.20), 0.28);
-                    } else if (uRoomStyleId > 5.5 && uRoomStyleId < 7.5) {
-                        finalWallColor = mix(finalWallColor, vec3(0.62, 0.82, 0.94), 0.30);
+                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.5, 0.5)).rgb;
+                    } else if (uRoomStyleId > 2.5 && uRoomStyleId < 4.5) {
+                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.0, 0.5)).rgb;
+                    } else if (uRoomStyleId > 4.5 && uRoomStyleId < 7.5) {
+                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.0, 0.0)).rgb;
                     } else if (uRoomStyleId > 7.5 && uRoomStyleId < 10.5) {
-                        finalWallColor = mix(finalWallColor, vec3(0.24, 0.10, 0.28), 0.34);
+                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.5, 0.0)).rgb;
                     } else if (uRoomStyleId > 10.5) {
-                        finalWallColor = mix(finalWallColor, vec3(0.34, 0.25, 0.16), 0.30);
+                        finalWallColor = texture2D(tRoomWallAtlas, roomUv + vec2(0.0, 0.5)).rgb;
                     }
 
                     // Per-tile wear jitter breaks the "one flat slab" read
@@ -14620,17 +14648,28 @@ export class ThreeGame {
     getRoomFloorMaterial(style, biome = BIOME_KEYS.ACTIVE) {
         const key = `${biome}:${style}`;
         if (this.roomFloorMaterials.has(key)) return this.roomFloorMaterials.get(key);
-        const texture = this.biomeTerrainTextures?.[biome]?.floorBase
+        const family = ROOM_FLOOR_MATERIAL_FAMILY[style];
+        let texture = this.biomeTerrainTextures?.[biome]?.floorBase
             ?? this.biomeTerrainTextures?.[BIOME_KEYS.ACTIVE]?.floorBase;
+        if (family && this.roomFloorMaterialAtlas) {
+            const slot = ROOM_MATERIAL_ATLAS_SLOT[family];
+            texture = this.roomFloorMaterialAtlas.clone();
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(0.5, 0.5);
+            texture.offset.set(slot.x, slot.y);
+            texture.needsUpdate = true;
+        }
         const material = new THREE.MeshStandardMaterial({
             map: texture,
-            color: ROOM_FLOOR_STYLE_COLOR[style] ?? 0x718088,
+            color: family ? 0xffffff : (ROOM_FLOOR_STYLE_COLOR[style] ?? 0x718088),
             roughness: 0.82,
-            metalness: biome === BIOME_KEYS.ACTIVE ? 0.24 : 0.08,
+            metalness: family === 'bio' ? 0.02 : family === 'cryo' ? 0.12 : 0.26,
             polygonOffset: true,
             polygonOffsetFactor: -1,
             polygonOffsetUnits: -1
         });
+        material.userData.ownsRoomAtlasTexture = Boolean(family);
         this.roomFloorMaterials.set(key, material);
         return material;
     }
@@ -21359,7 +21398,12 @@ export class ThreeGame {
             Object.values(textureSet ?? {}).forEach((texture) => texture?.dispose?.());
         });
         this.floorMaterial?.dispose?.();
-        for (const material of this.roomFloorMaterials?.values?.() ?? []) material?.dispose?.();
+        for (const material of this.roomFloorMaterials?.values?.() ?? []) {
+            if (material?.userData?.ownsRoomAtlasTexture) material.map?.dispose?.();
+            material?.dispose?.();
+        }
+        this.roomWallMaterialAtlas?.dispose?.();
+        this.roomFloorMaterialAtlas?.dispose?.();
         Object.values(this.exteriorCanyonMaterials ?? {}).forEach((material) => material?.dispose?.());
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();
