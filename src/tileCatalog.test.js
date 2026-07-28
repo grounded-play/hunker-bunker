@@ -95,4 +95,11 @@ describe('TILE_CATALOG self-consistency', () => {
             expect(Array.isArray(tile.anchors), tile.id).toBe(true);
         }
     });
+
+    it('provides multiple canyon-lined traversal geometries', () => {
+        const canyonTiles = TILE_CATALOG.filter((tile) => tile.category === 'canyon-walkway');
+        expect(canyonTiles.length).toBeGreaterThanOrEqual(8);
+        expect(canyonTiles.some((tile) => tile.id.startsWith('canyon-walkway-turn'))).toBe(true);
+        expect(canyonTiles.some((tile) => tile.id.startsWith('canyon-split-bridge'))).toBe(true);
+    });
 });

@@ -1,12 +1,5 @@
 import { SOCKET } from './tileCatalog.js';
 
-const SIDE_DELTA = Object.freeze({
-    n: -3,
-    e: 1,
-    s: 3,
-    w: -1
-});
-
 function edgeKey(a, b) {
     return a < b ? `${a}-${b}` : `${b}-${a}`;
 }

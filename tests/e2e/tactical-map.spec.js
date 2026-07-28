@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { bootToTitleSplash, startRunAndSkipIntro } from './helpers.js';
+import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 
 test.describe('Tactical Blueprint Map Overlay E2E', () => {
     test('opens tactical map overlay on M key press and closes on ESC', async ({ page }) => {
-        await bootToTitleSplash(page);
+        await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 
         // Verify tactical map modal starts hidden
@@ -22,7 +22,7 @@ test.describe('Tactical Blueprint Map Overlay E2E', () => {
     });
 
     test('opens tactical map overlay on Tab key press', async ({ page }) => {
-        await bootToTitleSplash(page);
+        await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 
         const mapModal = page.locator('#tactical-map-modal');

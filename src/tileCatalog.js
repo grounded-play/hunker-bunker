@@ -431,6 +431,52 @@ const CANYON_WALKWAY_BASE = {
     ]
 };
 
+const CANYON_WALKWAY_BROAD_BASE = {
+    ...CANYON_WALKWAY_BASE,
+    id: 'canyon-walkway-broad',
+    weight: 0.22,
+    pattern: [
+        '##...##',
+        '#.....#',
+        '#X...X#',
+        '#X...X#',
+        '#X...X#',
+        '#.....#',
+        '##...##'
+    ]
+};
+
+const CANYON_WALKWAY_TURN_BASE = {
+    ...CANYON_WALKWAY_BASE,
+    id: 'canyon-walkway-turn',
+    weight: 0.24,
+    sockets: { n: O, e: O, s: C, w: C },
+    pattern: [
+        '##...##',
+        '##...##',
+        '#X.....',
+        '#X.....',
+        '#X.....',
+        '#######',
+        '#######'
+    ]
+};
+
+const CANYON_SPLIT_BRIDGE_BASE = {
+    ...CANYON_WALKWAY_BASE,
+    id: 'canyon-split-bridge',
+    weight: 0.14,
+    pattern: [
+        '##...##',
+        '#.....#',
+        '#..X..#',
+        '#..X..#',
+        '#..X..#',
+        '#.....#',
+        '##...##'
+    ]
+};
+
 const DEADEND_BASE = {
     id: 'deadend',
     category: 'deadend',
@@ -574,6 +620,9 @@ export const TILE_CATALOG = Object.freeze([
     ...withRotations(CORRIDOR_T_BASE, ['nes', 'esw', 'swn', 'wne']),
     CORRIDOR_CROSS,
     ...withRotations(CANYON_WALKWAY_BASE, ['ns', 'ew']),
+    ...withRotations(CANYON_WALKWAY_BROAD_BASE, ['ns', 'ew']),
+    ...withRotations(CANYON_WALKWAY_TURN_BASE, ['ne', 'es', 'sw', 'wn']),
+    ...withRotations(CANYON_SPLIT_BRIDGE_BASE, ['ns', 'ew']),
     ...withRotations(DEADEND_BASE, ['n', 'e', 's', 'w']),
     ...withRotations(CANYON_IMPASSABLE_BASE, ['ns', 'ew']),
     ...withRotations(RAMP_BASE, ['n', 'e', 's', 'w']),

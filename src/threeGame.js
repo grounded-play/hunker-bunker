@@ -7,6 +7,10 @@ import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { planChunkRoomPopulation } from './roomPopulation.js';
 import { planChunkRoomEncounters } from './roomEncounters.js';
+import { planProceduralDoors, stampDoorRecords, transitionDoorState } from './proceduralDoors.js';
+import { createAccessState, isGateRequirementMet } from './accessControl.js';
+import { planSafeGates } from './mazeGates.js';
+import { extractChunkPortals, buildWorldRouteGraph, reachableChunkKeys } from './worldRoutePlanner.js';
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
@@ -751,6 +755,10 @@ export class ThreeGame {
         this.chunkCache = new Map();
         this.pocketCache = new Map();
         this.wfcMetadataCache = new Map();
+        this.proceduralDoorStates = new Map();
+        this.proceduralDoorMeshes = new Map();
+        this.mazeAccessState = createAccessState();
+        this.worldRouteRecords = new Map();
         this.pocketGroups = new Map();
         this.isInPocket = false;
         this.chunkMeshes = new Map();
@@ -3378,6 +3386,7 @@ export class ThreeGame {
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
         this.interactWithBunkerBlastDoorButton();
+        this.interactWithProceduralDoor();
         this.interactWithConsole();
         this.interactWithO2Generator();
         this.interactWithLoreTerminal();
@@ -4577,6 +4586,7 @@ export class ThreeGame {
         // a 20k-line file.
         if (!this.isInPocket) {
             this.updateBunkerBlastDoor(delta);
+            this.updateProceduralDoors?.(delta);
             this.updateBiomeEnvironment({ delta });
             this.updateWeather(delta);
             this.updateDayNightCycle(delta);
@@ -5533,6 +5543,76 @@ export class ThreeGame {
             return true;
         }
         return false;
+    }
+
+    refreshMazeAccessState() {
+        const bankState = this.bank?.getState?.() ?? {};
+        if ((bankState.o2GeneratorLevel ?? 0) >= 2) this.mazeAccessState.poweredSystems.add('cryo-grid');
+        if (bankState.unlocks?.radarNode || bankState.tier2Unlocks?.radarNode) {
+            this.mazeAccessState.credentials.add('security-alpha');
+        }
+        for (const boss of this.killedBosses ?? []) this.mazeAccessState.defeatedBosses.add(boss);
+        const act2State = this.act2?.getState?.();
+        if (act2State?.hiveNetwork?.purged || act2State?.purgedHive) {
+            this.mazeAccessState.completedObjectives.add('purge-hive-lock');
+        }
+    }
+
+    getProceduralDoorAt(worldX, worldZ) {
+        const chunkX = Math.floor(worldX / this.chunkSize);
+        const chunkY = Math.floor(worldZ / this.chunkSize);
+        const localX = worldX - chunkX * this.chunkSize;
+        const localY = worldZ - chunkY * this.chunkSize;
+        const record = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.doors
+            ?.find((door) => door.localX === localX && door.localY === localY);
+        return record ? (this.proceduralDoorStates.get(record.id) ?? record) : null;
+    }
+
+    interactWithProceduralDoor() {
+        if (!this.player || !this.isGameplayInputActive()) return false;
+        let nearest = null;
+        for (const door of this.proceduralDoorStates.values()) {
+            const [chunkX, chunkY] = door.chunkKey.split(',').map(Number);
+            const worldX = chunkX * this.chunkSize + door.localX;
+            const worldZ = chunkY * this.chunkSize + door.localY;
+            const distance = Math.hypot(this.player.position.x - worldX, this.player.position.z - worldZ);
+            if (distance > 1.8 || (nearest && nearest.distance <= distance)) continue;
+            nearest = { door, distance };
+        }
+        if (!nearest) return false;
+        this.refreshMazeAccessState();
+        const unlocked = isGateRequirementMet(nearest.door.lock, this.mazeAccessState);
+        const next = transitionDoorState(nearest.door, 'toggle', unlocked);
+        this.proceduralDoorStates.set(next.id, next);
+        if (!unlocked && next.lock) {
+            window.dispatchEvent(new CustomEvent('maze-gate-denied', {
+                detail: { doorId: next.id, requirement: next.lock, message: next.lock.label }
+            }));
+            window.AudioManager?.play?.('ui_error', { volume: 0.42, playbackRate: 0.72, bus: 'sfx' });
+        } else {
+            window.AudioManager?.playMetalStress?.({
+                volume: 0.42,
+                playbackRate: next.state === 'open' ? 1.35 : 0.82,
+                force: true
+            });
+        }
+        return true;
+    }
+
+    updateProceduralDoors(delta) {
+        for (const [id, mesh] of this.proceduralDoorMeshes ?? []) {
+            if (!mesh?.parent) {
+                this.proceduralDoorMeshes.delete(id);
+                continue;
+            }
+            const door = this.proceduralDoorStates.get(id);
+            if (!door) continue;
+            const targetY = door.state === 'open' || door.state === 'destroyed'
+                ? -this.wallHeight
+                : this.wallHeight / 2;
+            mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, targetY, Math.min(1, delta * 7));
+            mesh.visible = door.state !== 'destroyed';
+        }
     }
 
     tryInteractWithBunkerDoorPointer(clientX, clientY) {
@@ -14974,6 +15054,20 @@ export class ThreeGame {
                     this.configureWallMesh(doorMesh, {
                         chunkX, chunkY, localX, localY, worldX, worldZ, landform, variant: 'door', isDoor: true
                     });
+                    const doorRecord = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.doors
+                        ?.find((door) => door.localX === localX && door.localY === localY);
+                    const persistedDoor = doorRecord
+                        ? (this.proceduralDoorStates.get(doorRecord.id) ?? doorRecord)
+                        : null;
+                    doorMesh.userData.isProceduralDoor = true;
+                    doorMesh.userData.proceduralDoorId = persistedDoor?.id ?? null;
+                    doorMesh.userData.doorStyle = persistedDoor?.style ?? 'bunker';
+                    if (persistedDoor?.id) {
+                        doorMesh.position.y = persistedDoor.state === 'open' || persistedDoor.state === 'destroyed'
+                            ? -this.wallHeight
+                            : this.wallHeight / 2;
+                        this.proceduralDoorMeshes.set(persistedDoor.id, doorMesh);
+                    }
                     group.add(doorMesh);
                     continue;
                 }
@@ -20059,7 +20153,12 @@ export class ThreeGame {
         const chunkY = Math.floor(tileY / this.chunkSize);
         const localX = tileX - chunkX * this.chunkSize;
         const localY = tileY - chunkY * this.chunkSize;
-        return this.getOrCreateChunk(chunkX, chunkY)?.[localY]?.[localX] ?? '.';
+        const tile = this.getOrCreateChunk(chunkX, chunkY)?.[localY]?.[localX] ?? '.';
+        if (tile === 'D') {
+            const door = this.getProceduralDoorAt(tileX, tileY);
+            return door?.state === 'open' || door?.state === 'destroyed' ? '.' : '#';
+        }
+        return tile;
     }
 
     getCachedTileType(worldX, worldY) {
@@ -20084,7 +20183,12 @@ export class ThreeGame {
         const localX = tileX - chunkX * this.chunkSize;
         const localY = tileY - chunkY * this.chunkSize;
         const grid = this.chunkCache?.get?.(`${chunkX},${chunkY}`);
-        return grid?.[localY]?.[localX] ?? null;
+        const tile = grid?.[localY]?.[localX] ?? null;
+        if (tile === 'D') {
+            const door = this.getProceduralDoorAt(tileX, tileY);
+            return door?.state === 'open' || door?.state === 'destroyed' ? '.' : '#';
+        }
+        return tile;
     }
 
     // Single source of truth for the "is this wall tile actually a hole"
@@ -20594,8 +20698,10 @@ export class ThreeGame {
         } else {
             this.clearSpawnArea(grid, chunkX, chunkY);
         }
-        ThreeGame.prototype.addRoomThresholdDoors.call(this, grid, random, chunkX, chunkY);
-        this.clearDoorways?.(grid);
+        if (landform !== LANDFORMS.MAZE) {
+            ThreeGame.prototype.addRoomThresholdDoors.call(this, grid, random, chunkX, chunkY);
+            this.clearDoorways?.(grid);
+        }
         if (
             landform === LANDFORMS.MAZE
             && mazeLattice
@@ -20634,7 +20740,41 @@ export class ThreeGame {
                 encounter: encounterByRoom.get(room.id) ?? null
             }));
             mazeMetadata.encounterPlans = encounterPlans;
+            const plannedDoors = planProceduralDoors(mazeMetadata.roomInstances, roomRandom, {
+                tutorial: this.isInTutorialRing(chunkX, chunkY)
+            });
+            const gatePlan = planSafeGates(
+                mazeLattice,
+                mazeMetadata.roomInstances,
+                plannedDoors,
+                roomRandom,
+                {
+                    biome,
+                    depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                    tutorial: this.isInTutorialRing(chunkX, chunkY)
+                }
+            );
+            mazeMetadata.doors = gatePlan.doors;
+            mazeMetadata.gates = gatePlan.gates;
+            mazeMetadata.accessSources = gatePlan.accessSources;
+            if (!this.proceduralDoorStates) this.proceduralDoorStates = new Map();
+            for (const door of gatePlan.doors) {
+                const persisted = this.proceduralDoorStates.get(door.id);
+                this.proceduralDoorStates.set(door.id, persisted ?? door);
+            }
+            stampDoorRecords(grid, gatePlan.doors);
+            this.clearDoorways?.(grid);
         }
+        const chunkRouteRecord = {
+            key: `${chunkX},${chunkY}`,
+            chunkX,
+            chunkY,
+            portals: extractChunkPortals(grid)
+        };
+        if (!this.worldRouteRecords) this.worldRouteRecords = new Map();
+        this.worldRouteRecords.set(chunkRouteRecord.key, chunkRouteRecord);
+        const worldRouteGraph = buildWorldRouteGraph([...this.worldRouteRecords.values()]);
+        this.reachableGeneratedChunkKeys = reachableChunkKeys(worldRouteGraph, '0,0');
         return grid;
     }
 
