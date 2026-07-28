@@ -13,7 +13,7 @@
     "launchOptions": [
       {
         "platform": "Windows",
-        "executable": "win-unpacked/Hunker Bunker.exe"
+        "executable": "win-unpacked/hunker-bunker.exe"
       },
       {
         "platform": "Linux + SteamOS",

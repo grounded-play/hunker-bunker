@@ -14,7 +14,7 @@ const rootDir = path.resolve(__dirname, '..');
 
 export function getDrmWrapPaths(root = rootDir) {
     return {
-        winUnpackedExe: path.join(root, 'dist_electron', 'win-unpacked', 'Hunker Bunker.exe'),
+        winUnpackedExe: path.join(root, 'dist_electron', 'win-unpacked', 'hunker-bunker.exe'),
         drmToolPath: process.env.STEAM_DRM_TOOL_PATH || path.join(root, 'steam', 'sdk', 'tools', 'ContentBuilder', 'builder', 'drmwrap.exe')
     };
 }
@@ -31,11 +31,11 @@ DRM Tool Path:     ${drmToolPath}
 Instructions for Steamworks DRM Wrapping:
 ------------------------------------------------------------------------
 1. Download the Steamworks SDK (tools/ContentBuilder/builder/drmwrap.exe).
-2. Ensure packaged build exists at dist_electron/win-unpacked/Hunker Bunker.exe.
+2. Ensure packaged build exists at dist_electron/win-unpacked/hunker-bunker.exe.
 3. Run Valve's drmwrap tool (or use Steamworks Partner Site DRM wrapper):
 
    Command syntax:
-   drmwrap.exe -appid 4957040 -input "dist_electron/win-unpacked/Hunker Bunker.exe" -output "dist_electron/win-unpacked/Hunker Bunker.exe" -tool 0
+   drmwrap.exe -appid 4957040 -input "dist_electron/win-unpacked/hunker-bunker.exe" -output "dist_electron/win-unpacked/hunker-bunker.exe" -tool 0
 
 4. Verify the executable launches cleanly through Steam client.
 ========================================================================

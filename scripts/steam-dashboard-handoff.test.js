@@ -28,6 +28,10 @@ describe('steam dashboard handoff', () => {
 
         expect(handoff.app.appId).toBe(4957040);
         expect(handoff.depots.contentDepotId).toBe(4957041);
+        expect(handoff.depots.launchOptions).toContainEqual({
+            platform: 'Windows',
+            executable: 'win-unpacked/hunker-bunker.exe'
+        });
         expect(handoff.leaderboards.map((row) => row.apiName)).toEqual([
             'best_run_score',
             'daily_ops_score',

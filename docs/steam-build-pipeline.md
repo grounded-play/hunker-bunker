@@ -73,7 +73,7 @@ and `src/game.js`).
    active in code. Leave `comingSoon` definitions unpublished or hidden until
    their unlock paths are live.
 4. **Launch options**: single launch config per OS. With the current single
-   depot, use `win-unpacked/Hunker Bunker.exe` for Windows and
+   depot, use `win-unpacked/hunker-bunker.exe` for Windows and
    `linux-unpacked/hunker-bunker` for Linux/SteamOS. `steam_appid.txt` is
    dev-only and must NOT ship in depots (retail launches through the client).
    The packaged app refuses `steam_appid.txt` outside dev mode.

@@ -146,6 +146,7 @@ function buildInventorySummary(schema) {
 
 export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
     const packageJson = readJson('package.json');
+    const windowsExecutable = `${packageJson.build?.executableName || packageJson.name}.exe`;
     const inventorySchema = readJson('steam/inventory_schema_hunker_bunker.json');
     const achievements = buildAchievementRows();
     const activeAchievements = achievements.filter((achievement) => achievement.publishNow);
@@ -168,7 +169,7 @@ export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
             contentDepotId: CONTENT_DEPOT_ID,
             currentModel: 'single content depot',
             launchOptions: [
-                { platform: 'Windows', executable: 'win-unpacked/Hunker Bunker.exe' },
+                { platform: 'Windows', executable: `win-unpacked/${windowsExecutable}` },
                 { platform: 'Linux + SteamOS', executable: 'linux-unpacked/hunker-bunker' }
             ],
             optionalFutureSplit: 'Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml.'

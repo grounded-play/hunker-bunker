@@ -37,7 +37,7 @@ With the current single content depot, create one launch option per platform:
 
 | Platform | Executable |
 | --- | --- |
-| Windows | `win-unpacked/Hunker Bunker.exe` |
+| Windows | `win-unpacked/hunker-bunker.exe` |
 | Linux + SteamOS | `linux-unpacked/hunker-bunker` |
 
 Future download-size improvement: Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml.

@@ -140,7 +140,7 @@ Tasks:
 
 1. Keep `steam_appid.txt` dev-only and excluded from depots.
 2. Add a Windows DRM wrapping step before upload:
-   - Build `dist_electron/win-unpacked/Hunker Bunker.exe`.
+   - Build `dist_electron/win-unpacked/hunker-bunker.exe`.
    - Run `steamcmd +drm_wrap 4957040 "<input exe>" "<output exe>" drmtoolp 0`.
    - Upload the wrapped exe in the `win-unpacked/` payload inside the content
      depot, or in the Windows depot if the dashboard is later split by OS.
