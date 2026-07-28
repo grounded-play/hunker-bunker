@@ -8,7 +8,6 @@ import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
 import { SurvivorCamp } from './camp.js';
-import { KeyedVideoSprite } from './KeyedVideoSprite.js';
 import {
     ACT2_CAMP_LABELS,
     ACT2_CAMP_MAX_LEVEL,
@@ -727,6 +726,10 @@ export class ThreeGame {
         this.moveSpeed = _initialStats.moveSpeed;
         this.o2DrainMult = _initialStats.o2DrainMult;
         this.pickupMagnetRadius = _initialStats.pickupMagnetRadius ?? PICKUP_MAGNET_RADIUS;
+        this.sprinting = false;
+        this._sprintMoveSpeedMult = 1.0;
+        this._sprintO2DrainMult = 1.0;
+        this._wasSprinting = false;
         this.cameraLift = 10;
         this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
         this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
@@ -902,7 +905,7 @@ export class ThreeGame {
         this.hadNearDeath = false;
         this._blockedExtractionSignalFired = false;
         this.nightVision = false;
-        this._initClassAbility();
+        this._initClassPassives();
 
         window.threeGame = this;
         debugLog.info('ENGINE', `ThreeGame initialized | Player: ${this.playerType} | Seed: ${this.runEntropy}`);
@@ -3095,11 +3098,6 @@ export class ThreeGame {
                 debugLog.debug('INPUT', 'Action: RELOAD (R)');
                 this.triggerGameplayReload({ manual: true });
             }
-            if (this.codeMatchesAction(event.code, 'ability')) {
-                event.preventDefault();
-                debugLog.debug('INPUT', 'Action: CLASS ABILITY (Q/Space)');
-                this.triggerGameplayAbility();
-            }
             if (this.codeMatchesAction(event.code, 'dash')) {
                 event.preventDefault();
                 debugLog.debug('INPUT', 'Action: DASH (Shift)');
@@ -3330,13 +3328,6 @@ export class ThreeGame {
         return this.requestReload({ manual });
     }
 
-    triggerGameplayAbility() {
-        if (!this.isGameplayInputActive()) return false;
-        debugLog.info('GAME', `Triggered class ability (${this.playerType})`);
-        this.triggerClassAbility();
-        return true;
-    }
-
     triggerGameplayScan() {
         if (!this.isGameplayInputActive()) return false;
         debugLog.info('GAME', 'Triggered radar scan');
@@ -3514,9 +3505,6 @@ export class ThreeGame {
 
         this.weaponClipAmmo = Math.max(0, this.weaponClipAmmo - 1);
         let fireCd = WEAPON_FIRE_COOLDOWN;
-        if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
-            fireCd /= 1.20;
-        }
         this.weaponFireCooldown = fireCd;
         this.emitWeaponClipState();
 
@@ -3568,10 +3556,7 @@ export class ThreeGame {
         if (this.codeMatchesAction(code, 'moveDown')) this.keys.down = pressed;
         if (this.codeMatchesAction(code, 'moveLeft')) this.keys.left = pressed;
         if (this.codeMatchesAction(code, 'moveRight')) this.keys.right = pressed;
-        if (this.codeMatchesAction(code, 'sprint')) {
-            if (pressed) this.triggerSprintBurst();
-            this.keys.shift = false;
-        }
+        if (this.codeMatchesAction(code, 'sprint')) this.sprinting = pressed;
     }
 
     // Resolves the active key bindings (user-remapped or default) and reports
@@ -3593,17 +3578,12 @@ export class ThreeGame {
     }
 
     setVirtualInputSprint(active = false) {
-        if (active) return this.triggerSprintBurst();
-        this.keys.shift = false;
-        return false;
-    }
-
-    triggerSprintBurst() {
-        if (!this.isGameplayInputActive()) return false;
-        const wasActive = Boolean(this.classAbility?.active);
-        const cooldownBefore = this.classAbility?.cooldownRemaining ?? 0;
-        this.triggerClassAbility();
-        return !wasActive && cooldownBefore <= 0 && Boolean(this.classAbility?.active);
+        if (!this.isGameplayInputActive()) {
+            this.sprinting = false;
+            return false;
+        }
+        this.sprinting = Boolean(active);
+        return this.sprinting;
     }
 
     isGameplayInputActive() {
@@ -3856,7 +3836,7 @@ export class ThreeGame {
         }
         this.pickupMagnetRadius = baseMagnet;
 
-        this._initClassAbility();
+        this._initClassPassives();
         this.playerSprite.material = this.playerMaterials[resolvedType] ?? this.playerMaterials.SCOUT;
         this.playerSprite.material.needsUpdate = true;
         if (this.playerTorsoSprite) {
@@ -4391,7 +4371,7 @@ export class ThreeGame {
 
         const burstActive = phaseProgress >= 0.22 && phaseProgress <= 0.4;
         if (burstActive) {
-            this._abilityMoveSpeedMult = Math.max(this._abilityMoveSpeedMult ?? 1, 2.5);
+            this._sprintMoveSpeedMult = Math.max(this._sprintMoveSpeedMult ?? 1, 2.5);
             if (Math.random() < 0.28) {
                 this._spawnSprintTrail();
             }
@@ -4481,7 +4461,7 @@ export class ThreeGame {
             }
         }
 
-        this.updateClassAbility(delta);
+        this.updateSprintState(delta);
         this.updateRadarScans(delta);
         this.updatePlayer(delta);
         this.updateWeaponState(delta);
@@ -10859,7 +10839,6 @@ export class ThreeGame {
         if (this.isPlayerDead) return;
         if (this.godMode) return;
         if (this.cinematicLock) return; // untouchable during scripted sequences
-        if (this._abilityImmune) return;
         if (this.isInPocket) return; // untouchable while resolving a fall inside a pocket
         if (this.iFrameTimer > 0 && reason !== 'abyss') return;
         if (this.missionState?.status === 'inactive') return;
@@ -11055,7 +11034,7 @@ export class ThreeGame {
             this.runEntropy = this.fixedRunEntropy ? 0 : (Math.random() * 0xffffffff) >>> 0;
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
-            this._initClassAbility();
+            this._initClassPassives();
             if (this.crashedShips) {
                 for (const ship of this.crashedShips) {
                     ship.hp = ship.maxHp;
@@ -11235,147 +11214,17 @@ export class ThreeGame {
         return `LOG-${key}`;
     }
 
-    // Ability key + display label for the active class (drives the HUD panel).
-    getClassAbilityInfo() {
+    // Passive name + description for the active class (drives the HUD panel).
+    getClassPassiveInfo() {
         const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
-        return { key: stats.abilityKey, label: stats.abilityLabel };
+        return { name: stats.passiveName, description: stats.passiveDescription };
     }
 
-    _initClassAbility() {
-        const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
-        let cooldownMax = stats.abilityCooldown;
-        let activeDuration = stats.abilityDuration;
-
-        if (this.bank) {
-            if (this.bank.isSkillUnlocked('scout_special_upgrade_1')) {
-                activeDuration += 1.0;
-            }
-            if (this.bank.isSkillUnlocked('scout_special_upgrade_2')) {
-                cooldownMax -= 2.0;
-            }
-        }
-
-        this.classAbility = {
-            cooldownMax: cooldownMax,
-            cooldownRemaining: 0,
-            active: false,
-            activeTimer: 0,
-            activeDuration: activeDuration
-        };
-        this._abilityMoveSpeedMult = 1.0;
-        this._abilityImmune = false;
-        this._abilityO2DrainMult = 1.0;
-        this._abilityRefillMult = 1.0;
-    }
-
-    isSpecialAbilityUnlocked() {
-        const stats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
-        return !stats.unlockSkill || this.bank?.isSkillUnlocked?.(stats.unlockSkill);
-    }
-
-    triggerClassAbility() {
-        if (!this.isGameplayInputActive()) return;
-        if (!this.isSpecialAbilityUnlocked()) {
-            window.AudioManager?.play('ui_error', { volume: 0.32, playbackRate: 0.9, bus: 'sfx' });
-            this.showBunkerLine('MOTHERSHIP: EXOSUIT SPECIAL OFFLINE. UNLOCK IN SKILL TREE [TAB].');
-            return;
-        }
-        if (this.classAbility.cooldownRemaining > 0) {
-            window.AudioManager?.play('ui_error', { volume: 0.3, playbackRate: 1.4, bus: 'sfx' });
-            return;
-        }
-        this.classAbility.active = true;
-        this.classAbility.activeTimer = 0;
-        this.classAbility.cooldownRemaining = this.classAbility.cooldownMax;
-
-        const abilityKey = CLASS_STATS[this.playerType]?.abilityKey ?? 'sprint';
-        window.dispatchEvent(new CustomEvent('class-ability-activated', {
-            detail: { ability: abilityKey, playerType: this.playerType }
-        }));
-        window.AudioManager?.play('ui_boot', { volume: 0.42, playbackRate: abilityKey === 'fortify' ? 0.72 : 1.15, bus: 'sfx' });
-
-        if (abilityKey === 'sprint') {
-            window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
-            const videoSprite = new KeyedVideoSprite('/fx_scout_sprint.webm', {
-                width: 2.2,
-                height: 2.2,
-                threshold: 0.05,
-                edgeSoftness: 0.05,
-                loop: false
-            });
-            const spriteObj = videoSprite.getSprite();
-            if (spriteObj && this.player) {
-                spriteObj.position.copy(this.player.position);
-                spriteObj.position.y = 0.55;
-                this.scene.add(spriteObj);
-                this.transientEffects.push({
-                    videoSprite,
-                    spriteObj,
-                    age: 0,
-                    maxAge: 1.0,
-                    update(dt) {
-                        this.age += dt;
-                    },
-                    dispose() {
-                        videoSprite.dispose();
-                    }
-                });
-            }
-        } else if (abilityKey === 'fortify') {
-            window.AudioManager?.play('fx_tank_shockwave', { volume: 0.55, bus: 'sfx' });
-        } else if (abilityKey === 'overclock') {
-            window.AudioManager?.play('fx_engineer_turret', { volume: 0.48, bus: 'sfx' });
-        }
-    }
-
-    updateClassAbility(delta) {
-        // Tick cooldown
-        if (this.classAbility.cooldownRemaining > 0) {
-            this.classAbility.cooldownRemaining = Math.max(0, this.classAbility.cooldownRemaining - delta);
-        }
-
-        // Reset per-frame multipliers
-        this._abilityMoveSpeedMult = 1.0;
-        this._abilityImmune = false;
-        this._abilityO2DrainMult = 1.0;
-        this._abilityRefillMult = 1.0;
-
-        const abilityKey = CLASS_STATS[this.playerType]?.abilityKey;
-        if (this.classAbility.active) {
-            this.classAbility.activeTimer += delta;
-            if (this.classAbility.activeTimer >= this.classAbility.activeDuration) {
-                this.classAbility.active = false;
-                window.dispatchEvent(new CustomEvent('class-ability-ended', {
-                    detail: { ability: CLASS_STATS[this.playerType]?.abilityKey }
-                }));
-            } else if (abilityKey === 'sprint') {
-                this._abilityMoveSpeedMult = 3.0;
-                this._abilityO2DrainMult = 4.0;
-                // Spawn trail particle every ~6 frames
-                if (this.player && Math.random() < 0.45) {
-                    this._spawnSprintTrail();
-                }
-            } else if (abilityKey === 'fortify') {
-                this._abilityImmune = true;
-                this._abilityMoveSpeedMult = 0;
-            } else if (abilityKey === 'overclock') {
-                this._abilityO2DrainMult = 0.5;
-                this._abilityRefillMult = 3.0;
-            }
-        }
-
-        const activeProgress = this.classAbility.active
-            ? (this.classAbility.activeTimer / this.classAbility.activeDuration)
-            : 0;
-        window.dispatchEvent(new CustomEvent('ability-cooldown-tick', {
-            detail: {
-                remaining: this.classAbility.cooldownRemaining,
-                max: this.classAbility.cooldownMax,
-                active: this.classAbility.active,
-                activeProgress,
-                ability: abilityKey
-            }
-        }));
+    _initClassPassives() {
+        Object.assign(this, this.resolveClassPassiveStats(this.playerType));
+        this.turretCooldownTimer = this.turretInterval;
+        this.turretActiveTimer = 0;
+        this.tankRegenTimer = 0;
     }
 
     updateRadarScans(delta) {
@@ -11554,9 +11403,6 @@ export class ThreeGame {
         const radarEffects = this.getRunCardEffects().radar ?? {};
         const campRadarEffects = this.getCampVerbRuntimeEffects().radar ?? {};
         let cdMax = 4.0 * (radarEffects.cooldownMult ?? 1) * (campRadarEffects.cooldownMult ?? 1);
-        if (this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_special_upgrade_2') && this.classAbility.active) {
-            cdMax *= 0.5;
-        }
         this.radarScanCooldownMax = cdMax;
         this.radarScanCooldownRemaining = cdMax;
 
@@ -11697,6 +11543,16 @@ export class ThreeGame {
         });
     }
 
+    updateSprintState(_delta) {
+        const active = Boolean(this.sprinting) && this.isGameplayInputActive() && (this.playerVitals?.o2 ?? 0) > 0;
+        this._sprintMoveSpeedMult = active ? 1.6 : 1.0;
+        this._sprintO2DrainMult = active ? 2.5 : 1.0;
+        if (active && !this._wasSprinting) {
+            if (typeof window !== 'undefined') window.AudioManager?.play('fx_scout_sprint', { volume: 0.45, bus: 'sfx' });
+        }
+        this._wasSprinting = active;
+    }
+
     updateVitals(delta) {
         if (!this.player || this.isPlayerDead) return;
         if (this.cinematicLock) return; // no O2 drain during scripted sequences
@@ -11725,18 +11581,14 @@ export class ThreeGame {
             if (reactorLevel === 1) refillMult = 1.2;
             else if (reactorLevel >= 2) refillMult = 2.0;
 
-            let refillRate = generatorState.refillRate * refillMult
-                * (this._abilityRefillMult ?? 1.0);
-            if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_special_upgrade_2') && this.classAbility.active) {
-                refillRate *= 1.20;
-            }
+            let refillRate = generatorState.refillRate * refillMult;
             this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
             let drainRate = O2_DRAIN_RATE_PCT_PER_SEC
                 * (this.o2DrainMult ?? 1.0)
                 * (this.currentBiomeO2DrainMult ?? 1.0)
-                * (this._abilityO2DrainMult ?? 1.0)
+                * (this._sprintO2DrainMult ?? 1.0)
                 // THIN AIR run modifier: reserves are poor beyond the ship field.
                 * (this.getRunCardEffects().survival?.o2DrainMult ?? (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0));
             if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_o2_efficiency')) {
@@ -11923,8 +11775,7 @@ export class ThreeGame {
         const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
         const moveAxisX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
         const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
-        const fortifyActive = this.classAbility?.active && CLASS_STATS[this.playerType]?.abilityKey === 'fortify';
-        const isMoving = Boolean(moveAxisX || moveAxisZ) && !fortifyActive;
+        const isMoving = Boolean(moveAxisX || moveAxisZ);
         let moveDirX = this.aimDirX || 1;
         let moveDirZ = this.aimDirZ || 0;
         this.isMoving = isMoving;
@@ -11933,9 +11784,12 @@ export class ThreeGame {
             const prevX = this.player.position.x;
             const prevZ = this.player.position.z;
 
-            let speed = this.moveSpeed * (this._abilityMoveSpeedMult ?? 1.0);
-            if (this.playerSlowTimer > 0 && !(this._abilityMoveSpeedMult > 1)) {
+            let speed = this.moveSpeed * (this._sprintMoveSpeedMult ?? 1.0);
+            if (this.playerSlowTimer > 0 && !(this._sprintMoveSpeedMult > 1)) {
                 speed *= 0.55;
+            }
+            if (this._sprintMoveSpeedMult > 1 && Math.random() < 0.45) {
+                this._spawnSprintTrail();
             }
             const moveVector = new THREE.Vector3(moveAxisX, 0, moveAxisZ).normalize().multiplyScalar(speed * delta);
             const current = this.player.position.clone();
@@ -13521,9 +13375,6 @@ export class ThreeGame {
         damage = Math.max(1, Math.round(damage));
 
         let speed = PROJECTILE_SPEED + (bonuses?.speedAdd ?? 0);
-        if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_special_upgrade_1') && this.classAbility.active) {
-            speed *= 1.20;
-        }
 
         this.recoilBloom = Math.min(0.8, (this.recoilBloom ?? 0) + 0.15);
         this.triggerCameraShake?.(0.04, 0.08);
