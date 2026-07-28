@@ -113,7 +113,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'tank_special_upgrade_2',
             label: 'AEGIS GENERATION',
-            desc: 'O2 refill speed inside O2 bubble increased by 20% while braced.',
+            desc: 'Passively regenerate +1 heart every 60s while below max suit integrity.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['tank_special_unlock']),
             requiredGoal: 'reactorCompressor',
@@ -148,8 +148,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
         }),
         Object.freeze({
             id: 'engineer_special_unlock',
-            label: 'UNLOCK REROUTE',
-            desc: 'Unlocks Class Special Ability: Reroute [F]. 0.5x O2 drain, 3x O2 refill rate.',
+            label: 'TURRET PROTOCOL',
+            desc: 'AUTO-TURRET passive strengthened: active duration increased to 9s (from 6s).',
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['engineer_magnet_1', 'engineer_battery_1']),
             prereqMode: 'any',
@@ -159,7 +159,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'engineer_special_upgrade_1',
             label: 'SYSTEM OVERCLOCK',
-            desc: 'Reroute active ability grants +20% firing rate & projectile speed.',
+            desc: 'AUTO-TURRET fires 25% faster.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['engineer_special_unlock']),
             requiredGoal: 'reactorCompressor',
