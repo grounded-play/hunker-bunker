@@ -169,7 +169,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'engineer_special_upgrade_2',
             label: 'SAFETY STANDARDS',
-            desc: 'Reroute active ability reduces radar scan cooldown by 50%.',
+            desc: 'AUTO-TURRET redeploy cooldown reduced to 15s (from 20s).',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['engineer_special_unlock']),
             requiredGoal: 'reactorCompressor',
