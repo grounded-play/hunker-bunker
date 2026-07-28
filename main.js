@@ -297,7 +297,13 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'about-modal',
     'archive-log-detail-modal',
     'archive-modal',
+    'codex-detail-modal',
     'codex-modal',
+    'achievements-modal',
+    'roster-modal',
+    'fabrication-modal',
+    'elevator-choice-modal',
+    'archive-sims-modal',
     'lore-modal',
     'steam-vault-modal',
     'demo-end-modal',
@@ -306,6 +312,7 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'mothership-dialogue',
     'console-terminal-modal',
     'o2-generator-modal',
+    'rgb-root',
     'splash',
     'menu'
 ]);
@@ -433,12 +440,31 @@ function getPromptKeyText(defaultKey = 'E') {
     return defaultKey;
 }
 
+function ensureControllerMenuFocus() {
+    if (appPhase === 'gameplay' && Boolean(window.game?.isGameplayInputActive?.())) return;
+    const root = getControllerFocusRoot();
+    if (!root) return;
+    const active = document.activeElement;
+    if (!active || active === document.body || !root.contains(active)) {
+        const focusables = getVisibleControllerFocusables(root);
+        const preferred = getPreferredControllerFocusTarget(root, focusables);
+        if (preferred) focusControllerTarget(preferred);
+    }
+}
+
 function setLastInputMode(mode, { refresh = true } = {}) {
     const normalized = mode === 'controller' ? 'controller' : 'keyboard';
-    if (steamInputState.lastInputMode === normalized) return false;
+    const changed = steamInputState.lastInputMode !== normalized;
     steamInputState.lastInputMode = normalized;
-    if (refresh) refreshInteractivePromptKeys();
-    return true;
+
+    const isController = isSteamControllerInputActive();
+    if (typeof document !== 'undefined' && document.body) {
+        document.body.classList.toggle('controller-mode', isController);
+    }
+
+    if (changed && refresh) refreshInteractivePromptKeys();
+    if (isController) ensureControllerMenuFocus();
+    return changed;
 }
 
 function setPromptKeyLabel(promptKey, defaultKey = 'E') {
@@ -750,23 +776,49 @@ function updateControllerInputMemory(controller, nextState) {
     steamInputPrevControllers.set(controller.handle, { ...nextState });
 }
 
+function handleControllerTabNavigation(root, direction) {
+    if (!root) return false;
+    const tabs = Array.from(root.querySelectorAll('.tab-btn, .vault-tab-btn, .terminal-tab-btn, [role="tab"], .category-btn, .sub-tab-btn, .rgb-path-btn'))
+        .filter((el) => isElementVisible(el) && !el.disabled);
+    if (tabs.length < 2) return false;
+
+    let activeIndex = tabs.findIndex((el) => el.classList.contains('active') || el.classList.contains('selected') || el.getAttribute('aria-selected') === 'true' || el === document.activeElement);
+    if (activeIndex < 0) activeIndex = 0;
+
+    const nextIndex = (activeIndex + direction + tabs.length) % tabs.length;
+    const targetTab = tabs[nextIndex];
+    if (targetTab) {
+        targetTab.click();
+        focusControllerTarget(targetTab);
+        return true;
+    }
+    return false;
+}
+
 function handleSteamMenuInput(controller) {
     const prev = steamInputPrevControllers.get(controller.handle) ?? {};
     const moved = Boolean(controller.menuUp && !prev.menuUp)
         || Boolean(controller.menuDown && !prev.menuDown)
         || Boolean(controller.menuLeft && !prev.menuLeft)
         || Boolean(controller.menuRight && !prev.menuRight);
+    const tabLeft = Boolean((controller.sprint || controller.scan || controller.menuTabLeft) && !(prev.sprint || prev.scan || prev.menuTabLeft));
+    const tabRight = Boolean((controller.fire || controller.menuTabRight) && !(prev.fire || prev.menuTabRight));
+
     const activeElement = document.activeElement;
     const rangeAdjusted = Boolean(activeElement && isRangeInputElement(activeElement) && (
         (controller.menuLeft && !prev.menuLeft && adjustRangeInputValue(activeElement, -1))
         || (controller.menuRight && !prev.menuRight && adjustRangeInputValue(activeElement, 1))
     ));
 
-    if (!document.activeElement || document.activeElement === document.body || !getControllerFocusRoot()?.contains?.(document.activeElement)) {
-        const root = getControllerFocusRoot();
+    const root = getControllerFocusRoot();
+    if (!document.activeElement || document.activeElement === document.body || !root?.contains?.(document.activeElement)) {
         const focusables = getVisibleControllerFocusables(root ?? document);
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) focusControllerTarget(preferred);
+    } else if (tabLeft) {
+        handleControllerTabNavigation(root, -1);
+    } else if (tabRight) {
+        handleControllerTabNavigation(root, 1);
     } else if (moved && !rangeAdjusted) {
         const step = (controller.menuUp || controller.menuLeft) && !(controller.menuDown || controller.menuRight) ? -1 : 1;
         moveControllerFocus(step);
@@ -786,7 +838,10 @@ function handleSteamMenuInput(controller) {
         menuLeft: Boolean(controller.menuLeft),
         menuRight: Boolean(controller.menuRight),
         menuConfirm: Boolean(controller.menuConfirm),
-        menuBack: Boolean(controller.menuBack)
+        menuBack: Boolean(controller.menuBack),
+        sprint: Boolean(controller.sprint),
+        scan: Boolean(controller.scan),
+        fire: Boolean(controller.fire)
     });
 }
 

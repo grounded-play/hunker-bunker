@@ -47,7 +47,7 @@ describe('browser gamepad mapping', () => {
             fire: true,
             interact: true,
             reload: true,
-            scan: true,
+            sprint: true,
             pause: true,
             menuConfirm: true
         });

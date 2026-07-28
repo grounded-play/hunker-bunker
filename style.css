@@ -1664,7 +1664,8 @@ body {
   border-color: rgba(var(--class-color-rgb, 255, 159, 28), 0.38);
 }
 
-.char-card:focus-visible {
+.char-card:focus-visible,
+.controller-mode .char-card:focus {
   outline: 2px solid rgba(46, 196, 182, 0.95);
   outline-offset: 3px;
   transform: translateX(calc(var(--vu) * -1.2));
@@ -1685,17 +1686,28 @@ body {
 }
 
 .title-menu-btn:focus-visible,
+.controller-mode .title-menu-btn:focus,
 .start-btn:focus-visible,
+.controller-mode .start-btn:focus,
 .close-modal:focus-visible,
+.controller-mode .close-modal:focus,
 .calibrate-btn:focus-visible,
+.controller-mode .calibrate-btn:focus,
 .about-btn:focus-visible,
+.controller-mode .about-btn:focus,
 .confirm-secondary-btn:focus-visible,
+.controller-mode .confirm-secondary-btn:focus,
 .abort-btn:focus-visible,
+.controller-mode .abort-btn:focus,
 .open-settings-btn:focus-visible,
+.controller-mode .open-settings-btn:focus,
 .operator-callsign-input:focus-visible,
-.save-data-code:focus-visible {
+.controller-mode .operator-callsign-input:focus,
+.save-data-code:focus-visible,
+.controller-mode .save-data-code:focus {
   outline: 2px solid rgba(46, 196, 182, 0.9);
   outline-offset: 3px;
+  box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
 }
 
 .char-info {
@@ -11512,7 +11524,8 @@ button.archive-log-entry:active {
 }
 
 /* ── Focus Outline highlight ── */
-:focus-visible {
+:focus-visible,
+.controller-mode :focus {
   outline: 2px solid #22d3ee !important;
   outline-offset: 2px;
   box-shadow: 0 0 8px rgba(34, 211, 238, 0.8) !important;

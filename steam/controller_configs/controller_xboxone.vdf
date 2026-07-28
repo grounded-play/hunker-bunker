@@ -321,7 +321,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action gameplay scan, Scan"
+                            "binding" "game_action gameplay sprint, Sprint"
                         }
                     }
                 } }
@@ -367,7 +367,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action gameplay scan, Scan"
+                            "binding" "game_action gameplay sprint, Sprint"
                         }
                     }
                 } }
@@ -387,7 +387,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action gameplay reload, Reload"
+                            "binding" "game_action gameplay pause, Pause"
                         }
                     }
                 } }

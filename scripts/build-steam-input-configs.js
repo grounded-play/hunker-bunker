@@ -157,13 +157,13 @@ function buildControllerConfig(controllerType) {
         }),
         analogGroup(11, 'gameplay', 'move'),
         analogGroup(12, 'gameplay', 'camera'),
-        triggerGroup(13, 'gameplay', 'scan', 'Scan'),
+        triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
         switchesGroup(15, 'gameplay', {
             button_escape: ['pause', 'Pause'],
-            left_bumper: ['scan', 'Scan'],
+            left_bumper: ['sprint', 'Sprint'],
             right_bumper: ['fire', 'Fire'],
-            button_menu: ['reload', 'Reload'],
+            button_menu: ['pause', 'Pause'],
             button_back_left: ['sprint', 'Sprint'],
             button_back_right: ['interact', 'Interact']
         }),
