@@ -8,6 +8,10 @@ useful history but are not current status.
 
 ## Start here
 
+- **[`current-feature-status.md`](./current-feature-status.md)**
+  — canonical implementation/connection/test/live-acceptance/claim matrix.
+  Historical planning is indexed under [`archive/`](./archive/README.md);
+  compatibility stubs preserve older links.
 - **[`master-implementation-plan-2026-07-28.md`](./master-implementation-plan-2026-07-28.md)**
   — current dependency-ordered implementation plan across backend security,
   Steam live acceptance, Cloud/Input/Deck, radial WFC, objectives, factions,

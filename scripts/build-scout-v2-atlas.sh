@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source_dir="${1:-public/art-remaster/sprite-prototypes/scout/direction-pairs}"
-output_path="${2:-public/art-remaster/sprite-prototypes/scout/scout_walk_v2_atlas.png}"
+source_dir="${1:-art/source/art-remaster/sprite-prototypes/scout/direction-pairs}"
+output_path="${2:-art/source/art-remaster/sprite-prototypes/scout/scout_walk_v2_atlas.png}"
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
 

@@ -132,7 +132,7 @@ for (const [classId, config] of Object.entries(classes)) {
         productionRule: 'render and approve one frame at a time; assemble only accepted frames',
         frames
     };
-    const root = path.resolve(`public/art-remaster/sprite-v5/${config.directory}`);
+    const root = path.resolve(`art/source/art-remaster/sprite-v5/${config.directory}`);
     fs.mkdirSync(root, { recursive: true });
     fs.writeFileSync(
         path.join(root, `${config.filename}.walk-v5-frame-manifest.json`),

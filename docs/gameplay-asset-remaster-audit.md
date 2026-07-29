@@ -210,7 +210,7 @@ A candidate is not allowed to replace a live asset until:
 
 ## Prototype status
 
-`public/art-remaster/concepts/scout_sheet_biomech_concept.png` is a style and
+`art/source/art-remaster/concepts/scout_sheet_biomech_concept.png` is a style and
 silhouette study only. It demonstrates the worn bone/charcoal/cyan material
 translation from `title_key_art_v2.png`, but it is **not runtime-ready**:
 
@@ -225,7 +225,7 @@ deterministic pixel-art pass, not as a replacement sheet.
 ### Scout v2 sensual-direction study
 
 The second Scout exploration is stored under
-`public/art-remaster/sprite-prototypes/scout/`. It deliberately pushes the
+`art/source/art-remaster/sprite-prototypes/scout/`. It deliberately pushes the
 adult appeal further while remaining a fully sealed, credible pressure suit:
 an athletic hourglass silhouette, long articulated legs, tailored hip seals,
 a corset-like pressure harness, and an illuminated spinal support.
@@ -245,7 +245,7 @@ direction pairs, snapped to deterministic 256 × 256 cells, and anchor-normalize
 before runtime integration.
 
 That controlled assembly now exists as
-`public/art-remaster/sprite-prototypes/scout/scout_walk_v2_atlas.png`:
+`art/source/art-remaster/sprite-prototypes/scout/scout_walk_v2_atlas.png`:
 
 - 512 × 2048 transparent RGBA;
 - 2 columns × 8 direction rows;
@@ -294,6 +294,6 @@ and require a subsequent locomotion-atlas pass.
 
 ## Review sheets
 
-- `public/art-remaster/concepts/sprites-current-contact-sheet.jpg`
-- `public/art-remaster/concepts/world-assets-current-contact-sheet.jpg`
-- `public/art-remaster/sprites-v2/sprite-family-v2-contact-sheet.png`
+- `art/source/art-remaster/concepts/sprites-current-contact-sheet.jpg`
+- `art/source/art-remaster/concepts/world-assets-current-contact-sheet.jpg`
+- `art/source/art-remaster/sprites-v2/sprite-family-v2-contact-sheet.png`

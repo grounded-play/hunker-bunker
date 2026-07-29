@@ -1,0 +1,3483 @@
+{
+  "version": 1,
+  "references": [
+    "DoorIntro.mp4",
+    "Eng.Full_v2.png",
+    "Eng.Intro.gif",
+    "Eng.walk_v4.png",
+    "Scout.Intro.gif",
+    "Scout.full_v2.png",
+    "Tank.Intro.gif",
+    "Tank.full_v2.png",
+    "Tank.walk_v4.png",
+    "ach_ending_alien_exodus.jpg",
+    "ach_ending_empty_husk.jpg",
+    "ach_ending_failed_carrier.jpg",
+    "ach_ending_mothership_infection.jpg",
+    "ach_ending_outed_escape.jpg",
+    "alien_nahl_walk.png",
+    "alien_proto_crawler_walk.png",
+    "alien_proto_crawler_walk_v2.png",
+    "alien_proto_spitter_walk.png",
+    "alien_proto_spitter_walk_v2.png",
+    "alien_rhun_walk.png",
+    "alien_vey_walk.png",
+    "art-remaster/enemy-v5/snails/final/boss-cryosnail-walk-v5.png",
+    "art-remaster/enemy-v5/snails/final/boss-cybersnail-walk-v5.png",
+    "art-remaster/enemy-v5/snails/final/boss-sporesnail-walk-v5.png",
+    "art-remaster/enemy-v5/snails/final/cryosnail-walk-v5.png",
+    "art-remaster/enemy-v5/snails/final/cybersnail-walk-v5.png",
+    "art-remaster/enemy-v5/snails/final/sporesnail-walk-v5.png",
+    "audio/NewTrack1.mp3",
+    "audio/NewTrack2.mp3",
+    "audio/NewTrack3.mp3",
+    "audio/NewTrack4.mp3",
+    "audio/generated/camp_verb_meridian.wav",
+    "audio/generated/camp_verb_tallow.wav",
+    "audio/generated/camp_verb_vesper.wav",
+    "audio/generated/camp_worker_alerted.wav",
+    "audio/generated/camp_worker_armed.wav",
+    "audio/generated/camp_worker_fleeing.wav",
+    "audio/generated/camp_worker_infected.wav",
+    "audio/generated/camp_worker_panicked.wav",
+    "audio/vg2/amb_bunker_loop.wav",
+    "audio/vg2/amb_drip1.wav",
+    "audio/vg2/amb_drip2.wav",
+    "audio/vg2/amb_drip3.wav",
+    "audio/vg2/amb_drip4.wav",
+    "audio/vg2/amb_metal_stress1.wav",
+    "audio/vg2/amb_metal_stress2.wav",
+    "audio/vg2/amb_metal_stress3.wav",
+    "audio/vg2/camp_fire_douse.wav",
+    "audio/vg2/camp_fire_loop.wav",
+    "audio/vg2/camp_lockdown_alarm.wav",
+    "audio/vg2/camp_lockdown_chains.wav",
+    "audio/vg2/class_lock1.wav",
+    "audio/vg2/class_lock2.wav",
+    "audio/vg2/class_lock3.wav",
+    "audio/vg2/class_lock4.wav",
+    "audio/vg2/door_gears_spin1.wav",
+    "audio/vg2/door_gears_spin2.wav",
+    "audio/vg2/door_gears_spin3.wav",
+    "audio/vg2/door_gears_spin4.wav",
+    "audio/vg2/door_slam_vertical1.wav",
+    "audio/vg2/door_slam_vertical2.wav",
+    "audio/vg2/door_slam_vertical3.wav",
+    "audio/vg2/door_slide_horiz.wav",
+    "audio/vg2/door_slide_horiz2.wav",
+    "audio/vg2/door_slide_horiz3.wav",
+    "audio/vg2/door_slide_horiz4.wav",
+    "audio/vg2/enemy_death_crawler1.wav",
+    "audio/vg2/enemy_death_crawler2.wav",
+    "audio/vg2/enemy_death_snail1.wav",
+    "audio/vg2/enemy_death_snail2.wav",
+    "audio/vg2/enemy_death_snail3.wav",
+    "audio/vg2/enemy_hit_soft1.wav",
+    "audio/vg2/enemy_hit_soft2.wav",
+    "audio/vg2/enemy_hit_soft3.wav",
+    "audio/vg2/fx_achievement.wav",
+    "audio/vg2/fx_engineer_turret.wav",
+    "audio/vg2/fx_levelup.wav",
+    "audio/vg2/fx_scout_sprint.wav",
+    "audio/vg2/fx_tank_shockwave.wav",
+    "audio/vg2/hive_eggs_hatch.wav",
+    "audio/vg2/hive_eggs_hum.wav",
+    "audio/vg2/hive_queen_throne.wav",
+    "audio/vg2/hive_spores_puff.wav",
+    "audio/vg2/hive_webs_sticky.wav",
+    "audio/vg2/hive_wounded_drip.wav",
+    "audio/vg2/mainbg_music.mp3",
+    "audio/vg2/player_death1.wav",
+    "audio/vg2/player_hit1.wav",
+    "audio/vg2/player_hit2.wav",
+    "audio/vg2/player_hit3.wav",
+    "audio/vg2/ui_boot.wav",
+    "audio/vg2/ui_boot2.wav",
+    "audio/vg2/ui_click_confirm1.wav",
+    "audio/vg2/ui_click_confirm2.wav",
+    "audio/vg2/ui_error1.wav",
+    "audio/vg2/ui_error2.wav",
+    "audio/vg2/ui_error3.wav",
+    "audio/vg2/ui_hover1.wav",
+    "audio/vg2/ui_hover2.wav",
+    "audio/vg2/ui_scan_ping1.wav",
+    "audio/vg2/ui_scan_ping2.wav",
+    "audio/vg2/ui_scan_ping3.wav",
+    "audio/vg2/ui_scan_ping4.wav",
+    "audio/vg2/ui_typing1.wav",
+    "audio/vg2/ui_typing2.wav",
+    "audio/vg2/ui_typing3.wav",
+    "audio/vg2/ui_typing4.wav",
+    "audio/vg2/ui_upgrade_weapon1.wav",
+    "audio/vg2/weapon_fire_sidearm1.wav",
+    "audio/vg2/weapon_fire_sidearm2.wav",
+    "audio/vg2/weapon_fire_sidearm3.wav",
+    "audio/vg2/weapon_reload1.wav",
+    "audio/vg2/weapon_reload2.wav",
+    "bg.webp",
+    "bio_base_growth.png",
+    "bio_charger.png",
+    "bio_grunge_spores.png",
+    "bio_spores.png",
+    "bio_spores_amber.png",
+    "bio_spores_blue.png",
+    "bio_wall_veins.png",
+    "body_empty_exosuit.svg",
+    "body_human_frozen_suit.svg",
+    "boss_corrupted_engineer_v2.png",
+    "boss_corrupted_scout_v2.png",
+    "boss_corrupted_tank_v2.png",
+    "boss_cryosnail.png",
+    "boss_cryosnail_dead.png",
+    "boss_cybersnail.png",
+    "boss_cybersnail_dead.png",
+    "boss_sporesnail.png",
+    "boss_sporesnail_dead.png",
+    "briggs_camp_walk_v2.png",
+    "build_structure_anim.png",
+    "bunker_base_metal.png",
+    "bunker_grunge_rust.png",
+    "bunker_junk.png",
+    "bunker_junk_legendary.png",
+    "bunker_junk_rare.png",
+    "bunker_junk_uncommon.png",
+    "bunker_tech_scratches.png",
+    "bunker_wall_grunge.png",
+    "bunker_wall_metal.png",
+    "canyon_falloff_alien.png",
+    "canyon_falloff_biomech.png",
+    "canyon_falloff_ice.png",
+    "cave_mouth.png",
+    "civilian_miner_walk.png",
+    "civilian_researcher_walk.png",
+    "console.png",
+    "cryo_base_frost.png",
+    "cryo_grunge_rime.png",
+    "cryo_wall_conduit.png",
+    "cryosnail.png",
+    "cryosnail_dead.png",
+    "cutscenes/poster-art/death-abyss.png",
+    "cutscenes/poster-art/death-biohazard.png",
+    "cutscenes/poster-art/death-combat.png",
+    "cutscenes/poster-art/death-crawler.png",
+    "cutscenes/poster-art/death-hazard.png",
+    "cutscenes/poster-art/death-mission-abort.png",
+    "cutscenes/poster-art/death-oxygen.png",
+    "cutscenes/poster-art/death-queen.png",
+    "cutscenes/poster-art/death-ship.png",
+    "cutscenes/poster-art/event-black-box-recovered.png",
+    "cutscenes/poster-art/event-foundry-discovered.png",
+    "cutscenes/poster-art/event-queen-encounter.png",
+    "cybersnail.png",
+    "cybersnail_dead.png",
+    "decal_scars.png",
+    "door.png",
+    "door.webp",
+    "door_alien.png",
+    "door_bio.png",
+    "door_biomech_v2.webp",
+    "door_biomechanical.png",
+    "door_cryo.png",
+    "door_nuclear.png",
+    "door_rust.png",
+    "economy/cache_deep_relic.png",
+    "economy/cache_deep_relic_large.png",
+    "economy/cache_key.png",
+    "economy/cache_key_large.png",
+    "economy/decal_carbon.png",
+    "economy/decal_carbon_large.png",
+    "economy/emblem_archivist.png",
+    "economy/emblem_archivist_large.png",
+    "economy/emblem_queen_slayer.png",
+    "economy/emblem_queen_slayer_large.png",
+    "economy/finish_chrome.png",
+    "economy/finish_chrome_large.png",
+    "economy/patch_engineer.png",
+    "economy/patch_engineer_large.png",
+    "economy/patch_scout.png",
+    "economy/patch_scout_large.png",
+    "economy/patch_tank.png",
+    "economy/patch_tank_large.png",
+    "economy/relic_common.png",
+    "economy/relic_common_large.png",
+    "economy/relic_rare.png",
+    "economy/relic_rare_large.png",
+    "ending_carriersbargain_eggs.png",
+    "ending_cleanescape_cabin.png",
+    "ending_fullbrood_ship.png",
+    "ending_mixedcrew_cabin.png",
+    "ending_scorchedsky_cockpit.png",
+    "engineer_ship.png",
+    "engineer_ship_broken.png",
+    "engineer_ship_healed.png",
+    "favicon.png",
+    "fungal_spore_vent.png",
+    "fx_spark_burst.svg",
+    "fx_steam_puff.svg",
+    "hive_interior.png",
+    "ice_base_rock.png",
+    "ice_grunge_snow.png",
+    "ice_wall_glacier.png",
+    "kaelen_camp_walk_v2.png",
+    "lore_portraits/meridian_kaelen.jpg",
+    "lore_portraits/queen_00.webp",
+    "lore_portraits/survivor_00.webp",
+    "lore_portraits/survivor_01.webp",
+    "lore_portraits/survivor_02.webp",
+    "lore_portraits/survivor_03.webp",
+    "lore_portraits/survivor_04.webp",
+    "lore_portraits/survivor_05.webp",
+    "lore_portraits/survivor_06.webp",
+    "lore_portraits/survivor_08.webp",
+    "lore_portraits/survivor_09.webp",
+    "lore_portraits/survivor_10.webp",
+    "lore_portraits/survivor_11.webp",
+    "lore_portraits/tallow_martha.webp",
+    "lore_portraits/vesper_briggs.webp",
+    "manifest.json",
+    "martha_camp_walk.png",
+    "martha_camp_walk_v2.png",
+    "menu_bg.webp",
+    "menu_bg_v2.webp",
+    "module_hull_matrix.png",
+    "module_o2_generator.png",
+    "module_radar_dish.png",
+    "module_reactor_compressor.png",
+    "mycelium_stalker.png",
+    "pit_hole.png",
+    "prop_alien_feeding_basin.png",
+    "prop_alien_respiratory_vent.png",
+    "prop_biomech_arch.png",
+    "prop_biomech_pillar_left.png",
+    "prop_biomech_pillar_right.png",
+    "prop_broken_specimen_tank.png",
+    "prop_bunker_supplies.png",
+    "prop_camp_bedrolls.png",
+    "prop_camp_cookfire_doused.png",
+    "prop_camp_cookfire_lit.png",
+    "prop_camp_crates.png",
+    "prop_camp_crates_chained.png",
+    "prop_camp_grave_fresh.png",
+    "prop_camp_grave_old.png",
+    "prop_camp_laundry.png",
+    "prop_camp_sandbags.png",
+    "prop_camp_shutter_lockdown.png",
+    "prop_camp_warning_placard.png",
+    "prop_cave_bones.png",
+    "prop_cave_eggs_hatched.png",
+    "prop_cave_eggs_intact.png",
+    "prop_cave_hive_wounded.png",
+    "prop_cave_lichen.png",
+    "prop_cave_queen_throne.png",
+    "prop_cave_spores.png",
+    "prop_cave_webs.png",
+    "prop_conduit_hub.png",
+    "prop_cryo_sleep_pod.png",
+    "prop_cyber_junction.png",
+    "prop_diagnostic_console.png",
+    "prop_engineering_bench.png",
+    "prop_fusion_generator.png",
+    "prop_hive_resin_sac.svg",
+    "prop_medical_bed.png",
+    "prop_ruptured_coolant_pump.png",
+    "prop_security_barricade.png",
+    "prop_security_locker.png",
+    "prop_specimen_tank.png",
+    "prop_spore_colony.png",
+    "prop_surgical_cart.png",
+    "queen_silhouette.png",
+    "room_floor_material_atlas_v1.png",
+    "room_wall_material_atlas_v1.png",
+    "scatter_bio_moss.png",
+    "scatter_bio_pod.png",
+    "scatter_bolts.svg",
+    "scatter_cable_coil.svg",
+    "scatter_coolant_puddle.png",
+    "scatter_cryo_icicle.png",
+    "scatter_cryo_shards.png",
+    "scatter_gravel.png",
+    "scatter_ice_stalagmite.png",
+    "scatter_slime_puddle.png",
+    "schematics/schematic_00.webp",
+    "schematics/schematic_01.webp",
+    "schematics/schematic_02.webp",
+    "schematics/schematic_03.webp",
+    "schematics/schematic_04.webp",
+    "schematics/schematic_05.webp",
+    "schematics/schematic_06.webp",
+    "schematics/schematic_07.webp",
+    "scout_ship.png",
+    "scout_ship_broken.png",
+    "scout_ship_healed.png",
+    "ship_wreckage.png",
+    "spore_mortar.png",
+    "sporesnail.png",
+    "sporesnail_dead.png",
+    "tank_ship.png",
+    "tank_ship_broken.png",
+    "tank_ship_healed.png",
+    "title_key_art_v2.png"
+  ],
+  "assets": [
+    {
+      "path": "DoorIntro.mp4",
+      "bytes": 4668690,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Eng.Full.jpeg",
+      "bytes": 266452,
+      "classification": "unknown"
+    },
+    {
+      "path": "Eng.Full_v2.png",
+      "bytes": 457560,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Eng.Intro.gif",
+      "bytes": 7404804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Eng.walk_v4.png",
+      "bytes": 1516521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Scout.Intro.gif",
+      "bytes": 8282353,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Scout.full.jpeg",
+      "bytes": 226561,
+      "classification": "unknown"
+    },
+    {
+      "path": "Scout.full_v2.png",
+      "bytes": 447724,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Scout.walk_v4.png",
+      "bytes": 1977156,
+      "classification": "unknown"
+    },
+    {
+      "path": "Tank.Intro.gif",
+      "bytes": 8742231,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Tank.full.jpeg",
+      "bytes": 753161,
+      "classification": "unknown"
+    },
+    {
+      "path": "Tank.full_v2.png",
+      "bytes": 633677,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "Tank.walk_v4.png",
+      "bytes": 2019325,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ach_archivist.jpg",
+      "bytes": 636638,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_archivist.png",
+      "bytes": 684691,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_archivist_locked.jpg",
+      "bytes": 128764,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_archivist_locked.png",
+      "bytes": 245457,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_cartographer.jpg",
+      "bytes": 567348,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_cartographer.png",
+      "bytes": 610238,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_cartographer_locked.jpg",
+      "bytes": 106738,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_cartographer_locked.png",
+      "bytes": 206565,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_chen_thirteenth.jpg",
+      "bytes": 616161,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_chen_thirteenth.png",
+      "bytes": 667510,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_chen_thirteenth_locked.jpg",
+      "bytes": 121118,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_chen_thirteenth_locked.png",
+      "bytes": 198770,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_alien_exodus.jpg",
+      "bytes": 645902,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ach_ending_alien_exodus.png",
+      "bytes": 700626,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_alien_exodus_locked.jpg",
+      "bytes": 135598,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_alien_exodus_locked.png",
+      "bytes": 236297,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_carriers_bargain.jpg",
+      "bytes": 720954,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_carriers_bargain.png",
+      "bytes": 773475,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_carriers_bargain_locked.jpg",
+      "bytes": 157157,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_carriers_bargain_locked.png",
+      "bytes": 285637,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_clean_escape.jpg",
+      "bytes": 596774,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_clean_escape.png",
+      "bytes": 649318,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_clean_escape_locked.jpg",
+      "bytes": 122759,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_clean_escape_locked.png",
+      "bytes": 194093,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_empty_husk.jpg",
+      "bytes": 746113,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ach_ending_empty_husk.png",
+      "bytes": 798803,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_empty_husk_locked.jpg",
+      "bytes": 166790,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_empty_husk_locked.png",
+      "bytes": 326576,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_failed_carrier.jpg",
+      "bytes": 646689,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ach_ending_failed_carrier.png",
+      "bytes": 673521,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_failed_carrier_locked.jpg",
+      "bytes": 134845,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_failed_carrier_locked.png",
+      "bytes": 290225,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_full_brood.jpg",
+      "bytes": 611566,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_full_brood.png",
+      "bytes": 655861,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_full_brood_locked.jpg",
+      "bytes": 116942,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_full_brood_locked.png",
+      "bytes": 202071,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_mixed_crew.jpg",
+      "bytes": 714082,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_mixed_crew.png",
+      "bytes": 772820,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_mixed_crew_locked.jpg",
+      "bytes": 152547,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_mixed_crew_locked.png",
+      "bytes": 260944,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_mothership_infection.jpg",
+      "bytes": 764427,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ach_ending_mothership_infection.png",
+      "bytes": 843433,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_mothership_infection_locked.jpg",
+      "bytes": 174860,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_mothership_infection_locked.png",
+      "bytes": 287113,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_outed_escape.jpg",
+      "bytes": 604148,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ach_ending_outed_escape.png",
+      "bytes": 648511,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_outed_escape_locked.jpg",
+      "bytes": 111370,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_outed_escape_locked.png",
+      "bytes": 220619,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_scorched_sky.jpg",
+      "bytes": 580931,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_scorched_sky.png",
+      "bytes": 622382,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_scorched_sky_locked.jpg",
+      "bytes": 103139,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ending_scorched_sky_locked.png",
+      "bytes": 198099,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_gentle_drill.jpg",
+      "bytes": 591393,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_gentle_drill.png",
+      "bytes": 638214,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_gentle_drill_locked.jpg",
+      "bytes": 168109,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_gentle_drill_locked.png",
+      "bytes": 287715,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ghost.jpg",
+      "bytes": 522667,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ghost.png",
+      "bytes": 557916,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ghost_locked.jpg",
+      "bytes": 88047,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_ghost_locked.png",
+      "bytes": 158778,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_hardened.jpg",
+      "bytes": 568547,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_hardened.png",
+      "bytes": 600589,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_hardened_locked.jpg",
+      "bytes": 111191,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_hardened_locked.png",
+      "bytes": 208768,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_hunkered.jpg",
+      "bytes": 705655,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_hunkered.png",
+      "bytes": 749157,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_hunkered_locked.jpg",
+      "bytes": 147510,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_hunkered_locked.png",
+      "bytes": 296215,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_kin.jpg",
+      "bytes": 649178,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_kin.png",
+      "bytes": 696900,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_kin_locked.jpg",
+      "bytes": 141554,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_kin_locked.png",
+      "bytes": 250867,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_locked.jpg",
+      "bytes": 642239,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_locked.png",
+      "bytes": 698498,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_quick_study.jpg",
+      "bytes": 665959,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_quick_study.png",
+      "bytes": 724151,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_quick_study_locked.jpg",
+      "bytes": 141333,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_quick_study_locked.png",
+      "bytes": 241171,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_reyes_courier.jpg",
+      "bytes": 719981,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_reyes_courier.png",
+      "bytes": 764899,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_reyes_courier_locked.jpg",
+      "bytes": 164778,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_reyes_courier_locked.png",
+      "bytes": 325942,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_slay_the_queen.jpg",
+      "bytes": 579603,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_slay_the_queen.png",
+      "bytes": 618598,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_slay_the_queen_locked.jpg",
+      "bytes": 107264,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_slay_the_queen_locked.png",
+      "bytes": 201421,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_engineer.jpg",
+      "bytes": 725293,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_engineer.png",
+      "bytes": 786208,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_engineer_locked.jpg",
+      "bytes": 153116,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_engineer_locked.png",
+      "bytes": 289844,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_scout.jpg",
+      "bytes": 501044,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_scout.png",
+      "bytes": 541666,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_scout_locked.jpg",
+      "bytes": 81536,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_scout_locked.png",
+      "bytes": 141461,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_tank.jpg",
+      "bytes": 582161,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_tank.png",
+      "bytes": 622644,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_tank_locked.jpg",
+      "bytes": 108139,
+      "classification": "unknown"
+    },
+    {
+      "path": "ach_victory_tank_locked.png",
+      "bytes": 202051,
+      "classification": "unknown"
+    },
+    {
+      "path": "alien_nahl_walk.png",
+      "bytes": 678516,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "alien_proto_crawler_walk.png",
+      "bytes": 637653,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "alien_proto_crawler_walk_v2.png",
+      "bytes": 925225,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "alien_proto_spitter_walk.png",
+      "bytes": 573462,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "alien_proto_spitter_walk_v2.png",
+      "bytes": 1029699,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "alien_rhun_walk.png",
+      "bytes": 807332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "alien_vey_walk.png",
+      "bytes": 680088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "art-remaster/enemy-v5/snails/final/boss-cryosnail-walk-v5.png",
+      "bytes": 1703760,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "art-remaster/enemy-v5/snails/final/boss-cybersnail-walk-v5.png",
+      "bytes": 1702615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "art-remaster/enemy-v5/snails/final/boss-sporesnail-walk-v5.png",
+      "bytes": 1707780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "art-remaster/enemy-v5/snails/final/cryosnail-walk-v5.png",
+      "bytes": 1319027,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "art-remaster/enemy-v5/snails/final/cybersnail-walk-v5.png",
+      "bytes": 1281629,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "art-remaster/enemy-v5/snails/final/sporesnail-walk-v5.png",
+      "bytes": 1307872,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/NewTrack1.mp3",
+      "bytes": 7141643,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/NewTrack2.mp3",
+      "bytes": 8848747,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/NewTrack3.mp3",
+      "bytes": 6090421,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/NewTrack4.mp3",
+      "bytes": 8007161,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/cover.png",
+      "bytes": 867896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/camp_verb_meridian.wav",
+      "bytes": 75896,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/camp_verb_tallow.wav",
+      "bytes": 92654,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/camp_verb_vesper.wav",
+      "bytes": 81188,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/camp_worker_alerted.wav",
+      "bytes": 42380,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/camp_worker_armed.wav",
+      "bytes": 63548,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/camp_worker_fleeing.wav",
+      "bytes": 79424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/camp_worker_infected.wav",
+      "bytes": 101474,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/camp_worker_panicked.wav",
+      "bytes": 70604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/soundtrack-config.json",
+      "bytes": 1437,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_bunker_loop.mp3",
+      "bytes": 552410,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_bunker_loop.wav",
+      "bytes": 12723884,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_drip1.wav",
+      "bytes": 715592,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_drip2.wav",
+      "bytes": 789152,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_drip3.wav",
+      "bytes": 628652,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_drip4.wav",
+      "bytes": 668780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_metal_stress1.wav",
+      "bytes": 321038,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_metal_stress2.wav",
+      "bytes": 321038,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/amb_metal_stress3.wav",
+      "bytes": 334412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/camp_fire_douse.wav",
+      "bytes": 105884,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/camp_fire_loop.wav",
+      "bytes": 176444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/camp_lockdown_alarm.wav",
+      "bytes": 132344,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/camp_lockdown_chains.wav",
+      "bytes": 70604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/class_lock1.wav",
+      "bytes": 361160,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/class_lock2.wav",
+      "bytes": 357818,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/class_lock3.wav",
+      "bytes": 334412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/class_lock4.wav",
+      "bytes": 371192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_gears_spin1.wav",
+      "bytes": 307664,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_gears_spin2.wav",
+      "bytes": 327722,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_gears_spin3.wav",
+      "bytes": 317696,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_gears_spin4.wav",
+      "bytes": 321038,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_slam_vertical1.wav",
+      "bytes": 314348,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_slam_vertical2.wav",
+      "bytes": 300974,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_slam_vertical3.wav",
+      "bytes": 314348,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_slide_horiz.wav",
+      "bytes": 341102,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_slide_horiz2.wav",
+      "bytes": 331064,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_slide_horiz3.wav",
+      "bytes": 331070,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/door_slide_horiz4.wav",
+      "bytes": 307664,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/enemy_death_crawler1.wav",
+      "bytes": 20330,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/enemy_death_crawler2.wav",
+      "bytes": 23858,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/enemy_death_snail1.wav",
+      "bytes": 33560,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/enemy_death_snail2.wav",
+      "bytes": 37088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/enemy_death_snail3.wav",
+      "bytes": 39734,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/enemy_hit_soft1.wav",
+      "bytes": 6218,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/enemy_hit_soft2.wav",
+      "bytes": 7100,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/enemy_hit_soft3.wav",
+      "bytes": 7982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/fx_achievement.wav",
+      "bytes": 132344,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/fx_engineer_turret.wav",
+      "bytes": 88244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/fx_levelup.wav",
+      "bytes": 132344,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/fx_scout_sprint.wav",
+      "bytes": 52964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/fx_tank_shockwave.wav",
+      "bytes": 88244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/hive_eggs_hatch.wav",
+      "bytes": 52964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/hive_eggs_hum.wav",
+      "bytes": 176444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/hive_queen_throne.wav",
+      "bytes": 176444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/hive_spores_puff.wav",
+      "bytes": 88244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/hive_webs_sticky.wav",
+      "bytes": 44144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/hive_wounded_drip.wav",
+      "bytes": 70604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/mainbg_music.mp3",
+      "bytes": 11640874,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/player_death1.wav",
+      "bytes": 141164,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/player_hit1.wav",
+      "bytes": 12392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/player_hit2.wav",
+      "bytes": 13274,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/player_hit3.wav",
+      "bytes": 14156,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_boot.mp3",
+      "bytes": 12410,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_boot.wav",
+      "bytes": 327722,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_boot2.wav",
+      "bytes": 321038,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_click_confirm1.wav",
+      "bytes": 53546,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_click_confirm2.wav",
+      "bytes": 247478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_error1.wav",
+      "bytes": 317690,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_error2.wav",
+      "bytes": 334412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_error3.wav",
+      "bytes": 300974,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_hover1.wav",
+      "bytes": 615278,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_hover2.wav",
+      "bytes": 438062,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_scan_ping1.wav",
+      "bytes": 327722,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_scan_ping2.wav",
+      "bytes": 311006,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_scan_ping3.wav",
+      "bytes": 314348,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_scan_ping4.wav",
+      "bytes": 324380,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_typing1.wav",
+      "bytes": 611936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_typing2.wav",
+      "bytes": 578504,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_typing3.wav",
+      "bytes": 608594,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_typing4.wav",
+      "bytes": 605246,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/ui_upgrade_weapon1.wav",
+      "bytes": 75014,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/weapon_fire_sidearm1.wav",
+      "bytes": 9746,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/weapon_fire_sidearm2.wav",
+      "bytes": 10628,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/weapon_fire_sidearm3.wav",
+      "bytes": 11510,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/weapon_reload1.wav",
+      "bytes": 20330,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/vg2/weapon_reload2.wav",
+      "bytes": 22976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bg.png",
+      "bytes": 757837,
+      "classification": "unknown"
+    },
+    {
+      "path": "bg.webp",
+      "bytes": 66338,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bio_base_growth.png",
+      "bytes": 1869367,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bio_base_growth_normal.png",
+      "bytes": 2984550,
+      "classification": "unknown"
+    },
+    {
+      "path": "bio_charger.png",
+      "bytes": 614751,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bio_grunge_spores.png",
+      "bytes": 2142784,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bio_spores.png",
+      "bytes": 1431077,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bio_spores_amber.png",
+      "bytes": 681250,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bio_spores_blue.png",
+      "bytes": 827812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bio_wall_veins.png",
+      "bytes": 2005627,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bio_wall_veins_normal.png",
+      "bytes": 2927745,
+      "classification": "unknown"
+    },
+    {
+      "path": "body_empty_exosuit.svg",
+      "bytes": 1451,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "body_human_frozen_suit.svg",
+      "bytes": 1624,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_corrupted_engineer.png",
+      "bytes": 541585,
+      "classification": "unknown"
+    },
+    {
+      "path": "boss_corrupted_engineer_v2.png",
+      "bytes": 668410,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_corrupted_scout.png",
+      "bytes": 664873,
+      "classification": "unknown"
+    },
+    {
+      "path": "boss_corrupted_scout_v2.png",
+      "bytes": 828768,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_corrupted_tank.png",
+      "bytes": 514510,
+      "classification": "unknown"
+    },
+    {
+      "path": "boss_corrupted_tank_v2.png",
+      "bytes": 1038842,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_cryosnail.png",
+      "bytes": 793936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_cryosnail_dead.png",
+      "bytes": 609190,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_cybersnail.png",
+      "bytes": 691648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_cybersnail_dead.png",
+      "bytes": 685474,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_decoy_scout.png",
+      "bytes": 1490358,
+      "classification": "unknown"
+    },
+    {
+      "path": "boss_sporesnail.png",
+      "bytes": 703621,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "boss_sporesnail_dead.png",
+      "bytes": 585060,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "briggs_camp_walk.png",
+      "bytes": 1315314,
+      "classification": "unknown"
+    },
+    {
+      "path": "briggs_camp_walk_v2.png",
+      "bytes": 541489,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "build_structure_anim.png",
+      "bytes": 16194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_base_metal.png",
+      "bytes": 824675,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_base_metal_normal.png",
+      "bytes": 3271442,
+      "classification": "unknown"
+    },
+    {
+      "path": "bunker_grunge_rust.png",
+      "bytes": 1257692,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_junk.png",
+      "bytes": 1525183,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_junk_legendary.png",
+      "bytes": 1576586,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_junk_rare.png",
+      "bytes": 1659985,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_junk_uncommon.png",
+      "bytes": 1164228,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_tech_scratches.png",
+      "bytes": 1071521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_wall_grunge.png",
+      "bytes": 1015820,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_wall_metal.png",
+      "bytes": 886742,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "bunker_wall_metal_normal.png",
+      "bytes": 2898574,
+      "classification": "unknown"
+    },
+    {
+      "path": "camp_npc_turned_overlay.png",
+      "bytes": 1247831,
+      "classification": "unknown"
+    },
+    {
+      "path": "canyon_falloff_alien.png",
+      "bytes": 2970383,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "canyon_falloff_biomech.png",
+      "bytes": 3003893,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "canyon_falloff_ice.png",
+      "bytes": 2553407,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cave_mouth.png",
+      "bytes": 750170,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "civilian_miner_walk.png",
+      "bytes": 571930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "civilian_researcher_walk.png",
+      "bytes": 622788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "console.png",
+      "bytes": 682755,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cryo_base_frost.png",
+      "bytes": 2002579,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cryo_base_frost_normal.png",
+      "bytes": 3004243,
+      "classification": "unknown"
+    },
+    {
+      "path": "cryo_grunge_rime.png",
+      "bytes": 1232083,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cryo_wall_conduit.png",
+      "bytes": 1913794,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cryo_wall_conduit_normal.png",
+      "bytes": 2956634,
+      "classification": "unknown"
+    },
+    {
+      "path": "cryosnail.png",
+      "bytes": 511190,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cryosnail_dead.png",
+      "bytes": 445354,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/README.md",
+      "bytes": 1938,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/act3-departure-poster.jpg",
+      "bytes": 146045,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/act3-departure.webm",
+      "bytes": 1084258,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/cave-reveal-poster.jpg",
+      "bytes": 535369,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/cave-reveal.webm",
+      "bytes": 3109320,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-abyss-poster.jpg",
+      "bytes": 224958,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-abyss.webm",
+      "bytes": 811699,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-biohazard-poster.jpg",
+      "bytes": 322471,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-biohazard.webm",
+      "bytes": 795462,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-combat-poster.jpg",
+      "bytes": 211943,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-combat.webm",
+      "bytes": 812224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-crawler-poster.jpg",
+      "bytes": 235799,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-crawler.webm",
+      "bytes": 808276,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-hazard-poster.jpg",
+      "bytes": 158326,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-hazard.webm",
+      "bytes": 808645,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-mission-abort-poster.jpg",
+      "bytes": 230510,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-mission-abort.webm",
+      "bytes": 810573,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-oxygen-poster.jpg",
+      "bytes": 223025,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-oxygen.webm",
+      "bytes": 805741,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-queen-poster.jpg",
+      "bytes": 233882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-queen.webm",
+      "bytes": 810997,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-ship-poster.jpg",
+      "bytes": 263484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/death-ship.webm",
+      "bytes": 809524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-carriersbargain-poster.jpg",
+      "bytes": 340577,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-carriersbargain.webm",
+      "bytes": 1642369,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-cleanescape-poster.jpg",
+      "bytes": 470528,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-cleanescape.webm",
+      "bytes": 1503810,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-fullbrood-poster.jpg",
+      "bytes": 444663,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-fullbrood.webm",
+      "bytes": 1193069,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-mixedcrew-poster.jpg",
+      "bytes": 406741,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-mixedcrew.webm",
+      "bytes": 2018127,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-scorchedsky-poster.jpg",
+      "bytes": 356307,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/ending-scorchedsky.webm",
+      "bytes": 1228223,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/engineer-intro-poster.jpg",
+      "bytes": 65709,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/engineer-intro.webm",
+      "bytes": 1498404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-black-box-recovered-poster.jpg",
+      "bytes": 270556,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-black-box-recovered.webm",
+      "bytes": 805447,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-foundry-discovered-poster.jpg",
+      "bytes": 257082,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-foundry-discovered.webm",
+      "bytes": 813792,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-queen-encounter-poster.jpg",
+      "bytes": 259252,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-queen-encounter.webm",
+      "bytes": 803133,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-abyss.png",
+      "bytes": 2622478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-biohazard.png",
+      "bytes": 3080755,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-combat.png",
+      "bytes": 2433699,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-crawler.png",
+      "bytes": 2683764,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-hazard.png",
+      "bytes": 1881390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-mission-abort.png",
+      "bytes": 2635342,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-oxygen.png",
+      "bytes": 2360779,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-queen.png",
+      "bytes": 2535390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/death-ship.png",
+      "bytes": 2724268,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/event-black-box-recovered.png",
+      "bytes": 2772370,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/event-foundry-discovered.png",
+      "bytes": 2688052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/event-queen-encounter.png",
+      "bytes": 2691737,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/scout-intro-poster.jpg",
+      "bytes": 64324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/scout-intro.webm",
+      "bytes": 1483713,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-intro-poster.jpg",
+      "bytes": 67860,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-intro.webm",
+      "bytes": 1604017,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cybersnail.png",
+      "bytes": 672529,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cybersnail_dead.png",
+      "bytes": 717088,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_scars.png",
+      "bytes": 1565757,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door.png",
+      "bytes": 1021640,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door.webp",
+      "bytes": 161354,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_alien.png",
+      "bytes": 925955,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_bio.png",
+      "bytes": 964619,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_biomech_v2.webp",
+      "bytes": 209292,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_biomechanical.png",
+      "bytes": 789906,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_cryo.png",
+      "bytes": 1079569,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_nuclear.png",
+      "bytes": 798079,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_rust.png",
+      "bytes": 1024412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/cache_deep_relic.png",
+      "bytes": 69147,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/cache_deep_relic_large.png",
+      "bytes": 236572,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/cache_key.png",
+      "bytes": 57349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/cache_key_large.png",
+      "bytes": 200414,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_carbon.png",
+      "bytes": 45073,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/decal_carbon_large.png",
+      "bytes": 150308,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/emblem_archivist.png",
+      "bytes": 99436,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/emblem_archivist_large.png",
+      "bytes": 341755,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/emblem_queen_slayer.png",
+      "bytes": 98977,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/emblem_queen_slayer_large.png",
+      "bytes": 352451,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/finish_chrome.png",
+      "bytes": 73049,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/finish_chrome_large.png",
+      "bytes": 253584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_engineer.png",
+      "bytes": 79527,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_engineer_large.png",
+      "bytes": 285757,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_scout.png",
+      "bytes": 83401,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_scout_large.png",
+      "bytes": 296343,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_tank.png",
+      "bytes": 96468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/patch_tank_large.png",
+      "bytes": 361419,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/relic_common.png",
+      "bytes": 55138,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/relic_common_large.png",
+      "bytes": 191711,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/relic_rare.png",
+      "bytes": 73098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/relic_rare_large.png",
+      "bytes": 253859,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "egg_cluster.png",
+      "bytes": 941981,
+      "classification": "unknown"
+    },
+    {
+      "path": "ending_carriersbargain_eggs.png",
+      "bytes": 833114,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ending_cleanescape_cabin.png",
+      "bytes": 998173,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ending_fullbrood_ship.png",
+      "bytes": 975464,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ending_mixedcrew_cabin.png",
+      "bytes": 887141,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ending_scorchedsky_cockpit.png",
+      "bytes": 858438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "engineer_ship.png",
+      "bytes": 632429,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "engineer_ship_broken.png",
+      "bytes": 636041,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "engineer_ship_healed.png",
+      "bytes": 554266,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "engineer_walk.png",
+      "bytes": 658832,
+      "classification": "unknown"
+    },
+    {
+      "path": "engineer_walk_v2.png",
+      "bytes": 478629,
+      "classification": "unknown"
+    },
+    {
+      "path": "favicon.png",
+      "bytes": 453141,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "favicon.svg",
+      "bytes": 9523,
+      "classification": "unknown"
+    },
+    {
+      "path": "fungal_spore_vent.png",
+      "bytes": 714713,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "fx_engineer_turret_reprogram.webm",
+      "bytes": 132131,
+      "classification": "unknown"
+    },
+    {
+      "path": "fx_scout_sprint.webm",
+      "bytes": 90791,
+      "classification": "unknown"
+    },
+    {
+      "path": "fx_shared_achievement.webm",
+      "bytes": 170159,
+      "classification": "unknown"
+    },
+    {
+      "path": "fx_shared_levelup.webm",
+      "bytes": 193775,
+      "classification": "unknown"
+    },
+    {
+      "path": "fx_spark_burst.svg",
+      "bytes": 984,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "fx_steam_puff.svg",
+      "bytes": 1086,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "fx_tank_shockwave.webm",
+      "bytes": 145941,
+      "classification": "unknown"
+    },
+    {
+      "path": "hex_decal_cracks.png",
+      "bytes": 1610570,
+      "classification": "unknown"
+    },
+    {
+      "path": "hex_decal_infestation.png",
+      "bytes": 1686332,
+      "classification": "unknown"
+    },
+    {
+      "path": "hive_carapace_site.png",
+      "bytes": 824675,
+      "classification": "unknown"
+    },
+    {
+      "path": "hive_interior.png",
+      "bytes": 1025298,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "hive_relay_site.png",
+      "bytes": 2005627,
+      "classification": "unknown"
+    },
+    {
+      "path": "hive_suture_site.png",
+      "bytes": 1869367,
+      "classification": "unknown"
+    },
+    {
+      "path": "hunker_bunker_hero.png",
+      "bytes": 1004834,
+      "classification": "unknown"
+    },
+    {
+      "path": "hunker_bunker_select.png",
+      "bytes": 802032,
+      "classification": "unknown"
+    },
+    {
+      "path": "ice_base_rock.png",
+      "bytes": 2153267,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ice_grunge_snow.png",
+      "bytes": 1232083,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "ice_wall_glacier.png",
+      "bytes": 2332315,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "icon-192.png",
+      "bytes": 39297,
+      "classification": "unknown"
+    },
+    {
+      "path": "icon-512.png",
+      "bytes": 209249,
+      "classification": "unknown"
+    },
+    {
+      "path": "icon_cull.png",
+      "bytes": 453141,
+      "classification": "unknown"
+    },
+    {
+      "path": "icon_recruit.png",
+      "bytes": 453141,
+      "classification": "unknown"
+    },
+    {
+      "path": "icon_steal.png",
+      "bytes": 453141,
+      "classification": "unknown"
+    },
+    {
+      "path": "icon_turn.png",
+      "bytes": 453141,
+      "classification": "unknown"
+    },
+    {
+      "path": "icons.svg",
+      "bytes": 5031,
+      "classification": "unknown"
+    },
+    {
+      "path": "kaelen_camp_walk.png",
+      "bytes": 1537606,
+      "classification": "unknown"
+    },
+    {
+      "path": "kaelen_camp_walk_v2.png",
+      "bytes": 550453,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/meridian_kaelen.jpg",
+      "bytes": 994213,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/meridian_kaelen.png",
+      "bytes": 994213,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/queen_00.webp",
+      "bytes": 81630,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_00.webp",
+      "bytes": 4020,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_01.webp",
+      "bytes": 3256,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_02.webp",
+      "bytes": 2916,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_03.webp",
+      "bytes": 2912,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_04.webp",
+      "bytes": 3458,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_05.webp",
+      "bytes": 3052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_06.webp",
+      "bytes": 3884,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_07.webp",
+      "bytes": 3438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_08.webp",
+      "bytes": 3984,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_09.webp",
+      "bytes": 4114,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_10.webp",
+      "bytes": 3460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/survivor_11.webp",
+      "bytes": 3790,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/tallow_martha.png",
+      "bytes": 3884,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/tallow_martha.webp",
+      "bytes": 3884,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/vesper_briggs.png",
+      "bytes": 3460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "lore_portraits/vesper_briggs.webp",
+      "bytes": 3460,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "manifest.json",
+      "bytes": 676,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "martha_camp_walk.png",
+      "bytes": 981882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "martha_camp_walk_v2.png",
+      "bytes": 552754,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "menu_bg.png",
+      "bytes": 568102,
+      "classification": "unknown"
+    },
+    {
+      "path": "menu_bg.webp",
+      "bytes": 24818,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "menu_bg_v2.webp",
+      "bytes": 70844,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/ASSET_PROVENANCE.md",
+      "bytes": 8663,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/ambience/amb_parking_lot.wav",
+      "bytes": 705644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/ambience/amb_review_room.wav",
+      "bytes": 529244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/ambience/amb_sector_fire.wav",
+      "bytes": 705644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/ambience/amb_server_room.wav",
+      "bytes": 529244,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/ambience/amb_warehouse.wav",
+      "bytes": 705644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/music/music_epilogue_ashes.wav",
+      "bytes": 882044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/sfx/sfx_4a_servo.wav",
+      "bytes": 70604,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/sfx/sfx_ui_approved.wav",
+      "bytes": 26504,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/sfx/sfx_ui_denied.wav",
+      "bytes": 35324,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_elias_ch1_01.mp3",
+      "bytes": 12672,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_elias_ch2_01.mp3",
+      "bytes": 21600,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_elias_ch3_01.mp3",
+      "bytes": 17136,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_elias_ch4_01.mp3",
+      "bytes": 45936,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_hr_ch3_01.mp3",
+      "bytes": 23760,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_kiosk_ch4_01.mp3",
+      "bytes": 36432,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_lucia_message.mp3",
+      "bytes": 87264,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_marisol_ch1_01.mp3",
+      "bytes": 15408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_system_ch5_01.mp3",
+      "bytes": 54576,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/audio/voice/voice_system_ch6_01.mp3",
+      "bytes": 42912,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_desert_epilogue.png",
+      "bytes": 1075804,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_desert_epilogue_ashes.png",
+      "bytes": 1432665,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_employee_intake.png",
+      "bytes": 1637148,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_incident_review.png",
+      "bytes": 1790894,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_incident_review_v2.png",
+      "bytes": 1797591,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_medi_kiosk.png",
+      "bytes": 1203926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_rgb_parking_lot.png",
+      "bytes": 1858181,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_sector_four.png",
+      "bytes": 1599579,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_sedan_interior.png",
+      "bytes": 1161909,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_server_room.png",
+      "bytes": 1517784,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_warehouse_line_4a.png",
+      "bytes": 2271940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C1-A.mp4",
+      "bytes": 1690301,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C1-B.mp4",
+      "bytes": 1865887,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C2-A.mp4",
+      "bytes": 11266620,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C2-B.mp4",
+      "bytes": 12252050,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C3-A.mp4",
+      "bytes": 7595527,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C3-B.mp4",
+      "bytes": 7158068,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C4-A.mp4",
+      "bytes": 3356531,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C4-B.mp4",
+      "bytes": 2939349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C4-C.mp4",
+      "bytes": 1670721,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C5-A.mp4",
+      "bytes": 2749366,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C5-B.mp4",
+      "bytes": 4667915,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C5-C.mp4",
+      "bytes": 4955020,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C6-A.mp4",
+      "bytes": 4031102,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/C6-B.mp4",
+      "bytes": 4031102,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/Intro.mp4",
+      "bytes": 4535444,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/R1.mp4",
+      "bytes": 6177279,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/R2.mp4",
+      "bytes": 10041153,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/R3.mp4",
+      "bytes": 4352568,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/R4.mp4",
+      "bytes": 4793609,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/R5.mp4",
+      "bytes": 6909316,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/R6.mp4",
+      "bytes": 6812211,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/R7.mp4",
+      "bytes": 8168857,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/R8.mp4",
+      "bytes": 6940446,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c1/end_answer_lucia.png",
+      "bytes": 1185350,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c1/end_enter_now.png",
+      "bytes": 1177645,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c2/end_clean_metric.png",
+      "bytes": 2456882,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c2/end_honest_log.png",
+      "bytes": 2365436,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c3/end_comply_review.png",
+      "bytes": 1947266,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c3/end_document_review.png",
+      "bytes": 1915357,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c4/end_call_lucia.png",
+      "bytes": 1285623,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c4/end_lockout.png",
+      "bytes": 1162722,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c4/end_record_kiosk.png",
+      "bytes": 1426924,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c5/end_expose_profile.png",
+      "bytes": 1500791,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c5/end_preserve_profile.png",
+      "bytes": 1451294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c5/end_sever_trunk.png",
+      "bytes": 1501506,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c6/end_crushed_retry.png",
+      "bytes": 1030098,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/c6/end_rescue.png",
+      "bytes": 1586438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r1_badge_entry.png",
+      "bytes": 1580457,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r2_collision_aftermath.png",
+      "bytes": 2102132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r3_coverage_discharge.png",
+      "bytes": 1450492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r4_utility_map.png",
+      "bytes": 1362381,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r5_utility_return.png",
+      "bytes": 1362065,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r6_fire_propagation.png",
+      "bytes": 1694740,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r7_pinned_before_rescue.png",
+      "bytes": 1597962,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r8_system_loop.png",
+      "bytes": 2464539,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/cinematics/rails/r9_open_hand.png",
+      "bytes": 1897414,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c1/check_phone.png",
+      "bytes": 1210782,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c1/img_c1_badge_turnstile.png",
+      "bytes": 1418403,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c1/img_c1_marisol_intake.png",
+      "bytes": 1249185,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c1/inspect_albuterol.png",
+      "bytes": 1053149,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c1/inspect_drawing_notebook.png",
+      "bytes": 1233385,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c2/calibrate_joint.png",
+      "bytes": 1984203,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c2/img_c2_joint_focus.png",
+      "bytes": 1655750,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c2/img_c2_notebook_diagram.png",
+      "bytes": 2072701,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c2/img_c2_sensor_sweep.png",
+      "bytes": 1466579,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c2/img_c2_terminal_metric_wipe.png",
+      "bytes": 1400775,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c2/observe_4a_crush.png",
+      "bytes": 2095917,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c3/img_c3_collision_impact.png",
+      "bytes": 1407911,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c3/img_c3_hr_hand_reach.png",
+      "bytes": 1462232,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c3/img_c3_phone_snap_evidence.png",
+      "bytes": 1400127,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c3/img_c3_swab_reader.png",
+      "bytes": 1078861,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c3/marisol_waiting.png",
+      "bytes": 2353286,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c3/missing_footage.png",
+      "bytes": 2071398,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c3/preserve_evidence.png",
+      "bytes": 2272239,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c4/call_lucia.png",
+      "bytes": 1191349,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c4/coverage_denied.png",
+      "bytes": 1247657,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c4/img_c4_medicine_bag_3inch.png",
+      "bytes": 1555950,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c4/img_c4_partial_pay_denied.png",
+      "bytes": 1506480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c4/img_c4_paycheck_stub.png",
+      "bytes": 1355524,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c4/img_c4_utility_map_spread.png",
+      "bytes": 1720662,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c5/img_c5_battery_pallet.png",
+      "bytes": 1399442,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c5/img_c5_expired_extinguisher.png",
+      "bytes": 1330470,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c5/img_c5_wire_cutter_trunk.png",
+      "bytes": 1391431,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c5/terminal_decision.png",
+      "bytes": 1414376,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c5/training_profile.png",
+      "bytes": 1218853,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c6/img_c6_4a_destruction.png",
+      "bytes": 1613637,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c6/img_c6_fire_alarm_pull.png",
+      "bytes": 1688034,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c6/reach_drawing.png",
+      "bytes": 1566091,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/interstitials/c6/recenter_rescue.png",
+      "bytes": 1722054,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/items/item_albuterol_bottle.png",
+      "bytes": 829647,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/items/item_calibration_notebook.png",
+      "bytes": 723521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/items/item_lucia_drawing.png",
+      "bytes": 797501,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/items/item_phone.png",
+      "bytes": 862762,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/items/item_temp_badge.png",
+      "bytes": 999744,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/items/item_wire_cutters.png",
+      "bytes": 785152,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/sprites/elias.png",
+      "bytes": 933987,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "minigames/rgb/sprites/robot_4a.png",
+      "bytes": 989104,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "module_hull_matrix.png",
+      "bytes": 776791,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "module_o2_generator.png",
+      "bytes": 852603,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "module_radar_dish.png",
+      "bytes": 880427,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "module_reactor_compressor.png",
+      "bytes": 1165836,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "mycelium_stalker.png",
+      "bytes": 549418,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "pit_hole.png",
+      "bytes": 1509390,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_alien_feeding_basin.png",
+      "bytes": 498362,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_alien_respiratory_vent.png",
+      "bytes": 438907,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_arch.png",
+      "bytes": 634886,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_pillar_left.png",
+      "bytes": 528083,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_pillar_right.png",
+      "bytes": 575651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_broken_specimen_tank.png",
+      "bytes": 363661,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_bunker_supplies.png",
+      "bytes": 709965,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_bedrolls.png",
+      "bytes": 38700,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_cookfire_doused.png",
+      "bytes": 32389,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_cookfire_lit.png",
+      "bytes": 92531,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_cot.svg",
+      "bytes": 1476,
+      "classification": "unknown"
+    },
+    {
+      "path": "prop_camp_crate.svg",
+      "bytes": 1219,
+      "classification": "unknown"
+    },
+    {
+      "path": "prop_camp_crates.png",
+      "bytes": 1161343,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_crates_chained.png",
+      "bytes": 75659,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_grave_fresh.png",
+      "bytes": 32438,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_grave_old.png",
+      "bytes": 45426,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_laundry.png",
+      "bytes": 35973,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_sandbags.png",
+      "bytes": 1137453,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_shutter_lockdown.png",
+      "bytes": 111314,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_warning_placard.png",
+      "bytes": 122726,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cave_bones.png",
+      "bytes": 1460609,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cave_eggs_hatched.png",
+      "bytes": 33310,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cave_eggs_intact.png",
+      "bytes": 1299981,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cave_hive_wounded.png",
+      "bytes": 115435,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cave_lichen.png",
+      "bytes": 1182021,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cave_queen_throne.png",
+      "bytes": 788697,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cave_spores.png",
+      "bytes": 1149912,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cave_webs.png",
+      "bytes": 1315103,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_conduit_hub.png",
+      "bytes": 640918,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cryo_sleep_pod.png",
+      "bytes": 437708,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_cyber_junction.png",
+      "bytes": 597322,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_diagnostic_console.png",
+      "bytes": 379846,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_engineering_bench.png",
+      "bytes": 520664,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_fusion_generator.png",
+      "bytes": 465003,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_hive_resin_sac.svg",
+      "bytes": 1505,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_medical_bed.png",
+      "bytes": 392486,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_ruptured_coolant_pump.png",
+      "bytes": 461041,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_security_barricade.png",
+      "bytes": 338959,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_security_locker.png",
+      "bytes": 418394,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_specimen_tank.png",
+      "bytes": 587180,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_spore_colony.png",
+      "bytes": 756539,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_surgical_cart.png",
+      "bytes": 396194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "queen_silhouette.png",
+      "bytes": 667500,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "robots.txt",
+      "bytes": 78,
+      "classification": "unknown"
+    },
+    {
+      "path": "room_floor_material_atlas_v1.png",
+      "bytes": 2785271,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "room_wall_material_atlas_v1.png",
+      "bytes": 2882551,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_bio_moss.png",
+      "bytes": 907646,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_bio_pod.png",
+      "bytes": 766042,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_bolts.svg",
+      "bytes": 1796,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_cable_coil.svg",
+      "bytes": 1480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_coolant_puddle.png",
+      "bytes": 2819,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_cryo_icicle.png",
+      "bytes": 780272,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_cryo_shards.png",
+      "bytes": 943888,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_gravel.png",
+      "bytes": 2273,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_ice_stalagmite.png",
+      "bytes": 904485,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_slime_puddle.png",
+      "bytes": 2638,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "schematics/schematic_00.webp",
+      "bytes": 7706,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "schematics/schematic_01.webp",
+      "bytes": 9192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "schematics/schematic_02.webp",
+      "bytes": 8392,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "schematics/schematic_03.webp",
+      "bytes": 7622,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "schematics/schematic_04.webp",
+      "bytes": 8796,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "schematics/schematic_05.webp",
+      "bytes": 8870,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "schematics/schematic_06.webp",
+      "bytes": 8462,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "schematics/schematic_07.webp",
+      "bytes": 7668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scout_ship.png",
+      "bytes": 587932,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scout_ship_broken.png",
+      "bytes": 554256,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scout_ship_healed.png",
+      "bytes": 483574,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scout_walk.png",
+      "bytes": 743419,
+      "classification": "unknown"
+    },
+    {
+      "path": "scout_walk_v2.png",
+      "bytes": 459026,
+      "classification": "unknown"
+    },
+    {
+      "path": "ship_wreckage.png",
+      "bytes": 516510,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sitemap.xml",
+      "bytes": 276,
+      "classification": "unknown"
+    },
+    {
+      "path": "spore_mortar.png",
+      "bytes": 591994,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sporesnail.png",
+      "bytes": 570964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "sporesnail_dead.png",
+      "bytes": 484908,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "survivor_vessel.png",
+      "bytes": 441016,
+      "classification": "unknown"
+    },
+    {
+      "path": "tank_ship.png",
+      "bytes": 650835,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "tank_ship_broken.png",
+      "bytes": 626294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "tank_ship_healed.png",
+      "bytes": 536585,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "tank_walk.png",
+      "bytes": 847924,
+      "classification": "unknown"
+    },
+    {
+      "path": "tank_walk_v2.png",
+      "bytes": 655829,
+      "classification": "unknown"
+    },
+    {
+      "path": "title_key_art.png",
+      "bytes": 742665,
+      "classification": "unknown"
+    },
+    {
+      "path": "title_key_art_v2.png",
+      "bytes": 1710466,
+      "classification": "runtime-required"
+    }
+  ]
+}

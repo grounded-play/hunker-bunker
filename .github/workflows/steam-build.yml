@@ -48,6 +48,7 @@ jobs:
       - run: npm run audit:dependencies
       - run: npm run steam:claims:check
       - run: npm run audio:plan-sfx:check
+      - run: npm run audit:retail-assets:check
       - run: npm test
       - name: Build revision-stamped web payload
         run: npm run build
@@ -63,6 +64,7 @@ jobs:
           HB_STEAM_APPID: ${{ vars.STEAM_APPID }}
           HB_STEAM_CONFIG_REQUIRE_REMOTE: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
       - run: npx electron-builder --dir
+      - run: npm run audit:retail-assets:package
       - run: npm run steam:audit-depot
       - uses: actions/upload-artifact@v4
         with:

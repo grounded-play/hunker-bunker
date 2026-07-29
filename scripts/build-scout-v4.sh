@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-root="${1:-public/art-remaster/sprite-v4/scout}"
+root="${1:-art/source/art-remaster/sprite-v4/scout}"
 strip_dir="$root/strips"
 output="$root/Scout.walk_v4.png"
 work_dir="$(mktemp -d)"

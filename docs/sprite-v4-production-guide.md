@@ -11,16 +11,16 @@ truth table.
 Current Scout files:
 
 - runtime: `public/Scout.walk_v4.png`;
-- master: `public/art-remaster/sprite-v4/scout/Scout.walk_v4.png`;
-- preview: `public/art-remaster/sprite-v4/scout/Scout.walk_v4-preview-r2.png`;
-- metadata: `public/art-remaster/sprite-v4/scout/Scout.anim_v4.json`;
-- source strips: `public/art-remaster/sprite-v4/scout/strips/`;
+- master: `art/source/art-remaster/sprite-v4/scout/Scout.walk_v4.png`;
+- preview: `art/source/art-remaster/sprite-v4/scout/Scout.walk_v4-preview-r2.png`;
+- metadata: `art/source/art-remaster/sprite-v4/scout/Scout.anim_v4.json`;
+- source strips: `art/source/art-remaster/sprite-v4/scout/strips/`;
 - builder: `scripts/build-scout-v4.sh`;
 - strip splitter: `scripts/split-transparent-strip.py`.
 - locked identity master:
-  `public/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png`;
+  `art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png`;
 - 64-frame truth table:
-  `public/art-remaster/sprite-v4/scout/Scout.walk-v4-frame-spec.json`.
+  `art/source/art-remaster/sprite-v4/scout/Scout.walk-v4-frame-spec.json`.
 
 The identity master permanently defines anatomical left as cyan with a split
 kneepad and anatomical right as amber with a solid kneepad. A strip fails if
@@ -30,7 +30,7 @@ those markers swap, regardless of how attractive or dynamic the pose appears.
 
 Eight new high-detail direction strips were generated against the locked
 identity master and assembled under
-`public/art-remaster/sprite-v4/scout-anatomical/`.
+`art/source/art-remaster/sprite-v4/scout-anatomical/`.
 
 This retry is also **not runtime-ready**. It materially improved permanent
 cyan/amber identification in direct front and back views, but review still

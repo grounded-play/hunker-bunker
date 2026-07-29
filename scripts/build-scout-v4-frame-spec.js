@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const outputPath = path.resolve(
-    'public/art-remaster/sprite-v4/scout/Scout.walk-v4-frame-spec.json'
+    'art/source/art-remaster/sprite-v4/scout/Scout.walk-v4-frame-spec.json'
 );
 
 const directions = [

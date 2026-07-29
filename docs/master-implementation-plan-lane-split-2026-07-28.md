@@ -133,6 +133,35 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Codex Phase 12.1/12.2 **implemented conservatively**.
+  `docs/current-feature-status.md` is now the live truth matrix across design,
+  implementation, runtime connection, automation, live/hardware acceptance,
+  claim status, and evidence ownership. Ten clearly superseded early Sprint
+  19 proposal/lane/status documents moved under `docs/archive/sprint-19/`;
+  their old paths remain short compatibility stubs, and archive/master index
+  pages explain authority. Wave 3–6 handoffs remain live because current
+  audits still cite their evidence and unresolved decisions. Combined with
+  the already-shipped dependency audit (12.3) and claims control (12.4), all
+  Phase 12 code/document tasks are complete; ongoing truth updates and
+  eventual archival of later waves are maintenance, not an unimplemented
+  subsystem.
+- 2026-07-28: Codex Phase 11.1–11.3 **implemented with measured reduction**.
+  `scripts/audit-retail-assets.js` extracts runtime asset references from
+  HTML/CSS/JS/JSON-bearing runtime sources, classifies every public file,
+  rejects missing references/invalid media, reports extension-vs-codec
+  mismatches and duplicate SHA-256 groups, and enforces public/app.asar
+  budgets in Steam package CI. Generated reports live under `steam/`.
+  Production/reference art and RGB contact sheets moved from `public/` to
+  `art/source/`, retaining the six live enemy sheets. Public payload fell
+  from 833,071,416 to 643,399,073 bytes (189,672,343 bytes / about 22.8%)
+  with zero extracted runtime references missing. Fresh Windows/Linux
+  packages reduced the largest `app.asar` from 690,712,078 to 504,255,501
+  bytes (186,456,577 bytes / about 27.0%); both pass the new 600 MiB package
+  budget and the depot audit. **Still manual**: measure real Steam patch
+  delta after uploading the next depot and decide whether
+  the 116 extension/codec mismatches and nine duplicate groups merit
+  conversion/removal; they are now visible and regression-controlled rather
+  than silently shipped.
 - 2026-07-28: Phase 6.1/6.2 **live-verified against a real per-run plan
   object, not just synthetic test seeds — this is genuine Gate-adjacent
   evidence, not just unit tests.** Added a `ringplan`/`ringlock` dev-console

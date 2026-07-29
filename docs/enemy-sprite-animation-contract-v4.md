@@ -76,5 +76,5 @@ not change until all eight rows of a class pass.
 ## Rejected first-pass evidence
 
 The whole-atlas experiments are retained under
-`public/art-remaster/enemy-v4/rejected-candidates/`. They are not live assets
+`art/source/art-remaster/enemy-v4/rejected-candidates/`. They are not live assets
 and must not be repacked or promoted.
