@@ -23,6 +23,11 @@ if (process.platform === 'linux') {
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
+const {
+    sanitizeSaveData,
+    loadSaveWithBackup,
+    writeSaveAtomic
+} = require('./save-contract.cjs');
 
 const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
@@ -561,18 +566,22 @@ let saveState = {};
 let saveTimer = null;
 
 function loadSaveFile() {
-    try {
-        saveState = JSON.parse(fs.readFileSync(saveFilePath(), 'utf8')) ?? {};
-    } catch {
-        saveState = {};
+    const loaded = loadSaveWithBackup(fs, saveFilePath());
+    saveState = loaded.data;
+    if (loaded.source === 'backup') {
+        console.warn('[save] primary save was invalid; restored last-known-good backup.');
+        try {
+            writeSaveAtomic(fs, saveFilePath(), saveState);
+        } catch (err) {
+            console.log(`[save] backup recovery write failed: ${err?.message ?? err}`);
+        }
     }
     return saveState;
 }
 
 function flushSaveFile() {
     try {
-        fs.mkdirSync(path.dirname(saveFilePath()), { recursive: true });
-        fs.writeFileSync(saveFilePath(), JSON.stringify(saveState));
+        writeSaveAtomic(fs, saveFilePath(), saveState);
     } catch (err) {
         console.log(`[save] write failed: ${err?.message ?? err}`);
     }
@@ -592,11 +601,13 @@ ipcMain.on('hb:getSaveDataSync', (event) => {
 });
 ipcMain.on('hb:saveDataChanged', (_e, key, value) => {
     if (typeof key !== 'string') return;
-    saveState[key] = String(value);
+    const next = sanitizeSaveData({ [key]: String(value) });
+    if (!(key in next)) return;
+    saveState[key] = next[key];
     scheduleFlush();
 });
 ipcMain.on('hb:saveDataRemoved', (_e, key) => {
-    if (typeof key !== 'string') return;
+    if (typeof key !== 'string' || !key.startsWith('hb_')) return;
     delete saveState[key];
     scheduleFlush();
 });
