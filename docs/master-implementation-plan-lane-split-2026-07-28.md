@@ -133,6 +133,47 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 8.3 (visible aftermath) **checked — mostly already
+  covered by existing code, one item genuinely blocked**. Camps
+  (`src/camp.js` `setStatus`, `campHumanBehavior.js` from Slice 1) and
+  hives (`src/hiveSite.js` — 8 statuses: `slain`/`abandoned`/
+  `expired_by_cure`/`queen_consumed`/`mined`/`wounded`/`bonded`/`rescued`,
+  each with its own membrane/wound sprite and audio cue) already have real
+  physical state changes on resolution. **"Completed blockers" cannot be
+  visible yet because the blockers aren't physically in the world yet** —
+  `grep` for the `RING_BLOCKER_FEATURES` ids (`collapsed_bridge`,
+  `blast_bulkhead`, etc.) from Phase 6's `src/mazeExpedition.js` found zero
+  references anywhere in `src/threeGame.js`; the ring/blocker plan is
+  validated at the abstract graph level (Phase 6.2/6.4, done this session)
+  but never projected into actual generated chunks (Phase 6.1/6.3, still
+  open). This item is downstream of that bigger open task, not a standalone
+  Phase 8.3 gap. Didn't verify "dead bosses persist visibly" or
+  "ending-vector decisions" visually — needs a live-browser pass, not
+  claiming those done from a code read alone.
+- 2026-07-28: Phase 7 rollout steps 3 and 4 **checked, already done** — no
+  new work needed. Step 3 (black box): `main.js:4197-4212` already dispatches
+  both `trackObjective` (on `black-box-marker-active`) and `resolveObjective`
+  (on `black-box-recovered`). Step 4 (lore proximity, compass-only): already
+  implemented as a direct `getRadarCompassState()` branch
+  (`src/threeGame.js:11042-11059`, `getNearbyUnreadLoreTarget()`) sitting at
+  the correct priority (after the registry's own compass target, before the
+  radar-gated build-site guidance) — functionally equivalent to what the
+  spec asked for, just not routed through the registry itself. The unified
+  `#objective-tracker` HUD (`index.html:1072`, `renderObjectiveTracker` at
+  `main.js:4109`) is also already fully built and live.
+  **Step 5 (delete bespoke `#camp-quest-hud`/`#mission-progress-hud`) is
+  NOT safe to do blindly**: `#mission-progress-hud` is dual-purposed — it's
+  reused for the unrelated elevator-arrival countdown text
+  (`showMissionProgressHUD('ELEVATOR ARRIVAL: Ns')`, `main.js:3317`) and for
+  mission-type-flavored briefing text on mission start
+  (`main.js:5617-5627`, e.g. `'SURVEY: REACH 65u DEPTH'`) that the registry
+  entry doesn't carry (it only gets the generic `missionState.label`).
+  Deleting it outright would silently remove the elevator countdown and the
+  richer briefing text, not just de-duplicate. `#camp-quest-hud` looks
+  single-purpose by contrast (only camp-quest-progress calls found) and may
+  be safely deletable, but this needs live-browser visual verification
+  before touching DOM, not a blind text edit — flagging for a session that
+  can run the dev server and look at it, not doing it now.
 - 2026-07-28: Phase 7 **rollout step 2 (missions) done**: `docs/objective-system-spec.md`'s
   documented rollout order has camp quests done, missions next. Wired
   `ThreeGame.initMission`/`clearMission` and the three completion sites
