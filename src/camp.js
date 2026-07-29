@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
+import { campWorkerVisualForHumanState, updateCampWorkerHumanState } from './campHumanBehavior.js';
 
 const LEADER_SPRITESHEETS = {
     'Commander Briggs': '/briggs_camp_walk_v2.png',
@@ -160,6 +161,12 @@ export class SurvivorCamp {
         this.recruited = false;
         this.turned = false;
         this.status = 'alive';
+        // docs/human-ai-activation-plan.md Slice 1: shared per-camp humanAI.js
+        // state, derived each frame from status/suspicion/destroyed. Not
+        // persisted — it's a reactive readout of already-saved fields, not
+        // new save data.
+        this.workerHumanState = 'unaware';
+        this._previousSuspicion = 0;
         this.level = 0;
         this.barricades = [];
         this.turrets = [];
@@ -941,11 +948,22 @@ export class SurvivorCamp {
             this.npcSprite.position.set(this.npcPos.x, 0.75, this.npcPos.z);
         }
 
+        // docs/human-ai-activation-plan.md Slice 1: one shared humanAI.js
+        // state per camp, derived from status/suspicion/destroyed each frame.
+        this.workerHumanState = updateCampWorkerHumanState(this.workerHumanState, {
+            status: this.status,
+            suspicion: this.suspicion,
+            previousSuspicion: this._previousSuspicion,
+            destroyed: this.destroyed
+        });
+        this._previousSuspicion = this.suspicion;
+        const humanVisual = campWorkerVisualForHumanState(this.workerHumanState);
+
         for (const worker of this.campWorkers) {
             if (!worker.mesh) continue;
             worker.mesh.visible = this.status !== 'culled';
             if (!worker.mesh.visible) continue;
-            const t = this.elapsed * worker.speed + worker.phase;
+            const t = this.elapsed * worker.speed * humanVisual.speedMult + worker.phase;
             const gather = this.status === 'recruited';
             const turned = this.status === 'turned';
             const robbed = this.status === 'robbed';
@@ -958,6 +976,16 @@ export class SurvivorCamp {
             worker.mesh.position.set(x, 0.02 + Math.abs(Math.sin(t * 2.2)) * 0.035, z);
             worker.mesh.rotation.y = -t + (turned ? Math.sin(this.elapsed * 4.0) * 0.35 : 0);
             worker.mesh.rotation.z = turned ? Math.sin(this.elapsed * 5.5 + worker.phase) * 0.08 : 0;
+            // Human-state tint layers on top of (never replaces) the status
+            // base color from setStatus() -- only touched while actively
+            // escalated, so an 'unaware' camp's existing colors are untouched.
+            if (humanVisual.tint !== null) {
+                const bodyMat = worker.mesh.userData?.bodyMat;
+                if (bodyMat) {
+                    bodyMat.color.setHex(humanVisual.tint);
+                    bodyMat.emissive.setHex(humanVisual.tint);
+                }
+            }
         }
     }
 }

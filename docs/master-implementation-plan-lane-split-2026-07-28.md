@@ -133,6 +133,26 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 8.2 **decided and Slice 1 shipped**: asked the user
+  directly (repo precedent for dead-code removal requires explicit
+  go-ahead, and this is a visible gameplay-feel fork) — answer: activate
+  `src/humanAI.js`. Wrote `docs/human-ai-activation-plan.md` first (a real
+  scoped plan, not a blind dive) after discovering the audit undersold what
+  already existed: `SurvivorCamp.campWorkers` (`src/camp.js`) already had
+  live ambient movement/idle behavior reacting to camp `status`, and
+  `suspicion` was already a real 0-100 signal driving lockdown visuals. So
+  "activating" the state machine didn't need new rendering/movement/
+  detection plumbing — Slice 1 derives stimuli from signals `camp.js`
+  already computes every frame and feeds them through the actual
+  `nextHumanState()` (new `src/campHumanBehavior.js`, 12 tests), wired into
+  `SurvivorCamp.update()`'s existing worker loop for tint + speed feedback.
+  `humanAI.js` went from zero callers to one, today, not "eventually."
+  Slices 2 (escalation feeding back into gameplay, not just cosmetic) and 3
+  (per-worker instead of per-camp state, audio feedback) are open and
+  documented as such — not claimed done. Full suite 891/896 (5 known,
+  unrelated expected-fail) green, build green. Phase 8.1 (verb matrix) was
+  designed this session too (`docs/faction-verb-matrix.md`); 8.3 (visible
+  aftermath) remains open.
 - 2026-07-28: Lane split written. Claude lane starting on Phase 6.2/6.4
   (ring-crossing non-bypass proof + distance-band validation at the
   macro-plan level in `src/mazeExpedition.js`) — the audit's single most
