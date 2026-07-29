@@ -133,6 +133,31 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 6.1/6.2 **live-verified against a real per-run plan
+  object, not just synthetic test seeds — this is genuine Gate-adjacent
+  evidence, not just unit tests.** Added a `ringplan`/`ringlock` dev-console
+  command (`main.js`) surfacing the live seeded plan's unlock gate and
+  non-bypass proof. The command's own UI trigger hit Playwright focus/
+  visibility flakiness in headless Chromium (both the `` ` `` shortcut and
+  the toolbar button require a `show-debug` body class this session's
+  simple click-through never enabled) — rather than fight that, called the
+  real underlying functions directly via `page.evaluate` against
+  `window.game.getRadialMazePlan()` in an actual running session. Result,
+  captured verbatim:
+  ```json
+  { "ok": true, "seed": 1735238849, "nodeCount": 8, "blockerCount": 4,
+    "roomClusterCount": 85, "progressionValid": true, "progressionErrors": [],
+    "conflictCount": 0, "maxUnlockedRing": 1, "unlockedGoalKeys": [] }
+  ```
+  Real per-run seed, real plan object, `validateRingProgression`/
+  `findConflictingChunkReservations`/`getMaxUnlockedRing` all executing
+  correctly against it, zero page/console errors. `maxUnlockedRing: 1` with
+  zero goals unlocked confirms `enforceRingProgressionLock`'s live behavior
+  matches intent at run start. Full suite 985/985 throughout.
+  **Not committed together with this note** — Codex has ~160 files staged
+  mid-rename (Phase 11 asset relocation) in the shared working tree at the
+  time of writing; committed `main.js` alone via a scoped `git commit --
+  main.js` so their staged rename isn't bundled into an unrelated commit.
 - 2026-07-28: Codex plan-listed audio gap **closed with original generated
   assets, connected and automated**. Added eight deterministic 44.1 kHz
   mono PCM WAVs: five readable camp-worker transition stingers and distinct

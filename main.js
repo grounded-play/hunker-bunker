@@ -40,6 +40,11 @@ import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToas
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
+import {
+    findConflictingChunkReservations,
+    getMaxUnlockedRing,
+    validateRingProgression
+} from './src/mazeExpedition.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleSwitchClassBtn = document.getElementById('title-switch-class-btn');
@@ -6106,6 +6111,7 @@ function executeDevCommand(input) {
                 + '  uiscale <100-150>   - Set UI accessibility scale (%)\n'
                 + '  textfloor <16-24>   - Set minimum text floor font size (px)\n'
                 + '  layout / stage      - Display canonical stage transform & viewport metrics\n'
+                + '  ringplan / ringlock - Show the active run\'s radial ring plan, unlock gate, and non-bypass proof\n'
                 + '  perf / bootlog      - Display boot timings and current renderer workload\n'
                 + '  god                 - Toggle God Mode\n'
                 + '  salvage / +$        - Grant salvage & shells\n'
@@ -6120,6 +6126,31 @@ function executeDevCommand(input) {
         case 'metrics':
             result = devGetLayoutMetrics();
             break;
+        case 'ringplan':
+        case 'ringlock': {
+            // Phase 6.1/6.2 live diagnostic: inspects the current run's
+            // actual seeded radial plan (window.game.getRadialMazePlan(),
+            // already live-used to position camps/hives/the queen) rather
+            // than a synthetic test seed. Read-only -- does not affect
+            // generation.
+            const game = window.game;
+            if (!game?.getRadialMazePlan) {
+                result = 'No active run (radial plan is created lazily once a run starts).';
+                break;
+            }
+            const plan = game.getRadialMazePlan();
+            const progression = validateRingProgression(plan);
+            const conflicts = findConflictingChunkReservations(plan);
+            const unlocks = game.bank?.getState?.()?.unlocks ?? {};
+            const unlockedGoalKeys = new Set(Object.keys(unlocks).filter((key) => unlocks[key]));
+            const maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
+            result = `RADIAL PLAN DIAGNOSTIC (seed ${plan.seed})\n`
+                + `  Max unlocked ring: ${maxUnlockedRing}/5 (goals: ${[...unlockedGoalKeys].join(', ') || 'none'})\n`
+                + `  Ring-progression proof: ${progression.valid ? 'VALID (non-bypassable at the abstract graph level)' : `INVALID: ${progression.errors.join('; ')}`}\n`
+                + `  Chunk placement conflicts: ${conflicts.length === 0 ? 'none' : conflicts.map((c) => `(${c.chunkX},${c.chunkY}): ${c.siteIds.join(' + ')}`).join('; ')}\n`
+                + '  NOTE: this validates the seeded plan and the live unlock gate; it does not prove the WFC-generated chunk geometry physically enforces it (Phase 6.1/6.3, still open).';
+            break;
+        }
         case 'perf':
         case 'bootlog': {
             const renderer = window.game?.renderer;
