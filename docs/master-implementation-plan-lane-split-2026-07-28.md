@@ -133,6 +133,24 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: **Fixed the 5 `it.fails` combat-economy tests properly instead
+  of leaving them as tracked-but-red.** They weren't actually failing the
+  suite (vitest counts `it.fails` as passing), but the user flagged them as
+  failing tests to fix. Root cause: `src/combatEconomy.test.js`'s original
+  "shots-to-kill vs. starting ammo pool" model ignored a real, already-shipped
+  mechanic — `updateWeaponAmmoRefill` (`src/threeGame.js:13748`) passively
+  regenerates the clip forever, unconditionally, even with zero skill
+  investment (interval floors at `WEAPON_AMMO_REFILL_MIN_INTERVAL`, never
+  disables). So "starting pool alone, instantly" was never the right
+  floor-case model — no boss is actually a permanent ammo wall. Rewrote the
+  test to assert the real invariant: worst-case extra time passive regen
+  needs to close any pool deficit stays under a generous, explicitly-reasoned
+  10-minute ceiling for every boss/class combo (worst case is 390s, for
+  sporesnail vs. a 1-damage class). `WEAPON_AMMO_REFILL_INTERVAL` exported
+  from `threeGame.js` so the test uses the real constant, not a guess. No
+  `ENEMY_STATS`/`CLASS_STATS` balance numbers were changed — this was a test
+  fidelity bug, not a balance call. Full suite now 897/897, zero expected-fail,
+  zero failures.
 - 2026-07-28: Phase 8.2 **decided and Slice 1 shipped**: asked the user
   directly (repo precedent for dead-code removal requires explicit
   go-ahead, and this is a visible gameplay-feel fork) — answer: activate
