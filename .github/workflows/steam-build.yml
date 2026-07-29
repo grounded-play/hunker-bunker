@@ -45,6 +45,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run audit:dependencies
       - run: npm test
       - name: Build revision-stamped web payload
         run: npm run build

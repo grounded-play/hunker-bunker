@@ -29,4 +29,42 @@ test.describe('controller-ready modal focus', () => {
         await expect(modal).toBeHidden();
         await expect(trigger).toBeFocused();
     });
+
+    test('controls/remapping traps focus and restores its settings trigger', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const trigger = page.locator('#open-controls');
+        const modal = page.locator('#controls-popup');
+        await trigger.focus();
+        await trigger.click();
+        await expect(modal).toBeVisible();
+
+        await expect.poll(() => page.evaluate(() => (
+            document.getElementById('controls-popup')?.contains(document.activeElement)
+        ))).toBe(true);
+
+        for (let index = 0; index < 5; index += 1) {
+            await page.keyboard.press('Tab');
+            expect(await page.evaluate(() => (
+                document.getElementById('controls-popup')?.contains(document.activeElement)
+            ))).toBe(true);
+        }
+
+        await page.locator('#close-controls').click();
+        await expect(modal).toBeHidden();
+        await expect(trigger).toBeFocused();
+    });
+
+    test('tactical map receives deterministic focus when it becomes visible', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.evaluate(() => {
+            const modal = document.getElementById('tactical-map-modal');
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+        });
+
+        await expect(page.locator('#tactical-map-modal')).toBeVisible();
+        await expect(page.locator('#close-tactical-map-modal')).toBeFocused();
+    });
 });

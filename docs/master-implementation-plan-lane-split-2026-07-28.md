@@ -133,6 +133,18 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Codex Phase 12.3 **implemented**. Removed the unused
+  `socket.io-client` production dependency (the renderer had zero imports)
+  while retaining and documenting server-side `socket.io`, which is mounted
+  by `server/index.js` through `server/relay.js` but does not authorize a
+  multiplayer product claim. Added `npm run audit:dependencies`, pure parser
+  tests for static/dynamic imports and `require()`, and CI enforcement in
+  both presubmit workflows and the Steam package workflow.
+  `docs/dependency-policy.md` records the decision and the distinction
+  between an existing relay capability and approved multiplayer. **Still
+  open in Phase 12**: the live feature-truth matrix (12.1), stale-doc archive
+  with redirects/index preservation (12.2), and generated Steam
+  claims-control report (12.4).
 - 2026-07-28: Phase 8.2 Slice 3 **per-worker state done; audio still
   blocked on assets (unchanged)**. `updateCampWorkersHumanStates`
   (`src/campHumanBehavior.js`) replaces the single shared
@@ -195,8 +207,16 @@ it's flagged here rather than picked up.
   fixed a keyboard-mode close-path bug that could leave focus inside the
   newly hidden modal. Follow-up validation: full suite 951/951, focused
   Playwright acceptance 1/1, lint and production build/media audit green.
-  **Still open**: a systematic screen traversal pass and all Phase 5.3
-  physical-Deck work (built-in-controls run, 1280x800 legibility,
+  Follow-up focus-boundary inventory found and fixed three omitted
+  player-facing roots (`tactical-map-modal`, `controls-popup`, and
+  `snail-encounter-modal`). Every shipped `.modal` is now registered except
+  the intentionally developer-only console. Playwright covers Settings,
+  remapping, and Tactical Map deterministic focus; the existing suite covers
+  title/profile, class selection, field gamepad movement, Bunker Tree,
+  Tactical Map behavior, Vault, RGB, and game-over leaderboard paths.
+  **Still open**: physical-controller traversal of encounter-only camp/hive/
+  snail/endings paths and all Phase 5.3 physical-Deck work (built-in-controls
+  run, 1280x800 legibility,
   suspend/resume, controller reconnect, docked output, battery/performance,
   and offline Vault). The hardware items are not agent-executable.
 - 2026-07-28: Codex Phase 4 **canonical save contract implemented;
