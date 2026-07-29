@@ -133,6 +133,17 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 8.3 "dead bosses persist visibly" — **partially
+  checked, still not fully verified**. `spawnEnemyCorpse` (`src/threeGame.js:17911`)
+  is called from the same death-handling branch for bosses and regular
+  enemies alike (no `isBoss` exclusion in the call path), so the code
+  *attempts* a persistent corpse sprite for every death including bosses.
+  Did not verify that boss-specific `${type}_dead` materials actually exist
+  in `scatterMaterials` (if missing, `spawnEnemyCorpse` silently returns
+  with no corpse, no error) — that's an asset-population check this session
+  didn't chase down, and even confirming the material exists wouldn't prove
+  it *renders correctly* in game. Still needs a live-browser pass to fully
+  close this item, same as "ending-vector decisions" from the same list.
 - 2026-07-28: Phase 8.2 Slice 2 **verified already substantially true, not
   actually an open gap** — re-examined instead of left flagged. Confirmed
   by direct call (not just reading the numbers) that
