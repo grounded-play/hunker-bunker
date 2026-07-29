@@ -115,4 +115,64 @@ describe('ObjectiveRegistry', () => {
         expect(toggledAgain).toBe(true);
         expect(registry.getActiveObjectives()[0].steps[0].done).toBe(false);
     });
+
+    it('blocks and unblocks an objective with a player-readable reason', () => {
+        registry.trackObjective({ id: 'gate_1', label: 'CROSS RING 2', priority: 20, compass: { x: 5, z: 5 } });
+
+        expect(registry.blockObjective('gate_1', 'Restore canyon crossing power first')).toBe(true);
+        expect(registry.getBlockedObjectives()).toHaveLength(1);
+        expect(registry.getBlockedObjectives()[0].blockedReason).toBe('Restore canyon crossing power first');
+        // still visible/trackable and keeps its compass target while blocked
+        expect(registry.getActiveObjectives()[0].status).toBe('blocked');
+        expect(registry.getCompassTarget()?.id).toBe('gate_1');
+
+        expect(registry.unblockObjective('gate_1')).toBe(true);
+        expect(registry.getBlockedObjectives()).toHaveLength(0);
+        expect(registry.getActiveObjectives()[0].status).toBe('active');
+        expect(registry.getActiveObjectives()[0].blockedReason).toBeNull();
+    });
+
+    it('re-tracking a blocked objective without a status keeps it blocked', () => {
+        registry.trackObjective({ id: 'gate_1', label: 'CROSS RING 2' });
+        registry.blockObjective('gate_1', 'needs generator power');
+
+        registry.trackObjective({ id: 'gate_1', current: 1, target: 2 });
+
+        const obj = registry.getActiveObjectives()[0];
+        expect(obj.status).toBe('blocked');
+        expect(obj.blockedReason).toBe('needs generator power');
+        expect(obj.current).toBe(1);
+    });
+
+    it('groups child objectives under a parent id', () => {
+        registry.trackObjective({ id: 'parent_1', label: 'SECURE CAMP MERIDIAN', priority: 30 });
+        registry.trackObjective({ id: 'parent_1:step_a', label: 'CLEAR NESTS', priority: 31, parentId: 'parent_1' });
+        registry.trackObjective({ id: 'parent_1:step_b', label: 'TALK TO LEADER', priority: 32, parentId: 'parent_1' });
+        registry.trackObjective({ id: 'unrelated', label: 'OTHER', priority: 10 });
+
+        const children = registry.getChildObjectives('parent_1');
+        expect(children.map((child) => child.id)).toEqual(['parent_1:step_a', 'parent_1:step_b']);
+    });
+
+    it('records resolved objectives to history instead of dropping them silently', () => {
+        registry.trackObjective({ id: 'task_1', label: 'DEFEND CAMP', source: 'mission' });
+        registry.resolveObjective('task_1', 'failed');
+
+        const history = registry.getHistory();
+        expect(history).toHaveLength(1);
+        expect(history[0]).toMatchObject({ id: 'task_1', label: 'DEFEND CAMP', source: 'mission', outcome: 'failed' });
+        expect(registry.getActiveObjectives()).toHaveLength(0);
+    });
+
+    it('preserves persistent objectives across clear() (death/reset) but not a full wipe', () => {
+        registry.trackObjective({ id: 'story_goal', label: 'RECOVER BLACK BOX', persistent: true });
+        registry.trackObjective({ id: 'side_quest', label: 'HELP MERIDIAN' });
+
+        registry.clear();
+        const afterReset = registry.getActiveObjectives();
+        expect(afterReset.map((obj) => obj.id)).toEqual(['story_goal']);
+
+        registry.clear({ preservePersistent: false });
+        expect(registry.getActiveObjectives()).toHaveLength(0);
+    });
 });

@@ -48,6 +48,30 @@ useful history but are not current status.
   difficulty, ammo economy, skill tree UI, notification/dialogue system).
   Not Steam-specific; a different track from the list above.
 
+## Active execution status
+
+This is a compact orientation only. The lane-split status log is authoritative
+for detailed handoffs and completed work.
+
+| Lane | Current scope | Latest verified status | Shared-file caution |
+| --- | --- | --- | --- |
+| Gameplay/world agent | Master-plan Phases 6–10 | Phase 6.2/6.4 abstract ring non-bypass and increasing-distance proofs complete across 2,000 seeds; physical WFC projection/room clusters remain open; Phase 7 objective hierarchy is next | Owns `threeGame`, maze/WFC, objectives, factions, endings |
+| Backend/platform agent | Master-plan Phases 0–5 and 11–12 | Deployment audit and master documentation reconciled; backend is healthy/public/SQLite; credential rotation and live Steam acceptance remain manual blockers | Owns server/scripts/Electron/Input/Vault/assets/docs; re-read diffs before shared documentation edits |
+| User/manual acceptance | Steamworks, credentials, Cloud, hardware, commerce | Publisher/session credentials require rotation; dashboard publication, Steam-installed vertical slice, two-machine Cloud, physical Deck, and MicroTxn acceptance are not agent-completable | Never paste secrets or mark manual evidence complete without an observed pass |
+
+Current coordination rules:
+
+1. Check `git status`, the lane-split status log, and the target-file diff
+   immediately before editing.
+2. Do not edit files assigned to the other active lane without an explicit
+   handoff.
+3. Record partial versus complete status precisely; abstract graph proof is not
+   physical WFC proof, and configured backend health is not live Steam proof.
+4. Run focused tests for the owned slice, then the full required validation
+   before declaring a phase complete.
+5. Make shared documentation edits narrow and additive; never broadly replace
+   another agent's live changes.
+
 ## Steam launch readiness (status/planning)
 
 - **[`master-implementation-plan-2026-07-28.md`](./master-implementation-plan-2026-07-28.md)**

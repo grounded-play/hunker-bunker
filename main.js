@@ -35,6 +35,7 @@ import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSprite
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleSwitchClassBtn = document.getElementById('title-switch-class-btn');
@@ -1033,12 +1034,6 @@ const CONTROL_ACTIONS = Object.freeze([
 ]);
 const BUNKER_TIER_NAMES = Object.freeze(['SURFACE', 'SHALLOW', 'DEEP', 'ABYSS']);
 const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
-const STARTING_RUN_AMMO = 30;
-const CLASS_AMMO_CAPACITY = Object.freeze({
-    SCOUT: 36,
-    TANK: 42,
-    ENGINEER: 30
-});
 
 const state = {
     settings: {

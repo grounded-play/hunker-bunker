@@ -127,3 +127,56 @@ agent marks done.
   abstract plan — is provably non-bypassable; physical room-cluster
   reservation; vertical traversal acceptance. Picking up Phase 7
   (`ObjectiveRegistry` parent/child + blocked/reason model) next.
+- 2026-07-28: Codex Phase 0.3 **implemented**: the environment validator now
+  lives in runtime-safe `server/backendEnvAudit.js`; the existing
+  `steam:audit-backend[:strict]` command remains a thin, backward-compatible
+  CLI; and `server/index.js` runs the same audit before database
+  initialization or opening a listening socket. Production startup now
+  fails closed on invalid App ID, missing trust secrets, unsafe CORS,
+  non-durable storage, incomplete leaderboard mappings, invalid commerce
+  flags, or malformed limits. The active deployment is intentionally not
+  modified by this repo change: its known HTTP allowed origin must be
+  corrected manually before rebuilding under strict production startup.
+- 2026-07-28: Phase 7 **core registry work done**: `ObjectiveRegistry`
+  (`src/objectiveRegistry.js`) gained `status` ('active'/'blocked'/
+  'completed'/'failed'), `blockObjective`/`unblockObjective`/
+  `getBlockedObjectives` with a player-readable `blockedReason`, `parentId`/
+  `getChildObjectives` for parent/child grouping, a capped resolution
+  `history` (`getHistory`) so completed/failed objectives aren't just
+  dropped, and a `persistent` flag so `clear()` (death/reset) can keep
+  story-critical objectives while a full wipe still works via
+  `clear({ preservePersistent: false })`. 5 new tests, all green, no
+  existing call site broken (additive, backward-compatible defaults).
+  **Still open**: migrating tutorial/extraction/generator/cave/hive/boss
+  objective producers onto the registry (currently only camp quests, black
+  box, and compass targeting are connected — see
+  `objective-system-spec.md`), and the actual HUD/history UI (7.3).
+- 2026-07-28: Phase 10.2 **combat-economy floor case checked**:
+  `src/combatEconomy.test.js` computes shots-to-kill (boss HP ÷ class
+  projectile damage) against the starting-run ammo pool (reserve capped by
+  `CLASS_AMMO_CAPACITY` + loaded clip, no skill-tree tiers, no world
+  pickups) for every boss × class combo. Extracted `STARTING_RUN_AMMO`/
+  `CLASS_AMMO_CAPACITY` out of `main.js` into `src/data/ammoEconomy.js` (main.js
+  has DOM side effects at module scope and can't be imported by Vitest) and
+  exported `CLASS_STATS`/`WEAPON_CLIP_SIZE`/`WEAPON_FIRE_COOLDOWN` from
+  `src/threeGame.js` so the test uses real source-of-truth values, not
+  copy-pasted ones. Result: 14/19 combos pass; 5 are a **known, deliberately
+  undecided gap** (`boss_sporesnail` for all 3 classes, `boss_cryosnail` for
+  SCOUT/ENGINEER need more shots than the starting pool alone provides) —
+  tracked via `it.fails` so the test suite stays honest without silently
+  green-washing a real balance question. This is the same shape of gap
+  `sprint-19-wave6-punch-list-lane-split.md` flagged before (only
+  `cybersnail` was ever retuned). **Deliberately not fixed here**: closing
+  it means either lowering `sporesnail`/`cryosnail` HP (a difficulty-feel
+  call) or building the "mid-fight anti-softlock ammo drop" the audit notes
+  doesn't exist yet (`spawnSnailDrops` only fires on-kill) — both are
+  product decisions worth a human call, not something to guess at
+  unilaterally. Full build + 860-test suite green.
+- 2026-07-28: Deliberately deferred this pass: Phase 8 (`humanAI.js` is a
+  fully disconnected but well-designed state machine — zero callers anywhere
+  in the codebase; the master plan's own instruction is to *explicitly
+  choose* activate-and-finish vs. remove, and activating means real
+  station-to-station movement/rendering/streaming work, not a quick edit —
+  flagging for a deliberate decision rather than guessing) and Phase 9 (run
+  summary / manifest forecast / ending explanation — sizable UI work, not
+  started). Both remain open Claude-lane tasks for the next session.

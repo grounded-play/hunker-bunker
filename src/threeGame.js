@@ -138,7 +138,7 @@ const PICKUP_TYPES = [
     { type: 'weapon', weight: 0.18 },
     { type: 'coin', weight: 0.12 }
 ];
-const CLASS_STATS = {
+export const CLASS_STATS = {
     SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload.' },
     TANK:     { moveSpeed: 2.6, o2DrainMult: 0.75, pickupMagnetRadius: 2.8, projectileDamage: 2, passiveName: 'BULWARK', passiveDescription: 'Chance to fully block incoming damage.' },
     ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'AUTO-TURRET', passiveDescription: 'Periodically deploys an automated turret that fires on nearby enemies.' }
@@ -210,9 +210,9 @@ function setSpriteSheetFrame(texture, columns, rows, frameIndex = 0) {
 const PICKUP_MAGNET_RADIUS = 3.4;
 const PICKUP_COLLECT_RADIUS = 0.72;
 const PICKUP_COLLECT_DURATION = 0.2;
-const WEAPON_CLIP_SIZE = 6;
+export const WEAPON_CLIP_SIZE = 6;
 const WEAPON_RELOAD_DURATION = 1.25;
-const WEAPON_FIRE_COOLDOWN = 0.14;
+export const WEAPON_FIRE_COOLDOWN = 0.14;
 const WEAPON_AMMO_REFILL_INTERVAL = 10;
 const WEAPON_AMMO_REFILL_INTERVAL_REDUCTION = 2.1;
 const WEAPON_AMMO_REFILL_MIN_INTERVAL = 3.6;
