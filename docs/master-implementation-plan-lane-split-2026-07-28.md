@@ -105,6 +105,32 @@ watching real new players play the first hour. These stay as checklists and
 tooling that make the manual pass fast and unambiguous, not as things either
 agent marks done.
 
+## Gemini-lane coverage (unstaffed, Claude covering)
+
+No Gemini agent has actually worked on this branch — `git log`/`git
+branch -a` show no Gemini-authored commits or worktree. Historically (see
+`sprint-19-wave5/6-*-lane-split.md`) Gemini's lane was design-doc-first work
+that fed directly into what's now Claude's Phase 8/10: a faction verb
+matrix design pass and a first-hour acceptance checkpoint script, both
+assigned to Gemini on 2026-07-16 and never written. Claude picked both up
+on 2026-07-28 since they're prerequisites for Claude's own remaining work,
+not because they belong to a third lane:
+
+- `docs/faction-verb-matrix.md` — grounds Phase 8.1 in the camp
+  verb/status code that already exists (`src/campEconomy.js`,
+  `src/camp.js`, camp-choice actions in `src/threeGame.js`) and specifies
+  the cost/cooldown/failure/visual/audio/ending-consequence dimensions the
+  master plan asks for but the current passive-buff system doesn't have.
+- `docs/first-hour-acceptance-plan.md` — a checkpoint script for a human
+  observer (this part is not agent-executable) grounded in the real
+  tutorial-step sequence (`src/dialogue.js`) and Mothership reactive-line
+  triggers (`MOTHERSHIP_REACTIVE_LINES`, main.js) instead of an invented
+  checklist.
+
+Camp-3 boss climax design (the third original Gemini-lane item) remains
+unwritten — it doesn't feed Claude's current Phase 8-10 scope directly, so
+it's flagged here rather than picked up.
+
 ## Status log
 
 - 2026-07-28: Lane split written. Claude lane starting on Phase 6.2/6.4
@@ -137,6 +163,30 @@ agent marks done.
   flags, or malformed limits. The active deployment is intentionally not
   modified by this repo change: its known HTTP allowed origin must be
   corrected manually before rebuilding under strict production startup.
+- 2026-07-28: Codex Phase 0.4 **tooling implemented; live drill pending
+  operator maintenance window**: `npm run steam:backend-volume` now creates
+  non-overwriting, SHA-256 checksummed Docker-volume archives only while the
+  source volume is idle; independently verifies checksum/tar integrity; and
+  restores only into a brand-new non-production volume followed by SQLite
+  `PRAGMA integrity_check`. The runbook defines 7-daily/4-weekly/12-monthly
+  retention and encrypted off-device copies. No backup or service stop was
+  performed against the active deployment during concurrent development.
+- 2026-07-28: Codex Phase 1.3 **smoke client implemented; live acceptance
+  pending Steam session**: `npm run steam:smoke-leaderboards` performs global
+  and authenticated around-user reads for all five canonical boards, rejects
+  HTTP/mock responses, and can optionally submit one canonical run payload
+  before proving the account appears in reads. It accepts a short-lived
+  session-token file only; no Publisher-key input exists. A live run still
+  requires an operator-provided Steam session and test account.
+- 2026-07-28: Codex Phase 1.2 **repo implementation complete; dashboard
+  publication pending operator**: `src/steamStats.js` is now the canonical
+  definition and value-derivation source for `total_deaths` and
+  `longest_run_seconds`; runtime event/run-end synchronization and the
+  generated dashboard packet consume it. Dashboard generation now fails if
+  any publishable achievement lacks locked or unlocked art, automatically
+  holds `comingSoon` definitions, and documents the beta-only
+  `HB_QA_TOOLS_ENABLED=1` reset path. The packet reports 23 active
+  achievements, one held achievement, and no missing active artwork.
 - 2026-07-28: Phase 7 **core registry work done**: `ObjectiveRegistry`
   (`src/objectiveRegistry.js`) gained `status` ('active'/'blocked'/
   'completed'/'failed'), `blockObjective`/`unblockObjective`/
@@ -172,11 +222,45 @@ agent marks done.
   doesn't exist yet (`spawnSnailDrops` only fires on-kill) — both are
   product decisions worth a human call, not something to guess at
   unilaterally. Full build + 860-test suite green.
-- 2026-07-28: Deliberately deferred this pass: Phase 8 (`humanAI.js` is a
-  fully disconnected but well-designed state machine — zero callers anywhere
-  in the codebase; the master plan's own instruction is to *explicitly
-  choose* activate-and-finish vs. remove, and activating means real
-  station-to-station movement/rendering/streaming work, not a quick edit —
-  flagging for a deliberate decision rather than guessing) and Phase 9 (run
-  summary / manifest forecast / ending explanation — sizable UI work, not
-  started). Both remain open Claude-lane tasks for the next session.
+- 2026-07-28: Phase 9 **more built-out than the audit implied**: 10 Act 2
+  endings (`ACT2_ENDINGS` in `src/act2.js`), each with priority-ordered
+  trigger conditions, pre-cutscene narration lines, and a causal one-sentence
+  summary on the game-over screen; the boarding-manifest forecast already
+  explains seat/egg blockers with reason codes. The actual gap was
+  **automated coverage** — `generateRunOneSentenceSummary` and
+  `formatManifestBlocker` lived in `main.js` (DOM side effects at module
+  scope, not Vitest-importable) and had zero tests. Extracted both into
+  `src/endingExplanations.js` (`explainEnding`, `formatManifestBlocker`),
+  updated `main.js`'s two call sites to import them, and added
+  `src/endingExplanations.test.js`: every declared ending has a distinct,
+  non-generic explanation (guards against a new ending shipping without
+  matching text), and every known manifest blocker reason has player-legible
+  text. Run summary (9.1) and manifest seat-eligibility preview (9.2) were
+  already functional pre-existing code, not something to rebuild. Full
+  suite 879/884 (5 expected-fail, unchanged) green, build green.
+- 2026-07-28: Codex review (assist pass): read
+  `server/backendEnvAudit.js`, `scripts/steam-backend-volume.js`, and
+  `scripts/smoke-steam-leaderboards.js` in full. All three are careful —
+  safe Docker arg construction (`shell: false`, name allowlist regex),
+  non-overwriting backups with SHA-256 + tar-integrity verification,
+  restore-drill refuses to target the live volume name, leaderboard smoke
+  test reads the session token from a file in preference to env and rejects
+  mock/non-HTTPS responses. No issues found; full suite + lint stayed green
+  throughout. Not committing Codex's files here — they're still actively
+  landing new ones in the same working tree (`src/steamStats.js` appeared
+  mid-review) and should land under their own commit.
+- 2026-07-28: **No Gemini agent has actually touched this branch** (checked
+  `git log`/branches — no Gemini-authored commits, no separate worktree).
+  Per the new goal, Claude is additionally covering one unclaimed,
+  low-collision slice of the plan so it isn't just sitting unpicked — see
+  the new "Gemini-lane coverage (unstaffed, Claude covering)" section below.
+- 2026-07-28: Phase 8 remains open, **now pending an explicit human
+  decision** rather than being silently deferred again: `src/humanAI.js` is
+  a complete, tested state machine (states, stimuli, transitions) with
+  **zero callers anywhere in the codebase**. The master plan's own
+  instruction is to explicitly choose activate-and-finish vs. remove — and
+  `docs/repo-review`-era precedent in this repo (project memory: prior dead
+  code removal, e.g. levelManager/game.js, phaser dep, bank.js guards) was
+  only ever done "with explicit user go-ahead," not unilaterally. Asked the
+  user directly rather than guessing on a visible gameplay-feel fork
+  (ambient wandering camp NPCs vs. static camps).

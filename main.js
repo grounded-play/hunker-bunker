@@ -25,6 +25,7 @@ import { ARC_PRELUDE_ENABLED } from './src/featureFlags.js';
 import * as featureFlags from './src/featureFlags.js';
 import { ACHIEVEMENT_DEFS, AchievementEngine, getAchievementProgress, getSecretGateState, hasAnyUnlock, saveAchievements } from './src/achievements.js';
 import { STEAM_RUN_SCORE_FINALIZED_EVENT, buildSteamRunScorePayload, dispatchSteamRunScoreFinalized } from './src/steam/steamEvents.js';
+import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
@@ -36,6 +37,7 @@ import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
+import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 const startBtn = document.getElementById('start-game'); // INITIALIZE button
 const titleContinueBtn = document.getElementById('title-continue-btn');
 const titleSwitchClassBtn = document.getElementById('title-switch-class-btn');
@@ -3028,33 +3030,6 @@ window.addEventListener('run-cards-drawn', (event) => {
     updateQueensLedgerHUD();
 });
 
-function generateRunOneSentenceSummary(state, ending) {
-    switch (ending) {
-        case 'full_brood':
-            return "You delivered the Queen and her clutch to a crowded new world, executing her will flawlessly.";
-        case 'clean_escape':
-            return "You broke the hive link, purged the eggs, and successfully escaped with all human survivors.";
-        case 'mixed_crew':
-            return "You maintained a fragile compromise between human survivors and infected hybrids under the Queen's watch.";
-        case 'carriers_bargain':
-            return "You saved the survivors but carried the infection silently in your own flesh.";
-        case 'scorched_sky':
-            return "You incinerated every survivor camp and purged the eggs, leaving the sector a dead wasteland.";
-        case 'mothership_infection':
-            return "You stealthily smuggled the infection onto the Mother Ship disguised as a clean rescue flight.";
-        case 'alien_exodus':
-            return "You rejected the Queen but brought the allied beings off-world into safety.";
-        case 'outed_escape':
-            return "The survivors boarded knowing what you are, setting course for quarantine in deep suspicion.";
-        case 'failed_carrier':
-            return "You hid the future in a cargo pod but the containment failed, consuming your passengers.";
-        case 'empty_husk':
-            return "You fled alone, leaving both human camps and alien hives to die in the freezing dark.";
-        default:
-            return "You navigated the freezing dark, leaving a complex legacy in sector 9.";
-    }
-}
-
 function renderGameOverAct2Summary() {
     const summaryCard = document.getElementById('game-over-act2-summary');
     if (!summaryCard) return;
@@ -3071,7 +3046,7 @@ function renderGameOverAct2Summary() {
     const obedience = state.queenObedience ?? 0;
     const seatsUsed = state.manifest?.seatsUsed ?? 1;
     const seatsMax = state.manifest?.seatsMax ?? 4;
-    const oneLiner = generateRunOneSentenceSummary(state, ending);
+    const oneLiner = explainEnding(ending);
 
     const endingName = ACT2_ENDING_TITLES[ending] ?? String(ending).replace(/_/g, ' ').toUpperCase();
     const obedienceSign = obedience < 0 ? '\u2212' : obedience > 0 ? '+' : '';
@@ -3672,30 +3647,14 @@ function handleAchievementUnlocks(newUnlocks = [], { delayMs = 0 } = {}) {
 function recordAchievementEvent(name, detail = {}, options = {}) {
     const result = achievementEngine.recordEvent(name, detail);
     handleAchievementUnlocks(result.newUnlocks, options);
-    if (window.electronAPI?.setStat) {
-        if (result.state?.stats?.totalDeaths !== undefined) {
-            window.electronAPI.setStat('total_deaths', result.state.stats.totalDeaths);
-        }
-        if (result.state?.stats?.maxRunMs !== undefined) {
-            const maxSeconds = Math.floor(result.state.stats.maxRunMs / 1000);
-            window.electronAPI.setStat('longest_run_seconds', maxSeconds);
-        }
-    }
+    syncSteamStats(result.state, window.electronAPI?.setStat);
     return result;
 }
 
 function recordAchievementRunEnd(stats = {}, options = {}) {
     const result = achievementEngine.recordRunEnd(stats);
     handleAchievementUnlocks(result.newUnlocks, options);
-    if (window.electronAPI?.setStat) {
-        if (result.state?.stats?.totalDeaths !== undefined) {
-            window.electronAPI.setStat('total_deaths', result.state.stats.totalDeaths);
-        }
-        if (result.state?.stats?.maxRunMs !== undefined) {
-            const maxSeconds = Math.floor(result.state.stats.maxRunMs / 1000);
-            window.electronAPI.setStat('longest_run_seconds', maxSeconds);
-        }
-    }
+    syncSteamStats(result.state, window.electronAPI?.setStat);
     return result;
 }
 
@@ -7624,15 +7583,6 @@ function getActiveRunManifestOptions() {
     return {
         eggSeatRequiresNahl: Boolean(effects.manifest?.eggSeatRequiresNahl)
     };
-}
-
-function formatManifestBlocker(reason, manifest = {}) {
-    if (reason === 'seat_capacity_exceeded') {
-        return `OVER CAPACITY (${manifest.seatsUsed ?? '?'}/${manifest.seatsMax ?? '?'} SEATS)`;
-    }
-    if (reason === 'egg_requires_nahl') return 'EGG INSTABILITY: NAHL MUST BE ABOARD';
-    if (reason === 'egg_unstable') return 'EGG NEEDS THE QUEEN OR NAHL ABOARD';
-    return String(reason).replace(/_/g, ' ').toUpperCase();
 }
 
 function setCampChoiceOpen(open) {

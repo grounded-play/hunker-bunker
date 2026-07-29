@@ -23,6 +23,12 @@ useful history but are not current status.
   parts of the master plan are live/manual acceptance that no agent can do.
   Treat this as the ownership authority while both lanes are active; check its
   status log and `git diff` before touching a shared file.
+- **[`faction-verb-matrix.md`](./faction-verb-matrix.md)** and
+  **[`first-hour-acceptance-plan.md`](./first-hour-acceptance-plan.md)**
+  — the two design docs wave 6 assigned to a Gemini lane on 2026-07-16 that
+  were never written (no Gemini agent has actually touched this branch).
+  Written 2026-07-28 by Claude since they directly gate Phase 8.1/10.1 of
+  the master plan above.
 - **[`sprint-19-wave6-punch-list-lane-split.md`](./sprint-19-wave6-punch-list-lane-split.md)**
   — the current 3-way (Claude/Codex/Gemini) task split for the gameplay/UX
   punch list's remaining items plus the objective-framework/first-hour/
