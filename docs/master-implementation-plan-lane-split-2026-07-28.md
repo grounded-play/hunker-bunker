@@ -157,6 +157,39 @@ it's flagged here rather than picked up.
   it's the implicit starting phase and never fires a transition event) —
   fixed the test, not weakened it. Zero production code touched. Full
   suite 998/998, lint clean, build green.
+- 2026-07-28: Phase 6.1/6.3 **authoritative regional topology implemented
+  locally; live visual/physical acceptance and commit still pending**.
+  `generateRegionalRouteTopology` now creates one seeded macro graph rather
+  than allowing every 19x19 streamed chunk to roll its four portals
+  independently: a 120+ chunk winding spine runs from the crash site's
+  north blast door to the ring-5 mother hive, and five substantial closed
+  ring routes wrap and intersect that spine. Camps are snapped to rings
+  1/2/3, hives to 2/3/4, the cave/Queen to the terminal ring-5 spine chunk,
+  room clusters to physical ring chunks, and mission blockers to outward
+  spine crossings. `ThreeGame.getEdgeOpening` now reads those route edges
+  inside the expedition bounds; route chunks collapse as WFC `MAZE`, while
+  non-route chunks inside the bounds become sealed `CANYON`, preventing the
+  old 68%-random portal roll from reconnecting the macro maze behind the
+  plan. Ring chunks request loopier local collapses; outer spine chunks
+  request three-meta-tile hallway runs. The existing protected
+  `runMazeDetailPass` remains the MarkovJr-style local grammar pass on top
+  of the WFC result. A real weighted Dijkstra implementation now measures
+  the streamed route graph; tested seeds exceed 80 chunk crossings to the
+  Queen (representative runs measure roughly 110-124), all route chunks are
+  connected by Manhattan-adjacent edges, all five rings contain substantial
+  routes, every required site is on the physical graph, and different
+  seeds retain the contract while changing topology. **Still open before
+  claiming Phase 6 complete**: live-browser visual traversal, confirm the
+  in-chunk procedural gate chosen at each blocker is the actual unique
+  crossing cut, and tune room/canyon density from play feel.
+  Follow-up canyon pass now enforces the requested tile cross-section:
+  indoor traversal retains one structural wall/jamb band and every deeper
+  solid cell becomes lethal canyon; declared door/socket lanes remain
+  walkable. `canyon-walkway` WFC tiles are explicitly exposed wall-less
+  platforms, with canyon allowed directly beside their floor and only their
+  authored N/E/S/W sockets acting as exits. Focused WFC/streaming tests
+  cover the wall band, deep-canyon conversion, exposed-platform exception,
+  portal sealing, and route connectivity.
 - 2026-07-28: Phase 6.1/6.3 **attempted, scoped safely, shipped — user
   explicitly directed this after correcting two inaccurate stop-hook
   claims** (see `docs/phase6-wfc-ring-barrier-integration-plan.md` for the

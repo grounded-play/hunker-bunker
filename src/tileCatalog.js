@@ -363,7 +363,7 @@ const CORRIDOR_STRAIGHT_BASE = {
     id: 'corridor-straight',
     category: 'corridor-straight',
     tutorial: true,
-    weight: 0.7,
+    weight: 1.15,
     roomRole: 'generic',
     decorationSet: 'bunker',
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
@@ -405,7 +405,10 @@ const CORRIDOR_NARROW_BASE = {
     id: 'corridor-narrow',
     category: 'corridor-straight',
     tutorial: true,
-    weight: 2.1,
+    // Narrow halls are punctuation, not the default. A previous 2.1 weight
+    // made this one-cell waist dominate otherwise different WFC routes and
+    // was the main reason generated sectors all felt alike.
+    weight: 0.48,
     roomRole: 'generic',
     decorationSet: 'bunker',
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },

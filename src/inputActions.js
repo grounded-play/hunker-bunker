@@ -18,6 +18,22 @@ export function actionSetForAppPhase(phase) {
     return ACTION_SETS.MENU;
 }
 
+export function shouldPreferBrowserGamepad({
+    nativeAvailable = false,
+    nativeControllerCount = 0,
+    nativeAnyInput = false,
+    browserAnyInput = false,
+    browserEngaged = false
+} = {}) {
+    if (!nativeAvailable || nativeControllerCount < 1) return true;
+    if (nativeAnyInput) return false;
+    // A connected Steam Input device with a missing/unpublished action
+    // manifest reports a controller forever, but never reports an action.
+    // Let Chromium's standard Gamepad mapping rescue that case. Keep the
+    // fallback for one neutral frame so edge-triggered menu actions release.
+    return browserAnyInput || (browserEngaged && !browserAnyInput);
+}
+
 const NEUTRAL_PAD = Object.freeze({
     move: Object.freeze({ x: 0, y: 0 }),
     fire: false,

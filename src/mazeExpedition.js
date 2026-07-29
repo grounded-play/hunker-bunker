@@ -106,6 +106,193 @@ function polarPoint(radius, angle) {
     };
 }
 
+function chunkKey(x, y) {
+    return `${x},${y}`;
+}
+
+function routeEdgeKey(a, b) {
+    return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+function connectChunkPoints(from, to, preferHorizontal, visit) {
+    let x = from.x;
+    let y = from.y;
+    const stepAxis = (axis) => {
+        const target = axis === 'x' ? to.x : to.y;
+        while ((axis === 'x' ? x : y) !== target) {
+            const previous = { x, y };
+            if (axis === 'x') x += Math.sign(target - x);
+            else y += Math.sign(target - y);
+            visit(previous, { x, y });
+        }
+    };
+    if (preferHorizontal) {
+        stepAxis('x');
+        stepAxis('y');
+    } else {
+        stepAxis('y');
+        stepAxis('x');
+    }
+    return { x, y };
+}
+
+/**
+ * Builds the authoritative, streamed chunk graph for one run.
+ *
+ * The critical route is a long expanding spiral ("the snake") from the
+ * crash site to the mother hive. Five closed ring routes wrap that spine.
+ * Local WFC still authors the rooms and halls inside each selected chunk;
+ * this graph owns the macro connectivity so independently collapsed chunks
+ * can no longer create accidental shortcuts through canyon space.
+ */
+export function generateRegionalRouteTopology(seed = 1, {
+    chunkSize = 19,
+    radii = RADIAL_RING_RADII,
+    phase = 0
+} = {}) {
+    const random = seededRandom((Number(seed) ^ 0x44595354) >>> 0);
+    const routeChunks = new Map();
+    const routeEdges = new Set();
+    const addChunk = (point, role, ring = 0) => {
+        const key = chunkKey(point.x, point.y);
+        const existing = routeChunks.get(key);
+        routeChunks.set(key, {
+            chunkX: point.x,
+            chunkY: point.y,
+            ring: Math.max(existing?.ring ?? 0, ring),
+            roles: [...new Set([...(existing?.roles ?? []), role])]
+        });
+        return key;
+    };
+    const addSegment = (from, to, role, ring, index) => {
+        addChunk(from, role, ring);
+        connectChunkPoints(from, to, (index + Math.floor(random() * 2)) % 2 === 0, (a, b) => {
+            const aKey = addChunk(a, role, ring);
+            const bKey = addChunk(b, role, ring);
+            routeEdges.add(routeEdgeKey(aKey, bKey));
+        });
+    };
+
+    // Give the authored north blast door an unambiguous first leg before the
+    // route begins to coil. More angular travel is added at larger radii, so
+    // every outward ring takes longer to traverse than the previous one.
+    const outerRadius = Math.max(6, Math.round(radii.at(-1) / chunkSize));
+    const snakeControlPoints = [{ x: 0, y: 0 }, { x: 0, y: -1 }, { x: 0, y: -2 }];
+    const sampleCount = outerRadius * 18;
+    const startAngle = -Math.PI / 2 + phase * 0.12;
+    for (let index = 1; index <= sampleCount; index += 1) {
+        const t = index / sampleCount;
+        const radius = 1.6 + t * (outerRadius - 1.2);
+        const turns = 2.2 + t * 0.65;
+        const angle = startAngle + t * Math.PI * 2 * turns
+            + Math.sin(t * Math.PI * 7 + phase) * 0.16;
+        const point = {
+            x: Math.round(Math.cos(angle) * radius),
+            y: Math.round(Math.sin(angle) * radius)
+        };
+        const previous = snakeControlPoints.at(-1);
+        if (point.x !== previous.x || point.y !== previous.y) snakeControlPoints.push(point);
+    }
+
+    for (let index = 1; index < snakeControlPoints.length; index += 1) {
+        const point = snakeControlPoints[index];
+        const distance = Math.hypot(point.x, point.y) * chunkSize;
+        const ring = radii.reduce((best, radius, ringIndex) => (
+            Math.abs(distance - radius) < Math.abs(distance - radii[best]) ? ringIndex : best
+        ), 0);
+        addSegment(snakeControlPoints[index - 1], point, 'spine', ring, index);
+    }
+
+    const rings = [];
+    for (let ring = 1; ring <= 5; ring += 1) {
+        const radius = Math.max(2, Math.round(radii[ring] / chunkSize));
+        const samples = Math.max(20, radius * 12);
+        const points = [];
+        for (let index = 0; index < samples; index += 1) {
+            const angle = phase + ring * 0.37 + (index / samples) * Math.PI * 2;
+            const point = {
+                x: Math.round(Math.cos(angle) * radius),
+                y: Math.round(Math.sin(angle) * radius)
+            };
+            if (!points.length || point.x !== points.at(-1).x || point.y !== points.at(-1).y) {
+                points.push(point);
+            }
+        }
+        const ringKeys = new Set();
+        for (let index = 0; index < points.length; index += 1) {
+            const from = points[index];
+            const to = points[(index + 1) % points.length];
+            addSegment(from, to, 'ring', ring, index);
+            ringKeys.add(chunkKey(from.x, from.y));
+            ringKeys.add(chunkKey(to.x, to.y));
+        }
+        rings.push({ ring, radiusChunks: radius, chunkKeys: [...ringKeys] });
+    }
+
+    const spineChunkKeys = snakeControlPoints.map((point) => chunkKey(point.x, point.y));
+    const uniqueSpineChunkKeys = [...new Set(spineChunkKeys)];
+    const queenChunkKey = uniqueSpineChunkKeys.at(-1);
+    const boundsRadius = outerRadius + 2;
+    return {
+        version: 1,
+        chunkSize,
+        boundsRadius,
+        startChunkKey: '0,0',
+        queenChunkKey,
+        spineChunkKeys: uniqueSpineChunkKeys,
+        rings,
+        routeChunks: [...routeChunks.values()],
+        routeEdges: [...routeEdges]
+    };
+}
+
+export function topologyHasChunk(topology, chunkX, chunkY) {
+    return Boolean(topology?.routeChunks?.some((chunk) => chunk.chunkX === chunkX && chunk.chunkY === chunkY));
+}
+
+export function topologyHasEdge(topology, aX, aY, bX, bY) {
+    const edge = routeEdgeKey(chunkKey(aX, aY), chunkKey(bX, bY));
+    return Boolean(topology?.routeEdges?.includes(edge));
+}
+
+// Dijkstra over the physically streamed chunk graph. Edges are unit-weight
+// today, but keeping the weighted form lets vertical traversal, hazards, or
+// repaired shortcuts acquire real traversal costs without replacing the
+// route solver later.
+export function computeTopologyDistances(topology, startKey = topology?.startChunkKey ?? '0,0') {
+    const adjacency = new Map((topology?.routeChunks ?? []).map((chunk) => [
+        chunkKey(chunk.chunkX, chunk.chunkY),
+        []
+    ]));
+    for (const edge of topology?.routeEdges ?? []) {
+        const [a, b] = edge.split('|');
+        adjacency.get(a)?.push({ key: b, cost: 1 });
+        adjacency.get(b)?.push({ key: a, cost: 1 });
+    }
+    const distances = new Map([[startKey, 0]]);
+    const unvisited = new Set(adjacency.keys());
+    while (unvisited.size > 0) {
+        let current = null;
+        let currentDistance = Infinity;
+        for (const key of unvisited) {
+            const distance = distances.get(key) ?? Infinity;
+            if (distance < currentDistance) {
+                current = key;
+                currentDistance = distance;
+            }
+        }
+        if (current === null) break;
+        unvisited.delete(current);
+        for (const edge of adjacency.get(current) ?? []) {
+            const nextDistance = currentDistance + edge.cost;
+            if (nextDistance < (distances.get(edge.key) ?? Infinity)) {
+                distances.set(edge.key, nextDistance);
+            }
+        }
+    }
+    return distances;
+}
+
 export function generateRadialMazeExpedition(seed = 1) {
     const random = seededRandom(seed);
     const phase = random() * Math.PI * 2;
@@ -204,6 +391,78 @@ export function generateRadialMazeExpedition(seed = 1) {
         });
     }
 
+    const topology = generateRegionalRouteTopology(seed, {
+        phase,
+        radii: RADIAL_RING_RADII
+    });
+
+    // Make physical route chunks, not free-floating polar guesses, own the
+    // landmark locations. Camps occupy rings 1/2/3; hives occupy 2/3/4;
+    // the mother hive terminates the snake on ring 5.
+    const usedSiteChunks = new Set();
+    for (const node of nodes.filter((candidate) => candidate.ring > 0)) {
+        const candidates = node.id === 'queen_chamber'
+            ? [topology.queenChunkKey]
+            : topology.rings.find((entry) => entry.ring === node.ring)?.chunkKeys ?? [];
+        const available = candidates
+            .filter(Boolean)
+            .filter((key) => !usedSiteChunks.has(key))
+            .map((key) => {
+                const [chunkX, chunkY] = key.split(',').map(Number);
+                const angle = Math.atan2(chunkY, chunkX);
+                const delta = Math.abs(Math.atan2(Math.sin(angle - node.angle), Math.cos(angle - node.angle)));
+                return { key, chunkX, chunkY, delta };
+            })
+            .sort((a, b) => a.delta - b.delta);
+        const selected = available[0];
+        if (!selected) continue;
+        usedSiteChunks.add(selected.key);
+        node.chunkX = selected.chunkX;
+        node.chunkY = selected.chunkY;
+        node.x = selected.chunkX * 19;
+        node.z = selected.chunkY * 19;
+        node.radius = Math.round(Math.hypot(node.x, node.z));
+        const routeChunk = topology.routeChunks.find((chunk) => (
+            chunk.chunkX === selected.chunkX && chunk.chunkY === selected.chunkY
+        ));
+        if (routeChunk) routeChunk.roles = [...new Set([...routeChunk.roles, node.kind, node.id])];
+    }
+
+    for (const cluster of roomClusters) {
+        const ringChunks = topology.rings.find((entry) => entry.ring === cluster.ring)?.chunkKeys ?? [];
+        const key = ringChunks[Number(cluster.id.split('-').at(-1)) % Math.max(1, ringChunks.length)];
+        if (!key) continue;
+        const [chunkX, chunkY] = key.split(',').map(Number);
+        cluster.chunkX = chunkX;
+        cluster.chunkY = chunkY;
+        cluster.x = chunkX * 19;
+        cluster.z = chunkY * 19;
+    }
+
+    for (const blocker of blockers) {
+        const targetRadius = (RADIAL_RING_RADII[blocker.ring] + RADIAL_RING_RADII[blocker.blocksRing]) / 2;
+        const candidate = topology.spineChunkKeys
+            .map((key) => {
+                const [chunkX, chunkY] = key.split(',').map(Number);
+                return {
+                    key,
+                    chunkX,
+                    chunkY,
+                    delta: Math.abs(Math.hypot(chunkX * 19, chunkY * 19) - targetRadius)
+                };
+            })
+            .sort((a, b) => a.delta - b.delta)[0];
+        if (!candidate) continue;
+        blocker.chunkX = candidate.chunkX;
+        blocker.chunkY = candidate.chunkY;
+        blocker.x = candidate.chunkX * 19;
+        blocker.z = candidate.chunkY * 19;
+        const routeChunk = topology.routeChunks.find((chunk) => (
+            chunk.chunkX === candidate.chunkX && chunk.chunkY === candidate.chunkY
+        ));
+        if (routeChunk) routeChunk.roles = [...new Set([...routeChunk.roles, 'blocker', blocker.id])];
+    }
+
     return {
         seed: Number(seed) >>> 0,
         phase,
@@ -211,7 +470,8 @@ export function generateRadialMazeExpedition(seed = 1) {
         nodes,
         roomClusters,
         blockers,
-        edges
+        edges,
+        topology
     };
 }
 

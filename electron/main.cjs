@@ -387,6 +387,7 @@ function initSteam() {
                 ability: steamClient.input.getDigitalAction('ability'),
                 scan: steamClient.input.getDigitalAction('scan'),
                 sprint: steamClient.input.getDigitalAction('sprint'),
+                toggleMap: steamClient.input.getDigitalAction('toggle_map'),
                 archiveFocus: steamClient.input.getAnalogAction('archive_focus'),
                 archiveConfirm: steamClient.input.getDigitalAction('archive_confirm'),
                 archiveInventory: steamClient.input.getDigitalAction('archive_inventory'),
@@ -477,6 +478,7 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             ability: isValidActionHandle(actionHandles.ability) ? controller.isDigitalActionPressed(actionHandles.ability) : false,
             scan: isValidActionHandle(actionHandles.scan) ? controller.isDigitalActionPressed(actionHandles.scan) : false,
             sprint: isValidActionHandle(actionHandles.sprint) ? controller.isDigitalActionPressed(actionHandles.sprint) : false,
+            toggleMap: isValidActionHandle(actionHandles.toggleMap) ? controller.isDigitalActionPressed(actionHandles.toggleMap) : false,
             pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
         }
         : phase === 'archive'

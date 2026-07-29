@@ -78,7 +78,9 @@ import {
     generateRadialMazeExpedition,
     getMaxUnlockedRing,
     getRadialSite,
-    isChunkOnRingBarrier
+    isChunkOnRingBarrier,
+    topologyHasChunk,
+    topologyHasEdge
 } from './mazeExpedition.js';
 import { ExplorationTracker } from './mapSystem.js';
 
@@ -5736,6 +5738,7 @@ export class ThreeGame {
     }
 
     updateProceduralDoors(delta) {
+        let nearestDoor = null;
         for (const [id, mesh] of this.proceduralDoorMeshes ?? []) {
             if (!mesh?.parent) {
                 this.proceduralDoorMeshes.delete(id);
@@ -5744,10 +5747,54 @@ export class ThreeGame {
             const door = this.proceduralDoorStates.get(id);
             if (!door) continue;
             const targetY = door.state === 'open' || door.state === 'destroyed'
-                ? -this.wallHeight
-                : this.wallHeight / 2;
+                ? (mesh.userData.openY ?? -this.wallHeight)
+                : (mesh.userData.closedY ?? this.wallHeight / 2);
             mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, targetY, Math.min(1, delta * 7));
             mesh.visible = door.state !== 'destroyed';
+            const statusMaterial = mesh.userData.proceduralDoorStatusMaterial;
+            if (statusMaterial) {
+                const statusColor = door.state === 'locked'
+                    ? 0xffaa00
+                    : door.state === 'open'
+                        ? 0x00e5ff
+                        : 0xff2a00;
+                statusMaterial.color.setHex(statusColor);
+                statusMaterial.emissive.setHex(statusColor);
+            }
+            if (this.player && this.isGameplayInputActive()) {
+                const distance = Math.hypot(
+                    this.player.position.x - mesh.userData.worldX,
+                    this.player.position.z - mesh.userData.worldZ
+                );
+                if (distance <= 2.4 && (!nearestDoor || distance < nearestDoor.distance)) {
+                    nearestDoor = { door, distance };
+                }
+            }
+        }
+
+        const promptEl = document.getElementById('console-hud-prompt');
+        const actionText = promptEl?.querySelector('.prompt-text');
+        if (nearestDoor && promptEl && !this.activeInteractiveConsole) {
+            const promptKey = promptEl.querySelector('.prompt-key');
+            const locked = nearestDoor.door.lock
+                && !isGateRequirementMet(nearestDoor.door.lock, this.mazeAccessState);
+            if (actionText) {
+                actionText.textContent = locked
+                    ? `BLAST THRESHOLD LOCKED — ${nearestDoor.door.lock.label}`
+                    : nearestDoor.door.state === 'open'
+                        ? 'CLOSE BLAST THRESHOLD'
+                        : 'OPEN BLAST THRESHOLD';
+            }
+            if (promptKey) {
+                const promptKeyLabel = this.getPromptKeyLabel('E');
+                promptKey.textContent = promptKeyLabel;
+                promptKey.classList.toggle('prompt-key--tap', promptKeyLabel === 'TAP');
+            }
+            promptEl.classList.add('visible');
+            promptEl.classList.remove('hidden');
+        } else if (actionText?.textContent?.includes('BLAST THRESHOLD')) {
+            promptEl.classList.add('hidden');
+            promptEl.classList.remove('visible');
         }
     }
 
@@ -8461,6 +8508,10 @@ export class ThreeGame {
             );
         }
         return this.radialMazePlan;
+    }
+
+    getRegionalRouteTopology() {
+        return this.getRadialMazePlan()?.topology ?? null;
     }
 
     chooseRadialSitePosition(siteId, seed) {
@@ -15480,11 +15531,12 @@ export class ThreeGame {
                         ? doorRecord.orientation === 'horizontal'
                         : grid[localY]?.[localX - 1] === '#' || grid[localY]?.[localX + 1] === '#';
                     const doorMesh = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
-                    doorMesh.position.set(worldX, this.wallHeight / 2, worldZ);
+                    const blastDoorHeightScale = 1.72;
+                    doorMesh.position.set(worldX, (this.wallHeight * blastDoorHeightScale) / 2, worldZ);
                     doorMesh.scale.set(
-                        horizontal ? 2.8 : 0.35,
-                        1,
-                        horizontal ? 0.35 : 2.8
+                        horizontal ? 3.35 : 0.58,
+                        blastDoorHeightScale,
+                        horizontal ? 0.58 : 3.35
                     );
                     doorMesh.castShadow = true;
                     doorMesh.receiveShadow = true;
@@ -15497,14 +15549,79 @@ export class ThreeGame {
                     doorMesh.userData.isProceduralDoor = true;
                     doorMesh.userData.proceduralDoorId = persistedDoor?.id ?? null;
                     doorMesh.userData.doorStyle = persistedDoor?.style ?? 'bunker';
+                    doorMesh.userData.closedY = (this.wallHeight * blastDoorHeightScale) / 2;
+                    doorMesh.userData.openY = -(this.wallHeight * blastDoorHeightScale);
                     doorMesh.userData.indestructible = Boolean(
                         persistedDoor?.lock
                         && !isGateRequirementMet(persistedDoor.lock, this.mazeAccessState)
                     );
+
+                    // Use the crash-room blast door's visual language for
+                    // every generated threshold: oversized dropping slab,
+                    // reinforcement ribs, status bar, and controls on both
+                    // sides. These must read as interactable architecture,
+                    // not as another short wall segment.
+                    const statusMaterial = new THREE.MeshStandardMaterial({
+                        color: persistedDoor?.state === 'open' ? 0x00e5ff : 0xff2a00,
+                        emissive: persistedDoor?.state === 'open' ? 0x00e5ff : 0xff2a00,
+                        emissiveIntensity: 1.35,
+                        metalness: 0.35,
+                        roughness: 0.32
+                    });
+                    const statusBar = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.82, 0.09, 1.08),
+                        statusMaterial
+                    );
+                    statusBar.position.y = 0.42;
+                    doorMesh.add(statusBar);
+                    doorMesh.userData.proceduralDoorStatusMaterial = statusMaterial;
+                    for (const ribOffset of [-0.28, 0, 0.28]) {
+                        const rib = new THREE.Mesh(
+                            new THREE.BoxGeometry(0.08, 1.02, 1.1),
+                            new THREE.MeshStandardMaterial({
+                                color: 0x11161b,
+                                roughness: 0.3,
+                                metalness: 0.92
+                            })
+                        );
+                        rib.position.x = horizontal ? ribOffset : 0;
+                        rib.position.z = horizontal ? 0 : ribOffset;
+                        if (!horizontal) rib.rotation.y = Math.PI / 2;
+                        doorMesh.add(rib);
+                    }
+
+                    const panelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
+                    for (const side of [-1, 1]) {
+                        const panel = new THREE.Mesh(
+                            panelGeometry,
+                            new THREE.MeshStandardMaterial({
+                                color: 0x12191f,
+                                emissive: 0x07141a,
+                                metalness: 0.78,
+                                roughness: 0.38
+                            })
+                        );
+                        panel.position.set(
+                            worldX + (horizontal ? -1.72 : side * 0.78),
+                            0.82,
+                            worldZ + (horizontal ? side * 0.78 : -1.72)
+                        );
+                        const button = new THREE.Mesh(
+                            new THREE.CircleGeometry(0.11, 16),
+                            statusMaterial
+                        );
+                        button.position.z = 0.125;
+                        panel.add(button);
+                        panel.userData = {
+                            isProceduralDoorControl: true,
+                            proceduralDoorId: persistedDoor?.id ?? null
+                        };
+                        group.add(panel);
+                    }
                     if (persistedDoor?.id) {
                         doorMesh.position.y = persistedDoor.state === 'open' || persistedDoor.state === 'destroyed'
-                            ? -this.wallHeight
-                            : this.wallHeight / 2;
+                            ? doorMesh.userData.openY
+                            : doorMesh.userData.closedY;
                         this.proceduralDoorMeshes.set(persistedDoor.id, doorMesh);
                     }
                     group.add(doorMesh);
@@ -21236,6 +21353,10 @@ export class ThreeGame {
             // §1-3) replaces the old DFS-carve+erosion pipeline for MAZE
             // chunks — see §6 for why non-MAZE landforms are unaffected.
             const radialPlan = this.getRadialMazePlan?.();
+            const regionalChunk = radialPlan?.topology?.routeChunks?.find((chunk) => (
+                chunk.chunkX === chunkX && chunk.chunkY === chunkY
+            ));
+            const regionalRoles = regionalChunk?.roles ?? [];
             const radialAnchor = this.getBiomeAnchorPosition?.() ?? { x: 0, z: 0 };
             const chunkWorldX = chunkX * this.chunkSize + this.chunkSize * 0.5 - radialAnchor.x;
             const chunkWorldZ = chunkY * this.chunkSize + this.chunkSize * 0.5 - radialAnchor.z;
@@ -21251,11 +21372,22 @@ export class ThreeGame {
             // connective spiral chunks permit two- and three-tile hall runs.
             const hallwayContinuation = nearestRadialRoom <= this.chunkSize * 0.9
                 ? 0.16
-                : 0.72;
+                : regionalChunk?.ring >= 4
+                    ? 0.84
+                    : 0.72;
+            const minimumHallwayRun = nearestRadialRoom <= this.chunkSize * 0.9
+                ? 1
+                : regionalChunk?.ring >= 4
+                    ? 3
+                    : 2;
+            const isRingRoute = regionalRoles.includes('ring');
             mazeLattice = collapseChunkLattice(random, {
                 tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
                 depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
-                hallwayContinuation
+                hallwayContinuation,
+                minimumHallwayRun,
+                loopChance: isRingRoute ? 0.58 : 0.18,
+                maxLoops: isRingRoute ? 2 : 1
             });
             grid = stampLattice(mazeLattice, this.chunkSize);
             if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
@@ -21275,6 +21407,7 @@ export class ThreeGame {
                     ring,
                     roomClusterDistance: nearestRadialRoom,
                     mode: nearestRadialRoom <= this.chunkSize * 0.9 ? 'room-cluster' : 'spiral-connector',
+                    regionalRoles,
                     blocker: nearestBlocker?.distance <= this.chunkSize ? nearestBlocker : null
                 };
             }
@@ -21509,7 +21642,7 @@ export class ThreeGame {
             this.clearDoorways?.(grid);
         }
         if (landform === LANDFORMS.MAZE) {
-            addCanyonVoidAroundWalkable(grid);
+            addCanyonVoidAroundWalkable(grid, mazeLattice);
         }
         const chunkRouteRecord = {
             key: `${chunkX},${chunkY}`,
@@ -21547,6 +21680,17 @@ export class ThreeGame {
         if (!this._chunkLandformCache) this._chunkLandformCache = new Map();
         const key = `${chunkX},${chunkY}`;
         if (!this._chunkLandformCache.has(key)) {
+            const topology = this.getRegionalRouteTopology?.();
+            const insideRegionalBounds = topology
+                && Math.max(Math.abs(chunkX), Math.abs(chunkY)) <= topology.boundsRadius;
+            if (insideRegionalBounds && topologyHasChunk(topology, chunkX, chunkY)) {
+                this._chunkLandformCache.set(key, LANDFORMS.MAZE);
+                return this._chunkLandformCache.get(key);
+            }
+            if (insideRegionalBounds) {
+                this._chunkLandformCache.set(key, LANDFORMS.CANYON);
+                return this._chunkLandformCache.get(key);
+            }
             // docs/phase6-wfc-ring-barrier-integration-plan.md: a visible
             // canyon "you've reached a ring boundary" tell using the
             // existing CANYON landform -- does not touch the WFC lattice/
@@ -21588,7 +21732,17 @@ export class ThreeGame {
             east: this.getEdgeOpening('vertical', chunkX + 1, chunkY)
         };
 
-        if (!openings.north.open && !openings.south.open && !openings.west.open && !openings.east.open) {
+        const topology = this.getRegionalRouteTopology?.();
+        const insideRegionalBounds = topology
+            && Math.max(Math.abs(chunkX), Math.abs(chunkY)) <= topology.boundsRadius;
+        const isRegionalRoute = topologyHasChunk(topology, chunkX, chunkY);
+        if (
+            !openings.north.open
+            && !openings.south.open
+            && !openings.west.open
+            && !openings.east.open
+            && (!insideRegionalBounds || isRegionalRoute)
+        ) {
             openings.east.open = true;
         }
 
@@ -21627,6 +21781,28 @@ export class ThreeGame {
                 open: true,
                 offset: Math.floor(this.chunkCellCount / 2)
             };
+        }
+        const topology = this.getRegionalRouteTopology?.();
+        if (topology) {
+            const a = axis === 'horizontal'
+                ? { x: edgeX, y: edgeY - 1 }
+                : { x: edgeX - 1, y: edgeY };
+            const b = axis === 'horizontal'
+                ? { x: edgeX, y: edgeY }
+                : { x: edgeX, y: edgeY };
+            const insideRegionalBounds = [a, b].every((point) => (
+                Math.max(Math.abs(point.x), Math.abs(point.y)) <= topology.boundsRadius
+            ));
+            if (insideRegionalBounds) {
+                const seed = this.hashTile(
+                    edgeX * 97 + (axis === 'vertical' ? 11 : 23),
+                    edgeY * 193 + (axis === 'vertical' ? 41 : 59)
+                );
+                return {
+                    open: topologyHasEdge(topology, a.x, a.y, b.x, b.y),
+                    offset: seed % this.chunkCellCount
+                };
+            }
         }
         const seed = this.hashTile(edgeX * 97 + (axis === 'vertical' ? 11 : 23), edgeY * 193 + (axis === 'vertical' ? 41 : 59));
         return {

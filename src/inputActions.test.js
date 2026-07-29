@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { ACTION_SETS, actionSetForAppPhase, createActionRouter } from './inputActions.js';
+import {
+    ACTION_SETS,
+    actionSetForAppPhase,
+    createActionRouter,
+    shouldPreferBrowserGamepad
+} from './inputActions.js';
 
 function padSnapshot(overrides = {}) {
     return {
@@ -141,4 +146,36 @@ describe('actionSetForAppPhase', () => {
             expect(actionSetForAppPhase(phase)).toBe(ACTION_SETS.MENU);
         }
     );
+});
+
+describe('shouldPreferBrowserGamepad', () => {
+    it('uses the browser mapping when native Steam Input is unavailable or has no controller', () => {
+        expect(shouldPreferBrowserGamepad()).toBe(true);
+        expect(shouldPreferBrowserGamepad({ nativeAvailable: true })).toBe(true);
+    });
+
+    it('rescues input when Steam sees a controller but its action configuration emits nothing', () => {
+        expect(shouldPreferBrowserGamepad({
+            nativeAvailable: true,
+            nativeControllerCount: 1,
+            browserAnyInput: true
+        })).toBe(true);
+    });
+
+    it('keeps native Steam Input authoritative while it is producing actions', () => {
+        expect(shouldPreferBrowserGamepad({
+            nativeAvailable: true,
+            nativeControllerCount: 1,
+            nativeAnyInput: true,
+            browserAnyInput: true
+        })).toBe(false);
+    });
+
+    it('allows one neutral browser frame to release edge-triggered menu actions', () => {
+        expect(shouldPreferBrowserGamepad({
+            nativeAvailable: true,
+            nativeControllerCount: 1,
+            browserEngaged: true
+        })).toBe(true);
+    });
 });

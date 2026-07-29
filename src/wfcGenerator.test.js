@@ -9,7 +9,7 @@ import {
     LATTICE_SIZE,
     POCKET_LATTICE_SIZE
 } from './wfcGenerator.js';
-import { TILE_SIZE } from './tileCatalog.js';
+import { TILE_CATALOG, TILE_SIZE } from './tileCatalog.js';
 
 function seededRandom(seed) {
     let state = (seed >>> 0) || 1;
@@ -303,6 +303,39 @@ describe('stampLattice', () => {
             }
             expect(canyonCells.length, `seed ${seed}`).toBeGreaterThan(0);
         }
+    });
+
+    it('converts all deep solid mass to canyon while retaining one indoor wall band', () => {
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
+        grid[3][3] = '.';
+        addCanyonVoidAroundWalkable(grid);
+        expect(grid[3][2]).toBe('#');
+        expect(grid[2][2]).toBe('#');
+        expect(grid[0][0]).toBe('X');
+        expect(grid[6][6]).toBe('X');
+        expect(grid.flat().filter((cell) => cell === 'X').length).toBeGreaterThan(
+            grid.flat().filter((cell) => cell === '#').length
+        );
+    });
+
+    it('makes canyon-walkway tiles exposed wall-less platforms with socket exits', () => {
+        const tile = TILE_CATALOG.find((candidate) => candidate.id === 'canyon-walkway-ns');
+        expect(tile).toBeTruthy();
+        const grid = tile.pattern.map((row) => [...row]);
+        addCanyonVoidAroundWalkable(grid, [tile]);
+        expect(grid[0].slice(2, 5)).toEqual(['.', '.', '.']);
+        expect(grid[6].slice(2, 5)).toEqual(['.', '.', '.']);
+        expect(grid.flat().some((cell, index, cells) => {
+            if (cell !== 'X') return false;
+            const x = index % 7;
+            const y = Math.floor(index / 7);
+            return [
+                cells[y * 7 + x - 1],
+                cells[y * 7 + x + 1],
+                cells[(y - 1) * 7 + x],
+                cells[(y + 1) * 7 + x]
+            ].includes('.');
+        })).toBe(true);
     });
 });
 

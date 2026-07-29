@@ -32,7 +32,12 @@ import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_
 import { getGifDurationMs } from './src/gifDuration.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { getControllerGlyphLabel } from './src/inputGlyphs.js';
-import { ACTION_SETS, actionSetForAppPhase, createActionRouter } from './src/inputActions.js';
+import {
+    ACTION_SETS,
+    actionSetForAppPhase,
+    createActionRouter,
+    shouldPreferBrowserGamepad
+} from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
@@ -41,6 +46,7 @@ import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 import {
+    computeTopologyDistances,
     findConflictingChunkReservations,
     getMaxUnlockedRing,
     validateRingProgression
@@ -981,15 +987,22 @@ if (window.electronAPI?.onSteamInputState) {
 
 let browserGamepadPollRaf = null;
 let browserGamepadOwnedVirtualInput = false;
+let browserGamepadFallbackEngaged = false;
 let suppressBrowserGamepadUntilRelease = false;
 
 function browserGamepadApiAvailable() {
     return typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function';
 }
 
-function shouldUseBrowserGamepadFallback() {
+function shouldUseBrowserGamepadFallback(controllers) {
     if (!browserGamepadApiAvailable()) return false;
-    return !steamInputState.available || steamInputState.controllerCount === 0;
+    return shouldPreferBrowserGamepad({
+        nativeAvailable: steamInputState.available,
+        nativeControllerCount: steamInputState.controllerCount,
+        nativeAnyInput: steamInputState.anyInput,
+        browserAnyInput: controllers.some((controller) => controller.active),
+        browserEngaged: browserGamepadFallbackEngaged
+    });
 }
 
 function getBrowserGamepadControllers() {
@@ -1018,15 +1031,25 @@ function clearBrowserGamepadGameplayInput() {
 }
 
 function handleBrowserGamepadFallbackFrame() {
-    if (!shouldUseBrowserGamepadFallback()) {
+    const controllers = getBrowserGamepadControllers();
+    if (!shouldUseBrowserGamepadFallback(controllers)) {
+        browserGamepadFallbackEngaged = false;
         clearBrowserGamepadGameplayInput();
         browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
         return;
     }
 
-    const controllers = getBrowserGamepadControllers();
     const activeController = controllers.find((controller) => controller.active) ?? null;
     if (!activeController) {
+        const neutralController = controllers[0] ?? null;
+        if (browserGamepadFallbackEngaged && neutralController) {
+            const gameplayActive = Boolean(window.game?.isGameplayInputActive?.());
+            routeMainControllerInput(
+                neutralController,
+                appPhase === 'gameplay' && gameplayActive
+            );
+        }
+        browserGamepadFallbackEngaged = false;
         if (suppressBrowserGamepadUntilRelease) {
             suppressBrowserGamepadUntilRelease = false;
             steamInputPrevControllers.clear();
@@ -1036,6 +1059,7 @@ function handleBrowserGamepadFallbackFrame() {
         return;
     }
 
+    browserGamepadFallbackEngaged = true;
     markBrowserGamepadInput(activeController);
 
     if (suppressBrowserGamepadUntilRelease) {
@@ -6144,11 +6168,16 @@ function executeDevCommand(input) {
             const unlocks = game.bank?.getState?.()?.unlocks ?? {};
             const unlockedGoalKeys = new Set(Object.keys(unlocks).filter((key) => unlocks[key]));
             const maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
+            const topology = plan.topology;
+            const physicalDistances = computeTopologyDistances(topology);
+            const queenDistance = physicalDistances.get(topology?.queenChunkKey);
             result = `RADIAL PLAN DIAGNOSTIC (seed ${plan.seed})\n`
                 + `  Max unlocked ring: ${maxUnlockedRing}/5 (goals: ${[...unlockedGoalKeys].join(', ') || 'none'})\n`
                 + `  Ring-progression proof: ${progression.valid ? 'VALID (non-bypassable at the abstract graph level)' : `INVALID: ${progression.errors.join('; ')}`}\n`
+                + `  Physical route: ${topology?.routeChunks?.length ?? 0} chunks / ${topology?.routeEdges?.length ?? 0} edges / ${topology?.spineChunkKeys?.length ?? 0} spine chunks\n`
+                + `  Dijkstra crash-to-Queen distance: ${Number.isFinite(queenDistance) ? `${queenDistance} chunk crossings` : 'UNREACHABLE'}\n`
                 + `  Chunk placement conflicts: ${conflicts.length === 0 ? 'none' : conflicts.map((c) => `(${c.chunkX},${c.chunkY}): ${c.siteIds.join(' + ')}`).join('; ')}\n`
-                + '  NOTE: this validates the seeded plan and the live unlock gate; it does not prove the WFC-generated chunk geometry physically enforces it (Phase 6.1/6.3, still open).';
+                + '  NOTE: macro portals now follow this physical graph. In-chunk blocker-door cut placement still requires live traversal acceptance.';
             break;
         }
         case 'perf':

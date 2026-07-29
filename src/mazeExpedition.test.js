@@ -8,10 +8,12 @@ import {
     RADIAL_SITE_RULES,
     computeReachableRings,
     computeRingWalkDistances,
+    computeTopologyDistances,
     clampPositionToUnlockedRing,
     isChunkOnRingBarrier,
     findConflictingChunkReservations,
     generateRadialMazeExpedition,
+    generateRegionalRouteTopology,
     getLockedRingBoundaryRadius,
     getMaxUnlockedRing,
     projectPlanToChunkReservations,
@@ -120,6 +122,72 @@ describe('radial ring crossing gates are provably non-bypassable', () => {
         const result = validateRingProgression(broken);
         expect(result.valid).toBe(false);
         expect(result.errors).toContain('ring 3 reachable before ring-2-gate is unlocked');
+    });
+});
+
+describe('authoritative regional snake-and-rings topology', () => {
+    function adjacency(topology) {
+        const graph = new Map(topology.routeChunks.map((chunk) => [`${chunk.chunkX},${chunk.chunkY}`, new Set()]));
+        for (const edge of topology.routeEdges) {
+            const [a, b] = edge.split('|');
+            graph.get(a)?.add(b);
+            graph.get(b)?.add(a);
+        }
+        return graph;
+    }
+
+    it('builds one connected Manhattan route from the crash site to the mother hive', () => {
+        const topology = generateRegionalRouteTopology(8128);
+        const graph = adjacency(topology);
+        const seen = new Set([topology.startChunkKey]);
+        const queue = [topology.startChunkKey];
+        while (queue.length) {
+            const current = queue.shift();
+            for (const next of graph.get(current) ?? []) {
+                const [ax, ay] = current.split(',').map(Number);
+                const [bx, by] = next.split(',').map(Number);
+                expect(Math.abs(ax - bx) + Math.abs(ay - by)).toBe(1);
+                if (seen.has(next)) continue;
+                seen.add(next);
+                queue.push(next);
+            }
+        }
+        expect(seen.has(topology.queenChunkKey)).toBe(true);
+        expect(seen.size).toBe(graph.size);
+        expect(topology.spineChunkKeys.length).toBeGreaterThan(35);
+        expect(computeTopologyDistances(topology).get(topology.queenChunkKey)).toBeGreaterThan(80);
+    });
+
+    it('wraps all five levels of the snake in substantial ring routes', () => {
+        const topology = generateRegionalRouteTopology(1441);
+        expect(topology.rings.map((ring) => ring.ring)).toEqual([1, 2, 3, 4, 5]);
+        for (const ring of topology.rings) {
+            expect(ring.chunkKeys.length, `ring ${ring.ring}`).toBeGreaterThanOrEqual(12);
+            expect(ring.chunkKeys.every((key) => topology.routeChunks.some(
+                (chunk) => `${chunk.chunkX},${chunk.chunkY}` === key
+            ))).toBe(true);
+        }
+    });
+
+    it('places every camp, hive, blocker, and Queen on the physical route graph', () => {
+        for (let seed = 1; seed <= 100; seed += 1) {
+            const plan = generateRadialMazeExpedition(seed);
+            const routeKeys = new Set(plan.topology.routeChunks.map((chunk) => `${chunk.chunkX},${chunk.chunkY}`));
+            for (const site of [...plan.nodes, ...plan.blockers]) {
+                expect(routeKeys.has(`${site.chunkX ?? 0},${site.chunkY ?? 0}`), `${seed}:${site.id}`).toBe(true);
+            }
+            const queen = plan.nodes.find((node) => node.id === 'queen_chamber');
+            expect(`${queen.chunkX},${queen.chunkY}`).toBe(plan.topology.queenChunkKey);
+        }
+    });
+
+    it('varies the labyrinth by seed while preserving its structural contract', () => {
+        const a = generateRegionalRouteTopology(11, { phase: 0.3 });
+        const b = generateRegionalRouteTopology(12, { phase: 1.7 });
+        expect(a.routeEdges).not.toEqual(b.routeEdges);
+        expect(a.rings.length).toBe(b.rings.length);
+        expect(a.startChunkKey).toBe('0,0');
+        expect(b.startChunkKey).toBe('0,0');
     });
 });
 

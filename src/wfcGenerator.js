@@ -402,16 +402,32 @@ export function validateLatticeSeams(lattice) {
     return errors;
 }
 
-// Turn unused solid rock into a canyon backdrop while retaining the first
-// solid cell beside every traversable cell as a bunker wall. This produces a
-// consistent floor -> wall -> canyon cross-section around rooms and halls,
-// without allowing a lethal tile to replace a doorway or break connectivity.
-export function addCanyonVoidAroundWalkable(grid) {
+// Turn every unused solid cell into canyon while retaining exactly the first
+// solid cell beside indoor traversal as a structural wall. Exposed
+// canyon-walkway tiles deliberately skip that wall band: they are wall-less
+// platforms whose declared WFC sockets are the only safe exits.
+export function addCanyonVoidAroundWalkable(grid, lattice = null) {
     if (!Array.isArray(grid) || grid.length === 0) return grid;
     const height = grid.length;
     const width = grid[0]?.length ?? 0;
     const source = grid.map((row) => [...row]);
     const walkable = (char) => ['.', 'D', 'R', 'B', 'L'].includes(char);
+    const exposedCells = new Set();
+    if (Array.isArray(lattice)) {
+        const latticeSize = Math.round(Math.sqrt(lattice.length));
+        const stride = TILE_SIZE - 1;
+        for (let index = 0; index < lattice.length; index += 1) {
+            const tile = lattice[index];
+            if (tile?.category !== 'canyon-walkway') continue;
+            const originX = (index % latticeSize) * stride;
+            const originY = Math.floor(index / latticeSize) * stride;
+            for (let localY = 0; localY < TILE_SIZE; localY += 1) {
+                for (let localX = 0; localX < TILE_SIZE; localX += 1) {
+                    exposedCells.add(`${originX + localX},${originY + localY}`);
+                }
+            }
+        }
+    }
     const hasWalkableWithin = (x, y, radius) => {
         for (let dy = -radius; dy <= radius; dy += 1) {
             for (let dx = -radius; dx <= radius; dx += 1) {
@@ -427,9 +443,13 @@ export function addCanyonVoidAroundWalkable(grid) {
     for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
             if (source[y][x] !== '#') continue;
+            if (exposedCells.has(`${x},${y}`)) {
+                grid[y][x] = 'X';
+                continue;
+            }
             const touchesPath = hasWalkableWithin(x, y, 1);
             if (touchesPath) continue; // retain the visible/collidable wall band
-            if (hasWalkableWithin(x, y, 2)) grid[y][x] = 'X';
+            grid[y][x] = 'X';
         }
     }
     return grid;
