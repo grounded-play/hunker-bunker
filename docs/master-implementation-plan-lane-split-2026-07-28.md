@@ -133,6 +133,50 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Codex Phase 5.1/5.2 **code-executable work completed;
+  physical acceptance still open** (`676effe`). Native Steam Input and the
+  browser Gamepad fallback now enter one `src/inputActions.js` semantic
+  router; application phase automatically selects `menu`, `gameplay`, or
+  `archive`; Electron initializes and polls all three native action sets;
+  and RGB consumes the shell's semantic archive event instead of running a
+  second raw `navigator.getGamepads()` loop. Menu presses are edge-triggered
+  centrally while gameplay retains continuous move/aim/fire. Every
+  controller-focused editable field uses the Steam on-screen keyboard bridge
+  when available. Visible modal roots now receive deterministic initial
+  focus, trap keyboard/controller focus, and restore the remembered target
+  on return. Full suite 938/938, lint and production build/media audit green.
+  Action-aware fallback glyph lookup (face buttons, shoulders, sticks,
+  triggers, and system buttons across Xbox/Deck, PlayStation, and Nintendo
+  families) was completed in the follow-up slice with unit coverage. A new
+  1280x800 Playwright acceptance test proves the settings modal chooses an
+  internal focus target, keeps repeated Tab traversal inside its boundary,
+  and restores the title SETTINGS trigger on Escape. That test exposed and
+  fixed a keyboard-mode close-path bug that could leave focus inside the
+  newly hidden modal. Follow-up validation: full suite 951/951, focused
+  Playwright acceptance 1/1, lint and production build/media audit green.
+  **Still open**: a systematic screen traversal pass and all Phase 5.3
+  physical-Deck work (built-in-controls run, 1280x800 legibility,
+  suspend/resume, controller reconnect, docked output, battery/performance,
+  and offline Vault). The hardware items are not agent-executable.
+- 2026-07-28: Codex Phase 4 **canonical save contract implemented;
+  two-machine acceptance remains manual** (`699af32`). Added a versioned
+  Electron save envelope with sanitization and legacy migration, atomic
+  temp-file/rename writes, last-known-good `.bak`, corruption recovery, and
+  tests covering round-trip, migration, replacement, and backup fallback.
+  `docs/steam-cloud-save-contract.md` now publishes the authoritative
+  Auto-Cloud path and conflict/recovery behavior. **Still open**: machine A
+  to B and B to A sync, offline simultaneous edits, Cloud-disabled and stale
+  cloud behavior on real Steam clients; those require two installed machines
+  and must not be inferred from unit tests.
+- 2026-07-28: Codex Phase 3.1/3.2 **repo implementation complete;
+  commerce remains intentionally held** (`8a41fbe`, `699af32`). Generated
+  self-contained Steam Inventory art and in-build runtime variants for all
+  catalog items, including requested chroma-green masters; added an asset
+  completeness audit and Vault local fallback coverage; replaced the
+  duplicate hand-maintained runtime item list with a generated canonical
+  catalog plus generator tests. **Still open**: Valve/legal go/no-go and a
+  real Inventory definition upload/ownership/render pass. Phase 3.3 remains
+  off by design; no code path was enabled to imply commerce approval.
 - 2026-07-28: Phase 8.3 "dead bosses persist visibly" — **partially
   checked, still not fully verified**. `spawnEnemyCorpse` (`src/threeGame.js:17911`)
   is called from the same death-handling branch for bosses and regular

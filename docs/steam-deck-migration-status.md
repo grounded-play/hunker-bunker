@@ -39,8 +39,8 @@ Updated 2026-07-28 on `dev/sprint-21`.
 - [x] RGB consumes the main shell's semantic archive-action event. Its former
       second raw `navigator.getGamepads()` polling loop has been removed.
 - [ ] Real Steam Input glyph queries still require the Steamworks/Deck
-      hardware pass. The renderer currently uses controller-family prompt
-      labels with a safe `A` fallback.
+      hardware pass. The renderer now uses an action-aware controller-family
+      fallback abstraction for Xbox/Deck, PlayStation, and Nintendo labels.
 
 ## Phase 3: Remove mobile support — shipped
 
@@ -102,6 +102,8 @@ Code-side preparation completed before the hardware pass:
       continuous movement/aim/fire and edge-triggered interactions.
 - [x] Editable controller-focused fields invoke the Steam on-screen keyboard
       bridge when available.
+- [x] Semantic actions have controller-family fallback labels for prompts;
+      unknown controllers/actions degrade to readable text.
 - [x] Visible modal roots trap keyboard/controller focus, choose a
       deterministic first target, and restore the remembered target when
       returning to the previous root.

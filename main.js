@@ -31,6 +31,7 @@ import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
 import { getGifDurationMs } from './src/gifDuration.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
+import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import { ACTION_SETS, actionSetForAppPhase, createActionRouter } from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
@@ -267,22 +268,6 @@ function setAppPhase(phase) {
     updateQueensLedgerHUD();
 }
 
-const STEAM_INPUT_CONFIRM_GLYPHS = Object.freeze({
-    SteamDeckController: 'A',
-    SteamController: 'A',
-    XBox360Controller: 'A',
-    XBoxOneController: 'A',
-    GenericGamepad: 'A',
-    AppleMFiController: 'A',
-    AndroidController: 'A',
-    PS3Controller: 'X',
-    PS4Controller: 'X',
-    PS5Controller: 'X',
-    SwitchProController: 'B',
-    SwitchJoyConPair: 'B',
-    SwitchJoyConSingle: 'B'
-});
-
 const STEAM_INPUT_PROMPT_IDS = Object.freeze([
     'console-hud-prompt',
     'lore-hud-prompt',
@@ -430,18 +415,14 @@ function recordSteamTimelineEvent(type, title, description, {
     }).catch?.(() => {});
 }
 
-function getSteamInputConfirmGlyph(controllerType) {
-    return STEAM_INPUT_CONFIRM_GLYPHS[controllerType] ?? 'A';
-}
-
 function isSteamControllerInputActive() {
     return steamInputState.lastInputMode === 'controller'
         || (steamInputState.isSteamDeck && steamInputState.controllerCount > 0);
 }
 
-function getPromptKeyText(defaultKey = 'E') {
+function getPromptKeyText(defaultKey = 'E', action = 'interact') {
     if (isSteamControllerInputActive()) {
-        return getSteamInputConfirmGlyph(steamInputState.primaryControllerType);
+        return getControllerGlyphLabel(action, steamInputState.primaryControllerType, defaultKey);
     }
     return defaultKey;
 }
@@ -586,6 +567,7 @@ function getPreferredControllerFocusTarget(root, focusables) {
 
 let activeControllerFocusRoot = null;
 const controllerFocusMemory = new WeakMap();
+const controllerFocusInvokers = new WeakMap();
 
 function focusControllerTarget(target) {
     if (!target) return false;
@@ -604,8 +586,15 @@ function isModalFocusRoot(root) {
 function syncControllerFocusBoundary() {
     const nextRoot = getControllerFocusRoot();
     const active = document.activeElement;
+    let closingInvoker = null;
 
     if (nextRoot !== activeControllerFocusRoot) {
+        if (isModalFocusRoot(nextRoot) && active && active !== document.body && !nextRoot.contains(active)) {
+            controllerFocusInvokers.set(nextRoot, active);
+        }
+        if (isModalFocusRoot(activeControllerFocusRoot)) {
+            closingInvoker = controllerFocusInvokers.get(activeControllerFocusRoot) ?? null;
+        }
         if (activeControllerFocusRoot?.contains?.(active)) {
             controllerFocusMemory.set(activeControllerFocusRoot, active);
         }
@@ -617,9 +606,11 @@ function syncControllerFocusBoundary() {
 
     const focusables = getVisibleControllerFocusables(nextRoot);
     const remembered = controllerFocusMemory.get(nextRoot);
-    const target = remembered && focusables.includes(remembered)
-        ? remembered
-        : getPreferredControllerFocusTarget(nextRoot, focusables);
+    const target = closingInvoker && focusables.includes(closingInvoker)
+        ? closingInvoker
+        : remembered && focusables.includes(remembered)
+            ? remembered
+            : getPreferredControllerFocusTarget(nextRoot, focusables);
     if (target) focusControllerTarget(target);
     return target ?? null;
 }
@@ -649,8 +640,10 @@ function moveControllerFocus(delta) {
 
 document.addEventListener('focusin', (event) => {
     const root = getControllerFocusRoot();
-    if (!isModalFocusRoot(root) || root.contains(event.target)) return;
-    syncControllerFocusBoundary();
+    if (!root) return;
+    if (root !== activeControllerFocusRoot || (isModalFocusRoot(root) && !root.contains(event.target))) {
+        syncControllerFocusBoundary();
+    }
 });
 
 document.addEventListener('keydown', (event) => {
@@ -672,7 +665,8 @@ document.addEventListener('keydown', (event) => {
 
 const controllerFocusObserver = new MutationObserver(() => {
     queueMicrotask(() => {
-        if (isSteamControllerInputActive() || isModalFocusRoot(getControllerFocusRoot())) {
+        const root = getControllerFocusRoot();
+        if (root !== activeControllerFocusRoot || isSteamControllerInputActive() || isModalFocusRoot(root)) {
             syncControllerFocusBoundary();
         }
     });
@@ -2006,6 +2000,13 @@ function renderShipHealth(detail = {}) {
 window.addEventListener('pickup-collected', trackPickupCollected);
 window.addEventListener('player-consume-ammo-cache', (event) => {
     consumeSessionAmmoCache(event?.detail?.amount ?? 1);
+});
+// docs/faction-verb-matrix.md — Vesper FIELD RESUPPLY tops the ammo reserve
+// to full; ThreeGame.activateCampVerb already refills the loaded clip
+// directly (no main.js involvement needed for that part).
+window.addEventListener('camp-verb-resupply', () => {
+    pickupCounterState.ammo = activeAmmoCapacity;
+    renderPickupCounter();
 });
 window.addEventListener('combat-no-ammo', () => {
     flashWeaponError();
