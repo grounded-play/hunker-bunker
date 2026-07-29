@@ -282,6 +282,52 @@ export function getRadialSite(plan, id) {
     return plan?.nodes?.find((node) => node.id === id) ?? null;
 }
 
+// Phase 6.1 foundation ("project route reservations into each affected
+// chunk"): converts the plan's world-space sites into the same
+// chunkX/chunkY grid threeGame.js already uses everywhere
+// (Math.floor(worldCoord / chunkSize), chunkSize = 19). This is the data
+// projection step only -- it does NOT yet feed into wfcGenerator.js/
+// threeGame.js's actual chunk generation (that connection is the larger,
+// still-open remainder of 6.1/6.3). Produces reservation data a future
+// integration can consume without guessing the coordinate mapping.
+export function worldToChunkCoords(x, z, chunkSize = 19) {
+    return {
+        chunkX: Math.floor((Number(x) || 0) / chunkSize),
+        chunkY: Math.floor((Number(z) || 0) / chunkSize)
+    };
+}
+
+export function projectPlanToChunkReservations(plan, chunkSize = 19) {
+    const reservations = new Map();
+    const reserve = (site, category) => {
+        if (!Number.isFinite(site?.x) || !Number.isFinite(site?.z)) return;
+        const { chunkX, chunkY } = worldToChunkCoords(site.x, site.z, chunkSize);
+        const key = `${chunkX},${chunkY}`;
+        if (!reservations.has(key)) reservations.set(key, { chunkX, chunkY, sites: [] });
+        reservations.get(key).sites.push({ id: site.id, category, ring: site.ring ?? null });
+    };
+    for (const node of plan?.nodes ?? []) reserve(node, 'node');
+    for (const cluster of plan?.roomClusters ?? []) reserve(cluster, 'roomCluster');
+    for (const blocker of plan?.blockers ?? []) reserve(blocker, 'blocker');
+    return reservations;
+}
+
+// A future WFC integration can only give one chunk one special purpose at a
+// time (a chunk that's a mission blocker can't simultaneously be the camp
+// site next to it). Catches macro-plan spacing that's too tight for the
+// chunk grid before that integration is built, not after.
+export function findConflictingChunkReservations(plan, chunkSize = 19) {
+    const reservations = projectPlanToChunkReservations(plan, chunkSize);
+    const conflicts = [];
+    for (const { chunkX, chunkY, sites } of reservations.values()) {
+        const requiredSites = sites.filter((site) => site.category === 'node' || site.category === 'blocker');
+        if (requiredSites.length > 1) {
+            conflicts.push({ chunkX, chunkY, siteIds: requiredSites.map((site) => site.id) });
+        }
+    }
+    return conflicts;
+}
+
 export function validateRadialMazeExpedition(plan) {
     const errors = [];
     const nodes = plan?.nodes ?? [];

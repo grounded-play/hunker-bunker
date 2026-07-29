@@ -7,10 +7,13 @@ import {
     RADIAL_SITE_RULES,
     computeReachableRings,
     computeRingWalkDistances,
+    findConflictingChunkReservations,
     generateRadialMazeExpedition,
+    projectPlanToChunkReservations,
     validateRadialMazeExpedition,
     validateRingProgression,
-    validateMazeExpedition
+    validateMazeExpedition,
+    worldToChunkCoords
 } from './mazeExpedition.js';
 
 describe('long maze expedition plan', () => {
@@ -112,5 +115,58 @@ describe('radial ring crossing gates are provably non-bypassable', () => {
         const result = validateRingProgression(broken);
         expect(result.valid).toBe(false);
         expect(result.errors).toContain('ring 3 reachable before ring-2-gate is unlocked');
+    });
+});
+
+describe('chunk reservation projection (Phase 6.1 foundation)', () => {
+    it('matches threeGame.js\'s own world-to-chunk convention (Math.floor(coord / 19))', () => {
+        expect(worldToChunkCoords(0, 0)).toEqual({ chunkX: 0, chunkY: 0 });
+        expect(worldToChunkCoords(19, 38)).toEqual({ chunkX: 1, chunkY: 2 });
+        expect(worldToChunkCoords(-1, -20)).toEqual({ chunkX: -1, chunkY: -2 });
+    });
+
+    it('reserves a chunk for every node, room cluster, and blocker with finite coordinates', () => {
+        const plan = generateRadialMazeExpedition(1);
+        const reservations = projectPlanToChunkReservations(plan);
+        const totalSites = [...reservations.values()].reduce((sum, entry) => sum + entry.sites.length, 0);
+        const expectedSites = plan.nodes.length + plan.roomClusters.length + plan.blockers.length;
+        expect(totalSites).toBe(expectedSites);
+    });
+
+    it('places o2_ship at chunk (0,0), matching worldRoutePlanner\'s reachability start key', () => {
+        const plan = generateRadialMazeExpedition(1);
+        const reservations = projectPlanToChunkReservations(plan);
+        const shipChunk = [...reservations.values()].find((entry) => entry.sites.some((site) => site.id === 'o2_ship'));
+        expect(shipChunk?.chunkX).toBe(0);
+        expect(shipChunk?.chunkY).toBe(0);
+    });
+
+    it('flags it when two required (node/blocker) sites land in the same chunk', () => {
+        const plan = generateRadialMazeExpedition(1);
+        const collided = {
+            ...plan,
+            nodes: plan.nodes.map((node, index) => (index === 1 ? { ...node, x: plan.nodes[0].x, z: plan.nodes[0].z } : node))
+        };
+        const conflicts = findConflictingChunkReservations(collided);
+        expect(conflicts.length).toBeGreaterThan(0);
+        expect(conflicts[0].siteIds).toContain(plan.nodes[0].id);
+    });
+
+    it('quantifies the current macro-plan spacing gap across 2,000 seeds (documents reality, does not silently hide it)', () => {
+        // Known, minor gap: RADIAL_SITE_RULES/RING_BLOCKER_FEATURES placement
+        // doesn't check chunk-grid separation, only angular separation
+        // (generateRadialMazeExpedition's per-ring angle retry loop). A future
+        // Phase 6.1/6.3 chunk-generation integration needs to either merge a
+        // colliding node+blocker into one chunk's purpose or extend the
+        // angle-retry loop to also check chunk distance -- this test exists
+        // so that work starts from a measured number, not a guess, and so a
+        // regression (a much higher collision rate) gets caught.
+        let seedsWithConflicts = 0;
+        for (let seed = 1; seed <= 2000; seed += 1) {
+            const plan = generateRadialMazeExpedition(seed);
+            if (findConflictingChunkReservations(plan).length > 0) seedsWithConflicts += 1;
+        }
+        const conflictRate = seedsWithConflicts / 2000;
+        expect(conflictRate).toBeLessThan(0.05);
     });
 });

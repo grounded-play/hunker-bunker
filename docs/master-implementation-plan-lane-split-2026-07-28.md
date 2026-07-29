@@ -133,6 +133,27 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 6.1 **first real step of the still-open chunk-integration
+  work**: added `worldToChunkCoords`, `projectPlanToChunkReservations`,
+  `findConflictingChunkReservations` to `src/mazeExpedition.js` — converts
+  the macro plan's nodes/room-clusters/blockers into the exact
+  `chunkX/chunkY` grid `threeGame.js` already uses everywhere
+  (`Math.floor(worldCoord / 19)`, verified against real call sites, not
+  guessed). **This is data projection only — it does not yet feed into
+  `wfcGenerator.js`/`threeGame.js`'s actual chunk generation**; that
+  connection (making WFC honor reserved sockets) is the larger remainder of
+  6.1/6.3 and is a materially bigger, riskier change (touches the live
+  generation pipeline, needs visual/stress verification) that this session
+  didn't attempt. What this step *did* find, measured rather than guessed:
+  running the projection across 2,000 seeds shows a real, minor gap —
+  ~2.4% of seeds (48/2000) place a required node and a ring blocker in the
+  same chunk, because `generateRadialMazeExpedition`'s placement loop only
+  checks angular separation, not chunk-grid distance. Documented as a test
+  assertion (`conflictRate < 0.05`) rather than silently patched — fixing
+  the generator's placement algorithm risks the already-shipped,
+  2,000-seed-tested Phase 6.2/6.4 non-bypass proof, so it's flagged for
+  whoever does the full chunk-integration work next, not fixed blind under
+  time pressure. Full suite 921/921, build green.
 - 2026-07-28: Phase 7 **rollout complete (step 6, tutorial — the last step)**:
   `DialogueManager.startTutorialSequence` (`src/dialogue.js`) now tracks a
   stable `tutorial:onboarding` objective (priority 90, matching the spec's
