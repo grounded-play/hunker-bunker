@@ -20,6 +20,51 @@ export const RING_BLOCKER_FEATURES = Object.freeze([
     Object.freeze({ type: 'flooded_service_tunnel', mission: 'restart_drainage_pumps' })
 ]);
 
+// Phase 6.2 live enforcement: no literal canyon/gate geometry exists in the
+// WFC-generated world yet (that's a separate, larger asset/solver task —
+// see docs/master-implementation-plan-lane-split-2026-07-28.md). This is a
+// soft radial boundary using position math instead, gated by the same four
+// base goals (src/threeGame.js MILESTONE_BOSS_FOR_GOAL/BUILD_SITES) that
+// already drive ACTIVE->CRYO->BIO sector progression — real, already-live
+// signals, not new invented state. Ring 1 is always reachable (matches
+// generateRadialMazeExpedition's edges: the ring-1 spiral edge is the only
+// one with no blockerId).
+export const RING_UNLOCK_GOAL_ORDER = Object.freeze(['o2Bubble', 'hullExpansion', 'radarNode', 'reactorCompressor']);
+
+export function getMaxUnlockedRing(unlockedGoalKeys = new Set()) {
+    let ring = 1;
+    for (const goalKey of RING_UNLOCK_GOAL_ORDER) {
+        if (!unlockedGoalKeys.has(goalKey)) break;
+        ring += 1;
+    }
+    return Math.min(5, ring);
+}
+
+// Deliberately generous: the boundary sits a full ring-gap-width past the
+// max unlocked ring (not right at its own radius), so it never crowds the
+// existing camp/hive placement tolerance band (isSiteOnPlannedRing allows
+// +/-22 units) or feels like it's trapping the player next to their own
+// camp. This is a soft, tunable stand-in for real barrier geometry, not a
+// claim that the final radius is playtested/correct.
+export function getLockedRingBoundaryRadius(maxUnlockedRing, radialRingRadii = RADIAL_RING_RADII) {
+    const ring = Math.max(0, Math.min(radialRingRadii.length - 1, Math.floor(maxUnlockedRing)));
+    if (ring >= radialRingRadii.length - 1) return Infinity;
+    const gap = radialRingRadii[ring + 1] - radialRingRadii[ring];
+    return radialRingRadii[ring] + gap * 1.5;
+}
+
+export function clampPositionToUnlockedRing(x, z, anchor, maxUnlockedRing, radialRingRadii = RADIAL_RING_RADII) {
+    const anchorX = anchor?.x ?? 0;
+    const anchorZ = anchor?.z ?? 0;
+    const dx = (Number(x) || 0) - anchorX;
+    const dz = (Number(z) || 0) - anchorZ;
+    const distance = Math.hypot(dx, dz);
+    const boundary = getLockedRingBoundaryRadius(maxUnlockedRing, radialRingRadii);
+    if (distance <= boundary || distance === 0) return { x, z, blocked: false };
+    const scale = boundary / distance;
+    return { x: anchorX + dx * scale, z: anchorZ + dz * scale, blocked: true };
+}
+
 function seededRandom(seed) {
     let state = (Number(seed) >>> 0) || 1;
     return () => {

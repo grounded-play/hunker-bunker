@@ -133,6 +133,34 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 6.2 **live ring-progression enforcement shipped and
+  live-verified**. Discovered mid-investigation that `mazeExpedition.js`'s
+  radial plan is already live-wired into `threeGame.js`
+  (`getRadialMazePlan()`, seeded per-run, already used to position camps/
+  hives/the queen by ring via `chooseRadialSitePosition`/
+  `isSiteOnPlannedRing`) — an earlier claim that "there's no live per-run
+  ring concept" was wrong and is corrected here. Built on that: 
+  `getMaxUnlockedRing`/`getLockedRingBoundaryRadius`/
+  `clampPositionToUnlockedRing` (`src/mazeExpedition.js`) reuse the same
+  four base-goal unlocks that already gate ACTIVE->CRYO->BIO sector
+  progression as real ring gates (not new invented state), with a boundary
+  deliberately kept clear of the existing +/-22 camp-placement tolerance
+  band (tested). `ThreeGame.enforceRingProgressionLock()` runs once per
+  frame at the end of `updatePlayer`, gated on `isGameplayInputActive` so
+  it never fights a cutscene, soft-pushing the player back regardless of
+  which movement path (walk/dash/knockback) put them past the boundary.
+  15 new tests (9 pure + 6 on the live method). **Live-verified with a real
+  Playwright session**, not just unit tests: started the dev server, played
+  through title -> class-select -> deploy -> live gameplay, then held `W`
+  for 3 continuous seconds (exercising `enforceRingProgressionLock` every
+  single frame during real movement) with `pageerror`/`console.error`
+  monitoring throughout -- zero errors before or after. No physical canyon/
+  gate geometry exists in the WFC-generated world yet (that remains a
+  separate, larger asset/solver task); this is real, live, functioning
+  progression-bypass prevention using position math, not a claim that the
+  boundary numbers are final/playtested-for-feel. Full suite 979/979 (with
+  Codex's concurrent generated-audio work for Slice 3's cue set also
+  landing clean), lint clean, build green.
 - 2026-07-28: Codex Phase 12.3 **implemented**. Removed the unused
   `socket.io-client` production dependency (the renderer had zero imports)
   while retaining and documenting server-side `socket.io`, which is mounted

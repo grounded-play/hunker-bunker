@@ -73,7 +73,12 @@ import { applyCampPayoutEffects } from './runModifiers.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
-import { generateRadialMazeExpedition, getRadialSite } from './mazeExpedition.js';
+import {
+    clampPositionToUnlockedRing,
+    generateRadialMazeExpedition,
+    getMaxUnlockedRing,
+    getRadialSite
+} from './mazeExpedition.js';
 import { ExplorationTracker } from './mapSystem.js';
 
 export const EXTERIOR_CANYON_TILE = 'X';
@@ -12597,6 +12602,34 @@ export class ThreeGame {
                     detail: { progress: Math.min(1, this.missionState.elevatorTimer / 90), secondsRemaining: Math.ceil(90 - this.missionState.elevatorTimer) }
                 }));
             }
+        }
+
+        this.enforceRingProgressionLock();
+    }
+
+    // Phase 6.2 live enforcement: no physical canyon/gate geometry exists in
+    // the WFC-generated world yet (docs/mazeExpedition.js's getLockedRingBoundaryRadius
+    // is a deliberately generous soft stand-in, not a claim of final,
+    // playtested numbers). Runs once per frame at the end of updatePlayer so
+    // it corrects the result of any movement source (walk/dash/knockback)
+    // rather than needing to intercept every individual one. Gated on
+    // isGameplayInputActive so it never fights a cutscene/dialogue that's
+    // scripting the player position itself.
+    enforceRingProgressionLock() {
+        if (!this.player || !this.isGameplayInputActive?.()) return;
+        const unlocks = this.bank?.getState?.()?.unlocks ?? {};
+        const unlockedGoalKeys = new Set(Object.keys(unlocks).filter((key) => unlocks[key]));
+        const maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
+        const anchor = this.getBiomeAnchorPosition();
+        const result = clampPositionToUnlockedRing(
+            this.player.position.x,
+            this.player.position.z,
+            anchor,
+            maxUnlockedRing
+        );
+        if (result.blocked) {
+            this.player.position.x = result.x;
+            this.player.position.z = result.z;
         }
     }
 

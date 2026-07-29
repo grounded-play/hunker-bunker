@@ -4,11 +4,15 @@ import {
     MAZE_EXPEDITION_NODES,
     MAZE_GENERATION_RULES,
     MAZE_ROOM_TILES,
+    RADIAL_RING_RADII,
     RADIAL_SITE_RULES,
     computeReachableRings,
     computeRingWalkDistances,
+    clampPositionToUnlockedRing,
     findConflictingChunkReservations,
     generateRadialMazeExpedition,
+    getLockedRingBoundaryRadius,
+    getMaxUnlockedRing,
     projectPlanToChunkReservations,
     validateRadialMazeExpedition,
     validateRingProgression,
@@ -168,5 +172,66 @@ describe('chunk reservation projection (Phase 6.1 foundation)', () => {
         }
         const conflictRate = seedsWithConflicts / 2000;
         expect(conflictRate).toBeLessThan(0.05);
+    });
+});
+
+describe('live ring-lock enforcement (Phase 6.2 soft boundary, no physical geometry yet)', () => {
+    it('ring 1 is always unlocked with zero goals unlocked', () => {
+        expect(getMaxUnlockedRing(new Set())).toBe(1);
+    });
+
+    it('unlocks the next ring for each base goal in order', () => {
+        expect(getMaxUnlockedRing(new Set(['o2Bubble']))).toBe(2);
+        expect(getMaxUnlockedRing(new Set(['o2Bubble', 'hullExpansion']))).toBe(3);
+        expect(getMaxUnlockedRing(new Set(['o2Bubble', 'hullExpansion', 'radarNode']))).toBe(4);
+        expect(getMaxUnlockedRing(new Set(['o2Bubble', 'hullExpansion', 'radarNode', 'reactorCompressor']))).toBe(5);
+    });
+
+    it('does not skip ahead out of order -- a later goal alone does not unlock earlier rings', () => {
+        expect(getMaxUnlockedRing(new Set(['reactorCompressor']))).toBe(1);
+    });
+
+    it('every locked-ring boundary sits strictly beyond its own ring radius and before the next ring', () => {
+        for (let ring = 1; ring <= 4; ring += 1) {
+            const boundary = getLockedRingBoundaryRadius(ring);
+            expect(boundary, `ring ${ring}`).toBeGreaterThan(RADIAL_RING_RADII[ring]);
+        }
+    });
+
+    it('has no boundary (Infinity) once every ring is unlocked', () => {
+        expect(getLockedRingBoundaryRadius(5)).toBe(Infinity);
+    });
+
+    it('does not move a position that is already within the unlocked radius', () => {
+        const result = clampPositionToUnlockedRing(10, 10, { x: 0, z: 0 }, 1);
+        expect(result).toEqual({ x: 10, z: 10, blocked: false });
+    });
+
+    it('pulls a position beyond the boundary back onto the boundary circle, preserving direction', () => {
+        const boundary = getLockedRingBoundaryRadius(1);
+        const result = clampPositionToUnlockedRing(1000, 0, { x: 0, z: 0 }, 1);
+        expect(result.blocked).toBe(true);
+        expect(result.x).toBeCloseTo(boundary, 5);
+        expect(result.z).toBeCloseTo(0, 5);
+    });
+
+    it('clamps relative to a non-origin anchor', () => {
+        const boundary = getLockedRingBoundaryRadius(1);
+        const result = clampPositionToUnlockedRing(1000, 50, { x: 0, z: 50 }, 1);
+        expect(result.blocked).toBe(true);
+        expect(result.x).toBeCloseTo(boundary, 5);
+        expect(result.z).toBeCloseTo(50, 5);
+    });
+
+    it('never blocks a camp/hive site actually on its planned ring, given the +/-22 placement tolerance', () => {
+        // isSiteOnPlannedRing (threeGame.js) allows a site up to 22 units off
+        // its nominal ring radius. The boundary for the ring the site's own
+        // goal unlocks must stay outside that band, or legitimate camp
+        // access could get clamped.
+        for (let ring = 1; ring <= 4; ring += 1) {
+            const maxToleratedRadius = RADIAL_RING_RADII[ring] + 22;
+            const boundary = getLockedRingBoundaryRadius(ring);
+            expect(boundary, `ring ${ring}`).toBeGreaterThan(maxToleratedRadius);
+        }
     });
 });
