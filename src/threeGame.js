@@ -59,7 +59,14 @@ import { getDialogueLine } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { BunkerDirector } from './director.js';
-import { getAct2ClassPerks as getAct2ClassPerksConfig, mergeCampVerbEffects } from './campEconomy.js';
+import {
+    applyTrade as applyCampTrade,
+    canActivateCampVerb,
+    getAct2ClassPerks as getAct2ClassPerksConfig,
+    getCampActiveVerb,
+    isCampVerbDegraded,
+    mergeCampVerbEffects
+} from './campEconomy.js';
 import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
@@ -9194,6 +9201,76 @@ export class ThreeGame {
         return `field_favor_${next}`;
     }
 
+    // docs/faction-verb-matrix.md: applies a camp's signature active verb.
+    // Re-checks the gate at execution time (not just trusting whatever
+    // getActionableCampAt saw a frame ago) before spending anything.
+    activateCampVerb(camp) {
+        const verb = getCampActiveVerb(camp.id);
+        if (!verb) return false;
+        const gate = this.getCampActiveVerbGate(camp);
+        if (!gate.allowed) {
+            window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+            window.dispatchEvent(new CustomEvent('camp-verb-denied', {
+                detail: { campId: camp.id, campLabel: camp.label, verbId: verb.id, reason: gate.reason }
+            }));
+            return true;
+        }
+
+        applyCampTrade({ give: verb.cost, receive: {} }, this.bank);
+        this._campVerbLastUsedMs ??= {};
+        this._campVerbUsedOnce ??= {};
+        const nowMs = performance.now();
+        this._campVerbLastUsedMs[camp.id] = nowMs;
+        this._campVerbUsedOnce[camp.id] = true;
+
+        const record = this.getCampRecord(camp.id);
+        const degraded = isCampVerbDegraded(camp.id, record?.status ?? camp.status ?? 'alive');
+
+        if (camp.id === 'camp_tallow') {
+            this.healPlayer(this.playerVitals.maxHp);
+        } else if (camp.id === 'camp_vesper') {
+            this.weaponClipAmmo = this.weaponClipSize;
+            window.dispatchEvent(new CustomEvent('camp-verb-resupply', { detail: { campId: camp.id } }));
+        } else if (camp.id === 'camp_meridian' && !degraded) {
+            // Reuses the existing Meridian radar compass-lock mechanic
+            // (threeGame.js:11892) rather than the not-yet-built
+            // ring-blocker reveal from the design doc (Phase 6.1/6.3).
+            const compassTarget = this.getMeridianCompassTarget?.();
+            if (compassTarget) {
+                this._meridianCompassLock = { ...compassTarget, expiresAt: nowMs + 20000 };
+            }
+        }
+
+        this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, 'bunker_junk_uncommon');
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.5, playbackRate: degraded ? 0.7 : 1.15 });
+        window.dispatchEvent(new CustomEvent('camp-verb-activated', {
+            detail: { campId: camp.id, campLabel: camp.label, verbId: verb.id, degraded }
+        }));
+        return true;
+    }
+
+    // docs/faction-verb-matrix.md: gate check for a camp's signature active
+    // verb, reusing the pure canActivateCampVerb from campEconomy.js. Each
+    // camp maps 1:1 to a fixed ring in RADIAL_SITE_RULES (meridian=1,
+    // tallow=2, vesper=3), so Meridian's "once per ring" collapses to "once
+    // per camp, ever" here -- there's no live per-run concept of "current
+    // ring" yet (that's still Phase 6.1/6.3, not wired into gameplay).
+    getCampActiveVerbGate(camp) {
+        this._campVerbLastUsedMs ??= {};
+        this._campVerbUsedOnce ??= {};
+        const nowMs = performance.now();
+        return canActivateCampVerb(camp.id, {
+            bankState: this.bank?.getState?.() ?? {},
+            nowSeconds: nowMs / 1000,
+            lastUsedAtSeconds: Number.isFinite(this._campVerbLastUsedMs[camp.id])
+                ? this._campVerbLastUsedMs[camp.id] / 1000
+                : undefined,
+            ring: camp.id,
+            usedRings: this._campVerbUsedOnce[camp.id] ? new Set([camp.id]) : new Set(),
+            humanityDecayMultiplier: this.getCampVerbRuntimeEffects().humanityDecayMultiplier
+        });
+    }
+
     // Single check-point for every camp-quest reward — see CAMP_QUEST_REWARDS.
     hasCampQuestReward(rewardId) {
         const mapping = CAMP_QUEST_REWARDS[rewardId];
@@ -9946,6 +10023,19 @@ export class ThreeGame {
                     label: `RUN CAMP FAVOR — ${this.getCampFavorCost(record)} SHELLS`
                 };
             }
+            // docs/faction-verb-matrix.md: once a camp is fully bonded, its
+            // signature active verb becomes the next thing to do there.
+            if (phase === 'dormant' && status === 'alive' && (record?.bond ?? 0) >= ACT2_MAX_BOND) {
+                const verb = getCampActiveVerb(camp.id);
+                if (verb) {
+                    const gate = this.getCampActiveVerbGate(camp);
+                    const suffix = gate.allowed ? ''
+                        : gate.reason === 'on_cooldown' ? ' (RECOVERING)'
+                            : gate.reason === 'insufficient_resources' ? ' (NEEDS SUPPLIES)'
+                                : ' (UNAVAILABLE)';
+                    return { camp, action: 'active-verb', verb, gate, label: `${verb.label}${suffix}` };
+                }
+            }
             if (phase === 'camps_help' && !camp.aided) return { camp, action: 'aid', label: 'AID THE CAMP' };
             if (phase === 'camps_betray' && camp.aided && !camp.destroyed) {
                 // Supported camps fight back: breach, clear the defenders, then cull.
@@ -10132,6 +10222,10 @@ export class ThreeGame {
                 detail: { campId: camp.id, campLabel: camp.label, bond: next?.bond ?? 0, cost }
             }));
             return true;
+        }
+
+        if (action === 'active-verb') {
+            return this.activateCampVerb(camp);
         }
 
         if (action === 'defense-active') {

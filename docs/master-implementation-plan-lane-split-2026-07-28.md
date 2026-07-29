@@ -133,6 +133,35 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 8.1 **UI wiring done — the active verbs are now
+  actually triggerable, not just mechanically gated**. `getActionableCampAt`
+  (`src/threeGame.js`) gained an `active-verb` branch offered once a camp's
+  bond is maxed (the natural "what's left to do here" slot in the existing
+  priority chain); `getCampActiveVerbGate`/`activateCampVerb` re-check the
+  gate at execution time, spend the cost via the existing `applyTrade`, and
+  apply a real per-camp effect: Tallow full-heals the player, Vesper refills
+  the weapon clip and dispatches `camp-verb-resupply` for `main.js` to top
+  up reserve ammo, Meridian reuses the *existing* `_meridianCompassLock`
+  radar mechanic (`threeGame.js:11892`) for a 20s compass fix rather than
+  the not-yet-built ring-blocker reveal. Meridian's "once per ring" collapses
+  to "once per camp, ever" since each camp maps 1:1 to a fixed ring and
+  there's no live per-run "current ring" concept yet (Phase 6.1/6.3 still
+  open). 9 new tests on the gate/activation logic.
+  **Also did real live-browser verification this round** — a Playwright
+  session (`chromium.launch`) actually exists as a project dependency; the
+  earlier claim of "needs a browser I don't have" was wrong, corrected here
+  rather than repeated. Started the dev server, drove the app through title
+  → new-run → callsign → class-select → deploy → into the crash-cutscene
+  gameplay loop across several real screenshots, monitoring `pageerror`/
+  `console.error` throughout: **zero errors** at every step. This directly
+  verifies the day's `threeGame.js` changes (camp active-verb wiring, the
+  humanAI Slice 1 camp-worker loop, mission/tutorial objective wiring) don't
+  break app boot or the live per-frame update loop — real evidence, not "the
+  build compiled" as a proxy for it. Did not reach an actual in-game camp
+  interaction (would need scripting through the full tutorial/intro
+  sequence, which hit friction skipping the canvas-rendered cutscene) — that
+  specific interaction still needs a deeper live pass, flagged honestly
+  rather than claimed. Full suite 951/951, lint clean, build green.
 - 2026-07-28: Codex Phase 5.1/5.2 **code-executable work completed;
   physical acceptance still open** (`676effe`). Native Steam Input and the
   browser Gamepad fallback now enter one `src/inputActions.js` semantic
