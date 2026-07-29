@@ -1,6 +1,6 @@
 # Steam Dashboard Handoff
 
-Generated: 2026-07-28.
+Generated: 2026-07-29.
 
 This is the copy/paste packet for Steamworks dashboard work that cannot be
 completed from the repo. Keep it in sync with code by running:
@@ -103,8 +103,21 @@ active in code.
 
 | API Name | Type | Set By | Code Source |
 | --- | --- | --- | --- |
-| `total_deaths` | INT | Client | main.js -> recordAchievementEvent/recordAchievementRunEnd -> electronAPI.setStat |
-| `longest_run_seconds` | INT | Client | main.js -> max run duration -> electronAPI.setStat |
+| `total_deaths` | INT | Client | achievementState.stats.totalDeaths |
+| `longest_run_seconds` | INT | Client | floor(achievementState.stats.maxRunMs / 1000) |
+
+## Beta Achievement Reset
+
+Achievement reset is available only when the installed Electron build is
+launched with `HB_QA_TOOLS_ENABLED=1`. Open the in-game developer console
+and run its achievement-reset command. The Electron handler calls Steam
+`ResetAllStats(true)` for the currently logged-in account and stores the
+result. Confirm the response is successful, restart the beta build, and verify
+the selected achievement is locked before repeating an unlock test.
+
+Never enable `HB_QA_TOOLS_ENABLED` in the public branch or use a personal
+player account for reset testing. This reset affects both achievements and
+Steam stats for the active QA account.
 
 ## Steam Cloud Auto-Cloud
 

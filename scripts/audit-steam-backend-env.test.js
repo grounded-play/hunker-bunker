@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { auditSteamBackendEnv } from './audit-steam-backend-env.js';
+import { auditSteamBackendEnv } from '../server/backendEnvAudit.js';
 
 const VALID_LEADERBOARD_IDS = [
     'best_run_score:101',

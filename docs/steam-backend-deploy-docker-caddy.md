@@ -18,7 +18,7 @@ Caddy Reverse Proxy Container (`caddy:2-alpine`)
 Node.js Express Backend Container (`hunker-bunker-backend`:3001)
    │
    ▼
-SQLite Database / Persistent Volume (`./server/data/hunker_bunker.sqlite`)
+SQLite Database / Docker Volume (`hunker-bunker-data:/app/server/data/db_storage.sqlite`)
 ```
 
 ## Prerequisites
@@ -45,30 +45,74 @@ The production Docker Compose deployment files and environment secrets are confi
 
 ## Environment Configuration
 
-The existing `~/server/backend.env` contains:
+The existing `~/server/backend.env` contains the following configuration
+shape. Never copy real credential values into this repository:
 
 ```bash
 NODE_ENV=production
 PORT=3001
 HB_STEAM_APPID=4957040
 
-HB_STEAM_PUBLISHER_KEY=82FA9A2F2C6D1F2FE0DABE756C2C8385
-HB_SESSION_SECRET=6725a1a1beef84f9489a2ca0eae59db71efbfb1cb93e2ce47a9a85d5d6a32473eeb82881ba97aa498814b66ea5d602fa
-HB_ALLOWED_ORIGINS=https://steam.tuesdaycinema.club,http://steam.tuesdaycinema.club,https://tuesdaycinema.club,https://www.tuesdaycinema.club
+HB_STEAM_PUBLISHER_KEY=<set only in ~/server/backend.env>
+HB_SESSION_SECRET=<set only in ~/server/backend.env>
+HB_ALLOWED_ORIGINS=<comma-separated approved HTTPS origins>
 
-# Real Steamworks Leaderboard IDs
-HB_STEAM_LEADERBOARD_IDS=best_run_score:20504740,daily_ops_score:20504746,fastest_extraction_ms:20504747,deepest_depth_score:20504750,survival_time_seconds:20504754
+# Real Steamworks leaderboard name-to-ID mappings
+HB_STEAM_LEADERBOARD_IDS=<five configured leaderboard mappings>
 
-HB_DB_STORAGE_PATH=/app/server/data/db_storage.json
+HB_DB_STORAGE_PATH=/app/server/data/db_storage.sqlite
 HB_STEAM_DROP_COOLDOWN_SECONDS=60
 HB_STEAM_MICROTXN_ENABLED=0
 HB_STEAM_STORE_ENABLED=0
 ```
 
+> Security note (2026-07-28): an older revision of this document contained
+> literal credential values. They have been removed from the tracked file,
+> but removal does not erase Git history. The operator reports that the Steam
+> Publisher Web API key and `HB_SESSION_SECRET` have now been secured/rotated
+> in the external deployment. No replacement values were copied into the
+> repository. Live confirmation that the old key and sessions are rejected,
+> plus a successful new ticket exchange, remains part of release acceptance.
+
+## Verified Local Deployment — 2026-07-28
+
+Read-only inspection confirmed:
+
+- Compose project `server` is running from `/home/caveman/server/compose.yaml`.
+- The backend container is healthy and uses `restart: unless-stopped`.
+- Caddy is running with ports 80 and 443 exposed.
+- Backend port 3001 is bound only to `127.0.0.1`.
+- Caddy proxies `steam.tuesdaycinema.club` to the backend over the Compose
+  network.
+- `http://127.0.0.1:3001/health` returns HTTP 200.
+- `https://steam.tuesdaycinema.club/health` returns HTTP 200 through Caddy.
+- Health reports Steam App ID `4957040`, Steam auth configured, explicit
+  session signing, and durable initialized SQLite storage.
+- `HB_STEAM_PUBLISHER_KEY`, `HB_SESSION_SECRET`, `HB_ALLOWED_ORIGINS`,
+  `HB_DB_STORAGE_PATH`, and all five leaderboard mappings are set.
+- An unapproved Origin does not receive an
+  `Access-Control-Allow-Origin` response header.
+- Store and MicroTxn flags are present but remain disabled.
+- The strict backend audit currently fails one check because the active origin
+  list still contains an `http://` origin. Remove the HTTP entry from
+  `~/server/backend.env`, retain only required HTTPS origins, recreate the
+  backend, and rerun the strict audit.
+- The production image does not include `scripts/`, so
+  `npm run steam:audit-backend:strict` cannot execute inside the container.
+  Run it from a repository checkout against the deployment environment, or add
+  a runtime-safe audit entry point to the image.
+
+This proves the backend is configured, running, publicly reachable, and
+durable. It does **not** by itself prove that a Steam-installed game can
+successfully authenticate, submit a live leaderboard score, synchronize
+Cloud saves, or receive a real Inventory grant. Those require an installed
+Steam acceptance pass.
+
 ## Deployment Commands
 
 ### 1. Build and Start Containers
 ```bash
+cd ~/server
 docker compose up -d --build
 ```
 
@@ -92,9 +136,9 @@ Expected health JSON response:
 ```json
 {
   "ok": true,
-  "service": "hunker-bunker-steam-backend",
+  "service": "hunker-bunker-relay",
   "storage": {
-    "backend": "sqlite",
+    "storageBackend": "sqlite",
     "durable": true
   },
   "steam": {
@@ -117,14 +161,28 @@ docker compose logs -f caddy
 
 ## Maintenance & Data Backups
 
-Database persistence is mounted at `./server/data/`.
+Database persistence is stored in the named Docker volume
+`hunker-bunker-data`, mounted at `/app/server/data` inside the backend
+container. It is not a `~/server/data` bind mount.
 
-To back up the SQLite database:
+Create a versioned, checksummed host-side archive. The tool refuses a live
+filesystem copy, so stop and restart only the backend service:
 ```bash
-cp server/data/hunker_bunker.sqlite server/data/hunker_bunker.sqlite.bak-$(date +%Y%m%d%H%M%S)
+cd ~/server
+docker compose stop hunker-bunker-backend
+cd /path/to/hunker-bunker
+npm run steam:backend-volume -- backup \
+  --archive "$HOME/server/backups/hunker-bunker-data-YYYYMMDD-HHMMSS.tar.gz"
+cd ~/server
+docker compose start hunker-bunker-backend
 ```
+
+Verification, isolated restore drills, retention, and off-device policy are in
+`docs/steam-backend-admin-runbook.md`. Never restore directly over the live
+named volume.
 
 To restart the backend service without tearing down network/Caddy:
 ```bash
-docker compose restart backend
+cd ~/server
+docker compose restart hunker-bunker-backend
 ```

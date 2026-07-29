@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-28T17:56:53.279Z",
+  "generatedAt": "2026-07-29T01:02:23.463Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
@@ -320,13 +320,13 @@
       "apiName": "total_deaths",
       "type": "INT",
       "setBy": "Client",
-      "source": "main.js -> recordAchievementEvent/recordAchievementRunEnd -> electronAPI.setStat"
+      "source": "achievementState.stats.totalDeaths"
     },
     {
       "apiName": "longest_run_seconds",
       "type": "INT",
       "setBy": "Client",
-      "source": "main.js -> max run duration -> electronAPI.setStat"
+      "source": "floor(achievementState.stats.maxRunMs / 1000)"
     }
   ],
   "cloudPaths": [

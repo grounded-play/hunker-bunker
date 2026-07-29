@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
     buildDashboardHandoff,
     renderMarkdown,
+    validateAchievementAssets,
     writeDashboardHandoff
 } from './steam-dashboard-handoff.js';
 
@@ -60,6 +61,16 @@ describe('steam dashboard handoff', () => {
         expect(markdown).toContain('LinuxXdgDataHome');
         expect(markdown).toContain('steam_input_manifest.vdf');
         expect(markdown).toContain('steam/inventory_schema_hunker_bunker.json');
+        expect(markdown).toContain('HB_QA_TOOLS_ENABLED=1');
+    });
+
+    it('fails generation when a publishable achievement asset is missing', () => {
+        expect(() => validateAchievementAssets([
+            { apiName: 'ready', publishNow: true, icon: 'ready.png', lockedIcon: '' }
+        ])).toThrow(/ready/);
+        expect(validateAchievementAssets([
+            { apiName: 'held', publishNow: false, icon: '', lockedIcon: '' }
+        ])).toBe(true);
     });
 
     it('writes markdown and JSON artifacts', () => {

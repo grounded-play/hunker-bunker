@@ -1,6 +1,6 @@
 # Steam Backend Admin Runbook
 
-Last updated: 2026-07-16
+Last updated: 2026-07-28
 
 This runbook covers the trusted backend rail for Hunker Bunker's Steam
 leaderboards, inventory grants, and Store purchases. It is for operators and
@@ -105,6 +105,40 @@ commerce.
    Logs intentionally include only method, route path, status, duration,
    request ID, and booleans for ticket/session presence. They must not include
    raw auth tickets, bearer tokens, publisher keys, or full request bodies.
+
+### Production leaderboard smoke
+
+The smoke client reads all five canonical boards globally and around the
+authenticated player. It accepts only a short-lived backend session token and
+never accepts or sends a Publisher key. Put the token in a mode-0600 temporary
+file so it does not enter shell history:
+
+```bash
+chmod 600 /secure/path/session-token.txt
+npm run steam:smoke-leaderboards -- \
+  --backend-url https://your-backend.example \
+  --session-token-file /secure/path/session-token.txt \
+  --steam-id 7656119XXXXXXXXXX
+```
+
+Omit `--steam-id` for a connectivity-only read. Providing it additionally
+requires every around-user response to contain that account. The command
+rejects HTTP and mock backend responses.
+
+An explicit score-write acceptance pass requires a canonical run payload file:
+
+```bash
+npm run steam:smoke-leaderboards -- \
+  --backend-url https://your-backend.example \
+  --session-token-file /secure/path/session-token.txt \
+  --steam-id 7656119XXXXXXXXXX \
+  --submit-payload /secure/path/canonical-run-payload.json
+```
+
+Submission happens before the reads. The server recomputes scores and selects
+the leaderboard targets; the script does not accept arbitrary board names or
+scores. A victory Daily Ops payload is needed to exercise all five targets.
+Delete the session-token file when the acceptance record is complete.
 
 ## Purchase lifecycle
 
@@ -275,6 +309,54 @@ SQLite uses WAL mode and schema tables for inventories, leaderboard mirrors,
 idempotency, run receipts, purchase state, and purchase events. It is a better
 single-machine beta store than JSON, but it is still not a multi-region or
 multi-writer production database.
+
+### Versioned Docker-volume backup and restore drill
+
+Run these commands from a repository checkout containing the same backend
+version as the deployment. A filesystem-level SQLite backup requires the
+backend to be stopped:
+
+```bash
+cd ~/server
+docker compose stop hunker-bunker-backend
+cd /path/to/hunker-bunker
+npm run steam:backend-volume -- backup \
+  --archive "$HOME/server/backups/hunker-bunker-data-YYYYMMDD-HHMMSS.tar.gz"
+cd ~/server
+docker compose start hunker-bunker-backend
+```
+
+The command refuses to continue while a running container mounts the source
+volume, refuses to overwrite an archive, verifies the tar, and writes a
+mode-0600 `.sha256` sidecar. Verify a copied archive independently:
+
+```bash
+npm run steam:backend-volume -- verify \
+  --archive "$HOME/server/backups/hunker-bunker-data-YYYYMMDD-HHMMSS.tar.gz"
+```
+
+Perform recovery rehearsal only into a new temporary volume:
+
+```bash
+npm run steam:backend-volume -- restore-drill \
+  --archive "$HOME/server/backups/hunker-bunker-data-YYYYMMDD-HHMMSS.tar.gz" \
+  --target-volume hunker-bunker-restore-YYYYMMDD
+```
+
+The drill rejects the live `hunker-bunker-data` name and any existing target,
+extracts into the newly created volume, and runs SQLite
+`PRAGMA integrity_check` against `db_storage.sqlite`. Use
+`--sqlite-file <name>.sqlite` if the deployment uses another simple filename.
+It deliberately retains the temporary volume for inspection and never
+attaches it to the production service. After recording evidence and inspecting
+the recovered tables, an operator may remove that exact temporary volume.
+
+Retention policy: retain seven daily, four weekly, and twelve monthly backup
+archives plus their checksum sidecars. Copy at least the weekly and monthly
+sets to encrypted off-device storage. Test one retained archive monthly.
+Backups contain player and commerce records; restrict access and retention
+accordingly. Never include `backend.env` or Publisher/session secrets in the
+archive.
 
 ## SQLite migration path
 

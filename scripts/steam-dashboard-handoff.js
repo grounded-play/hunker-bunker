@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ACHIEVEMENT_DEFS } from '../src/achievements.js';
+import { STEAM_STAT_DEFS } from '../src/steamStats.js';
 import { STEAM_LEADERBOARD_DEFS } from '../server/leaderboardScoring.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -23,21 +24,6 @@ const SOURCE_REFS = Object.freeze([
     ['Item Store', 'https://partner.steamgames.com/doc/features/inventory/itemstore'],
     ['Steam Input Setup', 'https://partner.steamgames.com/doc/features/steam_controller/getting_started_for_devs'],
     ['SteamPipe Uploads', 'https://partner.steamgames.com/doc/sdk/uploading']
-]);
-
-const STEAM_STATS = Object.freeze([
-    {
-        apiName: 'total_deaths',
-        type: 'INT',
-        setBy: 'Client',
-        source: 'main.js -> recordAchievementEvent/recordAchievementRunEnd -> electronAPI.setStat'
-    },
-    {
-        apiName: 'longest_run_seconds',
-        type: 'INT',
-        setBy: 'Client',
-        source: 'main.js -> max run duration -> electronAPI.setStat'
-    }
 ]);
 
 const CLOUD_PATHS = Object.freeze([
@@ -125,6 +111,17 @@ function buildAchievementRows() {
     }));
 }
 
+export function validateAchievementAssets(achievements) {
+    const missing = achievements
+        .filter((achievement) => achievement.publishNow)
+        .filter((achievement) => !achievement.icon || !achievement.lockedIcon)
+        .map((achievement) => achievement.apiName);
+    if (missing.length > 0) {
+        throw new Error(`publishable achievements are missing locked or unlocked icons: ${missing.join(', ')}`);
+    }
+    return true;
+}
+
 function buildInventorySummary(schema) {
     return {
         appid: schema.appid,
@@ -149,6 +146,7 @@ export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
     const windowsExecutable = `${packageJson.build?.executableName || packageJson.name}.exe`;
     const inventorySchema = readJson('steam/inventory_schema_hunker_bunker.json');
     const achievements = buildAchievementRows();
+    validateAchievementAssets(achievements);
     const activeAchievements = achievements.filter((achievement) => achievement.publishNow);
     const heldAchievements = achievements.filter((achievement) => !achievement.publishNow);
     const leaderboards = buildLeaderboardRows();
@@ -179,7 +177,7 @@ export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
         achievements,
         activeAchievementCount: activeAchievements.length,
         heldAchievements,
-        stats: STEAM_STATS,
+        stats: Object.values(STEAM_STAT_DEFS).map(({ read: _read, ...definition }) => definition),
         cloudPaths: CLOUD_PATHS,
         steamInput: {
             manifestSource: 'steam/steam_input_manifest.vdf',
@@ -318,6 +316,19 @@ ${table(
         stat.source
     ])
 )}
+
+## Beta Achievement Reset
+
+Achievement reset is available only when the installed Electron build is
+launched with \`HB_QA_TOOLS_ENABLED=1\`. Open the in-game developer console
+and run its achievement-reset command. The Electron handler calls Steam
+\`ResetAllStats(true)\` for the currently logged-in account and stores the
+result. Confirm the response is successful, restart the beta build, and verify
+the selected achievement is locked before repeating an unlock test.
+
+Never enable \`HB_QA_TOOLS_ENABLED\` in the public branch or use a personal
+player account for reset testing. This reset affects both achievements and
+Steam stats for the active QA account.
 
 ## Steam Cloud Auto-Cloud
 

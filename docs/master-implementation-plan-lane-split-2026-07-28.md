@@ -264,3 +264,10 @@ it's flagged here rather than picked up.
   only ever done "with explicit user go-ahead," not unilaterally. Asked the
   user directly rather than guessing on a visible gameplay-feel fork
   (ambient wandering camp NPCs vs. static camps).
+- 2026-07-28: Phase 0.1 credential containment is **operator-confirmed**:
+  the user reports the exposed Publisher key/session material has been
+  secured. Replacement values remain external to the repository and were
+  not inspected or recorded. Release acceptance still requires proving the
+  old key/session no longer works and completing one new Steam ticket/session
+  exchange. Phase 0.2's HTTPS-only allowed-origin cleanup and strict audit
+  remain separate open tasks.
