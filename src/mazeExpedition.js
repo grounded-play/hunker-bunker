@@ -65,6 +65,30 @@ export function clampPositionToUnlockedRing(x, z, anchor, maxUnlockedRing, radia
     return { x: anchorX + dx * scale, z: anchorZ + dz * scale, blocked: true };
 }
 
+// Phase 6.2 visible barrier tell: docs/phase6-wfc-ring-barrier-integration-plan.md.
+// Deliberately does NOT touch the WFC lattice/tile solver -- only decides
+// which existing landform enum a chunk gets. Positioned at the *nominal*
+// ring radii (RADIAL_RING_RADII[1..4]), not clampPositionToUnlockedRing's
+// deliberately wider soft-clamp boundary, which serves a different purpose
+// (never crowding the camp-placement tolerance band) and would put the
+// visible barrier in the wrong place if reused here.
+//
+// Default band width: live-measured against a real per-run anchor
+// (docs/master-implementation-plan-lane-split-2026-07-28.md status log) --
+// a full chunkSize band flagged ~44-51% of chunks within an 8-chunk radius
+// of the ship as canyon, reading as "half the nearby world," not a
+// boundary. Halved to chunkSize/2 (~24% in the same live sample) so it
+// reads as a band, not the majority terrain. Still a default, not a
+// claim of final playtested feel.
+export function isChunkOnRingBarrier(chunkX, chunkY, chunkSize, anchor, bandWidth = chunkSize / 2, radialRingRadii = RADIAL_RING_RADII) {
+    const anchorX = anchor?.x ?? 0;
+    const anchorZ = anchor?.z ?? 0;
+    const centerX = chunkX * chunkSize + chunkSize / 2;
+    const centerZ = chunkY * chunkSize + chunkSize / 2;
+    const distance = Math.hypot(centerX - anchorX, centerZ - anchorZ);
+    return radialRingRadii.slice(1, 5).some((radius) => Math.abs(distance - radius) <= bandWidth / 2);
+}
+
 function seededRandom(seed) {
     let state = (Number(seed) >>> 0) || 1;
     return () => {

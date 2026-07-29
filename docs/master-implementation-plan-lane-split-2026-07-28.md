@@ -133,6 +133,50 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 6.1/6.3 **attempted, scoped safely, shipped — user
+  explicitly directed this after correcting two inaccurate stop-hook
+  claims** (see `docs/phase6-wfc-ring-barrier-integration-plan.md` for the
+  full design reasoning). Chose **not** to modify `wfcGenerator.js`'s
+  connectivity solver (a documented, deliberate spanning-tree/Hamiltonian-
+  path design chosen specifically to avoid WFC arc-consistency fragility —
+  reintroducing hard reserved-socket constraints there risks exactly the
+  failure mode that design avoided, with no test coverage of a change to
+  it). Instead used the existing, already-shipped `LANDFORMS.CANYON`
+  landform (bonus wall HP, exterior void generation) as a visible
+  "ring boundary" tell: `isChunkOnRingBarrier` (`src/mazeExpedition.js`)
+  forces `getChunkLandform` (`src/threeGame.js:21544`) to pick `CANYON`
+  for chunks near a nominal ring radius, instead of the normal random
+  biome-weighted pick — a landform-selection change only, zero changes to
+  `wfcGenerator.js`, tile catalog, or connectivity logic. The actual hard
+  bypass-prevention remains `enforceRingProgressionLock` (already shipped);
+  this is the visible half.
+  **Regression gate held as promised**: full suite + the 2,000-seed WFC
+  stress test stayed green throughout. One real regression *was* caught
+  mid-implementation (`src/threeGame.chunkVariation.test.js`'s
+  `getChunkLandform` fixture crashed — `getBiomeAnchorPosition is not a
+  function` — because its minimal fake `this` predated this dependency);
+  fixed by adding the stub, not by weakening the assertion.
+  **Live-verified against the real running game twice**, not just units:
+  first pass (default band = 1 full chunk width) measured 43.6-51.2% of
+  chunks within an 8-chunk radius of the real ship anchor as canyon —
+  reads as "half the nearby world," not a boundary — so the default was
+  halved to `chunkSize/2` before shipping. Re-verified post-tuning:
+  live measurement came back 34.6% (100/289) against this session's
+  offline pure-function prediction of 24.2% for the same anchor/band —
+  a real, still openly-flagged discrepancy, most likely explained by a
+  handful of chunks near spawn caching their landform in the first frames
+  when `getBiomeAnchorPosition()` may not have resolved the same anchor
+  yet (this caching-time/anchor-stability characteristic pre-dates this
+  change — the original biome-based landform pick was already
+  anchor-dependent and cached the same way) — not confirmed with full
+  certainty, stated as the leading theory rather than a settled fact.
+  Zero page/console errors in both live sessions. Full suite 991/991,
+  lint clean, build green.
+  **Still explicitly out of scope, stated plainly**: the canyon terrain is
+  a persistent thematic tell, not a destructible gate that dynamically
+  opens on unlock — actual passage is governed entirely by
+  `enforceRingProgressionLock`'s live position clamp. Building "the canyon
+  physically opens" is a separate, larger feature not attempted here.
 - 2026-07-28: Codex Phase 12.1/12.2 **implemented conservatively**.
   `docs/current-feature-status.md` is now the live truth matrix across design,
   implementation, runtime connection, automation, live/hardware acceptance,

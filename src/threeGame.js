@@ -77,7 +77,8 @@ import {
     clampPositionToUnlockedRing,
     generateRadialMazeExpedition,
     getMaxUnlockedRing,
-    getRadialSite
+    getRadialSite,
+    isChunkOnRingBarrier
 } from './mazeExpedition.js';
 import { ExplorationTracker } from './mapSystem.js';
 
@@ -21546,12 +21547,20 @@ export class ThreeGame {
         if (!this._chunkLandformCache) this._chunkLandformCache = new Map();
         const key = `${chunkX},${chunkY}`;
         if (!this._chunkLandformCache.has(key)) {
-            const biome = this.getBiomeKeyForWorldPosition(
-                chunkX * this.chunkSize + this.chunkSize * 0.5,
-                chunkY * this.chunkSize + this.chunkSize * 0.5
-            );
-            const random = this.createSeededRandom((this.hashTile(chunkX * 977 + 61, chunkY * 613 + 37) ^ this.runEntropy) >>> 0);
-            this._chunkLandformCache.set(key, pickLandform(random, biome));
+            // docs/phase6-wfc-ring-barrier-integration-plan.md: a visible
+            // canyon "you've reached a ring boundary" tell using the
+            // existing CANYON landform -- does not touch the WFC lattice/
+            // tile solver, only which landform enum this chunk gets.
+            if (isChunkOnRingBarrier(chunkX, chunkY, this.chunkSize, this.getBiomeAnchorPosition())) {
+                this._chunkLandformCache.set(key, LANDFORMS.CANYON);
+            } else {
+                const biome = this.getBiomeKeyForWorldPosition(
+                    chunkX * this.chunkSize + this.chunkSize * 0.5,
+                    chunkY * this.chunkSize + this.chunkSize * 0.5
+                );
+                const random = this.createSeededRandom((this.hashTile(chunkX * 977 + 61, chunkY * 613 + 37) ^ this.runEntropy) >>> 0);
+                this._chunkLandformCache.set(key, pickLandform(random, biome));
+            }
         }
         return this._chunkLandformCache.get(key);
     }

@@ -72,7 +72,10 @@ describe('getChunkLandform — per-run archetype variation', () => {
             runEntropy,
             hashTile: ThreeGame.prototype.hashTile,
             createSeededRandom: ThreeGame.prototype.createSeededRandom,
-            getBiomeKeyForWorldPosition: () => 'active'
+            getBiomeKeyForWorldPosition: () => 'active',
+            // docs/phase6-wfc-ring-barrier-integration-plan.md: getChunkLandform
+            // now checks proximity to a ring boundary before picking randomly.
+            getBiomeAnchorPosition: () => ({ x: 0, z: 0 })
         };
     }
 

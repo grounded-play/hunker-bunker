@@ -62,7 +62,7 @@ shouldn't be conflated with where the visible barrier sits). If so, force
 
 ```js
 // src/mazeExpedition.js — pure, testable
-export function isChunkOnRingBarrier(chunkX, chunkY, chunkSize, anchor, bandWidth = chunkSize) {
+export function isChunkOnRingBarrier(chunkX, chunkY, chunkSize, anchor, bandWidth = chunkSize / 2) {
     const centerX = chunkX * chunkSize + chunkSize / 2;
     const centerZ = chunkY * chunkSize + chunkSize / 2;
     const distance = Math.hypot(centerX - anchor.x, centerZ - anchor.z);

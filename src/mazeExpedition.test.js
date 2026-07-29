@@ -9,6 +9,7 @@ import {
     computeReachableRings,
     computeRingWalkDistances,
     clampPositionToUnlockedRing,
+    isChunkOnRingBarrier,
     findConflictingChunkReservations,
     generateRadialMazeExpedition,
     getLockedRingBoundaryRadius,
@@ -233,5 +234,51 @@ describe('live ring-lock enforcement (Phase 6.2 soft boundary, no physical geome
             const boundary = getLockedRingBoundaryRadius(ring);
             expect(boundary, `ring ${ring}`).toBeGreaterThan(maxToleratedRadius);
         }
+    });
+});
+
+describe('isChunkOnRingBarrier (Phase 6.2 visible barrier tell, docs/phase6-wfc-ring-barrier-integration-plan.md)', () => {
+    const chunkSize = 19;
+    const anchor = { x: 0, z: 0 };
+
+    it('defaults to a half-chunk-wide band (live-measured: a full-chunk band over-flagged nearby terrain, see the function comment)', () => {
+        // ring 4 radius = 160; chunk (8,0) center = 19*8+9.5 = 161.5, |161.5-160| = 1.5 <= (chunkSize/2)/2
+        expect(isChunkOnRingBarrier(8, 0, chunkSize, anchor)).toBe(true);
+        // chunk (7,0) center = 142.5, closest radius 118 or 160 both > half-band away
+        expect(isChunkOnRingBarrier(7, 0, chunkSize, anchor)).toBe(false);
+    });
+
+    it('flags the chunk whose center sits closest to a nominal ring radius, with an explicit wider band', () => {
+        // ring 1 radius = 42; chunk (2,0) center = 19*2+9.5 = 47.5, |47.5-42| = 5.5 <= chunkSize/2
+        expect(isChunkOnRingBarrier(2, 0, chunkSize, anchor, chunkSize)).toBe(true);
+    });
+
+    it('does not flag a chunk clearly between two ring radii', () => {
+        // chunk (1,0) center = 28.5, closest radius is 42 (distance 13.5) -- outside any reasonable band
+        expect(isChunkOnRingBarrier(1, 0, chunkSize, anchor, chunkSize)).toBe(false);
+    });
+
+    it('does not flag the origin/crash-site chunk', () => {
+        expect(isChunkOnRingBarrier(0, 0, chunkSize, anchor)).toBe(false);
+    });
+
+    it('is anchor-relative, not world-origin-relative', () => {
+        const shiftedAnchor = { x: 100, z: 0 };
+        // Same relative offset from the shifted anchor as the ring-1 case above
+        expect(isChunkOnRingBarrier(Math.round(100 / chunkSize) + 2, 0, chunkSize, shiftedAnchor, chunkSize)).toBe(true);
+    });
+
+    it('flags a plausible, non-trivial fraction of a coordinate grid -- not none, not everything', () => {
+        let flagged = 0;
+        let total = 0;
+        for (let cx = -15; cx <= 15; cx += 1) {
+            for (let cy = -15; cy <= 15; cy += 1) {
+                total += 1;
+                if (isChunkOnRingBarrier(cx, cy, chunkSize, anchor)) flagged += 1;
+            }
+        }
+        const fraction = flagged / total;
+        expect(flagged, 'at least some chunks should be flagged').toBeGreaterThan(0);
+        expect(fraction, 'should not flag the majority of chunks').toBeLessThan(0.5);
     });
 });
