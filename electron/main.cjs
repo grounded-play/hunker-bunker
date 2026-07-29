@@ -107,7 +107,9 @@ function isValidActionHandle(handle) {
 }
 
 function normalizeSteamInputPhase(phase) {
-    return phase === 'gameplay' ? 'gameplay' : 'menu';
+    if (phase === 'gameplay') return 'gameplay';
+    if (phase === 'archive') return 'archive';
+    return 'menu';
 }
 
 function normalizeSteamAuthIdentity(identity) {
@@ -368,6 +370,7 @@ function initSteam() {
             steamInputHandles = {
                 menu: steamClient.input.getActionSet('menu'),
                 gameplay: steamClient.input.getActionSet('gameplay'),
+                archive: steamClient.input.getActionSet('archive'),
                 menuUp: steamClient.input.getDigitalAction('menu_up'),
                 menuDown: steamClient.input.getDigitalAction('menu_down'),
                 menuLeft: steamClient.input.getDigitalAction('menu_left'),
@@ -384,6 +387,11 @@ function initSteam() {
                 ability: steamClient.input.getDigitalAction('ability'),
                 scan: steamClient.input.getDigitalAction('scan'),
                 sprint: steamClient.input.getDigitalAction('sprint'),
+                archiveFocus: steamClient.input.getAnalogAction('archive_focus'),
+                archiveConfirm: steamClient.input.getDigitalAction('archive_confirm'),
+                archiveInventory: steamClient.input.getDigitalAction('archive_inventory'),
+                archiveBack: steamClient.input.getDigitalAction('archive_back'),
+                archiveReveal: steamClient.input.getDigitalAction('archive_reveal'),
                 pause: steamClient.input.getDigitalAction('pause')
             };
 
@@ -453,8 +461,9 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
     const controllerHandle = controller.getHandle?.();
     const handle = typeof controllerHandle === 'bigint' ? controllerHandle.toString() : String(controllerHandle ?? '');
 
-    const moveVector = phase === 'gameplay' && isValidActionHandle(actionHandles.move)
-        ? controller.getAnalogActionVector(actionHandles.move)
+    const moveAction = phase === 'archive' ? actionHandles.archiveFocus : actionHandles.move;
+    const moveVector = (phase === 'gameplay' || phase === 'archive') && isValidActionHandle(moveAction)
+        ? controller.getAnalogActionVector(moveAction)
         : { x: 0, y: 0 };
     const cameraVector = phase === 'gameplay' && isValidActionHandle(actionHandles.camera)
         ? controller.getAnalogActionVector(actionHandles.camera)
@@ -470,6 +479,14 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             sprint: isValidActionHandle(actionHandles.sprint) ? controller.isDigitalActionPressed(actionHandles.sprint) : false,
             pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
         }
+        : phase === 'archive'
+            ? {
+                interact: isValidActionHandle(actionHandles.archiveConfirm) ? controller.isDigitalActionPressed(actionHandles.archiveConfirm) : false,
+                ability: isValidActionHandle(actionHandles.archiveInventory) ? controller.isDigitalActionPressed(actionHandles.archiveInventory) : false,
+                menuBack: isValidActionHandle(actionHandles.archiveBack) ? controller.isDigitalActionPressed(actionHandles.archiveBack) : false,
+                reload: isValidActionHandle(actionHandles.archiveReveal) ? controller.isDigitalActionPressed(actionHandles.archiveReveal) : false,
+                pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
+            }
         : {
             menuUp: isValidActionHandle(actionHandles.menuUp) ? controller.isDigitalActionPressed(actionHandles.menuUp) : false,
             menuDown: isValidActionHandle(actionHandles.menuDown) ? controller.isDigitalActionPressed(actionHandles.menuDown) : false,
@@ -517,7 +534,11 @@ function buildSteamInputSnapshot() {
     }
 
     const phase = normalizeSteamInputPhase(steamInputPhase);
-    const actionSet = phase === 'gameplay' ? steamInputHandles.gameplay : steamInputHandles.menu;
+    const actionSet = phase === 'gameplay'
+        ? steamInputHandles.gameplay
+        : phase === 'archive'
+            ? steamInputHandles.archive
+            : steamInputHandles.menu;
     const controllers = [];
 
     try {

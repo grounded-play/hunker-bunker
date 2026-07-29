@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTION_SETS, createActionRouter } from './inputActions.js';
+import { ACTION_SETS, actionSetForAppPhase, createActionRouter } from './inputActions.js';
 
 function padSnapshot(overrides = {}) {
     return {
@@ -127,4 +127,18 @@ describe('createActionRouter', () => {
         router.setActionSet(ACTION_SETS.ARCHIVE);
         expect(router.deriveActions(held).actions.confirm).toBe(true);
     });
+});
+
+describe('actionSetForAppPhase', () => {
+    it('maps field play and archive phases to their semantic action sets', () => {
+        expect(actionSetForAppPhase('gameplay')).toBe(ACTION_SETS.GAMEPLAY);
+        expect(actionSetForAppPhase('archive')).toBe(ACTION_SETS.ARCHIVE);
+    });
+
+    it.each(['loading', 'boot', 'splash', 'menu', 'gameover', 'demo-end', undefined])(
+        'keeps %s in the menu action set',
+        (phase) => {
+            expect(actionSetForAppPhase(phase)).toBe(ACTION_SETS.MENU);
+        }
+    );
 });

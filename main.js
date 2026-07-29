@@ -31,6 +31,7 @@ import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
 import { getGifDurationMs } from './src/gifDuration.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
+import { ACTION_SETS, actionSetForAppPhase, createActionRouter } from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
@@ -380,6 +381,7 @@ const steamInputState = {
 };
 
 const steamInputPrevControllers = new Map();
+const mainActionRouter = createActionRouter();
 let steamGamepadTextInputInFlight = false;
 let pendingSteamInputBoot = false;
 let suppressSteamInputUntilRelease = false;
@@ -400,6 +402,7 @@ window.HunkerInputState = {
 };
 
 function syncSteamInputPhase() {
+    mainActionRouter.setActionSet(actionSetForAppPhase(appPhase));
     window.electronAPI?.setSteamInputPhase?.(appPhase);
 }
 
@@ -445,14 +448,7 @@ function getPromptKeyText(defaultKey = 'E') {
 
 function ensureControllerMenuFocus() {
     if (appPhase === 'gameplay' && Boolean(window.game?.isGameplayInputActive?.())) return;
-    const root = getControllerFocusRoot();
-    if (!root) return;
-    const active = document.activeElement;
-    if (!active || active === document.body || !root.contains(active)) {
-        const focusables = getVisibleControllerFocusables(root);
-        const preferred = getPreferredControllerFocusTarget(root, focusables);
-        if (preferred) focusControllerTarget(preferred);
-    }
+    syncControllerFocusBoundary();
 }
 
 function setLastInputMode(mode, { refresh = true } = {}) {
@@ -588,6 +584,9 @@ function getPreferredControllerFocusTarget(root, focusables) {
     return focusables[0];
 }
 
+let activeControllerFocusRoot = null;
+const controllerFocusMemory = new WeakMap();
+
 function focusControllerTarget(target) {
     if (!target) return false;
     try {
@@ -596,6 +595,33 @@ function focusControllerTarget(target) {
         target.focus?.();
     }
     return true;
+}
+
+function isModalFocusRoot(root) {
+    return Boolean(root && root !== document.body && root.id !== 'splash' && root.id !== 'menu');
+}
+
+function syncControllerFocusBoundary() {
+    const nextRoot = getControllerFocusRoot();
+    const active = document.activeElement;
+
+    if (nextRoot !== activeControllerFocusRoot) {
+        if (activeControllerFocusRoot?.contains?.(active)) {
+            controllerFocusMemory.set(activeControllerFocusRoot, active);
+        }
+        activeControllerFocusRoot = nextRoot;
+    }
+
+    if (!nextRoot) return null;
+    if (active && active !== document.body && nextRoot.contains(active)) return active;
+
+    const focusables = getVisibleControllerFocusables(nextRoot);
+    const remembered = controllerFocusMemory.get(nextRoot);
+    const target = remembered && focusables.includes(remembered)
+        ? remembered
+        : getPreferredControllerFocusTarget(nextRoot, focusables);
+    if (target) focusControllerTarget(target);
+    return target ?? null;
 }
 
 function moveControllerFocus(delta) {
@@ -620,6 +646,42 @@ function moveControllerFocus(delta) {
     focusControllerTarget(target);
     return target;
 }
+
+document.addEventListener('focusin', (event) => {
+    const root = getControllerFocusRoot();
+    if (!isModalFocusRoot(root) || root.contains(event.target)) return;
+    syncControllerFocusBoundary();
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return;
+    const root = getControllerFocusRoot();
+    if (!isModalFocusRoot(root)) return;
+    const focusables = getVisibleControllerFocusables(root);
+    if (!focusables.length) {
+        event.preventDefault();
+        return;
+    }
+    const currentIndex = focusables.indexOf(document.activeElement);
+    const nextIndex = currentIndex < 0
+        ? 0
+        : (currentIndex + (event.shiftKey ? -1 : 1) + focusables.length) % focusables.length;
+    event.preventDefault();
+    focusControllerTarget(focusables[nextIndex]);
+});
+
+const controllerFocusObserver = new MutationObserver(() => {
+    queueMicrotask(() => {
+        if (isSteamControllerInputActive() || isModalFocusRoot(getControllerFocusRoot())) {
+            syncControllerFocusBoundary();
+        }
+    });
+});
+controllerFocusObserver.observe(document.body, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'aria-hidden']
+});
 
 async function openSteamGamepadTextInputForElement(element, {
     description = 'Enter text',
@@ -768,11 +830,7 @@ function handleSteamInputSnapshot(snapshot = {}) {
     steamInputPrevControllers.set(activeController.handle, steamInputPrevControllers.get(activeController.handle) ?? {});
 
     const gameplayActive = Boolean(window.game?.isGameplayInputActive?.());
-    if (steamInputState.phase === 'gameplay' && gameplayActive) {
-        handleSteamGameplayInput(activeController);
-    } else {
-        handleSteamMenuInput(activeController);
-    }
+    routeMainControllerInput(activeController, steamInputState.phase === 'gameplay' && gameplayActive);
 }
 
 function updateControllerInputMemory(controller, nextState) {
@@ -798,23 +856,12 @@ function handleControllerTabNavigation(root, direction) {
     return false;
 }
 
-function handleSteamMenuInput(controller) {
-    const prev = steamInputPrevControllers.get(controller.handle) ?? {};
-    const moved = Boolean(controller.menuUp && !prev.menuUp)
-        || Boolean(controller.menuDown && !prev.menuDown)
-        || Boolean(controller.menuLeft && !prev.menuLeft)
-        || Boolean(controller.menuRight && !prev.menuRight);
-    // menuTabLeft/menuTabRight are dedicated bumper fields (native Steam Input's
-    // "menu" action set, or browserGamepad.js's fallback). Don't fall back to
-    // scan/fire/sprint here: those share physical buttons with menuBack in the
-    // browser fallback, so a single back press would also flip the active tab.
-    const tabLeft = Boolean(controller.menuTabLeft && !prev.menuTabLeft);
-    const tabRight = Boolean(controller.menuTabRight && !prev.menuTabRight);
-
+function handleSteamMenuInput(actions) {
+    const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
     const activeElement = document.activeElement;
     const rangeAdjusted = Boolean(activeElement && isRangeInputElement(activeElement) && (
-        (controller.menuLeft && !prev.menuLeft && adjustRangeInputValue(activeElement, -1))
-        || (controller.menuRight && !prev.menuRight && adjustRangeInputValue(activeElement, 1))
+        (actions.left && adjustRangeInputValue(activeElement, -1))
+        || (actions.right && adjustRangeInputValue(activeElement, 1))
     ));
 
     const root = getControllerFocusRoot();
@@ -822,33 +869,21 @@ function handleSteamMenuInput(controller) {
         const focusables = getVisibleControllerFocusables(root ?? document);
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) focusControllerTarget(preferred);
-    } else if (tabLeft) {
+    } else if (actions.tabLeft) {
         handleControllerTabNavigation(root, -1);
-    } else if (tabRight) {
+    } else if (actions.tabRight) {
         handleControllerTabNavigation(root, 1);
     } else if (moved && !rangeAdjusted) {
-        const step = (controller.menuUp || controller.menuLeft) && !(controller.menuDown || controller.menuRight) ? -1 : 1;
+        const step = (actions.up || actions.left) && !(actions.down || actions.right) ? -1 : 1;
         moveControllerFocus(step);
     }
 
-    if (controller.menuConfirm && !prev.menuConfirm) {
+    if (actions.confirm) {
         activateControllerFocusedElement();
     }
-    if (controller.menuBack && !prev.menuBack) {
+    if (actions.back || actions.pause) {
         dispatchControllerEscape();
     }
-
-    updateControllerInputMemory(controller, {
-        ...prev,
-        menuUp: Boolean(controller.menuUp),
-        menuDown: Boolean(controller.menuDown),
-        menuLeft: Boolean(controller.menuLeft),
-        menuRight: Boolean(controller.menuRight),
-        menuConfirm: Boolean(controller.menuConfirm),
-        menuBack: Boolean(controller.menuBack),
-        menuTabLeft: Boolean(controller.menuTabLeft),
-        menuTabRight: Boolean(controller.menuTabRight)
-    });
 }
 
 window.addEventListener('gamepad-menu-nav', (event) => {
@@ -915,6 +950,27 @@ function handleSteamGameplayInput(controller) {
         aimX,
         aimY
     });
+}
+
+function routeMainControllerInput(controller, gameplayActive) {
+    const actionSet = appPhase === 'archive'
+        ? ACTION_SETS.ARCHIVE
+        : gameplayActive
+            ? ACTION_SETS.GAMEPLAY
+            : ACTION_SETS.MENU;
+    mainActionRouter.setActionSet(actionSet);
+    const { actions } = mainActionRouter.deriveActions(controller);
+    if (actionSet === ACTION_SETS.GAMEPLAY) {
+        handleSteamGameplayInput(actions);
+        return;
+    }
+    if (actionSet === ACTION_SETS.ARCHIVE) {
+        window.dispatchEvent(new CustomEvent('hb-archive-controller-actions', {
+            detail: actions
+        }));
+        return;
+    }
+    handleSteamMenuInput(actions);
 }
 
 if (window.electronAPI?.onSteamInputState) {
@@ -995,10 +1051,10 @@ function handleBrowserGamepadFallbackFrame() {
     const gameplayActive = Boolean(window.game?.isGameplayInputActive?.());
     if (appPhase === 'gameplay' && gameplayActive) {
         browserGamepadOwnedVirtualInput = true;
-        handleSteamGameplayInput(activeController);
+        routeMainControllerInput(activeController, true);
     } else {
         clearBrowserGamepadGameplayInput();
-        handleSteamMenuInput(activeController);
+        routeMainControllerInput(activeController, false);
     }
 
     browserGamepadPollRaf = window.requestAnimationFrame(handleBrowserGamepadFallbackFrame);
@@ -1095,6 +1151,7 @@ function maybeShowRgbUnlockToast() {
 }
 
 let rgbHandle = null;
+let rgbReturnPhase = 'menu';
 let fullscreenVideoSuspendDepth = 0;
 let fullscreenVideoWasPaused = false;
 let fullscreenVideoCanvasVisibility = '';
@@ -1179,6 +1236,8 @@ function launchRgb(chapter = null) {
     if (menu) menu.classList.add('hidden');
     const root = document.getElementById('rgb-root');
     if (!root) return;
+    rgbReturnPhase = appPhase === 'archive' ? 'menu' : appPhase;
+    setAppPhase('archive');
     // The archive fully covers the Three.js canvas. Stop both rendering and
     // WebGL compositing so its fullscreen videos have exclusive GPU time.
     const resumeGame = suspendGameForFullscreenVideo();
@@ -1196,6 +1255,7 @@ function launchRgb(chapter = null) {
             onExit: () => exitRgb(resumeGame)
         });
     } catch (error) {
+        setAppPhase(rgbReturnPhase);
         resumeGame();
         throw error;
     }
@@ -1208,6 +1268,10 @@ function exitRgb(resumeGame = null) {
     rgbSave = loadRgbSave(localStorage);
     updateArchiveSimsMenuVisibility();
     if (menu) menu.classList.remove('hidden');
+    setAppPhase(rgbReturnPhase);
+    if (rgbReturnPhase === 'gameplay') {
+        window.game?.setInputEnabled?.(true);
+    }
 }
 
 window.addEventListener('rgb-chapter-archive-recovered', (e) => {

@@ -42,8 +42,6 @@ import {
     saveChapterSnapshot,
     getChapterSnapshot
 } from './save.js';
-import { createActionRouter, ACTION_SETS } from '../../inputActions.js';
-import { mapBrowserGamepad } from '../../browserGamepad.js';
 import { AudioManager } from '../../audio.js';
 import { createRgbAudioController, getDialogueSpeaker } from './audio.js';
 import { assetUrl } from '../../assetUrl.js';
@@ -181,9 +179,7 @@ export function mountRgb({ root, save, storage, onExit }) {
     // for. Resets per chapter; never affects endings (scene-flow.md).
     let hintsShown = 0;
 
-    const actionRouter = createActionRouter();
     const rgbAudio = createRgbAudioController();
-    actionRouter.setActionSet(ACTION_SETS.ARCHIVE);
 
     root.classList.remove('hidden');
     root.classList.add('rgb-root');
@@ -1184,50 +1180,44 @@ export function mountRgb({ root, save, storage, onExit }) {
         }
     }
 
-    let gamepadFrame = null;
-    function pollGamepad() {
+    function handleArchiveControllerActions(event) {
         if (destroyed) return;
-        const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
-        const pad = pads?.[0] ? mapBrowserGamepad(pads[0]) : null;
-        if (pad) {
-            const { actions } = actionRouter.deriveActions(pad);
-            const now = performance.now();
-            if (mode === 'scene') {
-                if (activeCutaway) {
-                    if (actions.confirm) root.querySelector('.rgb-dialogue__take')?.click();
-                    if (actions.back) dismissCutaway();
-                    gamepadFrame = requestAnimationFrame(pollGamepad);
-                    return;
-                }
-                const magX = Math.abs(actions.focus.x);
-                const magY = Math.abs(actions.focus.y);
-                if (now - lastNavAt > NAV_REPEAT_MS && (magX > STICK_THRESHOLD || magY > STICK_THRESHOLD)) {
-                    lastNavAt = now;
-                    moveFocus(magX >= magY ? Math.sign(actions.focus.x) : Math.sign(actions.focus.y));
-                }
-                if (actions.confirm) {
-                    const list = focusableHotspots();
-                    if (list[focusIndex]) activateHotspot(list[focusIndex]);
-                }
-                if (actions.inventory) { mode = 'inventory'; render(); }
-                if (actions.back) { mode = 'pause'; render(); }
-            } else if (mode === 'chapterCard') {
-                if (actions.confirm || actions.back) dismissChapterCard();
-            } else if ((mode === 'inventory' || mode === 'recap' || mode === 'pause') && actions.back) {
-                mode = 'scene';
-                render();
+        const actions = event.detail;
+        if (!actions) return;
+        const now = performance.now();
+        if (mode === 'scene') {
+            if (activeCutaway) {
+                if (actions.confirm) root.querySelector('.rgb-dialogue__take')?.click();
+                if (actions.back) dismissCutaway();
+                return;
             }
-            if (mode !== 'cinematic' && revealHeld !== actions.reveal) {
-                revealHeld = actions.reveal;
-                render();
+            const magX = Math.abs(actions.focus.x);
+            const magY = Math.abs(actions.focus.y);
+            if (now - lastNavAt > NAV_REPEAT_MS && (magX > STICK_THRESHOLD || magY > STICK_THRESHOLD)) {
+                lastNavAt = now;
+                moveFocus(magX >= magY ? Math.sign(actions.focus.x) : Math.sign(actions.focus.y));
             }
+            if (actions.confirm) {
+                const list = focusableHotspots();
+                if (list[focusIndex]) activateHotspot(list[focusIndex]);
+            }
+            if (actions.inventory) { mode = 'inventory'; render(); }
+            if (actions.back || actions.pause) { mode = 'pause'; render(); }
+        } else if (mode === 'chapterCard') {
+            if (actions.confirm || actions.back || actions.pause) dismissChapterCard();
+        } else if ((mode === 'inventory' || mode === 'recap' || mode === 'pause') && (actions.back || actions.pause)) {
+            mode = 'scene';
+            render();
         }
-        gamepadFrame = requestAnimationFrame(pollGamepad);
+        if (mode !== 'cinematic' && revealHeld !== actions.reveal) {
+            revealHeld = actions.reveal;
+            render();
+        }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    gamepadFrame = requestAnimationFrame(pollGamepad);
+    window.addEventListener('hb-archive-controller-actions', handleArchiveControllerActions);
 
     render();
 
@@ -1238,7 +1228,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             AudioManager.startMenuMusic();
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
-            if (gamepadFrame) cancelAnimationFrame(gamepadFrame);
+            window.removeEventListener('hb-archive-controller-actions', handleArchiveControllerActions);
             cinematicLayer.remove();
             root.replaceChildren();
             root.classList.add('hidden');

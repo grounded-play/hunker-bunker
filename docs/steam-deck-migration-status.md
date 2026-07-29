@@ -1,7 +1,7 @@
 # Steam Deck-First Migration Status
 
 Tracks progress against `docs/steam-deck-first-display-and-input-spec.md`.
-Updated 2026-07-24 on `dev/sprint-20`.
+Updated 2026-07-28 on `dev/sprint-21`.
 
 ## Phase 1: Establish the stage — shipped
 
@@ -30,16 +30,17 @@ Updated 2026-07-24 on `dev/sprint-20`.
 - [x] `src/inputActions.js`: `createActionRouter()` derives semantic
       per-set actions (menu / gameplay / archive) from a browser-gamepad
       snapshot, with edge-triggering for discrete presses.
-- [ ] Native Steam Input runtime bridge (Electron/Steamworks side action-set
-      switching, glyph queries against the real overlay) is not wired —
-      today's implementation covers the manifest contract and the browser
-      Gamepad API fallback described in the spec ("The browser Gamepad API
-      remains a non-Steam fallback, mapped onto the same semantic
-      actions"). Wiring the native bridge is deferred to a sprint with Deck
-      hardware access.
-- [ ] Automatic action-set switching for menus/field/archive is implemented
-      for RGB's own runtime (Task 11) but not yet retrofitted onto the main
-      field-play HUD, which still reads raw mapped-pad fields directly.
+- [x] Electron initializes and activates the native `menu`, `gameplay`, and
+      `archive` action sets, polls their declared analog/digital actions, and
+      streams a normalized snapshot to the renderer.
+- [x] `main.js` routes both native Steam Input snapshots and browser Gamepad
+      fallback snapshots through `src/inputActions.js`. The application phase
+      selects `menu`, `gameplay`, or `archive` automatically.
+- [x] RGB consumes the main shell's semantic archive-action event. Its former
+      second raw `navigator.getGamepads()` polling loop has been removed.
+- [ ] Real Steam Input glyph queries still require the Steamworks/Deck
+      hardware pass. The renderer currently uses controller-family prompt
+      labels with a safe `A` fallback.
 
 ## Phase 3: Remove mobile support — shipped
 
@@ -92,6 +93,18 @@ Requires physical Steam Deck hardware:
 - [ ] Keyboard/mouse parity verification on 16:9 desktop (informally
       verified via Playwright at 1920×1080 during this pass; needs a real
       pass with a human).
+
+Code-side preparation completed before the hardware pass:
+
+- [x] One semantic router is authoritative for native Steam Input and browser
+      Gamepad fallback.
+- [x] Menu actions are edge-triggered centrally; field actions retain
+      continuous movement/aim/fire and edge-triggered interactions.
+- [x] Editable controller-focused fields invoke the Steam on-screen keyboard
+      bridge when available.
+- [x] Visible modal roots trap keyboard/controller focus, choose a
+      deterministic first target, and restore the remembered target when
+      returning to the previous root.
 
 ## RGB and other unlockable stories
 

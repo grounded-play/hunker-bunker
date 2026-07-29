@@ -12,6 +12,12 @@ export const ACTION_SETS = Object.freeze({
 
 const VALID_SETS = new Set(Object.values(ACTION_SETS));
 
+export function actionSetForAppPhase(phase) {
+    if (phase === 'gameplay') return ACTION_SETS.GAMEPLAY;
+    if (phase === 'archive') return ACTION_SETS.ARCHIVE;
+    return ACTION_SETS.MENU;
+}
+
 const NEUTRAL_PAD = Object.freeze({
     move: Object.freeze({ x: 0, y: 0 }),
     fire: false,
