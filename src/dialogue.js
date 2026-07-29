@@ -102,6 +102,11 @@ const MILESTONE_LINES = {
 };
 
 export class DialogueManager {
+    // Movement, vitals, pickup, HUD counter, dead ends, enemy intel, compass,
+    // console, console access, deposit, goals -- keep in sync with the
+    // _trackTutorialProgress(N) calls in startTutorialSequence.
+    static TUTORIAL_STEP_COUNT = 11;
+
     constructor({
         dialogId = 'mothership-dialogue',
         panelId = 'mothership-dialogue-panel',
@@ -428,38 +433,62 @@ export class DialogueManager {
         const runId = ++this.tutorialRunId;
         this.activeTutorialRunId = runId;
 
+        // docs/objective-system-spec.md rollout step 6 (tutorial, last).
+        // TUTORIAL_STEP_COUNT below must match the number of _trackTutorialProgress
+        // calls after it -- a mismatch just under/over-reports progress, it
+        // doesn't break the sequence itself.
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'tutorial:onboarding',
+            source: 'tutorial',
+            label: 'ONBOARDING',
+            current: 0,
+            target: DialogueManager.TUTORIAL_STEP_COUNT,
+            priority: 90
+        });
+
         await this.tutorialStepMovement(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(1);
 
         await this.tutorialStepVitals(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(2);
 
         await this.tutorialStepPickup(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(3);
 
         await this.tutorialStepHudCounter(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(4);
 
         await this.tutorialStepDeadEnds(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(5);
 
         await this.tutorialStepEnemyIntel(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(6);
 
         await this.tutorialStepCompass(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(7);
 
         await this.tutorialStepConsole(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(8);
 
         await this.tutorialStepConsoleAccess(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(9);
 
         await this.tutorialStepDeposit(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(10);
 
         await this.tutorialStepGoals(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(11);
 
         await this.showTutorialPrompt(runId, {
             icon: '✓',
@@ -470,6 +499,15 @@ export class DialogueManager {
 
         this.hideTutorialPrompt(runId);
         this.activeTutorialRunId = 0;
+        window.objectiveRegistry?.resolveObjective?.('tutorial:onboarding', 'complete');
+    }
+
+    _trackTutorialProgress(current) {
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'tutorial:onboarding',
+            current,
+            target: DialogueManager.TUTORIAL_STEP_COUNT
+        });
     }
 
     cancelDialogue() {
@@ -533,6 +571,7 @@ export class DialogueManager {
     cancelTutorial() {
         if (!this.activeTutorialRunId) return;
         this.activeTutorialRunId = 0;
+        window.objectiveRegistry?.resolveObjective?.('tutorial:onboarding', 'abandoned');
         this.hideTutorialPrompt();
         document.querySelectorAll('.tutorial-prompt[data-tutorial-stack-card="true"]').forEach((prompt) => {
             this.dismissTutorialCard(prompt);

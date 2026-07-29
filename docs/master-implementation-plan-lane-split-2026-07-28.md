@@ -133,6 +133,22 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 7 **rollout complete (step 6, tutorial — the last step)**:
+  `DialogueManager.startTutorialSequence` (`src/dialogue.js`) now tracks a
+  stable `tutorial:onboarding` objective (priority 90, matching the spec's
+  lowest band — "replaced by anything real"), incrementing `current` after
+  each of the 11 sequential steps via a new `_trackTutorialProgress(n)`
+  helper, resolving `'complete'` at the final step and `'abandoned'` from
+  `cancelTutorial()`. `DialogueManager.TUTORIAL_STEP_COUNT = 11` is the
+  single source of truth both places read from. 4 new tests on the two
+  clean seams (`_trackTutorialProgress`, `cancelTutorial`'s registry call);
+  didn't attempt to unit-test the full 11-step async sequence itself (heavy
+  DOM/timer mocking for mechanics that already work and aren't what's new).
+  **All 6 rollout steps from `docs/objective-system-spec.md` are now done**:
+  camp quests, missions, black box, lore proximity, and tutorial all report
+  through `ObjectiveRegistry`; only step 5 (deleting the now-fully-redundant
+  bespoke HUD elements) remains, and it's flagged above as needing live-browser
+  verification first, not a code gap. Full suite 916/916, build green.
 - 2026-07-28: Phase 8.3 (visible aftermath) **checked — mostly already
   covered by existing code, one item genuinely blocked**. Camps
   (`src/camp.js` `setStatus`, `campHumanBehavior.js` from Slice 1) and
