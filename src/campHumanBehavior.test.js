@@ -61,6 +61,26 @@ describe('updateCampWorkerHumanState (the actual humanAI.js activation)', () => 
     });
 });
 
+describe('escalation lines up with the real lockdown gate (Phase 8.2 Slice 2)', () => {
+    it('reaches armed at suspicion 50, the exact threshold SurvivorCamp.isLockedDown (src/camp.js:533) and getActionableCampAt\'s lockdown gate (src/threeGame.js:9900) already use to refuse bond/support/quest/aid', () => {
+        const state = updateCampWorkerHumanState('alerted', {
+            status: 'recruited',
+            suspicion: 50,
+            previousSuspicion: 49
+        });
+        expect(state).toBe('armed');
+    });
+
+    it('is not yet escalated one point below the lockdown threshold', () => {
+        const state = updateCampWorkerHumanState('unaware', {
+            status: 'recruited',
+            suspicion: 49,
+            previousSuspicion: 30
+        });
+        expect(state).not.toBe('armed');
+    });
+});
+
 describe('campWorkerVisualForHumanState', () => {
     it('gives every escalated state a distinct tint and a faster-than-normal speed', () => {
         for (const state of ['alerted', 'armed', 'panicked', 'fleeing', 'infected']) {

@@ -133,6 +133,21 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 8.2 Slice 2 **verified already substantially true, not
+  actually an open gap** — re-examined instead of left flagged. Confirmed
+  by direct call (not just reading the numbers) that
+  `deriveCampWorkerStimulus` escalates to `armed` at `suspicion >= 50`, the
+  *exact* threshold `SurvivorCamp.isLockedDown` (`src/camp.js:533`) and the
+  real `getActionableCampAt` lockdown gate (`src/threeGame.js:9900`) already
+  use to refuse bond/support/quest-offer/aid. So Slice 1's tint/speed
+  feedback was never purely cosmetic — it's a visible readout of a state
+  that already had real mechanical teeth through the pre-existing
+  suspicion system. 2 new regression tests lock in that the two thresholds
+  stay in lockstep. `docs/human-ai-activation-plan.md` updated to reflect
+  this — what's still genuinely open is a *distinct* consequence for
+  `panicked`/`fleeing`/`infected` specifically (states with no existing
+  suspicion threshold), which remains a real, undecided design call, not
+  guessed at here. Full suite 938/938, build green.
 - 2026-07-28: Phase 8.1 **implemented (mechanical layer), not just designed**:
   `docs/faction-verb-matrix.md`'s "Implementation order" step 1 done —
   `src/campEconomy.js` gained `CAMP_ACTIVE_VERBS` (Meridian ROUTE INTEL /

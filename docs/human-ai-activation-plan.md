@@ -64,14 +64,28 @@ Audio feedback is **not** in Slice 1 — camp.js's existing audio is a single
 looping fire-crackle bus (camp.js:846-875); a per-state stinger needs a
 short sample set that doesn't exist yet (asset work, not code).
 
-## Slice 2 (not started) — escalation feeds back into gameplay
+## Slice 2 — escalation feeding into gameplay: verified already substantially
+true, not a new gap
 
-Currently the state is purely cosmetic (tint/speed). To be a real
-"hostility/lockdown behavior" per the master plan, `armed`/`panicked` state
-should plausibly feed something the player can react to — e.g. an armed
-worker contributes to turret suspicion gain, or a fleeing worker blocks a
-`recruit` action briefly. Needs a design call on which knob, not just
-cosmetics — flagging rather than guessing.
+Re-examined 2026-07-28 rather than left "not started": `deriveCampWorkerStimulus`
+escalates to `armed`/`threat_seen` at `suspicion >= 50` — the *exact* same
+threshold as `SurvivorCamp.isLockedDown` (`src/camp.js:532-534`) and
+`getActionableCampAt`'s real lockdown gate (`src/threeGame.js:9899-9906`),
+which already refuses bond/support/quest-offer/aid the moment suspicion
+crosses that line. Confirmed by direct call, not just reading the numbers:
+`updateCampWorkerHumanState('alerted', { status: 'recruited', suspicion: 50,
+previousSuspicion: 49 })` returns `'armed'` — the same frame the real
+lockdown gate starts refusing those actions. So the escalation was *never*
+purely cosmetic — Slice 1's tint/speed feedback is a visible confirmation of
+a state that already has real mechanical teeth via the pre-existing
+suspicion/lockdown system, not a decorative layer sitting on top of nothing.
+
+What's still genuinely open: a *distinct* consequence for `panicked`/
+`fleeing`/`infected` specifically (states that don't correspond to an
+existing suspicion threshold) — e.g. a `fleeing` worker briefly blocking
+`recruit`. That's a real, still-undecided design call (which is why it's
+still flagged, not guessed at), but it's an *addition* on top of an
+already-working feedback loop, not a prerequisite for one to exist.
 
 ## Slice 3 (not started) — audio + individual (not per-camp) state
 
