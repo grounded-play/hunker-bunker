@@ -133,6 +133,24 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Codex plan-listed audio gap **closed with original generated
+  assets, connected and automated**. Added eight deterministic 44.1 kHz
+  mono PCM WAVs: five readable camp-worker transition stingers and distinct
+  Meridian/Tallow/Vesper active-verb cues. The checked-in generator uses
+  elementary oscillators, seeded noise, and envelopes only—no third-party
+  recordings or unclear licenses—and `docs/generated-audio-provenance.md`
+  records that provenance. Worker cues fire only on actual state changes,
+  with a tested priority selector preventing simultaneous per-worker noise;
+  verb cues consume the existing `camp-verb-activated` event. Steam package
+  CI verifies every generated WAV byte-for-byte. This supersedes the older
+  "audio blocked on assets" status below.
+- 2026-07-28: Codex Phase 12.4 **implemented**. Added a generated Steam
+  claims-control report backed by `steam/claim-evidence.json`. CI now fails
+  when controlled public copy positively claims multiplayer, Timeline, Deck
+  Verified, English Full Audio, Cloud, achievements, or purchases without
+  accepted evidence, and when the report is stale. Corrected the premature
+  announcement claim that Steam Cloud was already fully synchronized; it
+  now accurately says Auto-Cloud/two-machine acceptance remains pending.
 - 2026-07-28: Phase 6.2 **live ring-progression enforcement shipped and
   live-verified**. Discovered mid-investigation that `mazeExpedition.js`'s
   radial plan is already live-wired into `threeGame.js`
@@ -170,9 +188,9 @@ it's flagged here rather than picked up.
   both presubmit workflows and the Steam package workflow.
   `docs/dependency-policy.md` records the decision and the distinction
   between an existing relay capability and approved multiplayer. **Still
-  open in Phase 12**: the live feature-truth matrix (12.1), stale-doc archive
-  with redirects/index preservation (12.2), and generated Steam
-  claims-control report (12.4).
+  open in Phase 12**: the live feature-truth matrix (12.1) and stale-doc
+  archive with redirects/index preservation (12.2). Phase 12.4 is completed
+  in the newer entry above.
 - 2026-07-28: Phase 8.2 Slice 3 **per-worker state done; audio still
   blocked on assets (unchanged)**. `updateCampWorkersHumanStates`
   (`src/campHumanBehavior.js`) replaces the single shared

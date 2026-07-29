@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     campWorkerVisualForHumanState,
     deriveCampWorkerStimulus,
+    selectCampWorkerStateCue,
     updateCampWorkerHumanState,
     updateCampWorkersHumanStates
 } from './campHumanBehavior.js';
@@ -125,5 +126,22 @@ describe('campWorkerVisualForHumanState', () => {
 
     it('has no visual override for unaware', () => {
         expect(campWorkerVisualForHumanState('unaware')).toEqual({ tint: null, speedMult: 1 });
+    });
+});
+
+describe('selectCampWorkerStateCue', () => {
+    it('returns one cue for a newly entered state', () => {
+        expect(selectCampWorkerStateCue(['unaware'], ['alerted'])).toBe('camp_worker_alerted');
+    });
+
+    it('chooses the highest-priority changed state when workers diverge', () => {
+        expect(selectCampWorkerStateCue(
+            ['unaware', 'alerted', 'armed'],
+            ['alerted', 'panicked', 'infected']
+        )).toBe('camp_worker_infected');
+    });
+
+    it('does not repeat a cue while states remain unchanged', () => {
+        expect(selectCampWorkerStateCue(['armed', 'alerted'], ['armed', 'alerted'])).toBeNull();
     });
 });

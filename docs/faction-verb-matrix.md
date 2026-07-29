@@ -97,6 +97,9 @@ Designed/Implemented/Connected/Automated/Accepted/Claimable status per cell.
 2. Wire the three new active verbs into the camp-choice menu
    (`threeGame.js:9698-9958` region) alongside existing `cull`/`recruit`/
    `bond` options.
-3. Visual/audio feedback hooks last, once the mechanical shape is confirmed
-   in a playtest — per this repo's own precedent, cosmetic feedback work is
-   cheap to redo but state-machine rework is not.
+3. Visual/audio feedback hooks: **audio shipped 2026-07-28**. Meridian,
+   Tallow, and Vesper each use an original generated cue connected through
+   `camp-verb-activated`; deterministic source and provenance live in
+   `scripts/generate-plan-sfx.js` and `docs/generated-audio-provenance.md`.
+   Existing gear-poof feedback supplies the shared activation visual; the
+   faction-specific visual treatments in the matrix remain open.

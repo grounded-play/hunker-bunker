@@ -46,6 +46,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run audit:dependencies
+      - run: npm run steam:claims:check
+      - run: npm run audio:plan-sfx:check
       - run: npm test
       - name: Build revision-stamped web payload
         run: npm run build

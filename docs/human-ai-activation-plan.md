@@ -87,7 +87,7 @@ existing suspicion threshold) — e.g. a `fleeing` worker briefly blocking
 still flagged, not guessed at), but it's an *addition* on top of an
 already-working feedback loop, not a prerequisite for one to exist.
 
-## Slice 3 — per-worker state: done. Audio: still blocked on assets
+## Slice 3 — per-worker state and audio: done
 
 **Per-worker state shipped 2026-07-28.** `updateCampWorkersHumanStates`
 (`src/campHumanBehavior.js`) replaces the single shared `workerHumanState`
@@ -103,9 +103,13 @@ once per camp. 4 new tests, including one that pins a scripted
 `random` sequence to prove two workers can diverge from the identical
 stimulus. Full suite green, build green.
 
-**Audio remains blocked on assets**, unchanged from the original plan — a
-per-state stinger sample set doesn't exist yet and this is not something to
-fabricate; needs real sound design, not code.
+**Audio shipped 2026-07-28.** Five original procedural stingers now cover
+`alerted`, `armed`, `panicked`, `fleeing`, and `infected`. They are generated
+deterministically by `scripts/generate-plan-sfx.js`, documented in
+`docs/generated-audio-provenance.md`, verified byte-for-byte in CI, loaded by
+the gameplay manifest, and selected only when at least one revealed camp
+worker enters a new state. A priority selector prevents several independently
+reacting workers from creating an unreadable stack of simultaneous stingers.
 
 ## Explicitly out of scope here
 

@@ -2011,6 +2011,15 @@ window.addEventListener('camp-verb-resupply', () => {
     pickupCounterState.ammo = activeAmmoCapacity;
     renderPickupCounter();
 });
+window.addEventListener('camp-verb-activated', (event) => {
+    const campId = String(event?.detail?.campId ?? '').replace(/^camp_/, '');
+    if (!['meridian', 'tallow', 'vesper'].includes(campId)) return;
+    AudioManager.play(`camp_verb_${campId}`, {
+        volume: event?.detail?.degraded ? 0.28 : 0.46,
+        playbackRate: event?.detail?.degraded ? 0.78 : 1,
+        bus: 'sfx'
+    });
+});
 window.addEventListener('combat-no-ammo', () => {
     flashWeaponError();
 });
@@ -9485,6 +9494,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     { key: 'camp_fire_douse', url: '/audio/vg2/camp_fire_douse.wav' },
                     { key: 'camp_lockdown_alarm', url: '/audio/vg2/camp_lockdown_alarm.wav' },
                     { key: 'camp_lockdown_chains', url: '/audio/vg2/camp_lockdown_chains.wav' },
+                    { key: 'camp_worker_alerted', url: '/audio/generated/camp_worker_alerted.wav' },
+                    { key: 'camp_worker_armed', url: '/audio/generated/camp_worker_armed.wav' },
+                    { key: 'camp_worker_panicked', url: '/audio/generated/camp_worker_panicked.wav' },
+                    { key: 'camp_worker_fleeing', url: '/audio/generated/camp_worker_fleeing.wav' },
+                    { key: 'camp_worker_infected', url: '/audio/generated/camp_worker_infected.wav' },
+                    { key: 'camp_verb_meridian', url: '/audio/generated/camp_verb_meridian.wav' },
+                    { key: 'camp_verb_tallow', url: '/audio/generated/camp_verb_tallow.wav' },
+                    { key: 'camp_verb_vesper', url: '/audio/generated/camp_verb_vesper.wav' },
                     { key: 'hive_eggs_hum', url: '/audio/vg2/hive_eggs_hum.wav' },
                     { key: 'hive_eggs_hatch', url: '/audio/vg2/hive_eggs_hatch.wav' },
                     { key: 'hive_spores_puff', url: '/audio/vg2/hive_spores_puff.wav' },

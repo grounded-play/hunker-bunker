@@ -56,3 +56,21 @@ const HUMAN_STATE_VISUALS = Object.freeze({
 export function campWorkerVisualForHumanState(state) {
     return HUMAN_STATE_VISUALS[state] ?? { tint: null, speedMult: 1 };
 }
+
+const HUMAN_STATE_AUDIO_PRIORITY = Object.freeze([
+    'infected',
+    'fleeing',
+    'panicked',
+    'armed',
+    'alerted'
+]);
+
+export function selectCampWorkerStateCue(previousStates, nextStates) {
+    const changed = new Set();
+    for (let index = 0; index < nextStates.length; index += 1) {
+        const next = nextStates[index] ?? 'unaware';
+        if (next !== (previousStates[index] ?? 'unaware')) changed.add(next);
+    }
+    const state = HUMAN_STATE_AUDIO_PRIORITY.find((candidate) => changed.has(candidate));
+    return state ? `camp_worker_${state}` : null;
+}

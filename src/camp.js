@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
-import { campWorkerVisualForHumanState, updateCampWorkersHumanStates } from './campHumanBehavior.js';
+import { campWorkerVisualForHumanState, selectCampWorkerStateCue, updateCampWorkersHumanStates } from './campHumanBehavior.js';
 
 const LEADER_SPRITESHEETS = {
     'Commander Briggs': '/briggs_camp_walk_v2.png',
@@ -952,8 +952,9 @@ export class SurvivorCamp {
         // "notices" a shared status/suspicion/destroyed stimulus
         // (WORKER_REACTION_CHANCE per worker per new stimulus), so two
         // workers in the same camp can end up in different states.
+        const previousWorkerHumanStates = this.campWorkers.map((worker) => worker.humanState ?? 'unaware');
         const workerHumanStates = updateCampWorkersHumanStates(
-            this.campWorkers.map((worker) => worker.humanState ?? 'unaware'),
+            previousWorkerHumanStates,
             {
                 status: this.status,
                 suspicion: this.suspicion,
@@ -962,6 +963,10 @@ export class SurvivorCamp {
             }
         );
         this._previousSuspicion = this.suspicion;
+        const workerStateCue = selectCampWorkerStateCue(previousWorkerHumanStates, workerHumanStates);
+        if (workerStateCue && this.revealed && typeof window !== 'undefined') {
+            window.AudioManager?.play?.(workerStateCue, { volume: 0.3, bus: 'world' });
+        }
 
         for (let index = 0; index < this.campWorkers.length; index += 1) {
             const worker = this.campWorkers[index];
