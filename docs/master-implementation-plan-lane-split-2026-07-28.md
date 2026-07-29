@@ -133,6 +133,30 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 10.2 **closed a real, previously-uncovered gap: the
+  Queen fight now has combat-economy acceptance, not just damage-routing
+  correctness**. The master plan names "Queen and corrupted-operator
+  fights" and "close `slay_the_queen` only after a repeatable combat
+  acceptance pass" explicitly; `src/combatEconomy.test.js` never covered
+  the Queen (she's not in `ENEMY_STATS` — she's a separate, data-driven
+  `bossPhases.js` armor/weakpoint state machine), and the existing
+  `src/threeGame.queenFight.test.js` only tested damage-routing plumbing,
+  never ran the fight end-to-end. New `src/queenFightAcceptance.test.js`
+  simulates the real, unmocked `createBossFight`/`tickBossFight`/
+  `applyBossDamage` against each class's real fire rate (idealized
+  constant-fire floor case, same framing as `combatEconomy.test.js`):
+  all three classes defeat the Queen within a generous 600s ceiling
+  (actual idealized time: 16.7s for all three — verified, not assumed,
+  and independently sanity-checked via direct per-shot armored-vs-weakpoint
+  assertions since the convergence to one number across classes was worth
+  double-checking, not just accepting), every class passes through all
+  three phases, and the "armor chips, never fully zeroes a hit" contract
+  holds for 1-damage classes exactly as `applyBossDamage`'s own comment
+  claims. One of my own test assumptions was wrong and caught by the test
+  itself (expected `brood` to appear in the phase-transition event log;
+  it's the implicit starting phase and never fires a transition event) —
+  fixed the test, not weakened it. Zero production code touched. Full
+  suite 998/998, lint clean, build green.
 - 2026-07-28: Phase 6.1/6.3 **attempted, scoped safely, shipped — user
   explicitly directed this after correcting two inaccurate stop-hook
   claims** (see `docs/phase6-wfc-ring-barrier-integration-plan.md` for the
