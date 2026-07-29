@@ -2,97 +2,19 @@
  * Steam Vault & Store UI Frontend Implementation
  * Extracted from main.js for modular UI architecture.
  */
+import { STEAM_ITEM_CATALOG } from './data/steamItemCatalog.js';
 
-export const STEAM_ITEM_CATALOG = Object.freeze({
-    1000: {
-        name: 'Common Relic Fragment',
-        rarity: 'common',
-        desc: 'A shard of ancient subterranean machinery, used in basic crafting exchanges.',
-        tradable: true,
-        marketable: false,
-        img: 'https://hunkerbunker.netlify.app/economy/relic_common.png'
-    },
-    1100: {
-        name: 'Rare Relic Fragment',
-        rarity: 'rare',
-        desc: 'An intact processor core from the deep vaults, used to craft elite cosmetics.',
-        tradable: true,
-        marketable: false,
-        img: 'https://hunkerbunker.netlify.app/economy/relic_rare.png'
-    },
-    2000: {
-        name: 'Scout Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using a Scout frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_scout.png'
-    },
-    2001: {
-        name: 'Tank Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using a Tank frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_tank.png'
-    },
-    2002: {
-        name: 'Engineer Victory Patch',
-        rarity: 'uncommon',
-        desc: 'Awarded to operators who successfully extract using an Engineer frame. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/patch_engineer.png'
-    },
-    2100: {
-        name: 'Carbon Fiber Decal',
-        rarity: 'rare',
-        desc: 'A high-performance weave finish for your exosuit. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/decal_carbon.png'
-    },
-    2200: {
-        name: 'Chrome Plated Sidearm',
-        rarity: 'epic',
-        desc: 'Polished high-reflectivity chrome finish for the standard sidearm. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/finish_chrome.png'
-    },
-    2003: {
-        name: 'Queen Slayer Emblem',
-        rarity: 'legendary',
-        desc: 'Awarded for defeating the Act 2 queen. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/emblem_queen_slayer.png'
-    },
-    2004: {
-        name: 'Archivist Emblem',
-        rarity: 'epic',
-        desc: 'Awarded for recovering the full bunker archive. Cosmetic equip.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/emblem_archivist.png'
-    },
-    4000: {
-        name: 'Deep Relic Cache',
-        rarity: 'container',
-        desc: 'A sealed drop container. Requires a Cache Key to open — see the STORE tab for published odds.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/cache_deep_relic.png'
-    },
-    4001: {
-        name: 'Cache Key',
-        rarity: 'key',
-        desc: 'Opens a single Deep Relic Cache. Purchased with real money; never drops for free.',
-        tradable: true,
-        marketable: true,
-        img: 'https://hunkerbunker.netlify.app/economy/cache_key.png'
-    }
-});
+export { STEAM_ITEM_CATALOG };
+
+export function applyCatalogImage(image, catalog) {
+    if (!image || !catalog) return;
+    image.onerror = () => {
+        image.onerror = null;
+        image.src = assetUrl(catalog.localImg);
+        image.dataset.localFallback = 'true';
+    };
+    image.src = assetUrl(catalog.img);
+}
 
 let storeCatalog = null;
 let storeOdds = [];
@@ -138,7 +60,7 @@ export function showSteamDropToast(itemdefid, quantity = 1) {
     iconWrap.className = 'achievement-toast__icon';
     const img = document.createElement('img');
     img.alt = '';
-    img.src = assetUrl(catalog.img);
+    applyCatalogImage(img, catalog);
     iconWrap.append(img);
 
     const body = document.createElement('div');
@@ -363,7 +285,7 @@ export function renderInventoryGrid() {
 
         const img = document.createElement('img');
         img.className = 'vault-item-card__art';
-        img.src = assetUrl(catalog.img);
+        applyCatalogImage(img, catalog);
         card.appendChild(img);
 
         if (item.quantity > 1) {
@@ -412,7 +334,7 @@ export function updateDetailsPanel(item) {
         rarityEl.style.color = getRarityColor(catalog.rarity);
     }
     if (descEl) descEl.textContent = catalog.desc;
-    if (imgEl) imgEl.src = assetUrl(catalog.img);
+    if (imgEl) applyCatalogImage(imgEl, catalog);
 
     if (tradableEl) {
         tradableEl.className = `vault-meta-tag vault-meta-tag--readonly ${catalog.tradable ? 'active' : ''}`;
