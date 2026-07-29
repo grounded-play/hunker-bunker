@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
-import { campWorkerVisualForHumanState, updateCampWorkerHumanState } from './campHumanBehavior.js';
+import { campWorkerVisualForHumanState, updateCampWorkersHumanStates } from './campHumanBehavior.js';
 
 const LEADER_SPRITESHEETS = {
     'Commander Briggs': '/briggs_camp_walk_v2.png',
@@ -161,11 +161,10 @@ export class SurvivorCamp {
         this.recruited = false;
         this.turned = false;
         this.status = 'alive';
-        // docs/human-ai-activation-plan.md Slice 1: shared per-camp humanAI.js
-        // state, derived each frame from status/suspicion/destroyed. Not
-        // persisted — it's a reactive readout of already-saved fields, not
-        // new save data.
-        this.workerHumanState = 'unaware';
+        // docs/human-ai-activation-plan.md Slice 3: per-worker humanAI.js
+        // state (worker.humanState, set in createCampWorkers/update), derived
+        // each frame from status/suspicion/destroyed. Not persisted — it's a
+        // reactive readout of already-saved fields, not new save data.
         this._previousSuspicion = 0;
         this.level = 0;
         this.barricades = [];
@@ -244,7 +243,7 @@ export class SurvivorCamp {
             mesh.userData.campId = this.id;
             mesh.userData.index = index;
             group.add(mesh);
-            return { ...spec, mesh };
+            return { ...spec, mesh, humanState: 'unaware' };
         });
     }
 
@@ -948,21 +947,29 @@ export class SurvivorCamp {
             this.npcSprite.position.set(this.npcPos.x, 0.75, this.npcPos.z);
         }
 
-        // docs/human-ai-activation-plan.md Slice 1: one shared humanAI.js
-        // state per camp, derived from status/suspicion/destroyed each frame.
-        this.workerHumanState = updateCampWorkerHumanState(this.workerHumanState, {
-            status: this.status,
-            suspicion: this.suspicion,
-            previousSuspicion: this._previousSuspicion,
-            destroyed: this.destroyed
-        });
+        // docs/human-ai-activation-plan.md Slice 3: per-worker (not
+        // per-camp-shared) humanAI.js state -- each worker independently
+        // "notices" a shared status/suspicion/destroyed stimulus
+        // (WORKER_REACTION_CHANCE per worker per new stimulus), so two
+        // workers in the same camp can end up in different states.
+        const workerHumanStates = updateCampWorkersHumanStates(
+            this.campWorkers.map((worker) => worker.humanState ?? 'unaware'),
+            {
+                status: this.status,
+                suspicion: this.suspicion,
+                previousSuspicion: this._previousSuspicion,
+                destroyed: this.destroyed
+            }
+        );
         this._previousSuspicion = this.suspicion;
-        const humanVisual = campWorkerVisualForHumanState(this.workerHumanState);
 
-        for (const worker of this.campWorkers) {
+        for (let index = 0; index < this.campWorkers.length; index += 1) {
+            const worker = this.campWorkers[index];
+            worker.humanState = workerHumanStates[index];
             if (!worker.mesh) continue;
             worker.mesh.visible = this.status !== 'culled';
             if (!worker.mesh.visible) continue;
+            const humanVisual = campWorkerVisualForHumanState(worker.humanState);
             const t = this.elapsed * worker.speed * humanVisual.speedMult + worker.phase;
             const gather = this.status === 'recruited';
             const turned = this.status === 'turned';

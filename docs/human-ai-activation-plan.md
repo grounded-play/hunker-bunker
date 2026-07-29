@@ -87,12 +87,25 @@ existing suspicion threshold) — e.g. a `fleeing` worker briefly blocking
 still flagged, not guessed at), but it's an *addition* on top of an
 already-working feedback loop, not a prerequisite for one to exist.
 
-## Slice 3 (not started) — audio + individual (not per-camp) state
+## Slice 3 — per-worker state: done. Audio: still blocked on assets
 
-Per-worker (not per-camp-shared) state, so two workers in the same camp can
-be in different states (one fled, one still armed) — meaningfully richer,
-but needs the pure functions above to take a worker-scoped snapshot instead
-of a camp-scoped one, plus the stinger sample set for audio feedback.
+**Per-worker state shipped 2026-07-28.** `updateCampWorkersHumanStates`
+(`src/campHumanBehavior.js`) replaces the single shared `workerHumanState`
+with one state per `campWorkers[i]`. The stimulus is still camp-wide (it
+comes from shared status/suspicion/destroyed signals — there's no
+per-worker sensory model, and building one wasn't the point), but each
+worker independently "notices" it: `WORKER_REACTION_CHANCE` (0.7) per
+worker per new-stimulus tick, via an injectable `random` source so the
+divergence is deterministic under test. Two workers in the same camp can
+now genuinely end up in different states after the same event. `camp.js`'s
+`update()` loop now computes visuals (tint/speed) per worker instead of
+once per camp. 4 new tests, including one that pins a scripted
+`random` sequence to prove two workers can diverge from the identical
+stimulus. Full suite green, build green.
+
+**Audio remains blocked on assets**, unchanged from the original plan — a
+per-state stinger sample set doesn't exist yet and this is not something to
+fabricate; needs real sound design, not code.
 
 ## Explicitly out of scope here
 

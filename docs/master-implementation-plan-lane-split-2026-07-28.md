@@ -133,6 +133,18 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 8.2 Slice 3 **per-worker state done; audio still
+  blocked on assets (unchanged)**. `updateCampWorkersHumanStates`
+  (`src/campHumanBehavior.js`) replaces the single shared
+  `workerHumanState` with one state per `campWorkers[i]`, each
+  independently "noticing" a shared stimulus at `WORKER_REACTION_CHANCE`
+  (0.7) via an injectable `random` source. `camp.js`'s `update()` loop now
+  computes tint/speed per worker instead of once per camp. 4 new tests,
+  including one pinning a scripted random sequence to prove two workers in
+  the same camp can genuinely diverge from the identical event. This closes
+  the code-achievable half of Slice 3; the audio stinger set was never
+  code-blocked, it's asset-blocked, and stays that way. Full suite 955/955,
+  build green.
 - 2026-07-28: Phase 8.1 **UI wiring done — the active verbs are now
   actually triggerable, not just mechanically gated**. `getActionableCampAt`
   (`src/threeGame.js`) gained an `active-verb` branch offered once a camp's

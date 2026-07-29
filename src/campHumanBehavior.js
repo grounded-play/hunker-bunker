@@ -25,6 +25,26 @@ export function updateCampWorkerHumanState(currentState, campSnapshot) {
     return nextHumanState(currentState ?? 'unaware', stimulus);
 }
 
+// docs/human-ai-activation-plan.md Slice 3: per-worker instead of
+// per-camp-shared state. The stimulus itself is still camp-wide (it comes
+// from shared status/suspicion signals -- there's no per-worker sensory
+// model), but each worker independently "notices" it: REACTION_CHANCE per
+// worker per new-stimulus tick, so two workers in the same camp can end up
+// in different states (one fled, one still just alerted) instead of always
+// moving in lockstep. `random` is injectable so this stays deterministic
+// under test.
+export const WORKER_REACTION_CHANCE = 0.7;
+
+export function updateCampWorkersHumanStates(workerStates, campSnapshot, random = Math.random) {
+    const stimulus = deriveCampWorkerStimulus(campSnapshot);
+    if (!stimulus) return workerStates.map((state) => state ?? 'unaware');
+    return workerStates.map((state) => {
+        const current = state ?? 'unaware';
+        if (random() > WORKER_REACTION_CHANCE) return current;
+        return nextHumanState(current, stimulus);
+    });
+}
+
 const HUMAN_STATE_VISUALS = Object.freeze({
     alerted: Object.freeze({ tint: 0xffe9b0, speedMult: 1.1 }),
     armed: Object.freeze({ tint: 0xff6a4a, speedMult: 1.35 }),

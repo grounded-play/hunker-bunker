@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
     campWorkerVisualForHumanState,
     deriveCampWorkerStimulus,
-    updateCampWorkerHumanState
+    updateCampWorkerHumanState,
+    updateCampWorkersHumanStates
 } from './campHumanBehavior.js';
 
 describe('deriveCampWorkerStimulus', () => {
@@ -78,6 +79,37 @@ describe('escalation lines up with the real lockdown gate (Phase 8.2 Slice 2)', 
             previousSuspicion: 30
         });
         expect(state).not.toBe('armed');
+    });
+});
+
+describe('updateCampWorkersHumanStates (Phase 8.2 Slice 3: per-worker, not per-camp-shared)', () => {
+    it('leaves every worker unchanged when there is no stimulus', () => {
+        const result = updateCampWorkersHumanStates(['unaware', 'alerted'], { status: 'alive', suspicion: 0, previousSuspicion: 0 });
+        expect(result).toEqual(['unaware', 'alerted']);
+    });
+
+    it('escalates every worker when every worker "notices" (random always below the reaction chance)', () => {
+        const result = updateCampWorkersHumanStates(
+            ['unaware', 'unaware'],
+            { status: 'turned' },
+            () => 0
+        );
+        expect(result).toEqual(['infected', 'infected']);
+    });
+
+    it('lets workers diverge: some notice a stimulus, some do not, based on the injected random source', () => {
+        const random = (() => {
+            const sequence = [0, 0.99]; // first worker always reacts, second never does
+            let index = 0;
+            return () => sequence[index++ % sequence.length];
+        })();
+        const result = updateCampWorkersHumanStates(['unaware', 'unaware'], { status: 'turned' }, random);
+        expect(result).toEqual(['infected', 'unaware']);
+    });
+
+    it('defaults missing worker state to unaware', () => {
+        const result = updateCampWorkersHumanStates([undefined, null], { status: 'turned' }, () => 0);
+        expect(result).toEqual(['infected', 'infected']);
     });
 });
 
