@@ -133,6 +133,22 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 7 **rollout step 2 (missions) done**: `docs/objective-system-spec.md`'s
+  documented rollout order has camp quests done, missions next. Wired
+  `ThreeGame.initMission`/`clearMission` and the three completion sites
+  (survey/retrieval/elimination) plus the elimination kill-progress tick to
+  mirror into `ObjectiveRegistry` (`window.objectiveRegistry`) alongside the
+  existing `missionState` + bespoke `#mission-progress-hud` events — nothing
+  removed yet (rollout step 5 deletes the bespoke HUD once every producer
+  has migrated). Stable `mission:active` id so a new run's mission
+  overwrites rather than stacking a stale entry from a different mission
+  type. 4 new tests on the two clean, isolated methods
+  (`src/threeGame.missionObjectives.test.js`); the three completion/
+  kill-progress call sites are one-line additions following the identical
+  proven pattern, verified via full suite + build rather than a fragile
+  test around their much larger enclosing methods. Remaining rollout steps:
+  3 (black box — appears already partially done, needs verification), 4
+  (lore proximity), 5 (delete bespoke branches), 6 (tutorial, last).
 - 2026-07-28: **Fixed the 5 `it.fails` combat-economy tests properly instead
   of leaving them as tracked-but-red.** They weren't actually failing the
   suite (vitest counts `it.fails` as passing), but the user flagged them as

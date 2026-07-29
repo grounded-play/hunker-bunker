@@ -11531,12 +11531,24 @@ export class ThreeGame {
             targetKills: mission.targetKills ?? 0,
             targetDepth: mission.targetDepth ?? 0
         };
+        // docs/objective-system-spec.md rollout step 2 (missions). Stable id
+        // (not type-suffixed) so a new run's mission overwrites rather than
+        // stacking a stale entry from a prior run's different mission type.
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'mission:active',
+            source: 'mission',
+            label: this.missionState.label || 'MISSION',
+            current: 0,
+            target: mission.type === 'elimination' ? Math.max(1, mission.targetKills ?? 1) : 1,
+            priority: 30
+        });
     }
 
     clearMission() {
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
         this._extractionLockdownFired = false;
         this._blockedExtractionSignalFired = false;
+        window.objectiveRegistry?.resolveObjective?.('mission:active', 'abandoned');
         window.dispatchEvent(new CustomEvent('extraction-progress', {
             detail: { progress: 0, active: false }
         }));
@@ -12418,6 +12430,7 @@ export class ThreeGame {
             if (this.getActiveO2GeneratorDistance() >= this.missionState.targetDepth) {
                 this.missionState.status = 'objective_complete';
                 const uplink = this.getMothershipUplinkReadiness();
+                window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
                 window.dispatchEvent(new CustomEvent('mission-objective-complete', {
                     detail: { type: 'survey', uplinkReady: uplink.ready, uplink }
                 }));
@@ -17581,6 +17594,7 @@ export class ThreeGame {
                             if (pickupType === 'weapon' && rarity === 'legendary') {
                                 this.missionState.status = 'objective_complete';
                                 const uplink = this.getMothershipUplinkReadiness();
+                                window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
                                 window.dispatchEvent(new CustomEvent('mission-objective-complete', {
                                     detail: { type: 'retrieval', uplinkReady: uplink.ready, uplink }
                                 }));
@@ -17829,12 +17843,18 @@ export class ThreeGame {
 
         if (this.missionState?.type === 'elimination' && this.missionState.status === 'active') {
             this.missionState.killCount = (this.missionState.killCount ?? 0) + 1;
+            window.objectiveRegistry?.trackObjective?.({
+                id: 'mission:active',
+                current: this.missionState.killCount,
+                target: this.missionState.targetKills
+            });
             window.dispatchEvent(new CustomEvent('mission-kill-progress', {
                 detail: { count: this.missionState.killCount, target: this.missionState.targetKills }
             }));
             if (this.missionState.killCount >= this.missionState.targetKills) {
                 this.missionState.status = 'objective_complete';
                 const uplink = this.getMothershipUplinkReadiness();
+                window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
                 window.dispatchEvent(new CustomEvent('mission-objective-complete', {
                     detail: { type: 'elimination', uplinkReady: uplink.ready, uplink }
                 }));
