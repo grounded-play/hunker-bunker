@@ -133,6 +133,21 @@ it's flagged here rather than picked up.
 
 ## Status log
 
+- 2026-07-28: Phase 8.1 **implemented (mechanical layer), not just designed**:
+  `docs/faction-verb-matrix.md`'s "Implementation order" step 1 done —
+  `src/campEconomy.js` gained `CAMP_ACTIVE_VERBS` (Meridian ROUTE INTEL /
+  Tallow TRIAGE / Vesper FIELD RESUPPLY, each with real cost/cooldown/
+  failure-rule data), `getCampActiveVerb`, `canActivateCampVerb` (checks
+  cost affordability by reusing the existing `canApplyTrade`, cooldown
+  timing, Meridian's once-per-ring limit, Vesper's once-per-boss-encounter
+  limit, and Tallow's humanity-floor no-stacking rule), and
+  `isCampVerbDegraded` (Meridian's "bad intel, not blocked" failure mode
+  when the informant camp has been robbed). 7 new tests, all pure/no-DOM.
+  **Not done**: wiring this into the camp-choice menu UI
+  (`threeGame.js:9698-9958` per the design doc's step 2) so a player can
+  actually trigger these verbs, and the visual/audio feedback (step 3).
+  This session shipped the tested mechanical gate; the UI trigger and
+  presentation layer remain open. Full suite 928/928, build green.
 - 2026-07-28: Phase 6.1 **first real step of the still-open chunk-integration
   work**: added `worldToChunkCoords`, `projectPlanToChunkReservations`,
   `findConflictingChunkReservations` to `src/mazeExpedition.js` — converts

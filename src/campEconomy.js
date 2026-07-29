@@ -188,6 +188,92 @@ export function getAct2ClassPerks(playerType = 'SCOUT') {
     };
 }
 
+// docs/faction-verb-matrix.md — one signature active verb per camp, on top
+// of the passive getCampVerbEffects buff. Each carries the dimensions the
+// master plan asks every faction verb to have: cost, cooldown, and a
+// failure/exploit rule (see canActivateCampVerb / isCampVerbDegraded).
+// Visual/audio feedback and the ending-consequence weighting from the
+// design doc are not implemented here — this is the mechanical gate only.
+export const CAMP_ACTIVE_VERBS = Object.freeze({
+    camp_meridian: Object.freeze({
+        id: 'route_intel',
+        label: 'ROUTE INTEL',
+        description: 'Reveal one ring\'s mission-blocker location and a shortest-path ping.',
+        cost: Object.freeze({ tech: 1 }),
+        cooldownSeconds: 0,
+        oncePerRing: true
+    }),
+    camp_tallow: Object.freeze({
+        id: 'triage',
+        label: 'TRIAGE',
+        description: 'Cure one stage of infection progress, or fully heal.',
+        cost: Object.freeze({ med: 1 }),
+        cooldownSeconds: 90
+    }),
+    camp_vesper: Object.freeze({
+        id: 'field_resupply',
+        label: 'FIELD RESUPPLY',
+        description: 'Instant ammo-to-full plus one bonus turret charge.',
+        cost: Object.freeze({ coin: 1 }),
+        cooldownSeconds: 120,
+        oncePerBossEncounter: true
+    })
+});
+
+export function getCampActiveVerb(campId) {
+    return CAMP_ACTIVE_VERBS[campId] ?? null;
+}
+
+/**
+ * @param {string} campId
+ * @param {Object} context
+ * @param {Object} context.bankState
+ * @param {number} [context.nowSeconds]
+ * @param {number} [context.lastUsedAtSeconds] - when this camp's verb was last activated
+ * @param {number} [context.ring] - current ring, for oncePerRing verbs
+ * @param {Set<number>} [context.usedRings] - rings already pinged this run
+ * @param {boolean} [context.bossEncounterActive]
+ * @param {boolean} [context.usedThisBossEncounter]
+ * @param {number} [context.humanityDecayMultiplier] - current passive value from getCampVerbEffects
+ */
+export function canActivateCampVerb(campId, context = {}) {
+    const verb = getCampActiveVerb(campId);
+    if (!verb) return { allowed: false, reason: 'no_verb_for_camp' };
+
+    if (!canApplyTrade({ give: verb.cost, receive: {} }, context.bankState)) {
+        return { allowed: false, reason: 'insufficient_resources' };
+    }
+
+    if (Number.isFinite(verb.cooldownSeconds) && verb.cooldownSeconds > 0
+        && Number.isFinite(context.lastUsedAtSeconds) && Number.isFinite(context.nowSeconds)) {
+        const remaining = verb.cooldownSeconds - (context.nowSeconds - context.lastUsedAtSeconds);
+        if (remaining > 0) return { allowed: false, reason: 'on_cooldown', remainingSeconds: remaining };
+    }
+
+    if (verb.oncePerRing && context.usedRings?.has(context.ring)) {
+        return { allowed: false, reason: 'ring_already_pinged' };
+    }
+
+    if (verb.oncePerBossEncounter && context.bossEncounterActive && context.usedThisBossEncounter) {
+        return { allowed: false, reason: 'already_used_this_encounter' };
+    }
+
+    // Tallow: no free stacking once the passive stabilize_cover buff is
+    // already at its own floor (getCampVerbEffects's 0.45 minimum).
+    if (campId === 'camp_tallow' && (context.humanityDecayMultiplier ?? 1) <= 0.45) {
+        return { allowed: false, reason: 'already_at_humanity_floor' };
+    }
+
+    return { allowed: true, reason: null };
+}
+
+// Meridian's failure/exploit rule: mechanically usable even if the camp has
+// been robbed, but the result should read as untrustworthy intel rather
+// than a hard block -- a robbed informant can still talk, just not well.
+export function isCampVerbDegraded(campId, campStatus) {
+    return campId === 'camp_meridian' && campStatus === 'robbed';
+}
+
 export function canApplyTrade(trade, bankState) {
     if (!trade || !bankState) return false;
     for (const [key, amt] of Object.entries(trade.give)) {
