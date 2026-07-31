@@ -2508,7 +2508,7 @@ function renderRadioTransmission(rawText) {
     radioPrompt.dataset.removeDelayMs = '300';
     radioPrompt.innerHTML = `
         <div class="radio-transmission-prompt__avatar">
-          <img src="${portrait}" alt="Sender Portrait" />
+          <img src="${assetUrl(portrait)}" alt="Sender Portrait" />
           <div class="radio-transmission-prompt__scanline"></div>
         </div>
         <div class="radio-transmission-prompt__body">

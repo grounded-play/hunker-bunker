@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { SONG_INTERSTITIALS, getSongInterstitial, selectCampInterstitial } from './songInterstitials.js';
+import {
+    SONG_INTERSTITIALS,
+    SongInterstitialController,
+    getSongInterstitial,
+    selectCampInterstitial
+} from './songInterstitials.js';
 
 describe('song interstitial manifest', () => {
     it('provides stable first-frame and music slots for all 38 songs', () => {
@@ -11,6 +16,40 @@ describe('song interstitial manifest', () => {
             audio: '/audio/ost/Her Voice Inside Your Helmet.mp3',
             musicKey: 'music_interstitial_11'
         });
+    });
+
+    it('resolves still, motion, and song assets inside a packaged Electron build', async () => {
+        const previousDocument = globalThis.document;
+        globalThis.document = { baseURI: 'file:///opt/hunker-bunker/resources/app.asar/dist/index.html' };
+        const image = {};
+        const video = {
+            load() {},
+            set src(value) {
+                this._src = value;
+                this.onerror?.();
+            },
+            get src() { return this._src; }
+        };
+        const decoded = [];
+        const controller = new SongInterstitialController({
+            image,
+            video,
+            AudioManager: {
+                buffers: {},
+                async decodeAudioAsset(url) { decoded.push(url); return {}; },
+                play() { return { source: {}, gainNode: {} }; }
+            }
+        });
+        const spec = getSongInterstitial(1);
+        const stillPromise = controller.loadStill(spec);
+        expect(image.src).toBe('file:///opt/hunker-bunker/resources/app.asar/dist/interstitials/int_01_someone_is_still_alive_key_v1.webp');
+        image.onload();
+        await stillPromise;
+        await controller.loadMotion(spec);
+        await controller.startSong(spec);
+        expect(video.src).toBe('file:///opt/hunker-bunker/resources/app.asar/dist/interstitials/motion/int_01_someone_is_still_alive_motion_v1.webm');
+        expect(decoded).toEqual(['file:///opt/hunker-bunker/resources/app.asar/dist/audio/ost/Someone%20Is%20Still%20Alive.mp3']);
+        globalThis.document = previousDocument;
     });
 
     it('selects camp state themes before ordinary camp character themes', () => {

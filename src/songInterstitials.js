@@ -1,3 +1,5 @@
+import { assetUrl } from './assetUrl.js';
+
 const TITLES = [
     'Someone Is Still Alive', 'Kaelen\'s Sleeping Machine', 'The Math Is Beautiful Now',
     'Warmth Beneath the Ice', 'The Pipes Are Singing', 'Briggs Keeps the Ledger',
@@ -67,7 +69,7 @@ export class SongInterstitialController {
         if (!audio || !spec?.musicKey) return false;
         if (!audio.buffers?.[spec.musicKey] && spec.audio && audio.decodeAudioAsset) {
             try {
-                audio.buffers[spec.musicKey] = await audio.decodeAudioAsset(spec.audio);
+                audio.buffers[spec.musicKey] = await audio.decodeAudioAsset(assetUrl(spec.audio));
             } catch {
                 return false;
             }
@@ -96,7 +98,7 @@ export class SongInterstitialController {
             if (!this.image) return resolve(false);
             this.image.onload = () => resolve(true);
             this.image.onerror = () => resolve(false);
-            this.image.src = spec.image;
+            this.image.src = assetUrl(spec.image);
         });
     }
 
@@ -115,7 +117,7 @@ export class SongInterstitialController {
             const timeoutId = setTimeout(() => done(false), 1200);
             this.video.oncanplay = () => done(true);
             this.video.onerror = () => done(false);
-            this.video.src = spec.motion;
+            this.video.src = assetUrl(spec.motion);
             this.video.load?.();
         });
     }
