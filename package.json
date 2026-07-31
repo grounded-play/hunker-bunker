@@ -55,6 +55,7 @@
     "appId": "com.icecave.hunkerbunker",
     "productName": "Hunker Bunker",
     "executableName": "hunker-bunker",
+    "afterPack": "scripts/after-pack.cjs",
     "directories": {
       "output": "dist_electron"
     },

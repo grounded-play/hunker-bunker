@@ -76,6 +76,30 @@ function auditFile(filePath, root) {
     return null;
 }
 
+export function auditLinuxLauncher(root) {
+    const failures = [];
+    const launcher = path.join(root, 'hunker-bunker');
+    const binary = path.join(root, 'hunker-bunker-bin');
+    if (!fs.existsSync(launcher)) {
+        failures.push({ file: 'hunker-bunker', reason: 'SteamOS launcher is missing.' });
+    } else {
+        const body = fs.readFileSync(launcher, 'utf8');
+        if (!body.includes('hunker-bunker-bin') || !body.includes('--no-sandbox')) {
+            failures.push({
+                file: 'hunker-bunker',
+                reason: 'SteamOS launcher must start the Electron binary with --no-sandbox.'
+            });
+        }
+        if ((fs.statSync(launcher).mode & 0o111) === 0) {
+            failures.push({ file: 'hunker-bunker', reason: 'SteamOS launcher is not executable.' });
+        }
+    }
+    if (!fs.existsSync(binary)) {
+        failures.push({ file: 'hunker-bunker-bin', reason: 'Linux Electron binary is missing.' });
+    }
+    return failures;
+}
+
 function readTextIfExists(filePath) {
     if (!fs.existsSync(filePath)) return null;
     return fs.readFileSync(filePath, 'utf8');
@@ -197,6 +221,9 @@ export async function auditSteamDepot({
         scannedRoots += 1;
         const files = await walkFiles(absoluteRoot);
         scannedFiles += files.length;
+        if (path.basename(absoluteRoot) === 'linux-unpacked') {
+            failures.push(...auditLinuxLauncher(absoluteRoot).map((failure) => ({ root, ...failure })));
+        }
         for (const file of files) {
             const failure = auditFile(file, absoluteRoot);
             if (failure) {
