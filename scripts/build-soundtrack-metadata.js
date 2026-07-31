@@ -9,7 +9,6 @@ const outputPath = path.join(repoRoot, 'steam/store/soundtrack/ost_metadata.csv'
 const checkOnly = process.argv.includes('--check');
 
 const csvCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-const packagedTitle = (title) => title.replace(/[^a-zA-Z0-9\s-_()]/g, '');
 
 function parseSteamDurations(csv) {
     const durations = new Map();
@@ -33,9 +32,13 @@ export function buildSoundtrackMetadata() {
     }
 
     const headers = [
-        'Disc Number', 'Track Number', 'Title', 'Source Filename', 'Packaged Filename',
-        'Duration', 'Artist', 'Album Artist', 'Album', 'Composer', 'Publisher',
-        'Copyright', 'Year', 'Genre', 'Description', 'ISRC'
+        'Disc Number',
+        'Track Number',
+        'Original Name',
+        'Original Name Language (ie., "es", "jp") (optional)',
+        'International Name (optional)',
+        'Duration ("m:ss")',
+        'ISRC (optional)'
     ];
     const rows = tracks.map((track, index) => {
         const number = index + 1;
@@ -43,12 +46,7 @@ export function buildSoundtrackMetadata() {
         if (!steam || steam.title !== track.title) {
             throw new Error(`Track ${number} mismatch: config=${track.title}, Steam CSV=${steam?.title ?? 'missing'}.`);
         }
-        const packagedFilename = `${String(number).padStart(2, '0')} - ${packagedTitle(track.title)}.mp3`;
-        return [
-            1, number, track.title, track.filename, packagedFilename, steam.duration,
-            config.artist, config.album_artist, config.album, config.composer, config.publisher,
-            config.copyright, config.year, config.genre, track.description, ''
-        ].map(csvCell).join(',');
+        return `1,${number},${csvCell(track.title)},en,${csvCell(track.title)},${steam.duration},`;
     });
     return `${headers.map(csvCell).join(',')}\n${rows.join('\n')}\n`;
 }
