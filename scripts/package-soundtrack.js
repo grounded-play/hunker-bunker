@@ -64,6 +64,10 @@ function packageSoundtrack() {
         fs.rmSync(distDir, { recursive: true, force: true });
     }
     fs.mkdirSync(distDir, { recursive: true });
+
+    const metadataCsv = path.join(rootDir, 'steam', 'store', 'soundtrack', 'ost_metadata.csv');
+    fs.copyFileSync(metadataCsv, path.join(distDir, 'OST_METADATA.csv'));
+    console.log('Copying comprehensive metadata: OST_METADATA.csv');
     
     // Copy cover art
     if (config.cover) {

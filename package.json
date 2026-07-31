@@ -46,8 +46,9 @@
     "electron:dist": "npm run build && npm run steam:config && npm run steam:input-configs && electron-builder",
     "lighthouse:setup": "npx -y @puppeteer/browsers install chrome@stable",
     "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun",
-    "audit:soundtrack": "node scripts/package-soundtrack.js --check",
-    "package-soundtrack": "node scripts/package-soundtrack.js",
+    "soundtrack:metadata": "node scripts/build-soundtrack-metadata.js",
+    "audit:soundtrack": "node scripts/build-soundtrack-metadata.js --check && node scripts/package-soundtrack.js --check",
+    "package-soundtrack": "node scripts/build-soundtrack-metadata.js && node scripts/package-soundtrack.js",
     "cinematics:stills": "node scripts/build-cinematic-still-videos.js"
   },
   "build": {
