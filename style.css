@@ -1722,6 +1722,7 @@ body {
   display: none;
 }
 
+.title-menu-btn:focus,
 .title-menu-btn:focus-visible,
 .controller-mode .title-menu-btn:focus,
 .start-btn:focus-visible,
@@ -4776,6 +4777,16 @@ html.loading-cursor-hidden * {
 }
 
 html.loading-cursor-hidden #tactical-cursor {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+html.boot-cursor-hidden,
+html.boot-cursor-hidden * {
+  cursor: none !important;
+}
+
+html.boot-cursor-hidden #tactical-cursor {
   display: none !important;
   opacity: 0 !important;
 }

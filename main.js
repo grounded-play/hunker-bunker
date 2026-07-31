@@ -705,7 +705,7 @@ document.addEventListener('keydown', (event) => {
         event.preventDefault();
         activateControllerFocusedElement();
     }
-});
+}, { capture: true });
 
 document.addEventListener('focusin', (event) => {
     const root = getControllerFocusRoot();
@@ -9209,6 +9209,15 @@ function initTacticalCursor() {
         // that report false (0,0) or extremely small coordinates on either axis.
         if (e.clientX < 8 || e.clientY < 8) return;
 
+        // Gamescope can emit synthetic mouse motion while it transfers focus
+        // away from Steam's launch overlay. Do not reveal either cursor until
+        // the final airlock doors have completely exposed the title menu.
+        if (document.documentElement.classList.contains('boot-cursor-hidden')) {
+            cursor.classList.add('cursor-fade-out');
+            document.documentElement.classList.remove('custom-cursor-enabled');
+            return;
+        }
+
         mouseX = e.clientX;
         mouseY = e.clientY;
 
@@ -9862,7 +9871,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     transitionToMenuMusic();
                                     finishBootDiagnostics();
                                 },
-                                null,
+                                () => {
+                                    document.documentElement.classList.remove(
+                                        'boot-cursor-hidden',
+                                        'custom-cursor-enabled'
+                                    );
+                                    ensureControllerMenuFocus();
+                                },
                                 'base'
                             );
                             resolve();
