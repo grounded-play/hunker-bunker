@@ -96,6 +96,10 @@ steam/
 - Upload: `npm run steam:upload` uploads both the game build through
   `steam/app_build.vdf` and the OST through `steam/soundtrack_app_build.vdf`.
   Use `npm run steam:upload-soundtrack` to retry only the already-packaged OST.
+  The soundtrack upload intentionally does not set a live branch: after a
+  successful commit, open soundtrack AppID `4957680` → SteamPipe → Builds and
+  set the new build live on `default`. Steam does not allow `default` to be
+  selected automatically by `SetLive`.
   Use a **dedicated builder account** with only "Edit App Metadata +
   Publish" on this app, never the owner login.
 - **Local authenticated release**: `npm run steam:prepare` runs tests,

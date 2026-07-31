@@ -9,8 +9,6 @@
     "BuildOutput" "../steam_build_output/"
     "ContentRoot" "../dist_soundtrack/"
 
-    "SetLive" "beta"
-
     "Depots"
     {
         "4957681" "depot_build_soundtrack.vdf"

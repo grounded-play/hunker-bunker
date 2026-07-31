@@ -162,12 +162,14 @@ if (upload) {
                 '+quit'
             ], releaseEnv, 'Steam soundtrack upload');
             console.log(`[steam-release] uploaded soundtrack ${commit} through steam/soundtrack_app_build.vdf`);
+            console.log('[steam-release] soundtrack build committed; set it live on the default branch from AppID 4957680 > SteamPipe > Builds');
         } catch (err) {
             console.error(`\n[steam-release] WARNING: Soundtrack upload failed for AppID 4957680.`);
             console.error(`To fix this in Steamworks:`);
             console.error(`  1. Ensure account '${account}' has 'Edit App Metadata' & 'SteamPipe Upload' permissions granted for AppID 4957680.`);
             console.error(`  2. In Steamworks (App 4957680 > SteamPipe > Depots), verify Depot 4957681 is added and click 'Save'.`);
-            console.error(`  3. Click 'Publishing' -> 'Publish Changes' on App 4957680 in Steamworks at least once.\n`);
+            console.error(`  3. Click 'Publishing' -> 'Publish Changes' on App 4957680 in Steamworks at least once.`);
+            console.error(`  4. Do not configure SetLive=beta unless AppID 4957680 has that beta branch; soundtrack default builds are set live manually.\n`);
             if (soundtrackExplicit || process.env.HB_STEAM_REQUIRE_SOUNDTRACK === '1') {
                 throw err;
             }
