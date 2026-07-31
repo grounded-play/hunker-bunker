@@ -807,6 +807,7 @@ function createWindow() {
         backgroundColor: '#0a0c0e',
         icon: path.join(__dirname, 'icon.png'),
         autoHideMenuBar: true,
+        focusable: true,
         fullscreen: !DEV,
         // Map a black native surface immediately. Waiting for ready-to-show
         // lets the renderer (and audio) start behind Steam's loading overlay
@@ -829,6 +830,7 @@ function createWindow() {
         if (!win.isFullScreen()) win.setFullScreen(true);
         win.moveTop();
         win.focus();
+        win.webContents.focus();
         recordSteamDiagnostic('info', 'window_focus', 'Presented and focused the fullscreen game window', {
             phase,
             attempt: presentationAttempts,
@@ -838,6 +840,7 @@ function createWindow() {
         });
     };
     win.once('ready-to-show', () => presentGameWindow('ready-to-show'));
+    win.webContents.once('dom-ready', () => presentGameWindow('dom-ready'));
     win.webContents.once('did-finish-load', () => {
         setTimeout(() => presentGameWindow('did-finish-load'), 0);
     });
@@ -846,7 +849,10 @@ function createWindow() {
     // intentional: focus requests made before mapping can be ignored by X11.
     setTimeout(() => presentGameWindow('window-created'), 0);
     setTimeout(() => presentGameWindow('first-frame-fallback'), 1000);
-    win.on('focus', () => recordSteamDiagnostic('info', 'window_focus', 'Game window received focus'));
+    win.on('focus', () => {
+        win.webContents.focus();
+        recordSteamDiagnostic('info', 'window_focus', 'Game window received focus');
+    });
     win.on('blur', () => recordSteamDiagnostic('info', 'window_blur', 'Game window lost focus'));
 
     if (DEV) {

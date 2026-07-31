@@ -4768,6 +4768,18 @@ html.custom-cursor-enabled #confirm-no {
   display: none;
 }
 
+/* The boot/deployment screen is controller-first. Hide both Chromium's native
+   pointer and our rendered tactical cursor until the screen becomes interactive. */
+html.loading-cursor-hidden,
+html.loading-cursor-hidden * {
+  cursor: none !important;
+}
+
+html.loading-cursor-hidden #tactical-cursor {
+  display: none !important;
+  opacity: 0 !important;
+}
+
 .custom-cursor-enabled #tactical-cursor {
   display: block;
 }

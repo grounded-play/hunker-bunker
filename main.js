@@ -72,6 +72,22 @@ const loaderStatus = document.querySelector('.loader-status');
 const loaderBriefingAvatar = document.getElementById('loader-briefing-avatar');
 const loaderBriefingAvatarImg = document.getElementById('loader-briefing-avatar-img');
 const loaderBriefingSpeaker = document.getElementById('loader-briefing-speaker');
+
+function syncLoadingCursorSuppression() {
+    document.documentElement.classList.toggle(
+        'loading-cursor-hidden',
+        Boolean(loadingScreen && !loadingScreen.classList.contains('hidden'))
+    );
+}
+
+if (loadingScreen) {
+    new MutationObserver(syncLoadingCursorSuppression).observe(loadingScreen, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+}
+syncLoadingCursorSuppression();
+
 const ACTIVE_CLASS_KEY = 'hb_active_class_v1';
 const PLAYABLE_CLASSES = Object.freeze(['SCOUT', 'TANK', 'ENGINEER']);
 
@@ -448,6 +464,22 @@ function ensureControllerMenuFocus() {
     if (appPhase === 'gameplay' && Boolean(window.game?.isGameplayInputActive?.())) return;
     syncControllerFocusBoundary();
 }
+
+function clearHeldApplicationInput() {
+    window.game?.clearGameplayInputState?.();
+}
+
+window.addEventListener('blur', clearHeldApplicationInput);
+window.addEventListener('focus', () => {
+    window.requestAnimationFrame(ensureControllerMenuFocus);
+});
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        clearHeldApplicationInput();
+        return;
+    }
+    window.requestAnimationFrame(ensureControllerMenuFocus);
+});
 
 function setLastInputMode(mode, { refresh = true } = {}) {
     const normalized = mode === 'controller' ? 'controller' : 'keyboard';
