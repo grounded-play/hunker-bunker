@@ -18,6 +18,14 @@ app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
 if (process.platform === 'linux') {
     app.commandLine.appendSwitch('no-sandbox');
     app.commandLine.appendSwitch('disable-gpu-sandbox');
+    // Gamescope must be able to focus the native game surface and dismiss
+    // Steam's launch overlay. Native Wayland intentionally restricts focus,
+    // move, and post-creation fullscreen requests, while Steam Deck Gaming
+    // Mode provides XWayland specifically for game windows.
+    app.commandLine.appendSwitch(
+        'ozone-platform',
+        process.env.HB_ELECTRON_OZONE_PLATFORM || 'x11'
+    );
 }
 
 const path = require('node:path');
@@ -775,7 +783,7 @@ ipcMain.handle('hb:showFloatingGamepadTextInput', async (_e, keyboardMode, x, y,
 ipcMain.handle('hb:steamInfo', () => getSteamIdentitySnapshot());
 
 function createWindow() {
-    let presented = false;
+    let presentationAttempts = 0;
     const win = new BrowserWindow({
         width: 1600,
         height: 1000,
@@ -785,7 +793,10 @@ function createWindow() {
         icon: path.join(__dirname, 'icon.png'),
         autoHideMenuBar: true,
         fullscreen: !DEV,
-        show: DEV,
+        // Map a black native surface immediately. Waiting for ready-to-show
+        // lets the renderer (and audio) start behind Steam's loading overlay
+        // on Gamescope, which can leave that overlay holding focus forever.
+        show: true,
         webPreferences: {
             preload: path.join(__dirname, 'preload.cjs'),
             contextIsolation: true,
@@ -796,23 +807,30 @@ function createWindow() {
         }
     });
 
-    const presentGameWindow = () => {
-        if (DEV || presented || win.isDestroyed()) return;
-        presented = true;
+    const presentGameWindow = (phase = 'unknown') => {
+        if (DEV || win.isDestroyed()) return;
+        presentationAttempts += 1;
         win.show();
-        win.setFullScreen(true);
+        if (!win.isFullScreen()) win.setFullScreen(true);
         win.moveTop();
         win.focus();
         recordSteamDiagnostic('info', 'window_focus', 'Presented and focused the fullscreen game window', {
+            phase,
+            attempt: presentationAttempts,
             focused: win.isFocused(),
             visible: win.isVisible(),
             fullscreen: win.isFullScreen()
         });
     };
-    win.once('ready-to-show', presentGameWindow);
+    win.once('ready-to-show', () => presentGameWindow('ready-to-show'));
     win.webContents.once('did-finish-load', () => {
-        setTimeout(presentGameWindow, 0);
+        setTimeout(() => presentGameWindow('did-finish-load'), 0);
     });
+    // Claim the Gamescope slot as soon as the native surface exists, then
+    // retry once after Chromium has submitted its first frames. Retrying is
+    // intentional: focus requests made before mapping can be ignored by X11.
+    setTimeout(() => presentGameWindow('window-created'), 0);
+    setTimeout(() => presentGameWindow('first-frame-fallback'), 1000);
     win.on('focus', () => recordSteamDiagnostic('info', 'window_focus', 'Game window received focus'));
     win.on('blur', () => recordSteamDiagnostic('info', 'window_blur', 'Game window lost focus'));
 
