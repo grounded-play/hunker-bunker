@@ -2751,9 +2751,23 @@ input:checked+.slider:before {
   inset: 0;
   z-index: 16190;
   overflow: hidden;
-  background: #030506;
+  background: transparent;
   isolation: isolate;
 }
+
+.song-interstitial::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #030506;
+  opacity: 0;
+  transition: opacity 520ms ease-in;
+}
+
+.song-interstitial.is-closing::before,
+.song-interstitial.is-open::before,
+.song-interstitial.is-settled::before { opacity: 1; }
 
 .song-interstitial__media,
 .song-interstitial__placeholder {
@@ -2762,6 +2776,8 @@ input:checked+.slider:before {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 420ms ease-out;
 }
 
 .song-interstitial__placeholder {
@@ -2771,7 +2787,8 @@ input:checked+.slider:before {
     linear-gradient(115deg, #030506 12%, #20201a 48%, #081417 76%, #020303);
 }
 
-.song-interstitial:not(.has-placeholder) .song-interstitial__placeholder { opacity: 0; }
+.song-interstitial.is-open:not(.has-placeholder) .song-interstitial__media,
+.song-interstitial.is-open.has-placeholder .song-interstitial__placeholder { opacity: 1; }
 
 .song-interstitial__flash {
   position: absolute;
@@ -2835,6 +2852,9 @@ input:checked+.slider:before {
 
 @media (prefers-reduced-motion: reduce) {
   .song-interstitial__door { transition-duration: 90ms; }
+  .song-interstitial::before,
+  .song-interstitial__media,
+  .song-interstitial__placeholder { transition-duration: 90ms; }
   .song-interstitial.is-open .song-interstitial__flash { animation: none; }
 }
 

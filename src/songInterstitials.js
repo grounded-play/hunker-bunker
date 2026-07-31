@@ -126,6 +126,7 @@ export class SongInterstitialController {
         const spec = typeof specOrId === 'object' ? specOrId : getSongInterstitial(specOrId);
         if (!spec || !this.root) return { shown: false, fallback: true };
         const run = ++this._run;
+        const closeStartedAt = Date.now();
         this.root.classList.remove('hidden', 'is-open', 'is-settled', 'has-motion');
         this.root.classList.add('is-closing');
         this.root.setAttribute('aria-hidden', 'false');
@@ -150,7 +151,12 @@ export class SongInterstitialController {
                 this.video.play?.().catch?.(() => {});
             }
         }
-        await new Promise((resolve) => setTimeout(resolve, this.reducedMotion ? 80 : 360));
+        // Never reveal the incoming scene until the doors have completely met.
+        // Asset decoding may finish instantly or slowly, so wait against the
+        // original close start instead of adding an arbitrary post-load delay.
+        const closeDuration = this.reducedMotion ? 100 : 540;
+        const closeRemaining = Math.max(0, closeDuration - (Date.now() - closeStartedAt));
+        await new Promise((resolve) => setTimeout(resolve, closeRemaining));
         this.root.classList.remove('is-closing');
         this.root.classList.add('is-open');
         await new Promise((resolve) => setTimeout(resolve, this.reducedMotion ? 120 : holdMs));
