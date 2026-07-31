@@ -9,6 +9,7 @@ import {
     stampLattice,
     extractChunkWfcMetadata
 } from './wfcGenerator.js';
+import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { planChunkRoomPopulation } from './roomPopulation.js';
@@ -15119,7 +15120,7 @@ export class ThreeGame {
         const material = this.exteriorCanyonMaterials?.[biomeKey] ?? this.exteriorCanyonMaterial;
         const patch = new THREE.Mesh(this.floorGeometry, material);
         patch.rotation.x = -Math.PI / 2;
-        patch.position.set(worldX, 0.014, worldZ);
+        patch.position.set(worldX, -5, worldZ);
         patch.receiveShadow = false;
         patch.userData = { isExteriorCanyon: true, isLethalPit: true, worldX, worldZ };
         return patch;
@@ -15478,17 +15479,47 @@ export class ThreeGame {
             damagedCut = 0.12;
         }
 
-        // Single merged floor for the whole chunk (see chunkFloorGeometry note).
+        // Non-maze terrain can use one merged floor. Architectural maze
+        // chunks cannot: a full plane beneath X cells made the "canyon" read
+        // as more solid room. Instance only structural cells so canyon is an
+        // actual visible break in the floor.
         const chunkCenter = (this.chunkSize - 1) / 2;
-        const chunkFloor = new THREE.Mesh(this.chunkFloorGeometry, this.floorMaterial);
-        chunkFloor.rotation.x = -Math.PI / 2;
-        chunkFloor.position.set(
-            chunkX * this.chunkSize + chunkCenter,
-            0,
-            chunkY * this.chunkSize + chunkCenter
-        );
-        chunkFloor.receiveShadow = true;
-        group.add(chunkFloor);
+        if (landform === LANDFORMS.MAZE) {
+            const floorCells = [];
+            for (let localY = 0; localY < this.chunkSize; localY += 1) {
+                for (let localX = 0; localX < this.chunkSize; localX += 1) {
+                    if (grid[localY][localX] !== EXTERIOR_CANYON_TILE) floorCells.push({ localX, localY });
+                }
+            }
+            const floors = new THREE.InstancedMesh(this.floorGeometry, this.floorMaterial, floorCells.length);
+            const matrix = new THREE.Matrix4();
+            const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+            floorCells.forEach((cell, index) => {
+                matrix.compose(
+                    new THREE.Vector3(
+                        chunkX * this.chunkSize + cell.localX,
+                        0,
+                        chunkY * this.chunkSize + cell.localY
+                    ),
+                    rotation,
+                    new THREE.Vector3(1, 1, 1)
+                );
+                floors.setMatrixAt(index, matrix);
+            });
+            floors.instanceMatrix.needsUpdate = true;
+            floors.receiveShadow = true;
+            group.add(floors);
+        } else {
+            const chunkFloor = new THREE.Mesh(this.chunkFloorGeometry, this.floorMaterial);
+            chunkFloor.rotation.x = -Math.PI / 2;
+            chunkFloor.position.set(
+                chunkX * this.chunkSize + chunkCenter,
+                0,
+                chunkY * this.chunkSize + chunkCenter
+            );
+            chunkFloor.receiveShadow = true;
+            group.add(chunkFloor);
+        }
         this.addRoomSurfaceOverlays(
             group,
             chunkX,
@@ -21389,9 +21420,52 @@ export class ThreeGame {
                 loopChance: isRingRoute ? 0.58 : 0.18,
                 maxLoops: isRingRoute ? 2 : 1
             });
-            grid = stampLattice(mazeLattice, this.chunkSize);
             if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
             mazeMetadata = extractChunkWfcMetadata(mazeLattice, this.chunkSize, { chunkX, chunkY });
+            const architecturalOpenings = {
+                north: this.getEdgeOpening('horizontal', chunkX, chunkY),
+                south: this.getEdgeOpening('horizontal', chunkX, chunkY + 1),
+                west: this.getEdgeOpening('vertical', chunkX, chunkY),
+                east: this.getEdgeOpening('vertical', chunkX + 1, chunkY)
+            };
+            const isDestination = regionalRoles.some((role) => (
+                role === 'camp' || role === 'hive' || role === 'queen'
+                || role === 'room' || role === 'mission'
+            ));
+            const roomMode = isDestination
+                || regionalRoles.includes('ring')
+                || nearestRadialRoom <= this.chunkSize * 0.9
+                || random() < 0.24;
+            const architectural = generateArchitecturalMazeChunk(random, {
+                size: this.chunkSize,
+                openings: architecturalOpenings,
+                roomMode,
+                important: isDestination
+            });
+            grid = architectural.grid;
+            mazeMetadata.architectural = {
+                mode: architectural.room ? 'large-room' : 'long-connector',
+                roomShape: architectural.room?.shape ?? null,
+                canyonCells: grid.flat().filter((cell) => cell === EXTERIOR_CANYON_TILE).length
+            };
+            // The old nine 7x7 metadata rooms no longer describe the floor.
+            // Until multi-chunk room metadata is introduced, expose the one
+            // actual architectural room so population and overlays cannot be
+            // stamped into canyon.
+            if (architectural.room) {
+                const existing = mazeMetadata.roomInstances?.[0] ?? {};
+                mazeMetadata.roomInstances = [{
+                    ...existing,
+                    id: `architectural-room:${chunkX},${chunkY}`,
+                    chunkKey: `${chunkX},${chunkY}`,
+                    interior: architectural.room.interior,
+                    bounds: architectural.room.bounds,
+                    doors: [],
+                    navigation: { doorLanes: [] }
+                }];
+            } else {
+                mazeMetadata.roomInstances = [];
+            }
             if (radialPlan) {
                 const radialDistance = Math.hypot(chunkWorldX, chunkWorldZ);
                 const ring = radialPlan.radii.reduce((best, radius, index) => (
@@ -21554,6 +21628,7 @@ export class ThreeGame {
         if (
             landform === LANDFORMS.MAZE
             && mazeLattice
+            && !mazeMetadata?.architectural
             && !this.isInTutorialRing(chunkX, chunkY)
         ) {
             const beforeVerticalFeature = grid.map((row) => [...row]);

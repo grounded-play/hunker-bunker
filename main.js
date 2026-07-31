@@ -2,6 +2,7 @@
 import { AudioManager } from './src/audio.js';
 import { assetUrl } from './src/assetUrl.js';
 import { debugLog } from './src/debugConsole.js';
+import { canUseDeveloperTools } from './src/devToolsAccess.js';
 import { ObjectiveRegistry } from './src/objectiveRegistry.js';
 import { BankManager, FOUNDRY_ACTIVATION_COST } from './src/bank.js';
 import { FabricatorManager, FAB_RECIPES, FAB_SPIN_COST, FABRICATOR_SITE_MAX_USES } from './src/fabricator.js';
@@ -5876,13 +5877,45 @@ document.addEventListener('fullscreenchange', () => {
 });
 
 // Global UI Updates
+let qaToolsEnabled = false;
+const electronApiPresent = Boolean(window.electronAPI);
+let developerToolsAuthorized = canUseDeveloperTools({ electronApiPresent, qaToolsEnabled });
+
 function setDebugMode(active) {
-    if (active) {
+    const enabled = Boolean(active) && developerToolsAuthorized;
+    if (enabled) {
         document.body.classList.add('show-debug');
     } else {
         document.body.classList.remove('show-debug');
     }
-    window.game?.setMazeDebugVisible?.(active);
+    window.game?.setMazeDebugVisible?.(enabled);
+    if (mainDebugToggle) {
+        mainDebugToggle.checked = enabled;
+        mainDebugToggle.disabled = !developerToolsAuthorized;
+    }
+}
+
+if (window.electronAPI?.getQaToolsEnabled) {
+    window.electronAPI.getQaToolsEnabled()
+        .then((enabled) => {
+            qaToolsEnabled = Boolean(enabled);
+            developerToolsAuthorized = canUseDeveloperTools({
+                electronApiPresent,
+                qaToolsEnabled
+            });
+            if (!developerToolsAuthorized) {
+                state.settings.debug = false;
+                setDebugMode(false);
+                closeDevConsoleModal();
+            }
+        })
+        .catch(() => {
+            qaToolsEnabled = false;
+            developerToolsAuthorized = false;
+            state.settings.debug = false;
+            setDebugMode(false);
+            closeDevConsoleModal();
+        });
 }
 
 // FPS Counter (Debug Tool)
@@ -6297,6 +6330,10 @@ function executeDevCommand(input) {
 }
 
 function openDevConsoleModal() {
+    if (!developerToolsAuthorized) {
+        setDebugMode(false);
+        return;
+    }
     setDebugMode(true);
     const modal = document.getElementById('dev-console-modal');
     if (!modal) return;
@@ -6890,6 +6927,10 @@ setupClickOutside('tactical-map-modal', () => toggleTacticalMapModal(false));
 // Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
     if (event.code === 'Backquote' || event.key === '`' || event.key === '~') {
+        if (!developerToolsAuthorized) {
+            setDebugMode(false);
+            return;
+        }
         const activeTag = document.activeElement?.tagName?.toLowerCase();
         if (activeTag === 'input' && document.activeElement?.id !== 'dev-console-input') {
             return;

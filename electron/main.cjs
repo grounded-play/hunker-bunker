@@ -775,6 +775,7 @@ ipcMain.handle('hb:showFloatingGamepadTextInput', async (_e, keyboardMode, x, y,
 ipcMain.handle('hb:steamInfo', () => getSteamIdentitySnapshot());
 
 function createWindow() {
+    let presented = false;
     const win = new BrowserWindow({
         width: 1600,
         height: 1000,
@@ -784,14 +785,36 @@ function createWindow() {
         icon: path.join(__dirname, 'icon.png'),
         autoHideMenuBar: true,
         fullscreen: !DEV,
+        show: DEV,
         webPreferences: {
             preload: path.join(__dirname, 'preload.cjs'),
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: false, // preload uses contextBridge only; sandbox off for steamworks compat
-            webgl: true
+            webgl: true,
+            backgroundThrottling: false
         }
     });
+
+    const presentGameWindow = () => {
+        if (DEV || presented || win.isDestroyed()) return;
+        presented = true;
+        win.show();
+        win.setFullScreen(true);
+        win.moveTop();
+        win.focus();
+        recordSteamDiagnostic('info', 'window_focus', 'Presented and focused the fullscreen game window', {
+            focused: win.isFocused(),
+            visible: win.isVisible(),
+            fullscreen: win.isFullScreen()
+        });
+    };
+    win.once('ready-to-show', presentGameWindow);
+    win.webContents.once('did-finish-load', () => {
+        setTimeout(presentGameWindow, 0);
+    });
+    win.on('focus', () => recordSteamDiagnostic('info', 'window_focus', 'Game window received focus'));
+    win.on('blur', () => recordSteamDiagnostic('info', 'window_blur', 'Game window lost focus'));
 
     if (DEV) {
         win.loadURL(DEV_URL);
