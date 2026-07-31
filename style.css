@@ -942,6 +942,9 @@ body {
 
 .settings-select:focus {
   border-color: var(--accent-primary);
+  outline: 2px solid rgba(46, 196, 182, 0.9);
+  outline-offset: 3px;
+  box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
 }
 
 .setting-val-display {
@@ -2557,6 +2560,13 @@ body {
   opacity: 0;
   width: 0;
   height: 0;
+}
+
+.toggle input:focus + .slider,
+.controller-mode .toggle input:focus + .slider {
+  outline: 2px solid rgba(46, 196, 182, 0.9);
+  outline-offset: 3px;
+  box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
 }
 
 .slider {

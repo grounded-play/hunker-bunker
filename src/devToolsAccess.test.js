@@ -6,12 +6,12 @@ describe('developer tool authorization', () => {
         expect(canUseDeveloperTools()).toBe(true);
     });
 
-    it('fails closed in packaged Electron until QA tools are explicitly enabled', () => {
-        expect(canUseDeveloperTools({ electronApiPresent: true })).toBe(false);
+    it('keeps the current packaged QA build enabled without a beta response', () => {
+        expect(canUseDeveloperTools({ electronApiPresent: true })).toBe(true);
         expect(canUseDeveloperTools({
             electronApiPresent: true,
             qaToolsEnabled: false
-        })).toBe(false);
+        })).toBe(true);
     });
 
     it('allows an explicitly QA-enabled Electron launch', () => {

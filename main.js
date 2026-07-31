@@ -584,6 +584,19 @@ function adjustRangeInputValue(element, direction) {
     return true;
 }
 
+function adjustSelectValue(element, direction) {
+    if (!element?.matches?.('select') || !element.options?.length) return false;
+    const nextIndex = Math.min(
+        element.options.length - 1,
+        Math.max(0, element.selectedIndex + direction)
+    );
+    if (nextIndex === element.selectedIndex) return true;
+    element.selectedIndex = nextIndex;
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+}
+
 function getControllerFocusRoot() {
     for (const id of STEAM_INPUT_FOCUS_ROOT_IDS) {
         const element = document.getElementById(id);
@@ -625,6 +638,7 @@ function focusControllerTarget(target) {
     } catch {
         target.focus?.();
     }
+    target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     return true;
 }
 
@@ -692,15 +706,25 @@ function moveControllerFocus(delta) {
 // Treat WASD like the directional pad; on a vertical menu A/W move up and
 // D/S move down. Enter or Space activates the focused item.
 document.addEventListener('keydown', (event) => {
-    if (event.defaultPrevented || appPhase === 'gameplay') return;
+    if (event.defaultPrevented) return;
     if (isTextEditableElement(document.activeElement)) return;
     const root = getControllerFocusRoot();
     if (!root) return;
 
+    // Gameplay remains live unless a modal owns focus. This lets Settings and
+    // every nested submenu use Deck/keyboard navigation when opened in-run.
+    if (appPhase === 'gameplay' && !isModalFocusRoot(root)) return;
+
     const direction = menuKeyboardDirection(event.code);
     if (direction) {
         event.preventDefault();
-        moveControllerFocus(direction);
+        const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
+        const active = document.activeElement;
+        const adjusted = horizontal && (
+            adjustRangeInputValue(active, direction)
+            || adjustSelectValue(active, direction)
+        );
+        if (!adjusted) moveControllerFocus(direction);
     } else if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault();
         activateControllerFocusedElement();
@@ -1176,7 +1200,8 @@ const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
 
 const state = {
     settings: {
-        debug: false,
+        // Keep diagnostics visible by default throughout the current Deck QA build.
+        debug: true,
         audioMix: { ...DEFAULT_AUDIO_MIX },
         fullscreen: false,
         nightVision: false,
@@ -5965,10 +5990,10 @@ if (window.electronAPI?.getQaToolsEnabled) {
         })
         .catch(() => {
             qaToolsEnabled = false;
-            developerToolsAuthorized = false;
-            state.settings.debug = false;
-            setDebugMode(false);
-            closeDevConsoleModal();
+            developerToolsAuthorized = canUseDeveloperTools({
+                electronApiPresent,
+                qaToolsEnabled
+            });
         });
 }
 
@@ -9313,7 +9338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     installHudCompass();
     window.addEventListener('resize', refreshGameLayout);
 
-    setDebugMode(false);
+    setDebugMode(state.settings.debug);
     installAudioMixerControls();
     setAudioMixerOpen(false);
     loadAudioMixSettings();
@@ -9903,7 +9928,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     void autoTriggerBoot();
 });
 
-setDebugMode(false);
+setDebugMode(state.settings.debug);
 
 // ── Sprint 19 Wave 3 threat warnings and Queen hallucinations ──
 window.addEventListener('queen-hallucination', (event) => {
