@@ -1166,6 +1166,18 @@ export class ThreeGame {
         const baseMetalTex = activeTerrainTextures.floorBase;
         const grungeRustTex = activeTerrainTextures.floorGrunge;
         const techScratchesTex = activeTerrainTextures.floorDetail;
+        this.crashSiteFloorTexture = this.loadTerrainTexture(
+            '/crash_site_broken_floor_v1.png',
+            textureLoader,
+            maxAnisotropy
+        );
+        this.crashSiteFloorTexture.repeat.set(3, 3);
+        this.crashSiteFloorMaterial = new THREE.MeshStandardMaterial({
+            map: this.crashSiteFloorTexture,
+            color: 0xd3d8dc,
+            roughness: 0.94,
+            metalness: 0.28
+        });
         this.playerTextures = Object.fromEntries(
             Object.entries(PLAYER_SPRITE_LAYOUTS).map(([type, layout]) => [
                 type,
@@ -15469,7 +15481,8 @@ export class ThreeGame {
         const holeCut = this.getHoleCutForLandform(landform);
         const hazardCut = this.getHazardCutForLandform(landform);
         let damagedCut = 0.35;
-        if (landform === LANDFORMS.MAZE) {
+        const hasExteriorCanyon = grid.some((row) => row.includes(EXTERIOR_CANYON_TILE));
+        if (landform === LANDFORMS.MAZE || hasExteriorCanyon) {
             damagedCut = 0.62;
         } else if (landform === LANDFORMS.RUINS) {
             damagedCut = 0.85;
@@ -15519,6 +15532,20 @@ export class ThreeGame {
             );
             chunkFloor.receiveShadow = true;
             group.add(chunkFloor);
+        }
+        if (chunkX === 0 && chunkY === 0 && this.crashSiteFloorMaterial) {
+            // A separate damaged deck lies over the safe structural floor, only
+            // beneath the ship impact zone. Keeping it inset prevents it from
+            // visually bridging the canyon or covering the door hallway.
+            const crashDeck = new THREE.Mesh(
+                new THREE.PlaneGeometry(9, 9),
+                this.crashSiteFloorMaterial
+            );
+            crashDeck.rotation.x = -Math.PI / 2;
+            crashDeck.position.set(9, 0.012, 10);
+            crashDeck.receiveShadow = true;
+            crashDeck.userData = { isCrashSiteFloor: true };
+            group.add(crashDeck);
         }
         this.addRoomSurfaceOverlays(
             group,
@@ -22046,25 +22073,24 @@ export class ThreeGame {
 
     clearSpawnArea(grid, chunkX, chunkY) {
         if (chunkX !== 0 || chunkY !== 0) return;
-        const spawn = this.getSpawnTile();
 
-        // Authored circular ship room. Replacing the incoming landform
+        // Authored crash platform. Replacing the incoming landform
         // completely prevents stray procedural portals or wall erosion from
-        // punching extra doors into the O2-ring room.
+        // punching extra doors into the starting room. Deep exterior cells
+        // are lethal canyon, a one-cell wall/foundation band frames the room,
+        // and the north blast-door hall is its only bridge to another chunk.
         for (let localY = 0; localY < this.chunkSize; localY += 1) {
             for (let localX = 0; localX < this.chunkSize; localX += 1) {
-                grid[localY][localX] = '#';
+                grid[localY][localX] = EXTERIOR_CANYON_TILE;
             }
         }
 
-        const roomRadius = 7.35;
-        for (let localY = 1; localY < this.chunkSize - 1; localY += 1) {
-            for (let localX = 1; localX < this.chunkSize - 1; localX += 1) {
-                const dx = localX - spawn.x;
-                const dy = localY - spawn.y;
-                if (Math.hypot(dx, dy) <= roomRadius) {
-                    grid[localY][localX] = '.';
-                }
+        const room = { left: 2, right: 16, top: 4, bottom: 17 };
+        for (let localY = room.top - 1; localY <= room.bottom + 1; localY += 1) {
+            for (let localX = room.left - 1; localX <= room.right + 1; localX += 1) {
+                const inside = localX >= room.left && localX <= room.right
+                    && localY >= room.top && localY <= room.bottom;
+                grid[localY][localX] = inside ? '.' : '#';
             }
         }
 
@@ -22075,6 +22101,11 @@ export class ThreeGame {
             for (let localX = doorCenterX - 1; localX <= doorCenterX + 1; localX += 1) {
                 grid[localY][localX] = '.';
             }
+        }
+        // Hall jambs keep canyon on both sides all the way to the chunk seam.
+        for (let localY = 0; localY <= 2; localY += 1) {
+            grid[localY][doorCenterX - 2] = '#';
+            grid[localY][doorCenterX + 2] = '#';
         }
     }
 
@@ -22140,6 +22171,8 @@ export class ThreeGame {
             Object.values(textureSet ?? {}).forEach((texture) => texture?.dispose?.());
         });
         this.floorMaterial?.dispose?.();
+        this.crashSiteFloorMaterial?.dispose?.();
+        this.crashSiteFloorTexture?.dispose?.();
         for (const material of this.roomFloorMaterials?.values?.() ?? []) {
             if (material?.userData?.ownsRoomAtlasTexture) material.map?.dispose?.();
             material?.dispose?.();

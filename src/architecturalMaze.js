@@ -59,6 +59,35 @@ function addWallShell(grid) {
     }
 }
 
+function constrainBorderSockets(grid, openings) {
+    const size = grid.length;
+    for (let i = 0; i < size; i += 1) {
+        grid[0][i] = 'X';
+        grid[1][i] = 'X';
+        grid[size - 1][i] = 'X';
+        grid[size - 2][i] = 'X';
+        grid[i][0] = 'X';
+        grid[i][1] = 'X';
+        grid[i][size - 1] = 'X';
+        grid[i][size - 2] = 'X';
+    }
+    for (const [side, opening] of Object.entries(openings)) {
+        if (!opening?.open) continue;
+        const portal = portalPoint(size, side, opening.offset);
+        for (let depth = 0; depth <= 1; depth += 1) {
+            for (let offset = -1; offset <= 1; offset += 1) {
+                const x = side === 'north' || side === 'south'
+                    ? portal.x + offset
+                    : portal.x + (side === 'west' ? depth : -depth);
+                const y = side === 'west' || side === 'east'
+                    ? portal.y + offset
+                    : portal.y + (side === 'north' ? depth : -depth);
+                grid[y][x] = '.';
+            }
+        }
+    }
+}
+
 /**
  * A room-first, MarkovJunior/Nystrom-inspired chunk stage.
  * One chunk is one architectural gesture instead of a 3x3 carpet of motifs:
@@ -126,6 +155,10 @@ export function generateArchitecturalMazeChunk(random, {
         carveLine(grid, portal, bend, 1);
         carveLine(grid, bend, destination, 1);
     }
+    // Carving wide doglegs can otherwise run along a chunk boundary and make
+    // an accidental open seam. Re-author the boundary from declared sockets:
+    // canyon everywhere, exactly three floor cells at each hallway opening.
+    constrainBorderSockets(grid, openings);
     addWallShell(grid);
 
     const interior = [];

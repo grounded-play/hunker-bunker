@@ -11,7 +11,7 @@ function makeFakeGame() {
 }
 
 describe('clearSpawnArea — door/portal alignment', () => {
-    it('authors one circular room with its only exit centered on the north/top wall', () => {
+    it('authors one enlarged crash room with canyon outside and one north exit', () => {
         const game = makeFakeGame();
         const grid = Array(19).fill(null).map(() => Array(19).fill('.'));
         ThreeGame.prototype.clearSpawnArea.call(game, grid, 0, 0);
@@ -19,14 +19,17 @@ describe('clearSpawnArea — door/portal alignment', () => {
         expect(grid[0].slice(8, 11)).toEqual(['.', '.', '.']);
         for (let x = 0; x < 19; x += 1) {
             if (x >= 8 && x <= 10) continue;
-            expect(grid[0][x], `north edge x=${x}`).toBe('#');
+            const expected = x === 7 || x === 11 ? '#' : 'X';
+            expect(grid[0][x], `north edge x=${x}`).toBe(expected);
         }
         expect(grid[9][9]).toBe('.');
-        expect(grid[1][1]).toBe('#');
-        expect(grid[17][17]).toBe('#');
-        expect(grid[18].every((cell) => cell === '#')).toBe(true);
-        expect(grid.every((row) => row[0] === '#')).toBe(true);
-        expect(grid.every((row) => row[18] === '#')).toBe(true);
+        expect(grid[4].slice(2, 17).every((cell) => cell === '.')).toBe(true);
+        expect(grid[17].slice(2, 17).every((cell) => cell === '.')).toBe(true);
+        expect(grid[1][1]).toBe('X');
+        expect(grid[18][9]).toBe('#');
+        expect(grid[18][0]).toBe('X');
+        expect(grid.every((row) => row[0] === 'X')).toBe(true);
+        expect(grid.every((row) => row[18] === 'X')).toBe(true);
     });
 
     it('starts the north blast door closed across that three-wide hallway', () => {
