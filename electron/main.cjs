@@ -9,6 +9,16 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 
+// Give Gamescope a stable native identity before Chromium creates its first
+// surface. Steam's launch overlay tracks the game window by its Linux desktop
+// identity; Electron's generic fallback can otherwise leave that overlay up
+// even though the renderer and audio are already running.
+app.setName('Hunker Bunker');
+if (process.platform === 'linux') {
+    app.setDesktopName('hunker-bunker.desktop');
+    app.commandLine.appendSwitch('class', 'hunker-bunker');
+}
+
 // Force full GPU hardware acceleration and WebGL rasterization in packaged builds
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
@@ -805,9 +815,12 @@ function createWindow() {
         minWidth: 960,
         minHeight: 600,
         backgroundColor: '#0a0c0e',
+        title: 'Hunker Bunker',
         icon: path.join(__dirname, 'icon.png'),
         autoHideMenuBar: true,
         focusable: true,
+        frame: false,
+        skipTaskbar: false,
         fullscreen: !DEV,
         // Map a black native surface immediately. Waiting for ready-to-show
         // lets the renderer (and audio) start behind Steam's loading overlay
@@ -839,8 +852,22 @@ function createWindow() {
             fullscreen: win.isFullScreen()
         });
     };
+
+    const raiseAboveSteamLaunchOverlay = () => {
+        if (DEV || win.isDestroyed()) return;
+        // This is deliberately a short pulse. It makes Gamescope acknowledge
+        // the newly mapped game surface, then releases the topmost hint so the
+        // Steam/QAM overlays continue to work normally.
+        win.setAlwaysOnTop(true, 'screen-saver');
+        presentGameWindow('gamescope-handoff');
+        setTimeout(() => {
+            if (win.isDestroyed()) return;
+            win.setAlwaysOnTop(false);
+            presentGameWindow('gamescope-handoff-complete');
+        }, 750);
+    };
     win.once('ready-to-show', () => presentGameWindow('ready-to-show'));
-    win.webContents.once('dom-ready', () => presentGameWindow('dom-ready'));
+    win.webContents.once('dom-ready', raiseAboveSteamLaunchOverlay);
     win.webContents.once('did-finish-load', () => {
         setTimeout(() => presentGameWindow('did-finish-load'), 0);
     });
