@@ -36,6 +36,7 @@ const {
     loadSaveWithBackup,
     writeSaveAtomic
 } = require('./save-contract.cjs');
+const { isQaToolsEnabled, normalizeBetaName } = require('./qa-tools.cjs');
 
 const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
@@ -135,6 +136,7 @@ function serializeSteamId(steamId) {
 }
 
 function getSteamIdentitySnapshot() {
+    const betaName = getCurrentSteamBetaName();
     const base = {
         ok: Boolean(steamClient),
         active: Boolean(steamClient),
@@ -142,6 +144,8 @@ function getSteamIdentitySnapshot() {
         steamInputAvailable: steamInputReady,
         steamInputPhase,
         isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.()),
+        betaName,
+        qaToolsEnabled: qaToolsEnabled(betaName),
         cloud: getSteamCloudStatusSnapshot(),
         timelineAvailable: Boolean(getSteamTimelineApi())
     };
@@ -662,16 +666,27 @@ ipcMain.on('hb:setStat', (_e, key, value) => {
     }
 });
 
-// QA/beta-only achievement reset. Off by default in every build, including
-// the public Steam depot — only a build launched with HB_QA_TOOLS_ENABLED=1
-// registers this at all (e.g. via a Steam beta branch's launch options), so
+// QA/beta-only achievement reset. Off by default on the public Steam branch.
+// A named Steam beta branch or HB_QA_TOOLS_ENABLED=1 authorizes it, so
 // the capability doesn't exist for a normal player even if they find the ~
 // console. ISteamUserStats::ResetAllStats only ever affects the Steam
 // account currently logged into the running game — there is no remote way
 // to reset a different account's achievements; the QA tester (or someone on
 // their machine, logged in as them) has to trigger this themselves.
-function qaToolsEnabled() {
-    return process.env.HB_QA_TOOLS_ENABLED === '1';
+function getCurrentSteamBetaName() {
+    try {
+        return normalizeBetaName(steamClient?.apps?.currentBetaName?.());
+    } catch (err) {
+        console.warn('[steam:beta] unable to read current beta branch:', err?.message ?? err);
+        return null;
+    }
+}
+
+function qaToolsEnabled(betaName = getCurrentSteamBetaName()) {
+    return isQaToolsEnabled({
+        override: process.env.HB_QA_TOOLS_ENABLED,
+        betaName
+    });
 }
 ipcMain.handle('hb:qaToolsEnabled', () => qaToolsEnabled());
 ipcMain.handle('hb:resetAchievements', () => {

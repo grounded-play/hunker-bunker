@@ -736,9 +736,9 @@ export class DebugLogger {
 
             case 'resetachievements':
                 // QA/beta only — electron/main.cjs only registers the IPC
-                // handler this calls when the build was launched with
-                // HB_QA_TOOLS_ENABLED=1 (e.g. a Steam beta branch launch
-                // option). Resets the Steam account currently logged into
+                // handler this calls on a named Steam beta branch or when the
+                // build is launched with HB_QA_TOOLS_ENABLED=1. Resets the
+                // Steam account currently logged into
                 // THIS running game — there is no remote reset for a
                 // different account. Requires "confirm" since it's a real
                 // action against a real Steam profile, not local run state
