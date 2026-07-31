@@ -122,7 +122,127 @@ function preset(id, name, groups) {
     }`;
 }
 
+function legacyActivator(bindingValue) {
+    return `"activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "${bindingValue}"
+                        }
+                    }
+                }`;
+}
+
+function legacyFaceGroup() {
+    return `"group"
+    {
+        "id" "0"
+        "mode" "four_buttons"
+        "inputs"
+        {
+            "button_a" { ${legacyActivator('key_press RETURN, Confirm / Interact')} }
+            "button_b" { ${legacyActivator('key_press ESCAPE, Back / Pause')} }
+            "button_x" { ${legacyActivator('key_press R, Reload')} }
+            "button_y" { ${legacyActivator('key_press F, Ability')} }
+        }
+    }`;
+}
+
+function legacyMovementGroup(id) {
+    return `"group"
+    {
+        "id" "${id}"
+        "mode" "dpad"
+        "inputs"
+        {
+            "dpad_north" { ${legacyActivator('key_press W, Up / Move Up')} }
+            "dpad_south" { ${legacyActivator('key_press S, Down / Move Down')} }
+            "dpad_east" { ${legacyActivator('key_press D, Right / Move Right')} }
+            "dpad_west" { ${legacyActivator('key_press A, Left / Move Left')} }
+        }
+        "settings" { "requires_click" "0" }
+    }`;
+}
+
+function legacyTriggerGroup(id, bindingValue) {
+    return `"group"
+    {
+        "id" "${id}"
+        "mode" "trigger"
+        "inputs" { "edge" { ${legacyActivator(bindingValue)} } }
+    }`;
+}
+
+function buildDeckLegacyConfig() {
+    const groups = [
+        legacyFaceGroup(),
+        legacyMovementGroup(1),
+        legacyMovementGroup(2),
+        `"group"
+    {
+        "id" "6"
+        "mode" "joystick_mouse"
+        "inputs" { }
+        "settings"
+        {
+            "sensitivity" "175"
+            "sensitivity_vert_scale" "100"
+            "mouse_smoothing" "0"
+        }
+    }`,
+        legacyTriggerGroup(3, 'key_press LEFT_SHIFT, Sprint'),
+        legacyTriggerGroup(4, 'mouse_button LEFT, Fire / Click'),
+        `"group"
+    {
+        "id" "5"
+        "mode" "switches"
+        "inputs"
+        {
+            "button_escape" { ${legacyActivator('key_press ESCAPE, Pause / Back')} }
+            "button_menu" { ${legacyActivator('key_press ESCAPE, Pause / Back')} }
+            "left_bumper" { ${legacyActivator('key_press Q, Scan')} }
+            "right_bumper" { ${legacyActivator('mouse_button LEFT, Fire / Click')} }
+        }
+    }`
+    ];
+    const universalSources = {
+        0: 'button_diamond',
+        1: 'dpad',
+        2: 'joystick',
+        6: 'right_joystick',
+        3: 'left_trigger',
+        4: 'right_trigger',
+        5: 'switch'
+    };
+    const presets = [
+        preset(0, 'menu', universalSources),
+        preset(1, 'gameplay', universalSources),
+        preset(2, 'archive', universalSources)
+    ];
+    return `"controller_mappings"
+{
+    "version" "3"
+    "game" "Hunker Bunker"
+    "title" "Official Hunker Bunker — Deck WASD + Mouse"
+    "description" "Steam Deck fallback: left stick is WASD, right stick is mouse, A confirms/interacts."
+    "controller_type" "controller_neptune"
+    "major_revision" "2"
+    "minor_revision" "0"
+    ${groups.join('\n    ')}
+    ${presets.join('\n    ')}
+    "settings"
+    {
+        "left_trackpad_mode" "0"
+        "right_trackpad_mode" "0"
+    }
+}
+`;
+}
+
 function buildControllerConfig(controllerType) {
+    if (controllerType === 'controller_neptune') return buildDeckLegacyConfig();
     const groups = [
         faceGroup(0, 'menu', {
             a: ['menu_confirm', 'Confirm'],

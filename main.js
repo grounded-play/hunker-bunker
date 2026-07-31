@@ -37,6 +37,7 @@ import {
     ACTION_SETS,
     actionSetForAppPhase,
     createActionRouter,
+    menuKeyboardDirection,
     shouldPreferBrowserGamepad
 } from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
@@ -197,7 +198,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveDown: ['KeyS', 'ArrowDown'],
     moveLeft: ['KeyA', 'ArrowLeft'],
     moveRight: ['KeyD', 'ArrowRight'],
-    interact: ['KeyE', null],
+    interact: ['KeyE', 'Enter'],
     reload: ['KeyR', null],
     ability: ['KeyF', null],
     scan: ['KeyQ', null],
@@ -653,6 +654,26 @@ function moveControllerFocus(delta) {
     focusControllerTarget(target);
     return target;
 }
+
+// Keyboard-style Steam Deck layouts must be able to operate every menu even
+// when the native Steam Input action manifest has not been published yet.
+// Treat WASD like the directional pad; on a vertical menu A/W move up and
+// D/S move down. Enter or Space activates the focused item.
+document.addEventListener('keydown', (event) => {
+    if (event.defaultPrevented || appPhase === 'gameplay') return;
+    if (isTextEditableElement(document.activeElement)) return;
+    const root = getControllerFocusRoot();
+    if (!root) return;
+
+    const direction = menuKeyboardDirection(event.code);
+    if (direction) {
+        event.preventDefault();
+        moveControllerFocus(direction);
+    } else if (event.code === 'Enter' || event.code === 'Space') {
+        event.preventDefault();
+        activateControllerFocusedElement();
+    }
+});
 
 document.addEventListener('focusin', (event) => {
     const root = getControllerFocusRoot();

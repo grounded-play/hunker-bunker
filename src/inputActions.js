@@ -18,6 +18,12 @@ export function actionSetForAppPhase(phase) {
     return ACTION_SETS.MENU;
 }
 
+export function menuKeyboardDirection(code) {
+    if (['KeyW', 'KeyA', 'ArrowUp', 'ArrowLeft'].includes(code)) return -1;
+    if (['KeyS', 'KeyD', 'ArrowDown', 'ArrowRight'].includes(code)) return 1;
+    return 0;
+}
+
 export function shouldPreferBrowserGamepad({
     nativeAvailable = false,
     nativeControllerCount = 0,

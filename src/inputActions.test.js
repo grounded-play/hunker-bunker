@@ -3,6 +3,7 @@ import {
     ACTION_SETS,
     actionSetForAppPhase,
     createActionRouter,
+    menuKeyboardDirection,
     shouldPreferBrowserGamepad
 } from './inputActions.js';
 
@@ -33,6 +34,15 @@ function padSnapshot(overrides = {}) {
 }
 
 describe('createActionRouter', () => {
+    it('maps WASD and arrows onto linear menu focus movement', () => {
+        for (const code of ['KeyW', 'KeyA', 'ArrowUp', 'ArrowLeft']) {
+            expect(menuKeyboardDirection(code)).toBe(-1);
+        }
+        for (const code of ['KeyS', 'KeyD', 'ArrowDown', 'ArrowRight']) {
+            expect(menuKeyboardDirection(code)).toBe(1);
+        }
+        expect(menuKeyboardDirection('Enter')).toBe(0);
+    });
     it('starts in the menu set and switches sets explicitly', () => {
         const router = createActionRouter();
         expect(router.getActionSet()).toBe(ACTION_SETS.MENU);

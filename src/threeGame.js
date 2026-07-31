@@ -466,7 +466,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveDown: ['KeyS', 'ArrowDown'],
     moveLeft: ['KeyA', 'ArrowLeft'],
     moveRight: ['KeyD', 'ArrowRight'],
-    interact: ['KeyE', null],
+    interact: ['KeyE', 'Enter'],
     reload: ['KeyR', null],
     ability: ['KeyF', null],
     dash: ['Space', 'ShiftLeft'],
@@ -3296,7 +3296,7 @@ export class ThreeGame {
                 this.setKeyState(event.code, false);
                 return;
             }
-            if (this.codeMatchesAction(event.code, 'interact')) {
+            if (event.code === 'Enter' || this.codeMatchesAction(event.code, 'interact')) {
                 debugLog.debug('INPUT', 'Action: INTERACT (E/Enter)');
                 this.triggerGameplayInteract();
             }
