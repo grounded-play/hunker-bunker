@@ -11,7 +11,8 @@ const upload = args.has('--upload');
 const skipBuild = args.has('--skip-build');
 const skipTests = args.has('--skip-tests');
 const allowDirty = args.has('--allow-dirty');
-const includeSoundtrack = args.has('--soundtrack') || process.env.HB_STEAM_INCLUDE_SOUNDTRACK === '1';
+const soundtrackExplicit = args.has('--soundtrack');
+const includeSoundtrack = soundtrackExplicit || process.env.HB_STEAM_INCLUDE_SOUNDTRACK === '1';
 const packageJson = JSON.parse(
     fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')
 );
@@ -167,7 +168,7 @@ if (upload) {
             console.error(`  1. Ensure account '${account}' has 'Edit App Metadata' & 'SteamPipe Upload' permissions granted for AppID 4957680.`);
             console.error(`  2. In Steamworks (App 4957680 > SteamPipe > Depots), verify Depot 4957681 is added and click 'Save'.`);
             console.error(`  3. Click 'Publishing' -> 'Publish Changes' on App 4957680 in Steamworks at least once.\n`);
-            if (process.env.HB_STEAM_REQUIRE_SOUNDTRACK === '1') {
+            if (soundtrackExplicit || process.env.HB_STEAM_REQUIRE_SOUNDTRACK === '1') {
                 throw err;
             }
         } finally {
@@ -176,8 +177,7 @@ if (upload) {
     }
 }
 
-console.log(
-    upload
-        ? `[steam-release] uploaded ${commit} through steam/app_build.vdf`
-        : `[steam-release] prepared and audited ${commit}; no upload requested`
+console.log(upload
+    ? `[steam-release] uploaded ${commit} through steam/app_build.vdf${includeSoundtrack ? ' and steam/soundtrack_app_build.vdf' : ''}`
+    : `[steam-release] prepared and audited ${commit}; no upload requested`
 );

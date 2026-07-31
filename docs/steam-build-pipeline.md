@@ -93,7 +93,9 @@ steam/
 - electron-builder targets: `--dir` (win-unpacked / linux-unpacked) — Steam
   wants a loose directory, not an installer. NSIS/AppImage are for
   non-Steam distribution later.
-- Upload: `steamcmd +login <builder> +run_app_build .../app_build.vdf`.
+- Upload: `npm run steam:upload` uploads both the game build through
+  `steam/app_build.vdf` and the OST through `steam/soundtrack_app_build.vdf`.
+  Use `npm run steam:upload-soundtrack` to retry only the already-packaged OST.
   Use a **dedicated builder account** with only "Edit App Metadata +
   Publish" on this app, never the owner login.
 - **Local authenticated release**: `npm run steam:prepare` runs tests,
