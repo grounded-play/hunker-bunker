@@ -1,6 +1,6 @@
 import os
 import json
-from mutagen.id3 import ID3, TIT2, TPE1, TPE2, TALB, TRCK, TPOS, TDRC, TCON, TCOM, TPUB, COMM, APIC, ID3NoHeaderError
+from mutagen.id3 import ID3, TIT2, TPE1, TPE2, TALB, TRCK, TPOS, TDRC, TCON, TCOM, TPUB, TCOP, COMM, APIC, ID3NoHeaderError
 
 def embed_tags_in_dist():
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,10 +18,10 @@ def embed_tags_in_dist():
     with open(config_path, "r", encoding="utf-8") as f:
         config = json.load(f)
 
-    total_tracks = len(config["tracks"])
+    tracks = config.get("legacy_tracks", []) + config.get("tracks", [])
+    total_tracks = len(tracks)
 
-    for track in config["tracks"]:
-        track_num = track["track_number"]
+    for track_num, track in enumerate(tracks, start=1):
         num_str = str(track_num).zfill(2)
         clean_title = "".join(c for c in track["title"] if c.isalnum() or c in " -_()")
         filename = f"{num_str} - {clean_title}.mp3"
@@ -40,14 +40,15 @@ def embed_tags_in_dist():
 
         audio.add(TIT2(encoding=3, text=track["title"]))
         audio.add(TPE1(encoding=3, text=config.get("artist", "Government Name")))
-        audio.add(TPE2(encoding=3, text=config.get("artist", "Government Name")))
+        audio.add(TPE2(encoding=3, text=config.get("album_artist", config.get("artist", "Government Name"))))
         audio.add(TALB(encoding=3, text=config.get("album", "Hunker Bunker (Original Game Soundtrack)")))
         audio.add(TRCK(encoding=3, text=f"{track_num}/{total_tracks}"))
         audio.add(TPOS(encoding=3, text="1/1"))
         audio.add(TDRC(encoding=3, text=str(config.get("year", "2026"))))
         audio.add(TCON(encoding=3, text=config.get("genre", "Soundtrack / Industrial Ambient / Chiptune")))
-        audio.add(TCOM(encoding=3, text="Government Name"))
-        audio.add(TPUB(encoding=3, text="Tuesday Cinema Club"))
+        audio.add(TCOM(encoding=3, text=config.get("composer", config.get("artist", "Government Name"))))
+        audio.add(TPUB(encoding=3, text=config.get("publisher", "Tuesday Cinema Club")))
+        audio.add(TCOP(encoding=3, text=config.get("copyright", "© 2026 Tuesday Cinema Club")))
         audio.add(COMM(encoding=3, lang="eng", desc="Description", text=track.get("description", "")))
 
         if os.path.exists(cover_to_use):

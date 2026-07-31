@@ -46,6 +46,7 @@ import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToas
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
+import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -7939,8 +7940,31 @@ campChoiceCloseBtn?.addEventListener('click', () => {
     closeCampChoiceModal();
 });
 
-window.addEventListener('camp-choice-open', (event) => {
-    renderCampChoice(event?.detail ?? {});
+const songInterstitial = new SongInterstitialController({
+    root: document.getElementById('song-interstitial'),
+    image: document.getElementById('song-interstitial-image'),
+    video: document.getElementById('song-interstitial-video'),
+    title: document.getElementById('song-interstitial-title'),
+    track: document.getElementById('song-interstitial-track'),
+    AudioManager,
+    reducedMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+});
+
+window.addEventListener('camp-choice-open', async (event) => {
+    const detail = event?.detail ?? {};
+    await songInterstitial.show(selectCampInterstitial(detail));
+    renderCampChoice(detail);
+});
+
+// Generic hook for dialogue, encounters, bosses, memories, and endings. A
+// caller only needs to dispatch `{ detail: { trackId: 13 } }`; the manifest
+// owns image/audio/motion paths and the controller owns all fallback behavior.
+window.addEventListener('song-interstitial-open', async (event) => {
+    const trackId = event?.detail?.trackId;
+    const result = await songInterstitial.show(trackId, event?.detail ?? {});
+    window.dispatchEvent(new CustomEvent('song-interstitial-settled', {
+        detail: { trackId, ...result }
+    }));
 });
 
 // Act 1 camp support + the Act 2 payoff (defended culls).
@@ -9328,7 +9352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ],
         audio: [
             { key: 'amb_bunker_loop', url: '/audio/vg2/amb_bunker_loop.wav' },
-            { key: 'mainbg_music', url: '/audio/vg2/mainbg_music.mp3' },
+            { key: 'mainbg_music', url: '/audio/ost/Hunker Bunker Main Theme.mp3' },
             { key: 'door_slam_vertical1', url: '/audio/vg2/door_slam_vertical1.wav' },
             { key: 'door_slam_vertical2', url: '/audio/vg2/door_slam_vertical2.wav' },
             { key: 'door_slam_vertical3', url: '/audio/vg2/door_slam_vertical3.wav' },
@@ -9567,10 +9591,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     '/decal_scars.png'
                 ],
                 audio: [
-                    { key: 'music_safe_ship', url: '/audio/NewTrack1.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-                    { key: 'music_cryo_explore', url: '/audio/NewTrack2.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-                    { key: 'music_bio_explore', url: '/audio/NewTrack3.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
-                    { key: 'music_combat_threatened', url: '/audio/NewTrack4.mp3', fallbackUrl: '/audio/vg2/mainbg_music.mp3' },
+                    { key: 'music_safe_ship', url: '/audio/ost/Safe Haven (Ship Sanctuary).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
+                    { key: 'music_cryo_explore', url: '/audio/ost/Glacial Depths (Cryo Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
+                    { key: 'music_bio_explore', url: '/audio/ost/Overgrown Bio-Sphere (Bio Biome).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
+                    { key: 'music_combat_threatened', url: '/audio/ost/Under Siege (Combat Alert).mp3', fallbackUrl: '/audio/ost/Hunker Bunker Main Theme.mp3' },
                     { key: 'amb_drip1', url: '/audio/vg2/amb_drip1.wav' },
                     { key: 'amb_drip2', url: '/audio/vg2/amb_drip2.wav' },
                     { key: 'amb_drip3', url: '/audio/vg2/amb_drip3.wav' },
