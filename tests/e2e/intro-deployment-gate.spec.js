@@ -39,6 +39,14 @@ test('new-run intro keeps gameplay black, paused, and invulnerable until the fin
     }
     await page.locator('#start-game').click();
 
+    await page.locator('#transition-overlay.opening-h.active').waitFor({
+        state: 'visible',
+        timeout: 30_000
+    });
+    expect(await page.locator('#transition-overlay').evaluate((overlay) => (
+        getComputedStyle(overlay, '::before').opacity
+    ))).toBe('1');
+
     await page.waitForFunction(() => (
         window.__hbAppPhase === 'gameplay'
         && window.game?.loadingPaused === true

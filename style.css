@@ -506,11 +506,11 @@ body {
   --transition-scene-fade: 1;
 }
 
-#transition-overlay.opening-h.active::before {
-  opacity: 0;
-  transition-duration: 260ms;
-  transition-timing-function: ease-in;
-}
+/* Keep the destination masked while the panels travel outward. The previous
+   opening-h.active rule faded this scrim as soon as motion began, exposing
+   the next menu/video/world through the growing center gap. The overlay is
+   removed only after the 800ms door travel completes, so the destination
+   appears after the doors are fully open. */
 
 .door {
   position: absolute;
