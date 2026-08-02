@@ -1709,8 +1709,8 @@ body {
 
 .char-card:hover {
   background:
-    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.16), rgba(111, 213, 214, 0.05)),
-    rgba(14, 20, 24, 0.96) !important;
+    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.28), rgba(var(--class-color-rgb, 255, 159, 28), 0.09)),
+    rgb(8, 14, 17) !important;
   opacity: 1 !important;
   transform: translateX(calc(var(--vu) * -0.8));
   border-color: rgba(var(--class-color-rgb, 255, 159, 28), 0.58);
@@ -1724,23 +1724,47 @@ body {
   transform: translateX(calc(var(--vu) * -1.2));
   box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.35), 0 0 28px rgba(46, 196, 182, 0.45) !important;
   background:
-    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.22), rgba(111, 213, 214, 0.08)),
-    rgba(14, 20, 24, 0.98) !important;
+    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.34), rgba(var(--class-color-rgb, 255, 159, 28), 0.11)),
+    rgb(7, 13, 16) !important;
   opacity: 1 !important;
 }
 
 .char-card.selected {
   background:
-    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.24), rgba(111, 213, 214, 0.06)),
-    rgba(12, 18, 22, 0.98) !important;
+    linear-gradient(100deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.46), rgba(var(--class-color-rgb, 255, 159, 28), 0.20) 58%, rgba(2, 7, 9, 0.98)),
+    rgb(5, 10, 13) !important;
   opacity: 1 !important;
   border: 1px solid var(--class-color, var(--accent-primary));
   transform: translateX(calc(var(--vu) * -1.6));
   box-shadow: 0 0 30px rgba(var(--class-color-rgb, 255, 159, 28), 0.28), inset 3px 0 0 var(--class-color, var(--accent-primary));
+  animation: hero-card-throb 1.65s ease-in-out infinite;
 }
 
 .char-card.selected::after {
   display: none;
+}
+
+@keyframes hero-card-throb {
+  0%, 100% {
+    transform: translateX(calc(var(--vu) * -1.6)) scale(1);
+    box-shadow:
+      0 0 22px rgba(var(--class-color-rgb, 255, 159, 28), 0.30),
+      inset 3px 0 0 var(--class-color, var(--accent-primary)),
+      inset 0 0 24px rgba(var(--class-color-rgb, 255, 159, 28), 0.10);
+  }
+  50% {
+    transform: translateX(calc(var(--vu) * -1.6)) scale(1.018);
+    box-shadow:
+      0 0 42px rgba(var(--class-color-rgb, 255, 159, 28), 0.58),
+      inset 4px 0 0 var(--class-color, var(--accent-primary)),
+      inset 0 0 34px rgba(var(--class-color-rgb, 255, 159, 28), 0.24);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .char-card.selected {
+    animation: none;
+  }
 }
 
 .title-menu-btn:focus,
