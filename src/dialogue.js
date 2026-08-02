@@ -162,22 +162,47 @@ export class DialogueManager {
                 event.preventDefault();
                 if (this.isTyping) {
                     this.completeTypingInstantly = true;
-                } else {
-                    this.skipPause = true;
-                    if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                } else if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                    const active = document.activeElement;
+                    if (active === this.tutorialBtn || (this.tutorialBtn?.classList.contains('selected') && active !== this.skipBtn)) {
+                        this.resolveChoice('tutorial');
+                    } else {
                         this.resolveChoice('skip');
                     }
                 }
                 return;
             }
-            if (event.code === 'KeyA') {
+            if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                const availableChoices = [this.skipBtn, this.tutorialBtn].filter(
+                    (btn) => btn && !btn.classList.contains('hidden')
+                );
+                if (['KeyW', 'KeyA', 'ArrowUp', 'ArrowLeft'].includes(event.code)) {
+                    event.preventDefault();
+                    if (availableChoices.length) {
+                        const target = availableChoices[0];
+                        target.focus();
+                        target.classList.add('selected');
+                        availableChoices[1]?.classList.remove('selected');
+                    }
+                    return;
+                }
+                if (['KeyS', 'KeyD', 'ArrowDown', 'ArrowRight'].includes(event.code)) {
+                    event.preventDefault();
+                    if (availableChoices.length) {
+                        const target = availableChoices[availableChoices.length - 1];
+                        target.focus();
+                        target.classList.add('selected');
+                        availableChoices[0]?.classList.remove('selected');
+                    }
+                    return;
+                }
+            }
+            if (event.code === 'Digit1') {
                 event.preventDefault();
                 this.resolveChoice('skip');
                 return;
             }
-            if (event.code === 'KeyB') {
-                // Only honor the tutorial hotkey when the tutorial choice is
-                // actually on screen — milestone/brief dialogues hide it.
+            if (event.code === 'Digit2') {
                 if (this.tutorialBtn && !this.tutorialBtn.classList.contains('hidden')) {
                     event.preventDefault();
                     this.resolveChoice('tutorial');
@@ -255,6 +280,14 @@ export class DialogueManager {
         requestAnimationFrame(() => {
             if (!this.isDialogueRunActive(runId)) return;
             this.choicesEl.classList.add('is-visible');
+            if (this.skipBtn && !this.skipBtn.classList.contains('hidden')) {
+                this.skipBtn.focus();
+                this.skipBtn.classList.add('selected');
+                this.tutorialBtn?.classList.remove('selected');
+            } else if (this.tutorialBtn && !this.tutorialBtn.classList.contains('hidden')) {
+                this.tutorialBtn.focus();
+                this.tutorialBtn.classList.add('selected');
+            }
             // Choices reduce available text height; re-pin to newest line.
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
             window.setTimeout(() => {

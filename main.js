@@ -626,6 +626,11 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables.find((element) => element.id === 'start-game')
             ?? focusables[0];
     }
+    if (root?.id === 'mothership-dialogue') {
+        return focusables.find((element) => element.id === 'mothership-choice-skip' && isElementVisible(element))
+            ?? focusables.find((element) => element.id === 'mothership-choice-tutorial' && isElementVisible(element))
+            ?? focusables[0];
+    }
     return focusables[0];
 }
 

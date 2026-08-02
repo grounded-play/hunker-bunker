@@ -1709,27 +1709,34 @@ body {
 
 .char-card:hover {
   background:
-    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.1), rgba(111, 213, 214, 0.035)),
-    rgba(8, 12, 14, 0.86);
+    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.16), rgba(111, 213, 214, 0.05)),
+    rgba(14, 20, 24, 0.96) !important;
+  opacity: 1 !important;
   transform: translateX(calc(var(--vu) * -0.8));
-  border-color: rgba(var(--class-color-rgb, 255, 159, 28), 0.38);
+  border-color: rgba(var(--class-color-rgb, 255, 159, 28), 0.58);
 }
 
+.char-card:focus,
 .char-card:focus-visible,
 .controller-mode .char-card:focus {
-  outline: 2px solid rgba(46, 196, 182, 0.95);
-  outline-offset: 3px;
+  outline: 2px solid rgba(46, 196, 182, 0.95) !important;
+  outline-offset: 3px !important;
   transform: translateX(calc(var(--vu) * -1.2));
-  box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.22), 0 0 24px rgba(46, 196, 182, 0.18);
+  box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.35), 0 0 28px rgba(46, 196, 182, 0.45) !important;
+  background:
+    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.22), rgba(111, 213, 214, 0.08)),
+    rgba(14, 20, 24, 0.98) !important;
+  opacity: 1 !important;
 }
 
 .char-card.selected {
   background:
-    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.18), rgba(111, 213, 214, 0.045)),
-    rgba(8, 12, 14, 0.94);
+    linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.24), rgba(111, 213, 214, 0.06)),
+    rgba(12, 18, 22, 0.98) !important;
+  opacity: 1 !important;
   border: 1px solid var(--class-color, var(--accent-primary));
   transform: translateX(calc(var(--vu) * -1.6));
-  box-shadow: 0 0 30px rgba(var(--class-color-rgb, 255, 159, 28), 0.17), inset 3px 0 0 var(--class-color, var(--accent-primary));
+  box-shadow: 0 0 30px rgba(var(--class-color-rgb, 255, 159, 28), 0.28), inset 3px 0 0 var(--class-color, var(--accent-primary));
 }
 
 .char-card.selected::after {
@@ -3506,16 +3513,34 @@ input:checked+.slider:before {
 }
 
 .splash-btn:hover,
+.splash-btn:focus,
+.splash-btn:focus-visible,
+.controller-mode .splash-btn:focus,
 .start-btn:hover,
-.about-btn:hover {
-  background: #fff !important;
-  color: #000 !important;
-  box-shadow: 0 6px 0 #ccc !important;
+.start-btn:focus,
+.start-btn:focus-visible,
+.controller-mode .start-btn:focus,
+#start-game:hover,
+#start-game:focus,
+#start-game:focus-visible,
+.controller-mode #start-game:focus,
+.about-btn:hover,
+.about-btn:focus,
+.about-btn:focus-visible {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 6px 0 #cccccc, 0 0 28px rgba(46, 196, 182, 0.75) !important;
+  opacity: 1 !important;
+  outline: 3px solid rgba(46, 196, 182, 0.95) !important;
+  outline-offset: 2px !important;
   transform: translateY(-2px) !important;
 }
 
-.about-btn:hover {
+.about-btn:hover,
+.about-btn:focus,
+.about-btn:focus-visible {
   background: var(--accent-primary) !important;
+  color: #000000 !important;
 }
 
 .splash-btn:active,
@@ -5683,12 +5708,19 @@ body.mission-intro-active #game-container canvas {
   transition: transform 180ms ease-out, background 180ms ease-out, border-color 180ms ease-out, color 180ms ease-out;
 }
 
-.choice-card:hover {
+.choice-card:hover,
+.choice-card:focus,
+.choice-card:focus-visible,
+.choice-card.selected,
+.controller-mode .choice-card:focus {
   transform: translateY(calc(var(--vu) * -0.5));
-  background: rgba(var(--terminal-glow-rgb), 0.18);
-  border-color: var(--terminal-glow);
-  color: #000;
-  box-shadow: 0 calc(var(--vu) * 0.65) 0 rgba(255, 255, 255, 0.55);
+  background: rgba(var(--terminal-glow-rgb), 0.28) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  outline: 3px solid var(--terminal-glow) !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 calc(var(--vu) * 0.65) 0 rgba(255, 255, 255, 0.55), 0 0 24px rgba(var(--terminal-glow-rgb), 0.6) !important;
+  opacity: 1 !important;
 }
 
 .choice-card:active {
