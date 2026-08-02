@@ -29,10 +29,18 @@ describe('steam dashboard handoff', () => {
 
         expect(handoff.app.appId).toBe(4957040);
         expect(handoff.depots.contentDepotId).toBe(4957041);
+        // Both depots map to DepotPath ".", so the executable and the Steam Input
+        // manifest sit at the install root on every platform — the dashboard takes a
+        // single manifest path, so the platforms must not disagree on the layout.
         expect(handoff.depots.launchOptions).toContainEqual({
             platform: 'Windows',
-            executable: 'win-unpacked/hunker-bunker.exe'
+            executable: 'hunker-bunker.exe'
         });
+        expect(handoff.depots.launchOptions).toContainEqual({
+            platform: 'Linux + SteamOS',
+            executable: 'hunker-bunker'
+        });
+        expect(handoff.steamInput.manifestInstallPath).toBe('steam_input_manifest.vdf');
         expect(handoff.leaderboards.map((row) => row.apiName)).toEqual([
             'best_run_score',
             'daily_ops_score',

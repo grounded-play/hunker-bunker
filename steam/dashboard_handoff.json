@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-29T01:02:23.463Z",
+  "generatedAt": "2026-08-02T18:41:29.288Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
@@ -13,11 +13,11 @@
     "launchOptions": [
       {
         "platform": "Windows",
-        "executable": "win-unpacked/hunker-bunker.exe"
+        "executable": "hunker-bunker.exe"
       },
       {
         "platform": "Linux + SteamOS",
-        "executable": "linux-unpacked/hunker-bunker"
+        "executable": "hunker-bunker"
       }
     ],
     "optionalFutureSplit": "Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml."
@@ -387,6 +387,18 @@
         "label": "Back"
       },
       {
+        "actionSet": "menu",
+        "actionType": "Button",
+        "action": "menu_tab_left",
+        "label": "Previous Tab"
+      },
+      {
+        "actionSet": "menu",
+        "actionType": "Button",
+        "action": "menu_tab_right",
+        "label": "Next Tab"
+      },
+      {
         "actionSet": "gameplay",
         "actionType": "StickPadGyro",
         "action": "move",
@@ -396,7 +408,13 @@
         "actionSet": "gameplay",
         "actionType": "StickPadGyro",
         "action": "camera",
-        "label": "Camera"
+        "label": "Aim"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "StickPadGyro",
+        "action": "camera_mouse",
+        "label": "Aim Cursor"
       },
       {
         "actionSet": "gameplay",
@@ -431,8 +449,50 @@
       {
         "actionSet": "gameplay",
         "actionType": "Button",
+        "action": "sprint",
+        "label": "Sprint"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
+        "action": "toggle_map",
+        "label": "Tactical Map"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
         "action": "pause",
         "label": "Pause"
+      },
+      {
+        "actionSet": "archive",
+        "actionType": "StickPadGyro",
+        "action": "archive_focus",
+        "label": "Move Focus"
+      },
+      {
+        "actionSet": "archive",
+        "actionType": "Button",
+        "action": "archive_confirm",
+        "label": "Inspect / Confirm"
+      },
+      {
+        "actionSet": "archive",
+        "actionType": "Button",
+        "action": "archive_inventory",
+        "label": "Inventory"
+      },
+      {
+        "actionSet": "archive",
+        "actionType": "Button",
+        "action": "archive_back",
+        "label": "Back"
+      },
+      {
+        "actionSet": "archive",
+        "actionType": "Button",
+        "action": "archive_reveal",
+        "label": "Reveal Hotspots"
       }
     ]
   },

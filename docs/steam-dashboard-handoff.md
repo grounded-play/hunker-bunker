@@ -1,6 +1,6 @@
 # Steam Dashboard Handoff
 
-Generated: 2026-07-29.
+Generated: 2026-08-02.
 
 This is the copy/paste packet for Steamworks dashboard work that cannot be
 completed from the repo. Keep it in sync with code by running:
@@ -37,8 +37,8 @@ With the current single content depot, create one launch option per platform:
 
 | Platform | Executable |
 | --- | --- |
-| Windows | `win-unpacked/hunker-bunker.exe` |
-| Linux + SteamOS | `linux-unpacked/hunker-bunker` |
+| Windows | `hunker-bunker.exe` |
+| Linux + SteamOS | `hunker-bunker` |
 
 Future download-size improvement: Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml.
 
@@ -150,14 +150,24 @@ Actions in the manifest:
 | menu | Button | `menu_right` | Right |
 | menu | Button | `menu_confirm` | Confirm |
 | menu | Button | `menu_back` | Back |
+| menu | Button | `menu_tab_left` | Previous Tab |
+| menu | Button | `menu_tab_right` | Next Tab |
 | gameplay | StickPadGyro | `move` | Move |
-| gameplay | StickPadGyro | `camera` | Camera |
+| gameplay | StickPadGyro | `camera` | Aim |
+| gameplay | StickPadGyro | `camera_mouse` | Aim Cursor |
 | gameplay | Button | `fire` | Fire |
 | gameplay | Button | `interact` | Interact |
 | gameplay | Button | `reload` | Reload |
 | gameplay | Button | `ability` | Ability |
 | gameplay | Button | `scan` | Scan |
+| gameplay | Button | `sprint` | Sprint |
+| gameplay | Button | `toggle_map` | Tactical Map |
 | gameplay | Button | `pause` | Pause |
+| archive | StickPadGyro | `archive_focus` | Move Focus |
+| archive | Button | `archive_confirm` | Inspect / Confirm |
+| archive | Button | `archive_inventory` | Inventory |
+| archive | Button | `archive_back` | Back |
+| archive | Button | `archive_reveal` | Reveal Hotspots |
 
 ## Inventory Schema And Item Store
 

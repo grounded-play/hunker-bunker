@@ -23,6 +23,22 @@ describe('browser gamepad mapping', () => {
         expect(isGamepadButtonPressed(button(true, 0))).toBe(true);
     });
 
+    // The gameplay aim path reads controller.cameraDelta every frame. The Web
+    // Gamepad API has no trackpad or gyro to feed it, but the field still has to
+    // exist and read zero so the browser fallback lands on stick aim instead of
+    // faulting on an absent object.
+    it('carries a zeroed cameraDelta so the mouse-style aim path stays inert', () => {
+        const mapped = mapBrowserGamepad({
+            index: 0,
+            id: 'Xbox Wireless Controller',
+            axes: [0, 0, 0.9, -0.9],
+            buttons: Array.from({ length: 16 }, () => button(false))
+        });
+
+        expect(mapped.cameraDelta).toEqual({ x: 0, y: 0 });
+        expect(mapped.camera).toEqual({ x: 0.9, y: -0.9 });
+    });
+
     it('maps standard gamepad controls into the Steam-compatible shape', () => {
         const buttons = Array.from({ length: 16 }, () => button(false));
         buttons[0] = button(true);

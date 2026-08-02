@@ -50,6 +50,10 @@ export function mapBrowserGamepad(gamepad, {
         active: false,
         move: { x: moveX, y: moveY },
         camera: { x: cameraX, y: cameraY },
+        // Shape parity with the Steam Input snapshot. The Web Gamepad API exposes
+        // neither a trackpad nor a gyro, so there is no mouse-style aim source to
+        // feed this here — it stays zero and the consumer falls back to stick aim.
+        cameraDelta: { x: 0, y: 0 },
         fire: readButton(buttons, 5) || readButton(buttons, 7),
         interact: readButton(buttons, 0),
         reload: readButton(buttons, 2),

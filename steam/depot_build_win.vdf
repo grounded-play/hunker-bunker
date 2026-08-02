@@ -1,10 +1,12 @@
 "DepotBuild"
 {
     "DepotID" "4957042"
+    // DepotPath is "." so the install root holds the exe, steam_input_manifest.vdf
+    // and controller_configs/ — matching the Linux depot. See depot_build_content.vdf.
     "FileMapping"
     {
         "LocalPath" "win-unpacked/*"
-        "DepotPath" "win-unpacked"
+        "DepotPath" "."
         "recursive" "1"
     }
 

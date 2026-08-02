@@ -989,6 +989,39 @@ window.addEventListener('gamepad-menu-nav', (event) => {
     }
 });
 
+// Trackpad and gyro aim arrive as per-frame mouse deltas rather than a stick
+// position, so they drive a virtual cursor that feeds the same screen->world
+// raycast a real mouse uses. Deltas are already in pixels; the sensitivity knob
+// on the Steam side does the heavy lifting, so this stays 1:1 by default.
+const CONTROLLER_CURSOR_SENSITIVITY = 1;
+let controllerAimCursor = null;
+
+function applyControllerCursorAim(controller) {
+    const deltaX = Number(controller.cameraDelta?.x) || 0;
+    const deltaY = Number(controller.cameraDelta?.y) || 0;
+    // Sub-pixel motion is sensor noise, not a gesture.
+    if (Math.hypot(deltaX, deltaY) < 1) return false;
+    if (typeof window.game?.updateAimFromClient !== 'function') return false;
+
+    const width = window.innerWidth || 0;
+    const height = window.innerHeight || 0;
+    if (!width || !height) return false;
+
+    if (!controllerAimCursor) {
+        controllerAimCursor = { x: width / 2, y: height / 2 };
+    }
+    // Steam reports +Y as up, client coordinates grow downward — same inversion the
+    // stick path applies below.
+    controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY)));
+    controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y - (deltaY * CONTROLLER_CURSOR_SENSITIVITY)));
+
+    return Boolean(window.game.updateAimFromClient(
+        controllerAimCursor.x,
+        controllerAimCursor.y,
+        { keepMouseActive: true }
+    ));
+}
+
 function handleSteamGameplayInput(controller) {
     const prev = steamInputPrevControllers.get(controller.handle) ?? {};
     const moveX = Math.abs(Number(controller.move?.x) || 0) > 0.18 ? Number(controller.move?.x) || 0 : 0;
@@ -999,7 +1032,11 @@ function handleSteamGameplayInput(controller) {
     if (window.game?.setVirtualInput) {
         window.game.setVirtualInput(moveX, -moveY);
     }
-    if ((aimX || aimY) && window.game?.setControllerAimVector) {
+    // The pad/gyro cursor is the precision device, so it wins a frame where both
+    // moved. Whichever aimed last still wins overall: setControllerAimVector clears
+    // mouseAimActive, and updateAimFromClient sets it again.
+    const cursorAimed = applyControllerCursorAim(controller);
+    if (!cursorAimed && (aimX || aimY) && window.game?.setControllerAimVector) {
         window.game.setControllerAimVector(aimX, -aimY);
     }
 

@@ -1,16 +1,19 @@
 "DepotBuild"
 {
     "DepotID" "4957041"
+    // Map the Linux build's own directory onto the depot root so the installed
+    // layout matches the Windows depot: executable, steam_input_manifest.vdf and
+    // controller_configs/ all sit at the install root. Steam Input takes a single
+    // manifest path for every platform, so the two depots must agree on it.
     "FileMapping"
     {
-        "LocalPath" "*"
+        "LocalPath" "linux-unpacked/*"
         "DepotPath" "."
         "recursive" "1"
     }
 
     // Dev-only and server-only files; retail launches through Steam and the
     // trusted backend owns production state.
-    "FileExclusion" "win-unpacked/*"
     "FileExclusion" "steam_appid.txt"
     "FileExclusion" ".env"
     "FileExclusion" ".env.*"

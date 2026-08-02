@@ -63,6 +63,48 @@ function dpadGroup(id, actionSet, actions) {
     }`;
 }
 
+// Trackpad in dpad mode. requires_click is off so a resting thumb steers menus
+// without a physical click, which is how the Deck/DualSense pads are expected
+// to feel. Only bound to sources that actually have a trackpad.
+function padDpadGroup(id, actionSet, actions) {
+    return `"group"
+    {
+        "id" "${id}"
+        "mode" "dpad"
+        "inputs"
+        {
+            "dpad_north" { ${activator(actionSet, actions.up[0], actions.up[1])} }
+            "dpad_south" { ${activator(actionSet, actions.down[0], actions.down[1])} }
+            "dpad_east" { ${activator(actionSet, actions.right[0], actions.right[1])} }
+            "dpad_west" { ${activator(actionSet, actions.left[0], actions.left[1])} }
+        }
+        "settings" { "requires_click" "0" }
+    }`;
+}
+
+// Mouse-style analog source: 1:1 deltas rather than a stick position. Used for the
+// right trackpad, which turns into a precision aim cursor in a fixed top-down view
+// where a stick can only ever express a direction.
+function mouseGroup(id, actionSet, action, extraSettings = {}) {
+    const settings = Object.entries({ sensitivity: '105', ...extraSettings })
+        .map(([key, value]) => `"${key}" "${value}"`)
+        .join('\n            ');
+    return `"group"
+    {
+        "id" "${id}"
+        "mode" "absolute_mouse"
+        "inputs" { }
+        "settings"
+        {
+            ${settings}
+        }
+        "gameactions"
+        {
+            "${actionSet}" "${action}"
+        }
+    }`;
+}
+
 function analogGroup(id, actionSet, action) {
     return `"group"
     {
@@ -122,133 +164,13 @@ function preset(id, name, groups) {
     }`;
 }
 
-function legacyActivator(bindingValue) {
-    return `"activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "${bindingValue}"
-                        }
-                    }
-                }`;
-}
-
-function legacyFaceGroup() {
-    return `"group"
-    {
-        "id" "0"
-        "mode" "four_buttons"
-        "inputs"
-        {
-            "button_a" { ${legacyActivator('key_press RETURN, Confirm / Interact')} }
-            "button_b" { ${legacyActivator('key_press ESCAPE, Back / Pause')} }
-            "button_x" { ${legacyActivator('key_press R, Reload')} }
-            "button_y" { ${legacyActivator('key_press F, Ability')} }
-        }
-    }`;
-}
-
-function legacyMovementGroup(id) {
-    return `"group"
-    {
-        "id" "${id}"
-        "mode" "dpad"
-        "inputs"
-        {
-            "dpad_north" { ${legacyActivator('key_press W, Up / Move Up')} }
-            "dpad_south" { ${legacyActivator('key_press S, Down / Move Down')} }
-            "dpad_east" { ${legacyActivator('key_press D, Right / Move Right')} }
-            "dpad_west" { ${legacyActivator('key_press A, Left / Move Left')} }
-        }
-        "settings" { "requires_click" "0" }
-    }`;
-}
-
-function legacyTriggerGroup(id, bindingValue) {
-    return `"group"
-    {
-        "id" "${id}"
-        "mode" "trigger"
-        "inputs" { "edge" { ${legacyActivator(bindingValue)} } }
-    }`;
-}
-
-function buildDeckLegacyConfig() {
-    const groups = [
-        legacyFaceGroup(),
-        legacyMovementGroup(1),
-        legacyMovementGroup(2),
-        `"group"
-    {
-        "id" "6"
-        "mode" "joystick_mouse"
-        "inputs" { }
-        "settings"
-        {
-            "sensitivity" "175"
-            "sensitivity_vert_scale" "100"
-            "mouse_smoothing" "0"
-        }
-    }`,
-        legacyTriggerGroup(3, 'key_press LEFT_SHIFT, Sprint'),
-        legacyTriggerGroup(4, 'mouse_button LEFT, Fire / Click'),
-        `"group"
-    {
-        "id" "5"
-        "mode" "switches"
-        "inputs"
-        {
-            "button_escape" { ${legacyActivator('key_press ESCAPE, Pause / Back')} }
-            "button_menu" { ${legacyActivator('key_press ESCAPE, Pause / Back')} }
-            "left_bumper" { ${legacyActivator('key_press Q, Scan')} }
-            "right_bumper" { ${legacyActivator('mouse_button LEFT, Fire / Click')} }
-        }
-    }`
-    ];
-    const universalSources = {
-        0: 'button_diamond',
-        1: 'dpad',
-        2: 'joystick',
-        6: 'right_joystick',
-        3: 'left_trigger',
-        4: 'right_trigger',
-        5: 'switch'
-    };
-    const presets = [
-        preset(0, 'menu', universalSources),
-        preset(1, 'gameplay', universalSources),
-        preset(2, 'archive', universalSources)
-    ];
-    return `"controller_mappings"
-{
-    "version" "3"
-    "game" "Hunker Bunker"
-    "title" "Official Hunker Bunker — Deck WASD + Mouse"
-    "description" "Steam Deck fallback: left stick is WASD, right stick is mouse, A confirms/interacts."
-    "controller_type" "controller_neptune"
-    "major_revision" "2"
-    "minor_revision" "0"
-    ${groups.join('\n    ')}
-    ${presets.join('\n    ')}
-    "settings"
-    {
-        "left_trackpad_mode" "0"
-        "right_trackpad_mode" "0"
-    }
-}
-`;
-}
-
 function buildControllerConfig(controllerType) {
-    if (controllerType === 'controller_neptune') return buildDeckLegacyConfig();
     const groups = [
         faceGroup(0, 'menu', {
             a: ['menu_confirm', 'Confirm'],
             b: ['menu_back', 'Back'],
-            x: ['menu_page_left', 'Page Left'],
-            y: ['menu_page_right', 'Page Right']
+            x: ['menu_tab_left', 'Previous Tab'],
+            y: ['menu_tab_right', 'Next Tab']
         }),
         dpadGroup(1, 'menu', {
             up: ['menu_up', 'Up'],
@@ -262,8 +184,20 @@ function buildControllerConfig(controllerType) {
             left: ['menu_left', 'Left'],
             right: ['menu_right', 'Right']
         }),
-        triggerGroup(3, 'menu', 'menu_page_left', 'Page Left'),
-        triggerGroup(4, 'menu', 'menu_page_right', 'Page Right'),
+        triggerGroup(3, 'menu', 'menu_tab_left', 'Previous Tab'),
+        triggerGroup(4, 'menu', 'menu_tab_right', 'Next Tab'),
+        padDpadGroup(6, 'menu', {
+            up: ['menu_up', 'Up'],
+            down: ['menu_down', 'Down'],
+            left: ['menu_left', 'Left'],
+            right: ['menu_right', 'Right']
+        }),
+        padDpadGroup(7, 'menu', {
+            up: ['menu_up', 'Up'],
+            down: ['menu_down', 'Down'],
+            left: ['menu_left', 'Left'],
+            right: ['menu_right', 'Right']
+        }),
         switchesGroup(5, 'menu', {
             button_escape: ['pause', 'Pause'],
             left_bumper: ['menu_tab_left', 'Previous Tab'],
@@ -277,6 +211,16 @@ function buildControllerConfig(controllerType) {
         }),
         analogGroup(11, 'gameplay', 'move'),
         analogGroup(12, 'gameplay', 'camera'),
+        analogGroup(16, 'gameplay', 'move'),
+        mouseGroup(17, 'gameplay', 'camera_mouse'),
+        // Gyro feeds the same aim cursor as the trackpad, but only while the right
+        // pad is actually being touched ("gyro ratcheting"). In a fixed top-down view
+        // the reticle is always live, so an always-on gyro would let a resting hand
+        // walk the aim. NOTE: gyro_button is the one key here not covered by the
+        // Steam Input docs and not confirmable against a local Valve config — verify
+        // in Big Picture before publishing. If Steam ignores it the failure is
+        // visible immediately as always-on gyro drift.
+        mouseGroup(18, 'gameplay', 'camera_mouse', { gyro_button: 'right_pad_touch' }),
         triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
         switchesGroup(15, 'gameplay', {
@@ -297,6 +241,8 @@ function buildControllerConfig(controllerType) {
         }),
         analogGroup(21, 'archive', 'archive_focus'),
         analogGroup(22, 'archive', 'archive_focus'),
+        analogGroup(26, 'archive', 'archive_focus'),
+        analogGroup(27, 'archive', 'archive_focus'),
         triggerGroup(23, 'archive', 'archive_reveal', 'Reveal Hotspots'),
         triggerGroup(24, 'archive', 'archive_confirm', 'Inspect / Confirm'),
         switchesGroup(25, 'archive', {
@@ -313,7 +259,9 @@ function buildControllerConfig(controllerType) {
             2: 'joystick',
             3: 'left_trigger',
             4: 'right_trigger',
-            5: 'switch'
+            5: 'switch',
+            6: 'left_trackpad',
+            7: 'right_trackpad'
         }),
         preset(1, 'gameplay', {
             10: 'button_diamond',
@@ -321,7 +269,10 @@ function buildControllerConfig(controllerType) {
             12: 'right_joystick',
             13: 'left_trigger',
             14: 'right_trigger',
-            15: 'switch'
+            15: 'switch',
+            16: 'left_trackpad',
+            17: 'right_trackpad',
+            18: 'gyro'
         }),
         preset(2, 'archive', {
             20: 'button_diamond',
@@ -329,7 +280,9 @@ function buildControllerConfig(controllerType) {
             22: 'dpad',
             23: 'left_trigger',
             24: 'right_trigger',
-            25: 'switch'
+            25: 'switch',
+            26: 'left_trackpad',
+            27: 'right_trackpad'
         })
     ];
 
@@ -340,7 +293,7 @@ function buildControllerConfig(controllerType) {
     "title" "Official Hunker Bunker Layout"
     "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
     "controller_type" "${controllerType}"
-    "major_revision" "1"
+    "major_revision" "2"
     "minor_revision" "0"
     "localization"
     {
@@ -352,11 +305,6 @@ function buildControllerConfig(controllerType) {
     }
     ${groups.join('\n    ')}
     ${presets.join('\n    ')}
-    "settings"
-    {
-        "left_trackpad_mode" "0"
-        "right_trackpad_mode" "0"
-    }
 }
 `;
 }
@@ -379,20 +327,9 @@ export function syncSteamInputToDepotRoot({ repo = repoRoot } = {}) {
         }
     }
 
-    const manifestSrc = path.join(repo, 'steam', 'steam_input_manifest.vdf');
-    if (fs.existsSync(manifestSrc)) {
-        fs.copyFileSync(manifestSrc, path.join(distElectron, 'steam_input_manifest.vdf'));
-    }
-    const configsSrc = path.join(repo, 'steam', 'controller_configs');
-    const configsDest = path.join(distElectron, 'controller_configs');
-    if (fs.existsSync(configsSrc)) {
-        fs.mkdirSync(configsDest, { recursive: true });
-        for (const file of fs.readdirSync(configsSrc)) {
-            if (file.endsWith('.vdf')) {
-                fs.copyFileSync(path.join(configsSrc, file), path.join(configsDest, file));
-            }
-        }
-    }
+    // The manifest and controller_configs/ are placed inside each *-unpacked dir by
+    // electron-builder's extraFiles, and both depots now map from those dirs, so a
+    // copy at the dist_electron root would never be uploaded. Nothing to do here.
 }
 
 export function buildSteamInputConfigs({ destination = outputDir } = {}) {

@@ -116,6 +116,7 @@ export function auditSteamVdfs({ steamDir = path.join(repoRoot, 'steam') } = {})
     const failures = [];
     const appBuild = readTextIfExists(path.join(steamDir, 'app_build.vdf'));
     const contentDepot = readTextIfExists(path.join(steamDir, 'depot_build_content.vdf'));
+    const winDepot = readTextIfExists(path.join(steamDir, 'depot_build_win.vdf'));
     const inputManifest = readTextIfExists(path.join(steamDir, 'steam_input_manifest.vdf'));
 
     if (!appBuild) {
@@ -133,7 +134,12 @@ export function auditSteamVdfs({ steamDir = path.join(repoRoot, 'steam') } = {})
         }
     }
 
-    for (const [label, text] of [['steam/depot_build_content.vdf', contentDepot]]) {
+    const platformDepots = [
+        ['steam/depot_build_content.vdf', contentDepot, '4957041'],
+        ['steam/depot_build_win.vdf', winDepot, '4957042']
+    ];
+
+    for (const [label, text, depotId] of platformDepots) {
         if (!text) {
             failures.push({ file: label, reason: 'Missing Steam depot VDF.' });
             continue;
@@ -142,11 +148,21 @@ export function auditSteamVdfs({ steamDir = path.join(repoRoot, 'steam') } = {})
         if (/__DEPOT_/.test(depotBody)) {
             failures.push({ file: label, reason: 'Depot VDF still contains upload placeholders.' });
         }
-        if (!/"DepotID"\s+"4957041"/.test(depotBody)) {
-            failures.push({ file: label, reason: 'Content depot 4957041 is not pinned.' });
+        if (!new RegExp(`"DepotID"\\s+"${depotId}"`).test(depotBody)) {
+            failures.push({ file: label, reason: `Depot ${depotId} is not pinned.` });
         }
         if (!/"FileExclusion"\s+"steam_appid\.txt"/.test(depotBody)) {
             failures.push({ file: label, reason: 'Depot VDF must exclude steam_appid.txt.' });
+        }
+        // The Steamworks dashboard accepts one Steam Input manifest path for every
+        // platform, so each depot must land its build at the install root. Mapping a
+        // platform into a subdirectory silently breaks Steam Input on that platform
+        // only — the manifest is present in the depot but not where Steam looks.
+        if (!/"DepotPath"\s+"\."/.test(depotBody)) {
+            failures.push({
+                file: label,
+                reason: 'Depot must map its build to DepotPath "." so the Steam Input manifest path is identical on every platform.'
+            });
         }
     }
 

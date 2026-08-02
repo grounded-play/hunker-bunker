@@ -403,6 +403,7 @@ function initSteam() {
                 menuTabRight: steamClient.input.getDigitalAction('menu_tab_right'),
                 move: steamClient.input.getAnalogAction('move'),
                 camera: steamClient.input.getAnalogAction('camera'),
+                cameraMouse: steamClient.input.getAnalogAction('camera_mouse'),
                 fire: steamClient.input.getDigitalAction('fire'),
                 interact: steamClient.input.getDigitalAction('interact'),
                 reload: steamClient.input.getDigitalAction('reload'),
@@ -418,16 +419,28 @@ function initSteam() {
                 pause: steamClient.input.getDigitalAction('pause')
             };
 
-            const handlesAreValid = Object.values(steamInputHandles).every(isValidActionHandle);
-            steamInputReady = handlesAreValid;
-            if (!handlesAreValid) {
-                const invalidHandles = Object.entries(steamInputHandles)
-                    .filter(([, handle]) => !isValidActionHandle(handle))
-                    .map(([name]) => name);
-                recordSteamDiagnostic('warn', 'input_handles', 'Steam Input action handles are missing', { invalidHandles });
+            // Degrade per action rather than all-or-nothing. Without an action set
+            // nothing can be activated, so those are genuinely fatal — but a single
+            // unresolved action (an older user config, a partially loaded binding)
+            // must not take every other control down with it. Every read site below
+            // already guards on isValidActionHandle, so a missing action is inert.
+            const ACTION_SET_HANDLES = ['menu', 'gameplay', 'archive'];
+            const missingActionSets = ACTION_SET_HANDLES
+                .filter((name) => !isValidActionHandle(steamInputHandles[name]));
+            const invalidHandles = Object.entries(steamInputHandles)
+                .filter(([name, handle]) => !ACTION_SET_HANDLES.includes(name) && !isValidActionHandle(handle))
+                .map(([name]) => name);
+
+            steamInputReady = missingActionSets.length === 0;
+            if (!steamInputReady) {
+                recordSteamDiagnostic('warn', 'input_handles', 'Steam Input action sets are missing', { missingActionSets, invalidHandles });
             } else {
                 steamInputPhase = 'loading';
-                recordSteamDiagnostic('info', 'input_ready', 'Steam Input initialized with all action handles');
+                if (invalidHandles.length > 0) {
+                    recordSteamDiagnostic('warn', 'input_degraded', 'Steam Input running with some actions unbound', { invalidHandles });
+                } else {
+                    recordSteamDiagnostic('info', 'input_ready', 'Steam Input initialized with all action handles');
+                }
             }
         } catch (err) {
             steamInputReady = false;
@@ -491,6 +504,12 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
     const cameraVector = phase === 'gameplay' && isValidActionHandle(actionHandles.camera)
         ? controller.getAnalogActionVector(actionHandles.camera)
         : { x: 0, y: 0 };
+    // absolute_mouse reports frame deltas in mouse "pixels", not a normalized stick
+    // position, so this deliberately skips the [-1, 1] clamp applied to the stick
+    // vectors below — clamping would crush a fast flick into a single unit.
+    const cameraDeltaVector = phase === 'gameplay' && isValidActionHandle(actionHandles.cameraMouse)
+        ? controller.getAnalogActionVector(actionHandles.cameraMouse)
+        : { x: 0, y: 0 };
 
     const buttonState = phase === 'gameplay'
         ? {
@@ -524,8 +543,13 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
 
     const moveMagnitude = Math.hypot(Number(moveVector?.x) || 0, Number(moveVector?.y) || 0);
     const cameraMagnitude = Math.hypot(Number(cameraVector?.x) || 0, Number(cameraVector?.y) || 0);
+    // Mouse-style deltas are unbounded, so the 0.18 stick deadzone is the wrong test:
+    // it would treat sub-pixel gyro noise as deliberate input. A whole pixel of
+    // travel in a frame is a real gesture.
+    const cameraDeltaMagnitude = Math.hypot(Number(cameraDeltaVector?.x) || 0, Number(cameraDeltaVector?.y) || 0);
     const anyButtonPressed = Object.values(buttonState).some(Boolean);
-    const active = anyButtonPressed || moveMagnitude > 0.18 || cameraMagnitude > 0.18;
+    const active = anyButtonPressed || moveMagnitude > 0.18 || cameraMagnitude > 0.18
+        || cameraDeltaMagnitude >= 1;
 
     return {
         handle,
@@ -538,6 +562,10 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
         camera: {
             x: Math.max(-1, Math.min(1, Number(cameraVector?.x) || 0)),
             y: Math.max(-1, Math.min(1, Number(cameraVector?.y) || 0))
+        },
+        cameraDelta: {
+            x: Number(cameraDeltaVector?.x) || 0,
+            y: Number(cameraDeltaVector?.y) || 0
         },
         ...buttonState
     };

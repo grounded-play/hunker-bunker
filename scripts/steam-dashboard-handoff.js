@@ -50,14 +50,24 @@ const STEAM_INPUT_ACTIONS = Object.freeze([
     { actionSet: 'menu', actionType: 'Button', action: 'menu_right', label: 'Right' },
     { actionSet: 'menu', actionType: 'Button', action: 'menu_confirm', label: 'Confirm' },
     { actionSet: 'menu', actionType: 'Button', action: 'menu_back', label: 'Back' },
+    { actionSet: 'menu', actionType: 'Button', action: 'menu_tab_left', label: 'Previous Tab' },
+    { actionSet: 'menu', actionType: 'Button', action: 'menu_tab_right', label: 'Next Tab' },
     { actionSet: 'gameplay', actionType: 'StickPadGyro', action: 'move', label: 'Move' },
-    { actionSet: 'gameplay', actionType: 'StickPadGyro', action: 'camera', label: 'Camera' },
+    { actionSet: 'gameplay', actionType: 'StickPadGyro', action: 'camera', label: 'Aim' },
+    { actionSet: 'gameplay', actionType: 'StickPadGyro', action: 'camera_mouse', label: 'Aim Cursor' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'fire', label: 'Fire' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'interact', label: 'Interact' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'reload', label: 'Reload' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'ability', label: 'Ability' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'scan', label: 'Scan' },
-    { actionSet: 'gameplay', actionType: 'Button', action: 'pause', label: 'Pause' }
+    { actionSet: 'gameplay', actionType: 'Button', action: 'sprint', label: 'Sprint' },
+    { actionSet: 'gameplay', actionType: 'Button', action: 'toggle_map', label: 'Tactical Map' },
+    { actionSet: 'gameplay', actionType: 'Button', action: 'pause', label: 'Pause' },
+    { actionSet: 'archive', actionType: 'StickPadGyro', action: 'archive_focus', label: 'Move Focus' },
+    { actionSet: 'archive', actionType: 'Button', action: 'archive_confirm', label: 'Inspect / Confirm' },
+    { actionSet: 'archive', actionType: 'Button', action: 'archive_inventory', label: 'Inventory' },
+    { actionSet: 'archive', actionType: 'Button', action: 'archive_back', label: 'Back' },
+    { actionSet: 'archive', actionType: 'Button', action: 'archive_reveal', label: 'Reveal Hotspots' }
 ]);
 
 function readJson(relativePath) {
@@ -166,9 +176,12 @@ export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
         depots: {
             contentDepotId: CONTENT_DEPOT_ID,
             currentModel: 'single content depot',
+            // Both depots map their build to the depot root (DepotPath "."), so the
+            // executable and steam_input_manifest.vdf sit at the install root on every
+            // platform. Steam Input takes one manifest path for all platforms.
             launchOptions: [
-                { platform: 'Windows', executable: `win-unpacked/${windowsExecutable}` },
-                { platform: 'Linux + SteamOS', executable: 'linux-unpacked/hunker-bunker' }
+                { platform: 'Windows', executable: windowsExecutable },
+                { platform: 'Linux + SteamOS', executable: 'hunker-bunker' }
             ],
             optionalFutureSplit: 'Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml.'
         },
