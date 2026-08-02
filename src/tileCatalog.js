@@ -3,7 +3,85 @@
 // docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md §1-2.
 
 export const SOCKET = Object.freeze({ CLOSED: 'CLOSED', OPEN3: 'OPEN3' });
-export const TILE_SIZE = 7;
+
+// Every bunker tile is an island in a canyon. Reading inward from any edge:
+//
+//   X  pit     1  the chasm floor; shared with the neighbouring tile
+//   C  cliff   1  the vertical face rising out of the pit
+//   O  ledge   3  open ground outside the bunker, at the cliff edge
+//   #  wall    -  the authored core's own perimeter
+//   .  room    -  the authored core's interior
+//
+// PLAINS tiles skip the pit and cliff entirely and are ledge all the way out,
+// so neighbouring plains merge into continuous open exterior with no chasm.
+//
+// TILE_SIZE = ROOM_SIZE + 2*BAND_THICKNESS, and a lattice of N cells spans
+// N*(TILE_SIZE-1)+1 — CHUNK_SIZE. Those numbers are locked together; changing
+// one without the others silently corrupts world generation.
+export const ROOM_SIZE = 7;
+export const BAND_THICKNESS = 5;
+export const TILE_SIZE = ROOM_SIZE + (BAND_THICKNESS * 2);
+export const LATTICE = 3;
+export const CHUNK_SIZE = (LATTICE * (TILE_SIZE - 1)) + 1;
+
+export const GLYPH = Object.freeze({
+    PIT: 'X', CLIFF: 'C', LEDGE: 'O', WALL: '#', FLOOR: '.'
+});
+
+// No wall band: every authored core carries its own perimeter, and that
+// perimeter IS the bunker wall. Emitting one too would double the shell.
+const BANDS_CANYON = [GLYPH.PIT, GLYPH.CLIFF, GLYPH.LEDGE, GLYPH.LEDGE, GLYPH.LEDGE];
+const BANDS_PLAIN = [GLYPH.LEDGE, GLYPH.LEDGE, GLYPH.LEDGE, GLYPH.LEDGE, GLYPH.LEDGE];
+
+const CAUSEWAY_START = Math.floor((TILE_SIZE - 3) / 2);
+const CAUSEWAY_CELLS = [CAUSEWAY_START, CAUSEWAY_START + 1, CAUSEWAY_START + 2];
+
+// Wraps an authored interior in its bands and cuts a 3-wide causeway out on
+// every OPEN3 side. Without the causeway the shared edge lane would be
+// unbroken pit: every tile would validate cleanly while being sealed off.
+export function wrapWithBands(core, sockets, { plain = false } = {}) {
+    const open = ['n', 'e', 's', 'w'].filter((d) => sockets?.[d] === SOCKET.OPEN3);
+
+    // Closed on all four sides means unenterable, so it must hold no walkable
+    // ledge — that is exactly the stranded pocket solid filler exists to avoid.
+    if (open.length === 0) {
+        return Array.from({ length: TILE_SIZE }, () => GLYPH.WALL.repeat(TILE_SIZE));
+    }
+
+    const bands = plain ? BANDS_PLAIN : BANDS_CANYON;
+    const grid = [];
+    for (let y = 0; y < TILE_SIZE; y += 1) {
+        const row = [];
+        for (let x = 0; x < TILE_SIZE; x += 1) {
+            const depth = Math.min(x, y, TILE_SIZE - 1 - x, TILE_SIZE - 1 - y);
+            row.push(depth < BAND_THICKNESS ? bands[depth] : core[y - BAND_THICKNESS][x - BAND_THICKNESS]);
+        }
+        grid.push(row);
+    }
+    for (const side of open) {
+        for (const lane of CAUSEWAY_CELLS) {
+            for (let d = 0; d < BAND_THICKNESS; d += 1) {
+                const far = TILE_SIZE - 1 - d;
+                if (side === 'n') grid[d][lane] = GLYPH.FLOOR;
+                if (side === 's') grid[far][lane] = GLYPH.FLOOR;
+                if (side === 'w') grid[lane][d] = GLYPH.FLOOR;
+                if (side === 'e') grid[lane][far] = GLYPH.FLOOR;
+            }
+        }
+    }
+    return grid.map((r) => r.join(''));
+}
+
+export function defineTile(base) {
+    const { core, anchors, plain, ...rest } = base;
+    return {
+        ...rest,
+        ...(plain ? { plain: true } : {}),
+        pattern: wrapWithBands(core, base.sockets, { plain }),
+        ...(anchors ? { anchors: anchors.map((a) => ({ ...a, x: a.x + BAND_THICKNESS, y: a.y + BAND_THICKNESS })) } : {})
+    };
+}
+
 
 const OPPOSITE = Object.freeze({ n: 's', s: 'n', e: 'w', w: 'e' });
 
@@ -111,7 +189,7 @@ const SOLID_FILL = {
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
     anchors: [],
     sockets: { n: C, e: C, s: C, w: C },
-    pattern: [
+    core: [
         '#######',
         '#######',
         '#######',
@@ -137,7 +215,7 @@ const ROOM_ALCOVE_BASE = {
         { id: 'scatter-b', x: 5, y: 3, kind: 'small-prop', clearance: 0 }
     ],
     sockets: { n: C, e: C, s: O, w: C },
-    pattern: [
+    core: [
         '#######',
         '#.....#',
         '#.....#',
@@ -162,7 +240,7 @@ const ROOM_THROUGH_BASE = {
         { id: 'right-wall', x: 5, y: 3, kind: 'small-prop', clearance: 0 }
     ],
     sockets: { n: O, e: C, s: O, w: C },
-    pattern: [
+    core: [
         '##...##',
         '#.....#',
         '#.....#',
@@ -185,7 +263,7 @@ const ROOM_COMPACT_BASE = {
         { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 1 }
     ],
     sockets: { n: C, e: C, s: O, w: C },
-    pattern: [
+    core: [
         '#######',
         '#.....#',
         '#.....#',
@@ -212,7 +290,7 @@ const ROOM_RECTANGLE_BASE = {
         { id: 'wide-wall-right', x: 5, y: 3, kind: 'small-prop', clearance: 0 }
     ],
     sockets: { n: C, e: C, s: O, w: C },
-    pattern: [
+    core: [
         '#######',
         '#######',
         '#.....#',
@@ -239,7 +317,7 @@ const ROOM_BENT_BASE = {
         { id: 'east-wing', x: 5, y: 3, kind: 'small-prop', clearance: 0 }
     ],
     sockets: { n: O, e: O, s: C, w: C },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '##.....',
@@ -263,7 +341,7 @@ const ROOM_CORNER_BASE = {
         { id: 'closed-corner', x: 1, y: 5, kind: 'large-prop', clearance: 0 }
     ],
     sockets: { n: O, e: O, s: C, w: C },
-    pattern: [
+    core: [
         '##...##',
         '#.....#',
         '#......',
@@ -287,7 +365,7 @@ const ROOM_JUNCTION_BASE = {
         { id: 'closed-wall', x: 1, y: 3, kind: 'large-prop', clearance: 0 }
     ],
     sockets: { n: O, e: O, s: O, w: C },
-    pattern: [
+    core: [
         '##...##',
         '#.....#',
         '#......',
@@ -310,7 +388,7 @@ const ROOM_HUB = {
         { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 1 }
     ],
     sockets: { n: O, e: O, s: O, w: O },
-    pattern: [
+    core: [
         '##...##',
         '#.....#',
         '.......',
@@ -369,7 +447,7 @@ const CORRIDOR_STRAIGHT_BASE = {
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
     anchors: [],
     sockets: { n: O, e: C, s: O, w: C },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '##...##',
@@ -390,7 +468,7 @@ const CORRIDOR_TURN_BASE = {
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
     anchors: [],
     sockets: { n: O, e: O, s: C, w: C },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '##.....',
@@ -414,7 +492,7 @@ const CORRIDOR_NARROW_BASE = {
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
     anchors: [],
     sockets: { n: O, e: C, s: O, w: C },
-    pattern: [
+    core: [
         '##...##',
         '###.###',
         '###.###',
@@ -435,7 +513,7 @@ const CORRIDOR_T_BASE = {
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
     anchors: [],
     sockets: { n: O, e: O, s: O, w: C },
-    pattern: [
+    core: [
         '##...##',
         '#.....#',
         '#......',
@@ -456,7 +534,7 @@ const CORRIDOR_CROSS = {
     populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
     anchors: [],
     sockets: { n: O, e: O, s: O, w: O },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '.......',
@@ -477,7 +555,7 @@ const CANYON_WALKWAY_BASE = {
     populationBudget: { large: 0, small: 1, pickup: 0, enemy: 0 },
     anchors: [],
     sockets: { n: O, e: C, s: O, w: C },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '#X...X#',
@@ -492,7 +570,7 @@ const CANYON_WALKWAY_BROAD_BASE = {
     ...CANYON_WALKWAY_BASE,
     id: 'canyon-walkway-broad',
     weight: 0.22,
-    pattern: [
+    core: [
         '##...##',
         '#.....#',
         '#X...X#',
@@ -508,7 +586,7 @@ const CANYON_WALKWAY_TURN_BASE = {
     id: 'canyon-walkway-turn',
     weight: 0.24,
     sockets: { n: O, e: O, s: C, w: C },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '#X.....',
@@ -523,7 +601,7 @@ const CANYON_SPLIT_BRIDGE_BASE = {
     ...CANYON_WALKWAY_BASE,
     id: 'canyon-split-bridge',
     weight: 0.14,
-    pattern: [
+    core: [
         '##...##',
         '#.....#',
         '#..X..#',
@@ -546,7 +624,7 @@ const DEADEND_BASE = {
         { id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 1 }
     ],
     sockets: { n: O, e: C, s: C, w: C },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '#######',
@@ -576,7 +654,7 @@ const CANYON_IMPASSABLE_BASE = {
         ground: { n: O, e: C, s: O, w: C },
         elevated: { n: O, e: C, s: O, w: C }
     },
-    pattern: [
+    core: [
         '##...##',
         '#######',
         '#######',
@@ -601,7 +679,7 @@ const RAMP_BASE = {
         ground: { n: O, e: C, s: C, w: C },
         elevated: { n: C, e: C, s: O, w: C }
     },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '##...##',
@@ -626,7 +704,7 @@ const BRIDGE_BASE = {
         ground: { n: C, e: C, s: C, w: C },
         elevated: { n: O, e: C, s: O, w: C }
     },
-    pattern: [
+    core: [
         '##...##',
         '##...##',
         '##...##',
@@ -651,7 +729,7 @@ const LADDER_BASE = {
         ground: { n: O, e: C, s: C, w: C },
         elevated: { n: C, e: C, s: O, w: C }
     },
-    pattern: [
+    core: [
         '###.###',
         '###.###',
         '###.###',
@@ -662,29 +740,77 @@ const LADDER_BASE = {
     ]
 };
 
+
+// ── Plains ──────────────────────────────────────────────────────────────
+// Open exterior: no pit, no cliff, no bunker shell. `plain: true` swaps the
+// canyon bands for ledge all the way out, so adjacent plains merge into
+// continuous ground you can simply walk across. Open on all four sides —
+// a plain with a closed side would read as an invisible wall in open country.
+const PLAIN_OPEN_BASE = {
+    id: 'plain-open',
+    category: 'plain',
+    plain: true,
+    tutorial: false,
+    weight: 0.55,
+    roomRole: 'generic',
+    decorationSet: 'cave',
+    populationBudget: { large: 0, small: 2, pickup: 1, enemy: 1 },
+    anchors: [{ id: 'center', x: 3, y: 3, kind: 'landmark', clearance: 2 }],
+    sockets: { n: O, e: O, s: O, w: O },
+    core: [
+        '.......',
+        '.......',
+        '.......',
+        '.......',
+        '.......',
+        '.......',
+        '.......'
+    ]
+};
+
+// Scattered rock on otherwise open ground, so plains do not all read alike.
+const PLAIN_SCATTER_BASE = {
+    ...PLAIN_OPEN_BASE,
+    id: 'plain-scatter',
+    weight: 0.35,
+    populationBudget: { large: 1, small: 2, pickup: 1, enemy: 1 },
+    anchors: [{ id: 'center', x: 3, y: 3, kind: 'large-prop', clearance: 1 }],
+    core: [
+        '.......',
+        '..#....',
+        '.......',
+        '....#..',
+        '.......',
+        '..#....',
+        '.......'
+    ]
+};
+
 export const TILE_CATALOG = Object.freeze([
-    SOLID_FILL,
-    ...withRotations(ROOM_ALCOVE_BASE, ['s', 'w', 'n', 'e']),
-    ...withRotations(ROOM_COMPACT_BASE, ['s', 'w', 'n', 'e']),
-    ...withRotations(ROOM_RECTANGLE_BASE, ['s', 'w', 'n', 'e']),
-    ...withRotations(ROOM_THROUGH_BASE, ['ns', 'ew']),
-    ...withRotations(ROOM_BENT_BASE, ['ne', 'es', 'sw', 'wn']),
-    ...withRotations(ROOM_CORNER_BASE, ['ne', 'es', 'sw', 'wn']),
-    ...withRotations(ROOM_JUNCTION_BASE, ['nes', 'esw', 'swn', 'wne']),
-    ROOM_HUB,
-    ...ROOM_ROLE_VARIANTS.flatMap((room) => withRotations(room, ['s', 'w', 'n', 'e'])),
-    ...withRotations(CORRIDOR_STRAIGHT_BASE, ['ns', 'ew']),
-    ...withRotations(CORRIDOR_NARROW_BASE, ['ns', 'ew']),
-    ...withRotations(CORRIDOR_TURN_BASE, ['ne', 'es', 'sw', 'wn']),
-    ...withRotations(CORRIDOR_T_BASE, ['nes', 'esw', 'swn', 'wne']),
-    CORRIDOR_CROSS,
-    ...withRotations(CANYON_WALKWAY_BASE, ['ns', 'ew']),
-    ...withRotations(CANYON_WALKWAY_BROAD_BASE, ['ns', 'ew']),
-    ...withRotations(CANYON_WALKWAY_TURN_BASE, ['ne', 'es', 'sw', 'wn']),
-    ...withRotations(CANYON_SPLIT_BRIDGE_BASE, ['ns', 'ew']),
-    ...withRotations(DEADEND_BASE, ['n', 'e', 's', 'w']),
-    ...withRotations(CANYON_IMPASSABLE_BASE, ['ns', 'ew']),
-    ...withRotations(RAMP_BASE, ['n', 'e', 's', 'w']),
-    ...withRotations(BRIDGE_BASE, ['ns', 'ew']),
-    ...withRotations(LADDER_BASE, ['n', 'e', 's', 'w'])
+    defineTile(SOLID_FILL),
+    ...withRotations(defineTile(ROOM_ALCOVE_BASE), ['s', 'w', 'n', 'e']),
+    ...withRotations(defineTile(ROOM_COMPACT_BASE), ['s', 'w', 'n', 'e']),
+    ...withRotations(defineTile(ROOM_RECTANGLE_BASE), ['s', 'w', 'n', 'e']),
+    ...withRotations(defineTile(ROOM_THROUGH_BASE), ['ns', 'ew']),
+    ...withRotations(defineTile(ROOM_BENT_BASE), ['ne', 'es', 'sw', 'wn']),
+    ...withRotations(defineTile(ROOM_CORNER_BASE), ['ne', 'es', 'sw', 'wn']),
+    ...withRotations(defineTile(ROOM_JUNCTION_BASE), ['nes', 'esw', 'swn', 'wne']),
+    defineTile(ROOM_HUB),
+    ...ROOM_ROLE_VARIANTS.flatMap((room) => withRotations(defineTile(room), ['s', 'w', 'n', 'e'])),
+    ...withRotations(defineTile(CORRIDOR_STRAIGHT_BASE), ['ns', 'ew']),
+    ...withRotations(defineTile(CORRIDOR_NARROW_BASE), ['ns', 'ew']),
+    ...withRotations(defineTile(CORRIDOR_TURN_BASE), ['ne', 'es', 'sw', 'wn']),
+    ...withRotations(defineTile(CORRIDOR_T_BASE), ['nes', 'esw', 'swn', 'wne']),
+    defineTile(CORRIDOR_CROSS),
+    ...withRotations(defineTile(CANYON_WALKWAY_BASE), ['ns', 'ew']),
+    ...withRotations(defineTile(CANYON_WALKWAY_BROAD_BASE), ['ns', 'ew']),
+    ...withRotations(defineTile(CANYON_WALKWAY_TURN_BASE), ['ne', 'es', 'sw', 'wn']),
+    ...withRotations(defineTile(CANYON_SPLIT_BRIDGE_BASE), ['ns', 'ew']),
+    ...withRotations(defineTile(DEADEND_BASE), ['n', 'e', 's', 'w']),
+    ...withRotations(defineTile(CANYON_IMPASSABLE_BASE), ['ns', 'ew']),
+    ...withRotations(defineTile(RAMP_BASE), ['n', 'e', 's', 'w']),
+    ...withRotations(defineTile(BRIDGE_BASE), ['ns', 'ew']),
+    defineTile(PLAIN_OPEN_BASE),
+    defineTile(PLAIN_SCATTER_BASE),
+    ...withRotations(defineTile(LADDER_BASE), ['n', 'e', 's', 'w'])
 ]);

@@ -220,7 +220,7 @@ const HALLWAY_CATEGORIES = new Set([
 ]);
 
 function isRoomTile(tile) {
-    return tile.category === 'room';
+    return tile.category === 'room' || tile.category === 'plain';
 }
 
 function isHallwayTile(tile) {
