@@ -26,6 +26,13 @@ test.describe('Game-over leaderboard', () => {
         await expect(page.locator('#game-over-modal')).toBeVisible({ timeout: 10_000 });
         await expect(page.locator('#go-leaderboard-status')).toHaveClass(/go-leaderboard-status--offline/, { timeout: 10_000 });
         await expect(page.locator('#go-leaderboard-status')).toHaveText(/OFFLINE/i);
+        await expect(page.locator('#hole-hud-prompt')).toBeHidden();
+        await expect(page.locator('#console-hud-prompt')).toBeHidden();
+
+        await page.locator('#game-over-main-menu').click();
+        await expect(page.locator('#menu')).toBeVisible({ timeout: 10_000 });
+        await expect(page.locator('#hole-hud-prompt')).toBeHidden();
+        await expect(page.locator('#console-hud-prompt')).toBeHidden();
 
         expect(consoleErrors, `unexpected console errors: ${consoleErrors.join('\n')}`).toEqual([]);
 

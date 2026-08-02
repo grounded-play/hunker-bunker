@@ -241,6 +241,7 @@ function isGameplayHudActive() {
         && !document.body.classList.contains('mission-intro-active')
         && !document.body.classList.contains('hud-hidden');
 }
+window.isGameplayHudActive = isGameplayHudActive;
 
 function clearLoaderBriefingMode() {
     loadingScreen?.classList.remove('briefing-mode', 'tactical-mode');
@@ -257,6 +258,7 @@ function hideAllGameplayPrompts() {
         'lore-hud-prompt',
         'foundry-hud-prompt',
         'o2-generator-hud-prompt',
+        'hole-hud-prompt',
         'black-box-hud-prompt',
         'radio-transmission-prompt'
     ];
@@ -3466,6 +3468,10 @@ window.addEventListener('health-restored', () => {
 });
 window.addEventListener('player-death', runDeathSequence);
 window.addEventListener('player-respawned', () => {
+    // New-run world preparation uses the same respawn primitive as a live
+    // retry. Do not let its event tear down the intro mask or enable input
+    // while the first movie is still pending behind the doors.
+    const deploymentLocked = isResettingRun || document.body.classList.contains('mission-intro-active');
     clearTimedClass('death', 'player-dead-flash');
     stopO2Alarm();
     hideExtractionRing();
@@ -3474,12 +3480,13 @@ window.addEventListener('player-respawned', () => {
     _distressModeActive = false;
     // Recompute music from live state instead of forcing 'exploring'.
     updateMusicTension();
-    document.body.classList.remove('distress-mode', 'vitals-critical', 'player-poisoned', 'player-damage-flash', 'mission-intro-active');
+    document.body.classList.remove('distress-mode', 'vitals-critical', 'player-poisoned', 'player-damage-flash');
+    if (!deploymentLocked) document.body.classList.remove('mission-intro-active');
     const bar = document.getElementById('ability-bar');
     if (bar) bar.style.transform = 'scaleX(1)';
     const scanBar = document.getElementById('scan-bar');
     if (scanBar) scanBar.style.transform = 'scaleX(1)';
-    window.game?.setInputEnabled?.(true);
+    window.game?.setInputEnabled?.(!deploymentLocked);
 
     if (window.game?.act2?.getState?.().begun) {
         window.setTimeout(() => {

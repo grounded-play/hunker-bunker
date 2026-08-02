@@ -62,6 +62,9 @@ test('new-run intro keeps gameplay black, paused, and invulnerable until the fin
     }));
     expect(before.dead).toBe(false);
     expect(before.canvasVisibility).toBe('hidden');
+    await expect(page.locator('#ui')).toBeHidden();
+    await expect(page.locator('#hole-hud-prompt')).toBeHidden();
+    await expect(page.locator('#console-hud-prompt')).toBeHidden();
 
     // If the simulation leaks through the intro barrier, oxygen or health can
     // tick down here and enemies can kill the player before the video ends.

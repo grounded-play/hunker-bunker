@@ -73,7 +73,7 @@ import {
 import { CAMP_QUESTS } from './data/campQuests.js';
 import { humanityDecayProgress } from './vitals.js';
 import { applyCampPayoutEffects } from './runModifiers.js';
-import { applyBlackChromaKey } from './textureKeying.js';
+import { applyBlackChromaKey, applyGreenChromaKey } from './textureKeying.js';
 import { LANDFORMS, pickLandform, applyLandform, applyCanyonCollapse, connectPortalsInward, openMazeTerrain, generateHeightmapGrid, TERRAIN_HEIGHTS, findFarthestFloorCell } from './landforms.js';
 import { getDepthThreatScale, getProgressionSlot, progressionWorldTarget } from './worldProgression.js';
 import {
@@ -1194,14 +1194,13 @@ export class ThreeGame {
         const baseMetalTex = activeTerrainTextures.floorBase;
         const grungeRustTex = activeTerrainTextures.floorGrunge;
         const techScratchesTex = activeTerrainTextures.floorDetail;
-        this.crashSiteFloorTexture = this.loadTerrainTexture(
-            '/crash_site_broken_floor_v1.png',
-            textureLoader,
-            maxAnisotropy
-        );
-        this.crashSiteFloorTexture.repeat.set(3, 3);
+        this.crashSiteFloorTexture = this.loadKeyedSpriteTexture('/crash_site_broken_floor_v1.png', 14);
+        this.crashSiteFloorTexture.anisotropy = maxAnisotropy;
         this.crashSiteFloorMaterial = new THREE.MeshStandardMaterial({
             map: this.crashSiteFloorTexture,
+            transparent: true,
+            alphaTest: 0.02,
+            depthWrite: false,
             color: 0xd3d8dc,
             roughness: 0.94,
             metalness: 0.28
@@ -4389,6 +4388,7 @@ export class ThreeGame {
             // are pre-matted from chroma green and contain transparent pixels.
             const hasSourceAlpha = imgData.data.some((value, index) => index % 4 === 3 && value < 255);
             if (!options?.layout?.hasAlpha && !hasSourceAlpha) {
+                applyGreenChromaKey(imgData);
                 applyBlackChromaKey(imgData, { threshold });
             }
 
@@ -5375,38 +5375,18 @@ export class ThreeGame {
     }
 
     updateConsoles(delta, now) {
-        if (this.performanceProfile === 'menu') {
+        const hudActive = Boolean(window.isGameplayHudActive?.());
+        if (this.performanceProfile === 'menu' || !this.inputEnabled || !hudActive || this.isPlayerDead) {
+            this.activeInteractiveConsole = null;
             this.activeInteractiveO2Generator = null;
-            const promptEl = document.getElementById('console-hud-prompt');
-            if (promptEl) {
-                promptEl.classList.add('hidden');
-                promptEl.classList.remove('visible');
-            }
-            const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
-            if (o2PromptEl) {
-                o2PromptEl.classList.add('hidden');
-                o2PromptEl.classList.remove('visible');
+            for (const id of ['console-hud-prompt', 'o2-generator-hud-prompt', 'hole-hud-prompt']) {
+                const prompt = document.getElementById(id);
+                prompt?.classList.add('hidden');
+                prompt?.classList.remove('visible');
             }
             return;
         }
         if (!this.crashedShips || !this.player) return;
-
-        const hudActive = !document.getElementById('ui')?.classList.contains('hidden');
-        if (!this.inputEnabled || !hudActive) {
-            this.activeInteractiveConsole = null;
-            this.activeInteractiveO2Generator = null;
-            const promptEl = document.getElementById('console-hud-prompt');
-            if (promptEl) {
-                promptEl.classList.add('hidden');
-                promptEl.classList.remove('visible');
-            }
-            const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
-            if (o2PromptEl) {
-                o2PromptEl.classList.add('hidden');
-                o2PromptEl.classList.remove('visible');
-            }
-            return;
-        }
 
         let nearestConsole = null;
         let minDistance = Infinity;
@@ -16709,7 +16689,10 @@ export class ThreeGame {
             const localX = Math.round(x - chunkX * this.chunkSize);
             const localY = Math.round(z - chunkY * this.chunkSize);
             if (localX < 0 || localX >= this.chunkSize || localY < 0 || localY >= this.chunkSize) return false;
-            return grid[localY][localX] !== '#';
+            // Only structural room/hall floor is valid. The old "not wall"
+            // test also accepted canyon, cliff, ledge, and door glyphs, which
+            // left snails and props visibly floating over void bands.
+            return grid[localY][localX] === '.';
         };
 
         // 2. Generate Clustered elements (70%)
@@ -16913,12 +16896,13 @@ export class ThreeGame {
             const inAuthoredRoom = authoredRoomCells.has(`${localPX},${localPZ}`);
             const isDeadEnd = pRoomType === ROOM_TYPES.DEAD_END;
             const isChamber = pRoomType === ROOM_TYPES.CHAMBER;
-            const canSpawnSnail = !inAuthoredRoom && !templateNoEnemies && distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount && !isDeadEnd;
-            const sentinelForced = !inAuthoredRoom && templateCfg?.forceSentinel && isChamber && !hasSentinelThisChunk && distFromSpawn > 20;
-            const canSpawnSentinel = !inAuthoredRoom && !templateNoEnemies && (sentinelForced || (depthTierForScatter >= 2 && isChamber && !hasSentinelThisChunk && distFromSpawn > 20));
-            const canSpawnCrawler = !inAuthoredRoom && !templateNoEnemies && depthTierForScatter >= 3 && chunkBiomeKey === BIOME_KEYS.BIO && crawlerCount < 2 && distFromSpawn > 20 && !isDeadEnd;
+            const enemyRoomEligible = inAuthoredRoom || isChamber;
+            const canSpawnSnail = enemyRoomEligible && !templateNoEnemies && distFromSpawn > 14 && snailCount < snailSpawnConfig.maxCount && !isDeadEnd;
+            const sentinelForced = enemyRoomEligible && templateCfg?.forceSentinel && isChamber && !hasSentinelThisChunk && distFromSpawn > 20;
+            const canSpawnSentinel = enemyRoomEligible && !templateNoEnemies && (sentinelForced || (depthTierForScatter >= 2 && isChamber && !hasSentinelThisChunk && distFromSpawn > 20));
+            const canSpawnCrawler = enemyRoomEligible && !templateNoEnemies && depthTierForScatter >= 3 && chunkBiomeKey === BIOME_KEYS.BIO && crawlerCount < 2 && distFromSpawn > 20 && !isDeadEnd;
             const canSpawnProto = !templateNoEnemies && depthTierForScatter >= 1
-                && !inAuthoredRoom && protoCount < PROTO_SPAWN_MAX_PER_CHUNK && distFromSpawn > 16 && !isDeadEnd
+                && enemyRoomEligible && protoCount < PROTO_SPAWN_MAX_PER_CHUNK && distFromSpawn > 16 && !isDeadEnd
                 && (chunkLandform === LANDFORMS.RUINS || chunkLandform === LANDFORMS.CRATER);
             const loreChance = (templateCfg?.forceLore && !hasLoreTerminalThisChunk && isDeadEnd) ? 1.0 : (depthTierForScatter >= 2 ? 0.12 : 0.07);
             const canSpawnLore = isDeadEnd && !hasLoreTerminalThisChunk && distFromSpawn > 10;
