@@ -9,7 +9,7 @@ import {
     LATTICE_SIZE,
     POCKET_LATTICE_SIZE
 , POCKET_LATTICE_SIZE } from './wfcGenerator.js';
-import { TILE_CATALOG, TILE_SIZE } from './tileCatalog.js';
+import { TILE_CATALOG, TILE_SIZE , CHUNK_SIZE } from './tileCatalog.js';
 
 function seededRandom(seed) {
     let state = (seed >>> 0) || 1;
@@ -323,8 +323,14 @@ describe('stampLattice', () => {
         expect(tile).toBeTruthy();
         const grid = tile.pattern.map((row) => [...row]);
         addCanyonVoidAroundWalkable(grid, [tile]);
-        expect(grid[0].slice(2, 5)).toEqual(['.', '.', '.']);
-        expect(grid[6].slice(2, 5)).toEqual(['.', '.', '.']);
+        // Under banding every tile's outer lane is the shared pit, so exposure
+        // is no longer read off the border row. What still distinguishes a
+        // canyon walkway is that its own interior is flanked by void rather
+        // than wall: the deck is a platform, not a corridor.
+        const mid = Math.floor(TILE_SIZE / 2);
+        expect(grid[0].slice(mid - 1, mid + 2)).toEqual(['.', '.', '.']);
+        expect(grid[TILE_SIZE - 1].slice(mid - 1, mid + 2)).toEqual(['.', '.', '.']);
+        expect(grid[mid].includes('X')).toBe(true);
         expect(grid.flat().some((cell, index, cells) => {
             if (cell !== 'X') return false;
             const x = index % 7;
@@ -386,7 +392,7 @@ describe('collapsePocketLattice', () => {
 });
 
 describe('extractChunkWfcMetadata', () => {
-    it('extracts room footprints and translates anchor coordinates to 19x19 chunk space', () => {
+    it('extracts room footprints and translates anchor coordinates into chunk space', () => {
         const lattice = collapseChunkLattice(seededRandom(12));
         const metadata = extractChunkWfcMetadata(lattice, 19);
         expect(metadata).toBeTruthy();
@@ -395,9 +401,9 @@ describe('extractChunkWfcMetadata', () => {
 
         for (const anchor of metadata.anchors) {
             expect(anchor.localX).toBeGreaterThanOrEqual(0);
-            expect(anchor.localX).toBeLessThan(19);
+            expect(anchor.localX).toBeLessThan(CHUNK_SIZE);
             expect(anchor.localY).toBeGreaterThanOrEqual(0);
-            expect(anchor.localY).toBeLessThan(19);
+            expect(anchor.localY).toBeLessThan(CHUNK_SIZE);
             expect(anchor.decorationSet).toBeTruthy();
         }
     });
