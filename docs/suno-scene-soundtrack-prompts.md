@@ -2,7 +2,7 @@
 
 The soundtrack should feel like a damaged late-night RPG broadcast: slow tempos, huge decaying reverb, memorable little melodies, cheap synths made emotionally powerful, and enough weirdness that conversations with monsters feel as important as combat.
 
-Rather than directly copying *EarthBound*, these prompts borrow broad qualities that make surreal 1990s RPG music effective: quirky instrumentation, unsettling harmony, strong four-to-eight-note hooks, and music that can be funny and disturbing at the same time.
+Rather than directly copying _EarthBound_, these prompts borrow broad qualities that make surreal 1990s RPG music effective: quirky instrumentation, unsettling harmony, strong four-to-eight-note hooks, and music that can be funny and disturbing at the same time.
 
 ## Shared Suno Direction
 
@@ -330,13 +330,13 @@ Keep conversation tracks around **58–78 BPM** so dialogue remains readable. Ba
 
 The strongest connective technique is to give Kaelen, Martha, Briggs, the Queen, and Mothership a small signature motif, then corrupt, reharmonize, or combine those motifs as the story changes. This makes the soundtrack feel like one authored world instead of a folder of unrelated generations.
 
-| Character or faction | Core sound | Motif behavior |
-| --- | --- | --- |
-| Kaelen / Meridian | FM pluck, electrical clicks, glassy diagnostic chords | A precise five-note pattern that becomes obsessive and rhythmically unstable |
-| Martha / Tallow | Muted marimba, electric piano, steam and water percussion | A gentle nursery-like phrase infected by chromatic notes |
-| Briggs / Vesper | Synthetic bugle, tired snare, clean guitar harmonics | A descending soldier's phrase progressively reduced to three notes |
-| The Queen | Detuned music box, glass synth, breathing sub-bass | A beautiful unresolved lullaby that finally resolves in the darkest ending |
-| Mothership | Plastic electric piano, bossa machine, corporate chimes | A cheerful four-note service jingle that loses notes as corruption spreads |
+| Character or faction | Core sound                                                | Motif behavior                                                               |
+| -------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Kaelen / Meridian    | FM pluck, electrical clicks, glassy diagnostic chords     | A precise five-note pattern that becomes obsessive and rhythmically unstable |
+| Martha / Tallow      | Muted marimba, electric piano, steam and water percussion | A gentle nursery-like phrase infected by chromatic notes                     |
+| Briggs / Vesper      | Synthetic bugle, tired snare, clean guitar harmonics      | A descending soldier's phrase progressively reduced to three notes           |
+| The Queen            | Detuned music box, glass synth, breathing sub-bass        | A beautiful unresolved lullaby that finally resolves in the darkest ending   |
+| Mothership           | Plastic electric piano, bossa machine, corporate chimes   | A cheerful four-note service jingle that loses notes as corruption spreads   |
 
 ## Generation and Editing Notes
 
