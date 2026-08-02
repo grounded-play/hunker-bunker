@@ -516,37 +516,31 @@ export function addCanyonVoidAroundWalkable(grid, lattice = null) {
                 grid[y][x] = 'X';
                 continue;
             }
-            const touchesPath = hasWalkableWithin(x, y, 1);
-            if (touchesPath) continue; // retain the visible/collidable wall band
-            grid[y][x] = 'X';
+            if (hasWalkableWithin(x, y, 1)) continue; // structural wall shell
+            if (hasWalkableWithin(x, y, 3)) {
+                // Two cells of safe exterior ground between the wall shell
+                // and the falloff. O is rendered as floor and is intentionally
+                // walkable for the player.
+                grid[y][x] = 'O';
+            } else if (hasWalkableWithin(x, y, 4)) {
+                grid[y][x] = 'C';
+            } else {
+                grid[y][x] = 'X';
+            }
         }
     }
 
-    // Give exposed structure a readable shoreline: safe floor, structural
-    // wall, one textured cliff/ledge cell, and only then bottomless canyon.
-    // Previously this jumped directly from a ruler-straight wall to black
-    // void, leaving the dedicated cliff glyph/material almost unused.
-    const banded = grid.map((row) => [...row]);
+    // Authored landmarks such as the crash room begin with explicit X around
+    // their shell rather than deep '#'. Give those sites the same safe ledge
+    // and cliff sequence without changing canyon that is genuinely distant.
     for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
-            if (grid[y][x] !== 'X') continue;
-            let touchesStructure = false;
-            for (let dy = -1; dy <= 1 && !touchesStructure; dy += 1) {
-                for (let dx = -1; dx <= 1; dx += 1) {
-                    if (dx === 0 && dy === 0) continue;
-                    const neighbor = grid[y + dy]?.[x + dx];
-                    if (neighbor === '#' || walkable(neighbor)) {
-                        touchesStructure = true;
-                        break;
-                    }
-                }
-            }
-            if (touchesStructure) banded[y][x] = 'C';
+            if (source[y][x] !== 'X') continue;
+            if (hasWalkableWithin(x, y, 3)) grid[y][x] = 'O';
+            else if (hasWalkableWithin(x, y, 4)) grid[y][x] = 'C';
         }
     }
-    for (let y = 0; y < height; y += 1) {
-        for (let x = 0; x < width; x += 1) grid[y][x] = banded[y][x];
-    }
+
     return grid;
 }
 

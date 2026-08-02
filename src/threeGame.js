@@ -906,7 +906,10 @@ export class ThreeGame {
         // The orthographic viewport reaches roughly 11 world units from its
         // center horizontally. Begin staging neighbors before that edge can
         // enter frame, with a small movement/camera-lag cushion.
-        this.chunkPrefetchMargin = 14;
+        // Start staging the next row/column while the player is still well
+        // inside the current chunk. This enlarges the loading scan without
+        // making the always-visible set jump from 3x3 to an expensive 5x5.
+        this.chunkPrefetchMargin = 20;
         this.destroyedWallKeys = new Set();
         this.destroyedExteriorWallKeys = new Set();
         this.wallMeshes = [];

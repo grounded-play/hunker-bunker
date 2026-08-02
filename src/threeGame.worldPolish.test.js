@@ -60,6 +60,19 @@ describe('world polish', () => {
         expect(game._lastChunkVisibilityKey).toContain('2,0');
     });
 
+    it('starts the enlarged chunk-loading scan well before the visible boundary', () => {
+        const game = {
+            player: { position: { x: 30, z: 24 } },
+            chunkSize: 49,
+            visibleChunkRadius: 1,
+            chunkPrefetchMargin: 20
+        };
+
+        const coords = ThreeGame.prototype.getChunkPrefetchCoords.call(game, 0, 0);
+
+        expect(coords.map((entry) => entry.key)).toEqual(expect.arrayContaining(['2,-1', '2,0', '2,1']));
+    });
+
     it('mounts 3x3, hides recently departed chunks, and restores them before distant eviction', () => {
         const retained = { visible: true, userData: {}, children: [] };
         const distant = { visible: true, userData: {}, children: [] };
