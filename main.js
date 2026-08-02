@@ -6938,7 +6938,8 @@ const tacticalMapState = {
     dragStartX: 0,
     dragStartY: 0,
     initialPanX: 0,
-    initialPanY: 0
+    initialPanY: 0,
+    debugRevealAll: false
 };
 
 function resetTacticalMapView() {
@@ -6955,12 +6956,10 @@ function focusTacticalMapOnHome() {
 function focusTacticalMapOnPlayer() {
     const mapState = window.game?.getTacticalMapState?.();
     if (mapState?.player) {
-        const px = mapState.player.x;
-        const pz = mapState.player.z;
-        const gx = Math.floor((px + 7.5) / 15);
-        const gz = Math.floor((pz + 7.5) / 15);
-        tacticalMapState.panX = -gx * 36 * tacticalMapState.zoom;
-        tacticalMapState.panY = -gz * 36 * tacticalMapState.zoom;
+        const home = mapState.home ?? { x: 0, z: 0 };
+        const scale = 2.2 * tacticalMapState.zoom;
+        tacticalMapState.panX = -(mapState.player.x - home.x) * scale;
+        tacticalMapState.panY = -(mapState.player.z - home.z) * scale;
     }
 }
 
@@ -7008,6 +7007,10 @@ function setupTacticalMapEvents() {
     document.getElementById('map-focus-home')?.addEventListener('click', focusTacticalMapOnHome);
     document.getElementById('map-focus-player')?.addEventListener('click', focusTacticalMapOnPlayer);
     document.getElementById('map-reset-view')?.addEventListener('click', resetTacticalMapView);
+    document.getElementById('map-debug-reveal')?.addEventListener('click', (event) => {
+        tacticalMapState.debugRevealAll = !tacticalMapState.debugRevealAll;
+        event.currentTarget.setAttribute('aria-pressed', String(tacticalMapState.debugRevealAll));
+    });
 }
 
 function pollTacticalMapGamepadInput() {
@@ -7058,34 +7061,28 @@ function drawTacticalMapOverlay() {
     const exploredCells = mapState.exploredCells ?? [];
     const landmarks = mapState.landmarks ?? [];
     const player = mapState.player ?? { x: 0, z: 0, rotation: 0 };
+    const home = mapState.home ?? { x: 0, z: 0 };
+    const chunkSize = mapState.chunkSize ?? 49;
+    const detailedChunks = mapState.detailedChunks ?? [];
+    const discoveredKeys = new Set(detailedChunks.map((chunk) => chunk.key));
 
     const tileStatEl = document.getElementById('map-stat-tiles');
-    if (tileStatEl) tileStatEl.textContent = String(exploredCells.length);
+    if (tileStatEl) tileStatEl.textContent = String(detailedChunks.length);
     const signalStatEl = document.getElementById('map-stat-signals');
     if (signalStatEl) signalStatEl.textContent = String(landmarks.length);
 
-    let minGx = -4, maxGx = 4, minGz = -4, maxGz = 4;
-    for (const cell of exploredCells) {
-        minGx = Math.min(minGx, cell.gx);
-        maxGx = Math.max(maxGx, cell.gx);
-        minGz = Math.min(minGz, cell.gz);
-        maxGz = Math.max(maxGz, cell.gz);
-    }
-
-    const rangeX = Math.max(8, maxGx - minGx + 3);
-    const rangeZ = Math.max(8, maxGz - minGz + 3);
-    const baseCellW = width / rangeX;
-    const baseCellH = height / rangeZ;
-    const baseCellSize = Math.min(baseCellW, baseCellH);
-    const cellSize = baseCellSize * tacticalMapState.zoom;
-
-    const offsetX = (width - rangeX * cellSize) / 2 - minGx * cellSize + cellSize + tacticalMapState.panX;
-    const offsetY = (height - rangeZ * cellSize) / 2 - minGz * cellSize + cellSize + tacticalMapState.panY;
+    // World-space blueprint coordinates keep home base at the canvas center.
+    // Panning is an explicit user offset, never an implicit explored-bounds
+    // shift, so discovery can expand without making the map jump around.
+    const cellSize = 2.2 * tacticalMapState.zoom;
+    const offsetX = width / 2 - home.x * cellSize + tacticalMapState.panX;
+    const offsetY = height / 2 - home.z * cellSize + tacticalMapState.panY;
+    const worldToMap = (x, z) => ({ x: x * cellSize + offsetX, y: z * cellSize + offsetY });
 
     // Grid lines background
     ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
     ctx.lineWidth = 1;
-    const gridStep = Math.max(12, cellSize);
+    const gridStep = Math.max(12, chunkSize * cellSize);
     for (let x = (offsetX % gridStep + gridStep) % gridStep; x <= width; x += gridStep) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -7099,25 +7096,50 @@ function drawTacticalMapOverlay() {
         ctx.stroke();
     }
 
-    // Explored cells
-    for (const cell of exploredCells) {
-        const cx = cell.gx * cellSize + offsetX;
-        const cy = cell.gz * cellSize + offsetY;
+    // Debug uses the lightweight regional plan rather than generating every
+    // 49x49 gameplay chunk. It reveals the complete macro route without
+    // causing the same procedural-generation hitch the map is diagnosing.
+    if (tacticalMapState.debugRevealAll) {
+        ctx.lineWidth = Math.max(1, cellSize * 0.7);
+        ctx.strokeStyle = 'rgba(255, 176, 32, 0.42)';
+        for (const edge of mapState.routeEdges ?? []) {
+            const [ax, ay] = String(edge.from ?? '').split(',').map(Number);
+            const [bx, by] = String(edge.to ?? '').split(',').map(Number);
+            if (![ax, ay, bx, by].every(Number.isFinite)) continue;
+            const a = worldToMap((ax + 0.5) * chunkSize, (ay + 0.5) * chunkSize);
+            const b = worldToMap((bx + 0.5) * chunkSize, (by + 0.5) * chunkSize);
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        }
+        for (const chunk of mapState.routeChunks ?? []) {
+            if (discoveredKeys.has(`${chunk.chunkX},${chunk.chunkY}`)) continue;
+            const p = worldToMap(chunk.chunkX * chunkSize + 5, chunk.chunkY * chunkSize + 5);
+            const size = (chunkSize - 10) * cellSize;
+            ctx.fillStyle = chunk.roles?.includes('ring') ? 'rgba(255,176,32,.13)' : 'rgba(0,229,255,.10)';
+            ctx.strokeStyle = chunk.roles?.includes('ring') ? 'rgba(255,176,32,.62)' : 'rgba(0,229,255,.4)';
+            ctx.fillRect(p.x, p.y, size, size); ctx.strokeRect(p.x, p.y, size, size);
+        }
+    }
 
-        if (cx + cellSize < -20 || cx > width + 20 || cy + cellSize < -20 || cy > height + 20) continue;
-
-        ctx.fillStyle = 'rgba(0, 229, 255, 0.25)';
-        ctx.fillRect(cx, cy, cellSize - 2, cellSize - 2);
-
-        ctx.strokeStyle = '#00e5ff';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(cx, cy, cellSize - 2, cellSize - 2);
+    // Render the actual stamped floors. Rooms and halls retain their authored
+    // silhouettes, including bends, branches, and door connector lanes.
+    for (const chunk of detailedChunks) {
+        for (const cell of chunk.cells ?? []) {
+            const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
+            if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
+            ctx.fillStyle = cell.kind === 'door' ? '#ffd15c'
+                : cell.kind === 'room' ? 'rgba(0,229,255,.72)'
+                    : 'rgba(55,145,178,.5)';
+            ctx.fillRect(p.x, p.y, Math.max(1.2, cellSize + 0.25), Math.max(1.2, cellSize + 0.25));
+        }
     }
 
     // Landmarks (including Home Base)
     for (const landmark of landmarks) {
-        const lx = landmark.gx * cellSize + offsetX + cellSize / 2;
-        const ly = landmark.gz * cellSize + offsetY + cellSize / 2;
+        const landmarkKey = `${Math.floor(landmark.x / chunkSize)},${Math.floor(landmark.z / chunkSize)}`;
+        if (landmark.type !== 'home_base' && !tacticalMapState.debugRevealAll && !discoveredKeys.has(landmarkKey)) continue;
+        const point = worldToMap(landmark.x, landmark.z);
+        const lx = point.x;
+        const ly = point.y;
 
         if (lx < -60 || lx > width + 60 || ly < -60 || ly > height + 60) continue;
 
@@ -7162,8 +7184,9 @@ function drawTacticalMapOverlay() {
     }
 
     // Player position
-    const px = Math.floor((player.x + 7.5) / 15) * cellSize + offsetX + cellSize / 2;
-    const py = Math.floor((player.z + 7.5) / 15) * cellSize + offsetY + cellSize / 2;
+    const playerPoint = worldToMap(player.x, player.z);
+    const px = playerPoint.x;
+    const py = playerPoint.y;
 
     if (px >= -20 && px <= width + 20 && py >= -20 && py <= height + 20) {
         const time = Date.now() * 0.003;

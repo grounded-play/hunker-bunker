@@ -839,7 +839,11 @@ export class ThreeGame {
         // Stream/render a 5x5 neighborhood. Mounting remains frame-budgeted,
         // so this grows the safety buffer without rebuilding all 25 chunks in
         // one blocking startup frame.
-        this.defaultVisibleChunkRadius = 2;
+        // Mount the camera's immediate 3x3 neighborhood before deployment.
+        // A 5x5 startup set front-loads 25 expensive procedural chunks and
+        // merely moves the hitch behind the doors; directional prefetch below
+        // supplies the next row early without paying that cost at spawn.
+        this.defaultVisibleChunkRadius = 1;
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         this.wallHeight = 2.8;
         this.wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
@@ -905,6 +909,9 @@ export class ThreeGame {
         this.runEntropy = (Math.random() * 0xffffffff) >>> 0;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
+        this.discoveredMapChunkKeys = new Set(['0,0']);
+        this.discoveredMapRoomKeys = new Set();
+        this.discoveredMapCellKeys = new Set();
         this.maxChunkMountsPerFrame = 1;
         // The orthographic viewport reaches roughly 11 world units from its
         // center horizontally. Begin staging neighbors before that edge can
@@ -4822,20 +4829,17 @@ export class ThreeGame {
             return;
         }
 
-        // Adaptive quality: if FPS drops below 45 for 5s, reduce chunk radius (only active during gameplay)
+        // Track sustained frame pressure for diagnostics, but never solve it by
+        // hiding neighboring world chunks. Radius-zero was the reason the view
+        // outside the current room disappeared during the startup FPS dip.
         if (delta > 0) {
             const fps = 1 / delta;
             if (fps < 45) {
                 this._lowFpsTimer = (this._lowFpsTimer ?? 0) + delta;
-                if (this._lowFpsTimer >= 5 && this.visibleChunkRadius > 0) {
-                    this.visibleChunkRadius = 0;
-                }
             } else {
                 this._lowFpsTimer = 0;
-                if (this.visibleChunkRadius === 0 && fps > 55) {
-                    this.visibleChunkRadius = this.defaultVisibleChunkRadius; // restore if performance recovers
-                }
             }
+            this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         }
 
         this.updateSprintState(delta);
@@ -4848,6 +4852,7 @@ export class ThreeGame {
         this.updateCamera(delta);
         this._lastFrameDeltaForChunkMounts = delta;
         this.syncVisibleChunks();
+        this.updateTacticalMapDiscovery?.();
         this.updateCompanions(delta);
         this.updateTransientEffects(delta, now);
         this.updateHiddenPlayerMarker(now);
@@ -11429,8 +11434,8 @@ export class ThreeGame {
 
         if (this.explorationTracker) {
             this.explorationTracker.registerLandmark('home_base', {
-                x: 0,
-                z: 0,
+                x: CRASH_SITE_CENTER,
+                z: CRASH_SITE_CENTER,
                 label: 'HOME BASE / BUNKER COMMAND',
                 type: 'home_base',
                 priority: 1000
@@ -11483,12 +11488,74 @@ export class ThreeGame {
             });
         }
 
+        const detailedChunks = [];
+        for (const key of this.discoveredMapChunkKeys ?? []) {
+            const [chunkX, chunkY] = key.split(',').map(Number);
+            const grid = this.chunkCache.get(key);
+            if (!grid) continue;
+            const rooms = this.wfcMetadataCache?.get(key)?.roomInstances ?? [];
+            const roomCells = new Set(rooms
+                .filter((room) => this.discoveredMapRoomKeys?.has(`${key}:${room.id}`))
+                .flatMap((room) => room.footprint ?? [])
+                .map((cell) => `${cell.x},${cell.y}`));
+            const cells = [];
+            for (let y = 0; y < grid.length; y += 1) {
+                for (let x = 0; x < (grid[y]?.length ?? 0); x += 1) {
+                    const tile = grid[y][x];
+                    if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(tile)) continue;
+                    const worldKey = `${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`;
+                    // The crash-site chunk is an authored home chamber rather
+                    // than WFC room metadata. Elsewhere reveal whole rooms on
+                    // entry and only the hallway tiles the operator has swept.
+                    if (rooms.length > 0 && !roomCells.has(`${x},${y}`) && !this.discoveredMapCellKeys?.has(worldKey)) continue;
+                    cells.push({ x, y, kind: tile === 'D' ? 'door' : roomCells.has(`${x},${y}`) ? 'room' : 'hall' });
+                }
+            }
+            detailedChunks.push({ key, chunkX, chunkY, cells });
+        }
+        const topology = this.getRegionalRouteTopology?.();
         return {
             player: this.player ? { x: this.player.position.x, z: this.player.position.z, rotation: this.player.rotation?.y ?? 0 } : null,
+            home: { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER },
+            chunkSize: this.chunkSize,
+            detailedChunks,
+            routeChunks: topology?.routeChunks ?? [],
+            routeEdges: (topology?.routeEdges ?? []).map((edge) => {
+                const [from, to] = edge.split('|');
+                return { from, to };
+            }),
             exploredCells: this.explorationTracker ? this.explorationTracker.getExploredCells() : [],
             landmarks: this.explorationTracker ? this.explorationTracker.getLandmarks() : [],
             stats: this.explorationTracker ? this.explorationTracker.getStats() : { totalExplored: 0, activeLandmarks: 0 }
         };
+    }
+
+    updateTacticalMapDiscovery() {
+        if (!this.player || this.performanceProfile !== 'gameplay' || this.isInPocket) return;
+        this.explorationTracker?.recordPlayerPosition(this.player.position.x, this.player.position.z);
+        const chunkX = Math.floor(this.player.position.x / this.chunkSize);
+        const chunkY = Math.floor(this.player.position.z / this.chunkSize);
+        this.discoveredMapChunkKeys ??= new Set();
+        this.discoveredMapChunkKeys.add(`${chunkX},${chunkY}`);
+        this.discoveredMapRoomKeys ??= new Set();
+        this.discoveredMapCellKeys ??= new Set();
+        const grid = this.chunkCache.get(`${chunkX},${chunkY}`);
+        const localX = Math.round(this.player.position.x - chunkX * this.chunkSize);
+        const localY = Math.round(this.player.position.z - chunkY * this.chunkSize);
+        for (let dy = -3; dy <= 3; dy += 1) {
+            for (let dx = -3; dx <= 3; dx += 1) {
+                if (dx * dx + dy * dy > 10) continue;
+                const x = localX + dx;
+                const y = localY + dy;
+                if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(grid?.[y]?.[x])) continue;
+                this.discoveredMapCellKeys.add(`${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`);
+            }
+        }
+        for (const room of this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? []) {
+            if ((room.footprint ?? []).some((cell) => cell.x === localX && cell.y === localY)) {
+                this.discoveredMapRoomKeys.add(`${chunkX},${chunkY}:${room.id}`);
+            }
+        }
     }
 
     setGodMode(enabled = false) {
@@ -11682,6 +11749,9 @@ export class ThreeGame {
         this.proceduralDoorStates?.clear();
         this.proceduralDoorMeshes?.clear();
         this.worldRouteRecords?.clear();
+        this.discoveredMapChunkKeys = new Set(['0,0']);
+        this.discoveredMapRoomKeys = new Set();
+        this.discoveredMapCellKeys = new Set();
         this.reachableGeneratedChunkKeys = new Set();
         this.mazeAccessState = createAccessState();
         this.destroyedWallKeys.clear();
@@ -14816,6 +14886,7 @@ export class ThreeGame {
             ? this.getChunkPrefetchCoords(centerChunkX, centerChunkY)
             : [];
         const prefetchKey = prefetchEntries.map((entry) => entry.key).sort().join('|');
+        const prefetched = new Set(prefetchEntries.map((entry) => entry.key));
         const visibilityKey = `${centerChunkX},${centerChunkY}:${this.visibleChunkRadius}${prefetchKey ? `:${prefetchKey}` : ''}`;
         // This runs from the animation loop. Walking every loaded chunk to
         // rebuild registries is only necessary when the visible set changes
@@ -14879,7 +14950,11 @@ export class ThreeGame {
 
         for (const [key, group] of this.chunkMeshes.entries()) {
             if (resident.has(key)) {
-                group.visible = needed.has(key);
+                // A prefetched edge chunk is useful only if it can fill the
+                // camera beyond the current room. Keep it rendered once its
+                // staged mount completes; resident hysteresis still controls
+                // eventual disposal well away from the operator.
+                group.visible = needed.has(key) || prefetched.has(key);
                 group.userData.isPrefetch = !needed.has(key);
                 continue;
             }
