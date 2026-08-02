@@ -4917,8 +4917,11 @@ function syncStageMetrics() {
 
     const uiScaleMultiplier = (Number(state?.settings?.uiScale) || 100) / 100;
     const baseUnit = Math.min(rect.width / DESIGN_STAGE.width, rect.height / DESIGN_STAGE.height);
-    const unit = baseUnit * uiScaleMultiplier;
-    gameViewport.style.setProperty('--vu', `${unit}px`);
+    // --vu is the base layout unit (unscaled) for layout containers, doors, images, and canvas elements
+    gameViewport.style.setProperty('--vu', `${baseUnit}px`);
+    // --vu-text is scaled by UI Accessibility Scale to scale text sizes independently of images
+    gameViewport.style.setProperty('--vu-text', `${baseUnit * uiScaleMultiplier}px`);
+    gameViewport.style.setProperty('--ui-scale-multiplier', String(uiScaleMultiplier));
 
     const textFloor = Number(state?.settings?.textFloor) || 18;
     document.documentElement.style.setProperty('--hb-text-floor', `${textFloor}px`);
@@ -10567,6 +10570,34 @@ if (window.electronAPI) {
 
 // Initialize Steam Vault UI in all environments
 initSteamVaultUI();
+
+// Keep the title art alive at rest while making pointer movement feel like a
+// reflection travelling across damp metal. Motion is deliberately tiny so the
+// menu remains stable and the effect also works with the custom game cursor.
+const splashHero = document.getElementById('splash');
+if (splashHero && !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) {
+    let splashHeroFrame = 0;
+    splashHero.addEventListener('pointermove', (event) => {
+        if (splashHeroFrame) cancelAnimationFrame(splashHeroFrame);
+        splashHeroFrame = requestAnimationFrame(() => {
+            const bounds = splashHero.getBoundingClientRect();
+            const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
+            const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
+            splashHero.style.setProperty('--hero-shift-x', `${(x - 0.5) * -8}px`);
+            splashHero.style.setProperty('--hero-shift-y', `${(y - 0.5) * -5}px`);
+            splashHero.style.setProperty('--hero-light-x', `${x * 100}%`);
+            splashHero.style.setProperty('--hero-light-y', `${y * 100}%`);
+            splashHeroFrame = 0;
+        });
+    }, { passive: true });
+
+    splashHero.addEventListener('pointerleave', () => {
+        splashHero.style.setProperty('--hero-shift-x', '0px');
+        splashHero.style.setProperty('--hero-shift-y', '0px');
+        splashHero.style.setProperty('--hero-light-x', '64%');
+        splashHero.style.setProperty('--hero-light-y', '48%');
+    });
+}
 
 // ── Steam Vault & Leaderboard Frontend implementations decoupled to: ──
 // - src/steamVaultUi.js

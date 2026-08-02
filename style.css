@@ -120,12 +120,15 @@ body {
 
 #game-viewport {
   --vu: 1px;
+  --vu-text: calc(var(--vu) * var(--ui-scale-multiplier, 1));
   --gutter: calc(var(--vu) * 4);
-  --font-xl: calc(var(--vu) * 18);
-  --font-lg: calc(var(--vu) * 6);
-  --font-md: calc(var(--vu) * 4);
-  --font-sm: calc(var(--vu) * 2.5);
-  --font-xs: calc(var(--vu) * 1.8);
+  --font-xl: calc(var(--vu-text) * 18);
+  --font-lg: calc(var(--vu-text) * 6);
+  --font-md: calc(var(--vu-text) * 4);
+  --font-sm: calc(var(--vu-text) * 2.5);
+  --font-xs: calc(var(--vu-text) * 1.8);
+  --font-xxs: calc(var(--vu-text) * 1.4);
+  --font-xxxs: calc(var(--vu-text) * 1.1);
   /* Reserved layout lanes around the play canvas. Defined here (shared
      ancestor) so both #game-container and the left-lane HUD read the same
      lane width and stay aligned. */
@@ -901,12 +904,13 @@ body {
 .title-profile-hud {
   position: relative;
   width: calc(var(--vu) * 34);
-  min-height: calc(var(--vu) * 10);
+  min-height: calc(var(--vu) * 11.5);
   display: grid;
-  grid-template-columns: calc(var(--vu) * 8) 1fr;
-  gap: calc(var(--vu) * 1.2);
+  grid-template-columns: calc(var(--vu) * 6.5) minmax(0, 1fr);
+  gap: calc(var(--vu) * 1);
   align-items: center;
-  padding: calc(var(--vu) * 1);
+  padding: calc(var(--vu) * 1.1) calc(var(--vu) * 1.2);
+  overflow: hidden;
   background: linear-gradient(90deg, rgba(12, 16, 18, 0.94), rgba(12, 16, 18, 0.72));
   border: 1px solid rgba(255, 159, 28, 0.34);
   border-left: 3px solid var(--accent-primary);
@@ -917,7 +921,7 @@ body {
 
 .title-profile-hud__portrait {
   width: 100%;
-  height: calc(var(--vu) * 8);
+  height: calc(var(--vu) * 8.2);
   object-fit: contain;
   object-position: center bottom;
   image-rendering: pixelated;
@@ -925,29 +929,64 @@ body {
 
 .title-profile-hud__body {
   min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .title-profile-hud__kicker {
   color: var(--accent-primary);
-  font: 700 calc(var(--font-xs) * 0.78) / 1.2 'Space Mono', monospace;
-  letter-spacing: 0.14em;
+  font: 700 calc(var(--font-xs) * 0.64) / 1.2 'Space Mono', monospace;
+  letter-spacing: 0.11em;
+  white-space: nowrap;
 }
 
 .title-profile-hud__identity {
-  margin: calc(var(--vu) * 0.35) 0 calc(var(--vu) * 0.65);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: calc(var(--vu) * 0.12);
+  margin: calc(var(--vu) * 0.4) 0 calc(var(--vu) * 0.55);
   color: var(--text-main);
-  font-size: var(--font-md);
+  font-size: calc(var(--vu) * 1.7);
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.055em;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.title-profile-hud__identity > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.title-profile-hud__identity .ui-separator {
+  display: none;
+}
+
+.title-profile-hud__identity > span:last-child {
+  color: rgba(190, 202, 218, 0.82);
+  font-size: 0.72em;
+  letter-spacing: 0.14em;
 }
 
 .title-profile-hud__stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: calc(var(--vu) * 0.3) calc(var(--vu) * 0.7);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--vu) * 0.35) calc(var(--vu) * 0.8);
+  padding-top: calc(var(--vu) * 0.55);
+  border-top: 1px solid rgba(255, 159, 28, 0.16);
   color: var(--text-muted);
-  font: 700 calc(var(--font-xs) * 0.76) / 1.25 'Space Mono', monospace;
-  letter-spacing: 0.04em;
+  font: 700 calc(var(--font-xs) * 0.59) / 1.2 'Space Mono', monospace;
+  letter-spacing: 0.025em;
+}
+
+.title-profile-hud__stats > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .title-menu-btn--secondary {
