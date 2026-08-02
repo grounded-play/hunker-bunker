@@ -2,7 +2,17 @@
 // rings are fixed; angles, room clusters, spiral ingress points, blockers,
 // and route lengths are generated per run.
 
-export const RADIAL_RING_RADII = Object.freeze([0, 42, 78, 118, 160, 205]);
+import { CHUNK_SIZE } from './tileCatalog.js';
+
+// Ring radii are world units, but what the player traverses is chunks — so
+// these must scale with CHUNK_SIZE or the rings collapse onto one another.
+// Tuned when a chunk was 19 cells; at 49 the raw figures put rings 1-3 all at
+// the same chunk radius, silently merging three progression gates into one
+// belt. Deriving keeps them separable whatever the tile geometry does next.
+const RING_RADII_TUNED_AT_CHUNK_19 = [0, 42, 78, 118, 160, 205];
+export const RADIAL_RING_RADII = Object.freeze(
+    RING_RADII_TUNED_AT_CHUNK_19.map((r) => Math.round(r * (CHUNK_SIZE / 19)))
+);
 export const RADIAL_SITE_RULES = Object.freeze({
     camp_meridian: Object.freeze({ kind: 'camp', ring: 1 }),
     camp_tallow: Object.freeze({ kind: 'camp', ring: 2 }),
@@ -13,12 +23,31 @@ export const RADIAL_SITE_RULES = Object.freeze({
     queen_chamber: Object.freeze({ kind: 'mother_hive', ring: 5 })
 });
 
+// One fixed feature per ring rather than a random draw. A gate is a landmark
+// the player is meant to recognise and plan around ("the bridge is ring 2"), so
+// rolling a different obstacle each seed made every gate read as generic.
+// opensTraversal names the world change that clearing it produces — ring 2's
+// bridge is what physically spans the canyon once its mission is done.
 export const RING_BLOCKER_FEATURES = Object.freeze([
-    Object.freeze({ type: 'collapsed_bridge', mission: 'restore_canyon_crossing' }),
-    Object.freeze({ type: 'blast_bulkhead', mission: 'restore_ring_power' }),
-    Object.freeze({ type: 'hive_membrane', mission: 'clear_infested_threshold' }),
-    Object.freeze({ type: 'flooded_service_tunnel', mission: 'restart_drainage_pumps' })
+    Object.freeze({ type: 'blast_bulkhead', mission: 'restore_ring_power', door: 'bulkhead', opensTraversal: null }),
+    Object.freeze({ type: 'collapsed_bridge', mission: 'restore_canyon_crossing', door: 'gantry', opensTraversal: 'bridge' }),
+    Object.freeze({ type: 'hive_membrane', mission: 'clear_infested_threshold', door: 'membrane', opensTraversal: null }),
+    Object.freeze({ type: 'flooded_service_tunnel', mission: 'restart_drainage_pumps', door: 'pressure_hatch', opensTraversal: null })
 ]);
+
+// The traversal each cleared gate adds to the world. Ring 2's collapsed bridge
+// is the one that opens a canyon crossing, so beating ring 2 physically changes
+// how the map connects rather than only flipping a permission bit.
+export function getTraversalUnlocks(unlockedBlockerIds = new Set()) {
+    const open = [];
+    for (let ring = 1; ring <= RING_BLOCKER_FEATURES.length; ring += 1) {
+        const feature = RING_BLOCKER_FEATURES[ring - 1];
+        if (feature.opensTraversal && unlockedBlockerIds.has(`ring-${ring}-gate`)) {
+            open.push({ ring, traversal: feature.opensTraversal, from: `ring-${ring}-gate` });
+        }
+    }
+    return open;
+}
 
 // Phase 6.2 live enforcement: no literal canyon/gate geometry exists in the
 // WFC-generated world yet (that's a separate, larger asset/solver task —
@@ -146,7 +175,7 @@ function connectChunkPoints(from, to, preferHorizontal, visit) {
  * can no longer create accidental shortcuts through canyon space.
  */
 export function generateRegionalRouteTopology(seed = 1, {
-    chunkSize = 19,
+    chunkSize = CHUNK_SIZE,
     radii = RADIAL_RING_RADII,
     phase = 0
 } = {}) {
@@ -293,7 +322,7 @@ export function computeTopologyDistances(topology, startKey = topology?.startChu
     return distances;
 }
 
-export function generateRadialMazeExpedition(seed = 1) {
+export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE } = {}) {
     const random = seededRandom(seed);
     const phase = random() * Math.PI * 2;
     const nodes = [{
@@ -357,7 +386,7 @@ export function generateRadialMazeExpedition(seed = 1) {
 
     const blockers = [];
     for (let ring = 1; ring <= 4; ring += 1) {
-        const feature = RING_BLOCKER_FEATURES[(ring - 1 + Math.floor(random() * 2)) % RING_BLOCKER_FEATURES.length];
+        const feature = RING_BLOCKER_FEATURES[ring - 1];
         const angle = phase + ring * 1.37 + 0.35 + (random() - 0.5) * 0.38;
         const radius = (RADIAL_RING_RADII[ring] + RADIAL_RING_RADII[ring + 1]) / 2;
         blockers.push({
@@ -368,6 +397,8 @@ export function generateRadialMazeExpedition(seed = 1) {
             ...polarPoint(radius, angle),
             feature: feature.type,
             missionId: feature.mission,
+            door: feature.door,
+            opensTraversal: feature.opensTraversal,
             locked: true
         });
     }
@@ -419,8 +450,8 @@ export function generateRadialMazeExpedition(seed = 1) {
         usedSiteChunks.add(selected.key);
         node.chunkX = selected.chunkX;
         node.chunkY = selected.chunkY;
-        node.x = selected.chunkX * 19;
-        node.z = selected.chunkY * 19;
+        node.x = selected.chunkX * chunkSize;
+        node.z = selected.chunkY * chunkSize;
         node.radius = Math.round(Math.hypot(node.x, node.z));
         const routeChunk = topology.routeChunks.find((chunk) => (
             chunk.chunkX === selected.chunkX && chunk.chunkY === selected.chunkY
@@ -435,28 +466,41 @@ export function generateRadialMazeExpedition(seed = 1) {
         const [chunkX, chunkY] = key.split(',').map(Number);
         cluster.chunkX = chunkX;
         cluster.chunkY = chunkY;
-        cluster.x = chunkX * 19;
-        cluster.z = chunkY * 19;
+        cluster.x = chunkX * chunkSize;
+        cluster.z = chunkY * chunkSize;
     }
 
+    // Chunk->world conversion must use the real chunk size. Hardcoding 19 here
+    // made every blocker's distance undershoot once chunks grew, so all of them
+    // picked the same farthest spine chunk and collapsed into one cell. Taken
+    // chunks are also excluded, so two gates can never share a chunk even when
+    // their target radii are close.
+    // Seed with the chunks the story nodes already own, so a gate never lands
+    // on top of a camp, hive or the Queen either.
+    const takenBlockerChunks = new Set(
+        nodes.filter((node) => node.chunkX != null)
+            .map((node) => `${node.chunkX},${node.chunkY}`)
+    );
     for (const blocker of blockers) {
         const targetRadius = (RADIAL_RING_RADII[blocker.ring] + RADIAL_RING_RADII[blocker.blocksRing]) / 2;
         const candidate = topology.spineChunkKeys
+            .filter((key) => !takenBlockerChunks.has(key))
             .map((key) => {
                 const [chunkX, chunkY] = key.split(',').map(Number);
                 return {
                     key,
                     chunkX,
                     chunkY,
-                    delta: Math.abs(Math.hypot(chunkX * 19, chunkY * 19) - targetRadius)
+                    delta: Math.abs(Math.hypot(chunkX * chunkSize, chunkY * chunkSize) - targetRadius)
                 };
             })
             .sort((a, b) => a.delta - b.delta)[0];
         if (!candidate) continue;
+        takenBlockerChunks.add(candidate.key);
         blocker.chunkX = candidate.chunkX;
         blocker.chunkY = candidate.chunkY;
-        blocker.x = candidate.chunkX * 19;
-        blocker.z = candidate.chunkY * 19;
+        blocker.x = candidate.chunkX * chunkSize;
+        blocker.z = candidate.chunkY * chunkSize;
         const routeChunk = topology.routeChunks.find((chunk) => (
             chunk.chunkX === candidate.chunkX && chunk.chunkY === candidate.chunkY
         ));
@@ -614,19 +658,19 @@ export function getRadialSite(plan, id) {
 // Phase 6.1 foundation ("project route reservations into each affected
 // chunk"): converts the plan's world-space sites into the same
 // chunkX/chunkY grid threeGame.js already uses everywhere
-// (Math.floor(worldCoord / chunkSize), chunkSize = 19). This is the data
+// (Math.floor(worldCoord / chunkSize), chunkSize = CHUNK_SIZE). This is the data
 // projection step only -- it does NOT yet feed into wfcGenerator.js/
 // threeGame.js's actual chunk generation (that connection is the larger,
 // still-open remainder of 6.1/6.3). Produces reservation data a future
 // integration can consume without guessing the coordinate mapping.
-export function worldToChunkCoords(x, z, chunkSize = 19) {
+export function worldToChunkCoords(x, z, chunkSize = CHUNK_SIZE) {
     return {
         chunkX: Math.floor((Number(x) || 0) / chunkSize),
         chunkY: Math.floor((Number(z) || 0) / chunkSize)
     };
 }
 
-export function projectPlanToChunkReservations(plan, chunkSize = 19) {
+export function projectPlanToChunkReservations(plan, chunkSize = CHUNK_SIZE) {
     const reservations = new Map();
     const reserve = (site, category) => {
         if (!Number.isFinite(site?.x) || !Number.isFinite(site?.z)) return;
@@ -645,7 +689,7 @@ export function projectPlanToChunkReservations(plan, chunkSize = 19) {
 // time (a chunk that's a mission blocker can't simultaneously be the camp
 // site next to it). Catches macro-plan spacing that's too tight for the
 // chunk grid before that integration is built, not after.
-export function findConflictingChunkReservations(plan, chunkSize = 19) {
+export function findConflictingChunkReservations(plan, chunkSize = CHUNK_SIZE) {
     const reservations = projectPlanToChunkReservations(plan, chunkSize);
     const conflicts = [];
     for (const { chunkX, chunkY, sites } of reservations.values()) {

@@ -1,4 +1,4 @@
-import { SOCKET, TILE_SIZE } from './tileCatalog.js';
+import { SOCKET, TILE_SIZE, CHUNK_SIZE } from './tileCatalog.js';
 
 const WALKABLE_TILE_CHARS = new Set(['.', 'D', 'R', 'B', 'L']);
 const SIDES = ['n', 'e', 's', 'w'];
@@ -58,7 +58,7 @@ function translateCells(cells, originX, originY) {
 export function buildRoomInstances(lattice, {
     chunkX = 0,
     chunkY = 0,
-    chunkSize = 19
+    chunkSize = CHUNK_SIZE
 } = {}) {
     if (!Array.isArray(lattice)) return [];
     const latticeSize = Math.round(Math.sqrt(lattice.length));

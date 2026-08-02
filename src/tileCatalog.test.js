@@ -16,14 +16,14 @@ describe('rotateSocketsCW', () => {
 });
 
 describe('rotateAnchorsCW', () => {
-    it('transforms anchor coordinates 90 degrees CW within 7x7 grid', () => {
+    it('transforms anchor coordinates 90 degrees CW within the tile grid', () => {
         const anchors = [
             { id: 'center', x: 3, y: 3 },
             { id: 'top-left', x: 1, y: 1 }
         ];
         expect(rotateAnchorsCW(anchors)).toEqual([
-            { id: 'center', x: 3, y: 3 },
-            { id: 'top-left', x: 5, y: 1 }
+            { id: 'center', x: (TILE_SIZE - 1) - 3, y: 3 },
+            { id: 'top-left', x: (TILE_SIZE - 1) - 1, y: 1 }
         ]);
     });
 });
@@ -46,9 +46,13 @@ describe('TILE_CATALOG self-consistency', () => {
     });
 
     it('every declared socket matches the tile pattern border exactly', () => {
-        const OPEN3_ROW = '##...##';
-        const LADDER_ROW = '###.###';
-        const CLOSED_ROW = '#######';
+        // An edge lane is now the shared pit between two island tiles; an
+        // OPEN3 side breaks it with the 3-wide causeway deck.
+        const pad = (TILE_SIZE - 3) / 2;
+        const OPEN3_ROW = 'X'.repeat(pad) + '...' + 'X'.repeat(pad);
+        const LADDER_ROW = OPEN3_ROW;
+        const CLOSED_ROW = 'X'.repeat(TILE_SIZE);
+        const SOLID_ROW = '#'.repeat(TILE_SIZE);
         for (const tile of TILE_CATALOG) {
             const northRow = tile.pattern[0];
             const southRow = tile.pattern[TILE_SIZE - 1];
@@ -62,6 +66,9 @@ describe('TILE_CATALOG self-consistency', () => {
             );
 
             const expectedRow = (side) => {
+                // A tile closed on every side is solid rock, with no pit lane at all.
+                const anyOpen = ['n','e','s','w'].some(isOpen);
+                if (!anyOpen) return SOLID_ROW;
                 if (!isOpen(side)) return CLOSED_ROW;
                 return tile.category === 'ladder' ? LADDER_ROW : OPEN3_ROW;
             };

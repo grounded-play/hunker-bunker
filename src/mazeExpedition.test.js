@@ -1,3 +1,4 @@
+import { CHUNK_SIZE } from './tileCatalog.js';
 import { describe, expect, it } from 'vitest';
 import {
     MAZE_EXPEDITION_EDGES,
@@ -192,10 +193,10 @@ describe('authoritative regional snake-and-rings topology', () => {
 });
 
 describe('chunk reservation projection (Phase 6.1 foundation)', () => {
-    it('matches threeGame.js\'s own world-to-chunk convention (Math.floor(coord / 19))', () => {
+    it('matches threeGame.js\'s own world-to-chunk convention (Math.floor(coord / CHUNK_SIZE))', () => {
         expect(worldToChunkCoords(0, 0)).toEqual({ chunkX: 0, chunkY: 0 });
-        expect(worldToChunkCoords(19, 38)).toEqual({ chunkX: 1, chunkY: 2 });
-        expect(worldToChunkCoords(-1, -20)).toEqual({ chunkX: -1, chunkY: -2 });
+        expect(worldToChunkCoords(CHUNK_SIZE, CHUNK_SIZE * 2)).toEqual({ chunkX: 1, chunkY: 2 });
+        expect(worldToChunkCoords(-1, -(CHUNK_SIZE + 1))).toEqual({ chunkX: -1, chunkY: -2 });
     });
 
     it('reserves a chunk for every node, room cluster, and blocker with finite coordinates', () => {
@@ -306,13 +307,16 @@ describe('live ring-lock enforcement (Phase 6.2 soft boundary, no physical geome
 });
 
 describe('isChunkOnRingBarrier (Phase 6.2 visible barrier tell, docs/phase6-wfc-ring-barrier-integration-plan.md)', () => {
-    const chunkSize = 19;
+    // Must be the real chunk size: RADIAL_RING_RADII derives from CHUNK_SIZE, so
+    // feeding a different size here compares chunk centres against radii scaled
+    // for a world that is not the one being generated.
+    const chunkSize = CHUNK_SIZE;
     const anchor = { x: 0, z: 0 };
 
     it('defaults to a half-chunk-wide band (live-measured: a full-chunk band over-flagged nearby terrain, see the function comment)', () => {
-        // ring 4 radius = 160; chunk (8,0) center = 19*8+9.5 = 161.5, |161.5-160| = 1.5 <= (chunkSize/2)/2
+        // ring 4 radius = 413; chunk (8,0) center = 49*8+24.5 = 416.5, |416.5-413| = 3.5 <= (chunkSize/2)/2
         expect(isChunkOnRingBarrier(8, 0, chunkSize, anchor)).toBe(true);
-        // chunk (7,0) center = 142.5, closest radius 118 or 160 both > half-band away
+        // chunk (7,0) center = 367.5, closest radius 304 or 413 both > half-band away
         expect(isChunkOnRingBarrier(7, 0, chunkSize, anchor)).toBe(false);
     });
 

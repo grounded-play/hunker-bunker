@@ -1,4 +1,4 @@
-import { TILE_CATALOG, SOCKET, TILE_SIZE } from './tileCatalog.js';
+import { TILE_CATALOG, SOCKET, TILE_SIZE, CHUNK_SIZE } from './tileCatalog.js';
 import { buildRoomInstances } from './roomGeometry.js';
 import { injectBoundedLoops } from './mazeTopology.js';
 
@@ -220,7 +220,7 @@ const HALLWAY_CATEGORIES = new Set([
 ]);
 
 function isRoomTile(tile) {
-    return tile.category === 'room';
+    return tile.category === 'room' || tile.category === 'plain';
 }
 
 function isHallwayTile(tile) {
@@ -316,6 +316,10 @@ export function collapseChunkLattice(random, {
         }
         lattice.push(tile);
     }
+    // Carried on the array so stampLattice can merge same-role neighbours
+    // without changing its signature or the shape callers already destructure.
+    lattice.roles = roles;
+    lattice.openEdges = openEdges;
     return lattice;
 }
 
@@ -376,6 +380,63 @@ export function stampLattice(lattice, chunkSize) {
     return grid;
 }
 
+
+// Deletes the shell between adjacent cells that share a role, turning runs of
+// uniform tiles into one continuous space. This is what makes a room bigger
+// than one cell and a hallway longer than one tile: without it every cell is
+// the same box joined by a 3-wide door, which is exactly how the old layout
+// read. Rooms merge into wide chambers; hallways merge into runs that bend and
+// branch wherever the spanning tree turned or forked.
+export function mergeAdjacentSpaces(grid, lattice) {
+    const roles = lattice?.roles;
+    const openEdges = lattice?.openEdges;
+    if (!Array.isArray(roles) || !openEdges) return grid;
+
+    const latticeSize = Math.round(Math.sqrt(lattice.length));
+    const stride = TILE_SIZE - 1;
+    // The authored core sits at local BAND..TILE_SIZE-1-BAND; its own perimeter
+    // is the wall, so the walkable span is one cell inside that on each side.
+    const BAND = 5;
+    const lo = BAND + 1;
+    const hi = TILE_SIZE - 1 - BAND - 1;
+
+    const carve = (x0, x1, y0, y1) => {
+        for (let y = y0; y <= y1; y += 1) {
+            for (let x = x0; x <= x1; x += 1) {
+                if (grid[y] && grid[y][x] !== undefined) grid[y][x] = '.';
+            }
+        }
+    };
+
+    for (let my = 0; my < latticeSize; my += 1) {
+        for (let mx = 0; mx < latticeSize; mx += 1) {
+            const index = my * latticeSize + mx;
+            const ox = mx * stride;
+            const oy = my * stride;
+
+            if (mx + 1 < latticeSize) {
+                const right = index + 1;
+                if (openEdges.has(edgeKey(index, right)) && roles[index] === roles[right]) {
+                    carve(ox + hi, ox + stride + lo, oy + lo, oy + hi);
+                }
+            }
+            if (my + 1 < latticeSize) {
+                const below = index + latticeSize;
+                if (openEdges.has(edgeKey(index, below)) && roles[index] === roles[below]) {
+                    carve(ox + lo, ox + hi, oy + hi, oy + stride + lo);
+                }
+            }
+        }
+    }
+    return mergeAdjacentSpaces(grid, lattice);
+}
+
+// Deletes the shell between adjacent cells that share a role, turning runs of
+// uniform tiles into one continuous space. This is what makes a room bigger
+// than one cell and a hallway longer than one tile: without it every cell is
+// the same box joined by a 3-wide door, which is exactly how the old layout
+// read. Rooms merge into wide chambers; hallways merge into runs that bend and
+// branch wherever the spanning tree turned or forked.
 export function validateLatticeSeams(lattice) {
     if (!Array.isArray(lattice)) return ['lattice is not an array'];
     const latticeSize = Math.round(Math.sqrt(lattice.length));
@@ -463,7 +524,7 @@ export function addCanyonVoidAroundWalkable(grid, lattice = null) {
     return grid;
 }
 
-export function extractChunkWfcMetadata(lattice, chunkSize = 19, { chunkX = 0, chunkY = 0 } = {}) {
+export function extractChunkWfcMetadata(lattice, chunkSize = CHUNK_SIZE, { chunkX = 0, chunkY = 0 } = {}) {
     if (!Array.isArray(lattice)) return null;
     const latticeSize = Math.round(Math.sqrt(lattice.length));
     const stride = TILE_SIZE - 1;

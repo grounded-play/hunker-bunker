@@ -1,3 +1,5 @@
+import { CHUNK_SIZE } from './tileCatalog.js';
+
 import * as THREE from 'three';
 import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
@@ -240,7 +242,6 @@ const PROJECTILE_DAMAGE = 1;
 const TURRET_RANGE = 8.0;
 const TURRET_DAMAGE = 1;
 const FALL_DAMAGE_BASE = 2;
-const POCKET_GRID_SIZE = 13; // 2x2 overlapping 7x7 WFC tiles: 7 + 7 - 1.
 const POCKET_WORLD_Y = -6; // fixed depth below the surface (y=0)
 const WALL_HP_DAMAGED = 5;
 const WALL_HP_STANDARD = 8;
@@ -824,7 +825,7 @@ export class ThreeGame {
         this._pendingO2BossType = null;
         this.explorationTracker = new ExplorationTracker();
 
-        this.chunkSize = 19;
+        this.chunkSize = CHUNK_SIZE;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
         this.disableFogOfWar = true;
         this.defaultVisibleChunkRadius = 3;
@@ -21463,11 +21464,12 @@ export class ThreeGame {
             (this.hashTile(holeWorldX, holeWorldZ) ^ this.runEntropy) >>> 0
         );
         const lattice = collapsePocketLattice(random);
-        const grid = stampLattice(lattice, POCKET_GRID_SIZE);
-        const geometricCenter = (POCKET_GRID_SIZE - 1) / 2;
+        const grid = stampLattice(lattice);
+        const pocketSize = grid.length;
+        const geometricCenter = (pocketSize - 1) / 2;
         const floorCells = [];
-        for (let y = 0; y < POCKET_GRID_SIZE; y += 1) {
-            for (let x = 0; x < POCKET_GRID_SIZE; x += 1) {
+        for (let y = 0; y < pocketSize; y += 1) {
+            for (let x = 0; x < pocketSize; x += 1) {
                 if (grid[y][x] === '.') floorCells.push({ x, y });
             }
         }
@@ -21479,7 +21481,7 @@ export class ThreeGame {
         const pocket = {
             grid,
             lattice,
-            size: POCKET_GRID_SIZE,
+            size: pocketSize,
             centerCell: { x: centerCell.x, y: centerCell.y },
             climbPoint: { x: climbPoint.x, y: climbPoint.y }
         };
