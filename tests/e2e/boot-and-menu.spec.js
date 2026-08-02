@@ -40,4 +40,20 @@ test.describe('boot and main menu', () => {
 
         await page.screenshot({ path: 'playwright-report/screenshots/gameplay-hud-1280x800.png' });
     });
+
+    test('NEW RUN keeps the title selection visible until the doors fully close', async ({ page }) => {
+        await bootToTitleSplash(page);
+
+        await page.locator('#title-newrun-btn').click();
+        await page.locator('#transition-overlay.closing-v.active').waitFor({ state: 'visible' });
+
+        await expect(page.locator('#splash')).toBeVisible();
+        await expect(page.locator('#menu')).toBeHidden();
+        await expect(page.locator('#roster-modal')).toBeHidden();
+
+        await page.locator('#transition-overlay.opening-h').waitFor({ state: 'visible' });
+        await expect(page.locator('#splash')).toBeHidden();
+        await expect(page.locator('#menu')).toBeVisible();
+        await expect(page.locator('#roster-modal')).toBeVisible();
+    });
 });

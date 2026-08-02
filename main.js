@@ -5879,7 +5879,7 @@ async function runMissionIntroSequence({ deploymentHold = null } = {}) {
     }
 }
 
-const transitionFromTitleToMenu = () => {
+const transitionFromTitleToMenu = (afterClosed = null) => {
     triggerDoorTransition(
         () => {
             if (splash) splash.classList.add('hidden');
@@ -5889,6 +5889,7 @@ const transitionFromTitleToMenu = () => {
                 window.game?.setPerformanceProfile?.('menu');
                 queueGameLayoutRefresh();
             }
+            afterClosed?.();
         },
         () => {
             if (state.settings.fullscreen) {
@@ -9604,17 +9605,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (titleNewRunBtn) {
         titleNewRunBtn.addEventListener('click', () => {
-            clearSaveData();
-            blackBoxStore.clear();
-            if (window.game) {
-                window.game.clearBlackBoxMarker();
-            }
-            updateContinueButtonState();
-            transitionFromTitleToMenu();
-            renderRosterModal('new_game');
-            const modal = document.getElementById('roster-modal');
-            if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
-            document.getElementById('roster-callsign-input')?.focus?.();
+            transitionFromTitleToMenu(() => {
+                clearSaveData();
+                blackBoxStore.clear();
+                window.game?.clearBlackBoxMarker?.();
+                updateContinueButtonState();
+                renderRosterModal('new_game');
+                const modal = document.getElementById('roster-modal');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.setAttribute('aria-hidden', 'false');
+                }
+                document.getElementById('roster-callsign-input')?.focus?.();
+            });
         });
     }
     if (titleContinueBtn) {
