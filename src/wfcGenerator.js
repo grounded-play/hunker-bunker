@@ -377,7 +377,7 @@ export function stampLattice(lattice, chunkSize) {
             }
         }
     }
-    return grid;
+    return mergeAdjacentSpaces(grid, lattice);
 }
 
 
@@ -428,7 +428,7 @@ export function mergeAdjacentSpaces(grid, lattice) {
             }
         }
     }
-    return mergeAdjacentSpaces(grid, lattice);
+    return grid;
 }
 
 // Deletes the shell between adjacent cells that share a role, turning runs of
@@ -520,6 +520,32 @@ export function addCanyonVoidAroundWalkable(grid, lattice = null) {
             if (touchesPath) continue; // retain the visible/collidable wall band
             grid[y][x] = 'X';
         }
+    }
+
+    // Give exposed structure a readable shoreline: safe floor, structural
+    // wall, one textured cliff/ledge cell, and only then bottomless canyon.
+    // Previously this jumped directly from a ruler-straight wall to black
+    // void, leaving the dedicated cliff glyph/material almost unused.
+    const banded = grid.map((row) => [...row]);
+    for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+            if (grid[y][x] !== 'X') continue;
+            let touchesStructure = false;
+            for (let dy = -1; dy <= 1 && !touchesStructure; dy += 1) {
+                for (let dx = -1; dx <= 1; dx += 1) {
+                    if (dx === 0 && dy === 0) continue;
+                    const neighbor = grid[y + dy]?.[x + dx];
+                    if (neighbor === '#' || walkable(neighbor)) {
+                        touchesStructure = true;
+                        break;
+                    }
+                }
+            }
+            if (touchesStructure) banded[y][x] = 'C';
+        }
+    }
+    for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) grid[y][x] = banded[y][x];
     }
     return grid;
 }

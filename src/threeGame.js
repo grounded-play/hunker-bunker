@@ -1205,10 +1205,13 @@ export class ThreeGame {
             map: this.crashSiteFloorTexture,
             transparent: true,
             alphaTest: 0.02,
-            depthWrite: false,
+            depthWrite: true,
             color: 0xd3d8dc,
             roughness: 0.94,
-            metalness: 0.28
+            metalness: 0.28,
+            polygonOffset: true,
+            polygonOffsetFactor: -4,
+            polygonOffsetUnits: -4
         });
         this.playerTextures = Object.fromEntries(
             Object.entries(PLAYER_SPRITE_LAYOUTS).map(([type, layout]) => [
@@ -2470,8 +2473,17 @@ export class ThreeGame {
                     '#include <map_fragment>',
                     `
                     #ifdef USE_MAP
-                        float u = abs(vWorldNormal.z) > 0.5 ? vWorldPos.x : vWorldPos.z;
-                        vec2 cliffUv = vec2(u * 1.5, vWorldPos.y * 1.5);
+                        float bx = abs(vWorldNormal.x);
+                        float by = abs(vWorldNormal.y);
+                        float bz = abs(vWorldNormal.z);
+                        vec2 cliffUv;
+                        if (by > 0.65) {
+                            cliffUv = vec2(vWorldPos.x * 0.65, vWorldPos.z * 0.65);
+                        } else if (bz > bx) {
+                            cliffUv = vec2(vWorldPos.x * 0.65, vWorldPos.y * 0.65);
+                        } else {
+                            cliffUv = vec2(vWorldPos.z * 0.65, vWorldPos.y * 0.65);
+                        }
                         vec4 sampledDiffuseColor = texture2D( map, cliffUv );
                         #ifdef DECODE_VIDEO_TEXTURE
                             sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
@@ -4218,6 +4230,14 @@ export class ThreeGame {
                     obj.visible = shouldBeVisible;
                 }
             }
+        }
+
+        const activeShip = this.crashedShips.find((ship) => (
+            String(ship.type ?? '').trim().toUpperCase() === activeType
+        ));
+        if (activeShip && this.crashSiteFloorMesh) {
+            this.crashSiteFloorMesh.position.x = activeShip.tileX;
+            this.crashSiteFloorMesh.position.z = activeShip.tileZ;
         }
     }
 
@@ -12493,7 +12513,7 @@ export class ThreeGame {
                 this._fallHoleX = Math.round(this.player.position.x);
                 this._fallHoleZ = Math.round(this.player.position.z);
                 const fallTile = this.getTileType(this._fallHoleX, this._fallHoleZ);
-                this._fallIsLethal = fallTile === VERTICAL_TILE.PIT || fallTile === EXTERIOR_CANYON_TILE || fallTile === CLIFF_TILE;
+                this._fallIsLethal = true; // Pocket worlds temporarily disabled; all falls are lethal
                 this.setInputEnabled(false);
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
@@ -15034,18 +15054,19 @@ export class ThreeGame {
         const key = `${biome}:${style}`;
         if (this.roomFloorMaterials.has(key)) return this.roomFloorMaterials.get(key);
         const family = ROOM_FLOOR_MATERIAL_FAMILY[style];
+        let atlasSlot = null;
         let texture = this.biomeTerrainTextures?.[biome]?.floorBase
             ?? this.biomeTerrainTextures?.[BIOME_KEYS.ACTIVE]?.floorBase;
         if (family) {
             const isSiteFamily = family.startsWith('site:');
             const familyName = isSiteFamily ? family.slice(5) : family;
             const atlas = isSiteFamily ? this.siteFloorMaterialAtlas : this.roomFloorMaterialAtlas;
-            const slot = isSiteFamily ? SITE_FLOOR_ATLAS_SLOT[familyName] : ROOM_MATERIAL_ATLAS_SLOT[familyName];
-            if (atlas && slot) texture = atlas.clone();
+            atlasSlot = isSiteFamily ? SITE_FLOOR_ATLAS_SLOT[familyName] : ROOM_MATERIAL_ATLAS_SLOT[familyName];
+            if (atlas && atlasSlot) texture = atlas.clone();
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             texture.repeat.set(0.5, 0.5);
-            texture.offset.set(slot.x, slot.y);
+            texture.offset.set(atlasSlot.x, atlasSlot.y);
             texture.needsUpdate = true;
         }
         const material = new THREE.MeshStandardMaterial({
@@ -15057,6 +15078,52 @@ export class ThreeGame {
             polygonOffsetFactor: -1,
             polygonOffsetUnits: -1
         });
+        if (family) {
+            const atlasOffset = atlasSlot;
+            material.onBeforeCompile = (shader) => {
+                shader.uniforms.uRoomAtlasOffset = {
+                    value: new THREE.Vector2(atlasOffset.x, atlasOffset.y)
+                };
+                shader.vertexShader = shader.vertexShader.replace(
+                    'void main() {',
+                    `
+                    varying vec3 vRoomFloorWorldPos;
+                    void main() {
+                    `
+                );
+                shader.vertexShader = shader.vertexShader.replace(
+                    '#include <worldpos_vertex>',
+                    `
+                    #include <worldpos_vertex>
+                    vRoomFloorWorldPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+                    `
+                );
+                shader.fragmentShader = `
+                    varying vec3 vRoomFloorWorldPos;
+                    uniform vec2 uRoomAtlasOffset;
+                    ${shader.fragmentShader}
+                `;
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <map_fragment>',
+                    `
+                    #ifdef USE_MAP
+                        // Each atlas quadrant is a seamless multi-tile surface.
+                        // Sample it in world space so enlarging a room continues
+                        // the pattern instead of squeezing the entire quadrant
+                        // independently onto every one-metre floor cell.
+                        vec2 roomTileUv = fract(vRoomFloorWorldPos.xz * 0.25);
+                        vec2 roomAtlasUv = uRoomAtlasOffset + roomTileUv * 0.5;
+                        vec4 sampledDiffuseColor = texture2D(map, roomAtlasUv);
+                        #ifdef DECODE_VIDEO_TEXTURE
+                            sampledDiffuseColor = sRGBTransferEOTF(sampledDiffuseColor);
+                        #endif
+                        diffuseColor *= sampledDiffuseColor;
+                    #endif
+                    `
+                );
+            };
+            material.customProgramCacheKey = () => `room-floor-world-uv:${family}`;
+        }
         material.userData.ownsRoomAtlasTexture = Boolean(family);
         this.roomFloorMaterials.set(key, material);
         return material;
@@ -15135,6 +15202,91 @@ export class ThreeGame {
         group.add(mesh);
     }
 
+    addDoorThresholdSurfaceOverlay(group, chunkX, chunkY, grid, metadata) {
+        if (!grid) return;
+        const keyedCells = new Map();
+        const addCell = (x, y) => {
+            if (!Number.isInteger(x) || !Number.isInteger(y)) return;
+            if (x < 0 || y < 0 || x >= this.chunkSize || y >= this.chunkSize) return;
+            const tile = grid[y]?.[x];
+            // Door lanes may include their immediate room/corridor approach,
+            // but must never paint a bridge across actual canyon or cliff.
+            if (!['.', 'D', VERTICAL_TILE.RAMP, VERTICAL_TILE.BRIDGE, VERTICAL_TILE.LADDER].includes(tile)) return;
+            keyedCells.set(`${x},${y}`, { x, y });
+        };
+        for (let y = 0; y < this.chunkSize; y += 1) {
+            for (let x = 0; x < this.chunkSize; x += 1) {
+                if (grid[y]?.[x] === 'D') addCell(x, y);
+            }
+        }
+        for (const room of metadata?.roomInstances ?? []) {
+            for (const cell of room.navigation?.doorLanes ?? []) addCell(cell.x, cell.y);
+        }
+        for (const door of metadata?.doors ?? []) {
+            addCell(door.localX, door.localY);
+            for (const cell of door.cells ?? []) addCell(cell.x, cell.y);
+        }
+        const cells = [...keyedCells.values()];
+        if (!cells.length) return;
+        const biome = this.getBiomeKeyForWorldPosition(
+            chunkX * this.chunkSize + this.chunkSize * 0.5,
+            chunkY * this.chunkSize + this.chunkSize * 0.5
+        );
+        const mesh = new THREE.InstancedMesh(
+            this.floorGeometry,
+            this.getRoomFloorMaterial('hallway', biome),
+            cells.length
+        );
+        const matrix = new THREE.Matrix4();
+        const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+        cells.forEach((cell, index) => {
+            matrix.compose(
+                new THREE.Vector3(
+                    chunkX * this.chunkSize + cell.x,
+                    0.016,
+                    chunkY * this.chunkSize + cell.y
+                ),
+                rotation,
+                new THREE.Vector3(1, 1, 1)
+            );
+            mesh.setMatrixAt(index, matrix);
+        });
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { isDoorThresholdFloorOverlay: true };
+        group.add(mesh);
+    }
+
+    addCrashRoomSurfaceOverlay(group, grid) {
+        if (!grid) return;
+        const cells = [];
+        for (let y = 0; y < this.chunkSize; y += 1) {
+            for (let x = 0; x < this.chunkSize; x += 1) {
+                if (grid[y]?.[x] === '.') cells.push({ x, y });
+            }
+        }
+        if (!cells.length) return;
+        const mesh = new THREE.InstancedMesh(
+            this.floorGeometry,
+            this.getRoomFloorMaterial('bunker-standard', BIOME_KEYS.ACTIVE),
+            cells.length
+        );
+        const matrix = new THREE.Matrix4();
+        const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+        cells.forEach((cell, index) => {
+            matrix.compose(
+                new THREE.Vector3(cell.x, 0.009, cell.y),
+                rotation,
+                new THREE.Vector3(1, 1, 1)
+            );
+            mesh.setMatrixAt(index, matrix);
+        });
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { isCrashRoomFloorOverlay: true };
+        group.add(mesh);
+    }
+
     getWallKey(worldX, worldZ) {
         return `${Math.round(worldX)},${Math.round(worldZ)}`;
     }
@@ -15207,6 +15359,15 @@ export class ThreeGame {
         const roomStyleId = ROOM_WALL_STYLE_ID[room?.themeConfig?.wallStyle] ?? 0;
         wall.userData.roomId = room?.id ?? null;
         wall.userData.roomWallStyle = room?.themeConfig?.wallStyle ?? null;
+        // Apply organic jitter to exterior/canyon-facing wall segments
+        if (this.isExteriorWallTile?.(worldX, worldZ)) {
+            const seed = this.hashTile(Math.round(worldX), Math.round(worldZ));
+            const rng = this.createSeededRandom(seed);
+            wall.position.x += (rng() - 0.5) * 0.16;
+            wall.position.z += (rng() - 0.5) * 0.16;
+            wall.rotation.y += (rng() - 0.5) * 0.14;
+        }
+
         wall.onBeforeRender = () => {
             if (this.wallShaderUniforms) {
                 this.wallShaderUniforms.uLandformId.value = landformShaderId;
@@ -15257,38 +15418,87 @@ export class ThreeGame {
 
     createVoidPatch(worldX, worldZ) {
         if (!this.floorGeometry || !this.voidMaterial) return null;
+        const group = new THREE.Group();
         const patch = new THREE.Mesh(this.floorGeometry, this.voidMaterial);
         patch.rotation.x = -Math.PI / 2;
         patch.position.set(worldX, -10, worldZ); // deeply sunken
         patch.receiveShadow = false;
         patch.userData = { isExteriorCanyon: true, isLethalPit: true, worldX, worldZ };
-        return patch;
+        group.add(patch);
+
+        const coord = this.getChunkLocalFromWorld(worldX, worldZ);
+        const grid = this.chunkCache?.get?.(coord.key);
+        if (grid?.[coord.localY]) {
+            const localX = coord.localX;
+            const localY = coord.localY;
+            const hasWalkableOrWall = (dx, dy) => {
+                const char = grid[localY + dy]?.[localX + dx];
+                return char === '.' || char === 'D' || char === '#' || char === 'C';
+            };
+            if (
+                hasWalkableOrWall(0, -1) || hasWalkableOrWall(0, 1)
+                || hasWalkableOrWall(-1, 0) || hasWalkableOrWall(1, 0)
+            ) {
+                const cliffSkirt = this.createCliffPatch(worldX, worldZ);
+                if (cliffSkirt) group.add(cliffSkirt);
+            }
+        }
+        return group;
     }
 
     createCliffPatch(worldX, worldZ) {
-        if (!this.cliffGeometry) {
-            this.cliffGeometry = new THREE.BoxGeometry(1, 10, 1);
-        }
         const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
         const material = this.cliffMaterials?.[biomeKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE];
         if (!material) return null;
 
-        const materials = [
-            material, // right
-            material, // left
-            this.invisibleMaterial, // top
-            this.invisibleMaterial, // bottom
-            material, // front
-            material  // back
-        ];
+        if (!this.cliffPrimaryGeometry) {
+            this.cliffPrimaryGeometry = new THREE.CylinderGeometry(0.68, 0.95, 10, 14);
+        }
+        if (!this.cliffRockGeometry) {
+            this.cliffRockGeometry = new THREE.ConeGeometry(0.85, 9.5, 12);
+        }
 
-        const patch = new THREE.Mesh(this.cliffGeometry, materials);
-        // Positioned so the top is at y=0, extending down to y=-10
-        patch.position.set(worldX, -5, worldZ);
-        patch.receiveShadow = true;
-        patch.castShadow = true;
-        patch.userData = { isCliff: true, worldX, worldZ };
-        return patch;
+        const group = new THREE.Group();
+        group.userData = { isCliff: true, worldX, worldZ };
+
+        const seed = (this.hashTile(Math.round(worldX * 137 + 19), Math.round(worldZ * 223 + 43)) ^ (this.runEntropy ?? 0)) >>> 0;
+        const rng = this.createSeededRandom(seed);
+
+        // 1. Primary organic rock column with position jitter, scale, and tilt
+        const pOffsetX = (rng() - 0.5) * 0.48;
+        const pOffsetZ = (rng() - 0.5) * 0.48;
+        const pScaleX = 0.78 + rng() * 0.52;
+        const pScaleZ = 0.78 + rng() * 0.52;
+        const primaryMesh = new THREE.Mesh(this.cliffPrimaryGeometry, material);
+        primaryMesh.position.set(worldX + pOffsetX, -4.8, worldZ + pOffsetZ);
+        primaryMesh.scale.set(pScaleX, 1.02, pScaleZ);
+        primaryMesh.rotation.y = rng() * Math.PI * 2;
+        primaryMesh.rotation.x = (rng() - 0.5) * 0.22;
+        primaryMesh.rotation.z = (rng() - 0.5) * 0.22;
+        primaryMesh.receiveShadow = true;
+        primaryMesh.castShadow = true;
+        group.add(primaryMesh);
+
+        // 2. Secondary organic rock outcroppings to break straight grid lines
+        const subCount = 1 + Math.floor(rng() * 2);
+        for (let i = 0; i < subCount; i += 1) {
+            const angle = rng() * Math.PI * 2;
+            const dist = 0.28 + rng() * 0.38;
+            const subX = worldX + Math.cos(angle) * dist;
+            const subZ = worldZ + Math.sin(angle) * dist;
+            const subScale = 0.55 + rng() * 0.45;
+            const rockMesh = new THREE.Mesh(this.cliffRockGeometry, material);
+            rockMesh.position.set(subX, -4.6 + (rng() - 0.5) * 0.6, subZ);
+            rockMesh.scale.set(subScale, 1.05, subScale);
+            rockMesh.rotation.y = rng() * Math.PI * 2;
+            rockMesh.rotation.x = (rng() - 0.5) * 0.28;
+            rockMesh.rotation.z = (rng() - 0.5) * 0.28;
+            rockMesh.receiveShadow = true;
+            rockMesh.castShadow = true;
+            group.add(rockMesh);
+        }
+
+        return group;
     }
 
     markWallTileDestroyed(worldX, worldZ) {
@@ -15692,13 +15902,20 @@ export class ThreeGame {
             // beneath the ship impact zone. Keeping it inset prevents it from
             // visually bridging the canyon or covering the door hallway.
             const crashDeck = new THREE.Mesh(
-                new THREE.PlaneGeometry(9, 9),
+                new THREE.PlaneGeometry(7.5, 7.5),
                 this.crashSiteFloorMaterial
             );
             crashDeck.rotation.x = -Math.PI / 2;
-            crashDeck.position.set(9, 0.012, 10);
+            const activeShip = this.crashedShips?.find((ship) => ship.type === this.playerType);
+            crashDeck.position.set(
+                activeShip?.tileX ?? CRASH_SITE_CENTER,
+                0.035,
+                activeShip?.tileZ ?? CRASH_SITE_CENTER
+            );
             crashDeck.receiveShadow = true;
+            crashDeck.renderOrder = 4;
             crashDeck.userData = { isCrashSiteFloor: true };
+            this.crashSiteFloorMesh = crashDeck;
             group.add(crashDeck);
         }
         this.addRoomSurfaceOverlays(
@@ -15707,7 +15924,15 @@ export class ThreeGame {
             chunkY,
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
         );
+        if (chunkX === 0 && chunkY === 0) this.addCrashRoomSurfaceOverlay(group, grid);
         if (landform === LANDFORMS.MAZE) this.addHallwaySurfaceOverlay(group, chunkX, chunkY, grid);
+        this.addDoorThresholdSurfaceOverlay(
+            group,
+            chunkX,
+            chunkY,
+            grid,
+            this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
+        );
         this.addTerrainStepDressing(group, chunkX, chunkY, grid, landform);
         if (landform === LANDFORMS.MAZE) {
             this.addWfcDebugOverlay(
@@ -18565,7 +18790,11 @@ export class ThreeGame {
     }
 
     isSnailTileWalkable(tileX, tileZ) {
-        return this.getTileType(tileX, tileZ) !== '#';
+        const tile = this.getTileType(tileX, tileZ);
+        return tile === '.'
+            || tile === VERTICAL_TILE.RAMP
+            || tile === VERTICAL_TILE.BRIDGE
+            || tile === VERTICAL_TILE.LADDER;
     }
 
     pickSnailWanderTile(sprite, target = null) {
@@ -21099,6 +21328,18 @@ export class ThreeGame {
                 exteriorCanyon: true
             };
         }
+        if (tileType === CLIFF_TILE) {
+            return {
+                x: tileX,
+                z: tileY,
+                scale: 1,
+                rotationZ: 0,
+                fallRadius: 0.52,
+                lethal: true,
+                exteriorCanyon: true,
+                cliff: true
+            };
+        }
         if (tileType !== '#') return null;
 
         const chunkX = Math.floor(worldX / this.chunkSize);
@@ -21929,6 +22170,7 @@ export class ThreeGame {
 
     buildCrashSiteChunk(grid, chunkX = 0, chunkY = 0) {
         this.clearSpawnArea(grid, chunkX, chunkY);
+        addCanyonVoidAroundWalkable(grid);
         return grid;
     }
 

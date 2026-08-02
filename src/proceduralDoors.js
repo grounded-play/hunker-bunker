@@ -5,12 +5,8 @@ const SIDE_ORIENTATION = Object.freeze({
     w: 'vertical'
 });
 
-function doorChanceForRoom(room) {
-    if (room.role === 'security') return 1;
-    if (['medical', 'story', 'reward', 'cryo-lab'].includes(room.role)) return 0.82;
-    if (['utility', 'engineering', 'storage'].includes(room.role)) return 0.62;
-    if (['camp', 'nest', 'hive'].includes(room.role)) return 0.72;
-    return 0.34;
+function doorChanceForRoom(_room) {
+    return 1;
 }
 
 export function planProceduralDoors(rooms, random, { tutorial = false, forceAtLeastOne = false } = {}) {

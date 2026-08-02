@@ -217,7 +217,9 @@ describe('stampLattice', () => {
     it('produces a chunkSize x chunkSize grid matching each tile pattern at its lattice origin', () => {
         const lattice = collapseChunkLattice(seededRandom(7));
         const chunkSize = (TILE_SIZE - 1) * LATTICE_SIZE + 1; // 19
-        const grid = stampLattice(lattice);
+        // A plain array intentionally omits the role/open-edge metadata so
+        // this test isolates raw stamping from the subsequent merge pass.
+        const grid = stampLattice([...lattice]);
         expect(grid).toHaveLength(chunkSize);
         for (const row of grid) expect(row).toHaveLength(chunkSize);
 
@@ -233,6 +235,20 @@ describe('stampLattice', () => {
                 }
             }
         }
+    });
+
+    it('merges adjacent same-role spaces without breaking floor connectivity', () => {
+        let sawMergedShell = false;
+        for (let seed = 1; seed <= 100; seed += 1) {
+            const lattice = collapseChunkLattice(seededRandom(seed));
+            const raw = stampLattice([...lattice]);
+            const merged = stampLattice(lattice);
+            if (merged.some((row, y) => row.some((cell, x) => cell === '.' && raw[y][x] !== '.'))) {
+                sawMergedShell = true;
+            }
+            expect(isGridFullyConnected(merged), `seed ${seed}`).toBe(true);
+        }
+        expect(sawMergedShell).toBe(true);
     });
 
     // 500 seeds per mode: small enough to run instantly, large enough that
@@ -313,6 +329,7 @@ describe('stampLattice', () => {
         expect(grid[2][2]).toBe('#');
         expect(grid[0][0]).toBe('X');
         expect(grid[6][6]).toBe('X');
+        expect(grid.flat()).toContain('C');
         expect(grid.flat().filter((cell) => cell === 'X').length).toBeGreaterThan(
             grid.flat().filter((cell) => cell === '#').length
         );

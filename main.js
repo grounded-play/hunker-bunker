@@ -4713,9 +4713,9 @@ const gameOverMainMenu = document.getElementById('game-over-main-menu');
 
 if (gameOverTryAgain) {
     gameOverTryAgain.addEventListener('click', () => {
-        hideGameOverScreen();
         triggerDoorTransition(
             () => {
+                hideGameOverScreen();
                 showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
                 window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
@@ -4740,7 +4740,6 @@ if (gameOverTryAgain) {
 }
 
 function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
-    hideGameOverScreen();
     hideBiomePrompt();
     missionFlowRunning = false;
     resetRunToStartingState({
@@ -4752,6 +4751,7 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
 
     triggerDoorTransition(
         () => {
+            hideGameOverScreen();
             document.getElementById('ui')?.classList.add('hidden');
             window.game?.setInputEnabled?.(false);
             syncHudCompassVisibility();

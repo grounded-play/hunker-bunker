@@ -12,6 +12,43 @@ function makeFakeGame() {
 }
 
 describe('clearSpawnArea — door/portal alignment', () => {
+    it('allows snails only on structural floor and traversal tiles', () => {
+        const game = {
+            getTileType: (x) => ({
+                0: '.',
+                1: 'R',
+                2: 'B',
+                3: 'L',
+                4: '#',
+                5: 'X',
+                6: 'C',
+                7: 'P',
+                8: null
+            })[x]
+        };
+
+        expect([0, 1, 2, 3].every((x) => ThreeGame.prototype.isSnailTileWalkable.call(game, x, 0))).toBe(true);
+        expect([4, 5, 6, 7, 8].some((x) => ThreeGame.prototype.isSnailTileWalkable.call(game, x, 0))).toBe(false);
+    });
+
+    it('keeps the crash-floor decal centered under the active class ship', () => {
+        const floorPosition = { x: 0, z: 0 };
+        const game = {
+            playerType: 'TANK',
+            crashedShips: [
+                { type: 'SCOUT', tileX: 6, tileZ: 6, isVisible: false },
+                { type: 'TANK', tileX: 12, tileZ: 6, isVisible: false },
+                { type: 'ENGINEER', tileX: 9, tileZ: 13, isVisible: false }
+            ],
+            crashSiteFloorMesh: { position: floorPosition }
+        };
+
+        ThreeGame.prototype.updateCrashedShipsVisibility.call(game);
+
+        expect(floorPosition).toMatchObject({ x: 12, z: 6 });
+        expect(game.crashedShips.map((ship) => ship.isVisible)).toEqual([false, true, false]);
+    });
+
     it('authors one enlarged crash room with canyon outside and one north exit', () => {
         const game = makeFakeGame();
         const grid = Array(CHUNK_SIZE).fill(null).map(() => Array(CHUNK_SIZE).fill('.'));
