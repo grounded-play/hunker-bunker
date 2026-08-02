@@ -145,6 +145,12 @@ const FOUNDRY_DISCOVERY_MAX_DISTANCE = 58;
 const MENU_SHOWROOM_FLOOR_SIZE = 96;
 const MENU_SHOWROOM_FLOOR_OFFSET_X = 8;
 const MENU_SHOWROOM_FLOOR_OFFSET_Z = 8;
+// The crash site is an authored landmark inside the much larger procedural
+// origin chunk. Its ship placements, blast door, safe floor, and spawn must
+// share this fixed anchor; deriving any of them from CHUNK_SIZE strands the
+// player in the surrounding lethal canyon when chunk dimensions change.
+const CRASH_SITE_CENTER = 9;
+const CRASH_SITE_EDGE_OFFSET = (CRASH_SITE_CENTER - 1) / 2;
 const PICKUP_DISTRIBUTION = {
     clustered: 0.7,
     transitional: 0.2,
@@ -21978,7 +21984,7 @@ export class ThreeGame {
         if (axis === 'horizontal' && edgeX === 0 && edgeY === 0) {
             return {
                 open: true,
-                offset: Math.floor(this.chunkCellCount / 2)
+                offset: CRASH_SITE_EDGE_OFFSET
             };
         }
         const topology = this.getRegionalRouteTopology?.();
@@ -22193,7 +22199,7 @@ export class ThreeGame {
 
         // The only door is always centered on the top wall. A three-wide
         // pre-hall runs from the circular room to the north chunk edge.
-        const doorCenterX = Math.floor(this.chunkSize / 2);
+        const doorCenterX = CRASH_SITE_CENTER;
         for (let localY = 0; localY <= 3; localY += 1) {
             for (let localX = doorCenterX - 1; localX <= doorCenterX + 1; localX += 1) {
                 grid[localY][localX] = '.';
@@ -22215,9 +22221,19 @@ export class ThreeGame {
                 y: 100 * this.chunkSize + centerCell * 2 + 1
             };
         }
+        if (this.crashedShips) {
+            const ship = this.crashedShips.find(s => s.type === this.playerType);
+            if (ship) {
+                // Spawn the player slightly south of the console
+                return {
+                    x: ship.tileX + (ship.consoleOffset?.x || 0),
+                    y: ship.tileZ + (ship.consoleOffset?.z || 0) + 1.2
+                };
+            }
+        }
         return {
-            x: centerCell * 2 + 1,
-            y: centerCell * 2 + 1
+            x: CRASH_SITE_CENTER,
+            y: CRASH_SITE_CENTER
         };
     }
 

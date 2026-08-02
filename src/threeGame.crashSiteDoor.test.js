@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ThreeGame } from './threeGame.js';
+import { CHUNK_SIZE } from './tileCatalog.js';
 
 function makeFakeGame() {
     return {
         performanceProfile: 'gameplay',
-        chunkSize: 19,
-        chunkCellCount: 9,
+        chunkSize: CHUNK_SIZE,
+        chunkCellCount: (CHUNK_SIZE - 1) / 2,
         getSpawnTile: ThreeGame.prototype.getSpawnTile
     };
 }
@@ -13,11 +14,11 @@ function makeFakeGame() {
 describe('clearSpawnArea — door/portal alignment', () => {
     it('authors one enlarged crash room with canyon outside and one north exit', () => {
         const game = makeFakeGame();
-        const grid = Array(19).fill(null).map(() => Array(19).fill('.'));
+        const grid = Array(CHUNK_SIZE).fill(null).map(() => Array(CHUNK_SIZE).fill('.'));
         ThreeGame.prototype.clearSpawnArea.call(game, grid, 0, 0);
 
         expect(grid[0].slice(8, 11)).toEqual(['.', '.', '.']);
-        for (let x = 0; x < 19; x += 1) {
+        for (let x = 0; x < CHUNK_SIZE; x += 1) {
             if (x >= 8 && x <= 10) continue;
             const expected = x === 7 || x === 11 ? '#' : 'X';
             expect(grid[0][x], `north edge x=${x}`).toBe(expected);
@@ -29,7 +30,11 @@ describe('clearSpawnArea — door/portal alignment', () => {
         expect(grid[18][9]).toBe('#');
         expect(grid[18][0]).toBe('X');
         expect(grid.every((row) => row[0] === 'X')).toBe(true);
-        expect(grid.every((row) => row[18] === 'X')).toBe(true);
+        expect(grid.every((row) => row[CHUNK_SIZE - 1] === 'X')).toBe(true);
+
+        const spawn = game.getSpawnTile();
+        expect(spawn).toEqual({ x: 9, y: 9 });
+        expect(grid[spawn.y][spawn.x]).toBe('.');
     });
 
     it('starts the north blast door closed across that three-wide hallway', () => {
@@ -82,7 +87,7 @@ describe('clearSpawnArea — door/portal alignment', () => {
 
     it('forces the shared north edge portal to the authored hallway center', () => {
         const game = {
-            chunkCellCount: 9,
+            chunkCellCount: (CHUNK_SIZE - 1) / 2,
             hashTile: () => 99
         };
         expect(ThreeGame.prototype.getEdgeOpening.call(game, 'horizontal', 0, 0)).toEqual({

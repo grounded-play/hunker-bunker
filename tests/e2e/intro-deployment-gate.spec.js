@@ -91,4 +91,36 @@ test('new-run intro keeps gameplay black, paused, and invulnerable until the fin
         inputEnabled: true,
         canvasVisibility: 'visible'
     });
+
+    // The handoff must land in the authored crash room with the selected
+    // wreck and its terminal present; merely surviving the cinematic is not
+    // enough if the starting landmark failed to mount.
+    const crashRoom = await page.evaluate(() => {
+        const game = window.game;
+        const ship = game.crashedShips?.find((candidate) => candidate.type === game.playerType);
+        return {
+            spawn: game.getSpawnTile(),
+            player: { x: game.player.position.x, z: game.player.position.z },
+            tile: game.getTileType(Math.round(game.player.position.x), Math.round(game.player.position.z)),
+            shipType: ship?.type ?? null,
+            shipVisible: ship?.isVisible ?? false,
+            shipSpriteVisible: ship?.threeObjects?.[1]?.visible ?? false,
+            consoleSpriteVisible: ship?.threeObjects?.[3]?.visible ?? false,
+            shipTextureLoaded: Boolean(ship?.material?.map),
+            consoleTextureLoaded: Boolean(ship?.threeObjects?.[3]?.material?.map)
+        };
+    });
+    expect(crashRoom).toMatchObject({
+        player: { x: crashRoom.spawn.x, z: crashRoom.spawn.y },
+        tile: '.',
+        shipVisible: true,
+        shipSpriteVisible: true,
+        consoleSpriteVisible: true,
+        shipTextureLoaded: true,
+        consoleTextureLoaded: true
+    });
+    expect(['SCOUT', 'TANK', 'ENGINEER']).toContain(crashRoom.shipType);
+
+    await page.waitForTimeout(5_000);
+    expect(await page.evaluate(() => window.game.isPlayerDead)).toBe(false);
 });
