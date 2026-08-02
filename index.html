@@ -167,8 +167,27 @@
         </div>
       </div>
 
+      <div class="splash-water" aria-hidden="true">
+        <i class="splash-water__drop" style="--x: 8%; --delay: -1.8s; --duration: 3.9s; --length: 5.5;"></i>
+        <i class="splash-water__drop" style="--x: 17%; --delay: -3.1s; --duration: 5.2s; --length: 8;"></i>
+        <i class="splash-water__drop" style="--x: 28%; --delay: -0.7s; --duration: 4.6s; --length: 4;"></i>
+        <i class="splash-water__drop" style="--x: 39%; --delay: -4.2s; --duration: 5.8s; --length: 7;"></i>
+        <i class="splash-water__drop" style="--x: 49%; --delay: -2.3s; --duration: 4.2s; --length: 5;"></i>
+        <i class="splash-water__drop" style="--x: 57%; --delay: -5.1s; --duration: 6.1s; --length: 9;"></i>
+        <i class="splash-water__drop" style="--x: 66%; --delay: -1.1s; --duration: 4.9s; --length: 4.5;"></i>
+        <i class="splash-water__drop" style="--x: 74%; --delay: -3.7s; --duration: 5.5s; --length: 7.5;"></i>
+        <i class="splash-water__drop" style="--x: 83%; --delay: -0.2s; --duration: 4.4s; --length: 5;"></i>
+        <i class="splash-water__drop" style="--x: 92%; --delay: -2.8s; --duration: 5.9s; --length: 8.5;"></i>
+        <div class="splash-water__pool">
+          <i class="splash-water__ripple" style="--x: 31%; --delay: -1.4s;"></i>
+          <i class="splash-water__ripple" style="--x: 52%; --delay: -3.8s;"></i>
+          <i class="splash-water__ripple" style="--x: 72%; --delay: -2.6s;"></i>
+          <i class="splash-water__ripple" style="--x: 88%; --delay: -0.4s;"></i>
+        </div>
+      </div>
+
       <div class="splash-content">
-        <div class="splash-title">HUNKER BUNKER</div>
+        <div class="splash-title"><span>HUNKER</span><span>BUNKER</span></div>
         <div class="splash-subtitle">TACTICAL COMMAND v2.0</div>
 
         <section id="title-profile-hud" class="title-profile-hud hidden" aria-label="Current operator profile">
@@ -404,18 +423,16 @@
                 </div>
                 <div class="char-icon">⚙</div>
               </div>
+
+              <button class="start-btn" id="start-game">INITIALIZE</button>
             </div>
           </div>
 
         </div>
       </div>
 
-      <!-- Action Row: mirrors module-row column widths so stats align under hero preview -->
+      <!-- Action Row: prior contractor black box -->
       <div class="action-row">
-        <div class="action-row__left">
-          <button class="start-btn" id="start-game">INITIALIZE</button>
-        </div>
-        <!-- Death-thread to the base (doc 11 §4.D): a prior contractor's black box. -->
         <div class="last-contractor hidden" id="last-contractor"></div>
       </div>
     </div>
