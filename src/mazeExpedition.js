@@ -303,7 +303,7 @@ export function computeTopologyDistances(topology, startKey = topology?.startChu
     return distances;
 }
 
-export function generateRadialMazeExpedition(seed = 1) {
+export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE } = {}) {
     const random = seededRandom(seed);
     const phase = random() * Math.PI * 2;
     const nodes = [{
@@ -449,24 +449,37 @@ export function generateRadialMazeExpedition(seed = 1) {
         cluster.z = chunkY * 19;
     }
 
+    // Chunk->world conversion must use the real chunk size. Hardcoding 19 here
+    // made every blocker's distance undershoot once chunks grew, so all of them
+    // picked the same farthest spine chunk and collapsed into one cell. Taken
+    // chunks are also excluded, so two gates can never share a chunk even when
+    // their target radii are close.
+    // Seed with the chunks the story nodes already own, so a gate never lands
+    // on top of a camp, hive or the Queen either.
+    const takenBlockerChunks = new Set(
+        nodes.filter((node) => node.chunkX != null)
+            .map((node) => `${node.chunkX},${node.chunkY}`)
+    );
     for (const blocker of blockers) {
         const targetRadius = (RADIAL_RING_RADII[blocker.ring] + RADIAL_RING_RADII[blocker.blocksRing]) / 2;
         const candidate = topology.spineChunkKeys
+            .filter((key) => !takenBlockerChunks.has(key))
             .map((key) => {
                 const [chunkX, chunkY] = key.split(',').map(Number);
                 return {
                     key,
                     chunkX,
                     chunkY,
-                    delta: Math.abs(Math.hypot(chunkX * 19, chunkY * 19) - targetRadius)
+                    delta: Math.abs(Math.hypot(chunkX * chunkSize, chunkY * chunkSize) - targetRadius)
                 };
             })
             .sort((a, b) => a.delta - b.delta)[0];
         if (!candidate) continue;
+        takenBlockerChunks.add(candidate.key);
         blocker.chunkX = candidate.chunkX;
         blocker.chunkY = candidate.chunkY;
-        blocker.x = candidate.chunkX * 19;
-        blocker.z = candidate.chunkY * 19;
+        blocker.x = candidate.chunkX * chunkSize;
+        blocker.z = candidate.chunkY * chunkSize;
         const routeChunk = topology.routeChunks.find((chunk) => (
             chunk.chunkX === candidate.chunkX && chunk.chunkY === candidate.chunkY
         ));
