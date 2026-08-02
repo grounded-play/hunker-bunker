@@ -1208,7 +1208,7 @@ body {
   padding: calc(var(--vu) * 3.25);
   z-index: 8000;
   display: grid;
-  grid-template-columns: calc(var(--vu) * 44) minmax(0, 1fr);
+  grid-template-columns: calc(var(--vu) * 24) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: calc(var(--vu) * 1.5) calc(var(--vu) * 2);
 }
@@ -1227,25 +1227,18 @@ body {
 .menu-header-actions {
   grid-column: 1;
   grid-row: 2;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: calc(var(--vu) * 0.75) calc(var(--vu) * 1);
-  align-items: start;
-  padding: calc(var(--vu) * 1.2);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: calc(var(--vu) * 0.75);
+  padding: calc(var(--vu) * 1.4);
   min-width: 0;
   overflow-y: auto;
   background: rgba(7, 9, 10, 0.78);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   z-index: 100;
-}
-
-.menu-command-col {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--vu) * 0.75);
-  min-width: 0;
-  width: 100%;
 }
 
 .menu-header-actions .start-btn {
@@ -7466,10 +7459,13 @@ body.mission-intro-active #game-container canvas {
 
 .roster-modal-content {
   --roster-glow-rgb: 125, 255, 90;
-  max-width: min(94vw, calc(var(--vu) * 130));
-  width: min(94vw, calc(var(--vu) * 130));
-  border-color: rgba(var(--roster-glow-rgb), 0.4) !important;
-  /* Pin the header (and its close button); the weapon grid owns the scroll. */
+  max-width: min(94vw, calc(var(--vu) * 135));
+  width: min(94vw, calc(var(--vu) * 135));
+  background: rgba(10, 14, 18, 0.96) !important;
+  border: 1.5px solid rgba(var(--roster-glow-rgb), 0.5) !important;
+  box-shadow: 0 0 35px rgba(var(--roster-glow-rgb), 0.22), 0 0 70px rgba(0, 0, 0, 0.85) !important;
+  border-radius: 12px;
+  padding: calc(var(--vu) * 2.8) !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -7479,76 +7475,157 @@ body.mission-intro-active #game-container canvas {
 .roster-section-label,
 .roster-hint { flex: 0 0 auto; }
 
+.roster-title {
+  font-size: calc(var(--vu) * 2.6) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.1em !important;
+  color: #7dff5a !important;
+  text-shadow: 0 0 14px rgba(125, 255, 90, 0.55) !important;
+  text-align: center;
+  margin-bottom: calc(var(--vu) * 0.8);
+}
+
 .roster-id-row {
   display: flex;
   align-items: center;
-  gap: calc(var(--vu) * 1);
-  margin: calc(var(--vu) * 1) 0;
+  justify-content: center;
+  gap: calc(var(--vu) * 1.2);
+  margin: calc(var(--vu) * 1) 0 calc(var(--vu) * 1.4);
   flex-wrap: wrap;
 }
 
 .roster-callsign-label {
   font-family: 'Space Mono', monospace;
   font-size: var(--font-xs);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.14em;
-  color: rgba(125, 255, 90, 0.85);
+  color: rgba(125, 255, 90, 0.9);
+}
+
+.operator-callsign-input {
+  background: rgba(8, 12, 16, 0.95);
+  border: 1.5px solid rgba(125, 255, 90, 0.5);
+  border-radius: 6px;
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1.2);
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-sm);
+  color: #7dff5a;
+  font-weight: 800;
+  letter-spacing: 2px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
+}
+
+.operator-callsign-input:focus {
+  border-color: #7dff5a;
+  box-shadow: 0 0 14px rgba(125, 255, 90, 0.45);
+}
+
+.operator-callsign-input.callsign-pulse {
+  animation: callsign-glow-pulse 0.4s ease-out;
+}
+
+@keyframes callsign-glow-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(125, 255, 90, 0); }
+  50% { transform: scale(1.04); box-shadow: 0 0 20px rgba(125, 255, 90, 0.7); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(125, 255, 90, 0.3); }
+}
+
+#roster-randomize-btn {
+  background: linear-gradient(135deg, rgba(125, 255, 90, 0.22), rgba(0, 229, 255, 0.18)) !important;
+  border: 1.5px solid rgba(125, 255, 90, 0.7) !important;
+  color: #7dff5a !important;
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1.3) !important;
+  font-weight: 900 !important;
+  font-size: var(--font-xs) !important;
+  letter-spacing: 0.1em !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(125, 255, 90, 0.25) !important;
+  transition: all 0.22s ease-in-out !important;
+  position: relative;
+}
+
+#roster-randomize-btn:hover {
+  transform: translateY(-1px) scale(1.05) !important;
+  background: linear-gradient(135deg, rgba(125, 255, 90, 0.38), rgba(0, 229, 255, 0.32)) !important;
+  border-color: #7dff5a !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 22px rgba(125, 255, 90, 0.65), 0 0 35px rgba(0, 229, 255, 0.35) !important;
+}
+
+.roster-id {
+  padding: calc(var(--vu) * 0.4) calc(var(--vu) * 1);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xxs);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .roster-run-telemetry {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(calc(var(--vu) * 16), 1fr));
-  gap: calc(var(--vu) * 0.8);
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(var(--vu) * 1);
   margin: calc(var(--vu) * 1.2) 0;
-  padding: calc(var(--vu) * 1);
-  background: rgba(125, 255, 90, 0.04);
-  border: 1px solid rgba(125, 255, 90, 0.25);
-  border-radius: 6px;
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.4);
+  background: rgba(125, 255, 90, 0.05);
+  border: 1px solid rgba(125, 255, 90, 0.3);
+  border-radius: 8px;
+  box-shadow: inset 0 0 15px rgba(125, 255, 90, 0.06);
 }
 
 .roster-telemetry-chip {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 0.2);
+  gap: calc(var(--vu) * 0.3);
   font-size: var(--font-xs);
   color: #e8eff7;
 }
 
 .roster-telemetry-chip .label {
-  font-size: calc(var(--font-xs) * 0.85);
+  font-size: calc(var(--font-xs) * 0.82);
   letter-spacing: 0.12em;
-  color: rgba(125, 255, 90, 0.7);
+  color: rgba(125, 255, 90, 0.8);
+  font-weight: 800;
 }
 
 .roster-telemetry-chip b {
   font-size: var(--font-sm);
   font-weight: 900;
   color: #c8ffb4;
+  text-shadow: 0 0 8px rgba(125, 255, 90, 0.4);
 }
 
 .roster-footer-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: calc(var(--vu) * 1.6);
-  padding-top: calc(var(--vu) * 1);
-  border-top: 1px solid rgba(125, 255, 90, 0.2);
+  padding-top: calc(var(--vu) * 1.2);
+  border-top: 1px solid rgba(125, 255, 90, 0.22);
   flex: 0 0 auto;
 }
 
 .roster-confirm-btn {
   font-size: var(--font-sm) !important;
-  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 3) !important;
-  background: linear-gradient(180deg, #7dff5a 0%, #286018 100%) !important;
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 3.5) !important;
+  background: linear-gradient(180deg, #9eff7a 0%, #3eab20 100%) !important;
   color: #041405 !important;
   font-weight: 900 !important;
+  font-family: 'Outfit', sans-serif !important;
+  letter-spacing: 0.08em !important;
   border-radius: 6px !important;
-  box-shadow: 0 4px 0 rgba(20, 60, 10, 0.85), 0 0 15px rgba(125, 255, 90, 0.4) !important;
+  border: 1.5px solid #a6ff85 !important;
+  box-shadow: 0 4px 0 #286018, 0 0 20px rgba(125, 255, 90, 0.45) !important;
   cursor: pointer;
+  transition: all 0.2s ease-in-out !important;
 }
 
 .roster-confirm-btn:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 4px 0 rgba(20, 60, 10, 0.85), 0 0 25px rgba(125, 255, 90, 0.6) !important;
+  filter: brightness(1.12);
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 0 #286018, 0 0 32px rgba(125, 255, 90, 0.75) !important;
 }
 
 /* ── Steam Account Badge (Home Page & Menu Header) ───────── */
@@ -7591,12 +7668,8 @@ body.mission-intro-active #game-container canvas {
   position: relative;
   top: auto;
   left: auto;
-  right: auto;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: calc(var(--vu) * 0.4);
-  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1);
-  border-radius: 8px;
+  margin-top: calc(var(--vu) * 0.5);
+  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 1.2);
 }
 
 .steam-account-badge__icon {
@@ -8194,70 +8267,89 @@ body.mission-intro-active #game-container canvas {
 
 .roster-weapon-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--vu) * 22), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--vu) * 23), 1fr));
   gap: calc(var(--vu) * 1.4);
   flex: 1 1 auto;
   min-height: 0;
-  /* This is a flex child sharing a fixed vertical budget with the header,
-     both section labels, the cosmetics row, and the hint — at 1280x800
-     that budget only has room for one full row (254px/32vu) plus a sliver
-     of the next, so a 6th weapon rendered half-cut with the card's image
-     and label missing. Capping to exactly one row height hides row 2
-     cleanly instead of showing a broken partial card; the scrollbar
-     (styled below) is the affordance that more is one scroll away. The
-     margin-bottom keeps a real gap from "EQUIPPED STEAM COSMETICS" either
-     way, since a flush 0px boundary reads as overlap regardless of what's
-     cut. */
   margin-bottom: calc(var(--vu) * 1.2);
-  max-height: calc(var(--vu) * 32);
+  max-height: calc(var(--vu) * 36);
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(var(--roster-glow-rgb), 0.5) transparent;
+  scrollbar-color: rgba(var(--roster-glow-rgb), 0.5) rgba(10, 15, 20, 0.6);
 }
 
 .roster-weapon-grid::-webkit-scrollbar { width: calc(var(--vu) * 1); }
-.roster-weapon-grid::-webkit-scrollbar-track { background: transparent; }
+.roster-weapon-grid::-webkit-scrollbar-track { background: rgba(10, 15, 20, 0.6); border-radius: 4px; }
 .roster-weapon-grid::-webkit-scrollbar-thumb {
-  background: rgba(var(--roster-glow-rgb), 0.5);
+  background: rgba(var(--roster-glow-rgb), 0.6);
   border-radius: 4px;
+  box-shadow: 0 0 10px rgba(125, 255, 90, 0.4);
 }
 
 .roster-weapon {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 0.6);
-  padding: calc(var(--vu) * 1);
-  background: rgba(var(--roster-glow-rgb), 0.05);
-  border: 1px solid rgba(var(--roster-glow-rgb), 0.2);
-  border-radius: 7px;
+  gap: calc(var(--vu) * 0.8);
+  padding: calc(var(--vu) * 1.2);
+  background: rgba(15, 22, 28, 0.92);
+  border: 1.5px solid rgba(var(--roster-glow-rgb), 0.28);
+  border-radius: 8px;
+  transition: all 0.2s ease-in-out;
 }
 
-.roster-weapon--equipped { border-color: rgba(var(--roster-glow-rgb), 0.7); box-shadow: 0 0 calc(var(--vu) * 2) rgba(var(--roster-glow-rgb), 0.25); }
-.roster-weapon--locked { opacity: 0.5; }
+.roster-weapon:hover {
+  border-color: rgba(var(--roster-glow-rgb), 0.7);
+  box-shadow: 0 0 calc(var(--vu) * 2.5) rgba(var(--roster-glow-rgb), 0.3);
+  transform: translateY(-2px);
+}
+
+.roster-weapon--equipped {
+  border-color: rgba(var(--roster-glow-rgb), 0.95);
+  background: rgba(18, 30, 24, 0.95);
+  box-shadow: 0 0 calc(var(--vu) * 2.8) rgba(var(--roster-glow-rgb), 0.4);
+}
+
+.roster-weapon--locked {
+  opacity: 0.65;
+}
 
 .roster-weapon__art {
-  aspect-ratio: 1 / 1;
-  border-radius: 5px;
+  aspect-ratio: 1.3 / 1;
+  border-radius: 6px;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(var(--roster-glow-rgb), 0.15);
+  background: rgba(4, 7, 10, 0.95);
+  border: 1px solid rgba(var(--roster-glow-rgb), 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.roster-weapon__art img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.roster-weapon--locked .roster-weapon__art img { filter: grayscale(1) brightness(0.5); }
+.roster-weapon__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+  display: block;
+  filter: drop-shadow(0 0 6px rgba(125, 255, 90, 0.3));
+}
+
+.roster-weapon--locked .roster-weapon__art img {
+  filter: grayscale(0.8) brightness(0.6);
+}
 
 .roster-weapon__name {
-  font-size: calc(var(--vu) * 1.8);
+  font-size: var(--font-xs);
   font-weight: 800;
-  letter-spacing: 0.04em;
-  color: #e8eff7;
+  letter-spacing: 0.06em;
+  color: #ffffff;
   text-align: center;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
 }
 
 .roster-weapon__btn {
   padding: calc(var(--vu) * 0.8);
-  font-family: inherit;
-  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
   font-size: var(--font-xs);
   letter-spacing: 0.08em;
   color: #0a1c06;
@@ -8266,18 +8358,49 @@ body.mission-intro-active #game-container canvas {
   border-radius: 5px;
   cursor: pointer;
   box-shadow: 0 3px 0 rgba(40, 96, 24, 0.85);
+  transition: all 0.18s ease;
 }
 
-.roster-weapon__btn:hover:not(:disabled) { filter: brightness(1.08); }
+.roster-weapon__btn:hover:not(:disabled) { filter: brightness(1.12); }
 .roster-weapon__btn:disabled { cursor: default; box-shadow: none; }
-.roster-weapon__btn--locked { background: rgba(120, 130, 140, 0.25); color: rgba(220, 230, 240, 0.5); }
-.roster-weapon__btn--equipped { background: rgba(125, 255, 90, 0.22); color: #c8ffb4; }
+.roster-weapon__btn--locked { background: rgba(120, 130, 140, 0.25); color: rgba(220, 230, 240, 0.6); }
+.roster-weapon__btn--equipped { background: rgba(125, 255, 90, 0.25); color: #c8ffb4; border: 1px solid rgba(125, 255, 90, 0.5); }
+
+.roster-cosmetics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(var(--vu) * 1);
+  margin: calc(var(--vu) * 0.8) 0 calc(var(--vu) * 1.4);
+}
+
+.roster-cosmetic-chip {
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.2);
+  background: rgba(125, 255, 90, 0.05);
+  border: 1.5px solid rgba(125, 255, 90, 0.25);
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.roster-cosmetic-chip .label {
+  font-size: calc(var(--font-xs) * 0.88);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: rgba(125, 255, 90, 0.85);
+}
+
+.roster-cosmetic-chip span:last-child {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
 
 .roster-hint {
-  margin-top: calc(var(--vu) * 1.6);
+  margin-top: calc(var(--vu) * 1.2);
   font-size: var(--font-xs);
   letter-spacing: 0.04em;
-  color: rgba(232, 239, 247, 0.5);
+  color: rgba(232, 239, 247, 0.6);
   text-align: center;
 }
 

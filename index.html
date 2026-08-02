@@ -278,63 +278,55 @@
       <!-- Settings gear: pinned to top-right corner of menu, never displaced by layout -->
       <div class="menu-corner-settings">
         <button class="calibrate-btn open-settings-btn">⚙</button>
+      </div>
       <div class="header-bar">
         <div class="title-group">
           <h1 class="title-small">HUNKER BUNKER</h1>
+          <div id="menu-steam-badge" class="steam-account-badge steam-account-badge--menu" title="Click to open Steam Overlay profile">
+            <div class="steam-account-badge__icon">
+              <svg class="steam-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2a10 10 0 0 0-10 10c0 4.7 3.2 8.6 7.6 9.6l3-4.3a3.3 3.3 0 0 1-.3-1.3c0-.3 0-.6.1-.9L9 13a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 1 9 8a2.5 2.5 0 0 1 2.5 2.5c0 .3 0 .6-.1.9l3.4 2.2c.4-.2.9-.3 1.4-.3a3.5 3.5 0 1 1-3.5 3.5c0-.4.1-.8.2-1.2l-2.9 4.1A10 10 0 0 0 12 22a10 10 0 0 0 10-10A10 10 0 0 0 12 2z"/>
+              </svg>
+            </div>
+            <div class="steam-account-badge__info">
+              <span class="steam-account-badge__name" id="menu-steam-persona">STEAM OFFLINE</span>
+              <span class="steam-account-badge__status" id="menu-steam-status">NOT CONNECTED</span>
+            </div>
+          </div>
         </div>
         <div class="menu-header-actions">
-          <div class="menu-command-col menu-command-col--left">
-            <div class="menu-command">
-              <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
-              <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
-            </div>
-            <div class="menu-command">
-              <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
-              <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
-            </div>
-            <div class="menu-command">
-              <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
-              <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
-            </div>
-            <div class="menu-command hidden" id="achievements-command">
-              <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
-              <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
-            </div>
+          <div class="menu-command">
+            <button class="start-btn start-btn--daily" id="daily-ops-btn" title="One attempt per day — fixed world seed">DAILY OPS</button>
+            <div class="menu-command__status daily-ops-status" id="daily-ops-status"></div>
           </div>
-
-          <div class="menu-command-col menu-command-col--right">
-            <div class="menu-command hidden" id="archive-sims-command">
-              <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
-              <div class="menu-command__status" id="archive-sims-command-status">RGB</div>
-            </div>
-            <div class="menu-command menu-command--fab hidden" id="fabrication-command">
-              <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
-              <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
-            </div>
-            <div class="menu-command">
-              <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
-              <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
-            </div>
-            <div class="menu-command" id="steam-vault-command">
-              <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
-              <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
-            </div>
-
-            <!-- Steam Account & Operator Profile Status Card under Steam Vault -->
-            <div id="menu-steam-badge" class="steam-account-badge steam-account-badge--menu" title="Click to open Steam Overlay profile">
-              <div class="steam-account-badge__icon">
-                <svg class="steam-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2a10 10 0 0 0-10 10c0 4.7 3.2 8.6 7.6 9.6l3-4.3a3.3 3.3 0 0 1-.3-1.3c0-.3 0-.6.1-.9L9 13a2.5 2.5 0 0 1-2.5-2.5A2.5 2.5 0 0 1 9 8a2.5 2.5 0 0 1 2.5 2.5c0 .3 0 .6-.1.9l3.4 2.2c.4-.2.9-.3 1.4-.3a3.5 3.5 0 1 1-3.5 3.5c0-.4.1-.8.2-1.2l-2.9 4.1A10 10 0 0 0 12 22a10 10 0 0 0 10-10A10 10 0 0 0 12 z"/>
-                </svg>
-              </div>
-              <div class="steam-account-badge__info">
-                <span class="steam-account-badge__name" id="menu-steam-persona">STEAM OFFLINE</span>
-                <span class="steam-account-badge__status" id="menu-steam-status">NOT CONNECTED</span>
-              </div>
-            </div>
+          <div class="menu-command">
+            <button class="start-btn start-btn--archive" id="archive-btn" title="Bunker Archive — discovered lore logs">◈ ARCHIVE</button>
+            <div class="menu-command__status" id="archive-command-status">0 / 27 LOGS</div>
           </div>
-        </div>
-      </div>       </div>
+          <div class="menu-command">
+            <button class="start-btn start-btn--codex" id="codex-btn" title="Field Codex — catalogued hostiles, infrastructure, and phenomena">❑ CODEX</button>
+            <div class="menu-command__status" id="codex-command-status">0 / 0 INTEL</div>
+          </div>
+          <div class="menu-command hidden" id="achievements-command">
+            <button class="start-btn start-btn--achievements" id="achievements-btn" title="Achievement records — unlocked run milestones">ACHIEVEMENTS</button>
+            <div class="menu-command__status" id="achievements-command-status">LOCKED</div>
+          </div>
+          <div class="menu-command hidden" id="archive-sims-command">
+            <button class="start-btn start-btn--archive-sims" id="archive-sims-btn" title="Archive Simulations — unlockable story mini-games">◈ ARCHIVE SIMS</button>
+            <div class="menu-command__status" id="archive-sims-command-status">RGB</div>
+          </div>
+          <div class="menu-command menu-command--fab hidden" id="fabrication-command">
+            <button class="start-btn start-btn--fab" id="fabrication-btn" title="Fabrication Bay — print gear from salvage (unlocks once the base is powered)">◇ FAB BAY</button>
+            <div class="menu-command__status" id="fab-command-status">0 / 0 PRINTED</div>
+          </div>
+          <div class="menu-command">
+            <button class="start-btn start-btn--roster" id="roster-btn" title="Operator roster — callsign and equipped loadout">▣ ROSTER</button>
+            <div class="menu-command__status" id="roster-command-status">0 / 0 ARSENAL</div>
+          </div>
+          <div class="menu-command" id="steam-vault-command">
+            <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
+            <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
+          </div>
         </div>
       </div>
 
