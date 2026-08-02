@@ -23,6 +23,15 @@ const FORBIDDEN_EXTENSIONS = new Map([
     ['.key', 'Private key material must not ship in the depot.']
 ]);
 
+const STORE_ONLY_BASENAMES = [
+    /^steam_(?:header|small|main|vertical)_capsule(?:_v2)?_en\.png$/i,
+    /^(?:header|small|main|vertical)_capsule_\d+x\d+\.png$/i,
+    /^game_key_art_v2\.png$/i,
+    /^soundtrack_key_art_v2\.png$/i,
+    /^screenshot_soundtrack_1920x1080\.png$/i,
+    /^store-page-description\.md$/i
+];
+
 function isEnvFile(basename) {
     return basename === '.env' || basename.startsWith('.env.');
 }
@@ -51,6 +60,13 @@ function auditFile(filePath, root) {
     const basename = path.basename(filePath).toLowerCase();
     const extension = path.extname(basename);
     const relativePath = path.relative(root, filePath).split(path.sep).join('/');
+
+    if (STORE_ONLY_BASENAMES.some((pattern) => pattern.test(basename))) {
+        return {
+            file: relativePath,
+            reason: 'Steam store-only artwork must not ship in a customer depot.'
+        };
+    }
 
     if (FORBIDDEN_BASENAMES.has(basename)) {
         return {
