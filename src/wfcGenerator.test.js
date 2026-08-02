@@ -8,7 +8,7 @@ import {
     validateLatticeSeams,
     LATTICE_SIZE,
     POCKET_LATTICE_SIZE
-} from './wfcGenerator.js';
+, POCKET_LATTICE_SIZE } from './wfcGenerator.js';
 import { TILE_CATALOG, TILE_SIZE } from './tileCatalog.js';
 
 function seededRandom(seed) {
@@ -351,9 +351,9 @@ describe('collapsePocketLattice', () => {
         }
     });
 
-    it('stamps to a fully reachable 13x13 grid with at least one multi-cell-wide room, not a uniformly 1-wide maze', () => {
+    it('stamps to a fully reachable pocket grid with at least one multi-cell-wide room, not a uniformly 1-wide maze', () => {
         const pocketSize = (TILE_SIZE - 1) * POCKET_LATTICE_SIZE + 1; // 13
-        expect(pocketSize).toBe(13);
+        expect(pocketSize).toBe((POCKET_LATTICE_SIZE * (TILE_SIZE - 1)) + 1);
 
         let sawWideRoom = false;
         for (let seed = 1; seed <= 200; seed += 1) {

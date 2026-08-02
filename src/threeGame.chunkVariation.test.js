@@ -1,3 +1,4 @@
+import { TILE_SIZE } from './tileCatalog.js';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
@@ -170,10 +171,10 @@ describe('generatePocket — per-hole, per-run pocket layout', () => {
         expect(pocket.climbPoint).not.toEqual(pocket.centerCell);
     });
 
-    it('builds a 13x13 WFC pocket with a multi-cell-wide room', () => {
+    it('builds a WFC pocket with a multi-cell-wide room', () => {
         const game = makePocketFakeGame(13);
         const pocket = ThreeGame.prototype.generatePocket.call(game, 2, 8);
-        expect(pocket.size).toBe(13);
+        expect(pocket.size).toBe((2 * (TILE_SIZE - 1)) + 1);
         expect(pocket.grid).toHaveLength(13);
         expect(pocket.lattice).toHaveLength(4);
 
