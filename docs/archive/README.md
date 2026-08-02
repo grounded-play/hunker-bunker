@@ -15,3 +15,6 @@ Legacy Sprint 19 planning is indexed under
 [`sprint-19/README.md`](sprint-19/README.md). Compatibility stubs remain at
 the former paths so old links explain where the content moved.
 
+## AI Agent Walkthroughs
+Past AI agent implementation walkthroughs and summaries are archived in the 
+[`agent-walkthroughs/`](agent-walkthroughs/) directory, keyed by their conversation UUID. These provide historical context on specific code generation tasks and optimizations.

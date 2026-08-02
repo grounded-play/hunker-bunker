@@ -920,13 +920,18 @@ function createWindow() {
     return win;
 }
 
-initSteam();
-enableOverlay();
-
 app.whenReady().then(() => {
     loadSaveFile();
     createWindow();
-    startSteamInputPolling();
+
+    // Defer Steam initialization so it doesn't block the initial native window
+    // creation or Gamescope's surface handoff on the Steam Deck.
+    setTimeout(() => {
+        initSteam();
+        enableOverlay();
+        startSteamInputPolling();
+    }, 50);
+
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });

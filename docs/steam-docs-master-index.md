@@ -115,6 +115,9 @@ Current coordination rules:
   Queen-fight gap that's since been closed, repo-health notes). Historical
   record of what was found and fixed; also superseded for "what's left"
   by the master plan.
+- **[`steam-deck-load-time-optimization.md`](./steam-deck-load-time-optimization.md)**
+  — research and implemented Electron startup sequence optimizations to bypass
+  the SteamOS Gamescope loading screen faster on Steam Deck.
 
 ## Steam backend operations
 
