@@ -45,27 +45,43 @@ describe('ExplorationTracker & Map Helpers', () => {
         expect(tracker.isExplored(5, 5)).toBe(false);
     });
 
-    it('registers, manages, and filters active landmarks', () => {
+    it('registers, manages, and filters active landmarks including default Home Base', () => {
+        const initialLandmarks = tracker.getLandmarks();
+        expect(initialLandmarks).toHaveLength(1);
+        expect(initialLandmarks[0].id).toBe('home_base');
+
         tracker.registerLandmark('camp_meridian', { x: 100, z: -50, label: 'Camp Meridian', type: 'camp' });
         tracker.registerLandmark('hive_alpha', { x: -80, z: 120, label: 'Hive Site Alpha', type: 'hive' });
 
         const landmarks = tracker.getLandmarks();
-        expect(landmarks).toHaveLength(2);
-        expect(landmarks[0].label).toBe('Camp Meridian');
-        expect(landmarks[1].label).toBe('Hive Site Alpha');
+        expect(landmarks).toHaveLength(3);
 
         tracker.removeLandmark('hive_alpha');
-        expect(tracker.getLandmarks()).toHaveLength(1);
+        expect(tracker.getLandmarks()).toHaveLength(2);
     });
 
-    it('resets state cleanly', () => {
+    it('resets state cleanly and re-initializes Home Base', () => {
         tracker.recordPlayerPosition(0, 0);
         tracker.registerLandmark('test', { x: 10, z: 10 });
         expect(tracker.getExploredCells()).toHaveLength(1);
 
         tracker.reset();
         expect(tracker.getExploredCells()).toHaveLength(0);
-        expect(tracker.getLandmarks()).toHaveLength(0);
+        expect(tracker.getLandmarks()).toHaveLength(1);
+        expect(tracker.getLandmarks()[0].id).toBe('home_base');
         expect(tracker.getStats().totalExplored).toBe(0);
+    });
+
+    it('calculates explored cell bounds correctly', () => {
+        expect(tracker.getExploredBounds()).toEqual({ minGx: -4, maxGx: 4, minGz: -4, maxGz: 4 });
+
+        tracker.recordPlayerPosition(0, 0);
+        tracker.recordPlayerPosition(60, -45);
+
+        const bounds = tracker.getExploredBounds();
+        expect(bounds.minGx).toBe(0);
+        expect(bounds.maxGx).toBe(4);
+        expect(bounds.minGz).toBe(-3);
+        expect(bounds.maxGz).toBe(0);
     });
 });

@@ -6927,7 +6927,114 @@ quitCancelBtn?.addEventListener('click', () => {
 quitConfirmBtn?.addEventListener('click', executeQuitApplication);
 setupClickOutside('quit-confirm-modal', () => setQuitConfirmOpen(false));
 
-// ── Tactical Blueprint Map Overlay Render & Modal Toggle ──────
+// ── Tactical Blueprint Map Overlay Render & Interactive Navigation ──────
+let tacticalMapAnimFrame = null;
+let tacticalMapEventsInitialized = false;
+const tacticalMapState = {
+    panX: 0,
+    panY: 0,
+    zoom: 1.0,
+    isDragging: false,
+    dragStartX: 0,
+    dragStartY: 0,
+    initialPanX: 0,
+    initialPanY: 0
+};
+
+function resetTacticalMapView() {
+    tacticalMapState.panX = 0;
+    tacticalMapState.panY = 0;
+    tacticalMapState.zoom = 1.0;
+}
+
+function focusTacticalMapOnHome() {
+    tacticalMapState.panX = 0;
+    tacticalMapState.panY = 0;
+}
+
+function focusTacticalMapOnPlayer() {
+    const mapState = window.game?.getTacticalMapState?.();
+    if (mapState?.player) {
+        const px = mapState.player.x;
+        const pz = mapState.player.z;
+        const gx = Math.floor((px + 7.5) / 15);
+        const gz = Math.floor((pz + 7.5) / 15);
+        tacticalMapState.panX = -gx * 36 * tacticalMapState.zoom;
+        tacticalMapState.panY = -gz * 36 * tacticalMapState.zoom;
+    }
+}
+
+function adjustTacticalMapZoom(delta) {
+    tacticalMapState.zoom = Math.max(0.5, Math.min(3.5, tacticalMapState.zoom + delta));
+}
+
+function setupTacticalMapEvents() {
+    if (tacticalMapEventsInitialized) return;
+    const canvas = document.getElementById('tactical-map-canvas');
+    if (!canvas) return;
+
+    tacticalMapEventsInitialized = true;
+
+    canvas.addEventListener('mousedown', (e) => {
+        tacticalMapState.isDragging = true;
+        tacticalMapState.dragStartX = e.clientX;
+        tacticalMapState.dragStartY = e.clientY;
+        tacticalMapState.initialPanX = tacticalMapState.panX;
+        tacticalMapState.initialPanY = tacticalMapState.panY;
+        canvas.classList.add('dragging');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!tacticalMapState.isDragging) return;
+        const dx = e.clientX - tacticalMapState.dragStartX;
+        const dy = e.clientY - tacticalMapState.dragStartY;
+        tacticalMapState.panX = tacticalMapState.initialPanX + dx;
+        tacticalMapState.panY = tacticalMapState.initialPanY + dy;
+    });
+
+    window.addEventListener('mouseup', () => {
+        tacticalMapState.isDragging = false;
+        canvas.classList.remove('dragging');
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomDelta = e.deltaY < 0 ? 0.15 : -0.15;
+        adjustTacticalMapZoom(zoomDelta);
+    }, { passive: false });
+
+    document.getElementById('map-zoom-in')?.addEventListener('click', () => adjustTacticalMapZoom(0.25));
+    document.getElementById('map-zoom-out')?.addEventListener('click', () => adjustTacticalMapZoom(-0.25));
+    document.getElementById('map-focus-home')?.addEventListener('click', focusTacticalMapOnHome);
+    document.getElementById('map-focus-player')?.addEventListener('click', focusTacticalMapOnPlayer);
+    document.getElementById('map-reset-view')?.addEventListener('click', resetTacticalMapView);
+}
+
+function pollTacticalMapGamepadInput() {
+    const gamepads = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
+    const pad = gamepads[0] || gamepads[1] || gamepads[2] || gamepads[3];
+    if (!pad) return;
+
+    const deadzone = 0.2;
+    const stickX = Math.abs(pad.axes?.[0] ?? 0) > deadzone ? pad.axes[0] : 0;
+    const stickY = Math.abs(pad.axes?.[1] ?? 0) > deadzone ? pad.axes[1] : 0;
+    const dpadLeft = pad.buttons?.[14]?.pressed;
+    const dpadRight = pad.buttons?.[15]?.pressed;
+    const dpadUp = pad.buttons?.[12]?.pressed;
+    const dpadDown = pad.buttons?.[13]?.pressed;
+
+    const moveX = stickX + (dpadRight ? 1 : 0) - (dpadLeft ? 1 : 0);
+    const moveY = stickY + (dpadDown ? 1 : 0) - (dpadUp ? 1 : 0);
+
+    if (Math.abs(moveX) > 0.05 || Math.abs(moveY) > 0.05) {
+        tacticalMapState.panX -= moveX * 7;
+        tacticalMapState.panY -= moveY * 7;
+    }
+
+    if (pad.buttons?.[4]?.pressed) adjustTacticalMapZoom(-0.02);
+    if (pad.buttons?.[5]?.pressed) adjustTacticalMapZoom(0.02);
+}
+
 function drawTacticalMapOverlay() {
     const canvas = document.getElementById('tactical-map-canvas');
     if (!canvas) return;
@@ -6967,31 +7074,37 @@ function drawTacticalMapOverlay() {
 
     const rangeX = Math.max(8, maxGx - minGx + 3);
     const rangeZ = Math.max(8, maxGz - minGz + 3);
-    const cellW = width / rangeX;
-    const cellH = height / rangeZ;
-    const cellSize = Math.min(cellW, cellH);
+    const baseCellW = width / rangeX;
+    const baseCellH = height / rangeZ;
+    const baseCellSize = Math.min(baseCellW, baseCellH);
+    const cellSize = baseCellSize * tacticalMapState.zoom;
 
-    const offsetX = (width - rangeX * cellSize) / 2 - minGx * cellSize + cellSize;
-    const offsetY = (height - rangeZ * cellSize) / 2 - minGz * cellSize + cellSize;
+    const offsetX = (width - rangeX * cellSize) / 2 - minGx * cellSize + cellSize + tacticalMapState.panX;
+    const offsetY = (height - rangeZ * cellSize) / 2 - minGz * cellSize + cellSize + tacticalMapState.panY;
 
+    // Grid lines background
     ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
     ctx.lineWidth = 1;
-    for (let x = 0; x <= width; x += cellSize) {
+    const gridStep = Math.max(12, cellSize);
+    for (let x = (offsetX % gridStep + gridStep) % gridStep; x <= width; x += gridStep) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
         ctx.stroke();
     }
-    for (let y = 0; y <= height; y += cellSize) {
+    for (let y = (offsetY % gridStep + gridStep) % gridStep; y <= height; y += gridStep) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
         ctx.stroke();
     }
 
+    // Explored cells
     for (const cell of exploredCells) {
         const cx = cell.gx * cellSize + offsetX;
         const cy = cell.gz * cellSize + offsetY;
+
+        if (cx + cellSize < -20 || cx > width + 20 || cy + cellSize < -20 || cy > height + 20) continue;
 
         ctx.fillStyle = 'rgba(0, 229, 255, 0.25)';
         ctx.fillRect(cx, cy, cellSize - 2, cellSize - 2);
@@ -7001,55 +7114,97 @@ function drawTacticalMapOverlay() {
         ctx.strokeRect(cx, cy, cellSize - 2, cellSize - 2);
     }
 
+    // Landmarks (including Home Base)
     for (const landmark of landmarks) {
         const lx = landmark.gx * cellSize + offsetX + cellSize / 2;
         const ly = landmark.gz * cellSize + offsetY + cellSize / 2;
+
+        if (lx < -60 || lx > width + 60 || ly < -60 || ly > height + 60) continue;
 
         ctx.font = '14px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        if (landmark.type === 'camp') {
+        if (landmark.type === 'home_base') {
+            ctx.beginPath();
+            ctx.arc(lx, ly, 16, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.25)';
+            ctx.fill();
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffd700';
+            ctx.fillText('🏠', lx, ly);
+
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 11px Space Mono, monospace';
+            ctx.fillText(landmark.label ?? 'HOME BASE', lx, ly + 20);
+        } else if (landmark.type === 'camp') {
             ctx.fillStyle = '#ffaa00';
             ctx.fillText('⛺', lx, ly);
+            ctx.fillStyle = '#d0e0f0';
+            ctx.font = '10px Space Mono, monospace';
+            ctx.fillText(landmark.label ?? '', lx, ly + 14);
         } else if (landmark.type === 'hive') {
             ctx.fillStyle = '#ff0055';
             ctx.fillText('⚡', lx, ly);
+            ctx.fillStyle = '#d0e0f0';
+            ctx.font = '10px Space Mono, monospace';
+            ctx.fillText(landmark.label ?? '', lx, ly + 14);
         } else {
             ctx.fillStyle = '#a040ff';
             ctx.fillText('★', lx, ly);
+            ctx.fillStyle = '#d0e0f0';
+            ctx.font = '10px Space Mono, monospace';
+            ctx.fillText(landmark.label ?? '', lx, ly + 14);
         }
-
-        ctx.fillStyle = '#d0e0f0';
-        ctx.font = '10px Space Mono, monospace';
-        ctx.fillText(landmark.label ?? '', lx, ly + 14);
     }
 
+    // Player position
     const px = Math.floor((player.x + 7.5) / 15) * cellSize + offsetX + cellSize / 2;
     const py = Math.floor((player.z + 7.5) / 15) * cellSize + offsetY + cellSize / 2;
 
-    ctx.save();
-    ctx.translate(px, py);
-    ctx.rotate(player.rotation ?? 0);
+    if (px >= -20 && px <= width + 20 && py >= -20 && py <= height + 20) {
+        const time = Date.now() * 0.003;
+        const pulseRadius = 12 + Math.sin(time) * 4;
+        ctx.beginPath();
+        ctx.arc(px, py, pulseRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 255, 170, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
-    ctx.fillStyle = '#00ffaa';
-    ctx.beginPath();
-    ctx.moveTo(0, -10);
-    ctx.lineTo(7, 8);
-    ctx.lineTo(-7, 8);
-    ctx.closePath();
-    ctx.fill();
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(player.rotation ?? 0);
 
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+        ctx.fillStyle = '#00ffaa';
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(7, 8);
+        ctx.lineTo(-7, 8);
+        ctx.closePath();
+        ctx.fill();
 
-    ctx.restore();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // Zoom level HUD overlay
+    ctx.font = '10px Space Mono, monospace';
+    ctx.fillStyle = 'rgba(0, 229, 255, 0.6)';
+    ctx.textAlign = 'left';
+    ctx.fillText(`ZOOM: ${tacticalMapState.zoom.toFixed(1)}x`, 12, height - 12);
 }
 
 function toggleTacticalMapModal(forceState) {
     const modal = document.getElementById('tactical-map-modal');
     if (!modal) return;
+
+    setupTacticalMapEvents();
 
     const isHidden = modal.classList.contains('hidden');
     const shouldOpen = typeof forceState === 'boolean' ? forceState : isHidden;
@@ -7057,10 +7212,26 @@ function toggleTacticalMapModal(forceState) {
     if (shouldOpen) {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
-        drawTacticalMapOverlay();
+        if (!tacticalMapAnimFrame) {
+            const updateLoop = () => {
+                const modalNow = document.getElementById('tactical-map-modal');
+                if (modalNow && !modalNow.classList.contains('hidden')) {
+                    pollTacticalMapGamepadInput();
+                    drawTacticalMapOverlay();
+                    tacticalMapAnimFrame = requestAnimationFrame(updateLoop);
+                } else {
+                    tacticalMapAnimFrame = null;
+                }
+            };
+            tacticalMapAnimFrame = requestAnimationFrame(updateLoop);
+        }
     } else {
         modal.classList.add('hidden');
         modal.setAttribute('aria-hidden', 'true');
+        if (tacticalMapAnimFrame) {
+            cancelAnimationFrame(tacticalMapAnimFrame);
+            tacticalMapAnimFrame = null;
+        }
     }
 }
 
@@ -7069,9 +7240,58 @@ setupClickOutside('tactical-map-modal', () => toggleTacticalMapModal(false));
 
 // Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
-    // Focus-trap/menu navigation owns Tab while a modal is open. Do not let
-    // that already-handled event also toggle the tactical map underneath it.
     if (event.defaultPrevented) return;
+
+    const tacticalMapModal = document.getElementById('tactical-map-modal');
+    const isMapOpen = tacticalMapModal && !tacticalMapModal.classList.contains('hidden');
+
+    if (isMapOpen) {
+        if (event.code === 'KeyH') {
+            focusTacticalMapOnHome();
+            event.preventDefault();
+            return;
+        }
+        if (event.code === 'KeyP') {
+            focusTacticalMapOnPlayer();
+            event.preventDefault();
+            return;
+        }
+        if (event.code === 'KeyR') {
+            resetTacticalMapView();
+            event.preventDefault();
+            return;
+        }
+        if (event.key === '=' || event.key === '+') {
+            adjustTacticalMapZoom(0.25);
+            event.preventDefault();
+            return;
+        }
+        if (event.key === '-') {
+            adjustTacticalMapZoom(-0.25);
+            event.preventDefault();
+            return;
+        }
+        if (['ArrowUp', 'KeyW'].includes(event.code)) {
+            tacticalMapState.panY += 25;
+            event.preventDefault();
+            return;
+        }
+        if (['ArrowDown', 'KeyS'].includes(event.code)) {
+            tacticalMapState.panY -= 25;
+            event.preventDefault();
+            return;
+        }
+        if (['ArrowLeft', 'KeyA'].includes(event.code)) {
+            tacticalMapState.panX += 25;
+            event.preventDefault();
+            return;
+        }
+        if (['ArrowRight', 'KeyD'].includes(event.code)) {
+            tacticalMapState.panX -= 25;
+            event.preventDefault();
+            return;
+        }
+    }
 
     if (event.code === 'Backquote' || event.key === '`' || event.key === '~') {
         if (!developerToolsAuthorized) {

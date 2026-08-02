@@ -625,6 +625,23 @@
           <div class="tactical-map-title">◈ TACTICAL BLUEPRINT OVERLAY</div>
           <div class="tactical-map-subtitle" id="tactical-map-subtitle">GRID SECTOR 01 // EXPLORATION ACTIVE</div>
         </div>
+        <div class="tactical-map-toolbar">
+          <button type="button" class="map-tool-btn" id="map-zoom-in" title="Zoom In (+)">
+            <span class="btn-icon">+</span> <span class="btn-label">ZOOM IN</span>
+          </button>
+          <button type="button" class="map-tool-btn" id="map-zoom-out" title="Zoom Out (-)">
+            <span class="btn-icon">-</span> <span class="btn-label">ZOOM OUT</span>
+          </button>
+          <button type="button" class="map-tool-btn" id="map-focus-home" title="Center Home Base (H)">
+            <span class="btn-icon">🏠</span> <span class="btn-label">HOME BASE</span>
+          </button>
+          <button type="button" class="map-tool-btn" id="map-focus-player" title="Center Operator (P)">
+            <span class="btn-icon">🎯</span> <span class="btn-label">OPERATOR</span>
+          </button>
+          <button type="button" class="map-tool-btn" id="map-reset-view" title="Reset View (R)">
+            <span class="btn-icon">⟲</span> <span class="btn-label">RESET</span>
+          </button>
+        </div>
         <div class="tactical-map-body">
           <div class="tactical-map-canvas-wrap">
             <canvas id="tactical-map-canvas" width="960" height="600"></canvas>
@@ -632,6 +649,10 @@
           </div>
           <div class="tactical-map-sidebar">
             <div class="tactical-map-legend-title">BLUEPRINT LEGEND</div>
+            <div class="tactical-map-legend-item">
+              <span class="legend-chip legend-chip--home">🏠</span>
+              <span>HOME BASE</span>
+            </div>
             <div class="tactical-map-legend-item">
               <span class="legend-chip legend-chip--player">▲</span>
               <span>OPERATOR POSITION</span>
@@ -667,7 +688,10 @@
               </div>
             </div>
             <div class="tactical-map-keyhints">
-              <span>[M] / [TAB] / [ESC] TOGGLE OVERLAY</span>
+              <div class="keyhint-row">[DRAG / WASD / L-STICK] PAN</div>
+              <div class="keyhint-row">[SCROLL / +/- / LB-RB] ZOOM</div>
+              <div class="keyhint-row">[H / (X)] HOME  [P / (Y)] OPERATOR</div>
+              <div class="keyhint-row">[M] / [SELECT] / [ESC] CLOSE</div>
             </div>
           </div>
         </div>

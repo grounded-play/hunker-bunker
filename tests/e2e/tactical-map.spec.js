@@ -36,4 +36,30 @@ test.describe('Tactical Blueprint Map Overlay E2E', () => {
         await page.locator('#close-tactical-map-modal').click();
         await expect(mapModal).toHaveClass(/hidden/);
     });
+
+    test('interacts with tactical map toolbar controls and verifies home base legend', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
+
+        const mapModal = page.locator('#tactical-map-modal');
+        await page.keyboard.press('KeyM');
+        await expect(mapModal).not.toHaveClass(/hidden/);
+
+        // Verify Home Base legend chip is present
+        await expect(page.locator('.legend-chip--home')).toBeVisible();
+
+        // Verify toolbar buttons exist and are clickable
+        await expect(page.locator('#map-zoom-in')).toBeVisible();
+        await expect(page.locator('#map-zoom-out')).toBeVisible();
+        await expect(page.locator('#map-focus-home')).toBeVisible();
+        await expect(page.locator('#map-focus-player')).toBeVisible();
+
+        await page.locator('#map-zoom-in').click();
+        await page.locator('#map-focus-home').click();
+        await page.locator('#map-focus-player').click();
+        await page.locator('#map-reset-view').click();
+
+        await page.keyboard.press('Escape');
+        await expect(mapModal).toHaveClass(/hidden/);
+    });
 });

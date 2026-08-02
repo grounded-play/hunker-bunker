@@ -11389,6 +11389,16 @@ export class ThreeGame {
             this.explorationTracker.recordPlayerPosition(this.player.position.x, this.player.position.z);
         }
 
+        if (this.explorationTracker) {
+            this.explorationTracker.registerLandmark('home_base', {
+                x: 0,
+                z: 0,
+                label: 'HOME BASE / BUNKER COMMAND',
+                type: 'home_base',
+                priority: 1000
+            });
+        }
+
         if (this.camps) {
             for (const [id, camp] of Object.entries(this.camps)) {
                 if (camp && camp.position) {

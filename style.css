@@ -13626,12 +13626,63 @@ button.archive-log-entry:active {
   font-size: 11px;
 }
 
+.legend-chip--home { background: #ffd700; color: #000000; }
 .legend-chip--player { background: #00ffaa; color: #000000; }
 .legend-chip--explored { background: #00e5ff; color: #000000; }
 .legend-chip--unexplored { background: #1a2636; color: #556677; }
 .legend-chip--camp { background: #ffaa00; color: #000000; }
 .legend-chip--hive { background: #ff0055; color: #ffffff; }
 .legend-chip--objective { background: #a040ff; color: #ffffff; }
+
+.tactical-map-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 12px;
+  background: rgba(12, 22, 36, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 6px;
+}
+
+.map-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: #00e5ff;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.map-tool-btn:hover {
+  background: rgba(0, 229, 255, 0.22);
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.map-tool-btn:active {
+  transform: translateY(0);
+  background: rgba(0, 229, 255, 0.35);
+}
+
+#tactical-map-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+
+#tactical-map-canvas.dragging {
+  cursor: grabbing;
+}
 
 .tactical-map-stats {
   margin-top: auto;
@@ -13654,8 +13705,15 @@ button.archive-log-entry:active {
 
 .tactical-map-keyhints {
   font-family: 'Space Mono', monospace;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: #557799;
   text-align: center;
   margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.keyhint-row {
+  letter-spacing: 0.02em;
 }
