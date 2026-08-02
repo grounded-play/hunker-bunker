@@ -1,80 +1,99 @@
-# Hunker Bunker: Master Project Onboarding (PM Primer)
+# Hunker Bunker: Master PM Onboarding
 
-Welcome to **Hunker Bunker**. This document is the entry point for the Sprint 22 Systems Breakdown. It synthesizes the entire history, design philosophy, short/long-term goals, and critical unknowns of the project into a comprehensive primer for new Product Managers.
+## Product in One Sentence
 
-## 1. What is Hunker Bunker? (The Core Fantasy)
-Hunker Bunker is a retro-futuristic tactical survival roguelike built on a WebGL/Three.js engine wrapped in Electron. Set on the frozen, tidally locked world of Cocytus IV, the player navigates procedural subterranean corridors under severe oxygen pressure.
+Hunker Bunker is a single-player, isometric Three.js survival roguelike in which an oxygen-limited bunker expedition turns into a faction and identity crisis after the player becomes linked to the alien Queen beneath Cocytus IV.
 
-**The Genre Betrayal:** The game pitches itself as a survival looter, but halfway through a run, it reveals its true nature. The player is infected by the Alien Queen. The game flips from a pure resource grind into a tense, dual-faction social puzzle where every kindness you showed to the human camps becomes leverage, and every alien hive you mined becomes a hostile or cooperative force.
+The memorable promise is not merely “procedural bunker shooter.” It is: **the resources, camps, anomalies, deaths, and class choices from the first half of a run become evidence against—or leverage for—the player in the second half.**
 
-### The Three Classes (The "Three Ships" Secret)
-The player chooses one of three Exosuit classes, each with distinct playstyles that tie into the lore of the three crashed ships:
-- **Scout (Speed & Recon):** Tied to the *Tracking Signal* ship.
-- **Tank (Endurance & Armor):** Tied to the *Weapon* ship.
-- **Engineer (Systems & Terminals):** Tied to the *Relay* ship.
+## The Player Arc
 
----
+### Act 1: survive, salvage, and misunderstand
 
-## 2. The Faction Duality & The Narrative Engine
-The game operates on a mirrored faction system. In Act 1, the player builds human camps and mines "anomalies." In Act 2 (Post-Infection), those anomalies are revealed to be living Alien Hive minds. 
+The player deploys from a crashed vessel, restores ship systems, explores increasingly dangerous radial bands, discovers human camps, and treats alien structures as resources or hazards. Oxygen is the route timer. The radial world and mission gates determine how far the player can safely push.
 
-### The Human Camps (Survival & Compromise)
-1. **Meridian (Sector A-9):** Tech-scavengers led by Overseer Kaelen. (Engineers).
-2. **Tallow (Sector B-4):** Pacifist hydro-cultists led by Sister Martha. (Scouts).
-3. **Vesper (Sector C-7):** Militarized security led by Commander Briggs. (Tanks).
+### Act 2: infection makes earlier choices legible
 
-### The Hive Sites (Intimacy & Infection)
-1. **Suture Hive (Nahl):** The healer and mask-maker.
-2. **Relay Hive (Vey):** The communication and synapse router.
-3. **Carapace Hive (Rhun):** The defender and hull-grower.
+The Queen relationship reframes the world. Human camps remember support, theft, and violence. Hive sites reveal personalities and wounds. Humanity, cover, suspicion, obedience, camp status, and hive bond feed a boarding manifest with only four seats.
 
-### The Ultimate Puzzle: The Boarding Manifest
-The game ends with a strict logic puzzle. The escape vessel has exactly **4 seats**. Who gets them? The player, human survivors, alien allies, the Queen, or the eggs? This manifest mathematically determines which of the **5 endings** (Full Brood, Clean Escape, Mixed Crew, Carrier's Bargain, Scorched Sky) the player receives.
+### Ending: explain the consequence
 
----
+The code supports ten ending families, not five: the five original endings plus Mothership Infection, Alien Exodus, Outed Escape, Failed Carrier, and Empty Husk. The product requirement is that the player can answer “why did I get this ending?” without reading raw state.
 
-## 3. Technology Stack & Architecture
-- **Client:** Three.js (r184) for procedural isometric WebGL rendering, packaged in an Electron shell for desktop distribution.
-- **Steam Integration:** Native `steamworks.js` IPC integration for Achievements, Cloud Saves, Steam Input (Controller/Deck), and Steam Inventory/Vault.
-- **Trusted Backend:** A Node.js/Express relay server deployed via Docker/Caddy (`steam.tuesdaycinema.club`). It enforces Steam Auth Ticket verification and HMAC session tokens to prevent leaderboard and inventory spoofing.
+## Class Identity
 
----
+- **Scout:** speed/recon identity; class secret is the tracking-signal ship.
+- **Engineer:** systems/terminal identity; class secret is the relay ship.
+- **Tank:** durability/armor identity; class secret is the weapon ship.
 
-## 4. Long-Term Goals (The Path to 1.0)
-The long-term vision is to ship a "Steam-installed vertical slice" that survives contact with real players.
-1. **Roguelike Legibility (Kill the Spreadsheet):** The game currently tracks too many visible meters (bond, suspicion, humanity, obedience). The long-term goal is to collapse these into three readable UI pressures: *Survival*, *Social*, and *Launch*.
-2. **The "Secret Sauce" Lore Alignment:** Connect the disparate lore threads. Specifically, linking the Act 1 horror logs (Specimen 0047) seamlessly with the Act 2 Queen infection arc.
-3. **Physical Hardware Acceptance (Steam Deck):** The game boots on the Deck but is unplayable due to controller input mapping gaps in the Three.js renderer. 
-4. **Run Director Scaling:** Move from static "HP sponge" enemies to a dynamic event deck that changes the safe routes and applies real roguelike pressure.
+All classes have universal sprint. Their implemented differentiation is currently strongest in stats, passives, interaction affinity, and the class-keyed wreckage/lore payoff—not three fully separate traversal ability kits. Do not schedule “Sprint Burst / Shoulder Slam / Overclock Slide” as if those are already approved production verbs; treat them as optional combat-design proposals requiring a feel decision.
 
----
+## What Is Strong Today
 
-## 5. Short-Term Goals (Sprint 22 Focus)
-Sprint 22 is entirely focused on breaking down the game into its parsed components, stabilizing the WFC generation, addressing the First-Hour teardown, and proving the backend.
+- A large consequence state machine with persistence and migration.
+- Camps, active faction verbs, ambient human behavior, and hive state.
+- A radial procedural world with authored ring progression and landmark gates.
+- A real run director and apex-threat triggers rather than only static spawn noise.
+- A three-phase Queen fight with armor, add-control, and weak-point windows.
+- Objective history and player guidance across major producers.
+- A coherent Steam/Electron/backend architecture with unusually strong automated audits.
+- Distinctive writing: 0047, Director Chen, the Queen, camp leaders, and Mothership voices.
 
-### Lane 1: WFC Stabilization & The First-Hour Teardown (UX/World)
-- **WFC Blockers:** We recently scaled the `CHUNK_SIZE` from 19 to 49, which broke 23 tests in `src/tileCatalog.test.js`. This must be fixed immediately so the procedural maze generates correctly.
-- **Time-to-First-Input:** The game currently takes 90–150 seconds to start. We must compress the intro gauntlet and add a global "SKIP ALL" to get this under 30 seconds.
-- **Modal Purge:** Discovery events (like finding a camp) currently lock the screen for 15 seconds. Convert these to non-blocking HUD toasts.
+## What Is Still Product-Risky
 
-### Lane 2: Combat Juice & Backend Security (Systems/Math)
-- **Security P0:** The Publisher Web API key and `HB_SESSION_SECRET` were historically exposed in docs. Rotate these in Steamworks before any live beta push.
-- **Boss Phase Framework:** Convert the three biome bosses from 75-HP walls into 60-90s fights with two distinct phases and weak-point windows.
-- **Mobility Verbs:** Standardize the class mobility (Sprint Burst, Shoulder-Slam, Overclock Slide) and add 50ms hitstop flashes to make combat feel visceral.
+### First-hour friction
 
-### Lane 3: Factions & Sound (Narrative)
-- **Hive Integration:** Build out the mechanical states for the Suture, Relay, and Carapace hives in `src/act2.js`.
-- **Soundtrack:** Hook the 43 newly minted tracks into the `src/roomThemes.js` spatial audio system.
+Skip flow, settings, input routing, and presentation work exist, but that does not prove the first 30 minutes are paced well. The remaining work is observed timing, comprehension, and interruption count on a clean profile.
 
----
+### World readability after the 49×49 merge
 
-## 6. Major Unknowns & Risks (What Keeps Us Awake)
+The tile-band branch is merged and tests pass. The risk has moved from correctness to feel: whether merged halls read as purposeful routes, whether room identities are legible, and whether ring gates become learnable landmarks.
 
-**1. The Art Style Clash ("Two Games in One Frame")**
-We are mixing hand-modeled 3D blocks with AI-generated sprites of wildly different pixel densities. If we do not lock a unified pixel grid (the walk-sheet density) and regenerate the outlier portraits, we will be review-bombed for "AI slop" on Steam.
+### Combat quality outside the Queen
 
-**2. The Combat "Sponge" Problem**
-Our current minute-to-minute combat is "one verb against sponges"—players walk backward while holding left-click for 40 seconds against bosses. If the Boss Phase Framework and mobility verbs fail to make combat engaging, the narrative depth won't matter because players will quit in Hour 1.
+The Queen has the phase framework and an automated economy simulation. Other bosses may still read as durable stat packages. Do not generalize Queen acceptance to the whole boss roster.
 
-**3. Testing the Giant Interactive Systems**
-We have 270+ unit tests, but our End-to-End (E2E) and hardware acceptance testing lags severely behind the sheer size of `main.js` and `threeGame.js`. We do not know if the game survives a 60-minute, zero-death run on a physical Steam Deck because we haven't built the automated pipeline to prove it yet.
+### State legibility
+
+The internal model is deep enough. The PM problem is selecting the few player-facing summaries, warnings, and causal explanations that drive decisions.
+
+### External acceptance
+
+Code preparation is not Steam acceptance. Overlay, auth, achievements, stats, five leaderboards, Inventory, Auto-Cloud, controller-only traversal, and physical Deck behavior retain manual gates.
+
+## Current Technical Shape
+
+- **Renderer/runtime:** Three.js with a large `src/threeGame.js` integration surface and smaller pure modules around it.
+- **Web shell:** `main.js` owns menus, dialogue, settings, Act 2 surfaces, audio loading, and renderer orchestration.
+- **Desktop:** Electron packages `dist/`, the shell, and Steam Input configurations into Linux and Windows depots.
+- **Persistence:** `hb_*` local state is mirrored into an atomic Electron `save.json`; server SQLite is for trusted online state, not a replacement for the full local narrative save.
+- **Backend:** Express verifies one Steam auth ticket, mints a short-lived HMAC session, and handles trusted leaderboard, Inventory, and disabled-by-default store paths.
+- **Release:** `npm run steam:upload` builds game/input/soundtrack depots; Steamworks publishing and setting the soundtrack build live remain operator actions.
+
+## Sprint 22 Priorities
+
+1. **Evidence before invention:** convert automated readiness into installed and human-observed acceptance.
+2. **World tuning:** test merged rooms/halls, ring-gate identity, route clarity, and site spacing across representative seeds.
+3. **First-hour observation:** measure first input, first decision, first combat, first camp, and first meaningful consequence.
+4. **Combat comparison:** benchmark Queen, biome bosses, and ordinary enemies; extend phase mechanics only where the test shows monotony.
+5. **Consequence UX:** show readable camp/hive/manifest summaries and preserve “why” explanations.
+6. **Steam closure:** run the live auth/dashboard/Cloud/Input/Deck matrices before changing claims.
+7. **Audio curation:** map selected OST cues to meaningful beats; avoid treating “43 files exist” as “43 cues should all play dynamically.”
+
+## Decisions the PM Must Own
+
+- What is the target first-session length and first meaningful choice?
+- Which boss encounters need phases versus shorter HP/economy tuning?
+- Which three state summaries deserve permanent HUD presence?
+- What content is required for beta versus intentionally deferred?
+- Which Steam features may be claimed only after recorded acceptance?
+- Which soundtrack cues are diegetic, spatial, stateful, or DLC-only?
+
+## Definition of Sprint 22 Done
+
+- No syllabus item describes implemented code as hypothetical.
+- Representative world seeds have recorded human readability findings.
+- First-hour and combat acceptance scripts have observed results and follow-up owners.
+- Installed Steam and physical Deck gaps are explicitly passed, failed, or scheduled—not implied.
+- Store claims match the evidence matrix.
+- Open work is expressed as a product outcome and acceptance test, not merely a proposed filename.

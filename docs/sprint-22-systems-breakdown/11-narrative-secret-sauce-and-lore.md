@@ -1,23 +1,56 @@
-# System Breakdown: The "Secret Sauce" Lore & Coherence
+# System Breakdown: Secret-Sauce Lore and Coherence
 
-*Primary Citation: [Lore Coherence and Secret Sauce Review](../lore-coherence-and-secret-sauce-review.md)*
-*Secondary Citation: [Expanded Universe Narrative Design](../expanded-universe-narrative-design.md)*
+Primary design source: [Lore Coherence and Secret Sauce Review](../lore-coherence-and-secret-sauce-review.md).
 
-## Overview
-The *Lore Coherence Review* identified that the game's writing is incredibly strong ("near shipping quality"), but structurally broken. The game tells three distinct stories (0047, The Queen, Camp Societies) that never shake hands. Sprint 22 aims to execute the "Canon Weld" to unify the universe.
+## What Has Already Been Welded
 
-## 1. The Canon Weld (Specimen 0047 vs The Queen)
-- **The Finding:** Act 1 builds horror around "Specimen 0047" breaking out of containment. Act 2 pivots entirely to "The Alien Queen." As stated in the Review: "Nothing in the player-facing text connects them... A player who reads everything is punished with contradiction."
-- **The Fix:** Write one canon sentence into the lore logs: *Specimen 0047 was the Queen's dormant seed-carrier.* When the player builds the antenna at the foundry, the Queen must acknowledge it, fulfilling the narrative rhyme: *"THE LITTLE BUILDERS TRIED THIS ONCE. THEY LACKED HANDS. YOU ARE BETTER HANDS."*
+Several recommendations from the review are implemented:
 
-## 2. Death Intimacy (The Roguelike Relationship)
-- **The Finding:** The Review notes that winning roguelikes (like *Hades*) feature "Death that deepens instead of resets." Currently, death in Hunker Bunker is purely punitive.
-- **The Fix:** Add one dialogue beat per Camp Leader that only unlocks *after* the player has died. (e.g., *"You died out there. I heard. Sit down."*). Post-infection, the Queen must react to player death: *"I FELT THAT. DO NOT DO IT AGAIN."* This turns the core roguelike loop into a narrative relationship.
+- `specimen_0047` becomes a unified codex record after Chen's confession and the cave stasis record are both found.
+- Its copy identifies 0047 as an ancient seed-carrier reclassified as the Queen's dormant core.
+- Queen dialogue references the “little builders” and the foundry dish.
+- Scout/Engineer/Tank wreckage logs map to tracking signal/relay/weapon.
+- Camp leaders have post-death dialogue.
+- The Queen says “I FELT THAT. DO NOT DO IT AGAIN.” after post-reveal death.
+- The system/ending voice includes “Nobody checked your neck.”
 
-## 3. The Three System Voices
-- **The Finding:** The game currently has three disembodied text voices: The Bureaucratic Comedian (The Suit OS), Cold Command (Mothership), and The Poet (The Queen). 
-- **The Fix:** Do not rewrite them. Instead, canonize the split. Make the player's Suit OS register *decay with infection*. It starts as corporate comedy ("Atmospheric credit low"), glitches during Act 1, and turns to religious reverence for the Queen in Act 2 ("NOBODY CHECKED YOUR NECK"). This creates a free, text-based infection meter.
+These should no longer be listed as unimplemented Sprint 22 writing tasks.
 
-## 4. The Three Ships Secret
-- **The Finding:** Lore log B03 states: *"Three ships. One carries the tracking signal. One carries the relay. One carries the weapon."* The Review notes this is a wasted opportunity for replayability.
-- **The Fix:** Map these ships to the Three Classes. The Scout was on the Tracking Signal ship, the Engineer on the Relay, the Tank on the Weapon. Provide one class-keyed log at the salvage console so players realize their class is deeply tied to the canon.
+## Remaining Coherence Work
+
+### Discovery order
+
+Correct text can still fail if it arrives out of sequence or only in an obscure codex. Map the minimum evidence chain a normal player sees before the Queen reveal and after it.
+
+### Timeline strata
+
+Horizon research, Chen's operation, the crash, current camps, and Act 2 need readable dates/causal spacing. Avoid making the PM memorize log IDs; provide an in-world timeline surface or clear metadata.
+
+### Place identity
+
+Named places should be spoken by characters and reinforced through map labels, materials, audio, and repeated verbs. A name that appears only in a design document is not worldbuilding.
+
+### Voice boundaries
+
+Protect three registers: Suit/System corporate decay, Mothership command, and Queen intimacy/poetry. Infection can distort the system voice, but it must remain possible to understand who is speaking.
+
+## The Repeatable Story
+
+A tester should be able to tell a friend: “I thought I was mining a bunker, learned the thing I was sent to contain had been using my deaths to understand me, and then had to choose which humans or alien minds got the four seats home.”
+
+If the observed run cannot produce a concise story like that, add delivery and consequence—not more lore volume.
+
+## Sprint 22 Acceptance
+
+- Timeline read-through from a clean profile.
+- Class-specific run comparison.
+- Death-reactive dialogue verification before and after infection.
+- Codex unlock persistence and RGB archive unlock check.
+- Blind-player retelling after the Queen reveal and after an ending.
+
+## Writing Guardrails
+
+- Preserve the strongest existing lines rather than paraphrasing them repeatedly.
+- Put essential causal facts on the main path; put texture and ambiguity in optional logs.
+- Never solve tone problems by adding another explanatory system voice.
+- Ensure new ending/camp/hive writing has a concrete state trigger and testable delivery path.

@@ -1,31 +1,49 @@
-# System Breakdown: UX, The First Hour, & Presentation
+# System Breakdown: UX, First Hour, and Presentation
 
-*Primary Citation: [Player Teardown and Next-Level Plan](../player-teardown-and-next-level-plan.md)*
-*Secondary Citation: [Game-Wide Review and Solution Plan](../game-wide-review-and-solution-plan.md)*
+## Current Truth
 
-## Overview
-As explicitly stated in the *Player Teardown* (lines 17-105), Hunker Bunker's first five minutes are currently unacceptable. The onboarding is bloated with full-screen modals, and the art style suffers from severe inconsistency ("two art games in one frame"). Sprint 22 demands a brutal pass on the presentation layer.
+The teardown remains useful as a player-experience diagnosis, but several absence claims are stale. The runtime now has skip-all intro flow, controller pause routing, text speed, colorblind assist, difficulty display, audio settings, improved title/input focus, objective tracking, and optimized Electron startup. Sprint 22 must measure and tune these surfaces rather than schedule them from zero.
 
-## 1. The Intro Gauntlet Compression
-- **The Finding:** The Teardown notes that "Time-to-first-input is ~90-150s." The player sits through a blank title screen, class select, 7 lines of unskippable typing dialogue, and a tutorial choice before moving.
-- **Sprint 22 Action:** 
-  - Add a global `SKIP ALL` binding mapped to `ESC` and the `Start` button on controllers.
-  - Ensure all typing text can be clicked to instantly complete.
-  - Replace the blank title screen with the nano-banana hero image.
-  - **Target:** Time-to-first-input < 30 seconds.
+## First-Hour Funnel
 
-## 2. The Modal-to-Toast Conversion
-- **The Finding:** The Game-Wide Review explicitly criticizes "full-screen modal takeovers for minor events." Discovering a new camp or skill tree node currently triggers a 15-second radio modal, locking the player out of gameplay and destroying flow.
-- **Sprint 22 Action:** 
-  - Modals are strictly reserved for branching choices (e.g., Steal vs Cull). 
-  - All discovery and lore events must be routed to `.hud-notification-stack` in `main.js`. These non-blocking toasts queue up (max 2 on screen) and fade out over 6 seconds.
+Record timestamps for:
 
-## 3. The "AI Slop" Art Unification
-- **The Finding:** The Teardown calls out the mixed pixel density between our hand-modeled 3D blocks (low density) and AI-generated portraits/sprites (high density) as a major liability that risks the game being branded as "AI slop."
-- **Sprint 22 Action:** 
-  - Lock the resolution to the pixel grid of the walk-sheets. 
-  - Down-sample and index-color the overly detailed "painterly" radio portraits to match the chunky, retro-industrial aesthetic of the in-game sprites.
+- Play pressed to first rendered frame;
+- first frame to first input;
+- class confirmation;
+- first free movement;
+- first pickup and combat;
+- first objective completion;
+- first camp/faction interaction;
+- first death and return;
+- first ring gate.
 
-## 4. The Settings Surface
-- **The Finding:** The Teardown noted that pressing ESC does not pause the game.
-- **Sprint 22 Action:** Implement a true pause state that halts the Three.js clock. Add a unified settings modal containing: Text Speed, Camera Shake Toggle, Colorblind Assist, and the currently hidden Difficulty readout.
+Run once as a new player without skipping and once as a returning player using skip flow. The target should distinguish cold install, ordinary restart, and death loop.
+
+## Interruption Budget
+
+Reserve full-screen blocking presentation for choices, irreversible consequences, major reveals, and accessibility/safety needs. Discovery, routine objective progress, minor lore, and inventory feedback should normally use queued HUD surfaces. Audit actual interruption count; do not assume every existing modal remains.
+
+## Settings and Pause
+
+Verify pause actually halts dangerous simulation, oxygen drain, director ticks, and pocket updates where intended. Verify text speed, mix controls, colorblind assist, difficulty readout, camera effects, and controller navigation persist across restart. RGB/archive pause is a separate runtime surface and needs its own traversal check.
+
+## Visual Cohesion
+
+The game mixes procedural 3D geometry, sprites, portraits, video, and illustrated store art. The acceptance standard is not a single pixel density everywhere; it is intentional hierarchy, consistent edge treatment, readable scale, controlled palettes, and no placeholder/chroma remnants. Review screenshots at Steam thumbnail size and gameplay at 1280×800.
+
+## Sprint 22 Deliverables
+
+1. Recorded first-hour observation with confusion/interruption log.
+2. Returning-player/death-loop timing pass.
+3. Controller-only settings, pause, dialogue, map, archive, and gameplay pass.
+4. Representative screenshot cohesion review.
+5. Ranked fixes by player drop-off risk, not cosmetic preference.
+
+## Acceptance Questions
+
+- Can a player move within the promised time without skipping essential context?
+- Does every blocking screen justify stopping oxygen/combat?
+- Can the player explain the current objective and nearest safe action?
+- Can controller users recover from focus loss without a mouse?
+- Are difficulty and accessibility settings discoverable before the first demanding fight?

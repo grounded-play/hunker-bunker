@@ -1,38 +1,58 @@
-# System Breakdown: Platform, Backend, & Steam Integration
+# System Breakdown: Platform, Backend, and Steam Integration
 
-## Overview
-Hunker Bunker is not a traditional web game, despite being built on WebGL. It is packaged via Electron to act as a native desktop application, deeply integrated with Steamworks for platform features, and backed by a trusted Node.js relay server to prevent spoofing.
+## Release Truth
 
-## The Architecture Stack
+The platform stack is substantially implemented and automated. The remaining distinction is live acceptance. Never convert “route exists and tests pass” into “Steam feature is launched.”
 
-### 1. The Client Shell (Electron)
-- The game runs inside an Electron shell (`electron/main.cjs`).
-- The shell handles the initial boot, window management, and acts as the bridge between the sandboxed renderer (Three.js) and the native OS.
+## Client and Packaging
 
-### 2. Steamworks IPC (`steamworks.js`)
-The game uses `steamworks.js` for native Steam integrations:
-- **Steam Cloud Saves:** Syncs the local persistence JSON across machines. 
-- **Achievements & Stats:** Real-time hooks that unlock Steam achievements based on in-game milestones.
-- **Steam Inventory/Vault:** Reads the player's Steam inventory (e.g., cosmetic drops or real-money Cache Keys) and applies them in-game.
+- Vite builds the Three.js web runtime into `dist/`.
+- Electron packages `dist/`, `electron/`, Steam Input configs, and native `steamworks.js` dependencies.
+- Linux and Windows depots map their unpacked build roots consistently.
+- Store-only graphics remain under `steam/store/`; build/depot audits reject them from customer payloads.
+- A native Linux launcher handles the Electron sandbox requirement on SteamOS.
+- Steam initialization is deferred until after the first window is created to improve startup perception.
 
-### 3. Steam Input & The Controller Gap
-- The game uses Steam Input action-sets (streaming controller states) for prompts, but currently relies on the browser Gamepad API for actual movement. 
-- **Sprint 22 Blocker:** A Steam Deck player can boot the game but not play it because the Steam Input stream doesn't feed the movement/fire logic in `src/threeGame.js`. Sprint 22 must wire the streamed Steam Input directly into the renderer's control loop.
+## Steam Bridge
 
-## The Trusted Backend
+Connected code covers identity, ownership, achievements/stats, overlay URL opening, native Steam Input polling, on-screen keyboard, Cloud status/save mirroring, backend auth sessions, leaderboards, and Inventory/Vault reads. Browser Gamepad remains a fallback when native Steam Input is unavailable or incomplete.
 
-### Why a Backend?
-To prevent players from spoofing leaderboard scores or granting themselves infinite premium inventory items via browser DevTools, the game relies on a trusted relay server.
+The “Deck boots but cannot move” statement is stale. Semantic action routing, configs, action sets, browser fallback, focus fixes, and controller navigation landed in later commits. Physical built-in-control and suspend/dock acceptance remain open.
 
-### Infrastructure
-- **Server:** Node.js/Express.
-- **Deployment:** Docker Compose behind a Caddy reverse proxy at `steam.tuesdaycinema.club`.
-- **Database:** Migrating from a local JSON store to SQLite-on-volume (`server/db.js`).
+## Persistence Boundary
 
-### Security & The Session Flow (Sprint 22)
-Currently, every backend request burns a fresh Steam Auth Ticket (which triggers Valve's rate limits).
-- **Sprint 22 Fix:** The backend will verify the Steam Auth Ticket exactly once at boot via `/steam/session`. It will issue a short-lived, HMAC-signed session token (`HB_SESSION_SECRET`). 
-- All subsequent calls (like submitting a leaderboard score) will use `Authorization: Bearer <token>`, bypassing Valve's rate limits and drastically improving performance.
+- Local narrative/settings state uses `hb_*` keys.
+- Electron mirrors canonical keys into atomic `save.json` with migration/corruption handling.
+- Steam Auto-Cloud configuration is a dashboard/operator concern and still needs a two-machine matrix.
+- Backend SQLite stores trusted online data; it does not own the entire offline run save.
 
-### P0 Security Blocker
-The Publisher Web API key and the `HB_SESSION_SECRET` were previously exposed in documentation. These must be aggressively rotated in the Steamworks partner dashboard before the beta branch is opened to any public or external QA testing.
+## Trusted Backend
+
+The Express backend supports a one-ticket session exchange, HMAC-signed bearer sessions, trusted leaderboard scoring, Inventory operations, and disabled-by-default store/MicroTxn paths. The documented deployment is Docker/Caddy at `steam.tuesdaycinema.club` with durable SQLite storage.
+
+Historical health checks proved reachability/configuration, not a current Valve exchange. Re-run operational checks rather than treating a dated audit as uptime monitoring.
+
+## Manual Gates
+
+- installed-Steam identity and auth-ticket exchange;
+- one real achievement/stat update;
+- write/read all five leaderboards;
+- live Inventory definition/grant/ownership reconciliation;
+- overlay from an installed build;
+- two-machine Cloud conflict/offline recovery;
+- controller-only navigation across every major surface;
+- physical Deck suspend/resume, dock, performance, and battery;
+- Valve/legal approval before store or MicroTxn enablement.
+
+## Claim Boundaries
+
+Do not claim multiplayer, Timeline, Deck Verified, Full Controller Support, Full English Audio, purchases, or Cloud readiness beyond accepted evidence. Use `npm run steam:claims:check` and [Current Feature Status](../current-feature-status.md).
+
+## PM Release Checklist
+
+1. Name the build commit and backend environment.
+2. Pass tests, media audit, retail asset budget, claims check, and depot audit.
+3. Upload game/input/soundtrack depots.
+4. Set builds live through Steamworks where automation cannot.
+5. Execute installed/hardware acceptance and attach evidence.
+6. Update claims only after evidence is reviewed.

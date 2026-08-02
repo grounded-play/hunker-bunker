@@ -1,35 +1,46 @@
 # System Breakdown: Combat, Movement, and Classes
 
-## Overview
-Combat in Hunker Bunker is an isometric twin-stick shooter integrated with a severe resource timer (Oxygen). Currently, the player experience is hampered by a lack of mobility verbs and "sponge" enemies. Sprint 22 aims to entirely overhaul the minute-to-minute "juice" of the combat system.
+## Current Truth
 
-## The Three Exosuit Classes
-Classes define the player's starting stats, passive traits, and specific interactions with the world.
-1. **The Scout:** 
-   - *Fantasy:* Speed and Recon. High movement speed, lower base armor.
-   - *O2 Mod:* Drains O2 1.25x faster.
-   - *Sprint 22 Verb:* **Sprint Burst** (High-speed dash).
-2. **The Tank:**
-   - *Fantasy:* Endurance and Armor. Slow movement, high base health.
-   - *Sprint 22 Verb:* **Shoulder Slam** (Short lunge, high knockback, 1-shock armor).
-3. **The Engineer:**
-   - *Fantasy:* Systems and Terminals. Balanced stats, excels at interacting with the environment.
-   - *Sprint 22 Verb:* **Overclock Slide** (Quick repositioning slide).
+Combat is an isometric shooter under oxygen, ammo, positioning, and route pressure. Universal sprint is implemented for every class. Class passives are implemented and tested. The Queen uses a multi-phase boss framework. The remaining product problem is comparative feel across ordinary enemies and the other bosses—not the absence of all mobility or phase code.
 
-## The Core Pressures
-- **The O2 Leash:** Oxygen drains full-to-empty in ~5 minutes. Moving through dangerous biomes increases the drain rate (1.5x). Death forces a full respawn at the ship.
-- **Sprint 22 Fix (Beacon Recall):** To alleviate the tedious "walk back," Sprint 22 introduces a one-time "Beacon Recall" (fast travel to ship) unlocked at Camp Level 2.
+## Class Identity
 
-## The Combat "Sponge" Problem
-Currently, most bosses have 20-75 HP and rely on a single behavioral pattern (walk straight at the player and shoot). This results in the dominant strategy of "walking backward while holding left-click for 40 seconds."
+- **Scout — EVASIVE:** faster/recon-oriented, with slow resistance and reload advantages.
+- **Tank — BULWARK:** durability-oriented, with block chance and passive regeneration.
+- **Engineer — AUTO-TURRET:** systems-oriented, with deployable turret behavior and skill-tree scaling.
 
-### Sprint 22 Solution: Boss Phase Framework
-- Implement data-driven phases in `src/bossPhases.js`.
-- Bosses will hit HP thresholds that trigger **pattern swaps**, **add waves**, and **weak-point windows** (where damage is temporarily tripled).
-- The goal is to turn HP walls into 60-90 second fights consisting of at least 2 distinct decisions.
+The skill tree strengthens these identities. Universal sprint adds shared route control and consumes additional oxygen. Proposed class-specific dash/slam/slide verbs are design options, not current commitments.
 
-## "The Juice" (Presentation Overhaul)
-Combat currently lacks impact. Sprint 22 will introduce purely visual enhancements driven by existing damage events:
-- **Hitstop:** 50-70ms frame freezes on enemy hit.
-- **Impact Frames:** Scale pop animations for damage hits.
-- **Damage Pips & Kill Confirms:** Clear UI indicators when an enemy is wounded or destroyed.
+## Combat Economy
+
+The meaningful loop is damage throughput versus ammo, oxygen, enemy pressure, and safe repositioning. `src/combatEconomy.test.js` checks floor-case feasibility across classes. `src/queenFightAcceptance.test.js` simulates the real Queen phase state machine and class fire rates. These tests protect against mathematical softlocks; they do not establish fun, readability, or target encounter duration.
+
+## Queen Versus Other Bosses
+
+The Queen has armor reduction, add-control gates, phase transitions, and weak-point windows through `src/bossPhases.js`. Other boss/enemy definitions still largely originate in `src/data/enemies.js` and runtime behavior. Sprint 22 should run a side-by-side encounter audit before deciding whether to extend the framework, lower HP, change ammo drops, or shorten encounters.
+
+## Sprint 22 Acceptance Matrix
+
+For each class and representative encounter, record:
+
+- time to kill and shots/ammo consumed;
+- oxygen spent reaching and fighting;
+- number of tactically distinct decisions;
+- damage readability and hit confirmation;
+- whether backing away while firing dominates;
+- recovery after an error;
+- controller and mouse parity.
+
+Separate math failures from feel failures. A fight can be beatable and still monotonous.
+
+## Presentation Work
+
+Impact sound, damage feedback, camera shake, class cues, and combat music already have runtime surfaces. Any added hitstop must be tested against input buffering, low frame rate, accessibility settings, and multiplayer-free deterministic expectations. Prefer brief presentation emphasis over freezing simulation blindly.
+
+## PM Decisions
+
+- Target durations for ordinary, elite, biome-boss, and Queen encounters.
+- Whether each boss needs phases or simply a shorter, sharper economy.
+- Whether class-specific mobility is worth added input/tutorial complexity.
+- Which accessibility controls are mandatory for shake, flashes, and rapid audio.

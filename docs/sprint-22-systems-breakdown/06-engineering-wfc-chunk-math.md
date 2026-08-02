@@ -1,30 +1,55 @@
-# Engineering Deep Dive: WFC Chunk Math & The 49x49 Migration
+# Engineering Deep Dive: WFC Chunk Math and the 49×49 Migration
 
-## The Problem
-During Sprint 21, the world map was re-scaled. The base unit of generation, `CHUNK_SIZE`, was originally `19`. It has been changed to `49`. 
+## Current Formula
 
-The `CHUNK_SIZE` formula is defined in `src/tileCatalog.js` as:
-```javascript
-export const CHUNK_SIZE = (LATTICE * (TILE_SIZE - 1)) + 1;
+`src/tileCatalog.js` defines:
+
+```js
+ROOM_SIZE = 7
+BAND_THICKNESS = 5
+TILE_SIZE = ROOM_SIZE + (BAND_THICKNESS * 2) // 17
+LATTICE = 3
+CHUNK_SIZE = (LATTICE * (TILE_SIZE - 1)) + 1 // 49
 ```
 
-Because `CHUNK_SIZE` increased dramatically, the macro layout of the game (how chunks are distributed) broke because many calculations still assume `19`.
+Adjacent stamped tiles share one boundary row/column, which is why the formula subtracts one tile cell before multiplying. Tests and callers should import the derived constants rather than copy `49`, `17`, or older `19`/`13` values.
 
-## Areas of Failure (To Be Fixed in Sprint 22)
+## Migration Status
 
-### 1. Hardcoded Tests
-In `src/mazeExpedition.test.js`, tests are failing because they rely on hardcoded magic numbers rather than deriving them from the imported `CHUNK_SIZE`. 
-- **Action Item:** Replace magic coordinate limits in `src/wfcGenerator.test.js` and `src/mazeExpedition.test.js`.
+The migration work described in the first draft is complete on the current branch:
 
-### 2. Radial Ring Radii Calculation
-In `src/mazeExpedition.js`, the progression bands (Rings 1-4) determine where Camps, Bosses, and Hives spawn. 
-Previously, this was hardcoded. Now, it uses:
-```javascript
-RING_RADII_TUNED_AT_CHUNK_19.map((r) => Math.round(r * (CHUNK_SIZE / 19)))
-```
-- **The Gap:** The function `projectPlanToChunkReservations(plan, chunkSize = CHUNK_SIZE)` is throwing collision errors because the node placement derives X/Z from unscaled radii, but re-projecting the node's world position disagrees with its own precomputed `chunkX`/`chunkY`.
-- **Action Item:** Unify the world-to-chunk convention: `Math.floor(worldCoord / CHUNK_SIZE)`. Ensure `worldToChunkCoords` is used consistently during the radial projection phase.
+- ring radii scale from the original chunk-19 tuning baseline;
+- `worldToChunkCoords` and reservation projection use `CHUNK_SIZE`;
+- blocker placement is chunk-size-aware and de-duplicated;
+- pocket/test spans derive from current geometry;
+- canyon/plain layers are separated;
+- current tests pass.
 
-### 3. Shape-Aware Fill (`src/landforms.js`)
-The `applyRingRoadSystem` and the fill/widen passes in `src/landforms.js` currently trust a caller-supplied size instead of deriving span from the lattice and `TILE_SIZE`. This causes array out-of-bounds errors.
-- **Action Item:** Make `openMazeTerrain` aware of the carved diamond/cross/ellipse plaza silhouettes so it stops blindly filling cells up to the `floorTarget`.
+## Coordinate Conventions
+
+- World positions are continuous `x/z` values.
+- Chunk coordinates are integer keys derived by `Math.floor(worldCoord / CHUNK_SIZE)`.
+- The radial plan stores sites/blockers in world and projected chunk terms; validation must detect disagreement or collisions.
+- Chunk-local stamping must account for the shared edge between neighboring tiles.
+
+Any new system that places a site should use the existing conversion functions. A hardcoded multiplier is a regression even when it looks correct for the current size.
+
+## Geometry Conventions
+
+- `OPEN3` sockets reserve three-cell lanes.
+- Band wrapping is structural: room core, wall/ledge band, then canyon/void.
+- `mergeAdjacentSpaces` removes internal shells only between compatible same-role cells.
+- Plain tiles represent authored open traversal, not a failed room collapse.
+- Runtime widening/fill must preserve socket lanes, reserved landmarks, and role silhouettes.
+
+## Engineering Acceptance
+
+- Run focused WFC, tile catalog, room geometry, site placement, and stress suites.
+- Validate thousands of seeds for reachability, seam correctness, reservation conflicts, and deterministic replay.
+- Compare computed site chunks with actual runtime objects.
+- Inspect at least one real generated chunk with debug labels disabled.
+- Profile worst-case merged room generation and population.
+
+## Future Change Checklist
+
+If tile size, band thickness, or lattice size changes again, update derived constants first; then audit ring scale, world/chunk conversion, metadata extraction, room footprint classification, gate placement, population density, rendering budgets, and tests. Never begin by mass-replacing numeric literals without establishing which coordinate space they represent.

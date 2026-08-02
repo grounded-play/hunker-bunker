@@ -1,26 +1,48 @@
-# System Breakdown: The Run Director & Roguelike Events
+# System Breakdown: Run Director and Roguelike Events
 
-## Overview
-According to the `game-wide-review-and-solution-plan.md`, the game is at risk of feeling "authored but not replayable." Currently, randomness only shuffles room locations and spawns. To be a true roguelike, the game needs a Run Director that actively alters pressure and route safety based on the player's choices.
+## Current Status
 
-## The Current State
-- The game has "modifiers" (passive stat bumps), but no active event deck.
-- The player can always walk backward and shoot. The pressure is ambient (O2 drain), not dynamic.
+`src/director.js` is implemented, tested, instantiated by `ThreeGame`, and updated during gameplay. It selects patrol, lights-out, corruption, mercy, and taunt actions from pressure snapshots. It also defines named apex threats: a Vesper hunter pair and a Mothership exterminator lander, triggered by suspicion/outing conditions.
 
-## Sprint 22 Engineering Goals
+The original statement “the game has no active event deck” is therefore stale. The open question is whether the connected actions create perceptible, fair route-changing pressure in a real run.
 
-### 1. The Event Deck Engine
-Build a Director module that pulls from an authored deck of events based on Biome, Act, and Faction standing.
-- **Pressure Cards:** Events that force the player to change tactics. (e.g., "The Vents Open: Crawler spawn rate tripled in dark sectors for 3 minutes.")
-- **Positive Cards:** "A Cache Uncovered: Nearest undiscovered room guarantees a tech module."
+## Inputs and Cadence
 
-### 2. The Heartbeat of Fear (The Stalker)
-The game lacks an apex predator.
-- **Pre-Reveal (Act 1):** The Queen manifests as hallucinations. Radar glitches, audio spikes, but no physical threat.
-- **Post-Reveal (Act 2):** If `suspicion >= 75`, Commander Briggs dispatches a named Vesper Hunter pair. They actively pathfind toward the player across chunks. If the player is Outed, the Mothership sends an Exterminator Lander. This creates a terrifying "Mr. X" dynamic that breaks the standard combat loop.
+The director reasons about safety, health, depth, elapsed time, threat gaps, faction state, and already spawned apex events. Safe-field and mercy behavior prevent relentless pressure. Runtime integration should pause or suppress actions when gameplay simulation is not active.
 
-### 3. Faction Demand Shifts
-Camps currently offer static trades. The Director should randomize Faction Demands per run.
-- Run A: Meridian desperately needs Shells and will trade Tech at a 2x rate.
-- Run B: Meridian's systems are stable, so Tech is extremely expensive.
-This forces the player to adapt their routing and upgrading strategy every single run, cementing the roguelike replayability.
+## Product Goals
+
+- break the dominant backpedal-and-fire rhythm;
+- change route safety without invalidating authored objectives;
+- make faction suspicion physically consequential;
+- create memorable run stories;
+- preserve recovery windows and player attribution.
+
+## Sprint 22 Acceptance
+
+For representative seeds and difficulty levels, log:
+
+- event/action timeline;
+- time between threats;
+- player health/oxygen/depth when selected;
+- whether the player understood the cause;
+- whether objectives or gates became impossible;
+- whether apex threats spawned once and persisted correctly;
+- whether safe zones and pause states suppressed escalation.
+
+## Content Expansion Rule
+
+Add a card only if it changes a decision. Each new action needs eligibility, telegraph, duration, cancellation, stacking rules, recovery, and a deterministic selector test. Cosmetic-only ambience belongs in the audio/room system, not the pressure deck.
+
+## Faction Demand Variation
+
+Variable camp demand/pricing remains a product option. Before implementing it, verify that the current camp economies and active verbs are understood; random prices can create adaptation, but can also obscure faction identity and make progression feel arbitrary.
+
+## Risks
+
+- invisible director cheating;
+- event stacking during boss/story encounters;
+- stalkers crossing locked topology or safe fields;
+- mercy becoming exploitable;
+- actions continuing through pause/cutscene;
+- too much variation preventing players from learning cause and effect.

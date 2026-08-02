@@ -1,56 +1,52 @@
-# Engineering Deep Dive: Act 2 State Schema & Humanity
+# Engineering Deep Dive: Act 2 State Schema and Humanity
 
-## The Persistence Layer
-Hunker Bunker tracks narrative progression via localStorage (to be migrated fully to SQLite for server-side verification). The core Act 2 state is managed in `src/act2.js` under the key `hb_act2_v1`.
+## Current Status
 
-## The Schema (Version 3)
-To support the complex 4-seat manifest and the dual faction system, the `hb_act2_v1` state object must be expanded in Sprint 22 to include the following schema:
+Schema version 3 is implemented in `src/act2.js` under `hb_act2_v1`. Normalization, migration, persistence, manifest building, phase derivation, and ending selection are production code with extensive tests. Server SQLite is not intended to replace this complete local narrative save; Electron mirrors canonical `hb_*` state into `save.json` for durability and Steam Cloud.
 
-```javascript
-{
-    version: 3,
-    
-    // Core Progress
-    begun: false,
-    departed: false,
-    
-    // Queen & Brood
-    queenObedience: 0,
-    queenStatus: 'aboard', // aboard | rejected | killed | abandoned
-    eggsStatus: 'aboard',  // aboard | destroyed | abandoned | hidden
-    
-    // Player Cover & Infection
-    humanity: 100,          // 0..100, visible human control
-    infectionLoad: 0,       // 0..100, viral strength
-    infectionStage: 'latent', // latent | strained | symptomatic | outed | cured
-    coverIntegrity: 100,    // 0..100, how convincing the player appears
-    outedToHumans: false,
-    
-    // Factions
-    camps: [],              // State of Meridian, Tallow, Vesper
-    hives: [                // State of Suture, Relay, Carapace
-        {
-            id: 'hive_suture',
-            status: 'dormant', // dormant | mined | wounded | bonded | aboard
-            extractionLevel: 0,
-            bond: 0
-        }
-    ],
+## State Families
 
-    // The Escape Vessel Puzzle
-    manifest: {
-        player: 'infected',
-        humans: [],
-        aliens: [],
-        queen: false,
-        egg: false,
-        seatsUsed: 1,
-        seatsMax: 4
-    }
-}
-```
+- **Progress:** begun, uplink silenced, dish built, departed.
+- **Queen/brood:** obedience, Queen status, egg status.
+- **Player:** humanity, infection load/stage, cover integrity, outing.
+- **Social:** camps, suspicion, communication networks.
+- **Alien:** three normalized hive records with status, extraction, bond, and quest flags.
+- **Manifest:** derived passengers, Queen/egg presence, seats used/max, validity, and reason codes.
 
-## The Logic Solvers
-Sprint 22 requires implementing the mathematical solvers that process this schema upon vessel launch.
-- `pickAct2Ending()`: Must read `manifest.seatsUsed`. If `seatsUsed > seatsMax`, the launch must be blocked with an error toast: `MANIFEST FULL. SOMEONE MUST BE LEFT BEHIND.`
-- Depending on the composition of `manifest.humans` and `manifest.queen`, the solver maps the output to the 5 distinct ending webm files.
+The default seat maximum is four. The manifest should be rebuilt from normalized state rather than manually mutated by UI code.
+
+## Migration Contract
+
+`normalizeAct2State` accepts incomplete/older data, clamps numeric ranges, restores all canonical camps/hives, derives missing infection/obedience values where possible, and rebuilds the manifest. New fields need a default, normalization rule, old-save interpretation, and save-contract test.
+
+## Ending Solver
+
+`pickAct2Ending` resolves ten priority-ordered families. The order matters because several state vectors satisfy multiple broad descriptions. Changes require:
+
+- a specific vector test;
+- proof existing vectors retain their endings;
+- matching cutscene ID and explanation copy;
+- manifest validity and blocker reason coverage.
+
+## UI Boundary
+
+UI code may preview a modified state and call `buildAct2Manifest`/`pickAct2Ending`; it should not reproduce solver conditions. `src/endingExplanations.js` owns player-legible causal text for outcomes and blocker reasons.
+
+## Sprint 22 Work
+
+The engineering priority is not “create schema v3.” It is:
+
+1. verify every choice surface mutates state through the manager;
+2. test save/reload/death at narrative boundaries;
+3. make visible summaries match normalized truth;
+4. instrument impossible or invalid manifest vectors for QA;
+5. record human acceptance for all ten ending families or explicitly scope the beta subset.
+
+## High-Risk Changes
+
+- changing ending priority;
+- adding a passenger without seat accounting;
+- bypassing normalization;
+- storing derived manifest state as independent authority;
+- exposing raw meters without explaining causes;
+- moving local narrative authority to the backend without an offline/save migration design.

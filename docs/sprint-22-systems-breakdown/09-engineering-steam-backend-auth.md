@@ -1,30 +1,56 @@
-# Engineering Deep Dive: Steam Backend & Auth Flow
+# Engineering Deep Dive: Steam Backend Authentication
 
-## The Core Challenge
-Valve rate-limits calls to `AuthenticateUserTicket`. Currently, the game's architecture burns a fresh Steam Auth Ticket for every single backend request (e.g., submitting a leaderboard score, fetching inventory). This leads to immediate throttling and failure on live Steam servers.
+## Implemented Session Flow
 
-## The Sprint 22 Solution: HMAC Session Tokens
-We must move to a session-based architecture. 
+The session architecture is already implemented.
 
-### Step 1: Boot Verification
-When the Electron shell (`electron/main.cjs`) boots the game, `steamworks.js` generates exactly *one* Auth Ticket.
-It posts this ticket to the trusted backend (`steam.tuesdaycinema.club/steam/session`).
+1. Electron obtains a Steam web API auth ticket.
+2. The preload bridge posts it to `POST /steam/session`.
+3. `server/steamAuth.js` verifies the ticket with Valve.
+4. The backend mints a short-lived HMAC-signed token containing the verified Steam ID and app context.
+5. The preload bridge retains the session in memory and sends `Authorization: Bearer <token>` for later trusted requests.
+6. Middleware verifies signature, expiry, and app binding without calling Valve for every route.
 
-### Step 2: The Trusted Backend (`server/db.js` & Routes)
-The Node.js server receives the ticket and calls Valve's `ISteamUserAuth/AuthenticateUserTicket` endpoint.
-If Valve returns `OK`, the backend mints a short-lived (15-minute) JSON Web Token or HMAC-signed string using the `HB_SESSION_SECRET` environment variable.
-This token contains the player's verified `steamid64`.
+Tests cover token creation, tampering, expiry, app mismatch, session route behavior, and authenticated Inventory/store requests.
 
-### Step 3: Bearer Auth
-The Electron client stores this session token in memory. All subsequent requests (leaderboards, store purchases) are sent with:
-`Authorization: Bearer <HMAC_TOKEN>`
+## Trust Boundary
 
-The backend routes intercept this, verify the HMAC signature, and extract the `steamid64` without ever calling Valve's API again.
+The client may report events, but the backend must recompute or validate trusted outcomes. Never accept a renderer-supplied Steam ID as identity. Never log auth tickets, bearer tokens, Publisher keys, or session secrets.
 
-## Security Audit (P0 Blocker)
-Historical documentation in the repo accidentally exposed the `HB_SESSION_SECRET` and the `Publisher Web API Key`.
-Before the backend is deployed to production for beta testing, we must:
-1. Generate a new `Publisher Web API Key` in the Steamworks Partner portal.
-2. Generate a secure, 256-bit random string for the new `HB_SESSION_SECRET`.
-3. Update the Fly.io/Caddy environment variables with these new secrets.
-4. Run the CI depot audit to ensure `db_storage.json` and any `.env` files are strictly excluded from the final SteamPipe upload package.
+## Configuration
+
+Production requires:
+
+- Steam App ID;
+- Publisher Web API key;
+- explicit high-entropy `HB_SESSION_SECRET`;
+- HTTPS-only allowed origins;
+- durable database path;
+- canonical leaderboard mappings;
+- store/MicroTxn flags disabled unless separately approved.
+
+Run `npm run steam:audit-backend:strict` against the deployment environment. Environment values remain external to Git.
+
+## Credential Incident Context
+
+Old history contained sensitive values. Current tracked docs are redacted and the user previously reported rotation/containment. Do not repeat secrets to “prove” rotation. Release evidence should show old credentials fail, new auth succeeds, and strict configuration passes without exposing either value.
+
+## Sprint 22 Acceptance
+
+- Launch the exact packaged build through Steam.
+- Exchange one real ticket and confirm the expected Steam ID.
+- Let a session expire and verify safe renewal.
+- Verify tampered/expired tokens fail closed.
+- Submit/read all five leaderboards.
+- Verify Inventory access uses the authenticated identity.
+- Confirm logs and support bundles contain no ticket/token material.
+- Exercise backend restart and durable SQLite recovery.
+
+## Failure Modes
+
+- treating `/health` as proof Valve auth works;
+- repeatedly requesting tickets instead of reusing/renewing a session;
+- enabling mock purchase behavior in production;
+- allowing HTTP origins in strict production configuration;
+- putting credentials in docs, shell history, screenshots, or depot files;
+- coupling offline narrative saves to backend availability.

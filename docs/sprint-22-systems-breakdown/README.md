@@ -1,40 +1,92 @@
-# Sprint 22: Systems Breakdown & Master Syllabus
+# Sprint 22 Systems Breakdown and PM Syllabus
 
-This directory contains the exhaustive, parsed breakdown of Hunker Bunker's architecture, narrative, and mechanical systems. It is designed as a **Learning Workload** for the new Product Manager and the development team to understand the massive transition occurring in Sprint 22.
+This directory is the new PM's map of Hunker Bunker after the Sprint 21 tile-band merge. It is a synthesis layer, not a replacement for code, tests, the live feature matrix, or operator-only Steamworks evidence.
 
-## How to Read This Directory (The Syllabus)
+## Read This First
 
-This workload is split into four distinct tracks. Review them in order based on your lane assignment (Claude, Codex, Gemini):
+The original version of this syllabus was generated from plans that predated several completed implementations. This revision was checked against the current branch, recent commit history, runtime call sites, and the full automated suite. It uses four distinct status words:
 
-### Track 1: Vision & Onboarding (Start Here)
-- **[00-master-pm-onboarding.md](00-master-pm-onboarding.md)**
-  - *Summary:* The 10,000-foot view of the core fantasy, the genre betrayal, and the path to 1.0.
-  - *Primary Citations:* `docs/master-implementation-plan-2026-07-28.md`, `docs/current-feature-status.md`
+- **Implemented:** production code exists.
+- **Connected:** the shipped runtime invokes it.
+- **Automated:** tests or build gates exercise it.
+- **Accepted:** a human has proved it in the actual environment that matters, such as an installed Steam build or physical Steam Deck.
 
-### Track 2: World, UX, & Presentation (Lane 1: Claude)
-- **[12-ux-first-hour-and-presentation.md](12-ux-first-hour-and-presentation.md)**
-  - *Summary:* The brutal teardown of the 90-second intro gauntlet and the "AI Slop" art unification.
-  - *Primary Citations:* `docs/player-teardown-and-next-level-plan.md`
-- **[01-world-generation-and-wfc.md](01-world-generation-and-wfc.md)** & **[06-engineering-wfc-chunk-math.md](06-engineering-wfc-chunk-math.md)**
-  - *Summary:* How Radial WFC generates the maze and the critical P0 bug caused by scaling `CHUNK_SIZE` from 19 to 49.
+Do not turn “implemented” into a store claim when “accepted” is still open. The canonical cross-feature claim matrix remains [Current Feature Status](../current-feature-status.md).
 
-### Track 3: Combat, Backend, & Systems (Lane 2: Codex)
-- **[02-combat-and-classes.md](02-combat-and-classes.md)** & **[07-engineering-combat-boss-phases.md](07-engineering-combat-boss-phases.md)**
-  - *Summary:* Solving the "sponge" problem with Boss Phases, hitstop, and the new Sprint/Slam/Slide mobility verbs.
-  - *Primary Citations:* `docs/game-wide-review-and-solution-plan.md`
-- **[13-systems-run-director-and-events.md](13-systems-run-director-and-events.md)**
-  - *Summary:* Replacing static ambient pressure with dynamic event decks and a physical stalker presence.
-- **[05-platform-and-backend.md](05-platform-and-backend.md)** & **[09-engineering-steam-backend-auth.md](09-engineering-steam-backend-auth.md)**
-  - *Summary:* Steamworks IPC, the transition from local JSON to a trusted Node.js/SQLite backend, and fixing the `HB_SESSION_SECRET` leak.
-  - *Primary Citations:* `docs/steam-make-it-real-plan.md`
+## Current Baseline
 
-### Track 4: Factions, Narrative, & Audio (Lane 3: Gemini)
-- **[03-factions-and-hives.md](03-factions-and-hives.md)** & **[08-engineering-act2-state-schema.md](08-engineering-act2-state-schema.md)**
-  - *Summary:* The Act 1 Human Camps vs Act 2 Hive Sites, and collapsing the UI spreadsheet into readable summaries.
-  - *Primary Citations:* `docs/hive-swarm-camps-and-humanity-system-design.md`
-- **[04-narrative-and-manifest.md](04-narrative-and-manifest.md)** & **[11-narrative-secret-sauce-and-lore.md](11-narrative-secret-sauce-and-lore.md)**
-  - *Summary:* The 4-seat logic puzzle that determines the 5 endings, and the "Canon Weld" of Specimen 0047 to the Queen.
-  - *Primary Citations:* `docs/lore-coherence-and-secret-sauce-review.md`, `docs/expanded-universe-narrative-design.md`
-- **[10-engineering-audio-and-soundtrack.md](10-engineering-audio-and-soundtrack.md)**
-  - *Summary:* Hooking the 43 generated OST tracks into the Three.js spatial audio engine.
-  - *Primary Citations:* `docs/suno-scene-soundtrack-prompts.md`
+As reviewed for this update:
+
+- Branch: `dev/sprint-21`, carrying the merged `feat/tile-bands-v2` history.
+- Automated baseline: 1,044 passing Vitest tests.
+- World baseline: 49×49 canyon-band chunks, authoritative radial topology, deterministic ring gates, merged multi-cell rooms/halls, and a Ring 2 bridge traversal unlock are implemented.
+- Platform baseline: native Steam Input plus browser fallback, Linux/Windows Electron packaging, session-token backend auth, Cloud save bridge, achievements/stats forwarding, leaderboards, and Inventory/Vault paths exist in code.
+- Narrative baseline: Act 2 schema version 3, manifest validation, ten ending families, explanation text, the 0047/Queen canon weld, class wreckage logs, and death-reactive dialogue are implemented.
+- Audio baseline: 43 OST files and Steam metadata are packaged; five core exploration/combat cues and authored song interstitials are connected. A universal 43-track dynamic spatial score is not.
+- Release baseline: automated checks are strong; installed-Steam, live-dashboard, two-machine Cloud, and physical Deck acceptance remain human gates.
+
+## Reading Order
+
+### 1. Product and release orientation
+
+1. [Master PM Onboarding](00-master-pm-onboarding.md)
+2. [Platform, Backend, and Steam](05-platform-and-backend.md)
+3. [UX and First Hour](12-ux-first-hour-and-presentation.md)
+
+These establish what the game is, what is safe to claim, and which risks require human evidence.
+
+### 2. World and moment-to-moment play
+
+1. [World Generation and WFC](01-world-generation-and-wfc.md)
+2. [WFC Chunk Math](06-engineering-wfc-chunk-math.md)
+3. [Combat, Movement, and Classes](02-combat-and-classes.md)
+4. [Combat and Boss Phases](07-engineering-combat-boss-phases.md)
+5. [Run Director and Events](13-systems-run-director-and-events.md)
+
+### 3. Consequence and narrative
+
+1. [Factions, Camps, and Hives](03-factions-and-hives.md)
+2. [Act 2 State Schema](08-engineering-act2-state-schema.md)
+3. [Narrative and Manifest](04-narrative-and-manifest.md)
+4. [Secret Sauce and Lore](11-narrative-secret-sauce-and-lore.md)
+5. [Audio and Soundtrack](10-engineering-audio-and-soundtrack.md)
+
+### 4. Platform implementation detail
+
+1. [Steam Backend Authentication](09-engineering-steam-backend-auth.md)
+2. [Steam Build Pipeline](../steam-build-pipeline.md)
+3. [Backend/Steam Connection Audit](../backend-steam-and-game-connection-audit-2026-07-28.md)
+4. [Master Implementation Plan](../master-implementation-plan-2026-07-28.md)
+
+## Evidence Hierarchy
+
+When sources disagree, use this order:
+
+1. Current code and tests.
+2. [Current Feature Status](../current-feature-status.md).
+3. Current build/depot/backend audits.
+4. This Sprint 22 syllabus.
+5. Dated master plans and reviews.
+6. Archived sprint proposals and agent walkthroughs.
+
+Reviews remain valuable for product diagnosis even after their implementation claims become stale. For example, the first-hour teardown still expresses real quality risks, but several items it described as absent—settings, skip flow, director, boss phases, and lore welds—now have code.
+
+## PM Operating Cadence
+
+- Every sprint item needs an owner, evidence path, acceptance environment, and explicit non-goals.
+- Update the feature matrix when implementation or acceptance changes.
+- Require a human observation note for first-hour, combat feel, world readability, and physical hardware claims.
+- Keep Steam store copy behind `npm run steam:claims:check`.
+- Keep storefront/source art under `steam/store/`; build and depot audits reject it from customer payloads.
+- Do not place credentials, session tokens, auth tickets, or production environment values in documentation.
+
+## Sprint 22 Outcome
+
+Sprint 22 should not rebuild systems that already exist. Its job is to turn the implemented vertical slice into accepted product evidence:
+
+1. Run first-hour and long-run observation passes.
+2. Tune merged 49×49 spaces and ring landmarks from play, not diagrams.
+3. Extend the Queen-quality phase framework to remaining bosses only if playtests justify it.
+4. Make faction and ending consequences legible without exposing every variable.
+5. Finish installed-Steam, backend, Cloud, controller, and physical-Deck acceptance.
+6. Decide which of the 43 soundtrack cues deserve stateful runtime placement rather than playing all tracks indiscriminately.

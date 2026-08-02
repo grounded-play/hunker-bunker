@@ -1,29 +1,60 @@
-# Engineering Deep Dive: Combat & Boss Phases
+# Engineering Deep Dive: Combat and Boss Phases
 
-## The Current State of Combat
-Currently, combat is defined in `src/data/enemies.js` and instantiated in `src/threeGame.js`.
-Enemies act as basic objects with a `maxHp` and `speed` property. 
-For example, the primary boss is defined as:
-```javascript
-boss_cybersnail: { maxHp: 15, speed: 1.5 },
-```
-*Note: A recent commit dropped this from 20 HP to 15 HP, but the test `src/data/enemies.test.js` still asserts 20 HP, causing a pipeline failure.*
+## Implemented Framework
 
-## The Boss Phase Framework (Sprint 22)
-To fix the "sponge" problem (where bosses just walk at the player), we must implement a finite state machine for boss encounters.
+`src/bossPhases.js` is production code, not a proposed Sprint 22 filename. Its pure API includes:
 
-### Architecture Plan
-1. **Create `src/bossPhases.js`**: A new module that exports state definitions for each boss.
-2. **Phase Thresholds**: 
-   - Phase 1 (100% - 50% HP): Standard pattern (e.g., walk and shoot).
-   - Phase 2 (50% - 0% HP): Enraged pattern (e.g., spawn adds, increase speed, unlock secondary attack).
-3. **Weak-Point Windows**:
-   - Expose a boolean `isStaggered` on the enemy mesh user data.
-   - Modify the damage calculation in `src/threeGame.js` to multiply damage by `3.0` if `isStaggered === true`.
+- `createBossFight(def)`;
+- `currentPhase(fight)`;
+- `isWeakpointOpen(fight)`;
+- `applyBossDamage(fight, amount)`;
+- `tickBossFight(fight, delta, context)`;
+- `QUEEN_FIGHT_DEF` and phase dialogue.
 
-## Mobility Verbs
-Currently, only the Scout has a mobility verb (Sprint Burst). Sprint 22 requires standardizing this across classes.
+The Queen definition uses three phases and stateful events. Runtime integration in `src/threeGame.js` routes damage and encounter updates through this model.
 
-### Implementation inside `src/threeGame.js`
-- **Tank (Shoulder Slam):** Requires applying a forward velocity vector, triggering a short `knockback` impulse on colliding enemy meshes, and granting `invulnerable = true` for exactly `1-shock` duration (approx. 300ms).
-- **Engineer (Overclock Slide):** Requires temporarily dropping the friction coefficient on the player controller and applying a high-speed vector for 500ms, consuming 5% of the O2 bar.
+## What Automation Proves
+
+- Phase transitions and add gates occur.
+- Armor chips damage rather than reducing small hits to zero.
+- Weak-point windows modify effective damage.
+- Every class can complete an idealized constant-fire Queen simulation.
+- Queen-specific runtime routing has focused tests.
+
+It does not prove 60–90 second human fight duration, attack telegraph quality, movement challenge, or recovery feel.
+
+## Extending the Framework
+
+Do not copy the Queen definition wholesale. A boss definition should specify:
+
+- phase entry threshold and readable transition event;
+- attack/pattern change;
+- add policy and cap;
+- weak-point condition and duration;
+- failure recovery and ammo support;
+- audio/visual telegraph;
+- dialogue ownership;
+- deterministic test scenario.
+
+The runtime should consume phase events; it should not duplicate threshold logic in rendering code.
+
+## Known Boundary
+
+The enemy catalog and non-Queen boss behaviors are not automatically phase-driven just because `bossPhases.js` exists. Audit each encounter before labeling the full boss roster “phase complete.”
+
+## Sprint 22 Engineering Deliverables
+
+1. Produce a measured encounter table from real builds.
+2. Select the worst one or two boss experiences.
+3. Decide between economy tuning and phase conversion.
+4. Add pure phase tests and one runtime integration test per converted boss.
+5. Run mouse, controller, and Deck-class performance acceptance.
+
+## Regression Risks
+
+- phase events firing twice across frame boundaries;
+- adds blocking weak points forever;
+- armor making low-damage classes ineffective;
+- boss state continuing while gameplay input is paused;
+- audiovisual effects obscuring hazards;
+- ammo support only spawning after the kill, too late to prevent a softlock.

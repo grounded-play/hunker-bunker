@@ -1,23 +1,49 @@
-# Engineering Deep Dive: Audio & The Soundtrack
+# Engineering Deep Dive: Audio and Soundtrack
 
-## Overview
-Hunker Bunker relies on Three.js's `PositionalAudio` for spatial soundscapes in the 3D world, combined with a 2D UI audio layer. Recently, a massive 43-track original soundtrack was generated (documented in `suno-scene-soundtrack-prompts.md` and `ost_metadata.csv`). 
+## Current Audio Architecture
 
-## The Current State
-- The game has ambient tracks and SFX, but the 43 new tracks are not yet mapped to dynamic game states.
-- The `src/roomThemes.js` file handles assigning audio to specific room clusters (e.g., changing from a mechanical hum to biological squelching).
+`src/audio.js` provides a shared Web Audio manager with music, SFX, world, and voice mixing; loading, mute/volume controls, procedural cues, ambience, and context/tension changes are connected through `main.js` and gameplay events. This is not currently a universal `THREE.PositionalAudio` score system.
 
-## Sprint 22 Engineering Goals
+Room themes describe visual/encounter/prop identities in `src/roomThemes.js`; they do not independently select one of 43 OST tracks for every room.
 
-### 1. The Dynamic Audio Matrix
-We must build a state-aware audio manager that reads the current `hb_act2_v1` state and seamlessly crossfades tracks.
-- **Act 1 (Exploration):** Uses the "Glacial Depths" or "Overgrown Bio-Sphere" tracks.
-- **Act 2 (Infected):** If `humanity` < 50%, tracks should swap to their corrupted/dissonant counterparts (e.g., "The Spores Know Your Name").
-- **Boss Fights:** Trigger combat synths (e.g., "Gigawatt Goliath") based on the new `bossPhases.js` states.
+## OST Status
 
-### 2. The Spatial Mix
-- Attach `THREE.PositionalAudio` to the Camp Leaders and Hive cores. For example, Sister Martha's camp (Tallow) should emit the "Warmth Beneath the Ice" track localized to her sector.
-- Add occlusion raycasting: if a wall is between the player and the audio source, use a LowPass filter node to muffle the sound.
+- 43 MP3 sources are validated from `public/audio/ost`.
+- Steam CSV metadata, titles, durations, ID3 tagging, cover art, tracklist, and a separate soundtrack depot are automated.
+- Five core cues are loaded for title/safe ship/cryo/bio/combat contexts.
+- Authored song interstitials connect additional narrative cues.
+- The Steam store metadata lists all 43 tracks; store art and descriptions were updated separately.
 
-### 3. Soundtrack DLC Packaging
-The OST is currently being processed (ID3 tags and artwork). We need to ensure the SteamPipe upload script correctly separates the `dist_soundtrack` directory into a distinct Steam DLC depot so players can download the MP3s outside the game.
+“43 tracks packaged” does not mean all 43 should rotate during ordinary gameplay. Many are character, boss, consequence, or ending-specific.
+
+## Sprint 22 Audio Map
+
+Create an authored cue table with:
+
+- cue/track ID;
+- narrative owner;
+- trigger and cancellation condition;
+- diegetic versus score classification;
+- priority and crossfade policy;
+- replay cooldown;
+- fallback cue;
+- DLC-only flag where appropriate.
+
+Prioritize ship, biome exploration, threat, three camps, three hives, Queen phases, major consequence beats, and endings. Avoid assigning tracks merely to increase usage count.
+
+## Spatial Audio Decision
+
+Camp machinery, hive cores, vents, alarms, and creature emitters are good positional candidates. Full songs attached to characters may produce awkward attenuation and repeated overlap. If positional music is pursued, prototype one camp and one hive with distance falloff, occlusion, re-entry behavior, and mix ducking before generalizing.
+
+## Packaging Boundary
+
+`npm run package-soundtrack` builds `dist_soundtrack`; the soundtrack VDF maps only that directory and excludes the convenience ZIP. Game store art under `steam/store/` is not included. `npm run steam:upload` uploads game and soundtrack builds, but a human still sets the soundtrack build live and publishes Steamworks metadata/store changes.
+
+## Acceptance
+
+- No overlapping full-length tracks after rapid context changes.
+- Crossfades survive pause, cutscenes, death, and return to title.
+- Mix sliders and mute apply consistently to music/video/voice.
+- Missing assets fall back without blocking boot.
+- Track title/number/duration match Steam metadata and packaged filenames.
+- Installed soundtrack downloads all 43 MP3s in order.
