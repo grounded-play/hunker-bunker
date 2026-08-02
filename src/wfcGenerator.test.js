@@ -192,6 +192,8 @@ describe('collapseChunkLattice', () => {
         expect([...ids].some((id) => id.startsWith('room-bent'))).toBe(true);
         expect([...ids].some((id) => id.startsWith('corridor-narrow'))).toBe(true);
         expect([...ids].some((id) => id.startsWith('corridor-straight'))).toBe(true);
+        expect([...ids].some((id) => id.startsWith('corridor-turn'))).toBe(true);
+        expect([...ids].some((id) => id.startsWith('corridor-t') || id.startsWith('corridor-cross'))).toBe(true);
         expect([...ids].some((id) => id.startsWith('canyon-walkway'))).toBe(true);
     });
 
