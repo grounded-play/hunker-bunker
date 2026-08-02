@@ -475,7 +475,7 @@ export function validateLatticeSeams(lattice) {
 // solid cell beside indoor traversal as a structural wall. Exposed
 // canyon-walkway tiles deliberately skip that wall band: they are wall-less
 // platforms whose declared WFC sockets are the only safe exits.
-export function addCanyonVoidAroundWalkable(grid, lattice = null) {
+export function addCanyonVoidAroundWalkable(grid, lattice = null, { expandExistingCanyon = false } = {}) {
     if (!Array.isArray(grid) || grid.length === 0) return grid;
     const height = grid.length;
     const width = grid[0]?.length ?? 0;
@@ -508,6 +508,17 @@ export function addCanyonVoidAroundWalkable(grid, lattice = null) {
         }
         return false;
     };
+    const exteriorGroundReach = (x, y) => {
+        // Smooth coordinate noise gives each wall a 3-5 tile apron while
+        // keeping neighboring samples correlated, so the shoreline waves
+        // rather than alternating in a one-cell checkerboard.
+        const wave = (
+            Math.sin(x * 0.43)
+            + Math.cos(y * 0.37)
+            + Math.sin((x + y) * 0.19)
+        ) / 3;
+        return 4 + Math.round((wave + 1) * 0.5 * 2);
+    };
 
     for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
@@ -517,12 +528,12 @@ export function addCanyonVoidAroundWalkable(grid, lattice = null) {
                 continue;
             }
             if (hasWalkableWithin(x, y, 1)) continue; // structural wall shell
-            if (hasWalkableWithin(x, y, 3)) {
-                // Two cells of safe exterior ground between the wall shell
-                // and the falloff. O is rendered as floor and is intentionally
-                // walkable for the player.
+            const groundReach = exteriorGroundReach(x, y);
+            if (hasWalkableWithin(x, y, groundReach)) {
+                // At least three cells of safe exterior ground between the
+                // wall shell and the falloff, varying smoothly up to five.
                 grid[y][x] = 'O';
-            } else if (hasWalkableWithin(x, y, 4)) {
+            } else if (hasWalkableWithin(x, y, groundReach + 1)) {
                 grid[y][x] = 'C';
             } else {
                 grid[y][x] = 'X';
@@ -533,11 +544,14 @@ export function addCanyonVoidAroundWalkable(grid, lattice = null) {
     // Authored landmarks such as the crash room begin with explicit X around
     // their shell rather than deep '#'. Give those sites the same safe ledge
     // and cliff sequence without changing canyon that is genuinely distant.
-    for (let y = 0; y < height; y += 1) {
-        for (let x = 0; x < width; x += 1) {
-            if (source[y][x] !== 'X') continue;
-            if (hasWalkableWithin(x, y, 3)) grid[y][x] = 'O';
-            else if (hasWalkableWithin(x, y, 4)) grid[y][x] = 'C';
+    if (expandExistingCanyon) {
+        for (let y = 0; y < height; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+                if (source[y][x] !== 'X') continue;
+                const groundReach = exteriorGroundReach(x, y);
+                if (hasWalkableWithin(x, y, groundReach)) grid[y][x] = 'O';
+                else if (hasWalkableWithin(x, y, groundReach + 1)) grid[y][x] = 'C';
+            }
         }
     }
 

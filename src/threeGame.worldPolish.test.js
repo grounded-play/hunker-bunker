@@ -22,6 +22,7 @@ describe('world polish', () => {
             player: { position: { x: 10, z: 10 } },
             chunkSize: 19,
             visibleChunkRadius: 1,
+            chunkResidentPadding: 3,
             _lastChunkVisibilityKey: '0,0:1',
             pendingChunkMounts: [],
             getChunkPrefetchCoords: () => [],
@@ -103,8 +104,8 @@ describe('world polish', () => {
         expect(queueChunkMount).toHaveBeenCalledTimes(9);
         expect(retained.visible).toBe(false);
         expect(game.chunkMeshes.has('-2,0')).toBe(true);
-        expect(game.chunkMeshes.has('-3,0')).toBe(false);
-        expect(disposeChunkGroupResources).toHaveBeenCalledWith(distant);
+        expect(game.chunkMeshes.has('-3,0')).toBe(true);
+        expect(disposeChunkGroupResources).not.toHaveBeenCalledWith(distant);
 
         game.player.position.x = -40; // center chunk -1: retained chunk is visible again
         ThreeGame.prototype.syncVisibleChunks.call(game, true, { prefetch: false, processLimit: 0 });

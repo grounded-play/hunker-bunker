@@ -836,7 +836,10 @@ export class ThreeGame {
         this.chunkSize = CHUNK_SIZE;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
         this.disableFogOfWar = true;
-        this.defaultVisibleChunkRadius = 1;
+        // Stream/render a 5x5 neighborhood. Mounting remains frame-budgeted,
+        // so this grows the safety buffer without rebuilding all 25 chunks in
+        // one blocking startup frame.
+        this.defaultVisibleChunkRadius = 2;
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         this.wallHeight = 2.8;
         this.wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
@@ -910,6 +913,7 @@ export class ThreeGame {
         // inside the current chunk. This enlarges the loading scan without
         // making the always-visible set jump from 3x3 to an expensive 5x5.
         this.chunkPrefetchMargin = 20;
+        this.chunkResidentPadding = 3;
         this.destroyedWallKeys = new Set();
         this.destroyedExteriorWallKeys = new Set();
         this.wallMeshes = [];
@@ -1209,9 +1213,9 @@ export class ThreeGame {
             transparent: true,
             alphaTest: 0.02,
             depthWrite: true,
-            color: 0xd3d8dc,
+            color: 0x747b80,
             roughness: 0.94,
-            metalness: 0.28,
+            metalness: 0.18,
             polygonOffset: true,
             polygonOffsetFactor: -4,
             polygonOffsetUnits: -4
@@ -1314,9 +1318,9 @@ export class ThreeGame {
                 '#include <map_fragment>',
                 `
                 #ifdef USE_MAP
-                    vec2 uvBase = vWorldPos.xz * 0.12;
-                    vec2 uvGrunge = vWorldPos.xz * 0.053;
-                    vec2 uvDetail = vWorldPos.xz * 0.27;
+                    vec2 uvBase = vWorldPos.xz * 0.20;
+                    vec2 uvGrunge = vWorldPos.xz * 0.089;
+                    vec2 uvDetail = vWorldPos.xz * 0.36;
 
                     vec4 bunkerBase = texture2D( tBase, uvBase );
                     vec4 bunkerGrunge = texture2D( tGrunge, uvGrunge );
@@ -2431,18 +2435,25 @@ export class ThreeGame {
         // bottomless biomechanical rock face exposed when the player
         // breaches an outside room wall.
         const canyonMaterialConfigs = {
-            [BIOME_KEYS.ACTIVE]: ['/canyon_falloff_biomech.png', 0x294257, 0x071521],
-            [BIOME_KEYS.CRYO]: ['/canyon_falloff_ice.png', 0x375f82, 0x081d35],
-            [BIOME_KEYS.BIO]: ['/canyon_falloff_alien.png', 0x4a3f52, 0x09251d]
+            [BIOME_KEYS.ACTIVE]: ['/canyon_falloff_biomech.png', '/bunker_wall_metal_normal.png', 0x294257, 0x071521],
+            [BIOME_KEYS.CRYO]: ['/canyon_falloff_ice.png', '/cryo_wall_conduit_normal.png', 0x375f82, 0x081d35],
+            [BIOME_KEYS.BIO]: ['/canyon_falloff_alien.png', '/bio_wall_veins_normal.png', 0x4a3f52, 0x09251d]
         };
         this.cliffTextures = {};
+        this.cliffNormalTextures = {};
         this.cliffMaterials = {};
-        for (const [biomeKey, [path, color, emissive]] of Object.entries(canyonMaterialConfigs)) {
+        this.cliffShaderUniforms = [];
+        for (const [biomeKey, [path, normalPath, color, emissive]] of Object.entries(canyonMaterialConfigs)) {
             const texture = this.loadTerrainTexture(path, textureLoader, maxAnisotropy);
             texture.repeat.set(1.5, 1.5);
+            const normalTexture = this.loadTerrainTexture(normalPath, textureLoader, maxAnisotropy);
+            normalTexture.repeat.set(1.5, 1.5);
+            this.cliffNormalTextures[biomeKey] = normalTexture;
             this.cliffTextures[biomeKey] = texture;
             const material = new THREE.MeshStandardMaterial({
                 map: texture,
+                normalMap: normalTexture,
+                normalScale: new THREE.Vector2(0.72, 0.72),
                 color,
                 emissive: new THREE.Color(emissive),
                 emissiveIntensity: 0.65,
@@ -2451,6 +2462,8 @@ export class ThreeGame {
                 fog: true
             });
             material.onBeforeCompile = (shader) => {
+                shader.uniforms.uCliffTime = { value: 0 };
+                this.cliffShaderUniforms.push(shader.uniforms);
                 shader.vertexShader = shader.vertexShader.replace(
                     'void main() {',
                     `
@@ -2470,6 +2483,7 @@ export class ThreeGame {
                 shader.fragmentShader = `
                     varying vec3 vWorldPos;
                     varying vec3 vWorldNormal;
+                    uniform float uCliffTime;
                     ${shader.fragmentShader}
                 `;
                 shader.fragmentShader = shader.fragmentShader.replace(
@@ -2495,6 +2509,14 @@ export class ThreeGame {
                     #endif
                     `
                 );
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <emissivemap_fragment>',
+                    `
+                    #include <emissivemap_fragment>
+                    float cliffPulse = 0.5 + 0.5 * sin(uCliffTime * 1.4 + vWorldPos.x * 0.37 + vWorldPos.z * 0.29 - vWorldPos.y * 0.16);
+                    totalEmissiveRadiance += diffuseColor.rgb * cliffPulse * 0.075;
+                    `
+                );
             };
             this.cliffMaterials[biomeKey] = material;
         }
@@ -2503,6 +2525,16 @@ export class ThreeGame {
             color: 0x020304,
             fog: true
         });
+        this.cliffPathMaterial = new THREE.MeshBasicMaterial({
+            color: 0x70eaff,
+            transparent: true,
+            opacity: 0.42,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            fog: true,
+            side: THREE.DoubleSide
+        });
+        this.cliffPathGeometry = new THREE.CircleGeometry(0.62, 20);
 
         this.invisibleMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
@@ -4738,6 +4770,12 @@ export class ThreeGame {
 
     render() {
         const now = performance.now();
+        for (const uniforms of this.cliffShaderUniforms ?? []) {
+            if (uniforms.uCliffTime) uniforms.uCliffTime.value = now * 0.001;
+        }
+        if (this.cliffPathMaterial) {
+            this.cliffPathMaterial.opacity = 0.32 + Math.sin(now * 0.0024) * 0.12;
+        }
         if (this.performanceProfile === 'menu'
             && this._lastMenuRenderAt > 0
             && now - this._lastMenuRenderAt < this.menuFrameIntervalMs) {
@@ -14811,7 +14849,7 @@ export class ThreeGame {
             }
         }
 
-        const unloadRadius = this.visibleChunkRadius + 1;
+        const unloadRadius = this.visibleChunkRadius + (this.chunkResidentPadding ?? 3);
         for (let chunkY = centerChunkY - unloadRadius; chunkY <= centerChunkY + unloadRadius; chunkY++) {
             for (let chunkX = centerChunkX - unloadRadius; chunkX <= centerChunkX + unloadRadius; chunkX++) {
                 resident.add(`${chunkX},${chunkY}`);
@@ -15492,6 +15530,15 @@ export class ThreeGame {
         primaryMesh.castShadow = true;
         group.add(primaryMesh);
 
+        if (this.isCliffSecretPath(worldX, worldZ) && this.cliffPathGeometry && this.cliffPathMaterial) {
+            const pathGlow = new THREE.Mesh(this.cliffPathGeometry, this.cliffPathMaterial);
+            pathGlow.rotation.x = -Math.PI / 2;
+            pathGlow.position.set(worldX, 0.045, worldZ);
+            pathGlow.renderOrder = 2;
+            pathGlow.userData = { isCliffSecretPath: true };
+            group.add(pathGlow);
+        }
+
         // 2. Secondary organic rock outcroppings to break straight grid lines
         const subCount = 1 + Math.floor(rng() * 2);
         for (let i = 0; i < subCount; i += 1) {
@@ -15512,6 +15559,13 @@ export class ThreeGame {
         }
 
         return group;
+    }
+
+    isCliffSecretPath(worldX, worldZ) {
+        if (this.getTileType(worldX, worldZ) !== CLIFF_TILE) return false;
+        return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => (
+            this.getTileType(worldX + dx, worldZ + dz) === CLIFF_TILE
+        ));
     }
 
     markWallTileDestroyed(worldX, worldZ) {
@@ -21342,6 +21396,7 @@ export class ThreeGame {
             };
         }
         if (tileType === CLIFF_TILE) {
+            if (this.isCliffSecretPath(tileX, tileY)) return null;
             return {
                 x: tileX,
                 z: tileY,
@@ -22183,7 +22238,7 @@ export class ThreeGame {
 
     buildCrashSiteChunk(grid, chunkX = 0, chunkY = 0) {
         this.clearSpawnArea(grid, chunkX, chunkY);
-        addCanyonVoidAroundWalkable(grid);
+        addCanyonVoidAroundWalkable(grid, null, { expandExistingCanyon: true });
         return grid;
     }
 
@@ -22614,6 +22669,12 @@ export class ThreeGame {
         this.roomFloorMaterialAtlas?.dispose?.();
         this.siteFloorMaterialAtlas?.dispose?.();
         Object.values(this.cliffMaterials ?? {}).forEach((material) => material?.dispose?.());
+        Object.values(this.cliffTextures ?? {}).forEach((texture) => texture?.dispose?.());
+        Object.values(this.cliffNormalTextures ?? {}).forEach((texture) => texture?.dispose?.());
+        this.cliffPathMaterial?.dispose?.();
+        this.cliffPathGeometry?.dispose?.();
+        this.cliffPrimaryGeometry?.dispose?.();
+        this.cliffRockGeometry?.dispose?.();
         this.voidMaterial?.dispose?.();
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();

@@ -324,14 +324,14 @@ describe('stampLattice', () => {
     });
 
     it('converts all deep solid mass to canyon while retaining one indoor wall band', () => {
-        const grid = Array.from({ length: 11 }, () => Array(11).fill('#'));
-        grid[5][5] = '.';
+        const grid = Array.from({ length: 17 }, () => Array(17).fill('#'));
+        grid[8][8] = '.';
         addCanyonVoidAroundWalkable(grid);
-        expect(grid[5][4]).toBe('#');
-        expect(grid[4][4]).toBe('#');
-        expect(grid[5][3]).toBe('O');
+        expect(grid[8][7]).toBe('#');
+        expect(grid[7][7]).toBe('#');
+        expect(grid[8][6]).toBe('O');
         expect(grid[0][0]).toBe('X');
-        expect(grid[10][10]).toBe('X');
+        expect(grid[16][16]).toBe('X');
         expect(grid.flat()).toContain('C');
         expect(grid.flat().filter((cell) => cell === 'X').length).toBeGreaterThan(
             grid.flat().filter((cell) => cell === '#').length
