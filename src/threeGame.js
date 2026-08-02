@@ -11536,10 +11536,14 @@ export class ThreeGame {
         const chunkX = Math.floor(this.player.position.x / this.chunkSize);
         const chunkY = Math.floor(this.player.position.z / this.chunkSize);
         this.discoveredMapChunkKeys ??= new Set();
-        this.discoveredMapChunkKeys.add(`${chunkX},${chunkY}`);
+        const chunkKey = `${chunkX},${chunkY}`;
+        if (!this.discoveredMapChunkKeys.has(chunkKey)) {
+            this.discoveredMapChunkKeys.add(chunkKey);
+            debugLog.info('MAP', 'Chunk revealed', { chunk: chunkKey });
+        }
         this.discoveredMapRoomKeys ??= new Set();
         this.discoveredMapCellKeys ??= new Set();
-        const grid = this.chunkCache.get(`${chunkX},${chunkY}`);
+        const grid = this.chunkCache.get(chunkKey);
         const localX = Math.round(this.player.position.x - chunkX * this.chunkSize);
         const localY = Math.round(this.player.position.z - chunkY * this.chunkSize);
         for (let dy = -3; dy <= 3; dy += 1) {
@@ -11551,9 +11555,18 @@ export class ThreeGame {
                 this.discoveredMapCellKeys.add(`${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`);
             }
         }
-        for (const room of this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? []) {
+        for (const room of this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? []) {
             if ((room.footprint ?? []).some((cell) => cell.x === localX && cell.y === localY)) {
-                this.discoveredMapRoomKeys.add(`${chunkX},${chunkY}:${room.id}`);
+                const roomKey = `${chunkKey}:${room.id}`;
+                if (!this.discoveredMapRoomKeys.has(roomKey)) {
+                    this.discoveredMapRoomKeys.add(roomKey);
+                    debugLog.info('MAP', 'Room revealed', {
+                        chunk: chunkKey,
+                        roomId: room.id,
+                        role: room.role ?? null,
+                        theme: room.theme ?? null
+                    });
+                }
             }
         }
     }
@@ -15068,6 +15081,11 @@ export class ThreeGame {
         // a runtime concern and must not inflate the covered startup workload.
         this.syncVisibleChunks(true, { prefetch: false });
         const initialPending = this.pendingChunkMounts.length;
+        debugLog.info('STREAM', 'Initial chunk staging started', {
+            chunks: initialPending,
+            radius: this.visibleChunkRadius,
+            batchSize
+        });
         let mounted = 0;
         onProgress?.(initialPending === 0 ? 1 : 0);
 
@@ -15097,6 +15115,10 @@ export class ThreeGame {
         }
 
         onProgress?.(1);
+        debugLog.info('STREAM', 'Initial chunk staging ready', {
+            mounted: this.chunkMeshes.size,
+            queued: this.pendingChunkMounts.length
+        });
     }
 
     addTerrainStepDressing(group, chunkX, chunkY, grid, landform) {
@@ -15221,7 +15243,11 @@ export class ThreeGame {
                     '#include <worldpos_vertex>',
                     `
                     #include <worldpos_vertex>
-                    vRoomFloorWorldPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+                    #ifdef USE_INSTANCING
+                        vRoomFloorWorldPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+                    #else
+                        vRoomFloorWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+                    #endif
                     `
                 );
                 shader.fragmentShader = `

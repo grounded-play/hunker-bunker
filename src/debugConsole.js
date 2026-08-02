@@ -110,13 +110,13 @@ export class DebugLogger {
             const method = (init && init.method) ? init.method.toUpperCase() : 'GET';
             const startTime = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
 
-            logger.pushLog('debug', 'FETCH', [`-> ${method} ${url}`]);
-
             return origFetch.call(this, input, init).then(response => {
                 const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
                 const duration = Math.round(now - startTime);
-                const level = response.ok ? 'debug' : 'warn';
-                logger.pushLog(level, 'FETCH', [`<- ${method} ${url} [${response.status} ${response.statusText}] (${duration}ms)`]);
+                if (!response.ok || duration >= 1000) {
+                    const level = response.ok ? 'debug' : 'warn';
+                    logger.pushLog(level, 'FETCH', [`<- ${method} ${url} [${response.status} ${response.statusText}] (${duration}ms)`]);
+                }
                 return response;
             }).catch(err => {
                 const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();

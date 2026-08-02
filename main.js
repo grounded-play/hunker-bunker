@@ -3448,12 +3448,7 @@ function runDeathSequence(event) {
         triggerDoorTransition(
             () => {
                 showGameOverScreen(stats, { isVictory: false, deathReason });
-                resetRunToStartingState({
-                    resetBank: false,
-                    skipEffects: true,
-                    snailSpawnEnabled: false,
-                    purgeSnails: true
-                });
+                setSnailSpawnState(false, { purgeExisting: true });
                 window.game?.setInputEnabled?.(false);
             },
             null,
@@ -3604,12 +3599,7 @@ window.addEventListener('player-extracted', (event) => {
         triggerDoorTransition(
             () => {
                 showGameOverScreen(stats, { isVictory: true });
-                resetRunToStartingState({
-                    resetBank: false,
-                    skipEffects: true,
-                    snailSpawnEnabled: false,
-                    purgeSnails: true
-                });
+                setSnailSpawnState(false, { purgeExisting: true });
                 window.game?.setInputEnabled?.(false);
             },
             null,
@@ -4747,12 +4737,7 @@ if (gameOverTryAgain) {
 function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
     hideBiomePrompt();
     missionFlowRunning = false;
-    resetRunToStartingState({
-        resetBank: false,
-        skipEffects: true,
-        snailSpawnEnabled: false,
-        purgeSnails: true
-    });
+    setSnailSpawnState(false, { purgeExisting: true });
 
     triggerDoorTransition(
         () => {
@@ -10292,6 +10277,7 @@ const steamDebugStatus = document.getElementById('steam-debug-status');
 const bootDiagnostics = [];
 let bootDiagnosticOrigin = null;
 let bootLongTaskObserver = null;
+let bootLongTasks = [];
 
 function traceBootPhase(phase, details = null) {
     const now = performance.now();
@@ -10316,7 +10302,8 @@ function startBootLongTaskDiagnostics() {
     try {
         bootLongTaskObserver = new PerformanceObserver((list) => {
             for (const task of list.getEntries()) {
-                debugLog.warn('PERF', `Long renderer task during boot: ${Math.round(task.duration)}ms`, {
+                bootLongTasks.push({
+                    durationMs: Math.round(task.duration),
                     startMs: Math.round(task.startTime)
                 });
             }
@@ -10328,12 +10315,18 @@ function startBootLongTaskDiagnostics() {
 }
 
 function finishBootDiagnostics() {
+    if (bootLongTasks.length > 0) {
+        const totalMs = bootLongTasks.reduce((sum, task) => sum + task.durationMs, 0);
+        const slowest = [...bootLongTasks].sort((a, b) => b.durationMs - a.durationMs).slice(0, 5);
+        debugLog.warn('PERF', `Boot contained ${bootLongTasks.length} long tasks (${totalMs}ms total)`, { slowest });
+    }
     traceBootPhase('boot-ready', {
         renderer: window.game?.renderer?.info?.render ?? null,
         pixelRatio: window.game?.renderer?.getPixelRatio?.() ?? null
     });
     bootLongTaskObserver?.disconnect();
     bootLongTaskObserver = null;
+    bootLongTasks = [];
 }
 
 window.__hbBootDiagnostics = bootDiagnostics;

@@ -41,6 +41,7 @@ export class VitalsHUD {
             o2: 100,
             bubbleActive: false
         };
+        this.lastLoggedO2Bucket = null;
 
         this.handleHealth = this.handleHealth.bind(this);
         this.handleO2 = this.handleO2.bind(this);
@@ -66,7 +67,10 @@ export class VitalsHUD {
         if (typeof detail.bubbleActive === 'boolean') {
             this.state.bubbleActive = detail.bubbleActive;
         }
-        if (Math.round(this.state.o2) % 10 === 0 || this.state.o2 < 20) {
+        const roundedO2 = Math.round(this.state.o2);
+        const o2Bucket = roundedO2 < 20 ? roundedO2 : Math.floor(roundedO2 / 10) * 10;
+        if (o2Bucket !== this.lastLoggedO2Bucket) {
+            this.lastLoggedO2Bucket = o2Bucket;
             debugLog.debug('VITALS', `Oxygen level: ${Math.round(this.state.o2)}% (Bubble: ${this.state.bubbleActive})`);
         }
         this.renderO2();

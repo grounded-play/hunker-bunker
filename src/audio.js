@@ -225,10 +225,6 @@ export class AudioManager {
         // Pick a random variation
         const selectedKey = matchingKeys[Math.floor(Math.random() * matchingKeys.length)];
 
-        if (typeof window !== 'undefined' && window.hbLog) {
-            window.hbLog('AUDIO', 'debug', `Play audio clip [${key}] -> ${selectedKey}`);
-        }
-
         const source = audioCtx.createBufferSource();
         source.buffer = this.buffers[selectedKey];
         
