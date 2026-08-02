@@ -88,6 +88,8 @@ import {
 import { ExplorationTracker } from './mapSystem.js';
 
 export const EXTERIOR_CANYON_TILE = 'X';
+export const CLIFF_TILE = 'C';
+export const LEDGE_TILE = 'O';
 import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
@@ -834,7 +836,7 @@ export class ThreeGame {
         this.chunkSize = CHUNK_SIZE;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
         this.disableFogOfWar = true;
-        this.defaultVisibleChunkRadius = 3;
+        this.defaultVisibleChunkRadius = 1;
         this.visibleChunkRadius = this.defaultVisibleChunkRadius;
         this.wallHeight = 2.8;
         this.wallGeometry = new THREE.BoxGeometry(1, this.wallHeight, 1);
@@ -901,7 +903,10 @@ export class ThreeGame {
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this.maxChunkMountsPerFrame = 1;
-        this.chunkPrefetchMargin = 7;
+        // The orthographic viewport reaches roughly 11 world units from its
+        // center horizontally. Begin staging neighbors before that edge can
+        // enter frame, with a small movement/camera-lag cushion.
+        this.chunkPrefetchMargin = 14;
         this.destroyedWallKeys = new Set();
         this.destroyedExteriorWallKeys = new Set();
         this.wallMeshes = [];
@@ -2424,13 +2429,13 @@ export class ThreeGame {
             [BIOME_KEYS.CRYO]: ['/canyon_falloff_ice.png', 0x375f82, 0x081d35],
             [BIOME_KEYS.BIO]: ['/canyon_falloff_alien.png', 0x4a3f52, 0x09251d]
         };
-        this.exteriorCanyonTextures = {};
-        this.exteriorCanyonMaterials = {};
+        this.cliffTextures = {};
+        this.cliffMaterials = {};
         for (const [biomeKey, [path, color, emissive]] of Object.entries(canyonMaterialConfigs)) {
             const texture = this.loadTerrainTexture(path, textureLoader, maxAnisotropy);
             texture.repeat.set(1.5, 1.5);
-            this.exteriorCanyonTextures[biomeKey] = texture;
-            this.exteriorCanyonMaterials[biomeKey] = new THREE.MeshStandardMaterial({
+            this.cliffTextures[biomeKey] = texture;
+            const material = new THREE.MeshStandardMaterial({
                 map: texture,
                 color,
                 emissive: new THREE.Color(emissive),
@@ -2439,9 +2444,52 @@ export class ThreeGame {
                 metalness: 0,
                 fog: true
             });
+            material.onBeforeCompile = (shader) => {
+                shader.vertexShader = shader.vertexShader.replace(
+                    'void main() {',
+                    `
+                    varying vec3 vWorldPos;
+                    varying vec3 vWorldNormal;
+                    void main() {
+                    `
+                );
+                shader.vertexShader = shader.vertexShader.replace(
+                    '#include <worldpos_vertex>',
+                    `
+                    #include <worldpos_vertex>
+                    vWorldPos = (modelMatrix * vec4( transformed, 1.0 )).xyz;
+                    vWorldNormal = normalize( (modelMatrix * vec4( normal, 0.0 )).xyz );
+                    `
+                );
+                shader.fragmentShader = `
+                    varying vec3 vWorldPos;
+                    varying vec3 vWorldNormal;
+                    ${shader.fragmentShader}
+                `;
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <map_fragment>',
+                    `
+                    #ifdef USE_MAP
+                        float u = abs(vWorldNormal.z) > 0.5 ? vWorldPos.x : vWorldPos.z;
+                        vec2 cliffUv = vec2(u * 1.5, vWorldPos.y * 1.5);
+                        vec4 sampledDiffuseColor = texture2D( map, cliffUv );
+                        #ifdef DECODE_VIDEO_TEXTURE
+                            sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
+                        #endif
+                        diffuseColor *= sampledDiffuseColor;
+                    #endif
+                    `
+                );
+            };
+            this.cliffMaterials[biomeKey] = material;
         }
-        this.exteriorCanyonTexture = this.exteriorCanyonTextures[BIOME_KEYS.ACTIVE];
-        this.exteriorCanyonMaterial = this.exteriorCanyonMaterials[BIOME_KEYS.ACTIVE];
+
+        this.voidMaterial = new THREE.MeshBasicMaterial({
+            color: 0x020304,
+            fog: true
+        });
+
+        this.invisibleMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
         this.setupLighting();
         this.setupWorld();
@@ -4082,7 +4130,7 @@ export class ThreeGame {
         this.playerType = resolvedType;
         const color = PLAYER_COLORS[resolvedType] ?? 0xffffff;
         const stats = CLASS_STATS[resolvedType] ?? CLASS_STATS.ENGINEER;
-        
+
         let speed = stats.moveSpeed;
         if (resolvedType === 'SCOUT' && this.bank && this.bank.isSkillUnlocked('scout_speed_1')) {
             speed *= 1.15;
@@ -5023,7 +5071,7 @@ export class ThreeGame {
 
         // 2. Body corpse geometry group
         const bodyGroup = new THREE.Group();
-        
+
         const suitColors = {
             SCOUT: 0xd4af37,     // scout gold/yellow
             TANK: 0x990000,      // tank heavy red
@@ -11549,20 +11597,7 @@ export class ThreeGame {
 
     clearLoadedChunksForRunReset() {
         for (const group of this.chunkMeshes.values()) {
-            group.traverse((child) => {
-                if (child.userData?.isScatter) {
-                    child.material?.dispose?.();
-                    child.geometry?.dispose?.();
-                }
-                if (child.userData?.isPickup) {
-                    child.userData.shadow?.material?.dispose?.();
-                    child.userData.shadow?.geometry?.dispose?.();
-                    child.userData.glow?.material?.dispose?.();
-                    child.userData.glow?.geometry?.dispose?.();
-                    child.userData.burst?.material?.dispose?.();
-                    child.userData.burst?.geometry?.dispose?.();
-                }
-            });
+            this.disposeChunkGroupResources(group);
             this.chunkGroups.remove(group);
         }
 
@@ -11585,6 +11620,25 @@ export class ThreeGame {
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
+    }
+
+    disposeChunkGroupResources(group) {
+        group?.traverse?.((child) => {
+            if (child.userData?.isScatter) {
+                child.material?.dispose?.();
+                // THREE.Sprite instances share an internal geometry. Disposing
+                // one while evicting a chunk corrupts sprites still in use.
+                if (!child.isSprite) child.geometry?.dispose?.();
+            }
+            if (child.userData?.isPickup) {
+                child.userData.shadow?.material?.dispose?.();
+                child.userData.shadow?.geometry?.dispose?.();
+                child.userData.glow?.material?.dispose?.();
+                child.userData.glow?.geometry?.dispose?.();
+                child.userData.burst?.material?.dispose?.();
+                child.userData.burst?.geometry?.dispose?.();
+            }
+        });
     }
 
     respawnPlayer({ resetRunState = true, skipEffects = false, deferChunkMount = false } = {}) {
@@ -12439,7 +12493,7 @@ export class ThreeGame {
                 this._fallHoleX = Math.round(this.player.position.x);
                 this._fallHoleZ = Math.round(this.player.position.z);
                 const fallTile = this.getTileType(this._fallHoleX, this._fallHoleZ);
-                this._fallIsLethal = fallTile === VERTICAL_TILE.PIT || fallTile === EXTERIOR_CANYON_TILE;
+                this._fallIsLethal = fallTile === VERTICAL_TILE.PIT || fallTile === EXTERIOR_CANYON_TILE || fallTile === CLIFF_TILE;
                 this.setInputEnabled(false);
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
                 this.spawnPhysicalBurst(this.player.position.x, this.player.position.z, { color: 0x111111, count: 12, upward: 0.2 });
@@ -14684,7 +14738,14 @@ export class ThreeGame {
 
         const centerChunkX = Math.floor(this.player.position.x / this.chunkSize);
         const centerChunkY = Math.floor(this.player.position.z / this.chunkSize);
-        const visibilityKey = `${centerChunkX},${centerChunkY}:${this.visibleChunkRadius}`;
+        // Boundary proximity can change while the player remains inside the
+        // same chunk. Include the current prefetch targets in the early-return
+        // key so approaching an edge actually queues the next row/column.
+        const prefetchEntries = prefetch
+            ? this.getChunkPrefetchCoords(centerChunkX, centerChunkY)
+            : [];
+        const prefetchKey = prefetchEntries.map((entry) => entry.key).sort().join('|');
+        const visibilityKey = `${centerChunkX},${centerChunkY}:${this.visibleChunkRadius}${prefetchKey ? `:${prefetchKey}` : ''}`;
         // This runs from the animation loop. Walking every loaded chunk to
         // rebuild registries is only necessary when the visible set changes
         // or a queued mount still needs work.
@@ -14717,8 +14778,15 @@ export class ThreeGame {
             }
         }
 
+        const unloadRadius = this.visibleChunkRadius + 1;
+        for (let chunkY = centerChunkY - unloadRadius; chunkY <= centerChunkY + unloadRadius; chunkY++) {
+            for (let chunkX = centerChunkX - unloadRadius; chunkX <= centerChunkX + unloadRadius; chunkX++) {
+                resident.add(`${chunkX},${chunkY}`);
+            }
+        }
+
         if (prefetch) {
-            for (const entry of this.getChunkPrefetchCoords(centerChunkX, centerChunkY)) {
+            for (const entry of prefetchEntries) {
                 if (needed.has(entry.key)) continue;
                 resident.add(entry.key);
                 this.queueChunkMount(entry.chunkX, entry.chunkY, centerChunkX, centerChunkY, { prefetch: true });
@@ -14744,20 +14812,7 @@ export class ThreeGame {
                 group.userData.isPrefetch = !needed.has(key);
                 continue;
             }
-            group.traverse((child) => {
-                if (child.userData?.isScatter) {
-                    child.material?.dispose?.();
-                    child.geometry?.dispose?.();
-                }
-                if (child.userData?.isPickup) {
-                    child.userData.shadow?.material?.dispose?.();
-                    child.userData.shadow?.geometry?.dispose?.();
-                    child.userData.glow?.material?.dispose?.();
-                    child.userData.glow?.geometry?.dispose?.();
-                    child.userData.burst?.material?.dispose?.();
-                    child.userData.burst?.geometry?.dispose?.();
-                }
-            });
+            this.disposeChunkGroupResources(group);
             this.chunkGroups.remove(group);
             this.chunkMeshes.delete(key);
             this.pendingChunkMountKeys.delete(key);
@@ -14766,15 +14821,9 @@ export class ThreeGame {
         for (const group of this.chunkMeshes.values()) {
             if (!group.visible) continue;
             for (const child of group.children) {
-                if (child.userData.isWall) {
-                    this.wallMeshes.push(child);
-                }
-                if (child.userData.isPickup) {
-                    this.pickupMeshes.push(child);
-                }
-                if (child.userData.isScatter) {
-                    this.scatterSprites.push(child);
-                }
+                if (child.userData.isWall) this.wallMeshes.push(child);
+                if (child.userData.isPickup) this.pickupMeshes.push(child);
+                if (child.userData.isScatter) this.scatterSprites.push(child);
             }
         }
     }
@@ -14869,7 +14918,9 @@ export class ThreeGame {
     async prepareVisibleChunksForGameplay({ batchSize = 3, onProgress = null } = {}) {
         if (this.performanceProfile !== 'gameplay' || !this.player) return;
 
-        this.syncVisibleChunks(true, { prefetch: true });
+        // Deployment only needs the visible 3x3 set. Directional prefetch is
+        // a runtime concern and must not inflate the covered startup workload.
+        this.syncVisibleChunks(true, { prefetch: false });
         const initialPending = this.pendingChunkMounts.length;
         let mounted = 0;
         onProgress?.(initialPending === 0 ? 1 : 0);
@@ -14883,7 +14934,7 @@ export class ThreeGame {
             await new Promise((resolve) => requestAnimationFrame(resolve));
         }
 
-        this.syncVisibleChunks(true, { prefetch: true });
+        this.syncVisibleChunks(true, { prefetch: false });
 
         // Warm up the GPU before the cutscene: compile every material's shader
         // program and prime the shadow map now, while the loader still covers
@@ -15204,15 +15255,39 @@ export class ThreeGame {
         return adjacentCount > 0 && !bridgesPlayableSpaces;
     }
 
-    createExteriorCanyonPatch(worldX, worldZ) {
-        if (!this.floorGeometry || !this.exteriorCanyonMaterial) return null;
-        const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
-        const material = this.exteriorCanyonMaterials?.[biomeKey] ?? this.exteriorCanyonMaterial;
-        const patch = new THREE.Mesh(this.floorGeometry, material);
+    createVoidPatch(worldX, worldZ) {
+        if (!this.floorGeometry || !this.voidMaterial) return null;
+        const patch = new THREE.Mesh(this.floorGeometry, this.voidMaterial);
         patch.rotation.x = -Math.PI / 2;
-        patch.position.set(worldX, -5, worldZ);
+        patch.position.set(worldX, -10, worldZ); // deeply sunken
         patch.receiveShadow = false;
         patch.userData = { isExteriorCanyon: true, isLethalPit: true, worldX, worldZ };
+        return patch;
+    }
+
+    createCliffPatch(worldX, worldZ) {
+        if (!this.cliffGeometry) {
+            this.cliffGeometry = new THREE.BoxGeometry(1, 10, 1);
+        }
+        const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+        const material = this.cliffMaterials?.[biomeKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE];
+        if (!material) return null;
+
+        const materials = [
+            material, // right
+            material, // left
+            this.invisibleMaterial, // top
+            this.invisibleMaterial, // bottom
+            material, // front
+            material  // back
+        ];
+
+        const patch = new THREE.Mesh(this.cliffGeometry, materials);
+        // Positioned so the top is at y=0, extending down to y=-10
+        patch.position.set(worldX, -5, worldZ);
+        patch.receiveShadow = true;
+        patch.castShadow = true;
+        patch.userData = { isCliff: true, worldX, worldZ };
         return patch;
     }
 
@@ -15233,7 +15308,7 @@ export class ThreeGame {
             wallMesh.visible = false;
             parent?.remove(wallMesh);
             if (exterior) {
-                const patch = this.createExteriorCanyonPatch?.(coord.tileX, coord.tileZ);
+                const patch = this.createVoidPatch?.(coord.tileX, coord.tileZ);
                 if (patch) parent?.add(patch);
             }
             if (this.wallMeshes) {
@@ -15559,7 +15634,7 @@ export class ThreeGame {
         const holeCut = this.getHoleCutForLandform(landform);
         const hazardCut = this.getHazardCutForLandform(landform);
         let damagedCut = 0.35;
-        const hasExteriorCanyon = grid.some((row) => row.includes(EXTERIOR_CANYON_TILE));
+        const hasExteriorCanyon = grid.some((row) => row.includes(EXTERIOR_CANYON_TILE) || row.includes(CLIFF_TILE));
         if (landform === LANDFORMS.MAZE || hasExteriorCanyon) {
             damagedCut = 0.62;
         } else if (landform === LANDFORMS.RUINS) {
@@ -15575,11 +15650,12 @@ export class ThreeGame {
         // as more solid room. Instance only structural cells so canyon is an
         // actual visible break in the floor.
         const chunkCenter = (this.chunkSize - 1) / 2;
-        if (landform === LANDFORMS.MAZE) {
+        if (landform === LANDFORMS.MAZE || hasExteriorCanyon) {
             const floorCells = [];
             for (let localY = 0; localY < this.chunkSize; localY += 1) {
                 for (let localX = 0; localX < this.chunkSize; localX += 1) {
-                    if (grid[localY][localX] !== EXTERIOR_CANYON_TILE) floorCells.push({ localX, localY });
+                    const tileChar = grid[localY][localX];
+                    if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
                 }
             }
             const floors = new THREE.InstancedMesh(this.floorGeometry, this.floorMaterial, floorCells.length);
@@ -15650,8 +15726,13 @@ export class ThreeGame {
 
                 const tileChar = grid[localY][localX];
                 if (tileChar === EXTERIOR_CANYON_TILE) {
-                    const canyon = this.createExteriorCanyonPatch(worldX, worldZ);
+                    const canyon = this.createVoidPatch(worldX, worldZ);
                     if (canyon) group.add(canyon);
+                    continue;
+                }
+                if (tileChar === CLIFF_TILE) {
+                    const cliff = this.createCliffPatch(worldX, worldZ);
+                    if (cliff) group.add(cliff);
                     continue;
                 }
                 if (tileChar === 'D') {
@@ -22277,7 +22358,8 @@ export class ThreeGame {
         this.roomWallMaterialAtlas?.dispose?.();
         this.roomFloorMaterialAtlas?.dispose?.();
         this.siteFloorMaterialAtlas?.dispose?.();
-        Object.values(this.exteriorCanyonMaterials ?? {}).forEach((material) => material?.dispose?.());
+        Object.values(this.cliffMaterials ?? {}).forEach((material) => material?.dispose?.());
+        this.voidMaterial?.dispose?.();
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();
         this.doorMaterial?.dispose?.();
