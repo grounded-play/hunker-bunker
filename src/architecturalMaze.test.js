@@ -19,7 +19,7 @@ describe('generateArchitecturalMazeChunk', () => {
     });
 
     it('makes long bent canyon-separated connectors for traversal chunks', () => {
-        const { grid } = generateArchitecturalMazeChunk(seeded([0.8, 0.2, 0.9, 0.1]), {
+        const { grid, room } = generateArchitecturalMazeChunk(seeded([0.8, 0.2, 0.9, 0.1]), {
             openings: {
                 west: { open: true, offset: 2 },
                 east: { open: true, offset: 7 }
@@ -29,6 +29,7 @@ describe('generateArchitecturalMazeChunk', () => {
         expect(grid[15][18]).toBe('.');
         expect(grid.flat().filter((cell) => cell === '.').length).toBeGreaterThan(45);
         expect(grid.flat().filter((cell) => cell === 'X').length).toBeGreaterThan(100);
+        expect(room?.interior.length).toBeGreaterThan(20);
     });
 
     it('keeps every chunk seam canyon except declared three-wide hallway sockets', () => {

@@ -2442,9 +2442,9 @@ export class ThreeGame {
         // bottomless biomechanical rock face exposed when the player
         // breaches an outside room wall.
         const canyonMaterialConfigs = {
-            [BIOME_KEYS.ACTIVE]: ['/canyon_falloff_biomech.png', '/bunker_wall_metal_normal.png', 0x294257, 0x071521],
-            [BIOME_KEYS.CRYO]: ['/canyon_falloff_ice.png', '/cryo_wall_conduit_normal.png', 0x375f82, 0x081d35],
-            [BIOME_KEYS.BIO]: ['/canyon_falloff_alien.png', '/bio_wall_veins_normal.png', 0x4a3f52, 0x09251d]
+            [BIOME_KEYS.ACTIVE]: ['/canyon_falloff_biomech.png', '/bunker_wall_metal_normal.png', 0xffffff, 0x071521],
+            [BIOME_KEYS.CRYO]: ['/canyon_falloff_ice.png', '/cryo_wall_conduit_normal.png', 0xffffff, 0x081d35],
+            [BIOME_KEYS.BIO]: ['/canyon_falloff_alien.png', '/bio_wall_veins_normal.png', 0xffffff, 0x09251d]
         };
         this.cliffTextures = {};
         this.cliffNormalTextures = {};
@@ -2483,8 +2483,12 @@ export class ThreeGame {
                     '#include <worldpos_vertex>',
                     `
                     #include <worldpos_vertex>
-                    vWorldPos = (modelMatrix * vec4( transformed, 1.0 )).xyz;
-                    vWorldNormal = normalize( (modelMatrix * vec4( normal, 0.0 )).xyz );
+                    #ifdef USE_INSTANCING
+                        vWorldPos = (modelMatrix * instanceMatrix * vec4( transformed, 1.0 )).xyz;
+                    #else
+                        vWorldPos = (modelMatrix * vec4( transformed, 1.0 )).xyz;
+                    #endif
+                    vWorldNormal = normalize( mat3(modelMatrix) * transformedNormal );
                     `
                 );
                 shader.fragmentShader = `
@@ -13726,6 +13730,24 @@ export class ThreeGame {
         return WEATHER_FORCED_STATE;
     }
 
+    getWeatherSurfaceHeight(x, z) {
+        const tileX = Math.round(x);
+        const tileZ = Math.round(z);
+        if (typeof this.isHoleTile === 'function' && this.isHoleTile(tileX, tileZ)) {
+            return { type: 'abyss', height: -15.0 };
+        }
+        const tile = typeof this.getCachedTileType === 'function'
+            ? this.getCachedTileType(tileX, tileZ)
+            : (typeof this.getTileType === 'function' ? this.getTileType(tileX, tileZ) : '.');
+        if (tile === EXTERIOR_CANYON_TILE || tile === CLIFF_TILE) {
+            return { type: 'abyss', height: -15.0 };
+        }
+        if (tile === '#') {
+            return { type: 'wall', height: this.wallHeight ?? 2.8 };
+        }
+        return { type: 'floor', height: 0.05 };
+    }
+
     updateWeather(delta) {
         if (!FEATURE_WEATHER) return;
         const forcedState = this.pickWeatherState();
@@ -13733,13 +13755,6 @@ export class ThreeGame {
             this.setWeatherState(forcedState);
         }
         this.weather.splashCooldown = Math.max(0, (this.weather.splashCooldown ?? 0) - delta);
-        if (this.performanceProfile !== 'menu') {
-            this.weather.puddleTimer -= delta;
-            if (this.weather.puddleTimer <= 0) {
-                this.spawnRainPuddleNearPlayer();
-                this.weather.puddleTimer = RAIN_PUDDLE_SPAWN_MIN + Math.random() * (RAIN_PUDDLE_SPAWN_MAX - RAIN_PUDDLE_SPAWN_MIN);
-            }
-        }
 
         const { count } = this.weather;
         if (!count || !this.weather.points) return;
@@ -13753,20 +13768,21 @@ export class ThreeGame {
             positions[o + 1] += velocities[o + 1] * delta;
             positions[o + 2] += velocities[o + 2] * delta;
 
-            // Recycle particles that hit the ground or drift out of the field
-            // box (which is recentered on the player every frame).
             const outOfRange = Math.abs(positions[o] - px) > WEATHER_FIELD_RADIUS
                 || Math.abs(positions[o + 2] - pz) > WEATHER_FIELD_RADIUS;
-            if (positions[o + 1] <= 0.05 || outOfRange) {
+            const surface = this.getWeatherSurfaceHeight(positions[o], positions[o + 2]);
+
+            if (positions[o + 1] <= surface.height || outOfRange) {
                 if (
-                    positions[o + 1] <= 0.05
+                    surface.type !== 'abyss'
+                    && positions[o + 1] <= surface.height
                     && this.weather.splashCooldown <= 0
                     && this.weather.state === WEATHER_FORCED_STATE
                     && Math.abs(positions[o] - px) <= 8
                     && Math.abs(positions[o + 2] - pz) <= 8
                     && Math.random() < RAIN_SPLASH_IMPACT_CHANCE
                 ) {
-                    this.spawnRainSplash(positions[o], positions[o + 2], 0.68 + Math.random() * 0.38);
+                    this.spawnRainSplash(positions[o], positions[o + 2], 0.68 + Math.random() * 0.38, surface.height);
                     this.weather.splashCooldown = RAIN_SPLASH_COOLDOWN;
                 }
                 const { x, z } = this.weatherSpawnXZ();
@@ -13782,10 +13798,10 @@ export class ThreeGame {
         return FEATURE_WEATHER && this.weather?.state === WEATHER_FORCED_STATE;
     }
 
-    spawnRainSplash(x, z, scaleBoost = 1) {
+    spawnRainSplash(x, z, scaleBoost = 1, surfaceY = 0.05) {
         if (!this.scene) return;
         const splash = new THREE.Group();
-        splash.position.set(x, 0, z);
+        splash.position.set(x, surfaceY, z);
         splash.renderOrder = 1;
 
         const ring = new THREE.Mesh(
@@ -13799,7 +13815,7 @@ export class ThreeGame {
             })
         );
         ring.rotation.x = -Math.PI / 2;
-        ring.position.y = 0.042;
+        ring.position.y = 0.002;
         ring.renderOrder = 1;
         splash.add(ring);
 
@@ -13818,7 +13834,7 @@ export class ThreeGame {
                 })
             );
             droplet.rotation.x = -Math.PI / 2;
-            droplet.position.set((Math.random() - 0.5) * 0.04, 0.046 + Math.random() * 0.012, (Math.random() - 0.5) * 0.04);
+            droplet.position.set((Math.random() - 0.5) * 0.04, 0.006 + Math.random() * 0.012, (Math.random() - 0.5) * 0.04);
             droplet.renderOrder = 1;
             splash.add(droplet);
             const ang = Math.random() * Math.PI * 2;
@@ -13850,7 +13866,7 @@ export class ThreeGame {
                     droplet.vy = Math.max(-0.32, droplet.vy - 4.2 * dt);
                     droplet.mesh.position.x += droplet.vx * dt;
                     droplet.mesh.position.z += droplet.vz * dt;
-                    droplet.mesh.position.y = Math.max(0.04, droplet.mesh.position.y + droplet.vy * dt);
+                    droplet.mesh.position.y = Math.max(0.004, droplet.mesh.position.y + droplet.vy * dt);
                     droplet.mesh.material.opacity = 0.6 * (1 - t);
                 }
             },
@@ -13866,80 +13882,8 @@ export class ThreeGame {
     }
 
     spawnRainPuddleNearPlayer() {
-        if (!this.player || !this.scene || !this.isRainWeatherActive()) return;
-        if ((this.weather.activeRainPuddles ?? 0) >= RAIN_PUDDLE_MAX_COUNT) return;
-
-        const baseMaterial = this.currentBiomeKey === BIOME_KEYS.BIO
-            ? this.scatterMaterials?.scatter_slime_puddle
-            : this.scatterMaterials?.scatter_coolant_puddle;
-        if (!baseMaterial) return;
-
-        for (let attempt = 0; attempt < 8; attempt++) {
-            const angle = Math.random() * Math.PI * 2;
-            const radius = 1.25 + Math.random() * 7.6;
-            const x = this.player.position.x + Math.cos(angle) * radius;
-            const z = this.player.position.z + Math.sin(angle) * radius;
-            if (!this.canOccupyPosition(x, z)) continue;
-
-            const puddleRadius = 0.36 + Math.random() * 0.46;
-            const footprintZone = { x, z, radius: puddleRadius * 0.42, active: true };
-            this.dynamicPuddles.push(footprintZone);
-
-            const mat = new THREE.MeshBasicMaterial({
-                map: baseMaterial.map,
-                color: 0x777a76,
-                transparent: true,
-                alphaTest: 0.001,
-                opacity: 0.2 + Math.random() * 0.13,
-                depthWrite: false,
-                depthTest: true,
-                side: THREE.DoubleSide,
-                fog: true
-            });
-            if (this.currentBiomeKey === BIOME_KEYS.BIO) {
-                mat.color.setHex(0x707a70);
-            } else if (this.currentBiomeKey === BIOME_KEYS.CRYO) {
-                mat.color.setHex(0x7b7f80);
-            } else {
-                mat.color.setHex(0x737674);
-            }
-
-            const sprite = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
-            sprite.rotation.x = -Math.PI / 2;
-            sprite.rotation.z = Math.random() * Math.PI * 2;
-            sprite.position.set(x, 0.046, z);
-            const size = puddleRadius * (2.6 + Math.random() * 1.1);
-            const targetScaleX = size * (1.08 + Math.random() * 0.18);
-            const targetScaleY = size * (0.82 + Math.random() * 0.16);
-            sprite.scale.set(targetScaleX * 0.34, targetScaleY * 0.34, 1);
-            sprite.renderOrder = 3;
-            this.scene.add(sprite);
-
-            const duration = 13 + Math.random() * 11;
-            const baseOpacity = mat.opacity;
-            this.weather.activeRainPuddles = (this.weather.activeRainPuddles ?? 0) + 1;
-            this.transientEffects.push({
-                mesh: sprite,
-                age: 0,
-                duration,
-                update: (_dt, age) => {
-                    const t = Math.min(age / duration, 1);
-                    const grow = 0.34 + 0.66 * (1 - Math.pow(1 - Math.min(t * 2.2, 1), 3));
-                    sprite.scale.set(targetScaleX * grow, targetScaleY * grow, 1);
-                    footprintZone.radius = puddleRadius * (0.42 + 0.58 * grow);
-                    sprite.material.opacity = baseOpacity * (1 - t * 0.85);
-                },
-                dispose: () => {
-                    footprintZone.active = false;
-                    const idx = this.dynamicPuddles.indexOf(footprintZone);
-                    if (idx !== -1) this.dynamicPuddles.splice(idx, 1);
-                    this.weather.activeRainPuddles = Math.max(0, (this.weather.activeRainPuddles ?? 1) - 1);
-                    sprite.geometry.dispose();
-                    mat.dispose();
-                }
-            });
-            return;
-        }
+        // Disabled to prevent spawning intrusive grey circles on the floor
+        if (RAIN_PUDDLE_MAX_COUNT < 0 || RAIN_PUDDLE_SPAWN_MIN < 0 || RAIN_PUDDLE_SPAWN_MAX < 0) return;
     }
 
     isPositionInPuddle(x, z) {
@@ -15537,7 +15481,7 @@ export class ThreeGame {
                 const worldZ = chunkY * this.chunkSize + localY;
                 if (this.destroyedWallKeys.has(this.getWallKey(worldX, worldZ))) {
                     grid[localY][localX] = this.destroyedExteriorWallKeys?.has(this.getWallKey(worldX, worldZ))
-                        ? EXTERIOR_CANYON_TILE
+                        ? LEDGE_TILE
                         : '.';
                 }
             }
@@ -15662,6 +15606,18 @@ export class ThreeGame {
         return group;
     }
 
+    createExteriorGroundPatch(worldX, worldZ) {
+        const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+        const material = this.cliffMaterials?.[biomeKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE];
+        if (!material || !this.floorGeometry) return null;
+        const patch = new THREE.Mesh(this.floorGeometry, material);
+        patch.rotation.x = -Math.PI / 2;
+        patch.position.set(worldX, 0.012, worldZ);
+        patch.receiveShadow = true;
+        patch.userData = { isExteriorGround: true, worldX, worldZ };
+        return patch;
+    }
+
     isCliffSecretPath(worldX, worldZ) {
         if (this.getTileType(worldX, worldZ) !== CLIFF_TILE) return false;
         return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => (
@@ -15677,7 +15633,7 @@ export class ThreeGame {
         if (exterior) this.destroyedExteriorWallKeys?.add(wallKey);
         const grid = this.chunkCache?.get?.(coord.key);
         if (grid?.[coord.localY]) {
-            grid[coord.localY][coord.localX] = exterior ? EXTERIOR_CANYON_TILE : '.';
+            grid[coord.localY][coord.localX] = exterior ? LEDGE_TILE : '.';
         }
         const wallMesh = this.findWallMeshAt?.(coord.tileX, coord.tileZ);
         if (wallMesh) {
@@ -15686,7 +15642,7 @@ export class ThreeGame {
             wallMesh.visible = false;
             parent?.remove(wallMesh);
             if (exterior) {
-                const patch = this.createVoidPatch?.(coord.tileX, coord.tileZ);
+                const patch = this.createExteriorGroundPatch?.(coord.tileX, coord.tileZ);
                 if (patch) parent?.add(patch);
             }
             if (this.wallMeshes) {
@@ -16030,10 +15986,12 @@ export class ThreeGame {
         const chunkCenter = (this.chunkSize - 1) / 2;
         if (landform === LANDFORMS.MAZE || hasExteriorCanyon) {
             const floorCells = [];
+            const exteriorGroundCells = [];
             for (let localY = 0; localY < this.chunkSize; localY += 1) {
                 for (let localX = 0; localX < this.chunkSize; localX += 1) {
                     const tileChar = grid[localY][localX];
-                    if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
+                    if (tileChar === LEDGE_TILE) exteriorGroundCells.push({ localX, localY });
+                    else if (tileChar !== EXTERIOR_CANYON_TILE && tileChar !== CLIFF_TILE) floorCells.push({ localX, localY });
                 }
             }
             const floors = new THREE.InstancedMesh(this.floorGeometry, this.floorMaterial, floorCells.length);
@@ -16054,6 +16012,32 @@ export class ThreeGame {
             floors.instanceMatrix.needsUpdate = true;
             floors.receiveShadow = true;
             group.add(floors);
+            if (exteriorGroundCells.length > 0) {
+                const chunkWorldX = chunkX * this.chunkSize + chunkCenter;
+                const chunkWorldZ = chunkY * this.chunkSize + chunkCenter;
+                const biomeKey = this.getBiomeKeyForWorldPosition(chunkWorldX, chunkWorldZ);
+                const ledges = new THREE.InstancedMesh(
+                    this.floorGeometry,
+                    this.cliffMaterials?.[biomeKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE],
+                    exteriorGroundCells.length
+                );
+                exteriorGroundCells.forEach((cell, index) => {
+                    matrix.compose(
+                        new THREE.Vector3(
+                            chunkX * this.chunkSize + cell.localX,
+                            0.012,
+                            chunkY * this.chunkSize + cell.localY
+                        ),
+                        rotation,
+                        new THREE.Vector3(1, 1, 1)
+                    );
+                    ledges.setMatrixAt(index, matrix);
+                });
+                ledges.instanceMatrix.needsUpdate = true;
+                ledges.receiveShadow = true;
+                ledges.userData = { isExteriorGround: true };
+                group.add(ledges);
+            }
         } else {
             const chunkFloor = new THREE.Mesh(this.chunkFloorGeometry, this.floorMaterial);
             chunkFloor.rotation.x = -Math.PI / 2;
@@ -18960,6 +18944,7 @@ export class ThreeGame {
     isSnailTileWalkable(tileX, tileZ) {
         const tile = this.getTileType(tileX, tileZ);
         return tile === '.'
+            || tile === LEDGE_TILE
             || tile === VERTICAL_TILE.RAMP
             || tile === VERTICAL_TILE.BRIDGE
             || tile === VERTICAL_TILE.LADDER;
@@ -21359,7 +21344,7 @@ export class ThreeGame {
         }
         const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
         if (this.destroyedWallKeys?.has(key)) {
-            return this.destroyedExteriorWallKeys?.has(key) ? EXTERIOR_CANYON_TILE : '.';
+            return this.destroyedExteriorWallKeys?.has(key) ? LEDGE_TILE : '.';
         }
         const chunkX = Math.floor(tileX / this.chunkSize);
         const chunkY = Math.floor(tileY / this.chunkSize);
@@ -21393,7 +21378,7 @@ export class ThreeGame {
         }
         const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
         if (this.destroyedWallKeys?.has(key)) {
-            return this.destroyedExteriorWallKeys?.has(key) ? EXTERIOR_CANYON_TILE : '.';
+            return this.destroyedExteriorWallKeys?.has(key) ? LEDGE_TILE : '.';
         }
         const chunkX = Math.floor(tileX / this.chunkSize);
         const chunkY = Math.floor(tileY / this.chunkSize);
@@ -22322,7 +22307,12 @@ export class ThreeGame {
             this.clearDoorways?.(grid);
         }
         if (landform === LANDFORMS.MAZE) {
-            addCanyonVoidAroundWalkable(grid, mazeLattice);
+            addCanyonVoidAroundWalkable(grid, mazeLattice, {
+                // Architectural chunks begin with explicit X beyond their
+                // wall shell. Expand those authored voids into the same 3-5
+                // tile safe rim and rounded cliff band as stamped chunks.
+                expandExistingCanyon: Boolean(mazeMetadata?.architectural)
+            });
         }
         const chunkRouteRecord = {
             key: `${chunkX},${chunkY}`,
@@ -22332,6 +22322,24 @@ export class ThreeGame {
         };
         if (!this.worldRouteRecords) this.worldRouteRecords = new Map();
         this.worldRouteRecords.set(chunkRouteRecord.key, chunkRouteRecord);
+        const tileCounts = grid.flat().reduce((counts, tile) => {
+            counts[tile] = (counts[tile] ?? 0) + 1;
+            return counts;
+        }, {});
+        debugLog.debug('WORLD', 'Chunk generated', {
+            chunk: chunkRouteRecord.key,
+            landform,
+            architecture: mazeMetadata?.architectural?.mode ?? null,
+            portals: Object.entries(chunkRouteRecord.portals)
+                .filter(([, open]) => open)
+                .map(([side]) => side),
+            tiles: {
+                floor: tileCounts['.'] ?? 0,
+                ledge: tileCounts[LEDGE_TILE] ?? 0,
+                cliff: tileCounts[CLIFF_TILE] ?? 0,
+                void: tileCounts[EXTERIOR_CANYON_TILE] ?? 0
+            }
+        });
         const worldRouteGraph = buildWorldRouteGraph([...this.worldRouteRecords.values()]);
         this.reachableGeneratedChunkKeys = reachableChunkKeys(worldRouteGraph, '0,0');
         return grid;

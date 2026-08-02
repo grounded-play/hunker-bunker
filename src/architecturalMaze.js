@@ -114,9 +114,11 @@ export function generateArchitecturalMazeChunk(random, {
         top: Math.max(3, center - Math.floor(roomDepth / 2)),
         bottom: Math.min(size - 4, center + Math.floor(roomDepth / 2))
     };
+    let authoredRoom = null;
 
     if (roomMode || portals.length < 2) {
         carveRoom(grid, bounds, shape);
+        authoredRoom = { bounds, shape };
     } else {
         // Long connectors cross almost the full 19-cell chunk. Offset the
         // hub and alternate axis order so seeds produce doglegs, S bends,
@@ -133,17 +135,18 @@ export function generateArchitecturalMazeChunk(random, {
             carveLine(grid, portal, bend, 1);
             carveLine(grid, bend, hub, 1);
         }
-        // Occasional widened maintenance bay breaks up long walks without
-        // turning every connector into another square room.
-        if (random() < 0.45) {
-            const bay = {
-                left: Math.max(3, hub.x - 4),
-                right: Math.min(size - 4, hub.x + 4),
-                top: Math.max(3, hub.y - 2),
-                bottom: Math.min(size - 4, hub.y + 2)
-            };
-            carveRoom(grid, bay, random() < 0.5 ? 'l' : 'rectangle');
-        }
+        // Every traversal connector terminates in a recognizable junction
+        // bay. Making this optional produced full-chunk corridors that felt
+        // like long dead ends even when they technically reached a seam.
+        const bay = {
+            left: Math.max(3, hub.x - 4),
+            right: Math.min(size - 4, hub.x + 4),
+            top: Math.max(3, hub.y - 3),
+            bottom: Math.min(size - 4, hub.y + 3)
+        };
+        const bayShape = random() < 0.5 ? 'l' : 'rectangle';
+        carveRoom(grid, bay, bayShape);
+        authoredRoom = { bounds: bay, shape: bayShape };
     }
 
     const target = roomMode ? { x: center, y: center } : null;
@@ -162,12 +165,15 @@ export function generateArchitecturalMazeChunk(random, {
     addWallShell(grid);
 
     const interior = [];
-    if (roomMode || portals.length < 2) {
-        for (let y = bounds.top; y <= bounds.bottom; y += 1) {
-            for (let x = bounds.left; x <= bounds.right; x += 1) {
+    if (authoredRoom) {
+        for (let y = authoredRoom.bounds.top; y <= authoredRoom.bounds.bottom; y += 1) {
+            for (let x = authoredRoom.bounds.left; x <= authoredRoom.bounds.right; x += 1) {
                 if (grid[y][x] === '.') interior.push({ x, y });
             }
         }
     }
-    return { grid, room: interior.length ? { bounds, shape, interior } : null };
+    return {
+        grid,
+        room: interior.length ? { ...authoredRoom, interior } : null
+    };
 }

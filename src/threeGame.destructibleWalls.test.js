@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { EXTERIOR_CANYON_TILE, ThreeGame } from './threeGame.js';
+import { LEDGE_TILE, ThreeGame } from './threeGame.js';
 
 function call(method, fakeThis, ...args) {
     return ThreeGame.prototype[method].call(fakeThis, ...args);
@@ -95,7 +95,7 @@ describe('destructible wall grid persistence', () => {
         expect(call('isExteriorWallTile', fakeThis, 3, 3)).toBe(false);
     });
 
-    it('turns a breached exterior wall into a persistent lethal canyon tile', () => {
+    it('turns a breached exterior wall into persistent walkable exterior ground', () => {
         const grid = makeGrid(7);
         grid[3][2] = '.';
         const fakeThis = {
@@ -114,12 +114,12 @@ describe('destructible wall grid persistence', () => {
         const result = call('markWallTileDestroyed', fakeThis, 3, 3);
 
         expect(result.exterior).toBe(true);
-        expect(grid[3][3]).toBe(EXTERIOR_CANYON_TILE);
+        expect(grid[3][3]).toBe(LEDGE_TILE);
         expect(fakeThis.destroyedExteriorWallKeys.has('3,3')).toBe(true);
 
         const rebuilt = makeGrid(7);
         call('applyDestroyedWallsToGrid', fakeThis, rebuilt, 0, 0);
-        expect(rebuilt[3][3]).toBe(EXTERIOR_CANYON_TILE);
+        expect(rebuilt[3][3]).toBe(LEDGE_TILE);
     });
 
     it('removes existing wall decals when their wall is destroyed', () => {
