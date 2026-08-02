@@ -248,7 +248,7 @@ describe('stampLattice', () => {
     ])('every floor cell is reachable from every other floor cell (%s)', (_label, tutorialOnly) => {
         const chunkSize = (TILE_SIZE - 1) * LATTICE_SIZE + 1;
         for (let seed = 1; seed <= 500; seed += 1) {
-            const grid = stampLattice(collapseChunkLattice(seededRandom(seed), { tutorialOnly }), chunkSize);
+            const grid = stampLattice(collapseChunkLattice(seededRandom(seed), { tutorialOnly }));
             const floorCells = [];
             for (let y = 0; y < chunkSize; y += 1) {
                 for (let x = 0; x < chunkSize; x += 1) {
@@ -279,7 +279,7 @@ describe('stampLattice', () => {
     it('carves canyon behind a retained wall band around generated traversal', () => {
         const chunkSize = (TILE_SIZE - 1) * LATTICE_SIZE + 1;
         for (let seed = 1; seed <= 100; seed += 1) {
-            const grid = stampLattice(collapseChunkLattice(seededRandom(seed)), chunkSize);
+            const grid = stampLattice(collapseChunkLattice(seededRandom(seed)));
             const authoredCanyons = new Set();
             for (let y = 0; y < chunkSize; y += 1) {
                 for (let x = 0; x < chunkSize; x += 1) {
@@ -357,7 +357,7 @@ describe('collapsePocketLattice', () => {
 
         let sawWideRoom = false;
         for (let seed = 1; seed <= 200; seed += 1) {
-            const grid = stampLattice(collapsePocketLattice(seededRandom(seed)), pocketSize);
+            const grid = stampLattice(collapsePocketLattice(seededRandom(seed)));
             expect(grid).toHaveLength(pocketSize);
             expect(isGridFullyConnected(grid), `seed ${seed}`).toBe(true);
 

@@ -136,11 +136,12 @@ const INTERACT_RADIUS = 2.8;
 const SIGNAL_FLARE_HEIGHT = 11;
 
 export class SurvivorCamp {
-    constructor(scene, { id = 'camp', label = 'CAMP', playerType = 'Scout' } = {}) {
+    constructor(scene, { id = 'camp', label = 'CAMP', playerType = 'Scout', groundMaterial = null } = {}) {
         this.scene = scene;
         this.id = id;
         this.label = label;
         this.playerType = playerType;
+        this.groundMaterial = groundMaterial;
         this.group = null;
         this.beacon = null;
         this.beaconMat = null;
@@ -267,6 +268,15 @@ export class SurvivorCamp {
 
         const group = new THREE.Group();
         group.position.set(x, 0, z);
+
+        if (this.groundMaterial) {
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), this.groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = 0.018;
+            ground.receiveShadow = true;
+            ground.userData = { kind: 'camp-floor', campId: this.id };
+            group.add(ground);
+        }
 
         // Tents: weathered cones around a small clearing.
         const tentSpecs = [

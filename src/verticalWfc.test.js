@@ -20,7 +20,7 @@ function authoredRoomLattice() {
 describe('WFC vertical bridge rooms', () => {
     it('stamps lethal pits, a three-wide bridge, and two ramp rows into a WFC room', () => {
         const lattice = authoredRoomLattice();
-        const grid = stampLattice(lattice, 19);
+        const grid = stampLattice(lattice);
         const feature = applyVerticalBridgeFeature(grid, lattice, () => 0, { force: true });
 
         expect(feature).toBeTruthy();
@@ -33,7 +33,7 @@ describe('WFC vertical bridge rooms', () => {
 
     it('produces a monotonic ramp that reaches the elevated bridge height', () => {
         const lattice = authoredRoomLattice();
-        const grid = stampLattice(lattice, 19);
+        const grid = stampLattice(lattice);
         const feature = applyVerticalBridgeFeature(grid, lattice, () => 0, { force: true });
         const heightmap = generateHeightmapGrid(grid);
         const centerRamp = feature.rampCells
@@ -49,7 +49,7 @@ describe('WFC vertical bridge rooms', () => {
 
     it('keeps a continuous safe route across the pit on ramp/bridge cells', () => {
         const lattice = authoredRoomLattice();
-        const grid = stampLattice(lattice, 19);
+        const grid = stampLattice(lattice);
         const feature = applyVerticalBridgeFeature(grid, lattice, () => 0, { force: true });
         const safe = [...feature.rampCells, ...feature.bridgeCells];
         const centerLane = safe
@@ -64,7 +64,7 @@ describe('WFC vertical bridge rooms', () => {
 
     it('can stamp a ladder approach to the raised bridge', () => {
         const lattice = authoredRoomLattice();
-        const grid = stampLattice(lattice, 19);
+        const grid = stampLattice(lattice);
         const rolls = [0, 0.99];
         const feature = applyVerticalBridgeFeature(
             grid,

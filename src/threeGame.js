@@ -289,7 +289,15 @@ const ROOM_MATERIAL_ATLAS_SLOT = Object.freeze({
     cryo: Object.freeze({ x: 0, y: 0 }),
     bio: Object.freeze({ x: 0.5, y: 0 })
 });
+const SITE_FLOOR_ATLAS_SLOT = Object.freeze({
+    hallway: Object.freeze({ x: 0, y: 0.5 }),
+    camp: Object.freeze({ x: 0.5, y: 0.5 }),
+    hive: Object.freeze({ x: 0, y: 0 }),
+    room: Object.freeze({ x: 0.5, y: 0 })
+});
 const ROOM_FLOOR_MATERIAL_FAMILY = Object.freeze({
+    hallway: 'site:hallway',
+    'bunker-standard': 'site:room',
     'bunker-utility': 'utility',
     'bunker-medical': 'medical',
     'bunker-security': 'utility',
@@ -297,8 +305,8 @@ const ROOM_FLOOR_MATERIAL_FAMILY = Object.freeze({
     'cryo-rough': 'cryo',
     'cryo-tile': 'cryo',
     'bio-resin': 'bio',
-    'bio-hive': 'bio',
-    camp: 'utility',
+    'bio-hive': 'site:hive',
+    camp: 'site:camp',
     storage: 'utility'
 });
 const GENERATED_ROOM_PROP_PATHS = Object.freeze({
@@ -1159,6 +1167,19 @@ export class ThreeGame {
             textureLoader,
             maxAnisotropy
         );
+        this.siteFloorMaterialAtlas = this.loadTerrainTexture(
+            '/site_floor_material_atlas_v1.png',
+            textureLoader,
+            maxAnisotropy
+        );
+        this.doorTexture = this.loadTerrainTexture('/door_biomech_v2.webp', textureLoader, maxAnisotropy);
+        this.doorTexture.repeat.set(1, 1);
+        this.doorMaterial = new THREE.MeshStandardMaterial({
+            map: this.doorTexture,
+            color: 0xd2d9dc,
+            metalness: 0.78,
+            roughness: 0.38
+        });
         const activeTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.ACTIVE];
         const cryoTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.CRYO];
         const bioTerrainTextures = this.biomeTerrainTextures[BIOME_KEYS.BIO];
@@ -1677,6 +1698,31 @@ export class ThreeGame {
             prop_cave_queen_throne: this.loadKeyedSpriteTexture('/prop_cave_queen_throne.png', 14),
             prop_camp_sandbags: this.loadKeyedSpriteTexture('/prop_camp_sandbags.png', 14),
             prop_camp_crates: this.loadKeyedSpriteTexture('/prop_camp_crates.png', 14),
+            drop_horizon_badge: this.loadKeyedSpriteTexture('/drop_horizon_badge.png', 14),
+            drop_dig_manifest: this.loadKeyedSpriteTexture('/drop_dig_manifest.png', 14),
+            drop_security_log: this.loadKeyedSpriteTexture('/drop_security_log.png', 14),
+            drop_survey_probe: this.loadKeyedSpriteTexture('/drop_survey_probe.png', 14),
+            drop_meteor_core: this.loadKeyedSpriteTexture('/drop_meteor_core.png', 14),
+            drop_ration_ledger: this.loadKeyedSpriteTexture('/drop_ration_ledger.png', 14),
+            drop_child_drawing: this.loadKeyedSpriteTexture('/drop_child_drawing.png', 14),
+            drop_dogtags: this.loadKeyedSpriteTexture('/drop_dogtags.png', 14),
+            drop_resin_locket: this.loadKeyedSpriteTexture('/drop_resin_locket.png', 14),
+            drop_moult_shard: this.loadKeyedSpriteTexture('/drop_moult_shard.png', 14),
+            drop_first_bore_tag: this.loadKeyedSpriteTexture('/drop_first_bore_tag.png', 14),
+            drop_prayer_stone: this.loadKeyedSpriteTexture('/drop_prayer_stone.png', 14),
+            drop_frozen_letter: this.loadKeyedSpriteTexture('/drop_frozen_letter.png', 14),
+            drop_black_flask: this.loadKeyedSpriteTexture('/drop_black_flask.png', 14),
+
+            scatter_camp_supplies: this.loadScatterTexture('/scatter_camp_supplies.png', textureLoader),
+            scatter_hive_eggs: this.loadScatterTexture('/scatter_hive_eggs.png', textureLoader),
+            prop_blood_trail: this.loadScatterTexture('/prop_blood_trail.png', textureLoader),
+            scatter_broken_drone: this.loadScatterTexture('/scatter_broken_drone.png', textureLoader),
+            scatter_biomech_debris: this.loadScatterTexture('/scatter_biomech_debris.png', textureLoader),
+            decal_hive_growth: this.loadKeyedSpriteTexture('/decal_hive_growth.png', 14),
+            decal_bullet_holes: this.loadKeyedSpriteTexture('/decal_bullet_holes.png', 14),
+            prop_torn_warning_poster: this.loadKeyedSpriteTexture('/prop_torn_warning_poster.png', 14),
+            decal_wall_breach: this.loadKeyedSpriteTexture('/decal_wall_breach.png', 14),
+
             prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
         for (const [type, path] of Object.entries(GENERATED_ROOM_PROP_PATHS)) {
@@ -2302,6 +2348,16 @@ export class ThreeGame {
                 fog: false
             });
         }
+        for (const drop of LORE_DROPS) {
+            this.scatterMaterials[drop.key] = new THREE.SpriteMaterial({
+                map: this.scatterTextures[drop.key],
+                transparent: true,
+                alphaTest: 0.035,
+                depthWrite: false,
+                depthTest: true,
+                fog: false
+            });
+        }
         this.scatterPlaneMaterials = {
             bunker_junk: new THREE.MeshBasicMaterial({
                 map: this.scatterTextures.bunker_junk,
@@ -2365,12 +2421,8 @@ export class ThreeGame {
         this.exteriorCanyonTextures = {};
         this.exteriorCanyonMaterials = {};
         for (const [biomeKey, [path, color, emissive]] of Object.entries(canyonMaterialConfigs)) {
-            const texture = textureLoader.load(path);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
+            const texture = this.loadTerrainTexture(path, textureLoader, maxAnisotropy);
             texture.repeat.set(1.5, 1.5);
-            texture.colorSpace = THREE.SRGBColorSpace;
-            texture.magFilter = THREE.LinearFilter;
             this.exteriorCanyonTextures[biomeKey] = texture;
             this.exteriorCanyonMaterials[biomeKey] = new THREE.MeshStandardMaterial({
                 map: texture,
@@ -2841,11 +2893,7 @@ export class ThreeGame {
         doorGroup.position.set(9, 1.4, 3);
 
         const doorGeo = new THREE.BoxGeometry(3, 2.8, 0.72);
-        const doorMat = new THREE.MeshStandardMaterial({
-            color: 0x1f272e,
-            roughness: 0.45,
-            metalness: 0.82
-        });
+        const doorMat = this.doorMaterial;
         const doorSlab = new THREE.Mesh(doorGeo, doorMat);
         doorSlab.castShadow = true;
         doorSlab.receiveShadow = true;
@@ -4329,7 +4377,11 @@ export class ThreeGame {
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            if (!options?.layout?.hasAlpha) {
+            // Preserve authored alpha sprites. Older generated assets arrive
+            // on black and still need keying, while production collectibles
+            // are pre-matted from chroma green and contain transparent pixels.
+            const hasSourceAlpha = imgData.data.some((value, index) => index % 4 === 3 && value < 255);
+            if (!options?.layout?.hasAlpha && !hasSourceAlpha) {
                 applyBlackChromaKey(imgData, { threshold });
             }
 
@@ -8565,7 +8617,8 @@ export class ThreeGame {
             const hive = new HiveSite(this.scene, {
                 id: record.id,
                 label: site?.label ?? 'HIVE',
-                characterId: site?.characterId ?? ''
+                characterId: site?.characterId ?? '',
+                groundMaterial: this.getRoomFloorMaterial('bio-hive', BIOME_KEYS.BIO)
             });
             let { x, z } = record;
             if (!this.isSiteOnPlannedRing(x, z, record.id)) {
@@ -8913,7 +8966,8 @@ export class ThreeGame {
             const camp = new SurvivorCamp(this.scene, {
                 id: record.id,
                 label: ACT2_CAMP_LABELS[record.id] ?? 'CAMP',
-                playerType: this.playerType
+                playerType: this.playerType,
+                groundMaterial: this.getRoomFloorMaterial('camp', BIOME_KEYS.ACTIVE)
             });
             let { x, z } = record;
             if (
@@ -9020,13 +9074,14 @@ export class ThreeGame {
     // (corpse pattern) and a site offers at most one drop per run.
 
     spawnLoreDropSprite(drop, x, z) {
-        const baseMat = this.scatterMaterials.lore_terminal;
+        const baseMat = this.scatterMaterials[drop.key] || this.scatterMaterials.lore_terminal;
         if (!baseMat?.map) return null;
         const mat = baseMat.clone();
         mat.color.setHex(drop.rarity === 'legendary' ? 0xffd27a : drop.rarity === 'rare' ? 0x9be8ff : 0xffffff);
         const sprite = new THREE.Sprite(mat);
         sprite.center.set(0.5, 0);
-        sprite.scale.set(0.55, 0.55, 1);
+        const collectibleScale = drop.rarity === 'legendary' ? 0.78 : drop.rarity === 'rare' ? 0.7 : 0.64;
+        sprite.scale.set(collectibleScale, collectibleScale, 1);
         sprite.position.set(x, 0.06, z);
         sprite.renderOrder = 5;
         this.scene.add(sprite);
@@ -14943,9 +14998,12 @@ export class ThreeGame {
         const family = ROOM_FLOOR_MATERIAL_FAMILY[style];
         let texture = this.biomeTerrainTextures?.[biome]?.floorBase
             ?? this.biomeTerrainTextures?.[BIOME_KEYS.ACTIVE]?.floorBase;
-        if (family && this.roomFloorMaterialAtlas) {
-            const slot = ROOM_MATERIAL_ATLAS_SLOT[family];
-            texture = this.roomFloorMaterialAtlas.clone();
+        if (family) {
+            const isSiteFamily = family.startsWith('site:');
+            const familyName = isSiteFamily ? family.slice(5) : family;
+            const atlas = isSiteFamily ? this.siteFloorMaterialAtlas : this.roomFloorMaterialAtlas;
+            const slot = isSiteFamily ? SITE_FLOOR_ATLAS_SLOT[familyName] : ROOM_MATERIAL_ATLAS_SLOT[familyName];
+            if (atlas && slot) texture = atlas.clone();
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
             texture.repeat.set(0.5, 0.5);
@@ -15004,6 +15062,39 @@ export class ThreeGame {
             mesh.userData = { isRoomFloorOverlay: true, roomFloorStyle: style };
             group.add(mesh);
         }
+    }
+
+    addHallwaySurfaceOverlay(group, chunkX, chunkY, grid) {
+        if (!this.siteFloorMaterialAtlas || !grid) return;
+        const roomCells = new Set((this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
+            .flatMap((room) => room.interior ?? [])
+            .map((cell) => `${cell.x},${cell.y}`));
+        const cells = [];
+        for (let y = 0; y < this.chunkSize; y += 1) {
+            for (let x = 0; x < this.chunkSize; x += 1) {
+                if (grid[y]?.[x] === '.' && !roomCells.has(`${x},${y}`)) cells.push({ x, y });
+            }
+        }
+        if (!cells.length) return;
+        const biome = this.getBiomeKeyForWorldPosition(
+            chunkX * this.chunkSize + this.chunkSize * 0.5,
+            chunkY * this.chunkSize + this.chunkSize * 0.5
+        );
+        const mesh = new THREE.InstancedMesh(this.floorGeometry, this.getRoomFloorMaterial('hallway', biome), cells.length);
+        const matrix = new THREE.Matrix4();
+        const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+        cells.forEach((cell, index) => {
+            matrix.compose(
+                new THREE.Vector3(chunkX * this.chunkSize + cell.x, 0.006, chunkY * this.chunkSize + cell.y),
+                rotation,
+                new THREE.Vector3(1, 1, 1)
+            );
+            mesh.setMatrixAt(index, matrix);
+        });
+        mesh.instanceMatrix.needsUpdate = true;
+        mesh.receiveShadow = true;
+        mesh.userData = { isHallwayFloorOverlay: true };
+        group.add(mesh);
     }
 
     getWallKey(worldX, worldZ) {
@@ -15553,6 +15644,7 @@ export class ThreeGame {
             chunkY,
             this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)
         );
+        if (landform === LANDFORMS.MAZE) this.addHallwaySurfaceOverlay(group, chunkX, chunkY, grid);
         this.addTerrainStepDressing(group, chunkX, chunkY, grid, landform);
         if (landform === LANDFORMS.MAZE) {
             this.addWfcDebugOverlay(
@@ -15588,7 +15680,7 @@ export class ThreeGame {
                     const horizontal = doorRecord
                         ? doorRecord.orientation === 'horizontal'
                         : grid[localY]?.[localX - 1] === '#' || grid[localY]?.[localX + 1] === '#';
-                    const doorMesh = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    const doorMesh = new THREE.Mesh(this.wallGeometry, this.doorMaterial);
                     const blastDoorHeightScale = 1.72;
                     doorMesh.position.set(worldX, (this.wallHeight * blastDoorHeightScale) / 2, worldZ);
                     doorMesh.scale.set(
@@ -16874,6 +16966,9 @@ export class ThreeGame {
                 const isGroundCover = type.includes('puddle') || type === 'scatter_gravel'
                     || type === 'scatter_cable_coil' || type === 'scatter_bolts'
                     || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss'
+                    || type === 'scatter_camp_supplies' || type === 'scatter_hive_eggs'
+                    || type === 'prop_blood_trail' || type === 'scatter_broken_drone'
+                    || type === 'scatter_biomech_debris'
                     || type === 'body_human_frozen_suit' || type === 'body_empty_exosuit';
                 const isTallScatter = type === 'scatter_ice_stalagmite'
                     || type === 'scatter_bio_pod'
@@ -22179,9 +22274,12 @@ export class ThreeGame {
         }
         this.roomWallMaterialAtlas?.dispose?.();
         this.roomFloorMaterialAtlas?.dispose?.();
+        this.siteFloorMaterialAtlas?.dispose?.();
         Object.values(this.exteriorCanyonMaterials ?? {}).forEach((material) => material?.dispose?.());
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();
+        this.doorMaterial?.dispose?.();
+        this.doorTexture?.dispose?.();
         this.wallGeometry?.dispose();
         this.floorGeometry?.dispose();
         this.chunkFloorGeometry?.dispose();

@@ -10,6 +10,7 @@
 // threeGame.buildChunk owns the pipeline: DFS maze carve → applyLandform →
 // ensureChunkPortals → connectPortalsInward (non-maze) → widen → spawn clear.
 
+
 export const LANDFORMS = Object.freeze({
     MAZE: 'maze',
     FIELD: 'field',

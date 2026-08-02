@@ -8,8 +8,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'bunker-standard',
         doorStyle: 'bunker',
         signatureProps: ['prop_bunker_supplies'],
-        largeProps: ['prop_cyber_junction', 'prop_conduit_hub'],
-        smallProps: ['scatter_cable_coil', 'scatter_bolts'],
+        largeProps: ['prop_cyber_junction', 'prop_conduit_hub', 'decal_wall_breach'],
+        smallProps: ['scatter_cable_coil', 'scatter_bolts', 'prop_torn_warning_poster', 'decal_bullet_holes', 'prop_blood_trail'],
         encounterProfile: 'standard'
     },
     {
@@ -21,8 +21,9 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'bunker-utility',
         doorStyle: 'utility',
         signatureProps: ['prop_fusion_generator', 'prop_conduit_hub'],
-        largeProps: ['prop_engineering_bench', 'prop_cyber_junction'],
-        smallProps: ['scatter_cable_coil', 'scatter_bolts'],
+        largeProps: ['prop_engineering_bench', 'prop_cyber_junction', 'decal_wall_breach'],
+        smallProps: ['scatter_cable_coil', 'scatter_bolts', 'prop_torn_warning_poster', 'scatter_biomech_debris', 'scatter_broken_drone'],
+        rareProps: ['scatter_horizon_black_box', 'decal_machine_cult_shrine'],
         encounterProfile: 'utility'
     },
     {
@@ -75,6 +76,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         signatureProps: ['prop_cryo_sleep_pod'],
         largeProps: ['prop_diagnostic_console', 'prop_broken_specimen_tank'],
         smallProps: ['scatter_cryo_shards'],
+        rareProps: ['decal_pod_312_breach'],
         encounterProfile: 'sterile'
     },
     {
@@ -101,6 +103,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         signatureProps: ['prop_alien_respiratory_vent', 'prop_spore_colony'],
         largeProps: ['prop_alien_feeding_basin', 'prop_hive_resin_sac'],
         smallProps: ['prop_cave_spores', 'prop_cave_webs'],
+        rareProps: ['decal_tallow_herb_cache'],
         encounterProfile: 'bio-standard'
     },
     {
@@ -112,8 +115,8 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'bio-hive',
         doorStyle: 'hive',
         signatureProps: ['prop_alien_feeding_basin', 'prop_cave_eggs_intact'],
-        largeProps: ['prop_alien_respiratory_vent', 'prop_hive_resin_sac', 'prop_cave_hive_wounded'],
-        smallProps: ['prop_cave_eggs_hatched', 'prop_cave_webs'],
+        largeProps: ['prop_alien_respiratory_vent', 'prop_hive_resin_sac', 'prop_cave_hive_wounded', 'decal_hive_growth'],
+        smallProps: ['prop_cave_eggs_hatched', 'prop_cave_webs', 'scatter_hive_eggs', 'prop_blood_trail'],
         encounterProfile: 'bio-nest-guard'
     },
     {
@@ -127,6 +130,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         signatureProps: ['prop_engineering_bench'],
         largeProps: ['prop_fusion_generator', 'prop_conduit_hub'],
         smallProps: ['scatter_cable_coil', 'scatter_bolts'],
+        rareProps: ['decal_machine_cult_shrine'],
         encounterProfile: 'utility'
     },
     {
@@ -140,6 +144,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         signatureProps: ['prop_security_locker'],
         largeProps: ['prop_security_barricade'],
         smallProps: ['scatter_bolts'],
+        rareProps: ['prop_iron_guild_dogtags'],
         encounterProfile: 'security'
     },
     {
@@ -153,6 +158,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         signatureProps: ['prop_cryo_sleep_pod'],
         largeProps: ['prop_medical_bed', 'prop_diagnostic_console'],
         smallProps: ['scatter_cryo_shards', 'scatter_coolant_puddle'],
+        rareProps: ['decal_pod_312_breach'],
         encounterProfile: 'sterile'
     },
     {
@@ -177,8 +183,9 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         floorStyle: 'camp',
         doorStyle: 'camp',
         signatureProps: ['prop_camp_crates'],
-        largeProps: ['prop_camp_sandbags'],
-        smallProps: ['scatter_cable_coil'],
+        largeProps: ['prop_camp_sandbags', 'scatter_broken_drone'],
+        smallProps: ['scatter_cable_coil', 'scatter_camp_supplies', 'prop_blood_trail', 'decal_bullet_holes'],
+        rareProps: ['decal_tallow_herb_cache', 'prop_iron_guild_dogtags'],
         encounterProfile: 'safe'
     },
     {
@@ -192,6 +199,7 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         signatureProps: ['prop_bunker_supplies'],
         largeProps: ['prop_camp_crates'],
         smallProps: ['scatter_bolts'],
+        rareProps: ['scatter_horizon_black_box'],
         encounterProfile: 'safe'
     }
 ]);

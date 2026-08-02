@@ -349,9 +349,17 @@ export function collapsePocketLattice(random) {
 // latticeSize is derived from lattice.length rather than taken as a
 // parameter, so this works unmodified for both collapseChunkLattice's 3x3
 // output and collapsePocketLattice's 2x2 output.
+// The output size is derived from the lattice and TILE_SIZE rather than taken
+// on trust: span = latticeSize * (TILE_SIZE - 1) + 1. A caller passing a stale
+// size used to write past the end of the grid and throw, so the parameter is
+// now only a cross-check.
 export function stampLattice(lattice, chunkSize) {
     const latticeSize = Math.round(Math.sqrt(lattice.length));
-    const grid = Array.from({ length: chunkSize }, () => Array(chunkSize).fill('#'));
+    const span = (latticeSize * (TILE_SIZE - 1)) + 1;
+    if (chunkSize != null && chunkSize !== span) {
+        console.warn(`[wfc] ignoring chunkSize ${chunkSize}; a ${latticeSize}x${latticeSize} lattice of ${TILE_SIZE}-cell tiles spans ${span}`);
+    }
+    const grid = Array.from({ length: span }, () => Array(span).fill('#'));
     const stride = TILE_SIZE - 1; // tiles overlap by 1 cell on shared borders
     for (let my = 0; my < latticeSize; my += 1) {
         for (let mx = 0; mx < latticeSize; mx += 1) {

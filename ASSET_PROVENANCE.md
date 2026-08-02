@@ -23,6 +23,7 @@ None. All 6 RGB story item icons are now high-resolution graphic novel halftone 
 | `item_temp_badge` | RGB Mini-Game | `public/minigames/rgb/items/item_temp_badge.png` | Worn ID badge with red TEMP CONTRACTOR header & lanyard clip |
 | `item_phone` | RGB Mini-Game | `public/minigames/rgb/items/item_phone.png` | Cracked smartphone displaying "MISSED CALL LUCIA" notification |
 | `item_wire_cutters` | RGB Mini-Game | `public/minigames/rgb/items/item_wire_cutters.png` | Heavy-duty insulated wire cutters with red rubberized handles |
+| `drop_*` (14 lore collectibles) | World Lore Drops | `public/drop_*.png` | AI-generated stylized collectible sprites; built-in image generation, chroma-green source extraction, soft matte/despill, 512px alpha PNG finals |
 
 ---
 

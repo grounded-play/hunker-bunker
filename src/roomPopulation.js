@@ -70,6 +70,11 @@ export function planRoomPopulation(room, grid, random) {
     }
 
     const signaturePlaced = placements.some((placement) => placement.kind === 'signature');
+
+    if (theme.rareProps?.length > 0 && random() < 0.15) {
+        reservePlacement('rare', propFrom(theme.rareProps, random), false);
+    }
+
     return {
         roomId: room.id,
         budget,
