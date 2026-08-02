@@ -1237,8 +1237,8 @@ const DEFAULT_BIOME_LABEL = 'ACTIVE SECTOR';
 
 const state = {
     settings: {
-        // Keep diagnostics visible by default throughout the current Deck QA build.
-        debug: true,
+        // Debug surfaces are opt-in and additionally gated by QA authorization.
+        debug: false,
         audioMix: { ...DEFAULT_AUDIO_MIX },
         fullscreen: false,
         nightVision: false,
@@ -5115,6 +5115,11 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
     const game = window.game;
     if (!game?.prepareVisibleChunksForGameplay) return;
 
+    // An intro launch owns a longer-lived pause that begins before the world
+    // build and ends only after the final doors reveal gameplay. Preserve that
+    // outer hold instead of briefly starting vitals/enemies during warm-up.
+    const wasLoadingPaused = Boolean(game.loadingPaused);
+
     let announcedStage = '';
     const announceDeploymentStage = (stage, status, progress) => {
         showRunLoadingScreen(status, progress, { overDoor: loaderOverDoor });
@@ -5143,14 +5148,14 @@ async function prepareGameplayForDialogue({ loaderOverDoor = false } = {}) {
             }
         });
         announceDeploymentStage('PRESENT', 'PRESENTING FIRST RENDERED SECTOR FRAME...', 98);
-        game.setLoadingPaused?.(false);
+        if (!wasLoadingPaused) game.setLoadingPaused?.(false);
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         game.renderer?.render?.(game.scene, game.camera);
         await new Promise((resolve) => requestAnimationFrame(resolve));
         announceDeploymentStage('READY', 'DEPLOYMENT READY — TRANSFERRING CONTROL', 100);
         await new Promise((resolve) => window.setTimeout(resolve, loaderOverDoor ? 220 : 120));
     } finally {
-        game.setLoadingPaused?.(false);
+        game.setLoadingPaused?.(wasLoadingPaused);
         await hideRunLoadingScreen({ fade: loaderOverDoor });
     }
 }
@@ -5739,16 +5744,23 @@ async function runAct2IntroSequence(game, playerType) {
     window.AudioManager?.startAmbience?.();
 }
 
-async function runMissionIntroSequence() {
-    if (missionFlowRunning) return;
+async function runMissionIntroSequence({ deploymentHold = null } = {}) {
+    if (missionFlowRunning) {
+        deploymentHold?.();
+        return;
+    }
 
     ensureMissionManagers();
     missionFlowRunning = true;
     document.body.classList.add('mission-intro-active');
     const game = window.game;
-    let resumeIntroRendering = suspendGameForFullscreenVideo();
+    let resumeIntroRendering = deploymentHold || suspendGameForFullscreenVideo();
     const playerType = getSelectedHeroType();
 
+    // This is independent of renderer warm-up pause state: scripted intro
+    // sequences must remain invulnerable even if another caller changes the
+    // render pause while loading assets or mounting chunks.
+    game?.setCinematicLock?.(true);
     game?.setInputEnabled?.(false);
     hideAllGameplayPrompts();
     const consoleModal = document.getElementById('console-terminal-modal');
@@ -5795,35 +5807,28 @@ async function runMissionIntroSequence() {
             choice = await dialogueManager?.openMothershipDialogue({ playerType }) ?? 'skip';
         }
 
-        // The authored cinematic sequence is complete. Resume before the
-        // blast doors reveal the live game world.
-        resumeIntroRendering?.();
-        resumeIntroRendering = null;
-
         if (skipBtn) skipBtn.classList.add('hidden');
 
-        if (choice === 'tutorial' && !window.skipAllIntro) {
-            // Reveal HUD elements for in-world tutorial prompts.
-            document.body.classList.remove('mission-intro-active');
-            game?.setInputEnabled?.(true);
+        const startTutorial = choice === 'tutorial' && !window.skipAllIntro;
+        document.body.classList.add('hud-hidden');
+        await new Promise((resolve) => {
+            triggerDoorTransition(
+                // The panels are fully closed: make the prepared world the
+                // scene behind them, but keep cinematic invulnerability and
+                // input lock until the 800ms opening animation is complete.
+                () => {
+                    resumeIntroRendering?.();
+                    resumeIntroRendering = null;
+                    document.body.classList.remove('mission-intro-active');
+                },
+                resolve
+            );
+        });
+        document.body.classList.remove('hud-hidden');
+        game?.setCinematicLock?.(false);
+
+        if (startTutorial) {
             await dialogueManager?.startTutorialSequence({ game });
-        } else {
-            document.body.classList.add('hud-hidden');
-            await new Promise((resolve) => {
-                triggerDoorTransition(
-                    // onClosed: reveal game viewport behind the closed doors
-                    () => {
-                        document.body.classList.remove('mission-intro-active');
-                    },
-                    // onOpened: resolve transition promise
-                    () => {
-                        resolve();
-                    }
-                );
-            });
-            // Wait for doors to finish opening before revealing the HUD
-            await new Promise((r) => window.setTimeout(r, 1000));
-            document.body.classList.remove('hud-hidden');
         }
 
         // Show mission briefing after door transition
@@ -5859,6 +5864,7 @@ async function runMissionIntroSequence() {
         resumeIntroRendering?.();
         document.body.classList.remove('mission-intro-active');
         document.body.classList.remove('hud-hidden');
+        game?.setCinematicLock?.(false);
         game?.setInputEnabled?.(true);
         missionFlowRunning = false;
         const skipBtn = document.getElementById('global-skip-intro-btn');
@@ -5889,6 +5895,12 @@ const transitionFromTitleToMenu = () => {
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     const playerType = getSelectedHeroType();
     saveHeroType(playerType);
+    // Hold one continuous black/simulation barrier from the menu close,
+    // through world warm-up and the authored intro, to the final door reveal.
+    // Adding the body class before switching to gameplay also prevents a
+    // single rendered-world flash while the first doors are opening.
+    if (playIntro) document.body.classList.add('mission-intro-active');
+    const deploymentHold = playIntro ? suspendGameForFullscreenVideo() : null;
     triggerDoorTransition(
         () => {
             showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
@@ -5918,7 +5930,7 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
         },
         () => {
             if (playIntro) {
-                void runMissionIntroSequence();
+                void runMissionIntroSequence({ deploymentHold });
             } else {
                 window.game?.setInputEnabled?.(true);
             }
@@ -5946,6 +5958,8 @@ if (dailyOpsBtn) {
             window.game.globalSeedOffset = getDailySeedInt();
             window.game.fixedRunEntropy = true;
         }
+        document.body.classList.add('mission-intro-active');
+        const deploymentHold = suspendGameForFullscreenVideo();
         triggerDoorTransition(
             () => {
                 showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
@@ -5975,7 +5989,7 @@ if (dailyOpsBtn) {
                 return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
             () => {
-                void runMissionIntroSequence();
+                void runMissionIntroSequence({ deploymentHold });
             },
             undefined,
             { waitForClosedWork: true, openingHoldMs: 160 }
