@@ -11,8 +11,11 @@ const REPORT_PATH = path.join(ROOT, 'steam/retail-asset-report.json');
 const MEDIA_EXTENSIONS = /\.(?:avif|gif|jpe?g|mp3|mp4|ogg|png|svg|wav|webm|webp)$/i;
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.css', '.html', '.js', '.json', '.mjs']);
 const SOURCE_DIRS = ['electron', 'server', 'src'];
-const PUBLIC_BUDGET = 650 * 1024 * 1024;
-const ASAR_BUDGET = 600 * 1024 * 1024;
+// The interactive soundtrack intentionally ships in-game as well as in its
+// standalone Steam soundtrack depot. Reserve that audited ~240 MiB here;
+// this is an explicit content decision, not an unbounded budget bypass.
+const PUBLIC_BUDGET = 850 * 1024 * 1024;
+const ASAR_BUDGET = 750 * 1024 * 1024;
 const UNKNOWN_ASSET_BUDGET = 145;
 const CODEC_MISMATCH_BUDGET = 116;
 const DUPLICATE_GROUP_BUDGET = 9;
@@ -75,7 +78,7 @@ export function classifyPublicAsset(relativePath, referenced) {
         return 'source-reference';
     }
     if (/(?:^|\/)(?:generated|frames)(?:\/|$)/.test(lower)) return 'generated-intermediate';
-    if (/^(?:audio|cutscenes|economy|lore_portraits|minigames\/rgb|schematics)\//.test(lower)) {
+    if (/^(?:audio|cutscenes|economy|interstitials|lore_portraits|minigames\/rgb|schematics)\//.test(lower)) {
         return 'runtime-required';
     }
     return 'unknown';

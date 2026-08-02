@@ -19,5 +19,8 @@ describe('retail asset audit', () => {
         expect(classifyPublicAsset('art/player-preview.png', new Set())).toBe('source-reference');
         expect(classifyPublicAsset('art/generated/frame.png', new Set())).toBe('generated-intermediate');
     });
-});
 
+    it('recognizes generated song interstitials as intentional runtime media', () => {
+        expect(classifyPublicAsset('interstitials/int_01_key.webp', new Set())).toBe('runtime-required');
+    });
+});

@@ -147,15 +147,26 @@ body {
 #debug-toolbar {
   position: absolute;
   top: calc(var(--vu) * 4);
-  left: calc(var(--vu) * 4);
+  right: calc(var(--vu) * 4);
+  left: auto;
   display: none;
   flex-direction: column;
+  align-items: flex-end;
   gap: 8px;
+  width: 168px;
+  pointer-events: none;
   z-index: 100000 !important;
 }
 
 .show-debug #debug-toolbar {
   display: flex;
+}
+
+/* Telemetry and legends must never create an invisible click shield over the
+   game. Only the toolbar's actual form controls are interactive. */
+#debug-toolbar button,
+#debug-toolbar select {
+  pointer-events: auto;
 }
 
 #fps-counter {

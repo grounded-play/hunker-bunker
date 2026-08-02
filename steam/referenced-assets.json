@@ -28,10 +28,6 @@
     "art-remaster/enemy-v5/snails/final/cryosnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/cybersnail-walk-v5.png",
     "art-remaster/enemy-v5/snails/final/sporesnail-walk-v5.png",
-    "audio/NewTrack1.mp3",
-    "audio/NewTrack2.mp3",
-    "audio/NewTrack3.mp3",
-    "audio/NewTrack4.mp3",
     "audio/generated/camp_verb_meridian.wav",
     "audio/generated/camp_verb_tallow.wav",
     "audio/generated/camp_verb_vesper.wav",
@@ -86,7 +82,6 @@
     "audio/vg2/hive_spores_puff.wav",
     "audio/vg2/hive_webs_sticky.wav",
     "audio/vg2/hive_wounded_drip.wav",
-    "audio/vg2/mainbg_music.mp3",
     "audio/vg2/player_death1.wav",
     "audio/vg2/player_hit1.wav",
     "audio/vg2/player_hit2.wav",
@@ -151,6 +146,7 @@
     "civilian_miner_walk.png",
     "civilian_researcher_walk.png",
     "console.png",
+    "crash_site_broken_floor_v1.png",
     "cryo_base_frost.png",
     "cryo_grunge_rime.png",
     "cryo_wall_conduit.png",
@@ -940,26 +936,6 @@
       "classification": "runtime-required"
     },
     {
-      "path": "audio/NewTrack1.mp3",
-      "bytes": 7141643,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "audio/NewTrack2.mp3",
-      "bytes": 8848747,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "audio/NewTrack3.mp3",
-      "bytes": 6090421,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "audio/NewTrack4.mp3",
-      "bytes": 8007161,
-      "classification": "runtime-required"
-    },
-    {
       "path": "audio/cover.png",
       "bytes": 867896,
       "classification": "runtime-required"
@@ -1005,8 +981,223 @@
       "classification": "runtime-required"
     },
     {
+      "path": "audio/ost/A Snail Blocks the Hallway.mp3",
+      "bytes": 4885164,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Absolute Zero Has a Shell.mp3",
+      "bytes": 8091552,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Black Box Stain.mp3",
+      "bytes": 2220055,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Briggs Became the Barricade.mp3",
+      "bytes": 5576100,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Briggs Keeps the Ledger.mp3",
+      "bytes": 4886923,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Cold Enough to Think.mp3",
+      "bytes": 6329334,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Contraband Sunrise.mp3",
+      "bytes": 5872183,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Destination Core Worlds.mp3",
+      "bytes": 3638010,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Dr. Nahl Remembers the Tissue.mp3",
+      "bytes": 5873988,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Four Seats, One Survivor.mp3",
+      "bytes": 7406186,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Gigawatt Goliath.mp3",
+      "bytes": 4161702,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Glacial Depths (Cryo Biome).mp3",
+      "bytes": 8848747,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Her Voice Inside Your Helmet.mp3",
+      "bytes": 4611032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Hunker Bunker Main Theme.mp3",
+      "bytes": 11640874,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/It Understands the Gun.mp3",
+      "bytes": 7408408,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Kaelen Is the Grid.mp3",
+      "bytes": 4781329,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Kaelen's Sleeping Machine.mp3",
+      "bytes": 4191548,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Martha Runs Faster Now.mp3",
+      "bytes": 5176773,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Meridian Remembers You.mp3",
+      "bytes": 3879871,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Mother of the Last World.mp3",
+      "bytes": 5533709,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Mothership Customer Support.mp3",
+      "bytes": 4507795,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Mothership Is Not Feeling Well.mp3",
+      "bytes": 4124932,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Nobody Says Goodbye.mp3",
+      "bytes": 9312355,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Overgrown Bio-Sphere (Bio Biome).mp3",
+      "bytes": 6090421,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Safe Haven (Ship Sanctuary).mp3",
+      "bytes": 7141643,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Someone Is Still Alive.mp3",
+      "bytes": 5833001,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Tallow Keeps the Steam.mp3",
+      "bytes": 5066130,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/The Bloom That Hunts.mp3",
+      "bytes": 7586933,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/The Cave Was Breathing.mp3",
+      "bytes": 8271957,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/The Creature Lets You Pass.mp3",
+      "bytes": 4471078,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/The Ice Gets Smaller.mp3",
+      "bytes": 6394369,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/The Math Is Beautiful Now.mp3",
+      "bytes": 5612735,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/The Pipes Are Singing.mp3",
+      "bytes": 6682901,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/The Queen Makes a Reasonable Offer.mp3",
+      "bytes": 5389600,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/The Spores Know Your Name.mp3",
+      "bytes": 6825530,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/They Still Have Their Faces.mp3",
+      "bytes": 2527576,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Under Siege (Combat Alert).mp3",
+      "bytes": 8007161,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Vesper Sleeps in Shifts.mp3",
+      "bytes": 6555023,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Warmth Beneath the Ice.mp3",
+      "bytes": 4572859,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/We Could Avoid Doing This.mp3",
+      "bytes": 6322226,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/We Escaped Together, Technically.mp3",
+      "bytes": 5514167,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/You Robbed the Only People Left.mp3",
+      "bytes": 3835615,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "audio/ost/Your Name Was Written Twice.mp3",
+      "bytes": 5620715,
+      "classification": "runtime-required"
+    },
+    {
       "path": "audio/soundtrack-config.json",
-      "bytes": 1437,
+      "bytes": 8219,
       "classification": "runtime-required"
     },
     {
@@ -1242,11 +1433,6 @@
     {
       "path": "audio/vg2/hive_wounded_drip.wav",
       "bytes": 70604,
-      "classification": "runtime-required"
-    },
-    {
-      "path": "audio/vg2/mainbg_music.mp3",
-      "bytes": 11640874,
       "classification": "runtime-required"
     },
     {
@@ -1627,6 +1813,11 @@
     {
       "path": "console.png",
       "bytes": 682755,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "crash_site_broken_floor_v1.png",
+      "bytes": 3058773,
       "classification": "runtime-required"
     },
     {
@@ -2313,6 +2504,196 @@
       "path": "icons.svg",
       "bytes": 5031,
       "classification": "unknown"
+    },
+    {
+      "path": "interstitials/int_01_someone_is_still_alive_key_v1.webp",
+      "bytes": 68598,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_02_kaelen_s_sleeping_machine_key_v1.webp",
+      "bytes": 119730,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_03_the_math_is_beautiful_now_key_v1.webp",
+      "bytes": 152332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_04_warmth_beneath_the_ice_key_v1.webp",
+      "bytes": 101450,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_05_the_pipes_are_singing_key_v1.webp",
+      "bytes": 105398,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_06_briggs_keeps_the_ledger_key_v1.webp",
+      "bytes": 104610,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_07_your_name_was_written_twice_key_v1.webp",
+      "bytes": 89540,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_08_dr_nahl_remembers_the_tissue_key_v1.webp",
+      "bytes": 108032,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_09_mothership_customer_support_key_v1.webp",
+      "bytes": 120726,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_10_mothership_is_not_feeling_well_key_v1.webp",
+      "bytes": 109230,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_11_her_voice_inside_your_helmet_key_v1.webp",
+      "bytes": 100424,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_12_the_queen_makes_a_reasonable_offer_key_v1.webp",
+      "bytes": 116648,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_13_a_snail_blocks_the_hallway_key_v1.webp",
+      "bytes": 118872,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_14_cold_enough_to_think_key_v1.webp",
+      "bytes": 150748,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_15_the_spores_know_your_name_key_v1.webp",
+      "bytes": 156756,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_16_we_could_avoid_doing_this_key_v1.webp",
+      "bytes": 144492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_17_it_understands_the_gun_key_v1.webp",
+      "bytes": 130298,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_18_the_creature_lets_you_pass_key_v1.webp",
+      "bytes": 105770,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_19_meridian_remembers_you_key_v1.webp",
+      "bytes": 121986,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_20_tallow_keeps_the_steam_key_v1.webp",
+      "bytes": 93544,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_21_vesper_sleeps_in_shifts_key_v1.webp",
+      "bytes": 82480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_22_you_robbed_the_only_people_left_key_v1.webp",
+      "bytes": 83612,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_23_they_still_have_their_faces_key_v1.webp",
+      "bytes": 120494,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_24_nobody_says_goodbye_key_v1.webp",
+      "bytes": 85478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_25_gigawatt_goliath_key_v1.webp",
+      "bytes": 178144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_26_absolute_zero_has_a_shell_key_v1.webp",
+      "bytes": 103428,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_27_the_bloom_that_hunts_key_v1.webp",
+      "bytes": 143284,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_28_martha_runs_faster_now_key_v1.webp",
+      "bytes": 87848,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_29_briggs_became_the_barricade_key_v1.webp",
+      "bytes": 93346,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_30_kaelen_is_the_grid_key_v1.webp",
+      "bytes": 167138,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_31_mother_of_the_last_world_key_v1.webp",
+      "bytes": 124926,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_32_black_box_stain_key_v1.webp",
+      "bytes": 174426,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_33_the_cave_was_breathing_key_v1.webp",
+      "bytes": 179594,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_34_four_seats_one_survivor_key_v1.webp",
+      "bytes": 87192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_35_contraband_sunrise_key_v1.webp",
+      "bytes": 84126,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_36_we_escaped_together_technically_key_v1.webp",
+      "bytes": 101022,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_37_the_ice_gets_smaller_key_v1.webp",
+      "bytes": 137870,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_38_destination_core_worlds_key_v1.webp",
+      "bytes": 125734,
+      "classification": "runtime-required"
     },
     {
       "path": "kaelen_camp_walk.png",

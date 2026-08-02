@@ -7005,6 +7005,10 @@ setupClickOutside('tactical-map-modal', () => toggleTacticalMapModal(false));
 
 // Global Key Listener for Modals & Dev Console
 document.addEventListener('keydown', (event) => {
+    // Focus-trap/menu navigation owns Tab while a modal is open. Do not let
+    // that already-handled event also toggle the tactical map underneath it.
+    if (event.defaultPrevented) return;
+
     if (event.code === 'Backquote' || event.key === '`' || event.key === '~') {
         if (!developerToolsAuthorized) {
             setDebugMode(false);
