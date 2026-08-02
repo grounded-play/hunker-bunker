@@ -742,11 +742,17 @@ const LADDER_BASE = {
 
 
 // ── Plains ──────────────────────────────────────────────────────────────
+// NOT in TILE_CATALOG, deliberately. A plain's edge lane is ledge while every
+// canyon tile's is pit, so the two can never satisfy validateLatticeSeams as
+// neighbours — plains cannot be WFC tiles. They are exported for the landform
+// layer (src/landforms.js chunk archetypes), which selects whole chunks rather
+// than lattice cells and so is free of the seam constraint. wrapWithBands
+// already supports them via { plain: true }.
 // Open exterior: no pit, no cliff, no bunker shell. `plain: true` swaps the
 // canyon bands for ledge all the way out, so adjacent plains merge into
 // continuous ground you can simply walk across. Open on all four sides —
 // a plain with a closed side would read as an invisible wall in open country.
-const PLAIN_OPEN_BASE = {
+export const PLAIN_OPEN_BASE = {
     id: 'plain-open',
     category: 'plain',
     plain: true,
@@ -769,7 +775,7 @@ const PLAIN_OPEN_BASE = {
 };
 
 // Scattered rock on otherwise open ground, so plains do not all read alike.
-const PLAIN_SCATTER_BASE = {
+export const PLAIN_SCATTER_BASE = {
     ...PLAIN_OPEN_BASE,
     id: 'plain-scatter',
     weight: 0.35,
@@ -810,7 +816,5 @@ export const TILE_CATALOG = Object.freeze([
     ...withRotations(defineTile(CANYON_IMPASSABLE_BASE), ['ns', 'ew']),
     ...withRotations(defineTile(RAMP_BASE), ['n', 'e', 's', 'w']),
     ...withRotations(defineTile(BRIDGE_BASE), ['ns', 'ew']),
-    defineTile(PLAIN_OPEN_BASE),
-    defineTile(PLAIN_SCATTER_BASE),
     ...withRotations(defineTile(LADDER_BASE), ['n', 'e', 's', 'w'])
 ]);

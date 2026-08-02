@@ -30,7 +30,7 @@ describe('room geometry', () => {
         const room = TILE_CATALOG.find((tile) => tile.id === 'room-alcove-s');
         const hall = TILE_CATALOG.find((tile) => tile.id === 'corridor-straight-ns');
         const lattice = [room, hall, room, hall, room, hall, room, hall, room];
-        const grid = stampLattice(lattice, 19);
+        const grid = stampLattice(lattice);
         const instances = buildRoomInstances(lattice, { chunkX: 2, chunkY: -4, chunkSize: 19 });
         expect(instances).toHaveLength(5);
         expect(instances[0].id).toBe('2,-4:room:0');

@@ -10,6 +10,8 @@
 // threeGame.buildChunk owns the pipeline: DFS maze carve → applyLandform →
 // ensureChunkPortals → connectPortalsInward (non-maze) → widen → spawn clear.
 
+import { CHUNK_SIZE } from './tileCatalog.js';
+
 export const LANDFORMS = Object.freeze({
     MAZE: 'maze',
     FIELD: 'field',
@@ -365,7 +367,7 @@ function applyRuinsLandform(grid, random) {
     }
 }
 
-export function applyRingRoadSystem(grid, chunkX, chunkY, chunkSize = 19) {
+export function applyRingRoadSystem(grid, chunkX, chunkY, chunkSize = CHUNK_SIZE) {
     const half = (chunkSize - 1) / 2;
     for (let localY = 0; localY < chunkSize; localY++) {
         for (let localX = 0; localX < chunkSize; localX++) {

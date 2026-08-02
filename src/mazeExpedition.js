@@ -2,7 +2,17 @@
 // rings are fixed; angles, room clusters, spiral ingress points, blockers,
 // and route lengths are generated per run.
 
-export const RADIAL_RING_RADII = Object.freeze([0, 42, 78, 118, 160, 205]);
+import { CHUNK_SIZE } from './tileCatalog.js';
+
+// Ring radii are world units, but what the player traverses is chunks — so
+// these must scale with CHUNK_SIZE or the rings collapse onto one another.
+// Tuned when a chunk was 19 cells; at 49 the raw figures put rings 1-3 all at
+// the same chunk radius, silently merging three progression gates into one
+// belt. Deriving keeps them separable whatever the tile geometry does next.
+const RING_RADII_TUNED_AT_CHUNK_19 = [0, 42, 78, 118, 160, 205];
+export const RADIAL_RING_RADII = Object.freeze(
+    RING_RADII_TUNED_AT_CHUNK_19.map((r) => Math.round(r * (CHUNK_SIZE / 19)))
+);
 export const RADIAL_SITE_RULES = Object.freeze({
     camp_meridian: Object.freeze({ kind: 'camp', ring: 1 }),
     camp_tallow: Object.freeze({ kind: 'camp', ring: 2 }),
@@ -146,7 +156,7 @@ function connectChunkPoints(from, to, preferHorizontal, visit) {
  * can no longer create accidental shortcuts through canyon space.
  */
 export function generateRegionalRouteTopology(seed = 1, {
-    chunkSize = 19,
+    chunkSize = CHUNK_SIZE,
     radii = RADIAL_RING_RADII,
     phase = 0
 } = {}) {
@@ -614,19 +624,19 @@ export function getRadialSite(plan, id) {
 // Phase 6.1 foundation ("project route reservations into each affected
 // chunk"): converts the plan's world-space sites into the same
 // chunkX/chunkY grid threeGame.js already uses everywhere
-// (Math.floor(worldCoord / chunkSize), chunkSize = 19). This is the data
+// (Math.floor(worldCoord / chunkSize), chunkSize = CHUNK_SIZE). This is the data
 // projection step only -- it does NOT yet feed into wfcGenerator.js/
 // threeGame.js's actual chunk generation (that connection is the larger,
 // still-open remainder of 6.1/6.3). Produces reservation data a future
 // integration can consume without guessing the coordinate mapping.
-export function worldToChunkCoords(x, z, chunkSize = 19) {
+export function worldToChunkCoords(x, z, chunkSize = CHUNK_SIZE) {
     return {
         chunkX: Math.floor((Number(x) || 0) / chunkSize),
         chunkY: Math.floor((Number(z) || 0) / chunkSize)
     };
 }
 
-export function projectPlanToChunkReservations(plan, chunkSize = 19) {
+export function projectPlanToChunkReservations(plan, chunkSize = CHUNK_SIZE) {
     const reservations = new Map();
     const reserve = (site, category) => {
         if (!Number.isFinite(site?.x) || !Number.isFinite(site?.z)) return;
@@ -645,7 +655,7 @@ export function projectPlanToChunkReservations(plan, chunkSize = 19) {
 // time (a chunk that's a mission blocker can't simultaneously be the camp
 // site next to it). Catches macro-plan spacing that's too tight for the
 // chunk grid before that integration is built, not after.
-export function findConflictingChunkReservations(plan, chunkSize = 19) {
+export function findConflictingChunkReservations(plan, chunkSize = CHUNK_SIZE) {
     const reservations = projectPlanToChunkReservations(plan, chunkSize);
     const conflicts = [];
     for (const { chunkX, chunkY, sites } of reservations.values()) {

@@ -217,7 +217,7 @@ describe('stampLattice', () => {
     it('produces a chunkSize x chunkSize grid matching each tile pattern at its lattice origin', () => {
         const lattice = collapseChunkLattice(seededRandom(7));
         const chunkSize = (TILE_SIZE - 1) * LATTICE_SIZE + 1; // 19
-        const grid = stampLattice(lattice, chunkSize);
+        const grid = stampLattice(lattice);
         expect(grid).toHaveLength(chunkSize);
         for (const row of grid) expect(row).toHaveLength(chunkSize);
 

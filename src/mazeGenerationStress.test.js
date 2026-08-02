@@ -52,7 +52,7 @@ describe('maze generation stress invariants', () => {
         for (let seed = 1; seed <= 2000; seed += 1) {
             const random = seededRandom(seed * 31 + biome.length);
             const lattice = collapseChunkLattice(random, { depthTier: 3 });
-            const grid = stampLattice(lattice, 19);
+            const grid = stampLattice(lattice);
             expect(floorIsConnected(grid), `${biome} seed ${seed}`).toBe(true);
             for (let index = 0; index < lattice.length; index += 1) {
                 const tile = lattice[index];

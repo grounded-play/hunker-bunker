@@ -1,3 +1,5 @@
+import { CHUNK_SIZE } from './tileCatalog.js';
+
 import * as THREE from 'three';
 import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
@@ -816,7 +818,7 @@ export class ThreeGame {
         this._pendingO2BossType = null;
         this.explorationTracker = new ExplorationTracker();
 
-        this.chunkSize = 19;
+        this.chunkSize = CHUNK_SIZE;
         this.chunkCellCount = (this.chunkSize - 1) / 2;
         this.disableFogOfWar = true;
         this.defaultVisibleChunkRadius = 3;
