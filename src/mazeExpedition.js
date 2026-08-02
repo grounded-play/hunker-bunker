@@ -23,12 +23,31 @@ export const RADIAL_SITE_RULES = Object.freeze({
     queen_chamber: Object.freeze({ kind: 'mother_hive', ring: 5 })
 });
 
+// One fixed feature per ring rather than a random draw. A gate is a landmark
+// the player is meant to recognise and plan around ("the bridge is ring 2"), so
+// rolling a different obstacle each seed made every gate read as generic.
+// opensTraversal names the world change that clearing it produces — ring 2's
+// bridge is what physically spans the canyon once its mission is done.
 export const RING_BLOCKER_FEATURES = Object.freeze([
-    Object.freeze({ type: 'collapsed_bridge', mission: 'restore_canyon_crossing' }),
-    Object.freeze({ type: 'blast_bulkhead', mission: 'restore_ring_power' }),
-    Object.freeze({ type: 'hive_membrane', mission: 'clear_infested_threshold' }),
-    Object.freeze({ type: 'flooded_service_tunnel', mission: 'restart_drainage_pumps' })
+    Object.freeze({ type: 'blast_bulkhead', mission: 'restore_ring_power', door: 'bulkhead', opensTraversal: null }),
+    Object.freeze({ type: 'collapsed_bridge', mission: 'restore_canyon_crossing', door: 'gantry', opensTraversal: 'bridge' }),
+    Object.freeze({ type: 'hive_membrane', mission: 'clear_infested_threshold', door: 'membrane', opensTraversal: null }),
+    Object.freeze({ type: 'flooded_service_tunnel', mission: 'restart_drainage_pumps', door: 'pressure_hatch', opensTraversal: null })
 ]);
+
+// The traversal each cleared gate adds to the world. Ring 2's collapsed bridge
+// is the one that opens a canyon crossing, so beating ring 2 physically changes
+// how the map connects rather than only flipping a permission bit.
+export function getTraversalUnlocks(unlockedBlockerIds = new Set()) {
+    const open = [];
+    for (let ring = 1; ring <= RING_BLOCKER_FEATURES.length; ring += 1) {
+        const feature = RING_BLOCKER_FEATURES[ring - 1];
+        if (feature.opensTraversal && unlockedBlockerIds.has(`ring-${ring}-gate`)) {
+            open.push({ ring, traversal: feature.opensTraversal, from: `ring-${ring}-gate` });
+        }
+    }
+    return open;
+}
 
 // Phase 6.2 live enforcement: no literal canyon/gate geometry exists in the
 // WFC-generated world yet (that's a separate, larger asset/solver task —
@@ -367,7 +386,7 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
 
     const blockers = [];
     for (let ring = 1; ring <= 4; ring += 1) {
-        const feature = RING_BLOCKER_FEATURES[(ring - 1 + Math.floor(random() * 2)) % RING_BLOCKER_FEATURES.length];
+        const feature = RING_BLOCKER_FEATURES[ring - 1];
         const angle = phase + ring * 1.37 + 0.35 + (random() - 0.5) * 0.38;
         const radius = (RADIAL_RING_RADII[ring] + RADIAL_RING_RADII[ring + 1]) / 2;
         blockers.push({
@@ -378,6 +397,8 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
             ...polarPoint(radius, angle),
             feature: feature.type,
             missionId: feature.mission,
+            door: feature.door,
+            opensTraversal: feature.opensTraversal,
             locked: true
         });
     }
