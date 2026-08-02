@@ -685,6 +685,80 @@ function syncControllerFocusBoundary() {
     return target ?? null;
 }
 
+function moveControllerFocusSpatial(eventCode) {
+    const root = getControllerFocusRoot();
+    const focusables = getVisibleControllerFocusables(root ?? document);
+    if (!focusables.length) return null;
+
+    const current = document.activeElement;
+    if (!current || (root && !root.contains(current))) {
+        const preferred = getPreferredControllerFocusTarget(root, focusables);
+        if (preferred) {
+            focusControllerTarget(preferred);
+            return preferred;
+        }
+        focusControllerTarget(focusables[0]);
+        return focusables[0];
+    }
+
+    const currentRect = current.getBoundingClientRect();
+    const cx = currentRect.left + currentRect.width / 2;
+    const cy = currentRect.top + currentRect.height / 2;
+
+    const isUp = eventCode === 'KeyW' || eventCode === 'ArrowUp';
+    const isDown = eventCode === 'KeyS' || eventCode === 'ArrowDown';
+    const isLeft = eventCode === 'KeyA' || eventCode === 'ArrowLeft';
+    const isRight = eventCode === 'KeyD' || eventCode === 'ArrowRight';
+
+    let bestCandidate = null;
+    let minScore = Infinity;
+
+    for (const el of focusables) {
+        if (el === current) continue;
+        const rect = el.getBoundingClientRect();
+        const elCx = rect.left + rect.width / 2;
+        const elCy = rect.top + rect.height / 2;
+
+        let inDirection = false;
+        let score = Infinity;
+
+        if (isUp && rect.top < currentRect.top - 4) {
+            inDirection = true;
+            const dx = Math.abs(elCx - cx);
+            const dy = currentRect.top - rect.bottom;
+            score = dy + dx * 2.5;
+        } else if (isDown && rect.top > currentRect.top + 4) {
+            inDirection = true;
+            const dx = Math.abs(elCx - cx);
+            const dy = rect.top - currentRect.bottom;
+            score = dy + dx * 2.5;
+        } else if (isLeft && rect.left < currentRect.left - 4) {
+            inDirection = true;
+            const dy = Math.abs(elCy - cy);
+            const dx = currentRect.left - rect.right;
+            score = dx + dy * 2.5;
+        } else if (isRight && rect.left > currentRect.left + 4) {
+            inDirection = true;
+            const dy = Math.abs(elCy - cy);
+            const dx = rect.left - currentRect.right;
+            score = dx + dy * 2.5;
+        }
+
+        if (inDirection && score < minScore) {
+            minScore = score;
+            bestCandidate = el;
+        }
+    }
+
+    if (bestCandidate) {
+        focusControllerTarget(bestCandidate);
+        return bestCandidate;
+    }
+
+    const direction = isUp || isLeft ? -1 : 1;
+    return moveControllerFocus(direction);
+}
+
 function moveControllerFocus(delta) {
     const root = getControllerFocusRoot();
     const focusables = getVisibleControllerFocusables(root ?? document);
@@ -731,7 +805,7 @@ document.addEventListener('keydown', (event) => {
             adjustRangeInputValue(active, direction)
             || adjustSelectValue(active, direction)
         );
-        if (!adjusted) moveControllerFocus(direction);
+        if (!adjusted) moveControllerFocusSpatial(event.code);
     } else if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault();
         activateControllerFocusedElement();

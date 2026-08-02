@@ -1208,7 +1208,7 @@ body {
   padding: calc(var(--vu) * 3.25);
   z-index: 8000;
   display: grid;
-  grid-template-columns: calc(var(--vu) * 24) minmax(0, 1fr);
+  grid-template-columns: calc(var(--vu) * 44) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: calc(var(--vu) * 1.5) calc(var(--vu) * 2);
 }
@@ -1227,18 +1227,25 @@ body {
 .menu-header-actions {
   grid-column: 1;
   grid-row: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  gap: calc(var(--vu) * 0.75);
-  padding: calc(var(--vu) * 1.4);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--vu) * 0.75) calc(var(--vu) * 1);
+  align-items: start;
+  padding: calc(var(--vu) * 1.2);
   min-width: 0;
   overflow-y: auto;
   background: rgba(7, 9, 10, 0.78);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   z-index: 100;
+}
+
+.menu-command-col {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.75);
+  min-width: 0;
+  width: 100%;
 }
 
 .menu-header-actions .start-btn {
@@ -7584,8 +7591,12 @@ body.mission-intro-active #game-container canvas {
   position: relative;
   top: auto;
   left: auto;
-  margin-top: calc(var(--vu) * 0.5);
-  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 1.2);
+  right: auto;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: calc(var(--vu) * 0.4);
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1);
+  border-radius: 8px;
 }
 
 .steam-account-badge__icon {
