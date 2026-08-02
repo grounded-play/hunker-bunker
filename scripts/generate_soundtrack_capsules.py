@@ -1,194 +1,137 @@
 import os
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
 
-out_dir = os.path.join("steam", "store", "soundtrack")
-os.makedirs(out_dir, exist_ok=True)
+OUT_DIR = os.path.join("steam", "store", "soundtrack")
+MASTER_PATH = os.path.join(OUT_DIR, "source", "soundtrack_key_art_v2.png")
+os.makedirs(OUT_DIR, exist_ok=True)
 
-cover_path = os.path.join("dist_soundtrack", "cover.png")
-cover_img = Image.open(cover_path).convert("RGBA")
+MASTER = Image.open(MASTER_PATH).convert("RGB")
+AMBER = (255, 175, 40, 255)
+WHITE = (245, 244, 238, 255)
+PINK = (211, 74, 122, 255)
+INK = (6, 8, 8, 255)
 
-# Helmet graphic crop (120, 80) to (904, 830)
-helmet_crop = cover_img.crop((120, 80, 904, 830))
 
-BG_COLOR = (12, 12, 12, 255)
-AMBER_COLOR = (255, 175, 40, 255)
-AMBER_GLOW = (255, 150, 0, 180)
-WHITE = (255, 255, 255, 255)
-MUTED_GRAY = (170, 170, 170, 255)
+def font(size, bold=True):
+    family = "LiberationSans-Bold.ttf" if bold else "LiberationSans-Regular.ttf"
+    path = os.path.join("/usr/share/fonts/truetype/liberation", family)
+    if not os.path.exists(path):
+        path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    return ImageFont.truetype(path, size)
 
-# Font loading helper
-def get_font(size, bold=True):
-    font_path = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
-    if not os.path.exists(font_path):
-        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    try:
-        return ImageFont.truetype(font_path, size)
-    except Exception:
-        return ImageFont.load_default()
 
-def create_base_canvas(width, height):
-    canvas = Image.new("RGBA", (width, height), BG_COLOR)
+def cover_crop(width, height, focus_x=0.61, focus_y=0.54):
+    source_ratio = MASTER.width / MASTER.height
+    target_ratio = width / height
+    if source_ratio > target_ratio:
+        crop_w = round(MASTER.height * target_ratio)
+        left = round((MASTER.width - crop_w) * focus_x)
+        left = max(0, min(left, MASTER.width - crop_w))
+        box = (left, 0, left + crop_w, MASTER.height)
+    else:
+        crop_h = round(MASTER.width / target_ratio)
+        top = round((MASTER.height - crop_h) * focus_y)
+        top = max(0, min(top, MASTER.height - crop_h))
+        box = (0, top, MASTER.width, top + crop_h)
+    return MASTER.crop(box).resize((width, height), Image.Resampling.LANCZOS).convert("RGBA")
+
+
+def add_readability(canvas, left_fraction=0.58):
+    shade = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    pixels = shade.load()
+    stop = max(1, int(canvas.width * left_fraction))
+    for x in range(stop):
+        strength = int(224 * (1 - x / stop) ** 1.6)
+        for y in range(canvas.height):
+            pixels[x, y] = (0, 0, 0, strength)
+    return Image.alpha_composite(canvas, shade)
+
+
+def add_frame(canvas, overlay_scale=1.0):
     draw = ImageDraw.Draw(canvas)
-    
-    # Outer HUD double border
-    draw.rectangle([6, 6, width - 7, height - 7], outline=(45, 38, 25, 255), width=2)
-    draw.rectangle([10, 10, width - 11, height - 11], outline=(25, 22, 18, 255), width=1)
-    
-    # Corner brackets (Tactical HUD)
-    bracket_len = min(28, min(width, height) // 8)
-    for cx, cy in [(14, 14), (width - 14, 14), (14, height - 14), (width - 14, height - 14)]:
-        dx = 1 if cx == 14 else -1
-        dy = 1 if cy == 14 else -1
-        draw.line([(cx, cy), (cx + dx * bracket_len, cy)], fill=AMBER_COLOR, width=3)
-        draw.line([(cx, cy), (cx, cy + dy * bracket_len)], fill=AMBER_COLOR, width=3)
-        
+    w, h = canvas.size
+    inset = max(5, round(min(w, h) * 0.018))
+    draw.rectangle((inset, inset, w - inset - 1, h - inset - 1), outline=(100, 72, 28, 150), width=max(1, inset // 4))
+
+    # Steam places its diagonal soundtrack ribbon in the upper-left. These
+    # disconnected pink/amber traces frame that zone without putting content
+    # beneath it, so the platform label reads as part of the artwork.
+    sx = round(154 * overlay_scale)
+    sy = round(112 * overlay_scale)
+    line_w = max(2, round(3 * overlay_scale))
+    draw.line(((sx, inset), (sx + round(84 * overlay_scale), inset)), fill=PINK, width=line_w)
+    draw.line(((inset, sy), (inset, sy + round(42 * overlay_scale)), (inset + round(42 * overlay_scale), sy + round(84 * overlay_scale))), fill=PINK, width=line_w)
+    draw.line(((sx + round(15 * overlay_scale), inset + round(16 * overlay_scale)), (sx + round(65 * overlay_scale), inset + round(16 * overlay_scale))), fill=AMBER, width=max(1, line_w - 1))
     return canvas
 
-def draw_text_with_shadow(draw, position, text, font, fill, shadow_fill=(0, 0, 0, 200), offset=(2, 2)):
-    x, y = position
-    sx, sy = offset
-    draw.text((x + sx, y + sy), text, font=font, fill=shadow_fill)
-    draw.text((x, y), text, font=font, fill=fill)
+
+def draw_lockup(canvas, x, y, title_size, subtitle_size, align="left"):
+    draw = ImageDraw.Draw(canvas)
+    title_font = font(title_size)
+    subtitle_font = font(subtitle_size)
+    title = "HUNKER BUNKER"
+    subtitle = "ORIGINAL GAME SOUNDTRACK"
+    if align == "center":
+        title_box = draw.textbbox((0, 0), title, font=title_font)
+        sub_box = draw.textbbox((0, 0), subtitle, font=subtitle_font)
+        title_x = x - (title_box[2] - title_box[0]) // 2
+        sub_x = x - (sub_box[2] - sub_box[0]) // 2
+    else:
+        title_x = sub_x = x
+    draw.text((title_x + 3, y + 3), title, font=title_font, fill=INK)
+    draw.text((title_x, y), title, font=title_font, fill=WHITE)
+    sub_y = y + round(title_size * 1.18)
+    draw.text((sub_x + 2, sub_y + 2), subtitle, font=subtitle_font, fill=INK)
+    draw.text((sub_x, sub_y), subtitle, font=subtitle_font, fill=AMBER)
+
+
+def save_capsule(name, width, height, lockup, focus=(0.61, 0.54), shade=0.58, overlay_scale=1.0):
+    canvas = cover_crop(width, height, *focus)
+    canvas = add_readability(canvas, shade)
+    canvas = add_frame(canvas, overlay_scale)
+    draw_lockup(canvas, *lockup)
+    path = os.path.join(OUT_DIR, name)
+    canvas.convert("RGB").save(path, "PNG", optimize=True)
+    print("Saved:", path)
+
 
 def make_header_capsule():
-    # 920x430 px
-    w, h = 920, 430
-    canvas = create_base_canvas(w, h)
-    
-    # Helmet right-aligned
-    h_size = 390
-    scaled_helmet = helmet_crop.resize((h_size, h_size), Image.Resampling.LANCZOS)
-    canvas.paste(scaled_helmet, (w - h_size - 25, (h - h_size) // 2 + 5), scaled_helmet)
-    
-    draw = ImageDraw.Draw(canvas)
-    
-    font_badge = get_font(13, bold=True)
-    font_title = get_font(38, bold=True)
-    font_sub = get_font(22, bold=True)
-    font_meta = get_font(15, bold=False)
-    font_badge_txt = get_font(16, bold=True)
-    
-    # Tech Tag
-    draw.rectangle([40, 45, 260, 72], outline=AMBER_COLOR, width=2)
-    draw.text((50, 51), "[ SYSTEM // SOUNDTRACK ]", font=font_badge, fill=AMBER_COLOR)
-    
-    # Main Title & Subtitle
-    draw_text_with_shadow(draw, (40, 92), "HUNKER BUNKER", font_title, WHITE)
-    draw_text_with_shadow(draw, (40, 142), "ORIGINAL GAME SOUNDTRACK", font_sub, AMBER_COLOR)
-    
-    # Credits & info
-    draw.text((40, 200), "COMPOSED BY GOVERNMENT NAME", font=font_meta, fill=WHITE)
-    draw.text((40, 230), "5 Official Tracks | Industrial Ambient & Chiptune", font=font_meta, fill=MUTED_GRAY)
-    
-    # Free DLC Pill
-    draw.rectangle([40, 310, 260, 360], fill=(220, 140, 20, 255))
-    draw.text((56, 324), "FREE SOUNDTRACK DLC", font=font_badge_txt, fill=(10, 10, 10, 255))
-    
-    out_path = os.path.join(out_dir, "header_capsule_920x430.png")
-    canvas.convert("RGB").save(out_path, quality=95)
-    print("Saved:", out_path)
+    save_capsule(
+        "header_capsule_920x430.png", 920, 430,
+        (56, 202, 43, 21), focus=(0.71, 0.5), shade=0.64, overlay_scale=1.0
+    )
+
 
 def make_small_capsule():
-    # 462x174 px
-    w, h = 462, 174
-    canvas = create_base_canvas(w, h)
-    
-    # Helmet on right
-    h_size = 155
-    scaled_helmet = helmet_crop.resize((h_size, h_size), Image.Resampling.LANCZOS)
-    canvas.paste(scaled_helmet, (w - h_size - 10, (h - h_size) // 2), scaled_helmet)
-    
-    draw = ImageDraw.Draw(canvas)
-    font_title = get_font(21, bold=True)
-    font_sub = get_font(13, bold=True)
-    font_badge = get_font(12, bold=True)
-    
-    draw_text_with_shadow(draw, (20, 22), "HUNKER BUNKER", font_title, WHITE)
-    draw_text_with_shadow(draw, (20, 52), "SOUNDTRACK", font_sub, AMBER_COLOR)
-    
-    draw.rectangle([20, 110, 150, 145], fill=(220, 140, 20, 255))
-    draw.text((32, 120), "FREE DLC", font=font_badge, fill=(10, 10, 10, 255))
-    
-    out_path = os.path.join(out_dir, "small_capsule_462x174.png")
-    canvas.convert("RGB").save(out_path, quality=95)
-    print("Saved:", out_path)
+    save_capsule(
+        "small_capsule_462x174.png", 462, 174,
+        (116, 70, 25, 12), focus=(0.82, 0.48), shade=0.78, overlay_scale=0.52
+    )
+
 
 def make_main_capsule():
-    # 1232x706 px
-    w, h = 1232, 706
-    canvas = create_base_canvas(w, h)
-    
-    # Helmet right
-    h_size = 640
-    scaled_helmet = helmet_crop.resize((h_size, h_size), Image.Resampling.LANCZOS)
-    canvas.paste(scaled_helmet, (w - h_size - 30, (h - h_size) // 2 + 10), scaled_helmet)
-    
-    draw = ImageDraw.Draw(canvas)
-    
-    font_badge = get_font(18, bold=True)
-    font_title = get_font(56, bold=True)
-    font_sub = get_font(30, bold=True)
-    font_meta = get_font(22, bold=False)
-    font_track_head = get_font(18, bold=True)
-    font_track = get_font(17, bold=False)
-    font_pill = get_font(22, bold=True)
-    
-    # Badge
-    draw.rectangle([60, 65, 380, 105], outline=AMBER_COLOR, width=2)
-    draw.text((75, 74), "[ OFFICIAL SOUNDTRACK ]", font=font_badge, fill=AMBER_COLOR)
-    
-    draw_text_with_shadow(draw, (60, 130), "HUNKER BUNKER", font_title, WHITE, offset=(3, 3))
-    draw_text_with_shadow(draw, (60, 205), "ORIGINAL GAME SOUNDTRACK", font_sub, AMBER_COLOR, offset=(3, 3))
-    draw.text((60, 260), "COMPOSED BY GOVERNMENT NAME", font=font_meta, fill=WHITE)
-    
-    # Tracklist Panel
-    draw.rectangle([60, 330, 540, 540], outline=(70, 58, 38, 255), fill=(18, 16, 14, 220))
-    draw.text((80, 345), "INCLUDED TRACKS:", font=font_track_head, fill=AMBER_COLOR)
-    
-    tracks = [
-        "01. Hunker Bunker Main Theme",
-        "02. Safe Haven (Ship Sanctuary)",
-        "03. Glacial Depths (Cryo Biome)",
-        "04. Overgrown Bio-Sphere (Bio Biome)",
-        "05. Under Siege (Combat Alert)"
-    ]
-    for i, t in enumerate(tracks):
-        draw.text((80, 380 + i * 29), t, font=font_track, fill=(220, 220, 220, 255))
-        
-    draw.rectangle([60, 585, 340, 645], fill=(220, 140, 20, 255))
-    draw.text((82, 604), "FREE DLC WITH GAME", font=font_pill, fill=(10, 10, 10, 255))
-    
-    out_path = os.path.join(out_dir, "main_capsule_1232x706.png")
-    canvas.convert("RGB").save(out_path, quality=95)
-    print("Saved:", out_path)
+    save_capsule(
+        "main_capsule_1232x706.png", 1232, 706,
+        (78, 310, 64, 29), focus=(0.69, 0.5), shade=0.62, overlay_scale=1.35
+    )
+
 
 def make_vertical_capsule():
-    # 748x896 px
-    w, h = 748, 896
-    canvas = create_base_canvas(w, h)
-    
-    # Helmet centered upper region
-    h_size = 560
-    scaled_helmet = helmet_crop.resize((h_size, h_size), Image.Resampling.LANCZOS)
-    canvas.paste(scaled_helmet, ((w - h_size) // 2, 40), scaled_helmet)
-    
-    draw = ImageDraw.Draw(canvas)
-    
-    font_title = get_font(44, bold=True)
-    font_sub = get_font(24, bold=True)
-    font_meta = get_font(20, bold=False)
-    font_pill = get_font(22, bold=True)
-    
-    draw_text_with_shadow(draw, (180, 610), "HUNKER BUNKER", font_title, WHITE, offset=(3, 3))
-    draw_text_with_shadow(draw, (140, 670), "ORIGINAL GAME SOUNDTRACK", font_sub, AMBER_COLOR, offset=(2, 2))
-    draw.text((200, 720), "COMPOSED BY GOVERNMENT NAME", font=font_meta, fill=WHITE)
-    
-    draw.rectangle([210, 785, 530, 845], fill=(220, 140, 20, 255))
-    draw.text((238, 804), "FREE SOUNDTRACK DLC", font=font_pill, fill=(10, 10, 10, 255))
-    
-    out_path = os.path.join(out_dir, "vertical_capsule_748x896.png")
-    canvas.convert("RGB").save(out_path, quality=95)
-    print("Saved:", out_path)
+    canvas = cover_crop(748, 896, focus_x=0.62, focus_y=0.52)
+    bottom = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    px = bottom.load()
+    start = int(canvas.height * 0.57)
+    for y in range(start, canvas.height):
+        strength = int(220 * ((y - start) / (canvas.height - start)) ** 1.35)
+        for x in range(canvas.width):
+            px[x, y] = (0, 0, 0, strength)
+    canvas = Image.alpha_composite(canvas, bottom)
+    canvas = add_frame(canvas, overlay_scale=1.12)
+    draw_lockup(canvas, 374, 724, 45, 22, align="center")
+    path = os.path.join(OUT_DIR, "vertical_capsule_748x896.png")
+    canvas.convert("RGB").save(path, "PNG", optimize=True)
+    print("Saved:", path)
+
 
 if __name__ == "__main__":
     make_header_capsule()
