@@ -874,7 +874,6 @@ export class ThreeGame {
 
         this.playerRadius = 0.38;
         this.wallCollisionHalfSize = 0.30;
-        this.wallCollisionPadding = 0.18;
         const _initialStats = CLASS_STATS[this.playerType] ?? CLASS_STATS.ENGINEER;
         this.moveSpeed = _initialStats.moveSpeed;
         this.o2DrainMult = _initialStats.o2DrainMult;
@@ -5534,7 +5533,7 @@ export class ThreeGame {
             const dz = this.player.position.z - consoleZ;
             const distance = Math.hypot(dx, dz);
 
-            if (distance < 3.0 && distance < minDistance) {
+            if (distance < 3.8 && distance < minDistance) {
                 nearestConsole = ship;
                 minDistance = distance;
             }
@@ -6000,8 +5999,7 @@ export class ThreeGame {
     }
 
     tryInteractWithConsolePointer(clientX, clientY) {
-        const ship = this.activeInteractiveConsole;
-        if (!ship || !this.isGameplayInputActive()) return false;
+        if (!this.isGameplayInputActive()) return false;
 
         const modal = document.getElementById('console-terminal-modal');
         if (modal && !modal.classList.contains('hidden')) {
@@ -6009,16 +6007,28 @@ export class ThreeGame {
         }
 
         const worldPoint = this.getWorldAimPoint(clientX, clientY);
-        if (!worldPoint) return false;
 
-        const consoleX = ship.tileX + ship.consoleOffset.x;
-        const consoleZ = ship.tileZ + ship.consoleOffset.z;
-        const distToConsole = Math.hypot(worldPoint.x - consoleX, worldPoint.z - consoleZ);
-        const distToShipCore = Math.hypot(worldPoint.x - ship.tileX, worldPoint.z - ship.tileZ);
+        if (this.crashedShips && this.player) {
+            for (const ship of this.crashedShips) {
+                if (!ship.isVisible) continue;
+                const consoleX = ship.tileX + ship.consoleOffset.x;
+                const consoleZ = ship.tileZ + ship.consoleOffset.z;
 
-        if (distToConsole <= 1.25 || distToShipCore <= Math.max(0.95, ship.width * 0.72)) {
-            this.interactWithConsole();
-            return true;
+                let hit = false;
+                if (worldPoint) {
+                    const distToConsole = Math.hypot(worldPoint.x - consoleX, worldPoint.z - consoleZ);
+                    const distToShipCore = Math.hypot(worldPoint.x - ship.tileX, worldPoint.z - ship.tileZ);
+                    if (distToConsole <= 2.5 || distToShipCore <= Math.max(1.5, ship.width * 0.9)) {
+                        hit = true;
+                    }
+                }
+                const playerDist = Math.hypot(this.player.position.x - consoleX, this.player.position.z - consoleZ);
+                if (playerDist <= 4.2 && (hit || playerDist <= 3.8)) {
+                    this.activeInteractiveConsole = ship;
+                    this.interactWithConsole();
+                    return true;
+                }
+            }
         }
 
         return false;
@@ -20267,6 +20277,9 @@ export class ThreeGame {
             }));
             setTimeout(() => this.closeSnailEncounter(), 1000);
         } else if (state.outcome === 'fled' || state.outcome === 'dialogue_complete') {
+            setTimeout(() => this.closeSnailEncounter(), 600);
+        } else if (state.outcome === 'fight_win' || state.outcome === 'reprogrammed') {
+            if (sprite) sprite.userData.encounterResolved = true;
             setTimeout(() => this.closeSnailEncounter(), 600);
         }
     }
