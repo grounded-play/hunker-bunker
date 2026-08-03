@@ -59,6 +59,9 @@ export function planRoomPopulation(room, grid, random) {
     };
 
     reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies'), true);
+    if (theme.ambientProps?.length > 0) {
+        reservePlacement('ambient', propFrom(theme.ambientProps, random), false);
+    }
     for (let index = 0; index < budget.large.min; index += 1) {
         reservePlacement('large', propFrom(theme.largeProps, random, 'prop_conduit_hub'), true);
     }

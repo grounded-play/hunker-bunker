@@ -1768,6 +1768,14 @@ export class ThreeGame {
             decal_meridian_stencil: this.loadKeyedSpriteTexture('/decal_meridian_stencil.png', 14),
             decal_claw_scratches: this.loadKeyedSpriteTexture('/decal_claw_scratches.png', 14),
             decal_spore_growth_patch: this.loadKeyedSpriteTexture('/decal_spore_growth_patch.png', 14),
+            decal_abandoned_meal_tray: this.loadKeyedSpriteTexture('/decal_abandoned_meal_tray.png', 14),
+            decal_emergency_oxygen_nest: this.loadKeyedSpriteTexture('/decal_emergency_oxygen_nest.png', 14),
+            decal_maintenance_shrine: this.loadKeyedSpriteTexture('/decal_maintenance_shrine.png', 14),
+            decal_failed_decon_kit: this.loadKeyedSpriteTexture('/decal_failed_decon_kit.png', 14),
+            decal_barricade_last_stand: this.loadKeyedSpriteTexture('/decal_barricade_last_stand.png', 14),
+            decal_childlike_cave_map: this.loadKeyedSpriteTexture('/decal_childlike_cave_map.png', 14),
+            decal_bio_sample_spill: this.loadKeyedSpriteTexture('/decal_bio_sample_spill.png', 14),
+            decal_worker_sleep_roll: this.loadKeyedSpriteTexture('/decal_worker_sleep_roll.png', 14),
 
             prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
@@ -17357,11 +17365,16 @@ export class ThreeGame {
                         z: worldZ,
                         type: propType,
                         scatterKey: `room_plan:${planned.id}`,
-                        scale: planned.kind === 'signature' ? 1.3 : planned.kind === 'large' ? 1.15 : 0.82,
+                        scale: planned.kind === 'signature'
+                            ? 1.3
+                            : planned.kind === 'large'
+                                ? 1.15
+                                : planned.kind === 'ambient' ? 1.05 : 0.82,
                         elevation: 0.08,
                         hp: propType === 'prop_specimen_tank' ? 4 : 3,
                         groupType: 'prop',
-                        opacity: 1
+                        opacity: 1,
+                        worldDressing: planned.kind === 'ambient'
                     });
                     reservedCells.add(`${planned.x},${planned.y}`);
                 }
@@ -18390,7 +18403,7 @@ export class ThreeGame {
         sprite.center.set(0.5, 0);
         sprite.position.set(placement.x, anchoredY, placement.z);
         sprite.frustumCulled = false;
-        sprite.renderOrder = 3;
+        sprite.renderOrder = placement.worldDressing ? 5 : 3;
         sprite.scale.set(scaleX, scaleY, 1);
         sprite.userData = {
             isScatter: true,

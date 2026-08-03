@@ -1284,6 +1284,12 @@ function applyControllerCursorAim(controller) {
     controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY)));
     controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y - (deltaY * CONTROLLER_CURSOR_SENSITIVITY)));
 
+    window.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: controllerAimCursor.x,
+        clientY: controllerAimCursor.y,
+        bubbles: true
+    }));
+
     return Boolean(window.game.updateAimFromClient(
         controllerAimCursor.x,
         controllerAimCursor.y,
@@ -1302,11 +1308,34 @@ function handleSteamGameplayInput(controller) {
         window.game.setVirtualInput(moveX, -moveY);
     }
     // The pad/gyro cursor is the precision device, so it wins a frame where both
-    // moved. Whichever aimed last still wins overall: setControllerAimVector clears
-    // mouseAimActive, and updateAimFromClient sets it again.
+    // moved. Whichever aimed last still wins overall. Right joystick deflection also
+    // moves the virtual mouse cursor smoothly across the screen like a mouse.
     const cursorAimed = applyControllerCursorAim(controller);
-    if (!cursorAimed && (aimX || aimY) && window.game?.setControllerAimVector) {
-        window.game.setControllerAimVector(aimX, -aimY);
+    if (!cursorAimed && (aimX || aimY)) {
+        const width = window.innerWidth || 1280;
+        const height = window.innerHeight || 720;
+        if (!controllerAimCursor) {
+            controllerAimCursor = { x: width / 2, y: height / 2 };
+        }
+        const STICK_MOUSE_SPEED = 18;
+        controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + aimX * STICK_MOUSE_SPEED));
+        controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + aimY * STICK_MOUSE_SPEED));
+
+        if (window.game?.updateAimFromClient) {
+            window.game.updateAimFromClient(
+                controllerAimCursor.x,
+                controllerAimCursor.y,
+                { keepMouseActive: true }
+            );
+        }
+        window.dispatchEvent(new MouseEvent('mousemove', {
+            clientX: controllerAimCursor.x,
+            clientY: controllerAimCursor.y,
+            bubbles: true
+        }));
+        if (window.game?.setControllerAimVector) {
+            window.game.setControllerAimVector(aimX, -aimY);
+        }
     }
 
     if (controller.fire) {
@@ -5235,7 +5264,22 @@ function updateHudCompass() {
 function installHudCompass() {
     if (!desktopCompassArrow || !desktopCompassDistance) return;
 
+    if (desktopCompass && !desktopCompass.dataset.clickBound) {
+        desktopCompass.dataset.clickBound = 'true';
+        desktopCompass.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleTacticalMapModal();
+        });
+        desktopCompass.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleTacticalMapModal();
+            }
+        });
+    }
+
     const step = () => {
+        syncHudCompassVisibility();
         updateHudCompass();
         requestAnimationFrame(step);
     };

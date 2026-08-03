@@ -4415,7 +4415,9 @@ input:checked+.slider:before {
      sitting directly over the TOTAL/MED text. Cleared to sit below it. */
   top: calc(var(--vu) * 42);
   left: calc(var(--vu) * 4);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
   font-family: 'Outfit', sans-serif;
   background: rgba(11, 13, 15, 0.88);
   border: 1.5px solid rgba(0, 229, 255, 0.3);
@@ -4427,8 +4429,23 @@ input:checked+.slider:before {
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 0.8);
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
   z-index: 100;
+}
+
+.desktop-compass:hover {
+  border-color: rgba(0, 229, 255, 0.7);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.3), inset 0 0 12px rgba(0, 229, 255, 0.12);
+  background: rgba(11, 13, 15, 0.95);
+}
+
+.desktop-compass:active {
+  transform: scale(0.98);
+}
+
+.desktop-compass:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 2px;
 }
 
 .desktop-compass.hidden {
@@ -4436,11 +4453,25 @@ input:checked+.slider:before {
 }
 
 .desktop-compass__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: clamp(8px, calc(var(--vu) * 1.1), 12px);
   font-weight: 900;
   letter-spacing: 0.12em;
   color: #00e5ff;
   text-transform: uppercase;
+}
+
+.desktop-compass__hint {
+  font-size: clamp(7px, calc(var(--vu) * 0.95), 10px);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: rgba(0, 229, 255, 0.9);
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  border-radius: 3px;
+  padding: 1px 5px;
 }
 
 .desktop-compass__face {
