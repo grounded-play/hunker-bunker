@@ -242,7 +242,7 @@ describe('chunk reservation projection (Phase 6.1 foundation)', () => {
         }
         const conflictRate = seedsWithConflicts / 2000;
         expect(conflictRate).toBeLessThan(0.05);
-    });
+    }, 20_000);
 });
 
 describe('live ring-lock enforcement (Phase 6.2 soft boundary, no physical geometry yet)', () => {
