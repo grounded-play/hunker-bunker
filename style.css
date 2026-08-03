@@ -1918,7 +1918,7 @@ body {
 
 /* --- Selection Stack --- */
 .char-selection {
-  width: 75%;
+  width: 100%;
   justify-self: start;
   display: flex;
   flex-direction: column;
@@ -2719,20 +2719,18 @@ body {
 }
 
 .action-row {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-row: 3;
-  grid-template-columns: calc(var(--vu) * 22) minmax(0, 1fr);
-  align-items: flex-end;
-  gap: calc(var(--vu) * 1.25);
-  width: 100%;
-  max-width: none;
-  justify-self: center;
+  position: absolute;
+  left: var(--briefing-content-left);
+  right: var(--briefing-content-right);
+  bottom: calc(var(--vu) * 1.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
   margin: 0;
   padding: 0;
-  position: relative;
-  z-index: 20;
-  transform: none;
+  z-index: 250;
+  pointer-events: none;
 }
 
 /* Same width as map-box — button lives here */
@@ -2745,10 +2743,10 @@ body {
 }
 
 .action-row .last-contractor {
-  grid-column: 2;
-  grid-row: 2;
-  width: 100%;
-  max-width: none;
+  width: min(100%, calc(var(--vu) * 73));
+  max-width: calc(var(--vu) * 73);
+  flex: 0 1 calc(var(--vu) * 73);
+  pointer-events: auto;
 }
 
 .career-stats {

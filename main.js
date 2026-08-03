@@ -4937,8 +4937,13 @@ function returnToMainMenuFromRun({ doorKey = 'base' } = {}) {
             const gameContainer = document.getElementById('game-container');
             const mapBox = document.querySelector('.map-box');
             if (gameContainer && mapBox) {
-                mapBox.insertBefore(gameContainer, mapBox.querySelector('.module-scanline'));
+                const commandBlock = mapBox.querySelector('.menu-header-actions');
+                mapBox.insertBefore(gameContainer, commandBlock ?? mapBox.querySelector('.module-scanline'));
                 gameContainer.classList.remove('fullscreen-mode');
+                // A death return leaves the world avatar flagged dead (and pit
+                // deaths may leave its scale at zero). Restore the menu-map
+                // preview without resetting the player's persistent run data.
+                window.game?.respawnPlayer?.({ resetRunState: false, skipEffects: true });
                 queueGameLayoutRefresh();
             }
         },
