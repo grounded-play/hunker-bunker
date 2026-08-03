@@ -73,8 +73,30 @@ is no per-instance `userData` on an `InstancedMesh`).
 Standard and damaged walls already reduce to nothing but a per-instance
 matrix — damaged walls' short height and tilt are just matrix values
 (`Matrix4.compose(...)`), the same mechanism standard walls already use
-for height-scale variance. Both variants therefore share **one
-`InstancedMesh` per chunk** (`this.wallGeometry`, `this.wallMaterial`).
+for height-scale variance. Both variants share pools of
+`InstancedMesh` (`this.wallGeometry`, `this.wallMaterial`).
+
+**Amendment (discovered while writing the implementation plan):**
+`wallMaterial` is one shared `MeshStandardMaterial` with a custom shader
+(`threeGame.js:1396-1575`) that reads `uLandformId`/`uRoomStyleId` as
+plain uniforms. `configureWallMesh` stamps these fresh via each wall's own
+`onBeforeRender`, immediately before that wall's individual draw call
+(`threeGame.js:15650-15655`) — since different rooms within the same
+chunk can carry different wall styles (`uRoomStyleId`), and a single
+shared uniform can't hold different values for different instances
+batched into one draw call. `landformShaderId` is chunk-constant (derived
+once from `getChunkLandform`, unaffected by batching), but `roomStyleId`
+varies *within* a chunk by which room a given wall cell belongs to.
+
+Resolution: **pool standard+damaged walls into one `InstancedMesh` per
+distinct `roomStyleId` per chunk**, not a single chunk-wide pool. Each
+pool's `onBeforeRender` stamps the uniform once (all instances in that
+pool share the same `roomStyleId` by construction), reusing the existing
+mechanism unmodified — no shader changes, no new regression surface on a
+hard-to-unit-test GPU-side system. A chunk typically has a handful of
+distinct room styles (not hundreds), so this still collapses ~100-250
+individual wall draws down to roughly 5-10 per chunk — the dominant win
+is intact even though it's not a single pool.
 
 Hazard walls (the pulsing-siren variant, the smallest of the three bands
 in the WFC weighting) **stay as individual `Mesh` objects** — they carry a
@@ -108,11 +130,13 @@ hit object's own `userData` for individual (hazard) walls.
 
 - **Mount** (`mountChunk`): two-pass per chunk. First pass walks the grid
   exactly as today, classifying each wall tile into
-  standard/damaged/hazard/door and collecting matrices into arrays
-  (mirroring the existing `rubbleMatrices`/`voidPatchMatrices` pattern)
-  instead of creating Meshes inline for standard/damaged walls and
-  ribs/panels. Second pass builds one `InstancedMesh` per pool from the
-  collected matrices and populates `_wallInstanceIndex`.
+  standard/damaged/hazard/door and collecting matrices into arrays keyed
+  by `roomStyleId` (mirroring the existing `rubbleMatrices`/
+  `voidPatchMatrices` pattern, but bucketed per style instead of one flat
+  array) instead of creating Meshes inline for standard/damaged walls and
+  ribs/panels. Second pass builds one `InstancedMesh` per
+  `roomStyleId` bucket from its collected matrices, stamps that pool's
+  `onBeforeRender` uniform once, and populates `_wallInstanceIndex`.
 - **Damage** (`damageWall`): looks up the instance via
   `_wallInstanceIndex`, calls `instancedMesh.setColorAt(instanceId,
   color)` + `instancedMesh.instanceColor.needsUpdate = true` instead of
