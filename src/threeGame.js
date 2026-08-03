@@ -16351,6 +16351,42 @@ export class ThreeGame {
         const floorRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
         const instMatrix = new THREE.Matrix4();
 
+        // Standard/damaged walls instance into one InstancedMesh per distinct
+        // roomStyleId within this chunk (not one pool for the whole chunk):
+        // wallMaterial's onBeforeRender-stamped uRoomStyleId uniform is shared
+        // by every instance in one draw call, and different rooms in the same
+        // chunk can carry different wall styles. landformShaderId is constant
+        // per chunk (one getChunkLandform call), so it doesn't need bucketing.
+        const wallMatricesByRoomStyle = new Map(); // roomStyleId -> Matrix4[]
+        const wallMetaByRoomStyle = new Map();     // roomStyleId -> opts[] (parallel to matrices)
+        const roomStyleIdCache = new Map();        // "localX,localY" -> roomStyleId, avoids re-scanning roomInstances per tile
+
+        const roomStyleIdFor = (cx, cy, localX, localY) => {
+            const cacheKey = `${localX},${localY}`;
+            if (roomStyleIdCache.has(cacheKey)) return roomStyleIdCache.get(cacheKey);
+            const roomMetadata = this.wfcMetadataCache?.get(`${cx},${cy}`);
+            const room = roomMetadata?.roomInstances?.find((candidate) => (
+                candidate.wallCells?.some((cell) => cell.x === localX && cell.y === localY)
+            ));
+            const roomStyleId = ROOM_WALL_STYLE_ID[room?.themeConfig?.wallStyle] ?? 0;
+            roomStyleIdCache.set(cacheKey, { roomStyleId, roomId: room?.id ?? null, roomWallStyle: room?.themeConfig?.wallStyle ?? null });
+            return roomStyleIdCache.get(cacheKey);
+        };
+
+        const pushWallInstanceMatrix = (matrix, opts) => {
+            const roomInfo = roomStyleIdFor(opts.chunkX, opts.chunkY, opts.localX, opts.localY);
+            const bucketKey = roomInfo.roomStyleId;
+            if (!wallMatricesByRoomStyle.has(bucketKey)) {
+                wallMatricesByRoomStyle.set(bucketKey, []);
+                wallMetaByRoomStyle.set(bucketKey, []);
+            }
+            wallMatricesByRoomStyle.get(bucketKey).push(matrix);
+            wallMetaByRoomStyle.get(bucketKey).push({ ...opts, roomId: roomInfo.roomId, roomWallStyle: roomInfo.roomWallStyle });
+        };
+
+        // TODO(Task 4): replaced with real per-decoration-type instanced pools.
+        const pushDecorationMatrix = () => {};
+
         const addCliffInstance = (worldX, worldZ) => {
             const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
             const seed = (this.hashTile(Math.round(worldX * 137 + 19), Math.round(worldZ * 223 + 43)) ^ (this.runEntropy ?? 0)) >>> 0;
@@ -16599,7 +16635,8 @@ export class ThreeGame {
                         }
                     }
                 } else if (wallTypeRoll < hazardCut) {
-                    // Hazard Wall (pulsing warning siren)
+                    // Hazard Wall (pulsing warning siren) — stays an individual
+                    // Mesh: rare, and carries a live-animated child (siren dome).
                     const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
                     wall.position.set(worldX, this.wallHeight / 2, worldZ);
                     wall.castShadow = true;
@@ -16629,32 +16666,23 @@ export class ThreeGame {
                     sirenDome.position.y = this.wallHeight / 2 + 0.14;
                     wall.add(sirenDome);
                 } else if (wallTypeRoll < damagedCut) {
-                    // Damaged Wall (ruins with rubble debris)
+                    // Damaged Wall (ruins with rubble debris) — instanced.
                     const shortHeightMult = 0.45 + wallTypeRng() * 0.25;
                     const damagedHeight = this.wallHeight * shortHeightMult;
-                    
-                    const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
-                    wall.position.set(worldX, damagedHeight / 2, worldZ);
-                    // Scale the Y height dynamically on the reused geometry
-                    wall.scale.set(1, shortHeightMult, 1);
-                    
-                    wall.rotation.x = (wallTypeRng() - 0.5) * 0.15;
-                    wall.rotation.z = (wallTypeRng() - 0.5) * 0.15;
-                    
-                    wall.castShadow = true;
-                    wall.receiveShadow = true;
-                    this.configureWallMesh(wall, {
-                        chunkX,
-                        chunkY,
-                        localX,
-                        localY,
-                        worldX,
-                        worldZ,
-                        landform,
-                        variant: 'damaged',
-                        heightScale: shortHeightMult
+                    const jitter = this.computeExteriorWallJitter(worldX, worldZ);
+                    const damagedMatrix = new THREE.Matrix4().compose(
+                        new THREE.Vector3(worldX + jitter.offsetX, damagedHeight / 2, worldZ + jitter.offsetZ),
+                        new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                            (wallTypeRng() - 0.5) * 0.15,
+                            jitter.rotationY,
+                            (wallTypeRng() - 0.5) * 0.15
+                        )),
+                        new THREE.Vector3(1, shortHeightMult, 1)
+                    );
+                    pushWallInstanceMatrix(damagedMatrix, {
+                        chunkX, chunkY, localX, localY, worldX, worldZ, landform,
+                        variant: 'damaged', heightScale: shortHeightMult
                     });
-                    group.add(wall);
 
                     const rubbleCount = 2 + Math.floor(wallTypeRng() * 3);
                     for (let i = 0; i < rubbleCount; i++) {
@@ -16670,8 +16698,7 @@ export class ThreeGame {
                         rubbleMatrices.push(rubbleMat);
                     }
                 } else {
-                    // Standard Wall
-                    const wall = new THREE.Mesh(this.wallGeometry, this.wallMaterial);
+                    // Standard Wall — instanced.
                     let heightScale = 1;
                     if (landform === LANDFORMS.CANYON) {
                         // Canyon ridges tower over the standard maze so the halls
@@ -16696,81 +16723,80 @@ export class ThreeGame {
                     } else if (landform === LANDFORMS.CRATER) {
                         heightScale = 0.88 + wallTypeRng() * 0.40;
                     }
-                    wall.scale.y = heightScale;
-                    wall.position.set(worldX, (this.wallHeight * heightScale) / 2, worldZ);
-                    wall.castShadow = true;
-                    wall.receiveShadow = true;
-                    this.configureWallMesh(wall, {
-                        chunkX,
-                        chunkY,
-                        localX,
-                        localY,
-                        worldX,
-                        worldZ,
-                        landform,
-                        variant: 'standard',
-                        heightScale
+                    const jitter = this.computeExteriorWallJitter(worldX, worldZ);
+                    const standardMatrix = new THREE.Matrix4().compose(
+                        new THREE.Vector3(worldX + jitter.offsetX, (this.wallHeight * heightScale) / 2, worldZ + jitter.offsetZ),
+                        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, jitter.rotationY, 0)),
+                        new THREE.Vector3(1, heightScale, 1)
+                    );
+                    pushWallInstanceMatrix(standardMatrix, {
+                        chunkX, chunkY, localX, localY, worldX, worldZ, landform,
+                        variant: 'standard', heightScale
                     });
-                    group.add(wall);
 
                     const rng = this.createSeededRandom(this.hashTile(worldX, worldZ));
                     const roll = rng();
                     if (roll < 0.12) {
-                        const pillar = new THREE.Mesh(this.pillarGeometry, this.wallMaterial);
                         const cx = (rng() < 0.5 ? -0.5 : 0.5);
                         const cz = (rng() < 0.5 ? -0.5 : 0.5);
-                        pillar.position.set(cx, 0, cz);
-                        pillar.castShadow = true;
-                        pillar.receiveShadow = true;
-                        wall.add(pillar);
+                        pushDecorationMatrix('pillar', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY),
+                            new THREE.Matrix4().makeTranslation(cx, 0, cz));
                     } else if (roll < 0.24) {
-                        const bracket = new THREE.Mesh(this.bracketGeometry, this.wallMaterial);
                         const faceRoll = Math.floor(rng() * 4);
+                        const bracketLocal = new THREE.Matrix4();
                         if (faceRoll === 0) {
-                            bracket.position.set(0.5, (rng() - 0.5) * 1.5, 0);
-                            bracket.rotation.y = Math.PI / 2;
+                            bracketLocal.compose(
+                                new THREE.Vector3(0.5, (rng() - 0.5) * 1.5, 0),
+                                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0)),
+                                new THREE.Vector3(1, 1, 1)
+                            );
                         } else if (faceRoll === 1) {
-                            bracket.position.set(-0.5, (rng() - 0.5) * 1.5, 0);
-                            bracket.rotation.y = Math.PI / 2;
+                            bracketLocal.compose(
+                                new THREE.Vector3(-0.5, (rng() - 0.5) * 1.5, 0),
+                                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0)),
+                                new THREE.Vector3(1, 1, 1)
+                            );
                         } else if (faceRoll === 2) {
-                            bracket.position.set(0, (rng() - 0.5) * 1.5, 0.5);
+                            bracketLocal.makeTranslation(0, (rng() - 0.5) * 1.5, 0.5);
                         } else {
-                            bracket.position.set(0, (rng() - 0.5) * 1.5, -0.5);
+                            bracketLocal.makeTranslation(0, (rng() - 0.5) * 1.5, -0.5);
                         }
-                        bracket.castShadow = true;
-                        bracket.receiveShadow = true;
-                        wall.add(bracket);
+                        pushDecorationMatrix('bracket', standardMatrix, roomStyleIdFor(chunkX, chunkY, localX, localY), bracketLocal);
                     } else if (roll < 0.32) {
-                        const vent = new THREE.Mesh(this.ventGeometry, this.ventMaterial);
                         const faceRoll = Math.floor(rng() * 4);
                         const vy = 0.4 + rng() * 0.6;
+                        const ventLocal = new THREE.Matrix4();
                         if (faceRoll === 0) {
-                            vent.position.set(0.501, vy, 0);
-                            vent.rotation.y = Math.PI / 2;
+                            ventLocal.compose(
+                                new THREE.Vector3(0.501, vy, 0),
+                                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0)),
+                                new THREE.Vector3(1, 1, 1)
+                            );
                         } else if (faceRoll === 1) {
-                            vent.position.set(-0.501, vy, 0);
-                            vent.rotation.y = Math.PI / 2;
+                            ventLocal.compose(
+                                new THREE.Vector3(-0.501, vy, 0),
+                                new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0)),
+                                new THREE.Vector3(1, 1, 1)
+                            );
                         } else if (faceRoll === 2) {
-                            vent.position.set(0, vy, 0.501);
+                            ventLocal.makeTranslation(0, vy, 0.501);
                         } else {
-                            vent.position.set(0, vy, -0.501);
+                            ventLocal.makeTranslation(0, vy, -0.501);
                         }
-                        wall.add(vent);
+                        pushDecorationMatrix('vent', standardMatrix, null, ventLocal);
                     } else if (roll < 0.38) {
-                        const pipe = new THREE.Mesh(this.pipeGeometry, this.pipeMaterial);
                         const faceRoll = Math.floor(rng() * 4);
+                        const pipeLocal = new THREE.Matrix4();
                         if (faceRoll === 0) {
-                            pipe.position.set(0.42, 0, (rng() - 0.5) * 0.6);
+                            pipeLocal.makeTranslation(0.42, 0, (rng() - 0.5) * 0.6);
                         } else if (faceRoll === 1) {
-                            pipe.position.set(-0.42, 0, (rng() - 0.5) * 0.6);
+                            pipeLocal.makeTranslation(-0.42, 0, (rng() - 0.5) * 0.6);
                         } else if (faceRoll === 2) {
-                            pipe.position.set((rng() - 0.5) * 0.6, 0, 0.42);
+                            pipeLocal.makeTranslation((rng() - 0.5) * 0.6, 0, 0.42);
                         } else {
-                            pipe.position.set((rng() - 0.5) * 0.6, 0, -0.42);
+                            pipeLocal.makeTranslation((rng() - 0.5) * 0.6, 0, -0.42);
                         }
-                        pipe.castShadow = true;
-                        pipe.receiveShadow = true;
-                        wall.add(pipe);
+                        pushDecorationMatrix('pipe', standardMatrix, null, pipeLocal);
                     }
                 }
             }
@@ -16798,6 +16824,30 @@ export class ThreeGame {
                 cliffInstanced.userData = { isCliff: true };
                 group.add(cliffInstanced);
             }
+        }
+
+        const landformShaderId = LANDFORM_SHADER_ID[landform] ?? 0;
+        for (const [roomStyleId, matrices] of wallMatricesByRoomStyle.entries()) {
+            const metaList = wallMetaByRoomStyle.get(roomStyleId);
+            const pool = new THREE.InstancedMesh(this.wallGeometry, this.wallMaterial, matrices.length);
+            matrices.forEach((m, idx) => pool.setMatrixAt(idx, m));
+            pool.instanceMatrix.needsUpdate = true;
+            pool.castShadow = true;
+            pool.receiveShadow = true;
+            pool.userData = { isWall: true, isInstancedWallPool: true };
+            pool.onBeforeRender = () => {
+                if (this.wallShaderUniforms) {
+                    this.wallShaderUniforms.uLandformId.value = landformShaderId;
+                    this.wallShaderUniforms.uRoomStyleId.value = roomStyleId;
+                }
+            };
+            metaList.forEach((opts, idx) => {
+                const record = this.createWallInstanceRecord(opts);
+                record.instancedMesh = pool;
+                record.instanceIndex = idx;
+                this._wallInstanceIndex.set(record.wallKey, record);
+            });
+            group.add(pool);
         }
 
         if (this.rubbleGeometry && this.wallMaterial && rubbleMatrices.length > 0) {
