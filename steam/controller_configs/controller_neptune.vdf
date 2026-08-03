@@ -572,16 +572,6 @@
                         }
                     }
                 } }
-            "button_back_left_upper" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action gameplay toggle_map, Tactical Map"
-                        }
-                    }
-                } }
         }
     }
     "group"
