@@ -910,6 +910,7 @@ export class ThreeGame {
         this.runEntropy = (Math.random() * 0xffffffff) >>> 0;
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
+        this._slowFrameChunkMountTick = 0;
         this.discoveredMapChunkKeys = new Set(['0,0']);
         this.discoveredMapRoomKeys = new Set();
         this.discoveredMapCellKeys = new Set();
@@ -11553,11 +11554,37 @@ export class ThreeGame {
             detailedChunks.push({ key, chunkX, chunkY, cells });
         }
         const topology = this.getRegionalRouteTopology?.();
+        const scannedPaths = [];
+        if (this.explorationTracker && this.player) {
+            const playerPos = { x: this.player.position.x, z: this.player.position.z };
+            const homePos = { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER };
+            const homePath = this.explorationTracker.computeScannedPath(homePos, playerPos);
+            if (homePath) {
+                scannedPaths.push({
+                    name: 'HOME_ROUTE',
+                    start: homePos,
+                    end: playerPos,
+                    ...homePath
+                });
+            }
+            if (this.missionState?.relayPos) {
+                const relayPath = this.explorationTracker.computeScannedPath(homePos, this.missionState.relayPos);
+                if (relayPath) {
+                    scannedPaths.push({
+                        name: 'RELAY_ROUTE',
+                        start: homePos,
+                        end: this.missionState.relayPos,
+                        ...relayPath
+                    });
+                }
+            }
+        }
         return {
             player: this.player ? { x: this.player.position.x, z: this.player.position.z, rotation: this.player.rotation?.y ?? 0 } : null,
             home: { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER },
             chunkSize: this.chunkSize,
             detailedChunks,
+            scannedPaths,
             routeChunks: topology?.routeChunks ?? [],
             routeEdges: (topology?.routeEdges ?? []).map((edge) => {
                 const [from, to] = edge.split('|');
@@ -11975,7 +12002,9 @@ export class ThreeGame {
     }
 
     initMission(mission) {
-        if (!mission) return;
+        const relayPos = mission.type === 'mapping'
+            ? { x: CRASH_SITE_CENTER + 70, z: CRASH_SITE_CENTER + 60 }
+            : null;
         this.missionState = {
             type: mission.type,
             label: mission.label ?? '',
@@ -11983,19 +12012,32 @@ export class ThreeGame {
             extractionTimer: 0,
             killCount: 0,
             targetKills: mission.targetKills ?? 0,
-            targetDepth: mission.targetDepth ?? 0
+            targetDepth: mission.targetDepth ?? 0,
+            relayPos
         };
+
+        if (relayPos) {
+            this.explorationTracker?.registerLandmark('sector_relay', {
+                x: relayPos.x,
+                z: relayPos.z,
+                label: 'SECTOR RELAY WAYPOINT',
+                type: 'objective'
+            });
+        }
+
         // docs/objective-system-spec.md rollout step 2 (missions). Stable id
         // (not type-suffixed) so a new run's mission overwrites rather than
         // stacking a stale entry from a prior run's different mission type.
-        window.objectiveRegistry?.trackObjective?.({
+        const trackPayload = {
             id: 'mission:active',
             source: 'mission',
             label: this.missionState.label || 'MISSION',
             current: 0,
             target: mission.type === 'elimination' ? Math.max(1, mission.targetKills ?? 1) : 1,
             priority: 30
-        });
+        };
+        if (relayPos) trackPayload.compass = { x: relayPos.x, z: relayPos.z };
+        window.objectiveRegistry?.trackObjective?.(trackPayload);
     }
 
     clearMission() {
@@ -12260,13 +12302,74 @@ export class ThreeGame {
                 if (pingedIds.has(id)) continue;
 
                 const holeInfo = this.getHoleVisualInfo(tileX, tileZ, { requireCached: true });
-                if (!holeInfo) continue;
-
-                const distance = Math.hypot(holeInfo.x - scanX, holeInfo.z - scanZ);
-                if (distance > scanRadius + holeInfo.fallRadius) continue;
-
                 pingedIds.add(id);
                 this.spawnHoleDangerOutline(holeInfo);
+            }
+        }
+    }
+
+    recordRadarScanDiscovery(px, pz, radius) {
+        if (!this.explorationTracker) return;
+        this.explorationTracker.recordRadarScan(px, pz, radius);
+
+        this.discoveredMapChunkKeys ??= new Set();
+        this.discoveredMapRoomKeys ??= new Set();
+        this.discoveredMapCellKeys ??= new Set();
+
+        const gridRadius = Math.ceil((radius + this.chunkSize * 0.5) / this.chunkSize);
+        const centerChunkX = Math.floor(px / this.chunkSize);
+        const centerChunkY = Math.floor(pz / this.chunkSize);
+
+        for (let dcx = -gridRadius; dcx <= gridRadius; dcx++) {
+            for (let dcy = -gridRadius; dcy <= gridRadius; dcy++) {
+                const chunkX = centerChunkX + dcx;
+                const chunkY = centerChunkY + dcy;
+                const key = `${chunkX},${chunkY}`;
+                const grid = this.chunkCache.get(key);
+                if (!grid) continue;
+
+                const chunkMinX = chunkX * this.chunkSize;
+                const chunkMinZ = chunkY * this.chunkSize;
+                const chunkCenterX = chunkMinX + this.chunkSize / 2;
+                const chunkCenterZ = chunkMinZ + this.chunkSize / 2;
+
+                if (Math.hypot(chunkCenterX - px, chunkCenterZ - pz) <= radius + this.chunkSize) {
+                    this.discoveredMapChunkKeys.add(key);
+
+                    for (const room of this.wfcMetadataCache?.get(key)?.roomInstances ?? []) {
+                        this.discoveredMapRoomKeys.add(`${key}:${room.id}`);
+                    }
+
+                    for (let y = 0; y < grid.length; y++) {
+                        for (let x = 0; x < (grid[y]?.length ?? 0); x++) {
+                            const tile = grid[y][x];
+                            if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(tile)) continue;
+                            const worldX = chunkMinX + x;
+                            const worldZ = chunkMinZ + y;
+                            if (Math.hypot(worldX - px, worldZ - pz) <= radius + 3) {
+                                this.discoveredMapCellKeys.add(`${worldX},${worldZ}`);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        this.checkMappingMissionComplete();
+    }
+
+    checkMappingMissionComplete() {
+        if (this.missionState?.type === 'mapping' && this.missionState.status === 'active') {
+            const relay = this.missionState.relayPos ?? { x: CRASH_SITE_CENTER + 70, z: CRASH_SITE_CENTER + 60 };
+            const startPos = { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER };
+            const pathRes = this.explorationTracker?.computeScannedPath(startPos, relay);
+            if (pathRes?.found || (pathRes?.scannedPercentage ?? 0) >= 0.85) {
+                this.missionState.status = 'objective_complete';
+                const uplink = this.getMothershipUplinkReadiness();
+                window.objectiveRegistry?.resolveObjective?.('mission:active', 'complete');
+                window.dispatchEvent(new CustomEvent('mission-objective-complete', {
+                    detail: { type: 'mapping', uplinkReady: uplink.ready, uplink }
+                }));
             }
         }
     }
@@ -12313,6 +12416,8 @@ export class ThreeGame {
             age: 0,
             duration: 1.2
         });
+
+        this.recordRadarScanDiscovery(px, pz, maxRadius);
 
         window.AudioManager?.play('ui_scan_ping', { volume: 0.55, playbackRate: 0.48, bus: 'sfx' });
 
@@ -14932,12 +15037,22 @@ export class ThreeGame {
         this.pendingChunkMountKeys = new Set(this.pendingChunkMounts.map((entry) => entry.key));
 
         const frameAlreadySlow = (this._lastFrameDeltaForChunkMounts ?? 0) > 0.024;
+        const hasMissingVisibleChunk = [...needed].some((key) => !this.chunkMeshes.has(key));
+        if (frameAlreadySlow) {
+            this._slowFrameChunkMountTick = (this._slowFrameChunkMountTick ?? 0) + 1;
+        } else {
+            this._slowFrameChunkMountTick = 0;
+        }
         const chunkMountLimit = Number.isFinite(processLimit)
             ? Math.max(0, Math.floor(processLimit))
             : force
                 ? 1
                 : frameAlreadySlow
-                    ? 0
+                    // Never let sustained low FPS starve terrain that is
+                    // already inside the visible 3x3 neighborhood. Background
+                    // prefetch remains throttled, but still gets an occasional
+                    // slot so the next boundary is staged before arrival.
+                    ? (hasMissingVisibleChunk || this._slowFrameChunkMountTick % 8 === 0 ? 1 : 0)
                     : this.maxChunkMountsPerFrame;
         this.processPendingChunkMounts(chunkMountLimit);
 

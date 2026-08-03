@@ -84,4 +84,30 @@ describe('ExplorationTracker & Map Helpers', () => {
         expect(bounds.minGz).toBe(-3);
         expect(bounds.maxGz).toBe(0);
     });
+
+    it('records radar scan cell discovery across radius', () => {
+        const scanRes = tracker.recordRadarScan(0, 0, 30);
+        expect(scanRes.scannedCount).toBeGreaterThan(1);
+        expect(scanRes.newlyDiscoveredCount).toBeGreaterThan(0);
+        expect(tracker.isExplored(0, 0)).toBe(true);
+
+        const explored = tracker.getExploredCells();
+        const scannedCells = explored.filter((c) => c.scanned);
+        expect(scannedCells.length).toBeGreaterThan(0);
+    });
+
+    it('computes path math over scanned grid cells', () => {
+        tracker.recordPlayerPosition(0, 0);
+        tracker.recordPlayerPosition(15, 0);
+        tracker.recordPlayerPosition(30, 0);
+        tracker.recordPlayerPosition(45, 0);
+
+        const pathResult = tracker.computeScannedPath({ x: 0, z: 0 }, { x: 45, z: 0 });
+        expect(pathResult.found).toBe(true);
+        expect(pathResult.path.length).toBeGreaterThanOrEqual(4);
+        expect(pathResult.scannedPercentage).toBe(1.0);
+
+        const unreachedResult = tracker.computeScannedPath({ x: 0, z: 0 }, { x: 200, z: 200 });
+        expect(unreachedResult.found).toBe(false);
+    });
 });

@@ -74,6 +74,34 @@ describe('world polish', () => {
         expect(coords.map((entry) => entry.key)).toEqual(expect.arrayContaining(['2,-1', '2,0', '2,1']));
     });
 
+    it('mounts missing visible terrain even during sustained slow frames', () => {
+        const processPendingChunkMounts = vi.fn();
+        const game = {
+            isInPocket: false,
+            player: { position: { x: 10, z: 10 } },
+            chunkSize: 49,
+            visibleChunkRadius: 1,
+            chunkResidentPadding: 3,
+            pendingChunkMounts: [{ key: '0,0', chunkX: 0, chunkY: 0, prefetch: false }],
+            pendingChunkMountKeys: new Set(['0,0']),
+            chunkMeshes: new Map(),
+            chunkGroups: { remove: vi.fn() },
+            visitedChunks: new Set(),
+            maxChunkMountsPerFrame: 1,
+            _lastFrameDeltaForChunkMounts: 0.05,
+            getChunkPrefetchCoords: () => [],
+            updateDepthTierProgress: vi.fn(),
+            queueChunkMount: vi.fn(),
+            onNewChunkDiscovered: vi.fn(),
+            processPendingChunkMounts,
+            disposeChunkGroupResources: vi.fn()
+        };
+
+        ThreeGame.prototype.syncVisibleChunks.call(game);
+
+        expect(processPendingChunkMounts).toHaveBeenCalledWith(1);
+    });
+
     it('mounts 3x3, hides recently departed chunks, and restores them before distant eviction', () => {
         const retained = { visible: true, userData: {}, children: [] };
         const distant = { visible: true, userData: {}, children: [] };

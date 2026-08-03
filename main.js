@@ -19,6 +19,7 @@ import { CODEX_ENTRIES, CODEX_CATEGORIES, getCodexEntry, CODEX_TOTAL, LORE_METAD
 import { pickRunModifier } from './src/data/runModifiers.js';
 import { pickMissionBriefing } from './src/data/missions.js';
 import { DIALOGUE_LINES, getDialogueLine } from './src/data/dialogueLines.js';
+import { MOTHERSHIP_REACTIVE_LINES } from './src/data/lineDirectorPools.js';
 import { ArcStateManager } from './src/arcState.js';
 import { CaveRevealController } from './src/caveReveal.js';
 import { Act2Manager, ACT2_ENDING_CUTSCENES, ACT2_LINES, getAct2EndingLines, pickAct2Ending, buildAct2Manifest } from './src/act2.js';
@@ -1511,10 +1512,6 @@ const PICKUP_COMBO_THRESHOLD = 3;
 let runStartTime = Date.now();
 let currentMission = null;
 let currentRunModifier = null;
-const _mothershipFiredTriggers = new Set();
-let _lastMothershipBroadcastAt = 0;
-const MOTHERSHIP_REACTIVE_COOLDOWN_MS = 45000;
-const MOTHERSHIP_REACTIVE_CRITICAL = new Set(['hp_critical', 'objective_found', 'first_boss']);
 const pickupCounterState = {
     total: 0,
     health: 0,
@@ -2976,11 +2973,12 @@ function assignMission(bankState) {
     } else if (totalUnlocks < 3) {
         return { type: 'survey', label: pickMissionBriefing('survey'), targetKills: 0, targetDepth: 65 };
     }
-    const idx = (totalUnlocks + Math.floor(Date.now() / 86400000)) % 3;
+    const idx = (totalUnlocks + Math.floor(Date.now() / 86400000)) % 4;
     const missions = [
         { type: 'retrieval', label: pickMissionBriefing('retrieval'), targetKills: 0, targetDepth: 0 },
         { type: 'survey', label: pickMissionBriefing('survey'), targetKills: 0, targetDepth: 145 },
-        { type: 'elimination', label: pickMissionBriefing('elimination'), targetKills: 6, targetDepth: 0 }
+        { type: 'elimination', label: pickMissionBriefing('elimination'), targetKills: 6, targetDepth: 0 },
+        { type: 'mapping', label: pickMissionBriefing('mapping'), targetKills: 0, targetDepth: 0 }
     ];
     return missions[idx];
 }
@@ -3426,8 +3424,6 @@ function resetRunToStartingState({
         const act2Run = isAct2RunActive();
         currentMission = act2Run ? null : assignMission(bankManager.getState());
         currentRunModifier = pickRunModifier();
-        _mothershipFiredTriggers.clear();
-        _lastMothershipBroadcastAt = 0;
 
         resetPickupCounter();
         window.game?.respawnPlayer?.({ resetRunState: true, skipEffects, deferChunkMount });
@@ -3550,7 +3546,8 @@ window.addEventListener('mission-objective-complete', (event) => {
     const messages = {
         retrieval: 'OBJECTIVE SECURED — RETURN TO SHIP',
         survey:    'SURVEY COMPLETE — RETURN TO SHIP',
-        elimination: 'TARGETS ELIMINATED — RETURN TO SHIP'
+        elimination: 'TARGETS ELIMINATED — RETURN TO SHIP',
+        mapping:   'PATHWAY MAPPED — RETURN TO SHIP'
     };
     const msg = uplinkReady
         ? (messages[type] ?? 'OBJECTIVE COMPLETE — RETURN TO SHIP')
@@ -4179,40 +4176,10 @@ document.getElementById('close-lore-modal')?.addEventListener('click', closeLore
 
 // ── Reactive Mothership ───────────────────────────────────────
 function fireMothershipReactiveLine(trigger) {
-    if (_mothershipFiredTriggers.has(trigger)) return;
-    const now = Date.now();
-    if (!MOTHERSHIP_REACTIVE_CRITICAL.has(trigger) && now - _lastMothershipBroadcastAt < MOTHERSHIP_REACTIVE_COOLDOWN_MS) {
-        return;
-    }
-    _mothershipFiredTriggers.add(trigger);
-    _lastMothershipBroadcastAt = now;
-    const lines = {
-        first_kill:       'AGENT — FIRST THREAT NEUTRALIZED. PROCEED.',
-        first_cryo:       'WARNING: CRYO SECTOR BOUNDARY CROSSED. THERMAL PROTOCOL ACTIVE.',
-        first_bio:        'ALERT: BIO-CONTAINMENT ZONE ENTERED. SUIT FILTERS AT LIMIT.',
-        hp_critical:      'DISTRESS SIGNAL: VITAL SIGNS CRITICAL. EXTRACTION WINDOW OPEN EARLY.',
-        objective_found:  'UPLINK: OBJECTIVE CONFIRMED. MAX SHIP SYSTEMS REQUIRED FOR EXTRACTION.',
-        first_deposit:    'SALVAGE RECEIVED. BANK SECURE. CONTINUE OPERATIONS.',
-        lore_found:       'AGENT — BUNKER DATA FRAGMENT RECOVERED. TRANSMITTING TO ARCHIVE.',
-        sentinel_spotted: 'WARNING: AUTOMATED DEFENSE SYSTEM ACTIVE. RECOMMEND COVER.',
-        crawler_detected:  'ALERT: FAST-MOVING BIO-ENTITY DETECTED. MAINTAIN DISTANCE.',
-        armory_found:      'UPLINK: ARMORY CACHE LOCATED. HIGH-VALUE ASSET — EXPECT RESISTANCE.',
-        the_nest:          'WARNING: BIO-ENTITY NEST CONFIRMED. MAXIMUM THREAT DENSITY. CAUTION.',
-        weapon_calibrated: 'NOTED: AGENT WEAPON OUTPUT RISING. ... WHY DO YOU NEED MORE.',
-        first_boss:        'CONFIRMED KILL: APEX BIO-ENTITY DOWN. THE SIGNAL FELT THAT.',
-        specimen_notices:  '[UNAUTHORIZED CHANNEL] ...0047 HAS STOPPED BUILDING. IT IS LISTENING TO YOU NOW.',
-    };
-    const text = lines[trigger];
-    if (text) showBiomePrompt(`> MOTHERSHIP: ${text}`);
+    const context = window.game?.buildLineDirectorContext?.() ?? {};
+    const line = window.lineDirector?.requestLine(`mothership:${trigger}`, context, MOTHERSHIP_REACTIVE_LINES);
+    if (line) showBiomePrompt(line.text);
 }
-
-window.addEventListener('pickup-collected', (event) => {
-    if (event?.detail?.type === 'weapon') {
-        if (!_mothershipFiredTriggers.has('first_deposit')) {
-            // first_deposit fires on first console deposit; track separately
-        }
-    }
-});
 
 window.addEventListener('special-room-discovered', (event) => {
     const label = event?.detail?.label ?? 'SPECIAL ROOM';
@@ -7215,6 +7182,43 @@ function drawTacticalMapOverlay() {
             ctx.font = '10px Space Mono, monospace';
             ctx.fillText(landmark.label ?? '', lx, ly + 14);
         }
+    }
+
+    // Render scanned sector grid dots from exploredCells
+    for (const c of exploredCells) {
+        if (!c.scanned) continue;
+        const pt = worldToMap(c.gx * 15, c.gz * 15);
+        if (pt.x < 0 || pt.x > width || pt.y < 0 || pt.y > height) continue;
+        ctx.fillStyle = 'rgba(0, 210, 255, 0.18)';
+        ctx.fillRect(pt.x - 3, pt.y - 3, 6, 6);
+    }
+
+    // Render scanned path connectivity lines & route vectors ("math paths of scanned area")
+    const scannedPaths = mapState.scannedPaths ?? [];
+    for (const sp of scannedPaths) {
+        if (!sp.path || sp.path.length < 2) continue;
+        ctx.save();
+        ctx.beginPath();
+        const startP = worldToMap(sp.path[0].x, sp.path[0].z);
+        ctx.moveTo(startP.x, startP.y);
+        for (let i = 1; i < sp.path.length; i++) {
+            const pt = worldToMap(sp.path[i].x, sp.path[i].z);
+            ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.strokeStyle = sp.found ? 'rgba(0, 255, 210, 0.85)' : 'rgba(0, 210, 255, 0.35)';
+        ctx.lineWidth = sp.found ? 3 : 1.5;
+        ctx.setLineDash(sp.found ? [6, 4] : [2, 4]);
+        ctx.stroke();
+
+        // Draw glowing waypoint nodes along the route
+        for (let i = 0; i < sp.path.length; i += Math.max(1, Math.floor(sp.path.length / 6))) {
+            const pt = worldToMap(sp.path[i].x, sp.path[i].z);
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, sp.found ? 3.5 : 2, 0, Math.PI * 2);
+            ctx.fillStyle = sp.found ? '#00ffd2' : '#00d2ff';
+            ctx.fill();
+        }
+        ctx.restore();
     }
 
     // Player position

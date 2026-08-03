@@ -1,7 +1,23 @@
 import { test, expect } from '@playwright/test';
-import { bootToTitleSplash } from './helpers.js';
+import { bootToOperatorMenu, bootToTitleSplash } from './helpers.js';
 
 test.describe('controller-ready modal focus', () => {
+    test('operator commands use spatial WASD navigation across both columns', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        const rosterModal = page.locator('#roster-modal');
+        if (await rosterModal.isVisible()) await page.locator('#close-roster-modal').click();
+
+        await page.locator('#daily-ops-btn').focus();
+        await page.keyboard.press('KeyD');
+        await expect(page.locator('#archive-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#codex-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyA');
+        await expect(page.locator('#roster-btn')).toBeFocused();
+    });
+
     test('settings traps focus and restores the title trigger when closed', async ({ page }) => {
         await bootToTitleSplash(page);
 
