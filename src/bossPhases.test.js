@@ -6,7 +6,8 @@ import {
     isWeakpointOpen,
     currentPhase,
     QUEEN_FIGHT_DEF,
-    QUEEN_PHASE_LINES
+    QUEEN_PHASE_LINES,
+    SPORESNAIL_FIGHT_DEF
 } from './bossPhases.js';
 
 const SIMPLE_DEF = {
@@ -166,5 +167,72 @@ describe('the queen def', () => {
         }
         expect(fight.defeated).toBe(true);
         expect(guard).toBeLessThan(10000);
+    });
+});
+
+// Sprint 22 B1: the first non-Queen boss converted onto this framework (see
+// the definition's own comment in bossPhases.js for why this specific boss
+// and why these specific parameters).
+describe('the sporesnail def (Sprint 22 B1)', () => {
+    it('is two escalating phases, deliberately not a queen-sized three', () => {
+        expect(SPORESNAIL_FIGHT_DEF.phases.map((p) => p.key)).toEqual(['hive-mind', 'bloom-frenzy']);
+    });
+
+    it('keeps armor gentler than the queen, so a 1-damage class still chips through', () => {
+        expect(SPORESNAIL_FIGHT_DEF.armoredDamageMult).toBeGreaterThan(QUEEN_FIGHT_DEF.armoredDamageMult);
+        const fight = createBossFight(SPORESNAIL_FIGHT_DEF);
+        const dealt = applyBossDamage(fight, 1);
+        expect(dealt).toBeGreaterThanOrEqual(1); // never fully negated
+    });
+
+    it('phase one matches the pre-existing unphased cadence exactly (6.5s / 2 adds), no weakpoint yet', () => {
+        const fight = createBossFight(SPORESNAIL_FIGHT_DEF);
+        expect(currentPhase(fight).key).toBe('hive-mind');
+        const events = drain(fight, 6.55, 0.1, { activeAdds: 0 });
+        const wave = events.find((e) => e.type === 'adds');
+        expect(wave).toMatchObject({ addType: 'sporesnail', count: 2 });
+        expect(events.some((e) => e.type === 'weakpoint-open')).toBe(false);
+    });
+
+    it('escalates adds and opens a weakpoint only in phase two', () => {
+        const fight = createBossFight(SPORESNAIL_FIGHT_DEF);
+        fight.hp = Math.floor(SPORESNAIL_FIGHT_DEF.maxHp * 0.4); // below the 0.45 threshold
+        const events = drain(fight, 9.05, 0.1, { activeAdds: 0 });
+        expect(events.some((e) => e.type === 'phase' && e.phase === 'bloom-frenzy')).toBe(true);
+        const wave = events.find((e) => e.type === 'adds');
+        expect(wave).toMatchObject({ addType: 'sporesnail', count: 3 });
+        expect(events.some((e) => e.type === 'weakpoint-open')).toBe(true);
+    });
+
+    it('never emits an "attack" event with a runtime-meaningful payload (this boss has no direct attack of its own)', () => {
+        const fight = createBossFight(SPORESNAIL_FIGHT_DEF);
+        const events = drain(fight, 20, 0.1, { activeAdds: 0 });
+        for (const event of events.filter((e) => e.type === 'attack')) {
+            expect(event.attack).toBeNull();
+        }
+    });
+
+    it('every class-equivalent damage rate can still defeat it within a generous ceiling (no permanent ammo wall)', () => {
+        // Mirrors src/queenFightAcceptance.test.js's idealized-floor
+        // methodology: constant fire at each class's real rate, chipping
+        // outside weakpoint windows and dealing full damage inside them.
+        for (const damagePerShot of [1, 2]) {
+            const fight = createBossFight(SPORESNAIL_FIGHT_DEF);
+            let elapsed = 0;
+            let fireTimer = 0;
+            const dt = 0.05;
+            const fireCooldown = 0.14; // WEAPON_FIRE_COOLDOWN
+            while (!fight.defeated && elapsed < 300) {
+                tickBossFight(fight, dt, { activeAdds: 0 });
+                fireTimer -= dt;
+                if (fireTimer <= 0) {
+                    fireTimer += fireCooldown;
+                    applyBossDamage(fight, damagePerShot);
+                }
+                elapsed += dt;
+            }
+            expect(fight.defeated, `damagePerShot=${damagePerShot} finalHp=${fight.hp}`).toBe(true);
+            expect(elapsed).toBeLessThanOrEqual(300);
+        }
     });
 });
