@@ -46,6 +46,19 @@ chrome/
 # Local scratch directory (generators, smoke tests, profiles)
 scratch/
 
+# 3D authoring/reference sources stay local. Only optimized runtime exports
+# (for example public/3d/scouting-scout/Scout.game.glb) belong in Git/builds.
+art/source/mixamo/
+*.fbx
+*.blend
+*.blend1
+*.obj
+*.dae
+*.3ds
+*.max
+*.mb
+*.ma
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -34,6 +34,18 @@ const requiredMedia = [
 
 const failures = [];
 
+const forbiddenBuildAssetExtensions = new Set([
+    '.fbx',
+    '.blend',
+    '.blend1',
+    '.obj',
+    '.dae',
+    '.3ds',
+    '.max',
+    '.mb',
+    '.ma'
+]);
+
 const storeOnlyBasenames = [
     /^steam_(?:header|small|main|vertical)_capsule(?:_v2)?_en\.png$/i,
     /^(?:header|small|main|vertical)_capsule_\d+x\d+\.png$/i,
@@ -82,6 +94,12 @@ for (const root of ['public', 'dist']) {
             if (isStoreOnlyAsset(file)) {
                 failures.push(
                     `${path.relative('.', file)}: Steam store-only artwork must remain under steam/store/ and outside customer builds`
+                );
+            }
+            const extension = path.extname(file).toLowerCase();
+            if (forbiddenBuildAssetExtensions.has(extension)) {
+                failures.push(
+                    `${path.relative('.', file)}: 3D authoring/reference file must remain outside public/ and customer builds`
                 );
             }
         }

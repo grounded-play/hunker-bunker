@@ -52,7 +52,8 @@ import {
 import { HiveSite } from './hiveSite.js';
 import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
-import { ARC_PRELUDE_ENABLED } from './featureFlags.js';
+import { ARC_PRELUDE_ENABLED, PLAYER_3D_COSMETIC_OVERLAY_ENABLED } from './featureFlags.js';
+import { createPlayer3dOverlay } from './player3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -3229,6 +3230,27 @@ export class ThreeGame {
         this.emitVitalsState();
         this.emitWeaponClipState();
         this.emitShipHealthState();
+        this.setupPlayer3dCosmeticOverlay();
+    }
+
+    async setupPlayer3dCosmeticOverlay() {
+        this.player3dOverlay?.dispose?.();
+        this.player3dOverlay = null;
+        if (!PLAYER_3D_COSMETIC_OVERLAY_ENABLED || this.playerType !== 'SCOUT' || !this.player) return;
+        const playerRoot = this.player;
+        try {
+            const overlay = await createPlayer3dOverlay({ targetHeight: this.playerSpriteScale * 0.98 });
+            if (this.player !== playerRoot) {
+                overlay.dispose();
+                return;
+            }
+            overlay.root.position.x += this.playerSpriteLead;
+            overlay.root.position.z += this.playerSpriteLead;
+            playerRoot.add(overlay.root);
+            this.player3dOverlay = overlay;
+        } catch (error) {
+            console.warn('[player-3d-overlay] unavailable; keeping the 2D player', error);
+        }
     }
 
     createLightConeTexture(colorHex) {
@@ -11933,6 +11955,7 @@ export class ThreeGame {
         const damage = Math.max(0, Math.round(amount));
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - damage);
         if (this.playerVitals.hp === previousHp) return;
+        this.player3dOverlay?.trigger('hit');
 
         if (sourceX != null && sourceZ != null) {
             this.showDirectionalHitIndicator(sourceX, sourceZ);
@@ -12969,6 +12992,15 @@ export class ThreeGame {
         // Handle falling in hole state
         if (this.isPlayerFalling) {
             this.isMoving = false;
+            this.player3dOverlay?.update(delta, {
+                isFalling: true,
+                isMoving: false,
+                hasAim: this.hasActiveAim,
+                moveX: 0,
+                moveZ: 0,
+                aimX: this.aimDirX,
+                aimZ: this.aimDirZ
+            });
             if (this.player) {
                 this.player.position.y -= 3.5 * delta;
                 this.player.rotation.y += 8.0 * delta;
@@ -14376,6 +14408,20 @@ export class ThreeGame {
     }
 
     updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving, moveDirX = 0, moveDirZ = 0) {
+        if (this.player3dOverlay) {
+            this.player3dOverlay.root.visible = this.playerType === 'SCOUT';
+            this.player3dOverlay.update(delta, {
+                isFalling: this.isPlayerFalling,
+                isReloading: this.weaponReloading,
+                isMoving,
+                isSprinting: (this._sprintMoveSpeedMult ?? 1) > 1,
+                hasAim: this.hasActiveAim,
+                moveX: moveDirX,
+                moveZ: moveDirZ,
+                aimX: this.aimDirX,
+                aimZ: this.aimDirZ
+            });
+        }
         const aiming = this.hasActiveAim;
         // Upper body tracks the aim whenever the player is aiming.
         if (aiming) {
@@ -14646,6 +14692,7 @@ export class ThreeGame {
     }
 
     spawnPlayerShot(normX, normZ) {
+        this.player3dOverlay?.trigger('fire');
         const classDamage = CLASS_STATS[this.playerType]?.projectileDamage ?? PROJECTILE_DAMAGE;
         const bonuses = this.weaponUpgradeBonuses ?? null;
         let damage = classDamage + (bonuses?.shotDamage ?? 0);
