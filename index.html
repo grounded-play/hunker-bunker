@@ -1607,8 +1607,10 @@
     <!-- Settings Modal -->
     <div id="settings-popup" class="modal hidden">
       <div class="modal-content settings-modal-content">
-        <button class="close-modal" id="close-settings">×</button>
-        <h2 class="modal-title">SYSTEM SETTINGS</h2>
+        <div class="settings-sticky-header">
+          <h2 class="modal-title">SYSTEM SETTINGS</h2>
+          <button class="close-modal" id="close-settings" aria-label="Close system settings">×</button>
+        </div>
 
         <!-- Section 1: Display & Graphics -->
         <div class="settings-category-group">
