@@ -2444,6 +2444,23 @@ window.addEventListener('camp-verb-activated', (event) => {
         playbackRate: event?.detail?.degraded ? 0.78 : 1,
         bus: 'sfx'
     });
+    const campLabel = event?.detail?.campLabel ?? campId.toUpperCase();
+    const degraded = Boolean(event?.detail?.degraded);
+    let promptMsg = `SYSTEM: ${campLabel} VERB ACTIVATED.`;
+    if (campId === 'meridian') {
+        promptMsg = degraded
+            ? `SYSTEM: MERIDIAN ROUTE INTEL ACTIVATED (DEGRADED — RECENTLY ROBBED). RADAR LOCK DELAYED.`
+            : `SYSTEM: MERIDIAN ROUTE INTEL ACTIVATED. RADAR SCANNING BLOCKER & KEY REGIONAL SITES.`;
+    } else if (campId === 'tallow') {
+        promptMsg = `SYSTEM: TALLOW TRIAGE ACTIVATED. HEALTH FULLY RESTORED & INFECTION CLEANSED.`;
+    } else if (campId === 'vesper') {
+        promptMsg = `SYSTEM: VESPER FIELD RESUPPLY ACTIVATED. LOADED CLIP & AMMO RESERVES FULLY REFILLED.`;
+    }
+    showBiomePrompt(promptMsg);
+});
+window.addEventListener('camp-verb-denied', (event) => {
+    const reason = String(event?.detail?.reason ?? 'unavailable').replace(/_/g, ' ').toUpperCase();
+    showBiomePrompt(`SYSTEM: FACTION VERB DENIED — ${reason}.`);
 });
 window.addEventListener('combat-no-ammo', () => {
     flashWeaponError();
@@ -3219,7 +3236,7 @@ function renderOperatorPolishUi() {
         button.className = `operator-polish-chip${isUnlocked ? '' : ' is-locked'}${selected.id === polish.id ? ' is-selected' : ''}`;
         button.style.setProperty('--polish-color', polish.color);
         button.setAttribute('aria-disabled', String(!isUnlocked));
-        button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ' locked'}`);
+        button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ` locked. Clue: ${polish.hint}`}`);
         button.innerHTML = `<span class="operator-polish-chip__swatch"></span><span>${String(polish.id + 1).padStart(2, '0')} // ${polish.name}</span>`;
         if (isUnlocked) {
             button.addEventListener('click', () => {
@@ -3235,7 +3252,7 @@ function renderOperatorPolishUi() {
             if (readoutName) readoutName.textContent = polish.name;
             if (readoutState) readoutState.textContent = isUnlocked
                 ? (selected.id === polish.id ? 'EQUIPPED' : 'UNLOCKED')
-                : 'LOCKED';
+                : `LOCKED // ${polish.hint}`;
         });
         grid.append(button);
     }
@@ -10939,10 +10956,23 @@ const STEAM_ACHIEVEMENT_ITEM_MAP = Object.freeze({
 window.addEventListener('achievement-unlocked', (event) => {
     const key = event?.detail?.key;
     if (!key) return;
-    const polishGrant = unlockMilestonePolish(key);
+    const polishGrant = unlockMilestonePolish(`achievement:${key}`);
     if (!polishGrant.unlocked) return;
     renderOperatorPolishUi();
     showBiomePrompt(`> SUIT POLISH UNLOCKED: ${OPERATOR_POLISHES[polishGrant.id].name}`);
+});
+
+function grantWorldMilestonePolish(milestone) {
+    const polishGrant = unlockMilestonePolish(milestone);
+    if (!polishGrant.unlocked) return;
+    renderOperatorPolishUi();
+    showBiomePrompt(`> SUIT POLISH UNLOCKED: ${OPERATOR_POLISHES[polishGrant.id].name}`);
+}
+
+window.addEventListener('black-box-recovered', () => grantWorldMilestonePolish('black-box-recovered'));
+window.addEventListener('act2-milestone', (event) => {
+    const key = event?.detail?.key;
+    if (key) grantWorldMilestonePolish(`act2:${key}`);
 });
 
 if (window.electronAPI) {

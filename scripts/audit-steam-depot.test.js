@@ -25,7 +25,10 @@ describe('auditSteamDepot', () => {
         fs.mkdirSync(path.join(depot, 'resources'), { recursive: true });
         fs.writeFileSync(path.join(depot, 'steam_appid.txt'), '4957040');
         fs.writeFileSync(path.join(depot, 'resources', '.env'), 'HB_STEAM_PUBLISHER_KEY=secret');
+        fs.writeFileSync(path.join(depot, 'resources', 'backend.env'), 'HB_SESSION_SECRET=secret');
         fs.writeFileSync(path.join(depot, 'resources', 'db_storage.json'), '{}');
+        fs.writeFileSync(path.join(depot, 'resources', 'hunker-bunker.sqlite'), 'database');
+        fs.writeFileSync(path.join(depot, 'resources', 'hunker-bunker.sqlite-wal'), 'database wal');
 
         const result = await auditSteamDepot({
             cwd: dir,
@@ -36,7 +39,10 @@ describe('auditSteamDepot', () => {
         expect(result.failures.map((failure) => failure.file)).toEqual(expect.arrayContaining([
             'steam_appid.txt',
             'resources/.env',
-            'resources/db_storage.json'
+            'resources/backend.env',
+            'resources/db_storage.json',
+            'resources/hunker-bunker.sqlite',
+            'resources/hunker-bunker.sqlite-wal'
         ]));
     });
 
