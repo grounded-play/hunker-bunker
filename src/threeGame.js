@@ -16384,8 +16384,27 @@ export class ThreeGame {
             wallMetaByRoomStyle.get(bucketKey).push({ ...opts, roomId: roomInfo.roomId, roomWallStyle: roomInfo.roomWallStyle });
         };
 
-        // TODO(Task 4): replaced with real per-decoration-type instanced pools.
-        const pushDecorationMatrix = () => {};
+        const pillarMatricesByRoomStyle = new Map();
+        const bracketMatricesByRoomStyle = new Map();
+        const ventMatrices = [];
+        const pipeMatrices = [];
+        const decorationScratch = new THREE.Matrix4();
+
+        const pushDecorationMatrix = (type, wallMatrix, roomInfo, localMatrix) => {
+            decorationScratch.multiplyMatrices(wallMatrix, localMatrix);
+            if (type === 'vent') {
+                ventMatrices.push(decorationScratch.clone());
+                return;
+            }
+            if (type === 'pipe') {
+                pipeMatrices.push(decorationScratch.clone());
+                return;
+            }
+            const target = type === 'pillar' ? pillarMatricesByRoomStyle : bracketMatricesByRoomStyle;
+            const bucketKey = roomInfo.roomStyleId;
+            if (!target.has(bucketKey)) target.set(bucketKey, []);
+            target.get(bucketKey).push(decorationScratch.clone());
+        };
 
         const addCliffInstance = (worldX, worldZ) => {
             const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
@@ -16848,6 +16867,58 @@ export class ThreeGame {
                 this._wallInstanceIndex.set(record.wallKey, record);
             });
             group.add(pool);
+        }
+
+        for (const [roomStyleId, matrices] of pillarMatricesByRoomStyle.entries()) {
+            if (matrices.length === 0) continue;
+            const pool = new THREE.InstancedMesh(this.pillarGeometry, this.wallMaterial, matrices.length);
+            matrices.forEach((m, idx) => pool.setMatrixAt(idx, m));
+            pool.instanceMatrix.needsUpdate = true;
+            pool.castShadow = true;
+            pool.receiveShadow = true;
+            pool.userData = { isWallDecoration: true, decorationType: 'pillar' };
+            pool.onBeforeRender = () => {
+                if (this.wallShaderUniforms) {
+                    this.wallShaderUniforms.uLandformId.value = landformShaderId;
+                    this.wallShaderUniforms.uRoomStyleId.value = roomStyleId;
+                }
+            };
+            group.add(pool);
+        }
+
+        for (const [roomStyleId, matrices] of bracketMatricesByRoomStyle.entries()) {
+            if (matrices.length === 0) continue;
+            const pool = new THREE.InstancedMesh(this.bracketGeometry, this.wallMaterial, matrices.length);
+            matrices.forEach((m, idx) => pool.setMatrixAt(idx, m));
+            pool.instanceMatrix.needsUpdate = true;
+            pool.castShadow = true;
+            pool.receiveShadow = true;
+            pool.userData = { isWallDecoration: true, decorationType: 'bracket' };
+            pool.onBeforeRender = () => {
+                if (this.wallShaderUniforms) {
+                    this.wallShaderUniforms.uLandformId.value = landformShaderId;
+                    this.wallShaderUniforms.uRoomStyleId.value = roomStyleId;
+                }
+            };
+            group.add(pool);
+        }
+
+        if (ventMatrices.length > 0) {
+            const ventPool = new THREE.InstancedMesh(this.ventGeometry, this.ventMaterial, ventMatrices.length);
+            ventMatrices.forEach((m, idx) => ventPool.setMatrixAt(idx, m));
+            ventPool.instanceMatrix.needsUpdate = true;
+            ventPool.userData = { isWallDecoration: true, decorationType: 'vent' };
+            group.add(ventPool);
+        }
+
+        if (pipeMatrices.length > 0) {
+            const pipePool = new THREE.InstancedMesh(this.pipeGeometry, this.pipeMaterial, pipeMatrices.length);
+            pipeMatrices.forEach((m, idx) => pipePool.setMatrixAt(idx, m));
+            pipePool.instanceMatrix.needsUpdate = true;
+            pipePool.castShadow = true;
+            pipePool.receiveShadow = true;
+            pipePool.userData = { isWallDecoration: true, decorationType: 'pipe' };
+            group.add(pipePool);
         }
 
         if (this.rubbleGeometry && this.wallMaterial && rubbleMatrices.length > 0) {
