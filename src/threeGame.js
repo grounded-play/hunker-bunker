@@ -16388,6 +16388,8 @@ export class ThreeGame {
         const bracketMatricesByRoomStyle = new Map();
         const ventMatrices = [];
         const pipeMatrices = [];
+        const doorRibMatrices = [];
+        const doorPanelMatrices = [];
         const decorationScratch = new THREE.Matrix4();
 
         const pushDecorationMatrix = (type, wallMatrix, roomInfo, localMatrix) => {
@@ -16525,48 +16527,34 @@ export class ThreeGame {
                     statusBar.position.y = 0.42;
                     doorMesh.add(statusBar);
                     doorMesh.userData.proceduralDoorStatusMaterial = statusMaterial;
+                    const doorWorldMatrix = new THREE.Matrix4().compose(
+                        new THREE.Vector3(worldX, 0, worldZ),
+                        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, horizontal ? 0 : Math.PI / 2, 0)),
+                        new THREE.Vector3(1, 1, 1)
+                    );
                     for (const ribOffset of [-0.28, 0, 0.28]) {
-                        const rib = new THREE.Mesh(
-                            new THREE.BoxGeometry(0.08, 1.02, 1.1),
-                            new THREE.MeshStandardMaterial({
-                                color: 0x11161b,
-                                roughness: 0.3,
-                                metalness: 0.92
-                            })
-                        );
-                        rib.position.x = horizontal ? ribOffset : 0;
-                        rib.position.z = horizontal ? 0 : ribOffset;
-                        if (!horizontal) rib.rotation.y = Math.PI / 2;
-                        doorMesh.add(rib);
+                        const localX = horizontal ? ribOffset : 0;
+                        const localZ = horizontal ? 0 : ribOffset;
+                        const ribMatrix = new THREE.Matrix4()
+                            .multiplyMatrices(doorWorldMatrix, new THREE.Matrix4().makeTranslation(localX, 0.42, localZ));
+                        doorRibMatrices.push(ribMatrix);
                     }
 
-                    const panelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
                     for (const side of [-1, 1]) {
-                        const panel = new THREE.Mesh(
-                            panelGeometry,
-                            new THREE.MeshStandardMaterial({
-                                color: 0x12191f,
-                                emissive: 0x07141a,
-                                metalness: 0.78,
-                                roughness: 0.38
-                            })
-                        );
-                        panel.position.set(
-                            worldX + (horizontal ? -1.72 : side * 0.78),
-                            0.82,
-                            worldZ + (horizontal ? side * 0.78 : -1.72)
-                        );
+                        const panelWorldX = worldX + (horizontal ? -1.72 : side * 0.78);
+                        const panelWorldZ = worldZ + (horizontal ? side * 0.78 : -1.72);
+                        doorPanelMatrices.push(new THREE.Matrix4().makeTranslation(panelWorldX, 0.82, panelWorldZ));
+
                         const button = new THREE.Mesh(
                             new THREE.CircleGeometry(0.11, 16),
                             statusMaterial
                         );
-                        button.position.z = 0.125;
-                        panel.add(button);
-                        panel.userData = {
+                        button.position.set(panelWorldX, 0.82, panelWorldZ + 0.125);
+                        button.userData = {
                             isProceduralDoorControl: true,
                             proceduralDoorId: persistedDoor?.id ?? null
                         };
-                        group.add(panel);
+                        group.add(button);
                     }
                     if (persistedDoor?.id) {
                         doorMesh.position.y = persistedDoor.state === 'open' || persistedDoor.state === 'destroyed'
@@ -16919,6 +16907,26 @@ export class ThreeGame {
             pipePool.receiveShadow = true;
             pipePool.userData = { isWallDecoration: true, decorationType: 'pipe' };
             group.add(pipePool);
+        }
+
+        if (doorRibMatrices.length > 0) {
+            const ribGeometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
+            const ribMaterial = new THREE.MeshStandardMaterial({ color: 0x11161b, roughness: 0.3, metalness: 0.92 });
+            const ribPool = new THREE.InstancedMesh(ribGeometry, ribMaterial, doorRibMatrices.length);
+            doorRibMatrices.forEach((m, idx) => ribPool.setMatrixAt(idx, m));
+            ribPool.instanceMatrix.needsUpdate = true;
+            ribPool.userData = { isDoorDecoration: true, decorationType: 'rib' };
+            group.add(ribPool);
+        }
+
+        if (doorPanelMatrices.length > 0) {
+            const panelGeometry = new THREE.BoxGeometry(0.38, 0.58, 0.24);
+            const panelMaterial = new THREE.MeshStandardMaterial({ color: 0x12191f, emissive: 0x07141a, metalness: 0.78, roughness: 0.38 });
+            const panelPool = new THREE.InstancedMesh(panelGeometry, panelMaterial, doorPanelMatrices.length);
+            doorPanelMatrices.forEach((m, idx) => panelPool.setMatrixAt(idx, m));
+            panelPool.instanceMatrix.needsUpdate = true;
+            panelPool.userData = { isDoorDecoration: true, decorationType: 'panel' };
+            group.add(panelPool);
         }
 
         if (this.rubbleGeometry && this.wallMaterial && rubbleMatrices.length > 0) {
