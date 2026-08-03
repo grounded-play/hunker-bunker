@@ -46,7 +46,7 @@ export const CODEX_ENTRIES = Object.freeze([
       blurb: 'The lighting budget lapses without warning. Please enjoy the darkness responsibly.' },
     { id: 'compass_corruption', name: 'TELEMETRY DRIFT', category: 'PHENOMENON', image: '/cutscenes/poster-art/death-abyss.png',
       blurb: 'Navigation data reclassified as suggestion. The map is corporate memory, not truth.' },
-    { id: 'elevator_down', name: 'THE ELEVATOR DOWN', category: 'PHENOMENON', image: '/door_biomech_v2.webp',
+    { id: 'elevator_down', name: 'THE ELEVATOR DOWN', category: 'PHENOMENON', image: '/door_biomech_keyart_v2.webp',
       blurb: 'Ninety seconds of descent. The vents disagree with your presence the entire way.' },
     { id: 'specimen_0047', name: 'SPECIMEN 0047', category: 'PHENOMENON', image: '/cutscenes/poster-art/event-queen-encounter.png',
       blurb: 'THE LINCHPIN. ORIGIN WELD UNLOCKED: ANCIENT SEED-CARRIER RECLASSIFIED AS QUEEN\'S DORMANT CORE. EXOSUIT TELEMETRY INDICATES THE BIO-SIGNAL SHIFTS FOCUS FROM BROADCAST TO THE CARRIER\'S IN-WORLD BODY.' }

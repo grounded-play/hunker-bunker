@@ -3,12 +3,12 @@ import path from 'node:path';
 
 const requiredMedia = [
     'DoorIntro.mp4',
-    'door_biomech_v2.webp',
-    'door_bio.png',
-    'door_nuclear.png',
-    'door_cryo.png',
-    'door_alien.png',
-    'door_rust.png',
+    'door_biomech_keyart_v2.webp',
+    'door_bio_keyart_v2.webp',
+    'door_nuclear_keyart_v2.webp',
+    'door_cryo_keyart_v2.webp',
+    'door_alien_keyart_v2.webp',
+    'door_rust_keyart_v2.webp',
     'Scout.full_v2.png',
     'Tank.walk_v4.png',
     'Eng.walk_v4.png',

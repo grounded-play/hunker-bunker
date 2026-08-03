@@ -1208,7 +1208,7 @@ export class ThreeGame {
             textureLoader,
             maxAnisotropy
         );
-        this.doorTexture = this.loadTerrainTexture('/door_biomech_v2.webp', textureLoader, maxAnisotropy);
+        this.doorTexture = this.loadTerrainTexture('/door_biomech_keyart_v2.webp', textureLoader, maxAnisotropy);
         this.doorTexture.repeat.set(1, 1);
         this.doorMaterial = new THREE.MeshStandardMaterial({
             map: this.doorTexture,

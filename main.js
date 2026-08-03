@@ -9342,14 +9342,14 @@ if (mainCommentaryToggle) {
 
 function getDoorImage(key) {
     const CLASS_DOORS = {
-        'SCOUT': '/door_bio.png',
-        'TANK': '/door_nuclear.png',
-        'ENGINEER': '/door_cryo.png'
+        'SCOUT': '/door_bio_keyart_v2.webp',
+        'TANK': '/door_nuclear_keyart_v2.webp',
+        'ENGINEER': '/door_cryo_keyart_v2.webp'
     };
     const SPECIAL_DOORS = {
-        'base': '/door_biomech_v2.webp',
-        'win': '/door_alien.png',
-        'lose': '/door_rust.png'
+        'base': '/door_biomech_keyart_v2.webp',
+        'win': '/door_alien_keyart_v2.webp',
+        'lose': '/door_rust_keyart_v2.webp'
     };
     if (key === 'win') return assetUrl(SPECIAL_DOORS.win);
     if (key === 'lose') return assetUrl(SPECIAL_DOORS.lose);
@@ -9363,12 +9363,12 @@ function getDoorImage(key) {
 
 function preloadDoorAssets() {
     const doorImages = [
-        '/door_biomech_v2.webp',
-        '/door_bio.png',
-        '/door_nuclear.png',
-        '/door_cryo.png',
-        '/door_alien.png',
-        '/door_rust.png',
+        '/door_biomech_keyart_v2.webp',
+        '/door_bio_keyart_v2.webp',
+        '/door_nuclear_keyart_v2.webp',
+        '/door_cryo_keyart_v2.webp',
+        '/door_alien_keyart_v2.webp',
+        '/door_rust_keyart_v2.webp',
         '/ship_wreckage.png'
     ];
 
@@ -10044,11 +10044,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         images: [
             '/bg.webp',
             '/door.webp',
-            '/door_bio.png',
-            '/door_nuclear.png',
-            '/door_cryo.png',
-            '/door_alien.png',
-            '/door_rust.png',
+            '/door_bio_keyart_v2.webp',
+            '/door_nuclear_keyart_v2.webp',
+            '/door_cryo_keyart_v2.webp',
+            '/door_alien_keyart_v2.webp',
+            '/door_rust_keyart_v2.webp',
             '/menu_bg.webp',
             '/ship_wreckage.png',
             '/scout_ship.png',
