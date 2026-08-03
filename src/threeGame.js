@@ -1275,15 +1275,39 @@ export class ThreeGame {
         this.crashSiteFloorTexture.anisotropy = maxAnisotropy;
         this.crashSiteFloorMaterial = new THREE.MeshStandardMaterial({
             map: this.crashSiteFloorTexture,
+            emissiveMap: this.crashSiteFloorTexture,
             transparent: true,
             alphaTest: 0.02,
             depthWrite: true,
-            color: 0x747b80,
-            roughness: 0.94,
-            metalness: 0.18,
+            color: 0x321913,
+            emissive: 0x7a1d08,
+            emissiveIntensity: 0.46,
+            roughness: 0.98,
+            metalness: 0.08,
             polygonOffset: true,
             polygonOffsetFactor: -4,
             polygonOffsetUnits: -4
+        });
+        const crashHeatCanvas = document.createElement('canvas');
+        crashHeatCanvas.width = 256;
+        crashHeatCanvas.height = 256;
+        const crashHeatContext = crashHeatCanvas.getContext('2d');
+        const crashHeatGradient = crashHeatContext.createRadialGradient(128, 128, 12, 128, 128, 126);
+        crashHeatGradient.addColorStop(0, 'rgba(255, 65, 10, 0.58)');
+        crashHeatGradient.addColorStop(0.28, 'rgba(220, 38, 5, 0.34)');
+        crashHeatGradient.addColorStop(0.62, 'rgba(115, 18, 3, 0.18)');
+        crashHeatGradient.addColorStop(1, 'rgba(20, 3, 0, 0)');
+        crashHeatContext.fillStyle = crashHeatGradient;
+        crashHeatContext.fillRect(0, 0, 256, 256);
+        this.crashSiteHeatTexture = new THREE.CanvasTexture(crashHeatCanvas);
+        this.crashSiteHeatMaterial = new THREE.MeshBasicMaterial({
+            map: this.crashSiteHeatTexture,
+            color: 0xff4a16,
+            transparent: true,
+            opacity: 0.42,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide
         });
         this.playerTextures = Object.fromEntries(
             Object.entries(PLAYER_SPRITE_LAYOUTS).map(([type, layout]) => [
@@ -4942,6 +4966,16 @@ export class ThreeGame {
 
     render() {
         const now = performance.now();
+        const crashHeatPulse = Math.sin(now * 0.0026);
+        if (this.crashSiteFloorMaterial) {
+            this.crashSiteFloorMaterial.emissiveIntensity = 0.46 + crashHeatPulse * 0.07;
+        }
+        if (this.crashSiteHeatMaterial) {
+            this.crashSiteHeatMaterial.opacity = 0.40 + crashHeatPulse * 0.06;
+        }
+        if (this.crashSiteHeatLight) {
+            this.crashSiteHeatLight.intensity = 1.4 + crashHeatPulse * 0.24;
+        }
         for (const uniforms of this.cliffShaderUniforms ?? []) {
             if (uniforms.uCliffTime) uniforms.uCliffTime.value = now * 0.001;
         }
@@ -16773,6 +16807,23 @@ export class ThreeGame {
             crashDeck.receiveShadow = true;
             crashDeck.renderOrder = 4;
             crashDeck.userData = { isCrashSiteFloor: true };
+            if (this.crashSiteHeatMaterial) {
+                const heatBed = new THREE.Mesh(
+                    new THREE.PlaneGeometry(6.8, 6.8),
+                    this.crashSiteHeatMaterial
+                );
+                heatBed.position.z = 0.012;
+                heatBed.renderOrder = 5;
+                heatBed.userData = { isCrashSiteHeat: true };
+                crashDeck.add(heatBed);
+
+                const impactLight = new THREE.PointLight(0xff3b0a, 1.45, 6.5, 2);
+                // The deck is rotated onto the X/Z floor, so local Z is world height.
+                impactLight.position.z = 0.85;
+                impactLight.userData = { isCrashSiteHeatLight: true };
+                crashDeck.add(impactLight);
+                this.crashSiteHeatLight = impactLight;
+            }
             this.crashSiteFloorMesh = crashDeck;
             group.add(crashDeck);
         }
@@ -23741,6 +23792,8 @@ export class ThreeGame {
         this.floorMaterial?.dispose?.();
         this.crashSiteFloorMaterial?.dispose?.();
         this.crashSiteFloorTexture?.dispose?.();
+        this.crashSiteHeatMaterial?.dispose?.();
+        this.crashSiteHeatTexture?.dispose?.();
         for (const material of this.roomFloorMaterials?.values?.() ?? []) {
             if (material?.userData?.ownsRoomAtlasTexture) material.map?.dispose?.();
             material?.dispose?.();
