@@ -8349,12 +8349,62 @@ body.mission-intro-active #game-container canvas {
   scrollbar-color: rgba(var(--roster-glow-rgb), 0.5) rgba(10, 15, 20, 0.6);
 }
 
-.roster-weapon-grid::-webkit-scrollbar { width: calc(var(--vu) * 1); }
-.roster-weapon-grid::-webkit-scrollbar-track { background: rgba(10, 15, 20, 0.6); border-radius: 4px; }
-.roster-weapon-grid::-webkit-scrollbar-thumb {
-  background: rgba(var(--roster-glow-rgb), 0.6);
-  border-radius: 4px;
-  box-shadow: 0 0 10px rgba(125, 255, 90, 0.4);
+.roster-weapon-grid:has(.roster-weapon-empty-slot) {
+  display: block;
+  max-height: none;
+  overflow-y: visible;
+}
+
+.roster-weapon-empty-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--vu) * 1.5);
+  padding: calc(var(--vu) * 1.2) calc(var(--vu) * 1.6);
+  background: rgba(12, 18, 24, 0.85);
+  border: 1.5px dashed rgba(125, 255, 90, 0.35);
+  border-radius: 8px;
+}
+
+.roster-empty-info {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--vu) * 1.2);
+  min-width: 0;
+}
+
+.roster-empty-icon {
+  font-size: calc(var(--vu) * 2.2);
+  color: #7dff5a;
+  text-shadow: 0 0 10px rgba(125, 255, 90, 0.5);
+}
+
+.roster-empty-text {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.2);
+  min-width: 0;
+}
+
+.roster-empty-title {
+  font-size: var(--font-xs);
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: #c8ffb4;
+}
+
+.roster-empty-sub {
+  font-size: calc(var(--font-xs) * 0.88);
+  color: rgba(220, 235, 245, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roster-weapon__btn--single-fab {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 2) !important;
 }
 
 .roster-weapon {
@@ -8409,12 +8459,20 @@ body.mission-intro-active #game-container canvas {
 }
 
 .roster-weapon__name {
-  font-size: var(--font-xs);
+  font-size: calc(var(--font-xs) * 0.95);
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: #ffffff;
   text-align: center;
   text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .roster-weapon__btn {
@@ -8466,6 +8524,17 @@ body.mission-intro-active #game-container canvas {
   align-items: center;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
+  min-width: 0;
+}
+
+.roster-cosmetic-chip span:last-child {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
 }
 
 .roster-cosmetic-chip:hover {

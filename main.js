@@ -8957,58 +8957,101 @@ function renderRosterModal(mode = 'continue') {
     }
 
     const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
-    const fabbed = weapons.filter((r) => fabricator.isFabricated(r.id)).length;
+    const fabbedWeapons = weapons.filter((r) => fabricator.isFabricated(r.id));
+    const fabbed = fabbedWeapons.length;
     setTxt('roster-fab-count', `ARSENAL: ${fabbed} / ${weapons.length} WEAPONS FABRICATED`);
 
-    const equippedId = loadout.getEquippedId();
     grid.innerHTML = '';
-    for (const recipe of weapons) {
-        const fabricated = fabricator.isFabricated(recipe.id);
-        const equipped = fabricated && equippedId === recipe.id;
+    if (fabbed === 0) {
+        // Single compact slot with one Fabricate button when 0 weapons are fabricated
+        const isFoundryUnlocked = bankManager.isFoundryActivated();
 
-        const card = document.createElement('div');
-        card.className = ['roster-weapon', fabricated ? '' : 'roster-weapon--locked', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
+        const emptyCard = document.createElement('div');
+        emptyCard.className = 'roster-weapon-empty-slot';
 
-        const art = document.createElement('div');
-        art.className = 'roster-weapon__art';
-        const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name;
-        img.src = assetUrl(fabricated ? recipe.art : '/bunker_junk_rare.png');
-        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
-        art.appendChild(img);
-        card.appendChild(art);
+        const info = document.createElement('div');
+        info.className = 'roster-empty-info';
 
-        const name = document.createElement('div');
-        name.className = 'roster-weapon__name';
-        name.textContent = fabricated ? recipe.name : 'NULL';
-        card.appendChild(name);
+        const icon = document.createElement('div');
+        icon.className = 'roster-empty-icon';
+        icon.textContent = '◇';
 
-        const btn = document.createElement('button');
-        btn.className = 'roster-weapon__btn';
-        if (!fabricated) {
-            btn.textContent = '+ FABRICATE';
-            btn.classList.add('roster-weapon__btn--locked');
-            btn.title = 'Click to open Fabrication Bay';
-            btn.addEventListener('click', () => {
+        const textGroup = document.createElement('div');
+        textGroup.className = 'roster-empty-text';
+
+        const title = document.createElement('div');
+        title.className = 'roster-empty-title';
+        title.textContent = 'NO WEAPONS FABRICATED';
+
+        const sub = document.createElement('div');
+        sub.className = 'roster-empty-sub';
+        sub.textContent = isFoundryUnlocked
+            ? 'Visit the Fabrication Bay to print sidearms from bunker salvage.'
+            : 'Power the base generator to unlock the Fabrication Bay.';
+
+        textGroup.appendChild(title);
+        textGroup.appendChild(sub);
+        info.appendChild(icon);
+        info.appendChild(textGroup);
+        emptyCard.appendChild(info);
+
+        const fabBtn = document.createElement('button');
+        fabBtn.className = 'roster-weapon__btn roster-weapon__btn--single-fab';
+        if (isFoundryUnlocked) {
+            fabBtn.textContent = '+ OPEN FAB BAY';
+            fabBtn.addEventListener('click', () => {
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
                 openFabricationModal();
             });
-        } else if (equipped) {
-            btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
         } else {
-            btn.textContent = 'EQUIP';
-            btn.addEventListener('click', () => {
-                if (loadout.equip(recipe.id, fabricator)) {
-                    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-                    syncEquippedWeaponLabel();
-                    renderRosterModal(mode);
-                } else {
-                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-                }
-            });
+            fabBtn.textContent = 'FAB BAY LOCKED';
+            fabBtn.disabled = true;
+            fabBtn.classList.add('roster-weapon__btn--locked');
         }
-        card.appendChild(btn);
-        grid.appendChild(card);
+        emptyCard.appendChild(fabBtn);
+        grid.appendChild(emptyCard);
+    } else {
+        const equippedId = loadout.getEquippedId();
+        for (const recipe of fabbedWeapons) {
+            const equipped = equippedId === recipe.id;
+
+            const card = document.createElement('div');
+            card.className = ['roster-weapon', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
+
+            const art = document.createElement('div');
+            art.className = 'roster-weapon__art';
+            const img = document.createElement('img');
+            img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name;
+            img.src = assetUrl(recipe.art);
+            img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
+            art.appendChild(img);
+            card.appendChild(art);
+
+            const name = document.createElement('div');
+            name.className = 'roster-weapon__name';
+            name.textContent = recipe.name;
+            name.title = recipe.name;
+            card.appendChild(name);
+
+            const btn = document.createElement('button');
+            btn.className = 'roster-weapon__btn';
+            if (equipped) {
+                btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
+            } else {
+                btn.textContent = 'EQUIP';
+                btn.addEventListener('click', () => {
+                    if (loadout.equip(recipe.id, fabricator)) {
+                        window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                        syncEquippedWeaponLabel();
+                        renderRosterModal(mode);
+                    } else {
+                        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                    }
+                });
+            }
+            card.appendChild(btn);
+            grid.appendChild(card);
+        }
     }
 }
 
