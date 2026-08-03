@@ -169,9 +169,17 @@
     "cutscenes/poster-art/event-queen-encounter.png",
     "cybersnail.png",
     "cybersnail_dead.png",
+    "decal_biohazard_stencil.png",
     "decal_bullet_holes.png",
+    "decal_claw_scratches.png",
+    "decal_footprints_mud.png",
+    "decal_hazard_stripes.png",
     "decal_hive_growth.png",
+    "decal_meridian_stencil.png",
+    "decal_oil_spill_patch.png",
     "decal_scars.png",
+    "decal_spore_growth_patch.png",
+    "decal_tallow_symbol.png",
     "decal_wall_breach.png",
     "door.png",
     "door.webp",
@@ -2178,8 +2186,58 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_abandoned_meal_tray.png",
+      "bytes": 573701,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_barricade_last_stand.png",
+      "bytes": 550192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_bio_sample_spill.png",
+      "bytes": 618877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_biohazard_stencil.png",
+      "bytes": 187264,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_bullet_holes.png",
       "bytes": 2050027,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_childlike_cave_map.png",
+      "bytes": 621769,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_claw_scratches.png",
+      "bytes": 219979,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_emergency_oxygen_nest.png",
+      "bytes": 542404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_failed_decon_kit.png",
+      "bytes": 554588,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_footprints_mud.png",
+      "bytes": 223720,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hazard_stripes.png",
+      "bytes": 213478,
       "classification": "runtime-required"
     },
     {
@@ -2193,6 +2251,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_maintenance_shrine.png",
+      "bytes": 478869,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_meridian_stencil.png",
+      "bytes": 210421,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_oil_spill_patch.png",
+      "bytes": 171759,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_pod_312_breach.png",
       "bytes": 1100,
       "classification": "runtime-required"
@@ -2203,13 +2276,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_spore_growth_patch.png",
+      "bytes": 201842,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_tallow_herb_cache.png",
       "bytes": 1127,
       "classification": "runtime-required"
     },
     {
+      "path": "decal_tallow_symbol.png",
+      "bytes": 199998,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_wall_breach.png",
       "bytes": 1930665,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_worker_sleep_roll.png",
+      "bytes": 511865,
       "classification": "runtime-required"
     },
     {

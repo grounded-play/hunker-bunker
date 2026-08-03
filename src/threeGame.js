@@ -1760,6 +1760,14 @@ export class ThreeGame {
             decal_bullet_holes: this.loadKeyedSpriteTexture('/decal_bullet_holes.png', 14),
             prop_torn_warning_poster: this.loadKeyedSpriteTexture('/prop_torn_warning_poster.png', 14),
             decal_wall_breach: this.loadKeyedSpriteTexture('/decal_wall_breach.png', 14),
+            decal_hazard_stripes: this.loadKeyedSpriteTexture('/decal_hazard_stripes.png', 14),
+            decal_biohazard_stencil: this.loadKeyedSpriteTexture('/decal_biohazard_stencil.png', 14),
+            decal_oil_spill_patch: this.loadKeyedSpriteTexture('/decal_oil_spill_patch.png', 14),
+            decal_footprints_mud: this.loadKeyedSpriteTexture('/decal_footprints_mud.png', 14),
+            decal_tallow_symbol: this.loadKeyedSpriteTexture('/decal_tallow_symbol.png', 14),
+            decal_meridian_stencil: this.loadKeyedSpriteTexture('/decal_meridian_stencil.png', 14),
+            decal_claw_scratches: this.loadKeyedSpriteTexture('/decal_claw_scratches.png', 14),
+            decal_spore_growth_patch: this.loadKeyedSpriteTexture('/decal_spore_growth_patch.png', 14),
 
             prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
@@ -2376,15 +2384,17 @@ export class ThreeGame {
                 fog: false
             })
         };
-        for (const type of Object.keys(GENERATED_ROOM_PROP_PATHS)) {
-            this.scatterMaterials[type] = new THREE.SpriteMaterial({
-                map: this.scatterTextures[type],
-                transparent: true,
-                alphaTest: 0.06,
-                depthWrite: false,
-                depthTest: true,
-                fog: false
-            });
+        for (const [type, texture] of Object.entries(this.scatterTextures)) {
+            if (!this.scatterMaterials[type] && texture) {
+                this.scatterMaterials[type] = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    alphaTest: 0.04,
+                    depthWrite: false,
+                    depthTest: true,
+                    fog: false
+                });
+            }
         }
         for (const drop of LORE_DROPS) {
             this.scatterMaterials[drop.key] = new THREE.SpriteMaterial({
