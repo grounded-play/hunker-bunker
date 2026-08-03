@@ -485,8 +485,6 @@ body {
   overflow: hidden;
   visibility: hidden;
   opacity: 0;
-  transition: opacity 0.45s cubic-bezier(0.25, 1, 0.35, 1), visibility 0.45s cubic-bezier(0.25, 1, 0.35, 1);
-  will-change: opacity, visibility;
 }
 
 #transition-overlay::before {

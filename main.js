@@ -9322,13 +9322,10 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         }, 800);
                     }, openingHoldMs);
 
-                    // 5. Cleanup with smooth fade out
+                    // 5. Cleanup
                     setTimeout(() => {
-                        overlay.classList.remove('active');
-                        setTimeout(() => {
-                            overlay.classList.remove('visible', 'opening-h');
-                        }, 450);
-                    }, openingHoldMs + 850);
+                        overlay.classList.remove('visible', 'opening-h', 'active');
+                    }, openingHoldMs + 900);
                 });
             });
         };
