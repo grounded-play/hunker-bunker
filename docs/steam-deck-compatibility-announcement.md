@@ -4,7 +4,7 @@
 
 **Subtitle:** Steam Deck-ready controls, readable 16:10 UI, Steam Input glyphs, and controller-first bunker runs.
 
-**Summary:** Hunker Bunker is built for handheld operators: Steam Input actions, controller-aware prompts, Deck-friendly layouts, and Steam Cloud progress.
+**Summary:** Hunker Bunker is built for handheld operators: Steam Input actions, controller-aware prompts, and Deck-friendly layouts. Steam Cloud acceptance remains in progress.
 
 **Cover image:** `steam/store/steam_deck_compatibility_event_header_en.png` — 1920 x 622.
 
@@ -44,6 +44,6 @@ For text entry (such as entering seed overrides or operator names), Hunker Bunke
 
 Hunker Bunker is distributed as a packaged Windows binary that runs seamlessly under Valve's **Proton** compatibility layer. 
 *   **Tested Runtime:** Officially tested and optimized on **Proton 9.0 (Stable)**.
-*   **Steam Cloud Support:** Your local progress, settings, and run history are fully synchronized between your desktop PC and your Steam Deck via **Steam Cloud**.
+*   **Steam Cloud readiness in progress:** The game has a versioned local-save bridge with atomic recovery. Cross-machine synchronization is not a shipping claim until the Steamworks Auto-Cloud configuration and two-machine acceptance pass are complete.
 
 We are committed to delivering a stellar handheld experience. See you in the depths, operator!

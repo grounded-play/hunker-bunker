@@ -3,7 +3,7 @@ import { MISSION_BRIEFINGS, pickMissionBriefing } from './missions.js';
 
 describe('mission briefings', () => {
     it('every type has multiple label variants', () => {
-        for (const type of ['retrieval', 'survey', 'elimination', 'caveSignal']) {
+        for (const type of ['retrieval', 'survey', 'elimination', 'caveSignal', 'mapping']) {
             expect(Array.isArray(MISSION_BRIEFINGS[type])).toBe(true);
             expect(MISSION_BRIEFINGS[type].length).toBeGreaterThanOrEqual(3);
             for (const label of MISSION_BRIEFINGS[type]) expect(typeof label).toBe('string');

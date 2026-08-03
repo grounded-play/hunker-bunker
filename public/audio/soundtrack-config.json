@@ -1,40 +1,60 @@
 {
   "album": "Hunker Bunker (Original Game Soundtrack)",
+  "album_artist": "Government Name",
   "artist": "Government Name",
+  "composer": "Government Name",
+  "publisher": "Tuesday Cinema Club",
+  "copyright": "© 2026 Tuesday Cinema Club",
   "year": 2026,
-  "genre": "Soundtrack / Industrial Ambient / Chiptune",
-  "description": "The official industrial electronic and tactical chiptune soundtrack for Hunker Bunker, composed by Government Name.",
+  "genre": "Video Game Soundtrack",
+  "description": "The complete original soundtrack to Hunker Bunker: 43 industrial electronic, dark ambient, and tactical chiptune pieces from beneath the ice of Cocytus IV.",
   "cover": "cover.png",
+  "source_directory": "ost",
+  "legacy_tracks": [
+    { "title": "Hunker Bunker Main Theme", "filename": "Hunker Bunker Main Theme.mp3", "description": "The original tactical theme that greets operators at the entrance to the deep bio-vaults." },
+    { "title": "Safe Haven (Ship Sanctuary)", "filename": "Safe Haven (Ship Sanctuary).mp3", "description": "Warm sanctuary ambience inside the recovery vessel." },
+    { "title": "Glacial Depths (Cryo Biome)", "filename": "Glacial Depths (Cryo Biome).mp3", "description": "Cold resonant pads echo through the frozen sub-sectors." },
+    { "title": "Overgrown Bio-Sphere (Bio Biome)", "filename": "Overgrown Bio-Sphere (Bio Biome).mp3", "description": "Organic signals and uneasy synthesizers move through the flora sectors." },
+    { "title": "Under Siege (Combat Alert)", "filename": "Under Siege (Combat Alert).mp3", "description": "Close-quarters tension for threatened and hostile encounters." }
+  ],
   "tracks": [
-    {
-      "track_number": 1,
-      "title": "Hunker Bunker Main Theme",
-      "filename": "vg2/mainbg_music.mp3",
-      "description": "The primary tactical theme greeting operators at the entrance of the deep bio-vaults."
-    },
-    {
-      "track_number": 2,
-      "title": "Safe Haven (Ship Sanctuary)",
-      "filename": "NewTrack1.mp3",
-      "description": "Warm ambient sanctuary vibes heard inside the player's recovery vessel."
-    },
-    {
-      "track_number": 3,
-      "title": "Glacial Depths (Cryo Biome)",
-      "filename": "NewTrack2.mp3",
-      "description": "Cold, isolating resonant pads echo through the frozen sub-sectors."
-    },
-    {
-      "track_number": 4,
-      "title": "Overgrown Bio-Sphere (Bio Biome)",
-      "filename": "NewTrack3.mp3",
-      "description": "Organic clicks and unsettling synthesizer sweeps inside the flora sectors."
-    },
-    {
-      "track_number": 5,
-      "title": "Under Siege (Combat Alert)",
-      "filename": "NewTrack4.mp3",
-      "description": "Fast-paced tension driving operators during close-quarters hostile encounters."
-    }
+    { "track_number": 1, "title": "Someone Is Still Alive", "filename": "Someone Is Still Alive.mp3", "description": "A weak signal answers from somewhere beneath the ice." },
+    { "track_number": 2, "title": "Kaelen's Sleeping Machine", "filename": "Kaelen's Sleeping Machine.mp3", "description": "A dormant machine dreams in diagnostic pulses." },
+    { "track_number": 3, "title": "The Math Is Beautiful Now", "filename": "The Math Is Beautiful Now.mp3", "description": "Order emerges from the bunker’s impossible calculations." },
+    { "track_number": 4, "title": "Warmth Beneath the Ice", "filename": "Warmth Beneath the Ice.mp3", "description": "A fragile refuge glows below the frozen surface." },
+    { "track_number": 5, "title": "The Pipes Are Singing", "filename": "The Pipes Are Singing.mp3", "description": "Steam and pressure turn old conduits into an instrument." },
+    { "track_number": 6, "title": "Briggs Keeps the Ledger", "filename": "Briggs Keeps the Ledger.mp3", "description": "Every favor, ration, and betrayal remains accounted for." },
+    { "track_number": 7, "title": "Your Name Was Written Twice", "filename": "Your Name Was Written Twice.mp3", "description": "The personnel archive contains one identity too many." },
+    { "track_number": 8, "title": "Dr. Nahl Remembers the Tissue", "filename": "Dr. Nahl Remembers the Tissue.mp3", "description": "The laboratory recalls what its surgeon tried to forget." },
+    { "track_number": 9, "title": "Mothership Customer Support", "filename": "Mothership Customer Support.mp3", "description": "An automated voice offers help from very far away." },
+    { "track_number": 10, "title": "Mothership Is Not Feeling Well", "filename": "Mothership Is Not Feeling Well.mp3", "description": "The orbital intelligence reports symptoms of its own." },
+    { "track_number": 11, "title": "Her Voice Inside Your Helmet", "filename": "Her Voice Inside Your Helmet.mp3", "description": "A private transmission crosses the suit’s sealed channel." },
+    { "track_number": 12, "title": "The Queen Makes a Reasonable Offer", "filename": "The Queen Makes a Reasonable Offer.mp3", "description": "Diplomacy arrives wearing an unfamiliar shape." },
+    { "track_number": 13, "title": "A Snail Blocks the Hallway", "filename": "A Snail Blocks the Hallway.mp3", "description": "A small obstacle becomes an unexpected negotiation." },
+    { "track_number": 14, "title": "Cold Enough to Think", "filename": "Cold Enough to Think.mp3", "description": "The cryogenic dark sharpens every dangerous thought." },
+    { "track_number": 15, "title": "The Spores Know Your Name", "filename": "The Spores Know Your Name.mp3", "description": "The bloom recognizes the visitor before they speak." },
+    { "track_number": 16, "title": "We Could Avoid Doing This", "filename": "We Could Avoid Doing This.mp3", "description": "One final pause before a preventable confrontation." },
+    { "track_number": 17, "title": "It Understands the Gun", "filename": "It Understands the Gun.mp3", "description": "The creature reads the threat perfectly." },
+    { "track_number": 18, "title": "The Creature Lets You Pass", "filename": "The Creature Lets You Pass.mp3", "description": "The corridor opens without a shot being fired." },
+    { "track_number": 19, "title": "Meridian Remembers You", "filename": "Meridian Remembers You.mp3", "description": "A camp recognizes the operator who returned." },
+    { "track_number": 20, "title": "Tallow Keeps the Steam", "filename": "Tallow Keeps the Steam.mp3", "description": "The settlement survives by tending its ancient heat." },
+    { "track_number": 21, "title": "Vesper Sleeps in Shifts", "filename": "Vesper Sleeps in Shifts.mp3", "description": "No one rests while the perimeter lights are failing." },
+    { "track_number": 22, "title": "You Robbed the Only People Left", "filename": "You Robbed the Only People Left.mp3", "description": "The cost of survival is entered into the record." },
+    { "track_number": 23, "title": "They Still Have Their Faces", "filename": "They Still Have Their Faces.mp3", "description": "The changed survivors remain painfully recognizable." },
+    { "track_number": 24, "title": "Nobody Says Goodbye", "filename": "Nobody Says Goodbye.mp3", "description": "A camp falls silent without ceremony." },
+    { "track_number": 25, "title": "Gigawatt Goliath", "filename": "Gigawatt Goliath.mp3", "description": "A colossal electrical weapon wakes in the dark." },
+    { "track_number": 26, "title": "Absolute Zero Has a Shell", "filename": "Absolute Zero Has a Shell.mp3", "description": "An armored cold front advances through the bunker." },
+    { "track_number": 27, "title": "The Bloom That Hunts", "filename": "The Bloom That Hunts.mp3", "description": "The overgrowth abandons its roots and gives chase." },
+    { "track_number": 28, "title": "Martha Runs Faster Now", "filename": "Martha Runs Faster Now.mp3", "description": "Reconstruction turns a familiar survivor into a pursuer." },
+    { "track_number": 29, "title": "Briggs Became the Barricade", "filename": "Briggs Became the Barricade.mp3", "description": "The keeper of the ledger makes his final stand." },
+    { "track_number": 30, "title": "Kaelen Is the Grid", "filename": "Kaelen Is the Grid.mp3", "description": "A human mind spreads through the bunker circuitry." },
+    { "track_number": 31, "title": "Mother of the Last World", "filename": "Mother of the Last World.mp3", "description": "The final intelligence claims everything beneath the ice." },
+    { "track_number": 32, "title": "Black Box Stain", "filename": "Black Box Stain.mp3", "description": "The recovered recording leaves a mark of its own." },
+    { "track_number": 33, "title": "The Cave Was Breathing", "filename": "The Cave Was Breathing.mp3", "description": "The walls reveal the slow rhythm inside them." },
+    { "track_number": 34, "title": "Four Seats, One Survivor", "filename": "Four Seats, One Survivor.mp3", "description": "An evacuation calculation with no fair answer." },
+    { "track_number": 35, "title": "Contraband Sunrise", "filename": "Contraband Sunrise.mp3", "description": "Stolen cargo crosses the first light beyond the bunker." },
+    { "track_number": 36, "title": "We Escaped Together, Technically", "filename": "We Escaped Together, Technically.mp3", "description": "Survival arrives with complicated company." },
+    { "track_number": 37, "title": "The Ice Gets Smaller", "filename": "The Ice Gets Smaller.mp3", "description": "Distance turns Cocytus IV into a shrinking white scar." },
+    { "track_number": 38, "title": "Destination: Core Worlds", "filename": "Destination Core Worlds.mp3", "description": "The last transmission points toward civilization." }
   ]
 }

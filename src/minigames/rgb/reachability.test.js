@@ -194,7 +194,13 @@ describe('pacing gates hold', () => {
     it('the parking lot exits are unavailable before the authored setup beats', () => {
         const chapter = CHAPTERS.parking_lot;
         const exits = chapter.hotspots.filter((h) => h.advances);
-        const explored = new Set(['inspect_bottle', 'check_balance', 'listen_voicemail', 'inspect_drawing']);
+        const explored = new Set([
+            'inspect_bottle',
+            'check_balance',
+            'listen_voicemail',
+            'inspect_drawing',
+            'speak_with_marisol'
+        ]);
         expect(exits).toHaveLength(2);
         expect(exits.every((exit) => isHotspotAvailable(exit, createRunState(), new Set()))).toBe(false);
         expect(exits.every((exit) => isHotspotAvailable(exit, createRunState(), explored))).toBe(true);

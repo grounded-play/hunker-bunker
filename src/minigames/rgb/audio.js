@@ -41,20 +41,24 @@ export const CHAPTER_AMBIENCE = Object.freeze({
 // two from talking over each other.
 export const HOTSPOT_AUDIO = Object.freeze({
     listen_voicemail: ['rgb_voice_lucia'],
+    speak_with_marisol: ['rgb_voice_marisol_ch1'],
     observe_4a: ['rgb_sfx_4a_servo'],
     select_joint: ['rgb_sfx_4a_servo'],
     apply_pressure: ['rgb_voice_elias_ch2', 'rgb_sfx_4a_servo'],
+    observe_sensor_sweep: ['rgb_sfx_4a_servo'],
     double_tap_honest: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
     double_tap_falsify: ['rgb_sfx_4a_servo', 'rgb_sfx_ui_approved'],
     demand_footage: ['rgb_voice_hr_ch3'],
     challenge_neutral_language: ['rgb_voice_elias_ch3'],
     proceed_to_kiosk: ['rgb_sfx_ui_denied'],
     scan_bottle: ['rgb_sfx_ui_denied'],
+    deposit_partial_pay: ['rgb_voice_kiosk_ch4', 'rgb_sfx_ui_denied'],
     document_bag: ['rgb_voice_elias_ch4'],
     ask_kiosk_release: ['rgb_voice_kiosk_ch4', 'rgb_sfx_ui_denied'],
     give_up: ['rgb_sfx_ui_denied'],
     read_terminal: ['rgb_voice_system_ch5'],
     attempt_delete: ['rgb_sfx_ui_denied'],
+    inspect_extinguisher: ['rgb_sfx_ui_denied'],
     walk_away: ['rgb_sfx_ui_denied'],
     expose_profile: ['rgb_sfx_ui_approved'],
     sever_trunk: ['rgb_sfx_ui_denied'],
@@ -70,11 +74,13 @@ const HOTSPOT_SPEAKERS = Object.freeze({
     call_lucia: 'LUCIA',
     request_marisol_witness: 'MARISOL',
     release_marisol_from_request: 'MARISOL',
+    speak_with_marisol: 'MARISOL',
     demand_footage: 'HR',
     call_hr: 'HR',
     scan_bottle: 'KIOSK',
     view_paycheck: 'KIOSK',
     request_billing_agent: 'KIOSK',
+    deposit_partial_pay: 'KIOSK',
     ask_kiosk_release: 'KIOSK',
     check_balance: 'SYSTEM',
     read_terminal: 'SYSTEM',
@@ -191,6 +197,10 @@ export function createRgbAudioController() {
             // a produced recording play it alone, and everything else gets the
             // current on-screen copy spoken.
             if (!hasAuthoredVoice(hotspotId)) speakLines(hotspotId, lines);
+        },
+        narrate(lines = []) {
+            const copy = Array.isArray(lines) ? lines : [lines];
+            speakLines('narrator', [...new Set(copy.map((line) => String(line).trim()).filter(Boolean))]);
         },
         ending(endingId) {
             if (endingId !== 'ashes_survival') return;

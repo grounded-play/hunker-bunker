@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "copyFiles": [
+    "docs/steam-deck-compatibility-announcement.md",
+    "docs/steam-portal-copy.md"
+  ],
+  "claimStatus": {
+    "multiplayer": "held",
+    "timeline": "held",
+    "deckVerified": "held",
+    "fullAudio": "held",
+    "cloud": "held",
+    "achievements": "held",
+    "purchases": "held"
+  },
+  "violations": []
+}

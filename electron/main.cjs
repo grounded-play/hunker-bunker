@@ -9,15 +9,44 @@
 
 const { app, BrowserWindow, ipcMain } = require('electron');
 
+// Give Gamescope a stable native identity before Chromium creates its first
+// surface. Steam's launch overlay tracks the game window by its Linux desktop
+// identity; Electron's generic fallback can otherwise leave that overlay up
+// even though the renderer and audio are already running.
+app.setName('Hunker Bunker');
+if (process.platform === 'linux') {
+    app.setDesktopName('hunker-bunker.desktop');
+    app.commandLine.appendSwitch('class', 'hunker-bunker');
+}
+
 // Force full GPU hardware acceleration and WebGL rasterization in packaged builds
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('enable-native-gpu-memory-buffers');
 
+if (process.platform === 'linux') {
+    app.commandLine.appendSwitch('no-sandbox');
+    app.commandLine.appendSwitch('disable-gpu-sandbox');
+    // Gamescope must be able to focus the native game surface and dismiss
+    // Steam's launch overlay. Native Wayland intentionally restricts focus,
+    // move, and post-creation fullscreen requests, while Steam Deck Gaming
+    // Mode provides XWayland specifically for game windows.
+    app.commandLine.appendSwitch(
+        'ozone-platform',
+        process.env.HB_ELECTRON_OZONE_PLATFORM || 'x11'
+    );
+}
+
 const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
+const {
+    sanitizeSaveData,
+    loadSaveWithBackup,
+    writeSaveAtomic
+} = require('./save-contract.cjs');
+const { isQaToolsEnabled, normalizeBetaName } = require('./qa-tools.cjs');
 
 const DEV = process.env.ELECTRON_DEV === '1';
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:5173';
@@ -97,7 +126,9 @@ function isValidActionHandle(handle) {
 }
 
 function normalizeSteamInputPhase(phase) {
-    return phase === 'gameplay' ? 'gameplay' : 'menu';
+    if (phase === 'gameplay') return 'gameplay';
+    if (phase === 'archive') return 'archive';
+    return 'menu';
 }
 
 function normalizeSteamAuthIdentity(identity) {
@@ -115,6 +146,7 @@ function serializeSteamId(steamId) {
 }
 
 function getSteamIdentitySnapshot() {
+    const betaName = getCurrentSteamBetaName();
     const base = {
         ok: Boolean(steamClient),
         active: Boolean(steamClient),
@@ -122,6 +154,8 @@ function getSteamIdentitySnapshot() {
         steamInputAvailable: steamInputReady,
         steamInputPhase,
         isSteamDeck: Boolean(steamClient?.utils?.isSteamRunningOnSteamDeck?.()),
+        betaName,
+        qaToolsEnabled: qaToolsEnabled(betaName),
         cloud: getSteamCloudStatusSnapshot(),
         timelineAvailable: Boolean(getSteamTimelineApi())
     };
@@ -358,32 +392,55 @@ function initSteam() {
             steamInputHandles = {
                 menu: steamClient.input.getActionSet('menu'),
                 gameplay: steamClient.input.getActionSet('gameplay'),
+                archive: steamClient.input.getActionSet('archive'),
                 menuUp: steamClient.input.getDigitalAction('menu_up'),
                 menuDown: steamClient.input.getDigitalAction('menu_down'),
                 menuLeft: steamClient.input.getDigitalAction('menu_left'),
                 menuRight: steamClient.input.getDigitalAction('menu_right'),
                 menuConfirm: steamClient.input.getDigitalAction('menu_confirm'),
                 menuBack: steamClient.input.getDigitalAction('menu_back'),
+                menuTabLeft: steamClient.input.getDigitalAction('menu_tab_left'),
+                menuTabRight: steamClient.input.getDigitalAction('menu_tab_right'),
                 move: steamClient.input.getAnalogAction('move'),
                 camera: steamClient.input.getAnalogAction('camera'),
+                cameraMouse: steamClient.input.getAnalogAction('camera_mouse'),
                 fire: steamClient.input.getDigitalAction('fire'),
                 interact: steamClient.input.getDigitalAction('interact'),
                 reload: steamClient.input.getDigitalAction('reload'),
                 ability: steamClient.input.getDigitalAction('ability'),
                 scan: steamClient.input.getDigitalAction('scan'),
+                sprint: steamClient.input.getDigitalAction('sprint'),
+                toggleMap: steamClient.input.getDigitalAction('toggle_map'),
+                archiveFocus: steamClient.input.getAnalogAction('archive_focus'),
+                archiveConfirm: steamClient.input.getDigitalAction('archive_confirm'),
+                archiveInventory: steamClient.input.getDigitalAction('archive_inventory'),
+                archiveBack: steamClient.input.getDigitalAction('archive_back'),
+                archiveReveal: steamClient.input.getDigitalAction('archive_reveal'),
                 pause: steamClient.input.getDigitalAction('pause')
             };
 
-            const handlesAreValid = Object.values(steamInputHandles).every(isValidActionHandle);
-            steamInputReady = handlesAreValid;
-            if (!handlesAreValid) {
-                const invalidHandles = Object.entries(steamInputHandles)
-                    .filter(([, handle]) => !isValidActionHandle(handle))
-                    .map(([name]) => name);
-                recordSteamDiagnostic('warn', 'input_handles', 'Steam Input action handles are missing', { invalidHandles });
+            // Degrade per action rather than all-or-nothing. Without an action set
+            // nothing can be activated, so those are genuinely fatal — but a single
+            // unresolved action (an older user config, a partially loaded binding)
+            // must not take every other control down with it. Every read site below
+            // already guards on isValidActionHandle, so a missing action is inert.
+            const ACTION_SET_HANDLES = ['menu', 'gameplay', 'archive'];
+            const missingActionSets = ACTION_SET_HANDLES
+                .filter((name) => !isValidActionHandle(steamInputHandles[name]));
+            const invalidHandles = Object.entries(steamInputHandles)
+                .filter(([name, handle]) => !ACTION_SET_HANDLES.includes(name) && !isValidActionHandle(handle))
+                .map(([name]) => name);
+
+            steamInputReady = missingActionSets.length === 0;
+            if (!steamInputReady) {
+                recordSteamDiagnostic('warn', 'input_handles', 'Steam Input action sets are missing', { missingActionSets, invalidHandles });
             } else {
                 steamInputPhase = 'loading';
-                recordSteamDiagnostic('info', 'input_ready', 'Steam Input initialized with all action handles');
+                if (invalidHandles.length > 0) {
+                    recordSteamDiagnostic('warn', 'input_degraded', 'Steam Input running with some actions unbound', { invalidHandles });
+                } else {
+                    recordSteamDiagnostic('info', 'input_ready', 'Steam Input initialized with all action handles');
+                }
             }
         } catch (err) {
             steamInputReady = false;
@@ -411,14 +468,16 @@ function initSteam() {
 
 // The Steam overlay needs specific Chromium switches; steamworks.js wraps
 // them so we don't cargo-cult flags. Must run before app is ready.
+// Note: electronEnableSteamOverlay appends 'in-process-gpu', which breaks
+// Mesa/Wayland GPU rendering on Linux/SteamOS. On Linux, Steam's LD_PRELOAD
+// overlay hook handles rendering without in-process-gpu.
 function enableOverlay() {
     try {
-        // Three.js already presents frames continuously. Passing true disables
-        // steamworks.js's extra 60 Hz webContents.invalidate() timer, which
-        // otherwise duplicates our render loop and wastes renderer/GPU time.
-        if (steam?.electronEnableSteamOverlay) {
+        if (steam?.electronEnableSteamOverlay && process.platform === 'win32') {
             steam.electronEnableSteamOverlay(true);
             recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay hook enabled without redundant frame invalidation');
+        } else if (process.platform === 'linux') {
+            recordSteamDiagnostic('info', 'overlay_ready', 'Steam overlay active via Linux LD_PRELOAD hook');
         } else {
             recordSteamDiagnostic('warn', 'overlay_unavailable', 'Steam overlay hook is unavailable because Steamworks did not initialize');
         }
@@ -438,11 +497,18 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
     const controllerHandle = controller.getHandle?.();
     const handle = typeof controllerHandle === 'bigint' ? controllerHandle.toString() : String(controllerHandle ?? '');
 
-    const moveVector = phase === 'gameplay' && isValidActionHandle(actionHandles.move)
-        ? controller.getAnalogActionVector(actionHandles.move)
+    const moveAction = phase === 'archive' ? actionHandles.archiveFocus : actionHandles.move;
+    const moveVector = (phase === 'gameplay' || phase === 'archive') && isValidActionHandle(moveAction)
+        ? controller.getAnalogActionVector(moveAction)
         : { x: 0, y: 0 };
     const cameraVector = phase === 'gameplay' && isValidActionHandle(actionHandles.camera)
         ? controller.getAnalogActionVector(actionHandles.camera)
+        : { x: 0, y: 0 };
+    // absolute_mouse reports frame deltas in mouse "pixels", not a normalized stick
+    // position, so this deliberately skips the [-1, 1] clamp applied to the stick
+    // vectors below — clamping would crush a fast flick into a single unit.
+    const cameraDeltaVector = phase === 'gameplay' && isValidActionHandle(actionHandles.cameraMouse)
+        ? controller.getAnalogActionVector(actionHandles.cameraMouse)
         : { x: 0, y: 0 };
 
     const buttonState = phase === 'gameplay'
@@ -452,21 +518,38 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             reload: isValidActionHandle(actionHandles.reload) ? controller.isDigitalActionPressed(actionHandles.reload) : false,
             ability: isValidActionHandle(actionHandles.ability) ? controller.isDigitalActionPressed(actionHandles.ability) : false,
             scan: isValidActionHandle(actionHandles.scan) ? controller.isDigitalActionPressed(actionHandles.scan) : false,
+            sprint: isValidActionHandle(actionHandles.sprint) ? controller.isDigitalActionPressed(actionHandles.sprint) : false,
+            toggleMap: isValidActionHandle(actionHandles.toggleMap) ? controller.isDigitalActionPressed(actionHandles.toggleMap) : false,
             pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
         }
+        : phase === 'archive'
+            ? {
+                interact: isValidActionHandle(actionHandles.archiveConfirm) ? controller.isDigitalActionPressed(actionHandles.archiveConfirm) : false,
+                ability: isValidActionHandle(actionHandles.archiveInventory) ? controller.isDigitalActionPressed(actionHandles.archiveInventory) : false,
+                menuBack: isValidActionHandle(actionHandles.archiveBack) ? controller.isDigitalActionPressed(actionHandles.archiveBack) : false,
+                reload: isValidActionHandle(actionHandles.archiveReveal) ? controller.isDigitalActionPressed(actionHandles.archiveReveal) : false,
+                pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
+            }
         : {
             menuUp: isValidActionHandle(actionHandles.menuUp) ? controller.isDigitalActionPressed(actionHandles.menuUp) : false,
             menuDown: isValidActionHandle(actionHandles.menuDown) ? controller.isDigitalActionPressed(actionHandles.menuDown) : false,
             menuLeft: isValidActionHandle(actionHandles.menuLeft) ? controller.isDigitalActionPressed(actionHandles.menuLeft) : false,
             menuRight: isValidActionHandle(actionHandles.menuRight) ? controller.isDigitalActionPressed(actionHandles.menuRight) : false,
             menuConfirm: isValidActionHandle(actionHandles.menuConfirm) ? controller.isDigitalActionPressed(actionHandles.menuConfirm) : false,
-            menuBack: isValidActionHandle(actionHandles.menuBack) ? controller.isDigitalActionPressed(actionHandles.menuBack) : false
+            menuBack: isValidActionHandle(actionHandles.menuBack) ? controller.isDigitalActionPressed(actionHandles.menuBack) : false,
+            menuTabLeft: isValidActionHandle(actionHandles.menuTabLeft) ? controller.isDigitalActionPressed(actionHandles.menuTabLeft) : false,
+            menuTabRight: isValidActionHandle(actionHandles.menuTabRight) ? controller.isDigitalActionPressed(actionHandles.menuTabRight) : false
         };
 
     const moveMagnitude = Math.hypot(Number(moveVector?.x) || 0, Number(moveVector?.y) || 0);
     const cameraMagnitude = Math.hypot(Number(cameraVector?.x) || 0, Number(cameraVector?.y) || 0);
+    // Mouse-style deltas are unbounded, so the 0.18 stick deadzone is the wrong test:
+    // it would treat sub-pixel gyro noise as deliberate input. A whole pixel of
+    // travel in a frame is a real gesture.
+    const cameraDeltaMagnitude = Math.hypot(Number(cameraDeltaVector?.x) || 0, Number(cameraDeltaVector?.y) || 0);
     const anyButtonPressed = Object.values(buttonState).some(Boolean);
-    const active = anyButtonPressed || moveMagnitude > 0.18 || cameraMagnitude > 0.18;
+    const active = anyButtonPressed || moveMagnitude > 0.18 || cameraMagnitude > 0.18
+        || cameraDeltaMagnitude >= 1;
 
     return {
         handle,
@@ -479,6 +562,10 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
         camera: {
             x: Math.max(-1, Math.min(1, Number(cameraVector?.x) || 0)),
             y: Math.max(-1, Math.min(1, Number(cameraVector?.y) || 0))
+        },
+        cameraDelta: {
+            x: Number(cameraDeltaVector?.x) || 0,
+            y: Number(cameraDeltaVector?.y) || 0
         },
         ...buttonState
     };
@@ -499,7 +586,11 @@ function buildSteamInputSnapshot() {
     }
 
     const phase = normalizeSteamInputPhase(steamInputPhase);
-    const actionSet = phase === 'gameplay' ? steamInputHandles.gameplay : steamInputHandles.menu;
+    const actionSet = phase === 'gameplay'
+        ? steamInputHandles.gameplay
+        : phase === 'archive'
+            ? steamInputHandles.archive
+            : steamInputHandles.menu;
     const controllers = [];
 
     try {
@@ -548,18 +639,22 @@ let saveState = {};
 let saveTimer = null;
 
 function loadSaveFile() {
-    try {
-        saveState = JSON.parse(fs.readFileSync(saveFilePath(), 'utf8')) ?? {};
-    } catch {
-        saveState = {};
+    const loaded = loadSaveWithBackup(fs, saveFilePath());
+    saveState = loaded.data;
+    if (loaded.source === 'backup') {
+        console.warn('[save] primary save was invalid; restored last-known-good backup.');
+        try {
+            writeSaveAtomic(fs, saveFilePath(), saveState);
+        } catch (err) {
+            console.log(`[save] backup recovery write failed: ${err?.message ?? err}`);
+        }
     }
     return saveState;
 }
 
 function flushSaveFile() {
     try {
-        fs.mkdirSync(path.dirname(saveFilePath()), { recursive: true });
-        fs.writeFileSync(saveFilePath(), JSON.stringify(saveState));
+        writeSaveAtomic(fs, saveFilePath(), saveState);
     } catch (err) {
         console.log(`[save] write failed: ${err?.message ?? err}`);
     }
@@ -579,11 +674,13 @@ ipcMain.on('hb:getSaveDataSync', (event) => {
 });
 ipcMain.on('hb:saveDataChanged', (_e, key, value) => {
     if (typeof key !== 'string') return;
-    saveState[key] = String(value);
+    const next = sanitizeSaveData({ [key]: String(value) });
+    if (!(key in next)) return;
+    saveState[key] = next[key];
     scheduleFlush();
 });
 ipcMain.on('hb:saveDataRemoved', (_e, key) => {
-    if (typeof key !== 'string') return;
+    if (typeof key !== 'string' || !key.startsWith('hb_')) return;
     delete saveState[key];
     scheduleFlush();
 });
@@ -607,16 +704,27 @@ ipcMain.on('hb:setStat', (_e, key, value) => {
     }
 });
 
-// QA/beta-only achievement reset. Off by default in every build, including
-// the public Steam depot — only a build launched with HB_QA_TOOLS_ENABLED=1
-// registers this at all (e.g. via a Steam beta branch's launch options), so
+// QA/beta-only achievement reset. Off by default on the public Steam branch.
+// A named Steam beta branch or HB_QA_TOOLS_ENABLED=1 authorizes it, so
 // the capability doesn't exist for a normal player even if they find the ~
 // console. ISteamUserStats::ResetAllStats only ever affects the Steam
 // account currently logged into the running game — there is no remote way
 // to reset a different account's achievements; the QA tester (or someone on
 // their machine, logged in as them) has to trigger this themselves.
-function qaToolsEnabled() {
-    return process.env.HB_QA_TOOLS_ENABLED === '1';
+function getCurrentSteamBetaName() {
+    try {
+        return normalizeBetaName(steamClient?.apps?.currentBetaName?.());
+    } catch (err) {
+        console.warn('[steam:beta] unable to read current beta branch:', err?.message ?? err);
+        return null;
+    }
+}
+
+function qaToolsEnabled(betaName = getCurrentSteamBetaName()) {
+    return isQaToolsEnabled({
+        override: process.env.HB_QA_TOOLS_ENABLED,
+        betaName
+    });
 }
 ipcMain.handle('hb:qaToolsEnabled', () => qaToolsEnabled());
 ipcMain.handle('hb:resetAchievements', () => {
@@ -728,23 +836,79 @@ ipcMain.handle('hb:showFloatingGamepadTextInput', async (_e, keyboardMode, x, y,
 ipcMain.handle('hb:steamInfo', () => getSteamIdentitySnapshot());
 
 function createWindow() {
+    let presentationAttempts = 0;
     const win = new BrowserWindow({
         width: 1600,
         height: 1000,
         minWidth: 960,
         minHeight: 600,
         backgroundColor: '#0a0c0e',
+        title: 'Hunker Bunker',
         icon: path.join(__dirname, 'icon.png'),
         autoHideMenuBar: true,
+        focusable: true,
+        frame: false,
+        skipTaskbar: false,
         fullscreen: !DEV,
+        // Map a black native surface immediately. Waiting for ready-to-show
+        // lets the renderer (and audio) start behind Steam's loading overlay
+        // on Gamescope, which can leave that overlay holding focus forever.
+        show: true,
         webPreferences: {
             preload: path.join(__dirname, 'preload.cjs'),
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: false, // preload uses contextBridge only; sandbox off for steamworks compat
-            webgl: true
+            webgl: true,
+            backgroundThrottling: false
         }
     });
+
+    const presentGameWindow = (phase = 'unknown') => {
+        if (DEV || win.isDestroyed()) return;
+        presentationAttempts += 1;
+        win.show();
+        if (!win.isFullScreen()) win.setFullScreen(true);
+        win.moveTop();
+        win.focus();
+        win.webContents.focus();
+        recordSteamDiagnostic('info', 'window_focus', 'Presented and focused the fullscreen game window', {
+            phase,
+            attempt: presentationAttempts,
+            focused: win.isFocused(),
+            visible: win.isVisible(),
+            fullscreen: win.isFullScreen()
+        });
+    };
+
+    const raiseAboveSteamLaunchOverlay = () => {
+        if (DEV || win.isDestroyed()) return;
+        // This is deliberately a short pulse. It makes Gamescope acknowledge
+        // the newly mapped game surface, then releases the topmost hint so the
+        // Steam/QAM overlays continue to work normally.
+        win.setAlwaysOnTop(true, 'screen-saver');
+        presentGameWindow('gamescope-handoff');
+        setTimeout(() => {
+            if (win.isDestroyed()) return;
+            win.setAlwaysOnTop(false);
+            presentGameWindow('gamescope-handoff-complete');
+        }, 750);
+    };
+    win.once('ready-to-show', () => presentGameWindow('ready-to-show'));
+    win.webContents.once('dom-ready', raiseAboveSteamLaunchOverlay);
+    win.webContents.once('did-finish-load', () => {
+        setTimeout(() => presentGameWindow('did-finish-load'), 0);
+    });
+    // Claim the Gamescope slot as soon as the native surface exists, then
+    // retry once after Chromium has submitted its first frames. Retrying is
+    // intentional: focus requests made before mapping can be ignored by X11.
+    setTimeout(() => presentGameWindow('window-created'), 0);
+    setTimeout(() => presentGameWindow('first-frame-fallback'), 1000);
+    win.on('focus', () => {
+        win.webContents.focus();
+        recordSteamDiagnostic('info', 'window_focus', 'Game window received focus');
+    });
+    win.on('blur', () => recordSteamDiagnostic('info', 'window_blur', 'Game window lost focus'));
 
     if (DEV) {
         win.loadURL(DEV_URL);
@@ -756,13 +920,18 @@ function createWindow() {
     return win;
 }
 
-initSteam();
-enableOverlay();
-
 app.whenReady().then(() => {
     loadSaveFile();
     createWindow();
-    startSteamInputPolling();
+
+    // Defer Steam initialization so it doesn't block the initial native window
+    // creation or Gamescope's surface handoff on the Steam Deck.
+    setTimeout(() => {
+        initSteam();
+        enableOverlay();
+        startSteamInputPolling();
+    }, 50);
+
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) createWindow();
     });

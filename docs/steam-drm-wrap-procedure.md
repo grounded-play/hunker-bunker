@@ -13,7 +13,7 @@ This runbook documents how to apply Valve's Steamworks DRM protection to package
    ```bash
    npm run electron:build
    ```
-   This creates `dist_electron/win-unpacked/Hunker Bunker.exe`.
+   This creates `dist_electron/win-unpacked/hunker-bunker.exe`.
 
 2. Obtain the Steamworks SDK:
    Download the latest SDK from the Steamworks Partner portal. Locate `drmwrap.exe` in:
@@ -35,7 +35,7 @@ npm run steam:drm-wrap
 ```
 
 ### Script Behaviors
-- Validates the presence of `dist_electron/win-unpacked/Hunker Bunker.exe`.
+- Validates the presence of `dist_electron/win-unpacked/hunker-bunker.exe`.
 - Checks for `drmwrap.exe`.
 - Invokes Valve's wrapper CLI targeting App ID `4957040`.
 - Outputs status logging and returns non-zero code on wrapper failure.
@@ -48,11 +48,11 @@ If executing `drmwrap.exe` directly on Windows:
 
 ```cmd
 cd steam\sdk\tools\ContentBuilder\builder
-drmwrap.exe -appid 4957040 -input "path\to\dist_electron\win-unpacked\Hunker Bunker.exe" -output "path\to\dist_electron\win-unpacked\Hunker Bunker.exe" -tool 0
+drmwrap.exe -appid 4957040 -input "path\to\dist_electron\win-unpacked\hunker-bunker.exe" -output "path\to\dist_electron\win-unpacked\hunker-bunker.exe" -tool 0
 ```
 
 > **Note on Steamworks Web Wrapper Option**:
-> Steamworks also provides an online DRM wrapper tool on the Steamworks Partner Dashboard (`App Admin -> SteamPipe -> DRM`). You may upload `Hunker Bunker.exe`, download the wrapped binary, and replace `dist_electron/win-unpacked/Hunker Bunker.exe` before building the depot.
+> Steamworks also provides an online DRM wrapper tool on the Steamworks Partner Dashboard (`App Admin -> SteamPipe -> DRM`). You may upload `hunker-bunker.exe`, download the wrapped binary, and replace `dist_electron/win-unpacked/hunker-bunker.exe` before building the depot.
 
 ---
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-asset_dir="${1:-public/art-remaster/sprites-v2}"
+asset_dir="${1:-art/source/art-remaster/sprites-v2}"
 work_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir"' EXIT
 

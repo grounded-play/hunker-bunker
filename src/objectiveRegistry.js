@@ -3,10 +3,14 @@
  * Per docs/objective-system-spec.md
  */
 
+const HISTORY_LIMIT = 20;
+
 export class ObjectiveRegistry {
     constructor() {
         /** @type {Map<string, Object>} */
         this.objectives = new Map();
+        /** @type {Array<Object>} most-recent-last, capped at HISTORY_LIMIT */
+        this.history = [];
         this.listeners = new Set();
     }
 
@@ -21,19 +25,29 @@ export class ObjectiveRegistry {
      * @param {number} [detail.priority=50] - Lower number = higher priority
      * @param {{x: number, z: number}|null} [detail.compass=null]
      * @param {Array<{label: string, done: boolean}>} [detail.steps=[]]
+     * @param {string} [detail.status='active'] - 'active' | 'blocked' | 'completed' | 'failed'
+     * @param {string|null} [detail.blockedReason=null] - required explanation while status is 'blocked'
+     * @param {string|null} [detail.parentId=null] - groups this objective under a parent objective's id
+     * @param {boolean} [detail.persistent=false] - survives clear() (death/reset) instead of being wiped
      */
     trackObjective(detail) {
         if (!detail || !detail.id) return;
 
+        const existing = this.objectives.get(detail.id);
+        const status = detail.status ?? existing?.status ?? 'active';
         const entry = {
             id: detail.id,
-            source: detail.source ?? 'custom',
-            label: detail.label ?? 'OBJECTIVE',
-            current: Number.isFinite(detail.current) ? detail.current : 0,
-            target: Number.isFinite(detail.target) ? detail.target : 1,
-            priority: Number.isFinite(detail.priority) ? detail.priority : 50,
+            source: detail.source ?? existing?.source ?? 'custom',
+            label: detail.label ?? existing?.label ?? 'OBJECTIVE',
+            current: Number.isFinite(detail.current) ? detail.current : (existing?.current ?? 0),
+            target: Number.isFinite(detail.target) ? detail.target : (existing?.target ?? 1),
+            priority: Number.isFinite(detail.priority) ? detail.priority : (existing?.priority ?? 50),
             compass: detail.compass ? { x: detail.compass.x, z: detail.compass.z } : null,
-            steps: Array.isArray(detail.steps) ? detail.steps.map(s => ({ label: s.label, done: Boolean(s.done) })) : [],
+            steps: Array.isArray(detail.steps) ? detail.steps.map(s => ({ label: s.label, done: Boolean(s.done) })) : (existing?.steps ?? []),
+            status,
+            blockedReason: status === 'blocked' ? (detail.blockedReason ?? existing?.blockedReason ?? null) : null,
+            parentId: detail.parentId ?? existing?.parentId ?? null,
+            persistent: typeof detail.persistent === 'boolean' ? detail.persistent : (existing?.persistent ?? false),
             updatedAt: Date.now()
         };
 
@@ -42,26 +56,99 @@ export class ObjectiveRegistry {
     }
 
     /**
-     * Remove an objective by ID.
+     * Mark an objective as blocked with a player-readable reason, keeping it
+     * visible (and its compass target, if any) rather than hiding it.
      * @param {string} id
-     * @param {string} [outcome='complete'] - 'complete' | 'failed' | 'abandoned'
+     * @param {string} reason
      */
-    resolveObjective(id, _outcome = 'complete') {
-        if (!id) return;
-        if (this.objectives.has(id)) {
-            this.objectives.delete(id);
-            this.notify();
-        }
+    blockObjective(id, reason) {
+        const obj = this.objectives.get(id);
+        if (!obj) return false;
+        obj.status = 'blocked';
+        obj.blockedReason = reason ?? null;
+        obj.updatedAt = Date.now();
+        this.notify();
+        return true;
     }
 
     /**
-     * Clear all registered objectives (e.g. on run reset/death).
+     * Clear a blocked status, returning the objective to active.
+     * @param {string} id
      */
-    clear() {
-        if (this.objectives.size > 0) {
-            this.objectives.clear();
-            this.notify();
-        }
+    unblockObjective(id) {
+        const obj = this.objectives.get(id);
+        if (!obj || obj.status !== 'blocked') return false;
+        obj.status = 'active';
+        obj.blockedReason = null;
+        obj.updatedAt = Date.now();
+        this.notify();
+        return true;
+    }
+
+    /**
+     * Returns currently blocked objectives, highest priority first.
+     */
+    getBlockedObjectives() {
+        return Array.from(this.objectives.values())
+            .filter((obj) => obj.status === 'blocked')
+            .sort((a, b) => a.priority - b.priority);
+    }
+
+    /**
+     * Returns the child objectives tracked under a parent id.
+     * @param {string} parentId
+     */
+    getChildObjectives(parentId) {
+        return Array.from(this.objectives.values())
+            .filter((obj) => obj.parentId === parentId)
+            .sort((a, b) => a.priority - b.priority);
+    }
+
+    /**
+     * Remove an objective by ID, recording it in resolution history so a
+     * "what changed" / run-summary view has data to render (Phase 7.3).
+     * @param {string} id
+     * @param {string} [outcome='complete'] - 'complete' | 'failed' | 'abandoned'
+     */
+    resolveObjective(id, outcome = 'complete') {
+        if (!id) return;
+        const obj = this.objectives.get(id);
+        if (!obj) return;
+        this.history.push({
+            id: obj.id,
+            source: obj.source,
+            label: obj.label,
+            outcome,
+            resolvedAt: Date.now()
+        });
+        if (this.history.length > HISTORY_LIMIT) this.history.shift();
+        this.objectives.delete(id);
+        this.notify();
+    }
+
+    /**
+     * Returns resolution history, most-recent-last.
+     * @param {number} [limit]
+     */
+    getHistory(limit) {
+        return Number.isFinite(limit) && limit > 0 ? this.history.slice(-limit) : [...this.history];
+    }
+
+    /**
+     * Clear registered objectives, e.g. on run reset/death. Objectives
+     * tracked with persistent:true (story-critical goals that must survive
+     * death) are kept unless preservePersistent is explicitly false (e.g. a
+     * full profile switch / new game).
+     * @param {Object} [options]
+     * @param {boolean} [options.preservePersistent=true]
+     */
+    clear({ preservePersistent = true } = {}) {
+        const toKeep = preservePersistent
+            ? Array.from(this.objectives.entries()).filter(([, obj]) => obj.persistent)
+            : [];
+        if (this.objectives.size === toKeep.length) return;
+        this.objectives = new Map(toKeep);
+        this.notify();
     }
 
     /**

@@ -81,7 +81,7 @@ owns.
    hand ×2; hips → thigh → shin → foot ×2), each mesh segment rigid
    (100%) weighted to exactly one bone.
 2. Script builds the chassis mesh from primitives sized against
-   `public/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png`
+   `art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png`
    silhouette (helmet, chest plate, pelvis armor, pauldron/forearm/hand
    per arm, thigh/shin/boot per leg). Reference the kneepad color-coding
    already established in that master art (orange = one side, cyan = the
@@ -108,7 +108,7 @@ owns.
 ```sh
 blender --background --python scripts/blender/build_player_chassis.py -- \
   --class scout \
-  --base-image public/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png \
+  --base-image art/source/art-remaster/sprite-v4/scout/identity/Scout.front-idle-master.png \
   --out public/models/scout/
 ```
 exits 0 and produces both output files. Then hand off to Lane 3's contract

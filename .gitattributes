@@ -1,0 +1,7 @@
+# Generated reports and source must remain byte-stable on every CI runner.
+*.csv text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.vdf text eol=lf
+*.yml text eol=lf

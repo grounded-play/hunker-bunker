@@ -8,6 +8,7 @@ export class MarkovGenerator {
         this.random = random;
         this.grid = Array(height).fill(null).map(() => Array(width).fill(' '));
         this.rules = [];
+        this.protectedCells = null; // optional Set of "x,y" strings
     }
 
     // Add a rule: find a subgrid pattern and replace it
@@ -59,12 +60,23 @@ export class MarkovGenerator {
 
         for (let y = 0; y <= this.height - maxHeight; y++) {
             for (let x = 0; x <= this.width - maxWidth; x++) {
-                if (this.matchAt(x, y, find)) {
+                if (this.matchAt(x, y, find) && !this.matchTouchesProtected({ x, y }, replace)) {
                     matches.push({ x, y });
                 }
             }
         }
         return matches;
+    }
+
+    matchTouchesProtected(pos, replace) {
+        if (!this.protectedCells || this.protectedCells.size === 0) return false;
+        for (let py = 0; py < replace.length; py += 1) {
+            for (let px = 0; px < replace[py].length; px += 1) {
+                if (replace[py][px] === '*') continue;
+                if (this.protectedCells.has(`${pos.x + px},${pos.y + py}`)) return true;
+            }
+        }
+        return false;
     }
 
     matchAt(x, y, pattern) {

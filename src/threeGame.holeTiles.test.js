@@ -109,10 +109,14 @@ describe('isHoleTile / mountChunk agreement', () => {
         expect(fakeThis.spawnHoleDangerOutline).toHaveBeenCalledTimes(callCount);
     });
 
-    it('allows filling hole tiles, marking them safe and updating state', () => {
+    it('allows filling hole tiles, marking them safe, walkable, and updating state', () => {
         const fakeThis = makeFakeHoleGame();
         fakeThis.getWallKey = ThreeGame.prototype.getWallKey;
         fakeThis.isHoleTile = ThreeGame.prototype.isHoleTile;
+        fakeThis.isFilledHoleTile = ThreeGame.prototype.isFilledHoleTile;
+        fakeThis.canOccupyPosition = ThreeGame.prototype.canOccupyPosition;
+        fakeThis.overlapsWall = ThreeGame.prototype.overlapsWall;
+        fakeThis.isSnailTileWalkable = ThreeGame.prototype.isSnailTileWalkable;
         const hole = findFirstHole(fakeThis);
 
         expect(fakeThis.isHoleTile(hole.x, hole.y)).toBe(true);
@@ -122,6 +126,9 @@ describe('isHoleTile / mountChunk agreement', () => {
         expect(filled).toBe(true);
         expect(fakeThis.filledHoleKeys.has(`${hole.x},${hole.y}`)).toBe(true);
         expect(fakeThis.isHoleTile(hole.x, hole.y)).toBe(false);
+        expect(fakeThis.isFilledHoleTile(hole.x, hole.y)).toBe(true);
+        expect(fakeThis.canOccupyPosition(hole.x, hole.y)).toBe(true);
+        expect(fakeThis.isSnailTileWalkable(hole.x, hole.y)).toBe(true);
     });
 
     it('defaults enemy X-ray ghost to natural sprite material color instead of red injury tint', () => {

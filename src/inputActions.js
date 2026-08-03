@@ -12,6 +12,40 @@ export const ACTION_SETS = Object.freeze({
 
 const VALID_SETS = new Set(Object.values(ACTION_SETS));
 
+export function actionSetForAppPhase(phase) {
+    if (phase === 'gameplay') return ACTION_SETS.GAMEPLAY;
+    if (phase === 'archive') return ACTION_SETS.ARCHIVE;
+    return ACTION_SETS.MENU;
+}
+
+export function menuKeyboardDirection(code) {
+    if (['KeyW', 'KeyA', 'ArrowUp', 'ArrowLeft'].includes(code)) return -1;
+    if (['KeyS', 'KeyD', 'ArrowDown', 'ArrowRight'].includes(code)) return 1;
+    return 0;
+}
+
+export function wrapMenuIndex(index, delta, length) {
+    if (!Number.isInteger(length) || length < 1) return 0;
+    const current = Number.isInteger(index) && index >= 0 ? index : 0;
+    return (current + delta + length) % length;
+}
+
+export function shouldPreferBrowserGamepad({
+    nativeAvailable = false,
+    nativeControllerCount = 0,
+    nativeAnyInput = false,
+    browserAnyInput = false,
+    browserEngaged = false
+} = {}) {
+    if (!nativeAvailable || nativeControllerCount < 1) return true;
+    if (nativeAnyInput) return false;
+    // A connected Steam Input device with a missing/unpublished action
+    // manifest reports a controller forever, but never reports an action.
+    // Let Chromium's standard Gamepad mapping rescue that case. Keep the
+    // fallback for one neutral frame so edge-triggered menu actions release.
+    return browserAnyInput || (browserEngaged && !browserAnyInput);
+}
+
 const NEUTRAL_PAD = Object.freeze({
     move: Object.freeze({ x: 0, y: 0 }),
     fire: false,
@@ -21,12 +55,15 @@ const NEUTRAL_PAD = Object.freeze({
     dash: false,
     scan: false,
     pause: false,
+    toggleMap: false,
     menuUp: false,
     menuDown: false,
     menuLeft: false,
     menuRight: false,
     menuConfirm: false,
-    menuBack: false
+    menuBack: false,
+    menuTabLeft: false,
+    menuTabRight: false
 });
 
 export function createActionRouter() {
@@ -48,10 +85,16 @@ export function createActionRouter() {
             right: edge('menu_right', pad.menuRight),
             confirm: edge('menu_confirm', pad.menuConfirm),
             back: edge('menu_back', pad.menuBack),
-            // Browser-gamepad fallback: LB (scan) / RB (fire) act as tab keys.
-            tabLeft: edge('menu_tab_left', pad.scan),
-            tabRight: edge('menu_tab_right', pad.fire),
-            pause: edge('menu_pause', pad.pause)
+            // Dedicated bumper fields (kept separate from scan/fire/menuBack,
+            // which share buttons with each other in the browser fallback).
+            tabLeft: edge('menu_tab_left', pad.menuTabLeft),
+            tabRight: edge('menu_tab_right', pad.menuTabRight),
+            pause: edge('menu_pause', pad.pause),
+            pointer: {
+                x: pad.camera?.x ?? 0,
+                y: pad.camera?.y ?? 0
+            },
+            cameraDelta: pad.cameraDelta ?? { x: 0, y: 0 }
         };
     }
 

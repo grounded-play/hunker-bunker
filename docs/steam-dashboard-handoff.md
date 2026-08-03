@@ -1,6 +1,6 @@
 # Steam Dashboard Handoff
 
-Generated: 2026-07-16.
+Generated: 2026-08-02.
 
 This is the copy/paste packet for Steamworks dashboard work that cannot be
 completed from the repo. Keep it in sync with code by running:
@@ -37,8 +37,8 @@ With the current single content depot, create one launch option per platform:
 
 | Platform | Executable |
 | --- | --- |
-| Windows | `win-unpacked/Hunker Bunker.exe` |
-| Linux + SteamOS | `linux-unpacked/hunker-bunker` |
+| Windows | `hunker-bunker.exe` |
+| Linux + SteamOS | `hunker-bunker` |
 
 Future download-size improvement: Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml.
 
@@ -49,11 +49,11 @@ Create these in Steamworks, then copy the generated leaderboard IDs back into
 
 | API Name | Sort Method | Display Type | Upload Method | Dashboard ID |
 | --- | --- | --- | --- | --- |
-| `best_run_score` | Descending | Numeric | KeepBest | <fill after Steamworks creation> |
-| `daily_ops_score` | Descending | Numeric | KeepBest | <fill after Steamworks creation> |
-| `fastest_extraction_ms` | Ascending | Milliseconds | KeepBest | <fill after Steamworks creation> |
-| `deepest_depth_score` | Descending | Numeric | KeepBest | <fill after Steamworks creation> |
-| `survival_time_seconds` | Descending | Seconds | KeepBest | <fill after Steamworks creation> |
+| `best_run_score` | Descending | Numeric | KeepBest | 20504740 |
+| `daily_ops_score` | Descending | Numeric | KeepBest | 20504746 |
+| `fastest_extraction_ms` | Ascending | Milliseconds | KeepBest | 20504747 |
+| `deepest_depth_score` | Descending | Numeric | KeepBest | 20504750 |
+| `survival_time_seconds` | Descending | Seconds | KeepBest | 20504754 |
 
 Backend env template after IDs exist:
 
@@ -103,8 +103,21 @@ active in code.
 
 | API Name | Type | Set By | Code Source |
 | --- | --- | --- | --- |
-| `total_deaths` | INT | Client | main.js -> recordAchievementEvent/recordAchievementRunEnd -> electronAPI.setStat |
-| `longest_run_seconds` | INT | Client | main.js -> max run duration -> electronAPI.setStat |
+| `total_deaths` | INT | Client | achievementState.stats.totalDeaths |
+| `longest_run_seconds` | INT | Client | floor(achievementState.stats.maxRunMs / 1000) |
+
+## Beta Achievement Reset
+
+Achievement reset is available only when the installed Electron build is
+launched with `HB_QA_TOOLS_ENABLED=1`. Open the in-game developer console
+and run its achievement-reset command. The Electron handler calls Steam
+`ResetAllStats(true)` for the currently logged-in account and stores the
+result. Confirm the response is successful, restart the beta build, and verify
+the selected achievement is locked before repeating an unlock test.
+
+Never enable `HB_QA_TOOLS_ENABLED` in the public branch or use a personal
+player account for reset testing. This reset affects both achievements and
+Steam stats for the active QA account.
 
 ## Steam Cloud Auto-Cloud
 
@@ -137,14 +150,24 @@ Actions in the manifest:
 | menu | Button | `menu_right` | Right |
 | menu | Button | `menu_confirm` | Confirm |
 | menu | Button | `menu_back` | Back |
+| menu | Button | `menu_tab_left` | Previous Tab |
+| menu | Button | `menu_tab_right` | Next Tab |
 | gameplay | StickPadGyro | `move` | Move |
-| gameplay | StickPadGyro | `camera` | Camera |
+| gameplay | StickPadGyro | `camera` | Aim |
+| gameplay | StickPadGyro | `camera_mouse` | Aim Cursor |
 | gameplay | Button | `fire` | Fire |
 | gameplay | Button | `interact` | Interact |
 | gameplay | Button | `reload` | Reload |
 | gameplay | Button | `ability` | Ability |
 | gameplay | Button | `scan` | Scan |
+| gameplay | Button | `sprint` | Sprint |
+| gameplay | Button | `toggle_map` | Tactical Map |
 | gameplay | Button | `pause` | Pause |
+| archive | StickPadGyro | `archive_focus` | Move Focus |
+| archive | Button | `archive_confirm` | Inspect / Confirm |
+| archive | Button | `archive_inventory` | Inventory |
+| archive | Button | `archive_back` | Back |
+| archive | Button | `archive_reveal` | Reveal Hotspots |
 
 ## Inventory Schema And Item Store
 

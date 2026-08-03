@@ -30,10 +30,10 @@ PWA/web demo. Steam is a parallel artifact of the same `dist/`.
 - **Defensive Steam init.** The wrapper must run with no Steam client
   present (dev boxes, itch later): `steamworks.js` loads via dynamic import
   behind a try/catch; absence of Steam = silent no-op, the game never knows.
-- **Windows + Linux payloads; macOS deferred.** Steamworks currently has one
-  content depot (`4957041`) for app `4957040`, so the upload carries both
-  `win-unpacked/` and `linux-unpacked/` inside that depot. A second OS-specific
-  depot can be added later to reduce download size. Windows is the audience;
+- **Windows + Linux payloads; macOS deferred.** App `4957040` uses separate
+  platform depots: Linux/SteamOS `4957041` and Windows `4957042`. Each build is
+  mapped to the install root, keeping the executable and Steam Input manifest
+  at the same relative location on every platform. Windows is the audience;
   the Linux native build doubles as the Steam Deck build (no Proton
   dependency). macOS needs signing + notarization — park it until the demo is
   proven.
@@ -72,9 +72,10 @@ and `src/game.js`).
    `ACHIEVEMENT_DEFS` keys and **Publish** only the achievements that are
    active in code. Leave `comingSoon` definitions unpublished or hidden until
    their unlock paths are live.
-4. **Launch options**: single launch config per OS. With the current single
-   depot, use `win-unpacked/Hunker Bunker.exe` for Windows and
-   `linux-unpacked/hunker-bunker` for Linux/SteamOS. `steam_appid.txt` is
+4. **Launch options**: single launch config per OS. Because each platform depot
+   maps its payload to the install root, use `hunker-bunker.exe` for Windows and
+   `hunker-bunker` for Linux/SteamOS. Do not prefix either path with its local
+   electron-builder output directory. `steam_appid.txt` is
    dev-only and must NOT ship in depots (retail launches through the client).
    The packaged app refuses `steam_appid.txt` outside dev mode.
 5. **Relay server**: the socket.io relay (`server/`) is not wired into the
@@ -87,13 +88,20 @@ and `src/game.js`).
 ```
 steam/
   app_build.vdf          # appid, branch (default→none, sets 'beta'), depots
-  depot_build_content.vdf  # dist_electron/* → depot 4957041
+  depot_build_content.vdf  # linux-unpacked/* → Linux depot 4957041 root
+  depot_build_win.vdf      # win-unpacked/* → Windows depot 4957042 root
 ```
 
 - electron-builder targets: `--dir` (win-unpacked / linux-unpacked) — Steam
   wants a loose directory, not an installer. NSIS/AppImage are for
   non-Steam distribution later.
-- Upload: `steamcmd +login <builder> +run_app_build .../app_build.vdf`.
+- Upload: `npm run steam:upload` uploads both the game build through
+  `steam/app_build.vdf` and the OST through `steam/soundtrack_app_build.vdf`.
+  Use `npm run steam:upload-soundtrack` to retry only the already-packaged OST.
+  The soundtrack upload intentionally does not set a live branch: after a
+  successful commit, open soundtrack AppID `4957680` → SteamPipe → Builds and
+  set the new build live on `default`. Steam does not allow `default` to be
+  selected automatically by `SetLive`.
   Use a **dedicated builder account** with only "Edit App Metadata +
   Publish" on this app, never the owner login.
 - **Local authenticated release**: `npm run steam:prepare` runs tests,
@@ -135,9 +143,10 @@ steam/
 ## Human checklist (only you can do these — Steamworks dashboard)
 
 1. Confirm appid `4957040` and note it in `steam/app_build.vdf`.
-2. Current dashboard has one content depot: `4957041`. If you keep one depot,
-   set Launch Options to the platform subfolders above. If you add a second
-   depot later, update `steam/app_build.vdf`, the CI upload job, and this doc.
+2. Confirm the Linux/SteamOS depot is `4957041` and the Windows depot is
+   `4957042`. Set launch executables to root-relative `hunker-bunker` and
+   `hunker-bunker.exe`; a `linux-unpacked/` or `win-unpacked/` prefix will cause
+   Steam's "Missing game executable" launch error.
 3. Create the builder account, grant minimal perms, run `steamcmd +login`
    once locally to mint `config.vdf`, store as the CI secret.
 4. Register + publish achievements from the mapping table.

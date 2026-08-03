@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ACHIEVEMENT_DEFS } from '../src/achievements.js';
+import { STEAM_STAT_DEFS } from '../src/steamStats.js';
 import { STEAM_LEADERBOARD_DEFS } from '../server/leaderboardScoring.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -23,21 +24,6 @@ const SOURCE_REFS = Object.freeze([
     ['Item Store', 'https://partner.steamgames.com/doc/features/inventory/itemstore'],
     ['Steam Input Setup', 'https://partner.steamgames.com/doc/features/steam_controller/getting_started_for_devs'],
     ['SteamPipe Uploads', 'https://partner.steamgames.com/doc/sdk/uploading']
-]);
-
-const STEAM_STATS = Object.freeze([
-    {
-        apiName: 'total_deaths',
-        type: 'INT',
-        setBy: 'Client',
-        source: 'main.js -> recordAchievementEvent/recordAchievementRunEnd -> electronAPI.setStat'
-    },
-    {
-        apiName: 'longest_run_seconds',
-        type: 'INT',
-        setBy: 'Client',
-        source: 'main.js -> max run duration -> electronAPI.setStat'
-    }
 ]);
 
 const CLOUD_PATHS = Object.freeze([
@@ -64,14 +50,24 @@ const STEAM_INPUT_ACTIONS = Object.freeze([
     { actionSet: 'menu', actionType: 'Button', action: 'menu_right', label: 'Right' },
     { actionSet: 'menu', actionType: 'Button', action: 'menu_confirm', label: 'Confirm' },
     { actionSet: 'menu', actionType: 'Button', action: 'menu_back', label: 'Back' },
+    { actionSet: 'menu', actionType: 'Button', action: 'menu_tab_left', label: 'Previous Tab' },
+    { actionSet: 'menu', actionType: 'Button', action: 'menu_tab_right', label: 'Next Tab' },
     { actionSet: 'gameplay', actionType: 'StickPadGyro', action: 'move', label: 'Move' },
-    { actionSet: 'gameplay', actionType: 'StickPadGyro', action: 'camera', label: 'Camera' },
+    { actionSet: 'gameplay', actionType: 'StickPadGyro', action: 'camera', label: 'Aim' },
+    { actionSet: 'gameplay', actionType: 'StickPadGyro', action: 'camera_mouse', label: 'Aim Cursor' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'fire', label: 'Fire' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'interact', label: 'Interact' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'reload', label: 'Reload' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'ability', label: 'Ability' },
     { actionSet: 'gameplay', actionType: 'Button', action: 'scan', label: 'Scan' },
-    { actionSet: 'gameplay', actionType: 'Button', action: 'pause', label: 'Pause' }
+    { actionSet: 'gameplay', actionType: 'Button', action: 'sprint', label: 'Sprint' },
+    { actionSet: 'gameplay', actionType: 'Button', action: 'toggle_map', label: 'Tactical Map' },
+    { actionSet: 'gameplay', actionType: 'Button', action: 'pause', label: 'Pause' },
+    { actionSet: 'archive', actionType: 'StickPadGyro', action: 'archive_focus', label: 'Move Focus' },
+    { actionSet: 'archive', actionType: 'Button', action: 'archive_confirm', label: 'Inspect / Confirm' },
+    { actionSet: 'archive', actionType: 'Button', action: 'archive_inventory', label: 'Inventory' },
+    { actionSet: 'archive', actionType: 'Button', action: 'archive_back', label: 'Back' },
+    { actionSet: 'archive', actionType: 'Button', action: 'archive_reveal', label: 'Reveal Hotspots' }
 ]);
 
 function readJson(relativePath) {
@@ -94,13 +90,21 @@ function findAchievementAsset(icon, locked = false) {
     return candidates.find(relativeIfExists) ?? '';
 }
 
+const ASSIGNED_LEADERBOARD_IDS = Object.freeze({
+    best_run_score: 20504740,
+    daily_ops_score: 20504746,
+    fastest_extraction_ms: 20504747,
+    deepest_depth_score: 20504750,
+    survival_time_seconds: 20504754
+});
+
 function buildLeaderboardRows() {
     return Object.values(STEAM_LEADERBOARD_DEFS).map((def) => ({
         apiName: def.name,
         sortMethod: def.sortmethod,
         displayType: def.displaytype,
         uploadScoreMethod: def.scoreMethod,
-        dashboardId: '<fill after Steamworks creation>'
+        dashboardId: ASSIGNED_LEADERBOARD_IDS[def.name] ?? '<fill after Steamworks creation>'
     }));
 }
 
@@ -115,6 +119,17 @@ function buildAchievementRows() {
         icon: findAchievementAsset(def.icon ?? def.key),
         lockedIcon: findAchievementAsset(def.icon ?? def.key, true)
     }));
+}
+
+export function validateAchievementAssets(achievements) {
+    const missing = achievements
+        .filter((achievement) => achievement.publishNow)
+        .filter((achievement) => !achievement.icon || !achievement.lockedIcon)
+        .map((achievement) => achievement.apiName);
+    if (missing.length > 0) {
+        throw new Error(`publishable achievements are missing locked or unlocked icons: ${missing.join(', ')}`);
+    }
+    return true;
 }
 
 function buildInventorySummary(schema) {
@@ -138,8 +153,10 @@ function buildInventorySummary(schema) {
 
 export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
     const packageJson = readJson('package.json');
+    const windowsExecutable = `${packageJson.build?.executableName || packageJson.name}.exe`;
     const inventorySchema = readJson('steam/inventory_schema_hunker_bunker.json');
     const achievements = buildAchievementRows();
+    validateAchievementAssets(achievements);
     const activeAchievements = achievements.filter((achievement) => achievement.publishNow);
     const heldAchievements = achievements.filter((achievement) => !achievement.publishNow);
     const leaderboards = buildLeaderboardRows();
@@ -159,9 +176,12 @@ export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
         depots: {
             contentDepotId: CONTENT_DEPOT_ID,
             currentModel: 'single content depot',
+            // Both depots map their build to the depot root (DepotPath "."), so the
+            // executable and steam_input_manifest.vdf sit at the install root on every
+            // platform. Steam Input takes one manifest path for all platforms.
             launchOptions: [
-                { platform: 'Windows', executable: 'win-unpacked/Hunker Bunker.exe' },
-                { platform: 'Linux + SteamOS', executable: 'linux-unpacked/hunker-bunker' }
+                { platform: 'Windows', executable: windowsExecutable },
+                { platform: 'Linux + SteamOS', executable: 'hunker-bunker' }
             ],
             optionalFutureSplit: 'Create a second OS-specific depot in Steamworks, then update steam/app_build.vdf and .github/workflows/steam-build.yml.'
         },
@@ -170,7 +190,7 @@ export function buildDashboardHandoff({ generatedAt = new Date() } = {}) {
         achievements,
         activeAchievementCount: activeAchievements.length,
         heldAchievements,
-        stats: STEAM_STATS,
+        stats: Object.values(STEAM_STAT_DEFS).map(({ read: _read, ...definition }) => definition),
         cloudPaths: CLOUD_PATHS,
         steamInput: {
             manifestSource: 'steam/steam_input_manifest.vdf',
@@ -309,6 +329,19 @@ ${table(
         stat.source
     ])
 )}
+
+## Beta Achievement Reset
+
+Achievement reset is available only when the installed Electron build is
+launched with \`HB_QA_TOOLS_ENABLED=1\`. Open the in-game developer console
+and run its achievement-reset command. The Electron handler calls Steam
+\`ResetAllStats(true)\` for the currently logged-in account and stores the
+result. Confirm the response is successful, restart the beta build, and verify
+the selected achievement is locked before repeating an unlock test.
+
+Never enable \`HB_QA_TOOLS_ENABLED\` in the public branch or use a personal
+player account for reset testing. This reset affects both achievements and
+Steam stats for the active QA account.
 
 ## Steam Cloud Auto-Cloud
 

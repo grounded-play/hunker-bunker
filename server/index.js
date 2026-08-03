@@ -6,6 +6,16 @@ import { attachSteamAuthRoutes } from './steamAuth.js';
 import { attachSteamLeaderboardRoutes } from './steamLeaderboards.js';
 import { attachSteamInventoryRoutes } from './steamInventory.js';
 import { attachSteamStoreRoutes } from './steamStore.js';
+import { auditSteamBackendEnv, formatBackendEnvIssue } from './backendEnvAudit.js';
+
+const backendEnvAudit = auditSteamBackendEnv(process.env);
+for (const warning of backendEnvAudit.warnings) {
+    console.warn(`[backend-audit] warning: ${formatBackendEnvIssue(warning)}`);
+}
+if (!backendEnvAudit.ok) {
+    const details = backendEnvAudit.failures.map((issue) => `- ${formatBackendEnvIssue(issue)}`).join('\n');
+    throw new Error(`[backend-audit] startup refused (${backendEnvAudit.failures.length} issue(s), strict=${backendEnvAudit.strict}):\n${details}`);
+}
 
 const app = express();
 const server = http.createServer(app);

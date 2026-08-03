@@ -1,0 +1,36 @@
+{
+  "copyFiles": [
+    "docs/steam-deck-compatibility-announcement.md",
+    "docs/steam-portal-copy.md"
+  ],
+  "claims": {
+    "multiplayer": {
+      "accepted": false,
+      "phrases": ["online multiplayer", "multiplayer support", "co-op support", "pvp support"]
+    },
+    "timeline": {
+      "accepted": false,
+      "phrases": ["steam timeline support", "timeline integration"]
+    },
+    "deckVerified": {
+      "accepted": false,
+      "phrases": ["steam deck verified", "deck verified"]
+    },
+    "fullAudio": {
+      "accepted": false,
+      "phrases": ["english full audio", "full audio support"]
+    },
+    "cloud": {
+      "accepted": false,
+      "phrases": ["steam cloud support", "fully synchronized", "steam cloud progress"]
+    },
+    "achievements": {
+      "accepted": false,
+      "phrases": ["steam achievements support", "steam achievements included"]
+    },
+    "purchases": {
+      "accepted": false,
+      "phrases": ["in-app purchases", "buy now", "purchasable cache keys"]
+    }
+  }
+}

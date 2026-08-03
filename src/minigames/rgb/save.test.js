@@ -4,8 +4,13 @@ import {
     loadRgbSave,
     saveRgbSave,
     markUnlocked,
+    unlockChapter,
+    isChapterUnlocked,
+    saveChapterSnapshot,
+    getChapterSnapshot,
     recordEnding,
     recordGameOver,
+    recordDiscoveredBeat,
     saveCheckpoint,
     shouldUnlockRgb
 } from './save.js';
@@ -32,14 +37,18 @@ describe('loadRgbSave', () => {
             version: 1,
             unlocked: false,
             checkpoint: 'parking_lot',
+            unlockedChapters: ['parking_lot'],
+            chapterSnapshots: {},
             endingsSeen: [],
             gameOversSeen: [],
+            discoveredBeats: [],
             settings: { hints: 'standard' },
             run: {
                 timeBand: 0,
                 pain: 'stable',
                 evidence: [],
                 inventory: [],
+                routeHistory: [],
                 flags: {}
             }
         });
@@ -82,6 +91,37 @@ describe('markUnlocked', () => {
     });
 });
 
+describe('unlockChapter and isChapterUnlocked', () => {
+    it('unlocks specific chapters and marks save unlocked', () => {
+        let save = loadRgbSave(createMemoryStorage());
+        expect(isChapterUnlocked(save, 'warehouse')).toBe(false);
+        save = unlockChapter(save, 'warehouse');
+        expect(save.unlocked).toBe(true);
+        expect(isChapterUnlocked(save, 'warehouse')).toBe(true);
+        expect(save.unlockedChapters).toContain('warehouse');
+    });
+});
+
+describe('saveChapterSnapshot and getChapterSnapshot', () => {
+    it('stores and retrieves choice snapshots per chapter', () => {
+        let save = loadRgbSave(createMemoryStorage());
+        const fakeRunState = {
+            timeBand: 1,
+            pain: 'injured',
+            evidence: ['swab_photo'],
+            inventory: ['notebook'],
+            routeHistory: [{ axis: 'TRUTH' }],
+            flags: { keptNotebook: true }
+        };
+        save = saveChapterSnapshot(save, 'warehouse', fakeRunState);
+        const snapshot = getChapterSnapshot(save, 'warehouse');
+        expect(snapshot.timeBand).toBe(1);
+        expect(snapshot.pain).toBe('injured');
+        expect(snapshot.evidence).toEqual(['swab_photo']);
+        expect(snapshot.flags.keptNotebook).toBe(true);
+    });
+});
+
 describe('saveCheckpoint', () => {
     it('updates the checkpoint field', () => {
         const save = saveCheckpoint(loadRgbSave(createMemoryStorage()), 'medi_kiosk');
@@ -105,6 +145,16 @@ describe('recordGameOver', () => {
         save = recordGameOver(save, 'crushed');
         save = recordGameOver(save, 'crushed');
         expect(save.gameOversSeen).toEqual(['crushed']);
+    });
+});
+
+describe('recordDiscoveredBeat', () => {
+    it('adds a discovered beat id uniquely across runs', () => {
+        let save = loadRgbSave(createMemoryStorage());
+        save = recordDiscoveredBeat(save, 'reply_to_lucia');
+        save = recordDiscoveredBeat(save, 'reply_to_lucia');
+        save = recordDiscoveredBeat(save, 'enter_now');
+        expect(save.discoveredBeats).toEqual(['reply_to_lucia', 'enter_now']);
     });
 });
 

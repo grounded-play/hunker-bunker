@@ -1,0 +1,804 @@
+"controller_mappings"
+{
+    "version" "3"
+    "game" "Hunker Bunker"
+    "title" "Official Hunker Bunker Layout"
+    "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
+    "controller_type" "controller_neptune"
+    "major_revision" "2"
+    "minor_revision" "0"
+    "localization"
+    {
+        "english"
+        {
+            "title" "Official Hunker Bunker Layout"
+            "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
+        }
+    }
+    "group"
+    {
+        "id" "0"
+        "mode" "four_buttons"
+        "inputs"
+        {
+            "button_a" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_confirm, Confirm"
+                        }
+                    }
+                } }
+            "button_b" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_back, Back"
+                        }
+                    }
+                } }
+            "button_x" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_tab_left, Previous Tab"
+                        }
+                    }
+                } }
+            "button_y" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_tab_right, Next Tab"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "1"
+        "mode" "dpad"
+        "inputs"
+        {
+            "dpad_north" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_up, Up"
+                        }
+                    }
+                } }
+            "dpad_south" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_down, Down"
+                        }
+                    }
+                } }
+            "dpad_east" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_right, Right"
+                        }
+                    }
+                } }
+            "dpad_west" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_left, Left"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "2"
+        "mode" "dpad"
+        "inputs"
+        {
+            "dpad_north" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_up, Up"
+                        }
+                    }
+                } }
+            "dpad_south" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_down, Down"
+                        }
+                    }
+                } }
+            "dpad_east" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_right, Right"
+                        }
+                    }
+                } }
+            "dpad_west" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_left, Left"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "3"
+        "mode" "trigger"
+        "inputs"
+        {
+            "edge" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_tab_left, Previous Tab"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "4"
+        "mode" "trigger"
+        "inputs"
+        {
+            "edge" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_tab_right, Next Tab"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "6"
+        "mode" "dpad"
+        "inputs"
+        {
+            "dpad_north" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_up, Up"
+                        }
+                    }
+                } }
+            "dpad_south" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_down, Down"
+                        }
+                    }
+                } }
+            "dpad_east" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_right, Right"
+                        }
+                    }
+                } }
+            "dpad_west" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_left, Left"
+                        }
+                    }
+                } }
+        }
+        "settings" { "requires_click" "0" }
+    }
+    "group"
+    {
+        "id" "7"
+        "mode" "dpad"
+        "inputs"
+        {
+            "dpad_north" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_up, Up"
+                        }
+                    }
+                } }
+            "dpad_south" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_down, Down"
+                        }
+                    }
+                } }
+            "dpad_east" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_right, Right"
+                        }
+                    }
+                } }
+            "dpad_west" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_left, Left"
+                        }
+                    }
+                } }
+        }
+        "settings" { "requires_click" "0" }
+    }
+    "group"
+    {
+        "id" "5"
+        "mode" "switches"
+        "inputs"
+        {
+            "button_escape" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu pause, Pause"
+                        }
+                    }
+                } }
+            "left_bumper" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_tab_left, Previous Tab"
+                        }
+                    }
+                } }
+            "right_bumper" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu menu_tab_right, Next Tab"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "10"
+        "mode" "four_buttons"
+        "inputs"
+        {
+            "button_a" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay interact, Interact"
+                        }
+                    }
+                } }
+            "button_b" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay scan, Scan"
+                        }
+                    }
+                } }
+            "button_x" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay reload, Reload"
+                        }
+                    }
+                } }
+            "button_y" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay ability, Ability"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "11"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "gameplay" "move"
+        }
+    }
+    "group"
+    {
+        "id" "12"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "gameplay" "camera"
+        }
+    }
+    "group"
+    {
+        "id" "16"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "gameplay" "move"
+        }
+    }
+    "group"
+    {
+        "id" "17"
+        "mode" "absolute_mouse"
+        "inputs" { }
+        "settings"
+        {
+            "sensitivity" "105"
+        }
+        "gameactions"
+        {
+            "gameplay" "camera_mouse"
+        }
+    }
+    "group"
+    {
+        "id" "18"
+        "mode" "absolute_mouse"
+        "inputs" { }
+        "settings"
+        {
+            "sensitivity" "105"
+            "gyro_button" "right_pad_touch"
+        }
+        "gameactions"
+        {
+            "gameplay" "camera_mouse"
+        }
+    }
+    "group"
+    {
+        "id" "13"
+        "mode" "trigger"
+        "inputs"
+        {
+            "edge" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay sprint, Sprint"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "14"
+        "mode" "trigger"
+        "inputs"
+        {
+            "edge" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay fire, Fire"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "15"
+        "mode" "switches"
+        "inputs"
+        {
+            "button_escape" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay pause, Pause"
+                        }
+                    }
+                } }
+            "left_bumper" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay sprint, Sprint"
+                        }
+                    }
+                } }
+            "right_bumper" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay fire, Fire"
+                        }
+                    }
+                } }
+            "button_menu" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay pause, Pause"
+                        }
+                    }
+                } }
+            "button_select" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay toggle_map, Tactical Map"
+                        }
+                    }
+                } }
+            "button_back" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay toggle_map, Tactical Map"
+                        }
+                    }
+                } }
+            "button_back_left" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay sprint, Sprint"
+                        }
+                    }
+                } }
+            "button_back_right" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action gameplay interact, Interact"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "20"
+        "mode" "four_buttons"
+        "inputs"
+        {
+            "button_a" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive archive_confirm, Inspect / Confirm"
+                        }
+                    }
+                } }
+            "button_b" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive archive_back, Back"
+                        }
+                    }
+                } }
+            "button_x" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive archive_reveal, Reveal Hotspots"
+                        }
+                    }
+                } }
+            "button_y" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive archive_inventory, Inventory"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "21"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "archive" "archive_focus"
+        }
+    }
+    "group"
+    {
+        "id" "22"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "archive" "archive_focus"
+        }
+    }
+    "group"
+    {
+        "id" "26"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "archive" "archive_focus"
+        }
+    }
+    "group"
+    {
+        "id" "27"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "archive" "archive_focus"
+        }
+    }
+    "group"
+    {
+        "id" "23"
+        "mode" "trigger"
+        "inputs"
+        {
+            "edge" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive archive_reveal, Reveal Hotspots"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "24"
+        "mode" "trigger"
+        "inputs"
+        {
+            "edge" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive archive_confirm, Inspect / Confirm"
+                        }
+                    }
+                } }
+        }
+    }
+    "group"
+    {
+        "id" "25"
+        "mode" "switches"
+        "inputs"
+        {
+            "button_escape" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive pause, Pause"
+                        }
+                    }
+                } }
+            "left_bumper" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive archive_inventory, Inventory"
+                        }
+                    }
+                } }
+            "right_bumper" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive archive_reveal, Reveal Hotspots"
+                        }
+                    }
+                } }
+        }
+    }
+    "preset"
+    {
+        "id" "0"
+        "name" "menu"
+        "group_source_bindings"
+        {
+            "0" "button_diamond active"
+            "1" "dpad active"
+            "2" "joystick active"
+            "3" "left_trigger active"
+            "4" "right_trigger active"
+            "5" "switch active"
+            "6" "left_trackpad active"
+            "7" "right_trackpad active"
+        }
+    }
+    "preset"
+    {
+        "id" "1"
+        "name" "gameplay"
+        "group_source_bindings"
+        {
+            "10" "button_diamond active"
+            "11" "joystick active"
+            "12" "right_joystick active"
+            "13" "left_trigger active"
+            "14" "right_trigger active"
+            "15" "switch active"
+            "16" "left_trackpad active"
+            "17" "right_trackpad active"
+            "18" "gyro active"
+        }
+    }
+    "preset"
+    {
+        "id" "2"
+        "name" "archive"
+        "group_source_bindings"
+        {
+            "20" "button_diamond active"
+            "21" "joystick active"
+            "22" "dpad active"
+            "23" "left_trigger active"
+            "24" "right_trigger active"
+            "25" "switch active"
+            "26" "left_trackpad active"
+            "27" "right_trackpad active"
+        }
+    }
+}

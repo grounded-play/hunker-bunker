@@ -3,6 +3,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { syncSteamInputToDepotRoot } from './build-steam-input-configs.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = new Set(process.argv.slice(2));
@@ -10,6 +11,8 @@ const upload = args.has('--upload');
 const skipBuild = args.has('--skip-build');
 const skipTests = args.has('--skip-tests');
 const allowDirty = args.has('--allow-dirty');
+const soundtrackExplicit = args.has('--soundtrack');
+const includeSoundtrack = soundtrackExplicit || process.env.HB_STEAM_INCLUDE_SOUNDTRACK === '1';
 const packageJson = JSON.parse(
     fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')
 );
@@ -79,26 +82,28 @@ if (upload && dirty && !allowDirty) {
 
 if (!skipBuild) {
     if (!skipTests) run('npm', ['test'], releaseEnv, 'test suite');
+    run('npm', ['run', 'package-soundtrack'], releaseEnv, 'Soundtrack packaging');
     run('npm', ['run', 'electron:build'], releaseEnv, 'Electron build');
-}
+    syncSteamInputToDepotRoot();
 
-const builtInfoPath = path.join(repoRoot, 'dist', 'build-info.json');
-requirePath('dist/build-info.json', 'Build metadata is missing');
-const builtInfo = JSON.parse(fs.readFileSync(builtInfoPath, 'utf8'));
-for (const [key, expected] of Object.entries({
-    version: packageJson.version,
-    commit,
-    branch,
-    dirty,
-    steamBuild: buildId
-})) {
-    if (builtInfo[key] !== expected) {
-        throw new Error(
-            `Build metadata mismatch for ${key}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(builtInfo[key])}`
-        );
+    const builtInfoPath = path.join(repoRoot, 'dist', 'build-info.json');
+    requirePath('dist/build-info.json', 'Build metadata is missing');
+    const builtInfo = JSON.parse(fs.readFileSync(builtInfoPath, 'utf8'));
+    for (const [key, expected] of Object.entries({
+        version: packageJson.version,
+        commit,
+        branch,
+        dirty,
+        steamBuild: buildId
+    })) {
+        if (builtInfo[key] !== expected) {
+            throw new Error(
+                `Build metadata mismatch for ${key}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(builtInfo[key])}`
+            );
+        }
     }
+    console.log(`[steam-release] verified dist/build-info.json (${buildId})`);
 }
-console.log(`[steam-release] verified dist/build-info.json (${buildId})`);
 
 run('npm', ['run', 'steam:audit-depot'], releaseEnv, 'Steam depot audit');
 
@@ -137,10 +142,44 @@ if (upload) {
     } finally {
         fs.rmSync(generatedAppBuild, { force: true });
     }
+
+    const soundtrackTemplate = path.join(repoRoot, 'steam', 'soundtrack_app_build.vdf');
+    if (fs.existsSync(soundtrackTemplate) && includeSoundtrack) {
+        const generatedSoundtrackBuild = path.join(repoRoot, 'steam', 'soundtrack_app_build.generated.vdf');
+        const soundtrackDesc = `Hunker Bunker Soundtrack ${buildId} ${branch}`.replace(/["\r\n]/g, '-');
+        const generatedSoundtrackBody = fs.readFileSync(soundtrackTemplate, 'utf8').replace(
+            /"Desc"\s+"[^"]*"/,
+            `"Desc" "${soundtrackDesc}"`
+        );
+        fs.writeFileSync(generatedSoundtrackBuild, generatedSoundtrackBody, 'utf8');
+        console.log(`[steam-release] Soundtrack build description: ${soundtrackDesc}`);
+        try {
+            run(steamCmd, [
+                '+login',
+                account,
+                '+run_app_build',
+                generatedSoundtrackBuild,
+                '+quit'
+            ], releaseEnv, 'Steam soundtrack upload');
+            console.log(`[steam-release] uploaded soundtrack ${commit} through steam/soundtrack_app_build.vdf`);
+            console.log('[steam-release] soundtrack build committed; set it live on the default branch from AppID 4957680 > SteamPipe > Builds');
+        } catch (err) {
+            console.error(`\n[steam-release] WARNING: Soundtrack upload failed for AppID 4957680.`);
+            console.error(`To fix this in Steamworks:`);
+            console.error(`  1. Ensure the configured Steam build account has 'Edit App Metadata' & 'SteamPipe Upload' permissions granted for AppID 4957680.`);
+            console.error(`  2. In Steamworks (App 4957680 > SteamPipe > Depots), verify Depot 4957681 is added and click 'Save'.`);
+            console.error(`  3. Click 'Publishing' -> 'Publish Changes' on App 4957680 in Steamworks at least once.`);
+            console.error(`  4. Do not configure SetLive=beta unless AppID 4957680 has that beta branch; soundtrack default builds are set live manually.\n`);
+            if (soundtrackExplicit || process.env.HB_STEAM_REQUIRE_SOUNDTRACK === '1') {
+                throw err;
+            }
+        } finally {
+            fs.rmSync(generatedSoundtrackBuild, { force: true });
+        }
+    }
 }
 
-console.log(
-    upload
-        ? `[steam-release] uploaded ${commit} through steam/app_build.vdf`
-        : `[steam-release] prepared and audited ${commit}; no upload requested`
+console.log(upload
+    ? `[steam-release] uploaded ${commit} through steam/app_build.vdf${includeSoundtrack ? ' and steam/soundtrack_app_build.vdf' : ''}`
+    : `[steam-release] prepared and audited ${commit}; no upload requested`
 );

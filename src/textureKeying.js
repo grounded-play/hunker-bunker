@@ -80,3 +80,67 @@ export function applyBlackChromaKey(imageData, { threshold = 15, edgeThreshold =
 
     return { keyedPixels };
 }
+
+function isGreenChromaPixel(data, pixelIndex, { minGreen, dominance }) {
+    const i = getPixelIndex(pixelIndex);
+    if (data[i + 3] <= 4) return true;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    return g >= minGreen && g >= r * dominance && g >= b * dominance;
+}
+
+// Generated art deliberately uses chroma green around its outer silhouette.
+// Flooding only from image edges removes that matte without erasing authored
+// green lights/details enclosed inside the object.
+export function applyGreenChromaKey(imageData, { minGreen = 80, dominance = 1.3 } = {}) {
+    if (!imageData?.data || !Number.isFinite(imageData.width) || !Number.isFinite(imageData.height)) {
+        return { keyedPixels: 0 };
+    }
+    const width = Math.max(0, Math.floor(imageData.width));
+    const height = Math.max(0, Math.floor(imageData.height));
+    const totalPixels = width * height;
+    if (totalPixels <= 0) return { keyedPixels: 0 };
+
+    const data = imageData.data;
+    const options = {
+        minGreen: Math.max(0, Number(minGreen) || 0),
+        dominance: Math.max(1, Number(dominance) || 1)
+    };
+    const visited = new Uint8Array(totalPixels);
+    const queue = new Int32Array(totalPixels);
+    let head = 0;
+    let tail = 0;
+    let keyedPixels = 0;
+    const enqueue = (pixelIndex) => {
+        if (pixelIndex < 0 || pixelIndex >= totalPixels || visited[pixelIndex]) return;
+        if (!isGreenChromaPixel(data, pixelIndex, options)) return;
+        visited[pixelIndex] = 1;
+        queue[tail++] = pixelIndex;
+    };
+
+    for (let x = 0; x < width; x += 1) {
+        enqueue(x);
+        enqueue((height - 1) * width + x);
+    }
+    for (let y = 1; y < height - 1; y += 1) {
+        enqueue(y * width);
+        enqueue(y * width + width - 1);
+    }
+    while (head < tail) {
+        const pixelIndex = queue[head++];
+        const x = pixelIndex % width;
+        const y = Math.floor(pixelIndex / width);
+        if (x > 0) enqueue(pixelIndex - 1);
+        if (x < width - 1) enqueue(pixelIndex + 1);
+        if (y > 0) enqueue(pixelIndex - width);
+        if (y < height - 1) enqueue(pixelIndex + width);
+    }
+    for (let pixelIndex = 0; pixelIndex < totalPixels; pixelIndex += 1) {
+        if (!visited[pixelIndex]) continue;
+        const i = getPixelIndex(pixelIndex);
+        if (data[i + 3] !== 0) keyedPixels += 1;
+        data[i + 3] = 0;
+    }
+    return { keyedPixels };
+}

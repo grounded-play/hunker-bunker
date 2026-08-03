@@ -23,6 +23,22 @@ describe('browser gamepad mapping', () => {
         expect(isGamepadButtonPressed(button(true, 0))).toBe(true);
     });
 
+    // The gameplay aim path reads controller.cameraDelta every frame. The Web
+    // Gamepad API has no trackpad or gyro to feed it, but the field still has to
+    // exist and read zero so the browser fallback lands on stick aim instead of
+    // faulting on an absent object.
+    it('carries a zeroed cameraDelta so the mouse-style aim path stays inert', () => {
+        const mapped = mapBrowserGamepad({
+            index: 0,
+            id: 'Xbox Wireless Controller',
+            axes: [0, 0, 0.9, -0.9],
+            buttons: Array.from({ length: 16 }, () => button(false))
+        });
+
+        expect(mapped.cameraDelta).toEqual({ x: 0, y: 0 });
+        expect(mapped.camera).toEqual({ x: 0.9, y: -0.9 });
+    });
+
     it('maps standard gamepad controls into the Steam-compatible shape', () => {
         const buttons = Array.from({ length: 16 }, () => button(false));
         buttons[0] = button(true);
@@ -47,10 +63,36 @@ describe('browser gamepad mapping', () => {
             fire: true,
             interact: true,
             reload: true,
-            scan: true,
+            sprint: true,
             pause: true,
             menuConfirm: true
         });
+    });
+
+    it('gives menu tab navigation its own bumper buttons, independent of back/scan', () => {
+        // East face button (index 1) already drives dash/scan/menuBack. If tab
+        // navigation also listened on it, a single Steam Deck B press would both
+        // close a modal (menuBack) and flip its tab (tabLeft) at once.
+        const buttons = Array.from({ length: 16 }, () => button(false));
+        buttons[1] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.menuBack).toBe(true);
+        expect(mapped.scan).toBe(true);
+        expect(mapped.menuTabLeft).toBe(false);
+        expect(mapped.menuTabRight).toBe(false);
+    });
+
+    it('drives menu tab navigation from the bumpers, matching the native controller_neptune.vdf menu action set', () => {
+        const buttons = Array.from({ length: 16 }, () => button(false));
+        buttons[4] = button(true);
+        buttons[5] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.menuTabLeft).toBe(true);
+        expect(mapped.menuTabRight).toBe(true);
     });
 
     it('infers common controller prompt families from browser ids', () => {

@@ -1,19 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { ThreeGame } from './threeGame.js';
-
-// Hive/camp placement bands (sprint-19 wave 6 punch list, §2b "the alien
-// hives are too close"): hives and camps used to draw from overlapping
-// distance bands (hives 45-90u, camps 70-120u) and the hives' wide angular
-// jitter could swing one right onto a camp bearing — so a player walking
-// toward any camp crossed a hive's radius first almost every time. The fix
-// keeps hives on a distinctly closer ring (40-60u) with tighter jitter on
-// the between-camp bisector bearings, while camps stay 70-120u. These tests
-// pin the separated bands so a future tuning pass can't silently re-overlap
-// them. Pure-logic methods, exercised via the established
-// ThreeGame.prototype.method.call(fakeThis, ...) pattern.
+import { WORLD_PROGRESSION_SLOTS } from './worldProgression.js';
 
 function makeFakePlacementGame(runEntropy) {
-    return {
+    const fake = {
         chunkSize: 19,
         runEntropy,
         getBiomeAnchorPosition: () => ({ x: 0, z: 0 }),
@@ -21,73 +11,46 @@ function makeFakePlacementGame(runEntropy) {
         createSeededRandom: ThreeGame.prototype.createSeededRandom,
         isSnailTileWalkable: () => true,
         canOccupyPosition: () => true,
-        // Every chunk qualifies as a camp clearing so the camp path exercises
-        // its normal (non-fallback) placement branch.
-        getChunkLandform: () => 'crater'
+        isGoodSitePosition: () => true,
+        chooseProgressionSitePosition: ThreeGame.prototype.chooseProgressionSitePosition
     };
+    return fake;
 }
 
-const HIVE_BASE_ANGLES = [Math.PI * 0.45, Math.PI * 1.1, Math.PI * 1.75];
+describe('ordered world landmark progression', () => {
+    it('places all three camps in increasing outward depth bands', () => {
+        const game = makeFakePlacementGame(42);
+        const camps = [0, 1, 2].map((index) => (
+            ThreeGame.prototype.chooseCampPosition.call(game, index)
+        ));
 
-function angularDistance(a, b) {
-    let diff = Math.abs(a - b) % (Math.PI * 2);
-    if (diff > Math.PI) diff = Math.PI * 2 - diff;
-    return diff;
-}
-
-describe('hive/camp placement bands', () => {
-    const entropies = [1, 7, 42, 1999, 987654321];
-
-    it('places hives on a 40-60u ring (closer than every camp)', () => {
-        for (const entropy of entropies) {
-            const fakeThis = makeFakePlacementGame(entropy);
-            for (let index = 0; index < 3; index += 1) {
-                const spot = ThreeGame.prototype.chooseHiveSitePosition.call(fakeThis, index);
-                const dist = Math.hypot(spot.x, spot.z);
-                // ±1 tolerance for the Math.round on tile coordinates.
-                expect(dist).toBeGreaterThanOrEqual(39);
-                expect(dist).toBeLessThanOrEqual(61);
-            }
-        }
+        expect(camps[0].z).toBeLessThan(camps[1].z);
+        expect(camps[1].z).toBeLessThan(camps[2].z);
+        camps.forEach((camp, index) => {
+            expect(Math.abs(camp.z - WORLD_PROGRESSION_SLOTS.camp[index].distance)).toBeLessThanOrEqual(15);
+        });
     });
 
-    it('places camps on a 70-120u ring', () => {
-        for (const entropy of entropies) {
-            const fakeThis = makeFakePlacementGame(entropy);
-            for (let index = 0; index < 3; index += 1) {
-                const spot = ThreeGame.prototype.chooseCampPosition.call(fakeThis, index);
-                const dist = Math.hypot(spot.x, spot.z);
-                expect(dist).toBeGreaterThanOrEqual(69);
-                expect(dist).toBeLessThanOrEqual(121);
-            }
-        }
+    it('puts hive branches beyond the early camps and around the final shelter', () => {
+        const game = makeFakePlacementGame(1999);
+        const hives = [0, 1, 2].map((index) => (
+            ThreeGame.prototype.chooseHiveSitePosition.call(game, index)
+        ));
+
+        expect(hives[0].z).toBeGreaterThan(75);
+        expect(hives[1].z).toBeGreaterThan(110);
+        expect(hives[2].z).toBeGreaterThan(hives[1].z);
+        expect(Math.sign(hives[0].x)).not.toBe(Math.sign(hives[1].x));
     });
 
-    it('keeps the hive band strictly inside the camp band (no overlap)', () => {
-        let maxHiveDist = 0;
-        let minCampDist = Infinity;
-        for (const entropy of entropies) {
-            const fakeThis = makeFakePlacementGame(entropy);
-            for (let index = 0; index < 3; index += 1) {
-                const hive = ThreeGame.prototype.chooseHiveSitePosition.call(fakeThis, index);
-                const camp = ThreeGame.prototype.chooseCampPosition.call(fakeThis, index);
-                maxHiveDist = Math.max(maxHiveDist, Math.hypot(hive.x, hive.z));
-                minCampDist = Math.min(minCampDist, Math.hypot(camp.x, camp.z));
-            }
-        }
-        expect(maxHiveDist).toBeLessThan(minCampDist);
-    });
+    it('keeps the final cave deeper than every camp and hive', () => {
+        const game = makeFakePlacementGame(7);
+        const cave = ThreeGame.prototype.chooseCaveEntrancePosition.call(game);
+        const landmarks = [
+            ...[0, 1, 2].map((index) => ThreeGame.prototype.chooseCampPosition.call(game, index)),
+            ...[0, 1, 2].map((index) => ThreeGame.prototype.chooseHiveSitePosition.call(game, index))
+        ];
 
-    it('keeps hives near their between-camp bisector bearings (tight jitter)', () => {
-        for (const entropy of entropies) {
-            const fakeThis = makeFakePlacementGame(entropy);
-            for (let index = 0; index < 3; index += 1) {
-                const spot = ThreeGame.prototype.chooseHiveSitePosition.call(fakeThis, index);
-                const angle = Math.atan2(spot.z, spot.x);
-                // Jitter is ±0.1π; small extra slack for tile rounding at
-                // 40u radius (1 tile ≈ 1.4° ≈ 0.008π).
-                expect(angularDistance(angle, HIVE_BASE_ANGLES[index])).toBeLessThanOrEqual(Math.PI * 0.11);
-            }
-        }
+        expect(cave.z).toBeGreaterThan(Math.max(...landmarks.map((site) => site.z)) + 45);
     });
 });

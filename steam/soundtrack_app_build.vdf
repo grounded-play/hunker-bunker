@@ -1,0 +1,16 @@
+// Hunker Bunker Soundtrack — steamcmd app build script.
+// Usage: steamcmd +login <builder_account> +run_app_build <abs path to this file> +quit
+// Soundtrack App ID: 4957680
+// Soundtrack Depot ID: 4957681
+"AppBuild"
+{
+    "AppID" "4957680"
+    "Desc" "Hunker Bunker Soundtrack automated build"
+    "BuildOutput" "../steam_build_output/"
+    "ContentRoot" "../dist_soundtrack/"
+
+    "Depots"
+    {
+        "4957681" "depot_build_soundtrack.vdf"
+    }
+}

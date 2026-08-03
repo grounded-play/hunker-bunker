@@ -8,7 +8,7 @@ follow-ups, not part of this slice.
 
 ## Problem
 
-Eight-direction hand/AI-generated sprite sheets (`public/art-remaster/`
+Eight-direction hand/AI-generated sprite sheets (`art/source/art-remaster/`
 v2 through v5) have not converged. Each version added more specification
 rigor against a generation method that cannot hold geometric consistency:
 v4's frame spec is a 64-cell "anatomical truth table" with invented

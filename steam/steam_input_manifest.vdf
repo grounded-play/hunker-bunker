@@ -1,7 +1,41 @@
 "Action Manifest"
 {
+    // Bump major_revision whenever action sets are added/removed or bindings are
+    // reworked enough that old user configs are unusable — Steam then force-updates
+    // players onto the current official config. minor_revision is for additive
+    // actions and localization tweaks. Read back via GetDeviceBindingRevision.
+    "major_revision" "2"
+    "minor_revision" "0"
     "configurations"
     {
+        "controller_neptune"
+        {
+            "0" { "path" "controller_configs/controller_neptune.vdf" }
+        }
+        "controller_xboxone"
+        {
+            "0" { "path" "controller_configs/controller_xboxone.vdf" }
+        }
+        "controller_xbox360"
+        {
+            "0" { "path" "controller_configs/controller_xbox360.vdf" }
+        }
+        "controller_ps4"
+        {
+            "0" { "path" "controller_configs/controller_ps4.vdf" }
+        }
+        "controller_ps5"
+        {
+            "0" { "path" "controller_configs/controller_ps5.vdf" }
+        }
+        "controller_switch_pro"
+        {
+            "0" { "path" "controller_configs/controller_switch_pro.vdf" }
+        }
+        "controller_generic"
+        {
+            "0" { "path" "controller_configs/controller_generic.vdf" }
+        }
     }
     "actions"
     {
@@ -18,8 +52,6 @@
                 "menu_back" "#ActionMenuBack"
                 "menu_tab_left" "#ActionMenuTabLeft"
                 "menu_tab_right" "#ActionMenuTabRight"
-                "menu_page_left" "#ActionMenuPageLeft"
-                "menu_page_right" "#ActionMenuPageRight"
                 "pause" "#ActionPause"
             }
         }
@@ -28,8 +60,26 @@
             "title" "#ActionSetGameplay"
             "StickPadGyro"
             {
-                "move" "#ActionMove"
-                "camera" "#ActionCamera"
+                "move"
+                {
+                    "title" "#ActionMove"
+                    "input_mode" "joystick_move"
+                }
+                "camera"
+                {
+                    "title" "#ActionCamera"
+                    "input_mode" "joystick_move"
+                }
+                // Mouse-style aim for the trackpad and gyro. Steam can synthesize
+                // absolute_mouse from a joystick but never the reverse, so the 1:1
+                // deltas have to be their own action. Deliberately no "os_mouse" —
+                // the game raycasts its own reticle and a second OS-driven cursor
+                // would fight it.
+                "camera_mouse"
+                {
+                    "title" "#ActionCameraMouse"
+                    "input_mode" "absolute_mouse"
+                }
             }
             "Button"
             {
@@ -40,6 +90,7 @@
                 "scan" "#ActionScan"
                 "sprint" "#ActionSprint"
                 "pause" "#ActionPause"
+                "toggle_map" "#ActionToggleMap"
             }
         }
         "archive"
@@ -47,7 +98,11 @@
             "title" "#ActionSetArchive"
             "StickPadGyro"
             {
-                "archive_focus" "#ActionArchiveFocus"
+                "archive_focus"
+                {
+                    "title" "#ActionArchiveFocus"
+                    "input_mode" "joystick_move"
+                }
             }
             "Button"
             {
@@ -74,10 +129,9 @@
             "ActionMenuBack" "Back"
             "ActionMenuTabLeft" "Previous Tab"
             "ActionMenuTabRight" "Next Tab"
-            "ActionMenuPageLeft" "Page Left"
-            "ActionMenuPageRight" "Page Right"
             "ActionMove" "Move"
-            "ActionCamera" "Camera"
+            "ActionCamera" "Aim"
+            "ActionCameraMouse" "Aim Cursor"
             "ActionFire" "Fire"
             "ActionInteract" "Interact"
             "ActionReload" "Reload"
@@ -85,6 +139,7 @@
             "ActionScan" "Scan"
             "ActionSprint" "Sprint"
             "ActionPause" "Pause"
+            "ActionToggleMap" "Tactical Map"
             "ActionArchiveFocus" "Move Focus"
             "ActionArchiveConfirm" "Inspect / Confirm"
             "ActionArchiveInventory" "Inventory"

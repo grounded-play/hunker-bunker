@@ -123,3 +123,43 @@ illustration art matching `item_calibration_notebook.png`'s treatment — see
 the root-level `ASSET_PROVENANCE.md` for the current, authoritative status
 of every RGB item icon. Nothing under `public/minigames/rgb/items/` is a
 placeholder as of this entry.
+
+## Dedicated Interstitials Pass 02
+
+15 dedicated story beat and object inspect interstitial assets were generated on
+2026-07-27 with OpenAI's built-in image generation workflow, then center-cropped
+and normalized to 1280×800 (16:10). The prompt set consistently requested
+high-contrast graphic realism, screen-printed grain, charcoal/gray industrial
+materials, restrained functional red accents, and no logos or watermarks. These
+replace the earlier diagrammatic placeholders and resolve visual repetition
+across hotspots in Chapters 1–6:
+
+- `interstitials/c1/img_c1_marisol_intake.png` — Marisol workplace entrance
+- `interstitials/c1/img_c1_badge_turnstile.png` — Turnstile badge scan granted
+- `interstitials/c2/img_c2_notebook_diagram.png` — Notebook Joint 3 diagram spread
+- `interstitials/c2/img_c2_joint_focus.png` — Robot 4A Joint 3 macro focus
+- `interstitials/c2/img_c2_terminal_metric_wipe.png` — Terminal metric cleared record
+- `interstitials/c3/img_c3_collision_impact.png` — Unprogrammed strike impact
+- `interstitials/c3/img_c3_swab_reader.png` — Compulsory swab reader inconclusive
+- `interstitials/c3/img_c3_phone_snap_evidence.png` — Evidence photo capture POV
+- `interstitials/c3/img_c3_hr_hand_reach.png` — HR retention reach across desk
+- `interstitials/c4/img_c4_paycheck_stub.png` — Itemized paycheck deduction stub
+- `interstitials/c4/img_c4_medicine_bag_3inch.png` — Prescription bag 3-inch gap
+- `interstitials/c4/img_c4_utility_map_spread.png` — Utility conduit map spread
+- `interstitials/c5/img_c5_wire_cutter_trunk.png` — Insulated cutters on data trunk
+- `interstitials/c5/img_c5_battery_pallet.png` — Staged lithium battery pallet
+- `interstitials/c6/img_c6_fire_alarm_pull.png` — Manual fire alarm pull station
+
+## Narrative Restoration Interstitials
+
+Four additional story interstitials were generated on 2026-07-27 with
+OpenAI's built-in image-generation workflow and normalized to 1280×800:
+
+- `interstitials/c2/img_c2_sensor_sweep.png` — 4A records Elias's gentle calibration source
+- `interstitials/c4/img_c4_partial_pay_denied.png` — Kiosk rejects Elias's entire $14.00 paycheck
+- `interstitials/c5/img_c5_expired_extinguisher.png` — Failed suppression equipment establishes negligence
+- `interstitials/c6/img_c6_4a_destruction.png` — 4A holds the rack until Elias escapes
+
+Prompt direction continued the established high-contrast graphic realism,
+screen-printed grain, charcoal industrial palette, and functional red light.
+The fire and destruction frame permits the route's authored ugly amber.

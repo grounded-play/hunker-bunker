@@ -50,20 +50,31 @@ export function mapBrowserGamepad(gamepad, {
         active: false,
         move: { x: moveX, y: moveY },
         camera: { x: cameraX, y: cameraY },
-        fire: readButton(buttons, 5) || readButton(buttons, 6) || readButton(buttons, 7),
+        // Shape parity with the Steam Input snapshot. The Web Gamepad API exposes
+        // neither a trackpad nor a gyro, so there is no mouse-style aim source to
+        // feed this here — it stays zero and the consumer falls back to stick aim.
+        cameraDelta: { x: 0, y: 0 },
+        fire: readButton(buttons, 5) || readButton(buttons, 7),
         interact: readButton(buttons, 0),
         reload: readButton(buttons, 2),
         ability: readButton(buttons, 3),
         dash: readButton(buttons, 1),
-        scan: readButton(buttons, 4) || readButton(buttons, 8),
-        sprint: readButton(buttons, 10),
+        scan: readButton(buttons, 1) || readButton(buttons, 11) || readButton(buttons, 8),
+        sprint: readButton(buttons, 4) || readButton(buttons, 6) || readButton(buttons, 10),
         pause: readButton(buttons, 9),
+        toggleMap: readButton(buttons, 8) || readButton(buttons, 16),
         menuUp: readButton(buttons, 12) || menuY < 0,
         menuDown: readButton(buttons, 13) || menuY > 0,
         menuLeft: readButton(buttons, 14) || menuX < 0,
         menuRight: readButton(buttons, 15) || menuX > 0,
         menuConfirm: readButton(buttons, 0),
-        menuBack: readButton(buttons, 1) || readButton(buttons, 8)
+        menuBack: readButton(buttons, 1) || readButton(buttons, 8),
+        // Dedicated bumpers for menu tab navigation, mirroring the "menu" action
+        // set's left_bumper/right_bumper bindings in controller_neptune.vdf. Kept
+        // separate from scan/fire/menuBack (which share buttons 1 and 8) so a
+        // single back press can't also flip the active tab.
+        menuTabLeft: readButton(buttons, 4),
+        menuTabRight: readButton(buttons, 5)
     };
 
     mapped.active = Boolean(
@@ -72,6 +83,7 @@ export function mapBrowserGamepad(gamepad, {
         || mapped.scan || mapped.sprint || mapped.pause
         || mapped.menuUp || mapped.menuDown || mapped.menuLeft || mapped.menuRight
         || mapped.menuConfirm || mapped.menuBack
+        || mapped.menuTabLeft || mapped.menuTabRight
     );
 
     return mapped;

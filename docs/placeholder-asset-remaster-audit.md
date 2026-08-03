@@ -98,7 +98,7 @@ isolated silhouettes, and promoted to their existing live paths:
 - `prop_camp_crates.png`
 
 The non-destructive production copies, removable-key sources, and comparison
-sheet live under `public/art-remaster/placeholder-v2/isolated-props/`. Unlike
+sheet live under `art/source/art-remaster/placeholder-v2/isolated-props/`. Unlike
 the earlier survival atlas, each prop was generated separately, eliminating
 cross-cell fragments. These assets retain their existing runtime identifiers,
 so no placement or material routing changes were required.
@@ -106,7 +106,7 @@ so no placement or material routing changes were required.
 ### Survival / maintenance pack
 
 The first coordinated placeholder replacement pack is available under
-`public/art-remaster/placeholder-v2/survival-pack/`:
+`art/source/art-remaster/placeholder-v2/survival-pack/`:
 
 - `prop_camp_cot_v2.png`;
 - `prop_camp_crate_v2.png`;
@@ -128,7 +128,7 @@ generated or isolated separately; the contact sheet is for material-language
 review only.
 
 Review them together in
-`public/art-remaster/placeholder-v2/survival-pack/contact-sheet.png`.
+`art/source/art-remaster/placeholder-v2/survival-pack/contact-sheet.png`.
 
 ### Remaining queue order
 

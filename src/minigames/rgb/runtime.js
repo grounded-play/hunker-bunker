@@ -7,6 +7,7 @@
 import {
     CHAPTERS,
     CHAPTER_ORDER,
+    CHAPTER_FLOWCHARTS,
     ENDINGS,
     GAME_OVERS,
     ITEMS,
@@ -31,18 +32,84 @@ import {
     gameOver
 } from './state.js';
 import { isHotspotAvailable } from './gating.js';
-import { saveCheckpoint, recordEnding, recordGameOver, saveRgbSave } from './save.js';
-import { createActionRouter, ACTION_SETS } from '../../inputActions.js';
-import { mapBrowserGamepad } from '../../browserGamepad.js';
+import {
+    saveCheckpoint,
+    recordEnding,
+    recordGameOver,
+    recordDiscoveredBeat,
+    saveRgbSave,
+    unlockChapter,
+    saveChapterSnapshot,
+    getChapterSnapshot
+} from './save.js';
 import { AudioManager } from '../../audio.js';
 import { createRgbAudioController, getDialogueSpeaker } from './audio.js';
 import { assetUrl } from '../../assetUrl.js';
 
 const NAV_REPEAT_MS = 220;
 const STICK_THRESHOLD = 0.5;
+const ROUTE_BEATS = Object.freeze({
+    reply_to_lucia: { axis: 'FAMILY', choice: 'ANSWERED LUCIA', consequence: 'The shift started late; Lucia was heard.' },
+    enter_now: { axis: 'FAMILY', choice: 'ENTERED NOW', consequence: 'The clock won the first decision.' },
+    double_tap_honest: { axis: 'TRUTH', choice: 'LEFT THE ERROR VISIBLE', consequence: '4A learned trust; the miss remained reviewable.' },
+    double_tap_falsify: { axis: 'TRUTH', choice: 'CLEANED THE METRIC', consequence: 'The numbers improved; the record did not.' },
+    request_marisol_witness: { axis: 'SOLIDARITY', choice: 'ASKED MARISOL TO STAY', consequence: 'Her testimony may help, but staying has a cost.' },
+    release_marisol_from_request: { axis: 'SOLIDARITY', choice: 'RELEASED MARISOL', consequence: 'She kept her own deadline; Elias lost a witness.' },
+    keep_notebook: { axis: 'EVIDENCE', choice: 'KEPT THE NOTEBOOK', consequence: 'The calibration record remains available later.' },
+    surrender_notebook: { axis: 'EVIDENCE', choice: 'SURRENDERED THE NOTEBOOK', consequence: 'Review controls the physical record.' },
+    request_billing_agent: { axis: 'ACCESS', choice: 'OPENED A BILLING CASE', consequence: 'A formal trail now exists.' },
+    call_lucia: { axis: 'FAMILY', choice: 'CALLED LUCIA BACK', consequence: 'The callback changes what the kiosk exit means.' },
+    give_up: { axis: 'ACCESS', choice: 'GAVE UP AT THE KIOSK', consequence: 'The treatment remained locked.' },
+    follow_utility_map: { axis: 'ACCESS', choice: 'FOLLOWED THE UTILITY MAP', consequence: 'Elias chose an unauthorized route forward.' },
+    walk_away: { axis: 'SYSTEM', choice: 'PRESERVED THE PROFILE', consequence: '4A survives inside the system loop.' },
+    expose_profile: { axis: 'SYSTEM', choice: 'EXPOSED THE PROFILE', consequence: 'The evidence route depends on what was preserved.' },
+    sever_trunk: { axis: 'SYSTEM', choice: 'SEVERED THE TRUNK', consequence: '4A is freed only if Elias can complete the rescue.' },
+    rescue_recenter: { axis: 'RESCUE', choice: 'RECENTERED 4A', consequence: 'The practiced calibration became a rescue action.' },
+    rescue_recenter_again: { axis: 'RESCUE', choice: 'RECENTERED 4A AGAIN', consequence: 'Persistence kept the rescue route alive.' },
+    rescue_fumble: { axis: 'RESCUE', choice: 'GRABBED THE CHASSIS', consequence: 'Force replaced calibration at the final moment.' }
+});
+
+const EVIDENCE_LABELS = Object.freeze({
+    camera_discrepancy: 'Missing pre-impact footage',
+    swab_photo: 'Inconclusive swab photograph',
+    payroll_record: 'Itemized payroll record',
+    kiosk_record: 'Medi-kiosk denial record',
+    training_profile: '4A training profile'
+});
+
+const SCENE_INTROS = Object.freeze({
+    parking_lot: 'Elias is in his sedan before the night shift. Check the medicine bottle, his balance, Lucia’s message, and the notebook before entering RGB.',
+    warehouse: 'Inside the warehouse, Elias must calibrate robot 4A while the production clock measures every movement.',
+    incident_review: 'After the collision, company review asks Elias to choose what enters the official record and what disappears.',
+    medi_kiosk: 'His employment and coverage terminated, Elias faces an automated kiosk holding Lucia’s medication behind glass.',
+    server_room: 'The utility route leads to RGB’s server room, where Elias discovers that his own work trained 4A.',
+    sector_four: 'The severed trunk has caused a fire and collapse. Elias is pinned in Sector Four while 4A approaches through the smoke.'
+});
+
+function uniqueLines(lines = []) {
+    const seen = new Set();
+    return lines
+        .map((line) => String(line ?? '').trim())
+        .filter((line) => line && !seen.has(line) && seen.add(line));
+}
 
 function hydrateRunState(save) {
     const base = createRunState();
+    const snapshot = getChapterSnapshot(save, save.checkpoint);
+    if (snapshot) {
+        return {
+            ...base,
+            checkpoint: save.checkpoint,
+            timeBand: Number.isFinite(snapshot.timeBand) ? snapshot.timeBand : save.run.timeBand,
+            pain: typeof snapshot.pain === 'string' ? snapshot.pain : save.run.pain,
+            evidence: Array.isArray(snapshot.evidence) ? [...snapshot.evidence] : [...save.run.evidence],
+            inventory: Array.isArray(snapshot.inventory) ? [...snapshot.inventory] : [...save.run.inventory],
+            routeHistory: Array.isArray(snapshot.routeHistory)
+                ? snapshot.routeHistory.map((e) => ({ ...e }))
+                : [...(save.run.routeHistory ?? [])],
+            flags: { ...base.flags, ...save.run.flags, ...(snapshot.flags ?? {}) }
+        };
+    }
     return {
         ...base,
         checkpoint: save.checkpoint,
@@ -50,6 +117,7 @@ function hydrateRunState(save) {
         pain: save.run.pain,
         evidence: [...save.run.evidence],
         inventory: [...save.run.inventory],
+        routeHistory: [...(save.run.routeHistory ?? [])],
         flags: { ...base.flags, ...save.run.flags }
     };
 }
@@ -63,6 +131,7 @@ function snapshotRun(save, runState) {
             pain: runState.pain,
             evidence: [...runState.evidence],
             inventory: [...runState.inventory],
+            routeHistory: [...runState.routeHistory],
             flags: { ...runState.flags }
         }
     };
@@ -105,13 +174,12 @@ export function mountRgb({ root, save, storage, onExit }) {
     let dialogueLines = ['Select an available action to continue the archive reconstruction.'];
     let dialogueSpeaker = null;
     let pendingPickup = null;
+    let activeCutaway = null;
     // How many of the current chapter's three authored hints have been asked
     // for. Resets per chapter; never affects endings (scene-flow.md).
     let hintsShown = 0;
 
-    const actionRouter = createActionRouter();
     const rgbAudio = createRgbAudioController();
-    actionRouter.setActionSet(ACTION_SETS.ARCHIVE);
 
     root.classList.remove('hidden');
     root.classList.add('rgb-root');
@@ -154,6 +222,110 @@ export function mountRgb({ root, save, storage, onExit }) {
         return currentSave.settings?.hints !== 'off';
     }
 
+    function cutawayForHotspot(hotspot) {
+        if (hotspot.cutaway) return { zoom: 1, ...hotspot.cutaway };
+        if (!hotspot.object) return null;
+        const centerX = ((hotspot.x ?? 0) + (hotspot.w ?? 180) / 2) / 1280 * 100;
+        const centerY = ((hotspot.y ?? 0) + (hotspot.h ?? 56) / 2) / 800 * 100;
+        return {
+            image: currentChapter().bg,
+            label: hotspot.label,
+            focusX: Math.max(8, Math.min(92, centerX)),
+            focusY: Math.max(8, Math.min(92, centerY)),
+            zoom: hotspot.cutawayZoom ?? 1.65
+        };
+    }
+
+    function recordRouteBeat(hotspot) {
+        save = recordDiscoveredBeat(save, hotspot.id);
+        saveRgbSave(localStorage, save);
+        const beat = ROUTE_BEATS[hotspot.id];
+        if (!beat || runState.routeHistory.some((entry) => entry.hotspotId === hotspot.id)) return;
+        runState = {
+            ...runState,
+            routeHistory: [
+                ...runState.routeHistory,
+                {
+                    hotspotId: hotspot.id,
+                    chapterId: runState.checkpoint,
+                    chapter: chapterNumber(),
+                    ...beat
+                }
+            ]
+        };
+    }
+
+    function renderChapterFlowchart(chapterId) {
+        const flowchartData = CHAPTER_FLOWCHARTS[chapterId ?? runState.checkpoint];
+        if (!flowchartData) return null;
+
+        const container = document.createElement('div');
+        container.className = 'rgb-flowchart';
+
+        const header = document.createElement('div');
+        header.className = 'rgb-flowchart__header';
+        header.innerHTML = `<span>FLOWCHART</span> <strong>${flowchartData.title.toUpperCase()}</strong>`;
+
+        const tree = document.createElement('div');
+        tree.className = 'rgb-flowchart__tree';
+
+        const waves = {};
+        for (const node of flowchartData.nodes) {
+            waves[node.wave] = waves[node.wave] || [];
+            waves[node.wave].push(node);
+        }
+
+        const discoveredSet = new Set(save.discoveredBeats ?? []);
+        const currentRunSet = new Set(runState.routeHistory.map((e) => e.hotspotId).concat(Array.from(visited)));
+
+        Object.keys(waves).sort((a, b) => Number(a) - Number(b)).forEach((waveNum) => {
+            const waveCol = document.createElement('div');
+            waveCol.className = `rgb-flowchart__wave rgb-flowchart__wave--${waveNum}`;
+
+            const waveTag = document.createElement('div');
+            waveTag.className = 'rgb-flowchart__wave-tag';
+            waveTag.textContent = `WAVE ${waveNum}`;
+            waveCol.append(waveTag);
+
+            for (const node of waves[waveNum]) {
+                const nodeEl = document.createElement('div');
+                nodeEl.className = 'rgb-flowchart__node';
+
+                const isCurrent = currentRunSet.has(node.id);
+                const isPast = !isCurrent && discoveredSet.has(node.id);
+
+                if (isCurrent) {
+                    nodeEl.classList.add('rgb-flowchart__node--current');
+                    if (node.isChoice) nodeEl.classList.add('rgb-flowchart__node--choice');
+                    nodeEl.innerHTML = `
+                        <div class="rgb-flowchart__badge">${node.branch ? `${node.branch} · ACTIVE` : 'ACTIVE RUN'}</div>
+                        <div class="rgb-flowchart__title">${node.label}</div>
+                        ${node.consequence ? `<div class="rgb-flowchart__desc">${node.consequence}</div>` : ''}
+                    `;
+                } else if (isPast) {
+                    nodeEl.classList.add('rgb-flowchart__node--discovered');
+                    nodeEl.innerHTML = `
+                        <div class="rgb-flowchart__badge rgb-flowchart__badge--past">${node.branch ? `${node.branch} · PAST RUN` : 'PAST RUN'}</div>
+                        <div class="rgb-flowchart__title">${node.label}</div>
+                        ${node.consequence ? `<div class="rgb-flowchart__desc">${node.consequence}</div>` : ''}
+                    `;
+                } else {
+                    nodeEl.classList.add('rgb-flowchart__node--hidden');
+                    nodeEl.innerHTML = `
+                        <div class="rgb-flowchart__badge rgb-flowchart__badge--hidden">${node.branch ? `${node.branch} · LOCKED` : 'UNEXPLORED'}</div>
+                        <div class="rgb-flowchart__title">??? UNDISCOVERED PATH ???</div>
+                        <div class="rgb-flowchart__desc">Explore alternative choices in another run to reveal.</div>
+                    `;
+                }
+                waveCol.append(nodeEl);
+            }
+            tree.append(waveCol);
+        });
+
+        container.append(header, tree);
+        return container;
+    }
+
     function render() {
         root.replaceChildren();
         if (mode === 'warning') return renderWarning();
@@ -193,7 +365,17 @@ export function mountRgb({ root, save, storage, onExit }) {
             }
         });
 
-        titleRow.append(progress, title, settingsBtn);
+        const pathBtn = document.createElement('button');
+        pathBtn.type = 'button';
+        pathBtn.className = 'rgb-path-btn';
+        pathBtn.textContent = `PATH ${runState.routeHistory.length}`;
+        pathBtn.setAttribute('aria-label', 'Open path history and recap');
+        pathBtn.addEventListener('click', () => {
+            mode = 'recap';
+            render();
+        });
+
+        titleRow.append(progress, title, pathBtn, settingsBtn);
 
         const goal = document.createElement('div');
         goal.className = 'rgb-header__goal';
@@ -204,17 +386,31 @@ export function mountRgb({ root, save, storage, onExit }) {
 
         const stage = document.createElement('div');
         stage.className = 'rgb-stage-layer';
-        if (chapter.bg) {
+        stage.classList.toggle('rgb-stage-layer--cutaway', Boolean(activeCutaway));
+        const stageImage = activeCutaway?.image ?? chapter.bg;
+        if (stageImage) {
             const bgImg = document.createElement('img');
             bgImg.className = 'rgb-stage-bg';
-            bgImg.src = assetUrl(chapter.bg);
+            bgImg.src = assetUrl(stageImage);
             bgImg.alt = '';
+            if (activeCutaway) {
+                bgImg.style.setProperty('--rgb-cutaway-x', `${activeCutaway.focusX ?? 50}%`);
+                bgImg.style.setProperty('--rgb-cutaway-y', `${activeCutaway.focusY ?? 50}%`);
+                bgImg.style.setProperty('--rgb-cutaway-zoom', activeCutaway.zoom ?? 1);
+            }
             stage.appendChild(bgImg);
+        }
+        if (activeCutaway?.label) {
+            const cutawayLabel = document.createElement('div');
+            cutawayLabel.className = 'rgb-cutaway-label';
+            cutawayLabel.textContent = activeCutaway.label;
+            stage.append(cutawayLabel);
         }
         scene.append(stage);
 
         const actionDeck = document.createElement('div');
         actionDeck.className = 'rgb-action-deck';
+        actionDeck.classList.toggle('rgb-action-deck--cutaway', Boolean(activeCutaway));
         actionDeck.setAttribute('aria-label', 'Available actions');
         const ready = new Set(focusableHotspots().map((h) => h.id));
         chapter.hotspots.forEach((hotspot) => {
@@ -281,13 +477,14 @@ export function mountRgb({ root, save, storage, onExit }) {
     }
 
     function dismissWarning() {
-        const isFreshStart = currentSave.checkpoint === 'parking_lot'
-            && currentSave.run.inventory.length === 0;
-        if (isFreshStart) {
+        // Loading or restarting Chapter 1 always restores the authored intro;
+        // retained inventory in an archive save must not suppress the opening.
+        if (currentSave.checkpoint === 'parking_lot') {
             mode = 'cinematic';
             root.replaceChildren();
             playCinematicSequence(cinematicLayer, [INTRO_CINEMATIC], {
-                background: INTRO_CINEMATIC.image
+                background: INTRO_CINEMATIC.image,
+                onNarration: (line) => rgbAudio.narrate(line)
             }).then(() => {
                 mode = 'chapterCard';
                 render();
@@ -367,7 +564,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             dialogue.appendChild(tag);
         }
 
-        for (const [index, line] of (lines ?? []).entries()) {
+        for (const [index, line] of uniqueLines(lines).entries()) {
             const p = document.createElement('p');
             p.style.setProperty('--rgb-line-index', index);
             const prompt = document.createElement('span');
@@ -384,11 +581,29 @@ export function mountRgb({ root, save, storage, onExit }) {
             take.textContent = pendingPickup.label ?? 'TAKE';
             take.addEventListener('click', takePendingPickup);
             dialogue.append(take);
+        } else if (activeCutaway) {
+            const back = document.createElement('button');
+            back.type = 'button';
+            back.className = 'rgb-dialogue__take rgb-dialogue__return';
+            back.textContent = 'RETURN TO SCENE';
+            back.addEventListener('click', dismissCutaway);
+            dialogue.append(back);
         }
 
         requestAnimationFrame(() => {
             dialogue.scrollTop = dialogue.scrollHeight;
         });
+    }
+
+    function dismissCutaway() {
+        activeCutaway = null;
+        dialogueLines = [
+            `Back in ${currentChapter().title.replace(/^Chapter \d+:\s*/, '')}.`,
+            SCENE_INTROS[runState.checkpoint]
+        ];
+        dialogueSpeaker = 'NARRATOR';
+        rgbAudio.narrate(dialogueLines);
+        render();
     }
 
     function takePendingPickup() {
@@ -435,6 +650,9 @@ export function mountRgb({ root, save, storage, onExit }) {
     function dismissChapterCard() {
         if (mode !== 'chapterCard') return;
         mode = 'scene';
+        dialogueLines = [SCENE_INTROS[runState.checkpoint] ?? currentChapter().goal];
+        dialogueSpeaker = 'NARRATOR';
+        rgbAudio.narrate(dialogueLines);
         render();
     }
 
@@ -504,30 +722,99 @@ export function mountRgb({ root, save, storage, onExit }) {
         overlay.className = 'rgb-overlay rgb-recap';
         const title = document.createElement('div');
         title.className = 'rgb-overlay__title';
-        title.textContent = 'RECAP';
+        title.textContent = 'YOUR PATH';
 
-        const goal = document.createElement('div');
-        goal.textContent = `Goal: ${currentChapter().goal}`;
-        const pain = document.createElement('div');
-        pain.textContent = `Elias: ${runState.pain}`;
-        const evidence = document.createElement('div');
-        evidence.textContent = `Evidence gathered: ${runState.evidence.length}`;
-        overlay.append(title, goal, pain, evidence);
+        const intro = document.createElement('div');
+        intro.className = 'rgb-recap__intro';
+        intro.textContent = `Current objective — ${currentChapter().goal}`;
 
-        const choices = consequentialChoices();
-        if (choices.length > 0) {
-            const heading = document.createElement('div');
-            heading.className = 'rgb-recap__heading';
-            heading.textContent = 'What you have done so far';
-            const list = document.createElement('ul');
-            for (const line of choices) {
-                const li = document.createElement('li');
-                li.textContent = line;
-                list.append(li);
-            }
-            overlay.append(heading, list);
+        const status = document.createElement('div');
+        status.className = 'rgb-recap__status';
+        const statusItems = [
+            ['ELIAS', runState.pain],
+            ['TIME', runState.timeBand],
+            ['4A TRUST', String(runState.trust4A ?? 0)],
+            ['EVIDENCE', String(runState.evidence.length)]
+        ];
+        for (const [label, value] of statusItems) {
+            const chip = document.createElement('div');
+            chip.className = 'rgb-recap__status-chip';
+            chip.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+            status.append(chip);
         }
+
+        const rail = document.createElement('div');
+        rail.className = 'rgb-route-rail';
+        const currentIndex = CHAPTER_ORDER.indexOf(runState.checkpoint);
+        CHAPTER_ORDER.forEach((chapterId, index) => {
+            const node = document.createElement('div');
+            node.className = 'rgb-route-node';
+            node.classList.add(index < currentIndex
+                ? 'rgb-route-node--complete'
+                : index === currentIndex
+                    ? 'rgb-route-node--current'
+                    : 'rgb-route-node--future');
+            node.innerHTML = `<span>${index + 1}</span><strong>${CHAPTERS[chapterId].title}</strong>`;
+            rail.append(node);
+        });
+
+        const heading = document.createElement('div');
+        heading.className = 'rgb-recap__heading';
+        heading.textContent = 'DECISIONS THAT CHANGED THIS RUN';
+
+        const timeline = document.createElement('div');
+        timeline.className = 'rgb-route-timeline';
+        for (const entry of runState.routeHistory) {
+            const card = document.createElement('article');
+            card.className = 'rgb-route-entry';
+            card.innerHTML = `
+                <div class="rgb-route-entry__meta">CH ${entry.chapter} · ${entry.axis}</div>
+                <div class="rgb-route-entry__choice">${entry.choice}</div>
+                <div class="rgb-route-entry__consequence">${entry.consequence}</div>
+            `;
+            timeline.append(card);
+        }
+        if (runState.routeHistory.length === 0) {
+            const legacyChoices = consequentialChoices();
+            const empty = document.createElement('div');
+            empty.className = 'rgb-overlay__empty';
+            empty.textContent = legacyChoices.length > 0
+                ? legacyChoices.join(' ')
+                : 'Your first consequential decision will appear here.';
+            timeline.append(empty);
+        }
+
+        const evidenceHeading = document.createElement('div');
+        evidenceHeading.className = 'rgb-recap__heading';
+        evidenceHeading.textContent = 'EVIDENCE PRESERVED';
+        const evidenceList = document.createElement('div');
+        evidenceList.className = 'rgb-recap__evidence';
+        evidenceList.textContent = runState.evidence.length > 0
+            ? runState.evidence.map((id) => EVIDENCE_LABELS[id] ?? id).join(' · ')
+            : 'No evidence preserved yet.';
+
+        const flowchartHeading = document.createElement('div');
+        flowchartHeading.className = 'rgb-recap__heading';
+        flowchartHeading.textContent = 'NARRATIVE BRANCH TREE & UNLOCKED PATHS';
+
+        const flowchartEl = renderChapterFlowchart(runState.checkpoint);
+
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'rgb-recap__close';
+        close.textContent = 'RETURN TO SCENE';
+        close.addEventListener('click', () => {
+            mode = 'scene';
+            render();
+        });
+
+        overlay.append(title, intro, status, rail, heading, timeline, evidenceHeading, evidenceList);
+        if (flowchartEl) {
+            overlay.append(flowchartHeading, flowchartEl);
+        }
+        overlay.append(close);
         root.append(overlay);
+        close.focus();
     }
 
     function renderPauseOverlay() {
@@ -578,11 +865,18 @@ export function mountRgb({ root, save, storage, onExit }) {
         const body = document.createElement('div');
         body.className = 'rgb-card__body';
         body.textContent = ending.body;
+
+        const flowchartEl = renderChapterFlowchart(runState.checkpoint);
+
         const exitBtn = document.createElement('button');
         exitBtn.type = 'button';
         exitBtn.textContent = 'EXIT SIMULATION';
         exitBtn.addEventListener('click', handleExit);
-        card.append(title, body, exitBtn);
+        card.append(title, body);
+        if (flowchartEl) {
+            card.append(flowchartEl);
+        }
+        card.append(exitBtn);
         root.append(card);
         exitBtn.focus();
     }
@@ -619,6 +913,10 @@ export function mountRgb({ root, save, storage, onExit }) {
     }
 
     function applyFocus() {
+        if (activeCutaway) {
+            root.querySelector('.rgb-dialogue__take')?.focus();
+            return;
+        }
         const list = focusableHotspots();
         if (list.length === 0) return;
         focusIndex = Math.max(0, Math.min(focusIndex, list.length - 1));
@@ -643,12 +941,17 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (mode !== 'scene') return;
         if (!isHotspotAvailable(hotspot, runState, visited)) return;
 
-        dialogueLines = [...(hotspot.lines ?? [])];
+        dialogueLines = uniqueLines(hotspot.lines ?? []);
         dialogueSpeaker = getDialogueSpeaker(hotspot.id);
         pendingPickup = hotspot.pickup ? { ...hotspot.pickup } : null;
-        rgbAudio.hotspot(hotspot.id, dialogueLines);
+        activeCutaway = cutawayForHotspot(hotspot);
         const priorState = runState;
+        const cinematicSteps = resolveCinematicSteps(hotspot.id, priorState);
+        // Cinematic choices receive purpose-written narration over the moving
+        // image. Ordinary scene/cutaway actions speak their displayed lines.
+        if (cinematicSteps.length === 0) rgbAudio.hotspot(hotspot.id, dialogueLines);
         runState = applyEffects(runState, hotspot.effects);
+        recordRouteBeat(hotspot);
         visited.add(hotspot.id);
         persist();
 
@@ -677,14 +980,15 @@ export function mountRgb({ root, save, storage, onExit }) {
             render();
         };
 
-        const cinematicSteps = resolveCinematicSteps(hotspot.id, priorState);
         if (cinematicSteps.length > 0) {
+            activeCutaway = null;
             mode = 'cinematic';
             const scene = root.querySelector('.rgb-scene');
             scene?.classList.add('rgb-scene--cinematic');
             playCinematicSequence(cinematicLayer, resolveCinematicAssets(cinematicSteps), {
                 background: currentChapter().bg,
-                transitionDelayMs: 320
+                transitionDelayMs: 320,
+                onNarration: (line) => rgbAudio.narrate(line)
             }).then(() => {
                 scene?.classList.remove('rgb-scene--cinematic');
                 proceed();
@@ -700,9 +1004,12 @@ export function mountRgb({ root, save, storage, onExit }) {
         visited = new Set();
         focusIndex = 0;
         hintsShown = 0;
+        activeCutaway = null;
         dialogueLines = [`Archive reconstruction resumed: ${CHAPTERS[chapterId].title}.`];
         dialogueSpeaker = null;
         currentSave = saveCheckpoint(currentSave, chapterId);
+        currentSave = unlockChapter(currentSave, chapterId);
+        currentSave = saveChapterSnapshot(currentSave, chapterId, runState);
         persist();
         window.dispatchEvent(new CustomEvent('rgb-checkpoint', { detail: { checkpoint: chapterId } }));
         rgbAudio.enterChapter(chapterId);
@@ -742,7 +1049,12 @@ export function mountRgb({ root, save, storage, onExit }) {
         }
         if (retryHotspot?.effects?.rescue) runState = { ...runState, rescueOutcome: null };
         if (retryHotspot?.effects?.finalChoice) runState = { ...runState, finalChoice: null };
-        dialogueLines = ['Retry restored. Select the next action.'];
+        dialogueLines = [
+            'The archive rewinds to the last recoverable action.',
+            SCENE_INTROS[runState.checkpoint]
+        ];
+        dialogueSpeaker = 'NARRATOR';
+        rgbAudio.narrate(dialogueLines);
         mode = 'scene';
         render();
     }
@@ -751,7 +1063,13 @@ export function mountRgb({ root, save, storage, onExit }) {
         runState = hydrateRunState(currentSave);
         visited = new Set();
         focusIndex = 0;
-        dialogueLines = [`Checkpoint restored: ${currentChapter().title}.`];
+        dialogueLines = [
+            `Checkpoint restored: ${currentChapter().title}.`,
+            SCENE_INTROS[runState.checkpoint]
+        ];
+        dialogueSpeaker = 'NARRATOR';
+        rgbAudio.enterChapter(runState.checkpoint);
+        rgbAudio.narrate(dialogueLines);
         mode = 'scene';
         render();
     }
@@ -801,6 +1119,16 @@ export function mountRgb({ root, save, storage, onExit }) {
             return;
         }
         if (mode !== 'scene') return;
+        if (activeCutaway) {
+            if (code === 'Enter' || code === 'Space' || code === 'KeyE') {
+                event.preventDefault();
+                root.querySelector('.rgb-dialogue__take')?.click();
+            } else if (code === 'Escape') {
+                event.preventDefault();
+                dismissCutaway();
+            }
+            return;
+        }
 
         switch (code) {
             case 'ArrowUp':
@@ -852,44 +1180,44 @@ export function mountRgb({ root, save, storage, onExit }) {
         }
     }
 
-    let gamepadFrame = null;
-    function pollGamepad() {
+    function handleArchiveControllerActions(event) {
         if (destroyed) return;
-        const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
-        const pad = pads?.[0] ? mapBrowserGamepad(pads[0]) : null;
-        if (pad) {
-            const { actions } = actionRouter.deriveActions(pad);
-            const now = performance.now();
-            if (mode === 'scene') {
-                const magX = Math.abs(actions.focus.x);
-                const magY = Math.abs(actions.focus.y);
-                if (now - lastNavAt > NAV_REPEAT_MS && (magX > STICK_THRESHOLD || magY > STICK_THRESHOLD)) {
-                    lastNavAt = now;
-                    moveFocus(magX >= magY ? Math.sign(actions.focus.x) : Math.sign(actions.focus.y));
-                }
-                if (actions.confirm) {
-                    const list = focusableHotspots();
-                    if (list[focusIndex]) activateHotspot(list[focusIndex]);
-                }
-                if (actions.inventory) { mode = 'inventory'; render(); }
-                if (actions.back) { mode = 'pause'; render(); }
-            } else if (mode === 'chapterCard') {
-                if (actions.confirm || actions.back) dismissChapterCard();
-            } else if ((mode === 'inventory' || mode === 'pause') && actions.back) {
-                mode = 'scene';
-                render();
+        const actions = event.detail;
+        if (!actions) return;
+        const now = performance.now();
+        if (mode === 'scene') {
+            if (activeCutaway) {
+                if (actions.confirm) root.querySelector('.rgb-dialogue__take')?.click();
+                if (actions.back) dismissCutaway();
+                return;
             }
-            if (mode !== 'cinematic' && revealHeld !== actions.reveal) {
-                revealHeld = actions.reveal;
-                render();
+            const magX = Math.abs(actions.focus.x);
+            const magY = Math.abs(actions.focus.y);
+            if (now - lastNavAt > NAV_REPEAT_MS && (magX > STICK_THRESHOLD || magY > STICK_THRESHOLD)) {
+                lastNavAt = now;
+                moveFocus(magX >= magY ? Math.sign(actions.focus.x) : Math.sign(actions.focus.y));
             }
+            if (actions.confirm) {
+                const list = focusableHotspots();
+                if (list[focusIndex]) activateHotspot(list[focusIndex]);
+            }
+            if (actions.inventory) { mode = 'inventory'; render(); }
+            if (actions.back || actions.pause) { mode = 'pause'; render(); }
+        } else if (mode === 'chapterCard') {
+            if (actions.confirm || actions.back || actions.pause) dismissChapterCard();
+        } else if ((mode === 'inventory' || mode === 'recap' || mode === 'pause') && (actions.back || actions.pause)) {
+            mode = 'scene';
+            render();
         }
-        gamepadFrame = requestAnimationFrame(pollGamepad);
+        if (mode !== 'cinematic' && revealHeld !== actions.reveal) {
+            revealHeld = actions.reveal;
+            render();
+        }
     }
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    gamepadFrame = requestAnimationFrame(pollGamepad);
+    window.addEventListener('hb-archive-controller-actions', handleArchiveControllerActions);
 
     render();
 
@@ -900,7 +1228,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             AudioManager.startMenuMusic();
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
-            if (gamepadFrame) cancelAnimationFrame(gamepadFrame);
+            window.removeEventListener('hb-archive-controller-actions', handleArchiveControllerActions);
             cinematicLayer.remove();
             root.replaceChildren();
             root.classList.add('hidden');

@@ -1,3 +1,5 @@
+const loggedAtlasLayouts = new Set();
+
 function findActiveRuns(length, isActive) {
     const runs = [];
     let start = -1;
@@ -19,7 +21,9 @@ function findActiveRuns(length, isActive) {
  */
 export function repackGeneratedSpriteAtlas(sourceCanvas, layout) {
     if (!layout?.repackFromTransparency) return sourceCanvas;
-    if (typeof window !== 'undefined' && window.hbLog) {
+    const layoutName = layout?.name || 'unnamed';
+    if (typeof window !== 'undefined' && window.hbLog && !loggedAtlasLayouts.has(layoutName)) {
+        loggedAtlasLayouts.add(layoutName);
         window.hbLog('LOAD', 'info', `Repacking sprite atlas: ${layout?.name || 'unnamed'}`);
     }
 
@@ -48,7 +52,7 @@ export function repackGeneratedSpriteAtlas(sourceCanvas, layout) {
     const output = document.createElement('canvas');
     output.width = layout.columns * cellWidth;
     output.height = layout.rows * cellHeight;
-    const outputContext = output.getContext('2d');
+    const outputContext = output.getContext('2d', { willReadFrequently: true });
     outputContext.imageSmoothingEnabled = false;
 
     for (let row = 0; row < rowRuns.length; row += 1) {

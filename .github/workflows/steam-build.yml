@@ -1,5 +1,5 @@
 # Steam build pipeline (docs/steam-build-pipeline.md, Phase C).
-# - Every push to dev/main branches + PRs: prove the game still packages.
+# - Every push to dev/main/mothership branches + PRs: prove the game still packages.
 # - Tags (v*) or manual dispatch: build win+linux, then upload to Steam's
 #   'beta' branch IF the Steam secrets are configured. Without secrets the
 #   upload job skips and the artifacts are still attached to the run.
@@ -12,6 +12,7 @@ on:
   push:
     branches:
       - main
+      - mothership
       - 'dev/**'
     tags: ['v*']
   workflow_dispatch:
@@ -39,12 +40,14 @@ jobs:
             unpacked: win-unpacked
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run audit:dependencies
+      - run: npm run presubmit
       - run: npm test
       - name: Build revision-stamped web payload
         run: npm run build
@@ -60,8 +63,25 @@ jobs:
           HB_STEAM_APPID: ${{ vars.STEAM_APPID }}
           HB_STEAM_CONFIG_REQUIRE_REMOTE: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
       - run: npx electron-builder --dir
+      - run: npm run audit:retail-assets:package
       - run: npm run steam:audit-depot
+      - name: Verify Linux launch payload
+        if: runner.os == 'Linux'
+        run: |
+          test -x dist_electron/linux-unpacked/hunker-bunker
+          test -x dist_electron/linux-unpacked/hunker-bunker-bin
+      - name: Archive Linux payload with executable modes
+        if: runner.os == 'Linux'
+        run: tar -C dist_electron -cf hunker-bunker-linux-unpacked.tar linux-unpacked
       - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: hunker-bunker-linux-unpacked
+          path: hunker-bunker-linux-unpacked.tar
+          compression-level: 0
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
         with:
           name: hunker-bunker-${{ matrix.unpacked }}
           path: dist_electron/${{ matrix.unpacked }}/
@@ -75,11 +95,11 @@ jobs:
       (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check Steam secrets
         id: creds
         run: |
-          if [ -n "${{ secrets.STEAM_BUILD_ACCOUNT }}" ] && [ -n "${{ secrets.STEAM_CONFIG_VDF }}" ] && [ -n "${{ secrets.STEAM_APPID }}" ] && [ -n "${{ secrets.STEAM_DEPOT_CONTENT }}" ]; then
+          if [ -n "${{ secrets.STEAM_BUILD_ACCOUNT }}" ] && [ -n "${{ secrets.STEAM_CONFIG_VDF }}" ] && [ -n "${{ secrets.STEAM_APPID }}" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "ready=false" >> "$GITHUB_OUTPUT"
@@ -89,12 +109,19 @@ jobs:
         if: steps.creds.outputs.ready == 'true'
         with:
           name: hunker-bunker-linux-unpacked
-          path: dist_electron/linux-unpacked
+          path: dist_electron
       - uses: actions/download-artifact@v4
         if: steps.creds.outputs.ready == 'true'
         with:
           name: hunker-bunker-win-unpacked
           path: dist_electron/win-unpacked
+      - name: Restore Linux payload and verify launchers
+        if: steps.creds.outputs.ready == 'true'
+        run: |
+          tar -xf dist_electron/hunker-bunker-linux-unpacked.tar -C dist_electron
+          test -x dist_electron/linux-unpacked/hunker-bunker
+          test -x dist_electron/linux-unpacked/hunker-bunker-bin
+          npm run steam:audit-depot
       - name: Upload via steamcmd
         if: steps.creds.outputs.ready == 'true'
         uses: game-ci/steam-deploy@v3
@@ -104,6 +131,7 @@ jobs:
           appId: ${{ secrets.STEAM_APPID }}
           buildDescription: ${{ github.ref_name }}
           rootPath: dist_electron
-          depot1Id: ${{ secrets.STEAM_DEPOT_CONTENT }}
-          depot1Path: .
+          firstDepotIdOverride: 4957041
+          depot1Path: linux-unpacked
+          depot2Path: win-unpacked
           releaseBranch: beta

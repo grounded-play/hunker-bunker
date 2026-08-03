@@ -97,4 +97,26 @@ describe('debugConsole', () => {
     it('has expanded maxLogs capacity of 2500', () => {
         expect(debugLog.maxLogs).toBe(2500);
     });
+
+    it('keeps the complete session journal when the visible console is cleared', () => {
+        const start = debugLog.sessionLogs.length;
+        debugLog.info('BOOT', 'renderer starting');
+        debugLog.info('PHASE', 'boot -> gameplay');
+        debugLog.clear();
+
+        expect(debugLog.sessionLogs.slice(start).map((entry) => entry.message)).toEqual([
+            'renderer starting',
+            'boot -> gameplay',
+            'Console logs cleared.'
+        ]);
+    });
+
+    it('serializes the session journal as readable text', () => {
+        debugLog.warn('WORLD', 'unexpected chunk fallback', { chunk: '2,-1' });
+
+        const exported = debugLog.serializeSession('txt');
+        expect(exported).toContain('HUNKER BUNKER SESSION LOG');
+        expect(exported).toContain('[WARN] [WORLD] unexpected chunk fallback');
+        expect(exported).toContain('"chunk": "2,-1"');
+    });
 });

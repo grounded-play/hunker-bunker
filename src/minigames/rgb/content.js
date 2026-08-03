@@ -76,6 +76,34 @@ export const CONTENT_WARNING = 'Depicts workplace injury, medical-access stress,
 // video first and falls back to holding the image when the video is missing.
 const CINEMATIC_BASE = '/minigames/rgb/cinematics';
 const BACKGROUNDS = '/minigames/rgb/backgrounds';
+const INTERSTITIALS = '/minigames/rgb/interstitials';
+
+const CINEMATIC_NARRATION = Object.freeze({
+    'C1-A': 'Elias answers Lucia before leaving the car, choosing to hear her even as the shift clock keeps running.',
+    'C1-B': 'Elias leaves the unanswered phone in the car and crosses the lot before the clock can count him late.',
+    'C2-A': 'He leaves the calibration error visible. The record stays honest, and 4A is allowed to learn from the correction.',
+    'C2-B': 'He cleans the failed movement from the metric. The dashboard improves, but 4A loses the lesson.',
+    'C3-A': 'Elias carries the discrepancy and preserved evidence out of review toward the medical kiosk.',
+    'C3-B': 'Review closes around the company version of events, and Elias is discharged toward the kiosk without the full record.',
+    'C4-A': 'The kiosk refuses every legitimate request. Elias records the denial, opens the notebook, and finds a utility route back inside RGB.',
+    'C4-B': 'Lucia is still waiting. Elias opens the notebook and chooses the utility route back inside RGB.',
+    'C4-C': 'Elias gives up. The medication returns to holding while Lucia’s message plays unanswered.',
+    'C5-A': 'Elias leaves his training profile intact. The system keeps using his labor after it has discarded him.',
+    'C5-B': 'Elias copies and transmits the profile before the access window closes.',
+    'C5-C': 'Elias severs the primary data trunk. The cut starts a cascading electrical fire and forces him toward Sector Four.',
+    'C6-A': '4A recalls the corrected joint movement, lifts the rack, and frees Elias from the collapse.',
+    'C6-B': '4A grips the wrong point. The load shifts, the rack falls, and the rescue fails.',
+    R1: 'Elias crosses the parking lot and badges into the warehouse.',
+    R2: 'The calibration shift ends in a collision, leaving the line and Elias under review.',
+    R3: 'RGB terminates Elias’s coverage and directs him to the automated medical kiosk.',
+    R4: 'The notebook map traces a maintenance conduit behind the kiosk.',
+    R5: 'Elias follows the unauthorized route back beneath the RGB facility.',
+    R6: 'The severed trunk ignites the battery pallet and sends fire through the server room.',
+    R7: 'The collapse pins Elias in Sector Four as 4A approaches through the smoke.',
+    R8: 'Elias walks away while the preserved profile continues training the system.',
+    R9: 'The transmitted evidence leaves RGB’s network and reaches people outside the company.',
+    R10: 'The damaged system destroys 4A after the robot completes the rescue.'
+});
 
 export const BRANCH_CINEMATICS = Object.freeze({
     'C1-A': { video: `${CINEMATIC_BASE}/C1-A.mp4`, image: `${CINEMATIC_BASE}/c1/end_answer_lucia.png` },
@@ -103,13 +131,15 @@ export const RAIL_CINEMATICS = Object.freeze({
     R6: { video: `${CINEMATIC_BASE}/R6.mp4`, image: `${CINEMATIC_BASE}/rails/r6_fire_propagation.png` },
     R7: { video: `${CINEMATIC_BASE}/R7.mp4`, image: `${CINEMATIC_BASE}/rails/r7_pinned_before_rescue.png` },
     R8: { video: `${CINEMATIC_BASE}/R8.mp4`, image: `${CINEMATIC_BASE}/rails/r8_system_loop.png` },
-    R9: { image: `${CINEMATIC_BASE}/rails/r9_open_hand.png` }
+    R9: { image: `${CINEMATIC_BASE}/rails/r9_open_hand.png` },
+    R10: { image: `${INTERSTITIALS}/c6/img_c6_4a_destruction.png` }
 });
 
 export const INTRO_CINEMATIC = Object.freeze({
     video: `${CINEMATIC_BASE}/Intro.mp4`,
     image: `${BACKGROUNDS}/bg_rgb_parking_lot.png`,
-    label: 'ARCHIVE SIGNAL // RIVERSIDE GLOBAL BOTICS'
+    label: 'ARCHIVE SIGNAL // RIVERSIDE GLOBAL BOTICS',
+    narration: 'The archive rewinds to the beginning. Elias Morales sits outside Riverside Global Botics before the shift that will cost him his job, his medical coverage, and nearly his life.'
 });
 
 // Resolves which cinematic beat(s), if any, play when a hotspot fires, using
@@ -145,17 +175,17 @@ export function resolveCinematicSteps(hotspotId, priorState) {
         case 'follow_utility_map': {
             const calledLuciaOnly = priorState.flags.luciaCallback
                 && !priorState.evidence.includes('kiosk_record');
-            return [calledLuciaOnly ? 'C4-B' : 'C4-A', 'R4', 'R5'];
+            return [calledLuciaOnly ? 'C4-B' : 'C4-A'];
         }
         case 'walk_away':
             return ['C5-A', 'R8'];
         case 'expose_profile':
             return ['C5-B', 'R9'];
         case 'sever_trunk':
-            return ['C5-C', 'R6', 'R7'];
+            return ['C5-C', 'R6'];
         case 'rescue_recenter':
         case 'rescue_recenter_again':
-            return ['C6-A'];
+            return ['C6-A', 'R10'];
         case 'rescue_fumble':
             return ['C6-B'];
         default:
@@ -165,7 +195,10 @@ export function resolveCinematicSteps(hotspotId, priorState) {
 
 export function resolveCinematicAssets(stepKeys) {
     return stepKeys
-        .map((key) => BRANCH_CINEMATICS[key] ?? RAIL_CINEMATICS[key])
+        .map((key) => {
+            const asset = BRANCH_CINEMATICS[key] ?? RAIL_CINEMATICS[key];
+            return asset ? { ...asset, id: key, narration: CINEMATIC_NARRATION[key] } : null;
+        })
         .filter(Boolean);
 }
 
@@ -188,6 +221,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'inspect_bottle',
                 label: 'Empty Albuterol Bottle',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/inspect_albuterol.png`, label: 'MEDICATION // ONE DOSE REMAINS' },
                 x: 570, y: 315, w: 105, h: 155,
                 once: true,
                 lines: [
@@ -203,6 +237,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'check_balance',
                 label: 'Check the Balance',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/check_phone.png`, label: 'ACCOUNT BALANCE // INSUFFICIENT' },
                 icon: `${ITEM_ART}/item_phone.png`,
                 x: 505, y: 425, w: 120, h: 115,
                 once: true,
@@ -219,6 +254,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'listen_voicemail',
                 label: "Lucia's Message",
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/check_phone.png`, label: 'VOICEMAIL // LUCIA' },
                 icon: `${ITEM_ART}/item_phone.png`,
                 x: 505, y: 425, w: 120, h: 115,
                 once: true,
@@ -235,6 +271,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'inspect_drawing',
                 label: 'The Drawing and the Notebook',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/inspect_drawing_notebook.png`, label: 'LUCIA + UNIT 4A' },
                 icon: `${ITEM_ART}/item_lucia_drawing.png`,
                 x: 30, y: 420, w: 435, h: 285,
                 once: true,
@@ -252,12 +289,27 @@ export const CHAPTERS = Object.freeze({
             // R1's walk across the lot and badge scan, so the player is never
             // returned to the car to click a redundant "Badge In" button.
             {
+                id: 'speak_with_marisol',
+                label: 'Speak with Marisol',
+                object: true,
+                cutaway: { image: `${INTERSTITIALS}/c1/img_c1_marisol_intake.png`, label: 'MARISOL // PICKUP DEADLINE' },
+                x: 835, y: 205, w: 245, h: 360,
+                once: true,
+                requiresAllOf: ['inspect_drawing'],
+                lines: [
+                    '"You look like hell, Eli."',
+                    '"That\'s my good side."',
+                    'She checks the time. Daycare starts charging by the minute at seven.'
+                ],
+                effects: { choice: 'speak_with_marisol' }
+            },
+            {
                 id: 'reply_to_lucia',
                 label: 'Answer Lucia',
                 x: 238, y: 590, w: 330, h: 72,
                 once: true,
                 choice: true,
-                requiresAllOf: ['inspect_drawing'],
+                requiresAllOf: ['speak_with_marisol'],
                 excludesAllOf: ['enter_now'],
                 lines: ['He answers. For seven seconds, the shift can wait.'],
                 effects: { choice: 'reply_to_lucia', timeCost: 1 },
@@ -269,7 +321,7 @@ export const CHAPTERS = Object.freeze({
                 x: 712, y: 590, w: 330, h: 72,
                 once: true,
                 choice: true,
-                requiresAllOf: ['inspect_drawing'],
+                requiresAllOf: ['speak_with_marisol'],
                 excludesAllOf: ['reply_to_lucia'],
                 lines: ['He locks the phone and steps into the heat.'],
                 advances: true
@@ -295,6 +347,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'observe_4a',
                 label: 'Sorting Arm 4A',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c2/observe_4a_crush.png`, label: 'UNIT 4A // GRIP ERROR' },
                 x: 555, y: 95, w: 615, h: 615,
                 once: true,
                 lines: [
@@ -308,6 +361,7 @@ export const CHAPTERS = Object.freeze({
                 label: 'Notebook Diagram',
                 object: true,
                 inventoryAction: true,
+                cutaway: { image: `${INTERSTITIALS}/c2/img_c2_notebook_diagram.png`, label: 'CALIBRATION NOTE // DOUBLE TAP' },
                 icon: `${ITEM_ART}/item_calibration_notebook.png`,
                 x: 35, y: 575, w: 190, h: 105,
                 once: true,
@@ -318,6 +372,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'select_joint',
                 label: "4A's Joint",
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c2/img_c2_joint_focus.png`, label: 'PIVOT OFFSET // TWO INCHES' },
                 x: 940, y: 385, w: 225, h: 305,
                 once: true,
                 requiresAllOf: ['read_diagram'],
@@ -327,17 +382,28 @@ export const CHAPTERS = Object.freeze({
                 id: 'apply_pressure',
                 label: 'Apply Light Pressure',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c2/calibrate_joint.png`, label: 'MANUAL RECENTER // LIGHT PRESSURE' },
                 x: 940, y: 385, w: 225, h: 305,
                 once: true,
                 requiresAllOf: ['select_joint'],
                 lines: ['Not harder. Smarter.']
             },
             {
+                id: 'observe_sensor_sweep',
+                label: "4A's Optical Sensor",
+                object: true,
+                cutaway: { image: `${INTERSTITIALS}/c2/img_c2_sensor_sweep.png`, label: 'OPTICAL SWEEP // CALIBRATION SOURCE' },
+                x: 650, y: 155, w: 240, h: 210,
+                once: true,
+                requiresAllOf: ['apply_pressure'],
+                lines: ['The red sensor crosses his face and holds there for one second longer than the task requires.']
+            },
+            {
                 id: 'double_tap_honest',
                 label: 'Double Tap — Log the Error',
                 x: 235, y: 610, w: 350, h: 70,
                 once: true,
-                requiresAllOf: ['apply_pressure'],
+                requiresAllOf: ['observe_sensor_sweep'],
                 excludesAllOf: ['double_tap_falsify'],
                 choice: true,
                 lines: ['The claw releases, recenters, sorts clean.', 'The metric counter still shows the miss. He leaves it.'],
@@ -347,9 +413,10 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'double_tap_falsify',
                 label: 'Double Tap — Clean the Log',
+                cutaway: { image: `${INTERSTITIALS}/c2/img_c2_terminal_metric_wipe.png`, label: 'METRIC TRACE // CLEANED' },
                 x: 695, y: 610, w: 350, h: 70,
                 once: true,
-                requiresAllOf: ['apply_pressure'],
+                requiresAllOf: ['observe_sensor_sweep'],
                 excludesAllOf: ['double_tap_honest'],
                 choice: true,
                 lines: ['The claw releases, recenters, sorts clean.', 'He edits the metric before anyone reviews it.'],
@@ -379,6 +446,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'demand_footage',
                 label: 'Review the Footage',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c3/missing_footage.png`, label: 'INCIDENT FOOTAGE // TWO SECONDS MISSING' },
                 x: 500, y: 530, w: 225, h: 205,
                 once: true,
                 lines: ['"Point of contact is neutral until review is complete."', 'The footage begins at impact. The preceding two seconds are missing.'],
@@ -389,7 +457,6 @@ export const CHAPTERS = Object.freeze({
                 label: 'Challenge “Neutral”',
                 x: 285, y: 610, w: 320, h: 70,
                 once: true,
-                choice: true,
                 requiresAllOf: ['demand_footage'],
                 lines: ['"You got a neutral word for bleeding?"']
             },
@@ -397,6 +464,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'complete_swab',
                 label: 'Compulsory Swab',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c3/img_c3_swab_reader.png`, label: 'COMPULSORY TEST // RESULT PENDING' },
                 x: 640, y: 630, w: 125, h: 140,
                 once: true,
                 requiresAllOf: ['challenge_neutral_language'],
@@ -406,6 +474,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'call_marisol',
                 label: 'Marisol Waiting',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c3/marisol_waiting.png`, label: 'MARISOL // DAYCARE CLOCK RUNNING' },
                 x: 920, y: 290, w: 135, h: 295,
                 once: true,
                 requires: {
@@ -422,6 +491,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'photograph_result',
                 label: 'Photograph the Reader',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c3/img_c3_phone_snap_evidence.png`, label: 'INCONCLUSIVE // PHOTOGRAPH PRESERVED' },
                 icon: `${ITEM_ART}/item_phone.png`,
                 x: 865, y: 700, w: 105, h: 80,
                 once: true,
@@ -433,6 +503,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'inspect_notebook_review',
                 label: 'Calibration Notebook',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c3/img_c3_hr_hand_reach.png`, label: 'PHYSICAL RECORD // HR REACHES FOR IT' },
                 icon: `${ITEM_ART}/item_calibration_notebook.png`,
                 x: 735, y: 675, w: 160, h: 115,
                 once: true,
@@ -458,6 +529,7 @@ export const CHAPTERS = Object.freeze({
                 choice: true,
                 requiresAllOf: ['call_marisol'],
                 excludesAllOf: ['request_marisol_witness'],
+                requires: { flags: { noticedMarisolPressure: true } },
                 lines: ['He remembers the pickup deadline and waves her off.'],
                 effects: { choice: 'release_marisol_from_request' }
             },
@@ -494,7 +566,7 @@ export const CHAPTERS = Object.freeze({
                 requires: {
                     painSet: true,
                     minVisitedOf: {
-                        ids: ['keep_notebook', 'surrender_notebook'],
+                        ids: ['request_marisol_witness', 'release_marisol_from_request'],
                         count: 1
                     }
                 },
@@ -522,6 +594,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'scan_bottle',
                 label: 'Scan the Bottle',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c4/coverage_denied.png`, label: 'COVERAGE TERMINATED // 6:42 PM' },
                 icon: `${ITEM_ART}/item_albuterol_bottle.png`,
                 x: 610, y: 405, w: 160, h: 115,
                 once: true,
@@ -534,6 +607,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'view_paycheck',
                 label: 'Itemized Paycheck',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c4/img_c4_paycheck_stub.png`, label: 'FINAL PAY // $14.00' },
                 x: 645, y: 210, w: 225, h: 195,
                 once: true,
                 requiresAllOf: ['scan_bottle'],
@@ -541,12 +615,27 @@ export const CHAPTERS = Object.freeze({
                 effects: { evidence: 'payroll_record', kioskAttempt: true }
             },
             {
-                id: 'request_billing_agent',
-                label: 'Request Billing Agent',
+                id: 'deposit_partial_pay',
+                label: 'Attempt $14.00 Partial Payment',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c4/img_c4_partial_pay_denied.png`, label: 'PARTIAL PAYMENT // NOT ACCEPTED' },
                 x: 645, y: 210, w: 225, h: 195,
                 once: true,
                 requiresAllOf: ['view_paycheck'],
+                lines: [
+                    'He offers every cent of the final paycheck.',
+                    'PARTIAL PAYMENT NOT ACCEPTED. REMAINING BALANCE: $272.40.'
+                ],
+                effects: { kioskAttempt: true }
+            },
+            {
+                id: 'request_billing_agent',
+                label: 'Request Billing Agent',
+                object: true,
+                cutaway: { image: `${INTERSTITIALS}/c4/coverage_denied.png`, label: 'WAIT TIME // 47 MINUTES' },
+                x: 645, y: 210, w: 225, h: 195,
+                once: true,
+                requiresAllOf: ['deposit_partial_pay'],
                 requires: { maxTimeBand: 2 },
                 lines: ['Wait time: forty-seven minutes.'],
                 effects: { choice: 'request_billing_agent', kioskAttempt: true }
@@ -556,8 +645,9 @@ export const CHAPTERS = Object.freeze({
                 label: 'Call HR',
                 object: true,
                 inventoryAction: true,
+                cutaway: { image: `${INTERSTITIALS}/c4/call_lucia.png`, label: 'HR // SEPARATION PENDING REVIEW' },
                 icon: `${ITEM_ART}/item_phone.png`,
-                x: 40, y: 565, w: 190, h: 105,
+                x: 40, y: 430, w: 190, h: 105,
                 once: true,
                 requiresAllOf: ['request_billing_agent'],
                 lines: ['"Separation pending review." No further comment.'],
@@ -568,8 +658,9 @@ export const CHAPTERS = Object.freeze({
                 label: 'Call Lucia',
                 object: true,
                 inventoryAction: true,
+                cutaway: { image: `${INTERSTITIALS}/c4/call_lucia.png`, label: 'LUCIA // STILL WAITING' },
                 icon: `${ITEM_ART}/item_phone.png`,
-                x: 40, y: 565, w: 190, h: 105,
+                x: 40, y: 430, w: 190, h: 105,
                 once: true,
                 requiresAllOf: ['call_hr', 'ask_kiosk_release'],
                 lines: ['"I\'m still at work, baby. I know."'],
@@ -579,6 +670,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'document_bag',
                 label: 'Document the Bag',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c4/img_c4_medicine_bag_3inch.png`, label: 'MEDICATION // THREE INCHES AWAY' },
                 x: 895, y: 275, w: 165, h: 215,
                 once: true,
                 requiresAllOf: ['view_paycheck'],
@@ -592,6 +684,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'ask_kiosk_release',
                 label: 'Request the Bag',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c4/coverage_denied.png`, label: 'COMMAND NOT RECOGNIZED' },
                 x: 895, y: 375, w: 165, h: 120,
                 once: true,
                 requiresAllOf: ['document_bag'],
@@ -604,6 +697,7 @@ export const CHAPTERS = Object.freeze({
             {
                 id: 'follow_utility_map',
                 label: 'Follow the Utility Map',
+                cutaway: { image: `${INTERSTITIALS}/c4/img_c4_utility_map_spread.png`, label: 'UTILITY CONDUIT // REAR ACCESS' },
                 x: 460, y: 700, w: 240, h: 70,
                 once: true,
                 requiresAllOf: ['call_lucia'],
@@ -666,6 +760,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'read_terminal',
                 label: 'Mainframe Terminal',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c5/training_profile.png`, label: 'HUMAN CALIBRATION SOURCE // ELIAS' },
                 x: 495, y: 210, w: 280, h: 465,
                 once: true,
                 lines: ['TRAINING MODEL: SORT_ARM_4A', 'HUMAN CALIBRATION SOURCE: ELIAS MORALES'],
@@ -677,6 +772,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'attempt_delete',
                 label: 'Delete the Profile',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c5/terminal_decision.png`, label: 'ADMIN LOCK // ACCESS DENIED' },
                 x: 495, y: 210, w: 280, h: 465,
                 once: true,
                 requiresAllOf: ['read_terminal'],
@@ -686,6 +782,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'inspect_battery_pallet',
                 label: 'Battery Pallet',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c5/img_c5_battery_pallet.png`, label: 'BATTERIES + CARDBOARD // NO CLEARANCE' },
                 x: 845, y: 455, w: 375, h: 335,
                 once: true,
                 requiresAllOf: ['attempt_delete'],
@@ -695,12 +792,28 @@ export const CHAPTERS = Object.freeze({
                 ]
             },
             {
+                id: 'inspect_extinguisher',
+                label: 'Fire Extinguisher',
+                object: true,
+                cutaway: { image: `${INTERSTITIALS}/c5/img_c5_expired_extinguisher.png`, label: 'FIRE SUPPRESSION // INSPECTION EXPIRED' },
+                x: 95, y: 195, w: 185, h: 315,
+                once: true,
+                requiresAllOf: ['inspect_battery_pallet'],
+                lines: [
+                    'Pressure needle in the red. Hose split at the coupling.',
+                    'Inspection expired two years ago.'
+                ]
+            },
+            {
                 id: 'walk_away',
                 label: 'Exit — Leave It Intact',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c5/terminal_decision.png`, label: 'OPTION // LEAVE THE PROFILE INTACT' },
                 x: 870, y: 170, w: 160, h: 230,
                 once: true,
-                requiresAllOf: ['inspect_battery_pallet'],
+                choice: true,
+                requiresAllOf: ['inspect_extinguisher'],
+                excludesAllOf: ['inspect_cutters'],
                 lines: ['He steps back from the terminal.'],
                 effects: { finalChoice: 'preserve' },
                 advances: true
@@ -709,9 +822,12 @@ export const CHAPTERS = Object.freeze({
                 id: 'expose_profile',
                 label: 'Copy and Transmit',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c5/terminal_decision.png`, label: 'OPTION // COPY THE PROFILE' },
                 x: 495, y: 210, w: 280, h: 465,
                 once: true,
-                requiresAllOf: ['inspect_battery_pallet'],
+                choice: true,
+                requiresAllOf: ['inspect_extinguisher'],
+                excludesAllOf: ['inspect_cutters'],
                 requires: { canExpose: true },
                 lines: ['The token has a window. He copies fast.'],
                 effects: { finalChoice: 'expose' },
@@ -721,10 +837,13 @@ export const CHAPTERS = Object.freeze({
                 id: 'inspect_cutters',
                 label: 'Insulated Cutters',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c5/img_c5_wire_cutter_trunk.png`, label: 'OPTION // PREPARE THE CUTTERS' },
                 icon: `${ITEM_ART}/item_wire_cutters.png`,
                 x: 60, y: 560, w: 330, h: 155,
                 once: true,
-                requiresAllOf: ['inspect_battery_pallet'],
+                choice: true,
+                requiresAllOf: ['inspect_extinguisher'],
+                excludesAllOf: ['walk_away', 'expose_profile'],
                 lines: ['Insulated maintenance cutters. Heavy enough for the primary trunk.'],
                 pickup: {
                     items: ['item_wire_cutters'],
@@ -735,6 +854,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'sever_trunk',
                 label: 'Sever the Data Trunk',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c5/img_c5_wire_cutter_trunk.png`, label: 'FINAL OPTION // SEVER THE TRUNK' },
                 x: 270, y: 190, w: 215, h: 535,
                 once: true,
                 requiresAllOf: ['inspect_cutters'],
@@ -763,6 +883,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'assess_lockdown',
                 label: 'Lockdown Door',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c6/img_c6_fire_alarm_pull.png`, label: 'THERMAL WARNING // REMAIN AT STATION' },
                 x: 955, y: 145, w: 155, h: 250,
                 once: true,
                 lines: ['THERMAL WARNING IN SECTOR 4. REMAIN AT YOUR STATION.']
@@ -771,6 +892,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'reach_drawing',
                 label: "Lucia's Drawing",
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c6/reach_drawing.png`, label: 'LUCIA + 4A // SAME JOINT' },
                 icon: `${ITEM_ART}/item_lucia_drawing.png`,
                 x: 755, y: 645, w: 225, h: 125,
                 once: true,
@@ -786,6 +908,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'rescue_recenter',
                 label: 'Tap. Tap.',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c6/recenter_rescue.png`, label: 'RELEASE // RECENTER // LIFT' },
                 x: 625, y: 130, w: 210, h: 205,
                 once: true,
                 requiresAllOf: ['reach_drawing'],
@@ -801,6 +924,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'rescue_recenter_weak',
                 label: 'Tap. Tap.',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c6/recenter_rescue.png`, label: 'RECENTER // SERVO UNCERTAIN' },
                 x: 625, y: 130, w: 210, h: 205,
                 once: true,
                 requiresAllOf: ['reach_drawing'],
@@ -814,6 +938,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'rescue_recenter_again',
                 label: 'Again. Tap. Tap.',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c6/recenter_rescue.png`, label: 'TWO INCHES // HOLD' },
                 x: 625, y: 130, w: 210, h: 205,
                 once: true,
                 requiresAllOf: ['rescue_recenter_weak'],
@@ -828,6 +953,7 @@ export const CHAPTERS = Object.freeze({
                 id: 'rescue_fumble',
                 label: 'Grab the Chassis',
                 object: true,
+                cutaway: { image: `${INTERSTITIALS}/c6/recenter_rescue.png`, label: 'LOAD INSTABILITY // WRONG POINT' },
                 x: 1060, y: 35, w: 215, h: 355,
                 once: true,
                 requiresAllOf: ['reach_drawing'],
@@ -880,5 +1006,93 @@ export const GAME_OVERS = Object.freeze({
         body: 'The bag returns to holding. Lucia\'s unanswered message plays.',
         retryFrom: 'give_up',
         retryScope: 'chapter'
+    }
+});
+
+export const CHAPTER_FLOWCHARTS = Object.freeze({
+    parking_lot: {
+        chapterId: 'parking_lot',
+        title: 'Chapter 1: The Parking Lot',
+        nodes: [
+            { id: 'inspect_bottle', label: 'Empty Albuterol Bottle', wave: 1, parentIds: [] },
+            { id: 'check_balance', label: 'Check Account Balance ($19.12)', wave: 1, parentIds: [] },
+            { id: 'listen_voicemail', label: 'Lucia\'s Voicemail', wave: 1, parentIds: ['check_balance'] },
+            { id: 'inspect_drawing', label: 'Lucia\'s Drawing & Notebook', wave: 2, parentIds: ['inspect_bottle', 'listen_voicemail'] },
+            { id: 'speak_with_marisol', label: 'Speak with Marisol at Intake', wave: 3, parentIds: ['inspect_drawing'] },
+            { id: 'reply_to_lucia', label: 'Answer Lucia', wave: 4, isChoice: true, branch: 'BRANCH A', parentIds: ['speak_with_marisol'], consequence: 'Shift started late; Lucia was heard.' },
+            { id: 'enter_now', label: 'Enter Now', wave: 4, isChoice: true, branch: 'BRANCH B', parentIds: ['speak_with_marisol'], consequence: 'Clock won the first decision.' }
+        ]
+    },
+    warehouse: {
+        chapterId: 'warehouse',
+        title: 'Chapter 2: Warehouse Calibration',
+        nodes: [
+            { id: 'observe_4a', label: 'Observe Sorting Arm 4A', wave: 1, parentIds: [] },
+            { id: 'read_diagram', label: 'Notebook Diagram (Double Tap Rule)', wave: 2, parentIds: ['observe_4a'] },
+            { id: 'select_joint', label: 'Locate Joint 3 Pivot Offset', wave: 3, parentIds: ['read_diagram'] },
+            { id: 'apply_pressure', label: 'Apply Light Pressure', wave: 3, parentIds: ['select_joint'] },
+            { id: 'observe_sensor_sweep', label: '4A Optical Recognition Sweep', wave: 4, parentIds: ['apply_pressure'] },
+            { id: 'double_tap_honest', label: 'Double Tap — Log Error', wave: 5, isChoice: true, branch: 'BRANCH A', parentIds: ['observe_sensor_sweep'], consequence: '4A learned trust; error remained reviewable.' },
+            { id: 'double_tap_falsify', label: 'Double Tap — Clean Metric', wave: 5, isChoice: true, branch: 'BRANCH B', parentIds: ['observe_sensor_sweep'], consequence: 'Numbers improved; metric record did not.' }
+        ]
+    },
+    incident_review: {
+        chapterId: 'incident_review',
+        title: 'Chapter 3: Incident Review',
+        nodes: [
+            { id: 'demand_footage', label: 'Review Incident Footage', wave: 1, parentIds: [] },
+            { id: 'challenge_neutral_language', label: 'Challenge "Neutral" Language', wave: 1, parentIds: ['demand_footage'] },
+            { id: 'complete_swab', label: 'Compulsory Medical Swab', wave: 2, parentIds: ['challenge_neutral_language'] },
+            { id: 'photograph_result', label: 'Photograph Swab Reader', wave: 3, parentIds: ['complete_swab'] },
+            { id: 'inspect_notebook_review', label: 'Protect Calibration Notebook', wave: 3, parentIds: ['photograph_result'] },
+            { id: 'call_marisol', label: 'Observe Marisol Beyond Glass', wave: 3, parentIds: ['inspect_notebook_review'] },
+            { id: 'request_marisol_witness', label: 'Ask Marisol to Stay', wave: 4, isChoice: true, branch: 'WITNESS A', parentIds: ['call_marisol'], consequence: 'Testimony kept; Marisol harmed financially.' },
+            { id: 'release_marisol_from_request', label: 'Release Marisol', wave: 4, isChoice: true, branch: 'WITNESS B', parentIds: ['call_marisol'], consequence: 'Marisol protected; witness statement lost.' },
+            { id: 'keep_notebook', label: 'Keep Notebook in Jacket', wave: 4, isChoice: true, branch: 'RECORD A', parentIds: ['inspect_notebook_review'], consequence: 'Calibration record preserved.' },
+            { id: 'surrender_notebook', label: 'Surrender Notebook to HR', wave: 4, isChoice: true, branch: 'RECORD B', parentIds: ['inspect_notebook_review'], consequence: 'Physical record surrendered to HR.' },
+            { id: 'proceed_to_kiosk', label: 'Leave Review Room', wave: 5, parentIds: ['keep_notebook', 'surrender_notebook'] }
+        ]
+    },
+    medi_kiosk: {
+        chapterId: 'medi_kiosk',
+        title: 'Chapter 4: Medi-Kiosk',
+        nodes: [
+            { id: 'scan_bottle', label: 'Scan Prescription Bottle', wave: 1, parentIds: [] },
+            { id: 'view_paycheck', label: 'View Itemized Paycheck', wave: 2, parentIds: ['scan_bottle'] },
+            { id: 'deposit_partial_pay', label: 'Attempt $14.00 Partial Payment', wave: 2, parentIds: ['view_paycheck'] },
+            { id: 'request_billing_agent', label: 'Request Billing Agent', wave: 3, parentIds: ['deposit_partial_pay'] },
+            { id: 'call_hr', label: 'Call HR Representative', wave: 3, parentIds: ['request_billing_agent'] },
+            { id: 'document_bag', label: 'Document Medicine Bag', wave: 3, parentIds: ['view_paycheck'] },
+            { id: 'ask_kiosk_release', label: 'Request Bag Release', wave: 3, parentIds: ['document_bag'] },
+            { id: 'call_lucia', label: 'Call Lucia Back from Kiosk', wave: 4, parentIds: ['call_hr', 'ask_kiosk_release'] },
+            { id: 'follow_utility_map', label: 'Follow Utility Conduit Map', wave: 5, isChoice: true, branch: 'BRANCH A', parentIds: ['call_lucia'], consequence: 'Unauthorized route to server basement chosen.' },
+            { id: 'give_up', label: 'GIVE UP', wave: 5, isChoice: true, branch: 'BRANCH B', parentIds: ['call_lucia'], consequence: 'Treatment remains locked. Game Over.' }
+        ]
+    },
+    server_room: {
+        chapterId: 'server_room',
+        title: 'Chapter 5: Server Room',
+        nodes: [
+            { id: 'read_terminal', label: 'Read Mainframe Terminal', wave: 1, parentIds: [] },
+            { id: 'attempt_delete', label: 'Attempt Profile Deletion', wave: 2, parentIds: ['read_terminal'] },
+            { id: 'inspect_battery_pallet', label: 'Inspect Battery Staging', wave: 2, parentIds: ['attempt_delete'] },
+            { id: 'inspect_extinguisher', label: 'Inspect Expired Fire Extinguisher', wave: 3, parentIds: ['inspect_battery_pallet'] },
+            { id: 'walk_away', label: 'Preserve Profile Intact', wave: 4, isChoice: true, branch: 'SYSTEM LOOP', parentIds: ['inspect_extinguisher'], consequence: '4A remains inside system loop.' },
+            { id: 'expose_profile', label: 'Copy & Transmit Profile', wave: 4, isChoice: true, branch: 'OPEN HAND', parentIds: ['inspect_extinguisher'], consequence: 'Evidence exposed to public mirror.' },
+            { id: 'inspect_cutters', label: 'Take Insulated Cutters', wave: 4, parentIds: ['inspect_extinguisher'] },
+            { id: 'sever_trunk', label: 'Sever Primary Data Trunk', wave: 5, isChoice: true, branch: 'SEVER TRUNK', parentIds: ['inspect_cutters'], consequence: 'Trunk severed; battery pallet ignited.' }
+        ]
+    },
+    sector_four: {
+        chapterId: 'sector_four',
+        title: 'Chapter 6: Sector 4 and Epilogue',
+        nodes: [
+            { id: 'assess_lockdown', label: 'Assess Thermal Warning / Alarm', wave: 1, parentIds: [] },
+            { id: 'reach_drawing', label: 'Reach for Scorched Drawing', wave: 2, parentIds: ['assess_lockdown'] },
+            { id: 'rescue_recenter', label: 'Tap. Tap. (High Trust Rescue)', wave: 3, isChoice: true, branch: 'TRUST LIFT', parentIds: ['reach_drawing'], consequence: '4A recenters and lifts on first attempt.' },
+            { id: 'rescue_recenter_weak', label: 'Tap. Tap. (Low Trust Fumble)', wave: 3, isChoice: true, branch: 'UNTRUST LIFT', parentIds: ['reach_drawing'], consequence: '4A grips short and fumbles.' },
+            { id: 'rescue_recenter_again', label: 'Again. Tap. Tap. (Second Lift)', wave: 4, parentIds: ['rescue_recenter_weak'], consequence: 'Persistence completes the rescue.' },
+            { id: 'rescue_fumble', label: 'Grab Chassis Forcefully', wave: 3, isChoice: true, branch: 'FAILURE', parentIds: ['reach_drawing'], consequence: 'Force replaced calibration. Crushed.' }
+        ]
     }
 });

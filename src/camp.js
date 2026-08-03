@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
+import { campWorkerVisualForHumanState, selectCampWorkerStateCue, updateCampWorkersHumanStates } from './campHumanBehavior.js';
 
 const LEADER_SPRITESHEETS = {
     'Commander Briggs': '/briggs_camp_walk_v2.png',
@@ -70,7 +71,7 @@ function applyImageToTexture(texture, image, threshold = 15) {
     const canvas = document.createElement('canvas');
     canvas.width = image.width;
     canvas.height = image.height;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.drawImage(image, 0, 0);
 
     const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -135,11 +136,12 @@ const INTERACT_RADIUS = 2.8;
 const SIGNAL_FLARE_HEIGHT = 11;
 
 export class SurvivorCamp {
-    constructor(scene, { id = 'camp', label = 'CAMP', playerType = 'Scout' } = {}) {
+    constructor(scene, { id = 'camp', label = 'CAMP', playerType = 'Scout', groundMaterial = null } = {}) {
         this.scene = scene;
         this.id = id;
         this.label = label;
         this.playerType = playerType;
+        this.groundMaterial = groundMaterial;
         this.group = null;
         this.beacon = null;
         this.beaconMat = null;
@@ -160,6 +162,11 @@ export class SurvivorCamp {
         this.recruited = false;
         this.turned = false;
         this.status = 'alive';
+        // docs/human-ai-activation-plan.md Slice 3: per-worker humanAI.js
+        // state (worker.humanState, set in createCampWorkers/update), derived
+        // each frame from status/suspicion/destroyed. Not persisted — it's a
+        // reactive readout of already-saved fields, not new save data.
+        this._previousSuspicion = 0;
         this.level = 0;
         this.barricades = [];
         this.turrets = [];
@@ -237,7 +244,7 @@ export class SurvivorCamp {
             mesh.userData.campId = this.id;
             mesh.userData.index = index;
             group.add(mesh);
-            return { ...spec, mesh };
+            return { ...spec, mesh, humanState: 'unaware' };
         });
     }
 
@@ -261,6 +268,15 @@ export class SurvivorCamp {
 
         const group = new THREE.Group();
         group.position.set(x, 0, z);
+
+        if (this.groundMaterial) {
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), this.groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = 0.018;
+            ground.receiveShadow = true;
+            ground.userData = { kind: 'camp-floor', campId: this.id };
+            group.add(ground);
+        }
 
         // Tents: weathered cones around a small clearing.
         const tentSpecs = [
@@ -941,11 +957,35 @@ export class SurvivorCamp {
             this.npcSprite.position.set(this.npcPos.x, 0.75, this.npcPos.z);
         }
 
-        for (const worker of this.campWorkers) {
+        // docs/human-ai-activation-plan.md Slice 3: per-worker (not
+        // per-camp-shared) humanAI.js state -- each worker independently
+        // "notices" a shared status/suspicion/destroyed stimulus
+        // (WORKER_REACTION_CHANCE per worker per new stimulus), so two
+        // workers in the same camp can end up in different states.
+        const previousWorkerHumanStates = this.campWorkers.map((worker) => worker.humanState ?? 'unaware');
+        const workerHumanStates = updateCampWorkersHumanStates(
+            previousWorkerHumanStates,
+            {
+                status: this.status,
+                suspicion: this.suspicion,
+                previousSuspicion: this._previousSuspicion,
+                destroyed: this.destroyed
+            }
+        );
+        this._previousSuspicion = this.suspicion;
+        const workerStateCue = selectCampWorkerStateCue(previousWorkerHumanStates, workerHumanStates);
+        if (workerStateCue && this.revealed && typeof window !== 'undefined') {
+            window.AudioManager?.play?.(workerStateCue, { volume: 0.3, bus: 'world' });
+        }
+
+        for (let index = 0; index < this.campWorkers.length; index += 1) {
+            const worker = this.campWorkers[index];
+            worker.humanState = workerHumanStates[index];
             if (!worker.mesh) continue;
             worker.mesh.visible = this.status !== 'culled';
             if (!worker.mesh.visible) continue;
-            const t = this.elapsed * worker.speed + worker.phase;
+            const humanVisual = campWorkerVisualForHumanState(worker.humanState);
+            const t = this.elapsed * worker.speed * humanVisual.speedMult + worker.phase;
             const gather = this.status === 'recruited';
             const turned = this.status === 'turned';
             const robbed = this.status === 'robbed';
@@ -958,6 +998,16 @@ export class SurvivorCamp {
             worker.mesh.position.set(x, 0.02 + Math.abs(Math.sin(t * 2.2)) * 0.035, z);
             worker.mesh.rotation.y = -t + (turned ? Math.sin(this.elapsed * 4.0) * 0.35 : 0);
             worker.mesh.rotation.z = turned ? Math.sin(this.elapsed * 5.5 + worker.phase) * 0.08 : 0;
+            // Human-state tint layers on top of (never replaces) the status
+            // base color from setStatus() -- only touched while actively
+            // escalated, so an 'unaware' camp's existing colors are untouched.
+            if (humanVisual.tint !== null) {
+                const bodyMat = worker.mesh.userData?.bodyMat;
+                if (bodyMat) {
+                    bodyMat.color.setHex(humanVisual.tint);
+                    bodyMat.emissive.setHex(humanVisual.tint);
+                }
+            }
         }
     }
 }

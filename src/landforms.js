@@ -10,6 +10,8 @@
 // threeGame.buildChunk owns the pipeline: DFS maze carve → applyLandform →
 // ensureChunkPortals → connectPortalsInward (non-maze) → widen → spawn clear.
 
+import { CHUNK_SIZE } from './tileCatalog.js';
+
 export const LANDFORMS = Object.freeze({
     MAZE: 'maze',
     FIELD: 'field',
@@ -21,9 +23,9 @@ export const LANDFORMS = Object.freeze({
 // Weights lean on the biome fantasy while keeping hard pillar mazes as a
 // discovery beat instead of the default traversal texture.
 const LANDFORM_WEIGHTS = Object.freeze({
-    active: Object.freeze({ maze: 0.18, field: 0.28, canyon: 0.16, crater: 0.20, ruins: 0.18 }),
-    cryo: Object.freeze({ maze: 0.16, field: 0.13, canyon: 0.38, crater: 0.15, ruins: 0.18 }),
-    bio: Object.freeze({ maze: 0.14, field: 0.36, canyon: 0.10, crater: 0.22, ruins: 0.18 })
+    active: Object.freeze({ maze: 0.58, field: 0.10, canyon: 0.10, crater: 0.12, ruins: 0.10 }),
+    cryo: Object.freeze({ maze: 0.52, field: 0.07, canyon: 0.22, crater: 0.08, ruins: 0.11 }),
+    bio: Object.freeze({ maze: 0.50, field: 0.13, canyon: 0.07, crater: 0.16, ruins: 0.14 })
 });
 
 export function pickLandform(random, biome = 'active') {
@@ -365,7 +367,7 @@ function applyRuinsLandform(grid, random) {
     }
 }
 
-export function applyRingRoadSystem(grid, chunkX, chunkY, chunkSize = 19) {
+export function applyRingRoadSystem(grid, chunkX, chunkY, chunkSize = CHUNK_SIZE) {
     const half = (chunkSize - 1) / 2;
     for (let localY = 0; localY < chunkSize; localY++) {
         for (let localX = 0; localX < chunkSize; localX++) {
@@ -418,7 +420,13 @@ export function connectPortalsInward(grid) {
     const carveInward = (x, y, dx, dy) => {
         let cx = x;
         let cy = y;
-        while (cx > 0 && cx < size - 1 && cy > 0 && cy < size - 1 && grid[cy][cx] === '#') {
+        while (
+            cx > 0
+            && cx < size - 1
+            && cy > 0
+            && cy < size - 1
+            && (grid[cy][cx] === '#' || grid[cy][cx] === 'X')
+        ) {
             grid[cy][cx] = '.';
             cx += dx;
             cy += dy;
@@ -464,6 +472,13 @@ export function generateHeightmapGrid(grid, landform = LANDFORMS.MAZE, random = 
             }
         }
     }
+    if (grid.verticalHeightmap) {
+        for (let y = 0; y < size; y += 1) {
+            for (let x = 0; x < size; x += 1) {
+                const authoredHeight = grid.verticalHeightmap[y]?.[x];
+                if (Number.isFinite(authoredHeight)) heightmap[y][x] = authoredHeight;
+            }
+        }
+    }
     return heightmap;
 }
-

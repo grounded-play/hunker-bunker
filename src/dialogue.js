@@ -1,3 +1,5 @@
+import { getControllerGlyphLabel } from './inputGlyphs.js';
+
 const DIALOGUE_CHAR_INTERVAL_MS = 18;
 const DIALOGUE_LINE_GAP_MS = 150;
 
@@ -102,6 +104,11 @@ const MILESTONE_LINES = {
 };
 
 export class DialogueManager {
+    // Movement, vitals, pickup, HUD counter, dead ends, enemy intel, compass,
+    // console, console access, deposit, goals -- keep in sync with the
+    // _trackTutorialProgress(N) calls in startTutorialSequence.
+    static TUTORIAL_STEP_COUNT = 11;
+
     constructor({
         dialogId = 'mothership-dialogue',
         panelId = 'mothership-dialogue-panel',
@@ -157,22 +164,47 @@ export class DialogueManager {
                 event.preventDefault();
                 if (this.isTyping) {
                     this.completeTypingInstantly = true;
-                } else {
-                    this.skipPause = true;
-                    if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                } else if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                    const active = document.activeElement;
+                    if (active === this.tutorialBtn || (this.tutorialBtn?.classList.contains('selected') && active !== this.skipBtn)) {
+                        this.resolveChoice('tutorial');
+                    } else {
                         this.resolveChoice('skip');
                     }
                 }
                 return;
             }
-            if (event.code === 'KeyA') {
+            if (this.choicesEl && !this.choicesEl.classList.contains('hidden')) {
+                const availableChoices = [this.skipBtn, this.tutorialBtn].filter(
+                    (btn) => btn && !btn.classList.contains('hidden')
+                );
+                if (['KeyW', 'KeyA', 'ArrowUp', 'ArrowLeft'].includes(event.code)) {
+                    event.preventDefault();
+                    if (availableChoices.length) {
+                        const target = availableChoices[0];
+                        target.focus();
+                        target.classList.add('selected');
+                        availableChoices[1]?.classList.remove('selected');
+                    }
+                    return;
+                }
+                if (['KeyS', 'KeyD', 'ArrowDown', 'ArrowRight'].includes(event.code)) {
+                    event.preventDefault();
+                    if (availableChoices.length) {
+                        const target = availableChoices[availableChoices.length - 1];
+                        target.focus();
+                        target.classList.add('selected');
+                        availableChoices[0]?.classList.remove('selected');
+                    }
+                    return;
+                }
+            }
+            if (event.code === 'Digit1') {
                 event.preventDefault();
                 this.resolveChoice('skip');
                 return;
             }
-            if (event.code === 'KeyB') {
-                // Only honor the tutorial hotkey when the tutorial choice is
-                // actually on screen — milestone/brief dialogues hide it.
+            if (event.code === 'Digit2') {
                 if (this.tutorialBtn && !this.tutorialBtn.classList.contains('hidden')) {
                     event.preventDefault();
                     this.resolveChoice('tutorial');
@@ -250,6 +282,14 @@ export class DialogueManager {
         requestAnimationFrame(() => {
             if (!this.isDialogueRunActive(runId)) return;
             this.choicesEl.classList.add('is-visible');
+            if (this.skipBtn && !this.skipBtn.classList.contains('hidden')) {
+                this.skipBtn.focus();
+                this.skipBtn.classList.add('selected');
+                this.tutorialBtn?.classList.remove('selected');
+            } else if (this.tutorialBtn && !this.tutorialBtn.classList.contains('hidden')) {
+                this.tutorialBtn.focus();
+                this.tutorialBtn.classList.add('selected');
+            }
             // Choices reduce available text height; re-pin to newest line.
             this.bodyEl.scrollTop = this.bodyEl.scrollHeight;
             window.setTimeout(() => {
@@ -428,38 +468,62 @@ export class DialogueManager {
         const runId = ++this.tutorialRunId;
         this.activeTutorialRunId = runId;
 
+        // docs/objective-system-spec.md rollout step 6 (tutorial, last).
+        // TUTORIAL_STEP_COUNT below must match the number of _trackTutorialProgress
+        // calls after it -- a mismatch just under/over-reports progress, it
+        // doesn't break the sequence itself.
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'tutorial:onboarding',
+            source: 'tutorial',
+            label: 'ONBOARDING',
+            current: 0,
+            target: DialogueManager.TUTORIAL_STEP_COUNT,
+            priority: 90
+        });
+
         await this.tutorialStepMovement(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(1);
 
         await this.tutorialStepVitals(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(2);
 
         await this.tutorialStepPickup(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(3);
 
         await this.tutorialStepHudCounter(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(4);
 
         await this.tutorialStepDeadEnds(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(5);
 
-        await this.tutorialStepEnemyIntel(runId);
+        await this.tutorialStepEnemyIntel(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(6);
 
-        await this.tutorialStepCompass(runId);
+        await this.tutorialStepCompass(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(7);
 
         await this.tutorialStepConsole(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(8);
 
-        await this.tutorialStepConsoleAccess(runId);
+        await this.tutorialStepConsoleAccess(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(9);
 
         await this.tutorialStepDeposit(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(10);
 
         await this.tutorialStepGoals(runId);
         if (!this.isTutorialRunActive(runId)) return;
+        this._trackTutorialProgress(11);
 
         await this.showTutorialPrompt(runId, {
             icon: '✓',
@@ -470,6 +534,15 @@ export class DialogueManager {
 
         this.hideTutorialPrompt(runId);
         this.activeTutorialRunId = 0;
+        window.objectiveRegistry?.resolveObjective?.('tutorial:onboarding', 'complete');
+    }
+
+    _trackTutorialProgress(current) {
+        window.objectiveRegistry?.trackObjective?.({
+            id: 'tutorial:onboarding',
+            current,
+            target: DialogueManager.TUTORIAL_STEP_COUNT
+        });
     }
 
     cancelDialogue() {
@@ -533,6 +606,7 @@ export class DialogueManager {
     cancelTutorial() {
         if (!this.activeTutorialRunId) return;
         this.activeTutorialRunId = 0;
+        window.objectiveRegistry?.resolveObjective?.('tutorial:onboarding', 'abandoned');
         this.hideTutorialPrompt();
         document.querySelectorAll('.tutorial-prompt[data-tutorial-stack-card="true"]').forEach((prompt) => {
             this.dismissTutorialCard(prompt);
@@ -688,15 +762,15 @@ export class DialogueManager {
             cleanText = text.replace(/^MOTHERSHIP:\s*/, '');
         } else if (text.startsWith('SISTER MARTHA:')) {
             name = 'SISTER MARTHA';
-            portrait = '/lore_portraits/tallow_martha.png';
+            portrait = '/lore_portraits/tallow_martha.webp';
             cleanText = text.replace(/^SISTER MARTHA:\s*/, '');
         } else if (text.startsWith('COMMANDER BRIGGS:')) {
             name = 'COMMANDER BRIGGS';
-            portrait = '/lore_portraits/vesper_briggs.png';
+            portrait = '/lore_portraits/vesper_briggs.webp';
             cleanText = text.replace(/^COMMANDER BRIGGS:\s*/, '');
         } else if (text.startsWith('OVERSEER KAELEN:')) {
             name = 'OVERSEER KAELEN';
-            portrait = '/lore_portraits/meridian_kaelen.png';
+            portrait = '/lore_portraits/meridian_kaelen.jpg';
             cleanText = text.replace(/^OVERSEER KAELEN:\s*/, '');
         } else if (/^(KAELEN|MARTHA|BRIGGS|NAHL|VEY|RHUN):/.test(text)) {
             const speakerMap = {
@@ -812,20 +886,45 @@ export class DialogueManager {
         }
     }
 
-    async tutorialStepMovement(runId, game) {
-        await this.showTutorialPrompt(runId, {
-            icon: 'WASD',
-            text: 'WASD / ARROW KEYS — NAVIGATE THE STRUCTURE'
-        });
+    getControlPrompt(game, { action = 'interact', kbdIcon = 'E', kbdText = '', padIcon = 'A', padText = '' } = {}) {
+        const isGamepad = Boolean(
+            game?.isGamepadActive?.()
+            || game?.activeInputDevice === 'gamepad'
+            || (typeof window !== 'undefined' && window.state?.inputMode === 'gamepad')
+            || (typeof navigator !== 'undefined' && Array.from(navigator.getGamepads?.() ?? []).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed)))
+        );
+        if (isGamepad) {
+            const controllerType = game?.activeControllerType ?? 'SteamDeckController';
+            const glyph = getControllerGlyphLabel(action, controllerType, padIcon);
+            return {
+                icon: glyph || padIcon,
+                text: padText || kbdText
+            };
+        }
+        return {
+            icon: kbdIcon,
+            text: kbdText
+        };
+    }
 
-        const startPos = game.getPlayerPosition?.() ?? { x: 0, z: 0 };
+    async tutorialStepMovement(runId, game) {
+        const prompt = this.getControlPrompt(game, {
+            action: 'sprint',
+            kbdIcon: 'WASD',
+            kbdText: 'WASD / ARROW KEYS — NAVIGATE STRUCTURE | [SHIFT] — SPRINT',
+            padIcon: 'LS',
+            padText: 'LEFT STICK — NAVIGATE STRUCTURE | [LS] / [LB] — SPRINT'
+        });
+        await this.showTutorialPrompt(runId, prompt);
+
+        const startPos = game?.getPlayerPosition?.() ?? { x: 0, z: 0 };
         let movedMs = 0;
 
         await this.waitUntil(runId, ({ deltaMs }) => {
-            if (game.isPlayerMoving?.()) {
+            if (game?.isPlayerMoving?.()) {
                 movedMs += deltaMs;
             }
-            const pos = game.getPlayerPosition?.() ?? startPos;
+            const pos = game?.getPlayerPosition?.() ?? startPos;
             const distance = Math.hypot((pos.x ?? 0) - (startPos.x ?? 0), (pos.z ?? 0) - (startPos.z ?? 0));
             return movedMs >= 2000 || distance > 3;
         }, { timeoutMs: 18000, intervalMs: 80 });
@@ -836,7 +935,7 @@ export class DialogueManager {
     async tutorialStepVitals(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '♥',
-            text: 'VITALS ARE NOW IN THE TOP HUD. KEEP AN EYE ON HEARTS + O₂ AT ALL TIMES.'
+            text: 'VITALS IN TOP HUD: KEEP AN EYE ON HEARTS + O₂ RESERVES AT ALL TIMES.'
         });
 
         const panel = document.getElementById('vitals-panel');
@@ -849,7 +948,7 @@ export class DialogueManager {
     async tutorialStepPickup(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '◍',
-            text: 'APPROACH SUPPLY CACHES. YOUR SUIT WILL AUTO-COLLECT THEM.'
+            text: 'APPROACH SUPPLY CACHES: YOUR SUIT AUTO-COLLECTS SALVAGE & AMMO.'
         });
 
         await this.waitForWindowEvent(runId, 'pickup-collected', 45000);
@@ -859,7 +958,7 @@ export class DialogueManager {
     async tutorialStepHudCounter(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '◎',
-            text: 'TRACK YOUR CACHE INVENTORY IN THE TOP PANEL.'
+            text: 'TRACK SECURED CACHE INVENTORY IN TOP PANEL.'
         });
 
         const panel = document.getElementById('pickup-counter-panel');
@@ -872,17 +971,21 @@ export class DialogueManager {
     async tutorialStepDeadEnds(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '⬡',
-            text: 'DEAD-END PILLAR CLUSTERS ARE REWARD CACHES — DENSER LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
+            text: 'DEAD-END PILLAR CLUSTERS: DENSER REWARD LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
         });
         await this.sleep(runId, 3200);
         this.hideTutorialPrompt(runId);
     }
 
-    async tutorialStepEnemyIntel(runId) {
-        await this.showTutorialPrompt(runId, {
-            icon: '!',
-            text: 'HOSTILE INTEL: CYBER SNAILS TAKE 2 SHOTS. LAND ONE HIT TO EXPOSE THEIR WEAK STATE.'
+    async tutorialStepEnemyIntel(runId, game) {
+        const prompt = this.getControlPrompt(game, {
+            action: 'fire',
+            kbdIcon: '!',
+            kbdText: 'HOSTILE INTEL: CYBER SNAILS TAKE 2 SHOTS. AIM & LEFT-CLICK / [SPACE] TO EXPOSE WEAK STATE.',
+            padIcon: 'RT',
+            padText: 'HOSTILE INTEL: CYBER SNAILS TAKE 2 SHOTS. AIM WITH RIGHT STICK & PRESS [RT] TO EXPOSE WEAK STATE.'
         });
+        await this.showTutorialPrompt(runId, prompt);
 
         const weaponPanel = document.getElementById('weapon-status-panel');
         weaponPanel?.classList.add('tutorial-focus-pulse');
@@ -902,11 +1005,15 @@ export class DialogueManager {
         this.hideTutorialPrompt(runId);
     }
 
-    async tutorialStepCompass(runId) {
-        await this.showTutorialPrompt(runId, {
-            icon: 'N',
-            text: "THE COMPASS MARKS YOUR SHIP'S CRASH SITE. THAT IS YOUR EXTRACTION POINT."
+    async tutorialStepCompass(runId, game) {
+        const prompt = this.getControlPrompt(game, {
+            action: 'toggleMap',
+            kbdIcon: 'N',
+            kbdText: "COMPASS MARKS YOUR SHIP'S CRASH SITE | PRESS [M] / [TAB] TO TOGGLE TACTICAL MAP.",
+            padIcon: 'VIEW',
+            padText: "COMPASS MARKS YOUR SHIP'S CRASH SITE | PRESS [VIEW] / [SELECT] TO TOGGLE TACTICAL MAP."
         });
+        await this.showTutorialPrompt(runId, prompt);
 
         const compass = document.querySelector('.touch-move-control__compass-face');
         compass?.classList.add('tutorial-focus-pulse');
@@ -916,16 +1023,20 @@ export class DialogueManager {
     }
 
     async tutorialStepConsole(runId, game) {
-        await this.showTutorialPrompt(runId, {
-            icon: 'E',
-            text: "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. PRESS [E] TO UPLINK."
+        const prompt = this.getControlPrompt(game, {
+            action: 'interact',
+            kbdIcon: 'E',
+            kbdText: "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. PRESS [E] TO UPLINK.",
+            padIcon: 'A',
+            padText: "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. PRESS [A] TO UPLINK."
         });
+        await this.showTutorialPrompt(runId, prompt);
 
         const consolePrompt = document.getElementById('console-hud-prompt');
         consolePrompt?.classList.add('tutorial-focus-pulse');
 
         await this.waitUntil(runId, () => {
-            const distance = Number(game.getActiveConsoleDistance?.());
+            const distance = Number(game?.getActiveConsoleDistance?.());
             return Number.isFinite(distance) && distance <= 4;
         }, { timeoutMs: 20000, intervalMs: 80 });
 
@@ -933,11 +1044,15 @@ export class DialogueManager {
         this.hideTutorialPrompt(runId);
     }
 
-    async tutorialStepConsoleAccess(runId) {
-        await this.showTutorialPrompt(runId, {
-            icon: 'E',
-            text: 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING AND THE O₂ GENERATOR MODULE.'
+    async tutorialStepConsoleAccess(runId, game) {
+        const prompt = this.getControlPrompt(game, {
+            action: 'interact',
+            kbdIcon: 'E',
+            kbdText: 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING & O₂ GENERATOR MODULE.',
+            padIcon: 'A',
+            padText: 'OPEN THE TERMINAL WITH [A] TO ACCESS BANKING & O₂ GENERATOR MODULE.'
         });
+        await this.showTutorialPrompt(runId, prompt);
 
         const modal = document.getElementById('console-terminal-modal');
         await this.waitUntil(runId, () => Boolean(modal && !modal.classList.contains('hidden')), {

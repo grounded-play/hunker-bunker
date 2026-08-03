@@ -3,9 +3,12 @@
 // Toggleable via `~` (Tilde / Backquote key). Captures console.log/warn/error/debug,
 // accepts cheat & diagnostic commands, and offers level/category filtering.
 
-class DebugLogger {
+export class DebugLogger {
     constructor() {
         this.logs = [];
+        this.sessionLogs = [];
+        this.sessionStartedAt = new Date();
+        this.sequence = 0;
         this.maxLogs = 2500;
         this.subscribers = new Set();
         this.visible = false;
@@ -24,6 +27,7 @@ class DebugLogger {
         this.initUncaughtErrorHandlers();
         this.initFetchInterception();
         this.initGlobalInputTelemetry();
+        this.initGameEventTelemetry();
 
         if (typeof window !== 'undefined') {
             window.hbLogger = this;
@@ -106,13 +110,13 @@ class DebugLogger {
             const method = (init && init.method) ? init.method.toUpperCase() : 'GET';
             const startTime = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
 
-            logger.pushLog('debug', 'FETCH', [`-> ${method} ${url}`]);
-
             return origFetch.call(this, input, init).then(response => {
                 const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
                 const duration = Math.round(now - startTime);
-                const level = response.ok ? 'debug' : 'warn';
-                logger.pushLog(level, 'FETCH', [`<- ${method} ${url} [${response.status} ${response.statusText}] (${duration}ms)`]);
+                if (!response.ok || duration >= 1000) {
+                    const level = response.ok ? 'debug' : 'warn';
+                    logger.pushLog(level, 'FETCH', [`<- ${method} ${url} [${response.status} ${response.statusText}] (${duration}ms)`]);
+                }
                 return response;
             }).catch(err => {
                 const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
@@ -158,6 +162,25 @@ class DebugLogger {
         }, { capture: true, passive: true });
     }
 
+    initGameEventTelemetry() {
+        if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+        const eventNames = [
+            'run-cards-drawn', 'player-damaged', 'player-death', 'player-respawned',
+            'player-extracted', 'mission-objective-complete', 'biome-changed',
+            'black-box-recovered', 'foundry-discovered', 'cave-entrance-revealed',
+            'queen-fight-started', 'camp-choice-resolved', 'camp-choice-denied',
+            'camp-supported', 'camp-bonded', 'camp-final-resolved',
+            'hive-choice-resolved', 'hive-mined', 'act2-milestone', 'act2-departed',
+            'achievement-unlocked', 'lore-terminal-read', 'salvage-cache-opened',
+            'o2-bubble-activated', 'bunker-door-toggled', 'bunker-door-destroyed'
+        ];
+        for (const eventName of eventNames) {
+            window.addEventListener(eventName, (event) => {
+                this.info('EVENT', eventName, event?.detail ?? null);
+            });
+        }
+    }
+
     formatArgs(args) {
         return args.map(arg => {
             if (arg === null) return 'null';
@@ -179,14 +202,17 @@ class DebugLogger {
         
         const message = this.formatArgs(args);
         const entry = {
-            id: Math.random().toString(36).substring(2, 9),
+            id: ++this.sequence,
             timestamp,
+            isoTime: now.toISOString(),
+            elapsedMs: now.getTime() - this.sessionStartedAt.getTime(),
             level,
             category,
             message
         };
 
         this.logs.push(entry);
+        this.sessionLogs.push(entry);
         if (this.logs.length > this.maxLogs) {
             this.logs.shift();
         }
@@ -286,6 +312,7 @@ class DebugLogger {
                     </select>
                     <input id="hb-console-search" type="text" placeholder="Filter logs..." style="background: #121820; border: 1px solid #334455; color: #fff; padding: 2px 6px; border-radius: 3px; width: 130px; font-size: 11px;" />
                     <button id="hb-console-autoscroll" class="hb-cmd-btn active">AUTO-SCROLL: ON</button>
+                    <button id="hb-console-export" class="hb-cmd-btn" title="Download the complete log captured since launch">EXPORT SESSION</button>
                     <button id="hb-console-clear" class="hb-cmd-btn">CLEAR</button>
                     <button id="hb-console-close" style="background: none; border: none; color: #ff5566; font-weight: bold; cursor: pointer; font-size: 14px; padding: 0 4px;">✕</button>
                 </div>
@@ -343,6 +370,7 @@ class DebugLogger {
         // Button Listeners
         overlay.querySelector('#hb-console-close').onclick = () => this.toggle(false);
         overlay.querySelector('#hb-console-clear').onclick = () => this.clear();
+        overlay.querySelector('#hb-console-export').onclick = () => this.exportSession('json');
 
         const autoScrollBtn = overlay.querySelector('#hb-console-autoscroll');
         autoScrollBtn.onclick = () => {
@@ -444,6 +472,69 @@ class DebugLogger {
         this.info('SYS', 'Console logs cleared.');
     }
 
+    buildSessionCapture() {
+        const game = typeof window !== 'undefined' ? (window.game ?? window.threeGame) : null;
+        return {
+            format: 'hunker-bunker-session-log',
+            schemaVersion: 1,
+            session: {
+                startedAt: this.sessionStartedAt.toISOString(),
+                exportedAt: new Date().toISOString(),
+                durationMs: Date.now() - this.sessionStartedAt.getTime(),
+                userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+                url: typeof location !== 'undefined' ? location.href : null
+            },
+            state: {
+                appPhase: typeof window !== 'undefined' ? window.__hbAppPhase ?? null : null,
+                playerType: game?.playerType ?? null,
+                runStats: game?.getRunStats?.() ?? null,
+                position: game?.player?.position
+                    ? { x: game.player.position.x, y: game.player.position.y, z: game.player.position.z }
+                    : null,
+                renderer: game?.renderer?.info?.render ?? null
+            },
+            entries: this.sessionLogs.map((entry) => ({ ...entry }))
+        };
+    }
+
+    serializeSession(format = 'json') {
+        const capture = this.buildSessionCapture();
+        if (format === 'txt') {
+            const header = [
+                'HUNKER BUNKER SESSION LOG',
+                `Started: ${capture.session.startedAt}`,
+                `Exported: ${capture.session.exportedAt}`,
+                `Duration: ${capture.session.durationMs}ms`,
+                `Entries: ${capture.entries.length}`,
+                ''
+            ];
+            return header.concat(capture.entries.map((entry) => (
+                `[${entry.isoTime}] [+${entry.elapsedMs}ms] [${entry.level.toUpperCase()}] [${entry.category}] ${entry.message}`
+            ))).join('\n');
+        }
+        return JSON.stringify(capture, null, 2);
+    }
+
+    exportSession(format = 'json') {
+        if (typeof document === 'undefined') return null;
+        const normalizedFormat = format === 'txt' ? 'txt' : 'json';
+        this.info('SESSION', `Export requested (${normalizedFormat.toUpperCase()})`);
+        const body = this.serializeSession(normalizedFormat);
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `hunker-bunker-session-${stamp}.${normalizedFormat}`;
+        const blob = new Blob([body], {
+            type: normalizedFormat === 'json' ? 'application/json' : 'text/plain'
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        anchor.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+        this.info('SESSION', `Session capture saved: ${filename} (${this.sessionLogs.length} entries)`);
+        return filename;
+    }
+
     renderSingleLog(entry) {
         if (!this.logsContainer) return;
         if (!this.matchesFilter(entry)) return;
@@ -505,6 +596,7 @@ class DebugLogger {
   • help                  - Show this command manual
   • steam [status|recheck]- Perform Steamworks integration & backend diagnostic check
   • clear                 - Clear dev log history
+  • exportlogs [json|txt] - Download the complete log captured since launch
   • god                   - Toggle player invincibility
   • heal                  - Fully restore player Health & Oxygen
   • tp <x> <z>            - Teleport player to target tile
@@ -548,6 +640,11 @@ class DebugLogger {
 
             case 'clear':
                 this.clear();
+                break;
+
+            case 'exportlogs':
+            case 'savelogs':
+                this.exportSession(parts[1]?.toLowerCase() === 'txt' ? 'txt' : 'json');
                 break;
 
             case 'god':
@@ -639,9 +736,9 @@ class DebugLogger {
 
             case 'resetachievements':
                 // QA/beta only — electron/main.cjs only registers the IPC
-                // handler this calls when the build was launched with
-                // HB_QA_TOOLS_ENABLED=1 (e.g. a Steam beta branch launch
-                // option). Resets the Steam account currently logged into
+                // handler this calls on a named Steam beta branch or when the
+                // build is launched with HB_QA_TOOLS_ENABLED=1. Resets the
+                // Steam account currently logged into
                 // THIS running game — there is no remote reset for a
                 // different account. Requires "confirm" since it's a real
                 // action against a real Steam profile, not local run state

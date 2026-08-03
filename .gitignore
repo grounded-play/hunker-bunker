@@ -61,6 +61,7 @@ scratch/
 dist_electron/
 steam_build_output/
 steam/app_build.generated.vdf
+steam/soundtrack_app_build.generated.vdf
 steam_appid.txt
 electron/steam-config.json
 dist_soundtrack/
@@ -72,3 +73,6 @@ server/db_storage.json.tmp
 # Playwright e2e (Phase 13) output
 playwright-report/
 test-results/
+
+# Local git worktrees (isolated workspaces)
+.worktrees/

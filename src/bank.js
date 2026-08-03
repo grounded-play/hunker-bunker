@@ -36,8 +36,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
         }),
         Object.freeze({
             id: 'scout_special_unlock',
-            label: 'UNLOCK SPRINT BURST',
-            desc: 'Unlocks Class Special Ability: Sprint Burst [F]. Move 3.0x speed, 2.0x O2 drain.',
+            label: 'EVASIVE INSTINCT',
+            desc: 'EVASIVE passive strengthened: enemy slow/freeze effect duration reduced by 75% (up from 50%).',
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['scout_speed_1', 'scout_ammo_1']),
             prereqMode: 'any',
@@ -47,7 +47,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'scout_special_upgrade_1',
             label: 'WINDRUNNER',
-            desc: 'Sprint Burst duration increased by +1.0s.',
+            desc: 'Reload speed bonus increased to -35% (from -20%).',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['scout_special_unlock']),
             requiredGoal: 'reactorCompressor',
@@ -57,7 +57,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'scout_special_upgrade_2',
             label: 'FAST RECOVERY',
-            desc: 'Sprint Burst cooldown reduced by -2.0s.',
+            desc: 'EVASIVE passive fully negates enemy slow/freeze effects.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['scout_special_unlock']),
             requiredGoal: 'reactorCompressor',
@@ -92,8 +92,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
         }),
         Object.freeze({
             id: 'tank_special_unlock',
-            label: 'UNLOCK BRACE',
-            desc: 'Unlocks Class Special Ability: Brace [F]. Stops movement, grants invulnerability.',
+            label: 'HARDENED BULWARK',
+            desc: 'BULWARK passive strengthened: block chance increased to 30% (from 20%).',
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['tank_damage_1', 'tank_o2_efficiency']),
             prereqMode: 'any',
@@ -103,7 +103,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'tank_special_upgrade_1',
             label: 'IRON WALL',
-            desc: 'Brace duration increased by +1.5s.',
+            desc: 'BULWARK block chance increased to 40%.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['tank_special_unlock']),
             requiredGoal: 'reactorCompressor',
@@ -113,7 +113,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'tank_special_upgrade_2',
             label: 'AEGIS GENERATION',
-            desc: 'O2 refill speed inside O2 bubble increased by 20% while braced.',
+            desc: 'Passively regenerate +1 heart every 60s while below max suit integrity.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['tank_special_unlock']),
             requiredGoal: 'reactorCompressor',
@@ -148,8 +148,8 @@ export const CLASS_SKILL_TREES = Object.freeze({
         }),
         Object.freeze({
             id: 'engineer_special_unlock',
-            label: 'UNLOCK REROUTE',
-            desc: 'Unlocks Class Special Ability: Reroute [F]. 0.5x O2 drain, 3x O2 refill rate.',
+            label: 'TURRET PROTOCOL',
+            desc: 'AUTO-TURRET passive strengthened: active duration increased to 9s (from 6s).',
             cost: Object.freeze({ tech: 50, coin: 15, med: 5 }),
             prereqs: Object.freeze(['engineer_magnet_1', 'engineer_battery_1']),
             prereqMode: 'any',
@@ -159,7 +159,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'engineer_special_upgrade_1',
             label: 'SYSTEM OVERCLOCK',
-            desc: 'Reroute active ability grants +20% firing rate & projectile speed.',
+            desc: 'AUTO-TURRET fires 25% faster.',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['engineer_special_unlock']),
             requiredGoal: 'reactorCompressor',
@@ -169,7 +169,7 @@ export const CLASS_SKILL_TREES = Object.freeze({
         Object.freeze({
             id: 'engineer_special_upgrade_2',
             label: 'SAFETY STANDARDS',
-            desc: 'Reroute active ability reduces radar scan cooldown by 50%.',
+            desc: 'AUTO-TURRET redeploy cooldown reduced to 15s (from 20s).',
             cost: Object.freeze({ tech: 80, coin: 20 }),
             prereqs: Object.freeze(['engineer_special_unlock']),
             requiredGoal: 'reactorCompressor',

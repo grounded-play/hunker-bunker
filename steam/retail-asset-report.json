@@ -1,0 +1,675 @@
+{
+  "version": 1,
+  "budgets": {
+    "publicBytes": 891289600,
+    "appAsarBytes": 786432000,
+    "unknownAssets": 145,
+    "codecMismatches": 116,
+    "duplicateGroups": 9
+  },
+  "measured": {
+    "publicBytes": 883644002,
+    "publicFileCount": 744
+  },
+  "classifications": {
+    "runtime-required": 604,
+    "source-reference": 0,
+    "generated-intermediate": 0,
+    "unknown": 140
+  },
+  "missingReferences": [],
+  "invalidMedia": [],
+  "codecMismatches": [
+    {
+      "path": "ach_archivist.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_cartographer.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_chen_thirteenth.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_alien_exodus.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_carriers_bargain.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_clean_escape.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_empty_husk.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_failed_carrier.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_full_brood.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_mixed_crew.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_mothership_infection.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_outed_escape.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ending_scorched_sky.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_gentle_drill.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_ghost.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_hardened.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_hunkered.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_kin.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_locked.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_quick_study.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_reyes_courier.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_slay_the_queen.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_victory_engineer.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_victory_scout.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ach_victory_tank.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "alien_nahl_walk.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "alien_proto_crawler_walk.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "alien_proto_spitter_walk.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "alien_rhun_walk.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "alien_vey_walk.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "audio/cover.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "bg.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "bio_charger.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_corrupted_engineer.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_corrupted_scout.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_corrupted_tank.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_cryosnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_cryosnail_dead.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_cybersnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_cybersnail_dead.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_sporesnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "boss_sporesnail_dead.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "briggs_camp_walk_v2.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "bunker_base_metal.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "bunker_grunge_rust.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "bunker_tech_scratches.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "bunker_wall_grunge.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "bunker_wall_metal.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cave_mouth.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "civilian_miner_walk.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "civilian_researcher_walk.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "console.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cryosnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cryosnail_dead.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cybersnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cybersnail_dead.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "door.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "door_alien.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "door_bio.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "door_biomechanical.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "door_cryo.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "door_nuclear.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "door_rust.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ending_carriersbargain_eggs.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ending_cleanescape_cabin.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ending_fullbrood_ship.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ending_mixedcrew_cabin.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "ending_scorchedsky_cockpit.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "engineer_ship.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "engineer_ship_broken.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "engineer_ship_healed.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "favicon.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "fungal_spore_vent.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "hive_carapace_site.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "hive_interior.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "icon_cull.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "icon_recruit.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "icon_steal.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "icon_turn.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "kaelen_camp_walk_v2.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "lore_portraits/meridian_kaelen.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "lore_portraits/tallow_martha.png",
+      "extension": ".png",
+      "detected": ".webp"
+    },
+    {
+      "path": "lore_portraits/vesper_briggs.png",
+      "extension": ".png",
+      "detected": ".webp"
+    },
+    {
+      "path": "martha_camp_walk_v2.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "menu_bg.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/backgrounds/bg_desert_epilogue.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/items/item_albuterol_bottle.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/items/item_calibration_notebook.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/items/item_lucia_drawing.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/items/item_phone.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/items/item_temp_badge.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/items/item_wire_cutters.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/sprites/elias.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "minigames/rgb/sprites/robot_4a.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "mycelium_stalker.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_biomech_arch.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_biomech_pillar_left.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_biomech_pillar_right.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_bunker_supplies.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_cave_queen_throne.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_conduit_hub.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_cyber_junction.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_specimen_tank.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "prop_spore_colony.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "queen_silhouette.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "scout_ship.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "scout_ship_broken.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "scout_ship_healed.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "spore_mortar.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "sporesnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "sporesnail_dead.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "survivor_vessel.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "tank_ship.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "tank_ship_broken.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "tank_ship_healed.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "title_key_art.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    }
+  ],
+  "duplicateChecksums": [
+    {
+      "sha256": "a2472109ccf5427f049ad86ffab8e8f136692e1c1ed72091594f420ff5a25606",
+      "files": [
+        "bio_base_growth.png",
+        "hive_suture_site.png"
+      ]
+    },
+    {
+      "sha256": "f4cd5feb814f384d77bff4c63d2b8412025da65fbd41f0afaa5bdb392c8c8d27",
+      "files": [
+        "bio_wall_veins.png",
+        "hive_relay_site.png"
+      ]
+    },
+    {
+      "sha256": "9eca9041fa572515ae018b7501b5bb4a81f7954ba4bfb6fa4ae42a5a3a7dce54",
+      "files": [
+        "bunker_base_metal.png",
+        "hive_carapace_site.png"
+      ]
+    },
+    {
+      "sha256": "de2b5e8fb5eab4369d3609c512a2711e03d42699bdfa4440542dbec1c6a240c9",
+      "files": [
+        "cryo_grunge_rime.png",
+        "ice_grunge_snow.png"
+      ]
+    },
+    {
+      "sha256": "8b1c8b594afb0be67094bb1ee80346a85b69f7f04315f521409bdc930096834e",
+      "files": [
+        "favicon.png",
+        "icon_cull.png",
+        "icon_recruit.png",
+        "icon_steal.png",
+        "icon_turn.png"
+      ]
+    },
+    {
+      "sha256": "716798ee725171e5b19d81d708e66e7b39e0b28a6939d151f56afe8858be8643",
+      "files": [
+        "lore_portraits/meridian_kaelen.jpg",
+        "lore_portraits/meridian_kaelen.png"
+      ]
+    },
+    {
+      "sha256": "cc9655c87efbfeb86e0aa6856b7d0f55790964c990b1073f2378205dc6ee409a",
+      "files": [
+        "lore_portraits/survivor_06.webp",
+        "lore_portraits/tallow_martha.png",
+        "lore_portraits/tallow_martha.webp"
+      ]
+    },
+    {
+      "sha256": "eb1360ec5c28211e7dc2de44489f762430bfa395caef77c597032fa4e6f3b657",
+      "files": [
+        "lore_portraits/survivor_10.webp",
+        "lore_portraits/vesper_briggs.png",
+        "lore_portraits/vesper_briggs.webp"
+      ]
+    },
+    {
+      "sha256": "149b4f8e42cd3fda35bffb42a557595de443d70ba33f3986b38232843a71364f",
+      "files": [
+        "minigames/rgb/cinematics/C6-A.mp4",
+        "minigames/rgb/cinematics/C6-B.mp4"
+      ]
+    }
+  ],
+  "failures": []
+}

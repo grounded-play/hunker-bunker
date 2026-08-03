@@ -125,6 +125,17 @@ describe('content shape', () => {
         }
     });
 
+    it('gives every resolved cinematic explanatory narration', () => {
+        const keys = [
+            ...Object.keys(BRANCH_CINEMATICS),
+            ...Object.keys(RAIL_CINEMATICS)
+        ];
+        for (const asset of resolveCinematicAssets(keys)) {
+            expect(asset.narration).toBeTruthy();
+        }
+        expect(INTRO_CINEMATIC.narration).toBeTruthy();
+    });
+
     it('every produced branch cinematic ships both a video and an image', () => {
         for (const entry of Object.values(BRANCH_CINEMATICS)) {
             expect(entry.video).toMatch(/\.mp4$/);
@@ -132,18 +143,33 @@ describe('content shape', () => {
         }
     });
 
-    it('rail cinematics ship video clips for R1-R8 and image fallbacks for R1-R9', () => {
+    it('rail cinematics ship video clips for R1-R8 and image fallbacks for every rail', () => {
         for (const [key, entry] of Object.entries(RAIL_CINEMATICS)) {
             expect(entry.image).toMatch(/\.png$/);
-            if (key !== 'R9') {
+            if (!['R9', 'R10'].includes(key)) {
                 expect(entry.video).toMatch(/\.mp4$/);
             }
         }
-        expect(Object.keys(RAIL_CINEMATICS).sort()).toEqual(['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9']);
+        expect(Object.keys(RAIL_CINEMATICS).sort()).toEqual([
+            'R1', 'R10', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'
+        ]);
     });
 
     it('the intro cinematic declares a video', () => {
         expect(INTRO_CINEMATIC.video).toMatch(/Intro\.mp4$/);
+    });
+
+    it('ships every declared cinematic video and fallback image', () => {
+        const urls = [
+            INTRO_CINEMATIC.video,
+            INTRO_CINEMATIC.image,
+            ...Object.values(BRANCH_CINEMATICS).flatMap((entry) => [entry.video, entry.image]),
+            ...Object.values(RAIL_CINEMATICS).flatMap((entry) => [entry.video, entry.image])
+        ].filter(Boolean);
+
+        for (const url of urls) {
+            expect(existsSync(resolve('public', url.replace(/^\//, ''))), url).toBe(true);
+        }
     });
 
     it('picks the branch clip that matches what the player actually did', () => {
@@ -157,15 +183,15 @@ describe('content shape', () => {
         const documented = { ...base, flags: { ...base.flags, keptNotebook: true } };
         expect(resolveCinematicSteps('proceed_to_kiosk', documented)).toEqual(['C3-A', 'R3']);
 
-        expect(resolveCinematicSteps('follow_utility_map', base)).toEqual(['C4-A', 'R4', 'R5']);
+        expect(resolveCinematicSteps('follow_utility_map', base)).toEqual(['C4-A']);
         const calledOnly = { ...base, flags: { ...base.flags, luciaCallback: true } };
-        expect(resolveCinematicSteps('follow_utility_map', calledOnly)).toEqual(['C4-B', 'R4', 'R5']);
+        expect(resolveCinematicSteps('follow_utility_map', calledOnly)).toEqual(['C4-B']);
 
         expect(resolveCinematicSteps('give_up', base)).toEqual(['C4-C']);
         expect(resolveCinematicSteps('walk_away', base)).toEqual(['C5-A', 'R8']);
         expect(resolveCinematicSteps('expose_profile', base)).toEqual(['C5-B', 'R9']);
-        expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C', 'R6', 'R7']);
-        expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A']);
+        expect(resolveCinematicSteps('sever_trunk', base)).toEqual(['C5-C', 'R6']);
+        expect(resolveCinematicSteps('rescue_recenter', base)).toEqual(['C6-A', 'R10']);
         expect(resolveCinematicSteps('rescue_fumble', base)).toEqual(['C6-B']);
         expect(resolveCinematicSteps('read_diagram', base)).toEqual([]);
     });
@@ -174,13 +200,78 @@ describe('content shape', () => {
         const declared = [
             ...Object.values(ITEMS).map((item) => item.icon),
             ...Object.values(ENDINGS).map((ending) => ending.art),
-            ...Object.values(CHAPTERS).map((chapter) => chapter.bg)
+            ...Object.values(CHAPTERS).map((chapter) => chapter.bg),
+            ...Object.values(CHAPTERS).flatMap((chapter) => (
+                chapter.hotspots.map((hotspot) => hotspot.cutaway?.image)
+            ))
         ].filter((url) => Boolean(url) && !url.startsWith('data:'));
 
         expect(declared.length).toBeGreaterThan(0);
         for (const url of declared) {
             expect(existsSync(resolve('public', url.replace(/^\//, ''))), url).toBe(true);
         }
+    });
+
+    it('gives Chapter 1 object interactions authored cutaways', () => {
+        const objectHotspots = CHAPTERS.parking_lot.hotspots.filter((hotspot) => hotspot.object);
+        expect(objectHotspots.length).toBeGreaterThan(0);
+        for (const hotspot of objectHotspots) {
+            expect(hotspot.cutaway?.image, hotspot.id).toMatch(/\/interstitials\/c1\/.+\.png$/);
+            expect(hotspot.cutaway?.label, hotspot.id).toBeTruthy();
+        }
+    });
+
+    it('gives every later chapter multiple authored narrative inserts', () => {
+        for (const chapterId of ['incident_review', 'medi_kiosk', 'server_room', 'sector_four']) {
+            const authoredImages = new Set(
+                CHAPTERS[chapterId].hotspots
+                    .map((hotspot) => hotspot.cutaway?.image)
+                    .filter(Boolean)
+            );
+            expect(authoredImages.size, chapterId).toBeGreaterThanOrEqual(2);
+        }
+    });
+
+    it('gives every object interaction an authored cutaway', () => {
+        for (const chapter of Object.values(CHAPTERS)) {
+            for (const hotspot of chapter.hotspots.filter((entry) => entry.object)) {
+                expect(hotspot.cutaway?.image, `${chapter.id}:${hotspot.id}`).toBeTruthy();
+                expect(hotspot.cutaway?.label, `${chapter.id}:${hotspot.id}`).toBeTruthy();
+            }
+        }
+    });
+
+    it('paces the incident review through one decision pair at a time', () => {
+        const chapter = CHAPTERS.incident_review;
+        const byId = Object.fromEntries(chapter.hotspots.map((hotspot) => [hotspot.id, hotspot]));
+        expect(byId.call_marisol.requires.minVisitedOf.ids).toEqual(['keep_notebook', 'surrender_notebook']);
+        expect(byId.proceed_to_kiosk.requires.minVisitedOf.ids).toEqual([
+            'request_marisol_witness',
+            'release_marisol_from_request'
+        ]);
+        expect(byId.challenge_neutral_language.choice).not.toBe(true);
+    });
+
+    it('turns taking the cutters into a committed server-room route', () => {
+        const chapter = CHAPTERS.server_room;
+        const byId = Object.fromEntries(chapter.hotspots.map((hotspot) => [hotspot.id, hotspot]));
+        expect(byId.walk_away.excludesAllOf).toContain('inspect_cutters');
+        expect(byId.expose_profile.excludesAllOf).toContain('inspect_cutters');
+        expect(byId.sever_trunk.requiresAllOf).toContain('inspect_cutters');
+    });
+
+    it('restores the missing narrative setup beats before each major choice', () => {
+        const parking = Object.fromEntries(CHAPTERS.parking_lot.hotspots.map((h) => [h.id, h]));
+        const warehouse = Object.fromEntries(CHAPTERS.warehouse.hotspots.map((h) => [h.id, h]));
+        const kiosk = Object.fromEntries(CHAPTERS.medi_kiosk.hotspots.map((h) => [h.id, h]));
+        const server = Object.fromEntries(CHAPTERS.server_room.hotspots.map((h) => [h.id, h]));
+
+        expect(parking.reply_to_lucia.requiresAllOf).toContain('speak_with_marisol');
+        expect(warehouse.double_tap_honest.requiresAllOf).toContain('observe_sensor_sweep');
+        expect(kiosk.request_billing_agent.requiresAllOf).toContain('deposit_partial_pay');
+        expect(server.walk_away.requiresAllOf).toContain('inspect_extinguisher');
+        expect(server.expose_profile.requiresAllOf).toContain('inspect_extinguisher');
+        expect(server.inspect_cutters.requiresAllOf).toContain('inspect_extinguisher');
     });
 
     it('gives every item an icon so the inventory never falls back to bare text', () => {

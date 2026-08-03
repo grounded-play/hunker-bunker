@@ -87,7 +87,7 @@ const frames = directions.flatMap((direction) => phases.map((phase) => ({
 })));
 
 const outputPath = path.resolve(
-    `public/art-remaster/sprite-v4/${classConfig.directory}/${classConfig.filename}.walk-v4-frame-spec.json`
+    `art/source/art-remaster/sprite-v4/${classConfig.directory}/${classConfig.filename}.walk-v4-frame-spec.json`
 );
 const spec = {
     version: 4,

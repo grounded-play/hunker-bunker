@@ -72,7 +72,7 @@ function loadAlienKeyedTexture(path, threshold = 15, fallbackCanvas = null) {
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
                 ctx.drawImage(img, 0, 0);
                 const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 applyBlackChromaKey(imgData, { threshold });
@@ -90,11 +90,12 @@ function loadAlienKeyedTexture(path, threshold = 15, fallbackCanvas = null) {
 }
 
 export class HiveSite {
-    constructor(scene, { id, label, characterId } = {}) {
+    constructor(scene, { id, label, characterId, groundMaterial = null } = {}) {
         this.scene = scene;
         this.id = id;
         this.label = label || 'HIVE SITE';
         this.characterId = characterId || 'nahl';
+        this.groundMaterial = groundMaterial;
         this.pos = { x: 0, z: 0 };
         this.built = false;
         this.revealed = false;
@@ -174,6 +175,15 @@ export class HiveSite {
 
         const group = new THREE.Group();
         group.position.set(x, 0, z);
+
+        if (this.groundMaterial) {
+            const ground = new THREE.Mesh(new THREE.CircleGeometry(2.65, 32), this.groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = 0.019;
+            ground.receiveShadow = true;
+            ground.userData = { kind: 'hive-floor', hiveId: this.id };
+            group.add(ground);
+        }
 
         // Core Bio-Structure Mesh (Pulsing Dome)
         const coreGeo = new THREE.SphereGeometry(1.4, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2);

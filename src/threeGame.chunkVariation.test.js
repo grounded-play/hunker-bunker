@@ -1,3 +1,4 @@
+import { TILE_SIZE } from './tileCatalog.js';
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
@@ -27,9 +28,11 @@ function makeFakeChunkGame(runEntropy, overrides = {}) {
         ensureChunkPortals: ThreeGame.prototype.ensureChunkPortals,
         getEdgeOpening: ThreeGame.prototype.getEdgeOpening,
         runMarkovPass: ThreeGame.prototype.runMarkovPass,
+        runMazeDetailPass: ThreeGame.prototype.runMazeDetailPass,
         widenChunkCorridors: ThreeGame.prototype.widenChunkCorridors,
         clearSpawnArea: ThreeGame.prototype.clearSpawnArea,
         getSpawnTile: ThreeGame.prototype.getSpawnTile,
+        isInTutorialRing: ThreeGame.prototype.isInTutorialRing,
         getChunkLandform: () => LANDFORMS.MAZE,
         getRunCardEffects: () => ({}),
         ...overrides
@@ -70,7 +73,10 @@ describe('getChunkLandform — per-run archetype variation', () => {
             runEntropy,
             hashTile: ThreeGame.prototype.hashTile,
             createSeededRandom: ThreeGame.prototype.createSeededRandom,
-            getBiomeKeyForWorldPosition: () => 'active'
+            getBiomeKeyForWorldPosition: () => 'active',
+            // docs/phase6-wfc-ring-barrier-integration-plan.md: getChunkLandform
+            // now checks proximity to a ring boundary before picking randomly.
+            getBiomeAnchorPosition: () => ({ x: 0, z: 0 })
         };
     }
 
@@ -114,11 +120,55 @@ describe('clearLoadedChunksForRunReset — stale landform cache', () => {
     });
 });
 
+describe('getOrCreateChunk — cache eviction does not thrash non-mounted lookups', () => {
+    // A session log from real play showed "Chunk generated" firing repeatedly
+    // for coordinates the player had already visited and moved away from,
+    // well after initial map staging — wasted buildChunk() CPU work causing
+    // the reported frame-rate drop. Root cause: getOrCreateChunk's eviction
+    // only protects entries currently in chunkMeshes (actually mounted), but
+    // gameplay logic (getTileType/getRoomTypeGrid, used by AI pathing) also
+    // populates chunkCache for chunks that are never mounted — so once total
+    // distinct chunk keys queried in a session exceeds MAX_CHUNK_CACHE, those
+    // non-mounted-but-still-relevant entries get evicted and regenerated from
+    // scratch the next time gameplay logic touches the same coordinate again.
+    function makeFakeChunkCacheGame() {
+        const buildChunkCalls = new Map(); // key -> call count
+        return {
+            chunkSize: 2,
+            chunkCache: new Map(),
+            chunkMeshes: new Map(),
+            destroyedWallKeys: new Set(),
+            applyDestroyedWallsToGrid: ThreeGame.prototype.applyDestroyedWallsToGrid,
+            buildChunk(chunkX, chunkY) {
+                const key = `${chunkX},${chunkY}`;
+                buildChunkCalls.set(key, (buildChunkCalls.get(key) ?? 0) + 1);
+                return { 0: ['.', '.'], 1: ['.', '.'], landform: LANDFORMS.MAZE };
+            },
+            buildChunkCalls
+        };
+    }
+
+    it('does not regenerate a previously cached, non-mounted chunk after 200 other distinct chunks are queried', () => {
+        const fakeThis = makeFakeChunkCacheGame();
+
+        // Query the chunk we'll re-check first, then 150 other distinct
+        // non-mounted chunks (well beyond the real 9x9=81 resident window),
+        // simulating gameplay logic touching many coordinates over a session.
+        ThreeGame.prototype.getOrCreateChunk.call(fakeThis, 0, 0);
+        for (let i = 1; i <= 150; i += 1) {
+            ThreeGame.prototype.getOrCreateChunk.call(fakeThis, i, 0);
+        }
+
+        // Re-querying (0,0) should return the cached grid, not rebuild it.
+        ThreeGame.prototype.getOrCreateChunk.call(fakeThis, 0, 0);
+
+        expect(fakeThis.buildChunkCalls.get('0,0')).toBe(1);
+    });
+});
+
 describe('generatePocket — per-hole, per-run pocket layout', () => {
-    // POCKET_CELL_COUNT is 5 (an odd cell-count, like the real chunk carve's
-    // chunkCellCount=9) so the DFS start cell lands exactly on the grid's
-    // true center — see the worked arithmetic in this task's implementation
-    // note. Grid size = 5*2+1 = 11.
+    // Phase 2 replaces the old 11x11 one-cell DFS maze with two overlapping
+    // 7x7 WFC tiles per axis: 7 + 7 - 1 = 13.
     function makePocketFakeGame(runEntropy) {
         return {
             runEntropy,
@@ -166,6 +216,23 @@ describe('generatePocket — per-hole, per-run pocket layout', () => {
         expect(pocket.grid[pocket.climbPoint.y][pocket.climbPoint.x]).toBe('.');
         expect(pocket.climbPoint).not.toEqual(pocket.centerCell);
     });
+
+    it('builds a WFC pocket with a multi-cell-wide room', () => {
+        const game = makePocketFakeGame(13);
+        const pocket = ThreeGame.prototype.generatePocket.call(game, 2, 8);
+        expect(pocket.size).toBe((2 * (TILE_SIZE - 1)) + 1);
+        expect(pocket.grid).toHaveLength((2 * (TILE_SIZE - 1)) + 1);
+        expect(pocket.lattice).toHaveLength(4);
+
+        const hasWideRoom = pocket.grid.some((row, y) => row.some((_cell, x) => (
+            y + 2 < pocket.size
+            && x + 2 < pocket.size
+            && pocket.grid.slice(y, y + 3).every((candidateRow) => (
+                candidateRow.slice(x, x + 3).every((cell) => cell === '.')
+            ))
+        )));
+        expect(hasWideRoom).toBe(true);
+    });
 });
 
 describe('mountPocket — pocket geometry mounting', () => {
@@ -173,6 +240,7 @@ describe('mountPocket — pocket geometry mounting', () => {
         return {
             pocketCache: new Map(),
             pocketGroups: new Map(),
+            pickupMeshes: [],
             runEntropy: 123,
             globalSeedOffset: 0,
             wallHeight: 2,
@@ -190,6 +258,7 @@ describe('mountPocket — pocket geometry mounting', () => {
             getWallKey: ThreeGame.prototype.getWallKey,
             generatePocket: ThreeGame.prototype.generatePocket,
             configureWallMesh: ThreeGame.prototype.configureWallMesh,
+            computeExteriorWallJitter: ThreeGame.prototype.computeExteriorWallJitter,
             getWallMaxHp: () => 8,
             createSnailDropPlacement: () => ({ worldX: 0, worldZ: 0, type: 'health', elevation: 0.2, offsetX: 0, offsetZ: 0, bobOffset: 0, rotation: 0, tiltX: 0, tiltZ: 0, scale: 0.8, shadowRadius: 0.24, collectLock: 0.34 }),
             createPickupInstance: () => new THREE.Object3D()
@@ -224,6 +293,7 @@ describe('enterPocket / exitPocket — fall resolution', () => {
             isInPocket: false,
             pocketCache: new Map(),
             pocketGroups: new Map(),
+            pickupMeshes: [],
             chunkMeshes: new Map([['0,1', { visible: true }]]),
             chunkSize: 19,
             runEntropy: 55,
@@ -243,6 +313,7 @@ describe('enterPocket / exitPocket — fall resolution', () => {
             getWallKey: ThreeGame.prototype.getWallKey,
             getWallMaxHp: () => 8,
             configureWallMesh: ThreeGame.prototype.configureWallMesh,
+            computeExteriorWallJitter: ThreeGame.prototype.computeExteriorWallJitter,
             generatePocket: ThreeGame.prototype.generatePocket,
             mountPocket: ThreeGame.prototype.mountPocket,
             resolveFallDamage: () => 2,
@@ -343,5 +414,46 @@ describe('getTileType — pocket-aware collision redirection', () => {
     it('falls back to the surface chunk system when not in a pocket', () => {
         const fakeThis = { ...makeFakeThisForTileType(), isInPocket: false, getOrCreateChunk: () => [['.']] };
         expect(() => ThreeGame.prototype.getTileType.call(fakeThis, 100, 200)).not.toThrow();
+    });
+});
+
+describe('syncVisibleChunks — _wallInstanceIndex cleanup on chunk unmount', () => {
+    it('removes _wallInstanceIndex entries belonging to a chunk that falls out of the resident window', () => {
+        const record = { wallKey: '5,5', chunkKey: '0,0' };
+        const otherRecord = { wallKey: '50,50', chunkKey: '2,2' };
+        const fakeThis = {
+            player: { position: { x: 0, z: 0 } },
+            chunkSize: 19,
+            visibleChunkRadius: 0,
+            chunkResidentPadding: 0,
+            chunkPrefetchMargin: 0,
+            chunkMeshes: new Map([
+                ['0,0', { visible: true, userData: {}, children: [] }],
+                // Present in chunkMeshes but far outside the resident window
+                // (radius 0, no padding) — this is the chunk that should get
+                // unmounted, dragging its _wallInstanceIndex entry with it.
+                ['2,2', { visible: true, userData: {}, children: [] }]
+            ]),
+            chunkGroups: { remove: () => {} },
+            pendingChunkMountKeys: new Set(),
+            pendingChunkMounts: [],
+            wallMeshes: [],
+            pickupMeshes: [],
+            scatterSprites: [],
+            _wallInstanceIndex: new Map([['5,5', record], ['50,50', otherRecord]]),
+            disposeChunkGroupResources: () => {},
+            processPendingChunkMounts: () => {},
+            getChunkPrefetchCoords: () => [],
+            maxChunkMountsPerFrame: 1,
+            visitedChunks: new Set(),
+            queueChunkMount: () => {},
+            onNewChunkDiscovered: () => {},
+            updateDepthTierProgress: () => {}
+        };
+
+        ThreeGame.prototype.syncVisibleChunks.call(fakeThis, true);
+
+        expect(fakeThis._wallInstanceIndex.has('50,50')).toBe(false);
+        expect(fakeThis._wallInstanceIndex.has('5,5')).toBe(true);
     });
 });

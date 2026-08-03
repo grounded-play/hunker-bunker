@@ -16,12 +16,12 @@ Tank and Engineer now have independent 8 × 8 RGBA walk atlases and explicit
 
 - `public/Tank.walk_v4.png`
 - `public/Eng.walk_v4.png`
-- `public/art-remaster/sprite-v4/tank/Tank.walk-v4-frame-spec.json`
-- `public/art-remaster/sprite-v4/engineer/Engineer.walk-v4-frame-spec.json`
+- `art/source/art-remaster/sprite-v4/tank/Tank.walk-v4-frame-spec.json`
+- `art/source/art-remaster/sprite-v4/engineer/Engineer.walk-v4-frame-spec.json`
 
 Both use the row and phase ordering below. Runtime footstep events occur at
 columns 0 and 4. Their locked identity masters and removable-key production
-sources remain beside the sidecars under `public/art-remaster/sprite-v4/`.
+sources remain beside the sidecars under `art/source/art-remaster/sprite-v4/`.
 
 ## Direction order
 

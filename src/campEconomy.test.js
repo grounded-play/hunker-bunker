@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
     applyTrade,
+    canActivateCampVerb,
     canApplyTrade,
     getAct2ClassPerks,
+    getCampActiveVerb,
     getCampTrades,
     getCampVerbEffects,
+    isCampVerbDegraded,
     mergeCampVerbEffects
 } from './campEconomy.js';
 import { BankManager } from './bank.js';
@@ -79,5 +82,73 @@ describe('Camp Economy Barter System', () => {
         expect(getAct2ClassPerks('SCOUT').turretDetectionRadiusMult).toBeLessThan(1);
         expect(getAct2ClassPerks('TANK').shockGuardCharges).toBe(1);
         expect(getAct2ClassPerks('ENGINEER').canReprogramTurrets).toBe(true);
+    });
+});
+
+describe('Camp Active Verbs (docs/faction-verb-matrix.md)', () => {
+    it('defines one signature active verb per camp with cost + cooldown', () => {
+        expect(getCampActiveVerb('camp_meridian')).toMatchObject({ id: 'route_intel', cost: { tech: 1 } });
+        expect(getCampActiveVerb('camp_tallow')).toMatchObject({ id: 'triage', cost: { med: 1 }, cooldownSeconds: 90 });
+        expect(getCampActiveVerb('camp_vesper')).toMatchObject({ id: 'field_resupply', cost: { coin: 1 }, cooldownSeconds: 120 });
+        expect(getCampActiveVerb('camp_unknown')).toBeNull();
+    });
+
+    it('blocks activation when the player cannot afford the cost', () => {
+        const result = canActivateCampVerb('camp_tallow', { bankState: { med: 0 } });
+        expect(result).toEqual({ allowed: false, reason: 'insufficient_resources' });
+    });
+
+    it('allows activation with sufficient resources and no other constraints', () => {
+        const result = canActivateCampVerb('camp_tallow', { bankState: { med: 3 } });
+        expect(result).toEqual({ allowed: true, reason: null });
+    });
+
+    it('blocks Tallow triage while the passive humanity-decay buff is already at its floor', () => {
+        const result = canActivateCampVerb('camp_tallow', { bankState: { med: 3 }, humanityDecayMultiplier: 0.45 });
+        expect(result).toEqual({ allowed: false, reason: 'already_at_humanity_floor' });
+    });
+
+    it('enforces Vesper field resupply cooldown', () => {
+        const onCooldown = canActivateCampVerb('camp_vesper', {
+            bankState: { coin: 5 },
+            nowSeconds: 100,
+            lastUsedAtSeconds: 30
+        });
+        expect(onCooldown.allowed).toBe(false);
+        expect(onCooldown.reason).toBe('on_cooldown');
+        expect(onCooldown.remainingSeconds).toBeCloseTo(50, 5);
+
+        const offCooldown = canActivateCampVerb('camp_vesper', {
+            bankState: { coin: 5 },
+            nowSeconds: 200,
+            lastUsedAtSeconds: 30
+        });
+        expect(offCooldown).toEqual({ allowed: true, reason: null });
+    });
+
+    it('enforces Vesper once-per-boss-encounter and Meridian once-per-ring exploit rules', () => {
+        expect(canActivateCampVerb('camp_vesper', {
+            bankState: { coin: 5 },
+            bossEncounterActive: true,
+            usedThisBossEncounter: true
+        })).toEqual({ allowed: false, reason: 'already_used_this_encounter' });
+
+        expect(canActivateCampVerb('camp_meridian', {
+            bankState: { tech: 5 },
+            ring: 2,
+            usedRings: new Set([1, 2])
+        })).toEqual({ allowed: false, reason: 'ring_already_pinged' });
+
+        expect(canActivateCampVerb('camp_meridian', {
+            bankState: { tech: 5 },
+            ring: 3,
+            usedRings: new Set([1, 2])
+        })).toEqual({ allowed: true, reason: null });
+    });
+
+    it('marks Meridian route intel as degraded (bad intel, not blocked) when the camp is robbed', () => {
+        expect(isCampVerbDegraded('camp_meridian', 'robbed')).toBe(true);
+        expect(isCampVerbDegraded('camp_meridian', 'alive')).toBe(false);
+        expect(isCampVerbDegraded('camp_tallow', 'robbed')).toBe(false);
     });
 });

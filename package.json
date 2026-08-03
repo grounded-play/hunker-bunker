@@ -13,6 +13,14 @@
     "server:nonprod": "cross-env HB_DB_BACKEND=sqlite HB_DB_SQLITE_PATH=server/data/hunker-bunker-nonprod.sqlite HB_STEAM_STORE_ENABLED=1 HB_STEAM_MICROTXN_ENABLED=1 HB_STEAM_STORE_MOCK_PURCHASES=1 nodemon server/index.js",
     "build": "vite build && npm run audit:build-media",
     "audit:build-media": "node scripts/audit-build-media.js",
+    "audit:retail-assets": "node scripts/audit-retail-assets.js",
+    "audit:retail-assets:check": "node scripts/audit-retail-assets.js --check",
+    "audit:retail-assets:package": "node scripts/audit-retail-assets.js --package",
+    "audit:dependencies": "node scripts/audit-dependency-usage.js",
+    "presubmit": "npm run presubmit:generated",
+    "presubmit:generated": "npm run steam:claims:check && npm run audio:plan-sfx:check && npm run audit:retail-assets:check && npm run steam:item-catalog:check && npm run audit:soundtrack",
+    "audio:plan-sfx": "node scripts/generate-plan-sfx.js",
+    "audio:plan-sfx:check": "node scripts/generate-plan-sfx.js --check",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
@@ -23,20 +31,33 @@
     "steam:dashboard-handoff": "node scripts/steam-dashboard-handoff.js",
     "steam:audit-backend": "node scripts/audit-steam-backend-env.js",
     "steam:audit-backend:strict": "node scripts/audit-steam-backend-env.js --strict",
+    "steam:backend-volume": "node scripts/steam-backend-volume.js",
+    "steam:smoke-leaderboards": "node scripts/smoke-steam-leaderboards.js",
+    "steam:audit-inventory-assets": "node scripts/audit-steam-inventory-assets.js",
+    "steam:item-catalog": "node scripts/build-steam-item-catalog.js",
+    "steam:item-catalog:check": "node scripts/build-steam-item-catalog.js --check",
+    "steam:claims": "node scripts/audit-steam-claims.js",
+    "steam:claims:check": "node scripts/audit-steam-claims.js --check",
     "steam:audit-depot": "node scripts/audit-steam-depot.js",
+    "steam:input-configs": "node scripts/build-steam-input-configs.js",
     "steam:prepare": "node scripts/steam-release.js",
-    "steam:upload": "node scripts/steam-release.js --upload",
+    "steam:upload": "node scripts/steam-release.js --upload --soundtrack",
+    "steam:upload-soundtrack": "node scripts/steam-release.js --upload --skip-build --soundtrack",
     "steam:drm-wrap": "node scripts/steam-drm-wrap.js",
-    "electron:build": "npm run build && npm run steam:config && electron-builder --dir --linux --win",
-    "electron:dist": "npm run build && npm run steam:config && electron-builder",
+    "electron:build": "npm run build && npm run steam:config && npm run steam:input-configs && electron-builder --dir --linux --win",
+    "electron:dist": "npm run build && npm run steam:config && npm run steam:input-configs && electron-builder",
     "lighthouse:setup": "npx -y @puppeteer/browsers install chrome@stable",
     "lighthouse": "npm run build && CHROME_PATH=$(ls chrome/*/chrome-linux64/chrome 2>/dev/null | head -1) lhci autorun",
-    "package-soundtrack": "node scripts/package-soundtrack.js",
+    "soundtrack:metadata": "node scripts/build-soundtrack-metadata.js",
+    "audit:soundtrack": "node scripts/build-soundtrack-metadata.js --check && node scripts/package-soundtrack.js --check",
+    "package-soundtrack": "node scripts/build-soundtrack-metadata.js && node scripts/package-soundtrack.js",
     "cinematics:stills": "node scripts/build-cinematic-still-videos.js"
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",
     "productName": "Hunker Bunker",
+    "executableName": "hunker-bunker",
+    "afterPack": "scripts/after-pack.cjs",
     "directories": {
       "output": "dist_electron"
     },
@@ -44,6 +65,10 @@
       {
         "from": "steam/steam_input_manifest.vdf",
         "to": "steam_input_manifest.vdf"
+      },
+      {
+        "from": "steam/controller_configs",
+        "to": "controller_configs"
       }
     ],
     "files": [
@@ -58,6 +83,7 @@
       "dist/**/*.webm"
     ],
     "linux": {
+      "executableName": "hunker-bunker",
       "icon": "electron/icon.png",
       "target": "dir"
     },
@@ -87,7 +113,6 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.0",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
     "steamworks.js": "^0.4.0",
     "three": "^0.184.0"
   },

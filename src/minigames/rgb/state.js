@@ -26,6 +26,7 @@ export function createRunState() {
         pain: 'stable',
         inventory: [],
         evidence: [],
+        routeHistory: [],
         flags: {
             heardFullMessage: false,
             noticedMarisolPressure: false,
