@@ -14,7 +14,7 @@ export function normalizePopulationBudget(budget = {}) {
     return {
         signature: Math.max(1, Number(budget.signature) || 1),
         large: normalizeCount(budget.large, 1),
-        small: normalizeCount(budget.small, 2),
+        small: normalizeCount(budget.small, 3),
         pickup: normalizeCount(budget.pickup, 0),
         enemy: normalizeCount(
             budget.enemy ?? { min: budget.enemyMin, max: budget.enemyMax },
@@ -59,6 +59,9 @@ export function planRoomPopulation(room, grid, random) {
     };
 
     reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies'), true);
+    if (theme.ambientProps?.length > 0) {
+        reservePlacement('ambient', propFrom(theme.ambientProps, random), false);
+    }
     for (let index = 0; index < budget.large.min; index += 1) {
         reservePlacement('large', propFrom(theme.largeProps, random, 'prop_conduit_hub'), true);
     }

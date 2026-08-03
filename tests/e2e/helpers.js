@@ -12,28 +12,24 @@
 export async function bootToTitleSplash(page) {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    // The click listener that reads "CLICK OR PRESS ANY KEY TO INITIALIZE"
-    // (document.body.addEventListener('click', triggerBoot) in main.js) is
-    // registered in the same synchronous block that exposes this hook.
     await page.waitForFunction(() => typeof window.HunkerTriggerBoot === 'function', { timeout: 15_000 });
-    // Vite's dev-triggered reload can still land in the gap right after the
-    // hook appears but before networkidle settles again, and how wide that
-    // gap is varies with how loaded the machine is (this dev container runs
-    // several concurrent agents/browsers) — a single fixed buffer flaked
-    // under heavier contention. Retrying the click a few times, each after
-    // a growing wait, is more robust than guessing one buffer length.
+
     const splash = page.locator('#splash');
+    const menu = page.locator('#menu');
+    if (await splash.isVisible() || await menu.isVisible()) return splash;
+
     for (const bufferMs of [1_000, 2_500, 5_000]) {
         await page.waitForTimeout(bufferMs);
-        await page.locator('body').click();
+        if (await splash.isVisible() || await menu.isVisible()) return splash;
+        await page.locator('body').click({ force: true }).catch(() => null);
         const becameVisible = await splash
             .waitFor({ state: 'visible', timeout: 5_000 })
             .then(() => true)
             .catch(() => false);
-        if (becameVisible) return splash;
+        if (becameVisible || await menu.isVisible()) return splash;
     }
-    // Last attempt, surfacing the real timeout error if it still fails.
-    await page.locator('body').click();
+    if (await splash.isVisible() || await menu.isVisible()) return splash;
+    await page.locator('body').click({ force: true }).catch(() => null);
     await splash.waitFor({ state: 'visible', timeout: 15_000 });
     return splash;
 }

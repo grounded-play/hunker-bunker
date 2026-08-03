@@ -1284,6 +1284,12 @@ function applyControllerCursorAim(controller) {
     controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY)));
     controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y - (deltaY * CONTROLLER_CURSOR_SENSITIVITY)));
 
+    window.dispatchEvent(new MouseEvent('mousemove', {
+        clientX: controllerAimCursor.x,
+        clientY: controllerAimCursor.y,
+        bubbles: true
+    }));
+
     return Boolean(window.game.updateAimFromClient(
         controllerAimCursor.x,
         controllerAimCursor.y,
@@ -1302,11 +1308,34 @@ function handleSteamGameplayInput(controller) {
         window.game.setVirtualInput(moveX, -moveY);
     }
     // The pad/gyro cursor is the precision device, so it wins a frame where both
-    // moved. Whichever aimed last still wins overall: setControllerAimVector clears
-    // mouseAimActive, and updateAimFromClient sets it again.
+    // moved. Whichever aimed last still wins overall. Right joystick deflection also
+    // moves the virtual mouse cursor smoothly across the screen like a mouse.
     const cursorAimed = applyControllerCursorAim(controller);
-    if (!cursorAimed && (aimX || aimY) && window.game?.setControllerAimVector) {
-        window.game.setControllerAimVector(aimX, -aimY);
+    if (!cursorAimed && (aimX || aimY)) {
+        const width = window.innerWidth || 1280;
+        const height = window.innerHeight || 720;
+        if (!controllerAimCursor) {
+            controllerAimCursor = { x: width / 2, y: height / 2 };
+        }
+        const STICK_MOUSE_SPEED = 18;
+        controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + aimX * STICK_MOUSE_SPEED));
+        controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + aimY * STICK_MOUSE_SPEED));
+
+        if (window.game?.updateAimFromClient) {
+            window.game.updateAimFromClient(
+                controllerAimCursor.x,
+                controllerAimCursor.y,
+                { keepMouseActive: true }
+            );
+        }
+        window.dispatchEvent(new MouseEvent('mousemove', {
+            clientX: controllerAimCursor.x,
+            clientY: controllerAimCursor.y,
+            bubbles: true
+        }));
+        if (window.game?.setControllerAimVector) {
+            window.game.setControllerAimVector(aimX, -aimY);
+        }
     }
 
     if (controller.fire) {
@@ -2444,6 +2473,23 @@ window.addEventListener('camp-verb-activated', (event) => {
         playbackRate: event?.detail?.degraded ? 0.78 : 1,
         bus: 'sfx'
     });
+    const campLabel = event?.detail?.campLabel ?? campId.toUpperCase();
+    const degraded = Boolean(event?.detail?.degraded);
+    let promptMsg = `SYSTEM: ${campLabel} VERB ACTIVATED.`;
+    if (campId === 'meridian') {
+        promptMsg = degraded
+            ? `SYSTEM: MERIDIAN ROUTE INTEL ACTIVATED (DEGRADED — RECENTLY ROBBED). RADAR LOCK DELAYED.`
+            : `SYSTEM: MERIDIAN ROUTE INTEL ACTIVATED. RADAR SCANNING BLOCKER & KEY REGIONAL SITES.`;
+    } else if (campId === 'tallow') {
+        promptMsg = `SYSTEM: TALLOW TRIAGE ACTIVATED. HEALTH FULLY RESTORED & INFECTION CLEANSED.`;
+    } else if (campId === 'vesper') {
+        promptMsg = `SYSTEM: VESPER FIELD RESUPPLY ACTIVATED. LOADED CLIP & AMMO RESERVES FULLY REFILLED.`;
+    }
+    showBiomePrompt(promptMsg);
+});
+window.addEventListener('camp-verb-denied', (event) => {
+    const reason = String(event?.detail?.reason ?? 'unavailable').replace(/_/g, ' ').toUpperCase();
+    showBiomePrompt(`SYSTEM: FACTION VERB DENIED — ${reason}.`);
 });
 window.addEventListener('combat-no-ammo', () => {
     flashWeaponError();
@@ -3219,7 +3265,7 @@ function renderOperatorPolishUi() {
         button.className = `operator-polish-chip${isUnlocked ? '' : ' is-locked'}${selected.id === polish.id ? ' is-selected' : ''}`;
         button.style.setProperty('--polish-color', polish.color);
         button.setAttribute('aria-disabled', String(!isUnlocked));
-        button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ' locked'}`);
+        button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ` locked. Clue: ${polish.hint}`}`);
         button.innerHTML = `<span class="operator-polish-chip__swatch"></span><span>${String(polish.id + 1).padStart(2, '0')} // ${polish.name}</span>`;
         if (isUnlocked) {
             button.addEventListener('click', () => {
@@ -3235,7 +3281,7 @@ function renderOperatorPolishUi() {
             if (readoutName) readoutName.textContent = polish.name;
             if (readoutState) readoutState.textContent = isUnlocked
                 ? (selected.id === polish.id ? 'EQUIPPED' : 'UNLOCKED')
-                : 'LOCKED';
+                : `LOCKED // ${polish.hint}`;
         });
         grid.append(button);
     }
@@ -5218,7 +5264,22 @@ function updateHudCompass() {
 function installHudCompass() {
     if (!desktopCompassArrow || !desktopCompassDistance) return;
 
+    if (desktopCompass && !desktopCompass.dataset.clickBound) {
+        desktopCompass.dataset.clickBound = 'true';
+        desktopCompass.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleTacticalMapModal();
+        });
+        desktopCompass.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleTacticalMapModal();
+            }
+        });
+    }
+
     const step = () => {
+        syncHudCompassVisibility();
         updateHudCompass();
         requestAnimationFrame(step);
     };
@@ -10939,10 +11000,23 @@ const STEAM_ACHIEVEMENT_ITEM_MAP = Object.freeze({
 window.addEventListener('achievement-unlocked', (event) => {
     const key = event?.detail?.key;
     if (!key) return;
-    const polishGrant = unlockMilestonePolish(key);
+    const polishGrant = unlockMilestonePolish(`achievement:${key}`);
     if (!polishGrant.unlocked) return;
     renderOperatorPolishUi();
     showBiomePrompt(`> SUIT POLISH UNLOCKED: ${OPERATOR_POLISHES[polishGrant.id].name}`);
+});
+
+function grantWorldMilestonePolish(milestone) {
+    const polishGrant = unlockMilestonePolish(milestone);
+    if (!polishGrant.unlocked) return;
+    renderOperatorPolishUi();
+    showBiomePrompt(`> SUIT POLISH UNLOCKED: ${OPERATOR_POLISHES[polishGrant.id].name}`);
+}
+
+window.addEventListener('black-box-recovered', () => grantWorldMilestonePolish('black-box-recovered'));
+window.addEventListener('act2-milestone', (event) => {
+    const key = event?.detail?.key;
+    if (key) grantWorldMilestonePolish(`act2:${key}`);
 });
 
 if (window.electronAPI) {

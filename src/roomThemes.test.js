@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assignRoomThemes, chooseRoomTheme, ROOM_THEME_CATALOG } from './roomThemes.js';
+import { assignRoomThemes, chooseRoomTheme, LIVED_IN_DECALS, ROOM_THEME_CATALOG } from './roomThemes.js';
 
 function seededRandom(seed) {
     let state = seed >>> 0 || 1;
@@ -36,6 +36,8 @@ describe('room themes', () => {
     it('defines a signature prop for every theme', () => {
         for (const theme of ROOM_THEME_CATALOG) {
             expect(theme.signatureProps.length, theme.id).toBeGreaterThan(0);
+            expect(theme.ambientProps.length, theme.id).toBeGreaterThan(0);
         }
+        expect(new Set(Object.values(LIVED_IN_DECALS).flat()).size).toBe(8);
     });
 });

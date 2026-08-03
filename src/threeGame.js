@@ -1761,6 +1761,22 @@ export class ThreeGame {
             decal_bullet_holes: this.loadKeyedSpriteTexture('/decal_bullet_holes.png', 14),
             prop_torn_warning_poster: this.loadKeyedSpriteTexture('/prop_torn_warning_poster.png', 14),
             decal_wall_breach: this.loadKeyedSpriteTexture('/decal_wall_breach.png', 14),
+            decal_hazard_stripes: this.loadKeyedSpriteTexture('/decal_hazard_stripes.png', 14),
+            decal_biohazard_stencil: this.loadKeyedSpriteTexture('/decal_biohazard_stencil.png', 14),
+            decal_oil_spill_patch: this.loadKeyedSpriteTexture('/decal_oil_spill_patch.png', 14),
+            decal_footprints_mud: this.loadKeyedSpriteTexture('/decal_footprints_mud.png', 14),
+            decal_tallow_symbol: this.loadKeyedSpriteTexture('/decal_tallow_symbol.png', 14),
+            decal_meridian_stencil: this.loadKeyedSpriteTexture('/decal_meridian_stencil.png', 14),
+            decal_claw_scratches: this.loadKeyedSpriteTexture('/decal_claw_scratches.png', 14),
+            decal_spore_growth_patch: this.loadKeyedSpriteTexture('/decal_spore_growth_patch.png', 14),
+            decal_abandoned_meal_tray: this.loadKeyedSpriteTexture('/decal_abandoned_meal_tray.png', 14),
+            decal_emergency_oxygen_nest: this.loadKeyedSpriteTexture('/decal_emergency_oxygen_nest.png', 14),
+            decal_maintenance_shrine: this.loadKeyedSpriteTexture('/decal_maintenance_shrine.png', 14),
+            decal_failed_decon_kit: this.loadKeyedSpriteTexture('/decal_failed_decon_kit.png', 14),
+            decal_barricade_last_stand: this.loadKeyedSpriteTexture('/decal_barricade_last_stand.png', 14),
+            decal_childlike_cave_map: this.loadKeyedSpriteTexture('/decal_childlike_cave_map.png', 14),
+            decal_bio_sample_spill: this.loadKeyedSpriteTexture('/decal_bio_sample_spill.png', 14),
+            decal_worker_sleep_roll: this.loadKeyedSpriteTexture('/decal_worker_sleep_roll.png', 14),
 
             prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
@@ -2377,15 +2393,17 @@ export class ThreeGame {
                 fog: false
             })
         };
-        for (const type of Object.keys(GENERATED_ROOM_PROP_PATHS)) {
-            this.scatterMaterials[type] = new THREE.SpriteMaterial({
-                map: this.scatterTextures[type],
-                transparent: true,
-                alphaTest: 0.06,
-                depthWrite: false,
-                depthTest: true,
-                fog: false
-            });
+        for (const [type, texture] of Object.entries(this.scatterTextures)) {
+            if (!this.scatterMaterials[type] && texture) {
+                this.scatterMaterials[type] = new THREE.SpriteMaterial({
+                    map: texture,
+                    transparent: true,
+                    alphaTest: 0.04,
+                    depthWrite: false,
+                    depthTest: true,
+                    fog: false
+                });
+            }
         }
         for (const drop of LORE_DROPS) {
             this.scatterMaterials[drop.key] = new THREE.SpriteMaterial({
@@ -17460,11 +17478,16 @@ export class ThreeGame {
                         z: worldZ,
                         type: propType,
                         scatterKey: `room_plan:${planned.id}`,
-                        scale: planned.kind === 'signature' ? 1.3 : planned.kind === 'large' ? 1.15 : 0.82,
+                        scale: planned.kind === 'signature'
+                            ? 1.3
+                            : planned.kind === 'large'
+                                ? 1.15
+                                : planned.kind === 'ambient' ? 1.05 : 0.82,
                         elevation: 0.08,
                         hp: propType === 'prop_specimen_tank' ? 4 : 3,
                         groupType: 'prop',
-                        opacity: 1
+                        opacity: 1,
+                        worldDressing: planned.kind === 'ambient'
                     });
                     reservedCells.add(`${planned.x},${planned.y}`);
                 }
@@ -18504,7 +18527,7 @@ export class ThreeGame {
         sprite.center.set(0.5, 0);
         sprite.position.set(placement.x, anchoredY, placement.z);
         sprite.frustumCulled = false;
-        sprite.renderOrder = 3;
+        sprite.renderOrder = placement.worldDressing ? 5 : 3;
         sprite.scale.set(scaleX, scaleY, 1);
         sprite.userData = {
             isScatter: true,
@@ -22696,14 +22719,21 @@ export class ThreeGame {
             // stamped into canyon.
             if (architectural.room) {
                 const existing = mazeMetadata.roomInstances?.[0] ?? {};
+                const roomId = `architectural-room:${chunkX},${chunkY}`;
+                const doors = (architectural.room.doors ?? []).map((door, index) => ({
+                    id: `${chunkX},${chunkY}:architectural-door:${index}:${door.side}`,
+                    side: door.side,
+                    cells: door.cells.map((cell) => ({ ...cell })),
+                    neighborIndex: null
+                }));
                 mazeMetadata.roomInstances = [{
                     ...existing,
-                    id: `architectural-room:${chunkX},${chunkY}`,
+                    id: roomId,
                     chunkKey: `${chunkX},${chunkY}`,
                     interior: architectural.room.interior,
                     bounds: architectural.room.bounds,
-                    doors: [],
-                    navigation: { doorLanes: [] }
+                    doors,
+                    navigation: { doorLanes: doors.flatMap((door) => door.cells) }
                 }];
             } else {
                 mazeMetadata.roomInstances = [];

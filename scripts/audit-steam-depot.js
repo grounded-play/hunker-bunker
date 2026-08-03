@@ -18,10 +18,19 @@ const FORBIDDEN_BASENAMES = new Map([
 ]);
 
 const FORBIDDEN_EXTENSIONS = new Map([
+    ['.db', 'Server or local database files must not ship in the depot.'],
+    ['.db-shm', 'Server or local database files must not ship in the depot.'],
+    ['.db-wal', 'Server or local database files must not ship in the depot.'],
     ['.pem', 'Private key/certificate material must not ship in the depot.'],
     ['.p12', 'Private key/certificate material must not ship in the depot.'],
     ['.pfx', 'Private key/certificate material must not ship in the depot.'],
-    ['.key', 'Private key material must not ship in the depot.']
+    ['.key', 'Private key material must not ship in the depot.'],
+    ['.sqlite', 'Server or local database files must not ship in the depot.'],
+    ['.sqlite-shm', 'Server or local database files must not ship in the depot.'],
+    ['.sqlite-wal', 'Server or local database files must not ship in the depot.'],
+    ['.sqlite3', 'Server or local database files must not ship in the depot.'],
+    ['.sqlite3-shm', 'Server or local database files must not ship in the depot.'],
+    ['.sqlite3-wal', 'Server or local database files must not ship in the depot.']
 ]);
 
 const STORE_ONLY_BASENAMES = [
@@ -34,7 +43,10 @@ const STORE_ONLY_BASENAMES = [
 ];
 
 function isEnvFile(basename) {
-    return basename === '.env' || basename.startsWith('.env.');
+    return basename === '.env'
+        || basename.startsWith('.env.')
+        || basename.endsWith('.env')
+        || basename.includes('.env.');
 }
 
 async function walkFiles(root) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockPolish } from './operatorPolishes.js';
+import { OPERATOR_POLISHES, POLISH_UNLOCK_BY_MILESTONE, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish, unlockPolish } from './operatorPolishes.js';
 
 function memoryStorage() {
     const values = new Map();
@@ -20,5 +20,20 @@ describe('operator polishes', () => {
         expect(selectPolish(7, storage)?.id).toBe(7);
         expect(getSelectedPolish(storage).id).toBe(7);
         expect(unlockAllPolishes(storage).size).toBe(16);
+    });
+
+    it('uses explicit thematic milestones instead of hashing arbitrary events', () => {
+        const storage = memoryStorage();
+        expect(unlockMilestonePolish('black-box-recovered', storage)).toEqual({ id: 15, unlocked: true });
+        expect(getUnlockedPolishIds(storage).has(15)).toBe(true);
+        expect(unlockMilestonePolish('black-box-recovered', storage)).toEqual({ id: 15, unlocked: false });
+        expect(unlockMilestonePolish('unrelated-event', storage)).toEqual({ id: null, unlocked: false });
+    });
+
+    it('gives every locked polish one unique reward milestone and a player clue', () => {
+        const rewardIds = Object.values(POLISH_UNLOCK_BY_MILESTONE);
+        expect(new Set(rewardIds).size).toBe(15);
+        expect([...rewardIds].sort((a, b) => a - b)).toEqual(OPERATOR_POLISHES.slice(1).map(({ id }) => id));
+        for (const polish of OPERATOR_POLISHES.slice(1)) expect(polish.hint.length).toBeGreaterThan(10);
     });
 });

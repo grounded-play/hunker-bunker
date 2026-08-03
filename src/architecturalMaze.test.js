@@ -15,7 +15,33 @@ describe('generateArchitecturalMazeChunk', () => {
         expect(result.room.interior.length).toBeGreaterThan(70);
         expect(result.grid.flat().filter((cell) => cell === 'X').length).toBeGreaterThan(40);
         expect(result.grid.flat()).toContain('#');
+        expect(result.room.doors.length).toBeGreaterThan(0);
+        expect(result.room.doors[0].cells).toHaveLength(3);
+        expect(result.room.doors[0].side).toBe('n');
+        for (const cell of result.room.doors[0].cells) {
+            expect(result.grid[cell.y][cell.x]).toBe('D');
+        }
         expect(result.grid[0]).toContain('.');
+    });
+
+    it('records correctly facing doors wherever a hallway enters a room', () => {
+        const { grid, room } = generateArchitecturalMazeChunk(seeded([0.8, 0.2, 0.9, 0.1]), {
+            openings: {
+                west: { open: true, offset: 2 },
+                east: { open: true, offset: 7 }
+            }
+        });
+        expect(room.doors.length).toBeGreaterThanOrEqual(2);
+        for (const door of room.doors) {
+            expect(door.cells).toHaveLength(3);
+            expect(['n', 'e', 's', 'w']).toContain(door.side);
+            for (const cell of door.cells) expect(grid[cell.y][cell.x]).toBe('D');
+            if (door.side === 'n' || door.side === 's') {
+                expect(new Set(door.cells.map((cell) => cell.y)).size).toBe(1);
+            } else {
+                expect(new Set(door.cells.map((cell) => cell.x)).size).toBe(1);
+            }
+        }
     });
 
     it('makes long bent canyon-separated connectors for traversal chunks', () => {

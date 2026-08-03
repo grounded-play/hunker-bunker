@@ -805,8 +805,11 @@
       </div>
 
       <!-- Desktop Compass HUD (shown only on PC) -->
-      <div id="desktop-compass" class="desktop-compass hidden" aria-hidden="true">
-        <div class="desktop-compass__header">NAV-LINK: ACTIVE</div>
+      <div id="desktop-compass" class="desktop-compass hidden" role="button" tabindex="0" title="Click or press M to toggle Tactical Map" aria-label="Tactical Compass (Click to open map)">
+        <div class="desktop-compass__header">
+          <span>NAV-LINK: ACTIVE</span>
+          <span class="desktop-compass__hint">[MAP / M]</span>
+        </div>
         <div class="desktop-compass__face">
           <div class="desktop-compass__ring">
             <div class="desktop-compass__arrow" id="desktop-compass-arrow"></div>
