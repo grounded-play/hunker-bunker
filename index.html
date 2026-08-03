@@ -489,7 +489,6 @@
             <label class="roster-callsign-label" for="roster-callsign-input">CALLSIGN:</label>
             <input type="text" id="roster-callsign-input" class="operator-callsign-input" maxlength="16" placeholder="AGENT-01" autocomplete="off" spellcheck="false">
             <button type="button" class="dev-btn dev-btn--accent" id="roster-randomize-btn" title="Randomize Callsign">🎲 RANDOM</button>
-            <span class="roster-id" id="roster-id">op-—</span>
           </div>
           <!-- Run Telemetry Summary Block -->
           <div id="roster-run-telemetry" class="roster-run-telemetry">
@@ -498,7 +497,10 @@
             <div class="roster-telemetry-chip"><span class="label">HOSTILES:</span> <b id="roster-stat-kills">0 ELIMINATED</b></div>
             <div class="roster-telemetry-chip"><span class="label">BLACK BOX:</span> <b id="roster-stat-blackbox">NONE</b></div>
           </div>
-          <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
+          <div class="roster-sub-bar">
+            <div class="roster-stat" id="roster-fab-count">ARSENAL: 0 / 0 SCHEMATICS FABRICATED</div>
+            <div class="roster-id-badge">ID: <span class="roster-id" id="roster-id">op-—</span></div>
+          </div>
         </div>
         <div class="roster-section-label">EQUIPPED SIDEARM</div>
         <div id="roster-weapon-grid" class="roster-weapon-grid"></div>

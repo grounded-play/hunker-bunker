@@ -8914,10 +8914,11 @@ function renderRosterModal(mode = 'continue') {
 
     setTxt('roster-id', profile.getProfileId());
 
-    // Populate Run Telemetry stats
+    // Populate Run Telemetry stats (reset to 0 on brand new operator registration)
     try {
-        const stats = window.game?.getRunStats?.() ?? {};
-        const bbState = blackBoxStore.load();
+        const isNewGame = (mode === 'new_game');
+        const stats = isNewGame ? {} : (window.game?.getRunStats?.() ?? {});
+        const bbState = isNewGame ? null : blackBoxStore.load();
         const depthVal = stats.depthTier ?? 0;
         const distVal = stats.distanceTravelled ?? 0;
         const killVal = stats.snailsKilled ?? 0;
