@@ -52,7 +52,7 @@ export function repackGeneratedSpriteAtlas(sourceCanvas, layout) {
     const output = document.createElement('canvas');
     output.width = layout.columns * cellWidth;
     output.height = layout.rows * cellHeight;
-    const outputContext = output.getContext('2d');
+    const outputContext = output.getContext('2d', { willReadFrequently: true });
     outputContext.imageSmoothingEnabled = false;
 
     for (let row = 0; row < rowRuns.length; row += 1) {

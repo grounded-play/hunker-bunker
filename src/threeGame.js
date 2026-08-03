@@ -4345,7 +4345,7 @@ export class ThreeGame {
             const canvas = document.createElement('canvas');
             canvas.width = image.width;
             canvas.height = image.height;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(image, 0, 0);
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -4479,7 +4479,7 @@ export class ThreeGame {
             const canvas = document.createElement('canvas');
             canvas.width = image.width;
             canvas.height = sourceHeight;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(
                 image,
                 0,
@@ -4533,7 +4533,7 @@ export class ThreeGame {
             const canvas = document.createElement('canvas');
             canvas.width = image.width;
             canvas.height = image.height;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(image, 0, 0);
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -4584,7 +4584,7 @@ export class ThreeGame {
             const croppedCanvas = document.createElement('canvas');
             croppedCanvas.width = cropWidth;
             croppedCanvas.height = cropHeight;
-            const croppedCtx = croppedCanvas.getContext('2d');
+            const croppedCtx = croppedCanvas.getContext('2d', { willReadFrequently: true });
 
             ctx.putImageData(imgData, 0, 0);
             croppedCtx.drawImage(canvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);

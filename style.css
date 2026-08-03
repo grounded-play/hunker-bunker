@@ -1219,6 +1219,12 @@ body {
   grid-template-columns: calc(var(--vu) * 22) minmax(0, 1fr);
   grid-template-rows: calc(var(--vu) * 4.2) minmax(0, 1fr) auto;
   gap: calc(var(--vu) * 1) calc(var(--vu) * 1.25);
+  overflow: hidden;
+  /* Keep the interactive console inside the inner face of the background frame. */
+  --briefing-content-top: calc(var(--vu) * 1.2);
+  --briefing-content-bottom: calc(var(--vu) * 4.4);
+  --briefing-content-left: calc(var(--vu) * 6.2);
+  --briefing-content-right: calc(var(--vu) * 6.4);
 }
 
 .header-bar {
@@ -1240,13 +1246,16 @@ body {
   align-items: stretch;
   justify-content: flex-start;
   gap: calc(var(--vu) * 0.9);
-  padding: calc(var(--vu) * 0.85);
+  padding: calc(var(--vu) * 0.7);
+  margin: var(--briefing-content-top) 0 var(--briefing-content-bottom) var(--briefing-content-left);
   min-width: 0;
   overflow-y: auto;
   background: rgba(7, 9, 10, 0.7);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   z-index: 100;
+  min-height: 0;
+  contain: layout paint;
 }
 
 .menu-command-columns-header {
@@ -1478,29 +1487,37 @@ body {
   display: grid;
   width: 100%;
   align-items: stretch;
-  padding: 0;
+  padding: var(--briefing-content-top) var(--briefing-content-right) var(--briefing-content-bottom) 0;
   min-height: 0;
   margin: 0;
+  overflow: hidden;
+  contain: layout paint;
 }
 
 /* --- Modular Console Cluster --- */
 .console-cluster {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   flex-direction: column;
   width: 100%;
   max-width: none;
   justify-content: flex-start;
   margin: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .module-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.85fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.82fr) minmax(0, 1.18fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: calc(var(--vu) * 1);
   align-items: stretch;
   justify-content: center;
   width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .map-box,
@@ -1512,11 +1529,16 @@ body {
   position: relative;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  contain: layout paint;
+  isolation: isolate;
+  clip-path: inset(0 round 10px);
 }
 
 .map-box {
-  width: auto;
-  min-width: 0;
   padding: calc(var(--vu) * 1.25);
   display: flex;
   flex-direction: column;
@@ -1527,8 +1549,6 @@ body {
 }
 
 .preview-box {
-  width: auto;
-  min-width: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto auto;
   align-content: stretch;
@@ -1538,8 +1558,6 @@ body {
 }
 
 .char-selection {
-  width: auto;
-  min-width: 0;
   padding: calc(var(--vu) * 1.25);
   display: flex;
   flex-direction: column;
@@ -1549,7 +1567,7 @@ body {
 #game-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: auto;
   flex: 1 1 auto;
   min-height: 0;
   background: #000;
@@ -1558,6 +1576,7 @@ body {
   overflow: hidden;
   border-radius: 10px;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  contain: layout paint;
 }
 
 #game-container canvas {
@@ -1843,11 +1862,11 @@ body {
 
 /* --- Selection Stack --- */
 .char-selection {
-  width: calc(var(--vu) * 39);
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--vu) * 1.35);
-  padding: calc(var(--vu) * 1.4);
+  gap: calc(var(--vu) * 0.9);
+  padding: calc(var(--vu) * 1.05);
   align-items: stretch;
   position: relative;
 }
@@ -1916,20 +1935,22 @@ body {
 }
 
 .char-card:hover {
+  z-index: 2;
   background:
     linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.28), rgba(var(--class-color-rgb, 255, 159, 28), 0.09)),
     rgb(8, 14, 17) !important;
   opacity: 1 !important;
-  transform: translateX(calc(var(--vu) * -0.8));
+  transform: scale(1.012);
   border-color: rgba(var(--class-color-rgb, 255, 159, 28), 0.58);
 }
 
 .char-card:focus,
 .char-card:focus-visible,
 .controller-mode .char-card:focus {
+  z-index: 4;
   outline: 2px solid rgba(46, 196, 182, 0.95) !important;
   outline-offset: 3px !important;
-  transform: translateX(calc(var(--vu) * -1.2));
+  transform: scale(1.012);
   box-shadow: 0 0 0 2px rgba(46, 196, 182, 0.35), 0 0 28px rgba(46, 196, 182, 0.45) !important;
   background:
     linear-gradient(90deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.34), rgba(var(--class-color-rgb, 255, 159, 28), 0.11)),
@@ -1938,14 +1959,21 @@ body {
 }
 
 .char-card.selected {
+  z-index: 3;
   background:
     linear-gradient(100deg, rgba(var(--class-color-rgb, 255, 159, 28), 0.46), rgba(var(--class-color-rgb, 255, 159, 28), 0.20) 58%, rgba(2, 7, 9, 0.98)),
     rgb(5, 10, 13) !important;
   opacity: 1 !important;
   border: 1px solid var(--class-color, var(--accent-primary));
-  transform: translateX(calc(var(--vu) * -1.6));
+  transform: scale(1.015);
   box-shadow: 0 0 30px rgba(var(--class-color-rgb, 255, 159, 28), 0.28), inset 3px 0 0 var(--class-color, var(--accent-primary));
   animation: hero-card-throb 1.65s ease-in-out infinite;
+}
+
+.char-card.selected:focus,
+.char-card.selected:focus-visible,
+.controller-mode .char-card.selected:focus {
+  z-index: 5;
 }
 
 .char-card.selected::after {
@@ -1954,14 +1982,14 @@ body {
 
 @keyframes hero-card-throb {
   0%, 100% {
-    transform: translateX(calc(var(--vu) * -1.6)) scale(1);
+    transform: scale(1.012);
     box-shadow:
       0 0 22px rgba(var(--class-color-rgb, 255, 159, 28), 0.30),
       inset 3px 0 0 var(--class-color, var(--accent-primary)),
       inset 0 0 24px rgba(var(--class-color-rgb, 255, 159, 28), 0.10);
   }
   50% {
-    transform: translateX(calc(var(--vu) * -1.6)) scale(1.018);
+    transform: scale(1.02);
     box-shadow:
       0 0 42px rgba(var(--class-color-rgb, 255, 159, 28), 0.58),
       inset 4px 0 0 var(--class-color, var(--accent-primary)),
@@ -3021,20 +3049,21 @@ input:checked+.slider:before {
   z-index: 16010;
 }
 
-/* Custom layout for Settings Modal to fit without scrollbars */
+/* Settings remains keyboard/Deck navigable at enlarged UI scales. */
 .settings-modal-content {
   padding: calc(var(--vu) * 3.5) calc(var(--vu) * 4) calc(var(--vu) * 2.5) calc(var(--vu) * 4) !important;
   width: calc(var(--vu) * 76) !important;
   max-height: 96% !important;
   overflow-y: auto !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track) !important;
+  scrollbar-gutter: stable;
 }
 
 .settings-modal-content::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  display: block !important;
+  width: 12px !important;
+  height: 12px !important;
 }
 
 .settings-modal-content .setting-item {

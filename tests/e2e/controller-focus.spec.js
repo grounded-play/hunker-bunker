@@ -8,14 +8,40 @@ test.describe('controller-ready modal focus', () => {
         if (await rosterModal.isVisible()) await page.locator('#close-roster-modal').click();
 
         await page.locator('#daily-ops-btn').focus();
-        await page.keyboard.press('KeyD');
-        await expect(page.locator('#archive-btn')).toBeFocused();
-
         await page.keyboard.press('KeyS');
-        await expect(page.locator('#codex-btn')).toBeFocused();
+        await expect(page.locator('#roster-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyD');
+        await expect(page.locator('#hero-polish-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyD');
+        await expect(page.locator('.char-selection .char-card.selected')).toBeFocused();
+
+        await page.keyboard.press('KeyA');
+        await expect(page.locator('#hero-polish-btn')).toBeFocused();
 
         await page.keyboard.press('KeyA');
         await expect(page.locator('#roster-btn')).toBeFocused();
+    });
+
+    test('operator polish picker uses a spatial WASD grid', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        const rosterModal = page.locator('#roster-modal');
+        if (await rosterModal.isVisible()) await page.locator('#close-roster-modal').click();
+
+        await page.locator('#hero-polish-btn').click();
+        await expect(page.locator('#operator-polish-modal')).toBeVisible();
+        const chips = page.locator('#operator-polish-grid .operator-polish-chip');
+        await expect(chips.nth(0)).toBeFocused();
+
+        await page.keyboard.press('KeyD');
+        await expect(chips.nth(1)).toBeFocused();
+        await page.keyboard.press('KeyS');
+        await expect(chips.nth(5)).toBeFocused();
+        await page.keyboard.press('ArrowLeft');
+        await expect(chips.nth(4)).toBeFocused();
+        await page.keyboard.press('ArrowUp');
+        await expect(chips.nth(0)).toBeFocused();
     });
 
     test('settings traps focus and restores the title trigger when closed', async ({ page }) => {
@@ -44,6 +70,31 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('Escape');
         await expect(modal).toBeHidden();
         await expect(trigger).toBeFocused();
+    });
+
+    test('settings callsign requires activation and keeps visible scrolling enabled', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const panel = page.locator('.settings-modal-content');
+        const callsign = page.locator('#operator-callsign');
+        await callsign.focus();
+        const original = await callsign.inputValue();
+
+        await page.keyboard.press('KeyX');
+        await expect(callsign).toHaveValue(original);
+
+        await page.keyboard.press('Enter');
+        await page.keyboard.press('KeyX');
+        await expect(callsign).toHaveValue(`${original}x`);
+        await page.keyboard.press('Escape');
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#open-save-data')).toBeFocused();
+
+        expect(await panel.evaluate((element) => ({
+            overflowY: getComputedStyle(element).overflowY,
+            scrollbarWidth: getComputedStyle(element).scrollbarWidth
+        }))).toEqual({ overflowY: 'auto', scrollbarWidth: 'thin' });
     });
 
     test('controls/remapping traps focus and restores its settings trigger', async ({ page }) => {

@@ -72,7 +72,7 @@ function loadAlienKeyedTexture(path, threshold = 15, fallbackCanvas = null) {
                 const canvas = document.createElement('canvas');
                 canvas.width = img.width;
                 canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
+                const ctx = canvas.getContext('2d', { willReadFrequently: true });
                 ctx.drawImage(img, 0, 0);
                 const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 applyBlackChromaKey(imgData, { threshold });

@@ -330,6 +330,7 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'archive-sims-modal',
     'lore-modal',
     'steam-vault-modal',
+    'operator-polish-modal',
     'tactical-map-modal',
     'demo-end-modal',
     'game-over-modal',
@@ -628,6 +629,11 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables.find((element) => element.id === 'start-game')
             ?? focusables[0];
     }
+    if (root?.id === 'operator-polish-modal') {
+        return focusables.find((element) => element.classList?.contains('operator-polish-chip') && element.classList.contains('is-selected'))
+            ?? focusables.find((element) => element.classList?.contains('operator-polish-chip'))
+            ?? focusables[0];
+    }
     if (root?.id === 'mothership-dialogue') {
         return focusables.find((element) => element.id === 'mothership-choice-skip' && isElementVisible(element))
             ?? focusables.find((element) => element.id === 'mothership-choice-tutorial' && isElementVisible(element))
@@ -713,21 +719,73 @@ function moveControllerFocus(delta) {
     return target;
 }
 
+let lastHeroMenuCommandFocus = null;
+
+function moveHeroSelectPanelFocus(code) {
+    const active = document.activeElement;
+    const isLeft = code === 'KeyA' || code === 'ArrowLeft';
+    const isRight = code === 'KeyD' || code === 'ArrowRight';
+    if (!isLeft && !isRight) return false;
+
+    const commandRail = active?.closest?.('.menu-header-actions');
+    const heroRail = active?.closest?.('.char-selection');
+    const previewRail = active?.closest?.('.preview-box');
+
+    if (commandRail) {
+        lastHeroMenuCommandFocus = active;
+        if (!isRight) return true;
+        const target = document.getElementById('hero-polish-btn')
+            ?? document.querySelector('.char-selection .char-card.selected')
+            ?? document.querySelector('.char-selection .char-card')
+            ?? document.getElementById('start-game');
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+
+    if (heroRail) {
+        if (!isLeft) return true;
+        const target = document.getElementById('hero-polish-btn');
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+
+    if (previewRail) {
+        const target = isRight
+            ? (document.querySelector('.char-selection .char-card.selected') ?? document.getElementById('start-game'))
+            : (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0]);
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
+
+    return false;
+}
+
+function moveOperatorPolishGridFocus(code) {
+    const active = document.activeElement;
+    if (!active?.classList?.contains('operator-polish-chip')) return false;
+    const chips = Array.from(document.querySelectorAll('#operator-polish-grid .operator-polish-chip'));
+    const index = chips.indexOf(active);
+    if (index < 0 || !chips.length) return false;
+
+    const columnCount = 4;
+    let nextIndex = index;
+    if (code === 'KeyA' || code === 'ArrowLeft') nextIndex = index % columnCount === 0 ? index + columnCount - 1 : index - 1;
+    if (code === 'KeyD' || code === 'ArrowRight') nextIndex = index % columnCount === columnCount - 1 ? index - columnCount + 1 : index + 1;
+    if (code === 'KeyW' || code === 'ArrowUp') nextIndex = (index - columnCount + chips.length) % chips.length;
+    if (code === 'KeyS' || code === 'ArrowDown') nextIndex = (index + columnCount) % chips.length;
+    return focusControllerTarget(chips[nextIndex], { playHover: true });
+}
+
 function moveMenuCommandGridFocus(code) {
     const active = document.activeElement;
     const activeColumn = active?.closest?.('.menu-command-column');
     if (!activeColumn) return false;
 
     const columns = Array.from(document.querySelectorAll('#menu .menu-command-column'));
-    const columnIndex = columns.indexOf(activeColumn);
-    if (columnIndex < 0) return false;
+    if (!columns.includes(activeColumn)) return false;
 
     const focusablesFor = (column) => getVisibleControllerFocusables(column).filter((element) => (
         element.matches('button, .steam-account-badge--menu')
     ));
     const currentItems = focusablesFor(activeColumn);
     if (!currentItems.length) return false;
-    const rowIndex = Math.max(0, currentItems.indexOf(active));
     const allItems = columns.flatMap(focusablesFor);
     const flatIndex = Math.max(0, allItems.indexOf(active));
     let target = null;
@@ -736,11 +794,6 @@ function moveMenuCommandGridFocus(code) {
         target = allItems[(flatIndex - 1 + allItems.length) % allItems.length];
     } else if (code === 'KeyS' || code === 'ArrowDown') {
         target = allItems[(flatIndex + 1) % allItems.length];
-    } else if (['KeyA', 'ArrowLeft', 'KeyD', 'ArrowRight'].includes(code)) {
-        const offset = (code === 'KeyA' || code === 'ArrowLeft') ? -1 : 1;
-        const nextColumn = columns[(columnIndex + offset + columns.length) % columns.length];
-        const nextItems = focusablesFor(nextColumn);
-        target = nextItems[Math.min(rowIndex, Math.max(0, nextItems.length - 1))] ?? null;
     }
 
     return target ? focusControllerTarget(target, { playHover: true }) : false;
@@ -752,7 +805,15 @@ function moveMenuCommandGridFocus(code) {
 // D/S move down. Enter or Space activates the focused item.
 document.addEventListener('keydown', (event) => {
     if (event.defaultPrevented) return;
-    if (isTextEditableElement(document.activeElement)) return;
+    const activeTextInput = isTextEditableElement(document.activeElement) ? document.activeElement : null;
+    if (activeTextInput?.dataset.menuTextEditing === 'true') {
+        if (event.code === 'Escape') {
+            event.preventDefault();
+            activeTextInput.dataset.menuTextEditing = 'false';
+            activeTextInput.classList.remove('is-menu-text-editing');
+        }
+        return;
+    }
     const root = getControllerFocusRoot();
     if (!root) return;
 
@@ -763,6 +824,8 @@ document.addEventListener('keydown', (event) => {
     const direction = menuKeyboardDirection(event.code);
     if (direction) {
         event.preventDefault();
+        if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
+        if (root.id === 'menu' && moveHeroSelectPanelFocus(event.code)) return;
         if (root.id === 'menu' && moveMenuCommandGridFocus(event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
@@ -774,8 +837,25 @@ document.addEventListener('keydown', (event) => {
     } else if (event.code === 'Enter' || event.code === 'Space') {
         event.preventDefault();
         activateControllerFocusedElement();
+    } else if (activeTextInput) {
+        // A text field reached through menu navigation is only selected, not
+        // editing. Confirm/A explicitly enters editing or opens Deck input.
+        event.preventDefault();
     }
 }, { capture: true });
+
+document.addEventListener('pointerdown', (event) => {
+    const input = event.target?.closest?.('input, textarea');
+    if (!isTextEditableElement(input)) return;
+    input.dataset.menuTextEditing = 'true';
+    input.classList.add('is-menu-text-editing');
+});
+
+document.addEventListener('focusout', (event) => {
+    if (!isTextEditableElement(event.target)) return;
+    event.target.dataset.menuTextEditing = 'false';
+    event.target.classList.remove('is-menu-text-editing');
+});
 
 document.addEventListener('focusin', (event) => {
     const root = getControllerFocusRoot();
@@ -863,13 +943,22 @@ function activateControllerFocusedElement() {
     if (!activeElement) return false;
 
     if (isTextEditableElement(activeElement)) {
-        void openSteamGamepadTextInputForElement(activeElement, {
+        const usesSteamKeyboard = Boolean(isSteamControllerInputActive() && window.electronAPI?.showGamepadTextInput);
+        activeElement.dataset.menuTextEditing = 'true';
+        activeElement.classList.add('is-menu-text-editing');
+        const inputPromise = openSteamGamepadTextInputForElement(activeElement, {
             description: activeElement.getAttribute('aria-label')
                 || activeElement.getAttribute('placeholder')
                 || 'Enter text',
             maxCharacters: Number(activeElement.getAttribute('maxlength')) || (activeElement.tagName === 'TEXTAREA' ? 1024 : 32),
             multiline: activeElement.tagName === 'TEXTAREA'
         });
+        if (usesSteamKeyboard) {
+            void inputPromise.finally(() => {
+                activeElement.dataset.menuTextEditing = 'false';
+                activeElement.classList.remove('is-menu-text-editing');
+            });
+        }
         return true;
     }
 
@@ -2995,7 +3084,7 @@ function renderOperatorPolishUi() {
         button.type = 'button';
         button.className = `operator-polish-chip${isUnlocked ? '' : ' is-locked'}${selected.id === polish.id ? ' is-selected' : ''}`;
         button.style.setProperty('--polish-color', polish.color);
-        button.disabled = !isUnlocked;
+        button.setAttribute('aria-disabled', String(!isUnlocked));
         button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ' locked'}`);
         button.innerHTML = `<span class="operator-polish-chip__swatch"></span><span>${String(polish.id + 1).padStart(2, '0')} // ${polish.name}</span>`;
         if (isUnlocked) {
@@ -3008,6 +3097,12 @@ function renderOperatorPolishUi() {
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
             });
         }
+        button.addEventListener('focus', () => {
+            if (readoutName) readoutName.textContent = polish.name;
+            if (readoutState) readoutState.textContent = isUnlocked
+                ? (selected.id === polish.id ? 'EQUIPPED' : 'UNLOCKED')
+                : 'LOCKED';
+        });
         grid.append(button);
     }
 }
@@ -8862,12 +8957,6 @@ if (callsignInput) {
     const commitCallsign = () => { callsignInput.value = profile.setCallsign(callsignInput.value); };
     callsignInput.addEventListener('change', commitCallsign);
     callsignInput.addEventListener('blur', commitCallsign);
-    callsignInput.addEventListener('focus', () => {
-        void openSteamGamepadTextInputForElement(callsignInput, {
-            description: 'Operator callsign',
-            maxCharacters: 16
-        });
-    });
 }
 
 document.getElementById('export-save')?.addEventListener('click', async () => {
@@ -9424,7 +9513,7 @@ function getPreviewSpriteImage(path, layout) {
             const canvas = document.createElement('canvas');
             canvas.width = image.width;
             canvas.height = image.height;
-            const ctx = canvas.getContext('2d');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
             ctx.drawImage(image, 0, 0);
 
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
