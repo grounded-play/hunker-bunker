@@ -106,4 +106,28 @@ describe('LineDirector', () => {
         d.reset();
         expect(d.requestLine('ambient', {}, pool)).not.toBeNull();
     });
+
+    it('enforces a global minimum gap between ANY two lines regardless of cooldownClass, unless bypassed', () => {
+        const d = new LineDirector({ globalMinGapSeconds: 8 });
+        const poolA = [{ id: 'a', text: 'a', tags: { cooldownClass: 'classA' } }];
+        const poolB = [{ id: 'b', text: 'b', tags: { cooldownClass: 'classB' } }];
+        const critical = [{ id: 'crit', text: 'crit', tags: { cooldownClass: 'classB', bypassSharedCooldown: true } }];
+
+        expect(d.requestLine('ambient', {}, poolA).id).toBe('a');
+        // different pool, different class, but within the global gap -> blocked
+        expect(d.requestLine('ambient', {}, poolB)).toBeNull();
+        // a bypassSharedCooldown line still gets through the global gap
+        expect(d.requestLine('ambient', {}, critical).id).toBe('crit');
+
+        d.tick(9);
+        expect(d.requestLine('ambient', {}, poolB).id).toBe('b');
+    });
+
+    it('defaults globalMinGapSeconds to 0 (disabled) when not configured', () => {
+        const d = new LineDirector();
+        const poolA = [{ id: 'a', text: 'a', tags: {} }];
+        const poolB = [{ id: 'b', text: 'b', tags: {} }];
+        expect(d.requestLine('ambient', {}, poolA).id).toBe('a');
+        expect(d.requestLine('ambient', {}, poolB).id).toBe('b');
+    });
 });

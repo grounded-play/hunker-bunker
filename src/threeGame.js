@@ -1144,7 +1144,7 @@ export class ThreeGame {
         // The Bunker Director: one pressure brain that reacts to the player's
         // greed/struggle by pulling existing levers (doc 11 §4.A).
         this.bunkerDirector = new BunkerDirector();
-        this.lineDirector = new LineDirector();
+        this.lineDirector = new LineDirector({ globalMinGapSeconds: 8 });
         if (typeof window !== 'undefined') window.lineDirector = this.lineDirector;
         this._syncedRunModifier = null;
 
@@ -4927,7 +4927,7 @@ export class ThreeGame {
         switch (action) {
             case 'patrol': {
                 const line = this.lineDirector?.requestLine('ambient', this.buildLineDirectorContext(), DIRECTOR_AMBIENT_LINES);
-                this.showBunkerLine(line?.text ?? 'A maintenance event has been scheduled around your location.');
+                if (line) this.showBunkerLine(line.text);
                 this.spawnPatrolNearPlayer();
                 break;
             }

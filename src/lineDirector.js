@@ -27,7 +27,7 @@ function objectiveEligible(line, context) {
     return sources.includes(context.objectiveSource ?? null);
 }
 
-function isLineEligible(line, trigger, context, { classLastFiredAt, lineHistory, nowSeconds }) {
+function isLineEligible(line, trigger, context, { classLastFiredAt, lineHistory, nowSeconds, globalMinGapSeconds, lastAnyFiredAt }) {
     if (!registerEligible(line, context)) return false;
     if (!eventEligible(line, trigger)) return false;
     if (!objectiveEligible(line, context)) return false;
@@ -42,6 +42,10 @@ function isLineEligible(line, trigger, context, { classLastFiredAt, lineHistory,
     if (!line.tags?.bypassSharedCooldown && cooldownSeconds > 0) {
         const lastFired = classLastFiredAt.get(cooldownClass) ?? -Infinity;
         if (nowSeconds - lastFired < cooldownSeconds) return false;
+    }
+
+    if (!line.tags?.bypassSharedCooldown && globalMinGapSeconds > 0) {
+        if (nowSeconds - lastAnyFiredAt < globalMinGapSeconds) return false;
     }
 
     const minRepeatSeconds = line.tags?.minRepeatSeconds ?? 0;
@@ -62,10 +66,12 @@ function scoreLine(line, context) {
 }
 
 export class LineDirector {
-    constructor() {
+    constructor({ globalMinGapSeconds = 0 } = {}) {
         this.lineHistory = new Map();      // lineId -> { lastFiredAt, timesFired }
         this.classLastFiredAt = new Map(); // cooldownClass -> seconds
         this._nowSeconds = 0;
+        this._globalMinGapSeconds = globalMinGapSeconds;
+        this._lastAnyFiredAt = -Infinity;
     }
 
     // Advance the arbiter's internal clock. Call once per frame with delta seconds.
@@ -79,7 +85,9 @@ export class LineDirector {
         const state = {
             classLastFiredAt: this.classLastFiredAt,
             lineHistory: this.lineHistory,
-            nowSeconds: this._nowSeconds
+            nowSeconds: this._nowSeconds,
+            globalMinGapSeconds: this._globalMinGapSeconds,
+            lastAnyFiredAt: this._lastAnyFiredAt
         };
         const eligible = pool.filter((line) => isLineEligible(line, trigger, context, state));
         if (!eligible.length) return null;
@@ -108,6 +116,7 @@ export class LineDirector {
         this.classLastFiredAt.set(cooldownClass, this._nowSeconds);
         const prev = this.lineHistory.get(line.id);
         this.lineHistory.set(line.id, { lastFiredAt: this._nowSeconds, timesFired: (prev?.timesFired ?? 0) + 1 });
+        this._lastAnyFiredAt = this._nowSeconds;
     }
 
     reset() {
