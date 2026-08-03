@@ -640,14 +640,18 @@ let activeControllerFocusRoot = null;
 const controllerFocusMemory = new WeakMap();
 const controllerFocusInvokers = new WeakMap();
 
-function focusControllerTarget(target) {
+function focusControllerTarget(target, { playHover = false } = {}) {
     if (!target) return false;
+    const previous = document.activeElement;
     try {
         target.focus?.({ preventScroll: true });
     } catch {
         target.focus?.();
     }
     target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    if (playHover && previous !== target) {
+        AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });
+    }
     return true;
 }
 
@@ -696,7 +700,6 @@ function moveControllerFocus(delta) {
     if (index < 0 || (root && !root.contains(document.activeElement))) {
         const preferred = getPreferredControllerFocusTarget(root, focusables);
         if (preferred) {
-            focusControllerTarget(preferred);
             index = focusables.indexOf(preferred);
         } else {
             index = 0;
@@ -706,7 +709,7 @@ function moveControllerFocus(delta) {
     }
 
     const target = focusables[index] ?? null;
-    focusControllerTarget(target);
+    focusControllerTarget(target, { playHover: true });
     return target;
 }
 
@@ -740,7 +743,7 @@ function moveMenuCommandGridFocus(code) {
         target = nextItems[Math.min(rowIndex, Math.max(0, nextItems.length - 1))] ?? null;
     }
 
-    return target ? focusControllerTarget(target) : false;
+    return target ? focusControllerTarget(target, { playHover: true }) : false;
 }
 
 // Keyboard-style Steam Deck layouts must be able to operate every menu even
@@ -980,7 +983,7 @@ function handleControllerTabNavigation(root, direction) {
     const targetTab = tabs[nextIndex];
     if (targetTab) {
         targetTab.click();
-        focusControllerTarget(targetTab);
+        focusControllerTarget(targetTab, { playHover: true });
         return true;
     }
     return false;
@@ -9319,10 +9322,13 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         }, 800);
                     }, openingHoldMs);
 
-                    // 5. Cleanup
+                    // 5. Cleanup with smooth fade out
                     setTimeout(() => {
-                        overlay.classList.remove('visible', 'opening-h', 'active');
-                    }, openingHoldMs + 900);
+                        overlay.classList.remove('active');
+                        setTimeout(() => {
+                            overlay.classList.remove('visible', 'opening-h');
+                        }, 450);
+                    }, openingHoldMs + 850);
                 });
             });
         };

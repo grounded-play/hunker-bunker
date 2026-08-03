@@ -485,6 +485,8 @@ body {
   overflow: hidden;
   visibility: hidden;
   opacity: 0;
+  transition: opacity 0.45s cubic-bezier(0.25, 1, 0.35, 1), visibility 0.45s cubic-bezier(0.25, 1, 0.35, 1);
+  will-change: opacity, visibility;
 }
 
 #transition-overlay::before {
@@ -493,10 +495,21 @@ body {
   inset: 0;
   z-index: 15000;
   background:
-    radial-gradient(circle at center, rgba(3, 4, 8, 0.55) 0%, rgba(1, 2, 4, 0.82) 45%, rgba(0, 0, 0, 0.97) 100%);
+    radial-gradient(circle at center, rgba(3, 4, 8, 0.65) 0%, rgba(1, 2, 4, 0.88) 45%, rgba(0, 0, 0, 0.98) 100%);
   opacity: var(--transition-scene-fade);
-  transition: opacity 180ms ease-out;
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity;
+}
+
+#transition-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 15002;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+  opacity: var(--transition-scene-fade);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #transition-overlay.visible {
@@ -509,26 +522,23 @@ body {
   --transition-scene-fade: 1;
 }
 
-/* Keep the destination masked while the panels travel outward. The previous
-   opening-h.active rule faded this scrim as soon as motion began, exposing
-   the next menu/video/world through the growing center gap. The overlay is
-   removed only after the 800ms door travel completes, so the destination
-   appears after the doors are fully open. */
+#transition-overlay.opening-h.active {
+  --transition-scene-fade: 0;
+}
 
 .door {
   position: absolute;
   background-image: var(--door-bg-image, url('/door_biomech_v2.webp'));
   background-repeat: no-repeat;
-  /* border: 4px solid #1a1c1e; */
-  /* Removed central borders */
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 0, 0, 0.7);
   z-index: 15001;
   display: none;
   overflow: visible;
+  will-change: transform;
 }
 
 #transition-overlay .door {
-  transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Vertical Close State */
@@ -658,7 +668,7 @@ body {
 
 #transition-overlay.closing-v.active .focus-top-right {
   transform: translate(-50%, -50%);
-  transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #transition-overlay.opening-h .focus-top-right {
@@ -667,18 +677,18 @@ body {
 
 #transition-overlay.opening-h.active .focus-top-right {
   transform: translate(calc(-50% + var(--door-half-span)), -50%);
-  transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* --- Smoke Particles --- */
 .smoke-particle {
   position: absolute;
-  background: radial-gradient(circle, rgba(200, 200, 200, 0.4) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(220, 225, 235, 0.45) 0%, rgba(160, 175, 195, 0.15) 50%, transparent 75%);
   border-radius: 50%;
   pointer-events: none;
   z-index: 15100;
-  filter: blur(8px);
-  animation: smoke-drift 1.5s forwards ease-out;
+  filter: blur(10px);
+  animation: smoke-drift 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes smoke-drift {
