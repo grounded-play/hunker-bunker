@@ -78,7 +78,7 @@ describe('isHoleTile / mountChunk agreement', () => {
 
         const rng = fakeThis.createSeededRandom(fakeThis.hashTile(hole.x, hole.y) + 999);
         const roll = rng();
-        const expectedScale = 1.5 + (roll / fakeThis.getHoleCutForLandform('maze')) * 2.5;
+        const expectedScale = (1.5 + (roll / fakeThis.getHoleCutForLandform('maze')) * 2.5) * 0.5;
         const expectedRotation = rng() * Math.PI * 2;
 
         const holeInfo = ThreeGame.prototype.getHoleVisualInfo.call(fakeThis, hole.x, hole.y);
@@ -89,7 +89,7 @@ describe('isHoleTile / mountChunk agreement', () => {
         });
         expect(holeInfo.scale).toBeCloseTo(expectedScale);
         expect(holeInfo.rotationZ).toBeCloseTo(expectedRotation);
-        expect(holeInfo.fallRadius).toBeCloseTo(expectedScale * 0.42);
+        expect(holeInfo.fallRadius).toBeCloseTo(expectedScale * 0.16);
     });
 
     it('uses cached chunks when radar scans for pit danger outlines', () => {

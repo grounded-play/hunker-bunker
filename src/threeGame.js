@@ -22177,7 +22177,7 @@ export class ThreeGame {
                 z: tileY,
                 scale: 0.5,
                 rotationZ: 0,
-                fallRadius: 0.24,
+                fallRadius: 0.12,
                 lethal: true
             };
         }
@@ -22187,7 +22187,7 @@ export class ThreeGame {
                 z: tileY,
                 scale: 1,
                 rotationZ: 0,
-                fallRadius: 0.52,
+                fallRadius: 0.20,
                 lethal: true,
                 exteriorCanyon: true
             };
@@ -22199,7 +22199,7 @@ export class ThreeGame {
                 z: tileY,
                 scale: 1,
                 rotationZ: 0,
-                fallRadius: 0.52,
+                fallRadius: 0.20,
                 lethal: true,
                 exteriorCanyon: true,
                 cliff: true
@@ -22224,7 +22224,7 @@ export class ThreeGame {
             z: worldY,
             scale,
             rotationZ: wallTypeRng() * Math.PI * 2,
-            fallRadius: scale * 0.42
+            fallRadius: scale * 0.16
         };
     }
 
