@@ -161,6 +161,11 @@ lane-split doc's role).
 | Date | Lane | Item | Status | Evidence |
 | --- | --- | --- | --- | --- |
 | 2026-08-03 | — | Plan drafted | Proposed | This doc + master plan |
+| 2026-08-03 | Claude | B2 — Faction aftermath matrix | Shipped | `getCampAftermathDisposition/-Reason/-Summary` (campEconomy.js), fortified-crossing event (camp.js), wired into camp-choice-resolved + lockdown prompt (threeGame.js); 23 tests |
+| 2026-08-03 | Claude | B3 — Act2 state-surface audit + boundary tests | Shipped | Zero direct `.act2.state.` mutation found outside act2.js (now a standing test guard); save/reload round-trip for all 10 ending families; 400-vector manifest/ending invariant sweep |
+| 2026-08-03 | Claude | A1+A3 — World-gen seed portfolio + large-N sweep | Shipped | `scripts/world-seed-portfolio-report.js` (`npm run audit:world-seeds[:sweep]`); 5,000-seed sweep clean, 0 site-spacing conflicts found — flagged for the human readability pass |
+| 2026-08-03 | Claude | A2+B1 — Combat encounter harness + boss-phase gate | Shipped, gate NOT MET | `scripts/combat-encounter-report.js` (`npm run audit:combat-encounters`); every non-Queen boss equally phase-less by computable data — no boss extended, needs human combat-feel pass to pick one |
+| 2026-08-03 | Claude | Fixed stale `CHUNK_SIZE=19` literal in `mazeGenerationStress.test.js` | Shipped | Found auditing world-gen tests for A1+A3; unrelated drive-by fix |
 
 ## Non-Goals For This Sprint
 
