@@ -97,7 +97,7 @@ export const LEDGE_TILE = 'O';
 import { rollEnemyLootDrop, computeActiveSynergies, WEAPON_OVERCLOCKS, SUIT_RELICS } from './runDrops.js';
 import { buildUnifiedSkillTree, getTreeConnectors } from './skillTree.js';
 import { pickLoreDropForSite, getFoundLoreKeys, markLoreDropFound, LORE_DROPS } from './loreDrops.js';
-import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES } from './bossPhases.js';
+import { createBossFight, tickBossFight, applyBossDamage, QUEEN_FIGHT_DEF, QUEEN_PHASE_LINES, SPORESNAIL_FIGHT_DEF } from './bossPhases.js';
 import { debugLog } from './debugConsole.js';
 import {
     PLAYER_DEFAULT_DIRECTION_INDEX,
@@ -8394,7 +8394,106 @@ export class ThreeGame {
             this.damageSnail(sprite, dealt);
             return;
         }
+        const sporesnailFight = sprite?.userData?.sporesnailFight;
+        if (sporesnailFight) {
+            const dealt = applyBossDamage(sporesnailFight, amount);
+            this.damageSnail(sprite, dealt);
+            return;
+        }
         this.damageSnail(sprite, amount);
+    }
+
+    // ── The BIO-biome sporesnail world boss (Sprint 22 B1) ─────────────────
+    // Mirrors the Queen fight's split above: src/bossPhases.js owns WHEN
+    // things happen, this owns spawning minions and the sprite's weakpoint
+    // tint. Unlike the Queen there's no dedicated singleton tracker or
+    // dialogue -- the fight object lives directly on
+    // sprite.userData.sporesnailFight (attached in createScatterInstance),
+    // so it's entirely self-contained per-sprite and needs no cleanup wiring
+    // of its own on death.
+    updateSporesnailFightTick(sprite, delta, distanceToTarget) {
+        const data = sprite.userData;
+        const fight = data.sporesnailFight;
+        if (!fight || fight.defeated || distanceToTarget > 12) return;
+        let activeAdds = 0;
+        for (const other of this.scatterSprites) {
+            if (other !== sprite && other.userData?.sporesnailAdd && !other.userData?.burstTriggered) activeAdds += 1;
+        }
+        const events = tickBossFight(fight, delta, { activeAdds });
+        for (const event of events) this.handleSporesnailFightEvent(event, sprite);
+    }
+
+    handleSporesnailFightEvent(event, sprite) {
+        const data = sprite.userData;
+        switch (event.type) {
+            case 'weakpoint-open':
+                data.weakpointOpen = true;
+                sprite.material?.color?.setHex(0xffe066);
+                window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 0.55 });
+                break;
+            case 'weakpoint-close':
+                data.weakpointOpen = false;
+                sprite.material?.color?.setHex(data.biomeTint ?? 0x88ff88);
+                break;
+            case 'phase':
+                window.AudioManager?.playMetalStress?.({ volume: 0.55, playbackRate: 0.58, force: true });
+                break;
+            case 'adds':
+                this.spawnSporesnailAdds(sprite, event.count);
+                break;
+            default:
+                // 'attack' carries no runtime-meaningful payload for this
+                // boss (see SPORESNAIL_FIGHT_DEF's comment in bossPhases.js);
+                // 'defeated' needs no extra handling here -- damageSnail's
+                // existing kill sequence (drops, VFX, milestone dispatch)
+                // already fires once sprite.userData.hp reaches 0.
+                break;
+        }
+    }
+
+    // Shared by the flat per-type cooldown (hive-harvest/easy-tier
+    // sporesnails, which never get a fight object attached) and the
+    // phase-driven full-hp world encounter, so both spawn identical minions
+    // instead of maintaining two copies of the same placement logic.
+    spawnSporesnailAdds(sprite, count = 2) {
+        const parent = sprite.parent;
+        if (!parent) return 0;
+        const spawnOffset = [
+            [1.2, 1.2], [-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2]
+        ];
+        let spawnedCount = 0;
+        for (const [dx, dz] of spawnOffset) {
+            const tx = sprite.position.x + dx;
+            const tz = sprite.position.z + dz;
+            if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
+                const placement = {
+                    x: tx,
+                    z: tz,
+                    type: 'sporesnail',
+                    scatterKey: `${sprite.userData.scatterKey}:minion:${Date.now()}:${spawnedCount}`,
+                    scale: 0.9 + Math.random() * 0.2,
+                    rotation: 0,
+                    tiltX: 0,
+                    tiltZ: 0,
+                    elevation: 0.09,
+                    groupType: 'minion',
+                    phase: Math.random() * Math.PI,
+                    opacity: 1,
+                    biomeTint: 0x88ff88
+                };
+                const minion = this.createScatterInstance(placement);
+                if (minion) {
+                    minion.userData.sporesnailAdd = true;
+                    parent.add(minion);
+                    this.scatterSprites.push(minion);
+                    this.spawnGearPoofEffect(tx, tz, 'bio_spores');
+                    spawnedCount += 1;
+                    if (spawnedCount >= count) break;
+                }
+            }
+        }
+        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
+        return spawnedCount;
     }
 
     // ── Act 2: the PregAlien loop (src/act2.js drives the ladder) ──────────
@@ -18329,9 +18428,19 @@ export class ThreeGame {
             const _enemyStats = getEnemyStats(placement.type, { maxHp: SNAIL_MAX_HP, speed: SNAIL_MOVE_SPEED });
             let maxHp = _enemyStats.maxHp;
             let speed = _enemyStats.speed;
-            if (Number.isFinite(placement.maxHp)) {
+            const hadExplicitMaxHp = Number.isFinite(placement.maxHp);
+            if (hadExplicitMaxHp) {
                 maxHp = Math.max(1, Math.floor(placement.maxHp));
             }
+            // Sprint 22 B1: only the full-hp world encounter gets the phase
+            // framework -- the reduced-hp variants (hive-harvest, the
+            // o2Bubble easy tier on other boss types) always pass an
+            // explicit placement.maxHp, which is exactly the signal that
+            // distinguishes "the one long set-piece fight" from "a quick
+            // recurring skirmish that happens to share a sprite type."
+            const sporesnailFight = (placement.type === 'boss_sporesnail' && !hadExplicitMaxHp)
+                ? createBossFight(SPORESNAIL_FIGHT_DEF)
+                : null;
             if (!isBoss) {
                 const anchor = this.getBiomeAnchorPosition();
                 const depth = Math.hypot(placement.x - anchor.x, placement.z - anchor.z);
@@ -18375,7 +18484,8 @@ export class ThreeGame {
                 attackCooldown: 0,
                 bossAttackTimer: 0,
                 sporeEmitTimer: 0,
-                biomeTint: tintColor
+                biomeTint: tintColor,
+                sporesnailFight
             };
             if (isPreEnraged && !isBoss) {
                 clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
@@ -20943,8 +21053,15 @@ export class ThreeGame {
 
         const distanceToTarget = Math.hypot(target.x - sprite.position.x, target.z - sprite.position.z);
 
-        // Boss special attacks logic
-        if (data.isBoss && data.aiMode === 'hunt') {
+        // Phase-driven bosses (currently just the full-hp world sporesnail
+        // encounter -- see SPORESNAIL_FIGHT_DEF in bossPhases.js) own their
+        // own attack/add/weakpoint timing via tickBossFight instead of the
+        // flat per-type cooldown below, which still serves every other boss
+        // type and the reduced-hp sporesnail variants (hive-harvest, the
+        // o2Bubble easy tier) that never get a fight object attached.
+        if (data.isBoss && data.aiMode === 'hunt' && data.sporesnailFight) {
+            this.updateSporesnailFightTick(sprite, delta, distanceToTarget);
+        } else if (data.isBoss && data.aiMode === 'hunt') {
             data.bossAttackTimer = (data.bossAttackTimer ?? 0) - delta;
             if (data.bossAttackTimer <= 0) {
                 // Determine attack based on type
@@ -20984,43 +21101,7 @@ export class ThreeGame {
                     window.AudioManager?.play('ui_scan_ping', { volume: 0.45, playbackRate: 0.38 });
                 } else if (data.type === 'boss_sporesnail' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 6.5;
-                    const parent = sprite.parent;
-                    if (parent) {
-                        const spawnOffset = [
-                            [1.2, 1.2], [-1.2, -1.2], [1.2, -1.2], [-1.2, 1.2]
-                        ];
-                        let spawnedCount = 0;
-                        for (const [dx, dz] of spawnOffset) {
-                            const tx = sprite.position.x + dx;
-                            const tz = sprite.position.z + dz;
-                            if (this.isSnailTileWalkable(Math.round(tx), Math.round(tz))) {
-                                const placement = {
-                                    x: tx,
-                                    z: tz,
-                                    type: 'sporesnail',
-                                    scatterKey: `${sprite.userData.scatterKey}:minion:${Date.now()}:${spawnedCount}`,
-                                    scale: 0.9 + Math.random() * 0.2,
-                                    rotation: 0,
-                                    tiltX: 0,
-                                    tiltZ: 0,
-                                    elevation: 0.09,
-                                    groupType: 'minion',
-                                    phase: Math.random() * Math.PI,
-                                    opacity: 1,
-                                    biomeTint: 0x88ff88
-                                };
-                                const minion = this.createScatterInstance(placement);
-                                if (minion) {
-                                    parent.add(minion);
-                                    this.scatterSprites.push(minion);
-                                    this.spawnGearPoofEffect(tx, tz, 'bio_spores');
-                                    spawnedCount++;
-                                    if (spawnedCount >= 2) break;
-                                }
-                            }
-                        }
-                        window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 0.5, force: true });
-                    }
+                    this.spawnSporesnailAdds(sprite, 2);
                 } else if (data.type === 'boss_corrupted_scout' && target.type === 'player' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 4.0;
                     const angleToPlayer = Math.atan2(target.z - sprite.position.z, target.x - sprite.position.x);

@@ -7,6 +7,7 @@ import {
     hasPhaseMechanic,
     idealizedTimeToKillSeconds,
     oxygenSpentPercent,
+    phasedTimeToKillSeconds,
     shotsToKill,
     worstCaseAmmoExhaustionRecoverySeconds
 } from './combat-encounter-report.js';
@@ -65,17 +66,46 @@ describe('idealizedTimeToKillSeconds', () => {
 });
 
 describe('hasPhaseMechanic / gatedBossPhaseExtensionCandidates (B1)', () => {
-    it('only the queen has a phase mechanic in the current data', () => {
+    it('the queen and the converted boss_sporesnail have a phase mechanic; every other enemy does not', () => {
         expect(hasPhaseMechanic('queen')).toBe(true);
+        expect(hasPhaseMechanic('boss_sporesnail')).toBe(true);
         for (const enemyId of Object.keys(ENEMY_STATS)) {
+            if (enemyId === 'boss_sporesnail') continue;
             expect(hasPhaseMechanic(enemyId)).toBe(false);
         }
     });
 
-    it('reports the B1 gate as not met, since every non-Queen boss is equally phase-less', () => {
+    it('reports the B1 gate as met, with boss_sporesnail as the only conversion this pass', () => {
         const gate = gatedBossPhaseExtensionCandidates();
-        expect(gate.gateMet).toBe(false);
-        expect(gate.phaselessBosses.length).toBeGreaterThan(1);
+        expect(gate.gateMet).toBe(true);
+        expect(gate.convertedThisPass).toEqual(['boss_sporesnail']);
+        expect(gate.phaselessBosses).not.toContain('boss_sporesnail');
+        expect(gate.phaselessBosses.length).toBeGreaterThan(0);
         expect(gate.phaselessBosses.every((id) => id.startsWith('boss_'))).toBe(true);
+    });
+});
+
+describe('phasedTimeToKillSeconds', () => {
+    it('returns null for ids with no bossPhases.js entry', () => {
+        expect(phasedTimeToKillSeconds('boss_cybersnail', 'SCOUT')).toBeNull();
+    });
+
+    it("TANK's phased fight takes meaningfully longer than the unarmored idealized baseline (armor has real bite at 2 damage/shot)", () => {
+        // TANK deals 2 dmg/shot; applyBossDamage rounds 2*0.6=1.2 down to 1
+        // outside weakpoint windows, a real reduction from the unarmored 2.
+        // SCOUT/ENGINEER deal 1 dmg/shot, where round(1*0.6)=1 is the same
+        // as unarmored (the "never fully negated" floor absorbs the armor
+        // entirely for them) plus phase-two weakpoint windows can only help
+        // -- so no directional guarantee holds for those two classes.
+        const phased = phasedTimeToKillSeconds('boss_sporesnail', 'TANK');
+        expect(phased).not.toBeNull();
+        expect(phased).toBeGreaterThan(idealizedTimeToKillSeconds('boss_sporesnail', 'TANK'));
+    });
+
+    it('every class can still defeat the phased sporesnail fight within a generous ceiling', () => {
+        for (const className of CLASS_NAMES) {
+            const phased = phasedTimeToKillSeconds('boss_sporesnail', className, { maxSeconds: 300 });
+            expect(phased, `${className} did not defeat boss_sporesnail within 300s`).not.toBeNull();
+        }
     });
 });

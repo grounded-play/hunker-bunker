@@ -16,7 +16,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENEMY_STATS } from '../src/data/enemies.js';
-import { QUEEN_FIGHT_DEF } from '../src/bossPhases.js';
+import { applyBossDamage, createBossFight, QUEEN_FIGHT_DEF, SPORESNAIL_FIGHT_DEF, tickBossFight } from '../src/bossPhases.js';
 import { CLASS_STATS, O2_DRAIN_RATE_PCT_PER_SEC, WEAPON_AMMO_REFILL_INTERVAL, WEAPON_FIRE_COOLDOWN } from '../src/threeGame.js';
 import { CLASS_AMMO_CAPACITY, STARTING_RUN_AMMO } from '../src/data/ammoEconomy.js';
 
@@ -60,9 +60,37 @@ export function worstCaseAmmoExhaustionRecoverySeconds(encounterId, className) {
     return deficit * WEAPON_AMMO_REFILL_INTERVAL;
 }
 
-/** True only for 'queen' -- the sole id with any entry in bossPhases.js. */
+const PHASE_DEFS = { queen: QUEEN_FIGHT_DEF, boss_sporesnail: SPORESNAIL_FIGHT_DEF };
+
+/** True for ids with a real entry in bossPhases.js. */
 export function hasPhaseMechanic(encounterId) {
-    return encounterId === 'queen';
+    return Object.prototype.hasOwnProperty.call(PHASE_DEFS, encounterId);
+}
+
+// Real floor-case simulation against the actual phase state machine (not
+// the HP-only idealizedTimeToKillSeconds above), for the ids that have one:
+// continuous fire at the class's base rate, no reload/skill tiers, chipping
+// outside weakpoint windows and dealing full damage inside them the moment
+// they're open (an upper bound on skilled play, same idealized-floor
+// framing as src/queenFightAcceptance.test.js's simulateQueenFight, which
+// this generalizes to any bossPhases.js def instead of just the Queen's).
+export function phasedTimeToKillSeconds(encounterId, className, { maxSeconds = 600, dt = 0.05 } = {}) {
+    const def = PHASE_DEFS[encounterId];
+    if (!def) return null;
+    const fight = createBossFight(def);
+    const damage = CLASS_STATS[className].projectileDamage;
+    let elapsed = 0;
+    let fireTimer = 0;
+    while (!fight.defeated && elapsed < maxSeconds) {
+        tickBossFight(fight, dt);
+        fireTimer -= dt;
+        if (fireTimer <= 0) {
+            fireTimer += WEAPON_FIRE_COOLDOWN;
+            applyBossDamage(fight, damage);
+        }
+        elapsed += dt;
+    }
+    return fight.defeated ? elapsed : null;
 }
 
 export function buildEncounterTable() {
@@ -76,6 +104,7 @@ export function buildEncounterTable() {
                 maxHp: maxHpFor(encounterId),
                 shots: shotsToKill(encounterId, className),
                 idealizedTtkSeconds: idealizedTimeToKillSeconds(encounterId, className),
+                phasedTtkSeconds: phasedTimeToKillSeconds(encounterId, className),
                 oxygenSpentPercent: oxygenSpentPercent(encounterId, className),
                 worstCaseAmmoExhaustionRecoverySeconds: worstCaseAmmoExhaustionRecoverySeconds(encounterId, className),
                 hasPhaseMechanic: hasPhaseMechanic(encounterId)
@@ -88,41 +117,54 @@ export function buildEncounterTable() {
 /**
  * The B1 gate: per docs/sprint-22-systems-breakdown/07-engineering-combat-boss-phases.md,
  * only extend bossPhases.js for a boss the *data* flags as a pure stat
- * package relative to the Queen -- not as a default deliverable. The only
- * computable signal available (enemy data is just maxHp/speed; there is no
- * per-boss attack-pattern, telegraph, or decision-point data to compare) is
- * "does this boss have any phase/weakpoint mechanic at all," and every
- * non-Queen boss is equally phase-less by that measure. A binary signal
- * that flags all of them identically cannot single out "the worst one or
- * two" the doc asks to extend -- doing so anyway would be an arbitrary
- * pick, not an evidence-based one. Distinguishing which specific boss reads
- * as monotonous needs the human side-by-side encounter audit doc 02 and 07
- * both call for (Phase F in the master plan), not more simulation.
+ * package relative to the Queen -- not as a default deliverable.
+ *
+ * Revised finding: an earlier pass at this gate checked only "does this
+ * boss have any bossPhases.js entry," which every non-Queen boss fails
+ * identically -- a signal that can't single out "the worst one or two" as
+ * the doc asks. Reading the actual per-boss attack code in threeGame.js
+ * (not just the maxHp/speed in data/enemies.js) turned up a real,
+ * discriminating signal: boss_sporesnail has by far the highest HP, the
+ * longest idealizedTimeToKillSeconds, and its one mechanic (spawning
+ * passive minions) deals zero direct damage, so an unusually long fight
+ * never directly threatens the player. That boss has since been converted
+ * (SPORESNAIL_FIGHT_DEF, src/bossPhases.js) -- two phases, gentler armor
+ * than the Queen's, wired into threeGame.js's boss_sporesnail attack
+ * dispatch. It's the only non-Queen boss with a phase entry now.
+ *
+ * The remaining phase-less bosses are NOT flagged for the same treatment:
+ * none of them show a comparably extreme HP/TTK/no-direct-damage profile,
+ * so picking among them would go back to being an arbitrary choice.
+ * Confirming whether they need it at all still needs the human
+ * side-by-side combat-feel pass (Phase F in the master plan).
  */
 export function gatedBossPhaseExtensionCandidates() {
     const phaselessBosses = BOSS_IDS.filter((id) => !hasPhaseMechanic(id));
     return {
-        gateMet: false,
-        reason: phaselessBosses.length > 1
-            ? `${phaselessBosses.length} non-Queen bosses are all equally phase-less by computable data alone `
-                + '(no per-boss decision-point/telegraph data exists to rank them) -- extending any one of them '
-                + 'without a human side-by-side comparison would be an arbitrary pick, not evidence-based.'
-            : 'no non-Queen boss data available to compare',
+        gateMet: true,
+        convertedThisPass: ['boss_sporesnail'],
+        reason: 'boss_sporesnail converted onto the phase framework based on HP/TTK/no-direct-damage data '
+            + '(see SPORESNAIL_FIGHT_DEF in src/bossPhases.js). Remaining phase-less bosses show no comparably '
+            + 'extreme profile -- extending any of them further would be an arbitrary pick without the human '
+            + 'combat-feel pass this table is instrumentation for, not a replacement for.',
         phaselessBosses
     };
 }
 
 function formatRow(row) {
+    const phased = row.phasedTtkSeconds != null ? `${row.phasedTtkSeconds.toFixed(1)}s` : 'n/a';
     return `${row.encounterId.padEnd(24)} ${row.className.padEnd(9)} `
         + `hp=${String(row.maxHp).padStart(4)} shots=${String(row.shots).padStart(4)} `
         + `ttk=${row.idealizedTtkSeconds.toFixed(1).padStart(6)}s `
+        + `phasedTtk=${phased.padStart(7)} `
         + `o2=${row.oxygenSpentPercent.toFixed(2).padStart(6)}% `
         + `ammoRecover=${String(row.worstCaseAmmoExhaustionRecoverySeconds).padStart(5)}s`;
 }
 
 function main() {
     const rows = buildEncounterTable();
-    console.log('[combat-encounter-report] idealized-floor encounter table (continuous fire, no reload/skill tiers):\n');
+    console.log('[combat-encounter-report] idealized-floor encounter table (continuous fire, no reload/skill tiers):');
+    console.log('[combat-encounter-report] ttk = unarmored HP-only baseline; phasedTtk = real bossPhases.js simulation where one exists:\n');
     for (const row of rows) console.log(formatRow(row));
 
     console.log('\n[combat-encounter-report] boss-only summary:');
@@ -130,8 +172,9 @@ function main() {
 
     const gate = gatedBossPhaseExtensionCandidates();
     console.log(`\n[combat-encounter-report] B1 boss-phase-extension gate: ${gate.gateMet ? 'MET' : 'NOT MET'}`);
+    console.log(`[combat-encounter-report] converted this pass: ${gate.convertedThisPass?.join(', ') ?? 'none'}`);
     console.log(`[combat-encounter-report] ${gate.reason}`);
-    console.log(`[combat-encounter-report] phase-less bosses: ${gate.phaselessBosses.join(', ')}`);
+    console.log(`[combat-encounter-report] remaining phase-less bosses: ${gate.phaselessBosses.join(', ')}`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
