@@ -25,6 +25,7 @@ describe('procedural doors', () => {
             localY: 6,
             side: 'n',
             style: 'security',
+            autoClose: true,
             cells: [{ x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }]
         });
         expect(grid[6].slice(2, 5)).toEqual(['D', 'D', 'D']);

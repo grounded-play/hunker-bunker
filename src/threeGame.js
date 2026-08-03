@@ -340,7 +340,9 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'scatter_coolant_puddle',
     'scatter_slime_puddle',
     'scatter_bio_moss',
-    'prop_blood_trail'
+    'scatter_horizon_black_box',
+    'prop_blood_trail',
+    'prop_iron_guild_dogtags'
 ]);
 const isFloorOverlayType = (type) => type?.startsWith('decal_') || FLOOR_OVERLAY_TYPES.has(type);
 const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
@@ -1786,6 +1788,11 @@ export class ThreeGame {
             decal_childlike_cave_map: this.loadKeyedSpriteTexture('/decal_childlike_cave_map.png', 14),
             decal_bio_sample_spill: this.loadKeyedSpriteTexture('/decal_bio_sample_spill.png', 14),
             decal_worker_sleep_roll: this.loadKeyedSpriteTexture('/decal_worker_sleep_roll.png', 14),
+            decal_machine_cult_shrine: this.loadKeyedSpriteTexture('/decal_machine_cult_shrine.png', 14),
+            decal_pod_312_breach: this.loadKeyedSpriteTexture('/decal_pod_312_breach.png', 14),
+            decal_tallow_herb_cache: this.loadKeyedSpriteTexture('/decal_tallow_herb_cache.png', 14),
+            scatter_horizon_black_box: this.loadKeyedSpriteTexture('/scatter_horizon_black_box.png', 14),
+            prop_iron_guild_dogtags: this.loadKeyedSpriteTexture('/prop_iron_guild_dogtags.png', 14),
 
             prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
@@ -18287,6 +18294,17 @@ export class ThreeGame {
                 baseScaleX: scaleX,
                 baseScaleY: scaleY,
                 baseOpacity: placement.opacity ?? 1
+            };
+            // Keyed textures finish on an async canvas. Apply their real
+            // aspect ratio once available so wide prefabs do not get crushed
+            // into square floor icons.
+            overlay.onBeforeRender = () => {
+                const width = Number(texture.image?.width);
+                const height = Number(texture.image?.height);
+                if (!(width > 0 && height > 0) || overlay.userData.aspectApplied) return;
+                overlay.scale.x = scaleX * (width / height);
+                overlay.userData.baseScaleX = overlay.scale.x;
+                overlay.userData.aspectApplied = true;
             };
             return overlay;
         }
