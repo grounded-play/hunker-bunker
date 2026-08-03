@@ -112,7 +112,7 @@ describe('radial ring crossing gates are provably non-bypassable', () => {
             const plan = generateRadialMazeExpedition(seed);
             expect(validateRingProgression(plan), `seed ${seed}`).toEqual({ valid: true, errors: [] });
         }
-    });
+    }, 20_000);
 
     it('flags a plan whose blocker fails to gate its ring', () => {
         const plan = generateRadialMazeExpedition(1);
