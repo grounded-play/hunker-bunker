@@ -7,14 +7,14 @@ afterEach(() => {
 });
 
 describe('floor overlays', () => {
-    it('renders room decals as horizontal meshes above the floor', () => {
+    it('renders ground overlay decals as horizontal meshes above the floor', () => {
         const texture = new THREE.Texture();
         const game = {
             floorGeometry: new THREE.PlaneGeometry(1, 1),
-            scatterTextures: { decal_worker_sleep_roll: texture }
+            scatterTextures: { decal_oil_spill_patch: texture }
         };
         const overlay = ThreeGame.prototype.createScatterInstance.call(game, {
-            type: 'decal_worker_sleep_roll',
+            type: 'decal_oil_spill_patch',
             x: 4,
             z: 7,
             scale: 1.2,
@@ -40,6 +40,35 @@ describe('floor overlays', () => {
 
         overlay.material.dispose();
         game.floorGeometry.dispose();
+        texture.dispose();
+    });
+
+    it('renders lived-in object props (decal_emergency_oxygen_nest) as standing 3D sprites like ship crash props', () => {
+        const texture = new THREE.Texture();
+        const spriteMat = new THREE.SpriteMaterial({ map: texture });
+        const game = Object.assign(Object.create(ThreeGame.prototype), {
+            scatterMaterials: { decal_emergency_oxygen_nest: spriteMat }
+        });
+        const sprite = ThreeGame.prototype.createScatterInstance.call(game, {
+            type: 'decal_emergency_oxygen_nest',
+            x: 4,
+            z: 7,
+            scale: 1.2,
+            elevation: 0.08,
+            scatterKey: 'ambient:2',
+            groupType: 'prop',
+            opacity: 1
+        });
+
+        expect(sprite).toBeInstanceOf(THREE.Sprite);
+        expect(sprite.center.x).toBe(0.5);
+        expect(sprite.center.y).toBe(0);
+        expect(sprite.position.x).toBe(4);
+        expect(sprite.position.z).toBe(7);
+        expect(sprite.position.y).toBe(0.08);
+
+        sprite.material.dispose();
+        spriteMat.dispose();
         texture.dispose();
     });
 

@@ -338,6 +338,19 @@ const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_alien_feeding_basin: '/prop_alien_feeding_basin.png'
 });
 const FLOOR_OVERLAY_TYPES = new Set([
+    'decal_oil_spill_patch',
+    'decal_footprints_mud',
+    'decal_tallow_symbol',
+    'decal_bio_sample_spill',
+    'decal_childlike_cave_map',
+    'decal_hive_growth',
+    'decal_spore_growth_patch',
+    'decal_bullet_holes',
+    'decal_wall_breach',
+    'decal_hazard_stripes',
+    'decal_biohazard_stencil',
+    'decal_meridian_stencil',
+    'decal_claw_scratches',
     'scatter_bolts',
     'scatter_cable_coil',
     'scatter_coolant_puddle',
@@ -348,7 +361,7 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'prop_blood_trail',
     'prop_iron_guild_dogtags'
 ]);
-const isFloorOverlayType = (type) => type?.startsWith('decal_') || FLOOR_OVERLAY_TYPES.has(type);
+const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
 const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
 const PROCEDURAL_DOOR_CLOSE_RADIUS = 3.6;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
@@ -3236,6 +3249,7 @@ export class ThreeGame {
     async setupPlayer3dCosmeticOverlay() {
         this.player3dOverlay?.dispose?.();
         this.player3dOverlay = null;
+        if (this.playerSprite) this.playerSprite.visible = true;
         if (!PLAYER_3D_COSMETIC_OVERLAY_ENABLED || this.playerType !== 'SCOUT' || !this.player) return;
         const playerRoot = this.player;
         try {
@@ -3245,9 +3259,15 @@ export class ThreeGame {
                 return;
             }
             overlay.root.position.x += this.playerSpriteLead;
+            // Mixamo's walk crouches below its bind-pose bounds; lift the
+            // cosmetic feet above the floor plane without touching collision.
+            overlay.root.position.y += 0.12;
             overlay.root.position.z += this.playerSpriteLead;
             playerRoot.add(overlay.root);
             this.player3dOverlay = overlay;
+            // Hide only after the GLB is ready. A load failure leaves the proven
+            // 2D sprite visible as the automatic fallback.
+            this.playerSprite.visible = false;
         } catch (error) {
             console.warn('[player-3d-overlay] unavailable; keeping the 2D player', error);
         }
@@ -4336,6 +4356,10 @@ export class ThreeGame {
         }
         this.emitVitalsState();
         this.emitShipHealthState();
+        // The selected operator can change after the player scene is built.
+        // Recreate the cosmetic here so switching to Scout actually installs
+        // the 3D model instead of leaving the legacy sprite active in-game.
+        if (this.player) this.setupPlayer3dCosmeticOverlay();
     }
 
     updateCrashedShipsVisibility(poof = false) {
@@ -4691,7 +4715,7 @@ export class ThreeGame {
         const width = this.container.clientWidth || 1;
         const height = this.container.clientHeight || 1;
         const aspect = width / height;
-        const viewSize = 6.8;
+        const viewSize = this.performanceProfile === 'menu' ? 3.7 : 6.8;
 
         this.menuPixelRatio = cappedPixelRatio({
             width,
@@ -14409,15 +14433,20 @@ export class ThreeGame {
 
     updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving, moveDirX = 0, moveDirZ = 0) {
         if (this.player3dOverlay) {
-            this.player3dOverlay.root.visible = this.playerType === 'SCOUT';
+            const show3dScout = this.playerType === 'SCOUT';
+            this.player3dOverlay.root.visible = show3dScout;
+            this.playerSprite.visible = !show3dScout;
+            const visualMoving = isMoving || this.isDashing;
+            const visualMoveX = this.isDashing ? this.dashDirX : moveDirX;
+            const visualMoveZ = this.isDashing ? this.dashDirZ : moveDirZ;
             this.player3dOverlay.update(delta, {
                 isFalling: this.isPlayerFalling,
                 isReloading: this.weaponReloading,
-                isMoving,
-                isSprinting: (this._sprintMoveSpeedMult ?? 1) > 1,
+                isMoving: visualMoving,
+                isSprinting: (this._sprintMoveSpeedMult ?? 1) > 1 || this.isDashing,
                 hasAim: this.hasActiveAim,
-                moveX: moveDirX,
-                moveZ: moveDirZ,
+                moveX: visualMoveX,
+                moveZ: visualMoveZ,
                 aimX: this.aimDirX,
                 aimZ: this.aimDirZ
             });
