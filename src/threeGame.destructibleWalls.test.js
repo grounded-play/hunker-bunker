@@ -247,3 +247,68 @@ describe('computeExteriorWallJitter — shared position/rotation jitter for exte
         expect(jitterA).not.toEqual(jitterC);
     });
 });
+
+describe('instanced wall tile identity', () => {
+    function makeRecord(worldX, worldZ, instanceIndex, pool) {
+        const record = call('createWallInstanceRecord', {
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getWallMaxHp: ThreeGame.prototype.getWallMaxHp
+        }, {
+            chunkX: 0,
+            chunkY: 0,
+            localX: worldX,
+            localY: worldZ,
+            worldX,
+            worldZ,
+            landform: 'maze'
+        });
+        record.instancedMesh = pool;
+        record.instanceIndex = instanceIndex;
+        return record;
+    }
+
+    it('resolves a projectile pool hit to only its matching wall record', () => {
+        const pool = { userData: { isInstancedWallPool: true } };
+        const first = makeRecord(4, 5, 0, pool);
+        const second = makeRecord(5, 5, 1, pool);
+        const fakeThis = { _wallInstanceIndex: new Map([[first.wallKey, first], [second.wallKey, second]]) };
+
+        expect(call('findWallByPoolInstance', fakeThis, pool, 1)).toBe(second);
+        expect(call('findWallByPoolInstance', fakeThis, pool, 9)).toBeNull();
+    });
+
+    it('retires only the destroyed matrix slot and leaves the shared pool active', () => {
+        const pool = {
+            setMatrixAt: vi.fn(),
+            instanceMatrix: { needsUpdate: false }
+        };
+        const first = makeRecord(4, 5, 0, pool);
+        const second = makeRecord(5, 5, 1, pool);
+        const grid = makeGrid();
+        const fakeThis = {
+            chunkSize: 19,
+            chunkCache: new Map([['0,0', grid]]),
+            chunkMeshes: new Map(),
+            destroyedWallKeys: new Set(),
+            destroyedExteriorWallKeys: new Set(),
+            _chunkRoomTypeCache: new Map(),
+            _chunkTemplateCache: new Map(),
+            _wallInstanceIndex: new Map([[first.wallKey, first], [second.wallKey, second]]),
+            wallMeshes: [pool],
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getChunkLocalFromWorld: ThreeGame.prototype.getChunkLocalFromWorld,
+            findWallMeshAt: ThreeGame.prototype.findWallMeshAt,
+            isExteriorWallTile: () => false
+        };
+
+        call('markWallTileDestroyed', fakeThis, 4, 5);
+
+        expect(pool.setMatrixAt).toHaveBeenCalledTimes(1);
+        expect(pool.setMatrixAt.mock.calls[0][0]).toBe(0);
+        expect(pool.instanceMatrix.needsUpdate).toBe(true);
+        expect(fakeThis._wallInstanceIndex.has(first.wallKey)).toBe(false);
+        expect(fakeThis._wallInstanceIndex.get(second.wallKey)).toBe(second);
+        expect(fakeThis.wallMeshes).toEqual([pool]);
+        expect(grid[5][4]).toBe('.');
+    });
+});

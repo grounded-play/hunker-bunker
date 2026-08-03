@@ -2566,74 +2566,84 @@ body {
 
 /* ---- Game Over Screen ---- */
 .game-over-content {
-  border-color: #dc2626 !important;
-  box-shadow: 0 0 40px rgba(220, 38, 38, 0.25) !important;
-  width: min(calc(var(--vu) * 112), 88vw) !important;
-  padding: clamp(10px, calc(var(--vu) * 2.0), 20px) !important;
+  background: linear-gradient(180deg, rgba(16, 20, 24, 0.97) 0%, rgba(10, 13, 16, 0.98) 100%) !important;
+  border: 1px solid rgba(239, 68, 68, 0.45) !important;
+  box-shadow: 0 0 50px rgba(220, 38, 38, 0.25), inset 0 0 30px rgba(0, 0, 0, 0.8) !important;
+  width: min(calc(var(--vu) * 112), 90vw) !important;
+  padding: clamp(14px, calc(var(--vu) * 2.2), 24px) !important;
   display: flex;
   flex-direction: column;
-  gap: clamp(4px, calc(var(--vu) * 0.75), 10px);
+  gap: clamp(8px, calc(var(--vu) * 1.0), 14px);
   max-height: calc(100dvh - 28px) !important;
-  overflow: visible;
-  overflow-x: hidden;
+  border-radius: 10px !important;
+  overflow-y: auto;
   scrollbar-width: none;
 }
 
 .game-over-header {
-  border-bottom: 1px solid rgba(220, 38, 38, 0.35);
-  padding-bottom: clamp(4px, calc(var(--vu) * 0.8), 8px);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  padding-bottom: clamp(6px, calc(var(--vu) * 1.0), 12px);
 }
 
 .game-over-title {
-  font-size: clamp(24px, calc(var(--vu) * 4.4), 48px);
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(24px, calc(var(--vu) * 4.6), 46px);
   font-weight: 900;
-  color: #dc2626;
-  letter-spacing: 2px;
-  text-shadow: 0 0 14px rgba(220, 38, 38, 0.55);
+  color: #ef4444;
+  letter-spacing: 3px;
+  text-shadow: 0 0 16px rgba(239, 68, 68, 0.6), 0 0 32px rgba(239, 68, 68, 0.3);
+  text-transform: uppercase;
 }
 
 .game-over-subtitle {
-  font-size: clamp(8px, calc(var(--vu) * 1.0), 11px);
-  color: rgba(255, 255, 255, 0.5);
-  letter-spacing: 1px;
-  line-height: 1.25;
-  margin-top: clamp(3px, calc(var(--vu) * 0.6), 8px);
+  font-family: 'Space Mono', monospace !important;
+  font-size: clamp(11px, calc(var(--vu) * 1.2), 13px) !important;
+  color: rgba(240, 243, 246, 0.92) !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.6 !important;
+  margin-top: clamp(6px, calc(var(--vu) * 0.8), 10px);
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-left: 4px solid #ef4444;
+  border-radius: 5px;
+  white-space: pre-wrap !important;
 }
 
 /* Unified panel grouping the stats and footnote */
 .game-over-report {
   display: grid;
   grid-template-columns: 1.25fr 1fr 1fr;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  padding: clamp(8px, calc(var(--vu) * 1.25), 14px);
-  gap: clamp(6px, calc(var(--vu) * 0.85), 10px);
+  padding: clamp(10px, calc(var(--vu) * 1.4), 16px);
+  gap: clamp(8px, calc(var(--vu) * 1.0), 12px);
 }
 
 .game-over-section-label {
   grid-column: 1 / -1;
-  font-size: clamp(8px, calc(var(--vu) * 0.95), 10px);
-  font-weight: 900;
-  color: rgba(255, 255, 255, 0.32);
-  letter-spacing: 1.6px;
-  margin-bottom: 0;
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(9px, calc(var(--vu) * 1.0), 11px);
+  font-weight: 700;
+  color: var(--accent-primary, #ff9f1c);
+  letter-spacing: 2px;
+  margin-bottom: 2px;
 }
 
-/* Individual stat row styled without repeating boxes/borders */
 .game-over-stat-block {
   display: flex;
   flex-direction: column;
-  gap: clamp(2px, calc(var(--vu) * 0.35), 5px);
-  min-height: clamp(48px, calc(var(--vu) * 6.0), 70px);
-  padding: clamp(7px, calc(var(--vu) * 0.9), 10px);
-  background: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.055) !important;
+  justify-content: center;
+  gap: clamp(3px, calc(var(--vu) * 0.4), 6px);
+  padding: clamp(8px, calc(var(--vu) * 1.0), 12px);
+  background: rgba(18, 24, 30, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
   border-radius: 6px !important;
 }
 
 .game-over-stat-block + .game-over-stat-block {
-  border-top: 1px solid rgba(255, 255, 255, 0.055) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.09) !important;
 }
 
 .game-over-stat-block--meter {
@@ -2641,10 +2651,11 @@ body {
 }
 
 .game-over-stat-label {
-  font-size: clamp(8px, calc(var(--vu) * 0.92), 10px);
-  font-weight: 900;
-  letter-spacing: 1.4px;
-  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(9px, calc(var(--vu) * 0.95), 11px);
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: rgba(180, 195, 210, 0.75);
   text-transform: uppercase;
 }
 
@@ -2657,23 +2668,24 @@ body {
 
 .game-over-stat-bar-track {
   flex: 1;
-  height: clamp(4px, calc(var(--vu) * 0.85), 8px);
-  background: rgba(255, 255, 255, 0.05);
+  height: clamp(5px, calc(var(--vu) * 0.9), 9px);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 999px;
   overflow: hidden;
 }
 
 .game-over-stat-bar {
   height: 100%;
-  background: linear-gradient(90deg, #b91c1c, #f87171);
-  box-shadow: 0 0 8px rgba(220, 38, 38, 0.4);
+  background: linear-gradient(90deg, #b91c1c, #ef4444);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
   border-radius: inherit;
   width: 0%;
   transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .game-over-stat-value {
-  font-size: clamp(15px, calc(var(--vu) * 1.85), 24px);
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(18px, calc(var(--vu) * 2.2), 26px);
   font-weight: 900;
   color: #ffffff;
   min-width: clamp(56px, calc(var(--vu) * 8.5), 96px);
@@ -2702,66 +2714,101 @@ body {
 
 .game-over-bank-note {
   grid-column: 1 / -1;
-  font-size: clamp(9px, calc(var(--vu) * 1.2), 14px);
-  color: rgba(125, 255, 90, 0.55);
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(10px, calc(var(--vu) * 1.25), 13px);
+  font-weight: 700;
+  color: rgba(125, 255, 90, 0.85);
   letter-spacing: 1.2px;
-  text-align: center;
-  padding: clamp(5px, calc(var(--vu) * 0.75), 9px) 0 0 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  margin-top: clamp(4px, calc(var(--vu) * 0.7), 10px);
+  text-align: left;
+  padding: clamp(6px, calc(var(--vu) * 0.8), 10px) clamp(10px, calc(var(--vu) * 1.2), 14px);
+  background: rgba(125, 255, 90, 0.05);
+  border: 1px solid rgba(125, 255, 90, 0.2);
+  border-radius: 5px;
+  margin-top: 4px;
 }
 
 .game-over-bank-note--recoverable {
-  color: rgba(255, 179, 71, 0.72);
-  border-top: 0;
+  color: rgba(255, 179, 71, 0.95);
+  background: rgba(255, 179, 71, 0.05);
+  border-color: rgba(255, 179, 71, 0.25);
   margin-top: 0;
-  padding-top: clamp(2px, calc(var(--vu) * 0.35), 5px);
 }
 
 .game-over-bank-note--steam {
-  color: rgba(34, 211, 238, 0.85);
-  border-top: 0;
+  color: rgba(34, 211, 238, 0.95);
+  background: rgba(34, 211, 238, 0.05);
+  border-color: rgba(34, 211, 238, 0.25);
   margin-top: 0;
-  padding-top: clamp(2px, calc(var(--vu) * 0.35), 5px);
-  font-weight: 700;
 }
 
+/* Action Buttons Styling - Sleek, tactical, zero wrapping */
 .game-over-actions {
   display: flex;
-  gap: clamp(8px, calc(var(--vu) * 1.4), 16px);
+  gap: clamp(12px, calc(var(--vu) * 2.0), 24px);
   justify-content: center;
-  flex-wrap: wrap;
-  padding-top: clamp(5px, calc(var(--vu) * 0.75), 9px);
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  align-items: center;
+  padding-top: clamp(8px, calc(var(--vu) * 1.0), 14px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.game-over-btn {
-  flex: 1 1 calc(var(--vu) * 25);
-  min-width: 120px;
-  max-width: calc(var(--vu) * 36);
-  padding: clamp(8px, calc(var(--vu) * 1.15), 12px) clamp(10px, calc(var(--vu) * 2.2), 18px) !important;
-  font-size: clamp(11px, calc(var(--vu) * 1.5), 16px) !important;
-  border-radius: 8px !important;
-}
-
-.game-over-btn.start-btn {
-  box-shadow: 0 4px 0 #c77b15 !important;
-}
-.game-over-btn.start-btn:hover {
-  box-shadow: 0 6px 0 #c77b15 !important;
-}
-.game-over-btn.start-btn:active {
-  box-shadow: 0 2px 0 #c77b15 !important;
-}
-
+.game-over-btn,
+.game-over-btn.start-btn,
 .game-over-btn.abort-btn {
-  box-shadow: 0 4px 0 #991b1b !important;
+  flex: 1 1 200px !important;
+  min-width: 160px !important;
+  max-width: 280px !important;
+  height: clamp(44px, calc(var(--vu) * 5.8), 54px) !important;
+  padding: 0 clamp(16px, calc(var(--vu) * 2.5), 28px) !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: clamp(14px, calc(var(--vu) * 1.7), 16px) !important;
+  font-weight: 900 !important;
+  letter-spacing: 2.5px !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out !important;
+  box-shadow: none !important;
 }
-.game-over-btn.abort-btn:hover {
-  box-shadow: 0 6px 0 #991b1b !important;
+
+.game-over-btn--primary,
+.game-over-btn.start-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  border: 1px solid #38bdf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
 }
-.game-over-btn.abort-btn:active {
-  box-shadow: 0 2px 0 #991b1b !important;
+
+.game-over-btn--primary:hover,
+.game-over-btn.start-btn:hover,
+.game-over-btn--primary:focus-visible,
+.game-over-btn.start-btn:focus-visible {
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%) !important;
+  border-color: #7dd3fc !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+}
+
+.game-over-btn--secondary,
+.game-over-btn.abort-btn {
+  background: linear-gradient(135deg, #1f191a 0%, #110d0e 100%) !important;
+  border: 1px solid rgba(239, 68, 68, 0.5) !important;
+  color: rgba(240, 240, 240, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.game-over-btn--secondary:hover,
+.game-over-btn.abort-btn:hover,
+.game-over-btn--secondary:focus-visible,
+.game-over-btn.abort-btn:focus-visible {
+  background: linear-gradient(135deg, #3f1515 0%, #290e0e 100%) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 
 .game-over-content::-webkit-scrollbar {

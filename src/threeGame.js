@@ -11845,6 +11845,7 @@ export class ThreeGame {
         this.mazeAccessState = createAccessState();
         this.destroyedWallKeys.clear();
         this.destroyedExteriorWallKeys?.clear();
+        this._wallInstanceIndex?.clear();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys.clear();
         this.wallMeshes = [];
@@ -14551,6 +14552,17 @@ export class ThreeGame {
         });
     }
 
+    // Resolve one hit slot in a pooled wall mesh back to its logical tile.
+    findWallByPoolInstance(pool, instanceId) {
+        if (!this._wallInstanceIndex || !Number.isInteger(instanceId)) return null;
+        for (const record of this._wallInstanceIndex.values()) {
+            if (!record.destroyed && record.instancedMesh === pool && record.instanceIndex === instanceId) {
+                return record;
+            }
+        }
+        return null;
+    }
+
     checkProjectileWallHit(projectile) {
         const speed = Math.hypot(projectile.vx, projectile.vz);
         if (speed <= 0.0001) return null;
@@ -14573,7 +14585,13 @@ export class ThreeGame {
                 nz = worldNormal.z;
             }
         }
-        return { point: hit.point, normalX: nx, normalZ: nz, wall: hit.object };
+        const wall = (hit.object?.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId))
+            ? this.findWallByPoolInstance(hit.object, hit.instanceId)
+            : hit.object;
+        // Never pass an unresolved pool into destroyWall: hiding/removing that
+        // object would erase every wall in its room-style bucket.
+        if (!wall) return null;
+        return { point: hit.point, normalX: nx, normalZ: nz, wall };
     }
 
     checkProjectilePlayerHit(projectile) {
@@ -15095,6 +15113,11 @@ export class ThreeGame {
             this.chunkGroups.remove(group);
             this.chunkMeshes.delete(key);
             this.pendingChunkMountKeys.delete(key);
+            if (this._wallInstanceIndex) {
+                for (const [wallKey, record] of this._wallInstanceIndex) {
+                    if (record.chunkKey === key) this._wallInstanceIndex.delete(wallKey);
+                }
+            }
         }
 
         for (const group of this.chunkMeshes.values()) {
@@ -15885,7 +15908,19 @@ export class ThreeGame {
             grid[coord.localY][coord.localX] = exterior ? LEDGE_TILE : '.';
         }
         const wallMesh = this.findWallMeshAt?.(coord.tileX, coord.tileZ);
-        if (wallMesh) {
+        if (wallMesh?.isInstancedWall) {
+            wallMesh.instancedMesh?.setMatrixAt(
+                wallMesh.instanceIndex,
+                new THREE.Matrix4().makeScale(0, 0, 0)
+            );
+            if (wallMesh.instancedMesh) wallMesh.instancedMesh.instanceMatrix.needsUpdate = true;
+            wallMesh.destroyed = true;
+            this._wallInstanceIndex?.delete(wallMesh.wallKey);
+            if (exterior) {
+                const patch = this.createExteriorGroundPatch?.(coord.tileX, coord.tileZ);
+                if (patch) this.chunkMeshes?.get?.(wallMesh.chunkKey)?.add?.(patch);
+            }
+        } else if (wallMesh) {
             const parent = wallMesh.parent;
             wallMesh.userData.destroyed = true;
             wallMesh.visible = false;
@@ -15905,6 +15940,8 @@ export class ThreeGame {
 
     findWallMeshAt(worldX, worldZ) {
         const key = this.getWallKey(worldX, worldZ);
+        const instanced = this._wallInstanceIndex?.get(key);
+        if (instanced && !instanced.destroyed) return instanced;
         return this.wallMeshes.find((wall) => wall?.userData?.wallKey === key && !wall.userData.destroyed) ?? null;
     }
 
@@ -15923,9 +15960,11 @@ export class ThreeGame {
         const coord = this.markWallTileDestroyed(worldX, worldZ);
         this.clearWallDecalsForWall(wall.userData.wallKey);
         wall.userData.destroyed = true;
-        wall.visible = false;
-        wall.parent?.remove(wall);
-        this.wallMeshes = this.wallMeshes.filter((candidate) => candidate !== wall);
+        if (!wall.isInstancedWall) {
+            wall.visible = false;
+            wall.parent?.remove(wall);
+            this.wallMeshes = this.wallMeshes.filter((candidate) => candidate !== wall);
+        }
 
         const fxColor = source === 'boss' ? 0xffa45a : burstColor;
         this.spawnPhysicalBurst(coord.tileX, coord.tileZ, {
@@ -15961,6 +16000,14 @@ export class ThreeGame {
         const hp = Math.max(0, wall.userData.wallHp ?? maxHp);
         const damageRatio = Math.min(1, Math.max(0, 1 - hp / maxHp));
         if (damageRatio <= 0) return;
+
+        if (wall.isInstancedWall) {
+            const color = new THREE.Color(0x808b96)
+                .lerp(new THREE.Color(0xff3300), damageRatio * 0.75);
+            wall.instancedMesh?.setColorAt(wall.instanceIndex, color);
+            if (wall.instancedMesh?.instanceColor) wall.instancedMesh.instanceColor.needsUpdate = true;
+            return;
+        }
 
         if (wall.material === this.wallMaterial) {
             wall.material = this.wallMaterial.clone();
@@ -16837,8 +16884,16 @@ export class ThreeGame {
         for (const [roomStyleId, matrices] of wallMatricesByRoomStyle.entries()) {
             const metaList = wallMetaByRoomStyle.get(roomStyleId);
             const pool = new THREE.InstancedMesh(this.wallGeometry, this.wallMaterial, matrices.length);
-            matrices.forEach((m, idx) => pool.setMatrixAt(idx, m));
+            const undamagedColor = new THREE.Color(0xffffff);
+            matrices.forEach((m, idx) => {
+                pool.setMatrixAt(idx, m);
+                // setColorAt lazily creates a zero-filled instanceColor buffer.
+                // Seed every slot white so damaging one wall cannot multiply
+                // every untouched wall's material/texture down to black.
+                pool.setColorAt(idx, undamagedColor);
+            });
             pool.instanceMatrix.needsUpdate = true;
+            if (pool.instanceColor) pool.instanceColor.needsUpdate = true;
             pool.castShadow = true;
             pool.receiveShadow = true;
             pool.userData = { isWall: true, isInstancedWallPool: true };

@@ -3228,15 +3228,34 @@ function generateDeathReport(stats, reason) {
         'cybersnail':         '> CAUSE: BIO-ENTITY CONTACT — CYBERSNAIL MELEE IMPACT',
         'cryosnail':          '> CAUSE: BIO-ENTITY CONTACT — CRYOSNAIL IMPACT',
         'sporesnail':         '> CAUSE: BIO-ENTITY CONTACT — SPORESNAIL IMPACT',
-        'enemy-projectile':   '> CAUSE: HOSTILE PROJECTILE IMPACT',
+        'mycelium_stalker':   '> CAUSE: BIO-ENTITY AMBUSH — MYCELIUM STALKER IMPACT',
+        'bio_charger':        '> CAUSE: BIO-ENTITY IMPACT — CHARGER HEAVY STRIKE',
+        'combat':             '> CAUSE: BIO-ENTITY CLOSE-QUARTERS COMBAT',
+        'enemy-projectile':   '> CAUSE: HOSTILE KINETIC IMPACT — ENEMY PROJECTILE',
         'sentinel':           '> CAUSE: HOSTILE PROJECTILE — SENTINEL FIRE',
         'ship-destroyed':     '> CAUSE: SHIP STRUCTURAL FAILURE — HULL INTEGRITY ZERO',
         'mission-abort':      '> CAUSE: CONTRACT TERMINATED BY OPERATOR — RECOVERY BAG FILED',
         'frost-shockwave':    '> CAUSE: CRYO HAZARD — THERMAL SHOCKWAVE IMPACT',
+        'queen-shockwave':    '> CAUSE: TITAN IMPACT — HIVE QUEEN SHOCKWAVE',
+        'ground-slam':        '> CAUSE: TITAN IMPACT — KINETIC GROUND SLAM',
         'poison':             '> CAUSE: BIO-TOXIN EXPOSURE — SUIT INTEGRITY FAILURE',
+        'hazard':             '> CAUSE: SUIT INTEGRITY BREACH — ENVIRONMENTAL HAZARD',
+        'hazard-zone':        '> CAUSE: SUIT INTEGRITY BREACH — HAZARD ZONE EXPOSURE',
+        'camp-turret':        '> CAUSE: FRIENDLY FIRE — AUTOMATED TURRET CROSSFIRE',
+        'fall':               '> CAUSE: EXOSUIT GRAVITATIONAL FAILURE — HIGH-ALTITUDE FALL IMPACT',
+        'pit-fall':           '> CAUSE: EXOSUIT GRAVITATIONAL FAILURE — PLUMMETED INTO PIT CHASM',
+        'chasm':              '> CAUSE: EXOSUIT GRAVITATIONAL FAILURE — PLUMMETED INTO PIT CHASM',
         'abyss':              '> CAUSE: EXOSUIT GRAVITATIONAL FAILURE — PLUMMETED INTO PIT CHASM',
     };
-    const cause = causeMap[reason] ?? '> CAUSE: EXOSUIT FAILURE — UNKNOWN EVENT';
+    let cause = causeMap[reason];
+    if (!cause) {
+        if (reason && typeof reason === 'string') {
+            const formatted = reason.toUpperCase().replace(/[-_]/g, ' ');
+            cause = `> CAUSE: EXOSUIT FAILURE — ${formatted}`;
+        } else {
+            cause = '> CAUSE: EXOSUIT FAILURE — SUIT INTEGRITY COLLAPSE';
+        }
+    }
     return [
         `> LAST POS: ${biome} // DIST: ${Math.round(depth)}u // BANKED: ${stats.totalPickups ?? 0}${recoverable} // THREATS: ${stats.snailsKilled ?? 0}`,
         cause
@@ -3348,16 +3367,22 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         const report = isVictory
             ? `> MISSION: ${stats.missionLabel ?? 'COMPLETE'}. RETURNING TO MOTHERSHIP.`
             : generateDeathReport(stats, deathReason);
-        subtitle.textContent = '';
+        subtitle.innerHTML = '';
+        subtitle.style.whiteSpace = 'pre-wrap';
         let charIdx = 0;
         const chars = report.split('');
         const typewriteReport = () => {
             if (charIdx < chars.length && subtitle) {
-                subtitle.textContent += chars[charIdx++];
-                setTimeout(typewriteReport, 12);
+                const char = chars[charIdx++];
+                if (char === '\n') {
+                    subtitle.appendChild(document.createElement('br'));
+                } else {
+                    subtitle.appendChild(document.createTextNode(char));
+                }
+                setTimeout(typewriteReport, 8);
             }
         };
-        setTimeout(typewriteReport, 300);
+        setTimeout(typewriteReport, 250);
     }
 
     // Score + rating
