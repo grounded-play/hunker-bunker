@@ -45,6 +45,7 @@ import {
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
+import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
@@ -9692,6 +9693,7 @@ function spawnSmoke(x, y, count, isVertical = true) {
 const charCards = document.querySelectorAll('.char-card');
 const previewSprite = document.getElementById('char-preview-sprite');
 const previewFallback = document.getElementById('char-preview-fallback');
+const preview3dCanvas = document.getElementById('char-preview-3d');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
 const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -9704,6 +9706,18 @@ let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
 let activePreviewType = 'TANK';
+let scoutHeroPreview = null;
+void createScoutHeroPreview(preview3dCanvas)
+    .then((preview) => {
+        scoutHeroPreview = preview;
+        void preview.setType(activePreviewType);
+        preview.setVisible(true);
+        previewSprite?.classList.add('hidden');
+        previewFallback?.classList.add('hidden');
+    })
+    .catch((error) => {
+        console.warn('[scout-hero-preview] keeping 2D fallback', error);
+    });
 const previewSpriteImages = new Map();
 const PREVIEW_PORTRAITS = Object.freeze({
     SCOUT: '/Scout.full_v2.png',
@@ -9823,10 +9837,14 @@ function syncHeroPreview(type) {
     if (!data) return;
 
     activePreviewType = type;
+    const show3dHero = Boolean(scoutHeroPreview);
+    void scoutHeroPreview?.setType(type);
+    scoutHeroPreview?.setVisible(true);
+    previewSprite?.classList.toggle('hidden', show3dHero);
     if (previewName) previewName.textContent = data.name;
     if (previewFallback) {
         previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
-        previewFallback.classList.remove('hidden');
+        previewFallback.classList.toggle('hidden', show3dHero);
     }
     previewFrameIndex = 0;
     void renderPreviewFrame(type, previewFrameIndex);

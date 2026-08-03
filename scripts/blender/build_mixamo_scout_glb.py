@@ -13,6 +13,7 @@ import bpy
 
 CLIPS = {
     "idle": "Basic Shooter Pack/rifle aiming idle.fbx",
+    "heroIdle": "Female Locomotion Pack/idle.fbx",
     "walk": "Basic Shooter Pack/walking.fbx",
     "run": "Basic Shooter Pack/rifle run.fbx",
     "backward": "Basic Shooter Pack/run backwards.fbx",

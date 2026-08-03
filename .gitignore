@@ -49,6 +49,7 @@ scratch/
 # 3D authoring/reference sources stay local. Only optimized runtime exports
 # (for example public/3d/scouting-scout/Scout.game.glb) belong in Git/builds.
 art/source/mixamo/
+art/source/new3d/
 *.fbx
 *.blend
 *.blend1

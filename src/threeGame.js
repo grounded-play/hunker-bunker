@@ -54,6 +54,7 @@ import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDi
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED, PLAYER_3D_COSMETIC_OVERLAY_ENABLED } from './featureFlags.js';
 import { createPlayer3dOverlay } from './player3dOverlay.js';
+import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -3250,10 +3251,28 @@ export class ThreeGame {
         this.player3dOverlay?.dispose?.();
         this.player3dOverlay = null;
         if (this.playerSprite) this.playerSprite.visible = true;
-        if (!PLAYER_3D_COSMETIC_OVERLAY_ENABLED || this.playerType !== 'SCOUT' || !this.player) return;
+        if (!PLAYER_3D_COSMETIC_OVERLAY_ENABLED || !['SCOUT', 'ENGINEER', 'TANK'].includes(this.playerType) || !this.player) return;
         const playerRoot = this.player;
         try {
-            const overlay = await createPlayer3dOverlay({ targetHeight: this.playerSpriteScale * 0.98 });
+            const classVisuals = {
+                SCOUT: {},
+                ENGINEER: {
+                    modelUrl: '/3d/runtime/engineer-vanguard.glb',
+                    animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                    animationBonePrefix: 'mixamorig',
+                    weaponEnabled: false,
+                },
+                TANK: {
+                    modelUrl: '/3d/runtime/tank-rigged.glb',
+                    animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                    animationBonePrefix: 'mixamorig',
+                    weaponEnabled: false,
+                }
+            };
+            const overlay = await createPlayer3dOverlay({
+                targetHeight: this.playerSpriteScale * 0.98,
+                ...classVisuals[this.playerType]
+            });
             if (this.player !== playerRoot) {
                 overlay.dispose();
                 return;
@@ -3270,6 +3289,21 @@ export class ThreeGame {
             this.playerSprite.visible = false;
         } catch (error) {
             console.warn('[player-3d-overlay] unavailable; keeping the 2D player', error);
+        }
+    }
+
+    async setupEnemy3dCosmeticOverlay(sprite) {
+        if (!sprite?.userData || sprite.userData.enemy3dLoading || sprite.userData.enemy3dVisual) return;
+        sprite.userData.enemy3dLoading = true;
+        try {
+            const visual = await createEnemy3dVisual(sprite.userData.type);
+            if (!visual || sprite.userData.burstTriggered) return;
+            sprite.userData.enemy3dVisual = visual;
+            sprite.visible = false;
+        } catch (error) {
+            console.warn(`[enemy-3d-overlay] ${sprite.userData.type} unavailable; keeping sprite`, error);
+        } finally {
+            sprite.userData.enemy3dLoading = false;
         }
     }
 
@@ -14433,9 +14467,9 @@ export class ThreeGame {
 
     updatePlayerSpriteAnimation(axisX, axisZ, delta, isMoving, moveDirX = 0, moveDirZ = 0) {
         if (this.player3dOverlay) {
-            const show3dScout = this.playerType === 'SCOUT';
-            this.player3dOverlay.root.visible = show3dScout;
-            this.playerSprite.visible = !show3dScout;
+            const show3dCharacter = ['SCOUT', 'ENGINEER', 'TANK'].includes(this.playerType);
+            this.player3dOverlay.root.visible = show3dCharacter;
+            this.playerSprite.visible = !show3dCharacter;
             const visualMoving = isMoving || this.isDashing;
             const visualMoveX = this.isDashing ? this.dashDirX : moveDirX;
             const visualMoveZ = this.isDashing ? this.dashDirZ : moveDirZ;
@@ -18581,6 +18615,7 @@ export class ThreeGame {
                 chargeDirZ: 0,
                 attackCooldown: 0
             };
+            this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
 
@@ -18716,6 +18751,7 @@ export class ThreeGame {
             if (isPreEnraged && !isBoss) {
                 clonedMat.color.setHex(SNAIL_ENRAGED_TINT);
             }
+            this.setupEnemy3dCosmeticOverlay(sprite);
             return sprite;
         }
 
@@ -21669,6 +21705,9 @@ export class ThreeGame {
         for (const child of this.scatterSprites) {
             const baseY = child.userData.elevationOffset ?? 0;
             child.userData.baseY = baseY;
+            if (child.userData.enemy3dVisual) {
+                updateEnemy3dVisual(child.userData.enemy3dVisual, child, delta, time);
+            }
             if (!child.userData.burstTriggered && child.material) {
                 child.material.opacity = child.userData.baseOpacity ?? 1;
             }
@@ -21768,6 +21807,7 @@ export class ThreeGame {
                     child.material.opacity = child.userData.baseOpacity * (1 - fadeT);
 
                     if (fadeT >= 1) {
+                        disposeEnemy3dVisual(child.userData.enemy3dVisual);
                         child.parent?.remove(child);
                         child.material?.dispose?.();
                         child.geometry?.dispose?.();
@@ -21787,6 +21827,7 @@ export class ThreeGame {
                     child.material.opacity = child.userData.baseOpacity * (1 - fadeT);
 
                     if (fadeT >= 1) {
+                        disposeEnemy3dVisual(child.userData.enemy3dVisual);
                         child.parent?.remove(child);
                         child.material?.dispose?.();
                         child.geometry?.dispose?.();

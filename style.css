@@ -1887,6 +1887,17 @@ body {
   transform: translateY(calc(var(--vu) * 0.25)) scale(1.3);
 }
 
+#char-preview-3d {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  filter:
+    drop-shadow(0 0 18px var(--sprite-glow, rgba(125, 255, 90, 0.28)))
+    drop-shadow(0 calc(var(--vu) * 0.7) calc(var(--vu) * 1.2) rgba(0, 0, 0, 0.6));
+}
+
 .char-preview-fallback {
   position: absolute;
   inset: 4% 8% 0;

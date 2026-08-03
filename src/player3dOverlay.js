@@ -3,13 +3,47 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { assetUrl } from './assetUrl.js';
 
 const MODEL_URL = '/3d/scouting-scout/Scout.game.glb';
+const WEAPON_URL = '/3d/GG.1.glb';
 
-const ONE_SHOTS = new Set(['fire', 'hit', 'land']);
+const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land']);
+const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
+let weaponTemplatePromise = null;
+
+async function createGg1Weapon() {
+    weaponTemplatePromise ??= new GLTFLoader().loadAsync(assetUrl(WEAPON_URL));
+    const template = await weaponTemplatePromise;
+    const weapon = template.scene.clone(true);
+    weapon.name = 'ScoutGG1';
+    weapon.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(weapon);
+    const size = bounds.getSize(new THREE.Vector3());
+    const scale = 0.62 / Math.max(size.x, size.y, size.z);
+    weapon.scale.multiplyScalar(scale);
+    // Preserve the hand-alignment turn and rotate the flat source around its
+    // remaining axis so the weapon sits upright in the Scout's grip.
+    weapon.rotation.set(0, -Math.PI / 2, -Math.PI / 2);
+    // Pull the grip inward toward the right palm. Rotation is intentionally
+    // kept separate so placement can be tuned without re-tilting the model.
+    weapon.position.set(0.03, 0.02, -0.10);
+    weapon.traverse((object) => {
+        if (!object.isMesh) return;
+        object.castShadow = true;
+        object.frustumCulled = false;
+    });
+    return weapon;
+}
 
 export function computeOverlayYaw(directionX, directionZ) {
     if (Math.hypot(directionX, directionZ) < 1e-5) return 0;
     // Mixamo characters face +Z after FBXLoader's axis conversion.
     return Math.atan2(directionX, directionZ);
+}
+
+export function computeUpperBodyAimOffset(rootYaw, aimX, aimZ, maxTurn = Math.PI / 2) {
+    if (Math.hypot(aimX, aimZ) < 1e-5) return 0;
+    const aimYaw = computeOverlayYaw(aimX, aimZ);
+    const offset = Math.atan2(Math.sin(aimYaw - rootYaw), Math.cos(aimYaw - rootYaw));
+    return THREE.MathUtils.clamp(offset, -maxTurn, maxTurn);
 }
 
 export function selectOverlayAnimation({
@@ -42,6 +76,60 @@ export function selectOverlayAnimation({
     return isSprinting ? 'run' : 'walk';
 }
 
+export function computeLocomotionWeights(state = {}) {
+    if (state.isFalling) return { fall: 1 };
+    if (!state.isMoving) return { idle: 1 };
+    if (!state.hasAim) return { [state.isSprinting ? 'run' : 'walk']: 1 };
+
+    const moveLength = Math.hypot(state.moveX ?? 0, state.moveZ ?? 0) || 1;
+    const aimLength = Math.hypot(state.aimX ?? 0, state.aimZ ?? 1) || 1;
+    const mx = (state.moveX ?? 0) / moveLength;
+    const mz = (state.moveZ ?? 0) / moveLength;
+    const ax = (state.aimX ?? 0) / aimLength;
+    const az = (state.aimZ ?? 1) / aimLength;
+    const forward = mx * ax + mz * az;
+    const side = ax * mz - az * mx;
+    const directional = {
+        [state.isSprinting ? 'run' : 'walk']: Math.max(0, forward),
+        backward: Math.max(0, -forward),
+        strafeLeft: Math.max(0, side),
+        strafeRight: Math.max(0, -side)
+    };
+    const total = Object.values(directional).reduce((sum, weight) => sum + weight, 0) || 1;
+    const weights = { idle: 0.15 };
+    for (const [name, weight] of Object.entries(directional)) {
+        if (weight > 1e-4) weights[name] = (weight / total) * 0.85;
+    }
+    return weights;
+}
+
+function makeClipInPlace(source) {
+    const clip = source.clone();
+    for (const track of clip.tracks) {
+        if (!/Hips\.position$/i.test(track.name) || track.getValueSize() !== 3) continue;
+        // Mixamo's imported armature stores planar travel on local X/Y and
+        // vertical body motion on local Z. Keep the vertical bob, but remove
+        // authored travel so the cosmetic stays on the authoritative player.
+        // Preserve each channel's starting offset; zeroing it would displace
+        // the skeleton from its bind position.
+        const anchorX = track.values[0];
+        const anchorY = track.values[1];
+        for (let index = 0; index < track.values.length; index += 3) {
+            track.values[index] = anchorX;
+            track.values[index + 1] = anchorY;
+        }
+    }
+    return clip;
+}
+
+function retargetMixamoClip(source, fromPrefix, toPrefix) {
+    const clip = source.clone();
+    for (const track of clip.tracks) {
+        track.name = track.name.replace(fromPrefix, toPrefix);
+    }
+    return clip;
+}
+
 function normalizeModel(root, targetHeight) {
     root.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(root);
@@ -55,9 +143,21 @@ function normalizeModel(root, targetHeight) {
     return scale;
 }
 
-export async function createPlayer3dOverlay({ targetHeight = 1.55 } = {}) {
+export async function createPlayer3dOverlay({
+    targetHeight = 1.55,
+    idleActionName = 'idle',
+    weaponVisible = true,
+    weaponEnabled = true,
+    modelUrl = MODEL_URL,
+    animationModelUrl = null,
+    animationBonePrefix = null,
+    allowStatic = false
+} = {}) {
     const loader = new GLTFLoader();
-    const gltf = await loader.loadAsync(assetUrl(MODEL_URL));
+    const [gltf, animationGltf] = await Promise.all([
+        loader.loadAsync(assetUrl(modelUrl)),
+        animationModelUrl ? loader.loadAsync(assetUrl(animationModelUrl)) : Promise.resolve(null)
+    ]);
     const root = gltf.scene;
     root.name = 'Scout3dCosmeticOverlay';
     normalizeModel(root, targetHeight);
@@ -70,9 +170,42 @@ export async function createPlayer3dOverlay({ targetHeight = 1.55 } = {}) {
         object.renderOrder = 7;
     });
 
+    let rightHand = root.getObjectByName('mixamorig1:RightHand')
+        ?? root.getObjectByName('mixamorig1RightHand');
+    if (!rightHand) {
+        root.traverse((object) => {
+            if (!rightHand && /RightHand$/.test(object.name)) rightHand = object;
+        });
+    }
+    const weapon = weaponEnabled && rightHand ? await createGg1Weapon() : null;
+    if (weapon) {
+        // The Mixamo rig is authored in centimeters and normalized by scaling
+        // its armature. Compensate for the hand's complete inherited scale so
+        // the meter-scale GG1 is not shrunk again as a bone child.
+        root.updateMatrixWorld(true);
+        const handWorldScale = rightHand.getWorldScale(new THREE.Vector3());
+        const inverseHandScale = 1 / Math.max(
+            Math.abs(handWorldScale.x),
+            Math.abs(handWorldScale.y),
+            Math.abs(handWorldScale.z),
+            1e-6
+        );
+        weapon.scale.multiplyScalar(inverseHandScale);
+        weapon.position.multiplyScalar(inverseHandScale);
+        weapon.visible = weaponVisible;
+        rightHand.add(weapon);
+    } else if (weaponEnabled) {
+        console.warn('[player-3d-overlay] GG1 could not find Scout right-hand bone');
+    }
+
     const mixer = new THREE.AnimationMixer(root);
     const actions = new Map();
-    for (const clip of gltf.animations) {
+    const sourceAnimations = animationGltf?.animations ?? gltf.animations;
+    for (const sourceClip of sourceAnimations) {
+        const retargeted = animationBonePrefix
+            ? retargetMixamoClip(sourceClip, 'mixamorig1', animationBonePrefix)
+            : sourceClip;
+        const clip = makeClipInPlace(retargeted);
         const action = mixer.clipAction(clip);
         if (ONE_SHOTS.has(clip.name)) {
             action.setLoop(THREE.LoopOnce, 1);
@@ -80,49 +213,104 @@ export async function createPlayer3dOverlay({ targetHeight = 1.55 } = {}) {
         }
         actions.set(clip.name, action);
     }
-    if (!actions.has('idle')) throw new Error('Scout GLB is missing its idle animation');
-    let currentName = null;
-    let currentAction = null;
+    if (!actions.has(idleActionName) && !allowStatic) {
+        throw new Error(`Character GLB is missing its ${idleActionName} animation`);
+    }
+    const idleActions = [...new Set(['idle', 'heroIdle', idleActionName])].filter((name) => actions.has(name));
+    const blendableActions = [
+        ...idleActions,
+        ...BLENDABLE_ACTIONS.filter((name) => name !== 'idle')
+    ];
     let forcedName = null;
     let forcedTimer = 0;
-
-    function transition(name, fadeSeconds = 0.16) {
-        const next = actions.get(name) ?? actions.get('idle');
-        if (!next || (currentName === name && currentAction === next)) return;
-        next.reset().fadeIn(fadeSeconds).play();
-        currentAction?.fadeOut(fadeSeconds);
-        currentAction = next;
-        currentName = name;
+    let wasFalling = false;
+    let wasReloading = false;
+    let upperBodyTurn = 0;
+    const upperBodyBones = ['Spine', 'Spine1'].map((suffix) => {
+        let match = null;
+        root.traverse((object) => {
+            if (!match && object.isBone && object.name.endsWith(suffix)) match = object;
+        });
+        return match;
+    }).filter(Boolean);
+    const smoothedWeights = Object.fromEntries([...actions.keys()].map((name) => [name, 0]));
+    for (const name of blendableActions) {
+        actions.get(name)?.setEffectiveWeight(0).play();
     }
-
-    transition('idle', 0);
 
     return {
         root,
         actions,
+        weapon,
+        setWeaponVisible(visible) {
+            if (weapon) weapon.visible = Boolean(visible);
+        },
         trigger(name, duration = null) {
             if (!actions.has(name)) return;
             forcedName = name;
             forcedTimer = duration ?? actions.get(name).getClip().duration;
-            if (currentName === name) {
-                actions.get(name).reset().play();
-                return;
-            }
-            transition(name, 0.06);
+            actions.get(name).reset().setEffectiveWeight(0).play();
         },
         update(delta, state) {
-            const facingX = state.hasAim ? state.aimX : state.moveX;
-            const facingZ = state.hasAim ? state.aimZ : state.moveZ;
+            // Hips and legs follow travel. When stationary, the whole body can
+            // settle toward aim instead of leaving the operator twisted.
+            const followMovement = state.isMoving && Math.hypot(state.moveX, state.moveZ) > 1e-4;
+            const facingX = followMovement ? state.moveX : (state.hasAim ? state.aimX : state.moveX);
+            const facingZ = followMovement ? state.moveZ : (state.hasAim ? state.aimZ : state.moveZ);
             if (Math.hypot(facingX, facingZ) > 1e-4) {
-                root.rotation.y = computeOverlayYaw(facingX, facingZ);
+                const targetYaw = computeOverlayYaw(facingX, facingZ);
+                const yawDelta = Math.atan2(
+                    Math.sin(targetYaw - root.rotation.y),
+                    Math.cos(targetYaw - root.rotation.y)
+                );
+                root.rotation.y += yawDelta * (1 - Math.exp(-delta * 14));
             }
+            if (wasFalling && !state.isFalling) this.trigger('land');
+            if (!wasReloading && state.isReloading) this.trigger('reload');
+            wasFalling = Boolean(state.isFalling);
+            wasReloading = Boolean(state.isReloading);
             if (forcedTimer > 0) {
                 forcedTimer = Math.max(0, forcedTimer - delta);
-                if (forcedTimer === 0) forcedName = null;
+                if (forcedTimer === 0) {
+                    actions.get(forcedName)?.fadeOut(0.1);
+                    forcedName = null;
+                }
             }
-            const desired = forcedName ?? selectOverlayAnimation(state);
-            transition(desired);
+            const targets = computeLocomotionWeights(state);
+            const locomotionScale = forcedName && !state.isFalling ? 0.62 : 1;
+            const activeIdleAction = actions.has(state.idleActionName)
+                ? state.idleActionName
+                : idleActionName;
+            for (const name of blendableActions) {
+                const isIdleAction = idleActions.includes(name);
+                const targetKey = isIdleAction ? 'idle' : name;
+                const idleEnabled = !isIdleAction || name === activeIdleAction;
+                const target = (targets[targetKey] ?? 0) * locomotionScale * (idleEnabled ? 1 : 0);
+                smoothedWeights[name] = THREE.MathUtils.damp(
+                    smoothedWeights[name] ?? 0,
+                    target,
+                    14,
+                    delta
+                );
+                actions.get(name)?.setEffectiveWeight(smoothedWeights[name]);
+            }
+            if (forcedName) {
+                const forcedAction = actions.get(forcedName);
+                const forcedWeight = THREE.MathUtils.damp(
+                    forcedAction.getEffectiveWeight(),
+                    state.isFalling ? 0 : 1,
+                    18,
+                    delta
+                );
+                forcedAction.setEffectiveWeight(forcedWeight);
+            }
             mixer.update(delta);
+            const targetUpperBodyTurn = followMovement && state.hasAim
+                ? computeUpperBodyAimOffset(root.rotation.y, state.aimX, state.aimZ)
+                : 0;
+            upperBodyTurn = THREE.MathUtils.damp(upperBodyTurn, targetUpperBodyTurn, 12, delta);
+            const turnPerBone = upperBodyTurn / Math.max(upperBodyBones.length, 1);
+            for (const bone of upperBodyBones) bone.rotation.y += turnPerBone;
         },
         dispose() {
             mixer.stopAllAction();

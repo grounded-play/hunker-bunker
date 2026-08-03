@@ -11,9 +11,9 @@ export async function createScoutHeroPreview(canvas) {
     renderer.toneMappingExposure = 1.08;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(31, 1, 0.01, 30);
-    camera.position.set(2.7, 1.8, 3.8);
-    camera.lookAt(0, 0.82, 0);
+    const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 30);
+    camera.position.set(2.75, 1.35, 4.0);
+    camera.lookAt(0, 1.05, 0);
     scene.add(new THREE.HemisphereLight(0xdaf4ff, 0x18202a, 2.15));
     const key = new THREE.DirectionalLight(0xffffff, 3.1);
     key.position.set(3, 5, 4);
@@ -22,10 +22,53 @@ export async function createScoutHeroPreview(canvas) {
     rim.position.set(-3, 2, -2);
     scene.add(rim);
 
-    const overlay = await createPlayer3dOverlay({ targetHeight: 1.72 });
-    overlay.root.position.y += 0.06;
-    overlay.root.rotation.y = -0.28;
+    let activeType = 'SCOUT';
+    let overlay = await createPlayer3dOverlay({
+        targetHeight: 2.05,
+        idleActionName: 'heroIdle',
+        weaponVisible: false
+    });
+    // Keep the portrait centered on the Scout's face and upper torso instead
+    // of letting the bottom of the preview window swallow the model.
+    overlay.root.position.y += 0.04;
+    overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
     scene.add(overlay.root);
+    let loadGeneration = 0;
+
+    async function setType(type) {
+        const nextType = ['SCOUT', 'ENGINEER', 'TANK'].includes(type) ? type : 'SCOUT';
+        const generation = ++loadGeneration;
+        if (nextType === activeType) return;
+        const configs = {
+            SCOUT: { idleActionName: 'heroIdle', weaponVisible: false },
+            ENGINEER: {
+                modelUrl: '/3d/runtime/engineer-vanguard.glb',
+                animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
+                animationBonePrefix: 'mixamorig',
+                idleActionName: 'heroIdle',
+                weaponEnabled: false,
+            },
+            TANK: {
+                modelUrl: '/3d/runtime/tank-rigged.glb',
+                idleActionName: 'Armature|mixamo.com|Layer0',
+                weaponEnabled: false,
+            }
+        };
+        const nextOverlay = await createPlayer3dOverlay({ targetHeight: 2.05, ...configs[nextType] });
+        if (disposed || generation !== loadGeneration) {
+            nextOverlay.dispose();
+            return;
+        }
+        overlay.root.removeFromParent();
+        overlay.dispose();
+        overlay = nextOverlay;
+        activeType = nextType;
+        weaponReady = false;
+        idleState.idleActionName = nextType === 'SCOUT' ? 'heroIdle' : configs[nextType].idleActionName;
+        overlay.root.position.y += 0.04;
+        overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
+        scene.add(overlay.root);
+    }
 
     let visible = false;
     let disposed = false;
@@ -40,9 +83,13 @@ export async function createScoutHeroPreview(canvas) {
         hasAim: true,
         moveX: 0,
         moveZ: 1,
-        aimX: -0.22,
-        aimZ: 1
+        // Match the preview camera's planar position so the operator faces us.
+        aimX: camera.position.x,
+        aimZ: camera.position.z,
+        idleActionName: 'heroIdle'
     };
+    let nextReadyChangeAt = performance.now() + 4200;
+    let weaponReady = false;
 
     const render = (time) => {
         if (disposed || !visible || document.hidden) {
@@ -51,6 +98,16 @@ export async function createScoutHeroPreview(canvas) {
         }
         const delta = Math.min((time - previousTime) / 1000, 0.05);
         previousTime = time;
+        if (activeType === 'SCOUT' && time >= nextReadyChangeAt) {
+            weaponReady = !weaponReady;
+            overlay.setWeaponVisible(weaponReady);
+            idleState.idleActionName = weaponReady ? 'idle' : 'heroIdle';
+            nextReadyChangeAt = time + (weaponReady ? 3200 : 5200);
+        }
+        const cameraYaw = Math.atan2(camera.position.x, camera.position.z);
+        const lookOffset = weaponReady ? Math.sin(time * 0.0009) * 0.16 : 0;
+        idleState.aimX = Math.sin(cameraYaw + lookOffset);
+        idleState.aimZ = Math.cos(cameraYaw + lookOffset);
         overlay.update(delta, idleState);
         renderer.render(scene, camera);
         frame = requestAnimationFrame(render);
@@ -81,6 +138,7 @@ export async function createScoutHeroPreview(canvas) {
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return {
+        setType,
         setVisible(nextVisible) {
             visible = Boolean(nextVisible);
             canvas.classList.toggle('hidden', !visible);
@@ -99,4 +157,3 @@ export async function createScoutHeroPreview(canvas) {
         }
     };
 }
-
