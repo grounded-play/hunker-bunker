@@ -219,9 +219,16 @@ export const ROOM_THEME_CATALOG = Object.freeze([
         wallStyle: 'camp-fortified',
         floorStyle: 'camp',
         doorStyle: 'camp',
-        signatureProps: ['prop_camp_crates'],
-        largeProps: ['prop_camp_sandbags', 'scatter_broken_drone'],
-        smallProps: ['scatter_cable_coil', 'scatter_camp_supplies', 'prop_blood_trail', 'decal_bullet_holes', 'decal_tallow_symbol', 'decal_footprints_mud', 'decal_meridian_stencil'],
+        signatureProps: ['prop_camp_crates', 'prop_camp_cookfire_lit'],
+        largeProps: [
+            'prop_camp_sandbags', 'scatter_broken_drone', 'prop_camp_cot',
+            'prop_camp_crate', 'prop_camp_cookfire_doused'
+        ],
+        smallProps: [
+            'prop_camp_bedrolls', 'scatter_cable_coil', 'scatter_bolts', 'scatter_camp_supplies',
+            'prop_blood_trail', 'decal_bullet_holes', 'decal_tallow_symbol',
+            'decal_footprints_mud', 'decal_meridian_stencil'
+        ],
         ambientProps: LIVED_IN_DECALS.camp,
         rareProps: ['decal_tallow_herb_cache', 'prop_iron_guild_dogtags'],
         encounterProfile: 'safe'

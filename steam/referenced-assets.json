@@ -181,11 +181,14 @@
     "decal_footprints_mud.png",
     "decal_hazard_stripes.png",
     "decal_hive_growth.png",
+    "decal_machine_cult_shrine.png",
     "decal_maintenance_shrine.png",
     "decal_meridian_stencil.png",
     "decal_oil_spill_patch.png",
+    "decal_pod_312_breach.png",
     "decal_scars.png",
     "decal_spore_growth_patch.png",
+    "decal_tallow_herb_cache.png",
     "decal_tallow_symbol.png",
     "decal_wall_breach.png",
     "decal_worker_sleep_roll.png",
@@ -288,6 +291,8 @@
     "prop_camp_bedrolls.png",
     "prop_camp_cookfire_doused.png",
     "prop_camp_cookfire_lit.png",
+    "prop_camp_cot.png",
+    "prop_camp_crate.png",
     "prop_camp_crates.png",
     "prop_camp_crates_chained.png",
     "prop_camp_grave_fresh.png",
@@ -310,7 +315,8 @@
     "prop_diagnostic_console.png",
     "prop_engineering_bench.png",
     "prop_fusion_generator.png",
-    "prop_hive_resin_sac.svg",
+    "prop_hive_resin_sac.png",
+    "prop_iron_guild_dogtags.png",
     "prop_medical_bed.png",
     "prop_ruptured_coolant_pump.png",
     "prop_security_barricade.png",
@@ -325,15 +331,16 @@
     "scatter_bio_moss.png",
     "scatter_bio_pod.png",
     "scatter_biomech_debris.png",
-    "scatter_bolts.svg",
+    "scatter_bolts.png",
     "scatter_broken_drone.png",
-    "scatter_cable_coil.svg",
+    "scatter_cable_coil.png",
     "scatter_camp_supplies.png",
     "scatter_coolant_puddle.png",
     "scatter_cryo_icicle.png",
     "scatter_cryo_shards.png",
     "scatter_gravel.png",
     "scatter_hive_eggs.png",
+    "scatter_horizon_black_box.png",
     "scatter_ice_stalagmite.png",
     "scatter_slime_puddle.png",
     "schematics/schematic_00.webp",
@@ -3745,22 +3752,32 @@
     },
     {
       "path": "prop_camp_bedrolls.png",
-      "bytes": 38700,
+      "bytes": 148251,
       "classification": "runtime-required"
     },
     {
       "path": "prop_camp_cookfire_doused.png",
-      "bytes": 32389,
+      "bytes": 161490,
       "classification": "runtime-required"
     },
     {
       "path": "prop_camp_cookfire_lit.png",
-      "bytes": 92531,
+      "bytes": 164302,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_cot.png",
+      "bytes": 153989,
       "classification": "runtime-required"
     },
     {
       "path": "prop_camp_cot.svg",
       "bytes": 1476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_crate.png",
+      "bytes": 205681,
       "classification": "runtime-required"
     },
     {
@@ -3879,6 +3896,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_hive_resin_sac.png",
+      "bytes": 176610,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_hive_resin_sac.svg",
       "bytes": 1505,
       "classification": "runtime-required"
@@ -3964,6 +3986,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "scatter_bolts.png",
+      "bytes": 100716,
+      "classification": "runtime-required"
+    },
+    {
       "path": "scatter_bolts.svg",
       "bytes": 1796,
       "classification": "runtime-required"
@@ -3971,6 +3998,11 @@
     {
       "path": "scatter_broken_drone.png",
       "bytes": 1924746,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_cable_coil.png",
+      "bytes": 144934,
       "classification": "runtime-required"
     },
     {

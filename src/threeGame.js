@@ -337,10 +337,13 @@ const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_alien_feeding_basin: '/prop_alien_feeding_basin.png'
 });
 const FLOOR_OVERLAY_TYPES = new Set([
+    'scatter_bolts',
+    'scatter_cable_coil',
     'scatter_coolant_puddle',
     'scatter_slime_puddle',
     'scatter_bio_moss',
     'scatter_horizon_black_box',
+    'prop_camp_bedrolls',
     'prop_blood_trail',
     'prop_iron_guild_dogtags'
 ]);
@@ -1707,11 +1710,11 @@ export class ThreeGame {
             scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
             scatter_cryo_shards: this.loadScatterTexture('/scatter_cryo_shards.png', textureLoader),
             scatter_bio_moss: this.loadScatterTexture('/scatter_bio_moss.png', textureLoader),
-            scatter_cable_coil: this.loadScatterTexture('/scatter_cable_coil.svg', textureLoader),
-            scatter_bolts: this.loadScatterTexture('/scatter_bolts.svg', textureLoader),
+            scatter_cable_coil: this.loadScatterTexture('/scatter_cable_coil.png', textureLoader),
+            scatter_bolts: this.loadScatterTexture('/scatter_bolts.png', textureLoader),
             body_human_frozen_suit: this.loadScatterTexture('/body_human_frozen_suit.svg', textureLoader),
             body_empty_exosuit: this.loadScatterTexture('/body_empty_exosuit.svg', textureLoader),
-            prop_hive_resin_sac: this.loadScatterTexture('/prop_hive_resin_sac.svg', textureLoader),
+            prop_hive_resin_sac: this.loadScatterTexture('/prop_hive_resin_sac.png', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
             lore_terminal: this.loadKeyedSpriteTexture('/console.png', 15),
             pit_hole: this.loadScatterTexture('/pit_hole.png', textureLoader),
@@ -1748,6 +1751,10 @@ export class ThreeGame {
             prop_cave_queen_throne: this.loadKeyedSpriteTexture('/prop_cave_queen_throne.png', 14),
             prop_camp_sandbags: this.loadKeyedSpriteTexture('/prop_camp_sandbags.png', 14),
             prop_camp_crates: this.loadKeyedSpriteTexture('/prop_camp_crates.png', 14),
+            prop_camp_bedrolls: this.loadKeyedSpriteTexture('/prop_camp_bedrolls.png', 14),
+            prop_camp_cookfire_doused: this.loadKeyedSpriteTexture('/prop_camp_cookfire_doused.png', 14),
+            prop_camp_cot: this.loadKeyedSpriteTexture('/prop_camp_cot.png', 14),
+            prop_camp_crate: this.loadKeyedSpriteTexture('/prop_camp_crate.png', 14),
             drop_horizon_badge: this.loadKeyedSpriteTexture('/drop_horizon_badge.png', 14),
             drop_dig_manifest: this.loadKeyedSpriteTexture('/drop_dig_manifest.png', 14),
             drop_security_log: this.loadKeyedSpriteTexture('/drop_security_log.png', 14),

@@ -42,6 +42,31 @@ describe('floor overlays', () => {
         game.floorGeometry.dispose();
         texture.dispose();
     });
+
+    it('lays survival-pack bolts, cable coils, and bedrolls flat', () => {
+        for (const type of ['scatter_bolts', 'scatter_cable_coil', 'prop_camp_bedrolls']) {
+            const texture = new THREE.Texture();
+            const geometry = new THREE.PlaneGeometry(1, 1);
+            const overlay = ThreeGame.prototype.createScatterInstance.call({
+                floorGeometry: geometry,
+                scatterTextures: { [type]: texture }
+            }, {
+                type,
+                x: 1,
+                z: 2,
+                scale: 1,
+                rotation: 0,
+                elevation: 0.01,
+                scatterKey: `pack:${type}`,
+                groupType: 'prop'
+            });
+            expect(overlay.userData.isFloorOverlay, type).toBe(true);
+            expect(overlay.rotation.x, type).toBeCloseTo(-Math.PI / 2);
+            overlay.material.dispose();
+            geometry.dispose();
+            texture.dispose();
+        }
+    });
 });
 
 describe('automatic doors', () => {
