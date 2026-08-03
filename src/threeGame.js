@@ -16574,16 +16574,28 @@ export class ThreeGame {
                     statusBar.position.y = 0.42;
                     doorMesh.add(statusBar);
                     doorMesh.userData.proceduralDoorStatusMaterial = statusMaterial;
-                    const doorWorldMatrix = new THREE.Matrix4().compose(
-                        new THREE.Vector3(worldX, 0, worldZ),
-                        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, horizontal ? 0 : Math.PI / 2, 0)),
-                        new THREE.Vector3(1, 1, 1)
+                    // Pure translation: doorMesh itself carries no rotation in the
+                    // original code (only individual sub-parts reorient their own
+                    // footprint), so this must never rotate — only place the door.
+                    const doorWorldMatrix = new THREE.Matrix4().makeTranslation(
+                        worldX,
+                        doorMesh.userData.closedY,
+                        worldZ
                     );
                     for (const ribOffset of [-0.28, 0, 0.28]) {
                         const localX = horizontal ? ribOffset : 0;
                         const localZ = horizontal ? 0 : ribOffset;
+                        // Each rib's own footprint rotation lives here, in its local
+                        // matrix, decoupled from doorWorldMatrix's translation-only
+                        // placement (matches original rib.rotation.y behavior, which
+                        // reoriented the rib's box without repositioning it).
+                        const ribLocalMatrix = new THREE.Matrix4().compose(
+                            new THREE.Vector3(localX, 0, localZ),
+                            new THREE.Quaternion().setFromEuler(new THREE.Euler(0, horizontal ? 0 : Math.PI / 2, 0)),
+                            new THREE.Vector3(1, 1, 1)
+                        );
                         const ribMatrix = new THREE.Matrix4()
-                            .multiplyMatrices(doorWorldMatrix, new THREE.Matrix4().makeTranslation(localX, 0.42, localZ));
+                            .multiplyMatrices(doorWorldMatrix, ribLocalMatrix);
                         doorRibMatrices.push(ribMatrix);
                     }
 
@@ -16964,6 +16976,10 @@ export class ThreeGame {
             group.add(pipePool);
         }
 
+        // KNOWN GAP: ribs don't animate with door open/close (see task-5 review,
+        // docs/superpowers/sdd/2026-08-02-wall-door-instancing/task-5-report.md)
+        // — consider updating ribPool.instanceMatrix per-frame in the door
+        // animation loop, or reverting ribs to individual meshes, as a follow-up.
         if (doorRibMatrices.length > 0) {
             const ribGeometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
             const ribMaterial = new THREE.MeshStandardMaterial({ color: 0x11161b, roughness: 0.3, metalness: 0.92 });
