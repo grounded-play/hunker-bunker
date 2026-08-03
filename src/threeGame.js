@@ -3279,13 +3279,14 @@ export class ThreeGame {
                     modelUrl: '/3d/runtime/engineer-vanguard.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
-                    weaponEnabled: false,
+                    weaponEnabled: true,
                 },
                 TANK: {
                     modelUrl: '/3d/runtime/tank-rigged.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
-                    weaponEnabled: true
+                    weaponEnabled: true,
+                    weaponMount: { position: [0.03, 0.02, 0.03] }
                 }
             };
             const overlay = await createPlayer3dOverlay({

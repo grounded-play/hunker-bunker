@@ -46,7 +46,8 @@ export async function createScoutHeroPreview(canvas) {
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'heroIdle',
-                weaponEnabled: false,
+                weaponVisible: false,
+                weaponEnabled: true,
             },
             TANK: {
                 modelUrl: '/3d/runtime/tank-rigged.glb',
@@ -54,7 +55,8 @@ export async function createScoutHeroPreview(canvas) {
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'heroIdle',
                 weaponVisible: false,
-                weaponEnabled: true
+                weaponEnabled: true,
+                weaponMount: { position: [0.03, 0.02, 0.03] }
             }
         };
         const nextOverlay = await createPlayer3dOverlay({ targetHeight: 2.05, ...configs[nextType] });
@@ -103,12 +105,12 @@ export async function createScoutHeroPreview(canvas) {
         previousTime = time;
         if (time >= nextReadyChangeAt) {
             weaponReady = !weaponReady;
-            overlay.setWeaponVisible(weaponReady && activeType !== 'ENGINEER');
+            overlay.setWeaponVisible(weaponReady);
             idleState.idleActionName = weaponReady ? 'idle' : 'heroIdle';
             nextReadyChangeAt = time + (weaponReady ? 3200 : 5200);
         }
         const cameraYaw = Math.atan2(camera.position.x, camera.position.z);
-        const lookOffset = weaponReady && activeType !== 'ENGINEER'
+        const lookOffset = weaponReady
             ? Math.sin(time * 0.0009) * 0.16
             : 0;
         idleState.aimX = Math.sin(cameraYaw + lookOffset);

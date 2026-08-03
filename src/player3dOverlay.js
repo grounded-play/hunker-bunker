@@ -18,7 +18,7 @@ function loadCharacterTemplate(url) {
     return characterTemplates.get(url);
 }
 
-async function createGg1Weapon() {
+async function createGg1Weapon({ position = [0.03, 0.02, -0.10] } = {}) {
     weaponTemplatePromise ??= new GLTFLoader().loadAsync(assetUrl(WEAPON_URL));
     const template = await weaponTemplatePromise;
     const weapon = template.scene.clone(true);
@@ -33,7 +33,7 @@ async function createGg1Weapon() {
     weapon.rotation.set(0, -Math.PI / 2, -Math.PI / 2);
     // Pull the grip inward toward the right palm. Rotation is intentionally
     // kept separate so placement can be tuned without re-tilting the model.
-    weapon.position.set(0.03, 0.02, -0.10);
+    weapon.position.fromArray(position);
     weapon.traverse((object) => {
         if (!object.isMesh) return;
         object.castShadow = true;
@@ -169,6 +169,7 @@ export async function createPlayer3dOverlay({
     idleActionName = 'idle',
     weaponVisible = true,
     weaponEnabled = true,
+    weaponMount = undefined,
     modelUrl = MODEL_URL,
     animationModelUrl = null,
     animationBonePrefix = null,
@@ -201,7 +202,7 @@ export async function createPlayer3dOverlay({
             if (!rightHand && /RightHand$/.test(object.name)) rightHand = object;
         });
     }
-    const weapon = weaponEnabled && rightHand ? await createGg1Weapon() : null;
+    const weapon = weaponEnabled && rightHand ? await createGg1Weapon(weaponMount) : null;
     if (weapon) {
         // The Mixamo rig is authored in centimeters and normalized by scaling
         // its armature. Compensate for the hand's complete inherited scale so
