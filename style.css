@@ -1216,15 +1216,15 @@ body {
   padding: calc(var(--vu) * 3.8) calc(var(--vu) * 4.2);
   z-index: 8000;
   display: grid;
-  grid-template-columns: calc(var(--vu) * 28) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: calc(var(--vu) * 4.2) minmax(0, 1fr) auto;
   gap: calc(var(--vu) * 1) calc(var(--vu) * 1.25);
   overflow: hidden;
   /* Keep the interactive console inside the inner face of the background frame. */
   --briefing-content-top: calc(var(--vu) * 9.4);
   --briefing-content-bottom: calc(var(--vu) * 9.4);
-  --briefing-content-left: calc(var(--vu) * 12.2);
-  --briefing-content-right: calc(var(--vu) * 9.4);
+  --briefing-content-left: calc(var(--vu) * 15.2);
+  --briefing-content-right: calc(var(--vu) * 12.4);
 }
 
 .header-bar {
@@ -1287,7 +1287,7 @@ body {
   text-align: left;
 }
 
-.menu-command-column:nth-of-type(3)::before {
+.menu-command-column:nth-of-type(2)::before {
   content: 'RECORDS + STEAM';
 }
 
@@ -1366,7 +1366,7 @@ body {
   position: absolute;
   left: calc(var(--vu) * 0.3);
   bottom: 0;
-  width: calc(var(--vu) * 21);
+  width: calc(var(--vu) * 10.5);
   height: 1px;
   background: var(--border-subtle);
 }
@@ -1377,7 +1377,11 @@ body {
   color: var(--accent-primary);
   letter-spacing: 1px;
   white-space: nowrap;
-  line-height: 0.72;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.28);
+  width: max-content;
+  line-height: 0.88;
 }
 
 .title-small span {
@@ -1487,12 +1491,12 @@ body {
 }
 
 .main-layout {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 2;
   display: grid;
   width: 100%;
   align-items: stretch;
-  padding: var(--briefing-content-top) var(--briefing-content-right) var(--briefing-content-bottom) 0;
+  padding: var(--briefing-content-top) var(--briefing-content-right) var(--briefing-content-bottom) var(--briefing-content-left);
   min-height: 0;
   margin: 0;
   overflow: hidden;
@@ -1514,7 +1518,7 @@ body {
 
 .module-row {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.82fr) minmax(0, 0.85fr);
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 0.84fr) minmax(0, 0.78fr);
   grid-template-rows: minmax(0, 1fr);
   gap: calc(var(--vu) * 1);
   align-items: stretch;
@@ -1551,6 +1555,51 @@ body {
   border: 1px solid rgba(var(--class-color-rgb, 255, 159, 28), 0.18);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(var(--class-color-rgb, 255, 159, 28), 0.08);
   transition: border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+}
+
+.map-box #game-container {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
+}
+
+.map-box .menu-header-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--vu) * 0.7);
+  width: 100%;
+  margin: 0;
+  padding: calc(var(--vu) * 0.45);
+  overflow: hidden;
+  background: rgba(5, 7, 8, 0.5);
+  border: 0;
+  border-radius: 6px;
+  contain: layout paint;
+}
+
+.map-box .menu-command-column {
+  gap: calc(var(--vu) * 0.5);
+}
+
+.map-box .menu-command-column::before {
+  padding-bottom: calc(var(--vu) * 0.55);
+  font-size: calc(var(--font-xs) * 0.54);
+}
+
+.map-box .menu-header-actions .start-btn {
+  padding: calc(var(--vu) * 0.52) calc(var(--vu) * 0.25) !important;
+  font-size: calc(var(--font-xs) * 0.68) !important;
+}
+
+.map-box .menu-command {
+  gap: calc(var(--vu) * 0.12);
+}
+
+.map-box .menu-command__status {
+  min-height: 0.8em;
+  margin-top: calc(var(--vu) * 0.15);
+  font-size: calc(var(--font-xs) * 0.58);
+  line-height: 1;
 }
 
 .preview-box {
@@ -4013,10 +4062,10 @@ input:checked+.slider:before {
 /* Gear button: pinned to top-right corner of #menu, matches menu padding */
 .menu-corner-settings {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: calc(var(--vu) * 0.9);
+  right: calc(var(--vu) * 0.9);
   pointer-events: auto;
-  z-index: 100;
+  z-index: 10000;
 }
 
 .hud-header__left {

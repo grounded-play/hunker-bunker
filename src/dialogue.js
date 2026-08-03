@@ -1,3 +1,5 @@
+import { getControllerGlyphLabel } from './inputGlyphs.js';
+
 const DIALOGUE_CHAR_INTERVAL_MS = 18;
 const DIALOGUE_LINE_GAP_MS = 150;
 
@@ -499,11 +501,11 @@ export class DialogueManager {
         if (!this.isTutorialRunActive(runId)) return;
         this._trackTutorialProgress(5);
 
-        await this.tutorialStepEnemyIntel(runId);
+        await this.tutorialStepEnemyIntel(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
         this._trackTutorialProgress(6);
 
-        await this.tutorialStepCompass(runId);
+        await this.tutorialStepCompass(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
         this._trackTutorialProgress(7);
 
@@ -511,7 +513,7 @@ export class DialogueManager {
         if (!this.isTutorialRunActive(runId)) return;
         this._trackTutorialProgress(8);
 
-        await this.tutorialStepConsoleAccess(runId);
+        await this.tutorialStepConsoleAccess(runId, game);
         if (!this.isTutorialRunActive(runId)) return;
         this._trackTutorialProgress(9);
 
@@ -884,20 +886,45 @@ export class DialogueManager {
         }
     }
 
-    async tutorialStepMovement(runId, game) {
-        await this.showTutorialPrompt(runId, {
-            icon: 'WASD',
-            text: 'WASD / ARROW KEYS — NAVIGATE THE STRUCTURE'
-        });
+    getControlPrompt(game, { action = 'interact', kbdIcon = 'E', kbdText = '', padIcon = 'A', padText = '' } = {}) {
+        const isGamepad = Boolean(
+            game?.isGamepadActive?.()
+            || game?.activeInputDevice === 'gamepad'
+            || (typeof window !== 'undefined' && window.state?.inputMode === 'gamepad')
+            || (typeof navigator !== 'undefined' && Array.from(navigator.getGamepads?.() ?? []).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed)))
+        );
+        if (isGamepad) {
+            const controllerType = game?.activeControllerType ?? 'SteamDeckController';
+            const glyph = getControllerGlyphLabel(action, controllerType, padIcon);
+            return {
+                icon: glyph || padIcon,
+                text: padText || kbdText
+            };
+        }
+        return {
+            icon: kbdIcon,
+            text: kbdText
+        };
+    }
 
-        const startPos = game.getPlayerPosition?.() ?? { x: 0, z: 0 };
+    async tutorialStepMovement(runId, game) {
+        const prompt = this.getControlPrompt(game, {
+            action: 'sprint',
+            kbdIcon: 'WASD',
+            kbdText: 'WASD / ARROW KEYS — NAVIGATE STRUCTURE | [SHIFT] — SPRINT',
+            padIcon: 'LS',
+            padText: 'LEFT STICK — NAVIGATE STRUCTURE | [LS] / [LB] — SPRINT'
+        });
+        await this.showTutorialPrompt(runId, prompt);
+
+        const startPos = game?.getPlayerPosition?.() ?? { x: 0, z: 0 };
         let movedMs = 0;
 
         await this.waitUntil(runId, ({ deltaMs }) => {
-            if (game.isPlayerMoving?.()) {
+            if (game?.isPlayerMoving?.()) {
                 movedMs += deltaMs;
             }
-            const pos = game.getPlayerPosition?.() ?? startPos;
+            const pos = game?.getPlayerPosition?.() ?? startPos;
             const distance = Math.hypot((pos.x ?? 0) - (startPos.x ?? 0), (pos.z ?? 0) - (startPos.z ?? 0));
             return movedMs >= 2000 || distance > 3;
         }, { timeoutMs: 18000, intervalMs: 80 });
@@ -908,7 +935,7 @@ export class DialogueManager {
     async tutorialStepVitals(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '♥',
-            text: 'VITALS ARE NOW IN THE TOP HUD. KEEP AN EYE ON HEARTS + O₂ AT ALL TIMES.'
+            text: 'VITALS IN TOP HUD: KEEP AN EYE ON HEARTS + O₂ RESERVES AT ALL TIMES.'
         });
 
         const panel = document.getElementById('vitals-panel');
@@ -921,7 +948,7 @@ export class DialogueManager {
     async tutorialStepPickup(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '◍',
-            text: 'APPROACH SUPPLY CACHES. YOUR SUIT WILL AUTO-COLLECT THEM.'
+            text: 'APPROACH SUPPLY CACHES: YOUR SUIT AUTO-COLLECTS SALVAGE & AMMO.'
         });
 
         await this.waitForWindowEvent(runId, 'pickup-collected', 45000);
@@ -931,7 +958,7 @@ export class DialogueManager {
     async tutorialStepHudCounter(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '◎',
-            text: 'TRACK YOUR CACHE INVENTORY IN THE TOP PANEL.'
+            text: 'TRACK SECURED CACHE INVENTORY IN TOP PANEL.'
         });
 
         const panel = document.getElementById('pickup-counter-panel');
@@ -944,17 +971,21 @@ export class DialogueManager {
     async tutorialStepDeadEnds(runId) {
         await this.showTutorialPrompt(runId, {
             icon: '⬡',
-            text: 'DEAD-END PILLAR CLUSTERS ARE REWARD CACHES — DENSER LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
+            text: 'DEAD-END PILLAR CLUSTERS: DENSER REWARD LOOT, NO ENEMIES. EXPLORE ALL BRANCHES.'
         });
         await this.sleep(runId, 3200);
         this.hideTutorialPrompt(runId);
     }
 
-    async tutorialStepEnemyIntel(runId) {
-        await this.showTutorialPrompt(runId, {
-            icon: '!',
-            text: 'HOSTILE INTEL: CYBER SNAILS TAKE 2 SHOTS. LAND ONE HIT TO EXPOSE THEIR WEAK STATE.'
+    async tutorialStepEnemyIntel(runId, game) {
+        const prompt = this.getControlPrompt(game, {
+            action: 'fire',
+            kbdIcon: '!',
+            kbdText: 'HOSTILE INTEL: CYBER SNAILS TAKE 2 SHOTS. AIM & LEFT-CLICK / [SPACE] TO EXPOSE WEAK STATE.',
+            padIcon: 'RT',
+            padText: 'HOSTILE INTEL: CYBER SNAILS TAKE 2 SHOTS. AIM WITH RIGHT STICK & PRESS [RT] TO EXPOSE WEAK STATE.'
         });
+        await this.showTutorialPrompt(runId, prompt);
 
         const weaponPanel = document.getElementById('weapon-status-panel');
         weaponPanel?.classList.add('tutorial-focus-pulse');
@@ -974,11 +1005,15 @@ export class DialogueManager {
         this.hideTutorialPrompt(runId);
     }
 
-    async tutorialStepCompass(runId) {
-        await this.showTutorialPrompt(runId, {
-            icon: 'N',
-            text: "THE COMPASS MARKS YOUR SHIP'S CRASH SITE. THAT IS YOUR EXTRACTION POINT."
+    async tutorialStepCompass(runId, game) {
+        const prompt = this.getControlPrompt(game, {
+            action: 'toggleMap',
+            kbdIcon: 'N',
+            kbdText: "COMPASS MARKS YOUR SHIP'S CRASH SITE | PRESS [M] / [TAB] TO TOGGLE TACTICAL MAP.",
+            padIcon: 'VIEW',
+            padText: "COMPASS MARKS YOUR SHIP'S CRASH SITE | PRESS [VIEW] / [SELECT] TO TOGGLE TACTICAL MAP."
         });
+        await this.showTutorialPrompt(runId, prompt);
 
         const compass = document.querySelector('.touch-move-control__compass-face');
         compass?.classList.add('tutorial-focus-pulse');
@@ -988,16 +1023,20 @@ export class DialogueManager {
     }
 
     async tutorialStepConsole(runId, game) {
-        await this.showTutorialPrompt(runId, {
-            icon: 'E',
-            text: "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. PRESS [E] TO UPLINK."
+        const prompt = this.getControlPrompt(game, {
+            action: 'interact',
+            kbdIcon: 'E',
+            kbdText: "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. PRESS [E] TO UPLINK.",
+            padIcon: 'A',
+            padText: "WHEN YOU'RE READY, RETURN TO THE CONSOLE NEAR YOUR WRECK. PRESS [A] TO UPLINK."
         });
+        await this.showTutorialPrompt(runId, prompt);
 
         const consolePrompt = document.getElementById('console-hud-prompt');
         consolePrompt?.classList.add('tutorial-focus-pulse');
 
         await this.waitUntil(runId, () => {
-            const distance = Number(game.getActiveConsoleDistance?.());
+            const distance = Number(game?.getActiveConsoleDistance?.());
             return Number.isFinite(distance) && distance <= 4;
         }, { timeoutMs: 20000, intervalMs: 80 });
 
@@ -1005,11 +1044,15 @@ export class DialogueManager {
         this.hideTutorialPrompt(runId);
     }
 
-    async tutorialStepConsoleAccess(runId) {
-        await this.showTutorialPrompt(runId, {
-            icon: 'E',
-            text: 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING AND THE O₂ GENERATOR MODULE.'
+    async tutorialStepConsoleAccess(runId, game) {
+        const prompt = this.getControlPrompt(game, {
+            action: 'interact',
+            kbdIcon: 'E',
+            kbdText: 'OPEN THE TERMINAL WITH [E] TO ACCESS BANKING & O₂ GENERATOR MODULE.',
+            padIcon: 'A',
+            padText: 'OPEN THE TERMINAL WITH [A] TO ACCESS BANKING & O₂ GENERATOR MODULE.'
         });
+        await this.showTutorialPrompt(runId, prompt);
 
         const modal = document.getElementById('console-terminal-modal');
         await this.waitUntil(runId, () => Boolean(modal && !modal.classList.contains('hidden')), {

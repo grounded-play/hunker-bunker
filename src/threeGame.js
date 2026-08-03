@@ -1,4 +1,5 @@
 import { CHUNK_SIZE } from './tileCatalog.js';
+import { getControllerGlyphLabel } from './inputGlyphs.js';
 
 import * as THREE from 'three';
 import { assetUrl } from './assetUrl.js';
@@ -5489,7 +5490,18 @@ export class ThreeGame {
         }
     }
 
-    getPromptKeyLabel(defaultKey = 'E') {
+    getPromptKeyLabel(defaultKey = 'E', action = 'interact') {
+        const isGamepad = Boolean(
+            this.isGamepadActive?.()
+            || this.activeInputDevice === 'gamepad'
+            || (typeof window !== 'undefined' && window.state?.inputMode === 'gamepad')
+            || (typeof navigator !== 'undefined' && Array.from(navigator.getGamepads?.() ?? []).some((gp) => gp?.connected && gp?.buttons?.some((b) => b?.pressed)))
+        );
+        if (isGamepad) {
+            const controllerType = this.activeControllerType ?? 'SteamDeckController';
+            const glyph = getControllerGlyphLabel(action, controllerType, 'A');
+            return `PRESS ${glyph || 'A'}`;
+        }
         const rawLabel = window.HunkerInputState?.getPromptKeyText?.(defaultKey) ?? defaultKey;
         return `PRESS ${rawLabel}`;
     }
@@ -15239,10 +15251,13 @@ export class ThreeGame {
         const random = this.createSeededRandom(this.hashTile(chunkX * 1229 + 83, chunkY * 1597 + 131));
         const maxSteps = landform === LANDFORMS.RUINS ? 30 : landform === LANDFORMS.MAZE ? 24 : 16;
         let steps = 0;
+        const stepMatrices = [];
+        const matrix = new THREE.Matrix4();
+        const rotQuat = new THREE.Quaternion();
 
         for (let localY = 1; localY < this.chunkSize - 1; localY++) {
             for (let localX = 1; localX < this.chunkSize - 1; localX++) {
-                if (steps >= maxSteps) return;
+                if (steps >= maxSteps) break;
                 if (grid[localY][localX] !== '.') continue;
 
                 const floorNeighbors =
@@ -15258,16 +15273,25 @@ export class ThreeGame {
                 const depth = 0.68 + random() * 0.26;
                 const worldX = chunkX * this.chunkSize + localX + (random() - 0.5) * 0.16;
                 const worldZ = chunkY * this.chunkSize + localY + (random() - 0.5) * 0.16;
-                const step = new THREE.Mesh(this.terrainStepGeometry, this.wallMaterial);
-                step.position.set(worldX, height / 2 + 0.006, worldZ);
-                step.scale.set(width, height / 0.08, depth);
-                step.rotation.y = Math.floor(random() * 4) * (Math.PI / 2);
-                step.castShadow = true;
-                step.receiveShadow = true;
-                step.userData.isTerrainStep = true;
-                group.add(step);
+                rotQuat.setFromEuler(new THREE.Euler(0, Math.floor(random() * 4) * (Math.PI / 2), 0));
+                matrix.compose(
+                    new THREE.Vector3(worldX, height / 2 + 0.006, worldZ),
+                    rotQuat,
+                    new THREE.Vector3(width, height / 0.08, depth)
+                );
+                stepMatrices.push(matrix.clone());
                 steps++;
             }
+        }
+
+        if (stepMatrices.length > 0) {
+            const instancedSteps = new THREE.InstancedMesh(this.terrainStepGeometry, this.wallMaterial, stepMatrices.length);
+            stepMatrices.forEach((m, idx) => instancedSteps.setMatrixAt(idx, m));
+            instancedSteps.instanceMatrix.needsUpdate = true;
+            instancedSteps.castShadow = true;
+            instancedSteps.receiveShadow = true;
+            instancedSteps.userData = { isTerrainStep: true };
+            group.add(instancedSteps);
         }
     }
 
@@ -16255,6 +16279,42 @@ export class ThreeGame {
             );
         }
 
+        const voidPatchMatrices = [];
+        const cliffMatricesByBiome = new Map();
+        const rubbleMatrices = [];
+        const floorRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+        const instMatrix = new THREE.Matrix4();
+
+        const addCliffInstance = (worldX, worldZ) => {
+            const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+            const seed = (this.hashTile(Math.round(worldX * 137 + 19), Math.round(worldZ * 223 + 43)) ^ (this.runEntropy ?? 0)) >>> 0;
+            const rng = this.createSeededRandom(seed);
+            const pOffsetX = (rng() - 0.5) * 0.48;
+            const pOffsetZ = (rng() - 0.5) * 0.48;
+            const pScaleX = 0.78 + rng() * 0.52;
+            const pScaleZ = 0.78 + rng() * 0.52;
+            const rotX = (rng() - 0.5) * 0.22;
+            const rotY = rng() * Math.PI * 2;
+            const rotZ = (rng() - 0.5) * 0.22;
+
+            const cliffQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(rotX, rotY, rotZ));
+            const cliffMat = new THREE.Matrix4().compose(
+                new THREE.Vector3(worldX + pOffsetX, -4.8, worldZ + pOffsetZ),
+                cliffQuat,
+                new THREE.Vector3(pScaleX, 1.02, pScaleZ)
+            );
+            if (!cliffMatricesByBiome.has(biomeKey)) cliffMatricesByBiome.set(biomeKey, []);
+            cliffMatricesByBiome.get(biomeKey).push(cliffMat);
+
+            if (this.isCliffSecretPath(worldX, worldZ) && this.cliffPathGeometry && this.cliffPathMaterial) {
+                const pathGlow = new THREE.Mesh(this.cliffPathGeometry, this.cliffPathMaterial);
+                pathGlow.rotation.x = -Math.PI / 2;
+                pathGlow.position.set(worldX, 0.045, worldZ);
+                pathGlow.userData = { isCliffSecretPath: true };
+                group.add(pathGlow);
+            }
+        };
+
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
                 const worldX = chunkX * this.chunkSize + localX;
@@ -16262,13 +16322,28 @@ export class ThreeGame {
 
                 const tileChar = grid[localY][localX];
                 if (tileChar === EXTERIOR_CANYON_TILE) {
-                    const canyon = this.createVoidPatch(worldX, worldZ);
-                    if (canyon) group.add(canyon);
+                    if (this.floorGeometry && this.voidMaterial) {
+                        instMatrix.compose(
+                            new THREE.Vector3(worldX, -10, worldZ),
+                            floorRotation,
+                            new THREE.Vector3(1, 1, 1)
+                        );
+                        voidPatchMatrices.push(instMatrix.clone());
+                    }
+                    const hasWalkableOrWall = (dx, dy) => {
+                        const char = grid[localY + dy]?.[localX + dx];
+                        return char === '.' || char === 'D' || char === '#' || char === 'C';
+                    };
+                    if (
+                        hasWalkableOrWall(0, -1) || hasWalkableOrWall(0, 1)
+                        || hasWalkableOrWall(-1, 0) || hasWalkableOrWall(1, 0)
+                    ) {
+                        addCliffInstance(worldX, worldZ);
+                    }
                     continue;
                 }
                 if (tileChar === CLIFF_TILE) {
-                    const cliff = this.createCliffPatch(worldX, worldZ);
-                    if (cliff) group.add(cliff);
+                    addCliffInstance(worldX, worldZ);
                     continue;
                 }
                 if (tileChar === 'D') {
@@ -16518,18 +16593,15 @@ export class ThreeGame {
                     const rubbleCount = 2 + Math.floor(wallTypeRng() * 3);
                     for (let i = 0; i < rubbleCount; i++) {
                         const size = 0.05 + wallTypeRng() * 0.07;
-                        const rubble = new THREE.Mesh(this.rubbleGeometry, this.wallMaterial);
-                        // Scale the reused unit dodecahedron geometry
-                        rubble.scale.set(size, size, size);
-                        
                         const rx = (wallTypeRng() - 0.5) * 0.72;
                         const rz = (wallTypeRng() - 0.5) * 0.72;
-                        rubble.position.set(worldX + rx, size, worldZ + rz);
-                        rubble.rotation.set(wallTypeRng() * Math.PI, wallTypeRng() * Math.PI, 0);
-                        
-                        rubble.castShadow = true;
-                        rubble.receiveShadow = true;
-                        group.add(rubble);
+                        const rubbleQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(wallTypeRng() * Math.PI, wallTypeRng() * Math.PI, 0));
+                        const rubbleMat = new THREE.Matrix4().compose(
+                            new THREE.Vector3(worldX + rx, size, worldZ + rz),
+                            rubbleQuat,
+                            new THREE.Vector3(size, size, size)
+                        );
+                        rubbleMatrices.push(rubbleMat);
                     }
                 } else {
                     // Standard Wall
@@ -16636,6 +16708,39 @@ export class ThreeGame {
                     }
                 }
             }
+        }
+
+        if (this.floorGeometry && this.voidMaterial && voidPatchMatrices.length > 0) {
+            const voidInstanced = new THREE.InstancedMesh(this.floorGeometry, this.voidMaterial, voidPatchMatrices.length);
+            voidPatchMatrices.forEach((m, idx) => voidInstanced.setMatrixAt(idx, m));
+            voidInstanced.instanceMatrix.needsUpdate = true;
+            voidInstanced.receiveShadow = false;
+            voidInstanced.userData = { isExteriorCanyon: true, isLethalPit: true };
+            group.add(voidInstanced);
+        }
+
+        if (this.cliffPrimaryGeometry && cliffMatricesByBiome.size > 0) {
+            for (const [bKey, matrices] of cliffMatricesByBiome.entries()) {
+                if (matrices.length === 0) continue;
+                const mat = this.cliffMaterials?.[bKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE];
+                if (!mat) continue;
+                const cliffInstanced = new THREE.InstancedMesh(this.cliffPrimaryGeometry, mat, matrices.length);
+                matrices.forEach((m, idx) => cliffInstanced.setMatrixAt(idx, m));
+                cliffInstanced.instanceMatrix.needsUpdate = true;
+                cliffInstanced.receiveShadow = true;
+                cliffInstanced.castShadow = true;
+                cliffInstanced.userData = { isCliff: true };
+                group.add(cliffInstanced);
+            }
+        }
+
+        if (this.rubbleGeometry && this.wallMaterial && rubbleMatrices.length > 0) {
+            const rubbleInstanced = new THREE.InstancedMesh(this.rubbleGeometry, this.wallMaterial, rubbleMatrices.length);
+            rubbleMatrices.forEach((m, idx) => rubbleInstanced.setMatrixAt(idx, m));
+            rubbleInstanced.instanceMatrix.needsUpdate = true;
+            rubbleInstanced.castShadow = true;
+            rubbleInstanced.receiveShadow = true;
+            group.add(rubbleInstanced);
         }
 
         // Spawn visual scatter sprites using the Snail Swarm Scatter algorithm
