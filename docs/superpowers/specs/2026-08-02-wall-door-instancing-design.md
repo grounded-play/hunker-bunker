@@ -103,6 +103,20 @@ in the WFC weighting) **stay as individual `Mesh` objects** — they carry a
 live-animated child (the siren dome) and are rare enough that instancing
 them isn't worth the added complexity.
 
+**Amendment (discovered while writing the implementation plan):** standard
+walls can also carry one decoration as a child — pillar, bracket, vent, or
+pipe (12%/12%/8%/6% chance respectively, `threeGame.js:16650-16708`).
+Instancing the wall breaks that parenting (`InstancedMesh` instances
+aren't `Object3D` nodes, can't have children), so these become chunk-level
+instanced pools too, same "purely static, no identity" reasoning already
+applied to door ribs/panels. Pillar and bracket use `this.wallMaterial`
+directly (the same shared shader as walls) and so need the same
+`roomStyleId`-bucketed pooling; vent and pipe use separate plain
+`MeshBasicMaterial`s with no custom shader, so each is one flat pool per
+chunk, no bucketing needed. None of the four are referenced by identity
+anywhere else in the file (no `userData`-based lookup, no damage/destroy
+path touches them).
+
 ### Doors
 
 The door **slab stays an individual `Mesh`** — it animates open/close and
