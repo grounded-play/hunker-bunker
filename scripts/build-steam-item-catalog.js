@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEEP_RELIC_CACHE_DROP_TABLE } from '../server/lootTables.js';
+import { generatedTextMatches } from './generated-text.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SCHEMA_PATH = path.join(ROOT, 'steam/inventory_schema_hunker_bunker.json');
@@ -75,7 +76,9 @@ export function buildSteamItemCatalog({
     const output = renderCatalogModule(buildRendererCatalog(schema));
     if (check) {
         const current = fs.readFileSync(outputPath, 'utf8');
-        if (current !== output) throw new Error(`${path.relative(ROOT, outputPath)} is stale; run npm run steam:item-catalog.`);
+        if (!generatedTextMatches(current, output)) {
+            throw new Error(`${path.relative(ROOT, outputPath)} is stale; run npm run steam:item-catalog.`);
+        }
     } else {
         fs.writeFileSync(outputPath, output, 'utf8');
     }

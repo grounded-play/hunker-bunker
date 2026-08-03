@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generatedTextMatches } from './generated-text.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const configPath = path.join(repoRoot, 'public/audio/soundtrack-config.json');
@@ -54,7 +55,7 @@ export function buildSoundtrackMetadata() {
 const generated = buildSoundtrackMetadata();
 if (checkOnly) {
     const current = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, 'utf8') : '';
-    if (current !== generated) {
+    if (!generatedTextMatches(current, generated)) {
         throw new Error('steam/store/soundtrack/ost_metadata.csv is missing or stale. Run npm run soundtrack:metadata.');
     }
     console.log('[soundtrack-metadata] ok (43 tracks)');
