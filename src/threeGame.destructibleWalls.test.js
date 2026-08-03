@@ -175,3 +175,45 @@ describe('destructible wall grid persistence', () => {
         expect(doorHp).toBe(3);
     });
 });
+
+describe('createWallInstanceRecord — instanced wall identity record', () => {
+    it('builds a self-referential userData record so wall.userData.X reads/writes the same object', () => {
+        const fakeThis = {
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getWallMaxHp: ThreeGame.prototype.getWallMaxHp
+        };
+
+        const record = call('createWallInstanceRecord', fakeThis, {
+            chunkX: 1, chunkY: -2, localX: 5, localY: 6,
+            worldX: 30, worldZ: -37, landform: 'maze',
+            variant: 'standard', heightScale: 1,
+            roomId: 'room-a', roomWallStyle: 'bunker-standard'
+        });
+
+        expect(record.isWall).toBe(true);
+        expect(record.isInstancedWall).toBe(true);
+        expect(record.wallKey).toBe('30,-37');
+        expect(record.destroyed).toBe(false);
+        expect(record.userData).toBe(record);
+
+        record.userData.wallHp = 1;
+        expect(record.wallHp).toBe(1);
+    });
+
+    it('sets maxWallHp/wallHp from getWallMaxHp for the given variant', () => {
+        const fakeThis = {
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getWallMaxHp: ThreeGame.prototype.getWallMaxHp
+        };
+
+        const record = call('createWallInstanceRecord', fakeThis, {
+            chunkX: 0, chunkY: 0, localX: 0, localY: 0,
+            worldX: 0, worldZ: 0, landform: 'maze',
+            variant: 'damaged', heightScale: 1
+        });
+
+        const expectedHp = ThreeGame.prototype.getWallMaxHp.call(fakeThis, { landform: 'maze', variant: 'damaged', heightScale: 1 });
+        expect(record.maxWallHp).toBe(expectedHp);
+        expect(record.wallHp).toBe(expectedHp);
+    });
+});

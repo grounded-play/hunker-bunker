@@ -927,6 +927,11 @@ export class ThreeGame {
         this.destroyedWallKeys = new Set();
         this.destroyedExteriorWallKeys = new Set();
         this.wallMeshes = [];
+        // Identity record for instanced wall tiles (standard/damaged variants —
+        // see mountChunk). Keyed by wallKey, same key space as
+        // destroyedWallKeys/getWallKey. Hazard walls and doors stay real
+        // Mesh objects and are never in this map.
+        this._wallInstanceIndex = new Map();
         this.pickupMeshes = [];
         this.scatterSprites = [];
         // Corpses live outside scatterSprites: syncVisibleChunks rebuilds that
@@ -15595,6 +15600,53 @@ export class ThreeGame {
         if (landform === LANDFORMS.RUINS) hp = Math.max(1, hp - 1);
         if (heightScale < 0.7) hp = Math.max(1, hp - 1);
         return hp;
+    }
+
+    // Identity record for one instanced wall tile — the InstancedMesh
+    // equivalent of what configureWallMesh stamps onto a real Mesh's
+    // userData. `record.userData = record` is deliberate: every existing
+    // wall-handling call site reads/writes `wall.userData.X` on what it
+    // believes is a Mesh; giving the record a self-referential userData
+    // lets those call sites keep working unchanged against this record,
+    // with explicit `isInstancedWall` branches only where a Three.js-
+    // specific operation (parent.remove, material clone) doesn't apply.
+    createWallInstanceRecord({
+        chunkX,
+        chunkY,
+        localX,
+        localY,
+        worldX,
+        worldZ,
+        landform = null,
+        variant = 'standard',
+        heightScale = 1,
+        roomId = null,
+        roomWallStyle = null
+    } = {}) {
+        const maxHp = this.getWallMaxHp({ landform, variant, heightScale });
+        const record = {
+            isWall: true,
+            isInstancedWall: true,
+            wallKey: this.getWallKey(worldX, worldZ),
+            wallHp: maxHp,
+            maxWallHp: maxHp,
+            wallVariant: variant,
+            wallHeightScale: heightScale,
+            chunkX,
+            chunkY,
+            localX,
+            localY,
+            worldX,
+            worldZ,
+            chunkKey: `${chunkX},${chunkY}`,
+            roomId,
+            roomWallStyle,
+            destroyed: false,
+            instancedMesh: null,
+            instanceIndex: -1
+        };
+        record.userData = record;
+        return record;
     }
 
     configureWallMesh(wall, {
