@@ -135,6 +135,8 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
 
 const INTERACT_RADIUS = 2.8;
 const SIGNAL_FLARE_HEIGHT = 11;
+export const CAMP_FLOOR_SIZE = 9;
+export const CAMP_CLEARING_RADIUS = 4;
 
 export class SurvivorCamp {
     constructor(scene, { id = 'camp', label = 'CAMP', playerType = 'Scout', groundMaterial = null } = {}) {
@@ -188,13 +190,13 @@ export class SurvivorCamp {
         this.npcMaterial = null;
         this.npcTexture = null;
         this.npcSpritePath = '';
-        this.npcPos = { x: 0.5, z: 0.5 };
-        this.npcTarget = { x: 0.5, z: 0.5 };
+        this.npcPos = { x: 0.8, z: 0.6 };
+        this.npcTarget = { x: 0.8, z: 0.6 };
         this.npcPathNodes = [
-            { x: 0.5, z: 0.5, action: 'idle' },
-            { x: -1.2, z: 0.8, action: 'inspect' },
-            { x: 0.9, z: -1.1, action: 'interact' },
-            { x: -0.5, z: -1.5, action: 'patrol' }
+            { x: 0.8, z: 0.6, action: 'idle' },
+            { x: -2.4, z: 1.6, action: 'inspect' },
+            { x: 2.2, z: -1.8, action: 'interact' },
+            { x: -1.2, z: -2.6, action: 'patrol' }
         ];
         this.npcNodeIndex = 0;
         this.npcActionTimer = 1.0;
@@ -236,8 +238,8 @@ export class SurvivorCamp {
 
     createCampWorkers(group) {
         const specs = [
-            { home: { x: -0.95, z: 0.95 }, radius: 0.46, speed: 0.65, phase: 0.3, scale: 0.95 },
-            { home: { x: 1.05, z: -0.95 }, radius: 0.38, speed: 0.85, phase: 2.1, scale: 0.86 }
+            { home: { x: -2.2, z: 1.9 }, radius: 0.72, speed: 0.65, phase: 0.3, scale: 0.95 },
+            { home: { x: 2.35, z: -1.7 }, radius: 0.68, speed: 0.85, phase: 2.1, scale: 0.86 }
         ];
         this.campWorkers = specs.map((spec, index) => {
             const mesh = this.createCampWorkerFigure(this.leaderColor, spec.scale);
@@ -272,7 +274,7 @@ export class SurvivorCamp {
         group.position.set(x, 0, z);
 
         if (this.groundMaterial) {
-            const ground = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), this.groundMaterial);
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(CAMP_FLOOR_SIZE, CAMP_FLOOR_SIZE), this.groundMaterial);
             ground.rotation.x = -Math.PI / 2;
             ground.position.y = 0.018;
             ground.receiveShadow = true;
@@ -282,9 +284,9 @@ export class SurvivorCamp {
 
         // Tents: weathered cones around a small clearing.
         const tentSpecs = [
-            { p: [-0.9, 0, -0.3], c: 0x5a6350 },
-            { p: [0.85, 0, -0.5], c: 0x635a48 },
-            { p: [0.1, 0, 0.9], c: 0x4e5a5e }
+            { p: [-2.4, 0, -1.4], c: 0x5a6350 },
+            { p: [2.3, 0, -1.6], c: 0x635a48 },
+            { p: [-0.4, 0, 2.5], c: 0x4e5a5e }
         ];
         for (const spec of tentSpecs) {
             const tent = new THREE.Mesh(
@@ -301,7 +303,7 @@ export class SurvivorCamp {
             new THREE.BoxGeometry(0.42, 0.42, 0.42),
             new THREE.MeshStandardMaterial({ color: 0x6b5a33, roughness: 0.8, metalness: 0.2 })
         );
-        crate.position.set(-0.2, 0.21, -0.95);
+        crate.position.set(-1.15, 0.21, -2.45);
         crate.rotation.y = 0.5;
         group.add(crate);
 
@@ -367,7 +369,7 @@ export class SurvivorCamp {
         const fin = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.5), this.sectionMat);
         fin.position.set(0.62, 0.5, 0);
         section.add(fin);
-        section.position.set(1.5, 0, 0.9);
+        section.position.set(3.0, 0, 2.35);
         section.visible = false;
         group.add(section);
         this.section = section;
@@ -446,7 +448,7 @@ export class SurvivorCamp {
         // Crates Sprite
         const matCrates = new THREE.SpriteMaterial({ map: this.texCrates, transparent: true, alphaTest: 0.05, depthWrite: false });
         const spriteCrates = new THREE.Sprite(matCrates);
-        spriteCrates.position.set(-1.1, 0.4, 1.1);
+        spriteCrates.position.set(-2.7, 0.4, 2.4);
         spriteCrates.scale.set(0.8, 0.8, 1);
         group.add(spriteCrates);
         this.propSprites.crates = spriteCrates;
@@ -454,7 +456,7 @@ export class SurvivorCamp {
         // Placard Sprite
         const matPlacard = new THREE.SpriteMaterial({ map: this.texPlacard, transparent: true, alphaTest: 0.05, depthWrite: false });
         const spritePlacard = new THREE.Sprite(matPlacard);
-        spritePlacard.position.set(0, 0.4, -2.4);
+        spritePlacard.position.set(0, 0.4, -4.0);
         spritePlacard.scale.set(0.7, 0.7, 1);
         spritePlacard.visible = false;
         group.add(spritePlacard);
@@ -463,7 +465,7 @@ export class SurvivorCamp {
         // Shutter Sprite
         const matShutter = new THREE.SpriteMaterial({ map: this.texShutter, transparent: true, alphaTest: 0.05, depthWrite: false });
         const spriteShutter = new THREE.Sprite(matShutter);
-        spriteShutter.position.set(0.8, 0.5, -0.9);
+        spriteShutter.position.set(2.3, 0.5, -1.6);
         spriteShutter.scale.set(0.8, 0.8, 1);
         spriteShutter.visible = false;
         group.add(spriteShutter);
@@ -472,14 +474,14 @@ export class SurvivorCamp {
         // Laundry Sprite
         const matLaundry = new THREE.SpriteMaterial({ map: this.texLaundry, transparent: true, alphaTest: 0.05, depthWrite: false });
         const spriteLaundry = new THREE.Sprite(matLaundry);
-        spriteLaundry.position.set(-1.4, 0.5, -0.8);
+        spriteLaundry.position.set(-3.0, 0.5, -1.0);
         spriteLaundry.scale.set(1.0, 1.0, 1);
         group.add(spriteLaundry);
 
         // Bedrolls Sprite
         const matBedrolls = new THREE.SpriteMaterial({ map: this.texBedrolls, transparent: true, alphaTest: 0.05, depthWrite: false });
         const spriteBedrolls = new THREE.Sprite(matBedrolls);
-        spriteBedrolls.position.set(1.3, 0.3, 0.4);
+        spriteBedrolls.position.set(2.6, 0.3, 0.8);
         spriteBedrolls.scale.set(0.6, 0.6, 1);
         group.add(spriteBedrolls);
 
@@ -492,16 +494,16 @@ export class SurvivorCamp {
             depthWrite: false
         });
         const spriteGrave = new THREE.Sprite(matGrave);
-        spriteGrave.position.set(-2.3, 0.4, 0.2);
+        spriteGrave.position.set(-3.6, 0.4, 0.7);
         spriteGrave.scale.set(0.7, 0.7, 1);
         group.add(spriteGrave);
 
         // Sandbags Sprites (level-based)
         this.sandbagSprites = [];
         const sandbagOffsets = [
-            { x: 1.8, z: -1.8 },
-            { x: -1.8, z: -1.8 },
-            { x: 2.2, z: 0 }
+            { x: 3.2, z: -3.1 },
+            { x: -3.2, z: -3.1 },
+            { x: 3.8, z: 0 }
         ];
         for (let i = 0; i < 3; i++) {
             const matSandbags = new THREE.SpriteMaterial({ map: this.texSandbags, transparent: true, alphaTest: 0.05, depthWrite: false });
@@ -598,7 +600,7 @@ export class SurvivorCamp {
                 new THREE.BoxGeometry(1.0, 0.5, 0.18),
                 new THREE.MeshStandardMaterial({ color: 0x55606a, roughness: 0.7, metalness: 0.45 })
             );
-            wall.position.set(Math.cos(angle) * 2.1, 0.25, Math.sin(angle) * 2.1);
+            wall.position.set(Math.cos(angle) * 3.8, 0.25, Math.sin(angle) * 3.8);
             wall.rotation.y = -angle + Math.PI / 2;
             this.group.add(wall);
             this.barricades.push(wall);
@@ -614,7 +616,7 @@ export class SurvivorCamp {
         while (this.turrets.length < Math.max(0, next - 1)) {
             const i = this.turrets.length;
             const angle = i === 0 ? -0.55 : 2.45;
-            const offset = { x: Math.cos(angle) * 2.7, z: Math.sin(angle) * 2.7 };
+            const offset = { x: Math.cos(angle) * 3.55, z: Math.sin(angle) * 3.55 };
             const group = new THREE.Group();
             const mast = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.07, 0.1, 0.9, 6),

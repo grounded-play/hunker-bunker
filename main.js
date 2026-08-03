@@ -2527,10 +2527,12 @@ window.addEventListener('weapon-upgraded', () => {
     fireMothershipReactiveLine('weapon_calibrated');
 });
 
-window.addEventListener('skill-unlocked', () => {
+window.addEventListener('skill-unlocked', (event) => {
     window.AudioManager?.play?.('fx_levelup', { volume: 0.38, bus: 'sfx' });
     syncAbilityPanelLabel();
     syncHudCompassVisibility();
+    const label = event?.detail?.label ? event.detail.label.toUpperCase() : 'POWER-UP';
+    showBiomePrompt(`> PROTOCOL UNLOCKED: ${label}`);
 });
 
 window.addEventListener('bank-updated', () => {
@@ -2742,7 +2744,7 @@ function updateHudNotificationDeck() {
     cards.forEach((card, index) => {
         stack.appendChild(card);
         card.style.setProperty('--deck-index', String(index));
-        card.style.zIndex = String(12090 - index);
+        card.style.zIndex = String(17090 - index);
         card.classList.toggle('is-top-card', index === 0);
     });
     stack.classList.toggle('has-decked-cards', hasCards);
@@ -9549,6 +9551,20 @@ function getDoorImage(key) {
     return assetUrl(CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
 }
 
+function getMapDoorImage(key) {
+    const MAP_CLASS_DOORS = {
+        'SCOUT': '/door_bio.png',
+        'TANK': '/door_nuclear.png',
+        'ENGINEER': '/door_cryo.png'
+    };
+    const SPECIAL_DOORS = {
+        'base': '/door_biomechanical.png'
+    };
+    if (MAP_CLASS_DOORS[key]) return assetUrl(MAP_CLASS_DOORS[key]);
+    const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
+    return assetUrl(MAP_CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
+}
+
 function preloadDoorAssets() {
     const doorImages = [
         '/door_biomech_keyart_v2.webp',
@@ -9557,6 +9573,10 @@ function preloadDoorAssets() {
         '/door_cryo_keyart_v2.webp',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
+        '/door_bio.png',
+        '/door_nuclear.png',
+        '/door_cryo.png',
+        '/door_biomechanical.png',
         '/ship_wreckage.png'
     ];
 
@@ -9910,7 +9930,15 @@ function triggerHeroPreviewSwap(type) {
 
     const targetType = pendingPreviewType;
     const doorImg = getDoorImage(targetType);
+    const mapDoor = document.getElementById('map-box-door');
+    const mapDoorImg = getMapDoorImage(targetType);
+
     previewDoor.style.setProperty('--door-bg-image', `url('${doorImg}')`);
+    if (mapDoor) {
+        mapDoor.style.setProperty('--map-door-bg-image', `url('${mapDoorImg}')`);
+        mapDoor.classList.remove('opening', 'ready-to-open');
+        mapDoor.classList.add('active', 'closing');
+    }
 
     previewDoor.classList.remove('opening', 'ready-to-open');
     previewDoor.classList.add('active', 'closing');
@@ -9921,17 +9949,29 @@ function triggerHeroPreviewSwap(type) {
         syncHeroPreview(targetType);
         previewDoor.classList.remove('closing');
         previewDoor.classList.add('ready-to-open');
+        if (mapDoor) {
+            mapDoor.classList.remove('closing');
+            mapDoor.classList.add('ready-to-open');
+        }
 
         window.setTimeout(() => {
             void previewDoor.offsetWidth;
+            if (mapDoor) void mapDoor.offsetWidth;
             previewDoor.classList.remove('ready-to-open');
             previewDoor.classList.add('opening');
+            if (mapDoor) {
+                mapDoor.classList.remove('ready-to-open');
+                mapDoor.classList.add('opening');
+            }
             AudioManager.play('door_slide_horiz', { volume: 0.18 });
             AudioManager.play('door_gears_spin', { volume: 0.1 });
         }, PREVIEW_DOOR_HOLD_MS);
 
         previewDoorTimer = window.setTimeout(() => {
             previewDoor.classList.remove('active', 'opening', 'ready-to-open');
+            if (mapDoor) {
+                mapDoor.classList.remove('active', 'opening', 'ready-to-open');
+            }
             previewDoorTimer = null;
 
             if (pendingPreviewType !== targetType) {
@@ -10005,14 +10045,14 @@ charCards.forEach(card => {
                     setTimeout(() => {
                         window.game.updatePlayerType(type, { poof: true, emitWorldEvents: false });
                         AudioManager.play('class_lock', { volume: 0.5 });
-                    }, 150);
+                    }, 360);
                     return;
                 }
 
                 setTimeout(() => {
                     window.game.updatePlayerType(type, { poof: true, emitWorldEvents: true });
                     AudioManager.play('class_lock', { volume: 0.5 });
-                }, 150);
+                }, 360);
             }
         }
     });

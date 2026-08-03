@@ -35,7 +35,7 @@ import { extractChunkPortals, buildWorldRouteGraph, reachableChunkKeys } from '.
 import { BaseLights } from './baseLights.js';
 import { FabricationFoundry } from './foundry.js';
 import { CaveEntrance } from './caveEntrance.js';
-import { SurvivorCamp } from './camp.js';
+import { SurvivorCamp, CAMP_CLEARING_RADIUS } from './camp.js';
 import {
     ACT2_CAMP_LABELS,
     ACT2_CAMP_MAX_LEVEL,
@@ -674,26 +674,39 @@ const BIOME_TERRAIN_TEXTURE_PATHS = Object.freeze({
     })
 });
 const CRYO_SCATTER_VARIANTS = [
-    { type: 'scatter_coolant_puddle', weight: 0.34 },
-    { type: 'scatter_ice_stalagmite', weight: 0.26 },
-    { type: 'scatter_cryo_icicle', weight: 0.22 },
-    { type: 'scatter_cryo_shards', weight: 0.18 },
-    { type: 'body_human_frozen_suit', weight: 0.1 },
-    { type: 'body_empty_exosuit', weight: 0.08 }
+    { type: 'scatter_coolant_puddle', weight: 0.28 },
+    { type: 'scatter_ice_stalagmite', weight: 0.22 },
+    { type: 'scatter_cryo_icicle', weight: 0.18 },
+    { type: 'scatter_cryo_shards', weight: 0.14 },
+    { type: 'decal_oil_spill_patch', weight: 0.16 },
+    { type: 'decal_footprints_mud', weight: 0.14 },
+    { type: 'decal_hazard_stripes', weight: 0.12 },
+    { type: 'decal_claw_scratches', weight: 0.10 },
+    { type: 'body_human_frozen_suit', weight: 0.08 },
+    { type: 'body_empty_exosuit', weight: 0.06 }
 ];
 const BIO_SCATTER_VARIANTS = [
-    { type: 'scatter_bio_pod', weight: 0.34 },
-    { type: 'scatter_bio_moss', weight: 0.2 },
-    { type: 'scatter_slime_puddle', weight: 0.24 },
-    { type: 'prop_hive_resin_sac', weight: 0.12 },
-    { type: 'bio_spores', weight: 0.14 },
+    { type: 'scatter_bio_pod', weight: 0.26 },
+    { type: 'scatter_bio_moss', weight: 0.20 },
+    { type: 'scatter_slime_puddle', weight: 0.20 },
+    { type: 'decal_bio_sample_spill', weight: 0.16 },
+    { type: 'decal_spore_growth_patch', weight: 0.16 },
+    { type: 'decal_hive_growth', weight: 0.14 },
+    { type: 'prop_hive_resin_sac', weight: 0.10 },
+    { type: 'bio_spores', weight: 0.10 },
     { type: 'bio_spores_blue', weight: 0.04 },
     { type: 'bio_spores_amber', weight: 0.04 }
 ];
 const ACTIVE_SCATTER_VARIANTS = [
-    { type: 'scatter_gravel', weight: 0.46 },
-    { type: 'scatter_cable_coil', weight: 0.18 },
+    { type: 'scatter_gravel', weight: 0.30 },
+    { type: 'scatter_cable_coil', weight: 0.16 },
     { type: 'scatter_bolts', weight: 0.14 },
+    { type: 'decal_oil_spill_patch', weight: 0.16 },
+    { type: 'decal_bullet_holes', weight: 0.15 },
+    { type: 'decal_claw_scratches', weight: 0.14 },
+    { type: 'decal_hazard_stripes', weight: 0.12 },
+    { type: 'decal_biohazard_stencil', weight: 0.10 },
+    { type: 'decal_footprints_mud', weight: 0.12 },
     ...SPORE_SCATTER_VARIANTS
 ];
 const BIOME_SCATTER_VARIANTS = Object.freeze({
@@ -3267,7 +3280,7 @@ export class ThreeGame {
                     modelUrl: '/3d/runtime/tank-rigged.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
-                    weaponEnabled: false,
+                    weaponEnabled: true
                 }
             };
             const overlay = await createPlayer3dOverlay({
@@ -4903,6 +4916,7 @@ export class ThreeGame {
         this._menuShowcaseShotTimer = (this._menuShowcaseShotTimer ?? 0) - delta;
         if (this._menuShowcaseShotTimer <= 0) {
             this._menuShowcaseShotTimer = 0.34 + Math.random() * 0.14;
+            this.player3dOverlay?.trigger('fire');
             const spread = (Math.random() - 0.5) * 0.14;
             const cos = Math.cos(spread);
             const sin = Math.sin(spread);
@@ -7601,6 +7615,7 @@ export class ThreeGame {
                 this.syncPersistentUpgrades();
                 this.updatePlayerType(this.playerType);
                 if (window.syncAbilityPanelLabel) window.syncAbilityPanelLabel();
+                window.dispatchEvent(new CustomEvent('skill-unlocked', { detail: { nodeId: node.id, label: node.label } }));
             } else {
                 window.AudioManager?.play('ui_error', { volume: 0.5 });
             }
@@ -8981,11 +8996,26 @@ export class ThreeGame {
             const tileX = Math.round(target.x + Math.cos(angle) * radius * random());
             const tileZ = Math.round(target.z + Math.sin(angle) * radius * random());
             if (attempt < 48 && !this.isGoodSitePosition(tileX, tileZ)) continue;
-            if (this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
+            const clearanceRadius = Math.max(0, Math.floor(slot?.clearanceRadius ?? 0));
+            const hasClearance = clearanceRadius === 0 || this.isSiteAreaWalkable(tileX, tileZ, clearanceRadius);
+            if (hasClearance && this.isSnailTileWalkable(tileX, tileZ) && this.canOccupyPosition(tileX, tileZ)) {
                 return { x: tileX, z: tileZ };
             }
         }
         return target;
+    }
+
+    isSiteAreaWalkable(tileX, tileZ, radius = 0) {
+        for (let dz = -radius; dz <= radius; dz += 1) {
+            for (let dx = -radius; dx <= radius; dx += 1) {
+                // Rounded corners keep the clearing organic while reserving
+                // enough room for the full camp floor and perimeter defenses.
+                if (Math.hypot(dx, dz) > radius + 0.25) continue;
+                if (!this.isSnailTileWalkable(tileX + dx, tileZ + dz)) return false;
+                if (!this.canOccupyPosition(tileX + dx, tileZ + dz)) return false;
+            }
+        }
+        return true;
     }
 
     getRadialMazePlan() {
@@ -9001,14 +9031,15 @@ export class ThreeGame {
         return this.getRadialMazePlan()?.topology ?? null;
     }
 
-    chooseRadialSitePosition(siteId, seed) {
+    chooseRadialSitePosition(siteId, seed, clearanceRadius = 0) {
         const site = getRadialSite(this.getRadialMazePlan(), siteId);
         if (!site) return null;
         return this.chooseProgressionSitePosition({
             lateral: site.x,
             distance: site.z,
             ring: site.ring,
-            landmarkId: site.id
+            landmarkId: site.id,
+            clearanceRadius
         }, seed);
     }
 
@@ -9377,8 +9408,14 @@ export class ThreeGame {
             Math.round(anchor.x) + 211 + index * 13,
             Math.round(anchor.z) + 89 - index * 7
         ) ^ this.runEntropy) >>> 0;
-        return this.chooseRadialSitePosition?.(siteId ?? this.act2?.getState?.().camps?.[index]?.id, seed)
-            ?? this.chooseProgressionSitePosition(getProgressionSlot('camp', index), seed);
+        return this.chooseRadialSitePosition?.(
+            siteId ?? this.act2?.getState?.().camps?.[index]?.id,
+            seed,
+            CAMP_CLEARING_RADIUS
+        ) ?? this.chooseProgressionSitePosition({
+            ...getProgressionSlot('camp', index),
+            clearanceRadius: CAMP_CLEARING_RADIUS
+        }, seed);
     }
 
     ensureAct2Camps() {
@@ -9395,6 +9432,7 @@ export class ThreeGame {
             if (
                 !this.isSiteOnPlannedRing(x, z, record.id)
                 || !this.isSnailTileWalkable(x, z)
+                || !this.isSiteAreaWalkable(x, z, CAMP_CLEARING_RADIUS)
             ) {
                 const site = this.chooseCampPosition(index, record.id);
                 x = site.x;
@@ -17497,7 +17535,7 @@ export class ThreeGame {
     }
 
     createChunkPickupPlacements(chunkX, chunkY, grid) {
-        const random = this.createSeededRandom(this.hashTile(chunkX * 401 + 17, chunkY * 733 + 29));
+        const random = this.createSeededRandom(((this.hashTile(chunkX * 401 + 17, chunkY * 733 + 29) ^ (this.runEntropy ?? 0)) >>> 0));
         const depthTier = this.getDepthTier(chunkX, chunkY);
         const depthLootConfig = getDepthLootConfig(depthTier);
         const spawn = this.getSpawnTile();
@@ -17784,7 +17822,7 @@ export class ThreeGame {
 
                 // 2) Room Set Pieces (Destructible props) — chamber cells only
                 const roll = rng();
-                if (roll < 0.12 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
+                if (roll < 0.28 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
                     const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
                     const propPalettes = {
                         active: [
@@ -17943,7 +17981,7 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu') {
             return [];
         }
-        const random = this.createSeededRandom(this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71));
+        const random = this.createSeededRandom(((this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71) ^ (this.runEntropy ?? 0)) >>> 0));
         const spawn = this.getSpawnTile();
         const roomTypes = this.getRoomTypeGrid(chunkX, chunkY);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
@@ -17977,14 +18015,14 @@ export class ThreeGame {
             }
         }
 
-        if (candidates.length < 10) return [];
+        if (candidates.length < 4) return [];
         const chunkCenterX = chunkX * this.chunkSize + (this.chunkSize * 0.5);
         const chunkCenterZ = chunkY * this.chunkSize + (this.chunkSize * 0.5);
         const biomeKey = this.getBiomeKeyForWorldPosition(chunkCenterX, chunkCenterZ);
         const biomeVariants = BIOME_SCATTER_VARIANTS[biomeKey] ?? BIOME_SCATTER_VARIANTS[BIOME_KEYS.ACTIVE];
         const allowJunkPiles = biomeKey === BIOME_KEYS.ACTIVE;
 
-        const totalItems = Math.floor(6 + random() * 5);
+        const totalItems = Math.floor(10 + random() * 8);
         const targetClustered = Math.round(totalItems * SCATTER_CLUSTER_RATIO);
         const targetTransitional = Math.round(totalItems * SCATTER_TRANSITION_RATIO);
         const targetStrays = Math.max(

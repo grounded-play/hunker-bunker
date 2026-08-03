@@ -1,8 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { SurvivorCamp, CAMP_INTERACT_RADIUS } from './camp.js';
+import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_FLOOR_SIZE, CAMP_INTERACT_RADIUS } from './camp.js';
 
 describe('SurvivorCamp', () => {
+    it('uses a crash-site-style clearing with structures spread across it', () => {
+        const groundMaterial = new THREE.MeshBasicMaterial();
+        const camp = new SurvivorCamp(new THREE.Scene(), { groundMaterial });
+        camp.reveal(0, 0);
+        const floor = camp.group.children.find((child) => child.userData?.kind === 'camp-floor');
+
+        expect(floor.geometry.parameters).toMatchObject({ width: CAMP_FLOOR_SIZE, height: CAMP_FLOOR_SIZE });
+        expect(CAMP_CLEARING_RADIUS).toBeGreaterThanOrEqual(4);
+        expect(Math.max(...camp.tents.map((tent) => Math.hypot(tent.position.x, tent.position.z)))).toBeGreaterThan(2.5);
+    });
     it('stays hidden until revealed and is not interactable', () => {
         const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_meridian', label: 'CAMP MERIDIAN' });
         camp.build(80, 40);

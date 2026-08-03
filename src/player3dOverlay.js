@@ -141,7 +141,12 @@ function retargetMixamoClip(source, fromPrefix, toPrefix, targetRoot) {
     clip.tracks = clip.tracks.filter((track) => {
         const separator = track.name.lastIndexOf('.');
         const nodeName = separator >= 0 ? track.name.slice(0, separator) : track.name;
-        return Boolean(targetRoot.getObjectByName(nodeName));
+        if (!targetRoot.getObjectByName(nodeName)) return false;
+        const property = separator >= 0 ? track.name.slice(separator + 1) : '';
+        // Rotations retarget across compatible Mixamo rigs. Per-bone position
+        // and scale tracks do not: they contain the source character's limb
+        // lengths and can stretch another mesh hundreds of world units.
+        return property === 'quaternion';
     });
     return clip;
 }
@@ -295,7 +300,14 @@ export async function createPlayer3dOverlay({
                     forcedName = null;
                 }
             }
-            const targets = computeLocomotionWeights(state);
+            let targets = computeLocomotionWeights(state);
+            const requestedLocomotion = selectOverlayAnimation(state);
+            if (!actions.has(requestedLocomotion) && actions.has(idleActionName)) {
+                // Bind-pose or single-clip showroom models still need a stable
+                // visible action when the menu's synthetic movement requests
+                // walk/run clips they do not carry.
+                targets = { idle: 1 };
+            }
             const locomotionScale = forcedName && !state.isFalling ? 0.62 : 1;
             const activeIdleAction = actions.has(state.idleActionName)
                 ? state.idleActionName
