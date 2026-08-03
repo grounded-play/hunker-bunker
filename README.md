@@ -5,12 +5,14 @@
 # HUNKER BUNKER
 
 <p align="center">
-  <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml"><img src="https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml/badge.svg" alt="Presubmit CI"></a>
+  <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/presubmit.yml?query=branch%3Amothership"><img src="https://img.shields.io/github/actions/workflow/status/grounded-play/hunker-bunker/presubmit.yml?branch=mothership&label=tests%20%2B%20coverage&logo=vitest" alt="Tests and coverage status on mothership"></a>
+  <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/steam-build.yml?query=branch%3Amothership"><img src="https://github.com/grounded-play/hunker-bunker/actions/workflows/steam-build.yml/badge.svg?branch=mothership" alt="Steam package status on mothership"></a>
+  <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/codeql.yml?query=branch%3Amothership"><img src="https://github.com/grounded-play/hunker-bunker/actions/workflows/codeql.yml/badge.svg?branch=mothership" alt="CodeQL status on mothership"></a>
+  <a href="https://github.com/grounded-play/hunker-bunker/actions/workflows/lighthouse.yml?query=branch%3Amothership"><img src="https://github.com/grounded-play/hunker-bunker/actions/workflows/lighthouse.yml/badge.svg?branch=mothership" alt="Lighthouse status on mothership"></a>
   <a href="https://app.netlify.com/projects/hunkerbunker/deploys"><img src="https://api.netlify.com/api/v1/badges/3d99b6f8-2e77-4a86-8292-1fffe5c9c308/deploy-status" alt="Netlify Status"></a>
   <a href="https://discord.gg/XXwwz3rauu"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white" alt="Discord Server"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <a href="https://threejs.org/"><img src="https://img.shields.io/badge/Three.js-r184-00e5ff.svg?logo=three.js" alt="Three.js"></a>
-  <a href="https://vitest.dev/"><img src="https://img.shields.io/badge/Testing-83%20Suites%20%7C%20677%20Passed-41b883.svg?logo=vitest" alt="Vitest"></a>
 </p>
 
 > **Crash in. Scavenge O2. Upgrade your suit. Survive the depths.**  
@@ -83,10 +85,15 @@ npm run dev
 ### 🧪 Verification & Build
 
 ```bash
-npm test         # Run unit test suite (83 files | 677 tests)
+npm test         # Run the complete unit and integration test suite
+npm run coverage # Run tests and generate the coverage report
 npm run lint     # Check formatting & code safety
 npm run build    # Compile production WebGL bundle
 ```
+
+The badges above report the latest merged `mothership` workflow results. Pull
+request checks may be newer; use the PR checks view when validating an
+unmerged branch.
 
 ---
 
@@ -105,4 +112,3 @@ Distributed under the **MIT License**. Built with ❤️ by **Tuesday Cinema Clu
 
 - 💬 **Discord**: [Join Server](https://discord.gg/XXwwz3rauu)
 - 📧 **Support & Contact**: [Support@TuesdayCinema.Club](mailto:Support@TuesdayCinema.Club)
-
