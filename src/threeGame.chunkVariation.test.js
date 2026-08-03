@@ -120,6 +120,52 @@ describe('clearLoadedChunksForRunReset — stale landform cache', () => {
     });
 });
 
+describe('getOrCreateChunk — cache eviction does not thrash non-mounted lookups', () => {
+    // A session log from real play showed "Chunk generated" firing repeatedly
+    // for coordinates the player had already visited and moved away from,
+    // well after initial map staging — wasted buildChunk() CPU work causing
+    // the reported frame-rate drop. Root cause: getOrCreateChunk's eviction
+    // only protects entries currently in chunkMeshes (actually mounted), but
+    // gameplay logic (getTileType/getRoomTypeGrid, used by AI pathing) also
+    // populates chunkCache for chunks that are never mounted — so once total
+    // distinct chunk keys queried in a session exceeds MAX_CHUNK_CACHE, those
+    // non-mounted-but-still-relevant entries get evicted and regenerated from
+    // scratch the next time gameplay logic touches the same coordinate again.
+    function makeFakeChunkCacheGame() {
+        const buildChunkCalls = new Map(); // key -> call count
+        return {
+            chunkSize: 2,
+            chunkCache: new Map(),
+            chunkMeshes: new Map(),
+            destroyedWallKeys: new Set(),
+            applyDestroyedWallsToGrid: ThreeGame.prototype.applyDestroyedWallsToGrid,
+            buildChunk(chunkX, chunkY) {
+                const key = `${chunkX},${chunkY}`;
+                buildChunkCalls.set(key, (buildChunkCalls.get(key) ?? 0) + 1);
+                return { 0: ['.', '.'], 1: ['.', '.'], landform: LANDFORMS.MAZE };
+            },
+            buildChunkCalls
+        };
+    }
+
+    it('does not regenerate a previously cached, non-mounted chunk after 200 other distinct chunks are queried', () => {
+        const fakeThis = makeFakeChunkCacheGame();
+
+        // Query the chunk we'll re-check first, then 150 other distinct
+        // non-mounted chunks (well beyond the real 9x9=81 resident window),
+        // simulating gameplay logic touching many coordinates over a session.
+        ThreeGame.prototype.getOrCreateChunk.call(fakeThis, 0, 0);
+        for (let i = 1; i <= 150; i += 1) {
+            ThreeGame.prototype.getOrCreateChunk.call(fakeThis, i, 0);
+        }
+
+        // Re-querying (0,0) should return the cached grid, not rebuild it.
+        ThreeGame.prototype.getOrCreateChunk.call(fakeThis, 0, 0);
+
+        expect(fakeThis.buildChunkCalls.get('0,0')).toBe(1);
+    });
+});
+
 describe('generatePocket — per-hole, per-run pocket layout', () => {
     // Phase 2 replaces the old 11x11 one-cell DFS maze with two overlapping
     // 7x7 WFC tiles per axis: 7 + 7 - 1 = 13.

@@ -22058,8 +22058,14 @@ export class ThreeGame {
     getOrCreateChunk(chunkX, chunkY) {
         const key = `${chunkX},${chunkY}`;
         if (!this.chunkCache.has(key)) {
-            // Evict oldest cache entries if over limit (prevents memory growth in long sessions)
-            const MAX_CHUNK_CACHE = 50;
+            // Evict oldest cache entries if over limit (prevents memory growth in long sessions).
+            // Must comfortably exceed the max resident window (visibleChunkRadius +
+            // chunkResidentPadding can reach a 9x9 = 81 chunk neighborhood) plus
+            // headroom for non-mounted lookups (AI pathing, getTileType/getRoomTypeGrid)
+            // that populate this cache without ever mounting — a cap too close to the
+            // resident window thrashed those non-mounted entries, forcing repeated
+            // buildChunk() regeneration for chunks the player had already visited.
+            const MAX_CHUNK_CACHE = 200;
             if (this.chunkCache.size >= MAX_CHUNK_CACHE) {
                 const toEvict = Math.ceil(this.chunkCache.size - MAX_CHUNK_CACHE + 5);
                 let evicted = 0;
