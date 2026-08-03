@@ -4239,6 +4239,9 @@ export class ThreeGame {
             this.playerEmitterGlow.material.map = this.playerEmitterGlowTexture;
             this.playerEmitterGlow.material.needsUpdate = true;
         }
+        if (this._playerPolishHex != null) {
+            this.setOperatorPolish(this._playerPolishHex);
+        }
         this.updatePlayerSpriteFrame(0, this.currentFacingRow);
 
         this.updateCrashedShipsVisibility(poof);
@@ -12854,8 +12857,11 @@ export class ThreeGame {
             } else if (wasPoisoned) {
                 window.dispatchEvent(new CustomEvent('player-poisoned', { detail: { timeLeft: this.playerPoisonTimer } }));
             }
-        } else if (this.playerSprite?.material?.color && this.playerSprite.material.color.getHex() !== 0xffffff) {
-            this.tintPlayerSprites(0xffffff);
+        } else {
+            const polishHex = this._playerPolishHex ?? 0xffffff;
+            if (this.playerSprite?.material?.color && this.playerSprite.material.color.getHex() !== polishHex) {
+                this.tintPlayerSprites(polishHex);
+            }
         }
 
         const keyAxisX = (this.keys.right ? 1 : 0) - (this.keys.left ? 1 : 0);
@@ -14226,6 +14232,18 @@ export class ThreeGame {
         if (this.playerTorsoSprite?.material?.color) {
             this.playerTorsoSprite.material.color.setHex(hex);
         }
+    }
+
+    setOperatorPolish(color = '#ffffff') {
+        const parsed = new THREE.Color(color);
+        this._playerPolishHex = parsed.getHex();
+        for (const material of Object.values(this.playerMaterials ?? {})) {
+            material.color?.setHex(this._playerPolishHex);
+        }
+        for (const material of Object.values(this.playerTorsoMaterials ?? {})) {
+            material.color?.setHex(this._playerPolishHex);
+        }
+        if (this.suitFillLight?.color) this.suitFillLight.color.copy(parsed);
     }
 
     updatePlayerSpriteFrame(column, legsRow, torsoRow = legsRow) {

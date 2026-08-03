@@ -46,6 +46,7 @@ import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSprite
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
+import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
@@ -724,12 +725,14 @@ function moveMenuCommandGridFocus(code) {
     const currentItems = focusablesFor(activeColumn);
     if (!currentItems.length) return false;
     const rowIndex = Math.max(0, currentItems.indexOf(active));
+    const allItems = columns.flatMap(focusablesFor);
+    const flatIndex = Math.max(0, allItems.indexOf(active));
     let target = null;
 
     if (code === 'KeyW' || code === 'ArrowUp') {
-        target = currentItems[(rowIndex - 1 + currentItems.length) % currentItems.length];
+        target = allItems[(flatIndex - 1 + allItems.length) % allItems.length];
     } else if (code === 'KeyS' || code === 'ArrowDown') {
-        target = currentItems[(rowIndex + 1) % currentItems.length];
+        target = allItems[(flatIndex + 1) % allItems.length];
     } else if (['KeyA', 'ArrowLeft', 'KeyD', 'ArrowRight'].includes(code)) {
         const offset = (code === 'KeyA' || code === 'ArrowLeft') ? -1 : 1;
         const nextColumn = columns[(columnIndex + offset + columns.length) % columns.length];
@@ -2961,6 +2964,67 @@ function updateHeroStats(type) {
         crossFadeStatValue(passiveEl, parts[1] ? parts[1].trim() : '—');
     }
 }
+
+function renderOperatorPolishUi() {
+    const selected = getSelectedPolish();
+    const unlocked = getUnlockedPolishIds();
+    const grid = document.getElementById('operator-polish-grid');
+    const swatch = document.getElementById('hero-polish-swatch');
+    const name = document.getElementById('hero-polish-name');
+    const count = document.getElementById('hero-polish-count');
+    const slot = document.getElementById('hero-polish-btn');
+
+    slot?.style.setProperty('--polish-color', selected.color);
+    swatch?.style.setProperty('--polish-color', selected.color);
+    if (name) name.textContent = selected.name;
+    if (count) count.textContent = `${unlocked.size}/16`;
+    document.getElementById('operator-polish-modal')?.style.setProperty('--polish-color', selected.color);
+    const readoutName = document.getElementById('operator-polish-readout-name');
+    const readoutState = document.getElementById('operator-polish-readout-state');
+    if (readoutName) readoutName.textContent = selected.name;
+    if (readoutState) readoutState.textContent = 'EQUIPPED';
+
+    if (!grid) return;
+    grid.innerHTML = '';
+    for (const polish of OPERATOR_POLISHES) {
+        const isUnlocked = unlocked.has(polish.id);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `operator-polish-chip${isUnlocked ? '' : ' is-locked'}${selected.id === polish.id ? ' is-selected' : ''}`;
+        button.style.setProperty('--polish-color', polish.color);
+        button.disabled = !isUnlocked;
+        button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ' locked'}`);
+        button.innerHTML = `<span class="operator-polish-chip__swatch"></span><span>${String(polish.id + 1).padStart(2, '0')} // ${polish.name}</span>`;
+        if (isUnlocked) {
+            button.addEventListener('click', () => {
+                const next = selectPolish(polish.id);
+                if (!next) return;
+                window.game?.setOperatorPolish?.(next.color);
+                void renderPreviewFrame(activePreviewType, previewFrameIndex);
+                renderOperatorPolishUi();
+                window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+            });
+        }
+        grid.append(button);
+    }
+}
+
+function setOperatorPolishModalOpen(open) {
+    const modal = document.getElementById('operator-polish-modal');
+    if (!modal) return;
+    modal.classList.toggle('hidden', !open);
+    modal.setAttribute('aria-hidden', String(!open));
+    if (open) renderOperatorPolishUi();
+}
+
+document.getElementById('hero-polish-btn')?.addEventListener('click', () => setOperatorPolishModalOpen(true));
+document.getElementById('close-operator-polish-modal')?.addEventListener('click', () => setOperatorPolishModalOpen(false));
+setupClickOutside('operator-polish-modal', () => setOperatorPolishModalOpen(false));
+document.getElementById('debug-unlock-all-polishes')?.addEventListener('click', () => {
+    unlockAllPolishes();
+    renderOperatorPolishUi();
+    showBiomePrompt('> DEBUG: ALL 16 OPERATOR POLISHES UNLOCKED');
+});
 
 // ---- Game Over Screen ----
 function assignMission(bankState) {
@@ -9425,6 +9489,14 @@ async function renderPreviewFrame(type, frameIndex = previewFrameIndex) {
         frameWidth,
         frameHeight
     );
+    const polish = getSelectedPolish();
+    if (polish.id !== 0) {
+        previewSpriteContext.save();
+        previewSpriteContext.globalCompositeOperation = 'multiply';
+        previewSpriteContext.fillStyle = polish.color;
+        previewSpriteContext.fillRect(0, 0, frameWidth, frameHeight);
+        previewSpriteContext.restore();
+    }
     previewFallback?.classList.add('hidden');
 
 }
@@ -9932,6 +10004,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         syncHeroPreview(initialType);
         updateHeroStats(initialType);
     }
+    renderOperatorPolishUi();
     startHeroPreviewAnimation();
     if (mainDebugToggle) mainDebugToggle.checked = false;
 
@@ -10178,6 +10251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     arcManager,
                     act2Manager
                 });
+                window.game.setOperatorPolish?.(getSelectedPolish().color);
                 window.game.nightVision = state.settings.nightVision;
                 traceBootPhase('three-constructor-ready', {
                     pixelRatio: window.game.renderer?.getPixelRatio?.(),
@@ -10604,6 +10678,15 @@ document.getElementById('menu-steam-badge')?.addEventListener('click', handleSte
 const STEAM_ACHIEVEMENT_ITEM_MAP = Object.freeze({
     slay_the_queen: 'achievement:slay_the_queen',
     archivist: 'achievement:archivist'
+});
+
+window.addEventListener('achievement-unlocked', (event) => {
+    const key = event?.detail?.key;
+    if (!key) return;
+    const polishGrant = unlockMilestonePolish(key);
+    if (!polishGrant.unlocked) return;
+    renderOperatorPolishUi();
+    showBiomePrompt(`> SUIT POLISH UNLOCKED: ${OPERATOR_POLISHES[polishGrant.id].name}`);
 });
 
 if (window.electronAPI) {
