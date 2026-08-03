@@ -11,6 +11,12 @@ test.describe('controller-ready modal focus', () => {
         await page.keyboard.press('KeyS');
         await expect(page.locator('#roster-btn')).toBeFocused();
 
+        await page.keyboard.press('KeyS');
+        await expect(page.locator('#start-game')).toBeFocused();
+
+        await page.keyboard.press('KeyW');
+        await expect(page.locator('#roster-btn')).toBeFocused();
+
         await page.keyboard.press('KeyD');
         await expect(page.locator('#codex-btn')).toBeFocused();
 

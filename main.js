@@ -730,6 +730,18 @@ function moveHeroSelectPanelFocus(code) {
     const commandRail = active?.closest?.('.menu-header-actions');
     const heroRail = active?.closest?.('.char-selection');
     const previewRail = active?.closest?.('.preview-box');
+    const initializeButton = active?.id === 'start-game';
+
+    if (initializeButton) {
+        if (isRight) {
+            return focusControllerTarget(document.getElementById('hero-polish-btn'), { playHover: true });
+        }
+        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
+        const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
+            ? lastHeroMenuCommandFocus
+            : visibleCommands.at(-1);
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
 
     if (commandRail) {
         lastHeroMenuCommandFocus = active;
@@ -775,6 +787,14 @@ function moveOperatorPolishGridFocus(code) {
 
 function moveMenuCommandGridFocus(code) {
     const active = document.activeElement;
+    if (active?.id === 'start-game') {
+        if (code !== 'KeyW' && code !== 'ArrowUp') return false;
+        const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
+        const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
+            ? lastHeroMenuCommandFocus
+            : visibleCommands.at(-1);
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
     const activeColumn = active?.closest?.('.menu-command-column');
     if (!activeColumn) return false;
 
@@ -793,7 +813,12 @@ function moveMenuCommandGridFocus(code) {
     if (code === 'KeyW' || code === 'ArrowUp') {
         target = currentItems[(rowIndex - 1 + currentItems.length) % currentItems.length];
     } else if (code === 'KeyS' || code === 'ArrowDown') {
-        target = currentItems[(rowIndex + 1) % currentItems.length];
+        if (rowIndex === currentItems.length - 1) {
+            lastHeroMenuCommandFocus = active;
+            target = document.getElementById('start-game');
+        } else {
+            target = currentItems[rowIndex + 1];
+        }
     } else if (code === 'KeyA' || code === 'ArrowLeft') {
         if (columnIndex === 0) return false;
         const adjacentItems = focusablesFor(columns[columnIndex - 1]);
