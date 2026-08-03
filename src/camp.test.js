@@ -77,6 +77,28 @@ describe('SurvivorCamp', () => {
         expect(camp.barricades[0].material.color.getHex()).toBe(0x2c2a26); // stays charred
     });
 
+    it('tracks the fortified crossing once when support level reaches the threshold', () => {
+        const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_vesper', label: 'CAMP VESPER' });
+        camp.reveal(0, 0);
+        expect(camp.wasFortified).toBe(false);
+
+        camp.setLevel(1);
+        expect(camp.wasFortified).toBe(false);
+
+        camp.setLevel(2);
+        expect(camp.wasFortified).toBe(true);
+
+        camp.setLevel(3);
+        expect(camp.wasFortified).toBe(true);
+
+        // Dropping back below the threshold re-arms the one-shot so a later
+        // re-crossing reads as a fresh event rather than staying silent.
+        camp.setLevel(1);
+        expect(camp.wasFortified).toBe(false);
+        camp.setLevel(2);
+        expect(camp.wasFortified).toBe(true);
+    });
+
     it('assigns the final camp to the player class mirror with living workers', () => {
         const camp = new SurvivorCamp(new THREE.Scene(), {
             id: 'camp_vesper',

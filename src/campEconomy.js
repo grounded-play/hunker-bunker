@@ -274,6 +274,84 @@ export function isCampVerbDegraded(campId, campStatus) {
     return campId === 'camp_meridian' && campStatus === 'robbed';
 }
 
+// docs/sprint-22-systems-breakdown/03-factions-and-hives.md — "select a
+// minimal but unmistakable aftermath matrix" and give the player a single
+// disposition + reason instead of raw suspicion/status/level numbers.
+// Priority order matters: several of these signals can be true at once for
+// the same camp record (e.g. status 'robbed' while also suspicion >= 50),
+// and only the most narratively severe one should read to the player.
+export const CAMP_AFTERMATH_FORTIFIED_LEVEL = 2;
+const CAMP_AFTERMATH_LOCKDOWN_SUSPICION = 50;
+const CAMP_STATUS_VALUES = Object.freeze(['alive', 'robbed', 'culled', 'recruited', 'turned']);
+
+export const CAMP_AFTERMATH_DISPOSITIONS = Object.freeze([
+    'culled',
+    'turned',
+    'outed',
+    'robbed',
+    'recruited',
+    'fortified',
+    'alive'
+]);
+
+const CAMP_AFTERMATH_LABELS = Object.freeze({
+    culled: 'DESTROYED',
+    turned: 'TURNED',
+    outed: 'LOCKED DOWN',
+    robbed: 'ROBBED',
+    recruited: 'RECRUITED',
+    fortified: 'FORTIFIED',
+    alive: 'ALIVE'
+});
+
+const CAMP_AFTERMATH_REASONS = Object.freeze({
+    culled: 'Nothing left standing here — you saw to that.',
+    turned: 'Spore exposure finished the job. They answer to the Queen now.',
+    outed: 'They know what you are carrying. Gates are shut, and they are watching.',
+    robbed: 'You took from them once. They have not forgotten.',
+    recruited: "They're hidden in your hold now, waiting on the launch.",
+    fortified: 'Your shells built these walls — the camp can hold its ground.',
+    alive: 'Untouched by you so far.'
+});
+
+function normalizeCampStatusValue(status) {
+    return CAMP_STATUS_VALUES.includes(status) ? status : 'alive';
+}
+
+/**
+ * Resolves the single player-facing "aftermath" disposition for a camp from
+ * whatever combination of status/suspicion/level/knowsPlayerInfected the
+ * record currently carries. Pure and read-only -- callers own applying the
+ * result to rendering, audio, or interaction gates.
+ */
+export function getCampAftermathDisposition(campRecord = {}) {
+    const status = normalizeCampStatusValue(campRecord.status);
+    const level = Math.max(0, Math.min(3, Math.floor(Number(campRecord.level) || 0)));
+    const suspicion = Math.max(0, Math.min(100, Math.floor(Number(campRecord.suspicion) || 0)));
+    const knowsPlayerInfected = Boolean(campRecord.knowsPlayerInfected);
+
+    if (status === 'culled') return 'culled';
+    if (status === 'turned') return 'turned';
+    if (knowsPlayerInfected || suspicion >= CAMP_AFTERMATH_LOCKDOWN_SUSPICION) return 'outed';
+    if (status === 'robbed') return 'robbed';
+    if (status === 'recruited') return 'recruited';
+    if (level >= CAMP_AFTERMATH_FORTIFIED_LEVEL) return 'fortified';
+    return 'alive';
+}
+
+export function getCampAftermathReason(disposition) {
+    return CAMP_AFTERMATH_REASONS[disposition] ?? CAMP_AFTERMATH_REASONS.alive;
+}
+
+export function getCampAftermathSummary(campRecord = {}) {
+    const disposition = getCampAftermathDisposition(campRecord);
+    return {
+        disposition,
+        label: CAMP_AFTERMATH_LABELS[disposition] ?? CAMP_AFTERMATH_LABELS.alive,
+        reason: getCampAftermathReason(disposition)
+    };
+}
+
 export function canApplyTrade(trade, bankState) {
     if (!trade || !bankState) return false;
     for (const [key, amt] of Object.entries(trade.give)) {
