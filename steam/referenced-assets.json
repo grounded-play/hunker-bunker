@@ -117,6 +117,7 @@
     "bio_spores_amber.png",
     "bio_spores_blue.png",
     "bio_wall_veins.png",
+    "bio_wall_veins_normal.png",
     "body_empty_exosuit.svg",
     "body_human_frozen_suit.svg",
     "boss_corrupted_engineer_v2.png",
@@ -139,6 +140,7 @@
     "bunker_tech_scratches.png",
     "bunker_wall_grunge.png",
     "bunker_wall_metal.png",
+    "bunker_wall_metal_normal.png",
     "canyon_falloff_alien.png",
     "canyon_falloff_biomech.png",
     "canyon_falloff_ice.png",
@@ -150,6 +152,7 @@
     "cryo_base_frost.png",
     "cryo_grunge_rime.png",
     "cryo_wall_conduit.png",
+    "cryo_wall_conduit_normal.png",
     "cryosnail.png",
     "cryosnail_dead.png",
     "cutscenes/poster-art/death-abyss.png",
@@ -166,16 +169,33 @@
     "cutscenes/poster-art/event-queen-encounter.png",
     "cybersnail.png",
     "cybersnail_dead.png",
+    "decal_bullet_holes.png",
+    "decal_hive_growth.png",
     "decal_scars.png",
+    "decal_wall_breach.png",
     "door.png",
     "door.webp",
-    "door_alien.png",
-    "door_bio.png",
-    "door_biomech_v2.webp",
+    "door_alien_keyart_v2.webp",
+    "door_bio_keyart_v2.webp",
+    "door_biomech_keyart_v2.webp",
     "door_biomechanical.png",
-    "door_cryo.png",
-    "door_nuclear.png",
-    "door_rust.png",
+    "door_cryo_keyart_v2.webp",
+    "door_nuclear_keyart_v2.webp",
+    "door_rust_keyart_v2.webp",
+    "drop_black_flask.png",
+    "drop_child_drawing.png",
+    "drop_dig_manifest.png",
+    "drop_dogtags.png",
+    "drop_first_bore_tag.png",
+    "drop_frozen_letter.png",
+    "drop_horizon_badge.png",
+    "drop_meteor_core.png",
+    "drop_moult_shard.png",
+    "drop_prayer_stone.png",
+    "drop_ration_ledger.png",
+    "drop_resin_locket.png",
+    "drop_security_log.png",
+    "drop_survey_probe.png",
     "economy/cache_deep_relic.png",
     "economy/cache_deep_relic_large.png",
     "economy/cache_key.png",
@@ -246,6 +266,7 @@
     "prop_biomech_arch.png",
     "prop_biomech_pillar_left.png",
     "prop_biomech_pillar_right.png",
+    "prop_blood_trail.png",
     "prop_broken_specimen_tank.png",
     "prop_bunker_supplies.png",
     "prop_camp_bedrolls.png",
@@ -281,17 +302,22 @@
     "prop_specimen_tank.png",
     "prop_spore_colony.png",
     "prop_surgical_cart.png",
+    "prop_torn_warning_poster.png",
     "queen_silhouette.png",
     "room_floor_material_atlas_v1.png",
     "room_wall_material_atlas_v1.png",
     "scatter_bio_moss.png",
     "scatter_bio_pod.png",
+    "scatter_biomech_debris.png",
     "scatter_bolts.svg",
+    "scatter_broken_drone.png",
     "scatter_cable_coil.svg",
+    "scatter_camp_supplies.png",
     "scatter_coolant_puddle.png",
     "scatter_cryo_icicle.png",
     "scatter_cryo_shards.png",
     "scatter_gravel.png",
+    "scatter_hive_eggs.png",
     "scatter_ice_stalagmite.png",
     "scatter_slime_puddle.png",
     "schematics/schematic_00.webp",
@@ -306,6 +332,7 @@
     "scout_ship_broken.png",
     "scout_ship_healed.png",
     "ship_wreckage.png",
+    "site_floor_material_atlas_v1.png",
     "spore_mortar.png",
     "sporesnail.png",
     "sporesnail_dead.png",
@@ -1628,7 +1655,7 @@
     {
       "path": "bio_wall_veins_normal.png",
       "bytes": 2927745,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "body_empty_exosuit.svg",
@@ -1773,7 +1800,7 @@
     {
       "path": "bunker_wall_metal_normal.png",
       "bytes": 2898574,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "camp_npc_turned_overlay.png",
@@ -1817,7 +1844,7 @@
     },
     {
       "path": "crash_site_broken_floor_v1.png",
-      "bytes": 3058773,
+      "bytes": 2018708,
       "classification": "runtime-required"
     },
     {
@@ -1843,7 +1870,7 @@
     {
       "path": "cryo_wall_conduit_normal.png",
       "bytes": 2956634,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "cryosnail.png",
@@ -2151,8 +2178,38 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_bullet_holes.png",
+      "bytes": 2050027,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hive_growth.png",
+      "bytes": 1633004,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_machine_cult_shrine.png",
+      "bytes": 1099,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_pod_312_breach.png",
+      "bytes": 1100,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_scars.png",
       "bytes": 1565757,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_tallow_herb_cache.png",
+      "bytes": 1127,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_wall_breach.png",
+      "bytes": 1930665,
       "classification": "runtime-required"
     },
     {
@@ -2171,8 +2228,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "door_alien_keyart_v2.webp",
+      "bytes": 188336,
+      "classification": "runtime-required"
+    },
+    {
       "path": "door_bio.png",
       "bytes": 964619,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_bio_keyart_v2.webp",
+      "bytes": 163880,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_biomech_keyart_v2.webp",
+      "bytes": 219924,
       "classification": "runtime-required"
     },
     {
@@ -2191,13 +2263,98 @@
       "classification": "runtime-required"
     },
     {
+      "path": "door_cryo_keyart_v2.webp",
+      "bytes": 214826,
+      "classification": "runtime-required"
+    },
+    {
       "path": "door_nuclear.png",
       "bytes": 798079,
       "classification": "runtime-required"
     },
     {
+      "path": "door_nuclear_keyart_v2.webp",
+      "bytes": 162820,
+      "classification": "runtime-required"
+    },
+    {
       "path": "door_rust.png",
       "bytes": 1024412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "door_rust_keyart_v2.webp",
+      "bytes": 221472,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_black_flask.png",
+      "bytes": 282978,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_child_drawing.png",
+      "bytes": 298134,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_dig_manifest.png",
+      "bytes": 327507,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_dogtags.png",
+      "bytes": 289168,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_first_bore_tag.png",
+      "bytes": 303572,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_frozen_letter.png",
+      "bytes": 204149,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_horizon_badge.png",
+      "bytes": 233151,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_meteor_core.png",
+      "bytes": 252298,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_moult_shard.png",
+      "bytes": 261694,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_prayer_stone.png",
+      "bytes": 294006,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_ration_ledger.png",
+      "bytes": 313533,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_resin_locket.png",
+      "bytes": 126412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_security_log.png",
+      "bytes": 252358,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "drop_survey_probe.png",
+      "bytes": 213634,
       "classification": "runtime-required"
     },
     {
@@ -3476,6 +3633,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_blood_trail.png",
+      "bytes": 1931111,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_broken_specimen_tank.png",
       "bytes": 363661,
       "classification": "runtime-required"
@@ -3503,12 +3665,12 @@
     {
       "path": "prop_camp_cot.svg",
       "bytes": 1476,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "prop_camp_crate.svg",
       "bytes": 1219,
-      "classification": "unknown"
+      "classification": "runtime-required"
     },
     {
       "path": "prop_camp_crates.png",
@@ -3626,6 +3788,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_iron_guild_dogtags.png",
+      "bytes": 1017,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_medical_bed.png",
       "bytes": 392486,
       "classification": "runtime-required"
@@ -3661,6 +3828,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_torn_warning_poster.png",
+      "bytes": 1932204,
+      "classification": "runtime-required"
+    },
+    {
       "path": "queen_silhouette.png",
       "bytes": 667500,
       "classification": "runtime-required"
@@ -3691,13 +3863,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "scatter_biomech_debris.png",
+      "bytes": 2379182,
+      "classification": "runtime-required"
+    },
+    {
       "path": "scatter_bolts.svg",
       "bytes": 1796,
       "classification": "runtime-required"
     },
     {
+      "path": "scatter_broken_drone.png",
+      "bytes": 1924746,
+      "classification": "runtime-required"
+    },
+    {
       "path": "scatter_cable_coil.svg",
       "bytes": 1480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_camp_supplies.png",
+      "bytes": 1745043,
       "classification": "runtime-required"
     },
     {
@@ -3718,6 +3905,16 @@
     {
       "path": "scatter_gravel.png",
       "bytes": 2273,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_hive_eggs.png",
+      "bytes": 1867427,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_horizon_black_box.png",
+      "bytes": 1061,
       "classification": "runtime-required"
     },
     {
@@ -3798,6 +3995,11 @@
     {
       "path": "ship_wreckage.png",
       "bytes": 516510,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "site_floor_material_atlas_v1.png",
+      "bytes": 1966084,
       "classification": "runtime-required"
     },
     {

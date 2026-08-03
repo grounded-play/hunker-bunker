@@ -7,7 +7,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 
 const DEFAULT_DEPOT_ROOTS = [
-    'dist_electron'
+    'dist_electron/linux-unpacked',
+    'dist_electron/win-unpacked'
 ];
 
 const FORBIDDEN_BASENAMES = new Map([
@@ -112,6 +113,8 @@ export function auditLinuxLauncher(root) {
     }
     if (!fs.existsSync(binary)) {
         failures.push({ file: 'hunker-bunker-bin', reason: 'Linux Electron binary is missing.' });
+    } else if ((fs.statSync(binary).mode & 0o111) === 0) {
+        failures.push({ file: 'hunker-bunker-bin', reason: 'Linux Electron binary is not executable.' });
     }
     return failures;
 }

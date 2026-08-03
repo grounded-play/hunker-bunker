@@ -65,7 +65,7 @@ describe('auditSteamDepot', () => {
         const depot = path.join(dir, 'dist_electron', 'linux-unpacked');
         fs.mkdirSync(depot, { recursive: true });
         fs.writeFileSync(path.join(depot, 'hunker-bunker'), '#!/bin/sh\nexec ./hunker-bunker-bin --no-sandbox "$@"\n', { mode: 0o755 });
-        fs.writeFileSync(path.join(depot, 'hunker-bunker-bin'), 'binary');
+        fs.writeFileSync(path.join(depot, 'hunker-bunker-bin'), 'binary', { mode: 0o755 });
 
         const result = await auditSteamDepot({
             cwd: dir,
@@ -84,6 +84,19 @@ describe('auditSteamDepot', () => {
         expect(auditLinuxLauncher(dir)).toEqual(expect.arrayContaining([
             expect.objectContaining({ file: 'hunker-bunker' }),
             expect.objectContaining({ file: 'hunker-bunker-bin' })
+        ]));
+    });
+
+    it('rejects a Linux Electron binary whose executable mode was stripped', () => {
+        const dir = makeTempDir();
+        fs.writeFileSync(path.join(dir, 'hunker-bunker'), '#!/bin/sh\nexec ./hunker-bunker-bin --no-sandbox "$@"\n', { mode: 0o755 });
+        fs.writeFileSync(path.join(dir, 'hunker-bunker-bin'), 'binary', { mode: 0o644 });
+
+        expect(auditLinuxLauncher(dir)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                file: 'hunker-bunker-bin',
+                reason: 'Linux Electron binary is not executable.'
+            })
         ]));
     });
 });

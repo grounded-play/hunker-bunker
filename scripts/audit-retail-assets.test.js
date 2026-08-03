@@ -23,4 +23,15 @@ describe('retail asset audit', () => {
     it('recognizes generated song interstitials as intentional runtime media', () => {
         expect(classifyPublicAsset('interstitials/int_01_key.webp', new Set())).toBe('runtime-required');
     });
+
+    it('recognizes data-keyed world dressing families as runtime media', () => {
+        for (const asset of [
+            'door_bio.png',
+            'decal_machine_cult_shrine.png',
+            'prop_iron_guild_dogtags.png',
+            'scatter_horizon_black_box.png'
+        ]) {
+            expect(classifyPublicAsset(asset, new Set())).toBe('runtime-required');
+        }
+    });
 });

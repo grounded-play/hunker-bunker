@@ -72,6 +72,12 @@ function collectSourceTexts(root) {
 export function classifyPublicAsset(relativePath, referenced) {
     const lower = relativePath.toLowerCase();
     if (referenced.has(relativePath)) return 'runtime-required';
+    // Several world-dressing families are selected by data key and resolved
+    // to filenames at runtime, so no literal `/asset.png` string exists for
+    // the static reference scanner to discover.
+    if (/^(?:door|decal|prop|scatter)_[^/]+\.(?:avif|gif|jpe?g|png|svg|webp)$/i.test(relativePath)) {
+        return 'runtime-required';
+    }
     if (/(?:^|\/)(?:concepts?|references?|rejected-candidates|sources-keyed|strips|identity)(?:\/|$)/.test(lower)
         || /(?:contact[_-]?sheet|preview|attempt|rejected|master-keyed|source-row)/.test(lower)) {
         return 'source-reference';
