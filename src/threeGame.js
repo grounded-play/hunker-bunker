@@ -58,10 +58,12 @@ import { createUniversalEncounter, resolveEncounterAction } from './universalEnc
 import { startEncounterTransition } from './snailEncounterTransition.js';
 import { cappedPixelRatio } from './renderScale.js';
 import { pickTerminalEvent } from './data/terminalEvents.js';
-import { getDialogueLine } from './data/dialogueLines.js';
+import { getDialogueLine, getSuitRegister } from './data/dialogueLines.js';
 import { getEnemyStats } from './data/enemies.js';
 import { DEPTH_TIER_NAMES, getDepthLootConfig } from './data/loot.js';
 import { BunkerDirector } from './director.js';
+import { LineDirector } from './lineDirector.js';
+import { DIRECTOR_AMBIENT_LINES } from './data/lineDirectorPools.js';
 import {
     applyTrade as applyCampTrade,
     canActivateCampVerb,
@@ -1141,6 +1143,8 @@ export class ThreeGame {
         // The Bunker Director: one pressure brain that reacts to the player's
         // greed/struggle by pulling existing levers (doc 11 §4.A).
         this.bunkerDirector = new BunkerDirector();
+        this.lineDirector = new LineDirector();
+        if (typeof window !== 'undefined') window.lineDirector = this.lineDirector;
         this._syncedRunModifier = null;
 
         this.camera = new THREE.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
@@ -4911,6 +4915,7 @@ export class ThreeGame {
     updateBunkerDirector(delta) {
         if (!this.bunkerDirector || !this.player || this.isPlayerDead || !this.snailsEnabled) return;
         if (!this.isGameplayInputActive()) return;
+        this.lineDirector?.tick(delta);
         this.syncRunModifierCards();
         const cardEffects = this.getRunCardEffects();
         const generatorState = this.getO2GeneratorState?.();
@@ -4929,10 +4934,12 @@ export class ThreeGame {
 
     executeDirectorAction(action) {
         switch (action) {
-            case 'patrol':
-                this.showBunkerLine(getDialogueLine('director') ?? 'A maintenance event has been scheduled around your location.');
+            case 'patrol': {
+                const line = this.lineDirector?.requestLine('ambient', this.buildLineDirectorContext(), DIRECTOR_AMBIENT_LINES);
+                this.showBunkerLine(line?.text ?? 'A maintenance event has been scheduled around your location.');
                 this.spawnPatrolNearPlayer();
                 break;
+            }
             case 'lightsout':
                 this.triggerLightsOut(6);
                 break;
@@ -4944,9 +4951,11 @@ export class ThreeGame {
                 this.grantSalvageCache({ tech: 6, coin: 4 });
                 this.showBunkerLine('Hardship subsidy released. Do not mistake this for compassion.');
                 break;
-            case 'taunt':
-                this.showBunkerLine(getDialogueLine('director') ?? '');
+            case 'taunt': {
+                const line = this.lineDirector?.requestLine('ambient', this.buildLineDirectorContext(), DIRECTOR_AMBIENT_LINES);
+                if (line) this.showBunkerLine(line.text);
                 break;
+            }
             default:
                 break;
         }
@@ -6098,6 +6107,22 @@ export class ThreeGame {
     showBunkerLine(text) {
         if (!text) return;
         window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
+    }
+
+    buildLineDirectorContext() {
+        const act2State = this.act2?.getState?.() ?? null;
+        const topObjective = (typeof window !== 'undefined'
+            ? window.objectiveRegistry?.getActiveObjectives?.(1)?.[0]
+            : null) ?? null;
+        const hpFrac = (this.playerVitals?.hp ?? 1) / Math.max(1, this.playerVitals?.maxHp ?? 1);
+        return {
+            register: getSuitRegister(act2State
+                ? { infectionStage: act2State.infectionStage, queenObedience: act2State.queenObedience }
+                : 'corporate'),
+            depthTier: this.currentDepthTier ?? 0,
+            danger: Math.max(0, Math.min(1, 1 - hpFrac)),
+            objectiveSource: topObjective?.source ?? null
+        };
     }
 
     adjustOxygen(amount = 0) {
@@ -11852,6 +11877,7 @@ export class ThreeGame {
             this.hadNearDeath = false;
             this._lastLoopStepKey = null; // force the loop-state HUD to re-emit
             this.bunkerDirector?.reset();
+            this.lineDirector?.reset();
             this._syncedRunModifier = null;
             this._blackoutWaveTimer = 0;
             this._extractionLockdownFired = false;
