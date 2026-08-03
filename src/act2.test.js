@@ -712,6 +712,204 @@ describe('expanded ending families', () => {
     });
 });
 
+// Sprint 22 B3 (docs/sprint-22-systems-breakdown/08-engineering-act2-state-schema.md
+// "Sprint 22 Work" item 2: "test save/reload/death at narrative boundaries").
+// Act2Manager has no bulk state setter -- the only sanctioned way to seed a
+// vector for a test is through the same storage the real `load()` reads, so
+// each case here writes JSON into a memoryStorage() slot and constructs a
+// *second*, independent Act2Manager against that same storage to stand in
+// for an app reload (or, since handleDeath() in threeGame.js never touches
+// `hb_act2_v1` at all, a death mid-run followed by a reload -- from this
+// module's perspective those are the same boundary: nothing rewrites this
+// key except a manager's own save(), so surviving one reload proves it
+// survives an arbitrary number of them, death or not).
+describe('Save/reload/death boundary persistence for every ending family', () => {
+    const campsWithStatus = (status, extra = {}) => ACT2_CAMP_IDS.map((id) => ({ id, aided: true, status, ...extra }));
+
+    const vectors = [
+        {
+            name: 'full brood',
+            ending: ACT2_ENDINGS.FULL_BROOD,
+            state: {
+                begun: true,
+                queenObedience: ACT2_MAX_OBEDIENCE,
+                queenStatus: 'aboard',
+                eggsStatus: 'aboard',
+                camps: campsWithStatus('culled')
+            }
+        },
+        {
+            name: 'clean escape',
+            ending: ACT2_ENDINGS.CLEAN_ESCAPE,
+            state: { begun: true, queenStatus: 'killed', eggsStatus: 'destroyed', camps: campsWithStatus('recruited') }
+        },
+        {
+            name: 'mixed crew',
+            ending: ACT2_ENDINGS.MIXED_CREW,
+            state: {
+                begun: true,
+                queenStatus: 'aboard',
+                eggsStatus: 'aboard',
+                camps: [
+                    { id: 'camp_meridian', aided: true, status: 'recruited' },
+                    { id: 'camp_tallow', aided: true, status: 'turned' },
+                    { id: 'camp_vesper', aided: true, status: 'robbed' }
+                ]
+            }
+        },
+        {
+            name: "carrier's bargain",
+            ending: ACT2_ENDINGS.CARRIERS_BARGAIN,
+            state: { begun: true, queenStatus: 'killed', eggsStatus: 'aboard', camps: campsWithStatus('recruited') }
+        },
+        {
+            name: 'scorched sky',
+            ending: ACT2_ENDINGS.SCORCHED_SKY,
+            state: { begun: true, queenStatus: 'killed', eggsStatus: 'destroyed', camps: campsWithStatus('culled') }
+        },
+        {
+            name: 'mothership infection',
+            ending: ACT2_ENDINGS.MOTHERSHIP_INFECTION,
+            state: {
+                begun: true,
+                uplinkSilenced: true,
+                dishBuilt: true,
+                queenStatus: 'rejected',
+                eggsStatus: 'destroyed',
+                infectionStage: 'latent',
+                camps: ACT2_CAMP_IDS.map((id) => ({ id, aided: true, status: 'recruited', bond: 4 })),
+                hives: [{ id: 'hive_relay', questFlags: { false_clearance: 'done' } }]
+            }
+        },
+        {
+            name: 'alien exodus',
+            ending: ACT2_ENDINGS.ALIEN_EXODUS,
+            state: {
+                begun: true,
+                queenStatus: 'abandoned',
+                eggsStatus: 'abandoned',
+                camps: campsWithStatus('robbed'),
+                hives: ACT2_HIVE_SITES.map((site) => ({ id: site.id, status: 'rescued' }))
+            }
+        },
+        {
+            name: 'outed escape',
+            ending: ACT2_ENDINGS.OUTED_ESCAPE,
+            state: {
+                begun: true,
+                queenStatus: 'killed',
+                eggsStatus: 'destroyed',
+                infectionStage: 'symptomatic',
+                camps: campsWithStatus('recruited', { knowsPlayerInfected: true }),
+                hives: []
+            }
+        },
+        {
+            name: 'failed carrier',
+            ending: ACT2_ENDINGS.FAILED_CARRIER,
+            state: {
+                begun: true,
+                queenStatus: 'killed',
+                eggsStatus: 'hidden',
+                camps: ACT2_CAMP_IDS.map((id, i) => ({ id, aided: true, status: i === 0 ? 'recruited' : 'culled' })),
+                hives: []
+            }
+        },
+        {
+            name: 'empty husk',
+            ending: ACT2_ENDINGS.EMPTY_HUSK,
+            state: {
+                begun: true,
+                queenStatus: 'abandoned',
+                eggsStatus: 'abandoned',
+                camps: campsWithStatus('robbed'),
+                hives: ACT2_HIVE_SITES.map((site) => ({ id: site.id, status: 'abandoned' }))
+            }
+        }
+    ];
+
+    it.each(vectors)('$name survives a save/reload boundary with an unchanged ending and manifest', ({ ending, state }) => {
+        // Seed through the same storage.setItem() path load() reads (the
+        // 'normalizes corrupt saves' test above uses the same convention) --
+        // never reach into manager.state directly, even from a test.
+        const storage = memoryStorage();
+        storage.setItem('hb_act2_v1', JSON.stringify(state));
+        const first = new Act2Manager({ storage });
+
+        expect(pickAct2Ending(first.getState())).toBe(ending);
+
+        // A second manager over the same storage stands in for an app
+        // reload (or a reload after death -- see the describe-block note).
+        const reloaded = new Act2Manager({ storage });
+        expect(pickAct2Ending(reloaded.getState())).toBe(ending);
+        expect(reloaded.getState().manifest).toEqual(first.getState().manifest);
+        expect(reloaded.getState()).toEqual(first.getState());
+
+        // A third reload proves the fixed point, not just a one-time match:
+        // save()/load() must not drift the state further on repeated boundaries.
+        reloaded.save();
+        const reloadedAgain = new Act2Manager({ storage });
+        expect(reloadedAgain.getState()).toEqual(reloaded.getState());
+    });
+});
+
+// Sprint 22 B3 item 4: "instrument impossible or invalid manifest vectors
+// for QA" -- rather than reacting only to whatever single vector a live run
+// happens to hit, sweep a broad combinatorial space and assert the two
+// invariants a QA pass actually cares about: the picker never throws or
+// returns a non-ending, and manifest.valid always agrees with seat math.
+describe('Manifest/ending invariants across a broad vector sweep (Sprint 22 B3)', () => {
+    const CAMP_STATUS_SWEEP = ACT2_CAMP_STATUSES;
+    const QUEEN_STATUS_SWEEP = ['aboard', 'rejected', 'killed', 'abandoned'];
+    const EGGS_STATUS_SWEEP = ['aboard', 'destroyed', 'abandoned', 'hidden'];
+    const KNOWN_ENDINGS = new Set(Object.values(ACT2_ENDINGS));
+
+    function* sweepVectors() {
+        for (const queenStatus of QUEEN_STATUS_SWEEP) {
+            for (const eggsStatus of EGGS_STATUS_SWEEP) {
+                for (const meridianStatus of CAMP_STATUS_SWEEP) {
+                    for (const tallowStatus of CAMP_STATUS_SWEEP) {
+                        yield {
+                            begun: true,
+                            queenStatus,
+                            eggsStatus,
+                            camps: [
+                                { id: 'camp_meridian', aided: true, status: meridianStatus },
+                                { id: 'camp_tallow', aided: true, status: tallowStatus },
+                                { id: 'camp_vesper', aided: true, status: 'alive' }
+                            ]
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    it('never throws and always returns a declared ending, for every swept vector', () => {
+        let checked = 0;
+        for (const rawState of sweepVectors()) {
+            const state = normalizeAct2State(rawState);
+            expect(() => pickAct2Ending(state)).not.toThrow();
+            expect(KNOWN_ENDINGS.has(pickAct2Ending(state))).toBe(true);
+            checked += 1;
+        }
+        expect(checked).toBe(QUEEN_STATUS_SWEEP.length * EGGS_STATUS_SWEEP.length * CAMP_STATUS_SWEEP.length * CAMP_STATUS_SWEEP.length);
+    });
+
+    it('keeps manifest.valid consistent with its own seat/invalidReasons math for every swept vector', () => {
+        for (const rawState of sweepVectors()) {
+            const state = normalizeAct2State(rawState);
+            const { manifest } = state;
+            expect(manifest.valid).toBe(manifest.invalidReasons.length === 0);
+            if (manifest.valid) {
+                expect(manifest.seatsUsed).toBeLessThanOrEqual(manifest.seatsMax);
+            } else {
+                expect(manifest.seatsUsed > manifest.seatsMax || manifest.invalidReasons.length > 0).toBe(true);
+            }
+        }
+    });
+});
+
 describe('dialogue stages and finals', () => {
     const boot = () => new Act2Manager({ storage: memoryStorage() });
 
