@@ -56,13 +56,23 @@ export function buildClaimsReport(root = ROOT) {
     };
 }
 
+export function claimsReportMatches(existing, report) {
+    try {
+        return JSON.stringify(JSON.parse(existing)) === JSON.stringify(report);
+    } catch {
+        return false;
+    }
+}
+
 function main() {
     const check = process.argv.includes('--check');
     const report = buildClaimsReport();
     const serialized = `${JSON.stringify(report, null, 2)}\n`;
     if (check) {
         const existing = fs.existsSync(REPORT_PATH) ? fs.readFileSync(REPORT_PATH, 'utf8') : '';
-        if (existing !== serialized) {
+        // Compare JSON values instead of bytes. Git may check tracked JSON out
+        // with CRLF on Windows, which must not make a current report look stale.
+        if (!claimsReportMatches(existing, report)) {
             console.error('[steam-claims] report is missing or stale; run npm run steam:claims');
             process.exitCode = 1;
             return;
@@ -83,4 +93,3 @@ function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
     main();
 }
-
