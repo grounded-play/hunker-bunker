@@ -708,6 +708,37 @@ function moveControllerFocus(delta) {
     return target;
 }
 
+function moveMenuCommandGridFocus(code) {
+    const active = document.activeElement;
+    const activeColumn = active?.closest?.('.menu-command-column');
+    if (!activeColumn) return false;
+
+    const columns = Array.from(document.querySelectorAll('#menu .menu-command-column'));
+    const columnIndex = columns.indexOf(activeColumn);
+    if (columnIndex < 0) return false;
+
+    const focusablesFor = (column) => getVisibleControllerFocusables(column).filter((element) => (
+        element.matches('button, .steam-account-badge--menu')
+    ));
+    const currentItems = focusablesFor(activeColumn);
+    if (!currentItems.length) return false;
+    const rowIndex = Math.max(0, currentItems.indexOf(active));
+    let target = null;
+
+    if (code === 'KeyW' || code === 'ArrowUp') {
+        target = currentItems[(rowIndex - 1 + currentItems.length) % currentItems.length];
+    } else if (code === 'KeyS' || code === 'ArrowDown') {
+        target = currentItems[(rowIndex + 1) % currentItems.length];
+    } else if (['KeyA', 'ArrowLeft', 'KeyD', 'ArrowRight'].includes(code)) {
+        const offset = (code === 'KeyA' || code === 'ArrowLeft') ? -1 : 1;
+        const nextColumn = columns[(columnIndex + offset + columns.length) % columns.length];
+        const nextItems = focusablesFor(nextColumn);
+        target = nextItems[Math.min(rowIndex, Math.max(0, nextItems.length - 1))] ?? null;
+    }
+
+    return target ? focusControllerTarget(target) : false;
+}
+
 // Keyboard-style Steam Deck layouts must be able to operate every menu even
 // when the native Steam Input action manifest has not been published yet.
 // Treat WASD like the directional pad; on a vertical menu A/W move up and
@@ -725,6 +756,7 @@ document.addEventListener('keydown', (event) => {
     const direction = menuKeyboardDirection(event.code);
     if (direction) {
         event.preventDefault();
+        if (root.id === 'menu' && moveMenuCommandGridFocus(event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
         const adjusted = horizontal && (
@@ -1572,22 +1604,33 @@ function refreshCareerStats() {
     const longestEl = document.getElementById('career-stat-longest-run');
     const depthEl = document.getElementById('career-stat-deepest-depth');
     const deathsEl = document.getElementById('career-stat-deaths');
-    if (!longestEl && !depthEl && !deathsEl) return;
+    const menuHistoryEl = document.getElementById('menu-steam-history');
+    if (!longestEl && !depthEl && !deathsEl && !menuHistoryEl) return;
 
     const stats = achievementEngine.getState().stats;
+    const totalSeconds = Math.floor((stats.maxRunMs ?? 0) / 1000);
+    const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+    const ss = String(totalSeconds % 60).padStart(2, '0');
+    const tier = arcManager.getState().signals.deepestDepthTier ?? 0;
+    const depthName = DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, tier))] ?? 'SURFACE';
+    const deaths = stats.totalDeaths ?? 0;
     if (longestEl) {
-        const totalSeconds = Math.floor((stats.maxRunMs ?? 0) / 1000);
-        const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-        const ss = String(totalSeconds % 60).padStart(2, '0');
         longestEl.textContent = `LONGEST ${mm}:${ss}`;
     }
     if (deathsEl) {
-        deathsEl.textContent = `DEATHS ${stats.totalDeaths ?? 0}`;
+        deathsEl.textContent = `DEATHS ${deaths}`;
     }
     if (depthEl) {
-        const tier = arcManager.getState().signals.deepestDepthTier ?? 0;
-        const name = DEPTH_TIER_NAMES[Math.max(0, Math.min(DEPTH_TIER_NAMES.length - 1, tier))] ?? 'SURFACE';
-        depthEl.textContent = `DEPTH ${name}`;
+        depthEl.textContent = `DEPTH ${depthName}`;
+    }
+    if (menuHistoryEl) {
+        const hasHistory = totalSeconds > 0 || deaths > 0 || tier > 0
+            || localStorage.getItem('hb_run_stats_v1') !== null
+            || localStorage.getItem('hb_bank_v1') !== null;
+        menuHistoryEl.textContent = hasHistory
+            ? `LONGEST ${mm}:${ss} · DEPTH ${depthName} · DEATHS ${deaths}`
+            : 'NEW OPERATOR // NO RUN HISTORY';
+        document.getElementById('menu-steam-badge')?.classList.toggle('steam-account-badge--returning', hasHistory);
     }
 }
 
@@ -1624,7 +1667,10 @@ function refreshTitleProfileHud(hasSave = true) {
     const hud = document.getElementById('title-profile-hud');
     if (!hud) return;
     hud.classList.toggle('hidden', !hasSave);
-    if (!hasSave) return;
+    if (!hasSave) {
+        refreshCareerStats();
+        return;
+    }
 
     const playerType = getSavedHeroType();
     const callsignEl = document.getElementById('title-profile-callsign');
@@ -8887,75 +8933,82 @@ function renderRosterModal(mode = 'continue') {
         setTxt('roster-stat-blackbox', 'NONE');
     }
 
-    // Render equipped Steam cosmetics (only show if any are equipped)
+    // Render equipped Steam cosmetics (3 pre-blank placeholder cards showing NULL when unequipped)
     const patchId = localStorage.getItem('hb_equipped_patch');
     const decalId = localStorage.getItem('hb_equipped_decal');
     const finishId = localStorage.getItem('hb_equipped_weapon_finish');
-    const hasCosmetics = Boolean(patchId || decalId || finishId);
 
+    setTxt('roster-equipped-patch', patchId ? (STEAM_ITEM_CATALOG[Number(patchId)]?.name ?? 'NULL') : 'NULL');
+    setTxt('roster-equipped-decal', decalId ? (STEAM_ITEM_CATALOG[Number(decalId)]?.name ?? 'NULL') : 'NULL');
+    setTxt('roster-equipped-weapon-finish', finishId ? (STEAM_ITEM_CATALOG[Number(finishId)]?.name ?? 'NULL') : 'NULL');
+
+    // Make cosmetic cards clickable to open Steam Vault submenu
     const cosmeticsRow = document.getElementById('roster-cosmetics-row');
-    const cosmeticsLabel = document.querySelector('.roster-section-label--cosmetics');
-    if (cosmeticsRow) cosmeticsRow.classList.toggle('hidden', !hasCosmetics);
-    if (cosmeticsLabel) cosmeticsLabel.classList.toggle('hidden', !hasCosmetics);
-
-    if (hasCosmetics) {
-        setTxt('roster-equipped-patch', patchId ? (STEAM_ITEM_CATALOG[Number(patchId)]?.name ?? 'NONE') : 'NONE');
-        setTxt('roster-equipped-decal', decalId ? (STEAM_ITEM_CATALOG[Number(decalId)]?.name ?? 'NONE') : 'NONE');
-        setTxt('roster-equipped-weapon-finish', finishId ? (STEAM_ITEM_CATALOG[Number(finishId)]?.name ?? 'NONE') : 'NONE');
+    if (cosmeticsRow && !cosmeticsRow._wired) {
+        cosmeticsRow._wired = true;
+        cosmeticsRow.querySelectorAll('.roster-cosmetic-chip').forEach((chip) => {
+            chip.style.cursor = 'pointer';
+            chip.title = 'Click to open Steam Vault cosmetics submenu';
+            chip.addEventListener('click', () => {
+                window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                openSteamVaultModal();
+            });
+        });
     }
 
     const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
-    const fabbedWeapons = weapons.filter((r) => fabricator.isFabricated(r.id));
-    const fabbed = fabbedWeapons.length;
+    const fabbed = weapons.filter((r) => fabricator.isFabricated(r.id)).length;
     setTxt('roster-fab-count', `ARSENAL: ${fabbed} / ${weapons.length} WEAPONS FABRICATED`);
 
-    const sidearmsLabel = document.querySelector('.roster-section-label--sidearm');
-    if (sidearmsLabel) sidearmsLabel.classList.toggle('hidden', fabbed === 0);
-
+    const equippedId = loadout.getEquippedId();
     grid.innerHTML = '';
-    if (fabbed === 0) {
-        grid.classList.add('hidden');
-    } else {
-        grid.classList.remove('hidden');
-        const equippedId = loadout.getEquippedId();
-        for (const recipe of fabbedWeapons) {
-            const equipped = equippedId === recipe.id;
+    for (const recipe of weapons) {
+        const fabricated = fabricator.isFabricated(recipe.id);
+        const equipped = fabricated && equippedId === recipe.id;
 
-            const card = document.createElement('div');
-            card.className = ['roster-weapon', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
+        const card = document.createElement('div');
+        card.className = ['roster-weapon', fabricated ? '' : 'roster-weapon--locked', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
 
-            const art = document.createElement('div');
-            art.className = 'roster-weapon__art';
-            const img = document.createElement('img');
-            img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
-            img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
-            art.appendChild(img);
-            card.appendChild(art);
+        const art = document.createElement('div');
+        art.className = 'roster-weapon__art';
+        const img = document.createElement('img');
+        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name;
+        img.src = assetUrl(fabricated ? recipe.art : '/bunker_junk_rare.png');
+        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
+        art.appendChild(img);
+        card.appendChild(art);
 
-            const name = document.createElement('div');
-            name.className = 'roster-weapon__name';
-            name.textContent = recipe.name;
-            card.appendChild(name);
+        const name = document.createElement('div');
+        name.className = 'roster-weapon__name';
+        name.textContent = fabricated ? recipe.name : 'NULL';
+        card.appendChild(name);
 
-            const btn = document.createElement('button');
-            btn.className = 'roster-weapon__btn';
-            if (equipped) {
-                btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
-            } else {
-                btn.textContent = 'EQUIP';
-                btn.addEventListener('click', () => {
-                    if (loadout.equip(recipe.id, fabricator)) {
-                        window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-                        syncEquippedWeaponLabel();
-                        renderRosterModal(mode);
-                    } else {
-                        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-                    }
-                });
-            }
-            card.appendChild(btn);
-            grid.appendChild(card);
+        const btn = document.createElement('button');
+        btn.className = 'roster-weapon__btn';
+        if (!fabricated) {
+            btn.textContent = '+ FABRICATE';
+            btn.classList.add('roster-weapon__btn--locked');
+            btn.title = 'Click to open Fabrication Bay';
+            btn.addEventListener('click', () => {
+                window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                openFabricationModal();
+            });
+        } else if (equipped) {
+            btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
+        } else {
+            btn.textContent = 'EQUIP';
+            btn.addEventListener('click', () => {
+                if (loadout.equip(recipe.id, fabricator)) {
+                    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                    syncEquippedWeaponLabel();
+                    renderRosterModal(mode);
+                } else {
+                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                }
+            });
         }
+        card.appendChild(btn);
+        grid.appendChild(card);
     }
 }
 

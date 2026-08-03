@@ -1208,7 +1208,7 @@ body {
   padding: calc(var(--vu) * 3.25);
   z-index: 8000;
   display: grid;
-  grid-template-columns: calc(var(--vu) * 24) minmax(0, 1fr);
+  grid-template-columns: calc(var(--vu) * 34) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: calc(var(--vu) * 1.5) calc(var(--vu) * 2);
 }
@@ -1227,27 +1227,44 @@ body {
 .menu-header-actions {
   grid-column: 1;
   grid-row: 2;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   justify-content: flex-start;
-  gap: calc(var(--vu) * 0.75);
+  gap: calc(var(--vu) * 1);
   padding: calc(var(--vu) * 1.4);
   min-width: 0;
-  overflow-y: auto;
+  overflow: hidden;
   background: rgba(7, 9, 10, 0.78);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   z-index: 100;
 }
 
+.menu-command-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.7);
+}
+
+.menu-command-column__label {
+  padding-bottom: calc(var(--vu) * 0.45);
+  border-bottom: 1px solid rgba(255, 159, 28, 0.2);
+  color: rgba(255, 183, 91, 0.72);
+  font: 800 calc(var(--font-xs) * 0.68) / 1 'Space Mono', monospace;
+  letter-spacing: 0.12em;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .menu-header-actions .start-btn {
   width: 100% !important;
   min-width: 0 !important;
   max-width: none !important;
-  padding: calc(var(--vu) * 1.0) calc(var(--vu) * 0.6) !important;
-  font-size: var(--font-xs) !important;
-  letter-spacing: 0.1em !important;
+  padding: calc(var(--vu) * 0.78) calc(var(--vu) * 0.4) !important;
+  font-size: calc(var(--font-xs) * 0.86) !important;
+  letter-spacing: 0.065em !important;
   white-space: nowrap;
   border-radius: 6px !important;
   border: 1px solid transparent !important;
@@ -1284,7 +1301,7 @@ body {
 
 .menu-command__status {
   width: 100%;
-  font-size: var(--font-xs);
+  font-size: calc(var(--font-xs) * 0.72);
   font-weight: 800;
   color: var(--accent-primary);
   opacity: 0.9;
@@ -1294,7 +1311,7 @@ body {
   min-height: 1.1em;
   text-align: center;
   white-space: nowrap;
-  margin-top: calc(var(--vu) * 0.7);
+  margin-top: calc(var(--vu) * 0.28);
   text-shadow: 0 0 calc(var(--vu) * 0.7) rgba(255, 159, 28, 0.18);
   position: relative;
   z-index: 2;
@@ -2462,7 +2479,7 @@ body {
   display: grid;
   grid-column: 1 / -1;
   grid-row: 3;
-  grid-template-columns: calc(var(--vu) * 24) minmax(0, 1fr);
+  grid-template-columns: calc(var(--vu) * 34) minmax(0, 1fr);
   align-items: flex-end;
   gap: calc(var(--vu) * 2);
   width: 100%;
@@ -7668,8 +7685,62 @@ body.mission-intro-active #game-container canvas {
   position: relative;
   top: auto;
   left: auto;
-  margin-top: calc(var(--vu) * 0.5);
-  padding: calc(var(--vu) * 0.5) calc(var(--vu) * 1.2);
+  right: auto;
+  width: 100%;
+  min-width: 0;
+  margin-top: auto;
+  padding: calc(var(--vu) * 0.75);
+  gap: calc(var(--vu) * 0.7);
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.steam-account-badge--menu:focus,
+.steam-account-badge--menu:focus-visible,
+.controller-mode .steam-account-badge--menu:focus {
+  outline: 2px solid rgba(0, 229, 255, 0.9);
+  outline-offset: 2px;
+  border-color: rgba(0, 229, 255, 0.72);
+  box-shadow: 0 0 18px rgba(0, 210, 255, 0.32);
+}
+
+.steam-account-badge--menu .steam-account-badge__icon {
+  width: calc(var(--vu) * 2.2);
+  height: calc(var(--vu) * 2.2);
+  flex: 0 0 auto;
+}
+
+.steam-account-badge--menu .steam-account-badge__info {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.steam-account-badge--menu .steam-account-badge__name,
+.steam-account-badge--menu .steam-account-badge__status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.steam-account-badge__history {
+  display: block;
+  margin-top: calc(var(--vu) * 0.38);
+  padding-top: calc(var(--vu) * 0.38);
+  border-top: 1px solid rgba(0, 210, 255, 0.16);
+  color: rgba(191, 205, 218, 0.7);
+  font: 700 calc(var(--font-xs) * 0.56) / 1.25 'Space Mono', monospace;
+  letter-spacing: 0.035em;
+  white-space: normal;
+}
+
+.steam-account-badge--menu.steam-account-badge--returning {
+  border-color: rgba(255, 159, 28, 0.42);
+  background: linear-gradient(135deg, rgba(32, 23, 11, 0.9), rgba(11, 18, 23, 0.88));
+}
+
+.steam-account-badge--menu.steam-account-badge--returning .steam-account-badge__history {
+  border-top-color: rgba(255, 159, 28, 0.22);
+  color: rgba(255, 205, 137, 0.82);
 }
 
 .steam-account-badge__icon {
@@ -8363,7 +8434,19 @@ body.mission-intro-active #game-container canvas {
 
 .roster-weapon__btn:hover:not(:disabled) { filter: brightness(1.12); }
 .roster-weapon__btn:disabled { cursor: default; box-shadow: none; }
-.roster-weapon__btn--locked { background: rgba(120, 130, 140, 0.25); color: rgba(220, 230, 240, 0.6); }
+.roster-weapon__btn--locked {
+  background: rgba(0, 229, 255, 0.15) !important;
+  color: #00e5ff !important;
+  border: 1px dashed rgba(0, 229, 255, 0.5) !important;
+  cursor: pointer !important;
+}
+
+.roster-weapon__btn--locked:hover {
+  background: rgba(0, 229, 255, 0.3) !important;
+  border-color: #00e5ff !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5) !important;
+}
+
 .roster-weapon__btn--equipped { background: rgba(125, 255, 90, 0.25); color: #c8ffb4; border: 1px solid rgba(125, 255, 90, 0.5); }
 
 .roster-cosmetics-row {
@@ -8381,6 +8464,15 @@ body.mission-intro-active #game-container canvas {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.roster-cosmetic-chip:hover {
+  background: rgba(125, 255, 90, 0.15);
+  border-color: rgba(125, 255, 90, 0.65);
+  box-shadow: 0 0 14px rgba(125, 255, 90, 0.35);
+  transform: translateY(-1px);
 }
 
 .roster-cosmetic-chip .label {
