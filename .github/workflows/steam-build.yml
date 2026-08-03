@@ -1,5 +1,5 @@
 # Steam build pipeline (docs/steam-build-pipeline.md, Phase C).
-# - Every push to dev/main branches + PRs: prove the game still packages.
+# - Every push to dev/main/mothership branches + PRs: prove the game still packages.
 # - Tags (v*) or manual dispatch: build win+linux, then upload to Steam's
 #   'beta' branch IF the Steam secrets are configured. Without secrets the
 #   upload job skips and the artifacts are still attached to the run.
@@ -12,6 +12,7 @@ on:
   push:
     branches:
       - main
+      - mothership
       - 'dev/**'
     tags: ['v*']
   workflow_dispatch:

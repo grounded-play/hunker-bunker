@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="steam/store/steam_header_capsule_en.png" alt="Hunker Bunker key art: a lone operator in an industrial bunker corridor" width="820">
+  <img src="./steam/store/steam_header_capsule_en.png" alt="Hunker Bunker key art: a lone operator in an industrial bunker corridor" width="820">
 </p>
 
 # HUNKER BUNKER
@@ -26,7 +26,7 @@
 
 | Ice-Locked Perimeter | Subterranean Tactical Run | Hostile Sector Contacts |
 | :---: | :---: | :---: |
-| <img src="public/title_key_art_v2.png" alt="Sector Zero Perimeter" width="380"> | <img src="public/hunker_bunker_hero.png" alt="Tactical Run" width="380"> | <img src="public/cutscenes/poster-art/death-combat.png" alt="Hostile Contacts" width="380"> |
+| <img src="./public/title_key_art_v2.png" alt="Sector Zero Perimeter" width="380"> | <img src="./public/hunker_bunker_hero.png" alt="Tactical Run" width="380"> | <img src="./public/cutscenes/poster-art/death-combat.png" alt="Hostile Contacts" width="380"> |
 
 ---
 
@@ -45,7 +45,7 @@
 
 | SCOUT | TANK | ENGINEER |
 | :---: | :---: | :---: |
-| <img src="public/Scout.Intro.gif" alt="Scout Class Exosuit" width="240"> | <img src="public/Tank.Intro.gif" alt="Tank Class Exosuit" width="240"> | <img src="public/Eng.Intro.gif" alt="Engineer Class Exosuit" width="240"> |
+| <img src="./public/Scout.Intro.gif" alt="Scout Class Exosuit" width="240"> | <img src="./public/Tank.Intro.gif" alt="Tank Class Exosuit" width="240"> | <img src="./public/Eng.Intro.gif" alt="Engineer Class Exosuit" width="240"> |
 | **Active Ability**: Sprint Burst<br>Fast recon & high-risk salvage runs. | **Active Ability**: Heavy Brace<br>Absorbs punishment & clears corridors. | **Active Ability**: Systems Reroute<br>Hacks terminals & maximizes extraction. |
 
 ---
