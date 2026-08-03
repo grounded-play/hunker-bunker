@@ -8887,60 +8887,75 @@ function renderRosterModal(mode = 'continue') {
         setTxt('roster-stat-blackbox', 'NONE');
     }
 
-    // Render equipped Steam cosmetics
+    // Render equipped Steam cosmetics (only show if any are equipped)
     const patchId = localStorage.getItem('hb_equipped_patch');
     const decalId = localStorage.getItem('hb_equipped_decal');
     const finishId = localStorage.getItem('hb_equipped_weapon_finish');
-    setTxt('roster-equipped-patch', patchId ? (STEAM_ITEM_CATALOG[Number(patchId)]?.name ?? 'NONE') : 'NONE');
-    setTxt('roster-equipped-decal', decalId ? (STEAM_ITEM_CATALOG[Number(decalId)]?.name ?? 'NONE') : 'NONE');
-    setTxt('roster-equipped-weapon-finish', finishId ? (STEAM_ITEM_CATALOG[Number(finishId)]?.name ?? 'NONE') : 'NONE');
+    const hasCosmetics = Boolean(patchId || decalId || finishId);
+
+    const cosmeticsRow = document.getElementById('roster-cosmetics-row');
+    const cosmeticsLabel = document.querySelector('.roster-section-label--cosmetics');
+    if (cosmeticsRow) cosmeticsRow.classList.toggle('hidden', !hasCosmetics);
+    if (cosmeticsLabel) cosmeticsLabel.classList.toggle('hidden', !hasCosmetics);
+
+    if (hasCosmetics) {
+        setTxt('roster-equipped-patch', patchId ? (STEAM_ITEM_CATALOG[Number(patchId)]?.name ?? 'NONE') : 'NONE');
+        setTxt('roster-equipped-decal', decalId ? (STEAM_ITEM_CATALOG[Number(decalId)]?.name ?? 'NONE') : 'NONE');
+        setTxt('roster-equipped-weapon-finish', finishId ? (STEAM_ITEM_CATALOG[Number(finishId)]?.name ?? 'NONE') : 'NONE');
+    }
 
     const weapons = FAB_RECIPES.filter((r) => r.klass === 'WEAPON');
-    const fabbed = weapons.filter((r) => fabricator.isFabricated(r.id)).length;
+    const fabbedWeapons = weapons.filter((r) => fabricator.isFabricated(r.id));
+    const fabbed = fabbedWeapons.length;
     setTxt('roster-fab-count', `ARSENAL: ${fabbed} / ${weapons.length} WEAPONS FABRICATED`);
 
-    const equippedId = loadout.getEquippedId();
+    const sidearmsLabel = document.querySelector('.roster-section-label--sidearm');
+    if (sidearmsLabel) sidearmsLabel.classList.toggle('hidden', fabbed === 0);
+
     grid.innerHTML = '';
-    for (const recipe of weapons) {
-        const fabricated = fabricator.isFabricated(recipe.id);
-        const equipped = fabricated && equippedId === recipe.id;
+    if (fabbed === 0) {
+        grid.classList.add('hidden');
+    } else {
+        grid.classList.remove('hidden');
+        const equippedId = loadout.getEquippedId();
+        for (const recipe of fabbedWeapons) {
+            const equipped = equippedId === recipe.id;
 
-        const card = document.createElement('div');
-        card.className = ['roster-weapon', fabricated ? '' : 'roster-weapon--locked', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
+            const card = document.createElement('div');
+            card.className = ['roster-weapon', equipped ? 'roster-weapon--equipped' : ''].filter(Boolean).join(' ');
 
-        const art = document.createElement('div');
-        art.className = 'roster-weapon__art';
-        const img = document.createElement('img');
-        img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
-        img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
-        art.appendChild(img);
-        card.appendChild(art);
+            const art = document.createElement('div');
+            art.className = 'roster-weapon__art';
+            const img = document.createElement('img');
+            img.loading = 'lazy'; img.decoding = 'async'; img.alt = recipe.name; img.src = assetUrl(recipe.art);
+            img.addEventListener('error', () => { img.src = assetUrl('/bunker_junk_rare.png'); }, { once: true });
+            art.appendChild(img);
+            card.appendChild(art);
 
-        const name = document.createElement('div');
-        name.className = 'roster-weapon__name';
-        name.textContent = fabricated ? recipe.name : '???';
-        card.appendChild(name);
+            const name = document.createElement('div');
+            name.className = 'roster-weapon__name';
+            name.textContent = recipe.name;
+            card.appendChild(name);
 
-        const btn = document.createElement('button');
-        btn.className = 'roster-weapon__btn';
-        if (!fabricated) {
-            btn.textContent = 'NOT FABRICATED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--locked');
-        } else if (equipped) {
-            btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
-        } else {
-            btn.textContent = 'EQUIP';
-            btn.addEventListener('click', () => {
-                if (loadout.equip(recipe.id, fabricator)) {
-                    window.AudioManager?.play?.('ui_click', { volume: 0.5 });
-                    syncEquippedWeaponLabel();
-                    renderRosterModal(mode);
-                } else {
-                    window.AudioManager?.play?.('ui_error', { volume: 0.5 });
-                }
-            });
+            const btn = document.createElement('button');
+            btn.className = 'roster-weapon__btn';
+            if (equipped) {
+                btn.textContent = '✓ EQUIPPED'; btn.disabled = true; btn.classList.add('roster-weapon__btn--equipped');
+            } else {
+                btn.textContent = 'EQUIP';
+                btn.addEventListener('click', () => {
+                    if (loadout.equip(recipe.id, fabricator)) {
+                        window.AudioManager?.play?.('ui_click', { volume: 0.5 });
+                        syncEquippedWeaponLabel();
+                        renderRosterModal(mode);
+                    } else {
+                        window.AudioManager?.play?.('ui_error', { volume: 0.5 });
+                    }
+                });
+            }
+            card.appendChild(btn);
+            grid.appendChild(card);
         }
-        card.appendChild(btn);
-        grid.appendChild(card);
     }
 }
 
