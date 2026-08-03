@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
 
 const MODEL_URL = '/3d/scouting-scout/Scout.game.glb';
@@ -8,6 +9,14 @@ const WEAPON_URL = '/3d/GG.1.glb';
 const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land']);
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
 let weaponTemplatePromise = null;
+const characterTemplates = new Map();
+
+function loadCharacterTemplate(url) {
+    if (!characterTemplates.has(url)) {
+        characterTemplates.set(url, new GLTFLoader().loadAsync(assetUrl(url)));
+    }
+    return characterTemplates.get(url);
+}
 
 async function createGg1Weapon() {
     weaponTemplatePromise ??= new GLTFLoader().loadAsync(assetUrl(WEAPON_URL));
@@ -122,11 +131,18 @@ function makeClipInPlace(source) {
     return clip;
 }
 
-function retargetMixamoClip(source, fromPrefix, toPrefix) {
+function retargetMixamoClip(source, fromPrefix, toPrefix, targetRoot) {
     const clip = source.clone();
     for (const track of clip.tracks) {
         track.name = track.name.replace(fromPrefix, toPrefix);
     }
+    // Some Mixamo downloads omit finger chains or auxiliary bones. Feeding
+    // those tracks to AnimationMixer produces a warning every frame/action.
+    clip.tracks = clip.tracks.filter((track) => {
+        const separator = track.name.lastIndexOf('.');
+        const nodeName = separator >= 0 ? track.name.slice(0, separator) : track.name;
+        return Boolean(targetRoot.getObjectByName(nodeName));
+    });
     return clip;
 }
 
@@ -153,11 +169,14 @@ export async function createPlayer3dOverlay({
     animationBonePrefix = null,
     allowStatic = false
 } = {}) {
-    const loader = new GLTFLoader();
-    const [gltf, animationGltf] = await Promise.all([
-        loader.loadAsync(assetUrl(modelUrl)),
-        animationModelUrl ? loader.loadAsync(assetUrl(animationModelUrl)) : Promise.resolve(null)
+    const [modelTemplate, animationGltf] = await Promise.all([
+        loadCharacterTemplate(modelUrl),
+        animationModelUrl ? loadCharacterTemplate(animationModelUrl) : Promise.resolve(null)
     ]);
+    const gltf = {
+        ...modelTemplate,
+        scene: cloneSkeleton(modelTemplate.scene)
+    };
     const root = gltf.scene;
     root.name = 'Scout3dCosmeticOverlay';
     normalizeModel(root, targetHeight);
@@ -203,7 +222,7 @@ export async function createPlayer3dOverlay({
     const sourceAnimations = animationGltf?.animations ?? gltf.animations;
     for (const sourceClip of sourceAnimations) {
         const retargeted = animationBonePrefix
-            ? retargetMixamoClip(sourceClip, 'mixamorig1', animationBonePrefix)
+            ? retargetMixamoClip(sourceClip, 'mixamorig1', animationBonePrefix, root)
             : sourceClip;
         const clip = makeClipInPlace(retargeted);
         const action = mixer.clipAction(clip);

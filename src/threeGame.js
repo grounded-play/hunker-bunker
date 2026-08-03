@@ -3253,6 +3253,7 @@ export class ThreeGame {
         if (this.playerSprite) this.playerSprite.visible = true;
         if (!PLAYER_3D_COSMETIC_OVERLAY_ENABLED || !['SCOUT', 'ENGINEER', 'TANK'].includes(this.playerType) || !this.player) return;
         const playerRoot = this.player;
+        const overlayType = this.playerType;
         try {
             const classVisuals = {
                 SCOUT: {},
@@ -3271,9 +3272,9 @@ export class ThreeGame {
             };
             const overlay = await createPlayer3dOverlay({
                 targetHeight: this.playerSpriteScale * 0.98,
-                ...classVisuals[this.playerType]
+                ...classVisuals[overlayType]
             });
-            if (this.player !== playerRoot) {
+            if (this.player !== playerRoot || this.playerType !== overlayType) {
                 overlay.dispose();
                 return;
             }
