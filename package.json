@@ -17,6 +17,8 @@
     "audit:retail-assets:check": "node scripts/audit-retail-assets.js --check",
     "audit:retail-assets:package": "node scripts/audit-retail-assets.js --package",
     "audit:dependencies": "node scripts/audit-dependency-usage.js",
+    "audit:world-seeds": "node scripts/world-seed-portfolio-report.js",
+    "audit:world-seeds:sweep": "node scripts/world-seed-portfolio-report.js --sweep-only --sweep=5000",
     "presubmit": "npm run presubmit:generated",
     "presubmit:generated": "npm run steam:claims:check && npm run audio:plan-sfx:check && npm run audit:retail-assets:check && npm run steam:item-catalog:check && npm run audit:soundtrack",
     "audio:plan-sfx": "node scripts/generate-plan-sfx.js",
