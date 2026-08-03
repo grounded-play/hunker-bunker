@@ -16002,7 +16002,7 @@ export class ThreeGame {
         if (damageRatio <= 0) return;
 
         if (wall.isInstancedWall) {
-            const color = new THREE.Color(0x808b96)
+            const color = new THREE.Color(0xffffff)
                 .lerp(new THREE.Color(0xff3300), damageRatio * 0.75);
             wall.instancedMesh?.setColorAt(wall.instanceIndex, color);
             if (wall.instancedMesh?.instanceColor) wall.instancedMesh.instanceColor.needsUpdate = true;

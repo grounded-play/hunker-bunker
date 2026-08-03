@@ -416,3 +416,44 @@ describe('getTileType — pocket-aware collision redirection', () => {
         expect(() => ThreeGame.prototype.getTileType.call(fakeThis, 100, 200)).not.toThrow();
     });
 });
+
+describe('syncVisibleChunks — _wallInstanceIndex cleanup on chunk unmount', () => {
+    it('removes _wallInstanceIndex entries belonging to a chunk that falls out of the resident window', () => {
+        const record = { wallKey: '5,5', chunkKey: '0,0' };
+        const otherRecord = { wallKey: '50,50', chunkKey: '2,2' };
+        const fakeThis = {
+            player: { position: { x: 0, z: 0 } },
+            chunkSize: 19,
+            visibleChunkRadius: 0,
+            chunkResidentPadding: 0,
+            chunkPrefetchMargin: 0,
+            chunkMeshes: new Map([
+                ['0,0', { visible: true, userData: {}, children: [] }],
+                // Present in chunkMeshes but far outside the resident window
+                // (radius 0, no padding) — this is the chunk that should get
+                // unmounted, dragging its _wallInstanceIndex entry with it.
+                ['2,2', { visible: true, userData: {}, children: [] }]
+            ]),
+            chunkGroups: { remove: () => {} },
+            pendingChunkMountKeys: new Set(),
+            pendingChunkMounts: [],
+            wallMeshes: [],
+            pickupMeshes: [],
+            scatterSprites: [],
+            _wallInstanceIndex: new Map([['5,5', record], ['50,50', otherRecord]]),
+            disposeChunkGroupResources: () => {},
+            processPendingChunkMounts: () => {},
+            getChunkPrefetchCoords: () => [],
+            maxChunkMountsPerFrame: 1,
+            visitedChunks: new Set(),
+            queueChunkMount: () => {},
+            onNewChunkDiscovered: () => {},
+            updateDepthTierProgress: () => {}
+        };
+
+        ThreeGame.prototype.syncVisibleChunks.call(fakeThis, true);
+
+        expect(fakeThis._wallInstanceIndex.has('50,50')).toBe(false);
+        expect(fakeThis._wallInstanceIndex.has('5,5')).toBe(true);
+    });
+});

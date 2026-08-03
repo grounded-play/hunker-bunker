@@ -311,4 +311,97 @@ describe('instanced wall tile identity', () => {
         expect(fakeThis.wallMeshes).toEqual([pool]);
         expect(grid[5][4]).toBe('.');
     });
+
+    it('tints an instanced wall via setColorAt with a white lerp base, not a hardcoded gray', () => {
+        const pool = {
+            setColorAt: vi.fn(),
+            instanceColor: {}
+        };
+        const record = makeRecord(4, 5, 0, pool);
+        record.wallHp = 1; // damaged, not destroyed (maxWallHp defaults higher — see getWallMaxHp)
+
+        call('updateWallDamageColor', {}, record);
+
+        expect(pool.setColorAt).toHaveBeenCalledTimes(1);
+        expect(pool.setColorAt.mock.calls[0][0]).toBe(0);
+        const colorArg = pool.setColorAt.mock.calls[0][1];
+        // A partially-damaged wall's tint should sit strictly between white and the
+        // 0xff3300 damage color, and specifically NOT equal a pure 0x808b96-based
+        // lerp result (regression guard for the base-color bug this fix corrects).
+        expect(colorArg.r).toBeGreaterThan(0);
+        expect(colorArg.g).toBeLessThan(1);
+        expect(pool.instanceColor.needsUpdate).toBe(true);
+    });
+
+    it('destroyWall does not filter wallMeshes or touch .parent for an instanced wall (the pool stays; only the instance retires)', () => {
+        const pool = {
+            setMatrixAt: vi.fn(),
+            instanceMatrix: { needsUpdate: false }
+        };
+        const record = makeRecord(4, 5, 0, pool);
+        record.wallHp = 1;
+        const grid = makeGrid();
+        const fakeThis = {
+            chunkSize: 19,
+            chunkCache: new Map([['0,0', grid]]),
+            chunkMeshes: new Map(),
+            destroyedWallKeys: new Set(),
+            destroyedExteriorWallKeys: new Set(),
+            _chunkRoomTypeCache: new Map(),
+            _chunkTemplateCache: new Map(),
+            _wallInstanceIndex: new Map([[record.wallKey, record]]),
+            wallMeshes: [pool],
+            proceduralDoorStates: new Map(),
+            refreshMazeAccessState: () => {},
+            clearWallDecalsForWall: () => {},
+            spawnPhysicalBurst: () => {},
+            spawnTextureBurstEffect: () => {},
+            triggerCameraShake: () => {},
+            getWallKey: ThreeGame.prototype.getWallKey,
+            getChunkLocalFromWorld: ThreeGame.prototype.getChunkLocalFromWorld,
+            isExteriorWallTile: () => false,
+            findWallMeshAt: ThreeGame.prototype.findWallMeshAt,
+            markWallTileDestroyed: ThreeGame.prototype.markWallTileDestroyed
+        };
+
+        // destroyWall reaches out to the global `window` (AudioManager cue,
+        // wall-destroyed CustomEvent dispatch) unconditionally — stub it for
+        // this Node-environment test run, then clean up immediately after.
+        vi.stubGlobal('window', { dispatchEvent: () => {}, AudioManager: undefined });
+        let destroyed;
+        try {
+            destroyed = call('destroyWall', fakeThis, record, {});
+        } finally {
+            vi.unstubAllGlobals();
+        }
+
+        expect(destroyed).toBe(true);
+        expect(record.destroyed).toBe(true);
+        expect(fakeThis.wallMeshes).toEqual([pool]); // pool itself untouched
+        expect(pool.setMatrixAt).toHaveBeenCalledTimes(1); // exactly once, not twice (no double-zeroing)
+    });
+
+    it('checkProjectileWallHit returns null rather than an unresolved InstancedMesh pool when the hit instance cannot be found in the index', () => {
+        const pool = { userData: { isInstancedWallPool: true } };
+        const fakeThis = {
+            _wallInstanceIndex: new Map(), // empty - nothing will resolve
+            _projRaycaster: {
+                set: () => {},
+                far: 0,
+                intersectObjects: () => [{
+                    object: pool,
+                    instanceId: 0, // valid integer, but nothing in the index matches
+                    point: { x: 4, y: 0, z: 5 },
+                    distance: 0.1
+                }]
+            },
+            wallMeshes: [pool],
+            findWallByPoolInstance: ThreeGame.prototype.findWallByPoolInstance
+        };
+        const projectile = { mesh: { position: { x: 0, z: 0 } }, vx: 1, vz: 0 };
+
+        const result = call('checkProjectileWallHit', fakeThis, projectile);
+
+        expect(result).toBeNull();
+    });
 });
