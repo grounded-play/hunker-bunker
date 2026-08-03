@@ -93,7 +93,7 @@ function auditFile(filePath, root) {
     return null;
 }
 
-export function auditLinuxLauncher(root) {
+export function auditLinuxLauncher(root, { platform = process.platform } = {}) {
     const failures = [];
     const launcher = path.join(root, 'hunker-bunker');
     const binary = path.join(root, 'hunker-bunker-bin');
@@ -107,13 +107,13 @@ export function auditLinuxLauncher(root) {
                 reason: 'SteamOS launcher must start the Electron binary with --no-sandbox.'
             });
         }
-        if ((fs.statSync(launcher).mode & 0o111) === 0) {
+        if (platform !== 'win32' && (fs.statSync(launcher).mode & 0o111) === 0) {
             failures.push({ file: 'hunker-bunker', reason: 'SteamOS launcher is not executable.' });
         }
     }
     if (!fs.existsSync(binary)) {
         failures.push({ file: 'hunker-bunker-bin', reason: 'Linux Electron binary is missing.' });
-    } else if ((fs.statSync(binary).mode & 0o111) === 0) {
+    } else if (platform !== 'win32' && (fs.statSync(binary).mode & 0o111) === 0) {
         failures.push({ file: 'hunker-bunker-bin', reason: 'Linux Electron binary is not executable.' });
     }
     return failures;

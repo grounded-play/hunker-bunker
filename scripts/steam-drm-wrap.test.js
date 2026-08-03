@@ -11,7 +11,8 @@ describe('steam-drm-wrap helper', () => {
     it('returns exe_missing when packaged binary is not built', () => {
         const result = runSteamDrmWrap({
             winExe: '/nonexistent/path/app.exe',
-            drmTool: '/nonexistent/path/drmwrap.exe'
+            drmTool: '/nonexistent/path/drmwrap.exe',
+            quiet: true
         });
         expect(result.success).toBe(false);
         expect(result.status).toBe('exe_missing');

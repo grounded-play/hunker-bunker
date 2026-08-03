@@ -48,11 +48,12 @@ export function runSteamDrmWrap(options = {}) {
     const winExe = options.winExe || paths.winUnpackedExe;
     const drmTool = options.drmTool || paths.drmToolPath;
     const appId = options.appId || process.env.HB_STEAM_APPID || '4957040';
+    const quiet = Boolean(options.quiet);
 
-    printDrmWrapProcedure({ winUnpackedExe: winExe, drmToolPath: drmTool });
+    if (!quiet) printDrmWrapProcedure({ winUnpackedExe: winExe, drmToolPath: drmTool });
 
     if (!fs.existsSync(winExe)) {
-        console.warn(`[steam:drm] Executable not found at "${winExe}". Run 'npm run electron:build' first.`);
+        if (!quiet) console.warn(`[steam:drm] Executable not found at "${winExe}". Run 'npm run electron:build' first.`);
         return { success: false, status: 'exe_missing', winExe, drmTool };
     }
 

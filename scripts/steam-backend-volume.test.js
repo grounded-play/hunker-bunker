@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import path from 'node:path';
 import {
     assertSafeDockerVolumeName,
     buildBackupDockerArgs,
@@ -16,7 +17,7 @@ describe('steam backend volume tooling', () => {
     });
 
     it('requires a tar.gz archive and resolves it absolutely', () => {
-        expect(resolveArchivePath('backups/test.tar.gz', '/repo')).toBe('/repo/backups/test.tar.gz');
+        expect(resolveArchivePath('backups/test.tar.gz', '/repo')).toBe(path.resolve('/repo', 'backups/test.tar.gz'));
         expect(() => resolveArchivePath('backup.zip', '/repo')).toThrow(/must end/);
     });
 

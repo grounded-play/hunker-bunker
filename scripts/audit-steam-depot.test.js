@@ -81,7 +81,7 @@ describe('auditSteamDepot', () => {
         const dir = makeTempDir();
         fs.writeFileSync(path.join(dir, 'hunker-bunker'), 'raw electron binary', { mode: 0o755 });
 
-        expect(auditLinuxLauncher(dir)).toEqual(expect.arrayContaining([
+        expect(auditLinuxLauncher(dir, { platform: 'linux' })).toEqual(expect.arrayContaining([
             expect.objectContaining({ file: 'hunker-bunker' }),
             expect.objectContaining({ file: 'hunker-bunker-bin' })
         ]));
@@ -92,7 +92,7 @@ describe('auditSteamDepot', () => {
         fs.writeFileSync(path.join(dir, 'hunker-bunker'), '#!/bin/sh\nexec ./hunker-bunker-bin --no-sandbox "$@"\n', { mode: 0o755 });
         fs.writeFileSync(path.join(dir, 'hunker-bunker-bin'), 'binary', { mode: 0o644 });
 
-        expect(auditLinuxLauncher(dir)).toEqual(expect.arrayContaining([
+        expect(auditLinuxLauncher(dir, { platform: 'linux' })).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 file: 'hunker-bunker-bin',
                 reason: 'Linux Electron binary is not executable.'
