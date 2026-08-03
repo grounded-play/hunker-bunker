@@ -1229,7 +1229,12 @@ export class ThreeGame {
         this._darknessConePoint = new THREE.Vector3();
         this._darknessConeScreenPoints = [];
         this.container.style.position = this.container.style.position || 'relative';
-        this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay);
+        const mapDoor = this.container.querySelector('#map-box-door') ?? document.getElementById('map-box-door');
+        if (mapDoor) {
+            this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay, mapDoor);
+        } else {
+            this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay);
+        }
 
         const textureLoader = new THREE.TextureLoader();
         this.textureLoader = textureLoader;

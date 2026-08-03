@@ -4,12 +4,12 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import { assetUrl } from './assetUrl.js';
 
 const MODEL_CONFIG = {
-    cybersnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.72, yaw: Math.PI / 2 },
-    cryosnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.76, yaw: Math.PI / 2, tint: 0x9bdcff },
-    sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 0.78, yaw: Math.PI / 2, tint: 0x9dff91 },
-    boss_cybersnail: { url: '/3d/runtime/cyber-snail-boss.glb', height: 1.65, yaw: Math.PI / 2 },
-    boss_cryosnail: { url: '/3d/runtime/cyber-snail-boss.glb', height: 1.8, yaw: Math.PI / 2, tint: 0x9bdcff },
-    boss_sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 1.95, yaw: Math.PI / 2 },
+    cybersnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.72, yaw: -Math.PI / 2 },
+    cryosnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.76, yaw: -Math.PI / 2, tint: 0x9bdcff },
+    sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 0.78, yaw: -Math.PI / 2, tint: 0x9dff91 },
+    boss_cybersnail: { url: '/3d/runtime/cyber-snail-boss.glb', height: 1.65, yaw: -Math.PI / 2 },
+    boss_cryosnail: { url: '/3d/runtime/cyber-snail-boss.glb', height: 1.8, yaw: -Math.PI / 2, tint: 0x9bdcff },
+    boss_sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 1.95, yaw: -Math.PI / 2 },
     crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: Math.PI }
 };
 

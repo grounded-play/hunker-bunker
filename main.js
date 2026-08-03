@@ -346,6 +346,23 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'menu'
 ]);
 
+function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration = 280 } = {}) {
+    if (!modal || modal.classList.contains('hidden') || modal.classList.contains('is-exiting')) {
+        if (onComplete) onComplete();
+        return;
+    }
+    modal.classList.add('is-exiting');
+    if (exitClass) modal.classList.add(exitClass);
+    modal.setAttribute('aria-hidden', 'true');
+    window.setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('is-exiting');
+        if (exitClass) modal.classList.remove(exitClass);
+        if (onComplete) onComplete();
+    }, duration);
+}
+window.closeModalWithAnimation = closeModalWithAnimation;
+
 const COMMENTARY_ENTRIES = Object.freeze({
     run_start: {
         title: 'The Run Loop',
@@ -9295,7 +9312,10 @@ function renderRosterModal(mode = 'continue') {
         confirmBtn._wired = true;
         confirmBtn.addEventListener('click', () => {
             const modal = document.getElementById('roster-modal');
-            if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+            closeModalWithAnimation(modal, null, {
+                exitClass: 'roster-modal--deploying',
+                duration: 680
+            });
             window.AudioManager?.play?.('ui_click', { volume: 0.5 });
         });
     }
@@ -9451,11 +9471,11 @@ document.getElementById('roster-btn')?.addEventListener('click', () => {
 });
 document.getElementById('close-roster-modal')?.addEventListener('click', () => {
     const modal = document.getElementById('roster-modal');
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    closeModalWithAnimation(modal);
 });
 setupClickOutside('roster-modal', () => {
     const modal = document.getElementById('roster-modal');
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    closeModalWithAnimation(modal);
 });
 // Reflect a previously-equipped weapon on the HUD as soon as the page loads,
 // and keep it correct after a fresh fabrication completes.
@@ -9930,7 +9950,23 @@ function triggerHeroPreviewSwap(type) {
 
     const targetType = pendingPreviewType;
     const doorImg = getDoorImage(targetType);
-    const mapDoor = document.getElementById('map-box-door');
+    const gameContainer = document.getElementById('game-container');
+    let mapDoor = document.getElementById('map-box-door');
+    if (gameContainer) {
+        if (!mapDoor) {
+            mapDoor = document.createElement('div');
+            mapDoor.id = 'map-box-door';
+            mapDoor.className = 'map-box-door';
+            mapDoor.setAttribute('aria-hidden', 'true');
+            mapDoor.innerHTML = `
+                <div class="char-preview-door__panel char-preview-door__panel--top"></div>
+                <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
+            `;
+            gameContainer.appendChild(mapDoor);
+        } else {
+            gameContainer.appendChild(mapDoor);
+        }
+    }
     const mapDoorImg = getMapDoorImage(targetType);
 
     previewDoor.style.setProperty('--door-bg-image', `url('${doorImg}')`);
