@@ -174,7 +174,7 @@ export const CLASS_STATS = {
     ENGINEER: { moveSpeed: 3.6, o2DrainMult: 1.0,  pickupMagnetRadius: 3.4, projectileDamage: 1, passiveName: 'AUTO-TURRET', passiveDescription: 'Periodically deploys an automated turret that fires on nearby enemies.' }
 };
 
-const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
+export const O2_DRAIN_RATE_PCT_PER_SEC = 1 / 3;
 const O2_DANGER_THRESHOLD = 25;
 const O2_DRAIN_RATE_DANGER_MULT = 1.5;
 const O2_HEALTH_DRAIN_INTERVAL = 1;
