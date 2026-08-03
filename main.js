@@ -1111,7 +1111,79 @@ function handleControllerTabNavigation(root, direction) {
     return false;
 }
 
+let virtualGamepadCursor = null;
+
+function ensureVirtualGamepadCursor() {
+    if (virtualGamepadCursor || typeof document === 'undefined') return virtualGamepadCursor;
+    virtualGamepadCursor = document.createElement('div');
+    virtualGamepadCursor.id = 'virtual-gamepad-cursor';
+    virtualGamepadCursor.className = 'virtual-gamepad-cursor hidden';
+    virtualGamepadCursor.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#ff9f1c" stroke-width="2" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="3" fill="#ff9f1c"/></svg>`;
+    document.body.appendChild(virtualGamepadCursor);
+    return virtualGamepadCursor;
+}
+
+function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
+    const cursor = ensureVirtualGamepadCursor();
+    if (!cursor) return;
+    if (!visible) {
+        cursor.classList.add('hidden');
+        return;
+    }
+    cursor.classList.remove('hidden');
+    cursor.style.transform = `translate3d(${clientX - 12}px, ${clientY - 12}px, 0)`;
+}
+
 function handleSteamMenuInput(actions) {
+    const pointerX = Number(actions.pointer?.x) || 0;
+    const pointerY = Number(actions.pointer?.y) || 0;
+    const pointerMag = Math.hypot(pointerX, pointerY);
+    const deltaY = Number(actions.cameraDelta?.y) || 0;
+    const deltaX = Number(actions.cameraDelta?.x) || 0;
+    const width = window.innerWidth || 1280;
+    const height = window.innerHeight || 800;
+
+    if (!controllerAimCursor) {
+        controllerAimCursor = { x: width / 2, y: height / 2 };
+    }
+
+    if (pointerMag > 0.15 || Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
+        if (pointerMag > 0.15) {
+            const cursorSpeed = 16;
+            controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + (pointerX * cursorSpeed)));
+            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + (pointerY * cursorSpeed)));
+        } else if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
+            controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + deltaX));
+            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y - deltaY));
+        }
+
+        updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
+
+        // Smooth scroll active or hovered container
+        const scrollValue = (pointerY * 20) || (-deltaY * 20);
+        if (Math.abs(scrollValue) > 0.5) {
+            const elAtPoint = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
+            const root = getControllerFocusRoot() ?? document.body;
+            const scrollContainer = elAtPoint?.closest?.('.modal-content, .settings-modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
+                || root.querySelector?.('.settings-modal-content, .modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
+                || (root.scrollHeight > root.clientHeight ? root : null);
+
+            if (scrollContainer) {
+                scrollContainer.scrollTop += scrollValue;
+            }
+        }
+
+        // Hover element focus
+        const hovered = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
+        const focusable = hovered?.closest?.('button, select, input, a, [tabindex]:not([tabindex="-1"]), .setting-item');
+        if (focusable) {
+            const target = focusable.matches('button, select, input, a') ? focusable : focusable.querySelector('button, select, input, a');
+            if (target && target !== document.activeElement) {
+                focusControllerTarget(target, { playHover: true });
+            }
+        }
+    }
+
     const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
     const activeElement = document.activeElement;
     const rangeAdjusted = Boolean(activeElement && isRangeInputElement(activeElement) && (
@@ -1137,6 +1209,7 @@ function handleSteamMenuInput(actions) {
         activateControllerFocusedElement();
     }
     if (actions.back || actions.pause) {
+        updateVirtualGamepadCursorPosition(0, 0, false);
         dispatchControllerEscape();
     }
 }

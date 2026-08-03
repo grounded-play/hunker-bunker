@@ -83,7 +83,12 @@ export function createActionRouter() {
             // which share buttons with each other in the browser fallback).
             tabLeft: edge('menu_tab_left', pad.menuTabLeft),
             tabRight: edge('menu_tab_right', pad.menuTabRight),
-            pause: edge('menu_pause', pad.pause)
+            pause: edge('menu_pause', pad.pause),
+            pointer: {
+                x: pad.camera?.x ?? 0,
+                y: pad.camera?.y ?? 0
+            },
+            cameraDelta: pad.cameraDelta ?? { x: 0, y: 0 }
         };
     }
 

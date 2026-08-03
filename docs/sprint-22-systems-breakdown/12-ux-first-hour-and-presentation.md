@@ -36,9 +36,10 @@ The game mixes procedural 3D geometry, sprites, portraits, video, and illustrate
 
 1. Recorded first-hour observation with confusion/interruption log.
 2. Returning-player/death-loop timing pass.
-3. Controller-only settings, pause, dialogue, map, archive, and gameplay pass.
-4. Representative screenshot cohesion review.
-5. Ranked fixes by player drop-off risk, not cosmetic preference.
+3. Controller-only settings, pause, dialogue, map, archive, and gameplay pass (including Right Joystick virtual mouse cursor and smooth container scrolling in menu screens, and 3D world aim point targeting in-game).
+4. Steam Deck (1280×800) Settings menu layout overhaul with category sections and auto-scroll focus centering.
+5. Representative screenshot cohesion review.
+6. Ranked fixes by player drop-off risk, not cosmetic preference.
 
 ## Acceptance Questions
 
@@ -46,4 +47,7 @@ The game mixes procedural 3D geometry, sprites, portraits, video, and illustrate
 - Does every blocking screen justify stopping oxygen/combat?
 - Can the player explain the current objective and nearest safe action?
 - Can controller users recover from focus loss without a mouse?
+- Does moving the Right Joystick in menu screens drive a virtual mouse cursor and smoothly scroll menu panels?
+- Does the Right Joystick in-game position the 3D world aim point and targeting reticle directly where aimed?
+- Is the Settings menu layout spacious, sectioned into readable categories, and comfortable to scroll on Steam Deck (1280×800)?
 - Are difficulty and accessibility settings discoverable before the first demanding fight?

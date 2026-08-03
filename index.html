@@ -1609,94 +1609,114 @@
       <div class="modal-content settings-modal-content">
         <button class="close-modal" id="close-settings">×</button>
         <h2 class="modal-title">SYSTEM SETTINGS</h2>
-        <div class="setting-item">
-          <span>DEBUG OVERLAY</span>
-          <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
-        </div>
-        <div class="setting-item">
-          <span>NIGHT VISION (NO FOG/NIGHT)</span>
-          <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
-        </div>
-        <div class="setting-item">
-          <span>STAGE RESOLUTION</span>
-          <select id="setting-resolution" class="settings-select">
-            <option value="auto">AUTO (WINDOW FIT)</option>
-            <option value="deck" selected>STEAM DECK (1280×800 - 16:10)</option>
-            <option value="720p">720p HD (1280×720 - 16:9)</option>
-            <option value="1080p">1080p FHD (1920×1080 - 16:9)</option>
-            <option value="1440p">1440p QHD (2560×1440 - 16:9)</option>
-            <option value="4k">4K UHD (3840×2160 - 16:9)</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <span>UI ACCESSIBILITY SCALE</span>
-          <select id="setting-ui-scale" class="settings-select">
-            <option value="100" selected>100% (STANDARD)</option>
-            <option value="115">115% (LARGE)</option>
-            <option value="130">130% (EXTRA LARGE)</option>
-            <option value="150">150% (MAX ACCESSIBILITY)</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <span>MINIMUM TEXT FLOOR</span>
-          <select id="setting-text-floor" class="settings-select">
-            <option value="16">16px (COMPACT)</option>
-            <option value="18" selected>18px (DECK DEFAULT)</option>
-            <option value="20">20px (LARGE)</option>
-            <option value="22">22px (EXTRA LARGE)</option>
-            <option value="24">24px (MAX CLARITY)</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <span>TEXT SPEED</span>
-          <select id="setting-text-speed" class="settings-select">
-            <option value="normal">NORMAL</option>
-            <option value="fast">FAST</option>
-            <option value="instant">INSTANT</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <span>CAMERA SHAKE</span>
-          <label class="toggle"><input type="checkbox" id="setting-shake-toggle"> <span class="slider"></span></label>
-        </div>
-        <div class="setting-item">
-          <span>COLORBLIND ASSIST</span>
-          <label class="toggle"><input type="checkbox" id="setting-colorblind-toggle"> <span class="slider"></span></label>
-        </div>
-        <div class="setting-item">
-          <span>COMMENTARY MODE</span>
-          <label class="toggle"><input type="checkbox" id="main-commentary-toggle"> <span class="slider"></span></label>
-        </div>
-        <div class="setting-item">
-          <span>RUN DIFFICULTY</span>
-          <span id="setting-difficulty-val" class="setting-val-display">STANDARD</span>
-        </div>
-        <div class="setting-item setting-item--action">
-          <span>AUDIO MIXER</span>
-          <button type="button" class="calibrate-btn settings-action-btn" id="open-audio-mixer">OPEN</button>
-        </div>
-        <div class="setting-item setting-item--action">
-          <span>DESKTOP CONTROLS</span>
-          <button type="button" class="calibrate-btn settings-action-btn" id="open-controls">REMAP</button>
-        </div>
-        <div class="setting-item setting-item--operator">
-          <span>OPERATOR CALLSIGN</span>
-          <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
-        </div>
-        <div class="setting-item setting-item--action">
-          <span>SAVE DATA</span>
-          <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
-        </div>
-        <div class="setting-item setting-item--action setting-item--danger">
-          <span>NEW GAME RESET</span>
-          <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save">RESET</button>
-        </div>
-        <div class="setting-item setting-item--action setting-item--danger">
-          <span>EXIT APPLICATION</span>
-          <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm">QUIT GAME</button>
+
+        <!-- Section 1: Display & Graphics -->
+        <div class="settings-category-group">
+          <div class="settings-category-header">DISPLAY & GRAPHICS</div>
+          <div class="setting-item">
+            <span>STAGE RESOLUTION</span>
+            <select id="setting-resolution" class="settings-select">
+              <option value="auto">AUTO (WINDOW FIT)</option>
+              <option value="deck" selected>STEAM DECK (1280×800 - 16:10)</option>
+              <option value="720p">720p HD (1280×720 - 16:9)</option>
+              <option value="1080p">1080p FHD (1920×1080 - 16:9)</option>
+              <option value="1440p">1440p QHD (2560×1440 - 16:9)</option>
+              <option value="4k">4K UHD (3840×2160 - 16:9)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>NIGHT VISION (NO FOG/NIGHT)</span>
+            <label class="toggle"><input type="checkbox" id="main-nightvision-toggle"> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item">
+            <span>CAMERA SHAKE</span>
+            <label class="toggle"><input type="checkbox" id="setting-shake-toggle"> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item">
+            <span>DEBUG OVERLAY</span>
+            <label class="toggle"><input type="checkbox" id="main-debug-toggle"> <span class="slider"></span></label>
+          </div>
         </div>
 
-        <div class="modal-actions" style="margin-top: calc(var(--vu) * 6); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 4); display: flex; justify-content: center;">
+        <!-- Section 2: Audio & Voice -->
+        <div class="settings-category-group">
+          <div class="settings-category-header">AUDIO & VOICE</div>
+          <div class="setting-item setting-item--action">
+            <span>AUDIO MIXER</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-audio-mixer">OPEN</button>
+          </div>
+          <div class="setting-item">
+            <span>COMMENTARY MODE</span>
+            <label class="toggle"><input type="checkbox" id="main-commentary-toggle"> <span class="slider"></span></label>
+          </div>
+        </div>
+
+        <!-- Section 3: Gameplay & Accessibility -->
+        <div class="settings-category-group">
+          <div class="settings-category-header">GAMEPLAY & ACCESSIBILITY</div>
+          <div class="setting-item">
+            <span>RUN DIFFICULTY</span>
+            <span id="setting-difficulty-val" class="setting-val-display">STANDARD</span>
+          </div>
+          <div class="setting-item">
+            <span>UI ACCESSIBILITY SCALE</span>
+            <select id="setting-ui-scale" class="settings-select">
+              <option value="100" selected>100% (STANDARD)</option>
+              <option value="115">115% (LARGE)</option>
+              <option value="130">130% (EXTRA LARGE)</option>
+              <option value="150">150% (MAX ACCESSIBILITY)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>MINIMUM TEXT FLOOR</span>
+            <select id="setting-text-floor" class="settings-select">
+              <option value="16">16px (COMPACT)</option>
+              <option value="18" selected>18px (DECK DEFAULT)</option>
+              <option value="20">20px (LARGE)</option>
+              <option value="22">22px (EXTRA LARGE)</option>
+              <option value="24">24px (MAX CLARITY)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>TEXT SPEED</span>
+            <select id="setting-text-speed" class="settings-select">
+              <option value="normal">NORMAL</option>
+              <option value="fast">FAST</option>
+              <option value="instant">INSTANT</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>COLORBLIND ASSIST</span>
+            <label class="toggle"><input type="checkbox" id="setting-colorblind-toggle"> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item setting-item--action">
+            <span>DESKTOP CONTROLS</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-controls">REMAP</button>
+          </div>
+        </div>
+
+        <!-- Section 4: Operator & System Data -->
+        <div class="settings-category-group">
+          <div class="settings-category-header">OPERATOR & SYSTEM DATA</div>
+          <div class="setting-item setting-item--operator">
+            <span>OPERATOR CALLSIGN</span>
+            <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
+          </div>
+          <div class="setting-item setting-item--action">
+            <span>SAVE DATA</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
+          </div>
+          <div class="setting-item setting-item--action setting-item--danger">
+            <span>NEW GAME RESET</span>
+            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--reset" id="open-reset-save">RESET</button>
+          </div>
+          <div class="setting-item setting-item--action setting-item--danger">
+            <span>EXIT APPLICATION</span>
+            <button type="button" class="calibrate-btn settings-action-btn settings-action-btn--quit" id="open-quit-confirm">QUIT GAME</button>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: calc(var(--vu) * 4); border-top: 1px solid var(--border-subtle); padding-top: calc(var(--vu) * 3); display: flex; justify-content: center;">
           <button class="abort-btn hidden" id="abort-mission">ABORT MISSION</button>
         </div>
 

@@ -3294,36 +3294,73 @@ input:checked+.slider:before {
 
 /* Settings remains keyboard/Deck navigable at enlarged UI scales. */
 .settings-modal-content {
-  padding: calc(var(--vu) * 3.5) calc(var(--vu) * 4) calc(var(--vu) * 2.5) calc(var(--vu) * 4) !important;
-  width: calc(var(--vu) * 76) !important;
-  max-height: 96% !important;
+  padding: calc(var(--vu) * 4) calc(var(--vu) * 4.5) !important;
+  width: min(calc(var(--vu) * 88), 92vw) !important;
+  max-height: 90vh !important;
   overflow-y: auto !important;
   scrollbar-width: thin !important;
-  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track) !important;
+  scrollbar-color: var(--accent-primary) rgba(0, 0, 0, 0.4) !important;
   scrollbar-gutter: stable;
+  border: 1px solid var(--accent-primary);
+  box-shadow: 0 0 45px rgba(255, 159, 28, 0.15), 0 0 90px rgba(0, 0, 0, 0.85);
 }
 
 .settings-modal-content::-webkit-scrollbar {
   display: block !important;
-  width: 12px !important;
-  height: 12px !important;
+  width: 10px !important;
+}
+
+.settings-category-group {
+  background: rgba(18, 24, 33, 0.65);
+  border: 1px solid rgba(255, 159, 28, 0.22);
+  border-radius: 8px;
+  padding: calc(var(--vu) * 2.2) calc(var(--vu) * 3);
+  margin-bottom: calc(var(--vu) * 2.5);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.settings-category-header {
+  font-size: calc(var(--font-xs) * 1.1);
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--accent-primary);
+  border-bottom: 1px solid rgba(255, 159, 28, 0.35);
+  padding-bottom: calc(var(--vu) * 1);
+  margin-bottom: calc(var(--vu) * 2);
+  text-transform: uppercase;
 }
 
 .settings-modal-content .setting-item {
-  /* Trimmed from 1.5vu: 16 rows at 1280x800 no longer fit in the 96vh cap
-     (scrollbar-width: none hides the overflow with no visible cue that
-     more content exists below the fold) — this reclaims ~64px so every
-     row, including NEW GAME RESET, renders without scrolling. */
-  margin-bottom: calc(var(--vu) * 1.0) !important;
+  margin-bottom: calc(var(--vu) * 1.6) !important;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.2);
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.settings-modal-content .setting-item:hover,
+.settings-modal-content .setting-item:focus-within {
+  background: rgba(255, 159, 28, 0.08);
 }
 
 .settings-modal-content .modal-title {
-  margin-bottom: calc(var(--vu) * 1.2) !important;
+  margin-bottom: calc(var(--vu) * 2.5) !important;
 }
 
 .settings-modal-content .modal-actions {
   margin-top: calc(var(--vu) * 2) !important;
   padding-top: calc(var(--vu) * 1.5) !important;
+}
+
+.virtual-gamepad-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  z-index: 100000;
+  transition: transform 0.03s linear;
+  filter: drop-shadow(0 0 8px rgba(255, 159, 28, 0.85));
 }
 
 .modal-content {

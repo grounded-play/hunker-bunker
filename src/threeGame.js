@@ -3811,13 +3811,24 @@ export class ThreeGame {
         const aimLength = Math.hypot(aimX, aimZ);
         if (aimLength <= 0.0001) return false;
 
-        this.aimWorldPoint = null;
         this.aimDirX = aimX / aimLength;
         this.aimDirZ = aimZ / aimLength;
         this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
         this.hasActiveAim = true;
         this.mouseAimActive = false;
         this._aimResetTimer = 0;
+
+        if (this.player) {
+            const aimDist = 7.5;
+            const px = this.player.position.x;
+            const py = this.player.position.y ?? TERRAIN_HEIGHTS.GROUND;
+            const pz = this.player.position.z;
+            this.aimWorldPoint = new THREE.Vector3(
+                px + (this.aimDirX * aimDist),
+                py,
+                pz + (this.aimDirZ * aimDist)
+            );
+        }
         return true;
     }
 
