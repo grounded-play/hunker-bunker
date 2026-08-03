@@ -226,6 +226,37 @@ function idempotencyExpired(record, now = Date.now()) {
     return Number.isFinite(expiresAt) && expiresAt > 0 && expiresAt <= now;
 }
 
+function isSafeDbKey(key) {
+    if (key == null) return false;
+    const str = String(key).trim();
+    if (!str || str.length > 256) return false;
+    if (str === '__proto__' || str === 'constructor' || str === 'prototype') return false;
+    return true;
+}
+
+function safeGet(targetObj, rawKey) {
+    if (!targetObj || typeof targetObj !== 'object') return undefined;
+    const key = String(rawKey ?? '').trim();
+    if (!isSafeDbKey(key)) return undefined;
+    return Object.hasOwn(targetObj, key) ? targetObj[key] : undefined;
+}
+
+function safeSet(targetObj, rawKey, value) {
+    if (!targetObj || typeof targetObj !== 'object') return false;
+    const key = String(rawKey ?? '').trim();
+    if (!isSafeDbKey(key)) return false;
+    targetObj[key] = value;
+    return true;
+}
+
+function safeDelete(targetObj, rawKey) {
+    if (!targetObj || typeof targetObj !== 'object') return false;
+    const key = String(rawKey ?? '').trim();
+    if (!isSafeDbKey(key)) return false;
+    delete targetObj[key];
+    return true;
+}
+
 function normalizeDbStateShape() {
     dbState.inventories = dbState.inventories && typeof dbState.inventories === 'object' ? dbState.inventories : {};
     dbState.leaderboards = dbState.leaderboards && typeof dbState.leaderboards === 'object' ? dbState.leaderboards : {};
@@ -241,24 +272,22 @@ export async function initDb() {
     const dbFilePath = getDbFilePath();
     try {
         if (fs.existsSync(dbFilePath)) {
-            const content = await fs.promises.readFile(dbFilePath, 'utf8');
-            // Merge onto the defaults rather than replacing dbState outright,
-            // so a store file written before a new top-level key existed
-            // (e.g. `purchases`) doesn't wipe that key back to undefined.
-            dbState = { ...dbState, ...JSON.parse(content) };
-            normalizeDbStateShape();
-            await cleanupExpiredIdempotency();
-        } else {
-            normalizeDbStateShape();
-            await saveToDisk();
+            const fileContent = fs.readFileSync(dbFilePath, 'utf8');
+            const parsed = JSON.parse(fileContent);
+            dbState = {
+                ...dbState,
+                ...parsed
+            };
         }
+        normalizeDbStateShape();
         dbInitialized = true;
         lastInitError = null;
-        console.log('[hb-db] initialized database store at', dbFilePath);
     } catch (err) {
+        dbInitialized = false;
         lastInitError = err?.message ?? String(err);
-        console.error('[hb-db] failed to initialize database store:', err);
+        console.warn(`[hb-db] failed to initialize disk db at ${dbFilePath}:`, err);
     }
+    return getDbStatus();
 }
 
 export function getDbStatus() {
@@ -286,10 +315,11 @@ export function getMockInventory(steamId64) {
     const sqlite = getSqliteBackend();
     if (sqlite) return sqlite.getMockInventory(steamId64);
 
-    const sId = String(steamId64);
-    if (!dbState.inventories[sId]) {
+    const sId = String(steamId64 ?? '').trim();
+    if (!isSafeDbKey(sId)) return [];
+    if (!safeGet(dbState.inventories, sId)) {
         // Seed default items for developers to start with
-        dbState.inventories[sId] = [
+        safeSet(dbState.inventories, sId, [
             {
                 itemId: `mock-inv-${Math.random().toString(36).substring(2, 10)}`,
                 itemdefid: 1000,
@@ -304,18 +334,19 @@ export function getMockInventory(steamId64) {
                 acquiredAt: Date.now(),
                 properties: { source: 'seed' }
             }
-        ];
+        ]);
         void saveToDisk();
     }
-    return dbState.inventories[sId];
+    return safeGet(dbState.inventories, sId) ?? [];
 }
 
 export async function setMockInventory(steamId64, items) {
     const sqlite = getSqliteBackend();
     if (sqlite) return sqlite.setMockInventory(steamId64, items);
 
-    const sId = String(steamId64);
-    dbState.inventories[sId] = Array.isArray(items) ? items : [];
+    const sId = String(steamId64 ?? '').trim();
+    if (!isSafeDbKey(sId)) return;
+    safeSet(dbState.inventories, sId, Array.isArray(items) ? items : []);
     await saveToDisk();
 }
 
@@ -323,48 +354,52 @@ export function getMockLeaderboard(boardName) {
     const sqlite = getSqliteBackend();
     if (sqlite) return sqlite.getMockLeaderboard(boardName);
 
-    if (!dbState.leaderboards[boardName]) {
-        if (boardName === 'best_run_score') {
-            dbState.leaderboards[boardName] = [
+    const bName = String(boardName ?? '').trim();
+    if (!isSafeDbKey(bName)) return [];
+    if (!safeGet(dbState.leaderboards, bName)) {
+        let entries = [];
+        if (bName === 'best_run_score') {
+            entries = [
                 { steamId64: '76561198000000001', score: 1550, persona: 'Operator Aegis', timestamp: Date.now() - 3600000 * 4 },
                 { steamId64: '76561198000000002', score: 1200, persona: 'Operator Striker', timestamp: Date.now() - 3600000 * 8 },
                 { steamId64: '76561198000000003', score: 980, persona: 'Operator Scout', timestamp: Date.now() - 3600000 * 12 },
                 { steamId64: '76561198000000000', score: 850, persona: 'Agent (You)', timestamp: Date.now() - 60000 }
             ];
-        } else if (boardName === 'survival_time_seconds') {
-            dbState.leaderboards[boardName] = [
+        } else if (bName === 'survival_time_seconds') {
+            entries = [
                 { steamId64: '76561198000000001', score: 320, persona: 'Operator Aegis', timestamp: Date.now() - 3600000 * 4 },
                 { steamId64: '76561198000000002', score: 240, persona: 'Operator Striker', timestamp: Date.now() - 3600000 * 8 },
                 { steamId64: '76561198000000000', score: 180, persona: 'Agent (You)', timestamp: Date.now() - 60000 },
                 { steamId64: '76561198000000003', score: 150, persona: 'Operator Scout', timestamp: Date.now() - 3600000 * 12 }
             ];
-        } else if (boardName === 'deepest_depth_score') {
-            dbState.leaderboards[boardName] = [
+        } else if (bName === 'deepest_depth_score') {
+            entries = [
                 { steamId64: '76561198000000001', score: 300450, persona: 'Operator Aegis', timestamp: Date.now() - 3600000 * 4 },
                 { steamId64: '76561198000000002', score: 200380, persona: 'Operator Striker', timestamp: Date.now() - 3600000 * 8 },
                 { steamId64: '76561198000000003', score: 100120, persona: 'Operator Scout', timestamp: Date.now() - 3600000 * 12 },
                 { steamId64: '76561198000000000', score: 100080, persona: 'Agent (You)', timestamp: Date.now() - 60000 }
             ];
-        } else {
-            dbState.leaderboards[boardName] = [];
         }
-        const isAscending = boardName === 'fastest_extraction_ms';
-        dbState.leaderboards[boardName].sort((a, b) => {
+        const isAscending = bName === 'fastest_extraction_ms';
+        entries.sort((a, b) => {
             return isAscending ? a.score - b.score : b.score - a.score;
         });
-        dbState.leaderboards[boardName].forEach((entry, index) => {
+        entries.forEach((entry, index) => {
             entry.rank = index + 1;
         });
+        safeSet(dbState.leaderboards, bName, entries);
         void saveToDisk();
     }
-    return dbState.leaderboards[boardName];
+    return safeGet(dbState.leaderboards, bName) ?? [];
 }
 
 export async function saveMockLeaderboard(boardName, entries) {
     const sqlite = getSqliteBackend();
     if (sqlite) return sqlite.saveMockLeaderboard(boardName, entries);
 
-    dbState.leaderboards[boardName] = Array.isArray(entries) ? entries : [];
+    const bName = String(boardName ?? '').trim();
+    if (!isSafeDbKey(bName)) return;
+    safeSet(dbState.leaderboards, bName, Array.isArray(entries) ? entries : []);
     await saveToDisk();
 }
 
@@ -373,11 +408,12 @@ export function checkIdempotency(requestId) {
     if (sqlite) return sqlite.checkIdempotency(requestId);
 
     if (!requestId) return null;
-    const key = String(requestId);
-    const req = dbState.idempotency[key];
+    const key = String(requestId).trim();
+    if (!isSafeDbKey(key)) return null;
+    const req = safeGet(dbState.idempotency, key);
     if (!req) return null;
     if (idempotencyExpired(req)) {
-        delete dbState.idempotency[key];
+        safeDelete(dbState.idempotency, key);
         void saveToDisk();
         return null;
     }
@@ -389,6 +425,8 @@ export async function saveIdempotency(requestId, response, { ttlMs = null } = {}
     if (sqlite) return sqlite.saveIdempotency(requestId, response, { ttlMs });
 
     if (!requestId) return;
+    const key = String(requestId).trim();
+    if (!isSafeDbKey(key)) return;
     const now = Date.now();
     const record = {
         status: response.status ?? 200,
@@ -398,9 +436,9 @@ export async function saveIdempotency(requestId, response, { ttlMs = null } = {}
     if (Number.isFinite(ttlMs) && ttlMs > 0) {
         record.expiresAt = now + ttlMs;
     }
-    dbState.idempotency[String(requestId)] = {
+    safeSet(dbState.idempotency, key, {
         ...record
-    };
+    });
     await saveToDisk();
 }
 
@@ -411,7 +449,7 @@ export async function cleanupExpiredIdempotency({ now = Date.now() } = {}) {
     let removed = 0;
     for (const [key, record] of Object.entries(dbState.idempotency)) {
         if (idempotencyExpired(record, now)) {
-            delete dbState.idempotency[key];
+            safeDelete(dbState.idempotency, key);
             removed += 1;
         }
     }
