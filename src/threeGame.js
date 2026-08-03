@@ -12802,7 +12802,6 @@ export class ThreeGame {
                 this.isPlayerFalling = true;
                 this._fallHoleX = Math.round(this.player.position.x);
                 this._fallHoleZ = Math.round(this.player.position.z);
-                const fallTile = this.getTileType(this._fallHoleX, this._fallHoleZ);
                 this._fallIsLethal = true; // Pocket worlds temporarily disabled; all falls are lethal
                 this.setInputEnabled(false);
                 window.AudioManager?.playMetalStress?.({ volume: 0.8, playbackRate: 0.6, force: true });
@@ -19472,6 +19471,7 @@ export class ThreeGame {
     }
 
     isSnailTileWalkable(tileX, tileZ) {
+        if (this.isFilledHoleTile?.(tileX, tileZ)) return true;
         const tile = this.getTileType(tileX, tileZ);
         return tile === '.'
             || tile === LEDGE_TILE
@@ -21813,7 +21813,7 @@ export class ThreeGame {
                 const checkY = tileY + offsetY;
 
                 if (this.getTileType(checkX, checkY) !== '#') continue;
-                if (this.isHoleTile(checkX, checkY)) continue;
+                if (this.isHoleTile(checkX, checkY) || Boolean(this.isFilledHoleTile?.(checkX, checkY))) continue;
                 if (this.overlapsWall(x, z, checkX, checkY)) return false;
             }
         }
@@ -22052,6 +22052,13 @@ export class ThreeGame {
 
     isHoleTile(worldX, worldY) {
         return Boolean(this.getHoleVisualInfo(worldX, worldY));
+    }
+
+    isFilledHoleTile(worldX, worldY) {
+        const tileX = Math.round(worldX);
+        const tileY = Math.round(worldY);
+        const key = this.getWallKey ? this.getWallKey(tileX, tileY) : `${tileX},${tileY}`;
+        return Boolean(this.filledHoleKeys?.has(key));
     }
 
     fillHoleAt(worldX, worldZ) {
