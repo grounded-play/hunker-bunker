@@ -129,6 +129,7 @@
       </select>
       <button id="debug-unlock-all-ach" class="dev-btn dev-btn--warn" title="Unlock All Achievements">★ ACH ALL</button>
       <button id="debug-unlock-all-codex" class="dev-btn dev-btn--accent" title="Unlock All Codex Entries">❑ CODEX ALL</button>
+      <button id="debug-unlock-all-polishes" class="dev-btn dev-btn--accent" title="Unlock All Operator Polishes">◆ POLISH ALL</button>
     </div>
     <div id="cabinet-bezel"></div>
 
@@ -389,6 +390,14 @@
                   <div class="hero-stat-pips" id="hero-stat-loot"></div>
                   <span class="hero-stat-compact-value" id="hero-stat-loot-val">MED</span>
                 </div>
+                <button type="button" class="hero-polish-slot" id="hero-polish-btn" title="Choose operator polish">
+                  <span class="hero-polish-slot__swatch" id="hero-polish-swatch"></span>
+                  <span class="hero-polish-slot__copy">
+                    <span class="hero-polish-slot__label">SUIT POLISH</span>
+                    <span class="hero-polish-slot__name" id="hero-polish-name">STANDARD ISSUE</span>
+                  </span>
+                  <span class="hero-polish-slot__count" id="hero-polish-count">1/16</span>
+                </button>
                 <div class="module-scanline"></div>
               </div>
               <div class="module-scanline"></div>
@@ -640,6 +649,21 @@
             <span class="vault-store-open-status" id="vault-store-open-status">No Cache + Key pair detected in your inventory.</span>
             <button class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operator Polish Selector -->
+    <div id="operator-polish-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content operator-polish-modal-content">
+        <div class="terminal-scanline"></div>
+        <button class="close-modal" id="close-operator-polish-modal">×</button>
+        <div class="operator-polish-title">◆ OPERATOR POLISH</div>
+        <div class="operator-polish-subtitle">16-BIT SUIT TINT MATRIX // LOCKED FINISHES REQUIRE FIELD MILESTONES</div>
+        <div class="operator-polish-grid" id="operator-polish-grid"></div>
+        <div class="operator-polish-readout">
+          <span id="operator-polish-readout-name">STANDARD ISSUE</span>
+          <span id="operator-polish-readout-state">EQUIPPED</span>
         </div>
       </div>
     </div>

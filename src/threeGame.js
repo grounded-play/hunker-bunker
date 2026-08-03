@@ -2639,18 +2639,8 @@ export class ThreeGame {
     }
 
     setupWorld() {
-        const baseFloor = new THREE.Mesh(
-            new THREE.CircleGeometry(18, 48),
-            new THREE.MeshStandardMaterial({
-                color: 0x111418,
-                roughness: 1,
-                metalness: 0
-            })
-        );
-        baseFloor.rotation.x = -Math.PI / 2;
-        baseFloor.position.y = -0.03;
-        baseFloor.receiveShadow = true;
-        this.scene.add(baseFloor);
+        // Disabled grey CircleGeometry rendering under the floors
+        // const baseFloor = new THREE.Mesh(new THREE.CircleGeometry(18, 48), ...);
 
         const spawn = this.getSpawnTile();
         this.menuGridTexture = this.createMenuGridTexture();
