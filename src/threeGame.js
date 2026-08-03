@@ -14682,9 +14682,54 @@ export class ThreeGame {
             : MULTISHOT_SPREADS[Math.min(shotAmount, MULTISHOT_SPREADS.length - 1)];
 
         const fireOne = (dx, dz) => {
+            const desiredOffset = 0.62;
+            const playerX = this.player?.position?.x ?? 0;
+            const playerZ = this.player?.position?.z ?? 0;
+
+            let spawnX = playerX + dx * desiredOffset;
+            let spawnZ = playerZ + dz * desiredOffset;
+
+            // Check if a wall is standing between player and the forward spawn position
+            if (this.wallMeshes && this.wallMeshes.length > 0) {
+                this._projRaycaster.set(
+                    new THREE.Vector3(playerX, 0.45, playerZ),
+                    new THREE.Vector3(dx, 0, dz)
+                );
+                this._projRaycaster.far = desiredOffset + 0.05;
+                const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
+                if (hits.length > 0) {
+                    const hit = hits[0];
+                    const wall = (hit.object?.userData?.isInstancedWallPool && Number.isInteger(hit.instanceId))
+                        ? this.findWallByPoolInstance(hit.object, hit.instanceId)
+                        : hit.object;
+                    if (wall) {
+                        const hx = hit.point?.x ?? spawnX;
+                        const hz = hit.point?.z ?? spawnZ;
+                        this.spawnProjectileImpactEffect(hx, hz);
+                        this.spawnPhysicalBurst(hx, hz, { color: 0xffd27a, count: 5, upward: 0.16 });
+                        const destroyedWall = this.damageWall(wall, damage, { source: 'player' });
+                        if (!destroyedWall && FEATURE_WALL_DECALS) {
+                            let nx = -dx;
+                            let nz = -dz;
+                            if (hit.face && hit.object) {
+                                const worldNormal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+                                if (Number.isFinite(worldNormal.x) && Number.isFinite(worldNormal.z)) {
+                                    nx = worldNormal.x;
+                                    nz = worldNormal.z;
+                                }
+                            }
+                            this.spawnWallDecal(hx, hz, nx, nz, {
+                                wallKey: wall?.userData?.wallKey ?? null
+                            });
+                        }
+                        return;
+                    }
+                }
+            }
+
             this.spawnProjectile({
-                x: this.player.position.x + dx * 0.62,
-                z: this.player.position.z + dz * 0.62,
+                x: spawnX,
+                z: spawnZ,
                 vx: dx * speed,
                 vz: dz * speed,
                 ttl: PROJECTILE_TTL,
@@ -14765,14 +14810,19 @@ export class ThreeGame {
         return null;
     }
 
-    checkProjectileWallHit(projectile) {
+    checkProjectileWallHit(projectile, fromPos = null) {
         const speed = Math.hypot(projectile.vx, projectile.vz);
         if (speed <= 0.0001) return null;
+        const originX = fromPos ? fromPos.x : projectile.mesh.position.x;
+        const originZ = fromPos ? fromPos.z : projectile.mesh.position.z;
+        const rayFar = fromPos
+            ? Math.hypot(projectile.mesh.position.x - fromPos.x, projectile.mesh.position.z - fromPos.z) + 0.05
+            : Math.max(0.08, speed * 0.045);
         this._projRaycaster.set(
-            new THREE.Vector3(projectile.mesh.position.x, 0.45, projectile.mesh.position.z),
+            new THREE.Vector3(originX, 0.45, originZ),
             new THREE.Vector3(projectile.vx / speed, 0, projectile.vz / speed)
         );
-        this._projRaycaster.far = Math.max(0.08, speed * 0.045);
+        this._projRaycaster.far = Math.max(0.08, rayFar);
         const hits = this._projRaycaster.intersectObjects(this.wallMeshes, false);
         if (!hits.length) return null;
         const hit = hits[0];
@@ -15108,10 +15158,13 @@ export class ThreeGame {
                 continue;
             }
 
+            const oldX = projectile.mesh.position.x;
+            const oldZ = projectile.mesh.position.z;
+
             projectile.mesh.position.x += projectile.vx * delta;
             projectile.mesh.position.z += projectile.vz * delta;
 
-            const wallHit = this.checkProjectileWallHit(projectile);
+            const wallHit = this.checkProjectileWallHit(projectile, { x: oldX, z: oldZ });
             if (wallHit) {
                 const hx = wallHit.point?.x ?? projectile.mesh.position.x;
                 const hz = wallHit.point?.z ?? projectile.mesh.position.z;
