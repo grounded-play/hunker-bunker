@@ -8,6 +8,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = path.join(ROOT, 'steam/referenced-assets.json');
 const REPORT_PATH = path.join(ROOT, 'steam/retail-asset-report.json');
 const MEDIA_EXTENSIONS = /\.(?:avif|gif|jpe?g|mp3|mp4|ogg|png|svg|wav|webm|webp)$/i;
+const TEXT_ASSET_EXTENSIONS = new Set(['.css', '.html', '.js', '.json', '.md', '.mjs', '.svg', '.txt', '.vdf', '.xml']);
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.css', '.html', '.js', '.json', '.mjs']);
 const SOURCE_DIRS = ['electron', 'server', 'src'];
 // The interactive soundtrack intentionally ships in-game as well as in its
@@ -36,6 +37,24 @@ function walkFiles(root) {
 
 function posix(value) {
     return value.split(path.sep).join('/');
+}
+
+export function normalizeTextAssetContent(value) {
+    return String(value).replace(/\r\n?/g, '\n');
+}
+
+function portableAssetBuffer(file) {
+    const data = fs.readFileSync(file);
+    if (!TEXT_ASSET_EXTENSIONS.has(path.extname(file).toLowerCase())) return data;
+    return Buffer.from(normalizeTextAssetContent(data.toString('utf8')));
+}
+
+export function jsonReportMatches(existing, expected) {
+    try {
+        return JSON.stringify(JSON.parse(existing)) === JSON.stringify(expected);
+    } catch {
+        return false;
+    }
 }
 
 export function extractAssetReferences(text) {
@@ -107,7 +126,7 @@ function detectMediaType(file) {
 function summarizeDuplicates(files, root) {
     const byHash = new Map();
     for (const file of files) {
-        const digest = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+        const digest = crypto.createHash('sha256').update(portableAssetBuffer(file)).digest('hex');
         const entries = byHash.get(digest) ?? [];
         entries.push(posix(path.relative(root, file)));
         byHash.set(digest, entries);
@@ -119,7 +138,7 @@ function summarizeDuplicates(files, root) {
 }
 
 function fileSizeTotal(files) {
-    return files.reduce((total, file) => total + fs.statSync(file).size, 0);
+    return files.reduce((total, file) => total + portableAssetBuffer(file).byteLength, 0);
 }
 
 export function buildRetailAssetAudit(root = ROOT) {
@@ -131,7 +150,7 @@ export function buildRetailAssetAudit(root = ROOT) {
         const relativePath = posix(path.relative(publicRoot, file));
         return {
             path: relativePath,
-            bytes: fs.statSync(file).size,
+            bytes: portableAssetBuffer(file).byteLength,
             classification: classifyPublicAsset(relativePath, references)
         };
     });
@@ -215,18 +234,19 @@ function main() {
     }
     const { manifest, report } = buildRetailAssetAudit();
     const outputs = [
-        [MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`],
-        [REPORT_PATH, `${JSON.stringify(report, null, 2)}\n`]
+        [MANIFEST_PATH, manifest],
+        [REPORT_PATH, report]
     ];
     if (check) {
         for (const [target, expected] of outputs) {
-            if (!fs.existsSync(target) || fs.readFileSync(target, 'utf8') !== expected) {
+            const existing = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : '';
+            if (!jsonReportMatches(existing, expected)) {
                 console.error(`[retail-assets] stale report: ${posix(path.relative(ROOT, target))}`);
                 process.exitCode = 1;
             }
         }
     } else {
-        for (const [target, value] of outputs) fs.writeFileSync(target, value);
+        for (const [target, value] of outputs) fs.writeFileSync(target, `${JSON.stringify(value, null, 2)}\n`);
     }
     if (report.failures.length) {
         report.failures.forEach((failure) => console.error(`[retail-assets] ${failure}`));

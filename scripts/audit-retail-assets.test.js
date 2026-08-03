@@ -1,7 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { classifyPublicAsset, extractAssetReferences } from './audit-retail-assets.js';
+import {
+    classifyPublicAsset,
+    extractAssetReferences,
+    jsonReportMatches,
+    normalizeTextAssetContent
+} from './audit-retail-assets.js';
 
 describe('retail asset audit', () => {
+    it('normalizes checkout-specific line endings before measuring text assets', () => {
+        expect(normalizeTextAssetContent('one\r\ntwo\rthree\n')).toBe('one\ntwo\nthree\n');
+    });
+
+    it('accepts an equivalent tracked report with Windows line endings', () => {
+        const report = { version: 1, measured: { publicBytes: 42 } };
+        const windowsJson = `${JSON.stringify(report, null, 2).replace(/\n/g, '\r\n')}\r\n`;
+
+        expect(jsonReportMatches(windowsJson, report)).toBe(true);
+    });
+
     it('extracts root-relative runtime assets and strips query/hash suffixes', () => {
         expect(extractAssetReferences(`
             const image = '/sprites/player.png?v=2';
