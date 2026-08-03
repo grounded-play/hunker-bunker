@@ -1762,14 +1762,14 @@ body {
 }
 
 .map-box .menu-command {
-  gap: calc(var(--vu) * 0.12);
+  gap: calc(var(--vu) * 0.35);
 }
 
 .map-box .menu-command__status {
-  min-height: 0.8em;
-  margin-top: calc(var(--vu) * 0.15);
+  min-height: 1.0em;
+  margin-top: calc(var(--vu) * 0.35);
   font-size: calc(var(--font-xs) * 0.58);
-  line-height: 1;
+  line-height: 1.15;
 }
 
 .map-box .map-initialize-btn {
