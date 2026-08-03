@@ -325,10 +325,12 @@ describe('instanced wall tile identity', () => {
         expect(pool.setColorAt).toHaveBeenCalledTimes(1);
         expect(pool.setColorAt.mock.calls[0][0]).toBe(0);
         const colorArg = pool.setColorAt.mock.calls[0][1];
-        // A partially-damaged wall's tint should sit strictly between white and the
-        // 0xff3300 damage color, and specifically NOT equal a pure 0x808b96-based
-        // lerp result (regression guard for the base-color bug this fix corrects).
-        expect(colorArg.r).toBeGreaterThan(0);
+        // Both lerp endpoints (0xffffff and 0xff3300) have r=1.0, so a white
+        // lerp base keeps colorArg.r at/near 1.0 regardless of damage ratio.
+        // A gray 0x808b96 base (the bug this fix corrects) would instead pull
+        // r down to ~0.73 at this damageRatio — so this is a genuine
+        // regression guard: it fails if the base color reverts to gray.
+        expect(colorArg.r).toBeCloseTo(1, 5);
         expect(colorArg.g).toBeLessThan(1);
         expect(pool.instanceColor.needsUpdate).toBe(true);
     });
