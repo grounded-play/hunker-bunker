@@ -165,6 +165,21 @@ function preset(id, name, groups) {
 }
 
 function buildControllerConfig(controllerType) {
+    const gameplaySwitches = {
+        button_escape: ['pause', 'Pause'],
+        left_bumper: ['sprint', 'Sprint'],
+        right_bumper: ['fire', 'Fire'],
+        button_menu: ['pause', 'Pause'],
+        button_select: ['toggle_map', 'Tactical Map'],
+        button_back: ['toggle_map', 'Tactical Map'],
+        button_back_left: ['sprint', 'Sprint'],
+        button_back_right: ['interact', 'Interact']
+    };
+    // L4 is a convenient dedicated map button on Steam Deck. Keep View/Back as
+    // the universal fallback, and emit this extra source only for Deck hardware.
+    if (controllerType === 'controller_neptune') {
+        gameplaySwitches.button_back_left_upper = ['toggle_map', 'Tactical Map'];
+    }
     const groups = [
         faceGroup(0, 'menu', {
             a: ['menu_confirm', 'Confirm'],
@@ -223,16 +238,7 @@ function buildControllerConfig(controllerType) {
         mouseGroup(18, 'gameplay', 'camera_mouse', { gyro_button: 'right_pad_touch' }),
         triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
-        switchesGroup(15, 'gameplay', {
-            button_escape: ['pause', 'Pause'],
-            left_bumper: ['sprint', 'Sprint'],
-            right_bumper: ['fire', 'Fire'],
-            button_menu: ['pause', 'Pause'],
-            button_select: ['toggle_map', 'Tactical Map'],
-            button_back: ['toggle_map', 'Tactical Map'],
-            button_back_left: ['sprint', 'Sprint'],
-            button_back_right: ['interact', 'Interact']
-        }),
+        switchesGroup(15, 'gameplay', gameplaySwitches),
         faceGroup(20, 'archive', {
             a: ['archive_confirm', 'Inspect / Confirm'],
             b: ['archive_back', 'Back'],

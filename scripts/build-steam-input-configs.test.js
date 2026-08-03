@@ -46,6 +46,7 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).not.toMatch(/key_press|mouse_button/);
         expect(deck).toContain('game_action gameplay fire');
         expect(deck).toContain('game_action gameplay toggle_map');
+        expect(deck).toMatch(/"button_back_left_upper"[\s\S]*?game_action gameplay toggle_map/);
         expect(deck).toContain('game_action archive archive_reveal');
         expect(deck).toContain('"gameplay" "move"');
         expect(deck).toContain('"gameplay" "camera"');
