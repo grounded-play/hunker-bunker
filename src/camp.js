@@ -3,6 +3,7 @@ import { getCampClassMapping } from './act2.js';
 import { applyBlackChromaKey } from './textureKeying.js';
 import { assetUrl } from './assetUrl.js';
 import { campWorkerVisualForHumanState, selectCampWorkerStateCue, updateCampWorkersHumanStates } from './campHumanBehavior.js';
+import { CAMP_AFTERMATH_FORTIFIED_LEVEL } from './campEconomy.js';
 
 const LEADER_SPRITESHEETS = {
     'Commander Briggs': '/briggs_camp_walk_v2.png',
@@ -202,6 +203,7 @@ export class SurvivorCamp {
         this.campWorkers = [];
         this.fireAudio = null;
         this.wasLockedDown = false;
+        this.wasFortified = false;
     }
 
     createCampWorkerFigure(color = 0xffe9b0, scale = 1) {
@@ -565,9 +567,28 @@ export class SurvivorCamp {
     // Act 1 support level: each level rings the camp with barricade segments
     // and brightens the beacon — visible investment, and visible fortification
     // once the player realizes what Act 2 asks of them.
+    //
+    // The barricade/beacon/turret scaling below is continuous across levels
+    // 0-3, but per docs/sprint-22-systems-breakdown/03-factions-and-hives.md
+    // ("a fortified ... camp should not share the same ... audio ...
+    // affordances") crossing CAMP_AFTERMATH_FORTIFIED_LEVEL is also a
+    // one-time, unmistakable beat: a dedicated cue plus a `camp-fortified`
+    // event, fired once per camp the first time it happens.
     setLevel(level = 0) {
         const next = Math.max(0, Math.min(3, Math.floor(level)));
+        const crossedIntoFortified = next >= CAMP_AFTERMATH_FORTIFIED_LEVEL && !this.wasFortified;
+        this.wasFortified = next >= CAMP_AFTERMATH_FORTIFIED_LEVEL;
         this.level = next;
+        if (crossedIntoFortified && this.revealed && typeof window !== 'undefined') {
+            // No shipped asset for this cue yet -- AudioManager.play() is a
+            // silent no-op for an unmatched key, so this is safe to land
+            // ahead of the asset (see docs/sprint-22-systems-breakdown/
+            // 10-engineering-audio-and-soundtrack.md on missing-asset fallback).
+            window.AudioManager?.play?.('camp_fortified', { volume: 0.4, bus: 'sfx' });
+            window.dispatchEvent(new CustomEvent('camp-fortified', {
+                detail: { campId: this.id, campLabel: this.label, level: next }
+            }));
+        }
         if (!this.group) return;
 
         while (this.barricades.length < next * 2) {

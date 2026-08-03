@@ -70,6 +70,7 @@ import {
     canActivateCampVerb,
     getAct2ClassPerks as getAct2ClassPerksConfig,
     getCampActiveVerb,
+    getCampAftermathSummary,
     isCampVerbDegraded,
     mergeCampVerbEffects
 } from './campEconomy.js';
@@ -10265,7 +10266,8 @@ export class ThreeGame {
                 return {
                     camp,
                     action: 'lockdown',
-                    label: 'LOCKDOWN — THEY WATCH YOU'
+                    label: 'LOCKDOWN — THEY WATCH YOU',
+                    reason: getCampAftermathSummary(record).reason
                 };
             }
             if ((phase === 'gestation' || phase === 'dish') && status !== 'culled') {
@@ -10634,7 +10636,7 @@ export class ThreeGame {
         this.triggerCameraShake?.(0.18, 0.35);
         window.AudioManager?.play?.('ui_error', { volume: 0.38, playbackRate: 0.85 });
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
-            detail: { campId: camp.id, campLabel: camp.label, action: 'steal', status: after.status }
+            detail: { campId: camp.id, campLabel: camp.label, action: 'steal', status: after.status, ...getCampAftermathSummary(after) }
         }));
         window.dispatchEvent(new CustomEvent('act2-milestone', { detail: { key: 'campRobbed', campId: camp.id, campLabel: camp.label } }));
         return true;
@@ -10662,7 +10664,13 @@ export class ThreeGame {
         this.spawnGearPoofEffect(camp.pos.x, camp.pos.z, mode === 'turned' ? 'bio_spores' : 'bunker_junk_legendary');
         window.AudioManager?.play?.('class_lock', { volume: 0.52, playbackRate: mode === 'turned' ? 0.75 : 1.05 });
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
-            detail: { campId: camp.id, campLabel: camp.label, action: mode === 'turned' ? 'turn' : 'recruit', status: after.status }
+            detail: {
+                campId: camp.id,
+                campLabel: camp.label,
+                action: mode === 'turned' ? 'turn' : 'recruit',
+                status: after.status,
+                ...getCampAftermathSummary(after)
+            }
         }));
         window.dispatchEvent(new CustomEvent('act2-milestone', {
             detail: { key: mode === 'turned' ? 'campTurned' : 'campRecruited', campId: camp.id, campLabel: camp.label }
@@ -10713,7 +10721,13 @@ export class ThreeGame {
             }
         }));
         window.dispatchEvent(new CustomEvent('camp-choice-resolved', {
-            detail: { campId: camp.id, campLabel: camp.label, action: 'cull', status: record?.status ?? 'culled' }
+            detail: {
+                campId: camp.id,
+                campLabel: camp.label,
+                action: 'cull',
+                status: record?.status ?? 'culled',
+                ...getCampAftermathSummary(record ?? { status: 'culled' })
+            }
         }));
         return true;
     }
