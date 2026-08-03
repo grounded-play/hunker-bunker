@@ -59,6 +59,42 @@ function addWallShell(grid) {
     }
 }
 
+// Find the three-wide corridor cuts through the shell surrounding an authored
+// room. Door cells live on the corridor side of the room boundary so the slab
+// replaces the missing wall, instead of sitting one tile inside the chamber.
+function stampRoomThresholds(grid, bounds) {
+    const candidates = [
+        { side: 'n', cells: Array.from({ length: bounds.right - bounds.left + 1 }, (_, i) => ({ x: bounds.left + i, y: bounds.top - 1 })) },
+        { side: 'e', cells: Array.from({ length: bounds.bottom - bounds.top + 1 }, (_, i) => ({ x: bounds.right + 1, y: bounds.top + i })) },
+        { side: 's', cells: Array.from({ length: bounds.right - bounds.left + 1 }, (_, i) => ({ x: bounds.left + i, y: bounds.bottom + 1 })) },
+        { side: 'w', cells: Array.from({ length: bounds.bottom - bounds.top + 1 }, (_, i) => ({ x: bounds.left - 1, y: bounds.top + i })) }
+    ];
+    const doors = [];
+
+    for (const candidate of candidates) {
+        let run = [];
+        const flushRun = () => {
+            if (run.length < 3) {
+                run = [];
+                return;
+            }
+            const center = Math.floor(run.length / 2);
+            const start = Math.max(0, Math.min(run.length - 3, center - 1));
+            const cells = run.slice(start, start + 3);
+            for (const cell of cells) grid[cell.y][cell.x] = 'D';
+            doors.push({ side: candidate.side, cells });
+            run = [];
+        };
+
+        for (const cell of candidate.cells) {
+            if (grid[cell.y]?.[cell.x] === '.') run.push(cell);
+            else flushRun();
+        }
+        flushRun();
+    }
+    return doors;
+}
+
 function constrainBorderSockets(grid, openings) {
     const size = grid.length;
     for (let i = 0; i < size; i += 1) {
@@ -162,6 +198,7 @@ export function generateArchitecturalMazeChunk(random, {
     // an accidental open seam. Re-author the boundary from declared sockets:
     // canyon everywhere, exactly three floor cells at each hallway opening.
     constrainBorderSockets(grid, openings);
+    const doors = stampRoomThresholds(grid, authoredRoom.bounds);
     addWallShell(grid);
 
     const interior = [];
@@ -172,6 +209,6 @@ export function generateArchitecturalMazeChunk(random, {
     }
     return {
         grid,
-        room: interior.length ? { ...authoredRoom, interior } : null
+        room: interior.length ? { ...authoredRoom, interior, doors } : null
     };
 }

@@ -22611,14 +22611,21 @@ export class ThreeGame {
             // stamped into canyon.
             if (architectural.room) {
                 const existing = mazeMetadata.roomInstances?.[0] ?? {};
+                const roomId = `architectural-room:${chunkX},${chunkY}`;
+                const doors = (architectural.room.doors ?? []).map((door, index) => ({
+                    id: `${chunkX},${chunkY}:architectural-door:${index}:${door.side}`,
+                    side: door.side,
+                    cells: door.cells.map((cell) => ({ ...cell })),
+                    neighborIndex: null
+                }));
                 mazeMetadata.roomInstances = [{
                     ...existing,
-                    id: `architectural-room:${chunkX},${chunkY}`,
+                    id: roomId,
                     chunkKey: `${chunkX},${chunkY}`,
                     interior: architectural.room.interior,
                     bounds: architectural.room.bounds,
-                    doors: [],
-                    navigation: { doorLanes: [] }
+                    doors,
+                    navigation: { doorLanes: doors.flatMap((door) => door.cells) }
                 }];
             } else {
                 mazeMetadata.roomInstances = [];

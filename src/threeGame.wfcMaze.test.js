@@ -87,4 +87,20 @@ describe('buildChunk — WFC MAZE generation', () => {
         expect(Array.isArray(meta.rooms)).toBe(true);
         expect(Array.isArray(meta.anchors)).toBe(true);
     });
+
+    it('carries architectural room thresholds into procedural door metadata', () => {
+        const game = makeFakeGame(42, {
+            getDepthTier: () => 2,
+            getBiomeKeyForWorldPosition: () => 'ACTIVE'
+        });
+        const grid = ThreeGame.prototype.buildChunk.call(game, 4, 4);
+        const meta = game.wfcMetadataCache.get('4,4');
+        expect(meta.roomInstances[0].doors.length).toBeGreaterThan(0);
+        expect(meta.doors.length).toBe(meta.roomInstances[0].doors.length);
+        for (const door of meta.doors) {
+            expect(['horizontal', 'vertical']).toContain(door.orientation);
+            expect(door.cells).toHaveLength(3);
+            for (const cell of door.cells) expect(grid[cell.y][cell.x]).toBe('D');
+        }
+    });
 });
