@@ -217,3 +217,33 @@ describe('createWallInstanceRecord — instanced wall identity record', () => {
         expect(record.wallHp).toBe(expectedHp);
     });
 });
+
+describe('computeExteriorWallJitter — shared position/rotation jitter for exterior walls', () => {
+    it('returns zero jitter for a non-exterior wall tile', () => {
+        const fakeThis = {
+            isExteriorWallTile: () => false,
+            hashTile: ThreeGame.prototype.hashTile,
+            createSeededRandom: ThreeGame.prototype.createSeededRandom
+        };
+
+        const jitter = call('computeExteriorWallJitter', fakeThis, 5, 5);
+
+        expect(jitter).toEqual({ offsetX: 0, offsetZ: 0, rotationY: 0 });
+    });
+
+    it('returns deterministic non-zero jitter for an exterior wall tile, seeded by world position', () => {
+        const fakeThis = {
+            isExteriorWallTile: () => true,
+            hashTile: ThreeGame.prototype.hashTile,
+            createSeededRandom: ThreeGame.prototype.createSeededRandom
+        };
+
+        const jitterA = call('computeExteriorWallJitter', fakeThis, 5, 5);
+        const jitterB = call('computeExteriorWallJitter', fakeThis, 5, 5);
+        const jitterC = call('computeExteriorWallJitter', fakeThis, 6, 5);
+
+        expect(jitterA).toEqual(jitterB);
+        expect(jitterA).not.toEqual({ offsetX: 0, offsetZ: 0, rotationY: 0 });
+        expect(jitterA).not.toEqual(jitterC);
+    });
+});

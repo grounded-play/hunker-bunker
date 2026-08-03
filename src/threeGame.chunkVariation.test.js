@@ -258,6 +258,7 @@ describe('mountPocket — pocket geometry mounting', () => {
             getWallKey: ThreeGame.prototype.getWallKey,
             generatePocket: ThreeGame.prototype.generatePocket,
             configureWallMesh: ThreeGame.prototype.configureWallMesh,
+            computeExteriorWallJitter: ThreeGame.prototype.computeExteriorWallJitter,
             getWallMaxHp: () => 8,
             createSnailDropPlacement: () => ({ worldX: 0, worldZ: 0, type: 'health', elevation: 0.2, offsetX: 0, offsetZ: 0, bobOffset: 0, rotation: 0, tiltX: 0, tiltZ: 0, scale: 0.8, shadowRadius: 0.24, collectLock: 0.34 }),
             createPickupInstance: () => new THREE.Object3D()
@@ -312,6 +313,7 @@ describe('enterPocket / exitPocket — fall resolution', () => {
             getWallKey: ThreeGame.prototype.getWallKey,
             getWallMaxHp: () => 8,
             configureWallMesh: ThreeGame.prototype.configureWallMesh,
+            computeExteriorWallJitter: ThreeGame.prototype.computeExteriorWallJitter,
             generatePocket: ThreeGame.prototype.generatePocket,
             mountPocket: ThreeGame.prototype.mountPocket,
             resolveFallDamage: () => 2,

@@ -15649,6 +15649,23 @@ export class ThreeGame {
         return record;
     }
 
+    // Shared by configureWallMesh (individual Mesh) and the instanced-wall
+    // matrix builder (mountChunk) so both apply identical position/rotation
+    // jitter to exterior-facing wall tiles — extracted so instancing can't
+    // silently drift from what individual walls already do.
+    computeExteriorWallJitter(worldX, worldZ) {
+        if (!this.isExteriorWallTile?.(worldX, worldZ)) {
+            return { offsetX: 0, offsetZ: 0, rotationY: 0 };
+        }
+        const seed = this.hashTile(Math.round(worldX), Math.round(worldZ));
+        const rng = this.createSeededRandom(seed);
+        return {
+            offsetX: (rng() - 0.5) * 0.16,
+            offsetZ: (rng() - 0.5) * 0.16,
+            rotationY: (rng() - 0.5) * 0.14
+        };
+    }
+
     configureWallMesh(wall, {
         chunkX,
         chunkY,
@@ -15691,13 +15708,10 @@ export class ThreeGame {
         wall.userData.roomId = room?.id ?? null;
         wall.userData.roomWallStyle = room?.themeConfig?.wallStyle ?? null;
         // Apply organic jitter to exterior/canyon-facing wall segments
-        if (this.isExteriorWallTile?.(worldX, worldZ)) {
-            const seed = this.hashTile(Math.round(worldX), Math.round(worldZ));
-            const rng = this.createSeededRandom(seed);
-            wall.position.x += (rng() - 0.5) * 0.16;
-            wall.position.z += (rng() - 0.5) * 0.16;
-            wall.rotation.y += (rng() - 0.5) * 0.14;
-        }
+        const jitter = this.computeExteriorWallJitter(worldX, worldZ);
+        wall.position.x += jitter.offsetX;
+        wall.position.z += jitter.offsetZ;
+        wall.rotation.y += jitter.rotationY;
 
         wall.onBeforeRender = () => {
             if (this.wallShaderUniforms) {
