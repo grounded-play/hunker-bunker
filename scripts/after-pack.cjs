@@ -15,11 +15,14 @@ module.exports = async function afterPack(context) {
     const launcherPath = path.join(appOutDir, 'hunker-bunker');
     const binaryPath = path.join(appOutDir, 'hunker-bunker-bin');
 
-    if (!fs.existsSync(launcherPath)) {
-        throw new Error(`Linux Electron executable is missing: ${launcherPath}`);
+    try {
+        fs.renameSync(launcherPath, binaryPath);
+    } catch (err) {
+        if (err && err.code === 'ENOENT') {
+            throw new Error(`Linux Electron executable is missing: ${launcherPath}`);
+        }
+        throw err;
     }
-
-    fs.renameSync(launcherPath, binaryPath);
     fs.writeFileSync(launcherPath, `#!/bin/sh
 set -eu
 app_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)

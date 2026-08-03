@@ -138,7 +138,12 @@ export function generatePlanSfx({ outputDir = OUTPUT_DIR, check = false } = {}) 
     for (const [name, definition] of Object.entries(PLAN_SFX)) {
         const target = path.join(outputDir, `${name}.wav`);
         const rendered = renderPlanSfx(name, definition);
-        const existing = fs.existsSync(target) ? fs.readFileSync(target) : null;
+        let existing = null;
+        try {
+            existing = fs.readFileSync(target);
+        } catch (err) {
+            if (!err || err.code !== 'ENOENT') throw err;
+        }
         const matches = Boolean(existing?.equals(rendered));
         results.push({ name, target, matches });
         if (!check && !matches) fs.writeFileSync(target, rendered);
