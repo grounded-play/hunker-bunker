@@ -786,14 +786,22 @@ function moveMenuCommandGridFocus(code) {
     ));
     const currentItems = focusablesFor(activeColumn);
     if (!currentItems.length) return false;
-    const allItems = columns.flatMap(focusablesFor);
-    const flatIndex = Math.max(0, allItems.indexOf(active));
+    const columnIndex = columns.indexOf(activeColumn);
+    const rowIndex = Math.max(0, currentItems.indexOf(active));
     let target = null;
 
     if (code === 'KeyW' || code === 'ArrowUp') {
-        target = allItems[(flatIndex - 1 + allItems.length) % allItems.length];
+        target = currentItems[(rowIndex - 1 + currentItems.length) % currentItems.length];
     } else if (code === 'KeyS' || code === 'ArrowDown') {
-        target = allItems[(flatIndex + 1) % allItems.length];
+        target = currentItems[(rowIndex + 1) % currentItems.length];
+    } else if (code === 'KeyA' || code === 'ArrowLeft') {
+        if (columnIndex === 0) return false;
+        const adjacentItems = focusablesFor(columns[columnIndex - 1]);
+        target = adjacentItems[Math.min(rowIndex, adjacentItems.length - 1)];
+    } else if (code === 'KeyD' || code === 'ArrowRight') {
+        if (columnIndex === columns.length - 1) return false;
+        const adjacentItems = focusablesFor(columns[columnIndex + 1]);
+        target = adjacentItems[Math.min(rowIndex, adjacentItems.length - 1)];
     }
 
     return target ? focusControllerTarget(target, { playHover: true }) : false;
@@ -825,8 +833,8 @@ document.addEventListener('keydown', (event) => {
     if (direction) {
         event.preventDefault();
         if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
-        if (root.id === 'menu' && moveHeroSelectPanelFocus(event.code)) return;
         if (root.id === 'menu' && moveMenuCommandGridFocus(event.code)) return;
+        if (root.id === 'menu' && moveHeroSelectPanelFocus(event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
         const adjusted = horizontal && (

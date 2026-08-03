@@ -1222,7 +1222,7 @@ body {
   overflow: hidden;
   /* Keep the interactive console inside the inner face of the background frame. */
   --briefing-content-top: calc(var(--vu) * 9.4);
-  --briefing-content-bottom: calc(var(--vu) * 9.4);
+  --briefing-content-bottom: calc(var(--vu) * 11.4);
   --briefing-content-left: calc(var(--vu) * 15.2);
   --briefing-content-right: calc(var(--vu) * 12.4);
 }
@@ -1548,6 +1548,8 @@ body {
 }
 
 .map-box {
+  width: 90%;
+  justify-self: end;
   padding: calc(var(--vu) * 1.25);
   display: flex;
   flex-direction: column;
@@ -1916,7 +1918,8 @@ body {
 
 /* --- Selection Stack --- */
 .char-selection {
-  width: 100%;
+  width: 75%;
+  justify-self: start;
   display: flex;
   flex-direction: column;
   gap: calc(var(--vu) * 0.9);

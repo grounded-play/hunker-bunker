@@ -12,6 +12,9 @@ test.describe('controller-ready modal focus', () => {
         await expect(page.locator('#roster-btn')).toBeFocused();
 
         await page.keyboard.press('KeyD');
+        await expect(page.locator('#codex-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyD');
         await expect(page.locator('#hero-polish-btn')).toBeFocused();
 
         await page.keyboard.press('KeyD');
@@ -19,6 +22,9 @@ test.describe('controller-ready modal focus', () => {
 
         await page.keyboard.press('KeyA');
         await expect(page.locator('#hero-polish-btn')).toBeFocused();
+
+        await page.keyboard.press('KeyA');
+        await expect(page.locator('#codex-btn')).toBeFocused();
 
         await page.keyboard.press('KeyA');
         await expect(page.locator('#roster-btn')).toBeFocused();
