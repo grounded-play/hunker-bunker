@@ -3301,6 +3301,8 @@ input:checked+.slider:before {
   scrollbar-width: thin !important;
   scrollbar-color: var(--accent-primary) rgba(0, 0, 0, 0.4) !important;
   scrollbar-gutter: stable;
+  scroll-padding-top: calc(var(--vu) * 9);
+  scroll-padding-bottom: calc(var(--vu) * 4);
   border: 1px solid var(--accent-primary);
   box-shadow: 0 0 45px rgba(255, 159, 28, 0.15), 0 0 90px rgba(0, 0, 0, 0.85);
 }
@@ -3374,6 +3376,7 @@ input:checked+.slider:before {
   padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.2);
   border-radius: 4px;
   transition: background 0.15s ease;
+  scroll-margin-block: calc(var(--vu) * 10);
 }
 
 .settings-modal-content .setting-item:hover,

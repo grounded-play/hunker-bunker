@@ -24,6 +24,12 @@ export function menuKeyboardDirection(code) {
     return 0;
 }
 
+export function wrapMenuIndex(index, delta, length) {
+    if (!Number.isInteger(length) || length < 1) return 0;
+    const current = Number.isInteger(index) && index >= 0 ? index : 0;
+    return (current + delta + length) % length;
+}
+
 export function shouldPreferBrowserGamepad({
     nativeAvailable = false,
     nativeControllerCount = 0,

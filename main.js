@@ -39,6 +39,7 @@ import {
     actionSetForAppPhase,
     createActionRouter,
     menuKeyboardDirection,
+    wrapMenuIndex,
     shouldPreferBrowserGamepad
 } from './src/inputActions.js';
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
@@ -591,10 +592,8 @@ function adjustRangeInputValue(element, direction) {
 
 function adjustSelectValue(element, direction) {
     if (!element?.matches?.('select') || !element.options?.length) return false;
-    const nextIndex = Math.min(
-        element.options.length - 1,
-        Math.max(0, element.selectedIndex + direction)
-    );
+    const currentIndex = Math.max(0, element.selectedIndex);
+    const nextIndex = wrapMenuIndex(currentIndex, direction, element.options.length);
     if (nextIndex === element.selectedIndex) return true;
     element.selectedIndex = nextIndex;
     element.dispatchEvent(new Event('input', { bubbles: true }));
@@ -634,6 +633,11 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables.find((element) => element.classList?.contains('operator-polish-chip'))
             ?? focusables[0];
     }
+    if (root?.id === 'settings-popup') {
+        return focusables.find((element) => element.id === 'setting-resolution')
+            ?? focusables.find((element) => element.closest?.('.setting-item'))
+            ?? focusables[0];
+    }
     if (root?.id === 'mothership-dialogue') {
         return focusables.find((element) => element.id === 'mothership-choice-skip' && isElementVisible(element))
             ?? focusables.find((element) => element.id === 'mothership-choice-tutorial' && isElementVisible(element))
@@ -646,6 +650,28 @@ let activeControllerFocusRoot = null;
 const controllerFocusMemory = new WeakMap();
 const controllerFocusInvokers = new WeakMap();
 
+function centerSettingsFocusTarget(target) {
+    const popup = target?.closest?.('#settings-popup');
+    const scroller = popup?.querySelector?.('.settings-modal-content');
+    if (!scroller) return false;
+
+    if (target.closest('.settings-sticky-header')) {
+        scroller.scrollTop = 0;
+        return true;
+    }
+
+    const row = target.closest('.setting-item') ?? target;
+    const scrollerRect = scroller.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const headerHeight = scroller.querySelector('.settings-sticky-header')?.getBoundingClientRect().height ?? 0;
+    const usableHeight = Math.max(0, scroller.clientHeight - headerHeight);
+    const rowCenterInScroller = (rowRect.top - scrollerRect.top) + scroller.scrollTop + (rowRect.height / 2);
+    const desiredCenter = headerHeight + (usableHeight / 2);
+    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    scroller.scrollTop = Math.min(maxScroll, Math.max(0, rowCenterInScroller - desiredCenter));
+    return true;
+}
+
 function focusControllerTarget(target, { playHover = false } = {}) {
     if (!target) return false;
     const previous = document.activeElement;
@@ -654,7 +680,9 @@ function focusControllerTarget(target, { playHover = false } = {}) {
     } catch {
         target.focus?.();
     }
-    target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    if (!centerSettingsFocusTarget(target)) {
+        target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    }
     if (playHover && previous !== target) {
         AudioManager.play('ui_hover', { volume: 0.12, varyPitch: true });
     }

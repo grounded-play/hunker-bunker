@@ -4,6 +4,7 @@ import {
     actionSetForAppPhase,
     createActionRouter,
     menuKeyboardDirection,
+    wrapMenuIndex,
     shouldPreferBrowserGamepad
 } from './inputActions.js';
 
@@ -43,6 +44,14 @@ describe('createActionRouter', () => {
         }
         expect(menuKeyboardDirection('Enter')).toBe(0);
     });
+
+    it('wraps menu and select choices in both directions', () => {
+        expect(wrapMenuIndex(0, -1, 4)).toBe(3);
+        expect(wrapMenuIndex(3, 1, 4)).toBe(0);
+        expect(wrapMenuIndex(-1, 1, 4)).toBe(1);
+        expect(wrapMenuIndex(0, 1, 0)).toBe(0);
+    });
+
     it('starts in the menu set and switches sets explicitly', () => {
         const router = createActionRouter();
         expect(router.getActionSet()).toBe(ACTION_SETS.MENU);
