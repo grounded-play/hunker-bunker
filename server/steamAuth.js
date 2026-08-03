@@ -39,6 +39,8 @@ function normalizeSteamId64(value) {
     return /^\d{17}$/.test(steamId64) ? steamId64 : null;
 }
 
+let ephemeralSessionSecret = null;
+
 function normalizeSessionSecret() {
     const explicit = String(
         process.env.HB_SESSION_SECRET
@@ -62,11 +64,30 @@ function normalizeSessionSecret() {
         };
     }
 
+    if (process.env.NODE_ENV === 'production') {
+        if (!ephemeralSessionSecret) {
+            ephemeralSessionSecret = crypto.randomBytes(32).toString('hex');
+            console.warn('[security] Generating ephemeral session secret for production environment.');
+        }
+        return {
+            secret: ephemeralSessionSecret,
+            mode: 'ephemeral',
+            configured: true
+        };
+    }
+
     return {
         secret: DEV_SESSION_SECRET,
         mode: 'dev_fallback',
         configured: true
     };
+}
+
+function isDevFallbackAllowed(allowDevFallbackParam = true) {
+    if (!allowDevFallbackParam) return false;
+    if (process.env.NODE_ENV === 'production') return false;
+    if (process.env.HB_ALLOW_DEV_STEAM_AUTH === 'false') return false;
+    return true;
 }
 
 function getSteamSessionTtlMs() {
@@ -370,7 +391,7 @@ export async function authenticateSteamRequest(req, { allowDevFallback = true } 
 
     const auth = await verifySteamSessionTicket({ ticketHex, identity });
     if (!auth.ok) {
-        if (allowDevFallback && auth.reason === 'steam_auth_not_configured') {
+        if (isDevFallbackAllowed(allowDevFallback) && auth.reason === 'steam_auth_not_configured') {
             return createDevSteamAuth(identity);
         }
         return auth;
@@ -422,7 +443,7 @@ export function attachSteamAuthRoutes(app) {
 
         const result = auth.ok
             ? auth
-            : (auth.reason === 'steam_auth_not_configured'
+            : (isDevFallbackAllowed(true) && auth.reason === 'steam_auth_not_configured'
                 ? createDevSteamAuth(req.body?.identity)
                 : auth);
 

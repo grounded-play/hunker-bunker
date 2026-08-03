@@ -173,9 +173,13 @@ describe('Steam Store API endpoints', () => {
         const testId = '76561198000000000';
         await setMockInventory(testId, []);
 
+        const session = createSteamSessionToken({ steamId64: testId });
         const res = await fetch(`${baseUrl}/steam/store/purchase/init`, {
             method: 'POST',
-            headers: { 'content-type': 'application/json' },
+            headers: {
+                'content-type': 'application/json',
+                authorization: `Bearer ${session.token}`
+            },
             body: JSON.stringify({
                 ticketHex: '00112233445566778899aabbccddeeff',
                 requestId: `buy-prod-disabled-${Math.random()}`,

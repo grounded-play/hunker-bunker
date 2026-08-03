@@ -40,4 +40,21 @@ describe('room themes', () => {
         }
         expect(new Set(Object.values(LIVED_IN_DECALS).flat()).size).toBe(8);
     });
+
+    it('places every survival-pack prefab through the fortified camp theme', () => {
+        const camp = ROOM_THEME_CATALOG.find((theme) => theme.id === 'camp-fortified');
+        const placed = new Set([
+            ...camp.signatureProps,
+            ...camp.largeProps,
+            ...camp.smallProps
+        ]);
+        for (const type of [
+            'prop_camp_bedrolls', 'prop_camp_cookfire_doused',
+            'prop_camp_cookfire_lit', 'prop_camp_cot', 'prop_camp_crate',
+            'scatter_bolts', 'scatter_cable_coil'
+        ]) {
+            expect(placed.has(type), type).toBe(true);
+        }
+        expect(ROOM_THEME_CATALOG.some((theme) => theme.largeProps?.includes('prop_hive_resin_sac'))).toBe(true);
+    });
 });

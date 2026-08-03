@@ -42,7 +42,11 @@ function cleanConfigString(value, fallback) {
 function cleanBackendUrl(value) {
     const raw = cleanConfigString(value, DEFAULT_STEAM_CONFIG.backendUrl);
     try {
-        return new URL(raw).toString().replace(/\/$/, '');
+        const parsed = new URL(raw);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return DEFAULT_STEAM_CONFIG.backendUrl;
+        }
+        return parsed.toString().replace(/\/$/, '');
     } catch {
         return DEFAULT_STEAM_CONFIG.backendUrl;
     }
@@ -71,7 +75,15 @@ let pendingSteamSession = null;
 let pendingSteamSessionIdentity = null;
 
 function steamBackendUrl(path) {
-    return new URL(path, STEAM_BACKEND_URL.endsWith('/') ? STEAM_BACKEND_URL : `${STEAM_BACKEND_URL}/`).toString();
+    const relPath = String(path ?? '').trim();
+    if (!relPath.startsWith('/')) {
+        throw new Error('Backend path must start with /');
+    }
+    const targetUrl = new URL(relPath, STEAM_BACKEND_URL.endsWith('/') ? STEAM_BACKEND_URL : `${STEAM_BACKEND_URL}/`);
+    if (targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:') {
+        throw new Error('Invalid outbound protocol');
+    }
+    return targetUrl.toString();
 }
 
 async function requestSteamBackend(path, { method = 'GET', body = null, headers = {} } = {}) {

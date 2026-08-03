@@ -51,4 +51,21 @@ describe('room population', () => {
         ]);
         expect(plan.placements.filter(({ kind }) => kind === 'small')).toHaveLength(3);
     });
+
+    it('spreads multiple ambient prefabs through large rooms', () => {
+        const room = {
+            id: 'large-room',
+            interior: Array.from({ length: 80 }, (_, index) => ({ x: index % 10, y: Math.floor(index / 10) })),
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            themeConfig: {
+                signatureProps: ['prop_bunker_supplies'],
+                ambientProps: ['decal_worker_sleep_roll']
+            }
+        };
+        const grid = Array.from({ length: 8 }, () => Array(10).fill('.'));
+        const plan = planRoomPopulation(room, grid, () => 0);
+
+        expect(plan.placements.filter((placement) => placement.kind === 'ambient')).toHaveLength(3);
+    });
 });

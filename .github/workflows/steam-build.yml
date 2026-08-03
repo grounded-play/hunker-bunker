@@ -40,8 +40,8 @@ jobs:
             unpacked: win-unpacked
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -73,14 +73,14 @@ jobs:
       - name: Archive Linux payload with executable modes
         if: runner.os == 'Linux'
         run: tar -C dist_electron -cf hunker-bunker-linux-unpacked.tar linux-unpacked
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: runner.os == 'Linux'
         with:
           name: hunker-bunker-linux-unpacked
           path: hunker-bunker-linux-unpacked.tar
           compression-level: 0
           retention-days: 14
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: runner.os == 'Windows'
         with:
           name: hunker-bunker-${{ matrix.unpacked }}
@@ -95,7 +95,7 @@ jobs:
       (startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Check Steam secrets
         id: creds
         run: |
@@ -105,12 +105,12 @@ jobs:
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "Steam secrets not configured — skipping upload (artifacts are on the run)."
           fi
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: steps.creds.outputs.ready == 'true'
         with:
           name: hunker-bunker-linux-unpacked
           path: dist_electron
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: steps.creds.outputs.ready == 'true'
         with:
           name: hunker-bunker-win-unpacked

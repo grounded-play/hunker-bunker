@@ -336,6 +336,20 @@ const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_alien_respiratory_vent: '/prop_alien_respiratory_vent.png',
     prop_alien_feeding_basin: '/prop_alien_feeding_basin.png'
 });
+const FLOOR_OVERLAY_TYPES = new Set([
+    'scatter_bolts',
+    'scatter_cable_coil',
+    'scatter_coolant_puddle',
+    'scatter_slime_puddle',
+    'scatter_bio_moss',
+    'scatter_horizon_black_box',
+    'prop_camp_bedrolls',
+    'prop_blood_trail',
+    'prop_iron_guild_dogtags'
+]);
+const isFloorOverlayType = (type) => type?.startsWith('decal_') || FLOOR_OVERLAY_TYPES.has(type);
+const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
+const PROCEDURAL_DOOR_CLOSE_RADIUS = 3.6;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
 const BOSS_WALL_BREAK_DAMAGE = 999;
 
@@ -1696,11 +1710,11 @@ export class ThreeGame {
             scatter_cryo_icicle: this.loadScatterTexture('/scatter_cryo_icicle.png', textureLoader),
             scatter_cryo_shards: this.loadScatterTexture('/scatter_cryo_shards.png', textureLoader),
             scatter_bio_moss: this.loadScatterTexture('/scatter_bio_moss.png', textureLoader),
-            scatter_cable_coil: this.loadScatterTexture('/scatter_cable_coil.svg', textureLoader),
-            scatter_bolts: this.loadScatterTexture('/scatter_bolts.svg', textureLoader),
+            scatter_cable_coil: this.loadScatterTexture('/scatter_cable_coil.png', textureLoader),
+            scatter_bolts: this.loadScatterTexture('/scatter_bolts.png', textureLoader),
             body_human_frozen_suit: this.loadScatterTexture('/body_human_frozen_suit.svg', textureLoader),
             body_empty_exosuit: this.loadScatterTexture('/body_empty_exosuit.svg', textureLoader),
-            prop_hive_resin_sac: this.loadScatterTexture('/prop_hive_resin_sac.svg', textureLoader),
+            prop_hive_resin_sac: this.loadScatterTexture('/prop_hive_resin_sac.png', textureLoader),
             ship_wreckage: this.loadScatterTexture('/ship_wreckage.png', textureLoader),
             lore_terminal: this.loadKeyedSpriteTexture('/console.png', 15),
             pit_hole: this.loadScatterTexture('/pit_hole.png', textureLoader),
@@ -1737,6 +1751,10 @@ export class ThreeGame {
             prop_cave_queen_throne: this.loadKeyedSpriteTexture('/prop_cave_queen_throne.png', 14),
             prop_camp_sandbags: this.loadKeyedSpriteTexture('/prop_camp_sandbags.png', 14),
             prop_camp_crates: this.loadKeyedSpriteTexture('/prop_camp_crates.png', 14),
+            prop_camp_bedrolls: this.loadKeyedSpriteTexture('/prop_camp_bedrolls.png', 14),
+            prop_camp_cookfire_doused: this.loadKeyedSpriteTexture('/prop_camp_cookfire_doused.png', 14),
+            prop_camp_cot: this.loadKeyedSpriteTexture('/prop_camp_cot.png', 14),
+            prop_camp_crate: this.loadKeyedSpriteTexture('/prop_camp_crate.png', 14),
             drop_horizon_badge: this.loadKeyedSpriteTexture('/drop_horizon_badge.png', 14),
             drop_dig_manifest: this.loadKeyedSpriteTexture('/drop_dig_manifest.png', 14),
             drop_security_log: this.loadKeyedSpriteTexture('/drop_security_log.png', 14),
@@ -1777,6 +1795,11 @@ export class ThreeGame {
             decal_childlike_cave_map: this.loadKeyedSpriteTexture('/decal_childlike_cave_map.png', 14),
             decal_bio_sample_spill: this.loadKeyedSpriteTexture('/decal_bio_sample_spill.png', 14),
             decal_worker_sleep_roll: this.loadKeyedSpriteTexture('/decal_worker_sleep_roll.png', 14),
+            decal_machine_cult_shrine: this.loadKeyedSpriteTexture('/decal_machine_cult_shrine.png', 14),
+            decal_pod_312_breach: this.loadKeyedSpriteTexture('/decal_pod_312_breach.png', 14),
+            decal_tallow_herb_cache: this.loadKeyedSpriteTexture('/decal_tallow_herb_cache.png', 14),
+            scatter_horizon_black_box: this.loadKeyedSpriteTexture('/scatter_horizon_black_box.png', 14),
+            prop_iron_guild_dogtags: this.loadKeyedSpriteTexture('/prop_iron_guild_dogtags.png', 14),
 
             prop_camp_cookfire_lit: this.loadKeyedSpriteTexture('/prop_camp_cookfire_lit.png', 14)
         };
@@ -2463,8 +2486,12 @@ export class ThreeGame {
         this.holeMaterial = new THREE.MeshBasicMaterial({
             map: this.scatterTextures.pit_hole,
             transparent: true,
+            alphaTest: 0.02,
             depthWrite: false,
             depthTest: true,
+            polygonOffset: true,
+            polygonOffsetFactor: -4,
+            polygonOffsetUnits: -4,
             fog: true
         });
         // Exterior canyon is not a pocket-world hole. It is a cold,
@@ -5706,6 +5733,14 @@ export class ThreeGame {
         if (!this.bunkerBlastDoorGroup || !this.bunkerBlastDoorState) return;
 
         const state = this.bunkerBlastDoorState;
+        if (this.player && this.isGameplayInputActive() && !state.destroyed) {
+            const distance = Math.hypot(
+                this.player.position.x - (state.doorCenterX ?? 9),
+                this.player.position.z - state.doorZ
+            );
+            if (!state.open && distance <= PROCEDURAL_DOOR_OPEN_RADIUS) this.toggleBunkerBlastDoor();
+            else if (state.open && distance >= PROCEDURAL_DOOR_CLOSE_RADIUS) this.toggleBunkerBlastDoor();
+        }
         state.y = THREE.MathUtils.lerp(state.y, state.targetY, Math.min(1.0, state.speed * delta));
         this.bunkerBlastDoorGroup.position.y = state.y;
 
@@ -5732,30 +5767,11 @@ export class ThreeGame {
             this.exteriorButtonXrayMarker.scale.set(pulseScale, pulseScale, 1.0);
         }
 
-        // Update floating HUD prompt when player is near interior or exterior door button
-        if (this.player && this.bunkerDoorButtons && this.isGameplayInputActive()) {
-            const px = this.player.position.x;
-            const pz = this.player.position.z;
-            const intDist = Math.hypot(px - this.bunkerDoorButtons.interior.x, pz - this.bunkerDoorButtons.interior.z);
-            const extDist = Math.hypot(px - this.bunkerDoorButtons.exterior.x, pz - this.bunkerDoorButtons.exterior.z);
-
-            if (intDist <= 2.2 || extDist <= 2.2) {
-                const promptEl = document.getElementById('console-hud-prompt');
-                if (promptEl && !this.activeInteractiveConsole) {
-                    const actionText = promptEl.querySelector('.prompt-text');
-                    const promptKey = promptEl.querySelector('.prompt-key');
-                    if (actionText) {
-                        actionText.textContent = open ? 'CLOSE BLAST DOOR' : 'OPEN BLAST DOOR';
-                    }
-                    if (promptKey) {
-                        const promptKeyLabel = this.getPromptKeyLabel('E');
-                        promptKey.textContent = promptKeyLabel;
-                        promptKey.classList.toggle('prompt-key--tap', promptKeyLabel === 'TAP');
-                    }
-                    promptEl.classList.add('visible');
-                    promptEl.classList.remove('hidden');
-                }
-            }
+        const promptEl = document.getElementById('console-hud-prompt');
+        const actionText = promptEl?.querySelector('.prompt-text');
+        if (actionText?.textContent?.includes('BLAST DOOR')) {
+            promptEl.classList.add('hidden');
+            promptEl.classList.remove('visible');
         }
     }
 
@@ -5957,6 +5973,9 @@ export class ThreeGame {
     }
 
     updateProceduralDoors(delta) {
+        if (this.player && this.isGameplayInputActive() && this.proceduralDoorMeshes?.size) {
+            this.refreshMazeAccessState?.();
+        }
         let nearestDoor = null;
         for (const [id, mesh] of this.proceduralDoorMeshes ?? []) {
             if (!mesh?.parent) {
@@ -5985,6 +6004,23 @@ export class ThreeGame {
                     this.player.position.x - mesh.userData.worldX,
                     this.player.position.z - mesh.userData.worldZ
                 );
+                const unlocked = isGateRequirementMet(door.lock, this.mazeAccessState);
+                if (unlocked && door.state !== 'destroyed') {
+                    const action = door.state !== 'open' && distance <= PROCEDURAL_DOOR_OPEN_RADIUS
+                        ? 'open'
+                        : door.state === 'open' && distance >= PROCEDURAL_DOOR_CLOSE_RADIUS
+                            ? 'close'
+                            : null;
+                    if (action) {
+                        const next = transitionDoorState(door, action, true);
+                        this.proceduralDoorStates.set(id, next);
+                        window.AudioManager?.playMetalStress?.({
+                            volume: 0.34,
+                            playbackRate: action === 'open' ? 1.3 : 0.82,
+                            force: true
+                        });
+                    }
+                }
                 if (distance <= 2.4 && (!nearestDoor || distance < nearestDoor.distance)) {
                     nearestDoor = { door, distance };
                 }
@@ -5993,16 +6029,12 @@ export class ThreeGame {
 
         const promptEl = document.getElementById('console-hud-prompt');
         const actionText = promptEl?.querySelector('.prompt-text');
-        if (nearestDoor && promptEl && !this.activeInteractiveConsole) {
+        const nearestLocked = nearestDoor?.door.lock
+            && !isGateRequirementMet(nearestDoor.door.lock, this.mazeAccessState);
+        if (nearestDoor && nearestLocked && promptEl && !this.activeInteractiveConsole) {
             const promptKey = promptEl.querySelector('.prompt-key');
-            const locked = nearestDoor.door.lock
-                && !isGateRequirementMet(nearestDoor.door.lock, this.mazeAccessState);
             if (actionText) {
-                actionText.textContent = locked
-                    ? `BLAST THRESHOLD LOCKED — ${nearestDoor.door.lock.label}`
-                    : nearestDoor.door.state === 'open'
-                        ? 'CLOSE BLAST THRESHOLD'
-                        : 'OPEN BLAST THRESHOLD';
+                actionText.textContent = `BLAST THRESHOLD LOCKED — ${nearestDoor.door.lock.label}`;
             }
             if (promptKey) {
                 const promptKeyLabel = this.getPromptKeyLabel('E');
@@ -6015,6 +6047,35 @@ export class ThreeGame {
             promptEl.classList.add('hidden');
             promptEl.classList.remove('visible');
         }
+    }
+
+    attachProceduralDoorRibs(doorMesh, horizontal) {
+        if (!doorMesh) return null;
+        const ribGroup = new THREE.Group();
+        // Cancel the slab's non-uniform footprint scale so the ribs keep their
+        // authored dimensions, while remaining children of (and therefore
+        // translating vertically with) the animated slab.
+        ribGroup.scale.set(
+            1 / doorMesh.scale.x,
+            1 / doorMesh.scale.y,
+            1 / doorMesh.scale.z
+        );
+        ribGroup.userData = { isDoorDecoration: true, decorationType: 'rib-group' };
+        const geometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x11161b,
+            roughness: 0.3,
+            metalness: 0.92
+        });
+        for (const ribOffset of [-0.28, 0, 0.28]) {
+            const rib = new THREE.Mesh(geometry, material);
+            rib.position.set(horizontal ? ribOffset : 0, 0, horizontal ? 0 : ribOffset);
+            rib.rotation.y = horizontal ? 0 : Math.PI / 2;
+            rib.userData = { isDoorDecoration: true, decorationType: 'rib' };
+            ribGroup.add(rib);
+        }
+        doorMesh.add(ribGroup);
+        return ribGroup;
     }
 
     tryInteractWithBunkerDoorPointer(clientX, clientY) {
@@ -16576,7 +16637,6 @@ export class ThreeGame {
         const bracketMatricesByRoomStyle = new Map();
         const ventMatrices = [];
         const pipeMatrices = [];
-        const doorRibMatrices = [];
         const doorPanelMatrices = [];
         const decorationScratch = new THREE.Matrix4();
 
@@ -16715,30 +16775,7 @@ export class ThreeGame {
                     statusBar.position.y = 0.42;
                     doorMesh.add(statusBar);
                     doorMesh.userData.proceduralDoorStatusMaterial = statusMaterial;
-                    // Pure translation: doorMesh itself carries no rotation in the
-                    // original code (only individual sub-parts reorient their own
-                    // footprint), so this must never rotate — only place the door.
-                    const doorWorldMatrix = new THREE.Matrix4().makeTranslation(
-                        worldX,
-                        doorMesh.userData.closedY,
-                        worldZ
-                    );
-                    for (const ribOffset of [-0.28, 0, 0.28]) {
-                        const localX = horizontal ? ribOffset : 0;
-                        const localZ = horizontal ? 0 : ribOffset;
-                        // Each rib's own footprint rotation lives here, in its local
-                        // matrix, decoupled from doorWorldMatrix's translation-only
-                        // placement (matches original rib.rotation.y behavior, which
-                        // reoriented the rib's box without repositioning it).
-                        const ribLocalMatrix = new THREE.Matrix4().compose(
-                            new THREE.Vector3(localX, 0, localZ),
-                            new THREE.Quaternion().setFromEuler(new THREE.Euler(0, horizontal ? 0 : Math.PI / 2, 0)),
-                            new THREE.Vector3(1, 1, 1)
-                        );
-                        const ribMatrix = new THREE.Matrix4()
-                            .multiplyMatrices(doorWorldMatrix, ribLocalMatrix);
-                        doorRibMatrices.push(ribMatrix);
-                    }
+                    this.attachProceduralDoorRibs(doorMesh, horizontal);
 
                     for (const side of [-1, 1]) {
                         const panelWorldX = worldX + (horizontal ? -1.72 : side * 0.78);
@@ -16768,7 +16805,9 @@ export class ThreeGame {
                 if (tileChar === VERTICAL_TILE.PIT) {
                     const pit = new THREE.Mesh(this.floorGeometry, this.holeMaterial);
                     pit.rotation.x = -Math.PI / 2;
-                    pit.position.set(worldX, 0.012, worldZ);
+                    pit.scale.set(0.5, 0.5, 1);
+                    pit.position.set(worldX, 0.01, worldZ);
+                    pit.renderOrder = 2;
                     pit.receiveShadow = true;
                     pit.userData = { isLethalPit: true, worldX, worldZ };
                     group.add(pit);
@@ -16816,7 +16855,8 @@ export class ThreeGame {
                     holeMesh.rotation.x = -Math.PI / 2;
                     holeMesh.scale.set(holeInfo.scale, holeInfo.scale, 1);
                     holeMesh.rotation.z = holeInfo.rotationZ;
-                    holeMesh.position.set(holeInfo.x, 0.005, holeInfo.z);
+                    holeMesh.position.set(holeInfo.x, 0.01, holeInfo.z);
+                    holeMesh.renderOrder = 2;
                     holeMesh.receiveShadow = true;
                     group.add(holeMesh);
 
@@ -17115,20 +17155,6 @@ export class ThreeGame {
             pipePool.receiveShadow = true;
             pipePool.userData = { isWallDecoration: true, decorationType: 'pipe' };
             group.add(pipePool);
-        }
-
-        // KNOWN GAP: ribs don't animate with door open/close (see task-5 review,
-        // docs/superpowers/sdd/2026-08-02-wall-door-instancing/task-5-report.md)
-        // — consider updating ribPool.instanceMatrix per-frame in the door
-        // animation loop, or reverting ribs to individual meshes, as a follow-up.
-        if (doorRibMatrices.length > 0) {
-            const ribGeometry = new THREE.BoxGeometry(0.08, 1.02, 1.1);
-            const ribMaterial = new THREE.MeshStandardMaterial({ color: 0x11161b, roughness: 0.3, metalness: 0.92 });
-            const ribPool = new THREE.InstancedMesh(ribGeometry, ribMaterial, doorRibMatrices.length);
-            doorRibMatrices.forEach((m, idx) => ribPool.setMatrixAt(idx, m));
-            ribPool.instanceMatrix.needsUpdate = true;
-            ribPool.userData = { isDoorDecoration: true, decorationType: 'rib' };
-            group.add(ribPool);
         }
 
         if (doorPanelMatrices.length > 0) {
@@ -18240,7 +18266,55 @@ export class ThreeGame {
     createScatterInstance(placement) {
         const scaleX = placement.scale;
         const scaleY = placement.scale * (1.0 + placement.tiltX);
-        const anchoredY = placement.elevation;
+        const anchoredY = placement.elevation ?? 0;
+
+        if (isFloorOverlayType(placement.type)) {
+            const texture = this.scatterTextures[placement.type];
+            if (!texture) return null;
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                alphaTest: 0.035,
+                depthWrite: false,
+                depthTest: true,
+                polygonOffset: true,
+                polygonOffsetFactor: -3,
+                polygonOffsetUnits: -3,
+                side: THREE.DoubleSide,
+                fog: true
+            });
+            const overlay = new THREE.Mesh(this.floorGeometry, material);
+            overlay.rotation.x = -Math.PI / 2;
+            overlay.rotation.z = placement.rotation ?? 0;
+            overlay.position.set(placement.x, Math.max(0.03, anchoredY), placement.z);
+            overlay.scale.set(scaleX, scaleY, 1);
+            overlay.frustumCulled = false;
+            overlay.renderOrder = 7;
+            overlay.userData = {
+                isScatter: true,
+                isFloorOverlay: true,
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: overlay.position.y,
+                elevationOffset: overlay.position.y,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                baseOpacity: placement.opacity ?? 1
+            };
+            // Keyed textures finish on an async canvas. Apply their real
+            // aspect ratio once available so wide prefabs do not get crushed
+            // into square floor icons.
+            overlay.onBeforeRender = () => {
+                const width = Number(texture.image?.width);
+                const height = Number(texture.image?.height);
+                if (!(width > 0 && height > 0) || overlay.userData.aspectApplied) return;
+                overlay.scale.x = scaleX * (width / height);
+                overlay.userData.baseScaleX = overlay.scale.x;
+                overlay.userData.aspectApplied = true;
+            };
+            return overlay;
+        }
 
         if (placement.type.startsWith('prop_')) {
             const spriteMaterial = this.scatterMaterials[placement.type];
@@ -22126,9 +22200,9 @@ export class ThreeGame {
             return {
                 x: tileX,
                 z: tileY,
-                scale: 1,
+                scale: 0.5,
                 rotationZ: 0,
-                fallRadius: 0.48,
+                fallRadius: 0.12,
                 lethal: true
             };
         }
@@ -22138,7 +22212,7 @@ export class ThreeGame {
                 z: tileY,
                 scale: 1,
                 rotationZ: 0,
-                fallRadius: 0.52,
+                fallRadius: 0.20,
                 lethal: true,
                 exteriorCanyon: true
             };
@@ -22150,7 +22224,7 @@ export class ThreeGame {
                 z: tileY,
                 scale: 1,
                 rotationZ: 0,
-                fallRadius: 0.52,
+                fallRadius: 0.20,
                 lethal: true,
                 exteriorCanyon: true,
                 cliff: true
@@ -22169,13 +22243,13 @@ export class ThreeGame {
         if (roll >= holeCut) return null;
 
         const sizeFactor = roll / holeCut;
-        const scale = 1.5 + sizeFactor * 2.5;
+        const scale = (1.5 + sizeFactor * 2.5) * 0.5;
         return {
             x: worldX,
             z: worldY,
             scale,
             rotationZ: wallTypeRng() * Math.PI * 2,
-            fallRadius: scale * 0.42
+            fallRadius: scale * 0.16
         };
     }
 

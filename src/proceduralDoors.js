@@ -33,7 +33,7 @@ export function planProceduralDoors(rooms, random, { tutorial = false, forceAtLe
                 lock: null,
                 hp: tutorial ? 3 : 6,
                 maxHp: tutorial ? 3 : 6,
-                autoClose: false
+                autoClose: true
             });
         }
     }
@@ -56,7 +56,7 @@ export function planProceduralDoors(rooms, random, { tutorial = false, forceAtLe
                 lock: null,
                 hp: tutorial ? 3 : 6,
                 maxHp: tutorial ? 3 : 6,
-                autoClose: false
+                autoClose: true
             });
         }
     }
