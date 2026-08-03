@@ -114,7 +114,7 @@ export function generateArchitecturalMazeChunk(random, {
         top: Math.max(3, center - Math.floor(roomDepth / 2)),
         bottom: Math.min(size - 4, center + Math.floor(roomDepth / 2))
     };
-    let authoredRoom = null;
+    let authoredRoom;
 
     if (roomMode || portals.length < 2) {
         carveRoom(grid, bounds, shape);

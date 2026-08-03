@@ -19,6 +19,17 @@ As reviewed for this update:
 
 - Branch: `dev/sprint-21`, carrying the merged `feat/tile-bands-v2` history.
 - Automated baseline: 1,044 passing Vitest tests.
+
+> **Update (2026-08-02, end of Sprint 21):** 58 more commits landed after this
+> syllabus was first written, bringing the branch to 184 commits ahead of
+> `mothership` and the automated baseline to **1,101 passing Vitest tests**
+> (143 files). Two shipped systems from that window have no coverage
+> elsewhere in this directory — see [Run Director and Events](13-systems-run-director-and-events.md)
+> for the LineDirector ambient-commentary arbiter, and the new
+> [Rendering and Performance](14-engineering-rendering-and-performance.md)
+> for the wall/door draw-call fix. Nothing else in this syllabus was found
+> to describe already-shipped work as hypothetical — the remaining content
+> below still reflects the state as of the original write-up.
 - World baseline: 49×49 canyon-band chunks, authoritative radial topology, deterministic ring gates, merged multi-cell rooms/halls, and a Ring 2 bridge traversal unlock are implemented.
 - Platform baseline: native Steam Input plus browser fallback, Linux/Windows Electron packaging, session-token backend auth, Cloud save bridge, achievements/stats forwarding, leaderboards, and Inventory/Vault paths exist in code.
 - Narrative baseline: Act 2 schema version 3, manifest validation, ten ending families, explanation text, the 0047/Queen canon weld, class wreckage logs, and death-reactive dialogue are implemented.
@@ -42,6 +53,7 @@ These establish what the game is, what is safe to claim, and which risks require
 3. [Combat, Movement, and Classes](02-combat-and-classes.md)
 4. [Combat and Boss Phases](07-engineering-combat-boss-phases.md)
 5. [Run Director and Events](13-systems-run-director-and-events.md)
+6. [Rendering and Performance](14-engineering-rendering-and-performance.md)
 
 ### 3. Consequence and narrative
 

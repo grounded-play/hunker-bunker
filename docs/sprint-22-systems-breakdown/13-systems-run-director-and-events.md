@@ -46,3 +46,33 @@ Variable camp demand/pricing remains a product option. Before implementing it, v
 - mercy becoming exploitable;
 - actions continuing through pause/cutscene;
 - too much variation preventing players from learning cause and effect.
+
+## LineDirector — ambient commentary arbiter (added end of Sprint 21)
+
+Landed after the rest of this file was written: `src/lineDirector.js` is a
+context-scored arbiter (design: `docs/superpowers/specs/2026-08-02-line-director-overhaul-design.md`)
+that replaced `Math.random()` selection for the bunker's ambient taunts and
+the Mothership's reactive event lines. It fixed a real player-reported bug —
+depth-flavored lines (e.g. "you've gone too deep") could previously fire
+regardless of the player's actual depth, and the Director's ambient system
+and the Mothership's reactive system had no shared cooldown, so they could
+talk over each other seconds apart.
+
+- Lines are tagged pools (`src/data/lineDirectorPools.js`) scored against a
+  live context snapshot (real depth tier, danger, narrative register,
+  current objective) instead of picked blind.
+- A single shared `LineDirector` instance serves both trigger sources
+  (`this.lineDirector` in `src/threeGame.js`, `window.lineDirector` for
+  `main.js`), with an opt-in `globalMinGapSeconds` cross-pool cooldown so
+  the two sources can no longer fire back-to-back.
+- "No eligible line" resolves to firing nothing — never a random fallback.
+  This was itself a fix during final review: the `patrol` action's fallback
+  string bypassed the arbiter and could print the wrong tonal register.
+
+This is a separate system from the pressure-action director
+(`src/director.js`, described above) — it owns *what gets said*, not
+*what happens*. No further Sprint 22 acceptance items beyond what's already
+covered by its own test suite (`src/lineDirector.test.js`,
+`src/data/lineDirectorPools.test.js`) — it doesn't add new player-facing
+mechanics for a PM to schedule observation passes against, unlike the
+pressure-action director above.

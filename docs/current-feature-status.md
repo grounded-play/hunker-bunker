@@ -4,6 +4,18 @@ Canonical implementation/acceptance truth for Hunker Bunker as of
 2026-07-28. “Connected” means the shipped runtime calls the implementation;
 it does not imply Steamworks, hardware, legal, or live-service acceptance.
 
+> **Update (2026-08-02, end of Sprint 21):** the rows below have not been
+> individually re-verified since 2026-07-28 and may understate progress on
+> world-generation completeness given the tile-band merge landed after this
+> date — see `docs/sprint-22-systems-breakdown/01-world-generation-and-wfc.md`
+> for the more current world-gen status. Two systems shipped in this
+> window have no row here yet, since neither changes an acceptance/claim
+> status (both are internal engineering, not player-facing feature
+> surface): a HUD ambient-commentary arbiter (`src/lineDirector.js`) and a
+> wall/door rendering performance fix — see
+> `docs/sprint-22-systems-breakdown/13-systems-run-director-and-events.md`
+> and `docs/sprint-22-systems-breakdown/14-engineering-rendering-and-performance.md`.
+
 | Feature | Design | Implementation | Connection | Automated tests | Live/hardware acceptance | Claim status | Owner / evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Single-player run | Complete | Implemented | Connected | Unit + browser smoke | Browser run verified; installed Steam pass open | Safe as single-player | Gameplay; `main.js`, `src/threeGame.js` |
