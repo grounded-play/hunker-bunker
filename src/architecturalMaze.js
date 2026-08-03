@@ -165,11 +165,9 @@ export function generateArchitecturalMazeChunk(random, {
     addWallShell(grid);
 
     const interior = [];
-    if (authoredRoom) {
-        for (let y = authoredRoom.bounds.top; y <= authoredRoom.bounds.bottom; y += 1) {
-            for (let x = authoredRoom.bounds.left; x <= authoredRoom.bounds.right; x += 1) {
-                if (grid[y][x] === '.') interior.push({ x, y });
-            }
+    for (let y = authoredRoom.bounds.top; y <= authoredRoom.bounds.bottom; y += 1) {
+        for (let x = authoredRoom.bounds.left; x <= authoredRoom.bounds.right; x += 1) {
+            if (grid[y][x] === '.') interior.push({ x, y });
         }
     }
     return {

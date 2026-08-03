@@ -7,7 +7,6 @@ Run with:
     python3 scripts/generate-rgb-interstitial-assets.py
 """
 
-import os
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 

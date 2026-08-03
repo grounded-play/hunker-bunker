@@ -1,5 +1,5 @@
 import os
-from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageOps
+from PIL import Image, ImageDraw, ImageFont
 
 OUT_DIR = os.path.join("steam", "store", "soundtrack")
 MASTER_PATH = os.path.join(OUT_DIR, "source", "soundtrack_key_art_v2.png")

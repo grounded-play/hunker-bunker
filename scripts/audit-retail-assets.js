@@ -5,7 +5,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const PUBLIC_ROOT = path.join(ROOT, 'public');
 const MANIFEST_PATH = path.join(ROOT, 'steam/referenced-assets.json');
 const REPORT_PATH = path.join(ROOT, 'steam/retail-asset-report.json');
 const MEDIA_EXTENSIONS = /\.(?:avif|gif|jpe?g|mp3|mp4|ogg|png|svg|wav|webm|webp)$/i;
