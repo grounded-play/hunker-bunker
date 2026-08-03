@@ -1216,15 +1216,15 @@ body {
   padding: calc(var(--vu) * 3.8) calc(var(--vu) * 4.2);
   z-index: 8000;
   display: grid;
-  grid-template-columns: calc(var(--vu) * 22) minmax(0, 1fr);
+  grid-template-columns: calc(var(--vu) * 28) minmax(0, 1fr);
   grid-template-rows: calc(var(--vu) * 4.2) minmax(0, 1fr) auto;
   gap: calc(var(--vu) * 1) calc(var(--vu) * 1.25);
   overflow: hidden;
   /* Keep the interactive console inside the inner face of the background frame. */
-  --briefing-content-top: calc(var(--vu) * 1.2);
-  --briefing-content-bottom: calc(var(--vu) * 4.4);
-  --briefing-content-left: calc(var(--vu) * 6.2);
-  --briefing-content-right: calc(var(--vu) * 6.4);
+  --briefing-content-top: calc(var(--vu) * 9.4);
+  --briefing-content-bottom: calc(var(--vu) * 9.4);
+  --briefing-content-left: calc(var(--vu) * 12.2);
+  --briefing-content-right: calc(var(--vu) * 9.4);
 }
 
 .header-bar {
@@ -1377,6 +1377,11 @@ body {
   color: var(--accent-primary);
   letter-spacing: 1px;
   white-space: nowrap;
+  line-height: 0.72;
+}
+
+.title-small span {
+  display: block;
 }
 
 .subtitle-small {
@@ -1509,7 +1514,7 @@ body {
 
 .module-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.82fr) minmax(0, 0.85fr);
   grid-template-rows: minmax(0, 1fr);
   gap: calc(var(--vu) * 1);
   align-items: stretch;
