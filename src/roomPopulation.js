@@ -75,6 +75,7 @@ export function planRoomPopulation(room, grid, random) {
     const propLimit = room.role === 'medical' || room.role === 'cryo-lab' ? 3 : 2;
 
     const reservePlacement = (kind, type, blocking = false) => {
+        if (placements.length >= 3) return false;
         if (kind !== 'pickup' && placements.filter((placement) => placement.kind !== 'pickup').length >= propLimit) return false;
         const cell = pickCandidate(candidates, random, grid, center);
         if (!cell) return false;

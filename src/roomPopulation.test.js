@@ -76,6 +76,24 @@ describe('room population', () => {
         expect(plan.placements).toHaveLength(3);
     });
 
+    it('never exceeds three total objects even when a full room also requests a pickup', () => {
+        const room = {
+            id: 'busy-medical-room',
+            role: 'medical',
+            interior: Array.from({ length: 25 }, (_, index) => ({ x: index % 5 + 1, y: Math.floor(index / 5) + 1 })),
+            navigation: { doorLanes: [] },
+            populationBudget: { signature: 1, large: 3, small: 3, pickup: 1, enemy: 0 },
+            themeConfig: {
+                signatureProps: ['prop_medical_bed'],
+                largeProps: ['prop_diagnostic_console', 'prop_surgical_cart']
+            }
+        };
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
+        for (const cell of room.interior) grid[cell.y][cell.x] = '.';
+
+        expect(planRoomPopulation(room, grid, () => 0).placements).toHaveLength(3);
+    });
+
     it('respects reserved fixture cells and leaves the room center open', () => {
         const room = {
             id: 'fixture-room',

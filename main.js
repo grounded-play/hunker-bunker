@@ -1159,10 +1159,23 @@ function handleSteamInputSnapshot(snapshot = {}) {
         return;
     }
 
-    const activeController = controllers.find((controller) => controller.active) ?? controllers[0] ?? null;
+    let activeController = controllers.find((controller) => controller.active) ?? controllers[0] ?? null;
     if (!activeController) {
         if (window.game?.setVirtualInput) window.game.setVirtualInput(0, 0);
         return;
+    }
+
+    // Preserve movement on Deck configurations where Steam exposes the aim
+    // action but leaves the native move action neutral. Only borrow Chromium's
+    // physical left-stick axes; all buttons and aiming remain native actions.
+    if (steamInputState.phase === 'gameplay' && Math.hypot(
+        Number(activeController.move?.x) || 0,
+        Number(activeController.move?.y) || 0
+    ) <= 0.18) {
+        const browserMovement = getBrowserGamepadControllers().find((controller) => (
+            Math.hypot(Number(controller.move?.x) || 0, Number(controller.move?.y) || 0) > 0.18
+        ));
+        if (browserMovement) activeController = { ...activeController, move: browserMovement.move };
     }
 
     steamInputPrevControllers.set(activeController.handle, steamInputPrevControllers.get(activeController.handle) ?? {});

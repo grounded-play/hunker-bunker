@@ -18255,6 +18255,10 @@ export class ThreeGame {
                         this.chunkSize - 1 - placement.y
                     )
                 })));
+        const authoredRoomCells = new Set(
+            (this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
+                .flatMap((room) => (room.interior ?? []).map(({ x, y }) => `${x},${y}`))
+        );
 
         for (let localY = 0; localY < this.chunkSize; localY++) {
             for (let localX = 0; localX < this.chunkSize; localX++) {
@@ -18267,6 +18271,7 @@ export class ThreeGame {
                 const distToSpawn = Math.sqrt(dx * dx + dz * dz);
 
                 if (distToSpawn <= 6.0) continue;
+                if (authoredRoomCells.has(`${localX},${localY}`)) continue;
 
                 const roomType = roomTypes?.[localY]?.[localX] ?? ROOM_TYPES.CORRIDOR;
                 candidates.push({
@@ -18391,9 +18396,10 @@ export class ThreeGame {
         const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
         const reservedCells = new Set();
-        const hasAuthoredRoomPopulation = Boolean(wfcMeta?.roomInstances?.some(
-            (room) => room.populationPlan?.placements?.length
-        ));
+        const hasAuthoredRoomPopulation = Boolean(
+            wfcMeta?.roomInstances?.some((room) => room.populationPlan?.placements?.length)
+            || wfcMeta?.anchors?.length
+        );
 
         if (wfcMeta?.roomInstances?.length) {
             for (const room of wfcMeta.roomInstances) {
@@ -18523,7 +18529,7 @@ export class ThreeGame {
 
                 // 2) Room Set Pieces (Destructible props) — chamber cells only
                 const roll = rng();
-                if (!hasAuthoredRoomPopulation && roll < 0.28 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
+                if (!hasAuthoredRoomPopulation && roll < 0.07 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
                     const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
                     const propPalettes = {
                         active: [
@@ -19009,6 +19015,9 @@ export class ThreeGame {
                 elevation = 0.09 + random() * 0.05;
                 opacity = 1;
                 snailCount += 1;
+            } else if (inAuthoredRoom) {
+                // The authored plan owns the room's entire object budget.
+                continue;
             } else if (allowJunkPiles && roll < 0.52) {
                 type = this.chooseWeightedType(JUNK_SCATTER_VARIANTS, random);
                 scaleMultiplier = 1.72 + random() * 0.34;

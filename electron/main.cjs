@@ -560,13 +560,15 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
         handle,
         type: controllerType,
         active,
+        // Movement is consumed as a world axis, while the native right stick
+        // drives screen coordinates and therefore needs its vertical axis flipped.
         move: {
             x: Math.max(-1, Math.min(1, Number(moveVector?.x) || 0)),
             y: Math.max(-1, Math.min(1, Number(moveVector?.y) || 0))
         },
         camera: {
             x: Math.max(-1, Math.min(1, Number(cameraVector?.x) || 0)),
-            y: Math.max(-1, Math.min(1, Number(cameraVector?.y) || 0))
+            y: Math.max(-1, Math.min(1, -(Number(cameraVector?.y) || 0)))
         },
         cameraDelta: {
             x: Number(cameraDeltaVector?.x) || 0,
