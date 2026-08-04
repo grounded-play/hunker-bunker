@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { WORLD_3D_MODELS, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_MODELS, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
 
 describe('world 3D replacement catalog', () => {
     it('maps each new world counterpart to an optimized runtime GLB', () => {
@@ -16,6 +16,19 @@ describe('world 3D replacement catalog', () => {
         for (const config of Object.values(WORLD_3D_MODELS)) {
             expect(config.url.endsWith('.glb')).toBe(true);
             expect(config.height).toBeGreaterThan(0);
+        }
+    });
+
+    it('registers all thirteen new world-prop replacements', () => {
+        const types = [
+            'bunker_junk_rare', 'bunker_junk_uncommon', 'prop_bunker_supplies',
+            'prop_specimen_tank', 'prop_broken_specimen_tank', 'prop_surgical_cart',
+            'prop_medical_bed', 'prop_diagnostic_console', 'prop_security_barricade',
+            'prop_conduit_hub', 'prop_cave_bones', 'prop_cave_queen_throne', 'prop_biomech_arch'
+        ];
+        for (const type of types) {
+            expect(hasWorld3dModel(type), type).toBe(true);
+            expect(WORLD_3D_MODELS[type].url).toContain('/3d/runtime/new3ds/');
         }
     });
 

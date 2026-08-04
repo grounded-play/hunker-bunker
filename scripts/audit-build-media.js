@@ -29,7 +29,14 @@ const requiredMedia = [
     'cutscenes/death-hazard.webm',
     'cutscenes/event-black-box-recovered.webm',
     'cutscenes/event-foundry-discovered.webm',
-    'cutscenes/event-queen-encounter.webm'
+    'cutscenes/event-queen-encounter.webm',
+    ...[
+        'bunker_junk_rare', 'bunker_junk_uncommon', 'fungal_spore_vent',
+        'prop_biomech_arch', 'prop_broken_specimen_tank', 'prop_bunker_supplies',
+        'prop_cave_bones', 'prop_cave_queen_throne', 'prop_conduit_hub',
+        'prop_diagnostic_console', 'prop_medical_bed', 'prop_security_barricade',
+        'prop_specimen_tank', 'prop_surgical_cart', 'spore_mortar', 'sporesnail'
+    ].map((name) => `3d/runtime/new3ds/${name}.glb`)
 ];
 
 const failures = [];

@@ -6,7 +6,9 @@ import { assetUrl } from './assetUrl.js';
 const MODEL_CONFIG = {
     cybersnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.72, yaw: -Math.PI / 2 },
     cryosnail: { url: '/3d/runtime/cyber-snail.glb', height: 0.76, yaw: -Math.PI / 2, tint: 0x9bdcff },
-    sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 0.78, yaw: -Math.PI / 2, tint: 0x9dff91 },
+    sporesnail: { url: '/3d/runtime/new3ds/sporesnail.glb', height: 0.78, yaw: -Math.PI / 2 },
+    fungal_spore_vent: { url: '/3d/runtime/new3ds/fungal_spore_vent.glb', height: 0.82, yaw: 0 },
+    spore_mortar: { url: '/3d/runtime/new3ds/spore_mortar.glb', height: 1.05, yaw: 0 },
     // Boss exports face opposite their travel axis, so turn their model roots
     // 180 degrees relative to the smaller snail variants.
     boss_cybersnail: { url: '/3d/runtime/cyber-snail-boss.glb', height: 1.65, yaw: Math.PI / 2 },
@@ -22,6 +24,10 @@ const MODEL_CONFIG = {
 
 const templates = new Map();
 const LOCOMOTION_URL = '/3d/scouting-scout/Scout.game.glb';
+
+export function hasEnemy3dModel(type) {
+    return Boolean(MODEL_CONFIG[type]);
+}
 
 function loadTemplate(url) {
     if (!templates.has(url)) {
@@ -67,7 +73,11 @@ export async function createEnemy3dVisual(type) {
     });
     root.scale.setScalar(0.05);
     let mixer = null;
-    if (locomotion) {
+    const embeddedClip = gltf.animations?.find((clip) => /walk|run|idle/i.test(clip.name)) ?? gltf.animations?.[0];
+    if (embeddedClip) {
+        mixer = new THREE.AnimationMixer(model);
+        mixer.clipAction(embeddedClip).play();
+    } else if (locomotion) {
         const source = locomotion.animations.find((clip) => clip.name === 'run');
         if (source) {
             const clip = source.clone();

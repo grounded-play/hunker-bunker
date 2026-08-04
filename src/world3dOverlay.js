@@ -14,7 +14,20 @@ export const WORLD_3D_MODELS = Object.freeze({
     fusion_generator: { url: '/3d/runtime/fusion-generator.glb', height: 1.1, yaw: 0 },
     basic_pile: { url: '/3d/runtime/basic-pile.glb', height: 0.42, yaw: 0 },
     storage_locker: { url: '/3d/runtime/storage-locker.glb', height: 1.25, yaw: 0 },
-    frozen_tanker: { url: '/3d/runtime/frozen-tanker.glb', height: 1.05, yaw: 0 }
+    frozen_tanker: { url: '/3d/runtime/frozen-tanker.glb', height: 1.05, yaw: 0 },
+    bunker_junk_rare: { url: '/3d/runtime/new3ds/bunker_junk_rare.glb', height: 0.48, yaw: 0 },
+    bunker_junk_uncommon: { url: '/3d/runtime/new3ds/bunker_junk_uncommon.glb', height: 0.42, yaw: 0 },
+    prop_bunker_supplies: { url: '/3d/runtime/new3ds/prop_bunker_supplies.glb', height: 0.72, yaw: 0 },
+    prop_specimen_tank: { url: '/3d/runtime/new3ds/prop_specimen_tank.glb', height: 1.35, yaw: 0 },
+    prop_broken_specimen_tank: { url: '/3d/runtime/new3ds/prop_broken_specimen_tank.glb', height: 1.15, yaw: 0 },
+    prop_surgical_cart: { url: '/3d/runtime/new3ds/prop_surgical_cart.glb', height: 0.8, yaw: 0 },
+    prop_medical_bed: { url: '/3d/runtime/new3ds/prop_medical_bed.glb', height: 0.7, yaw: 0 },
+    prop_diagnostic_console: { url: '/3d/runtime/new3ds/prop_diagnostic_console.glb', height: 1.05, yaw: 0 },
+    prop_security_barricade: { url: '/3d/runtime/new3ds/prop_security_barricade.glb', height: 0.82, yaw: 0 },
+    prop_conduit_hub: { url: '/3d/runtime/new3ds/prop_conduit_hub.glb', height: 0.78, yaw: 0 },
+    prop_cave_bones: { url: '/3d/runtime/new3ds/prop_cave_bones.glb', height: 0.34, yaw: 0 },
+    prop_cave_queen_throne: { url: '/3d/runtime/new3ds/prop_cave_queen_throne.glb', height: 2.0, yaw: 0 },
+    prop_biomech_arch: { url: '/3d/runtime/new3ds/prop_biomech_arch.glb', height: 2.35, yaw: 0 }
 });
 
 const templates = new Map();
@@ -50,6 +63,10 @@ export async function createWorld3dModel(type) {
     root.name = `World3d:${type}`;
     root.add(model);
     return root;
+}
+
+export function hasWorld3dModel(type) {
+    return Boolean(WORLD_3D_MODELS[type]);
 }
 
 // Keep a replacement attached to the sprite that still owns gameplay state.

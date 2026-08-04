@@ -4,6 +4,7 @@ import os
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 SOURCE = os.path.join(ROOT, 'art', 'source', 'new3d')
 OUTPUT = os.path.join(ROOT, 'public', '3d', 'runtime')
+NEW3DS = os.path.join(OUTPUT, 'new3ds')
 
 ASSETS = {
     'CyberSnail.glb': 'cyber-snail.glb',
@@ -27,6 +28,25 @@ ASSETS = {
     os.path.join('assets', 'console.glb'): 'console.glb',
     os.path.join('assets', 'o2Gen.glb'): 'o2-generator.glb',
 }
+
+NEW3D_ASSETS = [
+    'bunker_junk_rare.glb',
+    'bunker_junk_uncommon.glb',
+    'fungal_spore_vent.glb',
+    'prop_biomech_arch.glb',
+    'prop_broken_specimen_tank.glb',
+    'prop_bunker_supplies.glb',
+    'prop_cave_bones.glb',
+    'prop_cave_queen_throne.glb',
+    'prop_conduit_hub.glb',
+    'prop_diagnostic_console.glb',
+    'prop_medical_bed.glb',
+    'prop_security_barricade.glb',
+    'prop_specimen_tank.glb',
+    'prop_surgical_cart.glb',
+    'spore_mortar.glb',
+    'sporesnail.glb',
+]
 
 
 def import_asset(path):
@@ -177,6 +197,24 @@ def build_rigged_engineer():
 
 
 os.makedirs(OUTPUT, exist_ok=True)
+if os.environ.get('HB_NEW3DS_ONLY') == '1':
+    for filename in NEW3D_ASSETS:
+        source_path = os.path.join(NEW3DS, filename)
+        temporary_path = os.path.join(NEW3DS, f'.{filename}.optimized.glb')
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+        import_asset(source_path)
+        prepare_scene()
+        bpy.ops.export_scene.gltf(
+            filepath=temporary_path,
+            export_format='GLB',
+            export_apply=True,
+            export_animations=True,
+            export_cameras=False,
+            export_lights=False,
+        )
+        os.replace(temporary_path, source_path)
+        print(f'[new3d] optimized {filename}')
+    raise SystemExit(0)
 if os.environ.get('HB_NEW3D_ONLY') == '1' or os.environ.get('HB_ENGINEER_ONLY') == '1':
     build_rigged_engineer()
 for source_name, output_name in ASSETS.items():

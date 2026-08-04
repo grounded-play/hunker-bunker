@@ -55,7 +55,7 @@ import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED, PLAYER_3D_COSMETIC_OVERLAY_ENABLED } from './featureFlags.js';
 import { createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
-import { createWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
+import { createWorld3dModel, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -19243,6 +19243,8 @@ export class ThreeGame {
             sprite.userData.isAmmoLocker = lockerType;
             if (lockerType) {
                 this.setupWorld3dReplacement(sprite, 'storage_locker');
+            } else if (hasWorld3dModel(placement.type)) {
+                this.setupWorld3dReplacement(sprite, placement.type);
             }
             return sprite;
         }
@@ -19275,7 +19277,7 @@ export class ThreeGame {
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1
             };
-            this.setupWorld3dReplacement(sprite, 'basic_pile');
+            this.setupWorld3dReplacement(sprite, hasWorld3dModel(placement.type) ? placement.type : 'basic_pile');
             return sprite;
         }
 
@@ -19520,6 +19522,8 @@ export class ThreeGame {
         };
         if (placement.type === 'body_human_frozen_suit') {
             this.setupWorld3dReplacement(sprite, 'frozen_tanker');
+        } else if (hasWorld3dModel(placement.type)) {
+            this.setupWorld3dReplacement(sprite, placement.type);
         }
         return sprite;
     }
