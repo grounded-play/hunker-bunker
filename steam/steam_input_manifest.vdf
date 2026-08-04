@@ -4,7 +4,7 @@
     // reworked enough that old user configs are unusable — Steam then force-updates
     // players onto the current official config. minor_revision is for additive
     // actions and localization tweaks. Read back via GetDeviceBindingRevision.
-    "major_revision" "4"
+    "major_revision" "5"
     "minor_revision" "0"
     "configurations"
     {
@@ -42,6 +42,14 @@
         "menu"
         {
             "title" "#ActionSetMenu"
+            "StickPadGyro"
+            {
+                "menu_pointer"
+                {
+                    "title" "#ActionMenuPointer"
+                    "input_mode" "joystick_move"
+                }
+            }
             "Button"
             {
                 "menu_up" "#ActionMenuUp"
@@ -128,6 +136,7 @@
             "ActionMenuBack" "Back"
             "ActionMenuTabLeft" "Previous Tab"
             "ActionMenuTabRight" "Next Tab"
+            "ActionMenuPointer" "Pointer"
             "ActionMove" "Move"
             "ActionCamera" "Aim"
             "ActionCameraMouse" "Aim Cursor"

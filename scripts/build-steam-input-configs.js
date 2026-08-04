@@ -187,6 +187,7 @@ function buildControllerConfig(controllerType) {
             left_bumper: ['menu_tab_left', 'Previous Tab'],
             right_bumper: ['menu_tab_right', 'Next Tab']
         }),
+        analogGroup(6, 'menu', 'menu_pointer'),
         faceGroup(10, 'gameplay', {
             a: ['interact', 'Interact'],
             b: ['dash', 'Dodge'],
@@ -226,7 +227,8 @@ function buildControllerConfig(controllerType) {
             2: 'joystick',
             3: 'left_trigger',
             4: 'right_trigger',
-            5: 'switch'
+            5: 'switch',
+            6: 'right_joystick'
         }),
         preset(1, 'gameplay', {
             10: 'button_diamond',
@@ -253,7 +255,7 @@ function buildControllerConfig(controllerType) {
     "title" "Official Hunker Bunker Layout"
     "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "${controllerType}"
-    "major_revision" "4"
+    "major_revision" "5"
     "minor_revision" "0"
     "localization"
     {

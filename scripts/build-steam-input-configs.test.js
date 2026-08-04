@@ -22,7 +22,7 @@ describe('buildSteamInputConfigs', () => {
         expect(outputs).toHaveLength(7);
         const deck = fs.readFileSync(path.join(destination, 'controller_neptune.vdf'), 'utf8');
         expect(deck).toContain('"controller_type" "controller_neptune"');
-        expect(deck).toContain('"major_revision" "4"');
+        expect(deck).toContain('"major_revision" "5"');
         expect(deck).toContain('"name" "menu"');
         expect(deck).toContain('"name" "gameplay"');
         expect(deck).toContain('"name" "archive"');
@@ -50,6 +50,8 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).toContain('game_action archive archive_reveal');
         expect(deck).toContain('"gameplay" "move"');
         expect(deck).toContain('"gameplay" "camera"');
+        expect(deck).toContain('"menu" "menu_pointer"');
+        expect(deck).toContain('"6" "right_joystick active"');
         expect(deck).toContain('"12" "right_joystick active"');
         expect(deck).not.toContain('"17" "right_joystick active"');
         expect(deck).not.toContain('left_trackpad active');

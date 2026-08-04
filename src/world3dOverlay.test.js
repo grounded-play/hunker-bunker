@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { WORLD_3D_MODELS, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
+import { WORLD_3D_FACING_YAW, WORLD_3D_MODELS, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
 
 describe('world 3D replacement catalog', () => {
     it('maps each new world counterpart to an optimized runtime GLB', () => {
@@ -42,7 +42,7 @@ describe('world 3D replacement catalog', () => {
         expect(syncWorld3dReplacement(source, { scale: 0.5 })).toBe(true);
         expect(root.position.toArray()).toEqual([3, -1.2, 7]);
         expect(root.scale.toArray()).toEqual([0.5, 0.5, 0.5]);
-        expect(root.rotation.y).toBeCloseTo(0.4);
+        expect(root.rotation.y).toBeCloseTo(0.4 + WORLD_3D_FACING_YAW);
         expect(root.visible).toBe(true);
     });
 });

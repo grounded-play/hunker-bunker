@@ -31,6 +31,7 @@ export const WORLD_3D_MODELS = Object.freeze({
 });
 
 const templates = new Map();
+export const WORLD_3D_FACING_YAW = Math.PI;
 
 function loadTemplate(url) {
     if (!templates.has(url)) {
@@ -77,7 +78,7 @@ export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
     const root = source?.userData?.world3dRoot;
     if (!root) return false;
     root.position.copy(source.position);
-    root.rotation.y = source.material?.rotation ?? 0;
+    root.rotation.y = (source.material?.rotation ?? 0) + WORLD_3D_FACING_YAW;
     root.scale.setScalar(Math.max(0, Number.isFinite(scale) ? scale : 1));
     root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
     return true;

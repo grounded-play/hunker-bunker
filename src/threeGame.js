@@ -3598,6 +3598,24 @@ export class ThreeGame {
         }
     }
 
+    deferWorld3dReplacement(source, modelType) {
+        if (!source?.userData || !hasWorld3dModel(modelType)) return;
+        source.userData.world3dModelType = modelType;
+    }
+
+    loadNearbyWorld3dReplacement(source) {
+        if (!source?.userData?.world3dModelType || source.userData.world3dLoading || source.userData.world3dRoot) return;
+        if ((this._world3dLoadsInFlight ?? 0) >= 2 || !this.player?.position) return;
+        const distance = Math.hypot(
+            this.player.position.x - source.position.x,
+            this.player.position.z - source.position.z
+        );
+        if (distance > 9) return;
+        this._world3dLoadsInFlight = (this._world3dLoadsInFlight ?? 0) + 1;
+        void this.setupWorld3dReplacement(source, source.userData.world3dModelType)
+            .finally(() => { this._world3dLoadsInFlight = Math.max(0, this._world3dLoadsInFlight - 1); });
+    }
+
     setupActiveShip3dReplacements(ship) {
         if (!ship) return;
         this.setupWorld3dReplacement(ship.shipSprite, ship.shipModelType, { owner: ship, ownerKey: 'ship3d' });
@@ -18373,6 +18391,9 @@ export class ThreeGame {
         const rng = this.createSeededRandom(((this.hashTile(chunkX * 811 + 17, chunkY * 919 + 23) + 404) ^ this.runEntropy) >>> 0);
         const wfcMeta = this.wfcMetadataCache?.get(`${chunkX},${chunkY}`);
         const reservedCells = new Set();
+        const hasAuthoredRoomPopulation = Boolean(wfcMeta?.roomInstances?.some(
+            (room) => room.populationPlan?.placements?.length
+        ));
 
         if (wfcMeta?.roomInstances?.length) {
             for (const room of wfcMeta.roomInstances) {
@@ -18502,7 +18523,7 @@ export class ThreeGame {
 
                 // 2) Room Set Pieces (Destructible props) — chamber cells only
                 const roll = rng();
-                if (roll < 0.28 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
+                if (!hasAuthoredRoomPopulation && roll < 0.28 && roomTypes?.[localY]?.[localX] === ROOM_TYPES.CHAMBER) {
                     const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
                     const propPalettes = {
                         active: [
@@ -19242,9 +19263,9 @@ export class ThreeGame {
                 || (placement.type === 'prop_bunker_supplies' && storageVariant);
             sprite.userData.isAmmoLocker = lockerType;
             if (lockerType) {
-                this.setupWorld3dReplacement(sprite, 'storage_locker');
+                this.deferWorld3dReplacement(sprite, 'storage_locker');
             } else if (hasWorld3dModel(placement.type)) {
-                this.setupWorld3dReplacement(sprite, placement.type);
+                this.deferWorld3dReplacement(sprite, placement.type);
             }
             return sprite;
         }
@@ -19277,7 +19298,7 @@ export class ThreeGame {
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1
             };
-            this.setupWorld3dReplacement(sprite, hasWorld3dModel(placement.type) ? placement.type : 'basic_pile');
+            this.deferWorld3dReplacement(sprite, hasWorld3dModel(placement.type) ? placement.type : 'basic_pile');
             return sprite;
         }
 
@@ -19521,9 +19542,9 @@ export class ThreeGame {
             baseOpacity: placement.opacity ?? 1
         };
         if (placement.type === 'body_human_frozen_suit') {
-            this.setupWorld3dReplacement(sprite, 'frozen_tanker');
+            this.deferWorld3dReplacement(sprite, 'frozen_tanker');
         } else if (hasWorld3dModel(placement.type)) {
-            this.setupWorld3dReplacement(sprite, placement.type);
+            this.deferWorld3dReplacement(sprite, placement.type);
         }
         return sprite;
     }
@@ -22537,6 +22558,7 @@ export class ThreeGame {
         for (const child of this.scatterSprites) {
             const baseY = child.userData.elevationOffset ?? 0;
             child.userData.baseY = baseY;
+            this.loadNearbyWorld3dReplacement(child);
             const world3dRoot = child.userData.world3dRoot;
             if (world3dRoot) {
                 world3dRoot.position.copy(child.position);

@@ -447,9 +447,11 @@ window.HunkerInputState = {
     getState: () => ({ ...steamInputState })
 };
 
-function syncSteamInputPhase() {
-    mainActionRouter.setActionSet(actionSetForAppPhase(appPhase));
-    window.electronAPI?.setSteamInputPhase?.(appPhase);
+function syncSteamInputPhase(phaseOverride = null) {
+    const effectivePhase = phaseOverride
+        ?? (!document.getElementById('settings-popup')?.classList.contains('hidden') ? 'menu' : appPhase);
+    mainActionRouter.setActionSet(actionSetForAppPhase(effectivePhase));
+    window.electronAPI?.setSteamInputPhase?.(effectivePhase);
 }
 
 function syncSteamTimelinePhase(phase = appPhase) {
@@ -1207,9 +1209,8 @@ function ensureVirtualGamepadCursor() {
 function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
     const cursor = ensureVirtualGamepadCursor();
     if (!cursor) return;
-    const isGameplay = appPhase === 'gameplay';
     const isMovie = Boolean(document.querySelector('.fullscreen-video-overlay:not(.hidden), .cinematic-overlay:not(.hidden), #mothership-dialogue-video-container:not(.hidden), video:not(.hidden)'));
-    if (!visible || isGameplay || isMovie) {
+    if (!visible || isMovie) {
         cursor.classList.add('hidden');
         return;
     }
@@ -1379,6 +1380,7 @@ function applyControllerCursorAim(controller) {
         clientY: controllerAimCursor.y,
         bubbles: true
     }));
+    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
     return Boolean(window.game.updateAimFromClient(
         controllerAimCursor.x,
@@ -1398,38 +1400,31 @@ function handleSteamGameplayInput(controller) {
         window.game.setVirtualInput(moveX, -moveY);
     }
 
-    // Always hide the UI virtual cursor element ("click square") during active gameplay
-    updateVirtualGamepadCursorPosition(0, 0, false);
-
     const cursorAimed = applyControllerCursorAim(controller);
     const anchor = getAimCursorAnchor();
 
     if (!cursorAimed && (aimX || aimY)) {
+        const width = window.innerWidth || 1280;
+        const height = window.innerHeight || 800;
+        const sensitivity = state.settings.aimSensitivity ?? 1.0;
         const invertSign = state.settings.invertAimY ? -1 : 1;
-        controllerAimCursor = { x: anchor.x, y: anchor.y };
+        if (!controllerAimCursor) controllerAimCursor = { x: anchor.x, y: anchor.y };
+        if (lastPlayerAnchor) {
+            controllerAimCursor.x += anchor.x - lastPlayerAnchor.x;
+            controllerAimCursor.y += anchor.y - lastPlayerAnchor.y;
+        }
+        const cursorSpeed = 16 * sensitivity;
+        controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + aimX * cursorSpeed));
+        controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + aimY * cursorSpeed * invertSign));
         lastPlayerAnchor = { ...anchor };
-        if (window.game?.setControllerAimVector) {
-            window.game.setControllerAimVector(aimX, -aimY * invertSign);
-        }
+        updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
+        window.dispatchEvent(new MouseEvent('mousemove', {
+            clientX: controllerAimCursor.x,
+            clientY: controllerAimCursor.y,
+            bubbles: true
+        }));
+        window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, { keepMouseActive: true });
     } else if (!cursorAimed) {
-        if (controllerAimCursor) {
-            const dx = anchor.x - controllerAimCursor.x;
-            const dy = anchor.y - controllerAimCursor.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist > 2.0) {
-                controllerAimCursor.x += dx * 0.18;
-                controllerAimCursor.y += dy * 0.18;
-                if (window.game?.updateAimFromClient) {
-                    window.game.updateAimFromClient(controllerAimCursor.x, controllerAimCursor.y, { keepMouseActive: false });
-                }
-            } else {
-                controllerAimCursor = { x: anchor.x, y: anchor.y };
-                if (window.game) {
-                    window.game.hasActiveAim = false;
-                    window.game.mouseAimActive = false;
-                }
-            }
-        }
         lastPlayerAnchor = { ...anchor };
     }
 
@@ -7221,6 +7216,13 @@ const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
 const abortBtn = document.getElementById('abort-mission');
 
+if (settingsPopup) {
+    new MutationObserver(() => syncSteamInputPhase()).observe(settingsPopup, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+}
+
 function openSettingsModal() {
     if (!settingsPopup) return;
     const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
@@ -7230,6 +7232,7 @@ function openSettingsModal() {
     }
 
     settingsPopup.classList.remove('hidden');
+    syncSteamInputPhase('menu');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
@@ -7338,6 +7341,7 @@ if (confirmYes) {
 if (closeSettings && settingsPopup) {
     closeSettings.addEventListener('click', () => {
         settingsPopup.classList.add('hidden');
+        syncSteamInputPhase();
         draftAudioMix = cloneAudioMix(state.settings.audioMix);
         AudioManager.setMix(state.settings.audioMix);
         setAudioMixerOpen(false);
