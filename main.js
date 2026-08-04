@@ -771,16 +771,31 @@ function moveHeroSelectPanelFocus(code) {
     const active = document.activeElement;
     const isLeft = code === 'KeyA' || code === 'ArrowLeft';
     const isRight = code === 'KeyD' || code === 'ArrowRight';
-    if (!isLeft && !isRight) return false;
+    const isUp = code === 'KeyW' || code === 'ArrowUp';
+    const isDown = code === 'KeyS' || code === 'ArrowDown';
+    if (!isLeft && !isRight && !isUp && !isDown) return false;
 
     const commandRail = active?.closest?.('.menu-header-actions');
     const heroRail = active?.closest?.('.char-selection');
     const previewRail = active?.closest?.('.preview-box');
     const initializeButton = active?.id === 'start-game';
+    const settingsButton = active?.closest?.('.menu-corner-settings .open-settings-btn');
+    const selectedHero = document.querySelector('.char-selection .char-card.selected')
+        ?? document.querySelector('.char-selection .char-card');
+
+    if (settingsButton) {
+        const target = isLeft
+            ? document.getElementById('hero-polish-btn')
+            : (isDown ? selectedHero : null);
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
 
     if (initializeButton) {
         if (isRight) {
             return focusControllerTarget(document.getElementById('hero-polish-btn'), { playHover: true });
+        }
+        if (isDown) {
+            return selectedHero ? focusControllerTarget(selectedHero, { playHover: true }) : true;
         }
         const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
         const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
@@ -800,19 +815,36 @@ function moveHeroSelectPanelFocus(code) {
     }
 
     if (heroRail) {
-        if (!isLeft) return true;
-        const target = document.getElementById('hero-polish-btn');
+        const cards = getVisibleControllerFocusables(heroRail).filter((element) => element.classList.contains('char-card'));
+        const index = Math.max(0, cards.indexOf(active));
+        let target = null;
+        if (isUp && index === 0) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+        else if (isUp) target = cards[index - 1];
+        else if (isDown) target = cards[index + 1] ?? document.getElementById('start-game');
+        else if (isLeft) target = document.getElementById('hero-polish-btn');
+        else if (isRight) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
     if (previewRail) {
         const target = isRight
-            ? (document.querySelector('.char-selection .char-card.selected') ?? document.getElementById('start-game'))
-            : (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0]);
+            ? (selectedHero ?? document.getElementById('start-game'))
+            : isLeft
+                ? (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0])
+                : isUp
+                    ? document.querySelector('#menu .menu-corner-settings .open-settings-btn')
+                    : document.getElementById('start-game');
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
     return false;
+}
+
+function moveMenuDirectionalFocus(code) {
+    if (moveMenuCommandGridFocus(code)) return true;
+    if (moveHeroSelectPanelFocus(code)) return true;
+    const direction = menuKeyboardDirection(code);
+    return direction ? Boolean(moveControllerFocus(direction)) : false;
 }
 
 function moveOperatorPolishGridFocus(code) {
@@ -904,8 +936,7 @@ document.addEventListener('keydown', (event) => {
     if (direction) {
         event.preventDefault();
         if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
-        if (root.id === 'menu' && moveMenuCommandGridFocus(event.code)) return;
-        if (root.id === 'menu' && moveHeroSelectPanelFocus(event.code)) return;
+        if (root.id === 'menu' && moveMenuDirectionalFocus(event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
         const adjusted = horizontal && (
@@ -1249,8 +1280,15 @@ function handleSteamMenuInput(actions) {
     } else if (actions.tabRight) {
         handleControllerTabNavigation(root, 1);
     } else if (moved && !rangeAdjusted) {
-        const step = (actions.up || actions.left) && !(actions.down || actions.right) ? -1 : 1;
-        moveControllerFocus(step);
+        const code = actions.up
+            ? 'ArrowUp'
+            : actions.down
+                ? 'ArrowDown'
+                : actions.left
+                    ? 'ArrowLeft'
+                    : 'ArrowRight';
+        if (root?.id === 'menu') moveMenuDirectionalFocus(code);
+        else moveControllerFocus((actions.up || actions.left) ? -1 : 1);
     }
 
     if (actions.confirm) {
@@ -1267,10 +1305,16 @@ window.addEventListener('gamepad-menu-nav', (event) => {
     if (!action) return;
 
     setLastInputMode('controller');
-    if (action === 'menu_up' || action === 'menu_left') {
-        moveControllerFocus(-1);
-    } else if (action === 'menu_down' || action === 'menu_right') {
-        moveControllerFocus(1);
+    if (action === 'menu_up' || action === 'menu_left' || action === 'menu_down' || action === 'menu_right') {
+        const codeByAction = {
+            menu_up: 'ArrowUp',
+            menu_down: 'ArrowDown',
+            menu_left: 'ArrowLeft',
+            menu_right: 'ArrowRight'
+        };
+        const root = getControllerFocusRoot();
+        if (root?.id === 'menu') moveMenuDirectionalFocus(codeByAction[action]);
+        else moveControllerFocus(action === 'menu_up' || action === 'menu_left' ? -1 : 1);
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
     } else if (action === 'menu_back') {
@@ -3345,6 +3389,7 @@ function renderOperatorPolishUi() {
                 const next = selectPolish(polish.id);
                 if (!next) return;
                 window.game?.setOperatorPolish?.(next.color);
+                scoutHeroPreview?.setOperatorPolish?.(next.color);
                 void renderPreviewFrame(activePreviewType, previewFrameIndex);
                 renderOperatorPolishUi();
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
@@ -9823,6 +9868,7 @@ let scoutHeroPreview = null;
 void createScoutHeroPreview(preview3dCanvas)
     .then((preview) => {
         scoutHeroPreview = preview;
+        preview.setOperatorPolish(getSelectedPolish().color);
         void preview.setType(activePreviewType);
         preview.setVisible(true);
         previewSprite?.classList.add('hidden');

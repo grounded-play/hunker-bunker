@@ -23,6 +23,7 @@ export async function createScoutHeroPreview(canvas) {
     scene.add(rim);
 
     let activeType = 'SCOUT';
+    let activePolish = 0xffffff;
     let overlay = await createPlayer3dOverlay({
         targetHeight: 2.05,
         idleActionName: 'heroIdle',
@@ -32,6 +33,7 @@ export async function createScoutHeroPreview(canvas) {
     // of letting the bottom of the preview window swallow the model.
     overlay.root.position.y += 0.04;
     overlay.root.rotation.y = Math.atan2(camera.position.x, camera.position.z);
+    overlay.setOperatorPolish(activePolish);
     scene.add(overlay.root);
     let loadGeneration = 0;
 
@@ -42,7 +44,7 @@ export async function createScoutHeroPreview(canvas) {
         const configs = {
             SCOUT: { idleActionName: 'heroIdle', weaponVisible: false },
             ENGINEER: {
-                modelUrl: '/3d/runtime/engineer-vanguard.glb',
+                modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                 animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                 animationBonePrefix: 'mixamorig',
                 idleActionName: 'heroIdle',
@@ -67,6 +69,7 @@ export async function createScoutHeroPreview(canvas) {
         overlay.root.removeFromParent();
         overlay.dispose();
         overlay = nextOverlay;
+        overlay.setOperatorPolish(activePolish);
         activeType = nextType;
         weaponReady = false;
         idleState.idleActionName = nextType === 'SCOUT' ? 'heroIdle' : configs[nextType].idleActionName;
@@ -146,6 +149,10 @@ export async function createScoutHeroPreview(canvas) {
 
     return {
         setType,
+        setOperatorPolish(color = 0xffffff) {
+            activePolish = color;
+            overlay.setOperatorPolish(activePolish);
+        },
         setVisible(nextVisible) {
             visible = Boolean(nextVisible);
             canvas.classList.toggle('hidden', !visible);
