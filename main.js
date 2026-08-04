@@ -10775,6 +10775,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.game = new ThreeGame({
                     parent: 'game-container',
                     playerType: targetType,
+                    deferPlayerSpriteLoad: true,
+                    deferGameplayAtlasLoad: true,
                     bankManager,
                     dialogueManager,
                     arcManager,
@@ -11009,6 +11011,8 @@ const bootDiagnostics = [];
 let bootDiagnosticOrigin = null;
 let bootLongTaskObserver = null;
 let bootLongTasks = [];
+let lastSteamIdentityLogKey = null;
+let lastSteamBackendLogKey = null;
 
 function traceBootPhase(phase, details = null) {
     const now = performance.now();
@@ -11094,7 +11098,7 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
         return null;
     }
 
-    console.log('[STEAM] Verifying Steamworks integration...');
+    console.debug('[STEAM] Verifying Steamworks integration...');
 
     const identityRequest = window.electronAPI.getSteamIdentity
         ? window.electronAPI.getSteamIdentity()
@@ -11124,21 +11128,44 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
         ? await healthPromise
         : { ok: false, pending: true, reason: 'health_pending' };
 
-    if (info?.active) {
-        console.info(`[STEAM] Steamworks ACTIVE — Account: ${info.persona ?? 'Unknown'} (AppID: ${info.appId}, SteamID64: ${info.steamId64 ?? 'N/A'})`);
-        if (info.isSteamDeck) console.info('[STEAM] Hardware: Steam Deck detected');
-        if (info.cloud?.available) console.info(`[STEAM] Cloud Sync: Available (App: ${info.cloud.enabledForApp}, Account: ${info.cloud.enabledForAccount})`);
-    } else {
-        console.warn(`[STEAM] Steamworks INACTIVE — Reason: ${info?.reason ?? 'unavailable'}${info?.message ? ` (${info.message})` : ''}`);
+    const identityLogKey = JSON.stringify({
+        active: Boolean(info?.active),
+        persona: info?.persona ?? null,
+        appId: info?.appId ?? null,
+        steamId64: info?.steamId64 ?? null,
+        reason: info?.reason ?? null,
+        cloud: info?.cloud ?? null,
+        isSteamDeck: Boolean(info?.isSteamDeck)
+    });
+    if (identityLogKey !== lastSteamIdentityLogKey) {
+        lastSteamIdentityLogKey = identityLogKey;
+        if (info?.active) {
+            console.info(`[STEAM] Steamworks ACTIVE — Account: ${info.persona ?? 'Unknown'} (AppID: ${info.appId}, SteamID64: ${info.steamId64 ?? 'N/A'})`);
+            if (info.isSteamDeck) console.info('[STEAM] Hardware: Steam Deck detected');
+            if (info.cloud?.available) console.info(`[STEAM] Cloud Sync: Available (App: ${info.cloud.enabledForApp}, Account: ${info.cloud.enabledForAccount})`);
+        } else {
+            console.warn(`[STEAM] Steamworks INACTIVE — Reason: ${info?.reason ?? 'unavailable'}${info?.message ? ` (${info.message})` : ''}`);
+        }
     }
 
-    if (health?.pending) {
-        console.info('[STEAM] Backend Service: checking asynchronously (does not gate Steam identity)');
-    } else if (health?.ok) {
-        console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${health.steam?.authConfigured ?? false})`);
-    } else {
-        console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${health?.reason ?? 'offline'}${health?.message ? ` (${health.message})` : ''}`);
-    }
+    const logBackendStatus = (backendHealth) => {
+        const backendLogKey = JSON.stringify({
+            pending: Boolean(backendHealth?.pending),
+            ok: Boolean(backendHealth?.ok),
+            authConfigured: Boolean(backendHealth?.steam?.authConfigured),
+            reason: backendHealth?.reason ?? null
+        });
+        if (backendLogKey === lastSteamBackendLogKey) return;
+        lastSteamBackendLogKey = backendLogKey;
+        if (backendHealth?.pending) {
+            console.debug('[STEAM] Backend Service: checking asynchronously (does not gate Steam identity)');
+        } else if (backendHealth?.ok) {
+            console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${backendHealth.steam?.authConfigured ?? false})`);
+        } else {
+            console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${backendHealth?.reason ?? 'offline'}${backendHealth?.message ? ` (${backendHealth.message})` : ''}`);
+        }
+    };
+    logBackendStatus(health);
 
     const state = info?.active && health?.steam?.authConfigured
         ? 'ready'
@@ -11152,11 +11179,7 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
                 ? 'ready'
                 : (info?.active || resolvedHealth?.ok ? 'partial' : 'offline');
             setSteamDebugStatus(formatSteamStatus(info, resolvedHealth), resolvedState);
-            if (resolvedHealth?.ok) {
-                console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${resolvedHealth.steam?.authConfigured ?? false})`);
-            } else {
-                console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${resolvedHealth?.reason ?? 'offline'}${resolvedHealth?.message ? ` (${resolvedHealth.message})` : ''}`);
-            }
+            logBackendStatus(resolvedHealth);
         });
     }
     return { info, health };

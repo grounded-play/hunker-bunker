@@ -30,6 +30,15 @@ As reviewed for this update:
 > for the wall/door draw-call fix. Nothing else in this syllabus was found
 > to describe already-shipped work as hypothetical — the remaining content
 > below still reflects the state as of the original write-up.
+
+> **Update (2026-08-04, dev/sprint-22):** automated baseline is now
+> **1,214 passing Vitest tests** (155 files). First real human-observed
+> playtest evidence for Sprint 22 priorities 2-4 (world tuning, first-hour
+> observation, combat comparison) landed — see
+> [Playtest Evidence: Log1 Findings and Improvement Plan](15-playtest-log1-findings-and-plan.md),
+> which also confirms two code-level bugs (a `foundry-discovered` event
+> dedup gap, and a bunker-door/boss-AoE safety mismatch that caused the
+> logged run's death) against current `src/threeGame.js`.
 - World baseline: 49×49 canyon-band chunks, authoritative radial topology, deterministic ring gates, merged multi-cell rooms/halls, and a Ring 2 bridge traversal unlock are implemented.
 - Platform baseline: native Steam Input plus browser fallback, Linux/Windows Electron packaging, session-token backend auth, Cloud save bridge, achievements/stats forwarding, leaderboards, and Inventory/Vault paths exist in code.
 - Narrative baseline: Act 2 schema version 3, manifest validation, ten ending families, explanation text, the 0047/Queen canon weld, class wreckage logs, and death-reactive dialogue are implemented.
@@ -54,6 +63,7 @@ These establish what the game is, what is safe to claim, and which risks require
 4. [Combat and Boss Phases](07-engineering-combat-boss-phases.md)
 5. [Run Director and Events](13-systems-run-director-and-events.md)
 6. [Rendering and Performance](14-engineering-rendering-and-performance.md)
+7. [Playtest Evidence: Log1 Findings and Improvement Plan](15-playtest-log1-findings-and-plan.md)
 
 ### 3. Consequence and narrative
 

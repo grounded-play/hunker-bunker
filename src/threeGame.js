@@ -864,7 +864,7 @@ function isChunkTraversalConnected(grid) {
 }
 
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, deferGameplayAtlasLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -872,6 +872,8 @@ export class ThreeGame {
 
         const initialType = String(playerType ?? 'TANK').trim().toUpperCase();
         this.playerType = PLAYER_COLORS[initialType] ? initialType : 'TANK';
+        this.deferGameplayAtlasLoad = Boolean(deferGameplayAtlasLoad);
+        this._deferredGameplayAtlasProcessors = [];
         this.dialogueManager = dialogueManager;
         this.arcManager = ARC_PRELUDE_ENABLED ? arcManager : null;
         this.o2StartupSequenceActive = false;
@@ -1313,7 +1315,9 @@ export class ThreeGame {
         this.playerTextures = Object.fromEntries(
             Object.entries(PLAYER_SPRITE_LAYOUTS).map(([type, layout]) => [
                 type,
-                this.createPlayerSpriteTexture(type, layout.path, textureLoader)
+                this.createPlayerSpriteTexture(type, layout.path, textureLoader, {
+                    load: !deferPlayerSpriteLoad && type === this.playerType
+                })
             ])
         );
 
@@ -4616,6 +4620,7 @@ export class ThreeGame {
     updatePlayerType(type, { poof = true, emitWorldEvents = true } = {}) {
         const requestedType = String(type ?? '').trim().toUpperCase();
         const resolvedType = PLAYER_COLORS[requestedType] ? requestedType : 'ENGINEER';
+        this.playerTextures?.[resolvedType]?.userData?.loadSource?.();
         this.playerType = resolvedType;
         const color = PLAYER_COLORS[resolvedType] ?? 0xffffff;
         const stats = CLASS_STATS[resolvedType] ?? CLASS_STATS.ENGINEER;
@@ -4785,9 +4790,13 @@ export class ThreeGame {
         this.updatePlayerSpriteFrame(0, this.currentFacingRow, this.torsoFacingRow);
     }
 
-    createPlayerSpriteTexture(type, path, _textureLoader) {
+    createPlayerSpriteTexture(type, path, _textureLoader, { load = true } = {}) {
         const texture = new THREE.Texture();
         texture.colorSpace = THREE.SRGBColorSpace;
+        const placeholder = document.createElement('canvas');
+        placeholder.width = 1;
+        placeholder.height = 1;
+        texture.image = placeholder;
 
         const image = new Image();
         image.onload = () => {
@@ -4827,7 +4836,13 @@ export class ThreeGame {
             console.warn(`[ThreeGame] Failed to load player sprite ${type} from ${safePath}`, error);
         };
 
-        image.src = safePath;
+        let sourceRequested = false;
+        texture.userData.loadSource = () => {
+            if (sourceRequested) return;
+            sourceRequested = true;
+            image.src = safePath;
+        };
+        if (load) texture.userData.loadSource();
 
         return texture;
     }
@@ -4916,9 +4931,13 @@ export class ThreeGame {
         texture.colorSpace = THREE.SRGBColorSpace;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
+        const placeholder = document.createElement('canvas');
+        placeholder.width = 1;
+        placeholder.height = 1;
+        texture.image = placeholder;
 
         const image = new Image();
-        image.onload = () => {
+        const processImage = () => {
             const cropBottomRatioRaw = Number(options?.cropBottomRatio);
             const cropBottomRatio = Number.isFinite(cropBottomRatioRaw)
                 ? THREE.MathUtils.clamp(cropBottomRatioRaw, 0, 0.9)
@@ -4959,6 +4978,13 @@ export class ThreeGame {
             if (onLoad) {
                 onLoad(texture);
             }
+        };
+        image.onload = () => {
+            if (options?.layout && this.deferGameplayAtlasLoad) {
+                this._deferredGameplayAtlasProcessors.push(processImage);
+                return;
+            }
+            processImage();
         };
 
         image.onerror = (err) => {
@@ -5115,6 +5141,9 @@ export class ThreeGame {
             ? this.defaultVisibleChunkRadius
             : 0;
         if (nextProfile === 'gameplay') {
+            this.deferGameplayAtlasLoad = false;
+            const deferredAtlasProcessors = this._deferredGameplayAtlasProcessors.splice(0);
+            for (const processAtlas of deferredAtlasProcessors) processAtlas();
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             this._menuShowcaseTimer = 0;
@@ -8743,6 +8772,7 @@ export class ThreeGame {
     // Reveal/power-up the Fabrication Foundry after the O2 counterattack.
     revealFoundry({ instant = false, randomEdge = false } = {}) {
         if (!this.foundry) return;
+        if (this.foundry.isRevealed) return;
         const site = (randomEdge || !this.foundry.built) ? this.chooseFoundryDiscoveryPosition() : this.foundry.getPosition();
         const ship = this.getActiveShip();
         const cx = Number.isFinite(site?.x) ? site.x : (Number.isFinite(ship?.tileX) ? ship.tileX : 9);
@@ -11927,6 +11957,9 @@ export class ThreeGame {
     }
 
     emitHealthState() {
+        const nextHealthKey = `${this.playerVitals.hp}/${this.playerVitals.maxHp}`;
+        if (nextHealthKey === this._lastEmittedHealthKey) return;
+        this._lastEmittedHealthKey = nextHealthKey;
         window.dispatchEvent(new CustomEvent('player-health-changed', {
             detail: {
                 hp: this.playerVitals.hp,
@@ -14061,6 +14094,8 @@ export class ThreeGame {
 
     emitBiomeChanged(biomeKey, distanceFromAnchor = 0) {
         const key = BIOME_ORDER.includes(biomeKey) ? biomeKey : BIOME_KEYS.ACTIVE;
+        if (key === this._lastEmittedBiomeKey) return;
+        this._lastEmittedBiomeKey = key;
         window.dispatchEvent(new CustomEvent('biome-changed', {
             detail: {
                 key,
@@ -21787,6 +21822,14 @@ export class ThreeGame {
         data.pathRetargetTimer = Math.max(0, (data.pathRetargetTimer ?? 0) - delta);
         data.wallBreakCooldown = Math.max(0, (data.wallBreakCooldown ?? 0) - delta);
 
+        if (data.type === 'boss_cryosnail' && data.frostShockwaveWindup > 0) {
+            data.frostShockwaveWindup -= delta;
+            if (data.frostShockwaveWindup <= 0) {
+                data.frostShockwaveWindup = 0;
+                this.resolveCryosnailShockwave(sprite);
+            }
+        }
+
         if (data.knockbackTimer > 0) {
             const kx = (data.knockbackVx ?? 0) * delta;
             const kz = (data.knockbackVz ?? 0) * delta;
@@ -21928,14 +21971,11 @@ export class ThreeGame {
                     window.AudioManager?.play('ui_scan_ping', { volume: 0.35, playbackRate: 1.45 });
                 } else if (data.type === 'boss_cryosnail' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 5.5;
+                    data.frostShockwaveWindup = 0.9;
                     this.spawnFrostShockwaveEffect(sprite.position.x, sprite.position.z, 4.5);
-                    if (this.player && !this.isPlayerDead) {
-                        const d = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
-                        if (d <= 4.5) {
-                            this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z);
-                            this.applyPlayerSlow(3.0); // slowed for 3 seconds (SCOUT passive reduces this)
-                        }
-                    }
+                    window.dispatchEvent(new CustomEvent('boss-attack-telegraph', {
+                        detail: { boss: 'boss_cryosnail', attack: 'frost-shockwave', radius: 4.5, windupMs: 900 }
+                    }));
                     window.AudioManager?.play('ui_scan_ping', { volume: 0.45, playbackRate: 0.38 });
                 } else if (data.type === 'boss_sporesnail' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 6.5;
@@ -22046,6 +22086,18 @@ export class ThreeGame {
             }
             window.AudioManager?.playMetalStress?.({ volume: 0.24, playbackRate: 1.1, force: true });
         }
+    }
+
+    resolveCryosnailShockwave(sprite) {
+        if (!sprite || !this.player || this.isPlayerDead) return false;
+        const distance = Math.hypot(
+            this.player.position.x - sprite.position.x,
+            this.player.position.z - sprite.position.z
+        );
+        if (distance > 4.5) return false;
+        this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z);
+        this.applyPlayerSlow(3.0);
+        return true;
     }
 
     isEnemyType(type) {
