@@ -27,10 +27,17 @@ function objectiveEligible(line, context) {
     return sources.includes(context.objectiveSource ?? null);
 }
 
+function directorActionEligible(line, context) {
+    const actions = line.tags?.directorActions ?? null;
+    if (!actions) return true;
+    return actions.includes(context.directorAction ?? null);
+}
+
 function isLineEligible(line, trigger, context, { classLastFiredAt, lineHistory, nowSeconds, globalMinGapSeconds, lastAnyFiredAt }) {
     if (!registerEligible(line, context)) return false;
     if (!eventEligible(line, trigger)) return false;
     if (!objectiveEligible(line, context)) return false;
+    if (!directorActionEligible(line, context)) return false;
     if (!inRange(context.depthTier ?? 0, line.tags?.depthTier)) return false;
     if (!inRange(context.danger ?? 0, line.tags?.danger)) return false;
 
@@ -62,6 +69,7 @@ function scoreLine(line, context) {
     if (sources && sources.includes(context.objectiveSource ?? null)) score += 2;
     if (line.tags?.depthTier) score += 1;
     if (line.tags?.danger) score += 1;
+    if (line.tags?.directorActions?.includes(context.directorAction ?? null)) score += 2;
     return score;
 }
 

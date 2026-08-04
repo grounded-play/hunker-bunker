@@ -28,6 +28,17 @@ describe('DIRECTOR_AMBIENT_LINES', () => {
     it('is ambient (eventTrigger null) for every line', () => {
         for (const line of DIRECTOR_AMBIENT_LINES) {
             expect(line.tags.eventTrigger ?? null).toBeNull();
+            expect(line.tags.directorActions?.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('has reality-matched lines for every Director lever in every voice register', () => {
+        for (const register of ['corporate', 'glitched', 'reverent']) {
+            for (const action of ['patrol', 'lightsout', 'corrupt', 'taunt']) {
+                expect(DIRECTOR_AMBIENT_LINES.some((line) => (
+                    line.register === register && line.tags.directorActions.includes(action)
+                ))).toBe(true);
+            }
         }
     });
 

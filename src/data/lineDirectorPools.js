@@ -5,26 +5,27 @@
 
 export const DIRECTOR_AMBIENT_LINES = Object.freeze([
     // corporate
-    { id: 'director_welcome_committee', register: 'corporate', text: 'Movement logged. Facilities has dispatched a welcome committee.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_pillar_lighting', register: 'corporate', text: 'Unauthorized exploration detected. Adjusting pillar lighting.', tags: { eventTrigger: null, depthTier: { min: 1 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_curiosity_clearance', register: 'corporate', text: 'Your curiosity exceeds your clearance. Compensating accordingly.', tags: { eventTrigger: null, depthTier: { min: 1 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_power_rerouted', register: 'corporate', text: 'Power rerouted to a department that resents you.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_depth_disapproval', register: 'corporate', text: 'The structure notes your depth and disapproves.', tags: { eventTrigger: null, depthTier: { min: 2 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_column_field', register: 'corporate', text: 'Please remain calm while the column field selects a new destination.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_productivity', register: 'corporate', text: 'Productivity is being monitored. So is everything else.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_maintenance_event', register: 'corporate', text: 'A maintenance event has been scheduled around your location.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_welcome_committee', register: 'corporate', text: 'Movement logged. Facilities has dispatched a welcome committee to your position.', tags: { eventTrigger: null, directorActions: ['patrol'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_pillar_lighting', register: 'corporate', text: 'Unauthorized exploration detected. Local lighting has been suspended.', tags: { eventTrigger: null, directorActions: ['lightsout'], depthTier: { min: 1 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_curiosity_clearance', register: 'corporate', text: 'Your curiosity continues to exceed your clearance.', tags: { eventTrigger: null, directorActions: ['taunt'], depthTier: { min: 1 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_power_rerouted', register: 'corporate', text: 'Local illumination power has been rerouted.', tags: { eventTrigger: null, directorActions: ['lightsout'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_depth_disapproval', register: 'corporate', text: 'The structure notes your depth and disapproves.', tags: { eventTrigger: null, directorActions: ['taunt'], depthTier: { min: 2 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_column_field', register: 'corporate', text: 'Navigation telemetry is no longer considered authoritative.', tags: { eventTrigger: null, directorActions: ['corrupt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_productivity', register: 'corporate', text: 'Productivity is being monitored. So are your vital signs.', tags: { eventTrigger: null, directorActions: ['taunt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_maintenance_event', register: 'corporate', text: 'A hostile maintenance team is converging on your location.', tags: { eventTrigger: null, directorActions: ['patrol'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
 
     // glitched
-    { id: 'director_glitch_curiosity', register: 'glitched', text: 'DE-DETECTION... Facilities has logged unauthorized cur-curiosity.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_glitch_breaker', register: 'glitched', text: 'WARNING: Sector breaker state UNSTABLE. Lights are... fading.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_glitch_containment', register: 'glitched', text: 'Power rerouted. Department of containment reports... zero staff.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_glitch_remembers', register: 'glitched', text: 'SYSTEM: The structure... it remembers you. It... wants you.', tags: { eventTrigger: null, depthTier: { min: 2 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_glitch_curiosity', register: 'glitched', text: 'DE-DETECTION... unauthorized cur-curiosity remains logged.', tags: { eventTrigger: null, directorActions: ['taunt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_glitch_breaker', register: 'glitched', text: 'WARNING: Sector breaker opened. Lights are... gone.', tags: { eventTrigger: null, directorActions: ['lightsout'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_glitch_containment', register: 'glitched', text: 'Department of containment reports... zero surviving staff.', tags: { eventTrigger: null, directorActions: ['taunt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_glitch_navigation', register: 'glitched', text: 'NAV-NAVIGATION checksum failed. Compass output corrupted.', tags: { eventTrigger: null, directorActions: ['corrupt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_glitch_remembers', register: 'glitched', text: 'SYSTEM: Movement signatures converging. The structure... remembers you.', tags: { eventTrigger: null, directorActions: ['patrol'], depthTier: { min: 2 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
 
     // reverent
-    { id: 'director_reverent_ghost', register: 'reverent', text: 'The Director is a ghost in a machine. The Queen is the blood in the pipes.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_reverent_column', register: 'reverent', text: 'The column field is aligning. We are finally going home.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_reverent_darkness', register: 'reverent', text: 'Do not fight the darkness. The dark is where the chitin grows.', tags: { eventTrigger: null, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
-    { id: 'director_reverent_descent', register: 'reverent', text: 'The structure welcomes your descent. We have prepared the throne.', tags: { eventTrigger: null, depthTier: { min: 2 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } }
+    { id: 'director_reverent_ghost', register: 'reverent', text: 'The Director is a ghost in a machine. The Queen hears every step.', tags: { eventTrigger: null, directorActions: ['taunt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_reverent_column', register: 'reverent', text: 'The column turns your compass away from the sky.', tags: { eventTrigger: null, directorActions: ['corrupt'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_reverent_darkness', register: 'reverent', text: 'The lights are gone. The dark is where the chitin grows.', tags: { eventTrigger: null, directorActions: ['lightsout'], cooldownClass: 'director_ambient', minRepeatSeconds: 90 } },
+    { id: 'director_reverent_descent', register: 'reverent', text: 'The structure sends its children to welcome your descent.', tags: { eventTrigger: null, directorActions: ['patrol'], depthTier: { min: 2 }, cooldownClass: 'director_ambient', minRepeatSeconds: 90 } }
 ]);
 
 const MOTHERSHIP_CRITICAL_IDS = new Set(['mothership_hp_critical', 'mothership_objective_found', 'mothership_first_boss']);

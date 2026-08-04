@@ -7089,12 +7089,17 @@ export class ThreeGame {
         // Mimic payback: an unverified forged terminal pays out, then bills you.
         if (this._terminalEventIsMimic && !this._terminalMimicDisarmed) {
             this.showBunkerLine('TERMINAL SIGNATURE FORGED. THE PAYOUT WAS REAL. SO IS THE INVOICE.');
-            this.spawnPatrolNearPlayer();
+            const patrolCount = this.spawnPatrolNearPlayer();
             this.corruptCompass(15);
-            result = `${result} // MIMIC: SIGNATURE FORGED — PATROLS DISPATCHED`;
+            result = patrolCount > 0
+                ? `${result} // MIMIC: SIGNATURE FORGED — ${patrolCount} HOSTILES DISPATCHED`
+                : `${result} // MIMIC: SIGNATURE FORGED — NAVIGATION CORRUPTED`;
             window.dispatchEvent(new CustomEvent('codex-discover', { detail: { id: 'mimic_terminal' } }));
         } else {
-            this.showBunkerLine(getDialogueLine('terminalChoice') ?? 'TERMINAL CHOICE REGISTERED.');
+            this.showBunkerLine(
+                getDialogueLine('terminalChoice', Math.random, this.buildLineDirectorContext().register)
+                ?? 'TERMINAL CHOICE REGISTERED.'
+            );
         }
         window.AudioManager?.play('ui_boot', { volume: 0.42, playbackRate: choice.tone === 'risk' ? 0.72 : 1.05, bus: 'sfx' });
         const resultEl = document.getElementById('terminal-event-result');
@@ -12617,7 +12622,10 @@ export class ThreeGame {
             cause: reason,
             log: deathLog
         });
-        this.showBunkerLine(getDialogueLine('death') ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.');
+        this.showBunkerLine(
+            getDialogueLine('death', Math.random, this.buildLineDirectorContext().register)
+            ?? 'SUIT FAILURE LOGGED. BLACK BOX ARMED.'
+        );
         window.dispatchEvent(new CustomEvent('player-death', {
             detail: { reason, blackBox: blackBoxState }
         }));
