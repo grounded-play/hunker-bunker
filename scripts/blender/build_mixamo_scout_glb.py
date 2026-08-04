@@ -24,6 +24,10 @@ CLIPS = {
     "hit": "Basic Shooter Pack/hit reaction.fbx",
     "fall": "Action Adventure Pack/falling idle.fbx",
     "land": "Action Adventure Pack/hard landing.fbx",
+    "melee": "Creature Pack/mutant punch.fbx",
+    "injuredIdle": "Male Injured Pack/injured idle.fbx",
+    "injuredWalk": "Male Injured Pack/injured walk.fbx",
+    "injuredRun": "Male Injured Pack/injured run.fbx",
 }
 
 

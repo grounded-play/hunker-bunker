@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
     ENGINEER_GESTURES,
+    INJURED_LOCOMOTION_VARIANTS,
     computeOperatorPolishMaterialState,
     computeLocomotionWeights,
     computeOverlayYaw,
     computeUpperBodyAimOffset,
+    selectLocomotionActionName,
     selectOverlayAnimation
 } from './player3dOverlay.js';
 
@@ -65,5 +67,20 @@ describe('player 3D cosmetic overlay', () => {
         expect(computeUpperBodyAimOffset(0, 1, 0)).toBeCloseTo(Math.PI / 2);
         expect(computeUpperBodyAimOffset(0, -1, 0)).toBeCloseTo(-Math.PI / 2);
         expect(computeUpperBodyAimOffset(0, 0, -1)).toBeCloseTo(Math.PI / 2);
+    });
+
+    it('redirects idle/walk/run to their injured counterpart only when hurt and the clip exists', () => {
+        expect(selectLocomotionActionName('walk', true, true)).toBe('injuredWalk');
+        expect(selectLocomotionActionName('walk', false, true)).toBe('walk');
+        expect(selectLocomotionActionName('walk', true, false)).toBe('walk');
+        expect(selectLocomotionActionName('run', true, true)).toBe('injuredRun');
+        expect(selectLocomotionActionName('idle', true, true)).toBe('injuredIdle');
+    });
+
+    it('does not redirect directions the injured pack has no clip for', () => {
+        expect(selectLocomotionActionName('backward', true, false)).toBe('backward');
+        expect(selectLocomotionActionName('strafeLeft', true, false)).toBe('strafeLeft');
+        expect(INJURED_LOCOMOTION_VARIANTS.backward).toBeUndefined();
+        expect(INJURED_LOCOMOTION_VARIANTS.strafeLeft).toBeUndefined();
     });
 });

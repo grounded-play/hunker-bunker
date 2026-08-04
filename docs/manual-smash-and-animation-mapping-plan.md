@@ -61,18 +61,65 @@ more usable motion than the runtime bundle. Export these in small reviewed waves
 1. ~~Export `melee` alone into the shared animation GLB, keep it in-place, and
    add it to `ONE_SHOTS`.~~ **Done 2026-08-04.** Verify the contact frame
    aligns around 45% of the clip still needs an in-engine eyeball pass.
-2. Export the injured trio and extend `computeLocomotionWeights()` with an HP
-   severity input. Cross-fade over 0.2–0.35 seconds to avoid snapping.
+2. ~~Export the injured trio and extend `computeLocomotionWeights()` with an
+   HP severity input. Cross-fade over 0.2–0.35 seconds to avoid snapping.~~
+   **Done 2026-08-04.** Kept `computeLocomotionWeights()`'s return shape
+   unchanged (its keys are asserted by existing tests) and instead added
+   `selectLocomotionActionName()` plus `INJURED_LOCOMOTION_VARIANTS` in
+   `player3dOverlay.js`: below 40% HP (`ThreeGame.isPlayerInjured()`,
+   `INJURED_HP_RATIO` in `threeGame.js`), idle/walk/run redirect their weight
+   to `injuredIdle`/`injuredWalk`/`injuredRun` every frame through the same
+   `THREE.MathUtils.damp(..., 14, delta)` every other locomotion blend
+   already uses — no separate crossfade timer, no snap. `backward`/
+   `strafeLeft`/`strafeRight` have no injured take in the source pack and are
+   unaffected. Verified live for all three classes (SCOUT/ENGINEER/TANK) via
+   Playwright against the running dev server: `melee` and all three injured
+   clips are present in `player3dOverlay.actions` for each class (retargeted
+   correctly onto ENGINEER/TANK's own rigs), and `triggerGameplayMelee()`
+   actually plays and ramps the `melee` action's weight to ~1 with no
+   console errors.
 3. Add `runStop` and `hardLand`, driven by existing sprint/fall transitions.
 4. Add context gestures only after viewing each retargeted class. Social and
    interaction animations should never delay authoritative gameplay completion.
-5. Add an automated runtime-clip manifest test so every mapped name is present
-   in the built GLB and missing clips fail during asset preparation, not play.
+5. ~~Add an automated runtime-clip manifest test so every mapped name is
+   present in the built GLB and missing clips fail during asset preparation,
+   not play.~~ **Done 2026-08-04** as `src/scoutAnimationClips.test.js`,
+   scoped to the 16 names currently mapped; extend its `EXPECTED_CLIPS` list
+   as later waves land.
 
 ## Acceptance checks
 
-- Smash contact, damage, and animation contact frame agree for all three classes.
-- Low-health animation changes do not alter movement speed or collision.
-- Interaction one-shots remain interruptible by damage, movement, and menus.
-- Retargeting does not introduce planar root motion or class-specific limb stretch.
-- Steam Deck/controller glyphs describe the same Smash action as keyboard/mouse.
+- [x] Smash gameplay (damage, arc, cooldown) confirmed class-agnostic by
+      inspection: `triggerGameplayMelee()` in `threeGame.js` has no
+      `playerType` branch. Steam Deck (Neptune) and every other bundled
+      controller profile bind `ability → Smash` at the same input-manifest
+      level, not per class.
+- [x] `melee` clip present and playing for all three classes, verified live
+      (Playwright against `npm run dev`, 2026-08-04): SCOUT carries it
+      natively, ENGINEER/TANK get it via the existing `mixamorig` retarget
+      path alongside their own class-specific clips (Engineer's 16 gestures,
+      Tank's unused single baked clip). No console errors on any class.
+- [ ] Smash contact, damage, and animation **contact frame** agreeing with
+      the 70° arc/4-damage window has NOT been precisely measured — only
+      confirmed the clip plays end-to-end (weight ramps to ~1, `time`
+      advances across its 1.1s duration). Needs an eyeball pass with the
+      canvas actually visible (screenshot capture timed out against the
+      WebGL canvas in this headless run; a human or a non-headless capture
+      is the next step here).
+- [x] Low-health animation changes do not alter movement speed or collision
+      — structurally true, not just tested: `isPlayerInjured()`/the
+      `injuredIdle/Walk/Run` redirect only ever call
+      `action.setEffectiveWeight()` on the cosmetic overlay's own
+      `AnimationMixer`; nothing in that path touches `player.position`,
+      `moveSpeed`, or any collision check.
+- [ ] Interaction one-shots remain interruptible by damage, movement, and
+      menus — not yet exercised.
+- [ ] Retargeting does not introduce planar root motion or class-specific
+      limb stretch — not yet visually checked for the new `melee`/injured
+      clips specifically (the existing `makeClipInPlace()` root-motion strip
+      applies to every clip uniformly, so this is likely fine, but "likely"
+      isn't "checked").
+- [x] Steam Deck/controller glyphs describe the same Smash action as
+      keyboard/mouse — confirmed in `steam/controller_configs/controller_neptune.vdf`
+      (`game_action gameplay ability, Smash`) and `steam/steam_input_manifest.vdf`
+      (`"ActionAbility" "Smash"`), matching the `V`/right-click keyboard path.

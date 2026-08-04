@@ -14,6 +14,15 @@ export const ENGINEER_GESTURES = Object.freeze([
 ]);
 const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES]);
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
+// Below INJURED_HP_RATIO, idle/walk/run cross-fade to their limping
+// counterparts (see computeLocomotionWeights callers). Only these three carry
+// an injured take in the source pack -- backward/strafe stay on the healthy
+// clip either way.
+export const INJURED_LOCOMOTION_VARIANTS = Object.freeze({
+    idle: 'injuredIdle',
+    walk: 'injuredWalk',
+    run: 'injuredRun'
+});
 let weaponTemplatePromise = null;
 const characterTemplates = new Map();
 
@@ -89,6 +98,14 @@ export function selectOverlayAnimation({
     if (side > 0.35) return 'strafeLeft';
     if (side < -0.35) return 'strafeRight';
     return isSprinting ? 'run' : 'walk';
+}
+
+// Which concrete action name should currently carry a locomotion weight
+// (e.g. does 'walk' redirect to 'injuredWalk'). Pure and name-only so it's
+// testable without the mixer/GLTF machinery createPlayer3dOverlay needs.
+export function selectLocomotionActionName(name, isInjured, hasVariantClip) {
+    const variant = INJURED_LOCOMOTION_VARIANTS[name];
+    return isInjured && variant && hasVariantClip ? variant : name;
 }
 
 export function computeLocomotionWeights(state = {}) {
@@ -317,7 +334,8 @@ export async function createPlayer3dOverlay({
         return match;
     }).filter(Boolean);
     const smoothedWeights = Object.fromEntries([...actions.keys()].map((name) => [name, 0]));
-    for (const name of blendableActions) {
+    const injuredVariantActions = Object.values(INJURED_LOCOMOTION_VARIANTS).filter((name) => actions.has(name));
+    for (const name of [...blendableActions, ...injuredVariantActions]) {
         actions.get(name)?.setEffectiveWeight(0).play();
     }
 
@@ -389,14 +407,24 @@ export async function createPlayer3dOverlay({
                 const isIdleAction = idleActions.includes(name);
                 const targetKey = isIdleAction ? 'idle' : name;
                 const idleEnabled = !isIdleAction || name === activeIdleAction;
-                const target = (targets[targetKey] ?? 0) * locomotionScale * (idleEnabled ? 1 : 0);
-                smoothedWeights[name] = THREE.MathUtils.damp(
-                    smoothedWeights[name] ?? 0,
-                    target,
-                    14,
-                    delta
-                );
-                actions.get(name)?.setEffectiveWeight(smoothedWeights[name]);
+                const baseTarget = (targets[targetKey] ?? 0) * locomotionScale * (idleEnabled ? 1 : 0);
+                const variantName = INJURED_LOCOMOTION_VARIANTS[name];
+                const hasVariantClip = Boolean(variantName && actions.has(variantName));
+                const activeName = selectLocomotionActionName(name, Boolean(state.isInjured), hasVariantClip);
+                // Drive both the base clip and its injured counterpart every
+                // frame (one target, one zero) so the swap cross-fades through
+                // the same damping every other locomotion blend uses here,
+                // instead of snapping when isInjured flips.
+                for (const candidate of hasVariantClip ? [name, variantName] : [name]) {
+                    const target = candidate === activeName ? baseTarget : 0;
+                    smoothedWeights[candidate] = THREE.MathUtils.damp(
+                        smoothedWeights[candidate] ?? 0,
+                        target,
+                        14,
+                        delta
+                    );
+                    actions.get(candidate)?.setEffectiveWeight(smoothedWeights[candidate]);
+                }
             }
             if (forcedName) {
                 const forcedAction = actions.get(forcedName);

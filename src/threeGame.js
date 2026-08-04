@@ -529,6 +529,7 @@ const MELEE_REACH = 1.8;
 const MELEE_HALF_ANGLE = THREE.MathUtils.degToRad(35);
 const MELEE_DAMAGE = 4;
 const MELEE_COOLDOWN = 0.55;
+const INJURED_HP_RATIO = 0.4;
 
 const SNAIL_ATTACK_RADIUS = 1.1;
 const SNAIL_ATTACK_COOLDOWN = 1.1;
@@ -12038,6 +12039,12 @@ export class ThreeGame {
         }
     }
 
+    isPlayerInjured() {
+        const maxHp = this.playerVitals?.maxHp;
+        if (!Number.isFinite(maxHp) || maxHp <= 0) return false;
+        return (this.playerVitals.hp / maxHp) < INJURED_HP_RATIO;
+    }
+
     emitHealthState() {
         const nextHealthKey = `${this.playerVitals.hp}/${this.playerVitals.maxHp}`;
         if (nextHealthKey === this._lastEmittedHealthKey) return;
@@ -13704,6 +13711,7 @@ export class ThreeGame {
             this.player3dOverlay?.update(delta, {
                 isFalling: true,
                 isMoving: false,
+                isInjured: this.isPlayerInjured(),
                 hasAim: this.hasActiveAim,
                 moveX: 0,
                 moveZ: 0,
@@ -15142,6 +15150,7 @@ export class ThreeGame {
                 isReloading: this.weaponReloading,
                 isMoving: visualMoving,
                 isSprinting: (this._sprintMoveSpeedMult ?? 1) > 1 || this.isDashing,
+                isInjured: this.isPlayerInjured(),
                 hasAim: this.hasActiveAim,
                 moveX: visualMoveX,
                 moveZ: visualMoveZ,
