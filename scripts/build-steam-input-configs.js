@@ -277,8 +277,7 @@ function buildControllerConfig(controllerType) {
             14: 'right_trigger',
             15: 'switch',
             16: 'left_trackpad',
-            12: 'right_trackpad',
-            18: 'gyro'
+            12: 'right_trackpad'
         }),
         preset(2, 'archive', {
             20: 'button_diamond',

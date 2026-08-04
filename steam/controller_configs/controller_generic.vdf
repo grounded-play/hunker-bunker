@@ -782,7 +782,6 @@
             "15" "switch active"
             "16" "left_trackpad active"
             "17" "right_joystick active"
-            "18" "gyro active"
         }
     }
     "preset"

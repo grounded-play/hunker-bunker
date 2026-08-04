@@ -50,6 +50,9 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).toContain('game_action archive archive_reveal');
         expect(deck).toContain('"gameplay" "move"');
         expect(deck).toContain('"gameplay" "camera"');
+        expect(deck).toContain('"12" "right_trackpad active"');
+        expect(deck).toContain('"17" "right_joystick active"');
+        expect(deck).not.toContain('"18" "gyro active"');
     });
 
     // A config that binds an action the manifest doesn't declare is silently dead
