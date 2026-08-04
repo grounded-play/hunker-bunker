@@ -13,7 +13,10 @@ const MODEL_CONFIG = {
     boss_cryosnail: { url: '/3d/runtime/cryo-snail-boss.glb', height: 1.8, yaw: Math.PI / 2 },
     boss_sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 1.95, yaw: Math.PI / 2 },
     crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: Math.PI },
-    mycelium_stalker: { url: '/3d/runtime/bio-stalker.glb', height: 1.2, yaw: Math.PI },
+    // The stalker export faces backward relative to its movement direction.
+    // Rotate it another 180 degrees around the vertical axis from its old PI
+    // correction; normalized, that leaves the model-local yaw at zero.
+    mycelium_stalker: { url: '/3d/runtime/bio-stalker.glb', height: 1.2, yaw: 0 },
     boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 
