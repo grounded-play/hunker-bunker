@@ -91,6 +91,8 @@ async function requestSteamBackend(path, { method = 'GET', body = null, headers 
         return { ok: false, reason: 'fetch_unavailable' };
     }
 
+    const requestStartedAt = Date.now();
+    const requestMethod = String(method || 'GET').toUpperCase();
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), STEAM_BACKEND_TIMEOUT_MS);
@@ -118,14 +120,24 @@ async function requestSteamBackend(path, { method = 'GET', body = null, headers 
         return {
             ...data,
             ok: response.ok && data?.ok !== false,
-            status: response.status
+            status: response.status,
+            request: {
+                path: String(path).split('?')[0],
+                method: requestMethod,
+                durationMs: Date.now() - requestStartedAt
+            }
         };
     } catch (err) {
         return {
             ok: false,
             reason: err?.name === 'AbortError' ? 'steam_backend_timeout' : 'steam_backend_unreachable',
             timeoutMs: err?.name === 'AbortError' ? STEAM_BACKEND_TIMEOUT_MS : undefined,
-            message: err?.message ?? String(err)
+            message: err?.message ?? String(err),
+            request: {
+                path: String(path).split('?')[0],
+                method: requestMethod,
+                durationMs: Date.now() - requestStartedAt
+            }
         };
     }
 }

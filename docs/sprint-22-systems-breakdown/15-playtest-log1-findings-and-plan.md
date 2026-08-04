@@ -283,3 +283,23 @@ payloads — that schema did all the work here. The one gap worth closing: a
 payload itself would have made Finding 1 visible from the log alone, without
 needing to cross-reference the call sites in `threeGame.js`. Consider adding
 current-state flags to repeat-prone events generally, not just this one.
+
+### Logging update — 2026-08-04
+
+Implemented after the first Log1 remediation pass:
+
+- `foundry-discovered` now includes reveal source/mode, prior build state, and
+  resulting reveal state.
+- `biome-changed` includes the previous biome, transition sequence number, and
+  milliseconds since the prior transition, making boundary flapping directly
+  queryable.
+- Cryosnail attacks emit correlated `boss-attack-telegraph` and
+  `boss-attack-resolved` events with an attack ID, distances, radius, wind-up,
+  and hit/escaped outcome.
+- Deferred atlas processing records atlas count and synchronous flush duration
+  under `PERF`.
+- Electron backend responses include safe request path, method, and duration;
+  Steam ticket verification failures include the upstream service, status,
+  AppID, and identity without logging the publisher key or auth ticket.
+- The event exporter now captures health changes, Tank blocks, and boss attack
+  lifecycle events in addition to the prior high-level event set.

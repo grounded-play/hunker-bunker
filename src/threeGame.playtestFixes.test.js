@@ -36,7 +36,11 @@ describe('Log1 playtest regressions', () => {
         expect(window.dispatchEvent).toHaveBeenCalledTimes(1);
         expect(window.dispatchEvent.mock.calls[0][0]).toMatchObject({
             type: 'foundry-discovered',
-            detail: { x: 4, z: 8, distance: 2 }
+            detail: {
+                x: 4, z: 8, distance: 2,
+                source: 'unspecified', revealMode: 'instant',
+                builtBeforeReveal: true, isRevealed: true
+            }
         });
     });
 
@@ -56,5 +60,25 @@ describe('Log1 playtest regressions', () => {
         expect(ThreeGame.prototype.resolveCryosnailShockwave.call(game, boss)).toBe(true);
         expect(game.takeDamage).toHaveBeenCalledWith(1, 'frost-shockwave', 0, 0);
         expect(game.applyPlayerSlow).toHaveBeenCalledWith(3);
+        expect(window.dispatchEvent.mock.calls.at(-1)[0]).toMatchObject({
+            type: 'boss-attack-resolved',
+            detail: { outcome: 'hit', playerDistanceAtResolution: 4 }
+        });
+    });
+
+    it('records biome transition direction, sequence, and timing', () => {
+        const game = { getBiomeLabel: (key) => key.toUpperCase() };
+
+        ThreeGame.prototype.emitBiomeChanged.call(game, 'active', 10);
+        game._lastBiomeEventAt -= 1250;
+        ThreeGame.prototype.emitBiomeChanged.call(game, 'cryo', 20);
+
+        expect(window.dispatchEvent.mock.calls[1][0]).toMatchObject({
+            type: 'biome-changed',
+            detail: {
+                key: 'cryo', previousKey: 'active', transitionCount: 2,
+                sincePreviousMs: expect.any(Number), distance: 20
+            }
+        });
     });
 });

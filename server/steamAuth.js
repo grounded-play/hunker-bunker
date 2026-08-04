@@ -349,7 +349,14 @@ export async function verifySteamSessionTicket({ ticketHex, identity } = {}) {
             return {
                 ok: false,
                 status: response.status,
-                reason: 'steam_auth_http_error'
+                reason: 'steam_auth_http_error',
+                upstream: {
+                    service: 'steamworks-authenticate-user-ticket',
+                    method: 'GET',
+                    status: response.status,
+                    appId: config.appId,
+                    identity: normalizeIdentity(identity)
+                }
             };
         }
 

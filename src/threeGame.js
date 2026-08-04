@@ -5143,7 +5143,12 @@ export class ThreeGame {
         if (nextProfile === 'gameplay') {
             this.deferGameplayAtlasLoad = false;
             const deferredAtlasProcessors = this._deferredGameplayAtlasProcessors.splice(0);
+            const atlasFlushStartedAt = performance.now();
             for (const processAtlas of deferredAtlasProcessors) processAtlas();
+            debugLog.info('PERF', 'Deferred sprite atlas processing complete', {
+                atlasCount: deferredAtlasProcessors.length,
+                durationMs: Math.round((performance.now() - atlasFlushStartedAt) * 10) / 10
+            });
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             this._menuShowcaseTimer = 0;
@@ -8770,9 +8775,10 @@ export class ThreeGame {
     }
 
     // Reveal/power-up the Fabrication Foundry after the O2 counterattack.
-    revealFoundry({ instant = false, randomEdge = false } = {}) {
+    revealFoundry({ instant = false, randomEdge = false, source = 'unspecified' } = {}) {
         if (!this.foundry) return;
         if (this.foundry.isRevealed) return;
+        const builtBeforeReveal = Boolean(this.foundry.built);
         const site = (randomEdge || !this.foundry.built) ? this.chooseFoundryDiscoveryPosition() : this.foundry.getPosition();
         const ship = this.getActiveShip();
         const cx = Number.isFinite(site?.x) ? site.x : (Number.isFinite(ship?.tileX) ? ship.tileX : 9);
@@ -8780,7 +8786,16 @@ export class ThreeGame {
         if (instant) this.foundry.revealInstant(cx, cz);
         else this.foundry.reveal(cx, cz);
         window.dispatchEvent(new CustomEvent('foundry-discovered', {
-            detail: { x: cx, z: cz, distance: this.player ? Math.round(Math.hypot(this.player.position.x - cx, this.player.position.z - cz)) : null }
+            detail: {
+                x: cx,
+                z: cz,
+                distance: this.player ? Math.round(Math.hypot(this.player.position.x - cx, this.player.position.z - cz)) : null,
+                source,
+                revealMode: instant ? 'instant' : 'animated',
+                randomEdge: Boolean(randomEdge),
+                builtBeforeReveal,
+                isRevealed: Boolean(this.foundry.isRevealed)
+            }
         }));
     }
 
@@ -9188,7 +9203,7 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu' || !this.isAct2Active()) return;
         const phase = this.act2.getPhase();
         if (phase === 'dish' && !this.foundry?.isRevealed) {
-            this.revealFoundry({ instant: true });
+            this.revealFoundry({ instant: true, source: 'act2-state-restore' });
         }
     }
 
@@ -11922,7 +11937,7 @@ export class ThreeGame {
         // Returning to an already-online base: snap the flood-light grid and the
         // Foundry on with no theatrics. The animated versions only play on the live
         // first repair, which fires via the o2-generator-upgraded event before this.
-        this.revealFoundry({ instant: true });
+        this.revealFoundry({ instant: true, source: 'o2-bubble-state-restore' });
         // Restoring an already-completed rebuild ladder also restores the cave
         // signal (no theatrics), unless the reveal has already played.
         if (this.hasUpgrade('reactorCompressor')) {
@@ -14095,10 +14110,20 @@ export class ThreeGame {
     emitBiomeChanged(biomeKey, distanceFromAnchor = 0) {
         const key = BIOME_ORDER.includes(biomeKey) ? biomeKey : BIOME_KEYS.ACTIVE;
         if (key === this._lastEmittedBiomeKey) return;
+        const previousKey = this._lastEmittedBiomeKey ?? null;
+        const now = performance.now();
+        const sincePreviousMs = Number.isFinite(this._lastBiomeEventAt)
+            ? Math.round(now - this._lastBiomeEventAt)
+            : null;
         this._lastEmittedBiomeKey = key;
+        this._lastBiomeEventAt = now;
+        this._biomeTransitionCount = (this._biomeTransitionCount ?? 0) + 1;
         window.dispatchEvent(new CustomEvent('biome-changed', {
             detail: {
                 key,
+                previousKey,
+                transitionCount: this._biomeTransitionCount,
+                sincePreviousMs,
                 label: this.getBiomeLabel(key),
                 distance: Math.round(distanceFromAnchor),
                 o2DrainMultiplier: BIOME_O2_DRAIN_MULTIPLIERS[key] ?? 1,
@@ -20241,7 +20266,7 @@ export class ThreeGame {
         if (isBoss) {
             this.killedBosses.add(sprite.userData.biome);
             if (sprite.userData.isMilestone && sprite.userData.sourceGoalKey === 'o2Bubble') {
-                this.revealFoundry({ randomEdge: true });
+                this.revealFoundry({ randomEdge: true, source: 'o2-counterattack-complete' });
             }
             if (sprite.userData.type === 'boss_queen') {
                 this.act2?.setQueenStatus('killed');
@@ -21972,9 +21997,17 @@ export class ThreeGame {
                 } else if (data.type === 'boss_cryosnail' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 5.5;
                     data.frostShockwaveWindup = 0.9;
+                    data.frostShockwaveAttackId = `cryosnail-shockwave-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
                     this.spawnFrostShockwaveEffect(sprite.position.x, sprite.position.z, 4.5);
                     window.dispatchEvent(new CustomEvent('boss-attack-telegraph', {
-                        detail: { boss: 'boss_cryosnail', attack: 'frost-shockwave', radius: 4.5, windupMs: 900 }
+                        detail: {
+                            attackId: data.frostShockwaveAttackId,
+                            boss: 'boss_cryosnail',
+                            attack: 'frost-shockwave',
+                            radius: 4.5,
+                            windupMs: 900,
+                            playerDistanceAtTelegraph: Math.round(distanceToTarget * 10) / 10
+                        }
                     }));
                     window.AudioManager?.play('ui_scan_ping', { volume: 0.45, playbackRate: 0.38 });
                 } else if (data.type === 'boss_sporesnail' && distanceToTarget <= 12) {
@@ -22094,10 +22127,22 @@ export class ThreeGame {
             this.player.position.x - sprite.position.x,
             this.player.position.z - sprite.position.z
         );
-        if (distance > 4.5) return false;
-        this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z);
-        this.applyPlayerSlow(3.0);
-        return true;
+        const hit = distance <= 4.5;
+        if (hit) {
+            this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z);
+            this.applyPlayerSlow(3.0);
+        }
+        window.dispatchEvent(new CustomEvent('boss-attack-resolved', {
+            detail: {
+                attackId: sprite.userData?.frostShockwaveAttackId ?? null,
+                boss: 'boss_cryosnail',
+                attack: 'frost-shockwave',
+                outcome: hit ? 'hit' : 'escaped',
+                radius: 4.5,
+                playerDistanceAtResolution: Math.round(distance * 10) / 10
+            }
+        }));
+        return hit;
     }
 
     isEnemyType(type) {

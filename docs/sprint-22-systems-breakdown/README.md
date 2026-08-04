@@ -32,7 +32,7 @@ As reviewed for this update:
 > below still reflects the state as of the original write-up.
 
 > **Update (2026-08-04, dev/sprint-22):** automated baseline is now
-> **1,214 passing Vitest tests** (155 files). First real human-observed
+> **1,215 passing Vitest tests** (155 files). First real human-observed
 > playtest evidence for Sprint 22 priorities 2-4 (world tuning, first-hour
 > observation, combat comparison) landed — see
 > [Playtest Evidence: Log1 Findings and Improvement Plan](15-playtest-log1-findings-and-plan.md),
