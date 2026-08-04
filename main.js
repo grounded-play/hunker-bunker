@@ -52,6 +52,8 @@ import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolis
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
+import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
+import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -338,6 +340,7 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'demo-end-modal',
     'game-over-modal',
     'camp-choice-modal',
+    'leader-conversation-modal',
     'mothership-dialogue',
     'console-terminal-modal',
     'o2-generator-modal',
@@ -8910,6 +8913,109 @@ window.addEventListener('camp-choice-open', async (event) => {
     const detail = event?.detail ?? {};
     await songInterstitial.show(selectCampInterstitial(detail));
     renderCampChoice(detail);
+});
+
+const leaderConversationModal = document.getElementById('leader-conversation-modal');
+const leaderConversationCanvas = document.getElementById('leader-conversation-canvas');
+const leaderConversationPortrait = document.getElementById('leader-conversation-portrait');
+const leaderConversationName = document.getElementById('leader-conversation-name');
+const leaderConversationKicker = document.getElementById('leader-conversation-kicker');
+const leaderConversationMeta = document.getElementById('leader-conversation-meta');
+const leaderConversationLine = document.getElementById('leader-conversation-line');
+const leaderConversationStats = document.getElementById('leader-conversation-stats');
+const leaderConversationGuidance = document.getElementById('leader-conversation-guidance');
+const leaderConversationContinue = document.getElementById('leader-conversation-continue');
+const leaderConversationLeave = document.getElementById('leader-conversation-leave');
+const leaderConversationClose = document.getElementById('leader-conversation-close');
+const leaderConversation3d = new LeaderConversation3d(leaderConversationCanvas);
+let leaderConversationLines = [];
+let leaderConversationLineIndex = 0;
+let leaderConversationIdentity = null;
+
+function cleanLeaderDialogueLine(line, speakerName = '') {
+    const text = String(line ?? '').trim();
+    const colon = text.indexOf(':');
+    if (colon < 0 || colon > 32) return text;
+    const prefix = text.slice(0, colon).trim().toLowerCase();
+    const names = String(speakerName).toLowerCase().split(/\s+/).filter(Boolean);
+    return names.some((name) => prefix.includes(name)) ? text.slice(colon + 1).trim() : text;
+}
+
+function renderLeaderConversationLine() {
+    const raw = leaderConversationLines[leaderConversationLineIndex] ?? '';
+    if (leaderConversationLine) leaderConversationLine.textContent = cleanLeaderDialogueLine(raw, leaderConversationIdentity?.name);
+    const reaction = dialogueReactionForLine(raw);
+    leaderConversationModal?.setAttribute('data-mood', reaction.mood);
+    leaderConversation3d.react(reaction);
+    const atEnd = leaderConversationLineIndex >= leaderConversationLines.length - 1;
+    if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? 'FINISH CONVERSATION' : 'CONTINUE';
+}
+
+function closeLeaderConversation() {
+    leaderConversationModal?.classList.add('hidden');
+    leaderConversationModal?.setAttribute('aria-hidden', 'true');
+    leaderConversation3d.hide();
+    leaderConversationLines = [];
+    leaderConversationLineIndex = 0;
+    if (isGameplayPhase()) window.game?.setInputEnabled?.(true);
+}
+
+leaderConversationContinue?.addEventListener('click', () => {
+    window.AudioManager?.play?.('ui_click', { volume: 0.4 });
+    if (leaderConversationLineIndex >= leaderConversationLines.length - 1) {
+        closeLeaderConversation();
+        return;
+    }
+    leaderConversationLineIndex += 1;
+    renderLeaderConversationLine();
+});
+leaderConversationLeave?.addEventListener('click', closeLeaderConversation);
+leaderConversationClose?.addEventListener('click', closeLeaderConversation);
+
+window.addEventListener('leader-dialogue', async (event) => {
+    const detail = event?.detail ?? {};
+    const identity = resolveLeaderIdentity(detail);
+    leaderConversationIdentity = identity;
+    leaderConversationLines = (detail.lines ?? []).map((line) => String(line ?? '')).filter(Boolean);
+    leaderConversationLineIndex = 0;
+    if (!leaderConversationLines.length || !leaderConversationModal) return;
+    preloadLeaderMedia(identity);
+    leaderConversationModal.style.setProperty('--leader-accent', identity.accent);
+    if (leaderConversationName) leaderConversationName.textContent = identity.name;
+    if (leaderConversationKicker) leaderConversationKicker.textContent = detail.kind === 'camp' ? 'CAMP CONVERSATION' : 'FIELD CONVERSATION';
+    if (leaderConversationMeta) {
+        leaderConversationMeta.textContent = [identity.title, identity.callsign ? `CALLSIGN ${identity.callsign}` : '', identity.classId]
+            .filter(Boolean).join(' // ');
+    }
+    if (leaderConversationPortrait) {
+        leaderConversationPortrait.src = identity.portrait;
+        leaderConversationPortrait.alt = identity.name;
+        leaderConversationPortrait.classList.remove('hidden');
+        leaderConversationPortrait.onerror = () => {
+            leaderConversationPortrait.onerror = null;
+            leaderConversationPortrait.src = identity.sprite;
+        };
+    }
+    const relationship = detail.relationship ?? {};
+    if (leaderConversationStats) {
+        const stats = [];
+        if (Number.isFinite(relationship.bond)) stats.push(`BOND ${relationship.bond}/5`);
+        if (Number.isFinite(relationship.level)) stats.push(`CAMP LEVEL ${relationship.level}/3`);
+        if (Number.isFinite(relationship.suspicion)) stats.push(`SUSPICION ${relationship.suspicion}/100`);
+        stats.push(`STORY STAGE ${(detail.progress?.stage ?? detail.stage ?? 0) + 1}`);
+        leaderConversationStats.textContent = stats.join('  •  ');
+    }
+    if (leaderConversationGuidance) leaderConversationGuidance.textContent = detail.progress?.guidance || 'Listen, then decide how you want to help.';
+    renderLeaderConversationLine();
+    leaderConversationModal.classList.remove('hidden');
+    leaderConversationModal.setAttribute('aria-hidden', 'false');
+    window.game?.setInputEnabled?.(false);
+    leaderConversationContinue?.focus();
+    window.AudioManager?.play?.('door_slide_horiz', { volume: 0.32 });
+    const has3d = await leaderConversation3d.show(identity);
+    if (leaderConversationIdentity?.id !== identity.id) return;
+    leaderConversationPortrait?.classList.toggle('hidden', has3d);
+    if (has3d) leaderConversation3d.react(dialogueReactionForLine(leaderConversationLines[leaderConversationLineIndex]));
 });
 
 // Generic hook for dialogue, encounters, bosses, memories, and endings. A

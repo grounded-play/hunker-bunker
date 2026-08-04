@@ -50,7 +50,7 @@ import {
     getClassCampOrder
 } from './act2.js';
 import { HiveSite } from './hiveSite.js';
-import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
+import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED, PLAYER_3D_COSMETIC_OVERLAY_ENABLED } from './featureFlags.js';
 import { createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
@@ -11065,6 +11065,7 @@ export class ThreeGame {
         const record = kind === 'hive' ? this.getHiveRecord(entity.id)
             : kind === 'scientist' ? this.getScientistRecord()
                 : this.getCampRecord(entity.id);
+        const key = this.leaderKeyFor(kind, entity);
         const beat = this.peekDialogueBeat(kind, entity, record);
         if (!beat) return false;
         const achievementState = window.achievementEngine?.getState?.() ?? {};
@@ -11091,16 +11092,6 @@ export class ThreeGame {
             }
         }
 
-        this.openUniversalEncounter(null, {
-            id: entity.id,
-            leaderName: entity.leaderName ?? entity.label ?? '',
-            label: entity.label ?? ''
-        });
-
-        if (lines && lines.length > 0) {
-            this.renderSnailEncounter(lines);
-        }
-
         window.dispatchEvent(new CustomEvent('leader-dialogue', {
             detail: {
                 kind,
@@ -11110,6 +11101,19 @@ export class ThreeGame {
                 stage: beat.stage,
                 leaderName: entity.leaderName ?? entity.label ?? '',
                 leaderClassId: entity.leaderClassId ?? entity.characterId ?? '',
+                leaderTitle: entity.leaderTitle ?? '',
+                leaderCallsign: entity.leaderCallsign ?? '',
+                portrait: entity.leaderInfo?.portrait ?? '',
+                sprite: entity.npcSpritePath ?? '',
+                relationship: {
+                    bond: record?.bond ?? null,
+                    level: record?.level ?? null,
+                    suspicion: record?.suspicion ?? null
+                },
+                progress: describeDialogueProgress(key, {
+                    stage: record?.dialogueStage ?? 0,
+                    talks: record?.stageTalks ?? 0
+                }, this.getDialogueContext(kind, record)),
                 finalReady: isFinalStage(beat.stage)
             }
         }));

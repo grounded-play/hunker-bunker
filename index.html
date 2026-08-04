@@ -1883,6 +1883,31 @@
 
     <canvas id="snail-encounter-canvas" class="snail-encounter-canvas"></canvas>
 
+    <div id="leader-conversation-modal" class="modal leader-conversation-modal hidden" aria-hidden="true">
+      <div class="leader-conversation-panel" role="dialog" aria-modal="true" aria-labelledby="leader-conversation-name">
+        <button type="button" id="leader-conversation-close" class="close-modal leader-conversation-close" aria-label="Leave conversation">×</button>
+        <section class="leader-conversation-visual" aria-label="Speaker">
+          <canvas id="leader-conversation-canvas" class="leader-conversation-canvas"></canvas>
+          <img id="leader-conversation-portrait" class="leader-conversation-portrait" src="/lore_portraits/survivor_00.webp" alt="">
+          <div class="leader-conversation-scanlines" aria-hidden="true"></div>
+        </section>
+        <section class="leader-conversation-content">
+          <div id="leader-conversation-kicker" class="leader-conversation-kicker">CAMP CONTACT</div>
+          <h2 id="leader-conversation-name" class="leader-conversation-name">SURVIVOR</h2>
+          <div id="leader-conversation-meta" class="leader-conversation-meta"></div>
+          <div id="leader-conversation-line" class="leader-conversation-line" aria-live="polite"></div>
+          <div class="leader-conversation-progress">
+            <div id="leader-conversation-stats" class="leader-conversation-stats"></div>
+            <div id="leader-conversation-guidance" class="leader-conversation-guidance"></div>
+          </div>
+          <div class="leader-conversation-actions">
+            <button type="button" id="leader-conversation-continue">CONTINUE</button>
+            <button type="button" id="leader-conversation-leave">LEAVE</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <div id="snail-encounter-modal" class="modal hidden" aria-hidden="true">
       <div class="snail-encounter-panel">
         <div class="snail-encounter-header">
