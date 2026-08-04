@@ -5400,9 +5400,15 @@ export class ThreeGame {
     executeDirectorAction(action) {
         switch (action) {
             case 'patrol': {
-                const line = this.lineDirector?.requestLine('ambient', this.buildLineDirectorContext(), DIRECTOR_AMBIENT_LINES);
-                if (line) this.showBunkerLine(line.text);
-                this.spawnPatrolNearPlayer();
+                const patrolCount = this.spawnPatrolNearPlayer();
+                if (patrolCount > 0) {
+                    const line = this.lineDirector?.requestLine(
+                        'ambient',
+                        this.buildLineDirectorContext({ directorAction: 'patrol', patrolCount }),
+                        DIRECTOR_AMBIENT_LINES
+                    );
+                    if (line) this.showBunkerLine(line.text);
+                }
                 break;
             }
             case 'lightsout':
@@ -5410,14 +5416,25 @@ export class ThreeGame {
                 break;
             case 'corrupt':
                 this.corruptCompass(18);
-                this.showBunkerLine('Navigation telemetry has been reclassified as suggestion.');
+                {
+                    const line = this.lineDirector?.requestLine(
+                        'ambient',
+                        this.buildLineDirectorContext({ directorAction: 'corrupt' }),
+                        DIRECTOR_AMBIENT_LINES
+                    );
+                    this.showBunkerLine(line?.text ?? 'Navigation telemetry has been reclassified as suggestion.');
+                }
                 break;
             case 'mercy':
                 this.grantSalvageCache({ tech: 6, coin: 4 });
                 this.showBunkerLine('Hardship subsidy released. Do not mistake this for compassion.');
                 break;
             case 'taunt': {
-                const line = this.lineDirector?.requestLine('ambient', this.buildLineDirectorContext(), DIRECTOR_AMBIENT_LINES);
+                const line = this.lineDirector?.requestLine(
+                    'ambient',
+                    this.buildLineDirectorContext({ directorAction: 'taunt' }),
+                    DIRECTOR_AMBIENT_LINES
+                );
                 if (line) this.showBunkerLine(line.text);
                 break;
             }
@@ -6653,7 +6670,7 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('bunker-line', { detail: { text } }));
     }
 
-    buildLineDirectorContext() {
+    buildLineDirectorContext(overrides = {}) {
         const act2State = this.act2?.getState?.() ?? null;
         const topObjective = (typeof window !== 'undefined'
             ? window.objectiveRegistry?.getActiveObjectives?.(1)?.[0]
@@ -6665,7 +6682,11 @@ export class ThreeGame {
                 : 'corporate'),
             depthTier: this.currentDepthTier ?? 0,
             danger: Math.max(0, Math.min(1, 1 - hpFrac)),
-            objectiveSource: topObjective?.source ?? null
+            objectiveSource: topObjective?.source ?? null,
+            biome: this.currentBiomeKey ?? BIOME_KEYS.ACTIVE,
+            hpFrac,
+            o2Frac: Math.max(0, Math.min(1, (this.playerVitals?.o2 ?? 100) / 100)),
+            ...overrides
         };
     }
 
@@ -6676,8 +6697,9 @@ export class ThreeGame {
     }
 
     spawnPatrolNearPlayer() {
-        if (!this.player) return;
+        if (!this.player) return 0;
         this.snailsEnabled = true;
+        let spawned = 0;
         const types = ['cybersnail', 'cybersnail', this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail'];
         for (let i = 0; i < 3; i++) {
             const type = types[i % types.length];
@@ -6709,8 +6731,10 @@ export class ThreeGame {
             const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
             group.add(sprite);
             this.scatterSprites.push(sprite);
+            spawned += 1;
         }
-        window.dispatchEvent(new CustomEvent('milestone-boss-warning'));
+        if (spawned > 0) window.dispatchEvent(new CustomEvent('milestone-boss-warning'));
+        return spawned;
     }
 
     revealNearbyExits() {

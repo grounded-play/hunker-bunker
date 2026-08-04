@@ -1203,7 +1203,9 @@ function ensureVirtualGamepadCursor() {
 function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
     const cursor = ensureVirtualGamepadCursor();
     if (!cursor) return;
-    if (!visible) {
+    const isGameplay = appPhase === 'gameplay';
+    const isMovie = Boolean(document.querySelector('.fullscreen-video-overlay:not(.hidden), .cinematic-overlay:not(.hidden), #mothership-dialogue-video-container:not(.hidden), video:not(.hidden)'));
+    if (!visible || isGameplay || isMovie) {
         cursor.classList.add('hidden');
         return;
     }
@@ -1390,9 +1392,10 @@ function handleSteamGameplayInput(controller) {
     if (window.game?.setVirtualInput) {
         window.game.setVirtualInput(moveX, -moveY);
     }
-    // The pad/gyro cursor is the precision device, so it wins a frame where both
-    // moved. Whichever aimed last still wins overall. Right joystick deflection also
-    // positions the virtual mouse cursor around the moving player.
+
+    // Always hide the UI virtual cursor element ("click square") during active gameplay
+    updateVirtualGamepadCursorPosition(0, 0, false);
+
     const cursorAimed = applyControllerCursorAim(controller);
     const width = window.innerWidth || 1280;
     const height = window.innerHeight || 720;
@@ -1409,8 +1412,6 @@ function handleSteamGameplayInput(controller) {
         controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + aimX * STICK_MOUSE_SPEED));
         controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + aimY * STICK_MOUSE_SPEED * invertSign));
         lastPlayerAnchor = { ...anchor };
-
-        updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
         if (window.game?.updateAimFromClient) {
             window.game.updateAimFromClient(
@@ -1435,13 +1436,11 @@ function handleSteamGameplayInput(controller) {
             if (dist > 2.0) {
                 controllerAimCursor.x += dx * 0.18;
                 controllerAimCursor.y += dy * 0.18;
-                updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
                 if (window.game?.updateAimFromClient) {
                     window.game.updateAimFromClient(controllerAimCursor.x, controllerAimCursor.y, { keepMouseActive: false });
                 }
             } else {
                 controllerAimCursor = { x: anchor.x, y: anchor.y };
-                updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, false);
                 if (window.game) {
                     window.game.hasActiveAim = false;
                     window.game.mouseAimActive = false;
