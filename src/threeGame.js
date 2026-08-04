@@ -2994,7 +2994,8 @@ export class ThreeGame {
                 : ship.type === 'TANK'
                     ? 'broken_tank_ship'
                     : 'broken_engineer_ship';
-            this.setupWorld3dReplacement(shipSprite, shipModelType, { owner: ship, ownerKey: 'ship3d' });
+            ship.shipSprite = shipSprite;
+            ship.shipModelType = shipModelType;
 
             // 3. Console Placement
             const consoleX = ship.tileX + ship.consoleOffset.x;
@@ -3014,7 +3015,7 @@ export class ThreeGame {
             consoleSprite.scale.set(1.0, 1.0, 1);
             consoleSprite.renderOrder = 4;
             this.scene.add(consoleSprite);
-            this.setupWorld3dReplacement(consoleSprite, 'base_console', { owner: ship, ownerKey: 'console3d' });
+            ship.consoleSprite = consoleSprite;
 
             const o2Module = createModuleSprite(ship, {
                 keyPrefix: 'o2Module',
@@ -3036,11 +3037,6 @@ export class ThreeGame {
                 offset: ship.reactorModuleOffset,
                 material: reactorModuleMat
             });
-            this.setupWorld3dReplacement(o2Module.sprite, 'o2_generator', { owner: ship, ownerKey: 'o2Module3d' });
-            this.setupWorld3dReplacement(hullModule.sprite, 'hull_matrix', { owner: ship, ownerKey: 'hullModule3d' });
-            this.setupWorld3dReplacement(radarModule.sprite, 'radar', { owner: ship, ownerKey: 'radarModule3d' });
-            this.setupWorld3dReplacement(reactorModule.sprite, 'fusion_generator', { owner: ship, ownerKey: 'reactorModule3d' });
-
             // 4. Interactive Console Neon Glowing Ring (Pulsing Indicator)
             const ringGeo = new THREE.RingGeometry(0.38, 0.44, 32);
             const ringMat = new THREE.MeshBasicMaterial({
@@ -3094,6 +3090,11 @@ export class ThreeGame {
                 safeRing,
                 terminalLight
             ];
+
+            // Only load the selected class's base presentation. Loading every
+            // wreck and every locked module here caused a large parse queue and
+            // delayed the visible ship/console by many seconds.
+            if (ship.type === this.playerType) this.setupActiveShip3dReplacements(ship);
         }
 
         this.syncPersistentUpgrades();
@@ -3584,6 +3585,12 @@ export class ThreeGame {
         } finally {
             source.userData.world3dLoading = false;
         }
+    }
+
+    setupActiveShip3dReplacements(ship) {
+        if (!ship) return;
+        this.setupWorld3dReplacement(ship.shipSprite, ship.shipModelType, { owner: ship, ownerKey: 'ship3d' });
+        this.setupWorld3dReplacement(ship.consoleSprite, 'base_console', { owner: ship, ownerKey: 'console3d' });
     }
 
     createLightConeTexture(colorHex) {
@@ -4525,6 +4532,14 @@ export class ThreeGame {
         };
     }
 
+    getPlayerScreenPoint() {
+        if (!this.player?.position) return null;
+        const px = this.player.position.x;
+        const py = (this.player.position.y ?? TERRAIN_HEIGHTS.GROUND) + 0.6;
+        const pz = this.player.position.z;
+        return this.getWorldScreenPoint(px, py, pz);
+    }
+
     getCampCompassState() {
         if (!this.player) return null;
 
@@ -4692,6 +4707,7 @@ export class ThreeGame {
             }
 
             ship.isVisible = shouldBeVisible;
+            if (shouldBeVisible) this.setupActiveShip3dReplacements?.(ship);
 
             if (ship.threeObjects) {
                 for (const obj of ship.threeObjects) {
@@ -11773,6 +11789,9 @@ export class ThreeGame {
                 if (ship.o2ModuleSprite) {
                     ship.o2ModuleSprite.userData.world3dDesiredVisible = o2ModuleOnline;
                     ship.o2ModuleSprite.visible = o2ModuleOnline && !ship.o2ModuleSprite.userData?.replacedBy3d;
+                    if (o2ModuleOnline) {
+                        this.setupWorld3dReplacement(ship.o2ModuleSprite, 'o2_generator', { owner: ship, ownerKey: 'o2Module3d' });
+                    }
                 }
                 if (ship.o2Module3d) ship.o2Module3d.visible = o2ModuleOnline;
                 if (ship.o2ModuleShadow) {
@@ -11781,6 +11800,9 @@ export class ThreeGame {
                 if (ship.hullModuleSprite) {
                     ship.hullModuleSprite.userData.world3dDesiredVisible = hullOnline;
                     ship.hullModuleSprite.visible = hullOnline && !ship.hullModuleSprite.userData?.replacedBy3d;
+                    if (hullOnline) {
+                        this.setupWorld3dReplacement(ship.hullModuleSprite, 'hull_matrix', { owner: ship, ownerKey: 'hullModule3d' });
+                    }
                 }
                 if (ship.hullModule3d) ship.hullModule3d.visible = hullOnline;
                 if (ship.hullModuleShadow) {
@@ -11789,6 +11811,9 @@ export class ThreeGame {
                 if (ship.radarModuleSprite) {
                     ship.radarModuleSprite.userData.world3dDesiredVisible = radarOnline;
                     ship.radarModuleSprite.visible = radarOnline && !ship.radarModuleSprite.userData?.replacedBy3d;
+                    if (radarOnline) {
+                        this.setupWorld3dReplacement(ship.radarModuleSprite, 'radar', { owner: ship, ownerKey: 'radarModule3d' });
+                    }
                 }
                 if (ship.radarModule3d) ship.radarModule3d.visible = radarOnline;
                 if (ship.radarModuleShadow) {
@@ -11797,6 +11822,9 @@ export class ThreeGame {
                 if (ship.reactorModuleSprite) {
                     ship.reactorModuleSprite.userData.world3dDesiredVisible = reactorOnline;
                     ship.reactorModuleSprite.visible = reactorOnline && !ship.reactorModuleSprite.userData?.replacedBy3d;
+                    if (reactorOnline) {
+                        this.setupWorld3dReplacement(ship.reactorModuleSprite, 'fusion_generator', { owner: ship, ownerKey: 'reactorModule3d' });
+                    }
                 }
                 if (ship.reactorModule3d) ship.reactorModule3d.visible = reactorOnline;
                 if (ship.reactorModuleShadow) {
@@ -18999,7 +19027,15 @@ export class ThreeGame {
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1
             };
-            if (placement.type === 'prop_bunker_supplies') {
+            // `prop_bunker_supplies` is a common room-dressing family, not a
+            // literal locker at every placement. Promote only a stable subset
+            // to the 3D locker so rooms retain crate/supply variety and do not
+            // become walls of identical cabinets.
+            const storageVariant = this.hashTile(
+                Math.round(placement.x * 10),
+                Math.round(placement.z * 10)
+            ) % 6 === 0;
+            if (placement.type === 'prop_bunker_supplies' && storageVariant) {
                 this.setupWorld3dReplacement(sprite, 'storage_locker');
             }
             return sprite;

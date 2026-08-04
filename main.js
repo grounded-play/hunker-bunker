@@ -1284,6 +1284,17 @@ window.addEventListener('gamepad-menu-nav', (event) => {
 // on the Steam side does the heavy lifting, so this stays 1:1 by default.
 const CONTROLLER_CURSOR_SENSITIVITY = 1;
 let controllerAimCursor = null;
+let lastPlayerAnchor = null;
+
+function getAimCursorAnchor() {
+    const playerPt = window.game?.getPlayerScreenPoint?.();
+    if (playerPt && Number.isFinite(playerPt.viewportX) && Number.isFinite(playerPt.viewportY)) {
+        return { x: playerPt.viewportX, y: playerPt.viewportY };
+    }
+    const width = window.innerWidth || 1280;
+    const height = window.innerHeight || 720;
+    return { x: width / 2, y: height / 2 };
+}
 
 function applyControllerCursorAim(controller) {
     const deltaX = Number(controller.cameraDelta?.x) || 0;
@@ -1296,9 +1307,17 @@ function applyControllerCursorAim(controller) {
     const height = window.innerHeight || 0;
     if (!width || !height) return false;
 
+    const anchor = getAimCursorAnchor();
     if (!controllerAimCursor) {
-        controllerAimCursor = { x: width / 2, y: height / 2 };
+        controllerAimCursor = { x: anchor.x, y: anchor.y };
+    } else if (lastPlayerAnchor) {
+        const playerMovedX = anchor.x - lastPlayerAnchor.x;
+        const playerMovedY = anchor.y - lastPlayerAnchor.y;
+        controllerAimCursor.x += playerMovedX;
+        controllerAimCursor.y += playerMovedY;
     }
+    lastPlayerAnchor = { ...anchor };
+
     const sensitivity = state.settings.aimSensitivity ?? 1.0;
     const invertSign = state.settings.invertAimY ? -1 : 1;
     controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY * sensitivity)));
@@ -1329,19 +1348,21 @@ function handleSteamGameplayInput(controller) {
     }
     // The pad/gyro cursor is the precision device, so it wins a frame where both
     // moved. Whichever aimed last still wins overall. Right joystick deflection also
-    // moves the virtual mouse cursor smoothly across the screen like a mouse.
+    // positions the virtual mouse cursor around the moving player.
     const cursorAimed = applyControllerCursorAim(controller);
     if (!cursorAimed && (aimX || aimY)) {
         const width = window.innerWidth || 1280;
         const height = window.innerHeight || 720;
-        if (!controllerAimCursor) {
-            controllerAimCursor = { x: width / 2, y: height / 2 };
-        }
+        const anchor = getAimCursorAnchor();
         const sensitivity = state.settings.aimSensitivity ?? 1.0;
         const invertSign = state.settings.invertAimY ? -1 : 1;
-        const STICK_MOUSE_SPEED = 18 * sensitivity;
-        controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + aimX * STICK_MOUSE_SPEED));
-        controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + aimY * STICK_MOUSE_SPEED * invertSign));
+
+        const STICK_AIM_RADIUS = 180 * sensitivity;
+        controllerAimCursor = {
+            x: Math.min(width, Math.max(0, anchor.x + aimX * STICK_AIM_RADIUS)),
+            y: Math.min(height, Math.max(0, anchor.y + aimY * STICK_AIM_RADIUS * invertSign))
+        };
+        lastPlayerAnchor = { ...anchor };
 
         if (window.game?.updateAimFromClient) {
             window.game.updateAimFromClient(
@@ -1358,6 +1379,8 @@ function handleSteamGameplayInput(controller) {
         if (window.game?.setControllerAimVector) {
             window.game.setControllerAimVector(aimX, -aimY * invertSign);
         }
+    } else {
+        lastPlayerAnchor = getAimCursorAnchor();
     }
 
     if (controller.fire) {
