@@ -6,7 +6,13 @@ import { assetUrl } from './assetUrl.js';
 const MODEL_URL = '/3d/scouting-scout/Scout.game.glb';
 const WEAPON_URL = '/3d/GG.1.glb';
 
-const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land']);
+export const ENGINEER_GESTURES = Object.freeze([
+    'engineerWeightShift', 'engineerDismiss', 'engineerThoughtful', 'engineerCocky',
+    'engineerHappy', 'engineerRelieved', 'engineerNod', 'engineerAngry',
+    'engineerAnnoyed', 'engineerLookAway', 'engineerSarcastic',
+    'engineerAcknowledge', 'engineerHardNod', 'engineerLongNod', 'engineerNo'
+]);
+const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', ...ENGINEER_GESTURES]);
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
 let weaponTemplatePromise = null;
 const characterTemplates = new Map();
@@ -271,9 +277,15 @@ export async function createPlayer3dOverlay({
 
     const mixer = new THREE.AnimationMixer(root);
     const actions = new Map();
-    const sourceAnimations = animationGltf?.animations ?? gltf.animations;
-    for (const sourceClip of sourceAnimations) {
-        const retargeted = animationBonePrefix
+    // Keep animations embedded in the operator (for example Engineer's unique
+    // gestures) and layer the shared locomotion pack on top. Previously an
+    // external locomotion GLB silently discarded every animation in the model.
+    const animationSources = [
+        ...(gltf.animations ?? []).map((clip) => ({ clip, retarget: false })),
+        ...(animationGltf?.animations ?? []).map((clip) => ({ clip, retarget: Boolean(animationBonePrefix) }))
+    ];
+    for (const { clip: sourceClip, retarget } of animationSources) {
+        const retargeted = retarget
             ? retargetMixamoClip(sourceClip, 'mixamorig1', animationBonePrefix, root)
             : sourceClip;
         const clip = makeClipInPlace(retargeted);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    ENGINEER_GESTURES,
     computeOperatorPolishMaterialState,
     computeLocomotionWeights,
     computeOverlayYaw,
@@ -8,6 +9,13 @@ import {
 } from './player3dOverlay.js';
 
 describe('player 3D cosmetic overlay', () => {
+    it('exposes the Engineer gesture pack for showroom pose cycling', () => {
+        expect(ENGINEER_GESTURES).toContain('engineerThoughtful');
+        expect(ENGINEER_GESTURES).toContain('engineerAcknowledge');
+        expect(ENGINEER_GESTURES).toContain('engineerNo');
+        expect(ENGINEER_GESTURES).toHaveLength(15);
+    });
+
     it('applies unlocked polish color and shine without losing the base material', () => {
         const polished = computeOperatorPolishMaterialState(0x808080, 0.72, 0.08, 0x58efff);
         expect(polished.color.getHex()).not.toBe(0x808080);

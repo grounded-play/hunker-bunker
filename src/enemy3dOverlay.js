@@ -10,9 +10,11 @@ const MODEL_CONFIG = {
     // Boss exports face opposite their travel axis, so turn their model roots
     // 180 degrees relative to the smaller snail variants.
     boss_cybersnail: { url: '/3d/runtime/cyber-snail-boss.glb', height: 1.65, yaw: Math.PI / 2 },
-    boss_cryosnail: { url: '/3d/runtime/cyber-snail-boss.glb', height: 1.8, yaw: Math.PI / 2, tint: 0x9bdcff },
+    boss_cryosnail: { url: '/3d/runtime/cryo-snail-boss.glb', height: 1.8, yaw: Math.PI / 2 },
     boss_sporesnail: { url: '/3d/runtime/spore-snail-boss.glb', height: 1.95, yaw: Math.PI / 2 },
-    crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: Math.PI }
+    crawler: { url: '/3d/runtime/parasite.glb', height: 1.15, yaw: Math.PI },
+    mycelium_stalker: { url: '/3d/runtime/bio-stalker.glb', height: 1.2, yaw: Math.PI },
+    boss_queen: { url: '/3d/runtime/queen.glb', height: 2.35, yaw: Math.PI }
 };
 
 const templates = new Map();

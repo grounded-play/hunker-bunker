@@ -1,6 +1,29 @@
 {
   "version": 1,
   "references": [
+    "3d/GG.1.glb",
+    "3d/runtime/basic-pile.glb",
+    "3d/runtime/bio-stalker.glb",
+    "3d/runtime/broken-engineer-ship.glb",
+    "3d/runtime/broken-scout-ship.glb",
+    "3d/runtime/broken-tank-ship.glb",
+    "3d/runtime/console.glb",
+    "3d/runtime/cryo-snail-boss.glb",
+    "3d/runtime/cyber-snail-boss.glb",
+    "3d/runtime/cyber-snail.glb",
+    "3d/runtime/engineer-rigged-gestures.glb",
+    "3d/runtime/engineer-vanguard.glb",
+    "3d/runtime/frozen-tanker.glb",
+    "3d/runtime/fusion-generator.glb",
+    "3d/runtime/hull-matrix.glb",
+    "3d/runtime/o2-generator.glb",
+    "3d/runtime/parasite.glb",
+    "3d/runtime/queen.glb",
+    "3d/runtime/radar.glb",
+    "3d/runtime/spore-snail-boss.glb",
+    "3d/runtime/storage-locker.glb",
+    "3d/runtime/tank-rigged.glb",
+    "3d/scouting-scout/Scout.game.glb",
     "DoorIntro.mp4",
     "Eng.Full_v2.png",
     "Eng.Intro.gif",
@@ -195,10 +218,13 @@
     "door.png",
     "door.webp",
     "door_alien_keyart_v2.webp",
+    "door_bio.png",
     "door_bio_keyart_v2.webp",
     "door_biomech_keyart_v2.webp",
     "door_biomechanical.png",
+    "door_cryo.png",
     "door_cryo_keyart_v2.webp",
+    "door_nuclear.png",
     "door_nuclear_keyart_v2.webp",
     "door_rust_keyart_v2.webp",
     "drop_black_flask.png",
@@ -365,6 +391,121 @@
     "title_key_art_v2.png"
   ],
   "assets": [
+    {
+      "path": "3d/GG.1.glb",
+      "bytes": 35611712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/basic-pile.glb",
+      "bytes": 5649512,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/bio-stalker.glb",
+      "bytes": 5246816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/broken-engineer-ship.glb",
+      "bytes": 5249124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/broken-scout-ship.glb",
+      "bytes": 5001976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/broken-tank-ship.glb",
+      "bytes": 5051904,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/console.glb",
+      "bytes": 4318964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/cryo-snail-boss.glb",
+      "bytes": 4770452,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/cyber-snail-boss.glb",
+      "bytes": 6008404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/cyber-snail.glb",
+      "bytes": 6233064,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/engineer-rigged-gestures.glb",
+      "bytes": 6357192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/engineer-vanguard.glb",
+      "bytes": 5167428,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/frozen-tanker.glb",
+      "bytes": 5093968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/fusion-generator.glb",
+      "bytes": 4516144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/hull-matrix.glb",
+      "bytes": 4910584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/o2-generator.glb",
+      "bytes": 4971272,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/parasite.glb",
+      "bytes": 5540768,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/queen.glb",
+      "bytes": 4994940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/radar.glb",
+      "bytes": 4830252,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/spore-snail-boss.glb",
+      "bytes": 5822668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/storage-locker.glb",
+      "bytes": 5068812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/tank-rigged.glb",
+      "bytes": 5525480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/scouting-scout/Scout.game.glb",
+      "bytes": 7474876,
+      "classification": "runtime-required"
+    },
     {
       "path": "DoorIntro.mp4",
       "bytes": 4668690,

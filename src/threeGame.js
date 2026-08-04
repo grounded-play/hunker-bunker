@@ -53,8 +53,9 @@ import { HiveSite } from './hiveSite.js';
 import { leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED, PLAYER_3D_COSMETIC_OVERLAY_ENABLED } from './featureFlags.js';
-import { createPlayer3dOverlay } from './player3dOverlay.js';
+import { createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
+import { createWorld3dModel } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -2988,6 +2989,12 @@ export class ThreeGame {
             shipSprite.scale.set(ship.scale, ship.scale, 1);
             shipSprite.renderOrder = 4;
             this.scene.add(shipSprite);
+            const shipModelType = ship.type === 'SCOUT'
+                ? 'broken_scout_ship'
+                : ship.type === 'TANK'
+                    ? 'broken_tank_ship'
+                    : 'broken_engineer_ship';
+            this.setupWorld3dReplacement(shipSprite, shipModelType, { owner: ship, ownerKey: 'ship3d' });
 
             // 3. Console Placement
             const consoleX = ship.tileX + ship.consoleOffset.x;
@@ -3007,6 +3014,7 @@ export class ThreeGame {
             consoleSprite.scale.set(1.0, 1.0, 1);
             consoleSprite.renderOrder = 4;
             this.scene.add(consoleSprite);
+            this.setupWorld3dReplacement(consoleSprite, 'base_console', { owner: ship, ownerKey: 'console3d' });
 
             const o2Module = createModuleSprite(ship, {
                 keyPrefix: 'o2Module',
@@ -3028,6 +3036,10 @@ export class ThreeGame {
                 offset: ship.reactorModuleOffset,
                 material: reactorModuleMat
             });
+            this.setupWorld3dReplacement(o2Module.sprite, 'o2_generator', { owner: ship, ownerKey: 'o2Module3d' });
+            this.setupWorld3dReplacement(hullModule.sprite, 'hull_matrix', { owner: ship, ownerKey: 'hullModule3d' });
+            this.setupWorld3dReplacement(radarModule.sprite, 'radar', { owner: ship, ownerKey: 'radarModule3d' });
+            this.setupWorld3dReplacement(reactorModule.sprite, 'fusion_generator', { owner: ship, ownerKey: 'reactorModule3d' });
 
             // 4. Interactive Console Neon Glowing Ring (Pulsing Indicator)
             const ringGeo = new THREE.RingGeometry(0.38, 0.44, 32);
@@ -3498,7 +3510,7 @@ export class ThreeGame {
             const classVisuals = {
                 SCOUT: {},
                 ENGINEER: {
-                    modelUrl: '/3d/runtime/engineer-vanguard.glb',
+                    modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
@@ -3547,6 +3559,30 @@ export class ThreeGame {
             console.warn(`[enemy-3d-overlay] ${sprite.userData.type} unavailable; keeping sprite`, error);
         } finally {
             sprite.userData.enemy3dLoading = false;
+        }
+    }
+
+    async setupWorld3dReplacement(source, modelType, { owner = null, ownerKey = null } = {}) {
+        if (!source || source.userData?.world3dLoading || source.userData?.world3dRoot) return;
+        source.userData.world3dLoading = true;
+        try {
+            const root = await createWorld3dModel(modelType);
+            if (!root || !source.parent) return;
+            root.position.copy(source.position);
+            root.rotation.y = source.material?.rotation ?? 0;
+            root.visible = owner ? Boolean(owner.isVisible) : source.visible;
+            source.parent.add(root);
+            root.userData.world3dSource = source;
+            source.userData.world3dRoot = root;
+            source.userData.world3dDesiredVisible = source.visible;
+            source.userData.replacedBy3d = true;
+            source.visible = false;
+            if (owner && ownerKey) owner[ownerKey] = root;
+            if (owner?.threeObjects && !owner.threeObjects.includes(root)) owner.threeObjects.push(root);
+        } catch (error) {
+            console.warn(`[world-3d-overlay] ${modelType} unavailable; keeping sprite`, error);
+        } finally {
+            source.userData.world3dLoading = false;
         }
     }
 
@@ -4659,7 +4695,14 @@ export class ThreeGame {
 
             if (ship.threeObjects) {
                 for (const obj of ship.threeObjects) {
-                    obj.visible = shouldBeVisible;
+                    if (obj.userData?.replacedBy3d) {
+                        obj.visible = false;
+                    } else if (obj.userData?.world3dSource) {
+                        obj.visible = shouldBeVisible
+                            && Boolean(obj.userData.world3dSource.userData?.world3dDesiredVisible);
+                    } else {
+                        obj.visible = shouldBeVisible;
+                    }
                 }
             }
         }
@@ -5163,6 +5206,17 @@ export class ThreeGame {
                 damage: PROJECTILE_DAMAGE,
                 radius: PROJECTILE_RADIUS
             });
+        }
+
+        if (this.playerType === 'ENGINEER') {
+            this._engineerGestureTimer = (this._engineerGestureTimer ?? 2.2) - delta;
+            if (this._engineerGestureTimer <= 0) {
+                const gesture = ENGINEER_GESTURES[Math.floor(Math.random() * ENGINEER_GESTURES.length)];
+                this.player3dOverlay?.trigger(gesture);
+                this._engineerGestureTimer = 4.5 + Math.random() * 3.5;
+            }
+        } else {
+            this._engineerGestureTimer = 2.2;
         }
     }
 
@@ -11717,26 +11771,34 @@ export class ThreeGame {
                 const radarOnline = isActiveShip && Boolean(unlocks.radarNode);
                 const reactorOnline = isActiveShip && Boolean(unlocks.reactorCompressor);
                 if (ship.o2ModuleSprite) {
-                    ship.o2ModuleSprite.visible = o2ModuleOnline;
+                    ship.o2ModuleSprite.userData.world3dDesiredVisible = o2ModuleOnline;
+                    ship.o2ModuleSprite.visible = o2ModuleOnline && !ship.o2ModuleSprite.userData?.replacedBy3d;
                 }
+                if (ship.o2Module3d) ship.o2Module3d.visible = o2ModuleOnline;
                 if (ship.o2ModuleShadow) {
                     ship.o2ModuleShadow.visible = o2ModuleOnline;
                 }
                 if (ship.hullModuleSprite) {
-                    ship.hullModuleSprite.visible = hullOnline;
+                    ship.hullModuleSprite.userData.world3dDesiredVisible = hullOnline;
+                    ship.hullModuleSprite.visible = hullOnline && !ship.hullModuleSprite.userData?.replacedBy3d;
                 }
+                if (ship.hullModule3d) ship.hullModule3d.visible = hullOnline;
                 if (ship.hullModuleShadow) {
                     ship.hullModuleShadow.visible = hullOnline;
                 }
                 if (ship.radarModuleSprite) {
-                    ship.radarModuleSprite.visible = radarOnline;
+                    ship.radarModuleSprite.userData.world3dDesiredVisible = radarOnline;
+                    ship.radarModuleSprite.visible = radarOnline && !ship.radarModuleSprite.userData?.replacedBy3d;
                 }
+                if (ship.radarModule3d) ship.radarModule3d.visible = radarOnline;
                 if (ship.radarModuleShadow) {
                     ship.radarModuleShadow.visible = radarOnline;
                 }
                 if (ship.reactorModuleSprite) {
-                    ship.reactorModuleSprite.visible = reactorOnline;
+                    ship.reactorModuleSprite.userData.world3dDesiredVisible = reactorOnline;
+                    ship.reactorModuleSprite.visible = reactorOnline && !ship.reactorModuleSprite.userData?.replacedBy3d;
                 }
+                if (ship.reactorModule3d) ship.reactorModule3d.visible = reactorOnline;
                 if (ship.reactorModuleShadow) {
                     ship.reactorModuleShadow.visible = reactorOnline;
                 }
@@ -18937,6 +18999,9 @@ export class ThreeGame {
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1
             };
+            if (placement.type === 'prop_bunker_supplies') {
+                this.setupWorld3dReplacement(sprite, 'storage_locker');
+            }
             return sprite;
         }
 
@@ -18968,6 +19033,7 @@ export class ThreeGame {
                 phase: placement.phase ?? 0,
                 baseOpacity: placement.opacity ?? 1
             };
+            this.setupWorld3dReplacement(sprite, 'basic_pile');
             return sprite;
         }
 
@@ -19210,6 +19276,9 @@ export class ThreeGame {
             phase: placement.phase ?? 0,
             baseOpacity: placement.opacity ?? 1
         };
+        if (placement.type === 'body_human_frozen_suit') {
+            this.setupWorld3dReplacement(sprite, 'frozen_tanker');
+        }
         return sprite;
     }
 
@@ -22149,6 +22218,11 @@ export class ThreeGame {
         for (const child of this.scatterSprites) {
             const baseY = child.userData.elevationOffset ?? 0;
             child.userData.baseY = baseY;
+            const world3dRoot = child.userData.world3dRoot;
+            if (world3dRoot) {
+                world3dRoot.position.copy(child.position);
+                world3dRoot.visible = !child.userData.burstTriggered;
+            }
             if (child.userData.enemy3dVisual) {
                 updateEnemy3dVisual(child.userData.enemy3dVisual, child, delta, time);
             }
@@ -22252,6 +22326,7 @@ export class ThreeGame {
 
                     if (fadeT >= 1) {
                         disposeEnemy3dVisual(child.userData.enemy3dVisual);
+                        child.userData.world3dRoot?.removeFromParent();
                         child.parent?.remove(child);
                         child.material?.dispose?.();
                         child.geometry?.dispose?.();
