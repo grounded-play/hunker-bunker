@@ -4,7 +4,7 @@
     // reworked enough that old user configs are unusable — Steam then force-updates
     // players onto the current official config. minor_revision is for additive
     // actions and localization tweaks. Read back via GetDeviceBindingRevision.
-    "major_revision" "2"
+    "major_revision" "3"
     "minor_revision" "0"
     "configurations"
     {
@@ -70,11 +70,9 @@
                     "title" "#ActionCamera"
                     "input_mode" "joystick_move"
                 }
-                // Mouse-style aim for the trackpad and gyro. Steam can synthesize
-                // absolute_mouse from a joystick but never the reverse, so the 1:1
-                // deltas have to be their own action. Deliberately no "os_mouse" —
-                // the game raycasts its own reticle and a second OS-driven cursor
-                // would fight it.
+                // Mouse-style virtual cursor driven only by the right joystick.
+                // Trackpads and gyro are deliberately absent from the official
+                // layout to prevent accidental aim or menu input.
                 "camera_mouse"
                 {
                     "title" "#ActionCameraMouse"

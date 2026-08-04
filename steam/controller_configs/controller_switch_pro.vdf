@@ -5,7 +5,7 @@
     "title" "Official Hunker Bunker Layout"
     "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
     "controller_type" "controller_switch_pro"
-    "major_revision" "2"
+    "major_revision" "3"
     "minor_revision" "0"
     "localization"
     {
@@ -197,104 +197,6 @@
     }
     "group"
     {
-        "id" "6"
-        "mode" "dpad"
-        "inputs"
-        {
-            "dpad_north" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action menu menu_up, Up"
-                        }
-                    }
-                } }
-            "dpad_south" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action menu menu_down, Down"
-                        }
-                    }
-                } }
-            "dpad_east" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action menu menu_right, Right"
-                        }
-                    }
-                } }
-            "dpad_west" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action menu menu_left, Left"
-                        }
-                    }
-                } }
-        }
-        "settings" { "requires_click" "0" }
-    }
-    "group"
-    {
-        "id" "7"
-        "mode" "dpad"
-        "inputs"
-        {
-            "dpad_north" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action menu menu_up, Up"
-                        }
-                    }
-                } }
-            "dpad_south" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action menu menu_down, Down"
-                        }
-                    }
-                } }
-            "dpad_east" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action menu menu_right, Right"
-                        }
-                    }
-                } }
-            "dpad_west" { "activators"
-                {
-                    "Full_Press"
-                    {
-                        "bindings"
-                        {
-                            "binding" "game_action menu menu_left, Left"
-                        }
-                    }
-                } }
-        }
-        "settings" { "requires_click" "0" }
-    }
-    "group"
-    {
         "id" "5"
         "mode" "switches"
         "inputs"
@@ -409,41 +311,12 @@
     }
     "group"
     {
-        "id" "16"
-        "mode" "joystick_move"
-        "inputs" { }
-        "settings"
-        {
-            "deadzone_inner_radius" "6000"
-        }
-        "gameactions"
-        {
-            "gameplay" "move"
-        }
-    }
-    "group"
-    {
         "id" "17"
         "mode" "absolute_mouse"
         "inputs" { }
         "settings"
         {
             "sensitivity" "105"
-        }
-        "gameactions"
-        {
-            "gameplay" "camera_mouse"
-        }
-    }
-    "group"
-    {
-        "id" "18"
-        "mode" "absolute_mouse"
-        "inputs" { }
-        "settings"
-        {
-            "sensitivity" "105"
-            "gyro_button" "right_pad_touch"
         }
         "gameactions"
         {
@@ -508,7 +381,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action gameplay sprint, Sprint"
+                            "binding" "game_action gameplay scan, Scan"
                         }
                     }
                 } }
@@ -518,7 +391,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action gameplay fire, Fire"
+                            "binding" "game_action gameplay toggle_map, Tactical Map"
                         }
                     }
                 } }
@@ -652,34 +525,6 @@
     }
     "group"
     {
-        "id" "26"
-        "mode" "joystick_move"
-        "inputs" { }
-        "settings"
-        {
-            "deadzone_inner_radius" "6000"
-        }
-        "gameactions"
-        {
-            "archive" "archive_focus"
-        }
-    }
-    "group"
-    {
-        "id" "27"
-        "mode" "joystick_move"
-        "inputs" { }
-        "settings"
-        {
-            "deadzone_inner_radius" "6000"
-        }
-        "gameactions"
-        {
-            "archive" "archive_focus"
-        }
-    }
-    "group"
-    {
         "id" "23"
         "mode" "trigger"
         "inputs"
@@ -764,8 +609,6 @@
             "3" "left_trigger active"
             "4" "right_trigger active"
             "5" "switch active"
-            "6" "left_trackpad active"
-            "7" "right_trackpad active"
         }
     }
     "preset"
@@ -776,11 +619,9 @@
         {
             "10" "button_diamond active"
             "11" "joystick active"
-            "12" "right_trackpad active"
             "13" "left_trigger active"
             "14" "right_trigger active"
             "15" "switch active"
-            "16" "left_trackpad active"
             "17" "right_joystick active"
         }
     }
@@ -796,8 +637,6 @@
             "23" "left_trigger active"
             "24" "right_trigger active"
             "25" "switch active"
-            "26" "left_trackpad active"
-            "27" "right_trackpad active"
         }
     }
 }

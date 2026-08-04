@@ -63,28 +63,8 @@ function dpadGroup(id, actionSet, actions) {
     }`;
 }
 
-// Trackpad in dpad mode. requires_click is off so a resting thumb steers menus
-// without a physical click, which is how the Deck/DualSense pads are expected
-// to feel. Only bound to sources that actually have a trackpad.
-function padDpadGroup(id, actionSet, actions) {
-    return `"group"
-    {
-        "id" "${id}"
-        "mode" "dpad"
-        "inputs"
-        {
-            "dpad_north" { ${activator(actionSet, actions.up[0], actions.up[1])} }
-            "dpad_south" { ${activator(actionSet, actions.down[0], actions.down[1])} }
-            "dpad_east" { ${activator(actionSet, actions.right[0], actions.right[1])} }
-            "dpad_west" { ${activator(actionSet, actions.left[0], actions.left[1])} }
-        }
-        "settings" { "requires_click" "0" }
-    }`;
-}
-
-// Mouse-style analog source: 1:1 deltas rather than a stick position. Used for the
-// right trackpad, which turns into a precision aim cursor in a fixed top-down view
-// where a stick can only ever express a direction.
+// Mouse-style analog action used by the right joystick for the free virtual aim
+// cursor. Trackpads are deliberately left unbound in every action set.
 function mouseGroup(id, actionSet, action, extraSettings = {}) {
     const settings = Object.entries({ sensitivity: '105', ...extraSettings })
         .map(([key, value]) => `"${key}" "${value}"`)
@@ -167,8 +147,8 @@ function preset(id, name, groups) {
 function buildControllerConfig(controllerType) {
     const gameplaySwitches = {
         button_escape: ['pause', 'Pause'],
-        left_bumper: ['sprint', 'Sprint'],
-        right_bumper: ['fire', 'Fire'],
+        left_bumper: ['scan', 'Scan'],
+        right_bumper: ['toggle_map', 'Tactical Map'],
         button_menu: ['pause', 'Pause'],
         button_select: ['toggle_map', 'Tactical Map'],
         button_back: ['toggle_map', 'Tactical Map'],
@@ -201,18 +181,6 @@ function buildControllerConfig(controllerType) {
         }),
         triggerGroup(3, 'menu', 'menu_tab_left', 'Previous Tab'),
         triggerGroup(4, 'menu', 'menu_tab_right', 'Next Tab'),
-        padDpadGroup(6, 'menu', {
-            up: ['menu_up', 'Up'],
-            down: ['menu_down', 'Down'],
-            left: ['menu_left', 'Left'],
-            right: ['menu_right', 'Right']
-        }),
-        padDpadGroup(7, 'menu', {
-            up: ['menu_up', 'Up'],
-            down: ['menu_down', 'Down'],
-            left: ['menu_left', 'Left'],
-            right: ['menu_right', 'Right']
-        }),
         switchesGroup(5, 'menu', {
             button_escape: ['pause', 'Pause'],
             left_bumper: ['menu_tab_left', 'Previous Tab'],
@@ -225,17 +193,10 @@ function buildControllerConfig(controllerType) {
             y: ['ability', 'Ability']
         }),
         analogGroup(11, 'gameplay', 'move'),
+        // Retain the declared legacy stick action for API compatibility, but do
+        // not assign it to a physical source in the official preset.
         analogGroup(12, 'gameplay', 'camera'),
-        analogGroup(16, 'gameplay', 'move'),
         mouseGroup(17, 'gameplay', 'camera_mouse'),
-        // Gyro feeds the same aim cursor as the trackpad, but only while the right
-        // pad is actually being touched ("gyro ratcheting"). In a fixed top-down view
-        // the reticle is always live, so an always-on gyro would let a resting hand
-        // walk the aim. NOTE: gyro_button is the one key here not covered by the
-        // Steam Input docs and not confirmable against a local Valve config — verify
-        // in Big Picture before publishing. If Steam ignores it the failure is
-        // visible immediately as always-on gyro drift.
-        mouseGroup(18, 'gameplay', 'camera_mouse', { gyro_button: 'right_pad_touch' }),
         triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
         switchesGroup(15, 'gameplay', gameplaySwitches),
@@ -247,8 +208,6 @@ function buildControllerConfig(controllerType) {
         }),
         analogGroup(21, 'archive', 'archive_focus'),
         analogGroup(22, 'archive', 'archive_focus'),
-        analogGroup(26, 'archive', 'archive_focus'),
-        analogGroup(27, 'archive', 'archive_focus'),
         triggerGroup(23, 'archive', 'archive_reveal', 'Reveal Hotspots'),
         triggerGroup(24, 'archive', 'archive_confirm', 'Inspect / Confirm'),
         switchesGroup(25, 'archive', {
@@ -265,9 +224,7 @@ function buildControllerConfig(controllerType) {
             2: 'joystick',
             3: 'left_trigger',
             4: 'right_trigger',
-            5: 'switch',
-            6: 'left_trackpad',
-            7: 'right_trackpad'
+            5: 'switch'
         }),
         preset(1, 'gameplay', {
             10: 'button_diamond',
@@ -275,9 +232,7 @@ function buildControllerConfig(controllerType) {
             17: 'right_joystick',
             13: 'left_trigger',
             14: 'right_trigger',
-            15: 'switch',
-            16: 'left_trackpad',
-            12: 'right_trackpad'
+            15: 'switch'
         }),
         preset(2, 'archive', {
             20: 'button_diamond',
@@ -285,9 +240,7 @@ function buildControllerConfig(controllerType) {
             22: 'dpad',
             23: 'left_trigger',
             24: 'right_trigger',
-            25: 'switch',
-            26: 'left_trackpad',
-            27: 'right_trackpad'
+            25: 'switch'
         })
     ];
 
@@ -298,7 +251,7 @@ function buildControllerConfig(controllerType) {
     "title" "Official Hunker Bunker Layout"
     "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
     "controller_type" "${controllerType}"
-    "major_revision" "2"
+    "major_revision" "3"
     "minor_revision" "0"
     "localization"
     {

@@ -43,7 +43,7 @@ describe('browser gamepad mapping', () => {
         const buttons = Array.from({ length: 16 }, () => button(false));
         buttons[0] = button(true);
         buttons[2] = button(true);
-        buttons[4] = button(true);
+        buttons[6] = button(true);
         buttons[7] = button(false, 0.8);
         buttons[9] = button(true);
 
@@ -67,6 +67,19 @@ describe('browser gamepad mapping', () => {
             pause: true,
             menuConfirm: true
         });
+    });
+
+    it('maps gameplay scan and tactical map to the left and right bumpers', () => {
+        const buttons = Array.from({ length: 17 }, () => button(false));
+        buttons[4] = button(true);
+        buttons[5] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.scan).toBe(true);
+        expect(mapped.toggleMap).toBe(true);
+        expect(mapped.fire).toBe(false);
+        expect(mapped.sprint).toBe(false);
     });
 
     it('gives menu tab navigation its own bumper buttons, independent of back/scan', () => {

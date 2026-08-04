@@ -22,7 +22,7 @@ describe('buildSteamInputConfigs', () => {
         expect(outputs).toHaveLength(7);
         const deck = fs.readFileSync(path.join(destination, 'controller_neptune.vdf'), 'utf8');
         expect(deck).toContain('"controller_type" "controller_neptune"');
-        expect(deck).toContain('"major_revision" "2"');
+        expect(deck).toContain('"major_revision" "3"');
         expect(deck).toContain('"name" "menu"');
         expect(deck).toContain('"name" "gameplay"');
         expect(deck).toContain('"name" "archive"');
@@ -50,9 +50,12 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).toContain('game_action archive archive_reveal');
         expect(deck).toContain('"gameplay" "move"');
         expect(deck).toContain('"gameplay" "camera"');
-        expect(deck).toContain('"12" "right_trackpad active"');
         expect(deck).toContain('"17" "right_joystick active"');
-        expect(deck).not.toContain('"18" "gyro active"');
+        expect(deck).not.toContain('left_trackpad active');
+        expect(deck).not.toContain('right_trackpad active');
+        expect(deck).not.toContain('gyro active');
+        expect(deck).toMatch(/"left_bumper"[\s\S]*?game_action gameplay scan/);
+        expect(deck).toMatch(/"right_bumper"[\s\S]*?game_action gameplay toggle_map/);
     });
 
     // A config that binds an action the manifest doesn't declare is silently dead
