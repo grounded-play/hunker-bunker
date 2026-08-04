@@ -28,10 +28,11 @@ describe('room population', () => {
         expect(plan.reserved).toContain('2,2');
     });
 
-    it('adds guaranteed lived-in dressing without consuming the normal small-prop budget', () => {
+    it('caps ordinary rooms at two wall-biased props', () => {
         const room = {
-            id: 'lived-in-room',
-            interior: Array.from({ length: 6 }, (_, index) => ({ x: index + 1, y: 2 })),
+            id: 'ordinary-room',
+            role: 'generic',
+            interior: Array.from({ length: 25 }, (_, index) => ({ x: index % 5 + 1, y: Math.floor(index / 5) + 1 })),
             navigation: { doorLanes: [] },
             populationBudget: { large: 1, small: 3, pickup: 0, enemy: 0 },
             themeConfig: {
@@ -41,32 +42,55 @@ describe('room population', () => {
                 ambientProps: ['decal_worker_sleep_roll']
             }
         };
-        const grid = Array.from({ length: 5 }, () => Array(8).fill('#'));
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
         for (const cell of room.interior) grid[cell.y][cell.x] = '.';
 
         const plan = planRoomPopulation(room, grid, () => 0);
 
-        expect(plan.placements.filter(({ kind }) => kind === 'ambient')).toEqual([
-            expect.objectContaining({ type: 'decal_worker_sleep_roll', blocking: false })
-        ]);
-        expect(plan.placements.filter(({ kind }) => kind === 'small')).toHaveLength(3);
+        const props = plan.placements.filter(({ kind }) => kind !== 'pickup');
+        expect(props).toHaveLength(2);
+        expect(props.every(({ x, y }) => x === 1 || x === 5 || y === 1 || y === 5)).toBe(true);
+        expect(plan.placements.some(({ kind }) => kind === 'small' || kind === 'ambient')).toBe(false);
     });
 
-    it('spreads multiple ambient prefabs through large rooms', () => {
+    it('places exactly three themed fixtures in medical rooms', () => {
         const room = {
-            id: 'large-room',
-            interior: Array.from({ length: 80 }, (_, index) => ({ x: index % 10, y: Math.floor(index / 10) })),
+            id: 'medical-room',
+            role: 'medical',
+            interior: Array.from({ length: 25 }, (_, index) => ({ x: index % 5 + 1, y: Math.floor(index / 5) + 1 })),
             navigation: { doorLanes: [] },
-            populationBudget: { signature: 1, large: 0, small: 0, pickup: 0, enemy: 0 },
+            populationBudget: { signature: 1, large: 3, small: 3, pickup: 0, enemy: 0 },
             themeConfig: {
-                signatureProps: ['prop_bunker_supplies'],
-                ambientProps: ['decal_worker_sleep_roll']
+                signatureProps: ['prop_medical_bed'],
+                largeProps: ['prop_diagnostic_console', 'prop_surgical_cart', 'prop_specimen_tank'],
+                smallProps: ['scatter_bolts']
             }
         };
-        const grid = Array.from({ length: 8 }, () => Array(10).fill('.'));
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
+        for (const cell of room.interior) grid[cell.y][cell.x] = '.';
         const plan = planRoomPopulation(room, grid, () => 0);
 
-        expect(plan.placements.filter((placement) => placement.kind === 'ambient')).toHaveLength(3);
+        expect(plan.placements.map(({ type }) => type)).toEqual([
+            'prop_medical_bed', 'prop_diagnostic_console', 'prop_surgical_cart'
+        ]);
+        expect(plan.placements).toHaveLength(3);
+    });
+
+    it('respects reserved fixture cells and leaves the room center open', () => {
+        const room = {
+            id: 'fixture-room',
+            role: 'generic',
+            interior: Array.from({ length: 25 }, (_, index) => ({ x: index % 5 + 1, y: Math.floor(index / 5) + 1 })),
+            navigation: { doorLanes: [{ x: 1, y: 1 }], reserved: [{ x: 1, y: 2 }, { x: 3, y: 3 }] },
+            populationBudget: { large: 1, small: 3, pickup: 0, enemy: 0 },
+            themeConfig: { signatureProps: ['signature'], largeProps: ['large'] }
+        };
+        const grid = Array.from({ length: 7 }, () => Array(7).fill('#'));
+        for (const cell of room.interior) grid[cell.y][cell.x] = '.';
+        const plan = planRoomPopulation(room, grid, () => 0);
+        expect(plan.placements).not.toContainEqual(expect.objectContaining({ x: 1, y: 1 }));
+        expect(plan.placements).not.toContainEqual(expect.objectContaining({ x: 1, y: 2 }));
+        expect(plan.placements).not.toContainEqual(expect.objectContaining({ x: 3, y: 3 }));
     });
 
     it('guarantees an ammo cache in reward, storage, and security rooms', () => {

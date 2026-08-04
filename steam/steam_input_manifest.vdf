@@ -4,7 +4,7 @@
     // reworked enough that old user configs are unusable — Steam then force-updates
     // players onto the current official config. minor_revision is for additive
     // actions and localization tweaks. Read back via GetDeviceBindingRevision.
-    "major_revision" "3"
+    "major_revision" "4"
     "minor_revision" "0"
     "configurations"
     {
@@ -85,6 +85,7 @@
                 "interact" "#ActionInteract"
                 "reload" "#ActionReload"
                 "ability" "#ActionAbility"
+                "dash" "#ActionDash"
                 "scan" "#ActionScan"
                 "sprint" "#ActionSprint"
                 "pause" "#ActionPause"
@@ -134,6 +135,7 @@
             "ActionInteract" "Interact"
             "ActionReload" "Reload"
             "ActionAbility" "Smash"
+            "ActionDash" "Dodge"
             "ActionScan" "Scan"
             "ActionSprint" "Sprint"
             "ActionPause" "Pause"

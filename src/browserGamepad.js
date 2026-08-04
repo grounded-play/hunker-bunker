@@ -58,10 +58,10 @@ export function mapBrowserGamepad(gamepad, {
         interact: readButton(buttons, 0),
         reload: readButton(buttons, 2),
         melee: readButton(buttons, 3),
-        ability: readButton(buttons, 3),
+        ability: false,
         dash: readButton(buttons, 1),
-        scan: readButton(buttons, 4) || readButton(buttons, 1) || readButton(buttons, 11),
-        sprint: readButton(buttons, 6) || readButton(buttons, 10),
+        scan: readButton(buttons, 4),
+        sprint: readButton(buttons, 6),
         pause: readButton(buttons, 9),
         toggleMap: readButton(buttons, 5) || readButton(buttons, 8) || readButton(buttons, 16),
         menuUp: readButton(buttons, 12) || menuY < 0,
@@ -69,7 +69,7 @@ export function mapBrowserGamepad(gamepad, {
         menuLeft: readButton(buttons, 14) || menuX < 0,
         menuRight: readButton(buttons, 15) || menuX > 0,
         menuConfirm: readButton(buttons, 0),
-        menuBack: readButton(buttons, 1) || readButton(buttons, 8),
+        menuBack: readButton(buttons, 1),
         // Dedicated bumpers for menu tab navigation, mirroring the "menu" action
         // set's left_bumper/right_bumper bindings in controller_neptune.vdf. Kept
         // separate from scan/fire/menuBack (which share buttons 1 and 8) so a
@@ -80,7 +80,7 @@ export function mapBrowserGamepad(gamepad, {
 
     mapped.active = Boolean(
         mapped.move.x || mapped.move.y || mapped.camera.x || mapped.camera.y
-        || mapped.fire || mapped.interact || mapped.reload || mapped.melee || mapped.ability
+        || mapped.fire || mapped.interact || mapped.reload || mapped.melee || mapped.dash
         || mapped.scan || mapped.sprint || mapped.pause
         || mapped.menuUp || mapped.menuDown || mapped.menuLeft || mapped.menuRight
         || mapped.menuConfirm || mapped.menuBack

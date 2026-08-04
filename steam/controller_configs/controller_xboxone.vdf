@@ -3,16 +3,16 @@
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Layout"
-    "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
+    "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "controller_xboxone"
-    "major_revision" "3"
+    "major_revision" "4"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
             "title" "Official Hunker Bunker Layout"
-            "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
+            "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
         }
     }
     "group"
@@ -211,6 +211,16 @@
                         }
                     }
                 } }
+            "button_menu" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action menu pause, Settings / Pause"
+                        }
+                    }
+                } }
             "left_bumper" { "activators"
                 {
                     "Full_Press"
@@ -255,7 +265,7 @@
                     {
                         "bindings"
                         {
-                            "binding" "game_action gameplay scan, Scan"
+                            "binding" "game_action gameplay dash, Dodge"
                         }
                     }
                 } }
@@ -575,6 +585,16 @@
                         }
                     }
                 } }
+            "button_menu" { "activators"
+                {
+                    "Full_Press"
+                    {
+                        "bindings"
+                        {
+                            "binding" "game_action archive pause, Settings / Pause"
+                        }
+                    }
+                } }
             "left_bumper" { "activators"
                 {
                     "Full_Press"
@@ -619,10 +639,10 @@
         {
             "10" "button_diamond active"
             "11" "joystick active"
+            "12" "right_joystick active"
             "13" "left_trigger active"
             "14" "right_trigger active"
             "15" "switch active"
-            "17" "right_joystick active"
         }
     }
     "preset"

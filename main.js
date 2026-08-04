@@ -1300,10 +1300,11 @@ function handleSteamMenuInput(actions) {
     if (actions.confirm) {
         activateControllerFocusedElement();
     }
-    if (actions.back || actions.pause) {
+    if (actions.back) {
         updateVirtualGamepadCursorPosition(0, 0, false);
         dispatchControllerEscape();
     }
+    if (actions.pause) triggerControllerPauseAction();
 }
 
 window.addEventListener('gamepad-menu-nav', (event) => {
@@ -1401,34 +1402,12 @@ function handleSteamGameplayInput(controller) {
     updateVirtualGamepadCursorPosition(0, 0, false);
 
     const cursorAimed = applyControllerCursorAim(controller);
-    const width = window.innerWidth || 1280;
-    const height = window.innerHeight || 720;
     const anchor = getAimCursorAnchor();
 
     if (!cursorAimed && (aimX || aimY)) {
-        if (!controllerAimCursor) {
-            controllerAimCursor = { x: anchor.x, y: anchor.y };
-        }
-        const sensitivity = state.settings.aimSensitivity ?? 1.0;
         const invertSign = state.settings.invertAimY ? -1 : 1;
-        const STICK_MOUSE_SPEED = 18 * sensitivity;
-
-        controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + aimX * STICK_MOUSE_SPEED));
-        controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + aimY * STICK_MOUSE_SPEED * invertSign));
+        controllerAimCursor = { x: anchor.x, y: anchor.y };
         lastPlayerAnchor = { ...anchor };
-
-        if (window.game?.updateAimFromClient) {
-            window.game.updateAimFromClient(
-                controllerAimCursor.x,
-                controllerAimCursor.y,
-                { keepMouseActive: true }
-            );
-        }
-        window.dispatchEvent(new MouseEvent('mousemove', {
-            clientX: controllerAimCursor.x,
-            clientY: controllerAimCursor.y,
-            bubbles: true
-        }));
         if (window.game?.setControllerAimVector) {
             window.game.setControllerAimVector(aimX, -aimY * invertSign);
         }
@@ -1466,6 +1445,9 @@ function handleSteamGameplayInput(controller) {
     if ((controller.melee && !prev.melee) || (controller.ability && !prev.ability)) {
         window.game?.triggerGameplayMelee?.();
     }
+    if (controller.dash && !prev.dash) {
+        window.game?.triggerGameplayDash?.();
+    }
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
     }
@@ -1482,6 +1464,9 @@ function handleSteamGameplayInput(controller) {
         fire: Boolean(controller.fire),
         interact: Boolean(controller.interact),
         reload: Boolean(controller.reload),
+        melee: Boolean(controller.melee),
+        ability: Boolean(controller.ability),
+        dash: Boolean(controller.dash),
         scan: Boolean(controller.scan),
         pause: Boolean(controller.pause),
         toggleMap: Boolean(controller.toggleMap),

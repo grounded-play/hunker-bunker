@@ -183,19 +183,20 @@ function buildControllerConfig(controllerType) {
         triggerGroup(4, 'menu', 'menu_tab_right', 'Next Tab'),
         switchesGroup(5, 'menu', {
             button_escape: ['pause', 'Pause'],
+            button_menu: ['pause', 'Settings / Pause'],
             left_bumper: ['menu_tab_left', 'Previous Tab'],
             right_bumper: ['menu_tab_right', 'Next Tab']
         }),
         faceGroup(10, 'gameplay', {
             a: ['interact', 'Interact'],
-            b: ['scan', 'Scan'],
+            b: ['dash', 'Dodge'],
             x: ['reload', 'Reload'],
             y: ['ability', 'Smash']
         }),
         analogGroup(11, 'gameplay', 'move'),
-        // Retain the declared legacy stick action for API compatibility, but do
-        // not assign it to a physical source in the official preset.
         analogGroup(12, 'gameplay', 'camera'),
+        // Retained for custom trackpad/gyro layouts. The official preset uses
+        // the right stick's direct aim vector below.
         mouseGroup(17, 'gameplay', 'camera_mouse'),
         triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
@@ -212,6 +213,7 @@ function buildControllerConfig(controllerType) {
         triggerGroup(24, 'archive', 'archive_confirm', 'Inspect / Confirm'),
         switchesGroup(25, 'archive', {
             button_escape: ['pause', 'Pause'],
+            button_menu: ['pause', 'Settings / Pause'],
             left_bumper: ['archive_inventory', 'Inventory'],
             right_bumper: ['archive_reveal', 'Reveal Hotspots']
         })
@@ -229,7 +231,7 @@ function buildControllerConfig(controllerType) {
         preset(1, 'gameplay', {
             10: 'button_diamond',
             11: 'joystick',
-            17: 'right_joystick',
+            12: 'right_joystick',
             13: 'left_trigger',
             14: 'right_trigger',
             15: 'switch'
@@ -249,16 +251,16 @@ function buildControllerConfig(controllerType) {
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Layout"
-    "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
+    "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "${controllerType}"
-    "major_revision" "3"
+    "major_revision" "4"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
             "title" "Official Hunker Bunker Layout"
-            "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
+            "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
         }
     }
     ${groups.join('\n    ')}
