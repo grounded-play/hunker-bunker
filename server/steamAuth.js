@@ -341,10 +341,8 @@ export async function verifySteamSessionTicket({ ticketHex, identity } = {}) {
     });
 
     try {
-        const response = await fetch(STEAM_AUTH_URL, {
-            method: 'POST',
-            headers: { 'content-type': 'application/x-www-form-urlencoded' },
-            body: params
+        const response = await fetch(`${STEAM_AUTH_URL}?${params.toString()}`, {
+            method: 'GET'
         });
 
         if (!response.ok) {
