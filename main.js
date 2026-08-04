@@ -1350,19 +1350,23 @@ function handleSteamGameplayInput(controller) {
     // moved. Whichever aimed last still wins overall. Right joystick deflection also
     // positions the virtual mouse cursor around the moving player.
     const cursorAimed = applyControllerCursorAim(controller);
+    const width = window.innerWidth || 1280;
+    const height = window.innerHeight || 720;
+    const anchor = getAimCursorAnchor();
+
     if (!cursorAimed && (aimX || aimY)) {
-        const width = window.innerWidth || 1280;
-        const height = window.innerHeight || 720;
-        const anchor = getAimCursorAnchor();
+        if (!controllerAimCursor) {
+            controllerAimCursor = { x: anchor.x, y: anchor.y };
+        }
         const sensitivity = state.settings.aimSensitivity ?? 1.0;
         const invertSign = state.settings.invertAimY ? -1 : 1;
+        const STICK_MOUSE_SPEED = 18 * sensitivity;
 
-        const STICK_AIM_RADIUS = 180 * sensitivity;
-        controllerAimCursor = {
-            x: Math.min(width, Math.max(0, anchor.x + aimX * STICK_AIM_RADIUS)),
-            y: Math.min(height, Math.max(0, anchor.y + aimY * STICK_AIM_RADIUS * invertSign))
-        };
+        controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + aimX * STICK_MOUSE_SPEED));
+        controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + aimY * STICK_MOUSE_SPEED * invertSign));
         lastPlayerAnchor = { ...anchor };
+
+        updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
         if (window.game?.updateAimFromClient) {
             window.game.updateAimFromClient(
@@ -1379,8 +1383,28 @@ function handleSteamGameplayInput(controller) {
         if (window.game?.setControllerAimVector) {
             window.game.setControllerAimVector(aimX, -aimY * invertSign);
         }
-    } else {
-        lastPlayerAnchor = getAimCursorAnchor();
+    } else if (!cursorAimed) {
+        if (controllerAimCursor) {
+            const dx = anchor.x - controllerAimCursor.x;
+            const dy = anchor.y - controllerAimCursor.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 2.0) {
+                controllerAimCursor.x += dx * 0.18;
+                controllerAimCursor.y += dy * 0.18;
+                updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
+                if (window.game?.updateAimFromClient) {
+                    window.game.updateAimFromClient(controllerAimCursor.x, controllerAimCursor.y, { keepMouseActive: false });
+                }
+            } else {
+                controllerAimCursor = { x: anchor.x, y: anchor.y };
+                updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, false);
+                if (window.game) {
+                    window.game.hasActiveAim = false;
+                    window.game.mouseAimActive = false;
+                }
+            }
+        }
+        lastPlayerAnchor = { ...anchor };
     }
 
     if (controller.fire) {
