@@ -174,7 +174,8 @@ export class DebugLogger {
             'hive-choice-resolved', 'hive-mined', 'act2-milestone', 'act2-departed',
             'achievement-unlocked', 'lore-terminal-read', 'salvage-cache-opened',
             'o2-bubble-activated', 'bunker-door-toggled', 'bunker-door-destroyed',
-            'boss-attack-telegraph', 'boss-attack-resolved'
+            'boss-attack-telegraph', 'boss-attack-resolved',
+            'destructible-prop-broken', 'player-melee-attack'
         ];
         for (const eventName of eventNames) {
             window.addEventListener(eventName, (event) => {

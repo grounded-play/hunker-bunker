@@ -51,6 +51,7 @@ const NEUTRAL_PAD = Object.freeze({
     fire: false,
     interact: false,
     reload: false,
+    melee: false,
     ability: false,
     dash: false,
     scan: false,

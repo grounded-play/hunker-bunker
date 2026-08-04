@@ -166,10 +166,10 @@ const PICKUP_DISTRIBUTION = {
     stray: 0.1
 };
 const PICKUP_TYPES = [
-    { type: 'health', weight: 0.35 },
-    { type: 'ammo', weight: 0.35 },
-    { type: 'weapon', weight: 0.18 },
-    { type: 'coin', weight: 0.12 }
+    { type: 'health', weight: 0.27 },
+    { type: 'ammo', weight: 0.50 },
+    { type: 'weapon', weight: 0.14 },
+    { type: 'coin', weight: 0.09 }
 ];
 export const CLASS_STATS = {
     SCOUT:    { moveSpeed: 4.8, o2DrainMult: 1.25, pickupMagnetRadius: 4.2, projectileDamage: 1, passiveName: 'EVASIVE', passiveDescription: 'Reduced duration from enemy slow/freeze effects. Faster reload.' },
@@ -519,11 +519,16 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveRight: ['KeyD', 'ArrowRight'],
     interact: ['KeyE', 'Enter'],
     reload: ['KeyR', null],
+    melee: ['KeyV', null],
     ability: ['KeyF', null],
     dash: ['Space', 'ShiftLeft'],
     scan: ['KeyQ', null],
     sprint: ['ShiftLeft', 'ShiftRight']
 });
+const MELEE_REACH = 1.8;
+const MELEE_HALF_ANGLE = THREE.MathUtils.degToRad(35);
+const MELEE_DAMAGE = 4;
+const MELEE_COOLDOWN = 0.55;
 
 const SNAIL_ATTACK_RADIUS = 1.1;
 const SNAIL_ATTACK_COOLDOWN = 1.1;
@@ -3888,6 +3893,11 @@ export class ThreeGame {
                 debugLog.debug('INPUT', 'Action: RADAR SCAN (Tab/F)');
                 this.triggerGameplayScan();
             }
+            if (this.codeMatchesAction(event.code, 'melee')) {
+                event.preventDefault();
+                debugLog.debug('INPUT', 'Action: SMASH');
+                this.triggerGameplayMelee();
+            }
             this.setKeyState(event.code, true);
         };
         this.handleKeyUp = (event) => this.setKeyState(event.code, false);
@@ -3903,6 +3913,12 @@ export class ThreeGame {
         this._canvasPointerType = 'mouse';
         this.handleCanvasPointerDown = (event) => {
             const pointerType = event.pointerType || 'mouse';
+            if (pointerType === 'mouse' && event.button === 2) {
+                event.preventDefault();
+                this.updateAimFromClient(event.clientX, event.clientY, { keepMouseActive: true });
+                this.triggerGameplayMelee();
+                return;
+            }
             if (pointerType === 'mouse' && event.button !== 0) return;
             this._canvasTapStartX = event.clientX;
             this._canvasTapStartY = event.clientY;
@@ -3976,6 +3992,7 @@ export class ThreeGame {
                 // Best effort only.
             }
         };
+        this.handleCanvasContextMenu = (event) => event.preventDefault();
 
         window.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('keyup', this.handleKeyUp);
@@ -4047,6 +4064,7 @@ export class ThreeGame {
         this.baseTurretPromptEl = document.getElementById('base-turret-hud-prompt');
         this.baseTurretPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
+        this.renderer.domElement.addEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.addEventListener('pointercancel', this.handleCanvasPointerCancel);
@@ -4278,8 +4296,7 @@ export class ThreeGame {
         if (this.weaponClipAmmo <= 0) {
             const availableAmmo = this.getAvailableAmmo();
             if (availableAmmo < 1) {
-                this.playThrottledUiError('_lastNoAmmoCueAt', { volume: 0.45 }, 'combat-no-ammo');
-                return false;
+                return this.triggerGameplayMelee({ source: 'empty-fire-fallback' });
             }
             this.requestReload();
             return false;
@@ -4316,6 +4333,56 @@ export class ThreeGame {
 
     triggerControllerFire() {
         return this.fireWeaponAtCurrentAim();
+    }
+
+    triggerGameplayMelee({ source = 'manual' } = {}) {
+        if (!this.isGameplayInputActive() || !this.player || this.isPlayerDead) return false;
+        if ((this.meleeCooldownTimer ?? 0) > 0) return false;
+        if (this.isInsideNoFireZone()) return false;
+
+        const fallbackX = this.cameraPlanarForward?.x ?? 1;
+        const fallbackZ = this.cameraPlanarForward?.y ?? 0;
+        const directionX = this.hasActiveAim ? this.aimDirX : fallbackX;
+        const directionZ = this.hasActiveAim ? this.aimDirZ : fallbackZ;
+        const directionLength = Math.hypot(directionX, directionZ) || 1;
+        const aimX = directionX / directionLength;
+        const aimZ = directionZ / directionLength;
+        const targets = [];
+
+        for (const sprite of this.scatterSprites) {
+            if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
+            if (!sprite.userData?.isDestructibleProp && !this.isEnemyType(sprite.userData?.type)) continue;
+            const dx = sprite.position.x - this.player.position.x;
+            const dz = sprite.position.z - this.player.position.z;
+            const distance = Math.hypot(dx, dz);
+            if (distance > MELEE_REACH || distance < 0.001) continue;
+            const angle = Math.acos(THREE.MathUtils.clamp(((dx / distance) * aimX) + ((dz / distance) * aimZ), -1, 1));
+            if (angle > MELEE_HALF_ANGLE) continue;
+            targets.push({ sprite, dx, dz, distance });
+        }
+
+        this.meleeCooldownTimer = MELEE_COOLDOWN;
+        this.player3dOverlay?.trigger('melee');
+        this.spawnPhysicalBurst(
+            this.player.position.x + aimX * 0.9,
+            this.player.position.z + aimZ * 0.9,
+            { color: PLAYER_COLORS[this.playerType] ?? 0xffffff, count: 9, upward: 0.22 }
+        );
+        this.triggerCameraShake?.(0.12, 0.18);
+        window.AudioManager?.playMetalStress?.({ volume: 0.42, playbackRate: 1.45, force: true });
+
+        for (const target of targets) {
+            this.applyPlayerDamageToEnemy(target.sprite, MELEE_DAMAGE);
+            if (this.isEnemyType(target.sprite.userData?.type) && !target.sprite.userData?.burstTriggered) {
+                target.sprite.userData.knockbackVx = (target.dx / target.distance) * 4.5;
+                target.sprite.userData.knockbackVz = (target.dz / target.distance) * 4.5;
+                target.sprite.userData.knockbackTimer = Math.max(target.sprite.userData.knockbackTimer ?? 0, 0.16);
+            }
+        }
+        window.dispatchEvent(new CustomEvent('player-melee-attack', {
+            detail: { source, targetsHit: targets.length, damage: MELEE_DAMAGE, reach: MELEE_REACH }
+        }));
+        return true;
     }
 
     beginHeldFire(clientX, clientY, pointerType = 'mouse') {
@@ -13689,6 +13756,7 @@ export class ThreeGame {
 
         // Update kinetic control timers
         this.dashCooldownTimer = Math.max(0, (this.dashCooldownTimer ?? 0) - delta);
+        this.meleeCooldownTimer = Math.max(0, (this.meleeCooldownTimer ?? 0) - delta);
         this.iFrameTimer = Math.max(0, (this.iFrameTimer ?? 0) - delta);
         this.perfectReloadBuffTimer = Math.max(0, (this.perfectReloadBuffTimer ?? 0) - delta);
         this.recoilBloom = Math.max(0, (this.recoilBloom ?? 0) - 1.2 * delta);
@@ -15596,6 +15664,22 @@ export class ThreeGame {
         return null;
     }
 
+    checkProjectileDestructiblePropHit(projectile) {
+        if (projectile?.isEnemy) return null;
+        for (const sprite of this.scatterSprites) {
+            if (!sprite?.parent || !sprite.userData?.isDestructibleProp || sprite.userData.burstTriggered) continue;
+            const distance = Math.hypot(
+                projectile.mesh.position.x - sprite.position.x,
+                projectile.mesh.position.z - sprite.position.z
+            );
+            const hitRadius = sprite.userData.collisionRadius ?? 0.38;
+            if (distance <= hitRadius + (projectile.radius ?? PROJECTILE_RADIUS) + PLAYER_HITBOX_PADDING) {
+                return sprite;
+            }
+        }
+        return null;
+    }
+
     destroyProjectile(projectile) {
         if (!projectile?.mesh) return;
         projectile.mesh.parent?.remove(projectile.mesh);
@@ -15907,6 +15991,14 @@ export class ThreeGame {
                 const snail = this.checkProjectileSnailHit(projectile);
                 if (snail) {
                     this.applyPlayerDamageToEnemy(snail, projectile.damage);
+                    toRemove.add(projectile);
+                    continue;
+                }
+
+                const destructibleProp = this.checkProjectileDestructiblePropHit(projectile);
+                if (destructibleProp) {
+                    this.damageScatterProp(destructibleProp, projectile.damage);
+                    this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
                     toRemove.add(projectile);
                     continue;
                 }
@@ -19130,8 +19222,13 @@ export class ThreeGame {
             const storageVariant = this.hashTile(
                 Math.round(placement.x * 10),
                 Math.round(placement.z * 10)
-            ) % 6 === 0;
-            if (placement.type === 'prop_bunker_supplies' && storageVariant) {
+            ) % 3 === 0;
+            sprite.userData.isSolidProp = true;
+            sprite.userData.collisionRadius = storageVariant ? 0.48 : 0.38;
+            const lockerType = placement.type === 'prop_security_locker'
+                || (placement.type === 'prop_bunker_supplies' && storageVariant);
+            sprite.userData.isAmmoLocker = lockerType;
+            if (lockerType) {
                 this.setupWorld3dReplacement(sprite, 'storage_locker');
             }
             return sprite;
@@ -19630,9 +19727,9 @@ export class ThreeGame {
         const ROOM_PICKUP_BIAS = {
             [ROOM_TYPES.DEAD_END]: [
                 { type: 'health', weight: 0.20 },
-                { type: 'ammo',   weight: 0.20 },
-                { type: 'weapon', weight: 0.34 },
-                { type: 'coin',   weight: 0.26 }
+                { type: 'ammo',   weight: 0.45 },
+                { type: 'weapon', weight: 0.20 },
+                { type: 'coin',   weight: 0.15 }
             ],
             [ROOM_TYPES.CORRIDOR]: [
                 { type: 'health', weight: 0.28 },
@@ -19641,10 +19738,10 @@ export class ThreeGame {
                 { type: 'coin',   weight: 0.08 }
             ],
             [ROOM_TYPES.CHAMBER]: [
-                { type: 'health', weight: 0.32 },
-                { type: 'ammo',   weight: 0.30 },
-                { type: 'weapon', weight: 0.24 },
-                { type: 'coin',   weight: 0.14 }
+                { type: 'health', weight: 0.27 },
+                { type: 'ammo',   weight: 0.45 },
+                { type: 'weapon', weight: 0.18 },
+                { type: 'coin',   weight: 0.10 }
             ]
         };
         const weights = ROOM_PICKUP_BIAS[roomType] ?? PICKUP_TYPES;
@@ -20171,14 +20268,50 @@ export class ThreeGame {
             if (isBio) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
             window.AudioManager?.playMetalStress?.({ volume: 0.5, playbackRate: 1.85, force: true });
 
-            this.spawnCrawlerDrops(sprite);
+            this.spawnDestructiblePropDrops(sprite);
 
             const idx = this.scatterSprites.indexOf(sprite);
             if (idx !== -1) this.scatterSprites.splice(idx, 1);
+            sprite.userData.world3dRoot?.removeFromParent();
             if (sprite.parent) sprite.parent.remove(sprite);
             return true;
         }
         return false;
+    }
+
+    spawnDestructiblePropDrops(sprite) {
+        const parent = sprite?.parent;
+        if (!parent) return 0;
+        const ammoCount = sprite.userData?.isAmmoLocker ? 3 : 1;
+        const dropTypes = Array.from({ length: ammoCount }, () => 'ammo');
+        if (!sprite.userData?.isAmmoLocker && Math.random() < 0.2) dropTypes.push('health');
+        let spawned = 0;
+        for (let index = 0; index < dropTypes.length; index += 1) {
+            const angle = (index / Math.max(dropTypes.length, 1)) * Math.PI * 2 + Math.random() * 0.35;
+            const radius = 0.4 + Math.random() * 0.25;
+            const placement = this.createSnailDropPlacement(
+                sprite.position.x,
+                sprite.position.z,
+                sprite.position.x + Math.cos(angle) * radius,
+                sprite.position.z + Math.sin(angle) * radius,
+                dropTypes[index]
+            );
+            const pickup = this.createPickupInstance(placement);
+            if (!pickup) continue;
+            parent.add(pickup);
+            this.pickupMeshes.push(pickup);
+            spawned += 1;
+        }
+        window.dispatchEvent(new CustomEvent('destructible-prop-broken', {
+            detail: {
+                type: sprite.userData?.type ?? 'prop',
+                ammoLocker: Boolean(sprite.userData?.isAmmoLocker),
+                drops: dropTypes,
+                x: Math.round(sprite.position.x),
+                z: Math.round(sprite.position.z)
+            }
+        }));
+        return spawned;
     }
 
     damageSnail(sprite, amount = 1) {
@@ -22865,6 +22998,16 @@ export class ThreeGame {
             }
         }
 
+        if (!this.isInPocket && this.scatterSprites) {
+            for (const prop of this.scatterSprites) {
+                if (!prop?.parent || !prop.userData?.isSolidProp || prop.userData.burstTriggered) continue;
+                const collisionRadius = prop.userData.collisionRadius ?? 0.38;
+                if (Math.hypot(x - prop.position.x, z - prop.position.z) < collisionRadius + this.playerRadius) {
+                    return false;
+                }
+            }
+        }
+
         const tileX = Math.round(x);
         const tileY = Math.round(z);
 
@@ -24383,6 +24526,7 @@ export class ThreeGame {
         this.baseDefenseTurretGroup?.removeFromParent?.();
         this.baseDefenseTurretLight?.removeFromParent?.();
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
+        this.renderer.domElement.removeEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);

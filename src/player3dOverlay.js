@@ -12,7 +12,7 @@ export const ENGINEER_GESTURES = Object.freeze([
     'engineerAnnoyed', 'engineerLookAway', 'engineerSarcastic',
     'engineerAcknowledge', 'engineerHardNod', 'engineerLongNod', 'engineerNo'
 ]);
-const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', ...ENGINEER_GESTURES]);
+const ONE_SHOTS = new Set(['fire', 'reload', 'hit', 'land', 'melee', ...ENGINEER_GESTURES]);
 const BLENDABLE_ACTIONS = ['idle', 'walk', 'run', 'backward', 'strafeLeft', 'strafeRight', 'fall'];
 let weaponTemplatePromise = null;
 const characterTemplates = new Map();

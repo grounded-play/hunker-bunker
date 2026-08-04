@@ -190,7 +190,7 @@ function buildControllerConfig(controllerType) {
             a: ['interact', 'Interact'],
             b: ['scan', 'Scan'],
             x: ['reload', 'Reload'],
-            y: ['ability', 'Ability']
+            y: ['ability', 'Smash']
         }),
         analogGroup(11, 'gameplay', 'move'),
         // Retain the declared legacy stick action for API compatibility, but do

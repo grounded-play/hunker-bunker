@@ -57,6 +57,7 @@ export function mapBrowserGamepad(gamepad, {
         fire: readButton(buttons, 7),
         interact: readButton(buttons, 0),
         reload: readButton(buttons, 2),
+        melee: readButton(buttons, 3),
         ability: readButton(buttons, 3),
         dash: readButton(buttons, 1),
         scan: readButton(buttons, 4) || readButton(buttons, 1) || readButton(buttons, 11),
@@ -79,7 +80,7 @@ export function mapBrowserGamepad(gamepad, {
 
     mapped.active = Boolean(
         mapped.move.x || mapped.move.y || mapped.camera.x || mapped.camera.y
-        || mapped.fire || mapped.interact || mapped.reload || mapped.ability
+        || mapped.fire || mapped.interact || mapped.reload || mapped.melee || mapped.ability
         || mapped.scan || mapped.sprint || mapped.pause
         || mapped.menuUp || mapped.menuDown || mapped.menuLeft || mapped.menuRight
         || mapped.menuConfirm || mapped.menuBack

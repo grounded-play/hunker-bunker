@@ -68,4 +68,22 @@ describe('room population', () => {
 
         expect(plan.placements.filter((placement) => placement.kind === 'ambient')).toHaveLength(3);
     });
+
+    it('guarantees an ammo cache in reward, storage, and security rooms', () => {
+        const grid = Array.from({ length: 5 }, () => Array(8).fill('.'));
+        for (const role of ['reward', 'storage', 'security']) {
+            const room = {
+                id: role,
+                role,
+                interior: Array.from({ length: 6 }, (_, index) => ({ x: index + 1, y: 2 })),
+                navigation: { doorLanes: [] },
+                populationBudget: { large: 0, small: 0, pickup: 0, enemy: 0 },
+                themeConfig: { signatureProps: ['signature'] }
+            };
+            const plan = planRoomPopulation(room, grid, () => 0);
+            expect(plan.placements).toContainEqual(expect.objectContaining({
+                kind: 'ammo-cache', type: 'prop_bunker_supplies', blocking: true
+            }));
+        }
+    });
 });

@@ -59,6 +59,9 @@ export function planRoomPopulation(room, grid, random) {
     };
 
     reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies'), true);
+    if (['reward', 'storage', 'security'].includes(room.role)) {
+        reservePlacement('ammo-cache', 'prop_bunker_supplies', true);
+    }
     if (theme.ambientProps?.length > 0) {
         // Large authored rooms need more than one lived-in detail to read at
         // gameplay scale. Spread 1-3 non-blocking overlays across the room.

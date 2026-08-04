@@ -220,6 +220,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveRight: ['KeyD', 'ArrowRight'],
     interact: ['KeyE', 'Enter'],
     reload: ['KeyR', null],
+    melee: ['KeyV', null],
     ability: ['KeyF', null],
     scan: ['KeyQ', null],
     sprint: ['ShiftLeft', 'ShiftRight']
@@ -1459,6 +1460,9 @@ function handleSteamGameplayInput(controller) {
     if (controller.reload && !prev.reload) {
         window.game?.triggerGameplayReload?.({ manual: true });
     }
+    if ((controller.melee && !prev.melee) || (controller.ability && !prev.ability)) {
+        window.game?.triggerGameplayMelee?.();
+    }
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
     }
@@ -1637,6 +1641,7 @@ const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveRight', label: 'MOVE RIGHT' },
     { id: 'interact', label: 'INTERACT' },
     { id: 'reload', label: 'RELOAD' },
+    { id: 'melee', label: 'SMASH' },
     { id: 'ability', label: 'EXOSUIT ACTION' },
     { id: 'scan', label: 'RADAR SCAN' },
     { id: 'sprint', label: 'SPRINT BURST' },

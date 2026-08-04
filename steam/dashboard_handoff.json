@@ -438,7 +438,7 @@
         "actionSet": "gameplay",
         "actionType": "Button",
         "action": "ability",
-        "label": "Ability"
+        "label": "Smash"
       },
       {
         "actionSet": "gameplay",
