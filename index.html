@@ -1117,6 +1117,11 @@
         <span class="prompt-text">UPGRADE O₂ GENERATOR</span>
       </div>
 
+      <div id="base-turret-hud-prompt" class="lore-hud-prompt hud-action-prompt base-turret-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">DEFENSE TURRET CONTROLS</span>
+      </div>
+
       <div id="foundry-hud-prompt" class="lore-hud-prompt hud-action-prompt foundry-hud-prompt hidden">
         <span class="prompt-key">PRESS E</span>
         <span class="prompt-text">OPEN FAB BAY</span>
@@ -1464,6 +1469,36 @@
       </div>
     </div>
 
+    <!-- Base Defense Turret Upgrade / Repair Modal -->
+    <div id="base-turret-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content base-turret-modal-content">
+        <button class="close-modal" id="close-base-turret-modal" aria-label="Close Base Turret controls">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+        <div class="terminal-header">
+          <div class="terminal-title">CAMP DEFENSE TURRET</div>
+          <div class="terminal-class-badge" id="base-turret-modal-badge">DOOR GUARD</div>
+        </div>
+        <div class="terminal-body">
+          <div class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
+            <div class="action-card action-card--generator">
+              <div class="action-card-header">
+                <span class="action-title">TURRET STATUS</span>
+                <span class="action-cost" id="base-turret-modal-status">LVL 1 // HP 100/100</span>
+              </div>
+              <p class="action-desc" id="base-turret-modal-stats">DAMAGE: 4 | RANGE: 7u | RATE: 1.2s</p>
+              <p class="action-desc" id="base-turret-modal-upgrade-cost">NEXT UPGRADE COST: --</p>
+              <p class="action-desc" id="base-turret-modal-repair-cost">REPAIR COST: --</p>
+              <div style="display: flex; gap: 10px; margin-top: 12px;">
+                <button class="terminal-action-btn" id="base-turret-upgrade-btn" style="flex: 1;">UPGRADE TURRET</button>
+                <button class="terminal-action-btn" id="base-turret-repair-btn" style="flex: 1;">REPAIR TURRET</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="elevator-choice-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content elevator-choice-content">
         <div class="terminal-scanline"></div>
@@ -1695,6 +1730,21 @@
               <option value="fast">FAST</option>
               <option value="instant">INSTANT</option>
             </select>
+          </div>
+          <div class="setting-item">
+            <span>AIM / JOYSTICK SENSITIVITY</span>
+            <select id="setting-aim-sensitivity" class="settings-select">
+              <option value="0.5">50% (SLOW)</option>
+              <option value="0.75">75% (LIGHT)</option>
+              <option value="1.0" selected>100% (STANDARD)</option>
+              <option value="1.25">125% (FAST)</option>
+              <option value="1.5">150% (VERY FAST)</option>
+              <option value="2.0">200% (HYPER)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <span>INVERT AIM Y-AXIS</span>
+            <label class="toggle"><input type="checkbox" id="setting-invert-y-toggle"> <span class="slider"></span></label>
           </div>
           <div class="setting-item">
             <span>COLORBLIND ASSIST</span>

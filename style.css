@@ -9347,6 +9347,39 @@ body.mission-intro-active #game-container canvas {
   opacity: 1;
 }
 
+.base-turret-hud-prompt {
+  position: absolute !important;
+  top: calc(var(--vu) * 12) !important;
+  right: calc(var(--vu) * 4) !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  background: rgba(11, 15, 13, 0.9) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1.5px solid rgba(125, 242, 255, 0.6) !important;
+  border-radius: 8px !important;
+  padding: calc(var(--vu) * 1.5) calc(var(--vu) * 3) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: calc(var(--vu) * 2) !important;
+  z-index: 9999 !important;
+  box-shadow: 0 0 14px rgba(125, 242, 255, 0.3), inset 0 0 8px rgba(125, 242, 255, 0.05) !important;
+  animation: prompt-float 2.5s infinite ease-in-out !important;
+  pointer-events: auto;
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+  color: #c4ffff !important;
+}
+.base-turret-hud-prompt.hidden {
+  display: none !important;
+}
+.base-turret-hud-prompt.visible {
+  display: flex !important;
+  opacity: 1;
+}
+
 .black-box-hud-prompt {
   position: absolute !important;
   top: calc(var(--vu) * 12) !important;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    computeOperatorPolishMaterialState,
     computeLocomotionWeights,
     computeOverlayYaw,
     computeUpperBodyAimOffset,
@@ -7,6 +8,18 @@ import {
 } from './player3dOverlay.js';
 
 describe('player 3D cosmetic overlay', () => {
+    it('applies unlocked polish color and shine without losing the base material', () => {
+        const polished = computeOperatorPolishMaterialState(0x808080, 0.72, 0.08, 0x58efff);
+        expect(polished.color.getHex()).not.toBe(0x808080);
+        expect(polished.roughness).toBe(0.36);
+        expect(polished.metalness).toBe(0.2);
+
+        const standard = computeOperatorPolishMaterialState(0x808080, 0.72, 0.08, 0xffffff);
+        expect(standard.color.getHex()).toBe(0x808080);
+        expect(standard.roughness).toBe(0.72);
+        expect(standard.metalness).toBe(0.08);
+    });
+
     it('maps world directions to continuous Mixamo yaw', () => {
         expect(computeOverlayYaw(0, 1)).toBeCloseTo(0);
         expect(computeOverlayYaw(1, 0)).toBeCloseTo(Math.PI / 2);

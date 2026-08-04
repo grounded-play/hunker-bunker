@@ -1194,13 +1194,15 @@ function handleSteamMenuInput(actions) {
     }
 
     if (pointerMag > 0.15 || Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
+        const sensitivity = state.settings.aimSensitivity ?? 1.0;
+        const invertSign = state.settings.invertAimY ? -1 : 1;
         if (pointerMag > 0.15) {
-            const cursorSpeed = 16;
+            const cursorSpeed = 16 * sensitivity;
             controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + (pointerX * cursorSpeed)));
-            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + (pointerY * cursorSpeed)));
+            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + (pointerY * cursorSpeed * invertSign)));
         } else if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
-            controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + deltaX));
-            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y - deltaY));
+            controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + (deltaX * sensitivity)));
+            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + (deltaY * sensitivity * invertSign)));
         }
 
         updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
@@ -1297,10 +1299,10 @@ function applyControllerCursorAim(controller) {
     if (!controllerAimCursor) {
         controllerAimCursor = { x: width / 2, y: height / 2 };
     }
-    // Steam reports +Y as up, client coordinates grow downward — same inversion the
-    // stick path applies below.
-    controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY)));
-    controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y - (deltaY * CONTROLLER_CURSOR_SENSITIVITY)));
+    const sensitivity = state.settings.aimSensitivity ?? 1.0;
+    const invertSign = state.settings.invertAimY ? -1 : 1;
+    controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY * sensitivity)));
+    controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + (deltaY * CONTROLLER_CURSOR_SENSITIVITY * sensitivity * invertSign)));
 
     window.dispatchEvent(new MouseEvent('mousemove', {
         clientX: controllerAimCursor.x,
@@ -1335,9 +1337,11 @@ function handleSteamGameplayInput(controller) {
         if (!controllerAimCursor) {
             controllerAimCursor = { x: width / 2, y: height / 2 };
         }
-        const STICK_MOUSE_SPEED = 18;
+        const sensitivity = state.settings.aimSensitivity ?? 1.0;
+        const invertSign = state.settings.invertAimY ? -1 : 1;
+        const STICK_MOUSE_SPEED = 18 * sensitivity;
         controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + aimX * STICK_MOUSE_SPEED));
-        controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + aimY * STICK_MOUSE_SPEED));
+        controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + aimY * STICK_MOUSE_SPEED * invertSign));
 
         if (window.game?.updateAimFromClient) {
             window.game.updateAimFromClient(
@@ -1352,7 +1356,7 @@ function handleSteamGameplayInput(controller) {
             bubbles: true
         }));
         if (window.game?.setControllerAimVector) {
-            window.game.setControllerAimVector(aimX, -aimY);
+            window.game.setControllerAimVector(aimX, -aimY * invertSign);
         }
     }
 
@@ -1559,6 +1563,8 @@ const state = {
         fullscreen: false,
         nightVision: false,
         commentary: false,
+        aimSensitivity: parseFloat(localStorage.getItem('hb_aim_sensitivity') || '1.0'),
+        invertAimY: localStorage.getItem('hb_invert_aim_y') === 'true',
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
@@ -6617,6 +6623,12 @@ function persistSettings() {
         if (state.settings.textFloor) {
             localStorage.setItem('hb_text_floor', String(state.settings.textFloor));
         }
+        if (state.settings.aimSensitivity != null) {
+            localStorage.setItem('hb_aim_sensitivity', String(state.settings.aimSensitivity));
+        }
+        if (state.settings.invertAimY != null) {
+            localStorage.setItem('hb_invert_aim_y', String(state.settings.invertAimY));
+        }
     } catch {
         // best-effort persistence
     }
@@ -7157,6 +7169,12 @@ function openSettingsModal() {
     const cbToggle = document.getElementById('setting-colorblind-toggle');
     if (cbToggle) cbToggle.checked = !!state.settings.colorblindAssist;
 
+    const aimSensSelect = document.getElementById('setting-aim-sensitivity');
+    if (aimSensSelect) aimSensSelect.value = String(state.settings.aimSensitivity ?? 1.0);
+
+    const invertYToggle = document.getElementById('setting-invert-y-toggle');
+    if (invertYToggle) invertYToggle.checked = !!state.settings.invertAimY;
+
     const diffVal = document.getElementById('setting-difficulty-val');
     if (diffVal) {
         const difficulty = window.game?.difficulty || state.settings.difficulty || 'standard';
@@ -7177,6 +7195,14 @@ document.getElementById('setting-ui-scale')?.addEventListener('change', (e) => {
 });
 document.getElementById('setting-text-floor')?.addEventListener('change', (e) => {
     devSetTextFloor(e.target.value);
+});
+document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (e) => {
+    state.settings.aimSensitivity = parseFloat(e.target.value) || 1.0;
+    persistSettings();
+});
+document.getElementById('setting-invert-y-toggle')?.addEventListener('change', (e) => {
+    state.settings.invertAimY = Boolean(e.target.checked);
+    persistSettings();
 });
 
 if (settingsBtns.length > 0 && settingsPopup) {

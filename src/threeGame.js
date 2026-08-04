@@ -3,7 +3,7 @@ import { getControllerGlyphLabel } from './inputGlyphs.js';
 
 import * as THREE from 'three';
 import { assetUrl } from './assetUrl.js';
-import { BankManager, O2_GENERATOR_UPGRADES, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
+import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
     addCanyonVoidAroundWalkable,
@@ -2780,6 +2780,7 @@ export class ThreeGame {
         this.scene.add(this.chunkGroups);
         this.setupCrashedShips();
         this.setupBunkerBlastDoor();
+        this.setupBaseDefenseTurret();
     }
 
     setupCrashedShips() {
@@ -2873,12 +2874,12 @@ export class ThreeGame {
             reactorModuleMat.needsUpdate = true;
         }, { cropBottomRatio: 0.16 });
 
-        // Placements relative to spawn (which is 9, 9 in starting chunk)
+        // Placements relative to spawn (centered at 9, 9 in starting chunk)
         this.crashedShips = [
             {
                 type: 'SCOUT',
-                tileX: 6,
-                tileZ: 6,
+                tileX: 9,
+                tileZ: 9,
                 width: 1.3,
                 scale: 3.5,
                 elevation: 0.1,
@@ -2894,8 +2895,8 @@ export class ThreeGame {
             },
             {
                 type: 'TANK',
-                tileX: 12,
-                tileZ: 6,
+                tileX: 9,
+                tileZ: 9,
                 width: 1.3,
                 scale: 3.5,
                 elevation: 0.1,
@@ -2912,7 +2913,7 @@ export class ThreeGame {
             {
                 type: 'ENGINEER',
                 tileX: 9,
-                tileZ: 13,
+                tileZ: 9,
                 width: 1.3,
                 scale: 3.5,
                 elevation: 0.1,
@@ -3205,6 +3206,203 @@ export class ThreeGame {
         };
     }
 
+    setupBaseDefenseTurret() {
+        const group = new THREE.Group();
+        group.position.set(9, 0, 4.8);
+
+        const baseGeo = new THREE.CylinderGeometry(0.35, 0.45, 0.2, 8);
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0x1a232a, metalness: 0.8, roughness: 0.3 });
+        const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+        baseMesh.position.y = 0.1;
+        baseMesh.castShadow = true;
+        baseMesh.receiveShadow = true;
+        group.add(baseMesh);
+
+        const mastGeo = new THREE.CylinderGeometry(0.1, 0.14, 0.8, 8);
+        const mastMat = new THREE.MeshStandardMaterial({ color: 0x2b3842, metalness: 0.7, roughness: 0.4 });
+        const mastMesh = new THREE.Mesh(mastGeo, mastMat);
+        mastMesh.position.y = 0.5;
+        group.add(mastMesh);
+
+        const headGroup = new THREE.Group();
+        headGroup.position.y = 0.95;
+
+        const headGeo = new THREE.BoxGeometry(0.38, 0.24, 0.5);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0x141d24, metalness: 0.85, roughness: 0.25 });
+        const headMesh = new THREE.Mesh(headGeo, headMat);
+        headMesh.castShadow = true;
+        headGroup.add(headMesh);
+
+        for (let side = -1; side <= 1; side += 2) {
+            const barrelGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.42, 8);
+            const barrelMat = new THREE.MeshStandardMaterial({ color: 0x5cd6ff, metalness: 0.9, roughness: 0.2, emissive: 0x004466, emissiveIntensity: 0.5 });
+            const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+            barrel.rotation.x = Math.PI / 2;
+            barrel.position.set(side * 0.11, 0, -0.25);
+            headGroup.add(barrel);
+        }
+
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0x5cd6ff });
+        const eyeMesh = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
+        eyeMesh.position.set(0, 0.14, -0.15);
+        headGroup.add(eyeMesh);
+
+        group.add(headGroup);
+
+        const light = new THREE.PointLight(0x5cd6ff, 1.2, 5.0);
+        light.position.set(9, 1.2, 4.8);
+        this.scene.add(light);
+
+        this.baseDefenseTurretGroup = group;
+        this.baseDefenseTurretHead = headGroup;
+        this.baseDefenseTurretEyeMat = eyeMat;
+        this.baseDefenseTurretLight = light;
+        this.scene.add(group);
+
+        this.baseDefenseTurretState = {
+            active: false,
+            cooldown: 0,
+            target: null,
+            tileX: 9,
+            tileZ: 4.8
+        };
+
+        this._onBaseItemRepaired = () => {
+            this.bank?.unlockBaseTurret?.();
+            this.updateBaseTurretVisuals();
+        };
+        this._onBaseTurretChanged = () => this.updateBaseTurretVisuals();
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('o2-generator-upgraded', this._onBaseItemRepaired);
+            window.addEventListener('goal-unlocked', this._onBaseItemRepaired);
+            window.addEventListener('goal-upgraded', this._onBaseItemRepaired);
+            window.addEventListener('base-turret-unlocked', this._onBaseTurretChanged);
+            window.addEventListener('base-turret-upgraded', this._onBaseTurretChanged);
+            window.addEventListener('base-turret-repaired', this._onBaseTurretChanged);
+        }
+        this.updateBaseTurretVisuals();
+    }
+
+    updateBaseTurretVisuals() {
+        if (!this.baseDefenseTurretGroup || !this.bank) return;
+        const level = this.bank.getBaseTurretLevel();
+        const hp = this.bank.getBaseTurretHp();
+
+        const hasCompletedBaseRepair = this.bank.getO2GeneratorLevel() >= 1
+            || Object.values(this.bank.state?.unlocks || {}).some(Boolean);
+        if (hasCompletedBaseRepair && !this.bank.isBaseTurretUnlocked()) {
+            this.bank.unlockBaseTurret();
+        }
+        const isUnlocked = this.bank.isBaseTurretUnlocked();
+
+        if (isUnlocked && this.baseDefenseTurretState) {
+            this.baseDefenseTurretState.active = true;
+        }
+
+        const active = Boolean(this.baseDefenseTurretState?.active && hp > 0);
+        this.baseDefenseTurretGroup.visible = Boolean(isUnlocked);
+        if (this.baseDefenseTurretLight) {
+            this.baseDefenseTurretLight.visible = active;
+        }
+
+        if (this.baseDefenseTurretEyeMat) {
+            if (!active) {
+                this.baseDefenseTurretEyeMat.color.set(hp <= 0 ? 0xff2200 : 0x444444);
+            } else if (level === 1) {
+                this.baseDefenseTurretEyeMat.color.set(0x5cd6ff);
+            } else if (level === 2) {
+                this.baseDefenseTurretEyeMat.color.set(0x7df2ff);
+            } else {
+                this.baseDefenseTurretEyeMat.color.set(0xffb700);
+            }
+        }
+    }
+
+    updateBaseDefenseTurret(delta) {
+        this.updateBaseTurretVisuals();
+        if (!this.baseDefenseTurretGroup || !this.baseDefenseTurretState?.active) return;
+        const hp = this.bank?.getBaseTurretHp() ?? 100;
+        if (hp <= 0) return;
+
+        const level = this.bank?.getBaseTurretLevel() ?? 1;
+        const config = BASE_TURRET_UPGRADES[level - 1] ?? BASE_TURRET_UPGRADES[0];
+        const turretPos = { x: 9, z: 4.8 };
+
+        const { range, damage, fireRate: fireInterval } = config;
+
+        let bestTarget = null;
+        let bestDistSq = range * range;
+
+        const candidates = this.scatterSprites ?? [];
+
+        for (const target of candidates) {
+            if (!target || !this.isEnemyType(target.userData?.type)) continue;
+            if (target.userData?.burstTriggered || target.userData?.isCompanion) continue;
+            const tx = target.position?.x;
+            const tz = target.position?.z;
+            if (tx == null || tz == null) continue;
+
+            const dx = tx - turretPos.x;
+            const dz = tz - turretPos.z;
+            const d2 = dx * dx + dz * dz;
+            if (d2 <= bestDistSq) {
+                bestDistSq = d2;
+                bestTarget = { target, x: tx, z: tz };
+            }
+        }
+
+        if (bestTarget && this.baseDefenseTurretHead) {
+            const targetAngle = Math.atan2(bestTarget.x - turretPos.x, bestTarget.z - turretPos.z) + Math.PI;
+            this.baseDefenseTurretHead.rotation.y = targetAngle;
+
+            this.baseDefenseTurretState.cooldown -= delta;
+            if (this.baseDefenseTurretState.cooldown <= 0) {
+                this.baseDefenseTurretState.cooldown = fireInterval;
+
+                this.applyPlayerDamageToEnemy(bestTarget.target, damage);
+                this.spawnBaseTurretLaser(turretPos, bestTarget, damage);
+            }
+        }
+    }
+
+    spawnBaseTurretLaser(fromPos, toPos, damage) {
+        const start = new THREE.Vector3(fromPos.x, 0.95, fromPos.z);
+        const end = new THREE.Vector3(toPos.x, 0.5, toPos.z);
+        const geom = new THREE.BufferGeometry().setFromPoints([start, end]);
+        const mat = new THREE.LineBasicMaterial({ color: 0x7df2ff, linewidth: 2 });
+        const line = new THREE.Line(geom, mat);
+        this.scene.add(line);
+
+        setTimeout(() => {
+            this.scene.remove(line);
+            geom.dispose();
+            mat.dispose();
+        }, 120);
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('camp-turret-zap', {
+                detail: { x: toPos.x, z: toPos.z, damage }
+            }));
+        }
+    }
+
+    damageBaseTurret(amount = 1, reason = 'enemy-impact') {
+        if (!this.bank?.isBaseTurretUnlocked?.()) return false;
+        const previousHp = this.bank.getBaseTurretHp();
+        const damage = Math.max(0, Math.round(amount));
+        if (damage <= 0 || previousHp <= 0) return false;
+        const hp = Math.max(0, previousHp - damage);
+        this.bank.setBaseTurretHp(hp);
+        this.updateBaseTurretVisuals();
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('base-turret-damaged', {
+                detail: { amount: previousHp - hp, hp, maxHp: this.bank.getBaseTurretMaxHp(), reason }
+            }));
+        }
+        return hp < previousHp;
+    }
+
     setupPlayer() {
         this.player = new THREE.Group();
 
@@ -3328,6 +3526,7 @@ export class ThreeGame {
             overlay.root.position.z += this.playerSpriteLead;
             playerRoot.add(overlay.root);
             this.player3dOverlay = overlay;
+            overlay.setOperatorPolish(this._playerPolishHex ?? 0xffffff);
             // Hide only after the GLB is ready. A load failure leaves the proven
             // 2D sprite visible as the automatic fallback.
             this.playerSprite.visible = false;
@@ -3797,6 +3996,8 @@ export class ThreeGame {
         this.foundryPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.blackBoxPromptEl = document.getElementById('black-box-hud-prompt');
         this.blackBoxPromptEl?.addEventListener('pointerup', this.handlePromptTap);
+        this.baseTurretPromptEl = document.getElementById('base-turret-hud-prompt');
+        this.baseTurretPromptEl?.addEventListener('pointerup', this.handlePromptTap);
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
@@ -3844,6 +4045,7 @@ export class ThreeGame {
         this.interactWithMazeAccessSource();
         this.interactWithConsole();
         this.interactWithO2Generator();
+        this.interactWithBaseTurret();
         this.interactWithLoreTerminal();
         this.interactWithFoundry();
         this.interactWithBlackBox();
@@ -5078,6 +5280,7 @@ export class ThreeGame {
             this.updateTerminalClockTick(now);
             this.updatePickups(delta, now);
             this.updateScatter(delta, now);
+            this.updateBaseDefenseTurret(delta);
             this.updateCorpses(delta);
             this.updateLoreDrops(delta);
             this.updateBuildSiteBeacon(now);
@@ -5783,6 +5986,11 @@ export class ThreeGame {
             }
         }
 
+        const baseTurretPos = { x: 9, z: 4.8 };
+        const baseTurretInRange = Boolean(this.baseDefenseTurretState?.active)
+            && Math.hypot(this.player.position.x - baseTurretPos.x, this.player.position.z - baseTurretPos.z) < 2.5;
+        this.activeInteractiveBaseTurret = baseTurretInRange ? true : null;
+
         const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
         if (o2PromptEl) {
             if (o2InRange) {
@@ -5802,6 +6010,29 @@ export class ThreeGame {
                 const modal = document.getElementById('o2-generator-modal');
                 if (modal && !modal.classList.contains('hidden')) {
                     this.closeO2GeneratorModal();
+                }
+            }
+        }
+
+        const baseTurretPromptEl = document.getElementById('base-turret-hud-prompt');
+        if (baseTurretPromptEl) {
+            if (baseTurretInRange) {
+                const actionText = baseTurretPromptEl.querySelector('.prompt-text');
+                const promptKey = baseTurretPromptEl.querySelector('.prompt-key');
+                if (actionText) actionText.textContent = 'DEFENSE TURRET CONTROLS';
+                if (promptKey) {
+                    const promptKeyLabel = this.getPromptKeyLabel('E');
+                    promptKey.textContent = promptKeyLabel;
+                    promptKey.classList.toggle('prompt-key--tap', promptKeyLabel === 'TAP');
+                }
+                baseTurretPromptEl.classList.add('visible');
+                baseTurretPromptEl.classList.remove('hidden');
+            } else {
+                baseTurretPromptEl.classList.add('hidden');
+                baseTurretPromptEl.classList.remove('visible');
+                const modal = document.getElementById('base-turret-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    this.closeBaseTurretModal();
                 }
             }
         }
@@ -6242,6 +6473,12 @@ export class ThreeGame {
         if (!this.isGameplayInputActive()) return;
         if (!this.activeInteractiveO2Generator) return;
         this.openO2GeneratorModal(this.activeInteractiveO2Generator);
+    }
+
+    interactWithBaseTurret() {
+        if (!this.isGameplayInputActive()) return;
+        if (!this.activeInteractiveBaseTurret) return;
+        this.openBaseTurretModal();
     }
 
     tryInteractWithConsolePointer(clientX, clientY) {
@@ -7983,6 +8220,100 @@ export class ThreeGame {
 
     closeO2GeneratorModal() {
         const modal = document.getElementById('o2-generator-modal');
+        if (modal) {
+            window.AudioManager?.play('ui_click', { volume: 0.45 });
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+    }
+
+    openBaseTurretModal() {
+        const modal = document.getElementById('base-turret-modal');
+        if (!modal) return;
+        this.syncPersistentUpgrades();
+        this.renderBaseTurretModal();
+        const closeBtn = document.getElementById('close-base-turret-modal');
+        if (closeBtn) {
+            closeBtn.onclick = () => this.closeBaseTurretModal();
+        }
+        const upgradeBtn = document.getElementById('base-turret-upgrade-btn');
+        if (upgradeBtn) {
+            upgradeBtn.onclick = () => {
+                if (this.bank?.upgradeBaseTurret()) {
+                    window.AudioManager?.play('ui_buy_item', { volume: 0.6 });
+                    this.updateBaseTurretVisuals();
+                    this.renderBaseTurretModal();
+                }
+            };
+        }
+        const repairBtn = document.getElementById('base-turret-repair-btn');
+        if (repairBtn) {
+            repairBtn.onclick = () => {
+                if (this.bank?.repairBaseTurret()) {
+                    window.AudioManager?.play('ui_buy_item', { volume: 0.6 });
+                    this.updateBaseTurretVisuals();
+                    this.renderBaseTurretModal();
+                }
+            };
+        }
+        window.AudioManager?.play('ui_scan_ping', { volume: 0.55 });
+        modal.classList.remove('hidden');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    renderBaseTurretModal() {
+        if (!this.bank) return;
+        const level = this.bank.getBaseTurretLevel();
+        const hp = this.bank.getBaseTurretHp();
+        const maxHp = this.bank.getBaseTurretMaxHp();
+
+        const statusEl = document.getElementById('base-turret-modal-status');
+        const statsEl = document.getElementById('base-turret-modal-stats');
+        const upgradeCostEl = document.getElementById('base-turret-modal-upgrade-cost');
+        const repairCostEl = document.getElementById('base-turret-modal-repair-cost');
+        const upgradeBtn = document.getElementById('base-turret-upgrade-btn');
+        const repairBtn = document.getElementById('base-turret-repair-btn');
+
+        const config = BASE_TURRET_UPGRADES[level - 1] ?? BASE_TURRET_UPGRADES[0];
+        const { damage, range, fireRate } = config;
+
+        if (statusEl) statusEl.textContent = `LVL ${level} // HP ${hp}/${maxHp}`;
+        if (statsEl) statsEl.textContent = `DAMAGE: ${damage} | RANGE: ${range}u | RATE: ${fireRate}s`;
+
+        const nextUpgradeCost = this.bank.getBaseTurretUpgradeCost();
+        if (upgradeCostEl) {
+            if (nextUpgradeCost) {
+                upgradeCostEl.textContent = `NEXT UPGRADE COST: ${this.formatResourceCost(nextUpgradeCost)}`;
+            } else {
+                upgradeCostEl.textContent = 'NEXT UPGRADE COST: MAX LEVEL REACHED';
+            }
+        }
+
+        const canAffordUpgrade = this.bank.canUpgradeBaseTurret();
+        if (upgradeBtn) {
+            upgradeBtn.disabled = !canAffordUpgrade;
+            upgradeBtn.style.opacity = canAffordUpgrade ? '1' : '0.5';
+        }
+
+        const canRepair = this.bank.canRepairBaseTurret();
+        if (repairCostEl) {
+            if (canRepair) {
+                repairCostEl.textContent = `REPAIR COST: ${this.formatResourceCost(BASE_TURRET_REPAIR_COST)}`;
+            } else if (hp >= maxHp) {
+                repairCostEl.textContent = 'REPAIR COST: FULL HP';
+            } else {
+                repairCostEl.textContent = `REPAIR COST: ${this.formatResourceCost(BASE_TURRET_REPAIR_COST)} (INSUFFICIENT RESOURCES)`;
+            }
+        }
+
+        if (repairBtn) {
+            repairBtn.disabled = !canRepair;
+            repairBtn.style.opacity = canRepair ? '1' : '0.5';
+        }
+    }
+
+    closeBaseTurretModal() {
+        const modal = document.getElementById('base-turret-modal');
         if (modal) {
             window.AudioManager?.play('ui_click', { volume: 0.45 });
             modal.classList.add('hidden');
@@ -14651,6 +14982,7 @@ export class ThreeGame {
         for (const material of Object.values(this.playerTorsoMaterials ?? {})) {
             material.color?.setHex(this._playerPolishHex);
         }
+        this.player3dOverlay?.setOperatorPolish?.(this._playerPolishHex);
         if (this.suitFillLight?.color) this.suitFillLight.color.copy(parsed);
     }
 
@@ -20327,6 +20659,13 @@ export class ThreeGame {
                 z: activeShip.tileZ
             });
         }
+        if (this.baseDefenseTurretState?.active && (this.bank?.getBaseTurretHp?.() ?? 0) > 0) {
+            targets.push({
+                type: 'base-turret',
+                x: this.baseDefenseTurretState.tileX,
+                z: this.baseDefenseTurretState.tileZ
+            });
+        }
         if (!targets.length) return null;
 
         for (const target of targets) {
@@ -21547,6 +21886,15 @@ export class ThreeGame {
                 this.applySnailContactKnockback(sprite, data);
                 if (data.type === 'cryosnail') {
                     this.applyPlayerSlow(2.5); // Cryosnail slows player on hit (SCOUT passive reduces this)
+                }
+            } else if (target.type === 'base-turret') {
+                this.damageBaseTurret(damage, data.type);
+                this.damageSnail(sprite, 1);
+                if (!sprite.userData.burstTriggered) {
+                    this.applySnailShipKnockback(sprite, data, {
+                        tileX: this.baseDefenseTurretState.tileX,
+                        tileZ: this.baseDefenseTurretState.tileZ
+                    });
                 }
             } else if (activeShip) {
                 this.damageShip(activeShip, damage, data.type);
@@ -23776,6 +24124,20 @@ export class ThreeGame {
         this.o2PromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.foundryPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
         this.blackBoxPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        this.baseTurretPromptEl?.removeEventListener('pointerup', this.handlePromptTap);
+        window.removeEventListener('o2-generator-upgraded', this._onBaseItemRepaired);
+        window.removeEventListener('goal-unlocked', this._onBaseItemRepaired);
+        window.removeEventListener('goal-upgraded', this._onBaseItemRepaired);
+        window.removeEventListener('base-turret-unlocked', this._onBaseTurretChanged);
+        window.removeEventListener('base-turret-upgraded', this._onBaseTurretChanged);
+        window.removeEventListener('base-turret-repaired', this._onBaseTurretChanged);
+        this.baseDefenseTurretGroup?.traverse?.((object) => {
+            object.geometry?.dispose?.();
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            for (const material of materials) material?.dispose?.();
+        });
+        this.baseDefenseTurretGroup?.removeFromParent?.();
+        this.baseDefenseTurretLight?.removeFromParent?.();
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);

@@ -272,12 +272,12 @@ function buildControllerConfig(controllerType) {
         preset(1, 'gameplay', {
             10: 'button_diamond',
             11: 'joystick',
-            12: 'right_joystick',
+            17: 'right_joystick',
             13: 'left_trigger',
             14: 'right_trigger',
             15: 'switch',
             16: 'left_trackpad',
-            17: 'right_trackpad',
+            12: 'right_trackpad',
             18: 'gyro'
         }),
         preset(2, 'archive', {

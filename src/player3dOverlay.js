@@ -164,6 +164,19 @@ function normalizeModel(root, targetHeight) {
     return scale;
 }
 
+export function computeOperatorPolishMaterialState(baseColor, baseRoughness, baseMetalness, polishColor) {
+    const original = new THREE.Color(baseColor);
+    const tint = new THREE.Color(polishColor);
+    const isStandardIssue = tint.getHex() === 0xffffff;
+    const color = original.clone();
+    if (!isStandardIssue) color.lerp(original.clone().multiply(tint), 0.78);
+    return {
+        color,
+        roughness: isStandardIssue ? baseRoughness : Math.min(baseRoughness, 0.36),
+        metalness: isStandardIssue ? baseMetalness : Math.max(baseMetalness, 0.2)
+    };
+}
+
 export async function createPlayer3dOverlay({
     targetHeight = 1.55,
     idleActionName = 'idle',
@@ -223,6 +236,39 @@ export async function createPlayer3dOverlay({
         console.warn('[player-3d-overlay] GG1 could not find Scout right-hand bone');
     }
 
+    // SkeletonUtils clones the scene graph but leaves material instances shared
+    // with the cached GLB template. Give this operator private materials so its
+    // selected polish cannot recolor menu previews or another class instance.
+    const materialClones = new Map();
+    const polishMaterials = [];
+    root.traverse((object) => {
+        if (!object.isMesh || !object.material) return;
+        let ancestor = object;
+        while (ancestor && ancestor !== root) {
+            if (ancestor === weapon) return;
+            ancestor = ancestor.parent;
+        }
+        const cloneMaterial = (source) => {
+            if (!source) return source;
+            if (!materialClones.has(source)) {
+                const clone = source.clone();
+                materialClones.set(source, clone);
+                if (clone.color) {
+                    polishMaterials.push({
+                        material: clone,
+                        baseColor: clone.color.clone(),
+                        baseRoughness: clone.roughness,
+                        baseMetalness: clone.metalness
+                    });
+                }
+            }
+            return materialClones.get(source);
+        };
+        object.material = Array.isArray(object.material)
+            ? object.material.map(cloneMaterial)
+            : cloneMaterial(object.material);
+    });
+
     const mixer = new THREE.AnimationMixer(root);
     const actions = new Map();
     const sourceAnimations = animationGltf?.animations ?? gltf.animations;
@@ -267,6 +313,20 @@ export async function createPlayer3dOverlay({
         root,
         actions,
         weapon,
+        setOperatorPolish(color = 0xffffff) {
+            for (const state of polishMaterials) {
+                const polished = computeOperatorPolishMaterialState(
+                    state.baseColor,
+                    state.baseRoughness,
+                    state.baseMetalness,
+                    color
+                );
+                state.material.color.copy(polished.color);
+                if (Number.isFinite(polished.roughness)) state.material.roughness = polished.roughness;
+                if (Number.isFinite(polished.metalness)) state.material.metalness = polished.metalness;
+                state.material.needsUpdate = true;
+            }
+        },
         setWeaponVisible(visible) {
             if (weapon) weapon.visible = Boolean(visible);
         },
