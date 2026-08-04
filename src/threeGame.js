@@ -55,7 +55,7 @@ import { blackBoxStore } from './blackBox.js';
 import { ARC_PRELUDE_ENABLED, PLAYER_3D_COSMETIC_OVERLAY_ENABLED } from './featureFlags.js';
 import { createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
-import { createWorld3dModel } from './world3dOverlay.js';
+import { createWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
 import { computeTrailPosition } from './companionFollow.js';
 import { SNAIL_ENCOUNTER_CONSTANTS } from './snailEncounter.js';
 import { createUniversalEncounter, resolveEncounterAction } from './universalEncounter.js';
@@ -3578,6 +3578,7 @@ export class ThreeGame {
             source.userData.world3dDesiredVisible = source.visible;
             source.userData.replacedBy3d = true;
             source.visible = false;
+            syncWorld3dReplacement(source);
             if (owner && ownerKey) owner[ownerKey] = root;
             if (owner?.threeObjects && !owner.threeObjects.includes(root)) owner.threeObjects.push(root);
         } catch (error) {
@@ -8601,9 +8602,11 @@ export class ThreeGame {
         const ship = this.getActiveShip();
         if (ship) {
             if (ship.o2ModuleSprite) {
-                ship.o2ModuleSprite.visible = true;
+                ship.o2ModuleSprite.userData.world3dDesiredVisible = true;
+                ship.o2ModuleSprite.visible = !ship.o2ModuleSprite.userData?.replacedBy3d;
                 ship.o2ModuleSprite.scale.set(0, 0, 1);
                 ship.o2ModuleSprite.position.y = 0.09 - 1.5;
+                syncWorld3dReplacement(ship.o2ModuleSprite, { scale: 0, visible: true });
             }
             if (ship.o2ModuleShadow) {
                 ship.o2ModuleShadow.visible = true;
@@ -8630,9 +8633,10 @@ export class ThreeGame {
             const progress = Math.min(1, this.o2StartupTime / duration);
             if (ship) {
                 if (ship.o2ModuleSprite) {
-                    ship.o2ModuleSprite.visible = true;
+                    ship.o2ModuleSprite.visible = !ship.o2ModuleSprite.userData?.replacedBy3d;
                     ship.o2ModuleSprite.scale.set(1.58 * progress, 1.58 * progress, 1);
                     ship.o2ModuleSprite.position.y = 0.09 - 1.5 * (1 - progress);
+                    syncWorld3dReplacement(ship.o2ModuleSprite, { scale: progress, visible: true });
                 }
                 if (ship.o2ModuleShadow) {
                     ship.o2ModuleShadow.visible = true;

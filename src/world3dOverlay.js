@@ -51,3 +51,17 @@ export async function createWorld3dModel(type) {
     root.add(model);
     return root;
 }
+
+// Keep a replacement attached to the sprite that still owns gameplay state.
+// The sprite can move after a GLB request starts (the O2 generator's boot
+// animation does exactly that), so copying its transform only once at load
+// completion can strand the model below the floor.
+export function syncWorld3dReplacement(source, { scale = 1, visible } = {}) {
+    const root = source?.userData?.world3dRoot;
+    if (!root) return false;
+    root.position.copy(source.position);
+    root.rotation.y = source.material?.rotation ?? 0;
+    root.scale.setScalar(Math.max(0, Number.isFinite(scale) ? scale : 1));
+    root.visible = visible ?? Boolean(source.userData.world3dDesiredVisible);
+    return true;
+}

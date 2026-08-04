@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { WORLD_3D_MODELS } from './world3dOverlay.js';
+import * as THREE from 'three';
+import { WORLD_3D_MODELS, syncWorld3dReplacement } from './world3dOverlay.js';
 
 describe('world 3D replacement catalog', () => {
     it('maps each new world counterpart to an optimized runtime GLB', () => {
@@ -16,5 +17,19 @@ describe('world 3D replacement catalog', () => {
             expect(config.url.endsWith('.glb')).toBe(true);
             expect(config.height).toBeGreaterThan(0);
         }
+    });
+
+    it('resynchronizes a loaded model when its source sprite moves during an animation', () => {
+        const source = new THREE.Sprite(new THREE.SpriteMaterial({ rotation: 0.4 }));
+        const root = new THREE.Group();
+        source.userData.world3dRoot = root;
+        source.userData.world3dDesiredVisible = true;
+        source.position.set(3, -1.2, 7);
+
+        expect(syncWorld3dReplacement(source, { scale: 0.5 })).toBe(true);
+        expect(root.position.toArray()).toEqual([3, -1.2, 7]);
+        expect(root.scale.toArray()).toEqual([0.5, 0.5, 0.5]);
+        expect(root.rotation.y).toBeCloseTo(0.4);
+        expect(root.visible).toBe(true);
     });
 });
