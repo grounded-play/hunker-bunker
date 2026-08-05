@@ -5219,6 +5219,11 @@ if (gameOverTryAgain) {
             () => {
                 hideGameOverScreen();
                 showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
+                // Death puts the app in the gameover phase. Input can be
+                // enabled on ThreeGame after the doors reopen, but movement
+                // is still rejected while the global phase remains there.
+                // Restore gameplay before rebuilding, matching a fresh run.
+                setAppPhase('gameplay');
                 window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: false,
