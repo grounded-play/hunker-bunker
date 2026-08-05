@@ -3404,7 +3404,7 @@ input:checked+.slider:before {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
-  z-index: 13000;
+  z-index: 100000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3435,20 +3435,20 @@ input:checked+.slider:before {
 }
 
 .critical-modal {
-  z-index: 16500;
+  z-index: 100050;
 }
 
 #settings-popup {
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  z-index: 16000;
+  z-index: 100010;
 }
 
 #audio-mixer-popup,
 #save-data-popup,
 #controls-popup {
-  z-index: 16010;
+  z-index: 100020;
 }
 
 /* Settings remains keyboard/Deck navigable at enlarged UI scales. */

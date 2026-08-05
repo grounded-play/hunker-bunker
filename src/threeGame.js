@@ -31,12 +31,8 @@ export const TiltShiftPassShader = {
 
         void main() {
             float dist = abs(vUv.y - focusY);
-            float factor = smoothstep(focusRange * 0.4, focusRange * 2.0, dist);
+            float factor = smoothstep(focusRange * 0.2, focusRange * 1.8, dist);
             vec2 step = dir * (blurAmount * factor);
-            if (factor < 0.01) {
-                gl_FragColor = texture2D(tDiffuse, vUv);
-                return;
-            }
             vec4 color = vec4(0.0);
             color += texture2D(tDiffuse, vUv - step * 3.0) * 0.09;
             color += texture2D(tDiffuse, vUv - step * 2.0) * 0.16;
@@ -4597,12 +4593,26 @@ export class ThreeGame {
             return Boolean(el && !el.classList.contains('hidden'));
         };
         return document.body.classList.contains('mission-intro-active')
+            || Boolean(document.querySelector('.modal:not(.hidden), .class-intro-overlay:not(.is-closing), .cinematic-still-overlay:not(.is-closing), #cutscene-overlay.is-active, .rgb-cinematic--visible'))
             || isVisible('console-terminal-modal')
             || isVisible('o2-generator-modal')
             || isVisible('game-over-modal')
             || isVisible('mothership-dialogue')
             || isVisible('confirm-modal')
             || isVisible('settings-popup')
+            || isVisible('tactical-map-modal')
+            || isVisible('codex-modal')
+            || isVisible('roster-modal')
+            || isVisible('fabrication-modal')
+            || isVisible('about-modal')
+            || isVisible('dev-console-modal')
+            || isVisible('base-turret-modal')
+            || isVisible('demo-end-modal')
+            || isVisible('camp-choice-modal')
+            || isVisible('leader-conversation-modal')
+            || isVisible('archive-sims-modal')
+            || isVisible('steam-vault-modal')
+            || isVisible('operator-polish-modal')
             || isVisible('snail-encounter-modal');
     }
 
