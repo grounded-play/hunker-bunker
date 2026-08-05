@@ -1159,12 +1159,18 @@ body {
 
 .loader-version-tag {
   font-family: 'Space Mono', monospace;
-  font-size: var(--font-xs);
+  width: 100%;
+  min-width: 0;
+  font-size: clamp(8px, var(--font-xs), 12px);
   color: var(--accent-primary);
   opacity: 0.85;
   letter-spacing: 2px;
   margin-bottom: calc(var(--vu) * 1.2);
   text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-shadow: 0 0 calc(var(--vu) * 0.8) rgba(255, 159, 28, 0.4);
 }
 
