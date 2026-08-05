@@ -2676,6 +2676,10 @@ export class ThreeGame {
             side: THREE.DoubleSide
         });
         this.cliffPathGeometry = new THREE.CircleGeometry(0.62, 20);
+        // Low-poly rim rubble sits across the regular tile seam. Flattened,
+        // rotated instances form a chipped overhang without changing the
+        // underlying collision/navigation grid.
+        this.cliffEdgeGeometry = new THREE.DodecahedronGeometry(0.62, 0);
 
         this.invisibleMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
@@ -17488,6 +17492,7 @@ export class ThreeGame {
 
         const voidPatchMatrices = [];
         const cliffMatricesByBiome = new Map();
+        const cliffEdgeMatricesByBiome = new Map();
         const rubbleMatrices = [];
         const floorRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
         const instMatrix = new THREE.Matrix4();
@@ -17568,6 +17573,35 @@ export class ThreeGame {
             );
             if (!cliffMatricesByBiome.has(biomeKey)) cliffMatricesByBiome.set(biomeKey, []);
             cliffMatricesByBiome.get(biomeKey).push(cliffMat);
+
+            // Two overlapping, flattened rock plates per cliff tile break the
+            // one-unit grid silhouette into a cracked, irregular rim. They use
+            // the same seeded stream as the main column, so chunk remounts do
+            // not make the edge crawl or visibly reshuffle.
+            if (!cliffEdgeMatricesByBiome.has(biomeKey)) cliffEdgeMatricesByBiome.set(biomeKey, []);
+            const edgeMatrices = cliffEdgeMatricesByBiome.get(biomeKey);
+            for (let edgeIndex = 0; edgeIndex < 2; edgeIndex += 1) {
+                const angle = rng() * Math.PI * 2;
+                const offset = 0.2 + rng() * 0.42;
+                const edgeQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                    (rng() - 0.5) * 0.24,
+                    rng() * Math.PI * 2,
+                    (rng() - 0.5) * 0.24
+                ));
+                edgeMatrices.push(new THREE.Matrix4().compose(
+                    new THREE.Vector3(
+                        worldX + Math.cos(angle) * offset,
+                        0.01 + rng() * 0.1,
+                        worldZ + Math.sin(angle) * offset
+                    ),
+                    edgeQuat,
+                    new THREE.Vector3(
+                        0.72 + rng() * 0.5,
+                        0.18 + rng() * 0.14,
+                        0.52 + rng() * 0.4
+                    )
+                ));
+            }
 
             if (this.isCliffSecretPath(worldX, worldZ) && this.cliffPathGeometry && this.cliffPathMaterial) {
                 const pathGlow = new THREE.Mesh(this.cliffPathGeometry, this.cliffPathMaterial);
@@ -17962,6 +17996,21 @@ export class ThreeGame {
                 cliffInstanced.castShadow = true;
                 cliffInstanced.userData = { isCliff: true };
                 group.add(cliffInstanced);
+            }
+        }
+
+        if (this.cliffEdgeGeometry && cliffEdgeMatricesByBiome.size > 0) {
+            for (const [bKey, matrices] of cliffEdgeMatricesByBiome.entries()) {
+                if (matrices.length === 0) continue;
+                const mat = this.cliffMaterials?.[bKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE];
+                if (!mat) continue;
+                const cliffEdges = new THREE.InstancedMesh(this.cliffEdgeGeometry, mat, matrices.length);
+                matrices.forEach((matrix, index) => cliffEdges.setMatrixAt(index, matrix));
+                cliffEdges.instanceMatrix.needsUpdate = true;
+                cliffEdges.receiveShadow = true;
+                cliffEdges.castShadow = true;
+                cliffEdges.userData = { isCliffEdgeDressing: true };
+                group.add(cliffEdges);
             }
         }
 
@@ -24607,6 +24656,7 @@ export class ThreeGame {
         this.cliffPathGeometry?.dispose?.();
         this.cliffPrimaryGeometry?.dispose?.();
         this.cliffRockGeometry?.dispose?.();
+        this.cliffEdgeGeometry?.dispose?.();
         this.voidMaterial?.dispose?.();
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();
