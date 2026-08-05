@@ -1,21 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { ThreeGame } from './threeGame.js';
+import { ThreeGame, TiltShiftPassShader } from './threeGame.js';
 
-describe('ThreeGame - Tilt-Shift Camera & Bokeh Vignette', () => {
-    it('creates bokeh particles with specified count and varied colors/properties', () => {
-        const particles = ThreeGame.prototype.createBokehParticles.call({}, 20);
-        expect(particles).toHaveLength(20);
-        particles.forEach((p) => {
-            expect(p).toHaveProperty('angle');
-            expect(p).toHaveProperty('distanceRatio');
-            expect(p).toHaveProperty('radius');
-            expect(p).toHaveProperty('baseAlpha');
-            expect(['cyan', 'amber', 'white']).toContain(p.hue);
-        });
+describe('ThreeGame - WebGL Camera Tilt-Shift Shader Pass', () => {
+    it('defines TiltShiftPassShader with focusY and blur direction uniforms', () => {
+        expect(TiltShiftPassShader).toBeDefined();
+        expect(TiltShiftPassShader.uniforms).toHaveProperty('focusY');
+        expect(TiltShiftPassShader.uniforms).toHaveProperty('focusRange');
+        expect(TiltShiftPassShader.uniforms).toHaveProperty('blurAmount');
+        expect(TiltShiftPassShader.uniforms).toHaveProperty('dir');
     });
 
-    it('updates focus CSS variables and toggles active state in gameplay mode', () => {
+    it('updates focus CSS variables and shader uniforms in gameplay mode', () => {
         const overlayStyleMap = new Map();
         const fakeOverlay = {
             classList: {
@@ -28,37 +24,21 @@ describe('ThreeGame - Tilt-Shift Camera & Bokeh Vignette', () => {
             }
         };
 
-        const fakeContext = {
-            setTransform: () => {},
-            clearRect: () => {},
-            save: () => {},
-            restore: () => {},
-            beginPath: () => {},
-            arc: () => {},
-            fill: () => {},
-            stroke: () => {}
-        };
-
-        const fakeCanvas = {
-            width: 100,
-            height: 100,
-            style: {}
-        };
+        const fakePassV = { uniforms: { focusY: { value: 0.5 } } };
+        const fakePassH = { uniforms: { focusY: { value: 0.5 } } };
 
         const fakeGame = {
             tiltShiftOverlay: fakeOverlay,
-            bokehCanvas: fakeCanvas,
-            bokehContext: fakeContext,
+            tiltShiftPassV: fakePassV,
+            tiltShiftPassH: fakePassH,
             performanceProfile: 'gameplay',
             loadingPaused: false,
             _tiltShiftFocusX: 50,
             _tiltShiftFocusY: 50,
             _tiltShiftProjectVec: new THREE.Vector3(),
-            _bokehParticles: ThreeGame.prototype.createBokehParticles(10),
             player: { position: new THREE.Vector3(0, 0, 0) },
             camera: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
-            container: { clientWidth: 800, clientHeight: 600 },
-            renderer: { getPixelRatio: () => 1 }
+            container: { clientWidth: 800, clientHeight: 600 }
         };
         fakeGame.camera.position.set(0, 10, 10);
         fakeGame.camera.lookAt(0, 0, 0);
@@ -69,16 +49,12 @@ describe('ThreeGame - Tilt-Shift Camera & Bokeh Vignette', () => {
         expect(overlayStyleMap.has('--focus-x')).toBe(true);
         expect(overlayStyleMap.has('--focus-y')).toBe(true);
 
-        const focusX = parseFloat(overlayStyleMap.get('--focus-x'));
-        const focusY = parseFloat(overlayStyleMap.get('--focus-y'));
-        expect(focusX).toBeGreaterThan(0);
-        expect(focusX).toBeLessThan(100);
-        expect(focusY).toBeGreaterThan(0);
-        expect(focusY).toBeLessThan(100);
+        expect(fakePassV.uniforms.focusY.value).toBeGreaterThan(0.05);
+        expect(fakePassV.uniforms.focusY.value).toBeLessThan(0.95);
+        expect(fakePassH.uniforms.focusY.value).toEqual(fakePassV.uniforms.focusY.value);
     });
 
-    it('clears canvas and removes active state when in menu profile', () => {
-        let cleared = false;
+    it('removes active overlay state when in menu profile', () => {
         const fakeOverlay = {
             classList: {
                 toggle: (cls, state) => {
@@ -87,15 +63,8 @@ describe('ThreeGame - Tilt-Shift Camera & Bokeh Vignette', () => {
             },
             style: { setProperty: () => {} }
         };
-        const fakeContext = {
-            clearRect: () => {
-                cleared = true;
-            }
-        };
         const fakeGame = {
             tiltShiftOverlay: fakeOverlay,
-            bokehCanvas: { width: 100, height: 100, style: {} },
-            bokehContext: fakeContext,
             performanceProfile: 'menu',
             player: { position: new THREE.Vector3(0, 0, 0) },
             camera: new THREE.PerspectiveCamera(),
@@ -104,6 +73,5 @@ describe('ThreeGame - Tilt-Shift Camera & Bokeh Vignette', () => {
 
         ThreeGame.prototype.updateTiltShiftAndBokeh.call(fakeGame, 0.016);
         expect(fakeOverlay._active).toBe(false);
-        expect(cleared).toBe(true);
     });
 });

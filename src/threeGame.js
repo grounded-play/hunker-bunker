@@ -2,6 +2,53 @@ import { CHUNK_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
 
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+
+export const TiltShiftPassShader = {
+    uniforms: {
+        tDiffuse: { value: null },
+        focusY: { value: 0.5 },
+        focusRange: { value: 0.20 },
+        blurAmount: { value: 0.0055 },
+        dir: { value: new THREE.Vector2(0, 1) }
+    },
+    vertexShader: `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float focusY;
+        uniform float focusRange;
+        uniform float blurAmount;
+        uniform vec2 dir;
+        varying vec2 vUv;
+
+        void main() {
+            float dist = abs(vUv.y - focusY);
+            float factor = smoothstep(focusRange * 0.4, focusRange * 2.2, dist);
+            vec2 step = dir * (blurAmount * factor);
+            if (factor < 0.01) {
+                gl_FragColor = texture2D(tDiffuse, vUv);
+                return;
+            }
+            vec4 color = vec4(0.0);
+            color += texture2D(tDiffuse, vUv - step * 3.0) * 0.09;
+            color += texture2D(tDiffuse, vUv - step * 2.0) * 0.16;
+            color += texture2D(tDiffuse, vUv - step * 1.0) * 0.25;
+            color += texture2D(tDiffuse, vUv) * 0.30;
+            color += texture2D(tDiffuse, vUv + step * 1.0) * 0.25;
+            color += texture2D(tDiffuse, vUv + step * 2.0) * 0.16;
+            color += texture2D(tDiffuse, vUv + step * 3.0) * 0.09;
+            gl_FragColor = color;
+        }
+    `
+};
 import { assetUrl } from './assetUrl.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
@@ -1230,22 +1277,21 @@ export class ThreeGame {
         this.tiltShiftOverlay = document.createElement('div');
         this.tiltShiftOverlay.className = 'gameplay-tilt-shift';
         this.tiltShiftOverlay.setAttribute('aria-hidden', 'true');
-        this.bokehCanvas = document.createElement('canvas');
-        Object.assign(this.bokehCanvas.style, {
-            position: 'absolute',
-            inset: '0',
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
-            zIndex: '1'
-        });
-        this.bokehContext = this.bokehCanvas.getContext('2d', { alpha: true });
-        this.tiltShiftOverlay.appendChild(this.bokehCanvas);
 
         this._tiltShiftFocusX = 50;
         this._tiltShiftFocusY = 50;
         this._tiltShiftProjectVec = new THREE.Vector3();
-        this._bokehParticles = this.createBokehParticles(28);
+
+        this.composer = new EffectComposer(this.renderer);
+        this.renderPass = new RenderPass(this.scene, this.camera);
+        this.composer.addPass(this.renderPass);
+
+        this.tiltShiftPassV = new ShaderPass(TiltShiftPassShader);
+        this.tiltShiftPassH = new ShaderPass(TiltShiftPassShader);
+        this.tiltShiftPassH.uniforms.dir.value.set(1, 0);
+
+        this.composer.addPass(this.tiltShiftPassV);
+        this.composer.addPass(this.tiltShiftPassH);
 
         this.darknessOverlay = document.createElement('canvas');
         Object.assign(this.darknessOverlay.style, {
@@ -3907,52 +3953,25 @@ export class ThreeGame {
         );
         beacon.rotation.x = -Math.PI / 2;
         beacon.position.y = 0.02;
+        beacon.rotation.x = -Math.PI / 2;
+        beacon.position.y = 0.02;
         beacon.renderOrder = 999;
         marker.add(beacon);
 
-        // Body silhouette group (upright character outline visible through walls)
-        const silhouetteGroup = new THREE.Group();
-        silhouetteGroup.position.y = this.playerHeight || 1.1;
-
-        const outlineOffsets = [
-            [-0.038, 0], [0.038, 0], [0, -0.038], [0, 0.038],
-            [-0.027, -0.027], [0.027, -0.027], [-0.027, 0.027], [0.027, 0.027]
-        ];
-
-        this._playerSilhouetteOutlineMats = [];
-        for (const [ox, oy] of outlineOffsets) {
-            const mat = new THREE.SpriteMaterial({
-                transparent: true,
-                opacity: 0.95,
-                depthTest: false,
-                depthWrite: false,
-                color: 0xffa020,
-                fog: false
-            });
-            this._playerSilhouetteOutlineMats.push(mat);
-            const spr = new THREE.Sprite(mat);
-            spr.center.set(0.5, 0);
-            spr.position.set(ox, oy, 0);
-            spr.renderOrder = 9997;
-            silhouetteGroup.add(spr);
-        }
-
-        this._playerSilhouetteInnerMat = new THREE.SpriteMaterial({
+        // High-visibility 3D vertical beacon line visible through walls
+        const linePoints = [new THREE.Vector3(0, 0.05, 0), new THREE.Vector3(0, 1.8, 0)];
+        const lineGeom = new THREE.BufferGeometry().setFromPoints(linePoints);
+        const lineMat = new THREE.LineBasicMaterial({
+            color: 0xff9f1c,
             transparent: true,
-            opacity: 0.85,
+            opacity: 0.95,
+            linewidth: 2,
             depthTest: false,
-            depthWrite: false,
-            color: 0xff5500,
-            fog: false
+            depthWrite: false
         });
-        const innerSpr = new THREE.Sprite(this._playerSilhouetteInnerMat);
-        innerSpr.center.set(0.5, 0);
-        innerSpr.position.set(0, 0, 0);
-        innerSpr.renderOrder = 9998;
-        silhouetteGroup.add(innerSpr);
-
-        this.playerSilhouetteGroup = silhouetteGroup;
-        marker.add(silhouetteGroup);
+        const pillar = new THREE.Line(lineGeom, lineMat);
+        pillar.renderOrder = 999;
+        marker.add(pillar);
 
         marker.renderOrder = 999;
 
@@ -5291,6 +5310,7 @@ export class ThreeGame {
         this.camera.updateProjectionMatrix();
 
         this.renderer.setSize(width, height, false);
+        this.composer?.setSize?.(width, height);
     }
 
     setLoadingPaused(paused = false) {
@@ -5571,7 +5591,11 @@ export class ThreeGame {
         } else {
             this.updatePocketContent(delta, now);
         }
-        this.renderer.render(this.scene, this.camera);
+        if (this.composer && this.performanceProfile === 'gameplay') {
+            this.composer.render();
+        } else {
+            this.renderer.render(this.scene, this.camera);
+        }
     }
 
     // Feed the Director a run-state snapshot and execute whatever lever it pulls.
@@ -16256,25 +16280,6 @@ export class ThreeGame {
         this.updateTiltShiftAndBokeh(0.016);
     }
 
-    createBokehParticles(count = 28) {
-        const particles = [];
-        const hues = ['cyan', 'amber', 'white'];
-        for (let i = 0; i < count; i++) {
-            particles.push({
-                angle: (i / count) * Math.PI * 2 + (Math.random() * 0.4 - 0.2),
-                distanceRatio: 0.38 + Math.random() * 0.58,
-                radius: 10 + Math.random() * 32,
-                baseAlpha: 0.06 + Math.random() * 0.22,
-                pulseSpeed: 0.6 + Math.random() * 1.8,
-                pulsePhase: Math.random() * Math.PI * 2,
-                driftSpeed: (Math.random() > 0.5 ? 1 : -1) * (0.04 + Math.random() * 0.14),
-                hue: hues[i % hues.length],
-                ringThickness: 1 + Math.random() * 2.5
-            });
-        }
-        return particles;
-    }
-
     updateTiltShiftAndBokeh(delta = 0.016) {
         const overlay = this.tiltShiftOverlay;
         if (!overlay || !this.player || !this.camera) return;
@@ -16282,17 +16287,7 @@ export class ThreeGame {
         const isGameplay = this.performanceProfile === 'gameplay' && !this.loadingPaused;
         overlay.classList.toggle('is-active', isGameplay);
 
-        const canvas = this.bokehCanvas;
-        const ctx = this.bokehContext;
-        const w = this.container?.clientWidth || 1;
-        const h = this.container?.clientHeight || 1;
-
-        if (!isGameplay) {
-            if (ctx && canvas) {
-                ctx.clearRect(0, 0, canvas.width || 1, canvas.height || 1);
-            }
-            return;
-        }
+        if (!isGameplay) return;
 
         // Project player's torso position into screen percentage coordinates
         this._tiltShiftProjectVec.set(
@@ -16311,65 +16306,13 @@ export class ThreeGame {
         overlay.style.setProperty('--focus-x', `${this._tiltShiftFocusX.toFixed(2)}%`);
         overlay.style.setProperty('--focus-y', `${this._tiltShiftFocusY.toFixed(2)}%`);
 
-        if (!canvas || !ctx) return;
-
-        const dpr = Math.max(0.65, this.renderer?.getPixelRatio?.() || 1);
-        const targetW = Math.max(1, Math.round(w * dpr));
-        const targetH = Math.max(1, Math.round(h * dpr));
-
-        if (canvas.width !== targetW || canvas.height !== targetH) {
-            canvas.width = targetW;
-            canvas.height = targetH;
-            canvas.style.width = `${w}px`;
-            canvas.style.height = `${h}px`;
+        // Update WebGL TiltShiftShader uniforms (0 at bottom, 1 at top in UV space)
+        const focusNormY = Math.min(0.95, Math.max(0.05, 1.0 - (this._tiltShiftFocusY / 100)));
+        if (this.tiltShiftPassV?.uniforms?.focusY) {
+            this.tiltShiftPassV.uniforms.focusY.value = focusNormY;
         }
-
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, w, h);
-
-        const fx = (this._tiltShiftFocusX / 100) * w;
-        const fy = (this._tiltShiftFocusY / 100) * h;
-        const maxR = Math.hypot(Math.max(fx, w - fx), Math.max(fy, h - fy));
-
-        if (!this._bokehParticles) {
-            this._bokehParticles = this.createBokehParticles(28);
-        }
-
-        for (let i = 0; i < this._bokehParticles.length; i++) {
-            const p = this._bokehParticles[i];
-            p.angle += p.driftSpeed * delta;
-            p.pulsePhase += p.pulseSpeed * delta;
-            const alpha = p.baseAlpha * (0.65 + 0.35 * Math.sin(p.pulsePhase));
-
-            const dist = p.distanceRatio * maxR;
-            const px = fx + Math.cos(p.angle) * dist;
-            const py = fy + Math.sin(p.angle) * dist * 0.75;
-
-            if (px < -50 || px > w + 50 || py < -50 || py > h + 50) continue;
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(px, py, p.radius, 0, Math.PI * 2);
-
-            let mainColor, ringColor;
-            if (p.hue === 'cyan') {
-                mainColor = `rgba(70, 220, 255, ${alpha.toFixed(3)})`;
-                ringColor = `rgba(160, 240, 255, ${(alpha * 1.5).toFixed(3)})`;
-            } else if (p.hue === 'amber') {
-                mainColor = `rgba(255, 190, 80, ${alpha.toFixed(3)})`;
-                ringColor = `rgba(255, 220, 140, ${(alpha * 1.5).toFixed(3)})`;
-            } else {
-                mainColor = `rgba(220, 240, 255, ${alpha.toFixed(3)})`;
-                ringColor = `rgba(255, 255, 255, ${(alpha * 1.5).toFixed(3)})`;
-            }
-
-            ctx.fillStyle = mainColor;
-            ctx.fill();
-
-            ctx.lineWidth = p.ringThickness;
-            ctx.strokeStyle = ringColor;
-            ctx.stroke();
-            ctx.restore();
+        if (this.tiltShiftPassH?.uniforms?.focusY) {
+            this.tiltShiftPassH.uniforms.focusY.value = focusNormY;
         }
     }
 
@@ -23457,31 +23400,8 @@ export class ThreeGame {
         this.playerMarker.children[0].material.opacity = pulse;
         this.playerMarker.children[1].material.opacity = 0.7 + Math.sin(now * 0.012 + 0.7) * 0.2;
         this.playerMarker.children[0].lookAt(this.camera.position.x, 0.05, this.camera.position.z);
-
-        if (this.playerSilhouetteGroup && this.playerSprite?.material?.map) {
-            const currentMap = this.playerSprite.material.map;
-            const currentScale = this.playerSprite.scale;
-
-            this.playerSilhouetteGroup.scale.copy(currentScale);
-            this.playerSilhouetteGroup.position.set(
-                this.playerSpriteLead || 0,
-                this.playerHeight || 1.1,
-                this.playerSpriteLead || 0
-            );
-
-            const outlineOpacity = 0.95 * (0.8 + Math.sin(now * 0.014) * 0.2);
-            const innerOpacity = 0.85 * (0.8 + Math.sin(now * 0.014) * 0.2);
-
-            if (this._playerSilhouetteOutlineMats) {
-                for (const mat of this._playerSilhouetteOutlineMats) {
-                    mat.map = currentMap;
-                    mat.opacity = outlineOpacity;
-                }
-            }
-            if (this._playerSilhouetteInnerMat) {
-                this._playerSilhouetteInnerMat.map = currentMap;
-                this._playerSilhouetteInnerMat.opacity = innerOpacity;
-            }
+        if (this.playerMarker.children[2]?.material) {
+            this.playerMarker.children[2].material.opacity = 0.8 + Math.sin(now * 0.014) * 0.2;
         }
     }
 
@@ -24956,7 +24876,6 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
         this.darknessOverlay?.remove?.();
-        this.bokehCanvas?.remove?.();
         this.tiltShiftOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
