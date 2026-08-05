@@ -104,10 +104,10 @@ export function createActionRouter() {
             tabLeft: edge('menu_tab_left', pad.menuTabLeft),
             tabRight: edge('menu_tab_right', pad.menuTabRight),
             pause: edge('menu_pause', pad.pause),
-            pointer: {
-                x: pad.camera?.x ?? 0,
-                y: pad.camera?.y ?? 0
-            },
+            // Menus use deterministic focus navigation. Do not turn the right
+            // stick into a cursor: tiny resting-stick drift made the menu focus
+            // and scroll position move by themselves on handheld controllers.
+            pointer: { x: 0, y: 0 },
             cameraDelta: pad.cameraDelta ?? { x: 0, y: 0 }
         };
     }

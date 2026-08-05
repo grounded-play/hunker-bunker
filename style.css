@@ -3599,6 +3599,76 @@ input:checked+.slider:before {
   cursor: pointer;
 }
 
+.settings-choice-control,
+.crosshair-color-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.settings-controller-hint,
+.crosshair-custom-color {
+  color: var(--text-dim);
+  font-size: max(11px, calc(var(--font-xs) * 0.72));
+  letter-spacing: 0.08em;
+}
+
+.crosshair-color-presets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(32px, calc(var(--vu) * 4.2)));
+  gap: 7px;
+}
+
+.sensitivity-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(58px, 1fr));
+  gap: 5px;
+}
+
+.sensitivity-presets button {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 159, 28, 0.5);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--text-main);
+  font: 800 max(12px, calc(var(--font-xs) * 0.78)) 'Outfit', sans-serif;
+  cursor: pointer;
+}
+
+.sensitivity-presets button[aria-pressed="true"],
+.sensitivity-presets button:focus-visible {
+  border-color: #fff;
+  outline: 2px solid var(--accent-primary);
+  background: rgba(255, 159, 28, 0.24);
+}
+
+.crosshair-color-swatch {
+  width: 100%;
+  min-width: 32px;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  border-radius: 5px;
+  background: var(--swatch-color);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.crosshair-color-swatch[aria-pressed="true"],
+.crosshair-color-swatch:focus-visible {
+  border-color: #fff;
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.crosshair-custom-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .modal-content {
   background: var(--bg-panel);
   border: 1px solid var(--accent-primary);

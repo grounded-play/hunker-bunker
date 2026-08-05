@@ -63,7 +63,7 @@ export function computeOverlayYaw(directionX, directionZ) {
     return Math.atan2(directionX, directionZ);
 }
 
-export function computeUpperBodyAimOffset(rootYaw, aimX, aimZ, maxTurn = Math.PI / 2) {
+export function computeUpperBodyAimOffset(rootYaw, aimX, aimZ, maxTurn = Math.PI) {
     if (Math.hypot(aimX, aimZ) < 1e-5) return 0;
     const aimYaw = computeOverlayYaw(aimX, aimZ);
     const offset = Math.atan2(Math.sin(aimYaw - rootYaw), Math.cos(aimYaw - rootYaw));

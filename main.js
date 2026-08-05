@@ -675,6 +675,12 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables.find((element) => element.closest?.('.setting-item'))
             ?? focusables[0];
     }
+    if (root?.id === 'fabrication-modal') {
+        return focusables.find((element) => element.id === 'fab-activate-btn' && !element.disabled)
+            ?? focusables.find((element) => element.id === 'fab-roll-btn' && !element.disabled)
+            ?? focusables.find((element) => element.id === 'close-fabrication-modal')
+            ?? focusables[0];
+    }
     if (root?.id === 'mothership-dialogue') {
         return focusables.find((element) => element.id === 'mothership-choice-skip' && isElementVisible(element))
             ?? focusables.find((element) => element.id === 'mothership-choice-tutorial' && isElementVisible(element))
@@ -6422,6 +6428,13 @@ const transitionFromTitleToMenu = (afterClosed = null) => {
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     const playerType = getSelectedHeroType();
     saveHeroType(playerType);
+    // Standard deployments always roll a fresh world. Daily Ops is the only
+    // mode allowed to retain a fixed shared seed.
+    _isDailyOpsRun = false;
+    if (window.game) {
+        window.game.fixedRunEntropy = false;
+        window.game.globalSeedOffset = 0;
+    }
     // Hold one continuous black/simulation barrier from the menu close,
     // through world warm-up and the authored intro, to the final door reveal.
     // Adding the body class before switching to gameplay also prevents a
@@ -7282,12 +7295,14 @@ function openSettingsModal() {
 
     const aimSensSelect = document.getElementById('setting-aim-sensitivity');
     if (aimSensSelect) aimSensSelect.value = String(state.settings.aimSensitivity ?? 1.0);
+    syncAimSensitivityControls();
 
     const invertYToggle = document.getElementById('setting-invert-y-toggle');
     if (invertYToggle) invertYToggle.checked = !!state.settings.invertAimY;
 
     const crosshairColor = document.getElementById('setting-crosshair-color');
     if (crosshairColor) crosshairColor.value = state.settings.crosshairColor || DEFAULT_CROSSHAIR_COLOR;
+    syncCrosshairColorControls();
 
     const diffVal = document.getElementById('setting-difficulty-val');
     if (diffVal) {
@@ -7312,18 +7327,55 @@ document.getElementById('setting-text-floor')?.addEventListener('change', (e) =>
 });
 document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (e) => {
     state.settings.aimSensitivity = parseFloat(e.target.value) || 1.0;
+    syncAimSensitivityControls();
     persistSettings();
+});
+
+function syncAimSensitivityControls() {
+    const selected = Number(state.settings.aimSensitivity ?? 1);
+    document.querySelectorAll('[data-aim-sensitivity]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(Number(button.dataset.aimSensitivity) === selected));
+    });
+}
+
+document.querySelectorAll('[data-aim-sensitivity]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const sensitivity = Number(button.dataset.aimSensitivity);
+        if (!Number.isFinite(sensitivity)) return;
+        state.settings.aimSensitivity = sensitivity;
+        const select = document.getElementById('setting-aim-sensitivity');
+        if (select) select.value = String(sensitivity);
+        syncAimSensitivityControls();
+        persistSettings();
+    });
 });
 document.getElementById('setting-invert-y-toggle')?.addEventListener('change', (e) => {
     state.settings.invertAimY = Boolean(e.target.checked);
     persistSettings();
 });
-document.getElementById('setting-crosshair-color')?.addEventListener('input', (e) => {
-    const color = String(e.target.value || '').toLowerCase();
+function setCrosshairColor(value) {
+    const color = String(value || '').toLowerCase();
     if (!/^#[0-9a-f]{6}$/.test(color)) return;
     state.settings.crosshairColor = color;
     document.documentElement.style.setProperty('--crosshair-color', color);
+    const picker = document.getElementById('setting-crosshair-color');
+    if (picker && picker.value !== color) picker.value = color;
+    syncCrosshairColorControls();
     persistSettings();
+}
+
+function syncCrosshairColorControls() {
+    const selected = state.settings.crosshairColor || DEFAULT_CROSSHAIR_COLOR;
+    document.querySelectorAll('[data-crosshair-color]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.crosshairColor === selected));
+    });
+}
+
+document.getElementById('setting-crosshair-color')?.addEventListener('input', (e) => {
+    setCrosshairColor(e.target.value);
+});
+document.querySelectorAll('[data-crosshair-color]').forEach((button) => {
+    button.addEventListener('click', () => setCrosshairColor(button.dataset.crosshairColor));
 });
 
 if (settingsBtns.length > 0 && settingsPopup) {
@@ -7975,6 +8027,13 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const controlsPopup = document.getElementById('controls-popup');
+        if (controlsPopup && !controlsPopup.classList.contains('hidden')) {
+            document.getElementById('close-controls')?.click();
+            event.preventDefault();
+            return;
+        }
+
         const audioMixerPopup = document.getElementById('audio-mixer-popup');
         if (audioMixerPopup && !audioMixerPopup.classList.contains('hidden')) {
             draftAudioMix = cloneAudioMix(state.settings.audioMix);
@@ -8178,6 +8237,7 @@ function renderFoundryActivationPanel(grid, bank) {
         <div class="fab-activation-panel__hint">${canActivate ? 'READY TO ACTIVATE' : missingText}</div>
     `;
     const btn = document.createElement('button');
+    btn.id = 'fab-activate-btn';
     btn.className = 'fab-card__btn';
     btn.disabled = !canActivate;
     btn.textContent = canActivate ? 'ACTIVATE FOUNDRY' : missingText;
@@ -8187,6 +8247,7 @@ function renderFoundryActivationPanel(grid, bank) {
             window.AudioManager?.play?.('class_lock', { volume: 0.55 });
             renderFabricationModal();
             refreshFabAccess();
+            requestAnimationFrame(() => focusControllerTarget(document.getElementById('fab-roll-btn')));
         } else {
             window.AudioManager?.play?.('ui_error', { volume: 0.5 });
             renderFabricationModal();
@@ -8365,6 +8426,10 @@ function openFabricationModal() {
     renderFabricationModal();
     const modal = document.getElementById('fabrication-modal');
     if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+    requestAnimationFrame(() => {
+        const focusables = getVisibleControllerFocusables(modal);
+        focusControllerTarget(getPreferredControllerFocusTarget(modal, focusables));
+    });
     if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
 }
 function closeFabricationModal() {

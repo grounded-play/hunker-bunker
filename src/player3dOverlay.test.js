@@ -63,10 +63,11 @@ describe('player 3D cosmetic overlay', () => {
         expect(Object.values(weights).reduce((sum, value) => sum + value, 0)).toBeCloseTo(1);
     });
 
-    it('turns the upper body toward aim without overtwisting the legs', () => {
+    it('lets the upper body track aim independently through a full turn', () => {
         expect(computeUpperBodyAimOffset(0, 1, 0)).toBeCloseTo(Math.PI / 2);
         expect(computeUpperBodyAimOffset(0, -1, 0)).toBeCloseTo(-Math.PI / 2);
-        expect(computeUpperBodyAimOffset(0, 0, -1)).toBeCloseTo(Math.PI / 2);
+        expect(computeUpperBodyAimOffset(0, 0, -1)).toBeCloseTo(Math.PI);
+        expect(computeUpperBodyAimOffset(0, 0, -1, Math.PI / 2)).toBeCloseTo(Math.PI / 2);
     });
 
     it('redirects idle/walk/run to their injured counterpart only when hurt and the clip exists', () => {

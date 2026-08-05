@@ -1732,15 +1732,26 @@
             </select>
           </div>
           <div class="setting-item">
-            <span>AIM / JOYSTICK SENSITIVITY</span>
-            <select id="setting-aim-sensitivity" class="settings-select">
+            <span>RIGHT STICK AIM SPEED</span>
+            <div class="settings-choice-control">
+              <select id="setting-aim-sensitivity" class="settings-select" aria-label="Right stick aim speed">
               <option value="0.5">50% (SLOW)</option>
               <option value="0.75">75% (LIGHT)</option>
               <option value="1.0" selected>100% (STANDARD)</option>
               <option value="1.25">125% (FAST)</option>
               <option value="1.5">150% (VERY FAST)</option>
               <option value="2.0">200% (HYPER)</option>
-            </select>
+              </select>
+              <div class="sensitivity-presets" role="group" aria-label="Right stick aim speed presets">
+                <button type="button" data-aim-sensitivity="0.5">50%</button>
+                <button type="button" data-aim-sensitivity="0.75">75%</button>
+                <button type="button" data-aim-sensitivity="1">100%</button>
+                <button type="button" data-aim-sensitivity="1.25">125%</button>
+                <button type="button" data-aim-sensitivity="1.5">150%</button>
+                <button type="button" data-aim-sensitivity="2">200%</button>
+              </div>
+              <span class="settings-controller-hint">D-PAD ◀ ▶ TO ADJUST</span>
+            </div>
           </div>
           <div class="setting-item">
             <span>INVERT AIM Y-AXIS</span>
@@ -1748,7 +1759,18 @@
           </div>
           <div class="setting-item">
             <span>CROSSHAIR COLOR</span>
-            <input type="color" id="setting-crosshair-color" class="settings-color-picker" value="#ff9f1c" aria-label="Crosshair color">
+            <div class="crosshair-color-controls">
+              <div id="crosshair-color-presets" class="crosshair-color-presets" role="group" aria-label="Crosshair color presets">
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffffff" style="--swatch-color:#ffffff" aria-label="White crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#39ff88" style="--swatch-color:#39ff88" aria-label="Green crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#2ec4ff" style="--swatch-color:#2ec4ff" aria-label="Cyan crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffe14a" style="--swatch-color:#ffe14a" aria-label="Yellow crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff4f64" style="--swatch-color:#ff4f64" aria-label="Red crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#d76bff" style="--swatch-color:#d76bff" aria-label="Purple crosshair"></button>
+              </div>
+              <label class="crosshair-custom-color">CUSTOM <input type="color" id="setting-crosshair-color" class="settings-color-picker" value="#ff9f1c" aria-label="Custom crosshair color"></label>
+            </div>
           </div>
           <div class="setting-item">
             <span>COLORBLIND ASSIST</span>

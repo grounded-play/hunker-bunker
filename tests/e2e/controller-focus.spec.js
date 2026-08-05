@@ -137,6 +137,21 @@ test.describe('controller-ready modal focus', () => {
         await page.evaluate(() => { navigator.getGamepads = () => []; });
     });
 
+    test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const fast = page.locator('[data-aim-sensitivity="1.5"]');
+        await fast.focus();
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: 'menu_confirm' } }));
+        });
+
+        await expect(fast).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.locator('#setting-aim-sensitivity')).toHaveValue('1.5');
+        await expect.poll(() => page.evaluate(() => localStorage.getItem('hb_aim_sensitivity'))).toBe('1.5');
+    });
+
     test('crosshair color picker updates and persists the accessibility color', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
@@ -152,6 +167,20 @@ test.describe('controller-ready modal focus', () => {
             stored: localStorage.getItem('hb_crosshair_color'),
             rendered: getComputedStyle(document.documentElement).getPropertyValue('--crosshair-color').trim()
         }))).toEqual({ stored: '#39ff88', rendered: '#39ff88' });
+    });
+
+    test('controller can choose a crosshair color without opening the native picker', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const green = page.locator('[data-crosshair-color="#39ff88"]');
+        await green.focus();
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: 'menu_confirm' } }));
+        });
+
+        await expect(green).toHaveAttribute('aria-pressed', 'true');
+        await expect.poll(() => page.evaluate(() => localStorage.getItem('hb_crosshair_color'))).toBe('#39ff88');
     });
 
     test('controls/remapping traps focus and restores its settings trigger', async ({ page }) => {
@@ -175,8 +204,11 @@ test.describe('controller-ready modal focus', () => {
             ))).toBe(true);
         }
 
-        await page.locator('#close-controls').click();
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: 'menu_back' } }));
+        });
         await expect(modal).toBeHidden();
+        await expect(page.locator('#settings-popup')).toBeVisible();
         await expect(trigger).toBeFocused();
     });
 

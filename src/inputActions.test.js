@@ -151,6 +151,14 @@ describe('createActionRouter', () => {
         expect(actions.tabRight).toBe(false);
     });
 
+    it('keeps the right stick inert in menus so stick drift cannot move the UI', () => {
+        const router = createActionRouter();
+        const { actions } = router.deriveActions(padSnapshot({ camera: { x: 0.8, y: -0.6 } }));
+        expect(actions.pointer).toEqual({ x: 0, y: 0 });
+        expect(actions.up).toBe(false);
+        expect(actions.down).toBe(false);
+    });
+
     it('passes the gameplay snapshot through untouched in the gameplay set', () => {
         const router = createActionRouter();
         router.setActionSet(ACTION_SETS.GAMEPLAY);

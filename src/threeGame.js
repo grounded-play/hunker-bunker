@@ -109,6 +109,7 @@ import {
     getPlayerSpriteLayout
 } from './playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './spriteAtlasRuntime.js';
+import { createFreshRunEntropy } from './runEntropy.js';
 import {
     ENEMY_SPRITE_LAYOUTS,
     STATIC_ENEMY_SPRITE_PATHS,
@@ -960,7 +961,7 @@ export class ThreeGame {
         // every run reset so discoveries land somewhere new each attempt; pinned
         // to 0 for Daily Ops so all players share the same daily layout.
         this.fixedRunEntropy = false;
-        this.runEntropy = (Math.random() * 0xffffffff) >>> 0;
+        this.runEntropy = createFreshRunEntropy();
         this.pendingChunkMounts = [];
         this.pendingChunkMountKeys = new Set();
         this._slowFrameChunkMountTick = 0;
@@ -4135,14 +4136,11 @@ export class ThreeGame {
 
     triggerGameplayInteract() {
         if (!this.isGameplayInputActive()) return false;
+        if (this.interactWithNearestShipStation()) return true;
         this.interactWithBunkerBlastDoorButton();
         this.interactWithProceduralDoor();
         this.interactWithMazeAccessSource();
-        this.interactWithConsole();
-        this.interactWithO2Generator();
-        this.interactWithBaseTurret();
         this.interactWithLoreTerminal();
-        this.interactWithFoundry();
         this.interactWithBlackBox();
         this.interactWithCaveEntrance();
         this.interactWithAct2Camp();
@@ -4153,6 +4151,31 @@ export class ThreeGame {
         this.interactWithPocketClimbPoint();
         this.interactWithBiomechanicalDoor();
         return true;
+    }
+
+    interactWithNearestShipStation() {
+        if (!this.player) return false;
+        const px = this.player.position.x;
+        const pz = this.player.position.z;
+        const candidates = [];
+        const consoleShip = this.activeInteractiveConsole;
+        if (consoleShip) {
+            const x = consoleShip.tileX + consoleShip.consoleOffset.x;
+            const z = consoleShip.tileZ + consoleShip.consoleOffset.z;
+            candidates.push({ distance: Math.hypot(px - x, pz - z), interact: () => this.interactWithConsole() });
+        }
+        if (this.activeInteractiveO2Generator) {
+            const position = this.getActiveO2GeneratorPosition();
+            if (position) candidates.push({ distance: Math.hypot(px - position.x, pz - position.z), interact: () => this.interactWithO2Generator() });
+        }
+        if (this.activeInteractiveBaseTurret) {
+            candidates.push({ distance: Math.hypot(px - 9, pz - 4.8), interact: () => this.interactWithBaseTurret() });
+        }
+        if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(px, pz)) {
+            candidates.push({ distance: this.foundry.distanceTo(px, pz), interact: () => this.interactWithFoundry() });
+        }
+        candidates.sort((a, b) => a.distance - b.distance);
+        return Boolean(candidates[0]?.interact());
     }
 
     triggerGameplayReload({ manual = false } = {}) {
@@ -6125,10 +6148,10 @@ export class ThreeGame {
         let minDistance = Infinity;
         const generatorState = this.getO2GeneratorState();
         const generatorPos = this.getActiveO2GeneratorPosition();
-        const o2InRange = generatorState.isOnline
-            && generatorPos
-            && Math.hypot(this.player.position.x - generatorPos.x, this.player.position.z - generatorPos.z) < 2.8;
-        this.activeInteractiveO2Generator = o2InRange ? this.getActiveShip() : null;
+        const o2Distance = generatorPos
+            ? Math.hypot(this.player.position.x - generatorPos.x, this.player.position.z - generatorPos.z)
+            : Infinity;
+        const o2CandidateInRange = Boolean(generatorState.isOnline && generatorPos && o2Distance < 2.8);
 
         for (const ship of this.crashedShips) {
             if (!ship.isVisible) continue;
@@ -6154,6 +6177,27 @@ export class ThreeGame {
                 minDistance = distance;
             }
         }
+
+        // Only one base station owns A and its prompt at a time. Overlapping
+        // console/O2/turret radii previously displayed multiple PRESS A calls
+        // and opened more than one panel from the same controller press.
+        const baseTurretPos = { x: 9, z: 4.8 };
+        const baseTurretDistance = Math.hypot(
+            this.player.position.x - baseTurretPos.x,
+            this.player.position.z - baseTurretPos.z
+        );
+        const baseTurretCandidateInRange = Boolean(this.baseDefenseTurretState?.active)
+            && baseTurretDistance < 2.5;
+        const stationCandidates = [
+            nearestConsole ? { type: 'console', distance: minDistance } : null,
+            o2CandidateInRange ? { type: 'o2', distance: o2Distance } : null,
+            baseTurretCandidateInRange ? { type: 'turret', distance: baseTurretDistance } : null
+        ].filter(Boolean).sort((a, b) => a.distance - b.distance);
+        const selectedStation = stationCandidates[0]?.type ?? null;
+        if (selectedStation !== 'console') nearestConsole = null;
+        const o2InRange = selectedStation === 'o2';
+        const baseTurretInRange = selectedStation === 'turret';
+        this.activeInteractiveO2Generator = o2InRange ? this.getActiveShip() : null;
 
         // Show/hide floating HUD prompt
         const promptEl = document.getElementById('console-hud-prompt');
@@ -6187,9 +6231,6 @@ export class ThreeGame {
             }
         }
 
-        const baseTurretPos = { x: 9, z: 4.8 };
-        const baseTurretInRange = Boolean(this.baseDefenseTurretState?.active)
-            && Math.hypot(this.player.position.x - baseTurretPos.x, this.player.position.z - baseTurretPos.z) < 2.5;
         this.activeInteractiveBaseTurret = baseTurretInRange ? true : null;
 
         const o2PromptEl = document.getElementById('o2-generator-hud-prompt');
@@ -6661,25 +6702,28 @@ export class ThreeGame {
     }
 
     interactWithConsole() {
-        if (!this.isGameplayInputActive()) return;
-        if (!this.activeInteractiveConsole) return;
+        if (!this.isGameplayInputActive()) return false;
+        if (!this.activeInteractiveConsole) return false;
         if (this.isAct2Active()) {
             this.handleAct2ConsoleInteract();
-            return;
+            return true;
         }
         this.openConsoleModal(this.activeInteractiveConsole);
+        return true;
     }
 
     interactWithO2Generator() {
-        if (!this.isGameplayInputActive()) return;
-        if (!this.activeInteractiveO2Generator) return;
+        if (!this.isGameplayInputActive()) return false;
+        if (!this.activeInteractiveO2Generator) return false;
         this.openO2GeneratorModal(this.activeInteractiveO2Generator);
+        return true;
     }
 
     interactWithBaseTurret() {
-        if (!this.isGameplayInputActive()) return;
-        if (!this.activeInteractiveBaseTurret) return;
+        if (!this.isGameplayInputActive()) return false;
+        if (!this.activeInteractiveBaseTurret) return false;
         this.openBaseTurretModal();
+        return true;
     }
 
     tryInteractWithConsolePointer(clientX, clientY) {
@@ -12895,7 +12939,7 @@ export class ThreeGame {
             this._hiveKinKills = 0;
             this._tankShockGuardUsed = false;
             this.cinematicLock = false;
-            this.runEntropy = this.fixedRunEntropy ? 0 : (Math.random() * 0xffffffff) >>> 0;
+            this.runEntropy = this.fixedRunEntropy ? 0 : createFreshRunEntropy();
             this.clearBlackBoxMarker();
             this._blackBoxState = blackBoxStore.load();
             this._initClassPassives();
@@ -15183,27 +15227,16 @@ export class ThreeGame {
         }
 
         if (isMoving) {
-            // Back-pedalling = moving roughly opposite to where the shot points,
-            // in any direction (down vs up, left vs right). In that case the legs
-            // face the aim and the walk cycle runs in reverse, so it reads as
-            // running backwards. Otherwise the legs face the travel heading and
-            // step forward normally.
-            let backpedal = false;
-            if (aiming) {
-                const aimLen = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
-                const dot = (moveDirX * this.aimDirX + moveDirZ * this.aimDirZ) / aimLen;
-                backpedal = dot < -0.3;
-            }
-            this.currentFacingRow = backpedal
-                ? this.aimFacingRow
-                : this.getFacingRow(axisX, axisZ);
+            // Legs always follow travel while the independently-rendered torso
+            // follows aim. This keeps mouse aim visually truthful even while
+            // strafing or retreating in the opposite direction.
+            this.currentFacingRow = this.getFacingRow(axisX, axisZ);
             if (!aiming) {
                 this.torsoFacingRow = this.currentFacingRow;
             }
 
             const layout = getPlayerSpriteLayout(this.playerType);
-            const dir = backpedal ? -1 : 1;
-            this.animationTimer += delta * layout.animationFps * dir;
+            this.animationTimer += delta * layout.animationFps;
             const frames = layout.walkFrames;
             const column = ((Math.floor(this.animationTimer) % frames) + frames) % frames;
             this.updatePlayerSpriteFrame(column, this.currentFacingRow, this.torsoFacingRow);
@@ -22098,8 +22131,6 @@ export class ThreeGame {
 
         const target = this.selectSnailTarget(sprite, activeShip);
         if (!target) return;
-        const bossCanBreakWalls = Boolean(data.isBoss && target.mode === 'hunt');
-
         const startTileX = Math.round(sprite.position.x);
         const startTileZ = Math.round(sprite.position.z);
         const goalTileX = Math.round(target.goalX);
@@ -22111,14 +22142,7 @@ export class ThreeGame {
         const noPath = !Array.isArray(data.pathNodes) || data.pathNodes.length === 0 || data.pathIndex >= data.pathNodes.length;
         const shouldRepath = targetChanged || noPath || data.pathRetargetTimer <= 0;
 
-        if (bossCanBreakWalls) {
-            data.pathNodes = null;
-            data.pathIndex = 0;
-            data.pathGoalTileX = goalTileX;
-            data.pathGoalTileZ = goalTileZ;
-            data.aiMode = target.mode;
-            data.targetType = target.type;
-        } else if (shouldRepath) {
+        if (shouldRepath) {
             const previousMode = data.aiMode;
             const pathNodes = this.findSnailPath(startTileX, startTileZ, goalTileX, goalTileZ, SNAIL_PATH_NODE_BUDGET);
             data.pathNodes = pathNodes;
@@ -22137,7 +22161,7 @@ export class ThreeGame {
 
         let moveTargetX = target.goalX;
         let moveTargetZ = target.goalZ;
-        if (!bossCanBreakWalls && Array.isArray(data.pathNodes) && data.pathNodes.length > 0) {
+        if (Array.isArray(data.pathNodes) && data.pathNodes.length > 1) {
             const index = Math.max(0, Math.min(data.pathIndex ?? 0, data.pathNodes.length - 1));
             const waypoint = data.pathNodes[index];
             moveTargetX = waypoint.x;
@@ -22165,15 +22189,38 @@ export class ThreeGame {
             const nextX = sprite.position.x + dirX * step;
             const nextZ = sprite.position.z + dirZ * step;
 
+            let moved = false;
             if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
                 sprite.position.x = nextX;
                 sprite.position.z = nextZ;
+                moved = true;
             } else if (data.isBoss && this.tryBossBreakWall(sprite, nextX, nextZ)) {
                 if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
                     sprite.position.x = nextX;
                     sprite.position.z = nextZ;
+                    moved = true;
                 }
-            } else {
+            }
+
+            // Rounded tile collision can reject a diagonal step at a cliff
+            // corner even though one component is safe. Slide along that safe
+            // axis instead of allowing a large boss to pin itself on the edge.
+            if (!moved) {
+                const axisSteps = Math.abs(dirX) >= Math.abs(dirZ)
+                    ? [{ x: nextX, z: sprite.position.z }, { x: sprite.position.x, z: nextZ }]
+                    : [{ x: sprite.position.x, z: nextZ }, { x: nextX, z: sprite.position.z }];
+                const slide = axisSteps.find((candidate) => this.isSnailTileWalkable(
+                    Math.round(candidate.x),
+                    Math.round(candidate.z)
+                ));
+                if (slide) {
+                    sprite.position.x = slide.x;
+                    sprite.position.z = slide.z;
+                    moved = true;
+                }
+            }
+
+            if (!moved) {
                 data.pathRetargetTimer = 0;
                 data.pathNodes = null;
             }
