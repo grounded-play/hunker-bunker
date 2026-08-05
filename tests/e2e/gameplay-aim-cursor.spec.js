@@ -6,10 +6,8 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 //
 // Verified this already works (main.js's handleSteamGameplayInput, landed
 // in the "restore interactive compass HUD ... right-joystick virtual mouse
-// aim" commit): the right stick drives #tactical-cursor -- the same
-// custom on-screen cursor a desktop mouse shows -- via a virtual cursor
-// position fed through the identical mousemove/updateAimFromClient path a
-// real mouse uses. This is the permanent regression test for that.
+// aim" commit): the right stick drives the direct virtual crosshair while
+// the slower decorative mouse cursor stays suppressed in controller mode.
 //
 // Same fake-gamepad technique as browser-gamepad-fallback.spec.js: the
 // fallback poll loop (main.js's handleBrowserGamepadFallbackFrame) reads
@@ -19,7 +17,7 @@ import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 // gyro on the Gamepad API) -- so a right-stick push here exercises the same
 // code path a real Deck player's right stick does.
 test.describe('Gameplay right-stick aim cursor', () => {
-    test('deflecting the right stick during gameplay shows the tactical cursor and moves it toward the stick direction', async ({ page }) => {
+    test('deflecting the right stick shows one responsive crosshair and suppresses the drifting mouse cursor', async ({ page }) => {
         test.setTimeout(180_000);
         const consoleErrors = [];
         page.on('console', (msg) => {
@@ -31,13 +29,15 @@ test.describe('Gameplay right-stick aim cursor', () => {
         await startRunAndSkipIntro(page);
 
         const readCursorState = () => {
-            const cursor = document.getElementById('tactical-cursor');
+            const cursor = document.getElementById('virtual-gamepad-cursor');
+            const tacticalCursor = document.getElementById('tactical-cursor');
             const style = getComputedStyle(cursor);
             const match = cursor.style.transform.match(/translate3d\(([-\d.]+)px, ([-\d.]+)px/);
             return {
-                enabled: document.documentElement.classList.contains('custom-cursor-enabled'),
+                controllerMode: document.body.classList.contains('controller-mode'),
                 display: style.display,
-                opacity: Number(style.opacity),
+                hidden: cursor.classList.contains('hidden'),
+                tacticalDisplay: getComputedStyle(tacticalCursor).display,
                 x: match ? Number(match[1]) : null,
                 y: match ? Number(match[2]) : null
             };
@@ -65,9 +65,10 @@ test.describe('Gameplay right-stick aim cursor', () => {
         await page.waitForTimeout(800);
         const rightUp = await page.evaluate(readCursorState);
 
-        expect(rightUp.enabled, 'custom-cursor-enabled should be set while the right stick is driving the cursor').toBe(true);
-        expect(rightUp.display, 'tactical cursor should be visible (display:block) while the right stick is driving it').toBe('block');
-        expect(rightUp.opacity).toBeGreaterThan(0);
+        expect(rightUp.controllerMode).toBe(true);
+        expect(rightUp.hidden, 'responsive controller crosshair should be visible').toBe(false);
+        expect(rightUp.display).not.toBe('none');
+        expect(rightUp.tacticalDisplay, 'the drifting bracketed cursor should be suppressed').toBe('none');
 
         // Now push the opposite direction and confirm the cursor tracks the
         // reversal -- proves the stick is actively driving position, not

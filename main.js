@@ -204,6 +204,8 @@ const DESIGN_STAGE = {
 const AUDIO_MIX_STORAGE_KEY = 'hunker_audio_mix_v1';
 const LEGACY_AUDIO_TOGGLE_KEY = 'hunker_audio_enabled';
 const COMMENTARY_STORAGE_KEY = 'hunker_commentary_enabled';
+const CROSSHAIR_COLOR_STORAGE_KEY = 'hb_crosshair_color';
+const DEFAULT_CROSSHAIR_COLOR = '#ff9f1c';
 const DEFAULT_AUDIO_MIX = Object.freeze({
     master: 1,
     music: 1,
@@ -1226,7 +1228,7 @@ function ensureVirtualGamepadCursor() {
     virtualGamepadCursor = document.createElement('div');
     virtualGamepadCursor.id = 'virtual-gamepad-cursor';
     virtualGamepadCursor.className = 'virtual-gamepad-cursor hidden';
-    virtualGamepadCursor.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#ff9f1c" stroke-width="2" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="3" fill="#ff9f1c"/></svg>`;
+    virtualGamepadCursor.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>`;
     document.body.appendChild(virtualGamepadCursor);
     return virtualGamepadCursor;
 }
@@ -1304,9 +1306,10 @@ function handleSteamMenuInput(actions) {
 
     const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
     const activeElement = document.activeElement;
-    const rangeAdjusted = Boolean(activeElement && isRangeInputElement(activeElement) && (
-        (actions.left && adjustRangeInputValue(activeElement, -1))
-        || (actions.right && adjustRangeInputValue(activeElement, 1))
+    const horizontalDirection = actions.left ? -1 : actions.right ? 1 : 0;
+    const controlAdjusted = Boolean(activeElement && horizontalDirection && (
+        adjustRangeInputValue(activeElement, horizontalDirection)
+        || adjustSelectValue(activeElement, horizontalDirection)
     ));
 
     const root = getControllerFocusRoot();
@@ -1318,7 +1321,7 @@ function handleSteamMenuInput(actions) {
         handleControllerTabNavigation(root, -1);
     } else if (actions.tabRight) {
         handleControllerTabNavigation(root, 1);
-    } else if (moved && !rangeAdjusted) {
+    } else if (moved && !controlAdjusted) {
         const code = actions.up
             ? 'ArrowUp'
             : actions.down
@@ -1693,6 +1696,9 @@ const state = {
         commentary: false,
         aimSensitivity: parseFloat(localStorage.getItem('hb_aim_sensitivity') || '1.0'),
         invertAimY: localStorage.getItem('hb_invert_aim_y') === 'true',
+        crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
+            ? localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY)
+            : DEFAULT_CROSSHAIR_COLOR,
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
@@ -1700,6 +1706,7 @@ const state = {
 };
 // Exposed so threeGame.js can read live key bindings without a circular import.
 window.state = state;
+document.documentElement.style.setProperty('--crosshair-color', state.settings.crosshairColor);
 
 // RGB archive-sim unlock/save state (docs/mini-games/rgb/unlock-and-integration.md).
 let rgbSave = loadRgbSave(localStorage);
@@ -6722,6 +6729,9 @@ function persistSettings() {
         if (state.settings.invertAimY != null) {
             localStorage.setItem('hb_invert_aim_y', String(state.settings.invertAimY));
         }
+        if (state.settings.crosshairColor) {
+            localStorage.setItem(CROSSHAIR_COLOR_STORAGE_KEY, state.settings.crosshairColor);
+        }
     } catch {
         // best-effort persistence
     }
@@ -7276,6 +7286,9 @@ function openSettingsModal() {
     const invertYToggle = document.getElementById('setting-invert-y-toggle');
     if (invertYToggle) invertYToggle.checked = !!state.settings.invertAimY;
 
+    const crosshairColor = document.getElementById('setting-crosshair-color');
+    if (crosshairColor) crosshairColor.value = state.settings.crosshairColor || DEFAULT_CROSSHAIR_COLOR;
+
     const diffVal = document.getElementById('setting-difficulty-val');
     if (diffVal) {
         const difficulty = window.game?.difficulty || state.settings.difficulty || 'standard';
@@ -7303,6 +7316,13 @@ document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (
 });
 document.getElementById('setting-invert-y-toggle')?.addEventListener('change', (e) => {
     state.settings.invertAimY = Boolean(e.target.checked);
+    persistSettings();
+});
+document.getElementById('setting-crosshair-color')?.addEventListener('input', (e) => {
+    const color = String(e.target.value || '').toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(color)) return;
+    state.settings.crosshairColor = color;
+    document.documentElement.style.setProperty('--crosshair-color', color);
     persistSettings();
 });
 
