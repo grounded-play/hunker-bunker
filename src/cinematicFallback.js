@@ -81,7 +81,7 @@ export const EVENT_CINEMATICS = Object.freeze({
         kicker: 'SECTOR ZERO // GEOLOGY MISMATCH',
         title: 'THE WALL WAS BUILT AROUND A MOUTH',
         body: 'Warm air moves upward. Something below has been waiting for circulation.',
-        images: Object.freeze(['/cave_mouth.png', '/hive_interior.png'])
+        images: Object.freeze(['/cutscenes/poster-art/event-cave-revealed-1.png', '/cutscenes/poster-art/event-cave-revealed-2.png'])
     }),
     queen_encounter: Object.freeze({
         kicker: 'UNKNOWN SIGNAL // SOURCE CONFIRMED',
@@ -93,25 +93,25 @@ export const EVENT_CINEMATICS = Object.freeze({
         kicker: 'BUNKER SYSTEM // LIFE SUPPORT',
         title: 'THE AIR HOLDS A LITTLE LONGER',
         body: 'Oxygen reclamation comes back online. The safe bubble widens around what you rebuilt.',
-        images: Object.freeze(['/module_o2_generator.png'])
+        images: Object.freeze(['/cutscenes/poster-art/event-o2-generator-upgraded.png'])
     }),
     boss_encounter_cryosnail: Object.freeze({
         kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
         title: 'THE ICE SENDS SOMETHING BACK',
         body: 'A cryosnail-class hostile converges on your position.',
-        images: Object.freeze(['/boss_cryosnail.png'])
+        images: Object.freeze(['/cutscenes/poster-art/event-boss-cryosnail.png'])
     }),
     boss_encounter_cybersnail: Object.freeze({
         kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
         title: 'THE GRID ANSWERS WITH TEETH',
         body: 'A cybersnail-class hostile converges on your position.',
-        images: Object.freeze(['/boss_cybersnail.png'])
+        images: Object.freeze(['/cutscenes/poster-art/event-boss-cybersnail.png'])
     }),
     boss_encounter_sporesnail: Object.freeze({
         kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
         title: 'THE BLOOM LEARNED TO HUNT',
         body: 'A sporesnail-class hostile converges on your position.',
-        images: Object.freeze(['/boss_sporesnail.png'])
+        images: Object.freeze(['/cutscenes/poster-art/event-boss-sporesnail.png'])
     })
 });
 
