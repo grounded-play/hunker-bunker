@@ -4104,6 +4104,10 @@ window.addEventListener('o2-generator-upgraded', (event) => {
     if (event?.detail?.level === 1) return;
     const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
+    playAuthoredEventOnce('o2_generator_upgraded', {
+        videoBase: 'event-o2-generator-upgraded',
+        eventDetail: event?.detail ?? {}
+    });
 });
 
 window.addEventListener('extraction-progress', (event) => {
@@ -8582,8 +8586,15 @@ window.addEventListener('o2-startup-sequence-started', (event) => {
         duration: 3200
     });
 });
-window.addEventListener('milestone-boss-warning', () => {
+const MILESTONE_BOSS_CINEMATIC_SUFFIXES = new Set(['cryosnail', 'cybersnail', 'sporesnail']);
+window.addEventListener('milestone-boss-warning', (event) => {
     showBiomePrompt('> ALERT: PERIMETER BREACH — LARGE HOSTILE SIGNATURE CLOSING <');
+    const bossType = String(event?.detail?.type ?? '').replace(/^boss_/, '');
+    const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cryosnail';
+    playAuthoredEventOnce(`boss_encounter_${suffix}`, {
+        videoBase: `event-boss-encounter-${suffix}`,
+        eventDetail: event?.detail ?? {}
+    });
 });
 window.addEventListener('foundry-discovered', (event) => {
     if (!isGameplayPhase()) return;
@@ -9001,6 +9012,12 @@ window.addEventListener('camp-choice-open', async (event) => {
     const detail = event?.detail ?? {};
     await songInterstitial.show(selectCampInterstitial(detail));
     renderCampChoice(detail);
+});
+
+// First contact with a camp (any act) gets the same song title card as the
+// choice modal, without opening the choice modal itself.
+window.addEventListener('camp-first-contact', async (event) => {
+    await songInterstitial.show(selectCampInterstitial(event?.detail ?? {}));
 });
 
 const leaderConversationModal = document.getElementById('leader-conversation-modal');

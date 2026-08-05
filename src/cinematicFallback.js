@@ -88,6 +88,30 @@ export const EVENT_CINEMATICS = Object.freeze({
         title: 'THE QUEEN OPENS HER EYES',
         body: 'The voice under Sector Zero no longer needs the radio.',
         images: Object.freeze(['/cutscenes/poster-art/event-queen-encounter.png'])
+    }),
+    o2_generator_upgraded: Object.freeze({
+        kicker: 'BUNKER SYSTEM // LIFE SUPPORT',
+        title: 'THE AIR HOLDS A LITTLE LONGER',
+        body: 'Oxygen reclamation comes back online. The safe bubble widens around what you rebuilt.',
+        images: Object.freeze(['/module_o2_generator.png'])
+    }),
+    boss_encounter_cryosnail: Object.freeze({
+        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
+        title: 'THE ICE SENDS SOMETHING BACK',
+        body: 'A cryosnail-class hostile converges on your position.',
+        images: Object.freeze(['/boss_cryosnail.png'])
+    }),
+    boss_encounter_cybersnail: Object.freeze({
+        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
+        title: 'THE GRID ANSWERS WITH TEETH',
+        body: 'A cybersnail-class hostile converges on your position.',
+        images: Object.freeze(['/boss_cybersnail.png'])
+    }),
+    boss_encounter_sporesnail: Object.freeze({
+        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
+        title: 'THE BLOOM LEARNED TO HUNT',
+        body: 'A sporesnail-class hostile converges on your position.',
+        images: Object.freeze(['/boss_sporesnail.png'])
     })
 });
 

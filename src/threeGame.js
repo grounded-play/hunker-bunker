@@ -1230,6 +1230,23 @@ export class ThreeGame {
         this.tiltShiftOverlay = document.createElement('div');
         this.tiltShiftOverlay.className = 'gameplay-tilt-shift';
         this.tiltShiftOverlay.setAttribute('aria-hidden', 'true');
+        this.bokehCanvas = document.createElement('canvas');
+        Object.assign(this.bokehCanvas.style, {
+            position: 'absolute',
+            inset: '0',
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            zIndex: '1'
+        });
+        this.bokehContext = this.bokehCanvas.getContext('2d', { alpha: true });
+        this.tiltShiftOverlay.appendChild(this.bokehCanvas);
+
+        this._tiltShiftFocusX = 50;
+        this._tiltShiftFocusY = 50;
+        this._tiltShiftProjectVec = new THREE.Vector3();
+        this._bokehParticles = this.createBokehParticles(28);
+
         this.darknessOverlay = document.createElement('canvas');
         Object.assign(this.darknessOverlay.style, {
             position: 'absolute',
@@ -3892,6 +3909,50 @@ export class ThreeGame {
         beacon.position.y = 0.02;
         beacon.renderOrder = 999;
         marker.add(beacon);
+
+        // Body silhouette group (upright character outline visible through walls)
+        const silhouetteGroup = new THREE.Group();
+        silhouetteGroup.position.y = this.playerHeight || 1.1;
+
+        const outlineOffsets = [
+            [-0.038, 0], [0.038, 0], [0, -0.038], [0, 0.038],
+            [-0.027, -0.027], [0.027, -0.027], [-0.027, 0.027], [0.027, 0.027]
+        ];
+
+        this._playerSilhouetteOutlineMats = [];
+        for (const [ox, oy] of outlineOffsets) {
+            const mat = new THREE.SpriteMaterial({
+                transparent: true,
+                opacity: 0.95,
+                depthTest: false,
+                depthWrite: false,
+                color: 0xffa020,
+                fog: false
+            });
+            this._playerSilhouetteOutlineMats.push(mat);
+            const spr = new THREE.Sprite(mat);
+            spr.center.set(0.5, 0);
+            spr.position.set(ox, oy, 0);
+            spr.renderOrder = 9997;
+            silhouetteGroup.add(spr);
+        }
+
+        this._playerSilhouetteInnerMat = new THREE.SpriteMaterial({
+            transparent: true,
+            opacity: 0.85,
+            depthTest: false,
+            depthWrite: false,
+            color: 0xff5500,
+            fog: false
+        });
+        const innerSpr = new THREE.Sprite(this._playerSilhouetteInnerMat);
+        innerSpr.center.set(0.5, 0);
+        innerSpr.position.set(0, 0, 0);
+        innerSpr.renderOrder = 9998;
+        silhouetteGroup.add(innerSpr);
+
+        this.playerSilhouetteGroup = silhouetteGroup;
+        marker.add(silhouetteGroup);
 
         marker.renderOrder = 999;
 
@@ -11349,6 +11410,22 @@ export class ThreeGame {
         const { camp, action } = actionable;
 
         if (action === 'talk') {
+            // First contact with any camp — including ordinary Act 1 dormant-phase
+            // visits, not just the Act 2 launch_ready boarding decision — gets the
+            // same song-interstitial beat the choice modal shows later. Narrower
+            // than 'camp-choice-open' on purpose: it must not also open the choice
+            // modal, just the title card.
+            this._seenCampFirstContact ??= new Set();
+            if (!this._seenCampFirstContact.has(camp.id)) {
+                this._seenCampFirstContact.add(camp.id);
+                window.dispatchEvent(new CustomEvent('camp-first-contact', {
+                    detail: {
+                        campId: camp.id,
+                        campLabel: camp.label,
+                        campState: this.getCampRecord(camp.id)
+                    }
+                }));
+            }
             return this.talkToLeader('camp', camp);
         }
 
@@ -13234,35 +13311,93 @@ export class ThreeGame {
         const sourceMap = sprite?.material?.map;
         if (!sprite?.isSprite || !sourceMap) return;
 
+        const ghostGroup = new THREE.Group();
+        const outlineOffsets = [
+            [-0.035, 0], [0.035, 0], [0, -0.035], [0, 0.035],
+            [-0.025, -0.025], [0.025, -0.025], [-0.025, 0.025], [0.025, 0.025]
+        ];
+
+        const baseColorObj = new THREE.Color(colorHex);
+        const outlineColorHex = (baseColorObj.r > 0.8 && baseColorObj.g < 0.4) ? 0xff2a6d : 0x00f0ff;
+
+        const outlineMats = [];
+        for (const [ox, oy] of outlineOffsets) {
+            const oMat = new THREE.SpriteMaterial({
+                map: sourceMap,
+                transparent: true,
+                opacity: 0.95,
+                depthTest: false,
+                depthWrite: false,
+                color: outlineColorHex,
+                fog: false
+            });
+            outlineMats.push(oMat);
+            const oSpr = new THREE.Sprite(oMat);
+            oSpr.center.set(sprite.center?.x ?? 0.5, sprite.center?.y ?? 0.5);
+            oSpr.position.set(ox * (sprite.scale?.x || 1), oy * (sprite.scale?.y || 1), 0);
+            oSpr.renderOrder = 9997;
+            ghostGroup.add(oSpr);
+        }
+
         const ghostMat = new THREE.SpriteMaterial({
             map: sourceMap,
             transparent: true,
-            opacity: 0.9,
+            opacity: 0.85,
             depthTest: false,
             depthWrite: false,
             color: colorHex,
             fog: false
         });
-        const ghost = new THREE.Sprite(ghostMat);
-        ghost.scale.copy(sprite.scale);
-        ghost.position.copy(sprite.position);
-        ghost.renderOrder = 9998;
-        this.scene.add(ghost);
+        const innerSpr = new THREE.Sprite(ghostMat);
+        innerSpr.center.set(sprite.center?.x ?? 0.5, sprite.center?.y ?? 0.5);
+        innerSpr.position.set(0, 0, 0);
+        innerSpr.renderOrder = 9998;
+        ghostGroup.add(innerSpr);
+
+        if (sprite.scale) ghostGroup.scale.copy(sprite.scale);
+        if (sprite.position) ghostGroup.position.copy(sprite.position);
+        ghostGroup.renderOrder = 9998;
+
+        Object.defineProperty(ghostGroup, 'material', {
+            get: () => ghostMat,
+            configurable: true
+        });
+        Object.defineProperty(ghostGroup, 'isSprite', {
+            get: () => true,
+            configurable: true
+        });
+
+        this.scene.add(ghostGroup);
 
         this.transientEffects.push({
-            mesh: ghost,
+            mesh: ghostGroup,
             age: 0,
             duration,
             update: (dt, age) => {
                 if (sprite?.parent) {
-                    ghost.position.copy(sprite.position);
-                    ghost.scale.copy(sprite.scale);
+                    ghostGroup.position.copy(sprite.position);
+                    ghostGroup.scale.copy(sprite.scale);
+                    if (sprite.material?.map && sprite.material.map !== sourceMap) {
+                        const newMap = sprite.material.map;
+                        ghostMat.map = newMap;
+                        for (const oMat of outlineMats) {
+                            oMat.map = newMap;
+                        }
+                    }
                 }
                 const t = age / duration;
-                ghostMat.opacity = 0.9 * (1 - t * t);
+                const innerOp = 0.85 * (1 - t * t);
+                const outOp = 0.95 * (1 - t * t);
+                ghostMat.opacity = innerOp;
+                for (const oMat of outlineMats) {
+                    oMat.opacity = outOp;
+                }
             },
             dispose: () => {
                 ghostMat.dispose();
+                for (const oMat of outlineMats) {
+                    oMat.dispose();
+                }
             }
         });
     }
@@ -16107,6 +16242,7 @@ export class ThreeGame {
         }
 
         this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
+        this.updateTiltShiftAndBokeh(delta);
     }
 
     snapCameraToPlayer() {
@@ -16117,6 +16253,124 @@ export class ThreeGame {
             this.player.position.z + this.cameraOffset.z
         );
         this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
+        this.updateTiltShiftAndBokeh(0.016);
+    }
+
+    createBokehParticles(count = 28) {
+        const particles = [];
+        const hues = ['cyan', 'amber', 'white'];
+        for (let i = 0; i < count; i++) {
+            particles.push({
+                angle: (i / count) * Math.PI * 2 + (Math.random() * 0.4 - 0.2),
+                distanceRatio: 0.38 + Math.random() * 0.58,
+                radius: 10 + Math.random() * 32,
+                baseAlpha: 0.06 + Math.random() * 0.22,
+                pulseSpeed: 0.6 + Math.random() * 1.8,
+                pulsePhase: Math.random() * Math.PI * 2,
+                driftSpeed: (Math.random() > 0.5 ? 1 : -1) * (0.04 + Math.random() * 0.14),
+                hue: hues[i % hues.length],
+                ringThickness: 1 + Math.random() * 2.5
+            });
+        }
+        return particles;
+    }
+
+    updateTiltShiftAndBokeh(delta = 0.016) {
+        const overlay = this.tiltShiftOverlay;
+        if (!overlay || !this.player || !this.camera) return;
+
+        const isGameplay = this.performanceProfile === 'gameplay' && !this.loadingPaused;
+        overlay.classList.toggle('is-active', isGameplay);
+
+        const canvas = this.bokehCanvas;
+        const ctx = this.bokehContext;
+        const w = this.container?.clientWidth || 1;
+        const h = this.container?.clientHeight || 1;
+
+        if (!isGameplay) {
+            if (ctx && canvas) {
+                ctx.clearRect(0, 0, canvas.width || 1, canvas.height || 1);
+            }
+            return;
+        }
+
+        // Project player's torso position into screen percentage coordinates
+        this._tiltShiftProjectVec.set(
+            this.player.position.x,
+            this.player.position.y + 0.7,
+            this.player.position.z
+        ).project(this.camera);
+
+        const targetX = Math.min(95, Math.max(5, (this._tiltShiftProjectVec.x * 0.5 + 0.5) * 100));
+        const targetY = Math.min(95, Math.max(5, (-this._tiltShiftProjectVec.y * 0.5 + 0.5) * 100));
+
+        const lerpFactor = Math.min(1, delta * 12);
+        this._tiltShiftFocusX += (targetX - this._tiltShiftFocusX) * lerpFactor;
+        this._tiltShiftFocusY += (targetY - this._tiltShiftFocusY) * lerpFactor;
+
+        overlay.style.setProperty('--focus-x', `${this._tiltShiftFocusX.toFixed(2)}%`);
+        overlay.style.setProperty('--focus-y', `${this._tiltShiftFocusY.toFixed(2)}%`);
+
+        if (!canvas || !ctx) return;
+
+        const dpr = Math.max(0.65, this.renderer?.getPixelRatio?.() || 1);
+        const targetW = Math.max(1, Math.round(w * dpr));
+        const targetH = Math.max(1, Math.round(h * dpr));
+
+        if (canvas.width !== targetW || canvas.height !== targetH) {
+            canvas.width = targetW;
+            canvas.height = targetH;
+            canvas.style.width = `${w}px`;
+            canvas.style.height = `${h}px`;
+        }
+
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+
+        const fx = (this._tiltShiftFocusX / 100) * w;
+        const fy = (this._tiltShiftFocusY / 100) * h;
+        const maxR = Math.hypot(Math.max(fx, w - fx), Math.max(fy, h - fy));
+
+        if (!this._bokehParticles) {
+            this._bokehParticles = this.createBokehParticles(28);
+        }
+
+        for (let i = 0; i < this._bokehParticles.length; i++) {
+            const p = this._bokehParticles[i];
+            p.angle += p.driftSpeed * delta;
+            p.pulsePhase += p.pulseSpeed * delta;
+            const alpha = p.baseAlpha * (0.65 + 0.35 * Math.sin(p.pulsePhase));
+
+            const dist = p.distanceRatio * maxR;
+            const px = fx + Math.cos(p.angle) * dist;
+            const py = fy + Math.sin(p.angle) * dist * 0.75;
+
+            if (px < -50 || px > w + 50 || py < -50 || py > h + 50) continue;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(px, py, p.radius, 0, Math.PI * 2);
+
+            let mainColor, ringColor;
+            if (p.hue === 'cyan') {
+                mainColor = `rgba(70, 220, 255, ${alpha.toFixed(3)})`;
+                ringColor = `rgba(160, 240, 255, ${(alpha * 1.5).toFixed(3)})`;
+            } else if (p.hue === 'amber') {
+                mainColor = `rgba(255, 190, 80, ${alpha.toFixed(3)})`;
+                ringColor = `rgba(255, 220, 140, ${(alpha * 1.5).toFixed(3)})`;
+            } else {
+                mainColor = `rgba(220, 240, 255, ${alpha.toFixed(3)})`;
+                ringColor = `rgba(255, 255, 255, ${(alpha * 1.5).toFixed(3)})`;
+            }
+
+            ctx.fillStyle = mainColor;
+            ctx.fill();
+
+            ctx.lineWidth = p.ringThickness;
+            ctx.strokeStyle = ringColor;
+            ctx.stroke();
+            ctx.restore();
+        }
     }
 
     triggerCameraShake(intensity = 0.18, duration = 0.35) {
@@ -23202,7 +23456,33 @@ export class ThreeGame {
         const pulse = 0.7 + Math.sin(now * 0.012) * 0.2;
         this.playerMarker.children[0].material.opacity = pulse;
         this.playerMarker.children[1].material.opacity = 0.7 + Math.sin(now * 0.012 + 0.7) * 0.2;
-        this.playerMarker.lookAt(this.camera.position.x, this.playerMarker.position.y, this.camera.position.z);
+        this.playerMarker.children[0].lookAt(this.camera.position.x, 0.05, this.camera.position.z);
+
+        if (this.playerSilhouetteGroup && this.playerSprite?.material?.map) {
+            const currentMap = this.playerSprite.material.map;
+            const currentScale = this.playerSprite.scale;
+
+            this.playerSilhouetteGroup.scale.copy(currentScale);
+            this.playerSilhouetteGroup.position.set(
+                this.playerSpriteLead || 0,
+                this.playerHeight || 1.1,
+                this.playerSpriteLead || 0
+            );
+
+            const outlineOpacity = 0.95 * (0.8 + Math.sin(now * 0.014) * 0.2);
+            const innerOpacity = 0.85 * (0.8 + Math.sin(now * 0.014) * 0.2);
+
+            if (this._playerSilhouetteOutlineMats) {
+                for (const mat of this._playerSilhouetteOutlineMats) {
+                    mat.map = currentMap;
+                    mat.opacity = outlineOpacity;
+                }
+            }
+            if (this._playerSilhouetteInnerMat) {
+                this._playerSilhouetteInnerMat.map = currentMap;
+                this._playerSilhouetteInnerMat.opacity = innerOpacity;
+            }
+        }
     }
 
     getTileType(worldX, worldY) {
@@ -24676,6 +24956,7 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
         this.darknessOverlay?.remove?.();
+        this.bokehCanvas?.remove?.();
         this.tiltShiftOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());

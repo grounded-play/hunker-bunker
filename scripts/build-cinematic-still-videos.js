@@ -43,7 +43,11 @@ const JOBS = [
     ['death-hazard', DEATH_CINEMATICS.hazard],
     ['event-foundry-discovered', EVENT_CINEMATICS.foundry_discovered],
     ['event-black-box-recovered', EVENT_CINEMATICS.black_box_recovered],
-    ['event-queen-encounter', EVENT_CINEMATICS.queen_encounter]
+    ['event-queen-encounter', EVENT_CINEMATICS.queen_encounter],
+    ['event-o2-generator-upgraded', EVENT_CINEMATICS.o2_generator_upgraded],
+    ['event-boss-encounter-cryosnail', EVENT_CINEMATICS.boss_encounter_cryosnail],
+    ['event-boss-encounter-cybersnail', EVENT_CINEMATICS.boss_encounter_cybersnail],
+    ['event-boss-encounter-sporesnail', EVENT_CINEMATICS.boss_encounter_sporesnail]
 ];
 
 function hasCommand(command, args = ['-version']) {

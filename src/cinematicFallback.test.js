@@ -43,6 +43,13 @@ describe('cinematic still fallback specs', () => {
         expect(getEventCinematicSpec('not-authored')).toBeNull();
     });
 
+    it('covers the O2 generator upgrade and each milestone boss encounter', () => {
+        expect(getEventCinematicSpec('o2_generator_upgraded').images).toEqual(['/module_o2_generator.png']);
+        expect(getEventCinematicSpec('boss_encounter_cryosnail').images).toEqual(['/boss_cryosnail.png']);
+        expect(getEventCinematicSpec('boss_encounter_cybersnail').images).toEqual(['/boss_cybersnail.png']);
+        expect(getEventCinematicSpec('boss_encounter_sporesnail').images).toEqual(['/boss_sporesnail.png']);
+    });
+
     it('suppresses cold-boot and instant state-restoration cinematics', () => {
         expect(shouldPlayAuthoredEventCinematic({ appPhase: 'loading' })).toBe(false);
         expect(shouldPlayAuthoredEventCinematic({ appPhase: 'menu' })).toBe(false);
