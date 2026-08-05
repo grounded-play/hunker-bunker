@@ -1223,6 +1223,12 @@ export class ThreeGame {
         this.renderer.setPixelRatio(this.menuPixelRatio);
         this.renderer.shadowMap.enabled = false;
         this.renderer.shadowMap.type = THREE.PCFShadowMap;
+        // Keep the player/action plane crisp while softly defocusing the far
+        // screen edges. This DOM post-effect sits above only the WebGL canvas,
+        // so HUD text and interaction prompts retain their full readability.
+        this.tiltShiftOverlay = document.createElement('div');
+        this.tiltShiftOverlay.className = 'gameplay-tilt-shift';
+        this.tiltShiftOverlay.setAttribute('aria-hidden', 'true');
         this.darknessOverlay = document.createElement('canvas');
         Object.assign(this.darknessOverlay.style, {
             position: 'absolute',
@@ -1240,9 +1246,9 @@ export class ThreeGame {
         this.container.style.position = this.container.style.position || 'relative';
         const mapDoor = this.container.querySelector('#map-box-door') ?? document.getElementById('map-box-door');
         if (mapDoor) {
-            this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay, mapDoor);
+            this.container.replaceChildren(this.renderer.domElement, this.tiltShiftOverlay, this.darknessOverlay, mapDoor);
         } else {
-            this.container.replaceChildren(this.renderer.domElement, this.darknessOverlay);
+            this.container.replaceChildren(this.renderer.domElement, this.tiltShiftOverlay, this.darknessOverlay);
         }
 
         const textureLoader = new THREE.TextureLoader();
@@ -5267,6 +5273,7 @@ export class ThreeGame {
         if (nextProfile === 'menu' && this.darknessOverlay) {
             this.darknessOverlay.style.opacity = '0';
         }
+        this.tiltShiftOverlay?.classList.toggle('is-active', nextProfile === 'gameplay');
         if (this.chunkGroups) {
             this.chunkGroups.visible = nextProfile === 'gameplay';
         }
@@ -24591,6 +24598,7 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
         this.darknessOverlay?.remove?.();
+        this.tiltShiftOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
         Object.values(this.playerTextures ?? {}).forEach((texture) => texture.dispose());
         Object.values(this.playerTorsoMaterials ?? {}).forEach((material) => material.dispose());
