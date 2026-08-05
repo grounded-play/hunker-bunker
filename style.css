@@ -1842,13 +1842,11 @@ body {
   position: absolute;
   inset: 0;
   background: radial-gradient(
-    ellipse 48% 38% at var(--focus-x, 50%) var(--focus-y, 50%),
-    transparent 18%,
-    rgba(2, 5, 7, 0.12) 42%,
-    rgba(2, 5, 7, 0.45) 72%,
-    rgba(0, 0, 0, 0.75) 100%
+    ellipse 68% 58% at var(--focus-x, 50%) var(--focus-y, 50%),
+    transparent 45%,
+    rgba(2, 5, 7, 0.08) 72%,
+    rgba(0, 0, 0, 0.28) 100%
   );
-  box-shadow: inset 0 0 110px rgba(0, 0, 0, 0.6);
 }
 
 .gameplay-tilt-shift.is-active {

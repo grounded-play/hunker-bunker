@@ -1127,7 +1127,13 @@ function triggerControllerPauseAction() {
         dispatchControllerEscape();
         return true;
     }
+    const tacticalMapModal = document.getElementById('tactical-map-modal');
+    if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
+        toggleTacticalMapModal(false);
+        return true;
+    }
     const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
+        .filter((id) => id !== 'splash' && id !== 'menu')
         .map((id) => document.getElementById(id))
         .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
     if (activeModal) {
@@ -1259,8 +1265,21 @@ function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
 }
 
 function handleSteamMenuInput(actions) {
-    const pointerX = Number(actions.pointer?.x) || 0;
-    const pointerY = Number(actions.pointer?.y) || 0;
+    const tacticalMapModal = document.getElementById('tactical-map-modal');
+    if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
+        if (actions.back || actions.pause) {
+            toggleTacticalMapModal(false);
+            return;
+        }
+    }
+
+    const camStickX = Math.abs(Number(actions.camera?.x) || 0) > 0.15 ? Number(actions.camera?.x) : 0;
+    const camStickY = Math.abs(Number(actions.camera?.y) || 0) > 0.15 ? Number(actions.camera?.y) : 0;
+    const moveStickX = Math.abs(Number(actions.move?.x) || 0) > 0.25 ? Number(actions.move?.x) : 0;
+    const moveStickY = Math.abs(Number(actions.move?.y) || 0) > 0.25 ? Number(actions.move?.y) : 0;
+
+    const pointerX = Number(actions.pointer?.x) || camStickX || moveStickX || 0;
+    const pointerY = Number(actions.pointer?.y) || camStickY || moveStickY || 0;
     const pointerMag = Math.hypot(pointerX, pointerY);
     const deltaY = Number(actions.cameraDelta?.y) || 0;
     const deltaX = Number(actions.cameraDelta?.x) || 0;
@@ -1487,6 +1506,21 @@ function handleSteamGameplayInput(controller) {
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
     }
+    const tacticalMapModal = document.getElementById('tactical-map-modal');
+    const isMapOpen = tacticalMapModal && !tacticalMapModal.classList.contains('hidden');
+    if (isMapOpen) {
+        if ((controller.dash && !prev.dash) || (controller.toggleMap && !prev.toggleMap) || (controller.pause && !prev.pause)) {
+            toggleTacticalMapModal(false);
+            updateControllerInputMemory(controller, {
+                ...prev,
+                dash: Boolean(controller.dash),
+                toggleMap: Boolean(controller.toggleMap),
+                pause: Boolean(controller.pause)
+            });
+            return;
+        }
+    }
+
     if (controller.pause && !prev.pause) {
         triggerControllerPauseAction();
     }
