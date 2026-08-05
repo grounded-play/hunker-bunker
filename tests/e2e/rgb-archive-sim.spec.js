@@ -25,6 +25,22 @@ async function completeObjectCutaway(page, label) {
     await expect(page.locator('.rgb-stage-layer--cutaway')).toHaveCount(0);
 }
 
+async function dispatchArchiveControllerActions(page, overrides = {}) {
+    await page.evaluate((detail) => {
+        window.dispatchEvent(new CustomEvent('hb-archive-controller-actions', {
+            detail: {
+                focus: { x: 0, y: 0 },
+                confirm: false,
+                inventory: false,
+                back: false,
+                reveal: false,
+                pause: false,
+                ...detail
+            }
+        }));
+    }, overrides);
+}
+
 test.describe('RGB archive simulation', () => {
     test('unlocked save shows the menu entry, launches, and completes chapter 1 into a persisted checkpoint', async ({ page }) => {
         await page.goto('/');
@@ -56,9 +72,10 @@ test.describe('RGB archive simulation', () => {
         await page.locator('#archive-sim-rgb-launch').click();
         await page.locator('#rgb-root').waitFor({ state: 'visible' });
 
-        await page.locator('.rgb-warning__continue').click();
+        await dispatchArchiveControllerActions(page, { confirm: true });
         await page.locator('.rgb-cinematic__skip').click();
-        await page.locator('.rgb-chapter-card__continue').click();
+        await expect(page.locator('.rgb-chapter-card__continue')).toBeVisible();
+        await dispatchArchiveControllerActions(page, { confirm: true });
         await expect(page.locator('.rgb-header__title')).toHaveText(/Chapter 1/);
 
         await expect(page.locator('.rgb-stage-bg')).toHaveAttribute('src', /bg_sedan_interior/);
@@ -78,10 +95,11 @@ test.describe('RGB archive simulation', () => {
         }, RGB_SAVE_KEY);
         expect(savedCheckpoint).toBe('warehouse');
 
-        await page.keyboard.press('Tab');
+        await dispatchArchiveControllerActions(page, { inventory: true });
         await expect(page.locator('.rgb-inventory')).toBeVisible();
         await expect(page.locator('.rgb-inventory__item')).toHaveCount(5);
-        await page.keyboard.press('Tab');
+        await dispatchArchiveControllerActions(page, { inventory: true });
+        await expect(page.locator('.rgb-inventory')).toHaveCount(0);
 
         await completeObjectCutaway(page, 'Sorting Arm 4A');
         await page.locator('.rgb-hotspot', { hasText: 'Notebook Diagram' }).click();

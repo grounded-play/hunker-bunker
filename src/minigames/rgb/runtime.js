@@ -930,6 +930,31 @@ export function mountRgb({ root, save, storage, onExit }) {
         applyFocus();
     }
 
+    function moveOverlayFocus(delta) {
+        const buttons = Array.from(root.querySelectorAll('button:not([disabled])'))
+            .filter((button) => button.getClientRects().length > 0);
+        if (buttons.length === 0) return false;
+        const currentIndex = buttons.indexOf(document.activeElement);
+        const nextIndex = currentIndex < 0
+            ? 0
+            : (currentIndex + delta + buttons.length) % buttons.length;
+        buttons[nextIndex]?.focus();
+        return true;
+    }
+
+    function activateOverlayFocus() {
+        const active = document.activeElement;
+        if (active instanceof HTMLButtonElement && root.contains(active) && !active.disabled) {
+            active.click();
+            return true;
+        }
+        const first = root.querySelector('button:not([disabled])');
+        if (!first) return false;
+        first.focus();
+        first.click();
+        return true;
+    }
+
     function activateHotspot(hotspot) {
         if (mode !== 'scene') return;
         if (!isHotspotAvailable(hotspot, runState, visited)) return;
@@ -1178,6 +1203,10 @@ export function mountRgb({ root, save, storage, onExit }) {
         const actions = event.detail;
         if (!actions) return;
         const now = performance.now();
+        if (mode === 'warning') {
+            if (actions.confirm) dismissWarning();
+            return;
+        }
         if (mode === 'scene') {
             if (activeCutaway) {
                 if (actions.confirm) root.querySelector('.rgb-dialogue__take')?.click();
@@ -1198,9 +1227,23 @@ export function mountRgb({ root, save, storage, onExit }) {
             if (actions.back || actions.pause) { mode = 'pause'; render(); }
         } else if (mode === 'chapterCard') {
             if (actions.confirm || actions.back || actions.pause) dismissChapterCard();
-        } else if ((mode === 'inventory' || mode === 'recap' || mode === 'pause') && (actions.back || actions.pause)) {
-            mode = 'scene';
-            render();
+        } else if (mode === 'inventory') {
+            if (actions.inventory || actions.back || actions.pause) {
+                mode = 'scene';
+                render();
+            }
+        } else if (mode === 'recap' || mode === 'pause' || mode === 'ending' || mode === 'gameover') {
+            const magX = Math.abs(actions.focus.x);
+            const magY = Math.abs(actions.focus.y);
+            if (now - lastNavAt > NAV_REPEAT_MS && (magX > STICK_THRESHOLD || magY > STICK_THRESHOLD)) {
+                lastNavAt = now;
+                moveOverlayFocus(magX >= magY ? Math.sign(actions.focus.x) : Math.sign(actions.focus.y));
+            }
+            if (actions.confirm) activateOverlayFocus();
+            if ((mode === 'recap' || mode === 'pause') && (actions.back || actions.pause)) {
+                mode = 'scene';
+                render();
+            }
         }
         if (mode !== 'cinematic' && revealHeld !== actions.reveal) {
             revealHeld = actions.reveal;

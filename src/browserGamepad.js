@@ -58,7 +58,10 @@ export function mapBrowserGamepad(gamepad, {
         interact: readButton(buttons, 0),
         reload: readButton(buttons, 2),
         melee: readButton(buttons, 3),
-        ability: false,
+        // Y is the gameplay smash action and the archive Inventory action.
+        // Keep both semantic fields populated so action-set routing can choose
+        // the meaning without losing the browser fallback on Steam Deck.
+        ability: readButton(buttons, 3),
         dash: readButton(buttons, 1),
         scan: readButton(buttons, 4),
         sprint: readButton(buttons, 6),
@@ -80,7 +83,7 @@ export function mapBrowserGamepad(gamepad, {
 
     mapped.active = Boolean(
         mapped.move.x || mapped.move.y || mapped.camera.x || mapped.camera.y
-        || mapped.fire || mapped.interact || mapped.reload || mapped.melee || mapped.dash
+        || mapped.fire || mapped.interact || mapped.reload || mapped.melee || mapped.ability || mapped.dash
         || mapped.scan || mapped.sprint || mapped.pause
         || mapped.menuUp || mapped.menuDown || mapped.menuLeft || mapped.menuRight
         || mapped.menuConfirm || mapped.menuBack

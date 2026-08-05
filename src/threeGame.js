@@ -5244,8 +5244,11 @@ export class ThreeGame {
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             this._menuShowcaseTimer = 0;
-            this._menuShowcaseShotTimer = 0;
         } else if (nextProfile === 'menu') {
+            // Menu showrooms are presentation-only. Remove any live combat
+            // state before their render loop starts so shots cannot continue
+            // into retained scenery and produce off-screen hit audio.
+            this.resetWeaponState({ emit: false });
             // Teleport player immediately to the isolated menu showroom spawn coordinate
             const spawn = this.getSpawnTile();
             if (this.player) {
@@ -5308,7 +5311,7 @@ export class ThreeGame {
             { x: -1, z: 0 },
             { x: 0, z: -1 }
         ];
-        const shootDirs = [
+        const lookDirs = [
             { x: 0, z: -1 },
             { x: 1, z: 0 },
             { x: 0, z: 1 },
@@ -5316,13 +5319,13 @@ export class ThreeGame {
         ];
 
         const moveDir = moveDirs[phase];
-        const shootDir = shootDirs[phase];
+        const lookDir = lookDirs[phase];
         this.virtualInput.x = moveDir.x;
         this.virtualInput.z = moveDir.z;
         this.hasActiveAim = true;
-        this.aimDirX = shootDir.x;
-        this.aimDirZ = shootDir.z;
-        this.aimFacingRow = this.getFacingRow(shootDir.x, shootDir.z);
+        this.aimDirX = lookDir.x;
+        this.aimDirZ = lookDir.z;
+        this.aimFacingRow = this.getFacingRow(lookDir.x, lookDir.z);
 
         const burstActive = phaseProgress >= 0.22 && phaseProgress <= 0.4;
         if (burstActive) {
@@ -5330,26 +5333,6 @@ export class ThreeGame {
             if (Math.random() < 0.28) {
                 this._spawnSprintTrail();
             }
-        }
-
-        this._menuShowcaseShotTimer = (this._menuShowcaseShotTimer ?? 0) - delta;
-        if (this._menuShowcaseShotTimer <= 0) {
-            this._menuShowcaseShotTimer = 0.34 + Math.random() * 0.14;
-            this.player3dOverlay?.trigger('fire');
-            const spread = (Math.random() - 0.5) * 0.14;
-            const cos = Math.cos(spread);
-            const sin = Math.sin(spread);
-            const vx = (shootDir.x * cos) - (shootDir.z * sin);
-            const vz = (shootDir.x * sin) + (shootDir.z * cos);
-            this.spawnProjectile({
-                x: this.player.position.x + vx * 0.56,
-                z: this.player.position.z + vz * 0.56,
-                vx: vx * PROJECTILE_SPEED,
-                vz: vz * PROJECTILE_SPEED,
-                ttl: Math.min(PROJECTILE_TTL, 0.95),
-                damage: PROJECTILE_DAMAGE,
-                radius: PROJECTILE_RADIUS
-            });
         }
 
         if (this.playerType === 'ENGINEER') {
@@ -5412,7 +5395,6 @@ export class ThreeGame {
             }
             this.updatePlayer(delta);
             this.updateWeaponState(delta);
-            this.updateProjectiles(delta);
             this.updateCamera(delta);
             this.updateTransientEffects(delta, now);
             this.updateHiddenPlayerMarker(now);

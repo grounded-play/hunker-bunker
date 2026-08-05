@@ -146,4 +146,16 @@ test.describe('controller-ready modal focus', () => {
         await expect(page.locator('#tactical-map-modal')).toBeVisible();
         await expect(page.locator('#close-tactical-map-modal')).toBeFocused();
     });
+
+    test('base turret submenu owns controller focus when it becomes visible', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.evaluate(() => {
+            const modal = document.getElementById('base-turret-modal');
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+        });
+
+        await expect(page.locator('#base-turret-modal')).toBeVisible();
+        await expect(page.locator('#close-base-turret-modal')).toBeFocused();
+    });
 });

@@ -316,6 +316,7 @@ const STEAM_INPUT_PROMPT_IDS = Object.freeze([
 ]);
 
 const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
+    'dev-console-modal',
     'confirm-modal',
     'reset-save-confirm-modal',
     'quit-confirm-modal',
@@ -337,6 +338,7 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'steam-vault-modal',
     'operator-polish-modal',
     'tactical-map-modal',
+    'base-turret-modal',
     'demo-end-modal',
     'game-over-modal',
     'camp-choice-modal',

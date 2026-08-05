@@ -82,6 +82,17 @@ describe('browser gamepad mapping', () => {
         expect(mapped.sprint).toBe(false);
     });
 
+    it('maps Y to both gameplay smash and archive Inventory semantics', () => {
+        const buttons = Array.from({ length: 17 }, () => button(false));
+        buttons[3] = button(true);
+
+        const mapped = mapBrowserGamepad({ index: 0, id: 'Xbox Wireless Controller', axes: [0, 0, 0, 0], buttons });
+
+        expect(mapped.melee).toBe(true);
+        expect(mapped.ability).toBe(true);
+        expect(mapped.active).toBe(true);
+    });
+
     it('keeps B as back/dodge without also firing scan or tab navigation', () => {
         const buttons = Array.from({ length: 16 }, () => button(false));
         buttons[1] = button(true);
