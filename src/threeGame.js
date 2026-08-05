@@ -8737,6 +8737,9 @@ export class ThreeGame {
         this.closeConsoleModal();
         this.setInputEnabled(false);
 
+        window.dispatchEvent(new CustomEvent('o2-startup-sequence-started', {
+            detail: { level: 1, bossType }
+        }));
         this._pendingO2BossType = bossType;
         this.o2StartupSequenceActive = true;
         this.o2StartupPhase = 'popup';
@@ -18254,7 +18257,11 @@ export class ThreeGame {
                         this.chunkSize - 1 - placement.x,
                         this.chunkSize - 1 - placement.y
                     )
-                })));
+                })))
+            .filter((placement) => Math.hypot(
+                placement.worldX - spawn.x,
+                placement.worldZ - spawn.y
+            ) > 9);
         const authoredRoomCells = new Set(
             (this.wfcMetadataCache?.get(`${chunkX},${chunkY}`)?.roomInstances ?? [])
                 .flatMap((room) => (room.interior ?? []).map(({ x, y }) => `${x},${y}`))
@@ -18270,7 +18277,7 @@ export class ThreeGame {
                 const dz = worldZ - spawn.y;
                 const distToSpawn = Math.sqrt(dx * dx + dz * dz);
 
-                if (distToSpawn <= 6.0) continue;
+                if (distToSpawn <= 9.0) continue;
                 if (authoredRoomCells.has(`${localX},${localY}`)) continue;
 
                 const roomType = roomTypes?.[localY]?.[localX] ?? ROOM_TYPES.CORRIDOR;
@@ -18564,7 +18571,11 @@ export class ThreeGame {
                 }
             }
         }
-        return placements;
+        const spawn = this.getSpawnTile();
+        return placements.filter((placement) => Math.hypot(
+            placement.x - spawn.x,
+            placement.z - spawn.y
+        ) > 9);
     }
 
     selectClusterCenter(candidates, clusters, random) {
@@ -18710,8 +18721,8 @@ export class ThreeGame {
                 const dz = worldZ - spawn.y;
                 const distToSpawn = Math.sqrt(dx * dx + dz * dz);
 
-                // Keep away from player's starting spawn tile
-                if (distToSpawn <= 6.0) continue;
+                // Keep the entire ship/start room clear of general scatter.
+                if (distToSpawn <= 9.0) continue;
 
                 candidates.push({
                     localX,

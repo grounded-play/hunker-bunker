@@ -31,7 +31,6 @@ import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
-import { getGifDurationMs } from './src/gifDuration.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
@@ -5728,17 +5727,8 @@ function warmClassIntroMedia(playerType = 'SCOUT') {
     warmCutsceneVideo(webmBase);
 }
 
-const CLASS_INTRO_GIFS = Object.freeze({
-    SCOUT: '/Scout.Intro.gif',
-    TANK: '/Tank.Intro.gif',
-    ENGINEER: '/Eng.Intro.gif'
-});
-const CLASS_INTRO_GIF_VISIBLE_MS = 7750;
-const CLASS_INTRO_GIF_LOOP_GUARD_MS = 250;
-
 function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
-    const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
     warmClassIntroMedia(playerType);
     window.AudioManager?.unlock?.();
 
@@ -5764,18 +5754,11 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         skipHint.textContent = 'PRESS ANY KEY TO SKIP';
 
         let settled = false;
-        let step = 'gif';
-        let gifTimer = null;
         let guardTimer = null;
         let videoElement = null;
-        let gifImg = null;
         let checkSkipInterval = null;
 
         const clearTimers = () => {
-            if (gifTimer) {
-                window.clearTimeout(gifTimer);
-                gifTimer = null;
-            }
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
@@ -5813,14 +5796,12 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         function onKey(event) {
             event.preventDefault();
-            if (step === 'gif') startVideoStep();
-            else cleanupAndResolve();
+            cleanupAndResolve();
         }
 
         function onPointerUp(event) {
             event.preventDefault();
-            if (step === 'gif') startVideoStep();
-            else cleanupAndResolve();
+            cleanupAndResolve();
         }
 
         window.addEventListener('keydown', onKey);
@@ -5832,40 +5813,11 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
         }, 50);
 
-        function startVideoStep() {
-            if (settled || step === 'video') return;
-            step = 'video';
-            if (gifTimer) {
-                window.clearTimeout(gifTimer);
-                gifTimer = null;
-            }
-            gifImg?.remove();
-            buildVideo();
-        }
-
-        // Preserve the authored GIF → video sequence. Three.js remains
-        // suspended for both stages so GIF decoding does not contend with it.
-        gifImg = document.createElement('img');
-        gifImg.className = 'class-intro-video';
-        gifImg.style.objectFit = 'cover';
-        gifImg.alt = '';
-        gifImg.src = assetUrl(gifSrc);
-        gifImg.addEventListener('error', startVideoStep, { once: true });
-        overlay.append(gifImg, skipHint);
+        // Start directly on the authored class movie. The old GIF pre-roll
+        // looked like a stray flash/interstitial before the real intro loaded.
+        overlay.append(skipHint);
         host.appendChild(overlay);
-        const gifShownAt = performance.now();
-        gifTimer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_VISIBLE_MS);
-
-        void getGifDurationMs(gifSrc).then((durationMs) => {
-            if (settled || step !== 'gif' || !durationMs) return;
-            const elapsed = performance.now() - gifShownAt;
-            const safeVisibleMs = Math.min(
-                CLASS_INTRO_GIF_VISIBLE_MS,
-                Math.max(0, durationMs - CLASS_INTRO_GIF_LOOP_GUARD_MS)
-            );
-            window.clearTimeout(gifTimer);
-            gifTimer = window.setTimeout(startVideoStep, Math.max(0, safeVisibleMs - elapsed));
-        });
+        buildVideo();
 
         function buildVideo() {
         videoElement = document.createElement('video');
@@ -8487,13 +8439,13 @@ setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
-window.addEventListener('o2-bubble-activated', (event) => {
+window.addEventListener('o2-startup-sequence-started', (event) => {
     if ((event?.detail?.level ?? 0) !== 1) return;
     showTacticalOverlay({
         title: 'O₂ FIELD ONLINE',
         status: '> REPAIR SEQUENCE COMPLETE<br>> INITIALIZING SYSTEM REBOOT',
         progress: 100,
-        duration: 2200
+        duration: 3200
     });
 });
 window.addEventListener('milestone-boss-warning', () => {
