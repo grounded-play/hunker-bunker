@@ -108,6 +108,7 @@ export function createRgbAudioController() {
     let ready = false;
     let destroyed = false;
     let speechToken = 0;
+    let speechRetry = null;
 
     const stopHandle = (handle) => {
         try { handle?.source?.stop(); } catch { /* already stopped */ }
@@ -120,25 +121,52 @@ export function createRgbAudioController() {
 
     const stopSpeech = () => {
         speechToken += 1;
+        clearTimeout(speechRetry);
+        speechRetry = null;
         if (typeof window !== 'undefined' && window.speechSynthesis) {
             window.speechSynthesis.cancel();
         }
     };
 
-    const speakLines = (hotspotId, lines = []) => {
+    const speakWithGameVoice = (speaker, lines) => {
+        lines.forEach((line, index) => {
+            setTimeout(() => {
+                if (!destroyed) AudioManager.playVoiceForMessage({ name: speaker }, line);
+            }, index * 260);
+        });
+    };
+
+    const speakLines = (hotspotId, lines = [], retry = true) => {
+        const copy = [...new Set(lines.map((line) => String(line).trim()).filter(Boolean))];
         if (
             destroyed
             || AudioManager.globalMuted
             || !AudioManager.voiceEnabled
-            || typeof window === 'undefined'
+        ) return;
+
+        const speaker = getDialogueSpeaker(hotspotId);
+        if (
+            typeof window === 'undefined'
             || !window.speechSynthesis
             || typeof window.SpeechSynthesisUtterance !== 'function'
-        ) return;
+        ) {
+            speakWithGameVoice(speaker, copy);
+            return;
+        }
 
         stopSpeech();
         const token = speechToken;
-        const speaker = getDialogueSpeaker(hotspotId);
         const voices = window.speechSynthesis.getVoices();
+        // Electron may expose the API before Linux has populated its voices.
+        // Wait through that startup race instead of silently losing the line.
+        if (voices.length === 0 && retry) {
+            speechRetry = setTimeout(() => speakLines(hotspotId, copy, false), 450);
+            return;
+        }
+        if (voices.length === 0) {
+            speakWithGameVoice(speaker, copy);
+            return;
+        }
         const preferred = voices.find((voice) => (
             voice.lang?.toLowerCase().startsWith('en')
             && (speaker === 'SYSTEM' || speaker === 'KIOSK'
@@ -158,6 +186,7 @@ export function createRgbAudioController() {
             );
             utterance.onend = () => queueNext(index + 1);
             utterance.onerror = () => queueNext(index + 1);
+            window.speechSynthesis.resume();
             window.speechSynthesis.speak(utterance);
         };
         queueNext(0);
@@ -201,7 +230,7 @@ export function createRgbAudioController() {
         },
         narrate(lines = []) {
             const copy = Array.isArray(lines) ? lines : [lines];
-            speakLines('narrator', [...new Set(copy.map((line) => String(line).trim()).filter(Boolean))]);
+            speakLines('narrator', copy);
         },
         ending(endingId) {
             if (endingId !== 'ashes_survival') return;

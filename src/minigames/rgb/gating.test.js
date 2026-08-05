@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { isHotspotAvailable } from './gating.js';
+import { availableHotspots, isHotspotAvailable } from './gating.js';
 import { createRunState } from './state.js';
 
 const base = () => createRunState();
 const seen = (...ids) => new Set(ids);
 
 describe('isHotspotAvailable', () => {
+    it('returns only choices the player can currently select', () => {
+        const hotspots = [
+            { id: 'done', once: true },
+            { id: 'ready' },
+            { id: 'locked', requiresAllOf: ['missing'] }
+        ];
+        expect(availableHotspots(hotspots, base(), seen('done')).map(({ id }) => id))
+            .toEqual(['ready']);
+    });
+
     it('hides a once-hotspot that has already been visited', () => {
         const hotspot = { id: 'a', once: true };
         expect(isHotspotAvailable(hotspot, base(), seen())).toBe(true);

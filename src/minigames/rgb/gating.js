@@ -62,3 +62,9 @@ export function isHotspotAvailable(hotspot, runState, visited) {
 
     return true;
 }
+
+// Present only decisions that can be made now. Exposing the full authored
+// list also shows completed and mutually-exclusive options as duplicate UI.
+export function availableHotspots(hotspots, runState, visited) {
+    return hotspots.filter((hotspot) => isHotspotAvailable(hotspot, runState, visited));
+}

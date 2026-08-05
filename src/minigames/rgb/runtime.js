@@ -31,7 +31,7 @@ import {
     resolveOutcome,
     gameOver
 } from './state.js';
-import { isHotspotAvailable } from './gating.js';
+import { availableHotspots, isHotspotAvailable } from './gating.js';
 import {
     saveCheckpoint,
     recordEnding,
@@ -211,7 +211,7 @@ export function mountRgb({ root, save, storage, onExit }) {
     }
 
     function focusableHotspots() {
-        return currentChapter().hotspots.filter((h) => isHotspotAvailable(h, runState, visited));
+        return availableHotspots(currentChapter().hotspots, runState, visited);
     }
 
     function chapterNumber(chapterId = runState.checkpoint) {
@@ -412,11 +412,11 @@ export function mountRgb({ root, save, storage, onExit }) {
         actionDeck.className = 'rgb-action-deck';
         actionDeck.classList.toggle('rgb-action-deck--cutaway', Boolean(activeCutaway));
         actionDeck.setAttribute('aria-label', 'Available actions');
-        const ready = new Set(focusableHotspots().map((h) => h.id));
-        chapter.hotspots.forEach((hotspot) => {
+        focusableHotspots().forEach((hotspot) => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'rgb-hotspot';
+            btn.dataset.hotspotId = hotspot.id;
             const itemId = hotspot.pickup?.items?.[0]
                 ?? hotspot.effects?.item
                 ?? hotspot.effects?.items?.[0];
@@ -439,12 +439,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             btn.classList.toggle('rgb-hotspot--choice', Boolean(hotspot.choice));
             btn.classList.toggle('rgb-hotspot--object', Boolean(hotspot.object));
             btn.classList.toggle('rgb-hotspot--inventory-action', Boolean(hotspot.inventoryAction));
-            const isDone = hotspot.once && visited.has(hotspot.id);
-            const isReady = ready.has(hotspot.id);
-            btn.classList.toggle('rgb-hotspot--done', Boolean(isDone));
-            btn.classList.toggle('rgb-hotspot--locked', !isReady && !isDone);
             btn.classList.toggle('rgb-hotspot--reveal', revealHeld);
-            btn.disabled = !isReady;
             btn.addEventListener('click', () => activateHotspot(hotspot));
             actionDeck.appendChild(btn);
         });
@@ -922,12 +917,10 @@ export function mountRgb({ root, save, storage, onExit }) {
         focusIndex = Math.max(0, Math.min(focusIndex, list.length - 1));
         const target = list[focusIndex];
         const buttons = root.querySelectorAll('.rgb-hotspot');
-        buttons.forEach((btn, i) => {
-            const hotspot = currentChapter().hotspots[i];
-            btn.classList.toggle('rgb-hotspot--focused', hotspot?.id === target?.id);
+        buttons.forEach((btn) => {
+            btn.classList.toggle('rgb-hotspot--focused', btn.dataset.hotspotId === target?.id);
         });
-        const targetIndex = currentChapter().hotspots.findIndex((h) => h.id === target?.id);
-        if (targetIndex >= 0) buttons[targetIndex]?.focus();
+        [...buttons].find((btn) => btn.dataset.hotspotId === target?.id)?.focus();
     }
 
     function moveFocus(delta) {
