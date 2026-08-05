@@ -10,8 +10,8 @@ export const TiltShiftPassShader = {
     uniforms: {
         tDiffuse: { value: null },
         focusY: { value: 0.5 },
-        focusRange: { value: 0.45 },
-        blurAmount: { value: 0.0022 },
+        focusRange: { value: 0.55 },
+        blurAmount: { value: 0.0020 },
         dir: { value: new THREE.Vector2(0, 1) }
     },
     vertexShader: `
@@ -31,7 +31,7 @@ export const TiltShiftPassShader = {
 
         void main() {
             float dist = length((vUv - vec2(0.5, focusY)) * vec2(1.0, 1.25));
-            float factor = smoothstep(focusRange * 0.7, focusRange * 1.8, dist);
+            float factor = smoothstep(focusRange * 0.8, focusRange * 2.2, dist);
             vec2 step = dir * (blurAmount * factor);
             if (factor < 0.01) {
                 gl_FragColor = texture2D(tDiffuse, vUv);
