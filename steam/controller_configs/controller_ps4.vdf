@@ -5,7 +5,7 @@
     "title" "Official Hunker Bunker Layout"
     "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "controller_ps4"
-    "major_revision" "5"
+    "major_revision" "6"
     "minor_revision" "0"
     "localization"
     {
@@ -631,6 +631,34 @@
                 } }
         }
     }
+    "group"
+    {
+        "id" "8"
+        "mode" "absolute_mouse"
+        "inputs" { }
+        "settings"
+        {
+            "sensitivity" "105"
+        }
+        "gameactions"
+        {
+            "menu" "menu_pointer_mouse"
+        }
+    }
+    "group"
+    {
+        "id" "27"
+        "mode" "joystick_move"
+        "inputs" { }
+        "settings"
+        {
+            "deadzone_inner_radius" "6000"
+        }
+        "gameactions"
+        {
+            "archive" "archive_focus"
+        }
+    }
     "preset"
     {
         "id" "0"
@@ -644,6 +672,7 @@
             "4" "right_trigger active"
             "5" "switch active"
             "6" "right_joystick active"
+            "8" "center_trackpad active"
         }
     }
     "preset"
@@ -658,6 +687,7 @@
             "13" "left_trigger active"
             "14" "right_trigger active"
             "15" "switch active"
+            "17" "center_trackpad active"
         }
     }
     "preset"
@@ -672,6 +702,7 @@
             "23" "left_trigger active"
             "24" "right_trigger active"
             "25" "switch active"
+            "27" "center_trackpad active"
         }
     }
 }

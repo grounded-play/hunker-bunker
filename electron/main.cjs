@@ -402,6 +402,7 @@ function initSteam() {
                 menuTabLeft: steamClient.input.getDigitalAction('menu_tab_left'),
                 menuTabRight: steamClient.input.getDigitalAction('menu_tab_right'),
                 menuPointer: steamClient.input.getAnalogAction('menu_pointer'),
+                menuPointerMouse: steamClient.input.getAnalogAction('menu_pointer_mouse'),
                 move: steamClient.input.getAnalogAction('move'),
                 camera: steamClient.input.getAnalogAction('camera'),
                 cameraMouse: steamClient.input.getAnalogAction('camera_mouse'),
@@ -510,8 +511,11 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
     // absolute_mouse reports frame deltas in mouse "pixels", not a normalized stick
     // position, so this deliberately skips the [-1, 1] clamp applied to the stick
     // vectors below — clamping would crush a fast flick into a single unit.
-    const cameraDeltaVector = phase === 'gameplay' && isValidActionHandle(actionHandles.cameraMouse)
-        ? controller.getAnalogActionVector(actionHandles.cameraMouse)
+    const pointerDeltaAction = phase === 'menu'
+        ? actionHandles.menuPointerMouse
+        : actionHandles.cameraMouse;
+    const cameraDeltaVector = (phase === 'gameplay' || phase === 'menu') && isValidActionHandle(pointerDeltaAction)
+        ? controller.getAnalogActionVector(pointerDeltaAction)
         : { x: 0, y: 0 };
 
     const buttonState = phase === 'gameplay'

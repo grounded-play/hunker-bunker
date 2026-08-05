@@ -63,8 +63,8 @@ function dpadGroup(id, actionSet, actions) {
     }`;
 }
 
-// Mouse-style analog action used by the right joystick for the free virtual aim
-// cursor. Trackpads are deliberately left unbound in every action set.
+// Delta-style analog action used by Deck and PlayStation trackpads for the
+// menu pointer and gameplay aim cursor.
 function mouseGroup(id, actionSet, action, extraSettings = {}) {
     const settings = Object.entries({ sensitivity: '105', ...extraSettings })
         .map(([key, value]) => `"${key}" "${value}"`)
@@ -145,6 +145,8 @@ function preset(id, name, groups) {
 }
 
 function buildControllerConfig(controllerType) {
+    const hasDualTrackpads = controllerType === 'controller_neptune';
+    const hasCenterTrackpad = controllerType === 'controller_ps4' || controllerType === 'controller_ps5';
     const gameplaySwitches = {
         button_escape: ['pause', 'Pause'],
         left_bumper: ['scan', 'Scan'],
@@ -220,32 +222,69 @@ function buildControllerConfig(controllerType) {
         })
     ];
 
+    if (hasDualTrackpads) {
+        groups.push(
+            dpadGroup(7, 'menu', {
+                up: ['menu_up', 'Up'],
+                down: ['menu_down', 'Down'],
+                left: ['menu_left', 'Left'],
+                right: ['menu_right', 'Right']
+            }),
+            mouseGroup(8, 'menu', 'menu_pointer_mouse'),
+            analogGroup(16, 'gameplay', 'move'),
+            analogGroup(26, 'archive', 'archive_focus'),
+            analogGroup(27, 'archive', 'archive_focus')
+        );
+    } else if (hasCenterTrackpad) {
+        groups.push(
+            mouseGroup(8, 'menu', 'menu_pointer_mouse'),
+            analogGroup(27, 'archive', 'archive_focus')
+        );
+    }
+
+    const menuSources = {
+        0: 'button_diamond',
+        1: 'dpad',
+        2: 'joystick',
+        3: 'left_trigger',
+        4: 'right_trigger',
+        5: 'switch',
+        6: 'right_joystick'
+    };
+    const gameplaySources = {
+        10: 'button_diamond',
+        11: 'joystick',
+        12: 'right_joystick',
+        13: 'left_trigger',
+        14: 'right_trigger',
+        15: 'switch'
+    };
+    const archiveSources = {
+        20: 'button_diamond',
+        21: 'joystick',
+        22: 'dpad',
+        23: 'left_trigger',
+        24: 'right_trigger',
+        25: 'switch'
+    };
+
+    if (hasDualTrackpads) {
+        menuSources[7] = 'left_trackpad';
+        menuSources[8] = 'right_trackpad';
+        gameplaySources[16] = 'left_trackpad';
+        gameplaySources[17] = 'right_trackpad';
+        archiveSources[26] = 'left_trackpad';
+        archiveSources[27] = 'right_trackpad';
+    } else if (hasCenterTrackpad) {
+        menuSources[8] = 'center_trackpad';
+        gameplaySources[17] = 'center_trackpad';
+        archiveSources[27] = 'center_trackpad';
+    }
+
     const presets = [
-        preset(0, 'menu', {
-            0: 'button_diamond',
-            1: 'dpad',
-            2: 'joystick',
-            3: 'left_trigger',
-            4: 'right_trigger',
-            5: 'switch',
-            6: 'right_joystick'
-        }),
-        preset(1, 'gameplay', {
-            10: 'button_diamond',
-            11: 'joystick',
-            12: 'right_joystick',
-            13: 'left_trigger',
-            14: 'right_trigger',
-            15: 'switch'
-        }),
-        preset(2, 'archive', {
-            20: 'button_diamond',
-            21: 'joystick',
-            22: 'dpad',
-            23: 'left_trigger',
-            24: 'right_trigger',
-            25: 'switch'
-        })
+        preset(0, 'menu', menuSources),
+        preset(1, 'gameplay', gameplaySources),
+        preset(2, 'archive', archiveSources)
     ];
 
     return `"controller_mappings"
@@ -255,7 +294,7 @@ function buildControllerConfig(controllerType) {
     "title" "Official Hunker Bunker Layout"
     "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "${controllerType}"
-    "major_revision" "5"
+    "major_revision" "6"
     "minor_revision" "0"
     "localization"
     {

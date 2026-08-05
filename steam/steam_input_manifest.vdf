@@ -4,7 +4,7 @@
     // reworked enough that old user configs are unusable — Steam then force-updates
     // players onto the current official config. minor_revision is for additive
     // actions and localization tweaks. Read back via GetDeviceBindingRevision.
-    "major_revision" "5"
+    "major_revision" "6"
     "minor_revision" "0"
     "configurations"
     {
@@ -49,6 +49,11 @@
                     "title" "#ActionMenuPointer"
                     "input_mode" "joystick_move"
                 }
+                "menu_pointer_mouse"
+                {
+                    "title" "#ActionMenuPointerMouse"
+                    "input_mode" "absolute_mouse"
+                }
             }
             "Button"
             {
@@ -78,9 +83,8 @@
                     "title" "#ActionCamera"
                     "input_mode" "joystick_move"
                 }
-                // Mouse-style virtual cursor driven only by the right joystick.
-                // Trackpads and gyro are deliberately absent from the official
-                // layout to prevent accidental aim or menu input.
+                // Delta-style aim for Deck and PlayStation trackpads. The
+                // right joystick remains on the direct camera action above.
                 "camera_mouse"
                 {
                     "title" "#ActionCameraMouse"
@@ -137,6 +141,7 @@
             "ActionMenuTabLeft" "Previous Tab"
             "ActionMenuTabRight" "Next Tab"
             "ActionMenuPointer" "Pointer"
+            "ActionMenuPointerMouse" "Trackpad Pointer"
             "ActionMove" "Move"
             "ActionCamera" "Aim"
             "ActionCameraMouse" "Aim Cursor"

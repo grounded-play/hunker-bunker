@@ -5,7 +5,7 @@
     "title" "Official Hunker Bunker Layout"
     "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "controller_generic"
-    "major_revision" "5"
+    "major_revision" "6"
     "minor_revision" "0"
     "localization"
     {
