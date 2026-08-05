@@ -153,3 +153,13 @@ export function getEventCinematicSpec(eventId) {
         tone: 'event'
     });
 }
+
+export function shouldPlayAuthoredEventCinematic({
+    appPhase,
+    revealMode = 'animated',
+    source = ''
+} = {}) {
+    if (appPhase !== 'gameplay') return false;
+    if (revealMode === 'instant') return false;
+    return !String(source).includes('state-restore');
+}

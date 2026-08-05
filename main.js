@@ -10,7 +10,7 @@ import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from '.
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
-import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec } from './src/cinematicFallback.js';
+import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
@@ -6126,6 +6126,7 @@ let cinematicEventQueue = Promise.resolve();
 const seenSessionCinematicEvents = new Set();
 
 function queueCinematicEvent(options = {}) {
+    if (!isGameplayPhase()) return Promise.resolve({ skipped: true, reason: 'not-gameplay' });
     cinematicEventQueue = cinematicEventQueue
         .catch(() => undefined)
         .then(async () => {
@@ -6147,7 +6148,8 @@ window.addEventListener('cinematic-event', (event) => {
     });
 });
 
-function playAuthoredEventOnce(eventId, { videoBase = null } = {}) {
+function playAuthoredEventOnce(eventId, { videoBase = null, eventDetail = {} } = {}) {
+    if (!shouldPlayAuthoredEventCinematic({ appPhase, ...eventDetail })) return;
     if (seenSessionCinematicEvents.has(eventId)) return;
     const fallback = getEventCinematicSpec(eventId);
     if (!fallback) return;
@@ -6155,8 +6157,11 @@ function playAuthoredEventOnce(eventId, { videoBase = null } = {}) {
     void queueCinematicEvent({ videoBase, fallback });
 }
 
-window.addEventListener('foundry-discovered', () => {
-    playAuthoredEventOnce('foundry_discovered', { videoBase: 'event-foundry-discovered' });
+window.addEventListener('foundry-discovered', (event) => {
+    playAuthoredEventOnce('foundry_discovered', {
+        videoBase: 'event-foundry-discovered',
+        eventDetail: event?.detail ?? {}
+    });
 });
 window.addEventListener('black-box-recovered', () => {
     playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });

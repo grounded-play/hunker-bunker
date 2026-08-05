@@ -4,7 +4,8 @@ import {
     EVENT_CINEMATICS,
     getDeathCinematicSpec,
     getEventCinematicSpec,
-    normalizeCinematicStillSpec
+    normalizeCinematicStillSpec,
+    shouldPlayAuthoredEventCinematic
 } from './cinematicFallback.js';
 
 describe('cinematic still fallback specs', () => {
@@ -40,5 +41,13 @@ describe('cinematic still fallback specs', () => {
     it('returns authored event beats without inventing unknown ones', () => {
         expect(getEventCinematicSpec('cave_revealed').images).toEqual(EVENT_CINEMATICS.cave_revealed.images);
         expect(getEventCinematicSpec('not-authored')).toBeNull();
+    });
+
+    it('suppresses cold-boot and instant state-restoration cinematics', () => {
+        expect(shouldPlayAuthoredEventCinematic({ appPhase: 'loading' })).toBe(false);
+        expect(shouldPlayAuthoredEventCinematic({ appPhase: 'menu' })).toBe(false);
+        expect(shouldPlayAuthoredEventCinematic({ appPhase: 'gameplay', revealMode: 'instant' })).toBe(false);
+        expect(shouldPlayAuthoredEventCinematic({ appPhase: 'gameplay', source: 'o2-bubble-state-restore' })).toBe(false);
+        expect(shouldPlayAuthoredEventCinematic({ appPhase: 'gameplay', revealMode: 'animated' })).toBe(true);
     });
 });
