@@ -3453,15 +3453,16 @@ input:checked+.slider:before {
 
 /* Settings remains keyboard/Deck navigable at enlarged UI scales. */
 .settings-modal-content {
-  padding: calc(var(--vu) * 4) calc(var(--vu) * 4.5) !important;
-  width: min(calc(var(--vu) * 88), 92vw) !important;
-  max-height: 90vh !important;
+  padding: calc(var(--vu) * 3) calc(var(--vu) * 3.5) !important;
+  width: min(calc(var(--vu) * 80), 86%) !important;
+  max-height: 82% !important;
+  box-sizing: border-box !important;
   overflow-y: auto !important;
   scrollbar-width: thin !important;
   scrollbar-color: var(--accent-primary) rgba(0, 0, 0, 0.4) !important;
   scrollbar-gutter: stable;
-  scroll-padding-top: calc(var(--vu) * 9);
-  scroll-padding-bottom: calc(var(--vu) * 4);
+  scroll-padding-top: calc(var(--vu) * 7);
+  scroll-padding-bottom: calc(var(--vu) * 3);
   border: 1px solid var(--accent-primary);
   box-shadow: 0 0 45px rgba(255, 159, 28, 0.15), 0 0 90px rgba(0, 0, 0, 0.85);
 }
