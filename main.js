@@ -430,6 +430,7 @@ const mainActionRouter = createActionRouter();
 let steamGamepadTextInputInFlight = false;
 let pendingSteamInputBoot = false;
 let suppressSteamInputUntilRelease = false;
+let lastRequestedSteamInputPhase = null;
 
 window.HunkerTriggerBoot = () => {
     pendingSteamInputBoot = true;
@@ -447,10 +448,18 @@ window.HunkerInputState = {
 };
 
 function syncSteamInputPhase(phaseOverride = null) {
+    const modalMenuOpen = appPhase !== 'archive' && STEAM_INPUT_FOCUS_ROOT_IDS.some((id) => {
+        if (id === 'rgb-root' || id === 'splash' || id === 'menu') return false;
+        const element = document.getElementById(id);
+        return Boolean(element && !element.classList.contains('hidden'));
+    });
     const effectivePhase = phaseOverride
-        ?? (!document.getElementById('settings-popup')?.classList.contains('hidden') ? 'menu' : appPhase);
+        ?? (modalMenuOpen ? 'menu' : appPhase);
     mainActionRouter.setActionSet(actionSetForAppPhase(effectivePhase));
-    window.electronAPI?.setSteamInputPhase?.(effectivePhase);
+    if (effectivePhase !== lastRequestedSteamInputPhase) {
+        lastRequestedSteamInputPhase = effectivePhase;
+        window.electronAPI?.setSteamInputPhase?.(effectivePhase);
+    }
 }
 
 function syncSteamTimelinePhase(phase = appPhase) {
@@ -1000,6 +1009,7 @@ document.addEventListener('keydown', (event) => {
 const controllerFocusObserver = new MutationObserver(() => {
     queueMicrotask(() => {
         const root = getControllerFocusRoot();
+        syncSteamInputPhase();
         if (root !== activeControllerFocusRoot || isSteamControllerInputActive() || isModalFocusRoot(root)) {
             syncControllerFocusBoundary();
         }
@@ -5742,7 +5752,6 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         if (typeof window !== 'undefined' && window.hbLog) {
             window.hbLog('AUDIO', 'info', `Starting intro cutscene sequence for ${playerType}`);
         }
-        window.AudioManager?.play?.('amb_metal_stress1', { volume: 0.65, bus: 'world', varyPitch: false });
 
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
@@ -5824,7 +5833,9 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         videoElement.className = 'class-intro-video';
         videoElement.style.opacity = '0';
         videoElement.playsInline = true;
-        videoElement.muted = Boolean(window.AudioManager?.globalMuted);
+        // The class clips contain unexplained combat/gunfire audio that does
+        // not match the on-screen action. Keep the visual briefing clean.
+        videoElement.muted = true;
         videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
         videoElement.autoplay = true;
         videoElement.controls = false;

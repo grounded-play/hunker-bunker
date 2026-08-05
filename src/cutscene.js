@@ -105,12 +105,6 @@ export class CutsceneManager {
         });
 
         this.queue(runId, CUTSCENE_TIMING.shipFallStartMs, () => {
-            window.AudioManager?.play('amb_metal_stress1', {
-                volume: 0.6,
-                playbackRate: 1.15,
-                bus: 'world',
-                varyPitch: false
-            });
             this.shipEl.style.transition = [
                 `left ${CUTSCENE_TIMING.shipFallDurationMs}ms cubic-bezier(0.2, 0.75, 0.25, 1)`,
                 `top ${CUTSCENE_TIMING.shipFallDurationMs}ms cubic-bezier(0.2, 0.75, 0.25, 1)`,

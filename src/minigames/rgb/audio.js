@@ -5,6 +5,7 @@ const BASE = '/minigames/rgb/audio';
 export const RGB_AUDIO_MANIFEST = Object.freeze({
     images: [],
     audio: [
+        ['rgb_music_archive', '/audio/ost/Black Box Stain.mp3'],
         ['rgb_amb_parking_lot', 'ambience/amb_parking_lot.wav'],
         ['rgb_amb_warehouse', 'ambience/amb_warehouse.wav'],
         ['rgb_amb_review_room', 'ambience/amb_review_room.wav'],
@@ -24,7 +25,7 @@ export const RGB_AUDIO_MANIFEST = Object.freeze({
         ['rgb_voice_marisol_ch1', 'voice/voice_marisol_ch1_01.mp3'],
         ['rgb_voice_system_ch5', 'voice/voice_system_ch5_01.mp3'],
         ['rgb_voice_system_ch6', 'voice/voice_system_ch6_01.mp3']
-    ].map(([key, path]) => ({ key, url: `${BASE}/${path}` }))
+    ].map(([key, path]) => ({ key, url: path.startsWith('/') ? path : `${BASE}/${path}` }))
 });
 
 export const CHAPTER_AMBIENCE = Object.freeze({
@@ -168,10 +169,10 @@ export function createRgbAudioController() {
             await AudioManager.loadAssets(RGB_AUDIO_MANIFEST);
             if (destroyed) return;
             ready = true;
-            music = play('rgb_music_epilogue_ashes', {
+            music = play('rgb_music_archive', {
                 bus: 'music',
                 loop: true,
-                volume: 0.26
+                volume: 0.52
             });
             if (activeChapter) this.enterChapter(activeChapter);
         },
@@ -182,7 +183,7 @@ export function createRgbAudioController() {
             ambience = play(CHAPTER_AMBIENCE[chapterId], {
                 bus: 'world',
                 loop: true,
-                volume: chapterId === 'sector_four' ? 0.5 : 0.34
+                volume: chapterId === 'sector_four' ? 0.24 : 0.16
             });
         },
         hotspot(hotspotId, lines = []) {
