@@ -1258,6 +1258,8 @@ export class ThreeGame {
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 0, 0);
 
+        this.setupMenuGyroListeners();
+
         // The DOM hero picker covers most of this showroom. Avoid paying the
         // 4x pixel cost of a 2x display before gameplay starts.
         this.menuPixelRatio = 1;
@@ -5452,6 +5454,26 @@ export class ThreeGame {
             }
         } else {
             this._engineerGestureTimer = 2.2;
+        }
+
+        // Poll Gamepad API for orientation pose / right-stick motion tilt
+        if (typeof navigator !== 'undefined' && navigator.getGamepads) {
+            const gamepads = navigator.getGamepads() || [];
+            for (const gp of gamepads) {
+                if (!gp) continue;
+                if (gp.pose?.orientation) {
+                    const { x, y } = gp.pose.orientation;
+                    this._gamepadTiltX = THREE.MathUtils.clamp((y || 0) * 2.5, -1, 1);
+                    this._gamepadTiltY = THREE.MathUtils.clamp((x || 0) * 2.5, -1, 1);
+                } else if (gp.axes && gp.axes.length >= 4) {
+                    const rx = gp.axes[2] || 0;
+                    const ry = gp.axes[3] || 0;
+                    if (Math.abs(rx) > 0.15 || Math.abs(ry) > 0.15) {
+                        this._gamepadTiltX = rx;
+                        this._gamepadTiltY = ry;
+                    }
+                }
+            }
         }
     }
 
@@ -16250,12 +16272,76 @@ export class ThreeGame {
         this.activeProjectiles = survivors;
     }
 
+    setupMenuGyroListeners() {
+        if (typeof window === 'undefined') return;
+
+        this._rawGyroX = 0;
+        this._rawGyroY = 0;
+        this._pointerTiltX = 0;
+        this._pointerTiltY = 0;
+        this._gamepadTiltX = 0;
+        this._gamepadTiltY = 0;
+        this._menuParallaxX = 0;
+        this._menuParallaxY = 0;
+
+        this.handleDeviceOrientation = (event) => {
+            if (event.gamma != null && event.beta != null) {
+                this._rawGyroX = THREE.MathUtils.clamp(event.gamma / 30, -1, 1);
+                this._rawGyroY = THREE.MathUtils.clamp((event.beta - 40) / 30, -1, 1);
+            }
+        };
+
+        this.handleDeviceMotion = (event) => {
+            const rot = event.rotationRate;
+            if (rot && (rot.beta != null || rot.gamma != null)) {
+                this._rawGyroX = THREE.MathUtils.clamp(this._rawGyroX + (rot.gamma || 0) * 0.015, -1, 1);
+                this._rawGyroY = THREE.MathUtils.clamp(this._rawGyroY + (rot.beta || 0) * 0.015, -1, 1);
+            }
+        };
+
+        this.handleMenuPointerMove = (event) => {
+            if (this.performanceProfile !== 'menu') return;
+            const w = window.innerWidth || 1;
+            const h = window.innerHeight || 1;
+            this._pointerTiltX = ((event.clientX / w) - 0.5) * 2;
+            this._pointerTiltY = ((event.clientY / h) - 0.5) * 2;
+        };
+
+        window.addEventListener('deviceorientation', this.handleDeviceOrientation, { passive: true });
+        window.addEventListener('devicemotion', this.handleDeviceMotion, { passive: true });
+        window.addEventListener('pointermove', this.handleMenuPointerMove, { passive: true });
+    }
+
+    removeMenuGyroListeners() {
+        if (typeof window === 'undefined') return;
+        if (this.handleDeviceOrientation) window.removeEventListener('deviceorientation', this.handleDeviceOrientation);
+        if (this.handleDeviceMotion) window.removeEventListener('devicemotion', this.handleDeviceMotion);
+        if (this.handleMenuPointerMove) window.removeEventListener('pointermove', this.handleMenuPointerMove);
+    }
+
     updateCamera(delta) {
         const target = new THREE.Vector3(
             this.player.position.x + this.cameraOffset.x,
             this.player.position.y + this.cameraOffset.y,
             this.player.position.z + this.cameraOffset.z
         );
+
+        if (this.performanceProfile === 'menu') {
+            const inputX = this._rawGyroX || this._gamepadTiltX || this._pointerTiltX || 0;
+            const inputY = this._rawGyroY || this._gamepadTiltY || this._pointerTiltY || 0;
+            const targetParallaxX = inputX * 0.55;
+            const targetParallaxY = inputY * 0.40;
+            const lerpSpeed = Math.min(1, delta * 7);
+            this._menuParallaxX += (targetParallaxX - (this._menuParallaxX || 0)) * lerpSpeed;
+            this._menuParallaxY += (targetParallaxY - (this._menuParallaxY || 0)) * lerpSpeed;
+
+            target.x += this._menuParallaxX;
+            target.y += this._menuParallaxY;
+        } else {
+            this._menuParallaxX = (this._menuParallaxX || 0) * 0.9;
+            this._menuParallaxY = (this._menuParallaxY || 0) * 0.9;
+        }
+
         this.camera.position.lerp(target, 1 - Math.exp(-delta * 7));
 
         if (this._cameraShakeTimer > 0) {
@@ -16265,7 +16351,19 @@ export class ThreeGame {
             this.camera.position.z += (Math.random() - 0.5) * intensity;
         }
 
-        this.camera.lookAt(this.player.position.x, this.player.position.y + 0.4, this.player.position.z);
+        const lookAtX = this.player.position.x + (this._menuParallaxX || 0) * 0.35;
+        const lookAtY = this.player.position.y + 0.4 + (this._menuParallaxY || 0) * 0.35;
+        this.camera.lookAt(lookAtX, lookAtY, this.player.position.z);
+
+        if (this.performanceProfile === 'menu' && typeof document !== 'undefined') {
+            const menuEl = document.getElementById('menu') || document.getElementById('splash');
+            if (menuEl && !menuEl.classList.contains('hidden')) {
+                const rotY = ((this._menuParallaxX || 0) * 4.5).toFixed(2);
+                const rotX = (-(this._menuParallaxY || 0) * 4.5).toFixed(2);
+                menuEl.style.transform = `perspective(1000px) rotateY(${rotY}deg) rotateX(${rotX}deg)`;
+            }
+        }
+
         this.updateTiltShiftAndBokeh(delta);
     }
 
@@ -24982,6 +25080,7 @@ export class ThreeGame {
             this.scene.remove(this.o2BubbleObjects.light);
             this.o2BubbleObjects = null;
         }
+        this.removeMenuGyroListeners();
         this.renderer.dispose();
         this.container.replaceChildren();
     }
