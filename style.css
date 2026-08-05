@@ -1838,19 +1838,7 @@ body {
 }
 
 .gameplay-tilt-shift::after {
-  content: '';
-  position: absolute;
-  inset: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    circle 130vmax at var(--focus-x, 50%) var(--focus-y, 50%),
-    transparent 0%,
-    transparent 55%,
-    rgba(2, 5, 7, 0.04) 75%,
-    rgba(2, 5, 7, 0.15) 88%,
-    rgba(0, 0, 0, 0.38) 100%
-  );
+  display: none !important;
 }
 
 .gameplay-tilt-shift.is-active {

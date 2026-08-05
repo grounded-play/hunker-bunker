@@ -30,7 +30,7 @@ export const TiltShiftPassShader = {
         varying vec2 vUv;
 
         void main() {
-            float dist = length((vUv - vec2(0.5, focusY)) * vec2(1.0, 1.25));
+            float dist = abs(vUv.y - focusY);
             float factor = smoothstep(focusRange * 0.8, focusRange * 2.2, dist);
             vec2 step = dir * (blurAmount * factor);
             if (factor < 0.01) {
