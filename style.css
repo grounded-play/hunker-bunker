@@ -3553,13 +3553,14 @@ input:checked+.slider:before {
   position: fixed;
   top: 0;
   left: 0;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   pointer-events: none;
-  z-index: 100000;
-  transition: transform 0.03s linear;
-  color: var(--crosshair-color, #ff9f1c);
-  filter: drop-shadow(0 0 8px var(--crosshair-color, #ff9f1c));
+  z-index: 200000;
+  transform-origin: center center;
+  mix-blend-mode: screen;
+  will-change: transform, width, height, opacity;
+  transition: opacity 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .settings-color-picker {

@@ -1245,7 +1245,21 @@ function ensureVirtualGamepadCursor() {
     virtualGamepadCursor = document.createElement('div');
     virtualGamepadCursor.id = 'virtual-gamepad-cursor';
     virtualGamepadCursor.className = 'virtual-gamepad-cursor hidden';
-    virtualGamepadCursor.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>`;
+
+    const dot = document.createElement('div');
+    dot.className = 'cursor-dot';
+    virtualGamepadCursor.appendChild(dot);
+
+    const ring = document.createElement('div');
+    ring.className = 'cursor-ring';
+    virtualGamepadCursor.appendChild(ring);
+
+    ['tl', 'tr', 'bl', 'br'].forEach(dir => {
+        const b = document.createElement('div');
+        b.className = `cursor-bracket cursor-bracket-${dir}`;
+        virtualGamepadCursor.appendChild(b);
+    });
+
     document.body.appendChild(virtualGamepadCursor);
     return virtualGamepadCursor;
 }
@@ -1266,7 +1280,7 @@ function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
         return;
     }
     cursor.classList.remove('hidden');
-    cursor.style.transform = `translate3d(${clientX - 12}px, ${clientY - 12}px, 0)`;
+    cursor.style.transform = `translate3d(${clientX - 15}px, ${clientY - 15}px, 0)`;
 }
 
 function handleSteamMenuInput(actions) {
@@ -1584,6 +1598,7 @@ function routeMainControllerInput(controller, gameplayActive) {
         return;
     }
     if (actionSet === ACTION_SETS.ARCHIVE) {
+        handleSteamMenuInput(actions);
         window.dispatchEvent(new CustomEvent('hb-archive-controller-actions', {
             detail: actions
         }));
