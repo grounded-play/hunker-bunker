@@ -105,6 +105,13 @@ export function createActionRouter() {
             tabRight: edge('menu_tab_right', pad.menuTabRight),
             pause: edge('menu_pause', pad.pause),
             pointer: pad.pointer ?? { x: 0, y: 0 },
+            // handleSteamMenuInput (main.js) reads these to drive the right-stick
+            // cursor, with its own deadzone against resting-stick drift. Forward
+            // them through untouched -- deriveMenuActions used to hardcode
+            // pointer to {0,0} specifically to defeat that cursor, but the
+            // deadzone now lives in the consumer instead.
+            camera: pad.camera ?? { x: 0, y: 0 },
+            move: pad.move ?? { x: 0, y: 0 },
             cameraDelta: pad.cameraDelta ?? { x: 0, y: 0 }
         };
     }

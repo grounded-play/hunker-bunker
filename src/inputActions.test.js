@@ -151,10 +151,16 @@ describe('createActionRouter', () => {
         expect(actions.tabRight).toBe(false);
     });
 
-    it('keeps the right stick inert in menus so stick drift cannot move the UI', () => {
+    it('forwards the right stick and left stick to menu actions for handleSteamMenuInput to drive the cursor', () => {
+        // handleSteamMenuInput (main.js) reads actions.camera/actions.move
+        // directly and applies its own deadzone against resting-stick drift;
+        // this layer's job is just to pass the raw vectors through, not to
+        // zero them out itself.
         const router = createActionRouter();
-        const { actions } = router.deriveActions(padSnapshot({ camera: { x: 0.8, y: -0.6 } }));
-        expect(actions.pointer).toEqual({ x: 0, y: 0 });
+        const { actions } = router.deriveActions(padSnapshot({ camera: { x: 0.8, y: -0.6 }, move: { x: -0.3, y: 0.2 } }));
+        expect(actions.camera).toEqual({ x: 0.8, y: -0.6 });
+        expect(actions.move).toEqual({ x: -0.3, y: 0.2 });
+        // Discrete d-pad-style focus navigation is unaffected by stick position.
         expect(actions.up).toBe(false);
         expect(actions.down).toBe(false);
     });

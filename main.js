@@ -1264,6 +1264,18 @@ function ensureVirtualGamepadCursor() {
     return virtualGamepadCursor;
 }
 
+// Controller aim feeds updateAimFromClient (and anything else listening for
+// real pointer motion) through a synthetic mousemove, since that's the same
+// path a physical mouse uses. Marking it lets #tactical-cursor's own
+// mousemove listener (initTacticalCursor) tell it apart from a real mouse and
+// skip showing its own lagged cursor on top of the instant virtual-gamepad
+// one -- without this, gameplay aim renders both crosshairs at once.
+function dispatchSyntheticControllerMousemove(clientX, clientY) {
+    const event = new MouseEvent('mousemove', { clientX, clientY, bubbles: true });
+    event.isControllerSynthetic = true;
+    window.dispatchEvent(event);
+}
+
 function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
     const cursor = ensureVirtualGamepadCursor();
     if (!cursor) return;
@@ -1454,11 +1466,7 @@ function applyControllerCursorAim(controller) {
     controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY * sensitivity)));
     controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + (deltaY * CONTROLLER_CURSOR_SENSITIVITY * sensitivity * invertSign)));
 
-    window.dispatchEvent(new MouseEvent('mousemove', {
-        clientX: controllerAimCursor.x,
-        clientY: controllerAimCursor.y,
-        bubbles: true
-    }));
+    dispatchSyntheticControllerMousemove(controllerAimCursor.x, controllerAimCursor.y);
     updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
     return Boolean(window.game.updateAimFromClient(
@@ -1497,11 +1505,7 @@ function handleSteamGameplayInput(controller) {
         controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + aimY * cursorSpeed * invertSign));
         lastPlayerAnchor = { ...anchor };
         updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
-        window.dispatchEvent(new MouseEvent('mousemove', {
-            clientX: controllerAimCursor.x,
-            clientY: controllerAimCursor.y,
-            bubbles: true
-        }));
+        dispatchSyntheticControllerMousemove(controllerAimCursor.x, controllerAimCursor.y);
         window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, { keepMouseActive: true });
     } else if (!cursorAimed) {
         lastPlayerAnchor = { ...anchor };
@@ -10525,6 +10529,10 @@ function initTacticalCursor() {
     };
 
     window.addEventListener('mousemove', (e) => {
+        // Controller aim drives its own instant crosshair (virtual-gamepad-cursor)
+        // and only dispatches this for other listeners (updateAimFromClient etc).
+        // Showing this lagged cursor too would put two crosshairs on screen.
+        if (e.isControllerSynthetic) return;
         // Ensure clientX and clientY are valid, finite numbers
         if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
         if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
