@@ -5834,12 +5834,6 @@ html.boot-cursor-hidden #tactical-cursor {
   display: block;
 }
 
-/* Controller aim already has the direct, unsmoothed circular crosshair. Do not
-   also show the decorative mouse cursor, whose mechanical lag reads as drift. */
-body.controller-mode #tactical-cursor {
-  display: none !important;
-}
-
 #tactical-cursor.cursor-fade-out {
   opacity: 0;
 }

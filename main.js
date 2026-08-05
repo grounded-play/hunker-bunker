@@ -122,9 +122,14 @@ const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
     });
 const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
 const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
+const branchName = buildInfo.branch ? buildInfo.branch.replace(/^dev\//i, '').toUpperCase() : '';
+const sprintLabel = branchName
+    ? (branchName.startsWith('SPRINT') ? branchName.replace('-', ' ') : branchName)
+    : '';
+const loadingVersionText = `${sprintLabel ? `${sprintLabel} // ` : ''}${buildCommitLabel}${pipelineBuildLabel}`;
 const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}`;
 if (loaderVersionTag) {
-    loaderVersionTag.textContent = canonicalVersionText;
+    loaderVersionTag.textContent = loadingVersionText;
     loaderVersionTag.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
 }
 const aboutSysVer = document.getElementById('about-modal-sys-ver');
@@ -6159,6 +6164,10 @@ function playCinematicStills(rawSpec = {}) {
         host.appendChild(overlay);
         requestAnimationFrame(() => overlay.classList.add('is-open'));
 
+        if (spec.title || spec.body) {
+            window.AudioManager?.speakNarration?.(`${spec.title}. ${spec.body || ''}`);
+        }
+
         let settled = false;
         let frameTimer = 0;
         let finishTimer = 0;
@@ -8626,7 +8635,7 @@ window.addEventListener('milestone-boss-warning', (event) => {
     const bossType = String(event?.detail?.type ?? '').replace(/^boss_/, '');
     const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cryosnail';
     playAuthoredEventOnce(`boss_encounter_${suffix}`, {
-        videoBase: `event-boss-encounter-${suffix}`,
+        videoBase: null,
         eventDetail: event?.detail ?? {}
     });
 });
