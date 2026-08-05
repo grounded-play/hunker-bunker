@@ -37,6 +37,7 @@ import {
     ACTION_SETS,
     actionSetForAppPhase,
     createActionRouter,
+    hasControllerContinuePress,
     menuKeyboardDirection,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
@@ -1231,7 +1232,14 @@ function ensureVirtualGamepadCursor() {
 function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
     const cursor = ensureVirtualGamepadCursor();
     if (!cursor) return;
-    const isMovie = Boolean(document.querySelector('.fullscreen-video-overlay:not(.hidden), .cinematic-overlay:not(.hidden), #mothership-dialogue-video-container:not(.hidden), video:not(.hidden)'));
+    const isMovie = Boolean(document.querySelector(
+        '.fullscreen-video-overlay:not(.hidden), '
+        + '.cinematic-overlay:not(.hidden), '
+        + '.class-intro-overlay:not(.is-closing), '
+        + '.cinematic-still-overlay:not(.is-closing), '
+        + '#cutscene-overlay.is-active, '
+        + '.rgb-cinematic--visible'
+    ));
     if (!visible || isMovie) {
         cursor.classList.add('hidden');
         return;
@@ -1496,6 +1504,24 @@ function handleSteamGameplayInput(controller) {
 }
 
 function routeMainControllerInput(controller, gameplayActive) {
+    // The native snapshot retains gameplay-shaped button names while a movie
+    // temporarily owns input during a run. Check the raw controller before
+    // choosing an action set so A/RT/etc. can still honor "any button".
+    if (!gameplayActive && hasControllerContinuePress(controller) && document.querySelector(
+        '.class-intro-overlay:not(.is-closing), '
+        + '.cinematic-still-overlay:not(.is-closing), '
+        + '#cutscene-overlay.is-active, '
+        + '.rgb-cinematic--visible'
+    )) {
+        window.dispatchEvent(new KeyboardEvent('keydown', {
+            key: ' ',
+            code: 'Space',
+            bubbles: false,
+            cancelable: true
+        }));
+        return;
+    }
+
     const actionSet = appPhase === 'archive'
         ? ACTION_SETS.ARCHIVE
         : gameplayActive
@@ -5765,7 +5791,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = 'PRESS ANY KEY TO SKIP';
+        skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
 
         let settled = false;
         let guardTimer = null;
@@ -5943,7 +5969,7 @@ function playCutsceneVideo(base, options = {}) {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = 'PRESS ANY KEY TO SKIP';
+        skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
 
         let settled = false;
         let played = false;
@@ -6071,7 +6097,7 @@ function playCinematicStills(rawSpec = {}) {
         const skip = document.createElement('button');
         skip.type = 'button';
         skip.className = 'class-intro-skip cinematic-still-skip';
-        skip.textContent = spec.allowSkip ? 'PRESS ANY KEY TO CONTINUE' : '';
+        skip.textContent = spec.allowSkip ? 'PRESS ANY BUTTON / KEY TO CONTINUE' : '';
         skip.disabled = !spec.allowSkip;
 
         overlay.append(frameA);

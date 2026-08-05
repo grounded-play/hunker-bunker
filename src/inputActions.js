@@ -30,6 +30,19 @@ export function wrapMenuIndex(index, delta, length) {
     return (current + delta + length) % length;
 }
 
+export function hasControllerContinuePress(actions = {}) {
+    return Boolean(
+        actions.confirm || actions.back || actions.pause
+        || actions.tabLeft || actions.tabRight
+        || actions.up || actions.down || actions.left || actions.right
+        || actions.menuConfirm || actions.menuBack
+        || actions.menuTabLeft || actions.menuTabRight
+        || actions.menuUp || actions.menuDown || actions.menuLeft || actions.menuRight
+        || actions.interact || actions.dash || actions.reload || actions.ability
+        || actions.fire || actions.scan || actions.toggleMap
+    );
+}
+
 export function shouldPreferBrowserGamepad({
     nativeAvailable = false,
     nativeControllerCount = 0,

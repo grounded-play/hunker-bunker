@@ -3,6 +3,7 @@ import {
     ACTION_SETS,
     actionSetForAppPhase,
     createActionRouter,
+    hasControllerContinuePress,
     menuKeyboardDirection,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
@@ -33,6 +34,22 @@ function padSnapshot(overrides = {}) {
         ...overrides
     };
 }
+
+describe('hasControllerContinuePress', () => {
+    it.each(['confirm', 'back', 'pause', 'tabLeft', 'tabRight', 'up', 'down', 'left', 'right'])(
+        'accepts the %s action as a cinematic continue press',
+        (action) => expect(hasControllerContinuePress({ [action]: true })).toBe(true)
+    );
+
+    it('does not skip from right-stick pointer motion alone', () => {
+        expect(hasControllerContinuePress({ pointer: { x: 1, y: 0 } })).toBe(false);
+    });
+
+    it.each(['interact', 'dash', 'reload', 'ability', 'fire', 'scan', 'toggleMap'])(
+        'accepts the gameplay-shaped %s button while a movie owns field input',
+        (action) => expect(hasControllerContinuePress({ [action]: true })).toBe(true)
+    );
+});
 
 describe('createActionRouter', () => {
     it('maps WASD and arrows onto linear menu focus movement', () => {
