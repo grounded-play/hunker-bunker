@@ -1335,14 +1335,21 @@ function handleSteamMenuInput(actions) {
 
         updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
-        // Smooth scroll active or hovered container
+        // Smooth scroll active or hovered container. The whole-root fallback
+        // below is only for genuine scrollable modal content (settings lists,
+        // codex, etc). The title/main menu (#splash, #menu) were never meant
+        // to scroll at all -- any scrollHeight > clientHeight there is layout
+        // noise, not content, and scrolling the whole screen reads as the
+        // entire menu shifting instead of the subtle cursor motion desktop
+        // gets from the same stick input.
         const scrollValue = (pointerY * 20) || (-deltaY * 20);
         if (Math.abs(scrollValue) > 0.5) {
             const elAtPoint = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
             const root = getControllerFocusRoot() ?? document.body;
+            const isTopLevelMenuScreen = root.id === 'splash' || root.id === 'menu';
             const scrollContainer = elAtPoint?.closest?.('.modal-content, .settings-modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
                 || root.querySelector?.('.settings-modal-content, .modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
-                || (root.scrollHeight > root.clientHeight ? root : null);
+                || (!isTopLevelMenuScreen && root.scrollHeight > root.clientHeight ? root : null);
 
             if (scrollContainer) {
                 scrollContainer.scrollTop += scrollValue;
