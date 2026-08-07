@@ -30,27 +30,43 @@ Export rules:
 
 ## Trailer Beat Sheet
 
-Target length: 75 seconds.
+Target length: ~57 seconds (action-first, per Steam's own guidance: reach
+gameplay before any logo/title beat). Superseded the original 75s cut, which
+opened on 5s of silent title card before any gameplay — see
+`docs/superpowers/specs/2026-08-07-steam-trailer-capture-and-assembly-design.md`
+for the full capture/assembly design this beat sheet maps to.
 
-0-5 seconds: Dead-silent exterior title card over the crash site. One clean logo
-read, one breath of wind.
+Built end-to-end from this repo: Playwright drives real WASD movement +
+mouse aim/fire against the live game (`tests/e2e/trailer/`) to capture raw
+footage into `trailer/raw/clips/`, and `scripts/build-trailer.js` (data-driven
+from `scripts/trailer-edl.json`) assembles it into
+`dist/trailer/hunker-bunker-trailer.mp4` — Ken Burns pans, a reused
+door-transition wipe (`#transition-overlay`, cropped/zoomed differently each
+reuse so it doesn't read as a repeated clip), OST tail + rotated SFX one-shots,
+final 1920x1080/30fps H.264/AAC encode at 5,000+ Kbps.
 
-5-14 seconds: Establish the loop: choose an operator, enter the bunker, lights
-snap on, first resource pickup, first locked door.
+0-5s: Cold open, mid-action — hard cut straight into real played gameplay
+(weapon drawn, enemies on screen). No logo, no fade.
 
-14-27 seconds: Pressure rises. Oxygen meter falls, snails close in, generator
-comes online, weapon reload lands.
+5-19s: The loop, fast — real movement/exploration cut on the door-transition
+wipe between beats.
 
-27-39 seconds: Decision montage. Bank resources or descend, open archive logs,
-activate fabrication, pick a risky route.
+19-28s: Pressure — real gameplay continues, oxygen/HUD pressure readable.
 
-39-52 seconds: Steam/Deck-friendly feature pass. Controller prompts, readable
-HUD, quick run summary, leaderboard flash.
+28-34s: Escalation — real combat, reload under fire.
 
-52-65 seconds: The cave reveal. Show the mouth, the cutscene impact, the queen
-presence, and the tone shift without spoiling Act 2 outcomes.
+34-44s: Final approach — real movement building toward the reveal.
 
-65-75 seconds: Final call. Title, release/wishlist card, Steam page CTA.
+44-51s: The cave reveal (`public/cutscenes/cave-reveal.webm`) — tone shift,
+no Act 2 spoilers.
+
+51-57s: Title card, then the lull, then the wishlist/CTA card.
+
+Known limitation: a captured Queen-fight take was dropped from this cut —
+the run's console-terminal modal reopened unpredictably during that specific
+take and never produced a clean stretch of footage; worth a dedicated
+re-capture rather than reusing the current `capture-playthrough-boss.spec.js`
+take as-is.
 
 ## Screenshot Plan
 

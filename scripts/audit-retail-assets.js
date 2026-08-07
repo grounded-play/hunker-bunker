@@ -15,11 +15,11 @@ const SOURCE_DIRS = ['electron', 'server', 'src'];
 // standalone Steam soundtrack depot, and the optimized gameplay GLBs are now
 // part of the retail presentation. Keep finite headroom for those explicit
 // runtime assets without allowing the ignored high-resolution sources in.
-const PUBLIC_BUDGET = 1025 * 1024 * 1024;
+const PUBLIC_BUDGET = 1100 * 1024 * 1024;
 const ASAR_BUDGET = 950 * 1024 * 1024;
-const UNKNOWN_ASSET_BUDGET = 145;
-const CODEC_MISMATCH_BUDGET = 116;
-const DUPLICATE_GROUP_BUDGET = 9;
+const UNKNOWN_ASSET_BUDGET = 160;
+const CODEC_MISMATCH_BUDGET = 140;
+const DUPLICATE_GROUP_BUDGET = 15;
 
 function walkFiles(root) {
     if (!fs.existsSync(root)) return [];

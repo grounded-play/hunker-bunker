@@ -231,6 +231,8 @@ function isSafeDbKey(key) {
     const str = String(key).trim();
     if (!str || str.length > 256) return false;
     if (str === '__proto__' || str === 'constructor' || str === 'prototype') return false;
+    if (typeof Object.prototype[str] !== 'undefined') return false;
+    if (!/^[a-zA-Z0-9_.-]+$/.test(str)) return false;
     return true;
 }
 
@@ -238,23 +240,21 @@ function safeGet(targetObj, rawKey) {
     if (!targetObj || typeof targetObj !== 'object') return undefined;
     const key = String(rawKey ?? '').trim();
     if (!isSafeDbKey(key)) return undefined;
-    return Object.hasOwn(targetObj, key) ? targetObj[key] : undefined;
+    return Object.hasOwn(targetObj, key) ? Reflect.get(targetObj, key) : undefined;
 }
 
 function safeSet(targetObj, rawKey, value) {
     if (!targetObj || typeof targetObj !== 'object') return false;
     const key = String(rawKey ?? '').trim();
     if (!isSafeDbKey(key)) return false;
-    targetObj[key] = value;
-    return true;
+    return Reflect.set(targetObj, key, value);
 }
 
 function safeDelete(targetObj, rawKey) {
     if (!targetObj || typeof targetObj !== 'object') return false;
     const key = String(rawKey ?? '').trim();
     if (!isSafeDbKey(key)) return false;
-    delete targetObj[key];
-    return true;
+    return Reflect.deleteProperty(targetObj, key);
 }
 
 function normalizeDbStateShape() {

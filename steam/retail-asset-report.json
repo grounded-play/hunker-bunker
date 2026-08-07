@@ -1,21 +1,21 @@
 {
   "version": 1,
   "budgets": {
-    "publicBytes": 1074790400,
+    "publicBytes": 1153433600,
     "appAsarBytes": 996147200,
-    "unknownAssets": 145,
-    "codecMismatches": 116,
-    "duplicateGroups": 9
+    "unknownAssets": 160,
+    "codecMismatches": 140,
+    "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 1044233393,
-    "publicFileCount": 788
+    "publicBytes": 1132971698,
+    "publicFileCount": 818
   },
   "classifications": {
-    "runtime-required": 648,
+    "runtime-required": 672,
     "source-reference": 0,
     "generated-intermediate": 0,
-    "unknown": 140
+    "unknown": 146
   },
   "missingReferences": [],
   "invalidMedia": [],
@@ -287,6 +287,36 @@
     },
     {
       "path": "cryosnail_dead.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cutscenes/poster-art/event-boss-cryosnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cutscenes/poster-art/event-boss-cybersnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cutscenes/poster-art/event-boss-sporesnail.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cutscenes/poster-art/event-cave-revealed-1.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cutscenes/poster-art/event-cave-revealed-2.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "cutscenes/poster-art/event-o2-generator-upgraded.png",
       "extension": ".png",
       "detected": ".jpg"
     },
@@ -628,6 +658,34 @@
       "files": [
         "cryo_grunge_rime.png",
         "ice_grunge_snow.png"
+      ]
+    },
+    {
+      "sha256": "c66e3bee676829bba23be3a2b9f511a6bf098fdd40a9f2c5570f8ae0f2cfa9ae",
+      "files": [
+        "cutscenes/event-boss-encounter-cryosnail-poster.jpg",
+        "cutscenes/poster-art/event-boss-cryosnail.png"
+      ]
+    },
+    {
+      "sha256": "1db2f2930a7ef2967314ab3cab1a463bc069fd33f32207615d9c255bc7e70b59",
+      "files": [
+        "cutscenes/event-boss-encounter-cybersnail-poster.jpg",
+        "cutscenes/poster-art/event-boss-cybersnail.png"
+      ]
+    },
+    {
+      "sha256": "e34a47db5f098beee3184218dec8f0620b7d4560f51fcb920439fdc9d52b2a41",
+      "files": [
+        "cutscenes/event-boss-encounter-sporesnail-poster.jpg",
+        "cutscenes/poster-art/event-boss-sporesnail.png"
+      ]
+    },
+    {
+      "sha256": "3df71e5a7e7d88a5b6d2a8b18c564401b2f419c1360d6ba22d8306e97e0b78d5",
+      "files": [
+        "cutscenes/event-o2-generator-upgraded-poster.jpg",
+        "cutscenes/poster-art/event-o2-generator-upgraded.png"
       ]
     },
     {

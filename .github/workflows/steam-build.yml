@@ -31,6 +31,8 @@ on:
 
 jobs:
   package:
+    permissions:
+      contents: read
     strategy:
       matrix:
         include:
@@ -88,6 +90,8 @@ jobs:
           retention-days: 14
 
   upload-to-steam:
+    permissions:
+      contents: read
     # Only on tags/dispatch, and only once the builder secrets exist
     # (docs/steam-build-pipeline.md human checklist step 3).
     needs: package

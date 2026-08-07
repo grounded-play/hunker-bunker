@@ -90,3 +90,9 @@ test-results/
 
 # Local git worktrees (isolated workspaces)
 .worktrees/
+
+# Trailer raw footage / build output (large binaries, regenerated via
+# npm run trailer:capture / npm run trailer:build) -- keep the pipeline
+# code and EDL in git, not the media itself.
+trailer/raw/
+dist/trailer/

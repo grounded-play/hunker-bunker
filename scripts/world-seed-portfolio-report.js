@@ -25,7 +25,6 @@ import {
     computeRingWalkDistances,
     findConflictingChunkReservations,
     generateRadialMazeExpedition,
-    RING_BLOCKER_FEATURES,
     validateRadialMazeExpedition,
     validateRingProgression
 } from '../src/mazeExpedition.js';

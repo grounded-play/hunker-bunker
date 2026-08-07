@@ -46,7 +46,10 @@ function cleanBackendUrl(value) {
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
             return DEFAULT_STEAM_CONFIG.backendUrl;
         }
-        return parsed.toString().replace(/\/$/, '');
+        if (!/^[a-zA-Z0-9.-]+$/i.test(parsed.hostname)) {
+            return DEFAULT_STEAM_CONFIG.backendUrl;
+        }
+        return `${parsed.protocol}//${parsed.host}`.replace(/\/$/, '');
     } catch {
         return DEFAULT_STEAM_CONFIG.backendUrl;
     }

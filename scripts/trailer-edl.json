@@ -1,0 +1,93 @@
+{
+  "resolution": { "width": 1920, "height": 1080 },
+  "fps": 30,
+  "shots": [
+    {
+      "id": "cold-open",
+      "type": "clip",
+      "src": "trailer/raw/clips/playthrough-explore.webm",
+      "tailStart": 32,
+      "tailEnd": 27,
+      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.08 }
+    },
+    { "id": "wipe-1", "type": "doorTransition", "cropVariant": 0, "sfx": "door_slam_vertical1" },
+    {
+      "id": "explore-1",
+      "type": "clip",
+      "src": "trailer/raw/clips/playthrough-explore.webm",
+      "tailStart": 26,
+      "tailEnd": 21,
+      "kenBurns": { "zoomFrom": 1.02, "zoomTo": 1.0 }
+    },
+    {
+      "id": "explore-2",
+      "type": "clip",
+      "src": "trailer/raw/clips/playthrough-explore.webm",
+      "tailStart": 20,
+      "tailEnd": 15,
+      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.06 }
+    },
+    { "id": "wipe-2", "type": "doorTransition", "cropVariant": 1, "sfx": "door_slam_vertical2" },
+    {
+      "id": "pressure",
+      "type": "clip",
+      "src": "trailer/raw/clips/playthrough-explore.webm",
+      "tailStart": 14,
+      "tailEnd": 9,
+      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.1 }
+    },
+    { "id": "wipe-3", "type": "doorTransition", "cropVariant": 2, "sfx": "door_slide_horiz2" },
+    {
+      "id": "escalation",
+      "type": "clip",
+      "src": "trailer/raw/clips/playthrough-combat.webm",
+      "tailStart": 7,
+      "tailEnd": 5,
+      "kenBurns": { "zoomFrom": 1.03, "zoomTo": 1.12 }
+    },
+    { "id": "wipe-4", "type": "doorTransition", "cropVariant": 3, "sfx": "door_slide_horiz3" },
+    {
+      "id": "final-approach",
+      "type": "clip",
+      "src": "trailer/raw/clips/playthrough-explore.webm",
+      "tailStart": 8,
+      "tailEnd": 3,
+      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.07 }
+    },
+    {
+      "id": "cave-reveal",
+      "type": "clip",
+      "src": "public/cutscenes/cave-reveal.webm",
+      "tailStart": 7.3,
+      "tailEnd": 0,
+      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.0 }
+    },
+    {
+      "id": "title-card",
+      "type": "colorCard",
+      "color": "black",
+      "duration": 6,
+      "text": "HUNKER BUNKER",
+      "fontSize": 90
+    },
+    {
+      "id": "cta-card",
+      "type": "colorCard",
+      "color": "black",
+      "duration": 6,
+      "text": "WISHLIST NOW ON STEAM",
+      "fontSize": 56
+    }
+  ],
+  "music": {
+    "file": "public/audio/ost/Hunker Bunker Main Theme.mp3",
+    "climaxLullStart": 450,
+    "climaxLullEnd": 480,
+    "climaxLullEntersAtShot": "escalation"
+  },
+  "sfx": {
+    "coldOpen": ["weapon_fire_sidearm1"],
+    "pressure": ["weapon_fire_sidearm2", "amb_metal_stress1"],
+    "escalation": ["weapon_fire_sidearm3", "enemy_death_crawler1"]
+  }
+}

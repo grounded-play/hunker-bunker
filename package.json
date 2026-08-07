@@ -55,7 +55,9 @@
     "soundtrack:metadata": "node scripts/build-soundtrack-metadata.js",
     "audit:soundtrack": "node scripts/build-soundtrack-metadata.js --check && node scripts/package-soundtrack.js --check",
     "package-soundtrack": "node scripts/build-soundtrack-metadata.js && node scripts/package-soundtrack.js",
-    "cinematics:stills": "node scripts/build-cinematic-still-videos.js"
+    "cinematics:stills": "node scripts/build-cinematic-still-videos.js",
+    "trailer:capture": "playwright test --config=tests/e2e/trailer/trailer.playwright.config.js",
+    "trailer:build": "node scripts/build-trailer.js"
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",
