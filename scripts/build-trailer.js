@@ -77,6 +77,17 @@ function buildClipShot(shot, outPath) {
             : `${zoomFrom}+(${zoomTo}-${zoomFrom})*on/${totalFrames}`;
         filter += `,zoompan=z='${zExpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=${FPS}`;
     }
+    if (shot.endCard) {
+        const bold = '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf';
+        const { text, fontSize, showAfter } = shot.endCard;
+        const barY = Math.round(H * 0.70);
+        const barH = H - barY;
+        const textY = Math.round(H * 0.80);
+        const enable = `gte(t\\,${showAfter})`;
+        filter += `,drawbox=x=0:y=${barY}:w=${W}:h=${barH}:color=black@0.55:t=fill:enable='${enable}'`;
+        filter += `,drawtext=fontfile=${bold}:text='${text}':fontcolor=0xFFD400:fontsize=${fontSize}:` +
+            `x=(w-text_w)/2:y=${textY}:enable='${enable}'`;
+    }
 
     run([
         '-ss', String(start), '-t', String(duration), '-i', src,
@@ -127,24 +138,23 @@ function buildColorCardShot(shot, outPath) {
     return shot.duration;
 }
 
-// Styled like the game's own song-interstitial cards (style.css
-// .song-interstitial__caption): a small tracked-out monospace caption line
-// above a large bold uppercase title, over real key art instead of a flat
-// color card.
+// Feature-callout card: real key art (public/interstitials/*.webp) with a
+// large bold yellow line in the lower third, referencing an actual in-game
+// mechanic (bank salvage, O2 cost, black box recovery, etc.) rather than
+// generic marketing copy.
 function buildImageCardShot(shot, outPath) {
     const bold = '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf';
     const image = join(ROOT, shot.image);
+    const barY = Math.round(H * 0.70);
+    const barH = H - barY;
+    const textY = Math.round(H * 0.80);
     const filters = [
         `scale=${W}:${H}:force_original_aspect_ratio=increase`,
         `crop=${W}:${H}`,
-        `drawbox=x=0:y=0:w=${W}:h=${H}:color=black@0.42:t=fill`
+        `drawbox=x=0:y=${barY}:w=${W}:h=${barH}:color=black@0.55:t=fill`,
+        `drawtext=fontfile=${bold}:text='${shot.text}':fontcolor=0xFFD400:fontsize=${shot.fontSize}:` +
+        `x=(w-text_w)/2:y=${textY}`
     ];
-    if (shot.caption) {
-        filters.push(`drawtext=fontfile=${bold}:text='${shot.caption}':fontcolor=0x65efe8:fontsize=28:` +
-            `x=(w-text_w)/2:y=h*0.62:box=0`);
-    }
-    filters.push(`drawtext=fontfile=${bold}:text='${shot.text}':fontcolor=white:fontsize=${shot.fontSize}:` +
-        `x=(w-text_w)/2:y=h*0.67`);
     run([
         '-loop', '1', '-i', image, '-t', String(shot.duration),
         '-vf', filters.join(','), '-an',
@@ -162,25 +172,21 @@ function buildAudioMix(shotTimeline, work, outPath) {
     const filters = [];
 
     const music = EDL.music;
-    const musicDuration = music.climaxLullEnd - music.climaxLullStart;
-    const musicStartOffset = shotTimeline.find((s) => s.id === music.climaxLullEntersAtShot)?.start ?? 0;
-    inputs.push(['-ss', String(music.climaxLullStart), '-t', String(musicDuration), '-i', join(ROOT, music.file)]);
+    const musicDuration = music.end - music.start;
+    inputs.push(['-ss', String(music.start), '-t', String(musicDuration), '-i', join(ROOT, music.file)]);
     filters.push(
-        `[${inputs.length - 1}:a]afade=t=in:st=0:d=2,afade=t=out:st=${musicDuration - 3}:d=3,` +
-        `adelay=${Math.round(musicStartOffset * 1000)}|${Math.round(musicStartOffset * 1000)}[a${inputs.length - 1}]`
+        `[${inputs.length - 1}:a]afade=t=in:st=0:d=1.5,afade=t=out:st=${musicDuration - 2.5}:d=2.5[a${inputs.length - 1}]`
     );
 
+    // Optional SFX one-shots, keyed by shot id in the EDL rather than
+    // hardcoded beat names -- only fires for ids that actually exist in
+    // this cut's timeline.
     const sfxCues = [];
-    for (const shot of shotTimeline) {
-        if (shot.type === 'doorTransition' && shot.sfx) {
-            sfxCues.push({ file: sfxPath(shot.sfx), at: shot.start });
-        }
+    for (const [shotId, names] of Object.entries(EDL.sfx ?? {})) {
+        const shotStart = shotTimeline.find((s) => s.id === shotId)?.start;
+        if (shotStart === undefined) continue;
+        names.forEach((name, i) => sfxCues.push({ file: sfxPath(name), at: shotStart + 0.3 * i }));
     }
-    const beatSfx = EDL.sfx;
-    const beatStart = (id) => shotTimeline.find((s) => s.id === id)?.start ?? 0;
-    for (const name of beatSfx.coldOpen) sfxCues.push({ file: sfxPath(name), at: beatStart('cold-open') + 0.3 * beatSfx.coldOpen.indexOf(name) });
-    for (const name of beatSfx.pressure) sfxCues.push({ file: sfxPath(name), at: beatStart('pressure') + 0.4 * beatSfx.pressure.indexOf(name) });
-    for (const name of beatSfx.escalation) sfxCues.push({ file: sfxPath(name), at: beatStart('escalation') + 0.4 * beatSfx.escalation.indexOf(name) });
 
     for (const cue of sfxCues) {
         inputs.push(['-i', cue.file]);

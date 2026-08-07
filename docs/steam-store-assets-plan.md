@@ -30,48 +30,46 @@ Export rules:
 
 ## Trailer Beat Sheet
 
-Target length: ~82 seconds (action-first, per Steam's own guidance: reach
+Target length: ~49 seconds (action-first, per Steam's own guidance: reach
 gameplay before any logo/title beat). Superseded the original 75s cut, which
 opened on 5s of silent title card before any gameplay — see
 `docs/superpowers/specs/2026-08-07-steam-trailer-capture-and-assembly-design.md`
 for the capture/assembly design this beat sheet maps to.
 
-v2 source footage is hand-recorded, not automated: two full-quality 1920x1080/
-60fps screen captures (`trailer/raw/clips/user-long.mp4`, ~6 min;
-`user-short.mp4`, ~12s covering boot + the real title screen) dropped into
-`trailer/raw/clips/` and referenced by absolute `start`/`duration` in
-`scripts/trailer-edl.json`. The earlier all-Playwright v1 cut is still
-possible (`tests/e2e/trailer/` + `npm run trailer:capture`) but its
-screencast-captured footage reads as noticeably lower-fps/slower next to real
-play, so v2 prefers hand-recorded takes for every live-gameplay shot.
-`scripts/build-trailer.js` assembles the timeline: gameplay shots pass
-through at native 60fps with no Ken-Burns push (`raw: true` — synthetic zoom
-read as sluggish against genuinely smooth footage), a reused door-transition
-wipe (`#transition-overlay`, cropped/zoomed differently each reuse), title/
-CTA cards built from real game art (`public/title_key_art_v2.png`, an
-`public/interstitials/*.webp` key-art still) styled like the game's own
-song-interstitial cards (small tracked caption + bold uppercase title, per
-`.song-interstitial__caption` in style.css) rather than plain text-on-black,
-OST tail + rotated SFX one-shots, final 1920x1080/60fps H.264/AAC encode at
-10,000+ Kbps.
+v3 source footage is hand-recorded only, no automated captures: two
+full-quality 1920x1080/60fps screen recordings
+(`trailer/raw/clips/user-long.mp4`, ~6 min of real play across two runs;
+`user-short.mp4`, ~12s covering boot + the real title screen) referenced by
+absolute `start`/`duration` in `scripts/trailer-edl.json`. Neither the
+Playwright-automated clips (`tests/e2e/trailer/`) nor the door-transition
+wipe from earlier cuts are used here — cuts are driven entirely by
+interstitial image cards instead.
+
+Structure: six feature-callout cards (`public/interstitials/*.webp`, a large
+bold **yellow** line in the lower third naming a real in-game mechanic —
+"EVERY DOOR COSTS OXYGEN", "BANK WHAT YOU CAN CARRY", "RETRIEVE: TECH CACHE",
+etc., not generic marketing copy) alternate with real gameplay chunks pulled
+from confirmed non-boss windows in `user-long.mp4`. Both card duration and
+gameplay-chunk duration shrink on every pair (3.5s->1.2s cards, 7s->3s
+chunks) so the cut accelerates through the trailer, timed against the actual
+build in the last ~50s of "Hunker Bunker Main Theme.mp3" (used as a
+continuous background bed, not delayed SFX stabs). The trailer closes on
+`user-short.mp4` trimmed to its cinematic archway-run + real title-screen
+reveal, with the wishlist CTA drawn directly over its final held frame in
+the same yellow lower-third style as the interstitial cards.
 
 Two boss encounters (Cyber-Shell Titan, Cryo-Goliath Snail) recorded in
-`user-long.mp4` were identified and cut entirely per direction — every shot
-in the current EDL sources from confirmed non-boss windows.
+`user-long.mp4` were identified and cut entirely per direction — every
+gameplay chunk in the current EDL sources from confirmed non-boss windows.
 
-0-6s: Cold open, mid-action — real played gameplay, full speed, full screen.
+0-3.5s: Card 1 -- "EVERY DOOR COSTS OXYGEN" over key art.
 
-6-25s: The loop — exploration, the Mothership dialogue hook, a banking/tech
-beat, each cut on the door-transition wipe.
+3.5-38s: Five more card/gameplay pairs, each shorter than the last --
+exploration, the Mothership dialogue hook, banking, combat -- cutting faster
+as the OST build climbs.
 
-25-48s: Pressure into escalation — real combat across two separate runs.
-
-48-63s: Cinematic reveal (the boot sequence's archway-approach shot) into
-the cave-reveal cutscene — tone shift, no Act 2 spoilers.
-
-63-75s: Title card over real key art, then a lull.
-
-75-82s: Wishlist/CTA card over interstitial key art.
+38-48.7s: The short clip's cinematic reveal into the real title screen, CTA
+drawn over the held final frame.
 
 ## Screenshot Plan
 
