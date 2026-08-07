@@ -46,23 +46,42 @@ function sfxPath(name) {
 
 function buildClipShot(shot, outPath) {
     const src = join(ROOT, shot.src);
-    const duration = shot.tailStart - shot.tailEnd;
-    const total = probeDuration(src);
-    const start = Math.max(0, total - shot.tailStart);
-    const totalFrames = Math.round(duration * FPS);
-    const { zoomFrom, zoomTo } = shot.kenBurns;
-    const zExpr = zoomFrom === zoomTo
-        ? `${zoomFrom}`
-        : `${zoomFrom}+(${zoomTo}-${zoomFrom})*on/${totalFrames}`;
-    const filter = [
+    // Two addressing modes: tailStart/tailEnd (offset back from EOF -- what
+    // the short automated Playwright takes used) or start/duration
+    // (absolute offset -- more natural for the long real-played captures).
+    let start;
+    let duration;
+    if (shot.start !== undefined) {
+        start = shot.start;
+        duration = shot.duration;
+    } else {
+        const total = probeDuration(src);
+        duration = shot.tailStart - shot.tailEnd;
+        start = Math.max(0, total - shot.tailStart);
+    }
+
+    // Real played gameplay (raw: true) is already full-res/full-fps --
+    // zoompan's synthetic push was reading as sluggish against genuinely
+    // smooth 60fps footage, so skip it there and just crop-to-fill at
+    // native speed. Ken Burns is reserved for shots that explicitly ask
+    // for it (stills, cutscene-style clips).
+    let filter = [
         `scale=${W}:${H}:force_original_aspect_ratio=increase`,
-        `crop=${W}:${H}`,
-        `zoompan=z='${zExpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=${FPS}`
+        `crop=${W}:${H}`
     ].join(',');
+    if (!shot.raw && shot.kenBurns) {
+        const totalFrames = Math.round(duration * FPS);
+        const { zoomFrom, zoomTo } = shot.kenBurns;
+        const zExpr = zoomFrom === zoomTo
+            ? `${zoomFrom}`
+            : `${zoomFrom}+(${zoomTo}-${zoomFrom})*on/${totalFrames}`;
+        filter += `,zoompan=z='${zExpr}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${W}x${H}:fps=${FPS}`;
+    }
+
     run([
         '-ss', String(start), '-t', String(duration), '-i', src,
         '-vf', filter, '-an',
-        '-c:v', 'libx264', '-b:v', '11M', '-maxrate', '11M', '-bufsize', '22M',
+        '-c:v', 'libx264', '-b:v', '16M', '-maxrate', '16M', '-bufsize', '32M',
         '-pix_fmt', 'yuv420p', '-r', String(FPS),
         outPath
     ], `clip:${shot.id}`);
@@ -88,7 +107,7 @@ function buildDoorTransitionShot(shot, outPath) {
     run([
         '-ss', String(start), '-t', String(DOOR_TAIL_SECONDS), '-i', DOOR_CLIP,
         '-vf', filter, '-an',
-        '-c:v', 'libx264', '-b:v', '11M', '-maxrate', '11M', '-bufsize', '22M',
+        '-c:v', 'libx264', '-b:v', '16M', '-maxrate', '16M', '-bufsize', '32M',
         '-pix_fmt', 'yuv420p', '-r', String(FPS),
         outPath
     ], `door:${shot.id}`);
@@ -101,10 +120,38 @@ function buildColorCardShot(shot, outPath) {
     run([
         '-f', 'lavfi', '-i', `color=c=${shot.color}:s=${W}x${H}:d=${shot.duration}:rate=${FPS}`,
         '-vf', drawtext, '-an',
-        '-c:v', 'libx264', '-b:v', '11M', '-maxrate', '11M', '-bufsize', '22M',
+        '-c:v', 'libx264', '-b:v', '16M', '-maxrate', '16M', '-bufsize', '32M',
         '-pix_fmt', 'yuv420p', '-r', String(FPS),
         outPath
     ], `card:${shot.id}`);
+    return shot.duration;
+}
+
+// Styled like the game's own song-interstitial cards (style.css
+// .song-interstitial__caption): a small tracked-out monospace caption line
+// above a large bold uppercase title, over real key art instead of a flat
+// color card.
+function buildImageCardShot(shot, outPath) {
+    const bold = '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf';
+    const image = join(ROOT, shot.image);
+    const filters = [
+        `scale=${W}:${H}:force_original_aspect_ratio=increase`,
+        `crop=${W}:${H}`,
+        `drawbox=x=0:y=0:w=${W}:h=${H}:color=black@0.42:t=fill`
+    ];
+    if (shot.caption) {
+        filters.push(`drawtext=fontfile=${bold}:text='${shot.caption}':fontcolor=0x65efe8:fontsize=28:` +
+            `x=(w-text_w)/2:y=h*0.62:box=0`);
+    }
+    filters.push(`drawtext=fontfile=${bold}:text='${shot.text}':fontcolor=white:fontsize=${shot.fontSize}:` +
+        `x=(w-text_w)/2:y=h*0.67`);
+    run([
+        '-loop', '1', '-i', image, '-t', String(shot.duration),
+        '-vf', filters.join(','), '-an',
+        '-c:v', 'libx264', '-b:v', '16M', '-maxrate', '16M', '-bufsize', '32M',
+        '-pix_fmt', 'yuv420p', '-r', String(FPS),
+        outPath
+    ], `imageCard:${shot.id}`);
     return shot.duration;
 }
 
@@ -168,6 +215,7 @@ async function main() {
             if (shot.type === 'clip') duration = buildClipShot(shot, outPath);
             else if (shot.type === 'doorTransition') duration = buildDoorTransitionShot(shot, outPath);
             else if (shot.type === 'colorCard') duration = buildColorCardShot(shot, outPath);
+            else if (shot.type === 'imageCard') duration = buildImageCardShot(shot, outPath);
             else throw new Error(`Unknown shot type: ${shot.type}`);
 
             shotTimeline.push({ id: shot.id, type: shot.type, sfx: shot.sfx, start: cursor, duration });

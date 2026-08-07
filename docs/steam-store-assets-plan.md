@@ -30,43 +30,48 @@ Export rules:
 
 ## Trailer Beat Sheet
 
-Target length: ~57 seconds (action-first, per Steam's own guidance: reach
+Target length: ~82 seconds (action-first, per Steam's own guidance: reach
 gameplay before any logo/title beat). Superseded the original 75s cut, which
 opened on 5s of silent title card before any gameplay — see
 `docs/superpowers/specs/2026-08-07-steam-trailer-capture-and-assembly-design.md`
-for the full capture/assembly design this beat sheet maps to.
+for the capture/assembly design this beat sheet maps to.
 
-Built end-to-end from this repo: Playwright drives real WASD movement +
-mouse aim/fire against the live game (`tests/e2e/trailer/`) to capture raw
-footage into `trailer/raw/clips/`, and `scripts/build-trailer.js` (data-driven
-from `scripts/trailer-edl.json`) assembles it into
-`dist/trailer/hunker-bunker-trailer.mp4` — Ken Burns pans, a reused
-door-transition wipe (`#transition-overlay`, cropped/zoomed differently each
-reuse so it doesn't read as a repeated clip), OST tail + rotated SFX one-shots,
-final 1920x1080/30fps H.264/AAC encode at 5,000+ Kbps.
+v2 source footage is hand-recorded, not automated: two full-quality 1920x1080/
+60fps screen captures (`trailer/raw/clips/user-long.mp4`, ~6 min;
+`user-short.mp4`, ~12s covering boot + the real title screen) dropped into
+`trailer/raw/clips/` and referenced by absolute `start`/`duration` in
+`scripts/trailer-edl.json`. The earlier all-Playwright v1 cut is still
+possible (`tests/e2e/trailer/` + `npm run trailer:capture`) but its
+screencast-captured footage reads as noticeably lower-fps/slower next to real
+play, so v2 prefers hand-recorded takes for every live-gameplay shot.
+`scripts/build-trailer.js` assembles the timeline: gameplay shots pass
+through at native 60fps with no Ken-Burns push (`raw: true` — synthetic zoom
+read as sluggish against genuinely smooth footage), a reused door-transition
+wipe (`#transition-overlay`, cropped/zoomed differently each reuse), title/
+CTA cards built from real game art (`public/title_key_art_v2.png`, an
+`public/interstitials/*.webp` key-art still) styled like the game's own
+song-interstitial cards (small tracked caption + bold uppercase title, per
+`.song-interstitial__caption` in style.css) rather than plain text-on-black,
+OST tail + rotated SFX one-shots, final 1920x1080/60fps H.264/AAC encode at
+10,000+ Kbps.
 
-0-5s: Cold open, mid-action — hard cut straight into real played gameplay
-(weapon drawn, enemies on screen). No logo, no fade.
+Two boss encounters (Cyber-Shell Titan, Cryo-Goliath Snail) recorded in
+`user-long.mp4` were identified and cut entirely per direction — every shot
+in the current EDL sources from confirmed non-boss windows.
 
-5-19s: The loop, fast — real movement/exploration cut on the door-transition
-wipe between beats.
+0-6s: Cold open, mid-action — real played gameplay, full speed, full screen.
 
-19-28s: Pressure — real gameplay continues, oxygen/HUD pressure readable.
+6-25s: The loop — exploration, the Mothership dialogue hook, a banking/tech
+beat, each cut on the door-transition wipe.
 
-28-34s: Escalation — real combat, reload under fire.
+25-48s: Pressure into escalation — real combat across two separate runs.
 
-34-44s: Final approach — real movement building toward the reveal.
+48-63s: Cinematic reveal (the boot sequence's archway-approach shot) into
+the cave-reveal cutscene — tone shift, no Act 2 spoilers.
 
-44-51s: The cave reveal (`public/cutscenes/cave-reveal.webm`) — tone shift,
-no Act 2 spoilers.
+63-75s: Title card over real key art, then a lull.
 
-51-57s: Title card, then the lull, then the wishlist/CTA card.
-
-Known limitation: a captured Queen-fight take was dropped from this cut —
-the run's console-terminal modal reopened unpredictably during that specific
-take and never produced a clean stretch of footage; worth a dedicated
-re-capture rather than reusing the current `capture-playthrough-boss.spec.js`
-take as-is.
+75-82s: Wishlist/CTA card over interstitial key art.
 
 ## Screenshot Plan
 

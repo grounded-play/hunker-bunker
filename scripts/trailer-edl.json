@@ -1,80 +1,90 @@
 {
   "resolution": { "width": 1920, "height": 1080 },
-  "fps": 30,
+  "fps": 60,
   "shots": [
     {
       "id": "cold-open",
       "type": "clip",
-      "src": "trailer/raw/clips/playthrough-explore.webm",
-      "tailStart": 32,
-      "tailEnd": 27,
-      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.08 }
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 140,
+      "duration": 6,
+      "raw": true
     },
     { "id": "wipe-1", "type": "doorTransition", "cropVariant": 0, "sfx": "door_slam_vertical1" },
     {
       "id": "explore-1",
       "type": "clip",
-      "src": "trailer/raw/clips/playthrough-explore.webm",
-      "tailStart": 26,
-      "tailEnd": 21,
-      "kenBurns": { "zoomFrom": 1.02, "zoomTo": 1.0 }
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 59,
+      "duration": 7,
+      "raw": true
     },
     {
-      "id": "explore-2",
+      "id": "mothership-dialogue",
       "type": "clip",
-      "src": "trailer/raw/clips/playthrough-explore.webm",
-      "tailStart": 20,
-      "tailEnd": 15,
-      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.06 }
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 37,
+      "duration": 8,
+      "raw": true
     },
     { "id": "wipe-2", "type": "doorTransition", "cropVariant": 1, "sfx": "door_slam_vertical2" },
     {
-      "id": "pressure",
+      "id": "decision",
       "type": "clip",
-      "src": "trailer/raw/clips/playthrough-explore.webm",
-      "tailStart": 14,
-      "tailEnd": 9,
-      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.1 }
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 98,
+      "duration": 7,
+      "raw": true
     },
     { "id": "wipe-3", "type": "doorTransition", "cropVariant": 2, "sfx": "door_slide_horiz2" },
     {
+      "id": "pressure",
+      "type": "clip",
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 150,
+      "duration": 7,
+      "raw": true
+    },
+    {
       "id": "escalation",
       "type": "clip",
-      "src": "trailer/raw/clips/playthrough-combat.webm",
-      "tailStart": 7,
-      "tailEnd": 5,
-      "kenBurns": { "zoomFrom": 1.03, "zoomTo": 1.12 }
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 222,
+      "duration": 8,
+      "raw": true
     },
     { "id": "wipe-4", "type": "doorTransition", "cropVariant": 3, "sfx": "door_slide_horiz3" },
     {
-      "id": "final-approach",
+      "id": "cinematic-reveal",
       "type": "clip",
-      "src": "trailer/raw/clips/playthrough-explore.webm",
-      "tailStart": 8,
-      "tailEnd": 3,
-      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.07 }
+      "src": "trailer/raw/clips/user-short.mp4",
+      "start": 6,
+      "duration": 3,
+      "raw": true
     },
     {
       "id": "cave-reveal",
       "type": "clip",
       "src": "public/cutscenes/cave-reveal.webm",
-      "tailStart": 7.3,
-      "tailEnd": 0,
-      "kenBurns": { "zoomFrom": 1.0, "zoomTo": 1.0 }
+      "start": 0,
+      "duration": 7.3,
+      "raw": true
     },
     {
       "id": "title-card",
-      "type": "colorCard",
-      "color": "black",
+      "type": "imageCard",
+      "image": "public/title_key_art_v2.png",
       "duration": 6,
+      "caption": "TACTICAL COMMAND V2.0",
       "text": "HUNKER BUNKER",
       "fontSize": 90
     },
     {
       "id": "cta-card",
-      "type": "colorCard",
-      "color": "black",
+      "type": "imageCard",
+      "image": "public/interstitials/int_01_someone_is_still_alive_key_v1.webp",
       "duration": 6,
+      "caption": "COCYTUS IV AWAITS",
       "text": "WISHLIST NOW ON STEAM",
       "fontSize": 56
     }
