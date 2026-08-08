@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
     LEADER_DIALOGUE,
     LEADER_KEYS,
+    describeDialogueProgress,
     leaderKeyFromName,
     nextDialogueBeat,
     isFinalStage,
@@ -10,6 +11,16 @@ import {
 } from './campDialogue.js';
 
 describe('leader dialogue ladders', () => {
+    it('explains the concrete action needed to unlock the next conversation', () => {
+        const locked = describeDialogueProgress('kaelen', { stage: 0, talks: 2 }, { level: 0 });
+        expect(locked.ready).toBe(false);
+        expect(locked.guidance).toContain('raise camp level to 1');
+        expect(locked.guidance).toContain('now 0');
+
+        const available = describeDialogueProgress('kaelen', { stage: 0, talks: 1 }, { level: 0 });
+        expect(available.ready).toBe(true);
+        expect(available.guidance).toContain('available now');
+    });
     it('all seven leaders have four stages with beats and loop lines', () => {
         expect(LEADER_KEYS).toHaveLength(7);
         for (const key of LEADER_KEYS) {

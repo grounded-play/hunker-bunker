@@ -42,7 +42,14 @@ function cleanConfigString(value, fallback) {
 function cleanBackendUrl(value) {
     const raw = cleanConfigString(value, DEFAULT_STEAM_CONFIG.backendUrl);
     try {
-        return new URL(raw).toString().replace(/\/$/, '');
+        const parsed = new URL(raw);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return DEFAULT_STEAM_CONFIG.backendUrl;
+        }
+        if (!/^[a-zA-Z0-9.-]+$/i.test(parsed.hostname)) {
+            return DEFAULT_STEAM_CONFIG.backendUrl;
+        }
+        return `${parsed.protocol}//${parsed.host}`.replace(/\/$/, '');
     } catch {
         return DEFAULT_STEAM_CONFIG.backendUrl;
     }
@@ -71,7 +78,15 @@ let pendingSteamSession = null;
 let pendingSteamSessionIdentity = null;
 
 function steamBackendUrl(path) {
-    return new URL(path, STEAM_BACKEND_URL.endsWith('/') ? STEAM_BACKEND_URL : `${STEAM_BACKEND_URL}/`).toString();
+    const relPath = String(path ?? '').trim();
+    if (!relPath.startsWith('/')) {
+        throw new Error('Backend path must start with /');
+    }
+    const targetUrl = new URL(relPath, STEAM_BACKEND_URL.endsWith('/') ? STEAM_BACKEND_URL : `${STEAM_BACKEND_URL}/`);
+    if (targetUrl.protocol !== 'http:' && targetUrl.protocol !== 'https:') {
+        throw new Error('Invalid outbound protocol');
+    }
+    return targetUrl.toString();
 }
 
 async function requestSteamBackend(path, { method = 'GET', body = null, headers = {} } = {}) {
@@ -79,6 +94,8 @@ async function requestSteamBackend(path, { method = 'GET', body = null, headers 
         return { ok: false, reason: 'fetch_unavailable' };
     }
 
+    const requestStartedAt = Date.now();
+    const requestMethod = String(method || 'GET').toUpperCase();
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), STEAM_BACKEND_TIMEOUT_MS);
@@ -106,14 +123,24 @@ async function requestSteamBackend(path, { method = 'GET', body = null, headers 
         return {
             ...data,
             ok: response.ok && data?.ok !== false,
-            status: response.status
+            status: response.status,
+            request: {
+                path: String(path).split('?')[0],
+                method: requestMethod,
+                durationMs: Date.now() - requestStartedAt
+            }
         };
     } catch (err) {
         return {
             ok: false,
             reason: err?.name === 'AbortError' ? 'steam_backend_timeout' : 'steam_backend_unreachable',
             timeoutMs: err?.name === 'AbortError' ? STEAM_BACKEND_TIMEOUT_MS : undefined,
-            message: err?.message ?? String(err)
+            message: err?.message ?? String(err),
+            request: {
+                path: String(path).split('?')[0],
+                method: requestMethod,
+                durationMs: Date.now() - requestStartedAt
+            }
         };
     }
 }

@@ -1,8 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { SurvivorCamp, CAMP_INTERACT_RADIUS } from './camp.js';
+import { SurvivorCamp, CAMP_CLEARING_RADIUS, CAMP_FLOOR_SIZE, CAMP_INTERACT_RADIUS } from './camp.js';
 
 describe('SurvivorCamp', () => {
+    it('uses a crash-site-style clearing with structures spread across it', () => {
+        const groundMaterial = new THREE.MeshBasicMaterial();
+        const camp = new SurvivorCamp(new THREE.Scene(), { groundMaterial });
+        camp.reveal(0, 0);
+        const floor = camp.group.children.find((child) => child.userData?.kind === 'camp-floor');
+
+        expect(floor.geometry.parameters).toMatchObject({ width: CAMP_FLOOR_SIZE, height: CAMP_FLOOR_SIZE });
+        expect(CAMP_CLEARING_RADIUS).toBeGreaterThanOrEqual(4);
+        expect(Math.max(...camp.tents.map((tent) => Math.hypot(tent.position.x, tent.position.z)))).toBeGreaterThan(2.5);
+    });
     it('stays hidden until revealed and is not interactable', () => {
         const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_meridian', label: 'CAMP MERIDIAN' });
         camp.build(80, 40);
@@ -75,6 +85,28 @@ describe('SurvivorCamp', () => {
         expect(camp.isLockedDown).toBe(false);
         expect(camp.lockdownStrobe.visible).toBe(false);
         expect(camp.barricades[0].material.color.getHex()).toBe(0x2c2a26); // stays charred
+    });
+
+    it('tracks the fortified crossing once when support level reaches the threshold', () => {
+        const camp = new SurvivorCamp(new THREE.Scene(), { id: 'camp_vesper', label: 'CAMP VESPER' });
+        camp.reveal(0, 0);
+        expect(camp.wasFortified).toBe(false);
+
+        camp.setLevel(1);
+        expect(camp.wasFortified).toBe(false);
+
+        camp.setLevel(2);
+        expect(camp.wasFortified).toBe(true);
+
+        camp.setLevel(3);
+        expect(camp.wasFortified).toBe(true);
+
+        // Dropping back below the threshold re-arms the one-shot so a later
+        // re-crossing reads as a fresh event rather than staying silent.
+        camp.setLevel(1);
+        expect(camp.wasFortified).toBe(false);
+        camp.setLevel(2);
+        expect(camp.wasFortified).toBe(true);
     });
 
     it('assigns the final camp to the player class mirror with living workers', () => {

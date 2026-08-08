@@ -31,7 +31,7 @@ import {
     resolveOutcome,
     gameOver
 } from './state.js';
-import { isHotspotAvailable } from './gating.js';
+import { availableHotspots, isHotspotAvailable } from './gating.js';
 import {
     saveCheckpoint,
     recordEnding,
@@ -211,7 +211,7 @@ export function mountRgb({ root, save, storage, onExit }) {
     }
 
     function focusableHotspots() {
-        return currentChapter().hotspots.filter((h) => isHotspotAvailable(h, runState, visited));
+        return availableHotspots(currentChapter().hotspots, runState, visited);
     }
 
     function chapterNumber(chapterId = runState.checkpoint) {
@@ -412,11 +412,11 @@ export function mountRgb({ root, save, storage, onExit }) {
         actionDeck.className = 'rgb-action-deck';
         actionDeck.classList.toggle('rgb-action-deck--cutaway', Boolean(activeCutaway));
         actionDeck.setAttribute('aria-label', 'Available actions');
-        const ready = new Set(focusableHotspots().map((h) => h.id));
-        chapter.hotspots.forEach((hotspot) => {
+        focusableHotspots().forEach((hotspot) => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'rgb-hotspot';
+            btn.dataset.hotspotId = hotspot.id;
             const itemId = hotspot.pickup?.items?.[0]
                 ?? hotspot.effects?.item
                 ?? hotspot.effects?.items?.[0];
@@ -439,12 +439,7 @@ export function mountRgb({ root, save, storage, onExit }) {
             btn.classList.toggle('rgb-hotspot--choice', Boolean(hotspot.choice));
             btn.classList.toggle('rgb-hotspot--object', Boolean(hotspot.object));
             btn.classList.toggle('rgb-hotspot--inventory-action', Boolean(hotspot.inventoryAction));
-            const isDone = hotspot.once && visited.has(hotspot.id);
-            const isReady = ready.has(hotspot.id);
-            btn.classList.toggle('rgb-hotspot--done', Boolean(isDone));
-            btn.classList.toggle('rgb-hotspot--locked', !isReady && !isDone);
             btn.classList.toggle('rgb-hotspot--reveal', revealHeld);
-            btn.disabled = !isReady;
             btn.addEventListener('click', () => activateHotspot(hotspot));
             actionDeck.appendChild(btn);
         });
@@ -922,12 +917,10 @@ export function mountRgb({ root, save, storage, onExit }) {
         focusIndex = Math.max(0, Math.min(focusIndex, list.length - 1));
         const target = list[focusIndex];
         const buttons = root.querySelectorAll('.rgb-hotspot');
-        buttons.forEach((btn, i) => {
-            const hotspot = currentChapter().hotspots[i];
-            btn.classList.toggle('rgb-hotspot--focused', hotspot?.id === target?.id);
+        buttons.forEach((btn) => {
+            btn.classList.toggle('rgb-hotspot--focused', btn.dataset.hotspotId === target?.id);
         });
-        const targetIndex = currentChapter().hotspots.findIndex((h) => h.id === target?.id);
-        if (targetIndex >= 0) buttons[targetIndex]?.focus();
+        [...buttons].find((btn) => btn.dataset.hotspotId === target?.id)?.focus();
     }
 
     function moveFocus(delta) {
@@ -935,6 +928,31 @@ export function mountRgb({ root, save, storage, onExit }) {
         if (list.length === 0) return;
         focusIndex = (focusIndex + delta + list.length) % list.length;
         applyFocus();
+    }
+
+    function moveOverlayFocus(delta) {
+        const buttons = Array.from(root.querySelectorAll('button:not([disabled])'))
+            .filter((button) => button.getClientRects().length > 0);
+        if (buttons.length === 0) return false;
+        const currentIndex = buttons.indexOf(document.activeElement);
+        const nextIndex = currentIndex < 0
+            ? 0
+            : (currentIndex + delta + buttons.length) % buttons.length;
+        buttons[nextIndex]?.focus();
+        return true;
+    }
+
+    function activateOverlayFocus() {
+        const active = document.activeElement;
+        if (active instanceof HTMLButtonElement && root.contains(active) && !active.disabled) {
+            active.click();
+            return true;
+        }
+        const first = root.querySelector('button:not([disabled])');
+        if (!first) return false;
+        first.focus();
+        first.click();
+        return true;
     }
 
     function activateHotspot(hotspot) {
@@ -1185,6 +1203,10 @@ export function mountRgb({ root, save, storage, onExit }) {
         const actions = event.detail;
         if (!actions) return;
         const now = performance.now();
+        if (mode === 'warning') {
+            if (actions.confirm) dismissWarning();
+            return;
+        }
         if (mode === 'scene') {
             if (activeCutaway) {
                 if (actions.confirm) root.querySelector('.rgb-dialogue__take')?.click();
@@ -1205,9 +1227,23 @@ export function mountRgb({ root, save, storage, onExit }) {
             if (actions.back || actions.pause) { mode = 'pause'; render(); }
         } else if (mode === 'chapterCard') {
             if (actions.confirm || actions.back || actions.pause) dismissChapterCard();
-        } else if ((mode === 'inventory' || mode === 'recap' || mode === 'pause') && (actions.back || actions.pause)) {
-            mode = 'scene';
-            render();
+        } else if (mode === 'inventory') {
+            if (actions.inventory || actions.back || actions.pause) {
+                mode = 'scene';
+                render();
+            }
+        } else if (mode === 'recap' || mode === 'pause' || mode === 'ending' || mode === 'gameover') {
+            const magX = Math.abs(actions.focus.x);
+            const magY = Math.abs(actions.focus.y);
+            if (now - lastNavAt > NAV_REPEAT_MS && (magX > STICK_THRESHOLD || magY > STICK_THRESHOLD)) {
+                lastNavAt = now;
+                moveOverlayFocus(magX >= magY ? Math.sign(actions.focus.x) : Math.sign(actions.focus.y));
+            }
+            if (actions.confirm) activateOverlayFocus();
+            if ((mode === 'recap' || mode === 'pause') && (actions.back || actions.pause)) {
+                mode = 'scene';
+                render();
+            }
         }
         if (mode !== 'cinematic' && revealHeld !== actions.reveal) {
             revealHeld = actions.reveal;

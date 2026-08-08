@@ -11,7 +11,7 @@ import { ThreeGame } from './threeGame.js';
 
 const SURFACE_ONLY_METHODS = [
     'updateBunkerBlastDoor', 'updateBiomeEnvironment', 'updateWeather', 'updateDayNightCycle',
-    'updateTerminalClockTick', 'updatePickups', 'updateScatter', 'updateCorpses', 'updateLoreDrops',
+    'updateTerminalClockTick', 'updatePickups', 'updateScatter', 'updateBaseDefenseTurret', 'updateCorpses', 'updateLoreDrops',
     'updateBuildSiteBeacon', 'updateConsoles', 'updateLoreTerminals', 'updateFoundryPrompt',
     'updateCaveEntrance', 'updateAct2', 'updateCamps', 'updateHiveSites', 'updateInfectionPressure',
     'updateHazardZoneDamage', 'updateCampQuest', 'updateShipVisualState', 'updateBlackBoxMarker',

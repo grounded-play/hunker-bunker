@@ -3,8 +3,13 @@ import {
     applyTrade,
     canActivateCampVerb,
     canApplyTrade,
+    CAMP_AFTERMATH_DISPOSITIONS,
+    CAMP_AFTERMATH_FORTIFIED_LEVEL,
     getAct2ClassPerks,
     getCampActiveVerb,
+    getCampAftermathDisposition,
+    getCampAftermathReason,
+    getCampAftermathSummary,
     getCampTrades,
     getCampVerbEffects,
     isCampVerbDegraded,
@@ -150,5 +155,82 @@ describe('Camp Active Verbs (docs/faction-verb-matrix.md)', () => {
         expect(isCampVerbDegraded('camp_meridian', 'robbed')).toBe(true);
         expect(isCampVerbDegraded('camp_meridian', 'alive')).toBe(false);
         expect(isCampVerbDegraded('camp_tallow', 'robbed')).toBe(false);
+    });
+});
+
+// docs/sprint-22-systems-breakdown/03-factions-and-hives.md: "A fortified,
+// robbed, culled, turned, or outed camp should not share the same
+// population, props, audio, and interaction affordances" -- these tests
+// cover the single disposition resolver that ties together the previously
+// scattered status/suspicion/level/knowsPlayerInfected signals into one
+// player-facing label + reason, per the doc's "State vs Presentation"
+// requirement that a summary "must link to a reason ... when ambiguity
+// matters."
+describe('Camp Aftermath Disposition (docs/sprint-22-systems-breakdown/03-factions-and-hives.md)', () => {
+    it('ranks culled above every other signal', () => {
+        expect(getCampAftermathDisposition({
+            status: 'culled',
+            level: 3,
+            suspicion: 100,
+            knowsPlayerInfected: true
+        })).toBe('culled');
+    });
+
+    it('ranks turned above outed/robbed signals', () => {
+        expect(getCampAftermathDisposition({
+            status: 'turned',
+            suspicion: 100,
+            knowsPlayerInfected: true
+        })).toBe('turned');
+    });
+
+    it('resolves outed from high suspicion even when status is still alive', () => {
+        expect(getCampAftermathDisposition({ status: 'alive', suspicion: 50 })).toBe('outed');
+        expect(getCampAftermathDisposition({ status: 'alive', suspicion: 49 })).not.toBe('outed');
+    });
+
+    it('resolves outed from knowsPlayerInfected even when suspicion is still low', () => {
+        expect(getCampAftermathDisposition({
+            status: 'robbed',
+            suspicion: 10,
+            knowsPlayerInfected: true
+        })).toBe('outed');
+    });
+
+    it('resolves robbed when not outed', () => {
+        expect(getCampAftermathDisposition({ status: 'robbed', suspicion: 0 })).toBe('robbed');
+    });
+
+    it('resolves recruited when not outed', () => {
+        expect(getCampAftermathDisposition({ status: 'recruited', suspicion: 0 })).toBe('recruited');
+    });
+
+    it('resolves fortified at the named support level with no other signal active', () => {
+        expect(getCampAftermathDisposition({ status: 'alive', level: CAMP_AFTERMATH_FORTIFIED_LEVEL, suspicion: 0 }))
+            .toBe('fortified');
+        expect(getCampAftermathDisposition({ status: 'alive', level: CAMP_AFTERMATH_FORTIFIED_LEVEL - 1, suspicion: 0 }))
+            .toBe('alive');
+    });
+
+    it('defaults to alive with no record', () => {
+        expect(getCampAftermathDisposition()).toBe('alive');
+        expect(getCampAftermathDisposition({})).toBe('alive');
+    });
+
+    it('gives every declared disposition a non-empty label and reason', () => {
+        for (const disposition of CAMP_AFTERMATH_DISPOSITIONS) {
+            expect(getCampAftermathReason(disposition).length).toBeGreaterThan(0);
+        }
+    });
+
+    it('falls back to the alive reason for an unrecognized disposition', () => {
+        expect(getCampAftermathReason('not_a_real_disposition')).toBe(getCampAftermathReason('alive'));
+    });
+
+    it('combines disposition, label, and reason into one summary', () => {
+        const summary = getCampAftermathSummary({ status: 'robbed', suspicion: 0 });
+        expect(summary.disposition).toBe('robbed');
+        expect(summary.label).toBe('ROBBED');
+        expect(summary.reason.length).toBeGreaterThan(0);
     });
 });

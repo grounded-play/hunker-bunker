@@ -43,15 +43,15 @@ All classes have universal sprint. Their implemented differentiation is currentl
 
 ### First-hour friction
 
-Skip flow, settings, input routing, and presentation work exist, but that does not prove the first 30 minutes are paced well. The remaining work is observed timing, comprehension, and interruption count on a clean profile.
+Skip flow, settings, input routing, and presentation work exist, but that does not prove the first 30 minutes are paced well. The remaining work is observed timing, comprehension, and interruption count on a clean profile. **First real evidence:** [Log1 findings](15-playtest-log1-findings-and-plan.md) — cold boot to first player input ran ~142s (19.1s boot, including a 5.7s-blocking 67-long-task warning, plus intro cutscene/tutorial-choice time), for one TANK/tutorial-path session.
 
 ### World readability after the 49×49 merge
 
-The tile-band branch is merged and tests pass. The risk has moved from correctness to feel: whether merged halls read as purposeful routes, whether room identities are legible, and whether ring gates become learnable landmarks.
+The tile-band branch is merged and tests pass. The risk has moved from correctness to feel: whether merged halls read as purposeful routes, whether room identities are legible, and whether ring gates become learnable landmarks. **First real evidence:** the same [Log1 findings](15-playtest-log1-findings-and-plan.md) doc — one run generated 78% `maze`-landform chunks and showed 7.5x more Radar Scan usage than Dash usage, a candidate signal for route clarity that needs more seeds before acting on it.
 
 ### Combat quality outside the Queen
 
-The Queen has the phase framework and an automated economy simulation. Other bosses may still read as durable stat packages. Do not generalize Queen acceptance to the whole boss roster.
+The Queen has the phase framework and an automated economy simulation. Other bosses may still read as durable stat packages. Do not generalize Queen acceptance to the whole boss roster. **First real evidence:** [Log1 findings](15-playtest-log1-findings-and-plan.md) traces the logged run's death to `boss_cryosnail`'s frost-shockwave landing 394ms after the player opened the bunker door to retreat — the door grants no AoE protection, which is a concrete instance of exactly this risk.
 
 ### State legibility
 

@@ -22,7 +22,7 @@ describe('buildSteamInputConfigs', () => {
         expect(outputs).toHaveLength(7);
         const deck = fs.readFileSync(path.join(destination, 'controller_neptune.vdf'), 'utf8');
         expect(deck).toContain('"controller_type" "controller_neptune"');
-        expect(deck).toContain('"major_revision" "2"');
+        expect(deck).toContain('"major_revision" "7"');
         expect(deck).toContain('"name" "menu"');
         expect(deck).toContain('"name" "gameplay"');
         expect(deck).toContain('"name" "archive"');
@@ -46,14 +46,47 @@ describe('buildSteamInputConfigs', () => {
         expect(deck).not.toMatch(/key_press|mouse_button/);
         expect(deck).toContain('game_action gameplay fire');
         expect(deck).toContain('game_action gameplay toggle_map');
+        expect(deck).toMatch(/"button_back_left_upper"[\s\S]*?game_action gameplay toggle_map/);
         expect(deck).toContain('game_action archive archive_reveal');
         expect(deck).toContain('"gameplay" "move"');
         expect(deck).toContain('"gameplay" "camera"');
+        expect(deck).toContain('"menu" "menu_pointer"');
+        expect(deck).not.toContain('"6" "right_joystick active"');
+        expect(deck).toContain('"12" "right_joystick active"');
+        expect(deck).not.toContain('"17" "right_joystick active"');
+        expect(deck).toContain('"7" "left_trackpad active"');
+        expect(deck).toContain('"8" "right_trackpad active"');
+        expect(deck).toContain('"16" "left_trackpad active"');
+        expect(deck).toContain('"17" "right_trackpad active"');
+        expect(deck).toContain('"26" "left_trackpad active"');
+        expect(deck).toContain('"27" "right_trackpad active"');
+        expect(deck).not.toContain('gyro active');
+        expect(deck).toMatch(/"left_bumper"[\s\S]*?game_action gameplay scan/);
+        expect(deck).toMatch(/"right_bumper"[\s\S]*?game_action gameplay toggle_map/);
+        expect(deck).toMatch(/"button_b"[\s\S]*?game_action gameplay dash, Dodge/);
+        expect(deck).toMatch(/"button_a"[\s\S]*?game_action gameplay interact, Interact/);
+        expect(deck).toMatch(/"button_menu"[\s\S]*?game_action menu pause, Settings \/ Pause/);
+    });
+
+    it('maps PlayStation touchpads in every action set without inventing pads for Xbox', () => {
+        const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-input-configs-'));
+        tempDirs.push(destination);
+
+        buildSteamInputConfigs({ destination });
+        for (const controller of ['controller_ps4', 'controller_ps5']) {
+            const config = fs.readFileSync(path.join(destination, `${controller}.vdf`), 'utf8');
+            expect(config).toContain('"8" "center_trackpad active"');
+            expect(config).toContain('"17" "center_trackpad active"');
+            expect(config).toContain('"27" "center_trackpad active"');
+        }
+
+        const xbox = fs.readFileSync(path.join(destination, 'controller_xboxone.vdf'), 'utf8');
+        expect(xbox).not.toContain('trackpad active');
     });
 
     // A config that binds an action the manifest doesn't declare is silently dead
-    // in-game, and a declared action nothing binds is an input the player can never
-    // reach. Both directions have to stay closed.
+    // in-game. Every generally applicable declared action must also be reachable;
+    // hardware-specific pointer actions are required only on pad-equipped devices.
     it('binds exactly the action set the manifest declares, on every controller', () => {
         const destination = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-input-configs-'));
         tempDirs.push(destination);
@@ -82,7 +115,9 @@ describe('buildSteamInputConfigs', () => {
                 ...[...config.matchAll(/"gameactions"\s*\{\s*"\w+"\s+"(\w+)"/g)].map((match) => match[1])
             ]);
             expect([...bound].filter((action) => !declared.has(action))).toEqual([]);
-            expect([...declared].filter((action) => !bound.has(action))).toEqual([]);
+            const controllerHasTrackpad = /controller_(neptune|ps4|ps5)\.vdf$/.test(output);
+            const required = [...declared].filter((action) => action !== 'menu_pointer_mouse' || controllerHasTrackpad);
+            expect(required.filter((action) => !bound.has(action))).toEqual([]);
         }
     });
 });

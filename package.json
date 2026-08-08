@@ -17,6 +17,10 @@
     "audit:retail-assets:check": "node scripts/audit-retail-assets.js --check",
     "audit:retail-assets:package": "node scripts/audit-retail-assets.js --package",
     "audit:dependencies": "node scripts/audit-dependency-usage.js",
+    "audit:world-seeds": "node scripts/world-seed-portfolio-report.js",
+    "audit:world-seeds:sweep": "node scripts/world-seed-portfolio-report.js --sweep-only --sweep=5000",
+    "audit:combat-encounters": "node scripts/combat-encounter-report.js",
+    "audit:playtest-navigation": "node scripts/playtest-navigation-report.js",
     "presubmit": "npm run presubmit:generated",
     "presubmit:generated": "npm run steam:claims:check && npm run audio:plan-sfx:check && npm run audit:retail-assets:check && npm run steam:item-catalog:check && npm run audit:soundtrack",
     "audio:plan-sfx": "node scripts/generate-plan-sfx.js",
@@ -51,7 +55,9 @@
     "soundtrack:metadata": "node scripts/build-soundtrack-metadata.js",
     "audit:soundtrack": "node scripts/build-soundtrack-metadata.js --check && node scripts/package-soundtrack.js --check",
     "package-soundtrack": "node scripts/build-soundtrack-metadata.js && node scripts/package-soundtrack.js",
-    "cinematics:stills": "node scripts/build-cinematic-still-videos.js"
+    "cinematics:stills": "node scripts/build-cinematic-still-videos.js",
+    "trailer:capture": "playwright test --config=tests/e2e/trailer/trailer.playwright.config.js",
+    "trailer:build": "node scripts/build-trailer.js"
   },
   "build": {
     "appId": "com.icecave.hunkerbunker",
@@ -95,26 +101,26 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.15.1",
-    "@playwright/test": "^1.61.1",
-    "@types/three": "^0.184.1",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@playwright/test": "^1.62.1",
+    "@types/three": "^0.185.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
-    "electron": "^43.1.0",
+    "electron": "^43.2.0",
     "electron-builder": "^26.15.3",
-    "eslint": "^10.4.0",
-    "globals": "^17.6.0",
+    "eslint": "^10.8.0",
+    "globals": "^17.8.0",
     "nodemon": "^3.1.14",
     "vite": "^8.1.5",
-    "vitest": "^4.1.7",
-    "wait-on": "^9.0.10"
+    "vitest": "^4.1.10",
+    "wait-on": "^9.1.0"
   },
   "dependencies": {
     "express": "^5.2.1",
-    "express-rate-limit": "^8.6.0",
+    "express-rate-limit": "^8.6.1",
     "socket.io": "^4.8.3",
     "steamworks.js": "^0.4.0",
-    "three": "^0.184.0"
+    "three": "^0.185.1"
   },
   "overrides": {
     "vite": "^8.1.5",

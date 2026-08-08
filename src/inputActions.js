@@ -30,6 +30,19 @@ export function wrapMenuIndex(index, delta, length) {
     return (current + delta + length) % length;
 }
 
+export function hasControllerContinuePress(actions = {}) {
+    return Boolean(
+        actions.confirm || actions.back || actions.pause
+        || actions.tabLeft || actions.tabRight
+        || actions.up || actions.down || actions.left || actions.right
+        || actions.menuConfirm || actions.menuBack
+        || actions.menuTabLeft || actions.menuTabRight
+        || actions.menuUp || actions.menuDown || actions.menuLeft || actions.menuRight
+        || actions.interact || actions.dash || actions.reload || actions.ability
+        || actions.fire || actions.scan || actions.toggleMap
+    );
+}
+
 export function shouldPreferBrowserGamepad({
     nativeAvailable = false,
     nativeControllerCount = 0,
@@ -51,6 +64,7 @@ const NEUTRAL_PAD = Object.freeze({
     fire: false,
     interact: false,
     reload: false,
+    melee: false,
     ability: false,
     dash: false,
     scan: false,
@@ -90,10 +104,14 @@ export function createActionRouter() {
             tabLeft: edge('menu_tab_left', pad.menuTabLeft),
             tabRight: edge('menu_tab_right', pad.menuTabRight),
             pause: edge('menu_pause', pad.pause),
-            pointer: {
-                x: pad.camera?.x ?? 0,
-                y: pad.camera?.y ?? 0
-            },
+            pointer: pad.pointer ?? { x: 0, y: 0 },
+            // handleSteamMenuInput (main.js) reads these to drive the right-stick
+            // cursor, with its own deadzone against resting-stick drift. Forward
+            // them through untouched -- deriveMenuActions used to hardcode
+            // pointer to {0,0} specifically to defeat that cursor, but the
+            // deadzone now lives in the consumer instead.
+            camera: pad.camera ?? { x: 0, y: 0 },
+            move: pad.move ?? { x: 0, y: 0 },
             cameraDelta: pad.cameraDelta ?? { x: 0, y: 0 }
         };
     }

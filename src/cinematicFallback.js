@@ -81,13 +81,37 @@ export const EVENT_CINEMATICS = Object.freeze({
         kicker: 'SECTOR ZERO // GEOLOGY MISMATCH',
         title: 'THE WALL WAS BUILT AROUND A MOUTH',
         body: 'Warm air moves upward. Something below has been waiting for circulation.',
-        images: Object.freeze(['/cave_mouth.png', '/hive_interior.png'])
+        images: Object.freeze(['/cutscenes/poster-art/event-cave-revealed-1.png', '/cutscenes/poster-art/event-cave-revealed-2.png'])
     }),
     queen_encounter: Object.freeze({
         kicker: 'UNKNOWN SIGNAL // SOURCE CONFIRMED',
         title: 'THE QUEEN OPENS HER EYES',
         body: 'The voice under Sector Zero no longer needs the radio.',
         images: Object.freeze(['/cutscenes/poster-art/event-queen-encounter.png'])
+    }),
+    o2_generator_upgraded: Object.freeze({
+        kicker: 'BUNKER SYSTEM // LIFE SUPPORT',
+        title: 'THE AIR HOLDS A LITTLE LONGER',
+        body: 'Oxygen reclamation comes back online. The safe bubble widens around what you rebuilt.',
+        images: Object.freeze(['/cutscenes/poster-art/event-o2-generator-upgraded.png'])
+    }),
+    boss_encounter_cryosnail: Object.freeze({
+        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
+        title: 'THE ICE SENDS SOMETHING BACK',
+        body: 'A cryosnail-class hostile converges on your position.',
+        images: Object.freeze(['/cutscenes/poster-art/event-boss-cryosnail.png'])
+    }),
+    boss_encounter_cybersnail: Object.freeze({
+        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
+        title: 'THE GRID ANSWERS WITH TEETH',
+        body: 'A cybersnail-class hostile converges on your position.',
+        images: Object.freeze(['/cutscenes/poster-art/event-boss-cybersnail.png'])
+    }),
+    boss_encounter_sporesnail: Object.freeze({
+        kicker: 'PERIMETER BREACH // HOSTILE SIGNATURE',
+        title: 'THE BLOOM LEARNED TO HUNT',
+        body: 'A sporesnail-class hostile converges on your position.',
+        images: Object.freeze(['/cutscenes/poster-art/event-boss-sporesnail.png'])
     })
 });
 
@@ -152,4 +176,14 @@ export function getEventCinematicSpec(eventId) {
         id: `event-${id}`,
         tone: 'event'
     });
+}
+
+export function shouldPlayAuthoredEventCinematic({
+    appPhase,
+    revealMode = 'animated',
+    source = ''
+} = {}) {
+    if (appPhase !== 'gameplay') return false;
+    if (revealMode === 'instant') return false;
+    return !String(source).includes('state-restore');
 }

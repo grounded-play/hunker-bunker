@@ -14,7 +14,7 @@ export function normalizePopulationBudget(budget = {}) {
     return {
         signature: Math.max(1, Number(budget.signature) || 1),
         large: normalizeCount(budget.large, 1),
-        small: normalizeCount(budget.small, 2),
+        small: normalizeCount(budget.small, 3),
         pickup: normalizeCount(budget.pickup, 0),
         enemy: normalizeCount(
             budget.enemy ?? { min: budget.enemyMin, max: budget.enemyMax },
@@ -23,9 +23,25 @@ export function normalizePopulationBudget(budget = {}) {
     };
 }
 
-function pickCandidate(candidates, random) {
+function wallAdjacency(cell, grid) {
+    return [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        .reduce((count, [dx, dy]) => count + (grid?.[cell.y + dy]?.[cell.x + dx] === '#' ? 1 : 0), 0);
+}
+
+function pickCandidate(candidates, random, grid, center) {
     if (candidates.length === 0) return null;
-    return candidates.splice(Math.floor(random() * candidates.length), 1)[0];
+    // Props belong at the perimeter: keep the room center open for the player,
+    // ship consoles, mission fixtures, and readable combat lanes. Randomness
+    // only breaks ties between equally wall-adjacent cells.
+    const scored = candidates.map((cell) => ({
+        cell,
+        score: wallAdjacency(cell, grid) * 100
+            + Math.hypot(cell.x - center.x, cell.y - center.y)
+            + random() * 0.01
+    })).sort((a, b) => b.score - a.score);
+    const selected = scored[0].cell;
+    candidates.splice(candidates.indexOf(selected), 1);
+    return selected;
 }
 
 function propFrom(list, random, fallback) {
@@ -35,15 +51,33 @@ function propFrom(list, random, fallback) {
 
 export function planRoomPopulation(room, grid, random) {
     const budget = normalizePopulationBudget(room.populationBudget);
-    const reserved = new Set((room.navigation?.doorLanes ?? []).map(cellKey));
+    const doorLanes = room.navigation?.doorLanes ?? [];
+    const fixtureCells = room.navigation?.reserved ?? [];
+    const reserved = new Set([...doorLanes, ...fixtureCells].map(cellKey));
+    for (const fixture of fixtureCells) {
+        for (let dy = -1; dy <= 1; dy += 1) {
+            for (let dx = -1; dx <= 1; dx += 1) reserved.add(`${fixture.x + dx},${fixture.y + dy}`);
+        }
+    }
+    const rawInterior = room.interior ?? [];
+    const roomCenter = rawInterior.length > 0 ? {
+        x: rawInterior.reduce((sum, cell) => sum + cell.x, 0) / rawInterior.length,
+        y: rawInterior.reduce((sum, cell) => sum + cell.y, 0) / rawInterior.length
+    } : { x: 0, y: 0 };
     const candidates = (room.interior ?? []).filter(({ x, y }) => (
-        grid?.[y]?.[x] === '.' && !reserved.has(`${x},${y}`)
+        grid?.[y]?.[x] === '.'
+        && !reserved.has(`${x},${y}`)
+        && Math.hypot(x - roomCenter.x, y - roomCenter.y) >= 0.75
     ));
     const placements = [];
     const theme = room.themeConfig ?? {};
+    const center = roomCenter;
+    const propLimit = room.role === 'medical' || room.role === 'cryo-lab' ? 3 : 2;
 
     const reservePlacement = (kind, type, blocking = false) => {
-        const cell = pickCandidate(candidates, random);
+        if (placements.length >= 3) return false;
+        if (kind !== 'pickup' && placements.filter((placement) => placement.kind !== 'pickup').length >= propLimit) return false;
+        const cell = pickCandidate(candidates, random, grid, center);
         if (!cell) return false;
         reserved.add(cellKey(cell));
         placements.push({
@@ -58,22 +92,26 @@ export function planRoomPopulation(room, grid, random) {
         return true;
     };
 
-    reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies'), true);
-    for (let index = 0; index < budget.large.min; index += 1) {
-        reservePlacement('large', propFrom(theme.largeProps, random, 'prop_conduit_hub'), true);
+    if (room.role === 'medical' || room.role === 'cryo-lab') {
+        const medicalProps = [...new Set([
+            ...(theme.signatureProps ?? []),
+            ...(theme.largeProps ?? [])
+        ])].slice(0, 3);
+        while (medicalProps.length < 3) {
+            medicalProps.push(['prop_medical_bed', 'prop_diagnostic_console', 'prop_surgical_cart'][medicalProps.length]);
+        }
+        medicalProps.forEach((type, index) => reservePlacement(index === 0 ? 'signature' : 'large', type, true));
+    } else {
+        reservePlacement('signature', propFrom(theme.signatureProps, random, 'prop_bunker_supplies'), true);
+        if (['reward', 'storage', 'security'].includes(room.role)) {
+            reservePlacement('ammo-cache', 'prop_bunker_supplies', true);
+        } else if (budget.large.min > 0 && theme.largeProps?.length) {
+            reservePlacement('large', propFrom(theme.largeProps, random, 'prop_conduit_hub'), true);
+        }
     }
-    for (let index = 0; index < budget.small.min; index += 1) {
-        reservePlacement('small', propFrom(theme.smallProps, random, 'scatter_gravel'), false);
-    }
-    for (let index = 0; index < budget.pickup.min; index += 1) {
-        reservePlacement('pickup', 'room-biased', false);
-    }
+    if (budget.pickup.min > 0) reservePlacement('pickup', 'room-biased', false);
 
     const signaturePlaced = placements.some((placement) => placement.kind === 'signature');
-
-    if (theme.rareProps?.length > 0 && random() < 0.15) {
-        reservePlacement('rare', propFrom(theme.rareProps, random), false);
-    }
 
     return {
         roomId: room.id,
@@ -81,7 +119,7 @@ export function planRoomPopulation(room, grid, random) {
         reserved: [...reserved],
         placements,
         signaturePlaced,
-        degraded: !signaturePlaced || placements.filter((p) => p.kind === 'large').length < budget.large.min
+        degraded: !signaturePlaced
     };
 }
 

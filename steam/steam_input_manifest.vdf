@@ -4,7 +4,7 @@
     // reworked enough that old user configs are unusable — Steam then force-updates
     // players onto the current official config. minor_revision is for additive
     // actions and localization tweaks. Read back via GetDeviceBindingRevision.
-    "major_revision" "2"
+    "major_revision" "6"
     "minor_revision" "0"
     "configurations"
     {
@@ -42,6 +42,19 @@
         "menu"
         {
             "title" "#ActionSetMenu"
+            "StickPadGyro"
+            {
+                "menu_pointer"
+                {
+                    "title" "#ActionMenuPointer"
+                    "input_mode" "joystick_move"
+                }
+                "menu_pointer_mouse"
+                {
+                    "title" "#ActionMenuPointerMouse"
+                    "input_mode" "absolute_mouse"
+                }
+            }
             "Button"
             {
                 "menu_up" "#ActionMenuUp"
@@ -70,11 +83,8 @@
                     "title" "#ActionCamera"
                     "input_mode" "joystick_move"
                 }
-                // Mouse-style aim for the trackpad and gyro. Steam can synthesize
-                // absolute_mouse from a joystick but never the reverse, so the 1:1
-                // deltas have to be their own action. Deliberately no "os_mouse" —
-                // the game raycasts its own reticle and a second OS-driven cursor
-                // would fight it.
+                // Delta-style aim for Deck and PlayStation trackpads. The
+                // right joystick remains on the direct camera action above.
                 "camera_mouse"
                 {
                     "title" "#ActionCameraMouse"
@@ -87,6 +97,7 @@
                 "interact" "#ActionInteract"
                 "reload" "#ActionReload"
                 "ability" "#ActionAbility"
+                "dash" "#ActionDash"
                 "scan" "#ActionScan"
                 "sprint" "#ActionSprint"
                 "pause" "#ActionPause"
@@ -129,13 +140,16 @@
             "ActionMenuBack" "Back"
             "ActionMenuTabLeft" "Previous Tab"
             "ActionMenuTabRight" "Next Tab"
+            "ActionMenuPointer" "Pointer"
+            "ActionMenuPointerMouse" "Trackpad Pointer"
             "ActionMove" "Move"
             "ActionCamera" "Aim"
             "ActionCameraMouse" "Aim Cursor"
             "ActionFire" "Fire"
             "ActionInteract" "Interact"
             "ActionReload" "Reload"
-            "ActionAbility" "Ability"
+            "ActionAbility" "Smash"
+            "ActionDash" "Dodge"
             "ActionScan" "Scan"
             "ActionSprint" "Sprint"
             "ActionPause" "Pause"

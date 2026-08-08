@@ -10,7 +10,7 @@ import { ProfileManager, clearSaveData, exportSaveCode, importSaveCode } from '.
 import { LoadoutManager } from './src/loadout.js';
 import { CutsceneManager } from './src/cutscene.js';
 import { DEPTH_TIER_NAMES } from './src/data/loot.js';
-import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec } from './src/cinematicFallback.js';
+import { getDeathCinematicSpec, getEventCinematicSpec, normalizeCinematicStillSpec, shouldPlayAuthoredEventCinematic } from './src/cinematicFallback.js';
 import { DialogueManager } from './src/dialogue.js';
 import { VitalsHUD } from './src/vitals.js';
 import { blackBoxStore } from './src/blackBox.js';
@@ -31,13 +31,13 @@ import { syncSteamStats } from './src/steamStats.js';
 import { loadRgbSave, saveRgbSave, markUnlocked as markRgbUnlocked, shouldUnlockRgb, unlockChapter as unlockRgbChapter, isChapterUnlocked as isRgbChapterUnlocked } from './src/minigames/rgb/save.js';
 import { mountRgb } from './src/minigames/rgb/runtime.js';
 import { ENDINGS as RGB_ENDINGS, CHAPTERS as RGB_CHAPTERS, CHAPTER_ORDER as RGB_CHAPTER_ORDER } from './src/minigames/rgb/content.js';
-import { getGifDurationMs } from './src/gifDuration.js';
 import { mapBrowserGamepad } from './src/browserGamepad.js';
 import { getControllerGlyphLabel } from './src/inputGlyphs.js';
 import {
     ACTION_SETS,
     actionSetForAppPhase,
     createActionRouter,
+    hasControllerContinuePress,
     menuKeyboardDirection,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
@@ -45,12 +45,15 @@ import {
 import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
+import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
 import { explainEnding, formatManifestBlocker } from './src/endingExplanations.js';
 import { SongInterstitialController, selectCampInterstitial } from './src/songInterstitials.js';
+import { dialogueReactionForLine, preloadLeaderMedia, resolveLeaderIdentity } from './src/leaderIdentity.js';
+import { LeaderConversation3d } from './src/leaderConversation3d.js';
 import {
     computeTopologyDistances,
     findConflictingChunkReservations,
@@ -119,9 +122,14 @@ const buildInfo = typeof __HB_BUILD_INFO__ === 'object'
     });
 const buildCommitLabel = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''}`;
 const pipelineBuildLabel = buildInfo.steamBuild ? ` // PIPELINE ${buildInfo.steamBuild}` : '';
+const branchName = buildInfo.branch ? buildInfo.branch.replace(/^dev\//i, '').toUpperCase() : '';
+const sprintLabel = branchName
+    ? (branchName.startsWith('SPRINT') ? branchName.replace('-', ' ') : branchName)
+    : '';
+const loadingVersionText = `${sprintLabel ? `${sprintLabel} // ` : ''}${buildCommitLabel}${pipelineBuildLabel}`;
 const canonicalVersionText = `BUILD ${buildInfo.version} // ${buildCommitLabel} // ${buildInfo.branch}${pipelineBuildLabel}`;
 if (loaderVersionTag) {
-    loaderVersionTag.textContent = canonicalVersionText;
+    loaderVersionTag.textContent = loadingVersionText;
     loaderVersionTag.title = `Built ${buildInfo.builtAt ?? 'unknown time'}`;
 }
 const aboutSysVer = document.getElementById('about-modal-sys-ver');
@@ -201,6 +209,8 @@ const DESIGN_STAGE = {
 const AUDIO_MIX_STORAGE_KEY = 'hunker_audio_mix_v1';
 const LEGACY_AUDIO_TOGGLE_KEY = 'hunker_audio_enabled';
 const COMMENTARY_STORAGE_KEY = 'hunker_commentary_enabled';
+const CROSSHAIR_COLOR_STORAGE_KEY = 'hb_crosshair_color';
+const DEFAULT_CROSSHAIR_COLOR = '#ff9f1c';
 const DEFAULT_AUDIO_MIX = Object.freeze({
     master: 1,
     music: 1,
@@ -219,6 +229,7 @@ const DEFAULT_KEY_BINDINGS = Object.freeze({
     moveRight: ['KeyD', 'ArrowRight'],
     interact: ['KeyE', 'Enter'],
     reload: ['KeyR', null],
+    melee: ['KeyV', null],
     ability: ['KeyF', null],
     scan: ['KeyQ', null],
     sprint: ['ShiftLeft', 'ShiftRight']
@@ -312,6 +323,7 @@ const STEAM_INPUT_PROMPT_IDS = Object.freeze([
 ]);
 
 const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
+    'dev-console-modal',
     'confirm-modal',
     'reset-save-confirm-modal',
     'quit-confirm-modal',
@@ -333,9 +345,11 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'steam-vault-modal',
     'operator-polish-modal',
     'tactical-map-modal',
+    'base-turret-modal',
     'demo-end-modal',
     'game-over-modal',
     'camp-choice-modal',
+    'leader-conversation-modal',
     'mothership-dialogue',
     'console-terminal-modal',
     'o2-generator-modal',
@@ -344,6 +358,23 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'splash',
     'menu'
 ]);
+
+function closeModalWithAnimation(modal, onComplete, { exitClass = '', duration = 280 } = {}) {
+    if (!modal || modal.classList.contains('hidden') || modal.classList.contains('is-exiting')) {
+        if (onComplete) onComplete();
+        return;
+    }
+    modal.classList.add('is-exiting');
+    if (exitClass) modal.classList.add(exitClass);
+    modal.setAttribute('aria-hidden', 'true');
+    window.setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('is-exiting');
+        if (exitClass) modal.classList.remove(exitClass);
+        if (onComplete) onComplete();
+    }, duration);
+}
+window.closeModalWithAnimation = closeModalWithAnimation;
 
 const COMMENTARY_ENTRIES = Object.freeze({
     run_start: {
@@ -409,6 +440,7 @@ const mainActionRouter = createActionRouter();
 let steamGamepadTextInputInFlight = false;
 let pendingSteamInputBoot = false;
 let suppressSteamInputUntilRelease = false;
+let lastRequestedSteamInputPhase = null;
 
 window.HunkerTriggerBoot = () => {
     pendingSteamInputBoot = true;
@@ -425,9 +457,19 @@ window.HunkerInputState = {
     getState: () => ({ ...steamInputState })
 };
 
-function syncSteamInputPhase() {
-    mainActionRouter.setActionSet(actionSetForAppPhase(appPhase));
-    window.electronAPI?.setSteamInputPhase?.(appPhase);
+function syncSteamInputPhase(phaseOverride = null) {
+    const modalMenuOpen = appPhase !== 'archive' && STEAM_INPUT_FOCUS_ROOT_IDS.some((id) => {
+        if (id === 'rgb-root' || id === 'splash' || id === 'menu') return false;
+        const element = document.getElementById(id);
+        return Boolean(element && !element.classList.contains('hidden'));
+    });
+    const effectivePhase = phaseOverride
+        ?? (modalMenuOpen ? 'menu' : appPhase);
+    mainActionRouter.setActionSet(actionSetForAppPhase(effectivePhase));
+    if (effectivePhase !== lastRequestedSteamInputPhase) {
+        lastRequestedSteamInputPhase = effectivePhase;
+        window.electronAPI?.setSteamInputPhase?.(effectivePhase);
+    }
 }
 
 function syncSteamTimelinePhase(phase = appPhase) {
@@ -638,6 +680,12 @@ function getPreferredControllerFocusTarget(root, focusables) {
             ?? focusables.find((element) => element.closest?.('.setting-item'))
             ?? focusables[0];
     }
+    if (root?.id === 'fabrication-modal') {
+        return focusables.find((element) => element.id === 'fab-activate-btn' && !element.disabled)
+            ?? focusables.find((element) => element.id === 'fab-roll-btn' && !element.disabled)
+            ?? focusables.find((element) => element.id === 'close-fabrication-modal')
+            ?? focusables[0];
+    }
     if (root?.id === 'mothership-dialogue') {
         return focusables.find((element) => element.id === 'mothership-choice-skip' && isElementVisible(element))
             ?? focusables.find((element) => element.id === 'mothership-choice-tutorial' && isElementVisible(element))
@@ -753,16 +801,31 @@ function moveHeroSelectPanelFocus(code) {
     const active = document.activeElement;
     const isLeft = code === 'KeyA' || code === 'ArrowLeft';
     const isRight = code === 'KeyD' || code === 'ArrowRight';
-    if (!isLeft && !isRight) return false;
+    const isUp = code === 'KeyW' || code === 'ArrowUp';
+    const isDown = code === 'KeyS' || code === 'ArrowDown';
+    if (!isLeft && !isRight && !isUp && !isDown) return false;
 
     const commandRail = active?.closest?.('.menu-header-actions');
     const heroRail = active?.closest?.('.char-selection');
     const previewRail = active?.closest?.('.preview-box');
     const initializeButton = active?.id === 'start-game';
+    const settingsButton = active?.closest?.('.menu-corner-settings .open-settings-btn');
+    const selectedHero = document.querySelector('.char-selection .char-card.selected')
+        ?? document.querySelector('.char-selection .char-card');
+
+    if (settingsButton) {
+        const target = isLeft
+            ? document.getElementById('hero-polish-btn')
+            : (isDown ? selectedHero : null);
+        return target ? focusControllerTarget(target, { playHover: true }) : true;
+    }
 
     if (initializeButton) {
         if (isRight) {
             return focusControllerTarget(document.getElementById('hero-polish-btn'), { playHover: true });
+        }
+        if (isDown) {
+            return selectedHero ? focusControllerTarget(selectedHero, { playHover: true }) : true;
         }
         const visibleCommands = getVisibleControllerFocusables(document.querySelector('.menu-header-actions'));
         const target = lastHeroMenuCommandFocus && visibleCommands.includes(lastHeroMenuCommandFocus)
@@ -782,19 +845,36 @@ function moveHeroSelectPanelFocus(code) {
     }
 
     if (heroRail) {
-        if (!isLeft) return true;
-        const target = document.getElementById('hero-polish-btn');
+        const cards = getVisibleControllerFocusables(heroRail).filter((element) => element.classList.contains('char-card'));
+        const index = Math.max(0, cards.indexOf(active));
+        let target = null;
+        if (isUp && index === 0) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
+        else if (isUp) target = cards[index - 1];
+        else if (isDown) target = cards[index + 1] ?? document.getElementById('start-game');
+        else if (isLeft) target = document.getElementById('hero-polish-btn');
+        else if (isRight) target = document.querySelector('#menu .menu-corner-settings .open-settings-btn');
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
     if (previewRail) {
         const target = isRight
-            ? (document.querySelector('.char-selection .char-card.selected') ?? document.getElementById('start-game'))
-            : (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0]);
+            ? (selectedHero ?? document.getElementById('start-game'))
+            : isLeft
+                ? (lastHeroMenuCommandFocus ?? getVisibleControllerFocusables(document.querySelector('.menu-header-actions'))[0])
+                : isUp
+                    ? document.querySelector('#menu .menu-corner-settings .open-settings-btn')
+                    : document.getElementById('start-game');
         return target ? focusControllerTarget(target, { playHover: true }) : true;
     }
 
     return false;
+}
+
+function moveMenuDirectionalFocus(code) {
+    if (moveMenuCommandGridFocus(code)) return true;
+    if (moveHeroSelectPanelFocus(code)) return true;
+    const direction = menuKeyboardDirection(code);
+    return direction ? Boolean(moveControllerFocus(direction)) : false;
 }
 
 function moveOperatorPolishGridFocus(code) {
@@ -886,8 +966,7 @@ document.addEventListener('keydown', (event) => {
     if (direction) {
         event.preventDefault();
         if (root.id === 'operator-polish-modal' && moveOperatorPolishGridFocus(event.code)) return;
-        if (root.id === 'menu' && moveMenuCommandGridFocus(event.code)) return;
-        if (root.id === 'menu' && moveHeroSelectPanelFocus(event.code)) return;
+        if (root.id === 'menu' && moveMenuDirectionalFocus(event.code)) return;
         const horizontal = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'].includes(event.code);
         const active = document.activeElement;
         const adjusted = horizontal && (
@@ -946,6 +1025,7 @@ document.addEventListener('keydown', (event) => {
 const controllerFocusObserver = new MutationObserver(() => {
     queueMicrotask(() => {
         const root = getControllerFocusRoot();
+        syncSteamInputPhase();
         if (root !== activeControllerFocusRoot || isSteamControllerInputActive() || isModalFocusRoot(root)) {
             syncControllerFocusBoundary();
         }
@@ -1052,7 +1132,13 @@ function triggerControllerPauseAction() {
         dispatchControllerEscape();
         return true;
     }
+    const tacticalMapModal = document.getElementById('tactical-map-modal');
+    if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
+        toggleTacticalMapModal(false);
+        return true;
+    }
     const activeModal = STEAM_INPUT_FOCUS_ROOT_IDS
+        .filter((id) => id !== 'splash' && id !== 'menu')
         .map((id) => document.getElementById(id))
         .find((element) => element && !element.classList.contains('hidden') && element !== settingsPopup);
     if (activeModal) {
@@ -1104,10 +1190,23 @@ function handleSteamInputSnapshot(snapshot = {}) {
         return;
     }
 
-    const activeController = controllers.find((controller) => controller.active) ?? controllers[0] ?? null;
+    let activeController = controllers.find((controller) => controller.active) ?? controllers[0] ?? null;
     if (!activeController) {
         if (window.game?.setVirtualInput) window.game.setVirtualInput(0, 0);
         return;
+    }
+
+    // Preserve movement on Deck configurations where Steam exposes the aim
+    // action but leaves the native move action neutral. Only borrow Chromium's
+    // physical left-stick axes; all buttons and aiming remain native actions.
+    if (steamInputState.phase === 'gameplay' && Math.hypot(
+        Number(activeController.move?.x) || 0,
+        Number(activeController.move?.y) || 0
+    ) <= 0.18) {
+        const browserMovement = getBrowserGamepadControllers().find((controller) => (
+            Math.hypot(Number(controller.move?.x) || 0, Number(controller.move?.y) || 0) > 0.18
+        ));
+        if (browserMovement) activeController = { ...activeController, move: browserMovement.move };
     }
 
     steamInputPrevControllers.set(activeController.handle, steamInputPrevControllers.get(activeController.handle) ?? {});
@@ -1146,25 +1245,72 @@ function ensureVirtualGamepadCursor() {
     virtualGamepadCursor = document.createElement('div');
     virtualGamepadCursor.id = 'virtual-gamepad-cursor';
     virtualGamepadCursor.className = 'virtual-gamepad-cursor hidden';
-    virtualGamepadCursor.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#ff9f1c" stroke-width="2" stroke-dasharray="3 3"/><circle cx="12" cy="12" r="3" fill="#ff9f1c"/></svg>`;
+
+    const dot = document.createElement('div');
+    dot.className = 'cursor-dot';
+    virtualGamepadCursor.appendChild(dot);
+
+    const ring = document.createElement('div');
+    ring.className = 'cursor-ring';
+    virtualGamepadCursor.appendChild(ring);
+
+    ['tl', 'tr', 'bl', 'br'].forEach(dir => {
+        const b = document.createElement('div');
+        b.className = `cursor-bracket cursor-bracket-${dir}`;
+        virtualGamepadCursor.appendChild(b);
+    });
+
     document.body.appendChild(virtualGamepadCursor);
     return virtualGamepadCursor;
+}
+
+// Controller aim feeds updateAimFromClient (and anything else listening for
+// real pointer motion) through a synthetic mousemove, since that's the same
+// path a physical mouse uses. Marking it lets #tactical-cursor's own
+// mousemove listener (initTacticalCursor) tell it apart from a real mouse and
+// skip showing its own lagged cursor on top of the instant virtual-gamepad
+// one -- without this, gameplay aim renders both crosshairs at once.
+function dispatchSyntheticControllerMousemove(clientX, clientY) {
+    const event = new MouseEvent('mousemove', { clientX, clientY, bubbles: true });
+    event.isControllerSynthetic = true;
+    window.dispatchEvent(event);
 }
 
 function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
     const cursor = ensureVirtualGamepadCursor();
     if (!cursor) return;
-    if (!visible) {
+    const isMovie = Boolean(document.querySelector(
+        '.fullscreen-video-overlay:not(.hidden), '
+        + '.cinematic-overlay:not(.hidden), '
+        + '.class-intro-overlay:not(.is-closing), '
+        + '.cinematic-still-overlay:not(.is-closing), '
+        + '#cutscene-overlay.is-active, '
+        + '.rgb-cinematic--visible'
+    ));
+    if (!visible || isMovie) {
         cursor.classList.add('hidden');
         return;
     }
     cursor.classList.remove('hidden');
-    cursor.style.transform = `translate3d(${clientX - 12}px, ${clientY - 12}px, 0)`;
+    cursor.style.transform = `translate3d(${clientX - 15}px, ${clientY - 15}px, 0)`;
 }
 
 function handleSteamMenuInput(actions) {
-    const pointerX = Number(actions.pointer?.x) || 0;
-    const pointerY = Number(actions.pointer?.y) || 0;
+    const tacticalMapModal = document.getElementById('tactical-map-modal');
+    if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
+        if (actions.back || actions.pause) {
+            toggleTacticalMapModal(false);
+            return;
+        }
+    }
+
+    const camStickX = Math.abs(Number(actions.camera?.x) || 0) > 0.15 ? Number(actions.camera?.x) : 0;
+    const camStickY = Math.abs(Number(actions.camera?.y) || 0) > 0.15 ? Number(actions.camera?.y) : 0;
+    const moveStickX = Math.abs(Number(actions.move?.x) || 0) > 0.25 ? Number(actions.move?.x) : 0;
+    const moveStickY = Math.abs(Number(actions.move?.y) || 0) > 0.25 ? Number(actions.move?.y) : 0;
+
+    const pointerX = Number(actions.pointer?.x) || camStickX || moveStickX || 0;
+    const pointerY = Number(actions.pointer?.y) || camStickY || moveStickY || 0;
     const pointerMag = Math.hypot(pointerX, pointerY);
     const deltaY = Number(actions.cameraDelta?.y) || 0;
     const deltaX = Number(actions.cameraDelta?.x) || 0;
@@ -1176,25 +1322,34 @@ function handleSteamMenuInput(actions) {
     }
 
     if (pointerMag > 0.15 || Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
+        const sensitivity = state.settings.aimSensitivity ?? 1.0;
+        const invertSign = state.settings.invertAimY ? -1 : 1;
         if (pointerMag > 0.15) {
-            const cursorSpeed = 16;
+            const cursorSpeed = 16 * sensitivity;
             controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + (pointerX * cursorSpeed)));
-            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + (pointerY * cursorSpeed)));
+            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + (pointerY * cursorSpeed * invertSign)));
         } else if (Math.abs(deltaX) > 0.5 || Math.abs(deltaY) > 0.5) {
-            controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + deltaX));
-            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y - deltaY));
+            controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + (deltaX * sensitivity)));
+            controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + (deltaY * sensitivity * invertSign)));
         }
 
         updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
-        // Smooth scroll active or hovered container
+        // Smooth scroll active or hovered container. The whole-root fallback
+        // below is only for genuine scrollable modal content (settings lists,
+        // codex, etc). The title/main menu (#splash, #menu) were never meant
+        // to scroll at all -- any scrollHeight > clientHeight there is layout
+        // noise, not content, and scrolling the whole screen reads as the
+        // entire menu shifting instead of the subtle cursor motion desktop
+        // gets from the same stick input.
         const scrollValue = (pointerY * 20) || (-deltaY * 20);
         if (Math.abs(scrollValue) > 0.5) {
             const elAtPoint = document.elementFromPoint(controllerAimCursor.x, controllerAimCursor.y);
             const root = getControllerFocusRoot() ?? document.body;
+            const isTopLevelMenuScreen = root.id === 'splash' || root.id === 'menu';
             const scrollContainer = elAtPoint?.closest?.('.modal-content, .settings-modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
                 || root.querySelector?.('.settings-modal-content, .modal-content, .controls-list, .mothership-dialogue-body, .codex-modal-content, .archive-log-list')
-                || (root.scrollHeight > root.clientHeight ? root : null);
+                || (!isTopLevelMenuScreen && root.scrollHeight > root.clientHeight ? root : null);
 
             if (scrollContainer) {
                 scrollContainer.scrollTop += scrollValue;
@@ -1214,9 +1369,10 @@ function handleSteamMenuInput(actions) {
 
     const moved = Boolean(actions.up || actions.down || actions.left || actions.right);
     const activeElement = document.activeElement;
-    const rangeAdjusted = Boolean(activeElement && isRangeInputElement(activeElement) && (
-        (actions.left && adjustRangeInputValue(activeElement, -1))
-        || (actions.right && adjustRangeInputValue(activeElement, 1))
+    const horizontalDirection = actions.left ? -1 : actions.right ? 1 : 0;
+    const controlAdjusted = Boolean(activeElement && horizontalDirection && (
+        adjustRangeInputValue(activeElement, horizontalDirection)
+        || adjustSelectValue(activeElement, horizontalDirection)
     ));
 
     const root = getControllerFocusRoot();
@@ -1228,18 +1384,26 @@ function handleSteamMenuInput(actions) {
         handleControllerTabNavigation(root, -1);
     } else if (actions.tabRight) {
         handleControllerTabNavigation(root, 1);
-    } else if (moved && !rangeAdjusted) {
-        const step = (actions.up || actions.left) && !(actions.down || actions.right) ? -1 : 1;
-        moveControllerFocus(step);
+    } else if (moved && !controlAdjusted) {
+        const code = actions.up
+            ? 'ArrowUp'
+            : actions.down
+                ? 'ArrowDown'
+                : actions.left
+                    ? 'ArrowLeft'
+                    : 'ArrowRight';
+        if (root?.id === 'menu') moveMenuDirectionalFocus(code);
+        else moveControllerFocus((actions.up || actions.left) ? -1 : 1);
     }
 
     if (actions.confirm) {
         activateControllerFocusedElement();
     }
-    if (actions.back || actions.pause) {
+    if (actions.back) {
         updateVirtualGamepadCursorPosition(0, 0, false);
         dispatchControllerEscape();
     }
+    if (actions.pause) triggerControllerPauseAction();
 }
 
 window.addEventListener('gamepad-menu-nav', (event) => {
@@ -1247,10 +1411,16 @@ window.addEventListener('gamepad-menu-nav', (event) => {
     if (!action) return;
 
     setLastInputMode('controller');
-    if (action === 'menu_up' || action === 'menu_left') {
-        moveControllerFocus(-1);
-    } else if (action === 'menu_down' || action === 'menu_right') {
-        moveControllerFocus(1);
+    if (action === 'menu_up' || action === 'menu_left' || action === 'menu_down' || action === 'menu_right') {
+        const codeByAction = {
+            menu_up: 'ArrowUp',
+            menu_down: 'ArrowDown',
+            menu_left: 'ArrowLeft',
+            menu_right: 'ArrowRight'
+        };
+        const root = getControllerFocusRoot();
+        if (root?.id === 'menu') moveMenuDirectionalFocus(codeByAction[action]);
+        else moveControllerFocus(action === 'menu_up' || action === 'menu_left' ? -1 : 1);
     } else if (action === 'menu_confirm') {
         activateControllerFocusedElement();
     } else if (action === 'menu_back') {
@@ -1264,6 +1434,17 @@ window.addEventListener('gamepad-menu-nav', (event) => {
 // on the Steam side does the heavy lifting, so this stays 1:1 by default.
 const CONTROLLER_CURSOR_SENSITIVITY = 1;
 let controllerAimCursor = null;
+let lastPlayerAnchor = null;
+
+function getAimCursorAnchor() {
+    const playerPt = window.game?.getPlayerScreenPoint?.();
+    if (playerPt && Number.isFinite(playerPt.viewportX) && Number.isFinite(playerPt.viewportY)) {
+        return { x: playerPt.viewportX, y: playerPt.viewportY };
+    }
+    const width = window.innerWidth || 1280;
+    const height = window.innerHeight || 720;
+    return { x: width / 2, y: height / 2 };
+}
 
 function applyControllerCursorAim(controller) {
     const deltaX = Number(controller.cameraDelta?.x) || 0;
@@ -1276,13 +1457,24 @@ function applyControllerCursorAim(controller) {
     const height = window.innerHeight || 0;
     if (!width || !height) return false;
 
+    const anchor = getAimCursorAnchor();
     if (!controllerAimCursor) {
-        controllerAimCursor = { x: width / 2, y: height / 2 };
+        controllerAimCursor = { x: anchor.x, y: anchor.y };
+    } else if (lastPlayerAnchor) {
+        const playerMovedX = anchor.x - lastPlayerAnchor.x;
+        const playerMovedY = anchor.y - lastPlayerAnchor.y;
+        controllerAimCursor.x += playerMovedX;
+        controllerAimCursor.y += playerMovedY;
     }
-    // Steam reports +Y as up, client coordinates grow downward — same inversion the
-    // stick path applies below.
-    controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY)));
-    controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y - (deltaY * CONTROLLER_CURSOR_SENSITIVITY)));
+    lastPlayerAnchor = { ...anchor };
+
+    const sensitivity = state.settings.aimSensitivity ?? 1.0;
+    const invertSign = state.settings.invertAimY ? -1 : 1;
+    controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY * sensitivity)));
+    controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + (deltaY * CONTROLLER_CURSOR_SENSITIVITY * sensitivity * invertSign)));
+
+    dispatchSyntheticControllerMousemove(controllerAimCursor.x, controllerAimCursor.y);
+    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
 
     return Boolean(window.game.updateAimFromClient(
         controllerAimCursor.x,
@@ -1301,12 +1493,29 @@ function handleSteamGameplayInput(controller) {
     if (window.game?.setVirtualInput) {
         window.game.setVirtualInput(moveX, -moveY);
     }
-    // The pad/gyro cursor is the precision device, so it wins a frame where both
-    // moved. Whichever aimed last still wins overall: setControllerAimVector clears
-    // mouseAimActive, and updateAimFromClient sets it again.
+
     const cursorAimed = applyControllerCursorAim(controller);
-    if (!cursorAimed && (aimX || aimY) && window.game?.setControllerAimVector) {
-        window.game.setControllerAimVector(aimX, -aimY);
+    const anchor = getAimCursorAnchor();
+
+    if (!cursorAimed && (aimX || aimY)) {
+        const width = window.innerWidth || 1280;
+        const height = window.innerHeight || 800;
+        const sensitivity = state.settings.aimSensitivity ?? 1.0;
+        const invertSign = state.settings.invertAimY ? -1 : 1;
+        if (!controllerAimCursor) controllerAimCursor = { x: anchor.x, y: anchor.y };
+        if (lastPlayerAnchor) {
+            controllerAimCursor.x += anchor.x - lastPlayerAnchor.x;
+            controllerAimCursor.y += anchor.y - lastPlayerAnchor.y;
+        }
+        const cursorSpeed = 16 * sensitivity;
+        controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + aimX * cursorSpeed));
+        controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + aimY * cursorSpeed * invertSign));
+        lastPlayerAnchor = { ...anchor };
+        updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
+        dispatchSyntheticControllerMousemove(controllerAimCursor.x, controllerAimCursor.y);
+        window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, { keepMouseActive: true });
+    } else if (!cursorAimed) {
+        lastPlayerAnchor = { ...anchor };
     }
 
     if (controller.fire) {
@@ -1318,9 +1527,30 @@ function handleSteamGameplayInput(controller) {
     if (controller.reload && !prev.reload) {
         window.game?.triggerGameplayReload?.({ manual: true });
     }
+    if ((controller.melee && !prev.melee) || (controller.ability && !prev.ability)) {
+        window.game?.triggerGameplayMelee?.();
+    }
+    if (controller.dash && !prev.dash) {
+        window.game?.triggerGameplayDash?.();
+    }
     if (controller.scan && !prev.scan) {
         window.game?.triggerRadarScan?.();
     }
+    const tacticalMapModal = document.getElementById('tactical-map-modal');
+    const isMapOpen = tacticalMapModal && !tacticalMapModal.classList.contains('hidden');
+    if (isMapOpen) {
+        if ((controller.dash && !prev.dash) || (controller.toggleMap && !prev.toggleMap) || (controller.pause && !prev.pause)) {
+            toggleTacticalMapModal(false);
+            updateControllerInputMemory(controller, {
+                ...prev,
+                dash: Boolean(controller.dash),
+                toggleMap: Boolean(controller.toggleMap),
+                pause: Boolean(controller.pause)
+            });
+            return;
+        }
+    }
+
     if (controller.pause && !prev.pause) {
         triggerControllerPauseAction();
     }
@@ -1334,6 +1564,9 @@ function handleSteamGameplayInput(controller) {
         fire: Boolean(controller.fire),
         interact: Boolean(controller.interact),
         reload: Boolean(controller.reload),
+        melee: Boolean(controller.melee),
+        ability: Boolean(controller.ability),
+        dash: Boolean(controller.dash),
         scan: Boolean(controller.scan),
         pause: Boolean(controller.pause),
         toggleMap: Boolean(controller.toggleMap),
@@ -1346,6 +1579,24 @@ function handleSteamGameplayInput(controller) {
 }
 
 function routeMainControllerInput(controller, gameplayActive) {
+    // The native snapshot retains gameplay-shaped button names while a movie
+    // temporarily owns input during a run. Check the raw controller before
+    // choosing an action set so A/RT/etc. can still honor "any button".
+    if (!gameplayActive && hasControllerContinuePress(controller) && document.querySelector(
+        '.class-intro-overlay:not(.is-closing), '
+        + '.cinematic-still-overlay:not(.is-closing), '
+        + '#cutscene-overlay.is-active, '
+        + '.rgb-cinematic--visible'
+    )) {
+        window.dispatchEvent(new KeyboardEvent('keydown', {
+            key: ' ',
+            code: 'Space',
+            bubbles: false,
+            cancelable: true
+        }));
+        return;
+    }
+
     const actionSet = appPhase === 'archive'
         ? ACTION_SETS.ARCHIVE
         : gameplayActive
@@ -1358,6 +1609,7 @@ function routeMainControllerInput(controller, gameplayActive) {
         return;
     }
     if (actionSet === ACTION_SETS.ARCHIVE) {
+        handleSteamMenuInput(actions);
         window.dispatchEvent(new CustomEvent('hb-archive-controller-actions', {
             detail: actions
         }));
@@ -1496,6 +1748,7 @@ const CONTROL_ACTIONS = Object.freeze([
     { id: 'moveRight', label: 'MOVE RIGHT' },
     { id: 'interact', label: 'INTERACT' },
     { id: 'reload', label: 'RELOAD' },
+    { id: 'melee', label: 'SMASH' },
     { id: 'ability', label: 'EXOSUIT ACTION' },
     { id: 'scan', label: 'RADAR SCAN' },
     { id: 'sprint', label: 'SPRINT BURST' },
@@ -1512,6 +1765,11 @@ const state = {
         fullscreen: false,
         nightVision: false,
         commentary: false,
+        aimSensitivity: parseFloat(localStorage.getItem('hb_aim_sensitivity') || '1.0'),
+        invertAimY: localStorage.getItem('hb_invert_aim_y') === 'true',
+        crosshairColor: /^#[0-9a-f]{6}$/i.test(localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY) ?? '')
+            ? localStorage.getItem(CROSSHAIR_COLOR_STORAGE_KEY)
+            : DEFAULT_CROSSHAIR_COLOR,
         keyBindings: cloneKeyBindings(DEFAULT_KEY_BINDINGS)
     },
     onlineCount: 1,
@@ -1519,6 +1777,7 @@ const state = {
 };
 // Exposed so threeGame.js can read live key bindings without a circular import.
 window.state = state;
+document.documentElement.style.setProperty('--crosshair-color', state.settings.crosshairColor);
 
 // RGB archive-sim unlock/save state (docs/mini-games/rgb/unlock-and-integration.md).
 let rgbSave = loadRgbSave(localStorage);
@@ -2444,6 +2703,23 @@ window.addEventListener('camp-verb-activated', (event) => {
         playbackRate: event?.detail?.degraded ? 0.78 : 1,
         bus: 'sfx'
     });
+    const campLabel = event?.detail?.campLabel ?? campId.toUpperCase();
+    const degraded = Boolean(event?.detail?.degraded);
+    let promptMsg = `SYSTEM: ${campLabel} VERB ACTIVATED.`;
+    if (campId === 'meridian') {
+        promptMsg = degraded
+            ? `SYSTEM: MERIDIAN ROUTE INTEL ACTIVATED (DEGRADED — RECENTLY ROBBED). RADAR LOCK DELAYED.`
+            : `SYSTEM: MERIDIAN ROUTE INTEL ACTIVATED. RADAR SCANNING BLOCKER & KEY REGIONAL SITES.`;
+    } else if (campId === 'tallow') {
+        promptMsg = `SYSTEM: TALLOW TRIAGE ACTIVATED. HEALTH FULLY RESTORED & INFECTION CLEANSED.`;
+    } else if (campId === 'vesper') {
+        promptMsg = `SYSTEM: VESPER FIELD RESUPPLY ACTIVATED. LOADED CLIP & AMMO RESERVES FULLY REFILLED.`;
+    }
+    showBiomePrompt(promptMsg);
+});
+window.addEventListener('camp-verb-denied', (event) => {
+    const reason = String(event?.detail?.reason ?? 'unavailable').replace(/_/g, ' ').toUpperCase();
+    showBiomePrompt(`SYSTEM: FACTION VERB DENIED — ${reason}.`);
 });
 window.addEventListener('combat-no-ammo', () => {
     flashWeaponError();
@@ -2480,10 +2756,12 @@ window.addEventListener('weapon-upgraded', () => {
     fireMothershipReactiveLine('weapon_calibrated');
 });
 
-window.addEventListener('skill-unlocked', () => {
+window.addEventListener('skill-unlocked', (event) => {
     window.AudioManager?.play?.('fx_levelup', { volume: 0.38, bus: 'sfx' });
     syncAbilityPanelLabel();
     syncHudCompassVisibility();
+    const label = event?.detail?.label ? event.detail.label.toUpperCase() : 'POWER-UP';
+    showBiomePrompt(`> PROTOCOL UNLOCKED: ${label}`);
 });
 
 window.addEventListener('bank-updated', () => {
@@ -2695,7 +2973,7 @@ function updateHudNotificationDeck() {
     cards.forEach((card, index) => {
         stack.appendChild(card);
         card.style.setProperty('--deck-index', String(index));
-        card.style.zIndex = String(12090 - index);
+        card.style.zIndex = String(17090 - index);
         card.classList.toggle('is-top-card', index === 0);
     });
     stack.classList.toggle('has-decked-cards', hasCards);
@@ -3219,13 +3497,14 @@ function renderOperatorPolishUi() {
         button.className = `operator-polish-chip${isUnlocked ? '' : ' is-locked'}${selected.id === polish.id ? ' is-selected' : ''}`;
         button.style.setProperty('--polish-color', polish.color);
         button.setAttribute('aria-disabled', String(!isUnlocked));
-        button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ' locked'}`);
+        button.setAttribute('aria-label', `${polish.name}${isUnlocked ? '' : ` locked. Clue: ${polish.hint}`}`);
         button.innerHTML = `<span class="operator-polish-chip__swatch"></span><span>${String(polish.id + 1).padStart(2, '0')} // ${polish.name}</span>`;
         if (isUnlocked) {
             button.addEventListener('click', () => {
                 const next = selectPolish(polish.id);
                 if (!next) return;
                 window.game?.setOperatorPolish?.(next.color);
+                scoutHeroPreview?.setOperatorPolish?.(next.color);
                 void renderPreviewFrame(activePreviewType, previewFrameIndex);
                 renderOperatorPolishUi();
                 window.AudioManager?.play?.('ui_click', { volume: 0.5 });
@@ -3235,7 +3514,7 @@ function renderOperatorPolishUi() {
             if (readoutName) readoutName.textContent = polish.name;
             if (readoutState) readoutState.textContent = isUnlocked
                 ? (selected.id === polish.id ? 'EQUIPPED' : 'UNLOCKED')
-                : 'LOCKED';
+                : `LOCKED // ${polish.hint}`;
         });
         grid.append(button);
     }
@@ -3890,6 +4169,10 @@ window.addEventListener('o2-generator-upgraded', (event) => {
     if (event?.detail?.level === 1) return;
     const line = getDialogueLine('majorUpgrade', Math.random, getActiveSuitDialogueContext());
     if (line) showBiomePrompt(`> BUNKER: ${line}`);
+    playAuthoredEventOnce('o2_generator_upgraded', {
+        videoBase: 'event-o2-generator-upgraded',
+        eventDetail: event?.detail ?? {}
+    });
 });
 
 window.addEventListener('extraction-progress', (event) => {
@@ -5046,6 +5329,11 @@ if (gameOverTryAgain) {
             () => {
                 hideGameOverScreen();
                 showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
+                // Death puts the app in the gameover phase. Input can be
+                // enabled on ThreeGame after the doors reopen, but movement
+                // is still rejected while the global phase remains there.
+                // Restore gameplay before rebuilding, matching a fresh run.
+                setAppPhase('gameplay');
                 window.game?.setPerformanceProfile?.('gameplay');
                 resetRunToStartingState({
                     resetBank: false,
@@ -5218,7 +5506,22 @@ function updateHudCompass() {
 function installHudCompass() {
     if (!desktopCompassArrow || !desktopCompassDistance) return;
 
+    if (desktopCompass && !desktopCompass.dataset.clickBound) {
+        desktopCompass.dataset.clickBound = 'true';
+        desktopCompass.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleTacticalMapModal();
+        });
+        desktopCompass.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleTacticalMapModal();
+            }
+        });
+    }
+
     const step = () => {
+        syncHudCompassVisibility();
         updateHudCompass();
         requestAnimationFrame(step);
     };
@@ -5549,17 +5852,8 @@ function warmClassIntroMedia(playerType = 'SCOUT') {
     warmCutsceneVideo(webmBase);
 }
 
-const CLASS_INTRO_GIFS = Object.freeze({
-    SCOUT: '/Scout.Intro.gif',
-    TANK: '/Tank.Intro.gif',
-    ENGINEER: '/Eng.Intro.gif'
-});
-const CLASS_INTRO_GIF_VISIBLE_MS = 7750;
-const CLASS_INTRO_GIF_LOOP_GUARD_MS = 250;
-
 function playClassIntroSequence(playerType = 'SCOUT') {
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
-    const gifSrc = CLASS_INTRO_GIFS[playerType] ?? CLASS_INTRO_GIFS.SCOUT;
     warmClassIntroMedia(playerType);
     window.AudioManager?.unlock?.();
 
@@ -5573,7 +5867,6 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         if (typeof window !== 'undefined' && window.hbLog) {
             window.hbLog('AUDIO', 'info', `Starting intro cutscene sequence for ${playerType}`);
         }
-        window.AudioManager?.play?.('amb_metal_stress1', { volume: 0.65, bus: 'world', varyPitch: false });
 
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
@@ -5582,21 +5875,14 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = 'PRESS ANY KEY TO SKIP';
+        skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
 
         let settled = false;
-        let step = 'gif';
-        let gifTimer = null;
         let guardTimer = null;
         let videoElement = null;
-        let gifImg = null;
         let checkSkipInterval = null;
 
         const clearTimers = () => {
-            if (gifTimer) {
-                window.clearTimeout(gifTimer);
-                gifTimer = null;
-            }
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
@@ -5634,14 +5920,12 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         function onKey(event) {
             event.preventDefault();
-            if (step === 'gif') startVideoStep();
-            else cleanupAndResolve();
+            cleanupAndResolve();
         }
 
         function onPointerUp(event) {
             event.preventDefault();
-            if (step === 'gif') startVideoStep();
-            else cleanupAndResolve();
+            cleanupAndResolve();
         }
 
         window.addEventListener('keydown', onKey);
@@ -5653,47 +5937,20 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
         }, 50);
 
-        function startVideoStep() {
-            if (settled || step === 'video') return;
-            step = 'video';
-            if (gifTimer) {
-                window.clearTimeout(gifTimer);
-                gifTimer = null;
-            }
-            gifImg?.remove();
-            buildVideo();
-        }
-
-        // Preserve the authored GIF → video sequence. Three.js remains
-        // suspended for both stages so GIF decoding does not contend with it.
-        gifImg = document.createElement('img');
-        gifImg.className = 'class-intro-video';
-        gifImg.style.objectFit = 'cover';
-        gifImg.alt = '';
-        gifImg.src = assetUrl(gifSrc);
-        gifImg.addEventListener('error', startVideoStep, { once: true });
-        overlay.append(gifImg, skipHint);
+        // Start directly on the authored class movie. The old GIF pre-roll
+        // looked like a stray flash/interstitial before the real intro loaded.
+        overlay.append(skipHint);
         host.appendChild(overlay);
-        const gifShownAt = performance.now();
-        gifTimer = window.setTimeout(startVideoStep, CLASS_INTRO_GIF_VISIBLE_MS);
-
-        void getGifDurationMs(gifSrc).then((durationMs) => {
-            if (settled || step !== 'gif' || !durationMs) return;
-            const elapsed = performance.now() - gifShownAt;
-            const safeVisibleMs = Math.min(
-                CLASS_INTRO_GIF_VISIBLE_MS,
-                Math.max(0, durationMs - CLASS_INTRO_GIF_LOOP_GUARD_MS)
-            );
-            window.clearTimeout(gifTimer);
-            gifTimer = window.setTimeout(startVideoStep, Math.max(0, safeVisibleMs - elapsed));
-        });
+        buildVideo();
 
         function buildVideo() {
         videoElement = document.createElement('video');
         videoElement.className = 'class-intro-video';
         videoElement.style.opacity = '0';
         videoElement.playsInline = true;
-        videoElement.muted = Boolean(window.AudioManager?.globalMuted);
+        // The class clips contain unexplained combat/gunfire audio that does
+        // not match the on-screen action. Keep the visual briefing clean.
+        videoElement.muted = true;
         videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
         videoElement.autoplay = true;
         videoElement.controls = false;
@@ -5796,7 +6053,7 @@ function playCutsceneVideo(base, options = {}) {
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
-        skipHint.textContent = 'PRESS ANY KEY TO SKIP';
+        skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
 
         let settled = false;
         let played = false;
@@ -5924,7 +6181,7 @@ function playCinematicStills(rawSpec = {}) {
         const skip = document.createElement('button');
         skip.type = 'button';
         skip.className = 'class-intro-skip cinematic-still-skip';
-        skip.textContent = spec.allowSkip ? 'PRESS ANY KEY TO CONTINUE' : '';
+        skip.textContent = spec.allowSkip ? 'PRESS ANY BUTTON / KEY TO CONTINUE' : '';
         skip.disabled = !spec.allowSkip;
 
         overlay.append(frameA);
@@ -5932,6 +6189,10 @@ function playCinematicStills(rawSpec = {}) {
         overlay.append(shade, copy, skip);
         host.appendChild(overlay);
         requestAnimationFrame(() => overlay.classList.add('is-open'));
+
+        if (spec.title || spec.body) {
+            window.AudioManager?.speakNarration?.(`${spec.title}. ${spec.body || ''}`);
+        }
 
         let settled = false;
         let frameTimer = 0;
@@ -5995,6 +6256,7 @@ let cinematicEventQueue = Promise.resolve();
 const seenSessionCinematicEvents = new Set();
 
 function queueCinematicEvent(options = {}) {
+    if (!isGameplayPhase()) return Promise.resolve({ skipped: true, reason: 'not-gameplay' });
     cinematicEventQueue = cinematicEventQueue
         .catch(() => undefined)
         .then(async () => {
@@ -6016,7 +6278,8 @@ window.addEventListener('cinematic-event', (event) => {
     });
 });
 
-function playAuthoredEventOnce(eventId, { videoBase = null } = {}) {
+function playAuthoredEventOnce(eventId, { videoBase = null, eventDetail = {} } = {}) {
+    if (!shouldPlayAuthoredEventCinematic({ appPhase, ...eventDetail })) return;
     if (seenSessionCinematicEvents.has(eventId)) return;
     const fallback = getEventCinematicSpec(eventId);
     if (!fallback) return;
@@ -6024,8 +6287,11 @@ function playAuthoredEventOnce(eventId, { videoBase = null } = {}) {
     void queueCinematicEvent({ videoBase, fallback });
 }
 
-window.addEventListener('foundry-discovered', () => {
-    playAuthoredEventOnce('foundry_discovered', { videoBase: 'event-foundry-discovered' });
+window.addEventListener('foundry-discovered', (event) => {
+    playAuthoredEventOnce('foundry_discovered', {
+        videoBase: 'event-foundry-discovered',
+        eventDetail: event?.detail ?? {}
+    });
 });
 window.addEventListener('black-box-recovered', () => {
     playAuthoredEventOnce('black_box_recovered', { videoBase: 'event-black-box-recovered' });
@@ -6235,6 +6501,13 @@ const transitionFromTitleToMenu = (afterClosed = null) => {
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     const playerType = getSelectedHeroType();
     saveHeroType(playerType);
+    // Standard deployments always roll a fresh world. Daily Ops is the only
+    // mode allowed to retain a fixed shared seed.
+    _isDailyOpsRun = false;
+    if (window.game) {
+        window.game.fixedRunEntropy = false;
+        window.game.globalSeedOffset = 0;
+    }
     // Hold one continuous black/simulation barrier from the menu close,
     // through world warm-up and the authored intro, to the final door reveal.
     // Adding the body class before switching to gameplay also prevents a
@@ -6535,6 +6808,15 @@ function persistSettings() {
         }
         if (state.settings.textFloor) {
             localStorage.setItem('hb_text_floor', String(state.settings.textFloor));
+        }
+        if (state.settings.aimSensitivity != null) {
+            localStorage.setItem('hb_aim_sensitivity', String(state.settings.aimSensitivity));
+        }
+        if (state.settings.invertAimY != null) {
+            localStorage.setItem('hb_invert_aim_y', String(state.settings.invertAimY));
+        }
+        if (state.settings.crosshairColor) {
+            localStorage.setItem(CROSSHAIR_COLOR_STORAGE_KEY, state.settings.crosshairColor);
         }
     } catch {
         // best-effort persistence
@@ -7044,6 +7326,13 @@ const mainFsToggle = document.getElementById('main-fs-toggle');
 const settingsBtns = document.querySelectorAll('.open-settings-btn');
 const abortBtn = document.getElementById('abort-mission');
 
+if (settingsPopup) {
+    new MutationObserver(() => syncSteamInputPhase()).observe(settingsPopup, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+}
+
 function openSettingsModal() {
     if (!settingsPopup) return;
     const isHUD = !document.getElementById('ui')?.classList.contains('hidden');
@@ -7053,6 +7342,7 @@ function openSettingsModal() {
     }
 
     settingsPopup.classList.remove('hidden');
+    syncSteamInputPhase('menu');
     if (mainDebugToggle) mainDebugToggle.checked = state.settings.debug;
     if (mainFsToggle) mainFsToggle.checked = state.settings.fullscreen;
     if (mainNightVisionToggle) mainNightVisionToggle.checked = !!state.settings.nightVision;
@@ -7076,6 +7366,17 @@ function openSettingsModal() {
     const cbToggle = document.getElementById('setting-colorblind-toggle');
     if (cbToggle) cbToggle.checked = !!state.settings.colorblindAssist;
 
+    const aimSensSelect = document.getElementById('setting-aim-sensitivity');
+    if (aimSensSelect) aimSensSelect.value = String(state.settings.aimSensitivity ?? 1.0);
+    syncAimSensitivityControls();
+
+    const invertYToggle = document.getElementById('setting-invert-y-toggle');
+    if (invertYToggle) invertYToggle.checked = !!state.settings.invertAimY;
+
+    const crosshairColor = document.getElementById('setting-crosshair-color');
+    if (crosshairColor) crosshairColor.value = state.settings.crosshairColor || DEFAULT_CROSSHAIR_COLOR;
+    syncCrosshairColorControls();
+
     const diffVal = document.getElementById('setting-difficulty-val');
     if (diffVal) {
         const difficulty = window.game?.difficulty || state.settings.difficulty || 'standard';
@@ -7096,6 +7397,58 @@ document.getElementById('setting-ui-scale')?.addEventListener('change', (e) => {
 });
 document.getElementById('setting-text-floor')?.addEventListener('change', (e) => {
     devSetTextFloor(e.target.value);
+});
+document.getElementById('setting-aim-sensitivity')?.addEventListener('change', (e) => {
+    state.settings.aimSensitivity = parseFloat(e.target.value) || 1.0;
+    syncAimSensitivityControls();
+    persistSettings();
+});
+
+function syncAimSensitivityControls() {
+    const selected = Number(state.settings.aimSensitivity ?? 1);
+    document.querySelectorAll('[data-aim-sensitivity]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(Number(button.dataset.aimSensitivity) === selected));
+    });
+}
+
+document.querySelectorAll('[data-aim-sensitivity]').forEach((button) => {
+    button.addEventListener('click', () => {
+        const sensitivity = Number(button.dataset.aimSensitivity);
+        if (!Number.isFinite(sensitivity)) return;
+        state.settings.aimSensitivity = sensitivity;
+        const select = document.getElementById('setting-aim-sensitivity');
+        if (select) select.value = String(sensitivity);
+        syncAimSensitivityControls();
+        persistSettings();
+    });
+});
+document.getElementById('setting-invert-y-toggle')?.addEventListener('change', (e) => {
+    state.settings.invertAimY = Boolean(e.target.checked);
+    persistSettings();
+});
+function setCrosshairColor(value) {
+    const color = String(value || '').toLowerCase();
+    if (!/^#[0-9a-f]{6}$/.test(color)) return;
+    state.settings.crosshairColor = color;
+    document.documentElement.style.setProperty('--crosshair-color', color);
+    const picker = document.getElementById('setting-crosshair-color');
+    if (picker && picker.value !== color) picker.value = color;
+    syncCrosshairColorControls();
+    persistSettings();
+}
+
+function syncCrosshairColorControls() {
+    const selected = state.settings.crosshairColor || DEFAULT_CROSSHAIR_COLOR;
+    document.querySelectorAll('[data-crosshair-color]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(button.dataset.crosshairColor === selected));
+    });
+}
+
+document.getElementById('setting-crosshair-color')?.addEventListener('input', (e) => {
+    setCrosshairColor(e.target.value);
+});
+document.querySelectorAll('[data-crosshair-color]').forEach((button) => {
+    button.addEventListener('click', () => setCrosshairColor(button.dataset.crosshairColor));
 });
 
 if (settingsBtns.length > 0 && settingsPopup) {
@@ -7147,6 +7500,7 @@ if (confirmYes) {
 if (closeSettings && settingsPopup) {
     closeSettings.addEventListener('click', () => {
         settingsPopup.classList.add('hidden');
+        syncSteamInputPhase();
         draftAudioMix = cloneAudioMix(state.settings.audioMix);
         AudioManager.setMix(state.settings.audioMix);
         setAudioMixerOpen(false);
@@ -7746,6 +8100,13 @@ document.addEventListener('keydown', (event) => {
             return;
         }
 
+        const controlsPopup = document.getElementById('controls-popup');
+        if (controlsPopup && !controlsPopup.classList.contains('hidden')) {
+            document.getElementById('close-controls')?.click();
+            event.preventDefault();
+            return;
+        }
+
         const audioMixerPopup = document.getElementById('audio-mixer-popup');
         if (audioMixerPopup && !audioMixerPopup.classList.contains('hidden')) {
             draftAudioMix = cloneAudioMix(state.settings.audioMix);
@@ -7949,6 +8310,7 @@ function renderFoundryActivationPanel(grid, bank) {
         <div class="fab-activation-panel__hint">${canActivate ? 'READY TO ACTIVATE' : missingText}</div>
     `;
     const btn = document.createElement('button');
+    btn.id = 'fab-activate-btn';
     btn.className = 'fab-card__btn';
     btn.disabled = !canActivate;
     btn.textContent = canActivate ? 'ACTIVATE FOUNDRY' : missingText;
@@ -7958,6 +8320,7 @@ function renderFoundryActivationPanel(grid, bank) {
             window.AudioManager?.play?.('class_lock', { volume: 0.55 });
             renderFabricationModal();
             refreshFabAccess();
+            requestAnimationFrame(() => focusControllerTarget(document.getElementById('fab-roll-btn')));
         } else {
             window.AudioManager?.play?.('ui_error', { volume: 0.5 });
             renderFabricationModal();
@@ -8136,6 +8499,10 @@ function openFabricationModal() {
     renderFabricationModal();
     const modal = document.getElementById('fabrication-modal');
     if (modal) { modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false'); }
+    requestAnimationFrame(() => {
+        const focusables = getVisibleControllerFocusables(modal);
+        focusControllerTarget(getPreferredControllerFocusTarget(modal, focusables));
+    });
     if (FAB_RECIPES.some((r) => fabricator.isPrinting(r.id))) startFabTicker();
 }
 function closeFabricationModal() {
@@ -8279,17 +8646,24 @@ setupClickOutside('codex-detail-modal', closeCodexDetailModal);
 
 // In-world Foundry (Beat 4): reaching the powered structure opens the Bay.
 window.addEventListener('open-fabrication-bay', openFabricationModal);
-window.addEventListener('o2-bubble-activated', (event) => {
+window.addEventListener('o2-startup-sequence-started', (event) => {
     if ((event?.detail?.level ?? 0) !== 1) return;
     showTacticalOverlay({
         title: 'O₂ FIELD ONLINE',
         status: '> REPAIR SEQUENCE COMPLETE<br>> INITIALIZING SYSTEM REBOOT',
         progress: 100,
-        duration: 2200
+        duration: 3200
     });
 });
-window.addEventListener('milestone-boss-warning', () => {
+const MILESTONE_BOSS_CINEMATIC_SUFFIXES = new Set(['cryosnail', 'cybersnail', 'sporesnail']);
+window.addEventListener('milestone-boss-warning', (event) => {
     showBiomePrompt('> ALERT: PERIMETER BREACH — LARGE HOSTILE SIGNATURE CLOSING <');
+    const bossType = String(event?.detail?.type ?? '').replace(/^boss_/, '');
+    const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cryosnail';
+    playAuthoredEventOnce(`boss_encounter_${suffix}`, {
+        videoBase: null,
+        eventDetail: event?.detail ?? {}
+    });
 });
 window.addEventListener('foundry-discovered', (event) => {
     if (!isGameplayPhase()) return;
@@ -8707,6 +9081,115 @@ window.addEventListener('camp-choice-open', async (event) => {
     const detail = event?.detail ?? {};
     await songInterstitial.show(selectCampInterstitial(detail));
     renderCampChoice(detail);
+});
+
+// First contact with a camp (any act) gets the same song title card as the
+// choice modal, without opening the choice modal itself.
+window.addEventListener('camp-first-contact', async (event) => {
+    await songInterstitial.show(selectCampInterstitial(event?.detail ?? {}));
+});
+
+const leaderConversationModal = document.getElementById('leader-conversation-modal');
+const leaderConversationCanvas = document.getElementById('leader-conversation-canvas');
+const leaderConversationPortrait = document.getElementById('leader-conversation-portrait');
+const leaderConversationName = document.getElementById('leader-conversation-name');
+const leaderConversationKicker = document.getElementById('leader-conversation-kicker');
+const leaderConversationMeta = document.getElementById('leader-conversation-meta');
+const leaderConversationLine = document.getElementById('leader-conversation-line');
+const leaderConversationStats = document.getElementById('leader-conversation-stats');
+const leaderConversationGuidance = document.getElementById('leader-conversation-guidance');
+const leaderConversationContinue = document.getElementById('leader-conversation-continue');
+const leaderConversationLeave = document.getElementById('leader-conversation-leave');
+const leaderConversationClose = document.getElementById('leader-conversation-close');
+const leaderConversation3d = new LeaderConversation3d(leaderConversationCanvas);
+let leaderConversationLines = [];
+let leaderConversationLineIndex = 0;
+let leaderConversationIdentity = null;
+
+function cleanLeaderDialogueLine(line, speakerName = '') {
+    const text = String(line ?? '').trim();
+    const colon = text.indexOf(':');
+    if (colon < 0 || colon > 32) return text;
+    const prefix = text.slice(0, colon).trim().toLowerCase();
+    const names = String(speakerName).toLowerCase().split(/\s+/).filter(Boolean);
+    return names.some((name) => prefix.includes(name)) ? text.slice(colon + 1).trim() : text;
+}
+
+function renderLeaderConversationLine() {
+    const raw = leaderConversationLines[leaderConversationLineIndex] ?? '';
+    if (leaderConversationLine) leaderConversationLine.textContent = cleanLeaderDialogueLine(raw, leaderConversationIdentity?.name);
+    const reaction = dialogueReactionForLine(raw);
+    leaderConversationModal?.setAttribute('data-mood', reaction.mood);
+    leaderConversation3d.react(reaction);
+    const atEnd = leaderConversationLineIndex >= leaderConversationLines.length - 1;
+    if (leaderConversationContinue) leaderConversationContinue.textContent = atEnd ? 'FINISH CONVERSATION' : 'CONTINUE';
+}
+
+function closeLeaderConversation() {
+    leaderConversationModal?.classList.add('hidden');
+    leaderConversationModal?.setAttribute('aria-hidden', 'true');
+    leaderConversation3d.hide();
+    leaderConversationLines = [];
+    leaderConversationLineIndex = 0;
+    if (isGameplayPhase()) window.game?.setInputEnabled?.(true);
+}
+
+leaderConversationContinue?.addEventListener('click', () => {
+    window.AudioManager?.play?.('ui_click', { volume: 0.4 });
+    if (leaderConversationLineIndex >= leaderConversationLines.length - 1) {
+        closeLeaderConversation();
+        return;
+    }
+    leaderConversationLineIndex += 1;
+    renderLeaderConversationLine();
+});
+leaderConversationLeave?.addEventListener('click', closeLeaderConversation);
+leaderConversationClose?.addEventListener('click', closeLeaderConversation);
+
+window.addEventListener('leader-dialogue', async (event) => {
+    const detail = event?.detail ?? {};
+    const identity = resolveLeaderIdentity(detail);
+    leaderConversationIdentity = identity;
+    leaderConversationLines = (detail.lines ?? []).map((line) => String(line ?? '')).filter(Boolean);
+    leaderConversationLineIndex = 0;
+    if (!leaderConversationLines.length || !leaderConversationModal) return;
+    preloadLeaderMedia(identity);
+    leaderConversationModal.style.setProperty('--leader-accent', identity.accent);
+    if (leaderConversationName) leaderConversationName.textContent = identity.name;
+    if (leaderConversationKicker) leaderConversationKicker.textContent = detail.kind === 'camp' ? 'CAMP CONVERSATION' : 'FIELD CONVERSATION';
+    if (leaderConversationMeta) {
+        leaderConversationMeta.textContent = [identity.title, identity.callsign ? `CALLSIGN ${identity.callsign}` : '', identity.classId]
+            .filter(Boolean).join(' // ');
+    }
+    if (leaderConversationPortrait) {
+        leaderConversationPortrait.src = identity.portrait;
+        leaderConversationPortrait.alt = identity.name;
+        leaderConversationPortrait.classList.remove('hidden');
+        leaderConversationPortrait.onerror = () => {
+            leaderConversationPortrait.onerror = null;
+            leaderConversationPortrait.src = identity.sprite;
+        };
+    }
+    const relationship = detail.relationship ?? {};
+    if (leaderConversationStats) {
+        const stats = [];
+        if (Number.isFinite(relationship.bond)) stats.push(`BOND ${relationship.bond}/5`);
+        if (Number.isFinite(relationship.level)) stats.push(`CAMP LEVEL ${relationship.level}/3`);
+        if (Number.isFinite(relationship.suspicion)) stats.push(`SUSPICION ${relationship.suspicion}/100`);
+        stats.push(`STORY STAGE ${(detail.progress?.stage ?? detail.stage ?? 0) + 1}`);
+        leaderConversationStats.textContent = stats.join('  •  ');
+    }
+    if (leaderConversationGuidance) leaderConversationGuidance.textContent = detail.progress?.guidance || 'Listen, then decide how you want to help.';
+    renderLeaderConversationLine();
+    leaderConversationModal.classList.remove('hidden');
+    leaderConversationModal.setAttribute('aria-hidden', 'false');
+    window.game?.setInputEnabled?.(false);
+    leaderConversationContinue?.focus();
+    window.AudioManager?.play?.('door_slide_horiz', { volume: 0.32 });
+    const has3d = await leaderConversation3d.show(identity);
+    if (leaderConversationIdentity?.id !== identity.id) return;
+    leaderConversationPortrait?.classList.toggle('hidden', has3d);
+    if (has3d) leaderConversation3d.react(dialogueReactionForLine(leaderConversationLines[leaderConversationLineIndex]));
 });
 
 // Generic hook for dialogue, encounters, bosses, memories, and endings. A
@@ -9231,7 +9714,10 @@ function renderRosterModal(mode = 'continue') {
         confirmBtn._wired = true;
         confirmBtn.addEventListener('click', () => {
             const modal = document.getElementById('roster-modal');
-            if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+            closeModalWithAnimation(modal, null, {
+                exitClass: 'roster-modal--deploying',
+                duration: 680
+            });
             window.AudioManager?.play?.('ui_click', { volume: 0.5 });
         });
     }
@@ -9387,11 +9873,11 @@ document.getElementById('roster-btn')?.addEventListener('click', () => {
 });
 document.getElementById('close-roster-modal')?.addEventListener('click', () => {
     const modal = document.getElementById('roster-modal');
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    closeModalWithAnimation(modal);
 });
 setupClickOutside('roster-modal', () => {
     const modal = document.getElementById('roster-modal');
-    if (modal) { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    closeModalWithAnimation(modal);
 });
 // Reflect a previously-equipped weapon on the HUD as soon as the page loads,
 // and keep it correct after a fresh fabrication completes.
@@ -9487,6 +9973,20 @@ function getDoorImage(key) {
     return assetUrl(CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
 }
 
+function getMapDoorImage(key) {
+    const MAP_CLASS_DOORS = {
+        'SCOUT': '/door_bio.png',
+        'TANK': '/door_nuclear.png',
+        'ENGINEER': '/door_cryo.png'
+    };
+    const SPECIAL_DOORS = {
+        'base': '/door_biomechanical.png'
+    };
+    if (MAP_CLASS_DOORS[key]) return assetUrl(MAP_CLASS_DOORS[key]);
+    const activeClass = window.game?.playerType || activePreviewType || 'SCOUT';
+    return assetUrl(MAP_CLASS_DOORS[activeClass] || SPECIAL_DOORS.base);
+}
+
 function preloadDoorAssets() {
     const doorImages = [
         '/door_biomech_keyart_v2.webp',
@@ -9495,6 +9995,10 @@ function preloadDoorAssets() {
         '/door_cryo_keyart_v2.webp',
         '/door_alien_keyart_v2.webp',
         '/door_rust_keyart_v2.webp',
+        '/door_bio.png',
+        '/door_nuclear.png',
+        '/door_cryo.png',
+        '/door_biomechanical.png',
         '/ship_wreckage.png'
     ];
 
@@ -9631,6 +10135,7 @@ function spawnSmoke(x, y, count, isVertical = true) {
 const charCards = document.querySelectorAll('.char-card');
 const previewSprite = document.getElementById('char-preview-sprite');
 const previewFallback = document.getElementById('char-preview-fallback');
+const preview3dCanvas = document.getElementById('char-preview-3d');
 const previewDoor = document.getElementById('char-preview-door');
 const previewName = document.getElementById('char-preview-name');
 const previewSpriteContext = previewSprite?.getContext('2d', { willReadFrequently: true }) ?? null;
@@ -9643,6 +10148,19 @@ let previewAnimationTimer = null;
 let previewDoorTimer = null;
 let pendingPreviewType = null;
 let activePreviewType = 'TANK';
+let scoutHeroPreview = null;
+void createScoutHeroPreview(preview3dCanvas)
+    .then((preview) => {
+        scoutHeroPreview = preview;
+        preview.setOperatorPolish(getSelectedPolish().color);
+        void preview.setType(activePreviewType);
+        preview.setVisible(true);
+        previewSprite?.classList.add('hidden');
+        previewFallback?.classList.add('hidden');
+    })
+    .catch((error) => {
+        console.warn('[scout-hero-preview] keeping 2D fallback', error);
+    });
 const previewSpriteImages = new Map();
 const PREVIEW_PORTRAITS = Object.freeze({
     SCOUT: '/Scout.full_v2.png',
@@ -9762,10 +10280,14 @@ function syncHeroPreview(type) {
     if (!data) return;
 
     activePreviewType = type;
+    const show3dHero = Boolean(scoutHeroPreview);
+    void scoutHeroPreview?.setType(type);
+    scoutHeroPreview?.setVisible(true);
+    previewSprite?.classList.toggle('hidden', show3dHero);
     if (previewName) previewName.textContent = data.name;
     if (previewFallback) {
         previewFallback.src = assetUrl(PREVIEW_PORTRAITS[type] ?? PREVIEW_PORTRAITS.SCOUT);
-        previewFallback.classList.remove('hidden');
+        previewFallback.classList.toggle('hidden', show3dHero);
     }
     previewFrameIndex = 0;
     void renderPreviewFrame(type, previewFrameIndex);
@@ -9831,7 +10353,31 @@ function triggerHeroPreviewSwap(type) {
 
     const targetType = pendingPreviewType;
     const doorImg = getDoorImage(targetType);
+    const gameContainer = document.getElementById('game-container');
+    let mapDoor = document.getElementById('map-box-door');
+    if (gameContainer) {
+        if (!mapDoor) {
+            mapDoor = document.createElement('div');
+            mapDoor.id = 'map-box-door';
+            mapDoor.className = 'map-box-door';
+            mapDoor.setAttribute('aria-hidden', 'true');
+            mapDoor.innerHTML = `
+                <div class="char-preview-door__panel char-preview-door__panel--top"></div>
+                <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
+            `;
+            gameContainer.appendChild(mapDoor);
+        } else {
+            gameContainer.appendChild(mapDoor);
+        }
+    }
+    const mapDoorImg = getMapDoorImage(targetType);
+
     previewDoor.style.setProperty('--door-bg-image', `url('${doorImg}')`);
+    if (mapDoor) {
+        mapDoor.style.setProperty('--map-door-bg-image', `url('${mapDoorImg}')`);
+        mapDoor.classList.remove('opening', 'ready-to-open');
+        mapDoor.classList.add('active', 'closing');
+    }
 
     previewDoor.classList.remove('opening', 'ready-to-open');
     previewDoor.classList.add('active', 'closing');
@@ -9842,17 +10388,29 @@ function triggerHeroPreviewSwap(type) {
         syncHeroPreview(targetType);
         previewDoor.classList.remove('closing');
         previewDoor.classList.add('ready-to-open');
+        if (mapDoor) {
+            mapDoor.classList.remove('closing');
+            mapDoor.classList.add('ready-to-open');
+        }
 
         window.setTimeout(() => {
             void previewDoor.offsetWidth;
+            if (mapDoor) void mapDoor.offsetWidth;
             previewDoor.classList.remove('ready-to-open');
             previewDoor.classList.add('opening');
+            if (mapDoor) {
+                mapDoor.classList.remove('ready-to-open');
+                mapDoor.classList.add('opening');
+            }
             AudioManager.play('door_slide_horiz', { volume: 0.18 });
             AudioManager.play('door_gears_spin', { volume: 0.1 });
         }, PREVIEW_DOOR_HOLD_MS);
 
         previewDoorTimer = window.setTimeout(() => {
             previewDoor.classList.remove('active', 'opening', 'ready-to-open');
+            if (mapDoor) {
+                mapDoor.classList.remove('active', 'opening', 'ready-to-open');
+            }
             previewDoorTimer = null;
 
             if (pendingPreviewType !== targetType) {
@@ -9926,14 +10484,14 @@ charCards.forEach(card => {
                     setTimeout(() => {
                         window.game.updatePlayerType(type, { poof: true, emitWorldEvents: false });
                         AudioManager.play('class_lock', { volume: 0.5 });
-                    }, 150);
+                    }, 360);
                     return;
                 }
 
                 setTimeout(() => {
                     window.game.updatePlayerType(type, { poof: true, emitWorldEvents: true });
                     AudioManager.play('class_lock', { volume: 0.5 });
-                }, 150);
+                }, 360);
             }
         }
     });
@@ -9978,6 +10536,10 @@ function initTacticalCursor() {
     };
 
     window.addEventListener('mousemove', (e) => {
+        // Controller aim drives its own instant crosshair (virtual-gamepad-cursor)
+        // and only dispatches this for other listeners (updateAimFromClient etc).
+        // Showing this lagged cursor too would put two crosshairs on screen.
+        if (e.isControllerSynthetic) return;
         // Ensure clientX and clientY are valid, finite numbers
         if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
         if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
@@ -10502,6 +11064,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.game = new ThreeGame({
                     parent: 'game-container',
                     playerType: targetType,
+                    deferPlayerSpriteLoad: true,
+                    deferGameplayAtlasLoad: true,
                     bankManager,
                     dialogueManager,
                     arcManager,
@@ -10736,6 +11300,8 @@ const bootDiagnostics = [];
 let bootDiagnosticOrigin = null;
 let bootLongTaskObserver = null;
 let bootLongTasks = [];
+let lastSteamIdentityLogKey = null;
+let lastSteamBackendLogKey = null;
 
 function traceBootPhase(phase, details = null) {
     const now = performance.now();
@@ -10821,7 +11387,7 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
         return null;
     }
 
-    console.log('[STEAM] Verifying Steamworks integration...');
+    console.debug('[STEAM] Verifying Steamworks integration...');
 
     const identityRequest = window.electronAPI.getSteamIdentity
         ? window.electronAPI.getSteamIdentity()
@@ -10851,21 +11417,44 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
         ? await healthPromise
         : { ok: false, pending: true, reason: 'health_pending' };
 
-    if (info?.active) {
-        console.info(`[STEAM] Steamworks ACTIVE — Account: ${info.persona ?? 'Unknown'} (AppID: ${info.appId}, SteamID64: ${info.steamId64 ?? 'N/A'})`);
-        if (info.isSteamDeck) console.info('[STEAM] Hardware: Steam Deck detected');
-        if (info.cloud?.available) console.info(`[STEAM] Cloud Sync: Available (App: ${info.cloud.enabledForApp}, Account: ${info.cloud.enabledForAccount})`);
-    } else {
-        console.warn(`[STEAM] Steamworks INACTIVE — Reason: ${info?.reason ?? 'unavailable'}${info?.message ? ` (${info.message})` : ''}`);
+    const identityLogKey = JSON.stringify({
+        active: Boolean(info?.active),
+        persona: info?.persona ?? null,
+        appId: info?.appId ?? null,
+        steamId64: info?.steamId64 ?? null,
+        reason: info?.reason ?? null,
+        cloud: info?.cloud ?? null,
+        isSteamDeck: Boolean(info?.isSteamDeck)
+    });
+    if (identityLogKey !== lastSteamIdentityLogKey) {
+        lastSteamIdentityLogKey = identityLogKey;
+        if (info?.active) {
+            console.info(`[STEAM] Steamworks ACTIVE — Account: ${info.persona ?? 'Unknown'} (AppID: ${info.appId}, SteamID64: ${info.steamId64 ?? 'N/A'})`);
+            if (info.isSteamDeck) console.info('[STEAM] Hardware: Steam Deck detected');
+            if (info.cloud?.available) console.info(`[STEAM] Cloud Sync: Available (App: ${info.cloud.enabledForApp}, Account: ${info.cloud.enabledForAccount})`);
+        } else {
+            console.warn(`[STEAM] Steamworks INACTIVE — Reason: ${info?.reason ?? 'unavailable'}${info?.message ? ` (${info.message})` : ''}`);
+        }
     }
 
-    if (health?.pending) {
-        console.info('[STEAM] Backend Service: checking asynchronously (does not gate Steam identity)');
-    } else if (health?.ok) {
-        console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${health.steam?.authConfigured ?? false})`);
-    } else {
-        console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${health?.reason ?? 'offline'}${health?.message ? ` (${health.message})` : ''}`);
-    }
+    const logBackendStatus = (backendHealth) => {
+        const backendLogKey = JSON.stringify({
+            pending: Boolean(backendHealth?.pending),
+            ok: Boolean(backendHealth?.ok),
+            authConfigured: Boolean(backendHealth?.steam?.authConfigured),
+            reason: backendHealth?.reason ?? null
+        });
+        if (backendLogKey === lastSteamBackendLogKey) return;
+        lastSteamBackendLogKey = backendLogKey;
+        if (backendHealth?.pending) {
+            console.debug('[STEAM] Backend Service: checking asynchronously (does not gate Steam identity)');
+        } else if (backendHealth?.ok) {
+            console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${backendHealth.steam?.authConfigured ?? false})`);
+        } else {
+            console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${backendHealth?.reason ?? 'offline'}${backendHealth?.message ? ` (${backendHealth.message})` : ''}`);
+        }
+    };
+    logBackendStatus(health);
 
     const state = info?.active && health?.steam?.authConfigured
         ? 'ready'
@@ -10879,11 +11468,7 @@ async function refreshSteamBridgeStatus({ waitForBackend = true } = {}) {
                 ? 'ready'
                 : (info?.active || resolvedHealth?.ok ? 'partial' : 'offline');
             setSteamDebugStatus(formatSteamStatus(info, resolvedHealth), resolvedState);
-            if (resolvedHealth?.ok) {
-                console.info(`[STEAM] Backend Service: ACTIVE (Auth Configured: ${resolvedHealth.steam?.authConfigured ?? false})`);
-            } else {
-                console.warn(`[STEAM] Backend Service: UNREACHABLE — Reason: ${resolvedHealth?.reason ?? 'offline'}${resolvedHealth?.message ? ` (${resolvedHealth.message})` : ''}`);
-            }
+            logBackendStatus(resolvedHealth);
         });
     }
     return { info, health };
@@ -10939,10 +11524,23 @@ const STEAM_ACHIEVEMENT_ITEM_MAP = Object.freeze({
 window.addEventListener('achievement-unlocked', (event) => {
     const key = event?.detail?.key;
     if (!key) return;
-    const polishGrant = unlockMilestonePolish(key);
+    const polishGrant = unlockMilestonePolish(`achievement:${key}`);
     if (!polishGrant.unlocked) return;
     renderOperatorPolishUi();
     showBiomePrompt(`> SUIT POLISH UNLOCKED: ${OPERATOR_POLISHES[polishGrant.id].name}`);
+});
+
+function grantWorldMilestonePolish(milestone) {
+    const polishGrant = unlockMilestonePolish(milestone);
+    if (!polishGrant.unlocked) return;
+    renderOperatorPolishUi();
+    showBiomePrompt(`> SUIT POLISH UNLOCKED: ${OPERATOR_POLISHES[polishGrant.id].name}`);
+}
+
+window.addEventListener('black-box-recovered', () => grantWorldMilestonePolish('black-box-recovered'));
+window.addEventListener('act2-milestone', (event) => {
+    const key = event?.detail?.key;
+    if (key) grantWorldMilestonePolish(`act2:${key}`);
 });
 
 if (window.electronAPI) {

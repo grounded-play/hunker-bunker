@@ -74,10 +74,14 @@ console.log(
     `[steam-release] build ${buildId} from ${commit}${dirty ? '-dirty' : ''} on ${branch}`
 );
 
-if (upload && dirty && !allowDirty) {
+if (dirty && !allowDirty) {
     throw new Error(
-        'Refusing to upload a dirty worktree. Commit the release or pass --allow-dirty explicitly.'
+        'Refusing to prepare a release from a dirty worktree. Commit the release or pass --allow-dirty for local QA only.'
     );
+}
+
+if (upload && allowDirty) {
+    throw new Error('--allow-dirty is restricted to local QA and cannot be used with --upload.');
 }
 
 if (!skipBuild) {

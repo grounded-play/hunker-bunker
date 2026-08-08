@@ -54,16 +54,16 @@ describe('clearSpawnArea — door/portal alignment', () => {
         const game = {
             playerType: 'TANK',
             crashedShips: [
-                { type: 'SCOUT', tileX: 6, tileZ: 6, isVisible: false },
-                { type: 'TANK', tileX: 12, tileZ: 6, isVisible: false },
-                { type: 'ENGINEER', tileX: 9, tileZ: 13, isVisible: false }
+                { type: 'SCOUT', tileX: 9, tileZ: 9, isVisible: false },
+                { type: 'TANK', tileX: 9, tileZ: 9, isVisible: false },
+                { type: 'ENGINEER', tileX: 9, tileZ: 9, isVisible: false }
             ],
             crashSiteFloorMesh: { position: floorPosition }
         };
 
         ThreeGame.prototype.updateCrashedShipsVisibility.call(game);
 
-        expect(floorPosition).toMatchObject({ x: 12, z: 6 });
+        expect(floorPosition).toMatchObject({ x: 9, z: 9 });
         expect(game.crashedShips.map((ship) => ship.isVisible)).toEqual([false, true, false]);
     });
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { collapseChunkLattice, extractChunkWfcMetadata, stampLattice } from './wfcGenerator.js';
+import { CHUNK_SIZE } from './tileCatalog.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { planChunkRoomPopulation } from './roomPopulation.js';
 
@@ -72,7 +73,11 @@ describe('maze generation stress invariants', () => {
                     ).toBe(true);
                 }
             }
-            const metadata = extractChunkWfcMetadata(lattice, 19, { chunkX: 1, chunkY: 1 });
+            // docs/sprint-22-systems-breakdown/06-engineering-wfc-chunk-math.md:
+            // "Tests and callers should import the derived constants rather
+            // than copy 49, 17, or older 19/13 values" -- this literal 19
+            // predated the tile-bands migration to CHUNK_SIZE=49.
+            const metadata = extractChunkWfcMetadata(lattice, CHUNK_SIZE, { chunkX: 1, chunkY: 1 });
             const rooms = assignRoomThemes(metadata.roomInstances, {
                 biome,
                 depthTier: 3,

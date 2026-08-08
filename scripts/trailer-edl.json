@@ -1,0 +1,117 @@
+{
+  "resolution": { "width": 1920, "height": 1080 },
+  "fps": 60,
+  "shots": [
+    {
+      "id": "card-1",
+      "type": "imageCard",
+      "image": "public/interstitials/int_01_someone_is_still_alive_key_v1.webp",
+      "duration": 3.5,
+      "text": "EVERY DOOR COSTS OXYGEN",
+      "fontSize": 62
+    },
+    {
+      "id": "gameplay-1",
+      "type": "clip",
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 59,
+      "duration": 7,
+      "raw": true
+    },
+    {
+      "id": "card-2",
+      "type": "imageCard",
+      "image": "public/interstitials/int_09_mothership_customer_support_key_v1.webp",
+      "duration": 3,
+      "text": "AGENT, YOU ARE ALIVE",
+      "fontSize": 62
+    },
+    {
+      "id": "gameplay-2",
+      "type": "clip",
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 37,
+      "duration": 6,
+      "raw": true
+    },
+    {
+      "id": "card-3",
+      "type": "imageCard",
+      "image": "public/interstitials/int_06_briggs_keeps_the_ledger_key_v1.webp",
+      "duration": 2.5,
+      "text": "BANK WHAT YOU CAN CARRY",
+      "fontSize": 62
+    },
+    {
+      "id": "gameplay-3",
+      "type": "clip",
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 98,
+      "duration": 5,
+      "raw": true
+    },
+    {
+      "id": "card-4",
+      "type": "imageCard",
+      "image": "public/interstitials/int_13_a_snail_blocks_the_hallway_key_v1.webp",
+      "duration": 2,
+      "text": "THE BUNKER FIGHTS BACK",
+      "fontSize": 62
+    },
+    {
+      "id": "gameplay-4",
+      "type": "clip",
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 141,
+      "duration": 4,
+      "raw": true
+    },
+    {
+      "id": "card-5",
+      "type": "imageCard",
+      "image": "public/interstitials/int_32_black_box_stain_key_v1.webp",
+      "duration": 1.5,
+      "text": "RECOVER THE BLACK BOX",
+      "fontSize": 58
+    },
+    {
+      "id": "gameplay-5",
+      "type": "clip",
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 151,
+      "duration": 3.5,
+      "raw": true
+    },
+    {
+      "id": "card-6",
+      "type": "imageCard",
+      "image": "public/interstitials/int_17_it_understands_the_gun_key_v1.webp",
+      "duration": 1.2,
+      "text": "PUSH TOO FAR AND LOSE IT ALL",
+      "fontSize": 56
+    },
+    {
+      "id": "gameplay-6",
+      "type": "clip",
+      "src": "trailer/raw/clips/user-long.mp4",
+      "start": 222,
+      "duration": 3,
+      "raw": true
+    },
+    {
+      "id": "final-clip",
+      "type": "clip",
+      "src": "trailer/raw/clips/user-short.mp4",
+      "start": 5.7,
+      "duration": 6.4,
+      "raw": true,
+      "endCard": { "text": "WISHLIST NOW ON STEAM", "fontSize": 56, "showAfter": 4.9 }
+    }
+  ],
+  "music": {
+    "file": "public/audio/ost/Hunker Bunker Main Theme.mp3",
+    "start": 429,
+    "end": 480
+  },
+  "sfx": {}
+}

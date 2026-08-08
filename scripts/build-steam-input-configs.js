@@ -63,28 +63,8 @@ function dpadGroup(id, actionSet, actions) {
     }`;
 }
 
-// Trackpad in dpad mode. requires_click is off so a resting thumb steers menus
-// without a physical click, which is how the Deck/DualSense pads are expected
-// to feel. Only bound to sources that actually have a trackpad.
-function padDpadGroup(id, actionSet, actions) {
-    return `"group"
-    {
-        "id" "${id}"
-        "mode" "dpad"
-        "inputs"
-        {
-            "dpad_north" { ${activator(actionSet, actions.up[0], actions.up[1])} }
-            "dpad_south" { ${activator(actionSet, actions.down[0], actions.down[1])} }
-            "dpad_east" { ${activator(actionSet, actions.right[0], actions.right[1])} }
-            "dpad_west" { ${activator(actionSet, actions.left[0], actions.left[1])} }
-        }
-        "settings" { "requires_click" "0" }
-    }`;
-}
-
-// Mouse-style analog source: 1:1 deltas rather than a stick position. Used for the
-// right trackpad, which turns into a precision aim cursor in a fixed top-down view
-// where a stick can only ever express a direction.
+// Delta-style analog action used by Deck and PlayStation trackpads for the
+// menu pointer and gameplay aim cursor.
 function mouseGroup(id, actionSet, action, extraSettings = {}) {
     const settings = Object.entries({ sensitivity: '105', ...extraSettings })
         .map(([key, value]) => `"${key}" "${value}"`)
@@ -165,6 +145,23 @@ function preset(id, name, groups) {
 }
 
 function buildControllerConfig(controllerType) {
+    const hasDualTrackpads = controllerType === 'controller_neptune';
+    const hasCenterTrackpad = controllerType === 'controller_ps4' || controllerType === 'controller_ps5';
+    const gameplaySwitches = {
+        button_escape: ['pause', 'Pause'],
+        left_bumper: ['scan', 'Scan'],
+        right_bumper: ['toggle_map', 'Tactical Map'],
+        button_menu: ['pause', 'Pause'],
+        button_select: ['toggle_map', 'Tactical Map'],
+        button_back: ['toggle_map', 'Tactical Map'],
+        button_back_left: ['sprint', 'Sprint'],
+        button_back_right: ['interact', 'Interact']
+    };
+    // L4 is a convenient dedicated map button on Steam Deck. Keep View/Back as
+    // the universal fallback, and emit this extra source only for Deck hardware.
+    if (controllerType === 'controller_neptune') {
+        gameplaySwitches.button_back_left_upper = ['toggle_map', 'Tactical Map'];
+    }
     const groups = [
         faceGroup(0, 'menu', {
             a: ['menu_confirm', 'Confirm'],
@@ -186,53 +183,30 @@ function buildControllerConfig(controllerType) {
         }),
         triggerGroup(3, 'menu', 'menu_tab_left', 'Previous Tab'),
         triggerGroup(4, 'menu', 'menu_tab_right', 'Next Tab'),
-        padDpadGroup(6, 'menu', {
-            up: ['menu_up', 'Up'],
-            down: ['menu_down', 'Down'],
-            left: ['menu_left', 'Left'],
-            right: ['menu_right', 'Right']
-        }),
-        padDpadGroup(7, 'menu', {
-            up: ['menu_up', 'Up'],
-            down: ['menu_down', 'Down'],
-            left: ['menu_left', 'Left'],
-            right: ['menu_right', 'Right']
-        }),
         switchesGroup(5, 'menu', {
             button_escape: ['pause', 'Pause'],
+            button_menu: ['pause', 'Settings / Pause'],
             left_bumper: ['menu_tab_left', 'Previous Tab'],
             right_bumper: ['menu_tab_right', 'Next Tab']
         }),
+        // Keep the manifest action represented for user-authored layouts, but
+        // leave this group inactive in the official menu preset. The default
+        // right stick must not move menu focus or scrolling.
+        analogGroup(6, 'menu', 'menu_pointer'),
         faceGroup(10, 'gameplay', {
             a: ['interact', 'Interact'],
-            b: ['scan', 'Scan'],
+            b: ['dash', 'Dodge'],
             x: ['reload', 'Reload'],
-            y: ['ability', 'Ability']
+            y: ['ability', 'Smash']
         }),
         analogGroup(11, 'gameplay', 'move'),
         analogGroup(12, 'gameplay', 'camera'),
-        analogGroup(16, 'gameplay', 'move'),
+        // Retained for custom trackpad/gyro layouts. The official preset uses
+        // the right stick's direct aim vector below.
         mouseGroup(17, 'gameplay', 'camera_mouse'),
-        // Gyro feeds the same aim cursor as the trackpad, but only while the right
-        // pad is actually being touched ("gyro ratcheting"). In a fixed top-down view
-        // the reticle is always live, so an always-on gyro would let a resting hand
-        // walk the aim. NOTE: gyro_button is the one key here not covered by the
-        // Steam Input docs and not confirmable against a local Valve config — verify
-        // in Big Picture before publishing. If Steam ignores it the failure is
-        // visible immediately as always-on gyro drift.
-        mouseGroup(18, 'gameplay', 'camera_mouse', { gyro_button: 'right_pad_touch' }),
         triggerGroup(13, 'gameplay', 'sprint', 'Sprint'),
         triggerGroup(14, 'gameplay', 'fire', 'Fire'),
-        switchesGroup(15, 'gameplay', {
-            button_escape: ['pause', 'Pause'],
-            left_bumper: ['sprint', 'Sprint'],
-            right_bumper: ['fire', 'Fire'],
-            button_menu: ['pause', 'Pause'],
-            button_select: ['toggle_map', 'Tactical Map'],
-            button_back: ['toggle_map', 'Tactical Map'],
-            button_back_left: ['sprint', 'Sprint'],
-            button_back_right: ['interact', 'Interact']
-        }),
+        switchesGroup(15, 'gameplay', gameplaySwitches),
         faceGroup(20, 'archive', {
             a: ['archive_confirm', 'Inspect / Confirm'],
             b: ['archive_back', 'Back'],
@@ -241,49 +215,78 @@ function buildControllerConfig(controllerType) {
         }),
         analogGroup(21, 'archive', 'archive_focus'),
         analogGroup(22, 'archive', 'archive_focus'),
-        analogGroup(26, 'archive', 'archive_focus'),
-        analogGroup(27, 'archive', 'archive_focus'),
         triggerGroup(23, 'archive', 'archive_reveal', 'Reveal Hotspots'),
         triggerGroup(24, 'archive', 'archive_confirm', 'Inspect / Confirm'),
         switchesGroup(25, 'archive', {
             button_escape: ['pause', 'Pause'],
+            button_menu: ['pause', 'Settings / Pause'],
             left_bumper: ['archive_inventory', 'Inventory'],
             right_bumper: ['archive_reveal', 'Reveal Hotspots']
         })
     ];
 
+    if (hasDualTrackpads) {
+        groups.push(
+            dpadGroup(7, 'menu', {
+                up: ['menu_up', 'Up'],
+                down: ['menu_down', 'Down'],
+                left: ['menu_left', 'Left'],
+                right: ['menu_right', 'Right']
+            }),
+            mouseGroup(8, 'menu', 'menu_pointer_mouse'),
+            analogGroup(16, 'gameplay', 'move'),
+            analogGroup(26, 'archive', 'archive_focus'),
+            analogGroup(27, 'archive', 'archive_focus')
+        );
+    } else if (hasCenterTrackpad) {
+        groups.push(
+            mouseGroup(8, 'menu', 'menu_pointer_mouse'),
+            analogGroup(27, 'archive', 'archive_focus')
+        );
+    }
+
+    const menuSources = {
+        0: 'button_diamond',
+        1: 'dpad',
+        2: 'joystick',
+        3: 'left_trigger',
+        4: 'right_trigger',
+        5: 'switch'
+    };
+    const gameplaySources = {
+        10: 'button_diamond',
+        11: 'joystick',
+        12: 'right_joystick',
+        13: 'left_trigger',
+        14: 'right_trigger',
+        15: 'switch'
+    };
+    const archiveSources = {
+        20: 'button_diamond',
+        21: 'joystick',
+        22: 'dpad',
+        23: 'left_trigger',
+        24: 'right_trigger',
+        25: 'switch'
+    };
+
+    if (hasDualTrackpads) {
+        menuSources[7] = 'left_trackpad';
+        menuSources[8] = 'right_trackpad';
+        gameplaySources[16] = 'left_trackpad';
+        gameplaySources[17] = 'right_trackpad';
+        archiveSources[26] = 'left_trackpad';
+        archiveSources[27] = 'right_trackpad';
+    } else if (hasCenterTrackpad) {
+        menuSources[8] = 'center_trackpad';
+        gameplaySources[17] = 'center_trackpad';
+        archiveSources[27] = 'center_trackpad';
+    }
+
     const presets = [
-        preset(0, 'menu', {
-            0: 'button_diamond',
-            1: 'dpad',
-            2: 'joystick',
-            3: 'left_trigger',
-            4: 'right_trigger',
-            5: 'switch',
-            6: 'left_trackpad',
-            7: 'right_trackpad'
-        }),
-        preset(1, 'gameplay', {
-            10: 'button_diamond',
-            11: 'joystick',
-            12: 'right_joystick',
-            13: 'left_trigger',
-            14: 'right_trigger',
-            15: 'switch',
-            16: 'left_trackpad',
-            17: 'right_trackpad',
-            18: 'gyro'
-        }),
-        preset(2, 'archive', {
-            20: 'button_diamond',
-            21: 'joystick',
-            22: 'dpad',
-            23: 'left_trigger',
-            24: 'right_trigger',
-            25: 'switch',
-            26: 'left_trackpad',
-            27: 'right_trackpad'
-        })
+        preset(0, 'menu', menuSources),
+        preset(1, 'gameplay', gameplaySources),
+        preset(2, 'archive', archiveSources)
     ];
 
     return `"controller_mappings"
@@ -291,16 +294,16 @@ function buildControllerConfig(controllerType) {
     "version" "3"
     "game" "Hunker Bunker"
     "title" "Official Hunker Bunker Layout"
-    "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
+    "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
     "controller_type" "${controllerType}"
-    "major_revision" "2"
+    "major_revision" "7"
     "minor_revision" "0"
     "localization"
     {
         "english"
         {
             "title" "Official Hunker Bunker Layout"
-            "description" "Official full-controller layout for menus, bunker runs, and archive simulations."
+            "description" "Twin-stick layout: A interact, B dodge, X reload, Y smash, RT fire."
         }
     }
     ${groups.join('\n    ')}

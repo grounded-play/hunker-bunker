@@ -22,8 +22,13 @@ describe('retail asset audit', () => {
         expect(extractAssetReferences(`
             const image = '/sprites/player.png?v=2';
             background: url("/ui/frame.webp#main");
+            const model = '/3d/runtime/engineer-rigged-gestures.glb';
             import local from './module.js';
-        `)).toEqual(['sprites/player.png', 'ui/frame.webp']);
+        `)).toEqual([
+            '3d/runtime/engineer-rigged-gestures.glb',
+            'sprites/player.png',
+            'ui/frame.webp'
+        ]);
     });
 
     it('classifies explicit references as runtime required', () => {

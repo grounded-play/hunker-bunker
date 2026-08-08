@@ -321,6 +321,38 @@ export function nextDialogueBeat(leaderKey, { stage = 0, talks = 0 } = {}, ctx =
     return { type: 'loop', stage: stageIndex, lines: [current.loop] };
 }
 
+export function describeDialogueProgress(leaderKey, { stage = 0, talks = 0 } = {}, ctx = {}) {
+    const ladder = LEADER_DIALOGUE[leaderKey];
+    if (!ladder) return null;
+    const stageIndex = Math.max(0, Math.min(stage, ladder.stages.length - 1));
+    const current = ladder.stages[stageIndex];
+    if (talks < current.beats.length) {
+        const remaining = current.beats.length - talks;
+        return {
+            stage: stageIndex,
+            talks,
+            totalTalks: current.beats.length,
+            ready: true,
+            guidance: `${remaining} conversation ${remaining === 1 ? 'beat' : 'beats'} available now.`
+        };
+    }
+    if (stageIndex >= ladder.stages.length - 1 || !current.next) {
+        return { stage: stageIndex, talks, totalTalks: current.beats.length, ready: false, guidance: 'Personal story complete. Your decisions still affect their fate.' };
+    }
+    const missing = [];
+    if (current.next.level != null && (ctx.level ?? 0) < current.next.level) missing.push(`raise camp level to ${current.next.level} (now ${ctx.level ?? 0})`);
+    if (current.next.bond != null && (ctx.bond ?? 0) < current.next.bond) missing.push(`raise bond to ${current.next.bond} (now ${ctx.bond ?? 0})`);
+    if (current.next.postReveal && !ctx.postReveal) missing.push('continue the main bunker objective');
+    if (current.next.questFlag && ctx.questFlags?.[current.next.questFlag] !== 'done') missing.push(`complete ${current.next.questFlag.replace(/_/g, ' ')}`);
+    return {
+        stage: stageIndex,
+        talks,
+        totalTalks: current.beats.length,
+        ready: missing.length === 0,
+        guidance: missing.length ? `Next conversation: ${missing.join(' and ')}.` : 'The next conversation is ready.'
+    };
+}
+
 // Has this leader reached their final stage (the "final thing" is on offer)?
 export function isFinalStage(stage = 0) {
     return stage >= DIALOGUE_FINAL_STAGE;

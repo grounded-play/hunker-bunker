@@ -39,6 +39,9 @@ describe('BankManager', () => {
             hullExpansionLevel: 0,
             radarNodeLevel: 0,
             reactorCompressorLevel: 0,
+            baseTurretUnlocked: false,
+            baseTurretLevel: 1,
+            baseTurretHp: 100,
             tier2Unlocks: {
                 suitThermal: false,
                 deconFilters: false,

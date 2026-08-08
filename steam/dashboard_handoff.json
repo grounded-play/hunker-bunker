@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-02T18:41:29.288Z",
+  "generatedAt": "2026-08-04T22:06:36.276Z",
   "app": {
     "appId": 4957040,
     "title": "Hunker Bunker",
@@ -438,7 +438,13 @@
         "actionSet": "gameplay",
         "actionType": "Button",
         "action": "ability",
-        "label": "Ability"
+        "label": "Smash"
+      },
+      {
+        "actionSet": "gameplay",
+        "actionType": "Button",
+        "action": "dash",
+        "label": "Dodge"
       },
       {
         "actionSet": "gameplay",

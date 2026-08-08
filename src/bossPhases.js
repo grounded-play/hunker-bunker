@@ -186,3 +186,52 @@ export const QUEEN_PHASE_LINES = Object.freeze({
     fury: 'QUEEN: I CARRIED YOU. I CARRIED ALL OF YOU.',
     desperation: 'QUEEN: THE COLD BOX COULD NOT HOLD ME. YOU WILL NOT EITHER.'
 });
+
+// ── The BIO-biome sporesnail world boss ───────────────────────
+// Sprint 22 B1 (docs/sprint-22-systems-breakdown/07-engineering-combat-boss-phases.md):
+// the first non-Queen boss converted onto this framework, chosen from real
+// data (scripts/combat-encounter-report.js) rather than a guess -- of the
+// non-Queen bosses, this one has the highest HP by a wide margin, the
+// longest idealized time-to-kill, and its only mechanic (spawning two
+// passive minions on a flat cooldown) deals zero direct damage, so an
+// unusually long fight never directly threatens the player.
+//
+// Deliberately NOT a Queen clone (docs/sprint-22-systems-breakdown/
+// 07-engineering-combat-boss-phases.md: "Do not copy the Queen definition
+// wholesale"): two phases, not three, and armor is kept much gentler
+// (0.6 vs. the Queen's 0.25) specifically because that same doc names
+// "armor making low-damage classes ineffective" as a regression risk this
+// pass has no human playtest to justify overriding. Phase one matches the
+// boss's pre-existing unphased cadence (6.5s / 2 adds) exactly, so the
+// first half of the fight doesn't change feel at all; phase two (at or
+// below 45% hp) is the only new escalation: faster adds and a weak-point
+// window, giving the second half of an otherwise flat, long fight some
+// variety instead of repeating phase one to the end.
+//
+// This boss has no attack of its own (see above), so 'attack' events carry
+// nothing runtime-side interprets -- attackCooldown still has to be set for
+// tickBossFight's internal timers, so it's aligned to each phase's addWave
+// cadence and the runtime side simply ignores the 'attack' event type for
+// this fight (see threeGame.js's handleSporesnailFightEvent).
+export const SPORESNAIL_FIGHT_DEF = Object.freeze({
+    key: 'sporesnail',
+    maxHp: 75,
+    armoredDamageMult: 0.6,
+    phases: [
+        Object.freeze({
+            key: 'hive-mind',
+            until: 0.45,
+            attackCooldown: 6.5,
+            attack: null,
+            addWave: Object.freeze({ every: 6.5, type: 'sporesnail', count: 2, max: 4 })
+        }),
+        Object.freeze({
+            key: 'bloom-frenzy',
+            until: 0,
+            attackCooldown: 4.5,
+            attack: null,
+            addWave: Object.freeze({ every: 4.5, type: 'sporesnail', count: 3, max: 6 }),
+            weakpoint: Object.freeze({ every: 9, duration: 3.5 })
+        })
+    ]
+});

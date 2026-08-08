@@ -3,6 +3,7 @@ import {
     ACTION_SETS,
     actionSetForAppPhase,
     createActionRouter,
+    hasControllerContinuePress,
     menuKeyboardDirection,
     wrapMenuIndex,
     shouldPreferBrowserGamepad
@@ -33,6 +34,22 @@ function padSnapshot(overrides = {}) {
         ...overrides
     };
 }
+
+describe('hasControllerContinuePress', () => {
+    it.each(['confirm', 'back', 'pause', 'tabLeft', 'tabRight', 'up', 'down', 'left', 'right'])(
+        'accepts the %s action as a cinematic continue press',
+        (action) => expect(hasControllerContinuePress({ [action]: true })).toBe(true)
+    );
+
+    it('does not skip from right-stick pointer motion alone', () => {
+        expect(hasControllerContinuePress({ pointer: { x: 1, y: 0 } })).toBe(false);
+    });
+
+    it.each(['interact', 'dash', 'reload', 'ability', 'fire', 'scan', 'toggleMap'])(
+        'accepts the gameplay-shaped %s button while a movie owns field input',
+        (action) => expect(hasControllerContinuePress({ [action]: true })).toBe(true)
+    );
+});
 
 describe('createActionRouter', () => {
     it('maps WASD and arrows onto linear menu focus movement', () => {
@@ -132,6 +149,20 @@ describe('createActionRouter', () => {
         expect(actions.back).toBe(true);
         expect(actions.tabLeft).toBe(false);
         expect(actions.tabRight).toBe(false);
+    });
+
+    it('forwards the right stick and left stick to menu actions for handleSteamMenuInput to drive the cursor', () => {
+        // handleSteamMenuInput (main.js) reads actions.camera/actions.move
+        // directly and applies its own deadzone against resting-stick drift;
+        // this layer's job is just to pass the raw vectors through, not to
+        // zero them out itself.
+        const router = createActionRouter();
+        const { actions } = router.deriveActions(padSnapshot({ camera: { x: 0.8, y: -0.6 }, move: { x: -0.3, y: 0.2 } }));
+        expect(actions.camera).toEqual({ x: 0.8, y: -0.6 });
+        expect(actions.move).toEqual({ x: -0.3, y: 0.2 });
+        // Discrete d-pad-style focus navigation is unaffected by stick position.
+        expect(actions.up).toBe(false);
+        expect(actions.down).toBe(false);
     });
 
     it('passes the gameplay snapshot through untouched in the gameplay set', () => {

@@ -280,6 +280,14 @@ export const O2_GENERATOR_UPGRADES = Object.freeze([
     })
 ]);
 
+export const BASE_TURRET_UPGRADES = Object.freeze([
+    Object.freeze({ level: 1, label: 'L1 DEFENSE TURRET', damage: 4, range: 7, fireRate: 1.2, maxHp: 100, cost: Object.freeze({}) }),
+    Object.freeze({ level: 2, label: 'L2 HEAVY TURRET', damage: 7, range: 9, fireRate: 0.9, maxHp: 150, cost: Object.freeze({ tech: 30, coin: 10 }) }),
+    Object.freeze({ level: 3, label: 'L3 PLASMA TURRET', damage: 12, range: 11, fireRate: 0.6, maxHp: 200, cost: Object.freeze({ tech: 70, coin: 25 }) })
+]);
+
+export const BASE_TURRET_REPAIR_COST = Object.freeze({ tech: 10, coin: 5 });
+
 export const MAX_O2_GENERATOR_LEVEL = O2_GENERATOR_UPGRADES.length;
 
 export const TIER2_UPGRADE_ORDER = Object.freeze([
@@ -353,6 +361,9 @@ function createDefaultState() {
             stimCache: false,
             fallHardening: false
         },
+        baseTurretUnlocked: false,
+        baseTurretLevel: 1,
+        baseTurretHp: 100,
         weaponUpgrades: createDefaultWeaponUpgrades(),
         unlockedSkills: [],
         shells: 0
@@ -489,6 +500,17 @@ function toSerializableState(raw) {
         base.unlockedSkills = [];
     }
 
+    base.baseTurretUnlocked = Boolean(
+        raw.baseTurretUnlocked
+        || base.o2GeneratorLevel >= 1
+        || Object.values(base.unlocks).some(Boolean)
+    );
+    base.baseTurretLevel = Math.max(1, Math.min(3, Math.floor(Number(raw.baseTurretLevel) || 1)));
+    const persistedTurretHp = Number(raw.baseTurretHp);
+    base.baseTurretHp = Number.isFinite(persistedTurretHp)
+        ? Math.max(0, Math.floor(persistedTurretHp))
+        : 100;
+
     return base;
 }
 
@@ -507,6 +529,11 @@ function cloneState(state) {
         hullExpansionLevel: state.hullExpansionLevel ?? (state.unlocks?.hullExpansion ? 1 : 0),
         radarNodeLevel: state.radarNodeLevel ?? (state.unlocks?.radarNode ? 1 : 0),
         reactorCompressorLevel: state.reactorCompressorLevel ?? (state.unlocks?.reactorCompressor ? 1 : 0),
+        baseTurretUnlocked: Boolean(state.baseTurretUnlocked),
+        baseTurretLevel: Math.max(1, Math.min(3, Math.floor(Number(state.baseTurretLevel) || 1))),
+        baseTurretHp: Number.isFinite(Number(state.baseTurretHp))
+            ? Math.max(0, Math.floor(Number(state.baseTurretHp)))
+            : 100,
         tier2Unlocks: {
             ...(state.tier2Unlocks ?? { suitThermal: false, deconFilters: false, stimCache: false })
         },
@@ -876,6 +903,84 @@ export class BankManager {
             return true;
         }
         return false;
+    }
+
+    getBaseTurretLevel() {
+        return Math.max(1, Math.min(3, Math.floor(Number(this.state.baseTurretLevel) || 1)));
+    }
+
+    isBaseTurretUnlocked() {
+        return Boolean(this.state.baseTurretUnlocked);
+    }
+
+    unlockBaseTurret() {
+        if (this.isBaseTurretUnlocked()) return false;
+        this.state.baseTurretUnlocked = true;
+        this.state.baseTurretLevel = Math.max(1, this.getBaseTurretLevel());
+        this.state.baseTurretHp = this.getBaseTurretMaxHp();
+        this.save();
+        emit('base-turret-unlocked', {
+            level: this.getBaseTurretLevel(),
+            hp: this.getBaseTurretHp(),
+            bank: this.getState()
+        });
+        return true;
+    }
+
+    getBaseTurretHp() {
+        const maxHp = this.getBaseTurretMaxHp();
+        const hp = Number(this.state.baseTurretHp);
+        return Number.isFinite(hp) ? Math.max(0, Math.min(maxHp, hp)) : maxHp;
+    }
+
+    getBaseTurretMaxHp() {
+        const lvl = this.getBaseTurretLevel();
+        const cfg = BASE_TURRET_UPGRADES.find(u => u.level === lvl);
+        return cfg?.maxHp ?? 100;
+    }
+
+    getBaseTurretUpgradeCost() {
+        const lvl = this.getBaseTurretLevel();
+        const nextCfg = BASE_TURRET_UPGRADES.find(u => u.level === lvl + 1);
+        return nextCfg?.cost ?? null;
+    }
+
+    canUpgradeBaseTurret() {
+        const cost = this.getBaseTurretUpgradeCost();
+        if (!cost) return false;
+        return this.canAfford(cost);
+    }
+
+    upgradeBaseTurret() {
+        const cost = this.getBaseTurretUpgradeCost();
+        if (!cost || !this.spend(cost)) return false;
+        const newLevel = this.getBaseTurretLevel() + 1;
+        this.state.baseTurretLevel = newLevel;
+        this.state.baseTurretHp = this.getBaseTurretMaxHp();
+        this.save();
+        emit('base-turret-upgraded', { level: newLevel, hp: this.state.baseTurretHp, bank: this.getState() });
+        return true;
+    }
+
+    canRepairBaseTurret() {
+        if (this.getBaseTurretHp() >= this.getBaseTurretMaxHp()) return false;
+        return this.canAfford(BASE_TURRET_REPAIR_COST);
+    }
+
+    repairBaseTurret() {
+        if (!this.canRepairBaseTurret()) return false;
+        if (!this.spend(BASE_TURRET_REPAIR_COST)) return false;
+        const maxHp = this.getBaseTurretMaxHp();
+        this.state.baseTurretHp = maxHp;
+        this.save();
+        emit('base-turret-repaired', { level: this.getBaseTurretLevel(), hp: maxHp, bank: this.getState() });
+        return true;
+    }
+
+    setBaseTurretHp(hp) {
+        const maxHp = this.getBaseTurretMaxHp();
+        this.state.baseTurretHp = Math.max(0, Math.min(maxHp, hp));
+        this.save();
     }
 
     reset() {

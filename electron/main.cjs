@@ -401,6 +401,8 @@ function initSteam() {
                 menuBack: steamClient.input.getDigitalAction('menu_back'),
                 menuTabLeft: steamClient.input.getDigitalAction('menu_tab_left'),
                 menuTabRight: steamClient.input.getDigitalAction('menu_tab_right'),
+                menuPointer: steamClient.input.getAnalogAction('menu_pointer'),
+                menuPointerMouse: steamClient.input.getAnalogAction('menu_pointer_mouse'),
                 move: steamClient.input.getAnalogAction('move'),
                 camera: steamClient.input.getAnalogAction('camera'),
                 cameraMouse: steamClient.input.getAnalogAction('camera_mouse'),
@@ -408,6 +410,7 @@ function initSteam() {
                 interact: steamClient.input.getDigitalAction('interact'),
                 reload: steamClient.input.getDigitalAction('reload'),
                 ability: steamClient.input.getDigitalAction('ability'),
+                dash: steamClient.input.getDigitalAction('dash'),
                 scan: steamClient.input.getDigitalAction('scan'),
                 sprint: steamClient.input.getDigitalAction('sprint'),
                 toggleMap: steamClient.input.getDigitalAction('toggle_map'),
@@ -501,14 +504,18 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
     const moveVector = (phase === 'gameplay' || phase === 'archive') && isValidActionHandle(moveAction)
         ? controller.getAnalogActionVector(moveAction)
         : { x: 0, y: 0 };
-    const cameraVector = phase === 'gameplay' && isValidActionHandle(actionHandles.camera)
-        ? controller.getAnalogActionVector(actionHandles.camera)
+    const cameraAction = phase === 'menu' ? actionHandles.menuPointer : actionHandles.camera;
+    const cameraVector = (phase === 'gameplay' || phase === 'menu') && isValidActionHandle(cameraAction)
+        ? controller.getAnalogActionVector(cameraAction)
         : { x: 0, y: 0 };
     // absolute_mouse reports frame deltas in mouse "pixels", not a normalized stick
     // position, so this deliberately skips the [-1, 1] clamp applied to the stick
     // vectors below — clamping would crush a fast flick into a single unit.
-    const cameraDeltaVector = phase === 'gameplay' && isValidActionHandle(actionHandles.cameraMouse)
-        ? controller.getAnalogActionVector(actionHandles.cameraMouse)
+    const pointerDeltaAction = phase === 'menu'
+        ? actionHandles.menuPointerMouse
+        : actionHandles.cameraMouse;
+    const cameraDeltaVector = (phase === 'gameplay' || phase === 'menu') && isValidActionHandle(pointerDeltaAction)
+        ? controller.getAnalogActionVector(pointerDeltaAction)
         : { x: 0, y: 0 };
 
     const buttonState = phase === 'gameplay'
@@ -517,6 +524,7 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             interact: isValidActionHandle(actionHandles.interact) ? controller.isDigitalActionPressed(actionHandles.interact) : false,
             reload: isValidActionHandle(actionHandles.reload) ? controller.isDigitalActionPressed(actionHandles.reload) : false,
             ability: isValidActionHandle(actionHandles.ability) ? controller.isDigitalActionPressed(actionHandles.ability) : false,
+            dash: isValidActionHandle(actionHandles.dash) ? controller.isDigitalActionPressed(actionHandles.dash) : false,
             scan: isValidActionHandle(actionHandles.scan) ? controller.isDigitalActionPressed(actionHandles.scan) : false,
             sprint: isValidActionHandle(actionHandles.sprint) ? controller.isDigitalActionPressed(actionHandles.sprint) : false,
             toggleMap: isValidActionHandle(actionHandles.toggleMap) ? controller.isDigitalActionPressed(actionHandles.toggleMap) : false,
@@ -538,7 +546,8 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
             menuConfirm: isValidActionHandle(actionHandles.menuConfirm) ? controller.isDigitalActionPressed(actionHandles.menuConfirm) : false,
             menuBack: isValidActionHandle(actionHandles.menuBack) ? controller.isDigitalActionPressed(actionHandles.menuBack) : false,
             menuTabLeft: isValidActionHandle(actionHandles.menuTabLeft) ? controller.isDigitalActionPressed(actionHandles.menuTabLeft) : false,
-            menuTabRight: isValidActionHandle(actionHandles.menuTabRight) ? controller.isDigitalActionPressed(actionHandles.menuTabRight) : false
+            menuTabRight: isValidActionHandle(actionHandles.menuTabRight) ? controller.isDigitalActionPressed(actionHandles.menuTabRight) : false,
+            pause: isValidActionHandle(actionHandles.pause) ? controller.isDigitalActionPressed(actionHandles.pause) : false
         };
 
     const moveMagnitude = Math.hypot(Number(moveVector?.x) || 0, Number(moveVector?.y) || 0);
@@ -555,13 +564,15 @@ function getPrimaryControllerSnapshot(controller, phase, actionHandles) {
         handle,
         type: controllerType,
         active,
+        // Movement is consumed as a world axis, while the native right stick
+        // drives screen coordinates and therefore needs its vertical axis flipped.
         move: {
             x: Math.max(-1, Math.min(1, Number(moveVector?.x) || 0)),
             y: Math.max(-1, Math.min(1, Number(moveVector?.y) || 0))
         },
         camera: {
             x: Math.max(-1, Math.min(1, Number(cameraVector?.x) || 0)),
-            y: Math.max(-1, Math.min(1, Number(cameraVector?.y) || 0))
+            y: Math.max(-1, Math.min(1, -(Number(cameraVector?.y) || 0)))
         },
         cameraDelta: {
             x: Number(cameraDeltaVector?.x) || 0,

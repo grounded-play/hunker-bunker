@@ -166,13 +166,16 @@ export class DebugLogger {
         if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
         const eventNames = [
             'run-cards-drawn', 'player-damaged', 'player-death', 'player-respawned',
+            'player-health-changed', 'player-blocked',
             'player-extracted', 'mission-objective-complete', 'biome-changed',
             'black-box-recovered', 'foundry-discovered', 'cave-entrance-revealed',
             'queen-fight-started', 'camp-choice-resolved', 'camp-choice-denied',
             'camp-supported', 'camp-bonded', 'camp-final-resolved',
             'hive-choice-resolved', 'hive-mined', 'act2-milestone', 'act2-departed',
             'achievement-unlocked', 'lore-terminal-read', 'salvage-cache-opened',
-            'o2-bubble-activated', 'bunker-door-toggled', 'bunker-door-destroyed'
+            'o2-bubble-activated', 'bunker-door-toggled', 'bunker-door-destroyed',
+            'boss-attack-telegraph', 'boss-attack-resolved',
+            'destructible-prop-broken', 'player-melee-attack'
         ];
         for (const eventName of eventNames) {
             window.addEventListener(eventName, (event) => {

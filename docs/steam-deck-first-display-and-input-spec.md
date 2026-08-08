@@ -208,6 +208,24 @@ presentation, not a responsive mobile UI.
 - Add automatic action-set switching for menus, field play, and archives.
 - Validate glyph changes, focus retention, dead zones, and remapping on Deck.
 
+Canonical field layout (revision 4):
+
+| Control | Action |
+| --- | --- |
+| Left stick | Move; navigate menus |
+| Right stick | Aim directly |
+| D-pad | Navigate menus |
+| A | Confirm / interact |
+| B | Back / dodge |
+| X | Reload |
+| Y | Smash |
+| RT | Fire |
+| LT | Sprint |
+| LB | Scan |
+| RB | Tactical map |
+| Menu (≡) | Settings / pause |
+| View | Tactical map |
+
 ### Phase 3: Remove mobile support
 
 - Remove touch markup from `index.html`.
@@ -244,4 +262,3 @@ presentation, not a responsive mobile UI.
 - Keyboard/mouse and controller expose the same capabilities.
 - All essential text passes a real-hardware legibility review.
 - RGB and future unlockable stories use the same stage and input shell.
-

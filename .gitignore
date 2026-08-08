@@ -46,6 +46,20 @@ chrome/
 # Local scratch directory (generators, smoke tests, profiles)
 scratch/
 
+# 3D authoring/reference sources stay local. Only optimized runtime exports
+# (for example public/3d/scouting-scout/Scout.game.glb) belong in Git/builds.
+art/source/mixamo/
+art/source/new3d/
+*.fbx
+*.blend
+*.blend1
+*.obj
+*.dae
+*.3ds
+*.max
+*.mb
+*.ma
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -76,3 +90,9 @@ test-results/
 
 # Local git worktrees (isolated workspaces)
 .worktrees/
+
+# Trailer raw footage / build output (large binaries, regenerated via
+# npm run trailer:capture / npm run trailer:build) -- keep the pipeline
+# code and EDL in git, not the media itself.
+trailer/raw/
+dist/trailer/

@@ -51,7 +51,7 @@ function playStep(container, step, mediaStack, onNarration) {
         narration.textContent = step.narration ?? 'The archive advances to the next reconstructed scene.';
         const skip = document.createElement('div');
         skip.className = 'rgb-cinematic__skip';
-        skip.textContent = 'PRESS A KEY TO SKIP';
+        skip.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
         skip.setAttribute('role', 'button');
         skip.tabIndex = 0;
         skip.addEventListener('click', (event) => {

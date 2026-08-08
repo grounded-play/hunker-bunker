@@ -37,6 +37,25 @@ test.describe('Tactical Blueprint Map Overlay E2E', () => {
         await expect(mapModal).toHaveClass(/hidden/);
     });
 
+    test('opens tactical map overlay on clicking desktop compass HUD', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
+
+        const mapModal = page.locator('#tactical-map-modal');
+        await expect(mapModal).toHaveClass(/hidden/);
+
+        const compass = page.locator('#desktop-compass');
+        await expect(compass).toBeVisible();
+        await compass.click();
+
+        await expect(mapModal).not.toHaveClass(/hidden/);
+        await expect(page.locator('#tactical-map-canvas')).toBeVisible();
+
+        // Click close button to verify closing works
+        await page.locator('#close-tactical-map-modal').click();
+        await expect(mapModal).toHaveClass(/hidden/);
+    });
+
     test('interacts with tactical map toolbar controls and verifies home base legend', async ({ page }) => {
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);

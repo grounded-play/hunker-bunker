@@ -1,6 +1,6 @@
 # Steam Dashboard Handoff
 
-Generated: 2026-08-02.
+Generated: 2026-08-04.
 
 This is the copy/paste packet for Steamworks dashboard work that cannot be
 completed from the repo. Keep it in sync with code by running:
@@ -158,7 +158,8 @@ Actions in the manifest:
 | gameplay | Button | `fire` | Fire |
 | gameplay | Button | `interact` | Interact |
 | gameplay | Button | `reload` | Reload |
-| gameplay | Button | `ability` | Ability |
+| gameplay | Button | `ability` | Smash |
+| gameplay | Button | `dash` | Dodge |
 | gameplay | Button | `scan` | Scan |
 | gameplay | Button | `sprint` | Sprint |
 | gameplay | Button | `toggle_map` | Tactical Map |

@@ -30,27 +30,46 @@ Export rules:
 
 ## Trailer Beat Sheet
 
-Target length: 75 seconds.
+Target length: ~49 seconds (action-first, per Steam's own guidance: reach
+gameplay before any logo/title beat). Superseded the original 75s cut, which
+opened on 5s of silent title card before any gameplay — see
+`docs/superpowers/specs/2026-08-07-steam-trailer-capture-and-assembly-design.md`
+for the capture/assembly design this beat sheet maps to.
 
-0-5 seconds: Dead-silent exterior title card over the crash site. One clean logo
-read, one breath of wind.
+v3 source footage is hand-recorded only, no automated captures: two
+full-quality 1920x1080/60fps screen recordings
+(`trailer/raw/clips/user-long.mp4`, ~6 min of real play across two runs;
+`user-short.mp4`, ~12s covering boot + the real title screen) referenced by
+absolute `start`/`duration` in `scripts/trailer-edl.json`. Neither the
+Playwright-automated clips (`tests/e2e/trailer/`) nor the door-transition
+wipe from earlier cuts are used here — cuts are driven entirely by
+interstitial image cards instead.
 
-5-14 seconds: Establish the loop: choose an operator, enter the bunker, lights
-snap on, first resource pickup, first locked door.
+Structure: six feature-callout cards (`public/interstitials/*.webp`, a large
+bold **yellow** line in the lower third naming a real in-game mechanic —
+"EVERY DOOR COSTS OXYGEN", "BANK WHAT YOU CAN CARRY", "RETRIEVE: TECH CACHE",
+etc., not generic marketing copy) alternate with real gameplay chunks pulled
+from confirmed non-boss windows in `user-long.mp4`. Both card duration and
+gameplay-chunk duration shrink on every pair (3.5s->1.2s cards, 7s->3s
+chunks) so the cut accelerates through the trailer, timed against the actual
+build in the last ~50s of "Hunker Bunker Main Theme.mp3" (used as a
+continuous background bed, not delayed SFX stabs). The trailer closes on
+`user-short.mp4` trimmed to its cinematic archway-run + real title-screen
+reveal, with the wishlist CTA drawn directly over its final held frame in
+the same yellow lower-third style as the interstitial cards.
 
-14-27 seconds: Pressure rises. Oxygen meter falls, snails close in, generator
-comes online, weapon reload lands.
+Two boss encounters (Cyber-Shell Titan, Cryo-Goliath Snail) recorded in
+`user-long.mp4` were identified and cut entirely per direction — every
+gameplay chunk in the current EDL sources from confirmed non-boss windows.
 
-27-39 seconds: Decision montage. Bank resources or descend, open archive logs,
-activate fabrication, pick a risky route.
+0-3.5s: Card 1 -- "EVERY DOOR COSTS OXYGEN" over key art.
 
-39-52 seconds: Steam/Deck-friendly feature pass. Controller prompts, readable
-HUD, quick run summary, leaderboard flash.
+3.5-38s: Five more card/gameplay pairs, each shorter than the last --
+exploration, the Mothership dialogue hook, banking, combat -- cutting faster
+as the OST build climbs.
 
-52-65 seconds: The cave reveal. Show the mouth, the cutscene impact, the queen
-presence, and the tone shift without spoiling Act 2 outcomes.
-
-65-75 seconds: Final call. Title, release/wishlist card, Steam page CTA.
+38-48.7s: The short clip's cinematic reveal into the real title screen, CTA
+drawn over the held final frame.
 
 ## Screenshot Plan
 

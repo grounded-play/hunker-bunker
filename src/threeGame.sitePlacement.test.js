@@ -11,6 +11,7 @@ function makeFakePlacementGame(runEntropy) {
         createSeededRandom: ThreeGame.prototype.createSeededRandom,
         isSnailTileWalkable: () => true,
         canOccupyPosition: () => true,
+        isSiteAreaWalkable: ThreeGame.prototype.isSiteAreaWalkable,
         isGoodSitePosition: () => true,
         chooseProgressionSitePosition: ThreeGame.prototype.chooseProgressionSitePosition
     };
@@ -18,6 +19,13 @@ function makeFakePlacementGame(runEntropy) {
 }
 
 describe('ordered world landmark progression', () => {
+    it('requires a broad walkable clearing around camp centers', () => {
+        const game = makeFakePlacementGame(42);
+        game.isSnailTileWalkable = (x, z) => !(x === 3 && z === 0);
+
+        expect(ThreeGame.prototype.isSiteAreaWalkable.call(game, 0, 0, 4)).toBe(false);
+        expect(ThreeGame.prototype.isSiteAreaWalkable.call(game, 10, 10, 4)).toBe(true);
+    });
     it('places all three camps in increasing outward depth bands', () => {
         const game = makeFakePlacementGame(42);
         const camps = [0, 1, 2].map((index) => (

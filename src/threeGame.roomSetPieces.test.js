@@ -33,7 +33,8 @@ function makeFakeGame() {
         // both "succeed" every time they're checked, isolating room-gating
         // as the only thing that can still exclude a placement.
         createSeededRandom: () => () => 0,
-        getRoomTypeGrid: () => buildRoomTypeGrid(17)
+        getRoomTypeGrid: () => buildRoomTypeGrid(17),
+        getSpawnTile: () => ({ x: 100, y: 100 })
     };
 }
 
@@ -53,5 +54,29 @@ describe('createChunkSetPiecePlacements — room-gated set dressing', () => {
             // should ever produce a room set piece.
             expect(localX, `placement at (${localX},${localY})`).toBeLessThan(10);
         }
+    });
+
+    it('removes authored props from the ship starting-room clear zone', () => {
+        const game = makeFakeGame();
+        game.getSpawnTile = () => ({ x: 3, y: 3 });
+        game.wfcMetadataCache = new Map([['0,0', {
+            roomInstances: [{
+                populationPlan: {
+                    placements: [
+                        { id: 'near', x: 4, y: 4, kind: 'signature', type: 'prop_bunker_supplies' },
+                        { id: 'far', x: 14, y: 14, kind: 'signature', type: 'prop_specimen_tank' }
+                    ]
+                }
+            }]
+        }]]);
+
+        const placements = ThreeGame.prototype.createChunkSetPiecePlacements.call(
+            game,
+            0,
+            0,
+            buildTwoBlockGrid(17)
+        );
+
+        expect(placements.map(({ scatterKey }) => scatterKey)).toEqual(['room_plan:far']);
     });
 });

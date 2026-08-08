@@ -9,6 +9,8 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
       HB_BACKEND_AUDIT_STRICT: "1"

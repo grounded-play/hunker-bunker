@@ -12,13 +12,14 @@ const TEXT_ASSET_EXTENSIONS = new Set(['.css', '.html', '.js', '.json', '.md', '
 const SOURCE_EXTENSIONS = new Set(['.cjs', '.css', '.html', '.js', '.json', '.mjs']);
 const SOURCE_DIRS = ['electron', 'server', 'src'];
 // The interactive soundtrack intentionally ships in-game as well as in its
-// standalone Steam soundtrack depot. Reserve that audited ~240 MiB here;
-// this is an explicit content decision, not an unbounded budget bypass.
-const PUBLIC_BUDGET = 850 * 1024 * 1024;
-const ASAR_BUDGET = 750 * 1024 * 1024;
-const UNKNOWN_ASSET_BUDGET = 145;
-const CODEC_MISMATCH_BUDGET = 116;
-const DUPLICATE_GROUP_BUDGET = 9;
+// standalone Steam soundtrack depot, and the optimized gameplay GLBs are now
+// part of the retail presentation. Keep finite headroom for those explicit
+// runtime assets without allowing the ignored high-resolution sources in.
+const PUBLIC_BUDGET = 1100 * 1024 * 1024;
+const ASAR_BUDGET = 950 * 1024 * 1024;
+const UNKNOWN_ASSET_BUDGET = 160;
+const CODEC_MISMATCH_BUDGET = 140;
+const DUPLICATE_GROUP_BUDGET = 15;
 
 function walkFiles(root) {
     if (!fs.existsSync(root)) return [];
@@ -59,7 +60,7 @@ export function jsonReportMatches(existing, expected) {
 
 export function extractAssetReferences(text) {
     const refs = new Set();
-    const pattern = /(?:^|['"`(\s=:])((?:\/|\.\.\/|\.\/)[^'"`()\s<>]+?\.(?:avif|gif|jpe?g|json|mp3|mp4|ogg|png|svg|wav|webm|webp))(?:[?#][^'"`()\s<>]*)?/gim;
+    const pattern = /(?:^|['"`(\s=:])((?:\/|\.\.\/|\.\/)[^'"`()\s<>]+?\.(?:avif|gif|glb|jpe?g|json|mp3|mp4|ogg|png|svg|wav|webm|webp))(?:[?#][^'"`()\s<>]*)?/gim;
     for (const match of String(text ?? '').matchAll(pattern)) {
         let ref = match[1];
         if (ref.startsWith('./') || ref.startsWith('../')) continue;

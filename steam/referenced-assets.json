@@ -1,13 +1,48 @@
 {
   "version": 1,
   "references": [
+    "3d/GG.1.glb",
+    "3d/runtime/basic-pile.glb",
+    "3d/runtime/bio-stalker.glb",
+    "3d/runtime/broken-engineer-ship.glb",
+    "3d/runtime/broken-scout-ship.glb",
+    "3d/runtime/broken-tank-ship.glb",
+    "3d/runtime/console.glb",
+    "3d/runtime/cryo-snail-boss.glb",
+    "3d/runtime/cyber-snail-boss.glb",
+    "3d/runtime/cyber-snail.glb",
+    "3d/runtime/engineer-rigged-gestures.glb",
+    "3d/runtime/frozen-tanker.glb",
+    "3d/runtime/fusion-generator.glb",
+    "3d/runtime/hull-matrix.glb",
+    "3d/runtime/new3ds/bunker_junk_rare.glb",
+    "3d/runtime/new3ds/bunker_junk_uncommon.glb",
+    "3d/runtime/new3ds/fungal_spore_vent.glb",
+    "3d/runtime/new3ds/prop_biomech_arch.glb",
+    "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
+    "3d/runtime/new3ds/prop_bunker_supplies.glb",
+    "3d/runtime/new3ds/prop_cave_bones.glb",
+    "3d/runtime/new3ds/prop_cave_queen_throne.glb",
+    "3d/runtime/new3ds/prop_conduit_hub.glb",
+    "3d/runtime/new3ds/prop_diagnostic_console.glb",
+    "3d/runtime/new3ds/prop_medical_bed.glb",
+    "3d/runtime/new3ds/prop_security_barricade.glb",
+    "3d/runtime/new3ds/prop_specimen_tank.glb",
+    "3d/runtime/new3ds/prop_surgical_cart.glb",
+    "3d/runtime/new3ds/spore_mortar.glb",
+    "3d/runtime/new3ds/sporesnail.glb",
+    "3d/runtime/o2-generator.glb",
+    "3d/runtime/parasite.glb",
+    "3d/runtime/queen.glb",
+    "3d/runtime/radar.glb",
+    "3d/runtime/spore-snail-boss.glb",
+    "3d/runtime/storage-locker.glb",
+    "3d/runtime/tank-rigged.glb",
+    "3d/scouting-scout/Scout.game.glb",
     "DoorIntro.mp4",
     "Eng.Full_v2.png",
-    "Eng.Intro.gif",
     "Eng.walk_v4.png",
-    "Scout.Intro.gif",
     "Scout.full_v2.png",
-    "Tank.Intro.gif",
     "Tank.full_v2.png",
     "Tank.walk_v4.png",
     "ach_ending_alien_exodus.jpg",
@@ -144,7 +179,6 @@
     "canyon_falloff_alien.png",
     "canyon_falloff_biomech.png",
     "canyon_falloff_ice.png",
-    "cave_mouth.png",
     "civilian_miner_walk.png",
     "civilian_researcher_walk.png",
     "console.png",
@@ -165,21 +199,49 @@
     "cutscenes/poster-art/death-queen.png",
     "cutscenes/poster-art/death-ship.png",
     "cutscenes/poster-art/event-black-box-recovered.png",
+    "cutscenes/poster-art/event-boss-cryosnail.png",
+    "cutscenes/poster-art/event-boss-cybersnail.png",
+    "cutscenes/poster-art/event-boss-sporesnail.png",
+    "cutscenes/poster-art/event-cave-revealed-1.png",
+    "cutscenes/poster-art/event-cave-revealed-2.png",
     "cutscenes/poster-art/event-foundry-discovered.png",
+    "cutscenes/poster-art/event-o2-generator-upgraded.png",
     "cutscenes/poster-art/event-queen-encounter.png",
     "cybersnail.png",
     "cybersnail_dead.png",
+    "decal_abandoned_meal_tray.png",
+    "decal_barricade_last_stand.png",
+    "decal_bio_sample_spill.png",
+    "decal_biohazard_stencil.png",
     "decal_bullet_holes.png",
+    "decal_childlike_cave_map.png",
+    "decal_claw_scratches.png",
+    "decal_emergency_oxygen_nest.png",
+    "decal_failed_decon_kit.png",
+    "decal_footprints_mud.png",
+    "decal_hazard_stripes.png",
     "decal_hive_growth.png",
+    "decal_machine_cult_shrine.png",
+    "decal_maintenance_shrine.png",
+    "decal_meridian_stencil.png",
+    "decal_oil_spill_patch.png",
+    "decal_pod_312_breach.png",
     "decal_scars.png",
+    "decal_spore_growth_patch.png",
+    "decal_tallow_herb_cache.png",
+    "decal_tallow_symbol.png",
     "decal_wall_breach.png",
+    "decal_worker_sleep_roll.png",
     "door.png",
     "door.webp",
     "door_alien_keyart_v2.webp",
+    "door_bio.png",
     "door_bio_keyart_v2.webp",
     "door_biomech_keyart_v2.webp",
     "door_biomechanical.png",
+    "door_cryo.png",
     "door_cryo_keyart_v2.webp",
+    "door_nuclear.png",
     "door_nuclear_keyart_v2.webp",
     "door_rust_keyart_v2.webp",
     "drop_black_flask.png",
@@ -230,12 +292,12 @@
     "fungal_spore_vent.png",
     "fx_spark_burst.svg",
     "fx_steam_puff.svg",
-    "hive_interior.png",
     "ice_base_rock.png",
     "ice_grunge_snow.png",
     "ice_wall_glacier.png",
     "kaelen_camp_walk_v2.png",
     "lore_portraits/meridian_kaelen.jpg",
+    "lore_portraits/meridian_kaelen.png",
     "lore_portraits/queen_00.webp",
     "lore_portraits/survivor_00.webp",
     "lore_portraits/survivor_01.webp",
@@ -248,7 +310,9 @@
     "lore_portraits/survivor_09.webp",
     "lore_portraits/survivor_10.webp",
     "lore_portraits/survivor_11.webp",
+    "lore_portraits/tallow_martha.png",
     "lore_portraits/tallow_martha.webp",
+    "lore_portraits/vesper_briggs.png",
     "lore_portraits/vesper_briggs.webp",
     "manifest.json",
     "martha_camp_walk.png",
@@ -272,6 +336,8 @@
     "prop_camp_bedrolls.png",
     "prop_camp_cookfire_doused.png",
     "prop_camp_cookfire_lit.png",
+    "prop_camp_cot.png",
+    "prop_camp_crate.png",
     "prop_camp_crates.png",
     "prop_camp_crates_chained.png",
     "prop_camp_grave_fresh.png",
@@ -294,7 +360,8 @@
     "prop_diagnostic_console.png",
     "prop_engineering_bench.png",
     "prop_fusion_generator.png",
-    "prop_hive_resin_sac.svg",
+    "prop_hive_resin_sac.png",
+    "prop_iron_guild_dogtags.png",
     "prop_medical_bed.png",
     "prop_ruptured_coolant_pump.png",
     "prop_security_barricade.png",
@@ -309,15 +376,16 @@
     "scatter_bio_moss.png",
     "scatter_bio_pod.png",
     "scatter_biomech_debris.png",
-    "scatter_bolts.svg",
+    "scatter_bolts.png",
     "scatter_broken_drone.png",
-    "scatter_cable_coil.svg",
+    "scatter_cable_coil.png",
     "scatter_camp_supplies.png",
     "scatter_coolant_puddle.png",
     "scatter_cryo_icicle.png",
     "scatter_cryo_shards.png",
     "scatter_gravel.png",
     "scatter_hive_eggs.png",
+    "scatter_horizon_black_box.png",
     "scatter_ice_stalagmite.png",
     "scatter_slime_puddle.png",
     "schematics/schematic_00.webp",
@@ -343,6 +411,201 @@
   ],
   "assets": [
     {
+      "path": "3d/GG.1.glb",
+      "bytes": 35611712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/basic-pile.glb",
+      "bytes": 5649512,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/bio-stalker.glb",
+      "bytes": 5246816,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/broken-engineer-ship.glb",
+      "bytes": 5249124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/broken-scout-ship.glb",
+      "bytes": 5001976,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/broken-tank-ship.glb",
+      "bytes": 5051904,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/console.glb",
+      "bytes": 4318964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/cryo-snail-boss.glb",
+      "bytes": 4770452,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/cyber-snail-boss.glb",
+      "bytes": 6008404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/cyber-snail.glb",
+      "bytes": 6233064,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/engineer-rigged-gestures.glb",
+      "bytes": 6357192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/engineer-vanguard.glb",
+      "bytes": 5167428,
+      "classification": "unknown"
+    },
+    {
+      "path": "3d/runtime/frozen-tanker.glb",
+      "bytes": 5093968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/fusion-generator.glb",
+      "bytes": 4516144,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/hull-matrix.glb",
+      "bytes": 4910584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/bunker_junk_rare.glb",
+      "bytes": 4363348,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/bunker_junk_uncommon.glb",
+      "bytes": 3795812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/fungal_spore_vent.glb",
+      "bytes": 3284196,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_arch.glb",
+      "bytes": 5251704,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
+      "bytes": 4623472,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_bunker_supplies.glb",
+      "bytes": 4932964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_cave_bones.glb",
+      "bytes": 4435296,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_cave_queen_throne.glb",
+      "bytes": 5885988,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_conduit_hub.glb",
+      "bytes": 3960216,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_diagnostic_console.glb",
+      "bytes": 5365368,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_medical_bed.glb",
+      "bytes": 4075660,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_security_barricade.glb",
+      "bytes": 4915192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_specimen_tank.glb",
+      "bytes": 5239916,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_surgical_cart.glb",
+      "bytes": 4765964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/spore_mortar.glb",
+      "bytes": 5404332,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/sporesnail.glb",
+      "bytes": 5308636,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/o2-generator.glb",
+      "bytes": 4971272,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/parasite.glb",
+      "bytes": 5540768,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/queen.glb",
+      "bytes": 4994940,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/radar.glb",
+      "bytes": 4830252,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/spore-snail-boss.glb",
+      "bytes": 5822668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/storage-locker.glb",
+      "bytes": 5068812,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/tank-rigged.glb",
+      "bytes": 5525480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/scouting-scout/Scout.game.glb",
+      "bytes": 7948504,
+      "classification": "runtime-required"
+    },
+    {
       "path": "DoorIntro.mp4",
       "bytes": 4668690,
       "classification": "runtime-required"
@@ -360,7 +623,7 @@
     {
       "path": "Eng.Intro.gif",
       "bytes": 7404804,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "Eng.walk_v4.png",
@@ -370,7 +633,7 @@
     {
       "path": "Scout.Intro.gif",
       "bytes": 8282353,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "Scout.full.jpeg",
@@ -390,7 +653,7 @@
     {
       "path": "Tank.Intro.gif",
       "bytes": 8742231,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "Tank.full.jpeg",
@@ -1825,7 +2088,7 @@
     {
       "path": "cave_mouth.png",
       "bytes": 750170,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "civilian_miner_walk.png",
@@ -2068,6 +2331,36 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/event-boss-encounter-cryosnail-poster.jpg",
+      "bytes": 957651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-boss-encounter-cryosnail.webm",
+      "bytes": 812224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-boss-encounter-cybersnail-poster.jpg",
+      "bytes": 883557,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-boss-encounter-cybersnail.webm",
+      "bytes": 812224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-boss-encounter-sporesnail-poster.jpg",
+      "bytes": 991045,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-boss-encounter-sporesnail.webm",
+      "bytes": 812224,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/event-foundry-discovered-poster.jpg",
       "bytes": 257082,
       "classification": "runtime-required"
@@ -2075,6 +2368,16 @@
     {
       "path": "cutscenes/event-foundry-discovered.webm",
       "bytes": 813792,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-o2-generator-upgraded-poster.jpg",
+      "bytes": 973147,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/event-o2-generator-upgraded.webm",
+      "bytes": 828421,
       "classification": "runtime-required"
     },
     {
@@ -2138,8 +2441,38 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/poster-art/event-boss-cryosnail.png",
+      "bytes": 957651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/event-boss-cybersnail.png",
+      "bytes": 883557,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/event-boss-sporesnail.png",
+      "bytes": 991045,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/event-cave-revealed-1.png",
+      "bytes": 891193,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/event-cave-revealed-2.png",
+      "bytes": 889527,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/poster-art/event-foundry-discovered.png",
       "bytes": 2688052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/poster-art/event-o2-generator-upgraded.png",
+      "bytes": 973147,
       "classification": "runtime-required"
     },
     {
@@ -2178,8 +2511,58 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_abandoned_meal_tray.png",
+      "bytes": 573701,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_barricade_last_stand.png",
+      "bytes": 550192,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_bio_sample_spill.png",
+      "bytes": 618877,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_biohazard_stencil.png",
+      "bytes": 187264,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_bullet_holes.png",
       "bytes": 2050027,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_childlike_cave_map.png",
+      "bytes": 621769,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_claw_scratches.png",
+      "bytes": 219979,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_emergency_oxygen_nest.png",
+      "bytes": 542404,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_failed_decon_kit.png",
+      "bytes": 554588,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_footprints_mud.png",
+      "bytes": 223720,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_hazard_stripes.png",
+      "bytes": 213478,
       "classification": "runtime-required"
     },
     {
@@ -2193,6 +2576,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_maintenance_shrine.png",
+      "bytes": 478869,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_meridian_stencil.png",
+      "bytes": 210421,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_oil_spill_patch.png",
+      "bytes": 171759,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_pod_312_breach.png",
       "bytes": 1100,
       "classification": "runtime-required"
@@ -2203,13 +2601,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "decal_spore_growth_patch.png",
+      "bytes": 201842,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_tallow_herb_cache.png",
       "bytes": 1127,
       "classification": "runtime-required"
     },
     {
+      "path": "decal_tallow_symbol.png",
+      "bytes": 199998,
+      "classification": "runtime-required"
+    },
+    {
       "path": "decal_wall_breach.png",
       "bytes": 1930665,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "decal_worker_sleep_roll.png",
+      "bytes": 511865,
       "classification": "runtime-required"
     },
     {
@@ -2590,7 +3003,7 @@
     {
       "path": "hive_interior.png",
       "bytes": 1025298,
-      "classification": "runtime-required"
+      "classification": "unknown"
     },
     {
       "path": "hive_relay_site.png",
@@ -3649,22 +4062,32 @@
     },
     {
       "path": "prop_camp_bedrolls.png",
-      "bytes": 38700,
+      "bytes": 148251,
       "classification": "runtime-required"
     },
     {
       "path": "prop_camp_cookfire_doused.png",
-      "bytes": 32389,
+      "bytes": 161490,
       "classification": "runtime-required"
     },
     {
       "path": "prop_camp_cookfire_lit.png",
-      "bytes": 92531,
+      "bytes": 164302,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_cot.png",
+      "bytes": 153989,
       "classification": "runtime-required"
     },
     {
       "path": "prop_camp_cot.svg",
       "bytes": 1476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_camp_crate.png",
+      "bytes": 205681,
       "classification": "runtime-required"
     },
     {
@@ -3783,6 +4206,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_hive_resin_sac.png",
+      "bytes": 176610,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_hive_resin_sac.svg",
       "bytes": 1505,
       "classification": "runtime-required"
@@ -3868,6 +4296,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "scatter_bolts.png",
+      "bytes": 100716,
+      "classification": "runtime-required"
+    },
+    {
       "path": "scatter_bolts.svg",
       "bytes": 1796,
       "classification": "runtime-required"
@@ -3875,6 +4308,11 @@
     {
       "path": "scatter_broken_drone.png",
       "bytes": 1924746,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "scatter_cable_coil.png",
+      "bytes": 144934,
       "classification": "runtime-required"
     },
     {

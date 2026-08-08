@@ -93,6 +93,17 @@ describe('LineDirector', () => {
         expect(d.requestLine('ambient', { objectiveSource: 'camp-quest' }, pool)).toBeNull();
     });
 
+    it('only selects announcements that match the Director action that happened', () => {
+        const d = new LineDirector();
+        const pool = [
+            { id: 'patrol', text: 'hostiles inbound', tags: { directorActions: ['patrol'] } },
+            { id: 'lights', text: 'lights disabled', tags: { directorActions: ['lightsout'] } }
+        ];
+
+        expect(d.requestLine('ambient', { directorAction: 'patrol' }, pool).id).toBe('patrol');
+        expect(d.requestLine('ambient', { directorAction: 'corrupt' }, pool)).toBeNull();
+    });
+
     it('evaluates a template function against context instead of using a static text field', () => {
         const d = new LineDirector();
         const pool = [{ id: 'tmpl', template: (ctx) => `depth is ${ctx.depthTier}`, tags: {} }];

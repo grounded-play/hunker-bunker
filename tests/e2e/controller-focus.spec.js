@@ -109,6 +109,80 @@ test.describe('controller-ready modal focus', () => {
         }))).toEqual({ overflowY: 'auto', scrollbarWidth: 'thin' });
     });
 
+    test('controller left and right change focused settings selects', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const sensitivity = page.locator('#setting-aim-sensitivity');
+        await sensitivity.focus();
+        await sensitivity.selectOption('1.0');
+
+        await page.evaluate(() => {
+            const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+            buttons[15] = { pressed: true, value: 1 };
+            const pad = {
+                id: 'Xbox Wireless Controller (STANDARD GAMEPAD)',
+                index: 0,
+                connected: true,
+                mapping: 'standard',
+                axes: [0, 0, 0, 0],
+                buttons
+            };
+            navigator.getGamepads = () => [pad];
+        });
+
+        await expect(sensitivity).toHaveValue('1.25');
+        await expect.poll(() => page.evaluate(() => localStorage.getItem('hb_aim_sensitivity'))).toBe('1.25');
+
+        await page.evaluate(() => { navigator.getGamepads = () => []; });
+    });
+
+    test('controller can choose a visible right-stick sensitivity preset', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const fast = page.locator('[data-aim-sensitivity="1.5"]');
+        await fast.focus();
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: 'menu_confirm' } }));
+        });
+
+        await expect(fast).toHaveAttribute('aria-pressed', 'true');
+        await expect(page.locator('#setting-aim-sensitivity')).toHaveValue('1.5');
+        await expect.poll(() => page.evaluate(() => localStorage.getItem('hb_aim_sensitivity'))).toBe('1.5');
+    });
+
+    test('crosshair color picker updates and persists the accessibility color', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const picker = page.locator('#setting-crosshair-color');
+        await picker.evaluate((element) => {
+            element.value = '#39ff88';
+            element.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        await expect(picker).toHaveValue('#39ff88');
+        await expect.poll(() => page.evaluate(() => ({
+            stored: localStorage.getItem('hb_crosshair_color'),
+            rendered: getComputedStyle(document.documentElement).getPropertyValue('--crosshair-color').trim()
+        }))).toEqual({ stored: '#39ff88', rendered: '#39ff88' });
+    });
+
+    test('controller can choose a crosshair color without opening the native picker', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.locator('#title-settings-btn').click();
+
+        const green = page.locator('[data-crosshair-color="#39ff88"]');
+        await green.focus();
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: 'menu_confirm' } }));
+        });
+
+        await expect(green).toHaveAttribute('aria-pressed', 'true');
+        await expect.poll(() => page.evaluate(() => localStorage.getItem('hb_crosshair_color'))).toBe('#39ff88');
+    });
+
     test('controls/remapping traps focus and restores its settings trigger', async ({ page }) => {
         await bootToTitleSplash(page);
         await page.locator('#title-settings-btn').click();
@@ -130,8 +204,11 @@ test.describe('controller-ready modal focus', () => {
             ))).toBe(true);
         }
 
-        await page.locator('#close-controls').click();
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent('gamepad-menu-nav', { detail: { action: 'menu_back' } }));
+        });
         await expect(modal).toBeHidden();
+        await expect(page.locator('#settings-popup')).toBeVisible();
         await expect(trigger).toBeFocused();
     });
 
@@ -145,5 +222,17 @@ test.describe('controller-ready modal focus', () => {
 
         await expect(page.locator('#tactical-map-modal')).toBeVisible();
         await expect(page.locator('#close-tactical-map-modal')).toBeFocused();
+    });
+
+    test('base turret submenu owns controller focus when it becomes visible', async ({ page }) => {
+        await bootToTitleSplash(page);
+        await page.evaluate(() => {
+            const modal = document.getElementById('base-turret-modal');
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+        });
+
+        await expect(page.locator('#base-turret-modal')).toBeVisible();
+        await expect(page.locator('#close-base-turret-modal')).toBeFocused();
     });
 });

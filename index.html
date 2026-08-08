@@ -300,7 +300,12 @@
           <div class="module-row">
             <!-- Module 1: Sector Scan -->
             <div class="map-box">
-              <div id="game-container"></div>
+              <div id="game-container">
+                <div id="map-box-door" class="map-box-door" aria-hidden="true">
+                  <div class="map-box-door__panel map-box-door__panel--left"></div>
+                  <div class="map-box-door__panel map-box-door__panel--right"></div>
+                </div>
+              </div>
               <div class="menu-header-actions">
                 <div class="menu-command-column" aria-label="Operations commands">
                   <div class="menu-command">
@@ -349,6 +354,7 @@
                 <div class="char-preview-stage" aria-hidden="true">
                   <img id="char-preview-fallback" class="char-preview-fallback" src="/Tank.full_v2.png" alt="" />
                   <canvas id="char-preview-sprite" width="256" height="256"></canvas>
+                  <canvas id="char-preview-3d" class="hidden" width="320" height="320"></canvas>
                   <div id="char-preview-door" class="char-preview-door">
                     <div class="char-preview-door__panel char-preview-door__panel--top"></div>
                     <div class="char-preview-door__panel char-preview-door__panel--bottom"></div>
@@ -805,8 +811,11 @@
       </div>
 
       <!-- Desktop Compass HUD (shown only on PC) -->
-      <div id="desktop-compass" class="desktop-compass hidden" aria-hidden="true">
-        <div class="desktop-compass__header">NAV-LINK: ACTIVE</div>
+      <div id="desktop-compass" class="desktop-compass hidden" role="button" tabindex="0" title="Click or press M to toggle Tactical Map" aria-label="Tactical Compass (Click to open map)">
+        <div class="desktop-compass__header">
+          <span>NAV-LINK: ACTIVE</span>
+          <span class="desktop-compass__hint">[MAP / M]</span>
+        </div>
         <div class="desktop-compass__face">
           <div class="desktop-compass__ring">
             <div class="desktop-compass__arrow" id="desktop-compass-arrow"></div>
@@ -1106,6 +1115,11 @@
       <div id="o2-generator-hud-prompt" class="lore-hud-prompt hud-action-prompt o2-generator-hud-prompt hidden">
         <span class="prompt-key">PRESS E</span>
         <span class="prompt-text">UPGRADE O₂ GENERATOR</span>
+      </div>
+
+      <div id="base-turret-hud-prompt" class="lore-hud-prompt hud-action-prompt base-turret-hud-prompt hidden">
+        <span class="prompt-key">PRESS E</span>
+        <span class="prompt-text">DEFENSE TURRET CONTROLS</span>
       </div>
 
       <div id="foundry-hud-prompt" class="lore-hud-prompt hud-action-prompt foundry-hud-prompt hidden">
@@ -1455,6 +1469,36 @@
       </div>
     </div>
 
+    <!-- Base Defense Turret Upgrade / Repair Modal -->
+    <div id="base-turret-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content console-terminal-content base-turret-modal-content">
+        <button class="close-modal" id="close-base-turret-modal" aria-label="Close Base Turret controls">×</button>
+        <div class="terminal-scanline"></div>
+        <div class="terminal-flicker"></div>
+        <div class="terminal-header">
+          <div class="terminal-title">CAMP DEFENSE TURRET</div>
+          <div class="terminal-class-badge" id="base-turret-modal-badge">DOOR GUARD</div>
+        </div>
+        <div class="terminal-body">
+          <div class="upgrade-goals-section upgrade-goals-section--generator terminal-tone--generator">
+            <div class="action-card action-card--generator">
+              <div class="action-card-header">
+                <span class="action-title">TURRET STATUS</span>
+                <span class="action-cost" id="base-turret-modal-status">LVL 1 // HP 100/100</span>
+              </div>
+              <p class="action-desc" id="base-turret-modal-stats">DAMAGE: 4 | RANGE: 7u | RATE: 1.2s</p>
+              <p class="action-desc" id="base-turret-modal-upgrade-cost">NEXT UPGRADE COST: --</p>
+              <p class="action-desc" id="base-turret-modal-repair-cost">REPAIR COST: --</p>
+              <div style="display: flex; gap: 10px; margin-top: 12px;">
+                <button class="terminal-action-btn" id="base-turret-upgrade-btn" style="flex: 1;">UPGRADE TURRET</button>
+                <button class="terminal-action-btn" id="base-turret-repair-btn" style="flex: 1;">REPAIR TURRET</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="elevator-choice-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content console-terminal-content elevator-choice-content">
         <div class="terminal-scanline"></div>
@@ -1688,6 +1732,47 @@
             </select>
           </div>
           <div class="setting-item">
+            <span>RIGHT STICK AIM SPEED</span>
+            <div class="settings-choice-control">
+              <select id="setting-aim-sensitivity" class="settings-select" aria-label="Right stick aim speed">
+              <option value="0.5">50% (SLOW)</option>
+              <option value="0.75">75% (LIGHT)</option>
+              <option value="1.0" selected>100% (STANDARD)</option>
+              <option value="1.25">125% (FAST)</option>
+              <option value="1.5">150% (VERY FAST)</option>
+              <option value="2.0">200% (HYPER)</option>
+              </select>
+              <div class="sensitivity-presets" role="group" aria-label="Right stick aim speed presets">
+                <button type="button" data-aim-sensitivity="0.5">50%</button>
+                <button type="button" data-aim-sensitivity="0.75">75%</button>
+                <button type="button" data-aim-sensitivity="1">100%</button>
+                <button type="button" data-aim-sensitivity="1.25">125%</button>
+                <button type="button" data-aim-sensitivity="1.5">150%</button>
+                <button type="button" data-aim-sensitivity="2">200%</button>
+              </div>
+              <span class="settings-controller-hint">D-PAD ◀ ▶ TO ADJUST</span>
+            </div>
+          </div>
+          <div class="setting-item">
+            <span>INVERT AIM Y-AXIS</span>
+            <label class="toggle"><input type="checkbox" id="setting-invert-y-toggle"> <span class="slider"></span></label>
+          </div>
+          <div class="setting-item">
+            <span>CROSSHAIR COLOR</span>
+            <div class="crosshair-color-controls">
+              <div id="crosshair-color-presets" class="crosshair-color-presets" role="group" aria-label="Crosshair color presets">
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff9f1c" style="--swatch-color:#ff9f1c" aria-label="Orange crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffffff" style="--swatch-color:#ffffff" aria-label="White crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#39ff88" style="--swatch-color:#39ff88" aria-label="Green crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#2ec4ff" style="--swatch-color:#2ec4ff" aria-label="Cyan crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ffe14a" style="--swatch-color:#ffe14a" aria-label="Yellow crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#ff4f64" style="--swatch-color:#ff4f64" aria-label="Red crosshair"></button>
+                <button type="button" class="crosshair-color-swatch" data-crosshair-color="#d76bff" style="--swatch-color:#d76bff" aria-label="Purple crosshair"></button>
+              </div>
+              <label class="crosshair-custom-color">CUSTOM <input type="color" id="setting-crosshair-color" class="settings-color-picker" value="#ff9f1c" aria-label="Custom crosshair color"></label>
+            </div>
+          </div>
+          <div class="setting-item">
             <span>COLORBLIND ASSIST</span>
             <label class="toggle"><input type="checkbox" id="setting-colorblind-toggle"> <span class="slider"></span></label>
           </div>
@@ -1777,8 +1862,9 @@
     <div id="controls-popup" class="modal controls-modal hidden">
       <div class="modal-content controls-panel">
         <button class="close-modal controls-close" id="close-controls">×</button>
-        <h2 class="modal-title">DESKTOP CONTROLS</h2>
-        <p class="controls-hint">Click a slot, then press a key to bind it. ESC cancels.</p>
+        <h2 class="modal-title">CONTROLS</h2>
+        <p class="controls-hint"><strong>STEAM DECK:</strong> Left stick moves or navigates · Right stick aims and controls the visible pointer · A accepts/interacts · B backs out/dodges · Menu opens settings.</p>
+        <p class="controls-hint"><strong>DESKTOP:</strong> Click a slot, then press a key to bind it. ESC cancels.</p>
         <div class="controls-list" id="controls-list"></div>
         <div class="controls-actions">
           <button type="button" class="settings-action-btn settings-action-btn--reset" id="reset-controls">RESET</button>
@@ -1823,6 +1909,31 @@
     </div>
 
     <canvas id="snail-encounter-canvas" class="snail-encounter-canvas"></canvas>
+
+    <div id="leader-conversation-modal" class="modal leader-conversation-modal hidden" aria-hidden="true">
+      <div class="leader-conversation-panel" role="dialog" aria-modal="true" aria-labelledby="leader-conversation-name">
+        <button type="button" id="leader-conversation-close" class="close-modal leader-conversation-close" aria-label="Leave conversation">×</button>
+        <section class="leader-conversation-visual" aria-label="Speaker">
+          <canvas id="leader-conversation-canvas" class="leader-conversation-canvas"></canvas>
+          <img id="leader-conversation-portrait" class="leader-conversation-portrait" src="/lore_portraits/survivor_00.webp" alt="">
+          <div class="leader-conversation-scanlines" aria-hidden="true"></div>
+        </section>
+        <section class="leader-conversation-content">
+          <div id="leader-conversation-kicker" class="leader-conversation-kicker">CAMP CONTACT</div>
+          <h2 id="leader-conversation-name" class="leader-conversation-name">SURVIVOR</h2>
+          <div id="leader-conversation-meta" class="leader-conversation-meta"></div>
+          <div id="leader-conversation-line" class="leader-conversation-line" aria-live="polite"></div>
+          <div class="leader-conversation-progress">
+            <div id="leader-conversation-stats" class="leader-conversation-stats"></div>
+            <div id="leader-conversation-guidance" class="leader-conversation-guidance"></div>
+          </div>
+          <div class="leader-conversation-actions">
+            <button type="button" id="leader-conversation-continue">CONTINUE</button>
+            <button type="button" id="leader-conversation-leave">LEAVE</button>
+          </div>
+        </section>
+      </div>
+    </div>
 
     <div id="snail-encounter-modal" class="modal hidden" aria-hidden="true">
       <div class="snail-encounter-panel">
