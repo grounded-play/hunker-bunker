@@ -43,6 +43,20 @@ describe('player 3D cosmetic overlay', () => {
         expect(selectOverlayAnimation({ ...base, moveX: 1, moveZ: 0 })).toBe('strafeRight');
     });
 
+    it('keeps sprint locomotion aligned to travel while aiming elsewhere', () => {
+        const sprinting = {
+            isMoving: true,
+            isSprinting: true,
+            hasAim: true,
+            moveX: 0,
+            moveZ: -1,
+            aimX: 0,
+            aimZ: 1
+        };
+        expect(selectOverlayAnimation(sprinting)).toBe('run');
+        expect(computeLocomotionWeights(sprinting)).toEqual({ run: 1 });
+    });
+
     it('prioritizes fall and reload over locomotion', () => {
         expect(selectOverlayAnimation({ isFalling: true, isReloading: true, isMoving: true })).toBe('fall');
         expect(selectOverlayAnimation({ isReloading: true, isMoving: true })).toBe('reload');

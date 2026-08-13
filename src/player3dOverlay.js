@@ -84,7 +84,11 @@ export function selectOverlayAnimation({
     if (isFalling) return 'fall';
     if (isReloading) return 'reload';
     if (!isMoving) return 'idle';
-    if (!hasAim) return isSprinting ? 'run' : 'walk';
+    // Sprint follows travel, not aim. The overlay root already faces moveX/Z,
+    // while the upper body independently tracks aim, so always use the
+    // forward run cycle instead of aim-relative strafe/backward clips.
+    if (isSprinting) return 'run';
+    if (!hasAim) return 'walk';
 
     const moveLength = Math.hypot(moveX, moveZ) || 1;
     const aimLength = Math.hypot(aimX, aimZ) || 1;
@@ -111,7 +115,8 @@ export function selectLocomotionActionName(name, isInjured, hasVariantClip) {
 export function computeLocomotionWeights(state = {}) {
     if (state.isFalling) return { fall: 1 };
     if (!state.isMoving) return { idle: 1 };
-    if (!state.hasAim) return { [state.isSprinting ? 'run' : 'walk']: 1 };
+    if (state.isSprinting) return { run: 1 };
+    if (!state.hasAim) return { walk: 1 };
 
     const moveLength = Math.hypot(state.moveX ?? 0, state.moveZ ?? 0) || 1;
     const aimLength = Math.hypot(state.aimX ?? 0, state.aimZ ?? 1) || 1;
