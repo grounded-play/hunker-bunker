@@ -46,6 +46,18 @@ NEW3D_ASSETS = [
     'prop_surgical_cart.glb',
     'spore_mortar.glb',
     'sporesnail.glb',
+    'prop_ammo_crate_stack.glb',
+    'prop_biomech_flesh_locker.glb',
+    'prop_biomech_incubator.glb',
+    'prop_biomech_neural_synapse.glb',
+    'prop_biomech_respirator.glb',
+    'prop_biomech_sphincter_trap.glb',
+    'prop_biomech_triage_cradle.glb',
+    'prop_fabricator_workstation.glb',
+    'prop_laser_trap_emitter.glb',
+    'prop_o2_filter_vat.glb',
+    'prop_tesla_coil_node.glb',
+    'prop_vital_monitor.glb',
 ]
 
 

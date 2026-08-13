@@ -18,17 +18,29 @@
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
     "3d/runtime/new3ds/fungal_spore_vent.glb",
+    "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
     "3d/runtime/new3ds/prop_biomech_arch.glb",
+    "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
+    "3d/runtime/new3ds/prop_biomech_incubator.glb",
+    "3d/runtime/new3ds/prop_biomech_neural_synapse.glb",
+    "3d/runtime/new3ds/prop_biomech_respirator.glb",
+    "3d/runtime/new3ds/prop_biomech_sphincter_trap.glb",
+    "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
     "3d/runtime/new3ds/prop_broken_specimen_tank.glb",
     "3d/runtime/new3ds/prop_bunker_supplies.glb",
     "3d/runtime/new3ds/prop_cave_bones.glb",
     "3d/runtime/new3ds/prop_cave_queen_throne.glb",
     "3d/runtime/new3ds/prop_conduit_hub.glb",
     "3d/runtime/new3ds/prop_diagnostic_console.glb",
+    "3d/runtime/new3ds/prop_fabricator_workstation.glb",
+    "3d/runtime/new3ds/prop_laser_trap_emitter.glb",
     "3d/runtime/new3ds/prop_medical_bed.glb",
+    "3d/runtime/new3ds/prop_o2_filter_vat.glb",
     "3d/runtime/new3ds/prop_security_barricade.glb",
     "3d/runtime/new3ds/prop_specimen_tank.glb",
     "3d/runtime/new3ds/prop_surgical_cart.glb",
+    "3d/runtime/new3ds/prop_tesla_coil_node.glb",
+    "3d/runtime/new3ds/prop_vital_monitor.glb",
     "3d/runtime/new3ds/spore_mortar.glb",
     "3d/runtime/new3ds/sporesnail.glb",
     "3d/runtime/o2-generator.glb",
@@ -424,7 +436,7 @@
   "assets": [
     {
       "path": "3d/GG.1.glb",
-      "bytes": 35611712,
+      "bytes": 4229388,
       "classification": "runtime-required"
     },
     {
@@ -513,8 +525,43 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
+      "bytes": 4403360,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_biomech_arch.glb",
       "bytes": 5251704,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
+      "bytes": 4550796,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_incubator.glb",
+      "bytes": 4445972,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_neural_synapse.glb",
+      "bytes": 4811504,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_respirator.glb",
+      "bytes": 4309780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_sphincter_trap.glb",
+      "bytes": 5437764,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
+      "bytes": 4750216,
       "classification": "runtime-required"
     },
     {
@@ -548,8 +595,23 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/prop_fabricator_workstation.glb",
+      "bytes": 4836172,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_laser_trap_emitter.glb",
+      "bytes": 4387656,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_medical_bed.glb",
       "bytes": 4075660,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_o2_filter_vat.glb",
+      "bytes": 4256964,
       "classification": "runtime-required"
     },
     {
@@ -565,6 +627,16 @@
     {
       "path": "3d/runtime/new3ds/prop_surgical_cart.glb",
       "bytes": 4765964,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_tesla_coil_node.glb",
+      "bytes": 4213092,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/prop_vital_monitor.glb",
+      "bytes": 4168220,
       "classification": "runtime-required"
     },
     {

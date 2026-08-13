@@ -27,7 +27,19 @@ export const WORLD_3D_MODELS = Object.freeze({
     prop_conduit_hub: { url: '/3d/runtime/new3ds/prop_conduit_hub.glb', height: 0.78, yaw: 0 },
     prop_cave_bones: { url: '/3d/runtime/new3ds/prop_cave_bones.glb', height: 0.34, yaw: 0 },
     prop_cave_queen_throne: { url: '/3d/runtime/new3ds/prop_cave_queen_throne.glb', height: 2.0, yaw: 0 },
-    prop_biomech_arch: { url: '/3d/runtime/new3ds/prop_biomech_arch.glb', height: 2.35, yaw: 0 }
+    prop_biomech_arch: { url: '/3d/runtime/new3ds/prop_biomech_arch.glb', height: 2.35, yaw: 0 },
+    prop_ammo_crate_stack: { url: '/3d/runtime/new3ds/prop_ammo_crate_stack.glb', height: 0.85, yaw: 0 },
+    prop_biomech_flesh_locker: { url: '/3d/runtime/new3ds/prop_biomech_flesh_locker.glb', height: 1.35, yaw: 0 },
+    prop_biomech_incubator: { url: '/3d/runtime/new3ds/prop_biomech_incubator.glb', height: 1.45, yaw: 0 },
+    prop_biomech_neural_synapse: { url: '/3d/runtime/new3ds/prop_biomech_neural_synapse.glb', height: 1.40, yaw: 0 },
+    prop_biomech_respirator: { url: '/3d/runtime/new3ds/prop_biomech_respirator.glb', height: 1.30, yaw: 0 },
+    prop_biomech_sphincter_trap: { url: '/3d/runtime/new3ds/prop_biomech_sphincter_trap.glb', height: 0.80, yaw: 0 },
+    prop_biomech_triage_cradle: { url: '/3d/runtime/new3ds/prop_biomech_triage_cradle.glb', height: 0.95, yaw: 0 },
+    prop_fabricator_workstation: { url: '/3d/runtime/new3ds/prop_fabricator_workstation.glb', height: 1.20, yaw: 0 },
+    prop_laser_trap_emitter: { url: '/3d/runtime/new3ds/prop_laser_trap_emitter.glb', height: 0.75, yaw: 0 },
+    prop_o2_filter_vat: { url: '/3d/runtime/new3ds/prop_o2_filter_vat.glb', height: 1.40, yaw: 0 },
+    prop_tesla_coil_node: { url: '/3d/runtime/new3ds/prop_tesla_coil_node.glb', height: 1.45, yaw: 0 },
+    prop_vital_monitor: { url: '/3d/runtime/new3ds/prop_vital_monitor.glb', height: 1.10, yaw: 0 }
 });
 
 const templates = new Map();

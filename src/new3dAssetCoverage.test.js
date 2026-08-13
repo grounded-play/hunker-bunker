@@ -8,7 +8,11 @@ const NEW_ASSETS = [
     'prop_biomech_arch', 'prop_broken_specimen_tank', 'prop_bunker_supplies',
     'prop_cave_bones', 'prop_cave_queen_throne', 'prop_conduit_hub',
     'prop_diagnostic_console', 'prop_medical_bed', 'prop_security_barricade',
-    'prop_specimen_tank', 'prop_surgical_cart', 'spore_mortar', 'sporesnail'
+    'prop_specimen_tank', 'prop_surgical_cart', 'spore_mortar', 'sporesnail',
+    'prop_ammo_crate_stack', 'prop_biomech_flesh_locker', 'prop_biomech_incubator',
+    'prop_biomech_neural_synapse', 'prop_biomech_respirator', 'prop_biomech_sphincter_trap',
+    'prop_biomech_triage_cradle', 'prop_fabricator_workstation', 'prop_laser_trap_emitter',
+    'prop_o2_filter_vat', 'prop_tesla_coil_node', 'prop_vital_monitor'
 ];
 
 describe('new 3D replacement asset coverage', () => {

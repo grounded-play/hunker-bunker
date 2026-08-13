@@ -10,10 +10,18 @@ intentionally flat effects are excluded.
 - Crashed ships: Scout, Tank, Engineer
 - Base modules: console, O2 generator, hull matrix, radar dish, fusion generator
 - World props: bunker junk/basic pile, storage-locker variant of bunker supplies,
-  frozen human tanker
+  frozen human tanker, specimen tank, broken specimen tank, surgical cart, medical bed,
+  diagnostic console, security barricade, conduit hub, cave bones, queen throne, biomech arch
+- Room & Biomech props: ammo crate stack (`prop_ammo_crate_stack`), flesh locker (`prop_biomech_flesh_locker`),
+  incubator pod (`prop_biomech_incubator`), neural synapse node (`prop_biomech_neural_synapse`),
+  respirator vent (`prop_biomech_respirator`), sphincter trap (`prop_biomech_sphincter_trap`),
+  triage cradle (`prop_biomech_triage_cradle`), fabricator workstation (`prop_fabricator_workstation`),
+  laser trap emitter (`prop_laser_trap_emitter`), O2 filter vat (`prop_o2_filter_vat`),
+  tesla coil node (`prop_tesla_coil_node`), vital monitor (`prop_vital_monitor`)
 - Operators: Scout, Tank, Engineer
 - Enemies: cybersnail, cryosnail, sporesnail, crawler/parasite, mycelium stalker,
-  cybersnail boss, cryosnail boss, sporesnail boss, Queen
+  cybersnail boss, cryosnail boss, sporesnail boss, Queen, spore mortar, fungal spore vent
+
 
 ## Still missing 3D counterparts
 
