@@ -140,6 +140,53 @@ describe('getNextCampQuest', () => {
     });
 });
 
+describe('camp quest reset and persisted restoration', () => {
+    beforeEach(() => {
+        originalWindow = globalThis.window;
+        stubWindow();
+    });
+    afterEach(() => {
+        globalThis.window = originalWindow;
+    });
+
+    it('removes scene-parented quest entities before clearing runtime quest state', () => {
+        const active = makeQuestProp();
+        active.userData.campQuestId = 'camp_meridian';
+        const orphan = makeQuestProp();
+        orphan.userData.campQuestKey = 'lost_probe';
+        const unrelated = makeQuestProp();
+        const fakeThis = {
+            _activeCampQuest: { props: [active] },
+            scatterSprites: [active, orphan, unrelated]
+        };
+
+        expect(ThreeGame.prototype.clearActiveCampQuestEntities.call(fakeThis)).toBe(2);
+        expect(active.parent.remove).toHaveBeenCalledWith(active);
+        expect(orphan.parent.remove).toHaveBeenCalledWith(orphan);
+        expect(fakeThis.scatterSprites).toEqual([unrelated]);
+        expect(fakeThis._activeCampQuest.props).toEqual([]);
+    });
+
+    it('restores one persisted active quest idempotently without re-offering it', () => {
+        const camp = makeCamp();
+        const fakeThis = makeFakeThis({ camp });
+        fakeThis.act2.getState = () => ({
+            camps: [{
+                id: camp.id,
+                questFlags: { reactor_venting: 'active' }
+            }]
+        });
+        fakeThis.spawnReactorVentingObjects = vi.fn();
+
+        const first = ThreeGame.prototype.restoreActiveCampQuestFromState.call(fakeThis);
+        const second = ThreeGame.prototype.restoreActiveCampQuestFromState.call(fakeThis);
+
+        expect(first?.quest.id).toBe('reactor_venting');
+        expect(second).toBe(first);
+        expect(fakeThis.spawnReactorVentingObjects).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('getActionableCampAt — quest-offer priority', () => {
     it('offers the quest once camp support is maxed and no quest is active', () => {
         const camp = makeCamp({ level: 3 });

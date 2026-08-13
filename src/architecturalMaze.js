@@ -1,6 +1,11 @@
 const WALKABLE = new Set(['.', 'D', 'R', 'B', 'L']);
 
-function carveDisk(grid, cx, cy, radius) {
+// Exported for reuse by src/roomBuilds.js (Sprint 23 Phase 3): authored room
+// footprints need the exact same border-socket/door-threshold/wall-shell
+// pipeline this file already proved out for procedural rooms, so that
+// pipeline is shared rather than re-derived a second time with a chance to
+// drift out of sync.
+export function carveDisk(grid, cx, cy, radius) {
     for (let y = cy - radius; y <= cy + radius; y += 1) {
         for (let x = cx - radius; x <= cx + radius; x += 1) {
             if (grid[y]?.[x] !== undefined) grid[y][x] = '.';
@@ -8,7 +13,7 @@ function carveDisk(grid, cx, cy, radius) {
     }
 }
 
-function carveLine(grid, from, to, width) {
+export function carveLine(grid, from, to, width) {
     let { x, y } = from;
     carveDisk(grid, x, y, width);
     while (x !== to.x || y !== to.y) {
@@ -18,7 +23,7 @@ function carveLine(grid, from, to, width) {
     }
 }
 
-function portalPoint(size, side, offset) {
+export function portalPoint(size, side, offset) {
     const coordinate = Math.max(2, Math.min(size - 3, offset * 2 + 1));
     if (side === 'north') return { x: coordinate, y: 0 };
     if (side === 'south') return { x: coordinate, y: size - 1 };
@@ -40,7 +45,7 @@ function carveRoom(grid, bounds, shape) {
     }
 }
 
-function addWallShell(grid) {
+export function addWallShell(grid) {
     const source = grid.map((row) => [...row]);
     for (let y = 0; y < grid.length; y += 1) {
         for (let x = 0; x < grid[y].length; x += 1) {
@@ -62,7 +67,7 @@ function addWallShell(grid) {
 // Find the three-wide corridor cuts through the shell surrounding an authored
 // room. Door cells live on the corridor side of the room boundary so the slab
 // replaces the missing wall, instead of sitting one tile inside the chamber.
-function stampRoomThresholds(grid, bounds) {
+export function stampRoomThresholds(grid, bounds) {
     const candidates = [
         { side: 'n', cells: Array.from({ length: bounds.right - bounds.left + 1 }, (_, i) => ({ x: bounds.left + i, y: bounds.top - 1 })) },
         { side: 'e', cells: Array.from({ length: bounds.bottom - bounds.top + 1 }, (_, i) => ({ x: bounds.right + 1, y: bounds.top + i })) },
@@ -95,7 +100,7 @@ function stampRoomThresholds(grid, bounds) {
     return doors;
 }
 
-function constrainBorderSockets(grid, openings) {
+export function constrainBorderSockets(grid, openings) {
     const size = grid.length;
     for (let i = 0; i < size; i += 1) {
         grid[0][i] = 'X';

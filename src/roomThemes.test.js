@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { assignRoomThemes, chooseRoomTheme, LIVED_IN_DECALS, ROOM_THEME_CATALOG } from './roomThemes.js';
+import {
+    assignRoomThemes,
+    chooseRoomTheme,
+    LIVED_IN_DECALS,
+    PRESENTATION_STATE_MODIFIERS,
+    ROOM_THEME_CATALOG
+} from './roomThemes.js';
 
 function seededRandom(seed) {
     let state = seed >>> 0 || 1;
@@ -31,6 +37,62 @@ describe('room themes', () => {
         );
         expect(rooms[0].role).toBe('nest');
         expect(rooms[0].theme).toBe('bio-nest');
+    });
+
+    it.each([
+        ['medical', 'support', 'medical'],
+        ['armory', 'reward', 'security'],
+        ['o2', 'objective', 'engineering'],
+        ['fabricator', 'support', 'engineering'],
+        ['puzzle', 'challenge', 'engineering'],
+        ['trap_reward', 'challenge', 'security'],
+        ['cache', 'reward', 'reward'],
+        ['gate', 'ringCrossing', 'security']
+    ])('maps Lane B %s/%s rooms to the %s presentation role', (family, semanticRole, expectedRole) => {
+        const { role, theme } = chooseRoomTheme(
+            { family, role: semanticRole, doors: [{}] },
+            { biome: 'active', depthTier: 3, random: () => 0 }
+        );
+
+        expect(role).toBe(expectedRole);
+        expect(theme.roles).toContain(expectedRole);
+    });
+
+    it.each([
+        ['support', 'utility'],
+        ['objective', 'engineering'],
+        ['challenge', 'security'],
+        ['ringCrossing', 'security']
+    ])('maps family-less semantic role %s to %s', (semanticRole, expectedRole) => {
+        const { role, theme } = chooseRoomTheme(
+            { role: semanticRole, doors: [{}] },
+            { biome: 'active', depthTier: 3, random: () => 0 }
+        );
+        expect(role).toBe(expectedRole);
+        expect(theme.roles).toContain(expectedRole);
+    });
+
+    it('normalizes runtime biome keys before theme selection', () => {
+        const { theme } = chooseRoomTheme(
+            { family: 'armory', role: 'reward' },
+            { biome: 'CRYO', depthTier: 3, random: () => 0 }
+        );
+        expect(theme.biomes).toContain('cryo');
+        expect(theme.roles).toContain('security');
+    });
+
+    it.each([
+        ['dormant', null],
+        ['questActive', 'decal_hazard_stripes'],
+        ['resolved', 'decal_meridian_stencil']
+    ])('carries the authored %s state variant into presentation', (stateVariant, appliedDecal) => {
+        const [room] = assignRoomThemes(
+            [{ id: stateVariant, family: 'o2', role: 'objective', stateVariant }],
+            { biome: 'active', depthTier: 2, random: () => 0 }
+        );
+
+        expect(PRESENTATION_STATE_MODIFIERS).toHaveProperty(stateVariant);
+        expect(room.themeConfig).toMatchObject({ stateVariant, appliedDecal });
     });
 
     it('defines a signature prop for every theme', () => {

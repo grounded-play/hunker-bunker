@@ -54,4 +54,20 @@ describe('Hive Site 3D Visualizer', () => {
         hive.setStatus('slain');
         expect(hive.signalColumn.visible).toBe(false);
     });
+
+    it.each(['rescued', 'aboard'])('keeps a persisted %s hive vacated', (status) => {
+        const scene = new MockScene();
+        const hive = new HiveSite(scene, { id: 'hive_suture', label: 'SUTURE HIVE', characterId: 'nahl' });
+        hive.reveal(24, -12);
+
+        hive.syncFromRecord({ status, extractionLevel: 2, bond: 3, networked: true });
+        hive.update(1);
+
+        expect(hive.status).toBe(status);
+        expect(hive.signalColumn.visible).toBe(false);
+        expect(hive.npcSprite.visible).toBe(false);
+        expect(hive.propSprites.eggs.visible).toBe(false);
+        expect(hive.coreMat.emissiveIntensity).toBe(0);
+        expect(hive.alienDrones.every((drone) => drone.mesh?.visible === false)).toBe(true);
+    });
 });

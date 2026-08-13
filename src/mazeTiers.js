@@ -9,13 +9,20 @@
 // Gating deliberately reuses the four bank goals already driving
 // RING_UNLOCK_GOAL_ORDER — real, live player state, not new invented flags.
 
-import { TILE_SIZE } from './tileCatalog.js';
+import { BAND_THICKNESS, CHUNK_SIZE, LATTICE, TILE_SIZE } from './tileCatalog.js';
+import { getMilestoneForGoal } from './milestoneBossLifecycle.js';
 
-// Band thickness is declared here rather than imported so this module keeps
-// working while the tile catalog's banding is still in flux. Re-point these at
-// tileCatalog's own exports once that lands.
-const BAND_THICKNESS = 0;
-const ROOM_INTERIOR = TILE_SIZE - 2;
+const ROOM_INTERIOR = TILE_SIZE - (BAND_THICKNESS * 2);
+
+// One shared coordinate authority for diagnostics and downstream fixtures.
+// mazeTiers classifies footprints; it never owns another copy of these values.
+export const MAZE_TIER_GEOMETRY = Object.freeze({
+    tileSize: TILE_SIZE,
+    bandThickness: BAND_THICKNESS,
+    lattice: LATTICE,
+    stride: TILE_SIZE - 1,
+    chunkSize: CHUNK_SIZE
+});
 
 // ── Space taxonomy ──────────────────────────────────────────────────────
 //
@@ -87,6 +94,9 @@ export const SITE = Object.freeze({
     CAMP_OBJECTIVE: 'campObjective',
     HIVE: 'hive',
     CACHE: 'cache',
+    MILESTONE_BOSS: 'milestoneBoss',
+    // Backward-compatible taxonomy label. Macro progression APIs use the
+    // canonical milestone IDs below, never this legacy site-kind spelling.
     GATE_BOSS: 'gateBoss',
     QUEEN: 'queen'
 });
@@ -102,7 +112,9 @@ export const TIERS = Object.freeze([
         id: 'crashShelf',
         name: 'Crash Shelf',
         unlockGoal: null,
+        milestoneId: null,
         gateBoss: null,
+        legacyGateBoss: null,
         spaces: [SPACE.PLAIN, SPACE.HALL, SPACE.ROOM],
         sites: [SITE.CAMP, SITE.CACHE],
         minSites: 2
@@ -112,7 +124,9 @@ export const TIERS = Object.freeze([
         id: 'outworks',
         name: 'Outworks',
         unlockGoal: 'o2Bubble',
-        gateBoss: 'sentinel',
+        milestoneId: getMilestoneForGoal('o2Bubble').milestoneId,
+        gateBoss: getMilestoneForGoal('o2Bubble').milestoneId,
+        legacyGateBoss: 'sentinel',
         spaces: [SPACE.PLAIN, SPACE.HALL, SPACE.ROOM],
         sites: [SITE.CAMP, SITE.CAMP_OBJECTIVE, SITE.CACHE],
         minSites: 3
@@ -122,7 +136,9 @@ export const TIERS = Object.freeze([
         id: 'deepWorks',
         name: 'Deep Works',
         unlockGoal: 'hullExpansion',
-        gateBoss: 'warden',
+        milestoneId: getMilestoneForGoal('hullExpansion').milestoneId,
+        gateBoss: getMilestoneForGoal('hullExpansion').milestoneId,
+        legacyGateBoss: 'warden',
         spaces: [SPACE.HALL, SPACE.ROOM],
         sites: [SITE.CAMP, SITE.CAMP_OBJECTIVE, SITE.HIVE, SITE.CACHE],
         minSites: 4
@@ -132,7 +148,9 @@ export const TIERS = Object.freeze([
         id: 'hiveReach',
         name: 'Hive Reach',
         unlockGoal: 'radarNode',
-        gateBoss: 'broodmother',
+        milestoneId: getMilestoneForGoal('radarNode').milestoneId,
+        gateBoss: getMilestoneForGoal('radarNode').milestoneId,
+        legacyGateBoss: 'broodmother',
         spaces: [SPACE.HALL, SPACE.ROOM],
         sites: [SITE.HIVE, SITE.CAMP_OBJECTIVE, SITE.CACHE],
         minSites: 4
@@ -142,7 +160,9 @@ export const TIERS = Object.freeze([
         id: 'queenCore',
         name: 'Queen Core',
         unlockGoal: 'reactorCompressor',
-        gateBoss: 'praetorian',
+        milestoneId: getMilestoneForGoal('reactorCompressor').milestoneId,
+        gateBoss: getMilestoneForGoal('reactorCompressor').milestoneId,
+        legacyGateBoss: 'praetorian',
         spaces: [SPACE.HALL, SPACE.ROOM],
         sites: [SITE.QUEEN, SITE.HIVE],
         minSites: 2
@@ -161,20 +181,28 @@ export function goalsRequiredForTier(tier) {
         .map((entry) => entry.unlockGoal);
 }
 
-// Every gate boss standing between spawn and the given tier.
-export function bossesRequiredForTier(tier) {
-    return TIERS.filter((entry) => entry.tier <= tier && entry.gateBoss)
-        .map((entry) => entry.gateBoss);
+// Every canonical retaliation milestone standing between spawn and the tier.
+export function milestonesRequiredForTier(tier) {
+    return TIERS.filter((entry) => entry.tier <= tier && entry.milestoneId)
+        .map((entry) => entry.milestoneId);
 }
+
+// Kept as an API alias while callers migrate from the old conceptual labels.
+// Values returned here are canonical milestone IDs, not enemy/biome labels.
+export const bossesRequiredForTier = milestonesRequiredForTier;
 
 // A tier opens only when its own goal is banked, its gate boss is down, and
 // every tier before it is already open. Both conditions are required: the goal
 // is the economic gate, the boss is the skill gate.
-export function isTierUnlocked(tier, { unlockedGoalKeys = new Set(), defeatedBosses = new Set() } = {}) {
+export function isTierUnlocked(tier, {
+    unlockedGoalKeys = new Set(),
+    defeatedMilestoneIds,
+    defeatedBosses = new Set()
+} = {}) {
     const goals = new Set(unlockedGoalKeys);
-    const bosses = new Set(defeatedBosses);
+    const bosses = new Set(defeatedMilestoneIds ?? defeatedBosses);
     return goalsRequiredForTier(tier).every((goal) => goals.has(goal))
-        && bossesRequiredForTier(tier).every((boss) => bosses.has(boss));
+        && milestonesRequiredForTier(tier).every((milestoneId) => bosses.has(milestoneId));
 }
 
 export function getMaxUnlockedTier(state = {}) {
@@ -190,15 +218,17 @@ export function getMaxUnlockedTier(state = {}) {
 // "what unlocks access to the final layer".
 export function describeRouteToFinalTier(state = {}) {
     const goals = new Set(state.unlockedGoalKeys ?? []);
-    const bosses = new Set(state.defeatedBosses ?? []);
+    const bosses = new Set(state.defeatedMilestoneIds ?? state.defeatedBosses ?? []);
     return TIERS.filter((entry) => entry.tier > 1).map((entry) => ({
         tier: entry.tier,
         id: entry.id,
         name: entry.name,
         unlockGoal: entry.unlockGoal,
-        gateBoss: entry.gateBoss,
+        milestoneId: entry.milestoneId,
+        gateBoss: entry.milestoneId,
+        legacyGateBoss: entry.legacyGateBoss,
         goalBanked: goals.has(entry.unlockGoal),
-        bossDefeated: bosses.has(entry.gateBoss),
+        bossDefeated: bosses.has(entry.milestoneId),
         open: isTierUnlocked(entry.tier, state)
     }));
 }

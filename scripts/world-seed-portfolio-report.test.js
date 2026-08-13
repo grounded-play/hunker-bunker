@@ -3,7 +3,8 @@ import {
     buildPortfolioReport,
     computeSeedMetrics,
     runValidationSweep,
-    selectPortfolioSeeds
+    selectPortfolioSeeds,
+    worldSeedSweepIsValid
 } from './world-seed-portfolio-report.js';
 
 describe('computeSeedMetrics', () => {
@@ -24,6 +25,27 @@ describe('computeSeedMetrics', () => {
         expect(metrics.sites.length).toBeGreaterThan(0);
         expect(metrics.firstRingClarity.gate).toMatchObject({ ring: 1 });
         expect(metrics.firstRingClarity.roomClusterCount).toBeGreaterThanOrEqual(8);
+        expect(metrics.coordinateContract).toEqual({
+            tileSize: 17,
+            stride: 16,
+            bandThickness: 5,
+            lattice: 3,
+            chunkSize: 49
+        });
+        expect(metrics.worldPlan).toMatchObject({
+            version: 1,
+            valid: true,
+            manifestCount: 5,
+            reservationCount: 90,
+            projectedReservationCount: 90,
+            territoryCount: 6,
+            territoryBeatCount: 36,
+            reciprocalSocketEndpointCount: 60,
+            questDestinationCount: 9,
+            viableFallbackCount: 4,
+            crossingCount: 4,
+            conflicts: []
+        });
     });
 
     it('is deterministic for a fixed seed', () => {
@@ -85,6 +107,8 @@ describe('runValidationSweep', () => {
         expect(sweep.seedCount).toBe(300);
         expect(sweep.failures).toEqual([]);
         expect(sweep.determinismFailures).toEqual([]);
+        expect(sweep.conflictSeedCount).toBe(0);
+        expect(sweep.manifestConflictSeedCount).toBe(0);
         expect(sweep.allValid).toBe(true);
     });
 
@@ -92,5 +116,14 @@ describe('runValidationSweep', () => {
         const sweep = runValidationSweep(300);
         expect(sweep.conflictSeedCount).toBeGreaterThanOrEqual(0);
         expect(sweep.conflictSeedCount).toBeLessThanOrEqual(sweep.seedCount);
+    });
+
+    it('treats legacy spacing and new manifest/territory conflicts as fatal audit failures', () => {
+        const base = { failures: [], conflictSeedCount: 0, manifestConflictSeedCount: 0, determinismFailures: [] };
+        expect(worldSeedSweepIsValid(base)).toBe(true);
+        expect(worldSeedSweepIsValid({ ...base, conflictSeedCount: 1 })).toBe(false);
+        expect(worldSeedSweepIsValid({ ...base, manifestConflictSeedCount: 1 })).toBe(false);
+        expect(worldSeedSweepIsValid({ ...base, failures: [{ seed: 1 }] })).toBe(false);
+        expect(worldSeedSweepIsValid({ ...base, determinismFailures: [1] })).toBe(false);
     });
 });

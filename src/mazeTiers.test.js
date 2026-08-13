@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest';
 import {
     TIERS, FINAL_TIER, SPACE, SITE,
     HALL_PROFILES, ROOM_PROFILES, PLAIN_PROFILES,
-    MIN_HALL_WIDTH, MIN_HALL_ASPECT,
+    MAZE_TIER_GEOMETRY, MIN_HALL_WIDTH, MIN_HALL_ASPECT,
     classifySpace, profileFootprint, interiorForCells,
-    goalsRequiredForTier, bossesRequiredForTier, isTierUnlocked,
+    goalsRequiredForTier, bossesRequiredForTier, milestonesRequiredForTier, isTierUnlocked,
     getMaxUnlockedTier, describeRouteToFinalTier,
     findDisjointRoutes, hasTwoRoutesToQueen
 } from './mazeTiers.js';
 import { RING_UNLOCK_GOAL_ORDER } from './mazeExpedition.js';
+import { BAND_THICKNESS, CHUNK_SIZE, LATTICE, TILE_SIZE } from './tileCatalog.js';
+import { MILESTONE_BOSS_DEFINITIONS, MILESTONE_BOSS_IDS } from './milestoneBossLifecycle.js';
 
 describe('tier gating', () => {
     // If these drift apart, the maze would gate on goals the bank never grants.
@@ -24,7 +26,7 @@ describe('tier gating', () => {
 
     it('needs both the banked goal and the dead gate boss to open a tier', () => {
         const goals = { unlockedGoalKeys: new Set(['o2Bubble']) };
-        const boss = { defeatedBosses: new Set(['sentinel']) };
+        const boss = { defeatedMilestoneIds: new Set([MILESTONE_BOSS_IDS.O2_BUBBLE]) };
         expect(isTierUnlocked(2, goals)).toBe(false);
         expect(isTierUnlocked(2, boss)).toBe(false);
         expect(isTierUnlocked(2, { ...goals, ...boss })).toBe(true);
@@ -34,7 +36,11 @@ describe('tier gating', () => {
         // Everything the Queen's own tier asks for, but tier 3 skipped.
         const state = {
             unlockedGoalKeys: new Set(['o2Bubble', 'radarNode', 'reactorCompressor']),
-            defeatedBosses: new Set(['sentinel', 'broodmother', 'praetorian'])
+            defeatedMilestoneIds: new Set([
+                MILESTONE_BOSS_IDS.O2_BUBBLE,
+                MILESTONE_BOSS_IDS.RADAR_NODE,
+                MILESTONE_BOSS_IDS.REACTOR_COMPRESSOR
+            ])
         };
         expect(isTierUnlocked(FINAL_TIER, state)).toBe(false);
         expect(getMaxUnlockedTier(state)).toBe(2);
@@ -43,14 +49,26 @@ describe('tier gating', () => {
     it('spells out everything still standing between the player and the Queen', () => {
         const state = {
             unlockedGoalKeys: new Set(['o2Bubble']),
-            defeatedBosses: new Set(['sentinel'])
+            defeatedMilestoneIds: new Set([MILESTONE_BOSS_IDS.O2_BUBBLE])
         };
         const route = describeRouteToFinalTier(state);
         expect(route).toHaveLength(4);
         expect(route[0]).toMatchObject({ tier: 2, open: true, goalBanked: true, bossDefeated: true });
         expect(route[1]).toMatchObject({ tier: 3, open: false, goalBanked: false, bossDefeated: false });
         expect(goalsRequiredForTier(FINAL_TIER)).toEqual([...RING_UNLOCK_GOAL_ORDER]);
-        expect(bossesRequiredForTier(FINAL_TIER)).toHaveLength(4);
+        expect(milestonesRequiredForTier(FINAL_TIER))
+            .toEqual(MILESTONE_BOSS_DEFINITIONS.map((entry) => entry.milestoneId));
+        expect(bossesRequiredForTier(FINAL_TIER)).toEqual(milestonesRequiredForTier(FINAL_TIER));
+    });
+
+    it('requires canonical milestone IDs rather than conceptual labels or enemy types', () => {
+        const unlockedGoalKeys = new Set(['o2Bubble']);
+        expect(isTierUnlocked(2, { unlockedGoalKeys, defeatedBosses: new Set(['sentinel']) })).toBe(false);
+        expect(isTierUnlocked(2, { unlockedGoalKeys, defeatedBosses: new Set(['boss_cybersnail']) })).toBe(false);
+        expect(isTierUnlocked(2, {
+            unlockedGoalKeys,
+            defeatedMilestoneIds: new Set([MILESTONE_BOSS_IDS.O2_BUBBLE])
+        })).toBe(true);
     });
 
     it('puts the Queen alone in the deepest tier', () => {
@@ -61,6 +79,23 @@ describe('tier gating', () => {
 });
 
 describe('space taxonomy', () => {
+    it('derives its 17/16/3/49 profile geometry from the tile catalog', () => {
+        expect(MAZE_TIER_GEOMETRY).toEqual({
+            tileSize: TILE_SIZE,
+            bandThickness: BAND_THICKNESS,
+            lattice: LATTICE,
+            stride: TILE_SIZE - 1,
+            chunkSize: CHUNK_SIZE
+        });
+        expect(MAZE_TIER_GEOMETRY).toEqual({
+            tileSize: 17,
+            bandThickness: 5,
+            lattice: 3,
+            stride: 16,
+            chunkSize: 49
+        });
+        expect(interiorForCells(1)).toBe(7);
+    });
     it('makes every hall longer than it is wide, and never a tight slot', () => {
         for (const profile of HALL_PROFILES) {
             expect(classifySpace(profile), profile.id).toBe(SPACE.HALL);

@@ -96,4 +96,5 @@ describe('ThreeGame regional topology projection', () => {
             edgeY
         ).open).toBe(false);
     });
+
 });

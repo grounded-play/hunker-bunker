@@ -252,8 +252,49 @@ export const ROOM_THEME_CATALOG = Object.freeze([
 
 const ROLE_SEQUENCE = ['generic', 'utility', 'medical', 'security', 'engineering', 'storage', 'reward'];
 
+// Lane B room builds expose semantic planning roles (support, objective,
+// challenge, ringCrossing) that intentionally do not mirror presentation
+// roles. Prefer the authored family, then translate a semantic role, so those
+// rooms do not silently fall through to the generic bunker theme.
+export const ROOM_FAMILY_THEME_ROLES = Object.freeze({
+    medical: 'medical',
+    rescue: 'medical',
+    armory: 'security',
+    security: 'security',
+    gate: 'security',
+    arena: 'security',
+    trap: 'security',
+    trap_reward: 'security',
+    o2: 'engineering',
+    fabricator: 'engineering',
+    engineering: 'engineering',
+    puzzle: 'engineering',
+    objective: 'engineering',
+    mission: 'engineering',
+    cache: 'reward',
+    salvage: 'reward',
+    lore: 'reward',
+    camp: 'camp',
+    hive: 'hive',
+    queen: 'hive',
+    entry: 'generic',
+    connector: 'generic'
+});
+
+export const SEMANTIC_ROOM_THEME_ROLES = Object.freeze({
+    support: 'utility',
+    questDestination: 'utility',
+    objective: 'engineering',
+    shipGoalObjective: 'engineering',
+    challenge: 'security',
+    ringCrossing: 'security',
+    fallbackResourceRoute: 'engineering'
+});
+
 export function chooseRoomRole(room, { biome = 'active', depthTier = 0, random = () => 0.5 } = {}) {
-    const authored = room?.role;
+    const familyRole = ROOM_FAMILY_THEME_ROLES[room?.family];
+    if (familyRole) return familyRole;
+    const authored = SEMANTIC_ROOM_THEME_ROLES[room?.role] ?? room?.role;
     if (authored && authored !== 'generic') return authored;
     if (biome === 'bio' && depthTier >= 2 && random() < 0.3) return random() < 0.62 ? 'nest' : 'hive';
     if (biome === 'cryo' && depthTier >= 1 && random() < 0.22) return 'cryo-lab';
@@ -263,13 +304,14 @@ export function chooseRoomRole(room, { biome = 'active', depthTier = 0, random =
 }
 
 export function chooseRoomTheme(room, { biome = 'active', depthTier = 0, random = () => 0.5 } = {}) {
-    const role = chooseRoomRole(room, { biome, depthTier, random });
+    const normalizedBiome = String(biome).toLowerCase();
+    const role = chooseRoomRole(room, { biome: normalizedBiome, depthTier, random });
     let candidates = ROOM_THEME_CATALOG.filter((theme) => (
-        theme.biomes.includes(biome) && theme.roles.includes(role)
+        theme.biomes.includes(normalizedBiome) && theme.roles.includes(role)
     ));
     if (candidates.length === 0) {
         candidates = ROOM_THEME_CATALOG.filter((theme) => (
-            theme.biomes.includes(biome) && theme.roles.includes('generic')
+            theme.biomes.includes(normalizedBiome) && theme.roles.includes('generic')
         ));
     }
     if (candidates.length === 0) candidates = [ROOM_THEME_CATALOG[0]];
@@ -286,14 +328,40 @@ export function chooseRoomTheme(room, { biome = 'active', depthTier = 0, random 
     return { role, theme: selected };
 }
 
+export const PRESENTATION_STATE_MODIFIERS = Object.freeze({
+    intact: Object.freeze({ propPrefix: '', decal: null }),
+    dormant: Object.freeze({ propPrefix: '', decal: null }),
+    questActive: Object.freeze({ propPrefix: '', decal: 'decal_hazard_stripes' }),
+    resolved: Object.freeze({ propPrefix: '', decal: 'decal_meridian_stencil' }),
+    abandoned: Object.freeze({ propPrefix: 'scatter_', decal: 'decal_footprints_mud' }),
+    infested: Object.freeze({ propPrefix: 'prop_hive_', decal: 'decal_spore_growth_patch' }),
+    looted: Object.freeze({ propPrefix: 'scatter_', decal: 'decal_wall_breach' }),
+    wounded: Object.freeze({ propPrefix: 'prop_', decal: 'prop_blood_trail' }),
+    bonded: Object.freeze({ propPrefix: 'prop_', decal: 'decal_tallow_herb_cache' }),
+    culled: Object.freeze({ propPrefix: 'scatter_', decal: 'decal_barricade_last_stand' }),
+    turned: Object.freeze({ propPrefix: 'prop_hive_', decal: 'decal_spore_growth_patch' })
+});
+
+export function resolveThemeWithStateVariant(themeConfig, stateVariant = 'intact') {
+    if (!themeConfig) return themeConfig;
+    const modifier = PRESENTATION_STATE_MODIFIERS[stateVariant] ?? PRESENTATION_STATE_MODIFIERS.intact;
+    return {
+        ...themeConfig,
+        stateVariant,
+        appliedDecal: modifier.decal
+    };
+}
+
 export function assignRoomThemes(rooms, options = {}) {
+    const stateVariant = options.stateVariant ?? 'intact';
     return (rooms ?? []).map((room) => {
         const selection = chooseRoomTheme(room, options);
+        const resolvedTheme = resolveThemeWithStateVariant(selection.theme, room.stateVariant ?? stateVariant);
         return {
             ...room,
             role: selection.role,
-            theme: selection.theme.id,
-            themeConfig: selection.theme
+            theme: resolvedTheme.id,
+            themeConfig: resolvedTheme
         };
     });
 }

@@ -128,10 +128,15 @@ function seededRandom(seed) {
     };
 }
 
+function roundCoordinate(value) {
+    const rounded = Math.round(value);
+    return Object.is(rounded, -0) ? 0 : rounded;
+}
+
 function polarPoint(radius, angle) {
     return {
-        x: Math.round(Math.cos(angle) * radius),
-        z: Math.round(Math.sin(angle) * radius)
+        x: roundCoordinate(Math.cos(angle) * radius),
+        z: roundCoordinate(Math.sin(angle) * radius)
     };
 }
 
@@ -216,8 +221,8 @@ export function generateRegionalRouteTopology(seed = 1, {
         const angle = startAngle + t * Math.PI * 2 * turns
             + Math.sin(t * Math.PI * 7 + phase) * 0.16;
         const point = {
-            x: Math.round(Math.cos(angle) * radius),
-            y: Math.round(Math.sin(angle) * radius)
+            x: roundCoordinate(Math.cos(angle) * radius),
+            y: roundCoordinate(Math.sin(angle) * radius)
         };
         const previous = snakeControlPoints.at(-1);
         if (point.x !== previous.x || point.y !== previous.y) snakeControlPoints.push(point);
@@ -240,8 +245,8 @@ export function generateRegionalRouteTopology(seed = 1, {
         for (let index = 0; index < samples; index += 1) {
             const angle = phase + ring * 0.37 + (index / samples) * Math.PI * 2;
             const point = {
-                x: Math.round(Math.cos(angle) * radius),
-                y: Math.round(Math.sin(angle) * radius)
+                x: roundCoordinate(Math.cos(angle) * radius),
+                y: roundCoordinate(Math.sin(angle) * radius)
             };
             if (!points.length || point.x !== points.at(-1).x || point.y !== points.at(-1).y) {
                 points.push(point);
@@ -342,7 +347,12 @@ export function generateRadialMazeExpedition(seed = 1, { chunkSize = CHUNK_SIZE 
         for (let attempt = 0; attempt < 12; attempt += 1) {
             const separated = peers.every((other) => {
                 const delta = Math.abs(Math.atan2(Math.sin(angle - other), Math.cos(angle - other)));
-                return delta >= 0.9;
+                // Two multi-chunk authored territories can share a ring, but
+                // their fixed territory anchors need enough arc for both
+                // ordered approaches/exits. A sub-radian gap was sufficient
+                // for point landmarks and is not sufficient for six-beat
+                // camp/hive allocations.
+                return delta >= 1.6;
             });
             if (separated) break;
             angle += 0.72 + random() * 0.42;

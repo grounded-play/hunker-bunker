@@ -19,6 +19,22 @@ const HIVE_SIGNAL_HEIGHT = 8;
 
 const INTERACT_RADIUS = 2.6;
 
+// These persisted outcomes all leave an empty or inert world site. Keep the
+// record's exact status for Act 2 logic, but render and simulate them through
+// one shared predicate so a rescued/aboard hive cannot silently reactivate.
+const VACATED_HIVE_STATUSES = new Set([
+    'slain',
+    'abandoned',
+    'rescued',
+    'aboard',
+    'expired_by_cure',
+    'queen_consumed'
+]);
+
+function isVacatedHiveStatus(status) {
+    return VACATED_HIVE_STATUSES.has(status);
+}
+
 function makeAlienFallbackCanvas({ color = 0x8cff96 } = {}) {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
@@ -324,9 +340,9 @@ export class HiveSite {
     // all over a dead or abandoned site.
     syncSignalColumn() {
         if (!this.signalColumn || !this.signalMat) return;
-        const dead = ['slain', 'abandoned', 'expired_by_cure', 'queen_consumed'].includes(this.status);
-        this.signalColumn.visible = !dead;
-        if (dead) return;
+        const vacated = isVacatedHiveStatus(this.status);
+        this.signalColumn.visible = !vacated;
+        if (vacated) return;
         if (this.status === 'mined' || this.status === 'wounded') {
             this.signalMat.color.set(0xff5a3c);
         } else if (this.status === 'bonded' || this.status === 'rescued') {
@@ -342,9 +358,10 @@ export class HiveSite {
         this.syncSignalColumn();
 
         // Change color / emission based on status
-        if (status === 'slain' || status === 'abandoned') {
+        if (isVacatedHiveStatus(status)) {
             this.coreMat.color.set(0x3a3a3a);
             this.coreMat.emissive.set(0x000000);
+            this.coreMat.emissiveIntensity = 0;
             if (this.npcSprite) this.npcSprite.visible = false;
             for (const drone of this.alienDrones) {
                 if (drone.mesh) drone.mesh.visible = false;
@@ -371,22 +388,22 @@ export class HiveSite {
     updatePropVisuals() {
         if (!this.propSprites) return;
         const isHurt = this.status === 'wounded' || this.status === 'mined';
-        const dead = ['slain', 'abandoned', 'expired_by_cure', 'queen_consumed'].includes(this.status);
+        const vacated = isVacatedHiveStatus(this.status);
         const audio = typeof window !== 'undefined' ? window.AudioManager : null;
 
         if (this.propSprites.eggs) {
             this.propSprites.eggs.material.map = isHurt ? this.texEggsHatched : this.texEggsIntact;
             this.propSprites.eggs.material.needsUpdate = true;
-            this.propSprites.eggs.visible = !dead;
+            this.propSprites.eggs.visible = !vacated;
         }
 
         if (this.propSprites.wounded) {
-            this.propSprites.wounded.visible = isHurt && !dead;
+            this.propSprites.wounded.visible = isHurt && !vacated;
         }
 
         // --- AUDIO WIRING ---
         if (this.revealed) {
-            if (!dead) {
+            if (!vacated) {
                 if (!this.eggsAudio) {
                     this.eggsAudio = audio?.play('hive_eggs_hum', { loop: true, volume: 0.0, pan: 0, bus: 'world' });
                 }
@@ -397,7 +414,7 @@ export class HiveSite {
                 }
             }
 
-            if (isHurt && !dead) {
+            if (isHurt && !vacated) {
                 if (!this.wasHurt) {
                     this.wasHurt = true;
                     audio?.play('hive_eggs_hatch', { volume: 0.45, bus: 'sfx' });
@@ -460,7 +477,7 @@ export class HiveSite {
 
         // Pulse core bioluminescence
         const pulse = 0.45 + 0.15 * Math.sin(this.elapsed * 2.8);
-        if (this.coreMat && this.status !== 'slain') {
+        if (this.coreMat && !isVacatedHiveStatus(this.status)) {
             this.coreMat.emissiveIntensity = pulse;
         }
         if (this.signalColumn?.visible && this.signalMat) {
@@ -469,7 +486,7 @@ export class HiveSite {
         }
 
         // Ambient NPC walking logic
-        if (this.status !== 'slain' && this.status !== 'abandoned') {
+        if (!isVacatedHiveStatus(this.status)) {
             this.npcActionTimer -= delta;
             if (this.npcActionTimer <= 0) {
                 if (this.npcAction === 'idle') {
@@ -541,13 +558,7 @@ export class HiveSite {
         if (Number.isFinite(record.extractionLevel)) this.setExtractionLevel(record.extractionLevel);
         if (Number.isFinite(record.bond)) this.setBond(record.bond);
         this.networked = Boolean(record.networked);
-        if (record.status) {
-            const worldStatus = ['rescued', 'aboard', 'queen_consumed', 'expired_by_cure'].includes(record.status)
-                ? (record.status === 'rescued' || record.status === 'aboard' ? 'abandoned' : 'slain')
-                : record.status;
-            this.setStatus(worldStatus);
-            this.status = record.status;
-        }
+        if (record.status) this.setStatus(record.status);
         this.updatePropVisuals();
     }
 

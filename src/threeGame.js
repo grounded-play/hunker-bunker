@@ -1,4 +1,4 @@
-import { CHUNK_SIZE } from './tileCatalog.js';
+import { CHUNK_SIZE, TILE_SIZE } from './tileCatalog.js';
 import { getControllerGlyphLabel } from './inputGlyphs.js';
 
 import * as THREE from 'three';
@@ -52,14 +52,14 @@ import {
     addCanyonVoidAroundWalkable,
     collapseChunkLattice,
     collapsePocketLattice,
-    stampLattice,
-    extractChunkWfcMetadata
+    extractChunkWfcMetadata,
+    stampLattice
 } from './wfcGenerator.js';
 import { generateArchitecturalMazeChunk } from './architecturalMaze.js';
 import { applyVerticalBridgeFeature, VERTICAL_TILE } from './verticalWfc.js';
 import { assignRoomThemes } from './roomThemes.js';
 import { planChunkRoomPopulation } from './roomPopulation.js';
-import { planChunkRoomEncounters } from './roomEncounters.js';
+import { collectReachableCells, planChunkRoomEncounters } from './roomEncounters.js';
 import {
     planProceduralDoors,
     restoreDoorStates,
@@ -73,6 +73,37 @@ import {
     isGateRequirementMet,
     serializeAccessState
 } from './accessControl.js';
+import {
+    isCellInSafeZone,
+    shouldBlockAttackPath,
+    canHostileAggroTarget,
+    isDoorClosed,
+    translateContainmentZone,
+    translateContainmentDoor
+} from './roomContainment.js';
+import { bindRoomContent } from './roomContent.js';
+import { buildMazeChunkStructure } from './chunkStructure.js';
+import {
+    MILESTONE_BOSS_STATES,
+    MILESTONE_BOSS_EVENT_TYPES,
+    MILESTONE_BOSS_DEFINITIONS,
+    createMilestoneBossLifecycleState,
+    migrateMilestoneBossLifecycleState,
+    reconcileMilestoneBossLifecycle as canonicalReconcileMilestoneBossLifecycle,
+    applyMilestoneBossEvent,
+    getMilestoneForGoal,
+    getMilestoneById,
+    buildMilestoneBossReport
+} from './milestoneBossLifecycle.js';
+import { resolveObjectiveTarget, toObjectiveCompass } from './objectiveTargetResolver.js';
+import { buildRingCrossingPlan } from './ringCrossings.js';
+import {
+    clampPositionToAuthoredRing,
+    reconcileWorldPlanRingCrossings,
+    resolveAuthoredChunkStructure,
+    selectRingCrossingFarSide
+} from './authoredWorldRuntime.js';
+import { buildWorldPlan } from './ringManifest.js';
 import { planSafeGates } from './mazeGates.js';
 import { extractChunkPortals, buildWorldRouteGraph, reachableChunkKeys } from './worldRoutePlanner.js';
 import { BaseLights } from './baseLights.js';
@@ -95,7 +126,11 @@ import {
 import { HiveSite } from './hiveSite.js';
 import { describeDialogueProgress, leaderKeyFromName, nextDialogueBeat, isFinalStage } from './data/campDialogue.js';
 import { blackBoxStore } from './blackBox.js';
-import { ARC_PRELUDE_ENABLED, PLAYER_3D_COSMETIC_OVERLAY_ENABLED } from './featureFlags.js';
+import {
+    ARC_PRELUDE_ENABLED,
+    AUTHORED_WORLD_TILES_ENABLED,
+    PLAYER_3D_COSMETIC_OVERLAY_ENABLED
+} from './featureFlags.js';
 import { createPlayer3dOverlay, ENGINEER_GESTURES } from './player3dOverlay.js';
 import { createEnemy3dVisual, disposeEnemy3dVisual, updateEnemy3dVisual } from './enemy3dOverlay.js';
 import { createWorld3dModel, hasWorld3dModel, syncWorld3dReplacement } from './world3dOverlay.js';
@@ -1173,6 +1208,16 @@ export class ThreeGame {
         this.playerPoisonTimer = 0;
         this.playerPoisonTickTimer = 0;
         this.killedBosses = new Set();
+        this.defeatedMilestoneBosses = new Set();
+        const builtGoalKeys = new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+            .filter(([, built]) => Boolean(built))
+            .map(([goalKey]) => goalKey));
+        this.milestoneBossLifecycleState = createMilestoneBossLifecycleState({ builtGoalKeys });
+        this.ringCrossingState = null;
+        this.completedRingCrossingMissionIds = new Set();
+        this.worldPlan = null;
+        this._worldPlanInjected = false;
+        this.authoredWorldTiles = AUTHORED_WORLD_TILES_ENABLED;
         this.activeBoss = null;
         this.queenFightSprite = null;
         this.missionState = { type: null, label: '', status: 'inactive', extractionTimer: 0, killCount: 0, targetKills: 0, targetDepth: 0 };
@@ -4113,7 +4158,11 @@ export class ThreeGame {
                 const goalKey = event?.detail?.goalKey;
                 const bossType = MILESTONE_BOSS_FOR_GOAL[goalKey];
                 if (!bossType) return;
-                if (goalKey === 'o2Bubble') return;
+                this.applyMilestoneBossRuntimeEvent({
+                    type: MILESTONE_BOSS_EVENT_TYPES.GOAL_BUILT,
+                    goalKey
+                });
+                this.reconcileAuthoredWorldProgression?.();
 
                 this.closeConsoleModal();
                 this.setInputEnabled(false);
@@ -5573,6 +5622,7 @@ export class ThreeGame {
         this.updateCamera(delta);
         this._lastFrameDeltaForChunkMounts = delta;
         this.syncVisibleChunks();
+        if (this._milestoneBossRestagePending) this.restageReadyMilestoneBosses?.();
         this.updateTacticalMapDiscovery?.();
         this.updateCompanions(delta);
         this.updateTransientEffects(delta, now);
@@ -6677,6 +6727,9 @@ export class ThreeGame {
                 const worldZ = chunkY * this.chunkSize + source.localY;
                 if (Math.hypot(this.player.position.x - worldX, this.player.position.z - worldZ) > 1.8) continue;
                 const granted = grantAccess(this.mazeAccessState, source.requirement);
+                if (source.requirement?.type === 'objective') {
+                    this.completeRingCrossingMission?.(source.requirement.id);
+                }
                 if (granted) {
                     window.dispatchEvent(new CustomEvent('maze-access-granted', {
                         detail: {
@@ -9785,11 +9838,18 @@ export class ThreeGame {
             this.radialMazePlan = generateRadialMazeExpedition(
                 ((this.runEntropy ?? 0) ^ (this.globalSeedOffset ?? 0) ^ 0x52494e47) >>> 0
             );
+            if (this.radialMazePlan && !this.radialMazePlan.crossings) {
+                this.radialMazePlan.crossings = buildRingCrossingPlan(this.radialMazePlan);
+            }
         }
         return this.radialMazePlan;
     }
 
     getRegionalRouteTopology() {
+        if (this.authoredWorldTiles) {
+            this.ensureAuthoredWorldPlan?.();
+            if (this.authoredWorldTiles && this.worldPlan?.topology) return this.worldPlan.topology;
+        }
         return this.getRadialMazePlan()?.topology ?? null;
     }
 
@@ -10211,6 +10271,7 @@ export class ThreeGame {
         });
         this.ensureCampCivilians();
         this._act2CampsReady = true;
+        this.restoreActiveCampQuestFromState?.();
     }
 
     // Two ambient civilians per living camp (miner + researcher walk sheets).
@@ -10408,7 +10469,27 @@ export class ThreeGame {
         this._loreDropSitesSpawned = new Set();
     }
 
+    clearActiveCampQuestEntities() {
+        const questEntities = new Set([
+            ...(this._activeCampQuest?.props ?? []),
+            ...(this.scatterSprites ?? []).filter((sprite) => (
+                sprite?.userData?.campQuestId || sprite?.userData?.campQuestKey
+            ))
+        ]);
+        for (const sprite of questEntities) {
+            sprite?.parent?.remove?.(sprite);
+            sprite?.material?.dispose?.();
+            if (!sprite?.isSprite) sprite?.geometry?.dispose?.();
+        }
+        if (Array.isArray(this.scatterSprites)) {
+            this.scatterSprites = this.scatterSprites.filter((sprite) => !questEntities.has(sprite));
+        }
+        if (this._activeCampQuest) this._activeCampQuest.props = [];
+        return questEntities.size;
+    }
+
     resetAct2World() {
+        this.clearActiveCampQuestEntities();
         this.caveEntrance?.reset?.();
         for (const camp of this.camps ?? []) {
             camp.reset?.();
@@ -10427,6 +10508,10 @@ export class ThreeGame {
         }
         this.hives = [];
         this._hiveSitesReady = false;
+        // Persisted Act 2 quest flags are authoritative. Drop the stale sprite
+        // references now; ensureAct2Camps reconstructs and respawns the active
+        // quest idempotently after the world is mounted again.
+        this._activeCampQuest = null;
     }
 
     getCampRecord(id) {
@@ -10636,6 +10721,22 @@ export class ThreeGame {
             if (record.questFlags?.[quest.id] === 'done') continue;
             if ((record.bond ?? 0) < quest.bond) return null;
             return quest;
+        }
+        return null;
+    }
+
+    restoreActiveCampQuestFromState() {
+        if (this._activeCampQuest || !this.act2) return this._activeCampQuest;
+        const state = this.act2.getState?.();
+        for (const record of state?.camps ?? []) {
+            const activeQuestId = Object.entries(record.questFlags ?? {})
+                .find(([, status]) => status === 'active')?.[0];
+            if (!activeQuestId) continue;
+            const quest = (CAMP_QUESTS[record.id] ?? []).find((entry) => entry.id === activeQuestId);
+            const camp = this.getCampById?.(record.id);
+            if (!quest || !camp) continue;
+            this.acceptCampQuest(camp, quest);
+            return this._activeCampQuest;
         }
         return null;
     }
@@ -11043,6 +11144,10 @@ export class ThreeGame {
         window.dispatchEvent(new CustomEvent('camp-quest-complete', {
             detail: { campId: aq.campId, questId: aq.quest.id, label: aq.quest.label }
         }));
+        window.objectiveRegistry?.resolveObjective?.(
+            `camp-quest:${aq.campId}:${aq.quest.id}`,
+            'complete'
+        );
         this._activeCampQuest = null;
     }
 
@@ -12419,6 +12524,43 @@ export class ThreeGame {
         return nearest;
     }
 
+    syncActiveCampQuestObjectiveTarget() {
+        const active = this._activeCampQuest;
+        const registry = typeof window !== 'undefined' ? window.objectiveRegistry : null;
+        if (!active?.quest || !registry?.trackObjective) return null;
+        const resolved = resolveObjectiveTarget({
+            id: active.quest.id,
+            ...active.quest,
+            exactRevealed: this.wfcMetadataCache?.size > 0
+        }, {
+            worldPlan: this.worldPlan,
+            chunkStructures: this.wfcMetadataCache,
+            // ChunkStructureResult anchors already use absolute chunk indices.
+            // The biome/ship anchor would double-shift their final position.
+            worldOffset: { x: 0, z: 0 }
+        });
+        const authoredCompass = toObjectiveCompass(resolved);
+        const liveTarget = this.getActiveCampQuestTargetPos?.();
+        // Until the authored content binder has instantiated the quest prop,
+        // the live prop is the authoritative destination. Pointing at a
+        // reservation anchor while the interactable still lives on the legacy
+        // fallback would make the compass confidently wrong.
+        const compass = liveTarget
+            ? { x: liveTarget.x, z: liveTarget.z }
+            : authoredCompass;
+        registry.trackObjective({
+            id: `camp-quest:${active.campId}:${active.quest.id}`,
+            source: 'camp-quest',
+            label: `${active.quest.label ?? 'QUEST'} — ${active.current}/${active.target}`,
+            current: active.current,
+            target: active.target,
+            priority: 40,
+            compass,
+            persistent: true
+        });
+        return compass;
+    }
+
     getRadarCompassState() {
         if (!this.player) {
             return { active: false, angle: 0, distance: 0 };
@@ -12429,21 +12571,7 @@ export class ThreeGame {
             return { active: true, mode: 'corrupt', label: 'SIGNAL CORRUPT', angle: jitter, distance: 0 };
         }
 
-        const regTarget = typeof window !== 'undefined' ? window.objectiveRegistry?.getCompassTarget?.() : null;
-        if (regTarget && regTarget.priority < 50) {
-            const rdx = regTarget.x - this.player.position.x;
-            const rdz = regTarget.z - this.player.position.z;
-            const rdist = Math.hypot(rdx, rdz);
-            if (rdist > 0.5) {
-                return {
-                    active: true,
-                    mode: regTarget.source ?? 'objective',
-                    label: regTarget.label,
-                    angle: this.planarAngleTo(rdx, rdz, rdist),
-                    distance: rdist
-                };
-            }
-        }
+        this.syncActiveCampQuestObjectiveTarget?.();
 
         if (this._blackBoxMarkerActive && this._blackBoxState?.active) {
             const dx = this._blackBoxState.x - this.player.position.x;
@@ -12493,6 +12621,26 @@ export class ThreeGame {
                     label: 'FABRICATION BAY',
                     angle: this.planarAngleTo(fdx, fdz, fdist),
                     distance: fdist
+                };
+            }
+        }
+
+        // The shared registry arbitrates authored objectives, camp quests,
+        // missions, and priority-50 lore after the still-migrating bespoke
+        // story-critical branches above. This preserves their explicit order
+        // while producers move onto the single registry contract.
+        const regTarget = typeof window !== 'undefined' ? window.objectiveRegistry?.getCompassTarget?.() : null;
+        if (regTarget && regTarget.priority <= 50) {
+            const rdx = regTarget.x - this.player.position.x;
+            const rdz = regTarget.z - this.player.position.z;
+            const rdist = Math.hypot(rdx, rdz);
+            if (rdist > 0.5) {
+                return {
+                    active: true,
+                    mode: regTarget.source ?? 'objective',
+                    label: regTarget.label,
+                    angle: this.planarAngleTo(rdx, rdz, rdist),
+                    distance: rdist
                 };
             }
         }
@@ -12847,22 +12995,374 @@ export class ThreeGame {
         return stats;
     }
 
+    getActiveContainmentZones() {
+        const zones = [];
+        for (const camp of this.camps ?? []) {
+            const campPosition = camp?.position ?? camp?.pos;
+            const record = this.getCampRecord?.(camp.id);
+            const campStatus = record?.status ?? camp.status ?? null;
+            const hostileInAct2 = Boolean(this.isAct2Active?.())
+                && ['alive', 'robbed'].includes(campStatus);
+            const campIsSafe = !camp.destroyed
+                && campStatus !== 'culled'
+                && !hostileInAct2;
+            if (campPosition && campIsSafe) {
+                const safeHalfExtent = CAMP_CLEARING_RADIUS + 0.5;
+                zones.push({
+                    id: camp.id ?? 'camp',
+                    isSafe: true,
+                    bounds: {
+                        minX: campPosition.x - safeHalfExtent,
+                        maxX: campPosition.x + safeHalfExtent,
+                        minZ: campPosition.z - safeHalfExtent,
+                        maxZ: campPosition.z + safeHalfExtent
+                    }
+                });
+            }
+        }
+        for (const [key, metadata] of this.wfcMetadataCache?.entries() ?? []) {
+            const [cx, cy] = String(key).split(',').map(Number);
+            const chunkWorldX = Number.isFinite(cx) ? cx * this.chunkSize : 0;
+            const chunkWorldZ = Number.isFinite(cy) ? cy * this.chunkSize : 0;
+            for (const room of metadata?.roomInstances ?? []) {
+                const isSafe = Boolean(
+                    room.isSafe === true
+                    || room.safeZone === true
+                    || room.containment?.safeZone === true
+                    || room.containment?.blocksHostiles === true
+                    || room.containment?.blocksDamage === true
+                );
+                const roomDoors = (room.doors ?? [])
+                    .map((door) => this.proceduralDoorStates?.get?.(door.id))
+                    .filter(Boolean);
+                const isSealed = roomDoors.length === 0 || roomDoors.every(isDoorClosed);
+                if (isSafe && isSealed) {
+                    const translated = translateContainmentZone({
+                        ...room,
+                        isSafe: true,
+                        bounds: room.containmentBounds ?? room.bounds
+                    }, { x: chunkWorldX, z: chunkWorldZ });
+                    if (translated) zones.push(translated);
+                }
+            }
+        }
+        return zones;
+    }
+
+    canEnemyTargetPlayer(enemySprite) {
+        if (!enemySprite?.position || !this.player?.position) return true;
+        return canHostileAggroTarget(
+            { x: enemySprite.position.x, z: enemySprite.position.z },
+            { x: this.player.position.x, z: this.player.position.z },
+            {
+                containmentZones: this.getActiveContainmentZones?.() ?? [],
+                doors: this.getActiveDoors?.() ?? []
+            }
+        );
+    }
+
+    isPositionInSafeZone(x, z) {
+        return isCellInSafeZone(x, z, this.getActiveContainmentZones?.() ?? []);
+    }
+
+    getActiveDoors() {
+        const doors = [];
+        for (const door of this.proceduralDoorStates?.values() ?? []) {
+            const [chunkX, chunkY] = String(door.chunkKey ?? '0,0').split(',').map(Number);
+            const translated = translateContainmentDoor(door, {
+                x: Number.isFinite(chunkX) ? chunkX * this.chunkSize : 0,
+                z: Number.isFinite(chunkY) ? chunkY * this.chunkSize : 0
+            });
+            if (translated) doors.push(translated);
+        }
+        const blastDoor = this.bunkerBlastDoorState;
+        if (blastDoor && !blastDoor.destroyed) {
+            doors.push({
+                id: 'bunker-blast-door',
+                state: blastDoor.open ? 'open' : 'closed',
+                bounds: {
+                    minX: blastDoor.startTileX - 0.5,
+                    maxX: blastDoor.endTileX + 0.5,
+                    minZ: blastDoor.doorZ - 0.5,
+                    maxZ: blastDoor.doorZ + 0.5
+                }
+            });
+        }
+        return doors;
+    }
+
+    getBuiltGoalKeys() {
+        const unlocks = this.bank?.getState?.()?.unlocks ?? {};
+        return new Set(Object.keys(unlocks).filter((goalKey) => Boolean(unlocks[goalKey])));
+    }
+
+    getLiveMilestoneBossIds() {
+        const ids = new Set();
+        for (const sprite of this.scatterSprites ?? []) {
+            if (sprite?.parent && !sprite.userData?.burstTriggered && sprite.userData?.milestoneId) {
+                ids.add(sprite.userData.milestoneId);
+            }
+        }
+        if (this.activeBoss?.parent && !this.activeBoss.userData?.burstTriggered) {
+            const activeId = this.activeBoss.userData?.milestoneId
+                ?? getMilestoneForGoal(this.activeBoss.userData?.sourceGoalKey)?.milestoneId;
+            if (activeId) ids.add(activeId);
+        }
+        return ids;
+    }
+
+    applyMilestoneBossRuntimeEvent(event) {
+        const builtGoalKeys = typeof this.getBuiltGoalKeys === 'function'
+            ? this.getBuiltGoalKeys()
+            : new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+                .filter(([, built]) => Boolean(built))
+                .map(([goalKey]) => goalKey));
+        if (!this.milestoneBossLifecycleState) {
+            this.milestoneBossLifecycleState = createMilestoneBossLifecycleState({ builtGoalKeys });
+        }
+        const result = applyMilestoneBossEvent(this.milestoneBossLifecycleState, event);
+        this.milestoneBossLifecycleState = result.state;
+        for (const effect of result.effects ?? []) {
+            if (effect.type === 'milestone_defeated') {
+                const definition = getMilestoneById(effect.milestoneId);
+                if (definition) this.defeatedMilestoneBosses?.add(definition.goalKey);
+            }
+        }
+        return result;
+    }
+
+    reconcileMilestoneBossLifecycle({ activeMilestoneIds } = {}) {
+        const builtGoalKeys = typeof this.getBuiltGoalKeys === 'function'
+            ? this.getBuiltGoalKeys()
+            : new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+                .filter(([, built]) => Boolean(built))
+                .map(([goalKey]) => goalKey));
+        const defeatedMilestoneIds = [...(this.defeatedMilestoneBosses ?? [])]
+            .map((goalKey) => getMilestoneForGoal(goalKey)?.milestoneId)
+            .filter(Boolean);
+        this.milestoneBossLifecycleState = migrateMilestoneBossLifecycleState({
+            ...(this.milestoneBossLifecycleState ?? {}),
+            defeatedMilestoneIds
+        }, { builtGoalKeys });
+        const liveIds = activeMilestoneIds === undefined
+            ? (typeof this.getLiveMilestoneBossIds === 'function'
+                ? this.getLiveMilestoneBossIds()
+                : new Set([
+                    this.activeBoss?.parent
+                        ? (this.activeBoss.userData?.milestoneId
+                            ?? getMilestoneForGoal(this.activeBoss.userData?.sourceGoalKey)?.milestoneId)
+                        : null
+                ].filter(Boolean)))
+            : new Set(activeMilestoneIds);
+        for (const milestoneId of liveIds) {
+            const staged = applyMilestoneBossEvent(this.milestoneBossLifecycleState, {
+                type: MILESTONE_BOSS_EVENT_TYPES.BOSS_SPAWNED,
+                milestoneId
+            });
+            this.milestoneBossLifecycleState = staged.state;
+        }
+        const reconciled = canonicalReconcileMilestoneBossLifecycle(this.milestoneBossLifecycleState, {
+            builtGoalKeys,
+            activeMilestoneIds: liveIds
+        });
+        this.milestoneBossLifecycleState = reconciled.state;
+        const report = buildMilestoneBossReport(this.milestoneBossLifecycleState);
+        for (const entry of Object.values(report)) {
+            entry.unlocked = entry.isUnlocked;
+            entry.defeated = entry.isDefeated;
+        }
+        return report;
+    }
+
+    restageReadyMilestoneBosses() {
+        const report = this.reconcileMilestoneBossLifecycle();
+        const next = MILESTONE_BOSS_DEFINITIONS.find((definition) => (
+            report[definition.goalKey]?.status === MILESTONE_BOSS_STATES.READY_TO_STAGE
+        ));
+        if (!next) {
+            this._milestoneBossRestagePending = false;
+            return null;
+        }
+        const boss = this.spawnMilestoneBoss?.(next.presentationEnemyType, {
+            sourceGoalKey: next.goalKey
+        }) ?? null;
+        this._milestoneBossRestagePending = !boss;
+        return boss;
+    }
+
+    setAuthoredWorldPlan(worldPlan, { enabled = true } = {}) {
+        const planChanged = this.worldPlan !== (worldPlan ?? null)
+            || this.authoredWorldTiles !== Boolean(enabled && worldPlan);
+        if (planChanged) {
+            const removedGroups = new Set(this.chunkMeshes?.values?.() ?? []);
+            for (const group of removedGroups) {
+                this.disposeChunkGroupResources?.(group);
+                this.chunkGroups?.remove?.(group);
+            }
+            this.chunkMeshes?.clear?.();
+            this.chunkCache?.clear?.();
+            this._chunkRoomTypeCache?.clear?.();
+            this._chunkTemplateCache?.clear?.();
+            this._chunkLandformCache?.clear?.();
+            this.wfcMetadataCache?.clear?.();
+            this.proceduralDoorStates?.clear?.();
+            this.proceduralDoorMeshes?.clear?.();
+            this.worldRouteRecords?.clear?.();
+            if (Array.isArray(this.scatterSprites)) {
+                this.scatterSprites = this.scatterSprites.filter((sprite) => !removedGroups.has(sprite?.parent));
+            }
+            if (Array.isArray(this.pickupMeshes)) {
+                this.pickupMeshes = this.pickupMeshes.filter((mesh) => !removedGroups.has(mesh?.parent));
+            }
+            if (Array.isArray(this.pendingChunkMounts)) this.pendingChunkMounts = [];
+            this.pendingChunkMountKeys?.clear?.();
+            // The prior key may describe the same player chunk even though all
+            // mounted groups were just removed. Force the next visibility pass
+            // to repopulate immediately instead of waiting for player travel.
+            this._lastChunkVisibilityKey = null;
+        }
+        this.worldPlan = worldPlan ?? null;
+        this._worldPlanInjected = Boolean(worldPlan);
+        this.authoredWorldTiles = Boolean(enabled && worldPlan);
+        this._restoredAuthoredWorldIdentity = null;
+        this.ringCrossingState = null;
+        this.reconcileAuthoredWorldProgression?.();
+        return this.worldPlan;
+    }
+
+    getActiveAuthoredReservationIds() {
+        const ids = new Set();
+        const act2State = this.act2?.getState?.();
+        for (const camp of act2State?.camps ?? []) {
+            if (camp?.id && camp?.status) ids.add(`${camp.id}:state:${camp.status}`);
+            // Chunk selection can run before ensureAct2Camps reconstructs the
+            // runtime quest object. Persisted flags therefore activate the
+            // destination directly, independent of mount order.
+            for (const [questId, status] of Object.entries(camp?.questFlags ?? {})) {
+                if (camp?.id && (status === 'active' || status === 'done')) {
+                    ids.add(`quest:${camp.id}:${questId}:destination`);
+                }
+            }
+        }
+        for (const hive of act2State?.hives ?? []) {
+            if (hive?.id && hive?.status) ids.add(`${hive.id}:state:${hive.status}`);
+        }
+        if (this._activeCampQuest?.campId && this._activeCampQuest?.quest?.id) {
+            ids.add(`quest:${this._activeCampQuest.campId}:${this._activeCampQuest.quest.id}:destination`);
+        }
+        return ids;
+    }
+
+    ensureAuthoredWorldPlan() {
+        if (!this.authoredWorldTiles) return null;
+        const expectedIdentity = this._restoredAuthoredWorldIdentity;
+        const matchesRestoredIdentity = (plan) => {
+            if (!expectedIdentity || !plan) return true;
+            const seedMatches = expectedIdentity.seed == null
+                || (Number(plan.seed) >>> 0) === (Number(expectedIdentity.seed) >>> 0);
+            const versionMatches = expectedIdentity.version == null
+                || Number(plan.version) === Number(expectedIdentity.version);
+            return seedMatches && versionMatches;
+        };
+        const rejectMismatchedPlan = () => {
+            this.authoredWorldTiles = false;
+            this.worldPlan = null;
+            this.ringCrossingState = null;
+            return null;
+        };
+        if (this._worldPlanInjected && this.worldPlan) {
+            if (!matchesRestoredIdentity(this.worldPlan)) return rejectMismatchedPlan();
+            this._restoredAuthoredWorldIdentity = null;
+            return this.worldPlan;
+        }
+        const expedition = this.getRadialMazePlan?.();
+        if (!expedition) return null;
+        if (!this.worldPlan || this.worldPlan.seed !== (Number(expedition.seed) >>> 0)) {
+            this.worldPlan = buildWorldPlan(expedition);
+            this._worldPlanInjected = false;
+            this.ringCrossingState = null;
+        }
+        if (!matchesRestoredIdentity(this.worldPlan)) return rejectMismatchedPlan();
+        this._restoredAuthoredWorldIdentity = null;
+        return this.worldPlan;
+    }
+
+    completeRingCrossingMission(missionId) {
+        const worldPlan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        const known = worldPlan?.ringCrossings?.some((crossing) => crossing.requirements?.missionId === missionId);
+        if (!known) return false;
+        if (!this.completedRingCrossingMissionIds) this.completedRingCrossingMissionIds = new Set();
+        const previousSize = this.completedRingCrossingMissionIds.size;
+        this.completedRingCrossingMissionIds.add(missionId);
+        this.mazeAccessState?.completedObjectives?.add(missionId);
+        this.reconcileAuthoredWorldProgression?.();
+        return this.completedRingCrossingMissionIds.size !== previousSize;
+    }
+
+    reconcileAuthoredWorldProgression() {
+        if (!this.authoredWorldTiles) return null;
+        const worldPlan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+        if (!worldPlan?.ringCrossings) return null;
+        const completedMissionIds = new Set([
+            ...(this.completedRingCrossingMissionIds ?? []),
+            ...(this.mazeAccessState?.completedObjectives ?? [])
+        ]);
+        const result = reconcileWorldPlanRingCrossings(worldPlan, this.ringCrossingState, {
+            builtGoalKeys: typeof this.getBuiltGoalKeys === 'function'
+                ? this.getBuiltGoalKeys()
+                : new Set(Object.entries(this.bank?.getState?.()?.unlocks ?? {})
+                    .filter(([, built]) => Boolean(built))
+                    .map(([goalKey]) => goalKey)),
+            completedMissionIds,
+            milestoneLifecycle: this.milestoneBossLifecycleState
+        });
+        this.ringCrossingState = result.state;
+        this._openCrossings = result.openCrossingIds;
+        this._traversalUnlocks = result.traversalUnlocks;
+        for (const crossingId of result.openCrossingIds) {
+            this.mazeAccessState?.completedObjectives?.add(`ring-crossing-open:${crossingId}`);
+        }
+        for (const [doorId, door] of this.proceduralDoorStates ?? []) {
+            if (!door?.ringCrossingId || door.state === 'destroyed') continue;
+            const isOpen = result.openCrossingIds.has(door.ringCrossingId);
+            this.proceduralDoorStates.set(doorId, {
+                ...door,
+                state: isOpen ? 'open' : 'locked',
+                lock: isOpen ? null : door.lock
+            });
+        }
+        return result;
+    }
+
     takeDamage(amount = 1, reason = 'hazard', sourceX = null, sourceZ = null) {
-        if (this.isPlayerDead) return;
-        if (this.godMode) return;
-        if (this.cinematicLock) return; // untouchable during scripted sequences
-        if (this.isInPocket) return; // untouchable while resolving a fall inside a pocket
-        if (this.iFrameTimer > 0 && reason !== 'abyss') return;
-        if (this.missionState?.status === 'inactive') return;
+        if (this.isPlayerDead) return false;
+        if (this.godMode) return false;
+        if (this.cinematicLock) return false; // untouchable during scripted sequences
+        if (this.isInPocket) return false; // untouchable while resolving a fall inside a pocket
+        if (this.iFrameTimer > 0 && reason !== 'abyss') return false;
+        if (this.missionState?.status === 'inactive') return false;
+        if (sourceX != null && sourceZ != null && this.player?.position) {
+            const containmentClamped = shouldBlockAttackPath(
+                { x: sourceX, z: sourceZ },
+                { x: this.player.position.x, z: this.player.position.z },
+                {
+                    containmentZones: this.getActiveContainmentZones(),
+                    doors: this.getActiveDoors()
+                }
+            );
+            if (containmentClamped) {
+                return false; // Damage absorbed by safe haven or closed containment barrier
+            }
+        }
         if (this.playerType === 'TANK' && Math.random() < (this.blockChance ?? 0)) {
             window.AudioManager?.play('fx_tank_shockwave', { volume: 0.4, bus: 'sfx' });
             window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason } }));
-            return;
+            return false;
         }
         const previousHp = this.playerVitals.hp;
         const damage = Math.max(0, Math.round(amount));
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - damage);
-        if (this.playerVitals.hp === previousHp) return;
+        if (this.playerVitals.hp === previousHp) return false;
         this.player3dOverlay?.trigger('hit');
 
         if (sourceX != null && sourceZ != null) {
@@ -12889,6 +13389,7 @@ export class ThreeGame {
         if (this.playerVitals.hp <= 0) {
             this.handleDeath(reason);
         }
+        return true;
     }
 
     showDirectionalHitIndicator(attackerX, attackerZ) {
@@ -12921,6 +13422,10 @@ export class ThreeGame {
     handleDeath(reason = 'hazard') {
         if (this.isPlayerDead) return;
         this.isPlayerDead = true;
+        this.applyMilestoneBossRuntimeEvent?.({
+            type: MILESTONE_BOSS_EVENT_TYPES.PLAYER_DEATH
+        });
+        this._milestoneBossRestagePending = true;
         this.closeConsoleModal();
         const inventory = this.getSessionInventory();
         const salvage = {
@@ -12971,6 +13476,11 @@ export class ThreeGame {
         this._chunkTemplateCache?.clear();
         this._chunkLandformCache?.clear();
         this.radialMazePlan = null;
+        this.worldPlan = null;
+        this._worldPlanInjected = false;
+        this.ringCrossingState = null;
+        this._openCrossings = new Set();
+        this._traversalUnlocks = [];
         this.wfcMetadataCache?.clear();
         this.proceduralDoorStates?.clear();
         this.proceduralDoorMeshes?.clear();
@@ -12988,6 +13498,7 @@ export class ThreeGame {
         this.wallMeshes = [];
         this.pickupMeshes = [];
         this.scatterSprites = [];
+        this.activeBoss = null;
     }
 
     disposeChunkGroupResources(group) {
@@ -13093,6 +13604,12 @@ export class ThreeGame {
             }
             this.clearLoadedChunksForRunReset();
             this.syncVisibleChunks(true, { processLimit: deferChunkMount ? 0 : null });
+            this.applyMilestoneBossRuntimeEvent?.({
+                type: MILESTONE_BOSS_EVENT_TYPES.BASE_RETURN,
+                builtGoalKeys: [...(this.getBuiltGoalKeys?.() ?? [])],
+                activeMilestoneIds: []
+            });
+            this._milestoneBossRestagePending = true;
             this.updateCrashedShipsVisibility(false);
             this.emitDepthTierChanged(0);
         }
@@ -14298,14 +14815,34 @@ export class ThreeGame {
         if (!this.player || !this.isGameplayInputActive?.()) return;
         const unlocks = this.bank?.getState?.()?.unlocks ?? {};
         const unlockedGoalKeys = new Set(Object.keys(unlocks).filter((key) => unlocks[key]));
-        const maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
+        let maxUnlockedRing = getMaxUnlockedRing(unlockedGoalKeys);
+        let authoredProgression = false;
+        if (this.authoredWorldTiles && this.worldPlan?.ringCrossings) {
+            const authored = ThreeGame.prototype.reconcileAuthoredWorldProgression.call(this);
+            if (authored) {
+                maxUnlockedRing = authored.maxUnlockedRing;
+                authoredProgression = true;
+            }
+        }
         const anchor = this.getBiomeAnchorPosition();
-        const result = clampPositionToUnlockedRing(
-            this.player.position.x,
-            this.player.position.z,
-            anchor,
-            maxUnlockedRing
-        );
+        const result = authoredProgression
+            ? clampPositionToAuthoredRing(
+                this.player.position.x,
+                this.player.position.z,
+                anchor,
+                maxUnlockedRing,
+                this.getRadialMazePlan?.()?.radii,
+                {
+                    worldPlan: this.worldPlan,
+                    chunkSize: this.chunkSize
+                }
+            )
+            : clampPositionToUnlockedRing(
+                this.player.position.x,
+                this.player.position.z,
+                anchor,
+                maxUnlockedRing
+            );
         if (result.blocked) {
             this.player.position.x = result.x;
             this.player.position.z = result.z;
@@ -16205,6 +16742,19 @@ export class ThreeGame {
 
             projectile.mesh.position.x += projectile.vx * delta;
             projectile.mesh.position.z += projectile.vz * delta;
+
+            if (projectile.isEnemy && shouldBlockAttackPath(
+                { x: oldX, z: oldZ },
+                { x: projectile.mesh.position.x, z: projectile.mesh.position.z },
+                {
+                    containmentZones: this.getActiveContainmentZones?.() ?? [],
+                    doors: this.getActiveDoors?.() ?? []
+                }
+            )) {
+                this.spawnProjectileImpactEffect(projectile.mesh.position.x, projectile.mesh.position.z);
+                toRemove.add(projectile);
+                continue;
+            }
 
             const wallHit = this.checkProjectileWallHit(projectile, { x: oldX, z: oldZ });
             if (wallHit) {
@@ -20832,6 +21382,18 @@ export class ThreeGame {
 
         if (isBoss) {
             this.killedBosses.add(sprite.userData.biome);
+            if (sprite.userData.isMilestone && sprite.userData.milestoneId) {
+                const transition = this.applyMilestoneBossRuntimeEvent({
+                    type: MILESTONE_BOSS_EVENT_TYPES.ENEMY_KILLED,
+                    milestoneId: sprite.userData.milestoneId,
+                    encounterId: sprite.userData.milestoneEncounterId
+                });
+                if (transition.effects?.some((effect) => effect.type === 'milestone_defeated')) {
+                    const milestoneDef = getMilestoneById(sprite.userData.milestoneId);
+                    if (milestoneDef) this.defeatedMilestoneBosses.add(milestoneDef.goalKey);
+                    this.reconcileAuthoredWorldProgression?.();
+                }
+            }
             if (sprite.userData.isMilestone && sprite.userData.sourceGoalKey === 'o2Bubble') {
                 this.revealFoundry({ randomEdge: true, source: 'o2-counterattack-complete' });
             }
@@ -21097,10 +21659,23 @@ export class ThreeGame {
     // for the ship. Driven by the bank's `goal-unlocked` event (see init wiring).
     spawnMilestoneBoss(bossType, { sourceGoalKey = null } = {}) {
         if (!this.player || !this.snailsEnabled) return null;
+        const milestoneDef = sourceGoalKey ? getMilestoneForGoal(sourceGoalKey) : null;
+        if (milestoneDef) bossType = milestoneDef.presentationEnemyType;
         if (!this.scatterMaterials[bossType]) return null;
-        // Never stack the same milestone boss.
-        if (this.scatterSprites.some((s) => s.userData?.isMilestone && s.userData?.type === bossType && !s.userData?.burstTriggered)) {
+        // Presentation types are not identities: radar and reactor both use a
+        // Sporesnail. Deduplicate only by the canonical milestone ID.
+        if (milestoneDef && this.scatterSprites.some((sprite) => (
+            sprite.userData?.milestoneId === milestoneDef.milestoneId
+            && !sprite.userData?.burstTriggered
+            && sprite.parent
+        ))) {
             return null;
+        }
+        if (milestoneDef) {
+            this.reconcileMilestoneBossLifecycle?.();
+            const status = this.milestoneBossLifecycleState?.milestones?.[milestoneDef.milestoneId]?.status;
+            if (status === MILESTONE_BOSS_STATES.DEFEATED || status === MILESTONE_BOSS_STATES.ACTIVE) return null;
+            if (status !== MILESTONE_BOSS_STATES.READY_TO_STAGE) return null;
         }
 
         const baseX = this.player.position.x;
@@ -21122,6 +21697,14 @@ export class ThreeGame {
             if (spawnX !== null) break;
         }
         if (spawnX === null) return null;
+
+        // Do not advance the pure lifecycle until a live parent exists. The
+        // previous ordering could persist ACTIVE even though streaming had no
+        // group to own the attempted boss.
+        const chunkX = Math.floor(baseX / this.chunkSize);
+        const chunkY = Math.floor(baseZ / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`);
+        if (!group) return null;
 
         const tint = bossType === 'boss_cryosnail' ? 0x88ccff
             : bossType === 'boss_sporesnail' ? 0x88ff88 : 0xffffff;
@@ -21145,6 +21728,7 @@ export class ThreeGame {
         if (!boss) return null;
         boss.userData.isMilestone = true;
         boss.userData.sourceGoalKey = sourceGoalKey;
+        if (milestoneDef) boss.userData.milestoneId = milestoneDef.milestoneId;
         boss.userData.prioritizeShip = true;
         boss.userData.targetType = 'ship';
 
@@ -21159,12 +21743,18 @@ export class ThreeGame {
 
         // Parent to the player's (loaded) chunk group so the boss persists in
         // scatterSprites across chunk syncs. Chunk groups use world coords.
-        const chunkX = Math.floor(baseX / this.chunkSize);
-        const chunkY = Math.floor(baseZ / this.chunkSize);
-        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`);
-        if (!group) return null;
         group.add(boss);
         this.scatterSprites.push(boss);
+        if (milestoneDef) {
+            const transition = this.applyMilestoneBossRuntimeEvent({
+                type: MILESTONE_BOSS_EVENT_TYPES.BOSS_SPAWNED,
+                milestoneId: milestoneDef.milestoneId
+            });
+            const active = transition.effects?.find((effect) => effect.type === 'milestone_active');
+            boss.userData.milestoneEncounterId = active?.encounterId
+                ?? this.milestoneBossLifecycleState?.milestones?.[milestoneDef.milestoneId]?.activeEncounterId
+                ?? null;
+        }
 
         window.AudioManager?.playMetalStress?.({ volume: 0.6, playbackRate: 0.42, force: true });
         window.dispatchEvent(new CustomEvent('milestone-boss-spawned', { detail: { type: bossType } }));
@@ -21413,7 +22003,8 @@ export class ThreeGame {
 
     selectSnailTarget(sprite, activeShip) {
         const targets = [];
-        if (this.player && !this.isPlayerDead && !this.isHiveKinPassive(sprite)) {
+        if (this.player && !this.isPlayerDead && !this.isHiveKinPassive(sprite)
+            && this.canEnemyTargetPlayer?.(sprite) !== false) {
             targets.push({
                 type: 'player',
                 x: this.player.position.x,
@@ -21500,6 +22091,10 @@ export class ThreeGame {
             { dx: -1, dz: 1, cost: Math.SQRT2, diagonal: true },
             { dx: -1, dz: -1, cost: Math.SQRT2, diagonal: true }
         ];
+        const containmentOptions = {
+            containmentZones: this.getActiveContainmentZones?.() ?? [],
+            doors: this.getActiveDoors?.() ?? []
+        };
 
         if (!this.isSnailTileWalkable(startTileX, startTileZ)) {
             return [{ x: startTileX, z: startTileZ }];
@@ -21573,6 +22168,11 @@ export class ThreeGame {
                 const nx = current.x + dir.dx;
                 const nz = current.z + dir.dz;
                 if (!this.isSnailTileWalkable(nx, nz)) continue;
+                if (shouldBlockAttackPath(
+                    { x: current.x, z: current.z },
+                    { x: nx, z: nz },
+                    containmentOptions
+                )) continue;
                 if (dir.diagonal) {
                     if (!this.isSnailTileWalkable(current.x + dir.dx, current.z) || !this.isSnailTileWalkable(current.x, current.z + dir.dz)) {
                         continue;
@@ -21612,6 +22212,12 @@ export class ThreeGame {
         const data = sprite.userData;
         if (!this.player) return;
 
+        if (this.canEnemyTargetPlayer?.(sprite) === false) {
+            data.active = false;
+            sprite.material.color.setHex(0xffdd44);
+            return;
+        }
+
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
         const distToPlayer = Math.hypot(dx, dz);
@@ -21646,6 +22252,7 @@ export class ThreeGame {
 
     fireSentinelProjectile(sprite) {
         if (!this.player) return;
+        if (this.canEnemyTargetPlayer?.(sprite) === false) return;
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
         const dist = Math.hypot(dx, dz);
@@ -21672,6 +22279,11 @@ export class ThreeGame {
     updateCrawlerBehavior(sprite, delta) {
         const data = sprite.userData;
         if (!this.player) return;
+
+        if (this.canEnemyTargetPlayer?.(sprite) === false) {
+            data.crawlerState = 'idle';
+            return;
+        }
 
         if (data.attackCooldown > 0) {
             data.attackCooldown = Math.max(0, data.attackCooldown - delta);
@@ -21715,7 +22327,16 @@ export class ThreeGame {
             const moveZ = data.chargeDirZ * CRAWLER_CHARGE_SPEED * delta;
             const nextX = sprite.position.x + moveX;
             const nextZ = sprite.position.z + moveZ;
-            const wallHit = this.getTileType(Math.round(nextX), Math.round(nextZ)) === '#';
+            const containmentHit = shouldBlockAttackPath(
+                { x: sprite.position.x, z: sprite.position.z },
+                { x: nextX, z: nextZ },
+                {
+                    containmentZones: this.getActiveContainmentZones?.() ?? [],
+                    doors: this.getActiveDoors?.() ?? []
+                }
+            );
+            const wallHit = containmentHit
+                || this.getTileType(Math.round(nextX), Math.round(nextZ)) === '#';
 
             if (wallHit || data.chargeTimer >= CRAWLER_CHARGE_MAX_DURATION) {
                 data.crawlerState = 'idle';
@@ -21735,8 +22356,11 @@ export class ThreeGame {
             if (!this.isPlayerDead && newDist <= CRAWLER_ATTACK_RADIUS && data.attackCooldown <= 0 && !this.isHiveKinPassive(sprite)) {
                 data.attackCooldown = CRAWLER_ATTACK_COOLDOWN;
                 data.crawlerState = 'idle';
-                window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'crawler' } }));
-                window.AudioManager?.play('ui_error', { volume: 0.5, playbackRate: 1.3, bus: 'sfx' });
+                const hitApplied = this.takeDamage(1, 'crawler', sprite.position.x, sprite.position.z);
+                if (hitApplied) {
+                    window.dispatchEvent(new CustomEvent('player-hit', { detail: { reason: 'crawler' } }));
+                    window.AudioManager?.play('ui_error', { volume: 0.5, playbackRate: 1.3, bus: 'sfx' });
+                }
             }
         }
     }
@@ -21748,10 +22372,11 @@ export class ThreeGame {
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
         const distToPlayer = Math.hypot(dx, dz);
+        const canTargetPlayer = this.canEnemyTargetPlayer?.(sprite) !== false;
 
         // Stage 1 -> Stage 2 transition: Trigger eruption if player gets close (<=3.2) or vent takes damage
         const currentHp = Number.isFinite(data.hp) ? data.hp : 6;
-        if (distToPlayer <= 3.2 || currentHp < 6) {
+        if ((canTargetPlayer && distToPlayer <= 3.2) || currentHp < 6) {
             this.eruptFungalVent(sprite);
             return;
         }
@@ -21760,7 +22385,7 @@ export class ThreeGame {
         data.sporeTimer = (data.sporeTimer ?? 2.8) - delta;
         if (data.sporeTimer <= 0) {
             data.sporeTimer = 3.5 + Math.random() * 1.5;
-            if (distToPlayer <= 9.0) {
+            if (canTargetPlayer && distToPlayer <= 9.0) {
                 this.spawnProjectile({
                     x: sprite.position.x,
                     z: sprite.position.z,
@@ -21817,6 +22442,12 @@ export class ThreeGame {
     updateChargerOrStalkerBehavior(sprite, delta, { isStalker = false } = {}) {
         const data = sprite.userData;
         if (!this.player || this.isPlayerDead) return;
+        if (this.canEnemyTargetPlayer?.(sprite) === false) {
+            data.vx = (data.vx ?? 0) * 0.5;
+            data.vz = (data.vz ?? 0) * 0.5;
+            data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
+            return;
+        }
 
         const dx = this.player.position.x - sprite.position.x;
         const dz = this.player.position.z - sprite.position.z;
@@ -21846,17 +22477,28 @@ export class ThreeGame {
 
         const nextX = sprite.position.x + data.vx * delta;
         const nextZ = sprite.position.z + data.vz * delta;
+        const containmentOptions = {
+            containmentZones: this.getActiveContainmentZones?.() ?? [],
+            doors: this.getActiveDoors?.() ?? []
+        };
+        const canMoveTo = (x, z) => !shouldBlockAttackPath(
+            { x: sprite.position.x, z: sprite.position.z },
+            { x, z },
+            containmentOptions
+        );
 
         // Collision & door breaching physics
-        if (this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
+        if (canMoveTo(nextX, nextZ) && this.isSnailTileWalkable(Math.round(nextX), Math.round(nextZ))) {
             sprite.position.x = nextX;
             sprite.position.z = nextZ;
         } else {
             // Wall sliding check along X and Z axes
-            if (this.isSnailTileWalkable(Math.round(nextX), Math.round(sprite.position.z))) {
+            if (canMoveTo(nextX, sprite.position.z)
+                && this.isSnailTileWalkable(Math.round(nextX), Math.round(sprite.position.z))) {
                 sprite.position.x = nextX;
                 data.vz *= 0.4;
-            } else if (this.isSnailTileWalkable(Math.round(sprite.position.x), Math.round(nextZ))) {
+            } else if (canMoveTo(sprite.position.x, nextZ)
+                && this.isSnailTileWalkable(Math.round(sprite.position.x), Math.round(nextZ))) {
                 sprite.position.z = nextZ;
                 data.vx *= 0.4;
             } else {
@@ -21872,9 +22514,16 @@ export class ThreeGame {
         // Contact attack check
         if (distToPlayer <= 0.95 && (data.attackCooldown ?? 0) <= 0) {
             data.attackCooldown = 1.0;
-            this.takeDamage(isStalker ? 1 : 2, isStalker ? 'mycelium_stalker' : 'bio_charger', sprite.position.x, sprite.position.z);
-            if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
-            window.AudioManager?.playMetalStress?.({ volume: 0.35, playbackRate: 1.4, force: true });
+            const hitApplied = this.takeDamage(
+                isStalker ? 1 : 2,
+                isStalker ? 'mycelium_stalker' : 'bio_charger',
+                sprite.position.x,
+                sprite.position.z
+            );
+            if (hitApplied) {
+                if (isStalker) this.spawnToxicSporePuddle(sprite.position.x, sprite.position.z, false);
+                window.AudioManager?.playMetalStress?.({ volume: 0.35, playbackRate: 1.4, force: true });
+            }
         } else {
             data.attackCooldown = Math.max(0, (data.attackCooldown ?? 0) - delta);
         }
@@ -22620,14 +23269,16 @@ export class ThreeGame {
                     if (this.player && !this.isPlayerDead) {
                         const d = Math.hypot(this.player.position.x - sprite.position.x, this.player.position.z - sprite.position.z);
                         if (d <= 5.0) {
-                            this.takeDamage(2, 'ground-slam', sprite.position.x, sprite.position.z);
-                            this.triggerCameraShake?.(0.35, 0.45);
+                            const hitApplied = this.takeDamage(2, 'ground-slam', sprite.position.x, sprite.position.z);
+                            if (hitApplied) this.triggerCameraShake?.(0.35, 0.45);
                         }
                     }
                     window.AudioManager?.playMetalStress?.({ volume: 0.52, playbackRate: 0.8, force: true });
                 } else if (data.type === 'boss_corrupted_engineer' && distanceToTarget <= 12) {
                     data.bossAttackTimer = 6.0;
-                    this.applyPlayerSlow(2.5); // Jam and slow (SCOUT passive reduces this)
+                    if (target.type === 'player' && this.canEnemyTargetPlayer?.(sprite) !== false) {
+                        this.applyPlayerSlow(2.5); // Jam and slow (SCOUT passive reduces this)
+                    }
                     const parent = sprite.parent;
                     if (parent) {
                         const tx = sprite.position.x + (Math.random() - 0.5) * 2;
@@ -22677,10 +23328,12 @@ export class ThreeGame {
             data.attackCooldown = SNAIL_ATTACK_COOLDOWN;
             const damage = data.isBoss ? 2 : 1;
             if (target.type === 'player') {
-                this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
-                this.applySnailContactKnockback(sprite, data);
-                if (data.type === 'cryosnail') {
-                    this.applyPlayerSlow(2.5); // Cryosnail slows player on hit (SCOUT passive reduces this)
+                const damageApplied = this.takeDamage(damage, data.type, sprite.position.x, sprite.position.z);
+                if (damageApplied !== false) {
+                    this.applySnailContactKnockback(sprite, data);
+                    if (data.type === 'cryosnail') {
+                        this.applyPlayerSlow(2.5); // Cryosnail slows player on hit (SCOUT passive reduces this)
+                    }
                 }
             } else if (target.type === 'base-turret') {
                 this.damageBaseTurret(damage, data.type);
@@ -22709,21 +23362,22 @@ export class ThreeGame {
             this.player.position.z - sprite.position.z
         );
         const hit = distance <= 4.5;
+        let damageApplied = false;
         if (hit) {
-            this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z);
-            this.applyPlayerSlow(3.0);
+            damageApplied = this.takeDamage(1, 'frost-shockwave', sprite.position.x, sprite.position.z) !== false;
+            if (damageApplied) this.applyPlayerSlow(3.0);
         }
         window.dispatchEvent(new CustomEvent('boss-attack-resolved', {
             detail: {
                 attackId: sprite.userData?.frostShockwaveAttackId ?? null,
                 boss: 'boss_cryosnail',
                 attack: 'frost-shockwave',
-                outcome: hit ? 'hit' : 'escaped',
+                outcome: damageApplied ? 'hit' : hit ? 'blocked' : 'escaped',
                 radius: 4.5,
                 playerDistanceAtResolution: Math.round(distance * 10) / 10
             }
         }));
-        return hit;
+        return damageApplied;
     }
 
     isEnemyType(type) {
@@ -22795,7 +23449,15 @@ export class ThreeGame {
                 // Deal damage if player walks in it
                 if (this.player && !this.isPlayerDead && age % 0.4 < dt) {
                     const d = Math.hypot(this.player.position.x - x, this.player.position.z - z);
-                    if (d <= damageRadius) {
+                    const containmentBlocked = shouldBlockAttackPath(
+                        { x, z },
+                        { x: this.player.position.x, z: this.player.position.z },
+                        {
+                            containmentZones: this.getActiveContainmentZones?.() ?? [],
+                            doors: this.getActiveDoors?.() ?? []
+                        }
+                    );
+                    if (d <= damageRadius && !containmentBlocked) {
                         this.playerPoisonTimer = 3.0; // poisoned for 3 seconds
                     }
                 }
@@ -23988,7 +24650,7 @@ export class ThreeGame {
             overlay.add(mesh);
         }
 
-        const stride = 6;
+        const stride = TILE_SIZE - 1;
         const seamMaterial = (metadata.seamErrors?.length ?? 0) > 0
             ? this.wfcDebugMaterials.seamError
             : this.wfcDebugMaterials.seam;
@@ -24078,7 +24740,15 @@ export class ThreeGame {
         return {
             generationVersion: 2,
             access: serializeAccessState(this.mazeAccessState),
-            doors: serializeDoorStates(this.proceduralDoorStates)
+            doors: serializeDoorStates(this.proceduralDoorStates),
+            milestoneBosses: this.milestoneBossLifecycleState ?? null,
+            ringCrossings: this.ringCrossingState ?? null,
+            authoredWorld: {
+                enabled: Boolean(this.authoredWorldTiles),
+                seed: this.worldPlan?.seed ?? null,
+                version: this.worldPlan?.version ?? null,
+                completedMissionIds: [...(this.completedRingCrossingMissionIds ?? [])]
+            }
         };
     }
 
@@ -24086,6 +24756,38 @@ export class ThreeGame {
         if (!raw || raw.generationVersion !== 2) return false;
         this.mazeAccessState = createAccessState(raw.access);
         this.proceduralDoorStates = restoreDoorStates(raw.doors);
+        if (raw.milestoneBosses) {
+            this.milestoneBossLifecycleState = migrateMilestoneBossLifecycleState(raw.milestoneBosses);
+        }
+        if (raw.ringCrossings) {
+            this.ringCrossingState = raw.ringCrossings;
+        }
+        if (raw.authoredWorld) {
+            // Saved data must never override a code-level rollback. A currently
+            // enabled runtime may resume an enabled save, but the default-off
+            // feature flag always wins when no explicit opt-in exists.
+            const runtimeAllowsAuthoredWorld = Boolean(
+                this.authoredWorldTiles || AUTHORED_WORLD_TILES_ENABLED
+            );
+            this.authoredWorldTiles = Boolean(
+                runtimeAllowsAuthoredWorld && raw.authoredWorld.enabled
+            );
+            this._restoredAuthoredWorldIdentity = this.authoredWorldTiles
+                ? {
+                    seed: raw.authoredWorld.seed ?? null,
+                    version: raw.authoredWorld.version ?? null
+                }
+                : null;
+            if (!this.authoredWorldTiles) this.worldPlan = null;
+            this.completedRingCrossingMissionIds = new Set(raw.authoredWorld.completedMissionIds ?? []);
+        }
+        const reloaded = this.applyMilestoneBossRuntimeEvent?.({
+            type: MILESTONE_BOSS_EVENT_TYPES.RELOAD,
+            builtGoalKeys: [...(this.getBuiltGoalKeys?.() ?? [])],
+            activeMilestoneIds: []
+        });
+        if (reloaded) this._milestoneBossRestagePending = true;
+        this.reconcileAuthoredWorldProgression?.();
         return true;
     }
 
@@ -24171,6 +24873,7 @@ export class ThreeGame {
         let grid;
         let mazeLattice = null;
         let mazeMetadata = null;
+        let preserveAuthoredGrid = false;
         if (landform === LANDFORMS.MAZE) {
             // WFC tile catalog (docs/superpowers/specs/2026-07-27-wfc-tile-maze-generation-design.md
             // §1-3) replaces the old DFS-carve+erosion pipeline for MAZE
@@ -24204,16 +24907,22 @@ export class ThreeGame {
                     ? 3
                     : 2;
             const isRingRoute = regionalRoles.includes('ring');
-            mazeLattice = collapseChunkLattice(random, {
-                tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
-                depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
-                hallwayContinuation,
-                minimumHallwayRun,
-                loopChance: isRingRoute ? 0.58 : 0.18,
-                maxLoops: isRingRoute ? 2 : 1
-            });
-            if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
-            mazeMetadata = extractChunkWfcMetadata(mazeLattice, this.chunkSize, { chunkX, chunkY });
+            // Preserve the exact legacy RNG call order and WFC metadata while
+            // the authored-world flag is off. This is the rollback path, so it
+            // must remain byte-for-byte seed compatible with the pre-Lane-C
+            // generator rather than merely returning a similar architecture.
+            if (!this.authoredWorldTiles) {
+                mazeLattice = collapseChunkLattice(random, {
+                    tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
+                    depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                    hallwayContinuation,
+                    minimumHallwayRun,
+                    loopChance: isRingRoute ? 0.58 : 0.18,
+                    maxLoops: isRingRoute ? 2 : 1
+                });
+                if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
+                mazeMetadata = extractChunkWfcMetadata(mazeLattice, this.chunkSize, { chunkX, chunkY });
+            }
             const architecturalOpenings = {
                 north: this.getEdgeOpening('horizontal', chunkX, chunkY),
                 south: this.getEdgeOpening('horizontal', chunkX, chunkY + 1),
@@ -24228,42 +24937,98 @@ export class ThreeGame {
                 || regionalRoles.includes('ring')
                 || nearestRadialRoom <= this.chunkSize * 0.9
                 || random() < 0.24;
-            const architectural = generateArchitecturalMazeChunk(random, {
-                size: this.chunkSize,
-                openings: architecturalOpenings,
-                roomMode,
-                important: isDestination
-            });
-            grid = architectural.grid;
-            mazeMetadata.architectural = {
-                mode: architectural.room ? 'large-room' : 'long-connector',
-                roomShape: architectural.room?.shape ?? null,
-                canyonCells: grid.flat().filter((cell) => cell === EXTERIOR_CANYON_TILE).length
-            };
-            // The old nine 7x7 metadata rooms no longer describe the floor.
-            // Until multi-chunk room metadata is introduced, expose the one
-            // actual architectural room so population and overlays cannot be
-            // stamped into canyon.
-            if (architectural.room) {
-                const existing = mazeMetadata.roomInstances?.[0] ?? {};
-                const roomId = `architectural-room:${chunkX},${chunkY}`;
-                const doors = (architectural.room.doors ?? []).map((door, index) => ({
-                    id: `${chunkX},${chunkY}:architectural-door:${index}:${door.side}`,
-                    side: door.side,
-                    cells: door.cells.map((cell) => ({ ...cell })),
-                    neighborIndex: null
-                }));
-                mazeMetadata.roomInstances = [{
-                    ...existing,
-                    id: roomId,
-                    chunkKey: `${chunkX},${chunkY}`,
-                    interior: architectural.room.interior,
-                    bounds: architectural.room.bounds,
-                    doors,
-                    navigation: { doorLanes: doors.flatMap((door) => door.cells) }
-                }];
+            if (!this.authoredWorldTiles) {
+                const architectural = generateArchitecturalMazeChunk(random, {
+                    size: this.chunkSize,
+                    openings: architecturalOpenings,
+                    roomMode,
+                    important: isDestination
+                });
+                grid = architectural.grid;
+                mazeMetadata.architectural = {
+                    mode: architectural.room ? 'large-room' : 'long-connector',
+                    roomShape: architectural.room?.shape ?? null,
+                    canyonCells: grid.flat().filter((cell) => cell === EXTERIOR_CANYON_TILE).length
+                };
+                if (architectural.room) {
+                    const existing = mazeMetadata.roomInstances?.[0] ?? {};
+                    const roomId = `architectural-room:${chunkX},${chunkY}`;
+                    const doors = (architectural.room.doors ?? []).map((door, index) => ({
+                        id: `${chunkX},${chunkY}:architectural-door:${index}:${door.side}`,
+                        side: door.side,
+                        cells: door.cells.map((cell) => ({ ...cell })),
+                        neighborIndex: null
+                    }));
+                    mazeMetadata.roomInstances = [{
+                        ...existing,
+                        id: roomId,
+                        chunkKey: `${chunkX},${chunkY}`,
+                        interior: architectural.room.interior,
+                        bounds: architectural.room.bounds,
+                        doors,
+                        navigation: { doorLanes: doors.flatMap((door) => door.cells) }
+                    }];
+                } else {
+                    mazeMetadata.roomInstances = [];
+                }
             } else {
-                mazeMetadata.roomInstances = [];
+                const authoredPlan = this.ensureAuthoredWorldPlan?.() ?? this.worldPlan;
+                const authoredResolution = authoredPlan
+                    ? resolveAuthoredChunkStructure(random, authoredPlan, {
+                    chunkX,
+                    chunkY,
+                    activeReservationIds: this.getActiveAuthoredReservationIds?.() ?? [],
+                    chunkSize: this.chunkSize,
+                    openings: architecturalOpenings,
+                    biome: String(this.getBiomeKeyForWorldPosition?.(
+                        chunkX * this.chunkSize + this.chunkSize * 0.5,
+                        chunkY * this.chunkSize + this.chunkSize * 0.5
+                    ) ?? 'active').toLowerCase(),
+                    tutorialOnly: this.isInTutorialRing(chunkX, chunkY)
+                    })
+                    : null;
+                let structure = null;
+                if (authoredResolution?.status === 'accepted') structure = authoredResolution.structure;
+                if (!structure) {
+                    structure = buildMazeChunkStructure(random, {
+                    chunkX,
+                    chunkY,
+                    chunkSize: this.chunkSize,
+                    openings: architecturalOpenings,
+                    roomMode,
+                    important: isDestination,
+                    tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
+                    depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                    hallwayContinuation,
+                    minimumHallwayRun,
+                    loopChance: isRingRoute ? 0.58 : 0.18,
+                    maxLoops: isRingRoute ? 2 : 1
+                    });
+                }
+                preserveAuthoredGrid = structure.generatorId === 'authored-room'
+                    || structure.generatorId === 'hallway-connector';
+                grid = structure.grid;
+                if (!this.wfcMetadataCache) this.wfcMetadataCache = new Map();
+                mazeMetadata = {
+                generationVersion: 2,
+                chunkKey: structure.chunkKey,
+                architectural: {
+                    mode: structure.diagnostics.architecturalMode,
+                    roomShape: structure.rooms?.[0]?.bounds?.shape ?? null,
+                    canyonCells: structure.diagnostics.canyonCellCount
+                },
+                roomInstances: structure.rooms,
+                rooms: structure.rooms,
+                anchors: structure.anchors,
+                zones: structure.zones,
+                sockets: structure.sockets,
+                wayfindingMarkers: structure.wayfindingMarkers ?? [],
+                generatorId: structure.generatorId,
+                reservationId: structure.reservationId ?? authoredResolution?.reservationId ?? null,
+                ringCrossingId: authoredResolution?.reservation?.crossingId ?? null,
+                authoredResolution: authoredResolution?.diagnostics ?? null,
+                    structureResult: structure
+                };
             }
             if (radialPlan) {
                 const radialDistance = Math.hypot(chunkWorldX, chunkWorldZ);
@@ -24340,7 +25105,7 @@ export class ThreeGame {
             }
         }
 
-        this.ensureChunkPortals(grid, chunkX, chunkY);
+        if (!preserveAuthoredGrid) this.ensureChunkPortals(grid, chunkX, chunkY);
 
         // Walls tracing a carved plaza silhouette. openMazeTerrain fills
         // this and shields them from its own soften/fill; every later
@@ -24354,20 +25119,22 @@ export class ThreeGame {
             // reconciliation FIELD/CANYON/CRATER/RUINS already rely on
             // instead of teaching WFC about chunk-border constraints (spec
             // §4).
-            connectPortalsInward(grid);
-            const boundary = new Set();
-            const stride = 6; // TILE_SIZE - 1, matches wfcGenerator's stamping stride
-            for (let i = 0; i < this.chunkSize; i += 1) {
-                for (const line of [0, stride, stride * 2, stride * 3]) {
-                    boundary.add(`${i},${line}`);
-                    boundary.add(`${line},${i}`);
+            if (!preserveAuthoredGrid) {
+                connectPortalsInward(grid);
+                const boundary = new Set();
+                const stride = TILE_SIZE - 1; // TILE_SIZE - 1, matches wfcGenerator's stamping stride
+                for (let i = 0; i < this.chunkSize; i += 1) {
+                    for (const line of [0, stride, stride * 2, stride * 3]) {
+                        boundary.add(`${i},${line}`);
+                        boundary.add(`${line},${i}`);
+                    }
                 }
+                for (const room of mazeMetadata?.roomInstances ?? []) {
+                    for (const { x, y } of room.interior) boundary.add(`${x},${y}`);
+                    for (const { x, y } of room.navigation?.doorLanes ?? []) boundary.add(`${x},${y}`);
+                }
+                this.runMazeDetailPass(grid, random, boundary);
             }
-            for (const room of mazeMetadata?.roomInstances ?? []) {
-                for (const { x, y } of room.interior) boundary.add(`${x},${y}`);
-                for (const { x, y } of room.navigation?.doorLanes ?? []) boundary.add(`${x},${y}`);
-            }
-            this.runMazeDetailPass(grid, random, boundary);
         } else {
             // A ridge or crater rim can sit flush behind a portal opening —
             // tunnel inward so entrances never dead-end.
@@ -24448,6 +25215,40 @@ export class ThreeGame {
                 depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
                 random: roomRandom
             });
+            // Door records live in one global runtime Map. Authored catalog
+            // IDs are local to a build, so namespace them before planning to
+            // prevent `door:0:s` in one chunk overwriting another chunk.
+            mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
+                ...room,
+                doors: (room.doors ?? []).map((door) => ({
+                    ...door,
+                    id: String(door.id).startsWith(`${room.chunkKey}:`)
+                        ? door.id
+                        : `${room.chunkKey}:${door.id}`
+                }))
+            }));
+            const activeQuests = [];
+            if (this._activeCampQuest?.quest) {
+                const active = this._activeCampQuest;
+                const reservation = this.worldPlan?.reservations?.find((entry) => (
+                    entry.role === 'campObjective'
+                    && entry.campId === active.campId
+                    && entry.questId === active.quest.id
+                ));
+                activeQuests.push({
+                    ...active.quest,
+                    reservationId: reservation?.id ?? null,
+                    targetFamily: reservation?.roomFamily ?? null,
+                    objectiveAnchorId: reservation?.objectiveAnchorId ?? null
+                });
+            }
+            mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
+                ...room,
+                contentPlan: bindRoomContent(room, room.roomBuild ?? {}, {
+                    chunkSize: this.chunkSize,
+                    activeQuests
+                })
+            }));
             const plans = planChunkRoomPopulation(mazeMetadata.roomInstances, grid, roomRandom);
             const planByRoom = new Map(plans.map((plan) => [plan.roomId, plan]));
             mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
@@ -24455,18 +25256,19 @@ export class ThreeGame {
                 populationPlan: planByRoom.get(room.id) ?? null
             }));
             mazeMetadata.populationPlans = plans;
-            const encounterPlans = planChunkRoomEncounters(
-                mazeMetadata.roomInstances,
-                grid,
-                roomRandom,
-                { depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0 }
-            );
-            const encounterByRoom = new Map(encounterPlans.map((plan) => [plan.roomId, plan]));
-            mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
-                ...room,
-                encounter: encounterByRoom.get(room.id) ?? null
-            }));
-            mazeMetadata.encounterPlans = encounterPlans;
+            let encounterPlans = [];
+            // Preserve the pre-Lane-C RNG ordering on the rollback path:
+            // legacy encounters were selected before procedural doors. The
+            // authored path deliberately waits until doors are stamped so it
+            // can filter against the final reachable navigation component.
+            if (!this.authoredWorldTiles) {
+                encounterPlans = planChunkRoomEncounters(
+                    mazeMetadata.roomInstances,
+                    grid,
+                    roomRandom,
+                    { depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0 }
+                );
+            }
             const plannedDoors = planProceduralDoors(mazeMetadata.roomInstances, roomRandom, {
                 tutorial: this.isInTutorialRing(chunkX, chunkY),
                 forceAtLeastOne: Boolean(mazeMetadata.radial?.blocker)
@@ -24491,20 +25293,78 @@ export class ThreeGame {
                         : null
                 }
             );
+            if (mazeMetadata.ringCrossingId) {
+                const crossingId = mazeMetadata.ringCrossingId;
+                const crossing = this.worldPlan?.ringCrossings?.find((entry) => entry.id === crossingId);
+                const crossingStatus = this.reconcileAuthoredWorldProgression?.()
+                    ?.state?.crossings?.[crossingId]?.status ?? 'locked';
+                const sideVectors = {
+                    n: { dx: 0, dy: -1 },
+                    s: { dx: 0, dy: 1 },
+                    w: { dx: -1, dy: 0 },
+                    e: { dx: 1, dy: 0 }
+                };
+                // Select only from doors the accepted structure stamped, then
+                // use topology distance to identify the threshold that advances
+                // away from the ship. Radial direction is only a fail-closed
+                // compatibility fallback for incomplete injected plans.
+                const availableDoorSides = [...new Set(gatePlan.doors.map((door) => door.side))]
+                    .filter((side) => sideVectors[side])
+                    .sort();
+                const outwardSide = selectRingCrossingFarSide(
+                    this.worldPlan,
+                    crossingId,
+                    availableDoorSides
+                ) ?? [...availableDoorSides].sort((a, b) => (
+                        Math.hypot(chunkX + sideVectors[b].dx, chunkY + sideVectors[b].dy)
+                        - Math.hypot(chunkX + sideVectors[a].dx, chunkY + sideVectors[a].dy)
+                    ))[0];
+                gatePlan.doors = gatePlan.doors.map((door) => {
+                    if (door.side !== outwardSide) return door;
+                    const isOpen = crossingStatus === 'open';
+                    return {
+                        ...door,
+                        state: isOpen ? 'open' : 'locked',
+                        lock: isOpen ? null : {
+                            type: 'objective',
+                            id: `ring-crossing-open:${crossingId}`,
+                            label: `${String(crossingStatus).replace(/_/g, ' ').toUpperCase()} — ${crossing?.door?.toUpperCase() ?? 'CROSSING'}`
+                        },
+                        autoClose: false,
+                        ringCrossingId: crossingId
+                    };
+                });
+                const control = mazeMetadata.anchors?.find((anchor) => anchor.id === 'gate_control')
+                    ?? mazeMetadata.roomInstances.flatMap((room) => room.interactionAnchors ?? [])
+                        .find((anchor) => anchor.id === 'gate_control');
+                if (control && crossing?.requirements?.missionId) {
+                    gatePlan.accessSources.push({
+                        id: `${crossingId}:mission-control`,
+                        roomId: mazeMetadata.roomInstances[0]?.id ?? null,
+                        localX: control.x ?? control.localX,
+                        localY: control.y ?? control.localY,
+                        requirement: {
+                            type: 'objective',
+                            id: crossing.requirements.missionId,
+                            label: crossing.requirements.missionId.replace(/_/g, ' ').toUpperCase()
+                        }
+                    });
+                }
+            }
             mazeMetadata.doors = gatePlan.doors;
             mazeMetadata.gates = gatePlan.gates;
             mazeMetadata.accessSources = gatePlan.accessSources.map((source) => {
                 const sourceRoom = mazeMetadata.roomInstances.find((room) => room.id === source.roomId);
                 const signature = sourceRoom?.populationPlan?.placements
                     ?.find((placement) => placement.kind === 'signature');
-                if (signature) {
+                if (signature && !Number.isFinite(source.localX)) {
                     signature.type = 'lore_terminal';
                     signature.accessRequirement = source.requirement;
                 }
                 return {
                     ...source,
-                    localX: signature?.x ?? sourceRoom?.interior?.[0]?.x,
-                    localY: signature?.y ?? sourceRoom?.interior?.[0]?.y
+                    localX: source.localX ?? signature?.x ?? sourceRoom?.interior?.[0]?.x,
+                    localY: source.localY ?? signature?.y ?? sourceRoom?.interior?.[0]?.y
                 };
             });
             if (!this.proceduralDoorStates) this.proceduralDoorStates = new Map();
@@ -24514,6 +25374,37 @@ export class ThreeGame {
             }
             stampDoorRecords(grid, gatePlan.doors);
             this.clearDoorways?.(grid);
+            const blockedDoorCells = new Set(gatePlan.doors
+                .filter((door) => door.state === 'locked')
+                .flatMap((door) => door.cells ?? [])
+                .map((cell) => `${cell.x},${cell.y}`));
+            const reachableCells = collectReachableCells(grid, { blockedCells: blockedDoorCells });
+            const unlockedKeys = new Set(Object.keys(this.bank?.getState?.()?.unlocks ?? {})
+                .filter((key) => this.bank?.getState?.()?.unlocks?.[key]));
+            const authoredProgression = this.authoredWorldTiles
+                ? this.reconcileAuthoredWorldProgression?.()
+                : null;
+            const maxUnlockedRing = authoredProgression?.maxUnlockedRing
+                ?? getMaxUnlockedRing(unlockedKeys);
+            if (this.authoredWorldTiles) {
+                encounterPlans = planChunkRoomEncounters(
+                    mazeMetadata.roomInstances,
+                    grid,
+                    roomRandom,
+                    {
+                        depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                        maxUnlockedRing,
+                        reachableCells
+                    }
+                );
+            }
+            const encounterByRoom = new Map(encounterPlans.map((plan) => [plan.roomId, plan]));
+            mazeMetadata.roomInstances = mazeMetadata.roomInstances.map((room) => ({
+                ...room,
+                encounter: encounterByRoom.get(room.id) ?? null
+            }));
+            mazeMetadata.encounterPlans = encounterPlans;
+            mazeMetadata.reachableCells = reachableCells;
         }
         if (landform === LANDFORMS.MAZE) {
             addCanyonVoidAroundWalkable(grid, mazeLattice, {
@@ -24955,6 +25846,7 @@ export class ThreeGame {
     }
 
     destroy() {
+        this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });
         this.renderer.setAnimationLoop(null);
         this.resetWeaponState({ emit: false });
         window.removeEventListener('keydown', this.handleKeyDown);
