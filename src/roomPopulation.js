@@ -133,21 +133,63 @@ export function planRoomPopulation(room, grid, random) {
     // Authored structures deliberately may sit on '#' obstruction cells: the
     // stamped obstruction supplies collision while this placement supplies
     // its visible machinery/partition. Floor-only validation erases it.
-    const placedStructuralCells = new Set();
+    const placedAnchorCells = new Set();
     for (const anchor of structuralAnchors) {
         const cell = anchorCell(anchor);
-        if (!isCellOnGrid(cell, grid) || placedStructuralCells.has(cellKey(cell))) continue;
-        placedStructuralCells.add(cellKey(cell));
+        if (!isCellOnGrid(cell, grid) || placedAnchorCells.has(cellKey(cell))) continue;
+        placedAnchorCells.add(cellKey(cell));
         reserved.add(cellKey(cell));
         placements.push({
             id: `${room.id}:structural:${placements.length}`,
             roomId: room.id,
+            anchorId: anchor.id ?? null,
             x: cell.x,
             y: cell.y,
             kind: 'structural',
             type: anchor.type ?? 'structural_partition',
             blocking: anchor.blocking !== false
         });
+    }
+
+    const typedContentGroups = [
+        {
+            kind: 'interaction',
+            anchors: room.interactionAnchors ?? room.roomBuild?.interactionAnchors ?? room.contentPlan?.interactions ?? [],
+            defaultType: 'console',
+            defaultBlocking: false
+        },
+        {
+            kind: 'reward',
+            anchors: room.rewardAnchors ?? room.roomBuild?.rewardAnchors ?? room.contentPlan?.rewards ?? [],
+            defaultType: 'prop_bunker_supplies',
+            defaultBlocking: true
+        },
+        {
+            kind: 'lore',
+            anchors: room.loreAnchors ?? room.roomBuild?.loreAnchors ?? room.contentPlan?.lore ?? [],
+            defaultType: 'lore_terminal',
+            defaultBlocking: true
+        }
+    ];
+
+    for (const group of typedContentGroups) {
+        for (const anchor of group.anchors) {
+            if (!anchor?.type) continue;
+            const cell = anchorCell(anchor);
+            if (!isCellOnGrid(cell, grid) || placedAnchorCells.has(cellKey(cell))) continue;
+            placedAnchorCells.add(cellKey(cell));
+            reserved.add(cellKey(cell));
+            placements.push({
+                id: `${room.id}:${group.kind}:${placements.length}`,
+                roomId: room.id,
+                anchorId: anchor.id ?? null,
+                x: cell.x,
+                y: cell.y,
+                kind: group.kind,
+                type: anchor.type ?? group.defaultType,
+                blocking: anchor.blocking !== false && (anchor.blocking === true || group.defaultBlocking)
+            });
+        }
     }
 
     if (room.role === 'medical' || room.role === 'cryo-lab') {

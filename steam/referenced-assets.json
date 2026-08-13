@@ -327,9 +327,16 @@
     "pit_hole.png",
     "prop_alien_feeding_basin.png",
     "prop_alien_respiratory_vent.png",
+    "prop_ammo_crate_stack.jpg",
     "prop_biomech_arch.png",
+    "prop_biomech_flesh_locker.jpg",
+    "prop_biomech_incubator.jpg",
+    "prop_biomech_neural_synapse.jpg",
     "prop_biomech_pillar_left.png",
     "prop_biomech_pillar_right.png",
+    "prop_biomech_respirator.jpg",
+    "prop_biomech_sphincter_trap.jpg",
+    "prop_biomech_triage_cradle.jpg",
     "prop_blood_trail.png",
     "prop_broken_specimen_tank.png",
     "prop_bunker_supplies.png",
@@ -359,17 +366,22 @@
     "prop_cyber_junction.png",
     "prop_diagnostic_console.png",
     "prop_engineering_bench.png",
+    "prop_fabricator_workstation.jpg",
     "prop_fusion_generator.png",
     "prop_hive_resin_sac.png",
     "prop_iron_guild_dogtags.png",
+    "prop_laser_trap_emitter.jpg",
     "prop_medical_bed.png",
+    "prop_o2_filter_vat.jpg",
     "prop_ruptured_coolant_pump.png",
     "prop_security_barricade.png",
     "prop_security_locker.png",
     "prop_specimen_tank.png",
     "prop_spore_colony.png",
     "prop_surgical_cart.png",
+    "prop_tesla_coil_node.jpg",
     "prop_torn_warning_poster.png",
+    "prop_vital_monitor.jpg",
     "queen_silhouette.png",
     "room_floor_material_atlas_v1.png",
     "room_wall_material_atlas_v1.png",
@@ -4031,8 +4043,28 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_ammo_crate_stack.jpg",
+      "bytes": 705120,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_biomech_arch.png",
       "bytes": 634886,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_flesh_locker.jpg",
+      "bytes": 616259,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_incubator.jpg",
+      "bytes": 574485,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_neural_synapse.jpg",
+      "bytes": 621488,
       "classification": "runtime-required"
     },
     {
@@ -4043,6 +4075,21 @@
     {
       "path": "prop_biomech_pillar_right.png",
       "bytes": 575651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_respirator.jpg",
+      "bytes": 634960,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_sphincter_trap.jpg",
+      "bytes": 615096,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_biomech_triage_cradle.jpg",
+      "bytes": 727639,
       "classification": "runtime-required"
     },
     {
@@ -4201,6 +4248,11 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_fabricator_workstation.jpg",
+      "bytes": 589895,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_fusion_generator.png",
       "bytes": 465003,
       "classification": "runtime-required"
@@ -4221,8 +4273,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_laser_trap_emitter.jpg",
+      "bytes": 616875,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_medical_bed.png",
       "bytes": 392486,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_o2_filter_vat.jpg",
+      "bytes": 643267,
       "classification": "runtime-required"
     },
     {
@@ -4256,8 +4318,18 @@
       "classification": "runtime-required"
     },
     {
+      "path": "prop_tesla_coil_node.jpg",
+      "bytes": 616886,
+      "classification": "runtime-required"
+    },
+    {
       "path": "prop_torn_warning_poster.png",
       "bytes": 1932204,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "prop_vital_monitor.jpg",
+      "bytes": 689782,
       "classification": "runtime-required"
     },
     {

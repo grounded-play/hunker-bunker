@@ -36,7 +36,12 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [1, 2],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
-        structuralAnchors: [{ id: 'triage_partition', x: 7, y: 3 }],
+        // prop_vital_monitor: dedicated 2D signature sprite added this
+        // sprint (docs/sprint-23-room-juice-and-dressing-assets.md) —
+        // registered in GENERATED_ROOM_PROP_PATHS/scatterTextures already.
+        // Replaces the generic prop_conduit_hub placeholder, which reads as
+        // an engineering fixture, not a medical partition.
+        structuralAnchors: [{ id: 'triage_partition', type: 'prop_vital_monitor', x: 7, y: 3 }],
         // 'triage_console' is this room's own generic default interaction.
         // 'hydro_bed_controls' additionally matches
         // src/ringManifest.js's CAMP_QUEST_DESTINATIONS objectiveAnchorId
@@ -44,13 +49,13 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         // that specific quest's anchor id finds a real point here too,
         // without narrowing the whole family to one quest's naming.
         interactionAnchors: [
-            { id: 'triage_console', x: 7, y: 5 },
-            { id: 'hydro_bed_controls', x: 9, y: 5 }
+            { id: 'triage_console', type: 'prop_diagnostic_console', x: 7, y: 5 },
+            { id: 'hydro_bed_controls', type: 'prop_medical_bed', x: 9, y: 5 }
         ],
         compassAnchors: { approach: 'entry', objective: 'triage_console' },
         coverZones: [{ x: 4, y: 2, w: 7, h: 3 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'med_supply_case', x: 2, y: 1 }],
+        rewardAnchors: [{ id: 'med_supply_case', type: 'prop_bunker_supplies', x: 2, y: 1 }],
         loreAnchors: [],
         hazardZones: [],
         quietZones: [{ x: 0, y: 0, w: 15, h: 9 }],
@@ -76,12 +81,20 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [2, 3],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['reward', 'questDestination'],
-        structuralAnchors: [{ id: 'weapon_rack_a', x: 4, y: 4 }, { id: 'weapon_rack_b', x: 11, y: 4 }],
-        interactionAnchors: [{ id: 'armory_lock', x: 7, y: 5 }],
+        structuralAnchors: [{ id: 'weapon_rack_a', type: 'prop_security_locker', x: 4, y: 4 }, { id: 'weapon_rack_b', type: 'prop_security_locker', x: 11, y: 4 }],
+        // 'console' was a placeholder that resolves to nothing: no bare
+        // 'console' key exists in either scatterTextures or
+        // WORLD_3D_MODELS (only 'base_console'/'prop_diagnostic_console'
+        // do). 'base_console' is a real connected 3D GLB
+        // (public/3d/runtime/console.glb).
+        interactionAnchors: [{ id: 'armory_lock', type: 'base_console', x: 7, y: 5 }],
         compassAnchors: { approach: 'entry', objective: 'armory_lock' },
         coverZones: [{ x: 3, y: 3, w: 2, h: 2 }, { x: 10, y: 3, w: 2, h: 2 }],
         encounterZones: [{ id: 'armory_defenders', x: 5, y: 1, w: 5, h: 3 }],
-        rewardAnchors: [{ id: 'ammo_crate', x: 7, y: 7 }],
+        // prop_ammo_crate_stack: dedicated signature sprite for this exact
+        // reward, added this sprint — replaces the generic camp-crate
+        // placeholder.
+        rewardAnchors: [{ id: 'ammo_crate', type: 'prop_ammo_crate_stack', x: 7, y: 7 }],
         loreAnchors: [],
         hazardZones: [],
         quietZones: [],
@@ -101,16 +114,19 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [1, 2, 3],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['objective', 'shipGoalObjective'],
-        structuralAnchors: [{ id: 'scrubber_column', x: 6, y: 5 }],
+        structuralAnchors: [{ id: 'scrubber_column', type: 'prop_conduit_hub', x: 6, y: 5 }],
         // 'o2_control' matches src/ringManifest.js's MANDATORY_SHIP_GOALS
         // objectiveAnchorId for the o2Bubble goal exactly — this is the
         // ship-critical objective the manifest layer resolves by that id.
-        interactionAnchors: [{ id: 'o2_control', x: 6, y: 8 }],
+        // prop_o2_filter_vat: dedicated signature sprite for the ship-goal
+        // objective anchor, replacing the placeholder 'console' type that
+        // resolved to no texture.
+        interactionAnchors: [{ id: 'o2_control', type: 'prop_o2_filter_vat', x: 6, y: 8 }],
         compassAnchors: { approach: 'entry', objective: 'o2_control' },
         coverZones: [{ x: 5, y: 4, w: 3, h: 3 }],
         encounterZones: [{ id: 'scrubber_guard', x: 1, y: 1, w: 11, h: 3 }],
         rewardAnchors: [],
-        loreAnchors: [{ id: 'engineering_log', x: 1, y: 9 }],
+        loreAnchors: [{ id: 'engineering_log', type: 'lore_terminal', x: 1, y: 9 }],
         hazardZones: [],
         quietZones: [],
         safeZone: false,
@@ -134,12 +150,15 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [1, 2, 3, 4],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['support', 'questDestination'],
-        structuralAnchors: [{ id: 'fabricator_bench', x: 6, y: 3 }],
-        interactionAnchors: [{ id: 'fabricator_terminal', x: 6, y: 6 }],
+        structuralAnchors: [{ id: 'fabricator_bench', type: 'prop_engineering_bench', x: 6, y: 3 }],
+        // prop_fabricator_workstation: dedicated signature sprite,
+        // replacing the placeholder 'console' type that resolved to no
+        // texture.
+        interactionAnchors: [{ id: 'fabricator_terminal', type: 'prop_fabricator_workstation', x: 6, y: 6 }],
         compassAnchors: { approach: 'entry', objective: 'fabricator_terminal' },
         coverZones: [{ x: 5, y: 3, w: 3, h: 2 }],
         encounterZones: [],
-        rewardAnchors: [{ id: 'schematic_cache', x: 1, y: 1 }],
+        rewardAnchors: [{ id: 'schematic_cache', type: 'prop_bunker_supplies', x: 1, y: 1 }],
         loreAnchors: [],
         hazardZones: [],
         quietZones: [{ x: 0, y: 0, w: 13, h: 9 }],
@@ -164,13 +183,13 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         roles: ['challenge', 'questDestination'],
         structuralAnchors: [],
         interactionAnchors: [
-            { id: 'routing_node_a', x: 3, y: 3 },
-            { id: 'routing_node_b', x: 8, y: 7 }
+            { id: 'routing_node_a', type: 'prop_cyber_junction', x: 3, y: 3 },
+            { id: 'routing_node_b', type: 'prop_cyber_junction', x: 8, y: 7 }
         ],
         compassAnchors: { approach: 'entry', objective: 'routing_node_a' },
         coverZones: [],
         encounterZones: [],
-        rewardAnchors: [{ id: 'puzzle_reward', x: 10, y: 2 }],
+        rewardAnchors: [{ id: 'puzzle_reward', type: 'prop_bunker_supplies', x: 10, y: 2 }],
         loreAnchors: [],
         hazardZones: [],
         quietZones: [{ x: 0, y: 0, w: 13, h: 11 }],
@@ -196,11 +215,11 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['challenge', 'reward'],
         structuralAnchors: [],
-        interactionAnchors: [{ id: 'false_cache', x: 6, y: 4 }],
+        interactionAnchors: [{ id: 'false_cache', type: 'prop_bunker_supplies', x: 6, y: 4 }],
         compassAnchors: { approach: 'entry', objective: 'false_cache' },
         coverZones: [],
         encounterZones: [{ id: 'trap_trigger', x: 3, y: 2, w: 7, h: 5 }],
-        rewardAnchors: [{ id: 'trap_payoff', x: 6, y: 6 }],
+        rewardAnchors: [{ id: 'trap_payoff', type: 'prop_bunker_supplies', x: 6, y: 6 }],
         loreAnchors: [],
         hazardZones: [{ id: 'spore_vent', x: 3, y: 2, w: 7, h: 5 }],
         quietZones: [],
@@ -223,11 +242,11 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['reward'],
         structuralAnchors: [],
-        interactionAnchors: [{ id: 'reward_vault', x: 5, y: 4 }],
+        interactionAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 5, y: 4 }],
         compassAnchors: { approach: 'entry', objective: 'reward_vault' },
         coverZones: [],
         encounterZones: [],
-        rewardAnchors: [{ id: 'reward_vault', x: 5, y: 4 }],
+        rewardAnchors: [{ id: 'reward_vault', type: 'prop_bunker_supplies', x: 5, y: 4 }],
         loreAnchors: [],
         hazardZones: [],
         quietZones: [{ x: 0, y: 0, w: 11, h: 9 }],
@@ -253,13 +272,18 @@ export const ROOM_BUILD_CATALOG = Object.freeze([
         tierEligibility: [1, 2, 3, 4],
         biomeEligibility: ['active', 'cryo', 'bio'],
         roles: ['ringCrossing'],
-        structuralAnchors: [{ id: 'flank_pillar_a', x: 4, y: 5 }, { id: 'flank_pillar_b', x: 13, y: 5 }],
-        interactionAnchors: [{ id: 'gate_control', x: 8, y: 7 }],
+        structuralAnchors: [{ id: 'flank_pillar_a', type: 'prop_biomech_pillar_left', x: 4, y: 5 }, { id: 'flank_pillar_b', type: 'prop_biomech_pillar_right', x: 13, y: 5 }],
+        // 'base_console' is a real connected 3D GLB
+        // (public/3d/runtime/console.glb); the placeholder 'console' type
+        // resolved to no texture. No dedicated gate-control sprite exists
+        // yet — a natural next asset (e.g. prop_hydraulic_piston_actuator
+        // per docs/sprint-23-room-juice-and-dressing-assets.md).
+        interactionAnchors: [{ id: 'gate_control', type: 'base_console', x: 8, y: 7 }],
         compassAnchors: { approach: 'approach', objective: 'gate_control' },
         coverZones: [{ x: 3, y: 4, w: 2, h: 3 }, { x: 12, y: 4, w: 2, h: 3 }],
         encounterZones: [{ id: 'gate_staging', x: 6, y: 8, w: 5, h: 4 }],
         rewardAnchors: [],
-        loreAnchors: [{ id: 'gate_placard', x: 8, y: 10 }],
+        loreAnchors: [{ id: 'gate_placard', type: 'lore_terminal', x: 8, y: 10 }],
         hazardZones: [],
         quietZones: [],
         safeZone: false,

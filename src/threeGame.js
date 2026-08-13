@@ -82,7 +82,7 @@ import {
     translateContainmentDoor
 } from './roomContainment.js';
 import { bindRoomContent } from './roomContent.js';
-import { buildMazeChunkStructure } from './chunkStructure.js';
+import { buildMazeChunkStructure, buildHallwayConnectorChunkStructure } from './chunkStructure.js';
 import {
     MILESTONE_BOSS_STATES,
     MILESTONE_BOSS_EVENT_TYPES,
@@ -416,7 +416,19 @@ const GENERATED_ROOM_PROP_PATHS = Object.freeze({
     prop_cryo_sleep_pod: '/prop_cryo_sleep_pod.png',
     prop_ruptured_coolant_pump: '/prop_ruptured_coolant_pump.png',
     prop_alien_respiratory_vent: '/prop_alien_respiratory_vent.png',
-    prop_alien_feeding_basin: '/prop_alien_feeding_basin.png'
+    prop_alien_feeding_basin: '/prop_alien_feeding_basin.png',
+    prop_vital_monitor: '/prop_vital_monitor.jpg',
+    prop_ammo_crate_stack: '/prop_ammo_crate_stack.jpg',
+    prop_o2_filter_vat: '/prop_o2_filter_vat.jpg',
+    prop_fabricator_workstation: '/prop_fabricator_workstation.jpg',
+    prop_tesla_coil_node: '/prop_tesla_coil_node.jpg',
+    prop_laser_trap_emitter: '/prop_laser_trap_emitter.jpg',
+    prop_biomech_respirator: '/prop_biomech_respirator.jpg',
+    prop_biomech_incubator: '/prop_biomech_incubator.jpg',
+    prop_biomech_neural_synapse: '/prop_biomech_neural_synapse.jpg',
+    prop_biomech_flesh_locker: '/prop_biomech_flesh_locker.jpg',
+    prop_biomech_sphincter_trap: '/prop_biomech_sphincter_trap.jpg',
+    prop_biomech_triage_cradle: '/prop_biomech_triage_cradle.jpg'
 });
 const FLOOR_OVERLAY_TYPES = new Set([
     'decal_oil_spill_patch',
@@ -24989,20 +25001,30 @@ export class ThreeGame {
                     : null;
                 let structure = null;
                 if (authoredResolution?.status === 'accepted') structure = authoredResolution.structure;
+                if (!structure && !roomMode) {
+                    structure = buildHallwayConnectorChunkStructure(random, {
+                        chunkX,
+                        chunkY,
+                        chunkSize: this.chunkSize,
+                        openings: architecturalOpenings,
+                        fromFamily: regionalRoles[0] ?? null,
+                        toFamily: regionalRoles[1] ?? null
+                    });
+                }
                 if (!structure) {
                     structure = buildMazeChunkStructure(random, {
-                    chunkX,
-                    chunkY,
-                    chunkSize: this.chunkSize,
-                    openings: architecturalOpenings,
-                    roomMode,
-                    important: isDestination,
-                    tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
-                    depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
-                    hallwayContinuation,
-                    minimumHallwayRun,
-                    loopChance: isRingRoute ? 0.58 : 0.18,
-                    maxLoops: isRingRoute ? 2 : 1
+                        chunkX,
+                        chunkY,
+                        chunkSize: this.chunkSize,
+                        openings: architecturalOpenings,
+                        roomMode,
+                        important: isDestination,
+                        tutorialOnly: this.isInTutorialRing(chunkX, chunkY),
+                        depthTier: this.getDepthTier?.(chunkX, chunkY) ?? 0,
+                        hallwayContinuation,
+                        minimumHallwayRun,
+                        loopChance: isRingRoute ? 0.58 : 0.18,
+                        maxLoops: isRingRoute ? 2 : 1
                     });
                 }
                 preserveAuthoredGrid = structure.generatorId === 'authored-room'
