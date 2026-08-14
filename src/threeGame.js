@@ -974,6 +974,7 @@ function isChunkTraversalConnected(grid) {
 // and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
 const keyedSpriteTextureCache = new Map();
 const CAMERA_ROT_SPEED = 4.0;
+const MOUSE_LOOK_SENSITIVITY = 0.0025;
 
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
@@ -1062,6 +1063,7 @@ export class ThreeGame {
         this.facingPlanarForward = new THREE.Vector2(0, 0);
         this.facingPlanarRight = new THREE.Vector2(0, 0);
         this.updateFacingYaw(Math.PI / 2);
+        this._pointerLocked = false;
         this.chunkCache = new Map();
         this.pocketCache = new Map();
         this.wfcMetadataCache = new Map();
@@ -4189,7 +4191,6 @@ export class ThreeGame {
             const pointerType = event.pointerType || 'mouse';
             if (pointerType === 'mouse' && event.button === 2) {
                 event.preventDefault();
-                this.updateAimFromClient(event.clientX, event.clientY, { keepMouseActive: true });
                 this.triggerGameplayMelee();
                 return;
             }
@@ -4222,10 +4223,9 @@ export class ThreeGame {
                 return;
             }
 
-            this.updateAimFromClient(event.clientX, event.clientY, {
-                keepMouseActive: pointerType === 'mouse',
-                persistDuration: pointerType === 'mouse' ? 0 : 2.0
-            });
+            if (pointerType === 'mouse' && !this._pointerLocked) {
+                this.requestMouseLook();
+            }
             this.beginHeldFire(event.clientX, event.clientY, pointerType);
         };
 
@@ -4239,10 +4239,32 @@ export class ThreeGame {
             if (pointerType !== 'mouse') return;
             this.lastMouseClientX = event.clientX;
             this.lastMouseClientY = event.clientY;
-            this.updateAimFromClient(event.clientX, event.clientY, {
-                keepMouseActive: true,
-                persistDuration: 0
-            });
+        };
+
+        this.requestMouseLook = () => {
+            this.renderer.domElement.requestPointerLock?.();
+        };
+
+        this.updateMouseLookPrompt = () => {
+            const prompt = document.getElementById('mouse-look-prompt');
+            if (!prompt) return;
+            const shouldShow = !this._pointerLocked && this.isGameplayInputActive();
+            prompt.classList.toggle('hidden', !shouldShow);
+        };
+
+        this.handlePointerLockChange = () => {
+            this._pointerLocked = document.pointerLockElement === this.renderer.domElement;
+            this.updateMouseLookPrompt();
+        };
+
+        this.handlePointerLockError = () => {
+            this._pointerLocked = false;
+            this.updateMouseLookPrompt();
+        };
+
+        this.handleMouseLookMove = (event) => {
+            if (!this._pointerLocked) return;
+            this.updateFacingYaw(this.facingYaw - (event.movementX || 0) * MOUSE_LOOK_SENSITIVITY);
         };
 
         this.handleCanvasTap = (event) => {
@@ -4347,6 +4369,9 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.addEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
+        document.addEventListener('pointerlockchange', this.handlePointerLockChange);
+        document.addEventListener('pointerlockerror', this.handlePointerLockError);
+        document.addEventListener('mousemove', this.handleMouseLookMove);
     }
 
     updateFacingYaw(yaw) {
@@ -17170,6 +17195,9 @@ export class ThreeGame {
     }
 
     updateCamera(delta) {
+        if (this._pointerLocked && this.hasBlockingGameplayOverlay?.()) {
+            document.exitPointerLock?.();
+        }
         const targetAzimuth = this.facingYaw + Math.PI;
         this.cameraAzimuth = stepAngleTowards(this.cameraAzimuth, targetAzimuth, CAMERA_ROT_SPEED, delta);
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
@@ -26508,6 +26536,9 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
+        document.removeEventListener('pointerlockchange', this.handlePointerLockChange);
+        document.removeEventListener('pointerlockerror', this.handlePointerLockError);
+        document.removeEventListener('mousemove', this.handleMouseLookMove);
         this.darknessOverlay?.remove?.();
         this.tiltShiftOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
