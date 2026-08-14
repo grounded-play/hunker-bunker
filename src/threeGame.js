@@ -2894,6 +2894,9 @@ export class ThreeGame {
         // rotated instances form a chipped overhang without changing the
         // underlying collision/navigation grid.
         this.cliffEdgeGeometry = new THREE.DodecahedronGeometry(0.62, 0);
+        // Shared organic rock-column geometry instanced by addCliffInstance
+        // (buildChunk's chunk-mesh pass) for every canyon-edge/cliff tile.
+        this.cliffPrimaryGeometry = new THREE.CylinderGeometry(0.68, 0.95, 10, 14);
 
         this.invisibleMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
@@ -18083,99 +18086,12 @@ export class ThreeGame {
         return adjacentCount > 0 && !bridgesPlayableSpaces;
     }
 
-    createVoidPatch(worldX, worldZ) {
-        if (!this.floorGeometry || !this.voidMaterial) return null;
-        const group = new THREE.Group();
-        const patch = new THREE.Mesh(this.floorGeometry, this.voidMaterial);
-        patch.rotation.x = -Math.PI / 2;
-        patch.position.set(worldX, -10, worldZ); // deeply sunken
-        patch.receiveShadow = false;
-        patch.userData = { isExteriorCanyon: true, isLethalPit: true, worldX, worldZ };
-        group.add(patch);
-
-        const coord = this.getChunkLocalFromWorld(worldX, worldZ);
-        const grid = this.chunkCache?.get?.(coord.key);
-        if (grid?.[coord.localY]) {
-            const localX = coord.localX;
-            const localY = coord.localY;
-            const hasWalkableOrWall = (dx, dy) => {
-                const char = grid[localY + dy]?.[localX + dx];
-                return char === '.' || char === 'D' || char === '#' || char === 'C';
-            };
-            if (
-                hasWalkableOrWall(0, -1) || hasWalkableOrWall(0, 1)
-                || hasWalkableOrWall(-1, 0) || hasWalkableOrWall(1, 0)
-            ) {
-                const cliffSkirt = this.createCliffPatch(worldX, worldZ);
-                if (cliffSkirt) group.add(cliffSkirt);
-            }
-        }
-        return group;
-    }
-
-    createCliffPatch(worldX, worldZ) {
-        const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
-        const material = this.cliffMaterials?.[biomeKey] ?? this.cliffMaterials?.[BIOME_KEYS.ACTIVE];
-        if (!material) return null;
-
-        if (!this.cliffPrimaryGeometry) {
-            this.cliffPrimaryGeometry = new THREE.CylinderGeometry(0.68, 0.95, 10, 14);
-        }
-        if (!this.cliffRockGeometry) {
-            this.cliffRockGeometry = new THREE.ConeGeometry(0.85, 9.5, 12);
-        }
-
-        const group = new THREE.Group();
-        group.userData = { isCliff: true, worldX, worldZ };
-
-        const seed = (this.hashTile(Math.round(worldX * 137 + 19), Math.round(worldZ * 223 + 43)) ^ (this.runEntropy ?? 0)) >>> 0;
-        const rng = this.createSeededRandom(seed);
-
-        // 1. Primary organic rock column with position jitter, scale, and tilt
-        const pOffsetX = (rng() - 0.5) * 0.48;
-        const pOffsetZ = (rng() - 0.5) * 0.48;
-        const pScaleX = 0.78 + rng() * 0.52;
-        const pScaleZ = 0.78 + rng() * 0.52;
-        const primaryMesh = new THREE.Mesh(this.cliffPrimaryGeometry, material);
-        primaryMesh.position.set(worldX + pOffsetX, -4.8, worldZ + pOffsetZ);
-        primaryMesh.scale.set(pScaleX, 1.02, pScaleZ);
-        primaryMesh.rotation.y = rng() * Math.PI * 2;
-        primaryMesh.rotation.x = (rng() - 0.5) * 0.22;
-        primaryMesh.rotation.z = (rng() - 0.5) * 0.22;
-        primaryMesh.receiveShadow = true;
-        primaryMesh.castShadow = true;
-        group.add(primaryMesh);
-
-        if (this.isCliffSecretPath(worldX, worldZ) && this.cliffPathGeometry && this.cliffPathMaterial) {
-            const pathGlow = new THREE.Mesh(this.cliffPathGeometry, this.cliffPathMaterial);
-            pathGlow.rotation.x = -Math.PI / 2;
-            pathGlow.position.set(worldX, 0.045, worldZ);
-            pathGlow.renderOrder = 2;
-            pathGlow.userData = { isCliffSecretPath: true };
-            group.add(pathGlow);
-        }
-
-        // 2. Secondary organic rock outcroppings to break straight grid lines
-        const subCount = 1 + Math.floor(rng() * 2);
-        for (let i = 0; i < subCount; i += 1) {
-            const angle = rng() * Math.PI * 2;
-            const dist = 0.28 + rng() * 0.38;
-            const subX = worldX + Math.cos(angle) * dist;
-            const subZ = worldZ + Math.sin(angle) * dist;
-            const subScale = 0.55 + rng() * 0.45;
-            const rockMesh = new THREE.Mesh(this.cliffRockGeometry, material);
-            rockMesh.position.set(subX, -4.6 + (rng() - 0.5) * 0.6, subZ);
-            rockMesh.scale.set(subScale, 1.05, subScale);
-            rockMesh.rotation.y = rng() * Math.PI * 2;
-            rockMesh.rotation.x = (rng() - 0.5) * 0.28;
-            rockMesh.rotation.z = (rng() - 0.5) * 0.28;
-            rockMesh.receiveShadow = true;
-            rockMesh.castShadow = true;
-            group.add(rockMesh);
-        }
-
-        return group;
-    }
+    // createVoidPatch/createCliffPatch (the per-call, non-instanced canyon
+    // rock-column builder) were removed here: superseded by the instanced
+    // addCliffInstance/addCanyonDropSkirt pass in the chunk-mesh build below,
+    // and unreachable — createVoidPatch had no callers anywhere in the
+    // codebase. cliffPrimaryGeometry, the one live dependency it lazily
+    // created, now initializes in the constructor above instead.
 
     createExteriorGroundPatch(worldX, worldZ) {
         const biomeKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
