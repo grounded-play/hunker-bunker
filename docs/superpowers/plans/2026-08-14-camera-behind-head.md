@@ -344,19 +344,16 @@ git commit -m "feat: add facingYaw state driving aim direction and facing basis"
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `src/threeGame.facingYaw.test.js`:
+At the top of `src/threeGame.facingYaw.test.js`, add two more imports to the existing import block so it reads:
 
 ```js
-import { THREE } from 'three';
-```
-
-Actually import THREE properly at the top of the file (add to the existing import block):
-
-```js
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
+import { ThreeGame } from './threeGame.js';
+import { wrapAngle } from './cameraYaw.js';
 ```
 
-Then add:
+Then append to the file:
 
 ```js
 describe('updateCamera orbit', () => {
@@ -427,8 +424,6 @@ describe('snapCameraToPlayer orbit', () => {
     });
 });
 ```
-
-(Import `wrapAngle` into the test file's import line from Task 2 as well: `import { wrapAngle } from './cameraYaw.js';`.)
 
 - [ ] **Step 2: Run tests to verify they fail**
 
