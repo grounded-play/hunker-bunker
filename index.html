@@ -882,6 +882,57 @@
       </div>
     </div>
 
+    <!-- Interactive NPC Dialogue & Sensual Storyline Modal -->
+    <div id="npc-dialogue-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content npc-dialogue-content">
+        <div class="terminal-scanline"></div>
+        <div class="npc-dialogue-header">
+          <div class="npc-header-left">
+            <span class="npc-header-icon" id="npc-dialogue-icon">🩸</span>
+            <div class="npc-header-meta">
+              <div class="npc-header-name" id="npc-dialogue-name">SISTER VAL</div>
+              <div class="npc-header-faction" id="npc-dialogue-faction">CAMP TALLOW // SUTURE SANCTUARY</div>
+            </div>
+          </div>
+          <div class="npc-header-right">
+            <div class="npc-bond-container">
+              <span class="npc-bond-tag">AFFECTION // BOND</span>
+              <div class="npc-bond-badge" id="npc-dialogue-bond-badge">NEUTRAL (LVL 0)</div>
+            </div>
+            <button type="button" class="close-modal" id="close-npc-dialogue-modal" title="Exit Dialogue">×</button>
+          </div>
+        </div>
+
+        <div class="npc-dialogue-body">
+          <div class="npc-portrait-wrapper" id="npc-portrait-wrapper">
+            <div class="npc-portrait-glow" id="npc-portrait-glow"></div>
+            <div class="npc-portrait-frame">
+              <div class="npc-avatar-visual" id="npc-avatar-visual">🩸</div>
+            </div>
+            <div class="npc-mood-indicator" id="npc-mood-indicator">INTIMATE / ATTRACTED</div>
+          </div>
+
+          <div class="npc-script-container">
+            <div class="npc-narration-box" id="npc-narration-box">
+              She sets down a steaming bronze kettle of heated botanical resin...
+            </div>
+            <div class="npc-dialogue-box">
+              <span class="npc-dialogue-speaker" id="npc-dialogue-speaker">SISTER VAL:</span>
+              <p class="npc-dialogue-text" id="npc-dialogue-text">"You're shivering, contractor..."</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="npc-choices-container" id="npc-choices-container">
+          <!-- Dynamically populated choices -->
+        </div>
+
+        <div class="npc-dialogue-footer">
+          <span class="npc-footer-hint">PRESS [1-4] OR CLICK CHOICE CARD • [ESC] WITHDRAW</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Demo End Modal -->
     <div id="demo-end-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content demo-end-content">

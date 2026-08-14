@@ -7,6 +7,19 @@
 
 export const MATURE_CONTENT_MANIFEST = Object.freeze([
     {
+        id: 'sensual_storylines_romance',
+        title: 'Sensual Storylines, Camp Romance & Erotic Intimacy',
+        rating: 'Adult / Mature (18+) Romance',
+        description: 'Interactive branching dialogue trees with camp leaders and entities featuring intense physical and emotional intimacy, thermal shelter body heat, seductive touch, erotic bio-link synchronization, and sensual spore massages.',
+        tags: ['Erotic Sci-Fi', 'Sensual Choices', 'Camp Romance', 'Intimate Touch', 'Adult Themes'],
+        dialogueTrees: [
+            { id: 'sister_val', label: '🩸 SISTER VAL (TALLOW FLESH COMMUNION)' },
+            { id: 'commander_briggs', label: '🛡️ BRIGGS (VESPER COMBAT ADRENALINE)' },
+            { id: 'overseer_kaelen', label: '⚡ KAELEN (MERIDIAN BIO-LINK OVERCLOCK)' },
+            { id: 'aria_queen_mimic', label: '👑 ARIA (HIVE QUEEN SEDUCTIVE MIMIC)' }
+        ]
+    },
+    {
         id: 'parasite_symbiosis',
         title: 'Biological Parasitism & Seductive Alien Mimicry',
         rating: 'Mature / Sci-Fi Horror',
@@ -102,6 +115,20 @@ export class MatureContentAudit {
         MATURE_CONTENT_MANIFEST.forEach((item) => {
             const card = document.createElement('div');
             card.className = 'mature-audit-card';
+
+            let actionHtml = '';
+            if (Array.isArray(item.dialogueTrees)) {
+                actionHtml = `
+                    <div class="mature-audit-actions" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${item.dialogueTrees.map((dt) => `
+                            <button type="button" class="mature-launch-tree-btn start-btn" data-tree-id="${dt.id}" style="font-size: 10px; padding: 6px 10px;">
+                                ▶ ${dt.label}
+                            </button>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
                 <div class="mature-audit-card__header">
                     <div class="mature-audit-card__title">${item.title}</div>
@@ -111,7 +138,19 @@ export class MatureContentAudit {
                 <div class="mature-audit-card__tags">
                     ${item.tags.map((t) => `<span class="mature-audit-tag">${t}</span>`).join('')}
                 </div>
+                ${actionHtml}
             `;
+
+            card.querySelectorAll('.mature-launch-tree-btn').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    const treeId = e.currentTarget.getAttribute('data-tree-id');
+                    this.closeModal();
+                    if (typeof window !== 'undefined' && window.openNpcDialogueTree) {
+                        window.openNpcDialogueTree(treeId);
+                    }
+                });
+            });
+
             container.appendChild(card);
         });
     }

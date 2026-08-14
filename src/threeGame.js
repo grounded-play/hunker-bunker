@@ -12160,6 +12160,20 @@ export class ThreeGame {
                 finalReady: isFinalStage(beat.stage)
             }
         }));
+
+        const treeMap = {
+            camp_tallow: 'sister_val',
+            camp_vesper: 'commander_briggs',
+            camp_meridian: 'overseer_kaelen',
+            hive_suture: 'aria_queen_mimic',
+            hive_relay: 'aria_queen_mimic',
+            hive_carapace: 'aria_queen_mimic'
+        };
+        const treeId = treeMap[entity.id];
+        if (treeId && typeof window !== 'undefined' && window.openNpcDialogueTree) {
+            window.openNpcDialogueTree(treeId);
+        }
+
         return true;
     }
 

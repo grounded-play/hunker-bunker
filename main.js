@@ -49,6 +49,7 @@ import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
+import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
@@ -8138,6 +8139,120 @@ function setupPlayerTradeEvents() {
     };
 }
 
+let npcDialogueEventsInitialized = false;
+
+function updateNpcDialogueUi(state = {}) {
+    const modal = document.getElementById('npc-dialogue-modal');
+    if (!modal) return;
+
+    if (!state.isOpen || !state.node || !state.tree) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        return;
+    }
+
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+
+    const tree = state.tree;
+    const node = state.node;
+    const bond = state.bond;
+
+    const iconEl = document.getElementById('npc-dialogue-icon');
+    const nameEl = document.getElementById('npc-dialogue-name');
+    const factionEl = document.getElementById('npc-dialogue-faction');
+    const bondBadgeEl = document.getElementById('npc-dialogue-bond-badge');
+    const avatarEl = document.getElementById('npc-avatar-visual');
+    const moodEl = document.getElementById('npc-mood-indicator');
+    const narrationEl = document.getElementById('npc-narration-box');
+    const speakerEl = document.getElementById('npc-dialogue-speaker');
+    const textEl = document.getElementById('npc-dialogue-text');
+    const choicesEl = document.getElementById('npc-choices-container');
+
+    if (iconEl) iconEl.textContent = tree.icon || '💬';
+    if (nameEl) nameEl.textContent = tree.name.toUpperCase();
+    if (factionEl) factionEl.textContent = tree.faction;
+    if (bondBadgeEl && bond) {
+        bondBadgeEl.textContent = `${bond.label} (${state.bondScore || 0} PTS)`;
+    }
+    if (avatarEl) avatarEl.textContent = tree.icon || '💬';
+    if (moodEl) {
+        moodEl.textContent = (bond?.level >= 2) ? 'ENAMORED / DEVOTED' : ((bond?.level === 1) ? 'WARM / ATTRACTION' : 'ATTENTIVE');
+    }
+
+    if (narrationEl) {
+        if (node.narration) {
+            narrationEl.style.display = 'block';
+            narrationEl.textContent = node.narration;
+        } else {
+            narrationEl.style.display = 'none';
+        }
+    }
+
+    if (speakerEl) speakerEl.textContent = `${node.speaker ? node.speaker.toUpperCase() : tree.name.toUpperCase()}:`;
+    if (textEl) textEl.textContent = `"${node.dialogue}"`;
+
+    if (choicesEl) {
+        choicesEl.innerHTML = '';
+        (node.choices || []).forEach((choice, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'npc-choice-btn';
+            btn.setAttribute('data-choice-id', choice.id);
+            btn.innerHTML = `
+                <span class="npc-choice-key">[${idx + 1}]</span>
+                <span class="npc-choice-tone">${choice.tone || ''}</span>
+                <span class="npc-choice-text">${choice.text}</span>
+            `;
+            btn.addEventListener('click', () => {
+                window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+                npcDialogueTreeManager.selectChoice(choice.id);
+            });
+            choicesEl.appendChild(btn);
+        });
+    }
+}
+
+function setupNpcDialogueEvents() {
+    if (npcDialogueEventsInitialized) return;
+    npcDialogueEventsInitialized = true;
+
+    npcDialogueTreeManager.onStateChanged = updateNpcDialogueUi;
+
+    document.getElementById('close-npc-dialogue-modal')?.addEventListener('click', () => {
+        npcDialogueTreeManager.closeDialogue();
+        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (!npcDialogueTreeManager.activeTree || !npcDialogueTreeManager.currentNode) return;
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            npcDialogueTreeManager.closeDialogue();
+            return;
+        }
+
+        const choices = npcDialogueTreeManager.currentNode.choices || [];
+        const num = parseInt(e.key, 10);
+        if (!isNaN(num) && num >= 1 && num <= choices.length) {
+            e.preventDefault();
+            const selected = choices[num - 1];
+            if (selected) {
+                window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+                npcDialogueTreeManager.selectChoice(selected.id);
+            }
+        }
+    });
+
+    window.openNpcDialogueTree = (treeId) => {
+        setupNpcDialogueEvents();
+        return npcDialogueTreeManager.startDialogue(treeId);
+    };
+    window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
+    window.npcDialogueTreeManager = npcDialogueTreeManager;
+}
+
 function adjustTacticalMapZoom(delta) {
     tacticalMapState.zoom = Math.max(0.5, Math.min(3.5, tacticalMapState.zoom + delta));
 }
@@ -12211,10 +12326,11 @@ if (window.electronAPI) {
     setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
 }
 
-// Initialize Steam Vault, Tactical Net, and Mature Content Audit UI in all environments
+// Initialize Steam Vault, Tactical Net, NPC Dialogue Trees, and Mature Content Audit UI in all environments
 initSteamVaultUI();
 multiplayerLobby.init();
 matureContentAudit.init();
+setupNpcDialogueEvents();
 
 // Keep the title art alive at rest while making pointer movement feel like a
 // reflection travelling across damp metal. Motion is deliberately tiny so the

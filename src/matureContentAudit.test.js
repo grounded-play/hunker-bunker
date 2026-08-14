@@ -9,8 +9,9 @@ describe('MatureContentAudit', () => {
     });
 
     it('contains all required mature content categories in the manifest', () => {
-        expect(MATURE_CONTENT_MANIFEST.length).toBe(4);
+        expect(MATURE_CONTENT_MANIFEST.length).toBe(5);
         const ids = MATURE_CONTENT_MANIFEST.map((m) => m.id);
+        expect(ids).toContain('sensual_storylines_romance');
         expect(ids).toContain('parasite_symbiosis');
         expect(ids).toContain('queen_subjugation');
         expect(ids).toContain('self_annihilation');
