@@ -5126,21 +5126,22 @@ window.addEventListener('engineer-turret-tick', (event) => {
     }
 });
 
+let _cachedScanBar = null;
+let _cachedRadarPanel = null;
 window.addEventListener('scan-cooldown-tick', (event) => {
     const { remaining = 0, max = 1 } = event?.detail ?? {};
-    const bar = document.getElementById('scan-bar');
-    const panel = document.getElementById('radar-scan-panel');
+    if (!_cachedScanBar) _cachedScanBar = document.getElementById('scan-bar');
+    if (!_cachedRadarPanel) _cachedRadarPanel = document.getElementById('radar-scan-panel');
     const fillPct = 1 - (remaining / Math.max(0.001, max));
 
-    if (bar) {
-        bar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
+    if (_cachedScanBar) {
+        _cachedScanBar.style.transform = `scaleX(${Math.max(0, Math.min(1, fillPct))})`;
     }
 
-    if (panel) {
-        panel.classList.toggle('class-ability-panel--ready', remaining <= 0);
-        panel.classList.toggle('class-ability-panel--active', remaining > 0);
+    if (_cachedRadarPanel) {
+        _cachedRadarPanel.classList.toggle('class-ability-panel--ready', remaining <= 0);
+        _cachedRadarPanel.classList.toggle('class-ability-panel--active', remaining > 0);
     }
-
 });
 
 function syncAbilityPanelLabel() {
@@ -5833,19 +5834,78 @@ function warmCutsceneImage(src) {
 function warmCutsceneVideo(base) {
     if (!base) return;
     const canPlayWebm = document.createElement('video').canPlayType('video/webm');
-    const source = canPlayWebm ? `/cutscenes/${base}.webm` : `/cutscenes/${base}.mp4`;
+    let source;
+    if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
+        source = '/DoorIntro.mp4';
+    } else if (base.startsWith('/')) {
+        source = base;
+    } else {
+        source = canPlayWebm ? `/cutscenes/${base}.webm` : `/cutscenes/${base}.mp4`;
+    }
     if (cutsceneVideoPreloadCache.has(source)) return;
 
-    warmCutsceneImage(`/cutscenes/${base}-poster.jpg`);
+    if (!base.includes('DoorIntro')) {
+        warmCutsceneImage(`/cutscenes/${base}-poster.jpg`);
+    }
 
     const video = document.createElement('video');
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    video.poster = assetUrl(`/cutscenes/${base}-poster.jpg`);
+    if (!base.includes('DoorIntro')) {
+        video.poster = assetUrl(`/cutscenes/${base}-poster.jpg`);
+    }
     video.src = assetUrl(source);
     video.load();
     cutsceneVideoPreloadCache.set(source, video);
+}
+
+function preloadVideoReady(base) {
+    if (!base) return Promise.resolve();
+    warmCutsceneVideo(base);
+    return new Promise((resolve) => {
+        const canPlayWebm = document.createElement('video').canPlayType('video/webm');
+        let source;
+        if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
+            source = '/DoorIntro.mp4';
+        } else if (base.startsWith('/')) {
+            source = base;
+        } else {
+            source = canPlayWebm ? `/cutscenes/${base}.webm` : `/cutscenes/${base}.mp4`;
+        }
+
+        const cached = cutsceneVideoPreloadCache.get(source);
+        if (cached && cached.readyState >= 2) {
+            resolve();
+            return;
+        }
+
+        const video = cached || document.createElement('video');
+        video.muted = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+        if (!cached) {
+            video.src = assetUrl(source);
+            video.load();
+        }
+
+        let settled = false;
+        const done = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+        };
+
+        if (video.readyState >= 2) {
+            done();
+            return;
+        }
+
+        video.addEventListener('loadeddata', done, { once: true });
+        video.addEventListener('canplay', done, { once: true });
+        video.addEventListener('error', done, { once: true });
+        setTimeout(done, 2500);
+    });
 }
 
 function warmClassIntroMedia(playerType = 'SCOUT') {
@@ -7477,8 +7537,17 @@ if (fpsDisplay) {
     }, 1000);
 }
 
+let gearSpinRafId = 0;
+function ensureGearSpinActive() {
+    if (!gearSpinRafId) {
+        gearSpinState.lastTime = performance.now();
+        gearSpinRafId = requestAnimationFrame(updateGearSpin);
+    }
+}
+
 function updateGearSpin(now) {
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
+    const isVisible = overlay?.classList.contains('visible') || overlay?.classList.contains('closing-v') || overlay?.classList.contains('opening-h');
     const dt = Math.min((now - gearSpinState.lastTime) / 1000, 0.05);
     gearSpinState.lastTime = now;
 
@@ -7494,13 +7563,17 @@ function updateGearSpin(now) {
     gearSpinState.velocity += (gearSpinState.targetVelocity - gearSpinState.velocity) * smoothing;
     gearSpinState.rotation += gearSpinState.velocity * dt;
 
-    if (overlay) {
-        overlay.style.setProperty('--gear-rotation', `${gearSpinState.rotation}deg`);
+    if (overlay && isVisible) {
+        overlay.style.setProperty('--gear-rotation', `${gearSpinState.rotation.toFixed(2)}deg`);
     }
 
-    requestAnimationFrame(updateGearSpin);
+    if (isVisible || Math.abs(gearSpinState.velocity) > 0.5) {
+        gearSpinRafId = requestAnimationFrame(updateGearSpin);
+    } else {
+        gearSpinRafId = 0;
+    }
 }
-requestAnimationFrame(updateGearSpin);
+ensureGearSpinActive();
 
 // About Modal Logic
 const aboutBtn = document.getElementById('about-btn');
@@ -10239,6 +10312,7 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     // 1. Prepare for vertical close
     overlay.classList.add('visible');
     overlay.classList.add('closing-v');
+    ensureGearSpinActive();
     AudioManager.play('ui_boot1', { volume: 0.5 });
 
     // Force reflow
@@ -10777,15 +10851,25 @@ function initTacticalCursor() {
         document.documentElement.classList.add('custom-cursor-enabled');
     }, { passive: true });
 
+    let lastRenderedX = -9999;
+    let lastRenderedY = -9999;
+    let lastRenderedScale = -1;
+
     function updateCursorPosition() {
-        curX += (mouseX - curX) * LERP_FACTOR;
-        curY += (mouseY - curY) * LERP_FACTOR;
+        const dx = mouseX - curX;
+        const dy = mouseY - curY;
+        const ds = targetScale - curScale;
 
-        // Snappy dynamic scale LERP for precise clicks and fadeouts
-        curScale += (targetScale - curScale) * 0.35;
+        curX += dx * LERP_FACTOR;
+        curY += dy * LERP_FACTOR;
+        curScale += ds * 0.35;
 
-        // Keep the custom cursor perfectly centered on the physical pointer tip and scaled correctly
-        cursor.style.transform = `translate3d(${curX}px, ${curY}px, 0) translate3d(-50%, -50%, 0) scale(${curScale})`;
+        if (Math.abs(curX - lastRenderedX) > 0.05 || Math.abs(curY - lastRenderedY) > 0.05 || Math.abs(curScale - lastRenderedScale) > 0.005) {
+            lastRenderedX = curX;
+            lastRenderedY = curY;
+            lastRenderedScale = curScale;
+            cursor.style.transform = `translate3d(${curX.toFixed(1)}px, ${curY.toFixed(1)}px, 0) translate3d(-50%, -50%, 0) scale(${curScale.toFixed(3)})`;
+        }
         requestAnimationFrame(updateCursorPosition);
     }
     requestAnimationFrame(updateCursorPosition);
@@ -10940,6 +11024,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             '/door_cryo_keyart_v2.webp',
             '/door_alien_keyart_v2.webp',
             '/door_rust_keyart_v2.webp',
+            '/title_key_art_v2.png',
             '/menu_bg.webp',
             '/ship_wreckage.png',
             '/scout_ship.png',
@@ -11384,6 +11469,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             await initializeGame(initialType);
             traceBootPhase('airlock-start');
+            if (loaderBar) loaderBar.style.width = '85%';
+            renderLoaderLogs('> PRELOADING CINEMATIC FEED (DoorIntro)...');
+            await preloadVideoReady('DoorIntro');
+            if (document.fonts?.ready) await document.fonts.ready;
             if (loaderBar) loaderBar.style.width = '100%';
             renderLoaderLogs('> ALL ASSETS LOADED — OPENING AIRLOCK...');
         } catch (err) {

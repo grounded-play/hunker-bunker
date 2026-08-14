@@ -674,7 +674,7 @@ body {
 }
 
 #transition-overlay.opening-h.active .focus-top-right {
-  transform: translate(calc(-50% + var(--door-half-span)), -50%);
+  transform: translate(calc(-50% + var(--door-half-span) + var(--gear-focus-size) * 2 + calc(var(--vu) * 20)), -50%);
   transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

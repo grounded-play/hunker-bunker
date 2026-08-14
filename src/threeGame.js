@@ -2786,7 +2786,7 @@ export class ThreeGame {
                         // rock detail actually reads near the rim, then let
                         // it fall away to true darkness toward the pit floor
                         // (rim ~= world y 0, floor ~= world y -9.8; see
-                        // createCliffPatch's column placement/height).
+                        // addCliffInstance's column placement/height).
                         sampledDiffuseColor.rgb = pow( sampledDiffuseColor.rgb, vec3( 0.55 ) ) * 1.35;
                         float cliffDepthFade = smoothstep( -8.5, -0.3, vWorldPos.y );
                         sampledDiffuseColor.rgb *= mix( 0.05, 1.0, cliffDepthFade );
@@ -2807,8 +2807,23 @@ export class ThreeGame {
         }
 
         this.canyonDropMaterials = {};
-        this.canyonDropGeometry = new THREE.PlaneGeometry(1.0, 10.0);
-        this.canyonDropGeometry.translate(0, -5.0, 0);
+        // A flat vertical plane read as a sheer, featureless wall — bow it
+        // outward as it falls (2 units clear of the tile edge by the
+        // bottom) and drop it 4 units deeper (10 -> 14) so the canyon reads
+        // as a receding rock face instead of a straight drop.
+        this.canyonDropGeometry = new THREE.PlaneGeometry(1.0, 14.0, 1, 8);
+        this.canyonDropGeometry.translate(0, -7.0, 0);
+        {
+            const posAttr = this.canyonDropGeometry.attributes.position;
+            for (let i = 0; i < posAttr.count; i += 1) {
+                const y = posAttr.getY(i);
+                const depthT = THREE.MathUtils.clamp(-y / 14, 0, 1);
+                const outward = depthT * depthT * 2.0;
+                posAttr.setZ(i, posAttr.getZ(i) + outward);
+            }
+            posAttr.needsUpdate = true;
+            this.canyonDropGeometry.computeVertexNormals();
+        }
 
         for (const [biomeKey, [path, , color, emissive]] of Object.entries(canyonMaterialConfigs)) {
             const dropTex = this.loadTerrainTexture(path, textureLoader, maxAnisotropy);
@@ -5480,7 +5495,7 @@ export class ThreeGame {
         const width = this.container.clientWidth || 1;
         const height = this.container.clientHeight || 1;
         const aspect = width / height;
-        const viewSize = this.performanceProfile === 'menu' ? 3.7 : 6.8;
+        const viewSize = this.performanceProfile === 'menu' ? 3.7 : 5.2;
 
         this.menuPixelRatio = cappedPixelRatio({
             width,
@@ -13129,8 +13144,18 @@ export class ThreeGame {
         this.explorationTracker?.recordPlayerPosition(this.player.position.x, this.player.position.z);
         const chunkX = Math.floor(this.player.position.x / this.chunkSize);
         const chunkY = Math.floor(this.player.position.z / this.chunkSize);
-        this.discoveredMapChunkKeys ??= new Set();
+        const localX = Math.round(this.player.position.x - chunkX * this.chunkSize);
+        const localY = Math.round(this.player.position.z - chunkY * this.chunkSize);
         const chunkKey = `${chunkX},${chunkY}`;
+
+        if (this._lastDiscoveryChunkKey === chunkKey && this._lastDiscoveryLocalX === localX && this._lastDiscoveryLocalY === localY) {
+            return;
+        }
+        this._lastDiscoveryChunkKey = chunkKey;
+        this._lastDiscoveryLocalX = localX;
+        this._lastDiscoveryLocalY = localY;
+
+        this.discoveredMapChunkKeys ??= new Set();
         if (!this.discoveredMapChunkKeys.has(chunkKey)) {
             this.discoveredMapChunkKeys.add(chunkKey);
             debugLog.info('MAP', 'Chunk revealed', { chunk: chunkKey });
@@ -13138,8 +13163,6 @@ export class ThreeGame {
         this.discoveredMapRoomKeys ??= new Set();
         this.discoveredMapCellKeys ??= new Set();
         const grid = this.chunkCache.get(chunkKey);
-        const localX = Math.round(this.player.position.x - chunkX * this.chunkSize);
-        const localY = Math.round(this.player.position.z - chunkY * this.chunkSize);
         for (let dy = -3; dy <= 3; dy += 1) {
             for (let dx = -3; dx <= 3; dx += 1) {
                 if (dx * dx + dy * dy > 10) continue;
@@ -15716,24 +15739,62 @@ export class ThreeGame {
 
         ctx.save();
         ctx.globalCompositeOperation = 'destination-out';
-        ctx.filter = `blur(${THREE.MathUtils.clamp(Math.min(w, h) * 0.014, 7, 13).toFixed(1)}px)`;
+        ctx.shadowColor = 'rgba(0, 0, 0, 1)';
+        ctx.shadowBlur = THREE.MathUtils.clamp(Math.min(w, h) * 0.015, 8, 14);
         this.buildFlashlightScreenPath(ctx, points);
         ctx.fillStyle = 'rgba(0, 0, 0, 1)';
         ctx.fill();
         ctx.restore();
     }
 
+    hasTileWallBetween(x1, z1, x2, z2) {
+        const dx = x2 - x1;
+        const dz = z2 - z1;
+        const dist = Math.hypot(dx, dz);
+        if (dist <= 0.3) return false;
+
+        const steps = Math.min(48, Math.max(1, Math.ceil(dist * 2.5)));
+        const stepX = dx / steps;
+        const stepZ = dz / steps;
+
+        let curX = x1;
+        let curZ = z1;
+        let lastTileX = Math.round(x1);
+        let lastTileZ = Math.round(z1);
+
+        for (let i = 1; i < steps; i++) {
+            curX += stepX;
+            curZ += stepZ;
+            const tx = Math.round(curX);
+            const tz = Math.round(curZ);
+            if (tx === lastTileX && tz === lastTileZ) continue;
+            lastTileX = tx;
+            lastTileZ = tz;
+
+            const tile = this.getCachedTileType(tx, tz) ?? this.getTileType(tx, tz);
+            if (tile === '#' || tile === 'C' || tile === 'X') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     hasWallBetween(x1, z1, x2, z2) {
+        if (this.hasTileWallBetween(x1, z1, x2, z2)) return true;
         if (this.wallMeshes.length === 0) return false;
 
-        const origin = new THREE.Vector3(x1, SUIT_LIGHT_EMITTER_HEIGHT, z1);
-        const target = new THREE.Vector3(x2, SUIT_LIGHT_EMITTER_HEIGHT, z2);
-        const direction = target.clone().sub(origin);
-        const distance = direction.length();
+        this._hasWallOrigin ??= new THREE.Vector3();
+        this._hasWallTarget ??= new THREE.Vector3();
+        this._hasWallDir ??= new THREE.Vector3();
+
+        this._hasWallOrigin.set(x1, SUIT_LIGHT_EMITTER_HEIGHT, z1);
+        this._hasWallTarget.set(x2, SUIT_LIGHT_EMITTER_HEIGHT, z2);
+        this._hasWallDir.subVectors(this._hasWallTarget, this._hasWallOrigin);
+        const distance = this._hasWallDir.length();
         if (distance <= 0.1) return false;
 
-        direction.normalize();
-        this._lightOcclusionRaycaster.set(origin, direction);
+        this._hasWallDir.normalize();
+        this._lightOcclusionRaycaster.set(this._hasWallOrigin, this._hasWallDir);
         this._lightOcclusionRaycaster.far = distance;
 
         const hits = this._lightOcclusionRaycaster.intersectObjects(this.wallMeshes, false);
@@ -15817,16 +15878,20 @@ export class ThreeGame {
     }
 
     applyFogOfWarOpacity(object, visibility, { captureCurrent = false } = {}) {
-        object?.traverse?.((child) => {
+        if (!object) return;
+        object.traverse?.((child) => {
             const material = child.material;
             if (!material) return;
             const materials = Array.isArray(material) ? material : [material];
             for (const mat of materials) {
                 if (!mat) continue;
-                const previousVisibility = mat.userData.fogVisibility ?? 1;
+                const previousVisibility = mat.userData.fogVisibility;
+                if (!captureCurrent && previousVisibility !== undefined && Math.abs(visibility - previousVisibility) < 0.005) {
+                    continue;
+                }
                 const baseOpacity = captureCurrent
                     ? (mat.opacity ?? 1)
-                    : (mat.opacity ?? 1) / Math.max(0.001, previousVisibility);
+                    : (mat.opacity ?? 1) / Math.max(0.001, previousVisibility ?? 1);
                 mat.transparent = true;
                 mat.opacity = baseOpacity * visibility;
                 mat.userData.fogVisibility = visibility;
@@ -23925,46 +23990,52 @@ export class ThreeGame {
             }
         }
         
-        const bossPanel = document.getElementById('boss-status-panel');
+        if (!this._bossPanelEl) this._bossPanelEl = document.getElementById('boss-status-panel');
+        if (!this._bossNameEl) this._bossNameEl = document.getElementById('boss-name');
+        if (!this._bossHpBarEl) this._bossHpBarEl = document.getElementById('boss-hp-bar');
+        if (!this._bossHpTextEl) this._bossHpTextEl = document.getElementById('boss-hp-text');
+
         if (nearestBoss && minBossDist < 16.0) {
             this.activeBoss = nearestBoss;
-            if (bossPanel) {
-                bossPanel.classList.remove('hidden');
-                const nameEl = document.getElementById('boss-name');
-                const hpBar = document.getElementById('boss-hp-bar');
-                const hpText = document.getElementById('boss-hp-text');
+            if (this._bossPanelEl) {
+                this._bossPanelEl.classList.remove('hidden');
                 
-                if (nameEl) {
+                if (this._bossNameEl && this._lastRenderedBossType !== nearestBoss.userData.type) {
+                    this._lastRenderedBossType = nearestBoss.userData.type;
                     if (nearestBoss.userData.type === 'boss_cybersnail') {
-                        nameEl.textContent = 'CYBER-SHELL TITAN';
+                        this._bossNameEl.textContent = 'CYBER-SHELL TITAN';
                     } else if (nearestBoss.userData.type === 'boss_cryosnail') {
-                        nameEl.textContent = 'CRYO-GOLIATH SNAIL';
+                        this._bossNameEl.textContent = 'CRYO-GOLIATH SNAIL';
                     } else if (nearestBoss.userData.type === 'boss_sporesnail') {
-                        nameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
+                        this._bossNameEl.textContent = 'PLAGUE-SHELL BEHEMOTH';
                     } else if (nearestBoss.userData.type === 'boss_corrupted_scout') {
-                        nameEl.textContent = 'CORRUPTED SCOUT: MARTHA';
+                        this._bossNameEl.textContent = 'CORRUPTED SCOUT: MARTHA';
                     } else if (nearestBoss.userData.type === 'boss_corrupted_tank') {
-                        nameEl.textContent = 'CORRUPTED TANK: BRIGGS';
+                        this._bossNameEl.textContent = 'CORRUPTED TANK: BRIGGS';
                     } else if (nearestBoss.userData.type === 'boss_corrupted_engineer') {
-                        nameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
+                        this._bossNameEl.textContent = 'CORRUPTED ENGINEER: KAELEN';
                     } else if (nearestBoss.userData.type === 'boss_queen') {
-                        nameEl.textContent = 'THE QUEEN';
+                        this._bossNameEl.textContent = 'THE QUEEN';
                     } else {
-                        nameEl.textContent = 'ELITE THREAT';
+                        this._bossNameEl.textContent = 'ELITE THREAT';
                     }
                 }
                 
                 const hp = nearestBoss.userData.hp ?? 0;
                 const maxHp = nearestBoss.userData.maxHp ?? 10;
-                const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
-                
-                if (hpBar) hpBar.style.width = `${pct}%`;
-                if (hpText) hpText.textContent = `${hp} / ${maxHp}`;
+                if (this._lastRenderedBossHp !== hp || this._lastRenderedBossMaxHp !== maxHp) {
+                    this._lastRenderedBossHp = hp;
+                    this._lastRenderedBossMaxHp = maxHp;
+                    const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
+                    if (this._bossHpBarEl) this._bossHpBarEl.style.width = `${pct}%`;
+                    if (this._bossHpTextEl) this._bossHpTextEl.textContent = `${hp} / ${maxHp}`;
+                }
             }
         } else {
             this.activeBoss = null;
-            if (bossPanel) {
-                bossPanel.classList.add('hidden');
+            this._lastRenderedBossType = null;
+            if (this._bossPanelEl) {
+                this._bossPanelEl.classList.add('hidden');
             }
         }
 
@@ -24516,18 +24587,28 @@ export class ThreeGame {
     }
 
     updateHiddenPlayerMarker(now) {
-        const origin = this.camera.position.clone();
-        const target = this.player.position.clone();
-        const direction = target.clone().sub(origin);
-        const distance = direction.length();
-
-        if (distance <= 0.001 || this.wallMeshes.length === 0) {
+        if (!this.player || !this.camera || !this.playerMarker) return;
+        if (this.wallMeshes.length === 0) {
             this.playerMarker.visible = false;
             return;
         }
 
-        direction.normalize();
-        this.raycaster.set(origin, direction);
+        this._hiddenMarkerOrigin ??= new THREE.Vector3();
+        this._hiddenMarkerTarget ??= new THREE.Vector3();
+        this._hiddenMarkerDir ??= new THREE.Vector3();
+
+        this._hiddenMarkerOrigin.copy(this.camera.position);
+        this._hiddenMarkerTarget.copy(this.player.position);
+        this._hiddenMarkerDir.subVectors(this._hiddenMarkerTarget, this._hiddenMarkerOrigin);
+        const distance = this._hiddenMarkerDir.length();
+
+        if (distance <= 0.001) {
+            this.playerMarker.visible = false;
+            return;
+        }
+
+        this._hiddenMarkerDir.normalize();
+        this.raycaster.set(this._hiddenMarkerOrigin, this._hiddenMarkerDir);
         this.raycaster.far = distance - this.playerRadius * 0.25;
         const hits = this.raycaster.intersectObjects(this.wallMeshes, false);
         const hidden = hits.length > 0;
@@ -24536,9 +24617,13 @@ export class ThreeGame {
         if (!hidden) return;
 
         const pulse = 0.7 + Math.sin(now * 0.012) * 0.2;
-        this.playerMarker.children[0].material.opacity = pulse;
-        this.playerMarker.children[1].material.opacity = 0.7 + Math.sin(now * 0.012 + 0.7) * 0.2;
-        this.playerMarker.children[0].lookAt(this.camera.position.x, 0.05, this.camera.position.z);
+        if (this.playerMarker.children[0]?.material) {
+            this.playerMarker.children[0].material.opacity = pulse;
+            this.playerMarker.children[0].lookAt(this.camera.position.x, 0.05, this.camera.position.z);
+        }
+        if (this.playerMarker.children[1]?.material) {
+            this.playerMarker.children[1].material.opacity = 0.7 + Math.sin(now * 0.012 + 0.7) * 0.2;
+        }
         if (this.playerMarker.children[2]?.material) {
             this.playerMarker.children[2].material.opacity = 0.8 + Math.sin(now * 0.014) * 0.2;
         }
