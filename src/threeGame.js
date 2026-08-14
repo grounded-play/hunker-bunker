@@ -46,6 +46,7 @@ export const TiltShiftPassShader = {
     `
 };
 import { assetUrl } from './assetUrl.js';
+import { wrapAngle, stepAngleTowards, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
@@ -973,6 +974,9 @@ function isChunkTraversalConnected(grid) {
 // and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
 const keyedSpriteTextureCache = new Map();
 
+const CAMERA_ROT_SPEED = 4.0;
+const MOUSE_LOOK_SENSITIVITY = 0.0025;
+
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
@@ -1047,9 +1051,19 @@ export class ThreeGame {
         this.activeTurret = null;
         this.turretCooldownTimer = 0;
         this.cameraLift = 10;
-        this.cameraOffset = new THREE.Vector3(8, this.cameraLift, 8);
-        this.cameraPlanarForward = new THREE.Vector2(-this.cameraOffset.x, -this.cameraOffset.z).normalize();
-        this.cameraPlanarRight = new THREE.Vector2(-this.cameraPlanarForward.y, this.cameraPlanarForward.x).normalize();
+        this.cameraOrbitRadius = Math.hypot(8, 8);
+        this.cameraAzimuth = Math.atan2(8, 8);
+        this.cameraOffset = new THREE.Vector3(
+            this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
+            this.cameraLift,
+            this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
+        );
+        const initialCameraBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
+        this.cameraPlanarForward = new THREE.Vector2(initialCameraBasis.forward.x, initialCameraBasis.forward.y);
+        this.cameraPlanarRight = new THREE.Vector2(initialCameraBasis.right.x, initialCameraBasis.right.y);
+        this.facingPlanarForward = new THREE.Vector2(0, 0);
+        this.facingPlanarRight = new THREE.Vector2(0, 0);
+        this.updateFacingYaw(Math.PI / 2);
         this.chunkCache = new Map();
         this.pocketCache = new Map();
         this.wfcMetadataCache = new Map();
@@ -1163,7 +1177,6 @@ export class ThreeGame {
         this.aimDirZ = 0;
         this.aimFacingRow = PLAYER_DEFAULT_DIRECTION_INDEX;
         this.aimWorldPoint = null;
-        this.hasActiveAim = false;
         this.mouseAimActive = false;
         this.lastMouseClientX = null;
         this.lastMouseClientY = null;
@@ -4338,6 +4351,18 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
     }
 
+    updateFacingYaw(yaw) {
+        this.facingYaw = wrapAngle(yaw);
+        const aim = aimVectorFromYaw(this.facingYaw);
+        this.aimDirX = aim.x;
+        this.aimDirZ = aim.z;
+        const basis = planarBasisFromOffsetAzimuth(this.facingYaw + Math.PI);
+        this.facingPlanarForward.set(basis.forward.x, basis.forward.y);
+        this.facingPlanarRight.set(basis.right.x, basis.right.y);
+        this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
+        this.hasActiveAim = true;
+    }
+
     getWorldAimPoint(clientX, clientY) {
         const rect = this.renderer.domElement.getBoundingClientRect();
         const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -4785,7 +4810,6 @@ export class ThreeGame {
         this.virtualInput.z = 0;
         this.isMoving = false;
         this.mouseAimActive = false;
-        this.hasActiveAim = false;
         this.endHeldFire();
         this._aimResetTimer = 0;
         this.lastMouseClientX = null;
@@ -13787,7 +13811,6 @@ export class ThreeGame {
         this.resetVitalsForRun({ emit: false });
         this.resetWeaponState({ emit: false });
         this.mouseAimActive = false;
-        this.hasActiveAim = false;
         this._aimResetTimer = 0;
         this.aimWorldPoint = null;
         this.keys.up = false;
