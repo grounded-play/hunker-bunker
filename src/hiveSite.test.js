@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { HiveSite } from './hiveSite.js';
+import { HiveSite, HIVE_SIGNATURE_PROPS } from './hiveSite.js';
 
 // Mock THREE.js scene since we run in Node
 class MockScene {
@@ -69,5 +69,21 @@ describe('Hive Site 3D Visualizer', () => {
         expect(hive.propSprites.eggs.visible).toBe(false);
         expect(hive.coreMat.emissiveIntensity).toBe(0);
         expect(hive.alienDrones.every((drone) => drone.mesh?.visible === false)).toBe(true);
+    });
+
+    it.each(Object.keys(HIVE_SIGNATURE_PROPS))('builds %s\'s distinct signature-prop sprites without throwing', (hiveId) => {
+        const scene = new MockScene();
+        const hive = new HiveSite(scene, { id: hiveId, label: hiveId });
+        expect(() => hive.reveal(0, 0)).not.toThrow();
+
+        const specs = HIVE_SIGNATURE_PROPS[hiveId];
+        expect(Object.keys(hive.signatureProps)).toHaveLength(specs.length);
+        for (const spec of specs) {
+            const sprite = hive.signatureProps[spec.id];
+            expect(sprite.userData).toMatchObject({ kind: 'hive-signature-prop', hiveId, propId: spec.id });
+            expect(sprite.position.x).toBeCloseTo(spec.x);
+            expect(sprite.position.z).toBeCloseTo(spec.z);
+            expect(hive.group.children).toContain(sprite);
+        }
     });
 });

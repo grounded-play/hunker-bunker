@@ -17,6 +17,25 @@ const ALIEN_COLORS = {
 // Shorter than the camps' distress flare (11): hives whisper, camps shout.
 const HIVE_SIGNAL_HEIGHT = 8;
 
+// docs/sprint-23-room-juice-and-dressing-assets.md §5 — one or two dedicated
+// signature props per hive, distinct from the shared cave-prop dressing
+// (eggs/spores/webs/wounded below). Art is queued, not rendered yet; see
+// camp.js's CAMP_SIGNATURE_PROPS for why wiring ahead of the asset is safe.
+export const HIVE_SIGNATURE_PROPS = Object.freeze({
+    hive_suture: [
+        { id: 'suture_organ', path: '/prop_hive_suture_organ.jpg', x: -1.55, z: 1.0, y: 0.55, scale: 1.3 },
+        { id: 'wound_cauterizer', path: '/prop_hive_wound_cauterizer.jpg', x: 1.5, z: -1.05, y: 0.4, scale: 0.9 }
+    ],
+    hive_relay: [
+        { id: 'relay_antenna', path: '/prop_hive_relay_antenna.jpg', x: 0, z: 1.7, y: 0.75, scale: 1.4 },
+        { id: 'synaptic_web', path: '/prop_hive_synaptic_web.jpg', x: -1.4, z: -1.2, y: 0.5, scale: 1.1 }
+    ],
+    hive_carapace: [
+        { id: 'chitin_hatchery', path: '/prop_hive_chitin_hatchery.jpg', x: 1.6, z: 1.05, y: 0.5, scale: 1.2 },
+        { id: 'carapace_molt', path: '/prop_hive_carapace_molt.jpg', x: -1.6, z: -1.1, y: 0.45, scale: 1.25 }
+    ]
+});
+
 const INTERACT_RADIUS = 2.6;
 
 // These persisted outcomes all leave an empty or inert world site. Keep the
@@ -63,6 +82,30 @@ function makeAlienFallbackCanvas({ color = 0x8cff96 } = {}) {
             ctx.fillRect(14 + ox, 8 + oy, 4, 12);
         }
     }
+    return canvas;
+}
+
+// A plain placeholder tile so a pending hive signature prop reads as
+// "reserved for X" rather than a blank sprite while art is queued. Matches
+// camp.js's makeSignaturePropFallbackCanvas.
+function makeHiveSignaturePropFallbackCanvas({ color = 0x8cff96, label = '?' } = {}) {
+    if (typeof document === 'undefined') return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = 96;
+    canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return canvas;
+    const hex = `#${color.toString(16).padStart(6, '0')}`;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = hex;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([6, 5]);
+    ctx.strokeRect(6, 6, 84, 84);
+    ctx.fillStyle = hex;
+    ctx.font = 'bold 34px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label.slice(0, 1).toUpperCase(), 48, 50);
     return canvas;
 }
 
@@ -322,6 +365,29 @@ export class HiveSite {
         spriteWounded.visible = false;
         group.add(spriteWounded);
         this.propSprites.wounded = spriteWounded;
+
+        // Faction signature props (docs/sprint-23-room-juice-and-dressing-assets.md §5).
+        this.signatureProps = {};
+        for (const spec of HIVE_SIGNATURE_PROPS[this.id] ?? []) {
+            const texture = loadAlienKeyedTexture(
+                spec.path,
+                15,
+                makeHiveSignaturePropFallbackCanvas({ color: this.color, label: spec.id })
+            );
+            texture.repeat.set(1, 1);
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                transparent: true,
+                alphaTest: 0.05,
+                depthWrite: false
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(spec.x, spec.y, spec.z);
+            sprite.scale.set(spec.scale, spec.scale, 1);
+            sprite.userData = { kind: 'hive-signature-prop', hiveId: this.id, propId: spec.id };
+            group.add(sprite);
+            this.signatureProps[spec.id] = sprite;
+        }
 
         this.scene.add(group);
         this.group = group;

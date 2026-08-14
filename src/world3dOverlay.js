@@ -70,7 +70,17 @@ export async function createWorld3dModel(type) {
         if (!object.isMesh) return;
         object.castShadow = true;
         object.receiveShadow = true;
-        object.frustumCulled = false;
+        // Unlike camera-facing billboard sprites elsewhere in this codebase
+        // (whose bounding-sphere math against a THREE.Sprite is unreliable,
+        // hence their frustumCulled = false), these are static-position GLB
+        // meshes with a bounding box already computed above via
+        // Box3().setFromObject(). Frustum culling is safe here and matters
+        // at scale: as more chunks/camps/hives populate authored-room and
+        // signature-prop GLBs (see docs/sprint-23-room-juice-and-dressing-
+        // assets.md), leaving every one of them permanently submitted to
+        // the renderer regardless of camera visibility compounds badly.
+        if (!object.geometry.boundingSphere) object.geometry.computeBoundingSphere();
+        object.frustumCulled = true;
     });
     const root = new THREE.Group();
     root.name = `World3d:${type}`;
