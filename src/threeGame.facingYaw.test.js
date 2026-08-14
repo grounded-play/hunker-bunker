@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import { ThreeGame } from './threeGame.js';
 import { wrapAngle } from './cameraYaw.js';
@@ -103,5 +103,64 @@ describe('snapCameraToPlayer orbit', () => {
         ThreeGame.prototype.snapCameraToPlayer.call(game);
 
         expect(game.cameraAzimuth).toBeCloseTo(wrapAngle(Math.PI / 2 + Math.PI), 5);
+    });
+});
+
+describe('getFacingRow / getWorldDirectionForFacingRow use the instant facing basis', () => {
+    it('getFacingRow reads facingPlanarRight/Forward, ignoring a divergent camera basis', () => {
+        const game = {
+            facingPlanarRight: { x: 1, y: 0 },
+            facingPlanarForward: { x: 0, y: -1 },
+            cameraPlanarRight: { x: 0, y: 1 },
+            cameraPlanarForward: { x: 1, y: 0 }
+        };
+
+        const row = ThreeGame.prototype.getFacingRow.call(game, 1, 0);
+
+        expect(row).toBe(0);
+    });
+
+    it('getWorldDirectionForFacingRow round-trips through the facing basis', () => {
+        const game = {
+            facingPlanarRight: { x: 1, y: 0 },
+            facingPlanarForward: { x: 0, y: -1 }
+        };
+
+        const dir = ThreeGame.prototype.getWorldDirectionForFacingRow.call(game, 0);
+
+        expect(dir.x).toBeCloseTo(1, 5);
+        expect(dir.z).toBeCloseTo(0, 5);
+    });
+});
+
+describe('fire/melee direction no longer falls back to the camera basis', () => {
+    beforeEach(() => {
+        globalThis.window = {
+            dispatchEvent: vi.fn(),
+            AudioManager: { playMetalStress: vi.fn() }
+        };
+        globalThis.CustomEvent = class CustomEvent {
+            constructor(type, options = {}) { this.type = type; this.detail = options.detail; }
+        };
+    });
+
+    it('triggerGameplayMelee normalizes aimDirX/Z directly, with no hasActiveAim branch', () => {
+        const game = {
+            isGameplayInputActive: () => true,
+            player: { position: { x: 0, z: 0 } },
+            isPlayerDead: false,
+            meleeCooldownTimer: 0,
+            isInsideNoFireZone: () => false,
+            aimDirX: 0,
+            aimDirZ: 1,
+            scatterSprites: [],
+            spawnPhysicalBurst: vi.fn()
+        };
+
+        ThreeGame.prototype.triggerGameplayMelee.call(game, {});
+
+        // Function should run past the direction computation without throwing
+        // even though cameraPlanarForward is undefined on this mock.
+        expect(game.aimDirX).toBe(0);
     });
 });

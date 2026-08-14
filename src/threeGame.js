@@ -4542,42 +4542,6 @@ export class ThreeGame {
         return chunk.heightmap[localZ][localX] ?? TERRAIN_HEIGHTS.GROUND;
     }
 
-    setControllerAimVector(x = 0, y = 0) {
-        if (!this.isGameplayInputActive()) return false;
-
-        const screenAxisX = THREE.MathUtils.clamp(Number(x) || 0, -1, 1);
-        const screenAxisZ = THREE.MathUtils.clamp(Number(y) || 0, -1, 1);
-        const magnitude = Math.hypot(screenAxisX, screenAxisZ);
-        if (magnitude <= 0.18) return false;
-
-        const right = this.cameraPlanarRight ?? { x: 1, y: 0 };
-        const forward = this.cameraPlanarForward ?? { x: 0, y: 1 };
-        const aimX = (right.x * screenAxisX) + (forward.x * -screenAxisZ);
-        const aimZ = (right.y * screenAxisX) + (forward.y * -screenAxisZ);
-        const aimLength = Math.hypot(aimX, aimZ);
-        if (aimLength <= 0.0001) return false;
-
-        this.aimDirX = aimX / aimLength;
-        this.aimDirZ = aimZ / aimLength;
-        this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
-        this.hasActiveAim = true;
-        this.mouseAimActive = false;
-        this._aimResetTimer = 0;
-
-        if (this.player) {
-            const aimDist = 7.5;
-            const px = this.player.position.x;
-            const py = this.player.position.y ?? TERRAIN_HEIGHTS.GROUND;
-            const pz = this.player.position.z;
-            this.aimWorldPoint = new THREE.Vector3(
-                px + (this.aimDirX * aimDist),
-                py,
-                pz + (this.aimDirZ * aimDist)
-            );
-        }
-        return true;
-    }
-
     playThrottledUiError(fieldName, options = {}, eventName = null) {
         const now = performance.now();
         const lastPlayed = this[fieldName] ?? 0;
@@ -4614,16 +4578,6 @@ export class ThreeGame {
             return false;
         }
 
-        if (!this.hasActiveAim) {
-            const fallbackX = this.cameraPlanarForward?.x ?? this.aimDirX ?? 1;
-            const fallbackZ = this.cameraPlanarForward?.y ?? this.aimDirZ ?? 0;
-            const fallbackLength = Math.hypot(fallbackX, fallbackZ) || 1;
-            this.aimDirX = fallbackX / fallbackLength;
-            this.aimDirZ = fallbackZ / fallbackLength;
-            this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
-            this.hasActiveAim = true;
-        }
-
         const normX = this.aimDirX;
         const normZ = this.aimDirZ;
         if (!Number.isFinite(normX) || !Number.isFinite(normZ)) return false;
@@ -4652,13 +4606,9 @@ export class ThreeGame {
         if ((this.meleeCooldownTimer ?? 0) > 0) return false;
         if (this.isInsideNoFireZone()) return false;
 
-        const fallbackX = this.cameraPlanarForward?.x ?? 1;
-        const fallbackZ = this.cameraPlanarForward?.y ?? 0;
-        const directionX = this.hasActiveAim ? this.aimDirX : fallbackX;
-        const directionZ = this.hasActiveAim ? this.aimDirZ : fallbackZ;
-        const directionLength = Math.hypot(directionX, directionZ) || 1;
-        const aimX = directionX / directionLength;
-        const aimZ = directionZ / directionLength;
+        const directionLength = Math.hypot(this.aimDirX, this.aimDirZ) || 1;
+        const aimX = this.aimDirX / directionLength;
+        const aimZ = this.aimDirZ / directionLength;
         const targets = [];
 
         for (const sprite of this.scatterSprites) {
@@ -14892,8 +14842,8 @@ export class ThreeGame {
         const keyAxisZ = (this.keys.down ? 1 : 0) - (this.keys.up ? 1 : 0);
         const screenAxisX = THREE.MathUtils.clamp(keyAxisX + this.virtualInput.x, -1, 1);
         const screenAxisZ = THREE.MathUtils.clamp(keyAxisZ + this.virtualInput.z, -1, 1);
-        const moveAxisX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
-        const moveAxisZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
+        const moveAxisX = (this.facingPlanarRight.x * screenAxisX) + (this.facingPlanarForward.x * -screenAxisZ);
+        const moveAxisZ = (this.facingPlanarRight.y * screenAxisX) + (this.facingPlanarForward.y * -screenAxisZ);
         const isMoving = Boolean(moveAxisX || moveAxisZ);
         let moveDirX = this.aimDirX || 1;
         let moveDirZ = this.aimDirZ || 0;
@@ -16354,8 +16304,8 @@ export class ThreeGame {
         return getDirectionIndexFromWorldVector(
             worldX,
             worldZ,
-            this.cameraPlanarRight,
-            this.cameraPlanarForward
+            this.facingPlanarRight,
+            this.facingPlanarForward
         );
     }
 
@@ -16415,8 +16365,8 @@ export class ThreeGame {
         const angle = facingRow * (Math.PI / 4);
         const screenAxisX = Math.cos(angle);
         const screenAxisZ = Math.sin(angle);
-        const worldX = (this.cameraPlanarRight.x * screenAxisX) + (this.cameraPlanarForward.x * -screenAxisZ);
-        const worldZ = (this.cameraPlanarRight.y * screenAxisX) + (this.cameraPlanarForward.y * -screenAxisZ);
+        const worldX = (this.facingPlanarRight.x * screenAxisX) + (this.facingPlanarForward.x * -screenAxisZ);
+        const worldZ = (this.facingPlanarRight.y * screenAxisX) + (this.facingPlanarForward.y * -screenAxisZ);
         const length = Math.hypot(worldX, worldZ) || 1;
         return { x: worldX / length, z: worldZ / length };
     }
@@ -16464,20 +16414,6 @@ export class ThreeGame {
     updateWeaponState(delta) {
         if (this.weaponFireCooldown > 0) {
             this.weaponFireCooldown = Math.max(0, this.weaponFireCooldown - delta);
-        }
-
-        if (this.mouseAimActive && Number.isFinite(this.lastMouseClientX) && Number.isFinite(this.lastMouseClientY)) {
-            this.updateAimFromClient(this.lastMouseClientX, this.lastMouseClientY, {
-                keepMouseActive: true,
-                persistDuration: 0
-            });
-        }
-
-        if (!this.mouseAimActive && this._aimResetTimer > 0) {
-            this._aimResetTimer = Math.max(0, this._aimResetTimer - delta);
-            if (this._aimResetTimer === 0) {
-                this.hasActiveAim = false;
-            }
         }
 
         this.updateWeaponAmmoRefill(delta);
