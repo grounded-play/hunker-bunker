@@ -12170,8 +12170,24 @@ export class ThreeGame {
             hive_carapace: 'aria_queen_mimic'
         };
         const treeId = treeMap[entity.id];
-        if (treeId && typeof window !== 'undefined' && window.openNpcDialogueTree) {
-            window.openNpcDialogueTree(treeId);
+        if (treeId && typeof window !== 'undefined') {
+            if (window.sideStoryManager) {
+                window.sideStoryManager.evaluateTriggers({
+                    visitedCampTallow: entity.id === 'camp_tallow',
+                    visitedCampVesper: entity.id === 'camp_vesper',
+                    visitedCampMeridian: entity.id === 'camp_meridian',
+                    touchedHiveRelay: String(entity.id).startsWith('hive_'),
+                    depthTier: this.depthTier ?? 1,
+                    ringIndex: this.ringProgressionIndex ?? 1,
+                    techInventory: this.bank?.getBanked?.()?.tech ?? 0,
+                    medInventory: this.bank?.getBanked?.()?.med ?? 0,
+                    ammoInventory: this.playerAmmo ?? 0,
+                    lowO2Exposures: (this.playerVitals?.o2 < 20) ? 1 : 0
+                });
+            }
+            if (window.openNpcDialogueTree) {
+                window.openNpcDialogueTree(treeId);
+            }
         }
 
         return true;

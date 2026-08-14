@@ -50,6 +50,7 @@ import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToas
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
 import { npcDialogueTreeManager, NPC_DIALOGUE_TREES } from './src/npcDialogueTrees.js';
+import { sideStoryManager, SIDE_STORIES_CONFIG, SIDE_STORY_STATUS } from './src/sideStorySystem.js';
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
@@ -8169,6 +8170,30 @@ function updateNpcDialogueUi(state = {}) {
     const textEl = document.getElementById('npc-dialogue-text');
     const choicesEl = document.getElementById('npc-choices-container');
 
+    const storyTitleEl = document.getElementById('npc-story-stage-title');
+    const storyObjectiveEl = document.getElementById('npc-story-objective-text');
+    const dotsContainer = document.getElementById('npc-story-progress-dots');
+
+    if (storyTitleEl) {
+        storyTitleEl.textContent = state.currentStage
+            ? `SIDE STORY // STAGE ${state.currentStage.index}/3: ${state.currentStage.title.toUpperCase()}`
+            : 'SIDE STORY // COMPANION ARC';
+    }
+    if (storyObjectiveEl) {
+        storyObjectiveEl.textContent = state.currentStage
+            ? `OBJECTIVE: ${state.currentStage.objective}`
+            : 'Explore the sector and converse with survivors.';
+    }
+    if (dotsContainer) {
+        const completed = state.storyState?.completedStages || [];
+        const activeIdx = state.storyState?.stageIndex || 1;
+        dotsContainer.innerHTML = [1, 2, 3].map((idx) => {
+            if (completed.includes(idx)) return '<span class="story-dot story-dot--completed"></span>';
+            if (idx === activeIdx) return '<span class="story-dot story-dot--active"></span>';
+            return '<span class="story-dot"></span>';
+        }).join('');
+    }
+
     if (iconEl) iconEl.textContent = tree.icon || '💬';
     if (nameEl) nameEl.textContent = tree.name.toUpperCase();
     if (factionEl) factionEl.textContent = tree.faction;
@@ -8251,6 +8276,9 @@ function setupNpcDialogueEvents() {
     };
     window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
     window.npcDialogueTreeManager = npcDialogueTreeManager;
+    window.sideStoryManager = sideStoryManager;
+    window.SIDE_STORIES_CONFIG = SIDE_STORIES_CONFIG;
+    window.SIDE_STORY_STATUS = SIDE_STORY_STATUS;
 }
 
 function adjustTacticalMapZoom(delta) {

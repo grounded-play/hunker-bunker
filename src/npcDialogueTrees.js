@@ -1,3 +1,5 @@
+import { sideStoryManager } from './sideStorySystem.js';
+
 /**
  * NPC Interactive Branching Dialogue Trees & Sensual Mature Storylines
  * Covers deep, choice-driven interactions with Camp Leaders and Entities:
@@ -561,22 +563,96 @@ export class NpcDialogueTreeManager {
         this.history = [];
     }
 
-    startDialogue(treeId) {
+    startDialogue(treeId, { bypassPrereq = false } = {}) {
         const tree = NPC_DIALOGUE_TREES[treeId];
         if (!tree) return null;
 
         this.activeTree = tree;
-        this.currentNode = tree.nodes[tree.initialNode];
+
+        // Check if side story has lockout
+        const lockout = sideStoryManager.isLockedOut(treeId);
+        if (!bypassPrereq && lockout.locked) {
+            this.currentNode = {
+                id: `${treeId}_lockout`,
+                speaker: tree.name,
+                narration: 'They look at you with cold, guarded apprehension, stepping back.',
+                dialogue: `[FACTION LOCKOUT] ${lockout.reason || 'Our factions are in direct conflict. Withdraw before blood is drawn.'}`,
+                choices: [
+                    { id: 'lockout_leave', tone: '[WITHDRAW]', text: 'I understand. Stepping back.', nextNode: null }
+                ]
+            };
+            this.history = [this.currentNode.id];
+            this.notifyChange();
+            return this.currentNode;
+        }
+
+        const currentStage = sideStoryManager.getCurrentStage(treeId);
+        let startNodeId = tree.initialNode;
+
+        if (currentStage && tree.nodes[currentStage.dialogueNode]) {
+            startNodeId = currentStage.dialogueNode;
+        }
+
+        const baseNode = tree.nodes[startNodeId] || tree.nodes[tree.initialNode];
+        this.currentNode = { ...baseNode, choices: [...baseNode.choices] };
+
+        // Append Skip / Pause options if side story is in progress
+        if (currentStage && currentStage.skipCost) {
+            const hasSkip = this.currentNode.choices.some((c) => c.id.startsWith('skip_stage_'));
+            if (!hasSkip) {
+                const costStr = Object.entries(currentStage.skipCost)
+                    .map(([k, v]) => `${v} ${k.toUpperCase()}`)
+                    .join(', ');
+                this.currentNode.choices.push({
+                    id: `skip_stage_${currentStage.index}`,
+                    tone: `[SKIP QUEST // BRIBE (${costStr})]`,
+                    text: `Provide required supplies to advance ${currentStage.title}.`,
+                    nextNode: null,
+                    isSkipAction: true
+                });
+            }
+        }
+
+        const hasPause = this.currentNode.choices.some((c) => c.id === 'pause_story_choice');
+        if (!hasPause) {
+            this.currentNode.choices.push({
+                id: 'pause_story_choice',
+                tone: '[PAUSE / COME BACK LATER]',
+                text: 'I have other urgent sector duties. Keep this between us until I return.',
+                nextNode: null,
+                isPauseAction: true
+            });
+        }
+
         this.history = [this.currentNode.id];
         this.notifyChange();
         return this.currentNode;
     }
 
-    selectChoice(choiceId) {
+    selectChoice(choiceId, { inventory = null } = {}) {
         if (!this.currentNode || !this.activeTree) return null;
 
         const choice = (this.currentNode.choices || []).find((c) => c.id === choiceId);
         if (!choice) return null;
+
+        if (choice.isSkipAction) {
+            const currentInv = inventory || (typeof window !== 'undefined' ? (window.game?.bank?.getBanked?.() || {}) : {});
+            const skipResult = sideStoryManager.skipCurrentStageWithCost(this.activeTree.id, currentInv);
+            const prevTree = this.activeTree;
+            this.activeTree = null;
+            this.currentNode = null;
+            this.notifyChange();
+            return { concluded: true, tree: prevTree, skipped: skipResult.success };
+        }
+
+        if (choice.isPauseAction) {
+            sideStoryManager.pauseStory(this.activeTree.id);
+            const prevTree = this.activeTree;
+            this.activeTree = null;
+            this.currentNode = null;
+            this.notifyChange();
+            return { concluded: true, tree: prevTree, paused: true };
+        }
 
         if (!choice.nextNode) {
             // Dialogue tree concluded
@@ -595,13 +671,15 @@ export class NpcDialogueTreeManager {
             return { concluded: true };
         }
 
-        this.currentNode = nextNode;
+        this.currentNode = { ...nextNode, choices: [...nextNode.choices] };
         this.history.push(nextNode.id);
 
         // Apply bond delta if arriving at a node with bondDelta
         if (nextNode.bondDelta && this.activeTree) {
             const treeId = this.activeTree.id;
             this.bondState[treeId] = (this.bondState[treeId] || 0) + nextNode.bondDelta;
+            const story = sideStoryManager.getStoryState(treeId);
+            if (story) story.bondScore = this.bondState[treeId];
         }
 
         // Apply reward perk if arriving at a node with rewardPerk
@@ -614,6 +692,8 @@ export class NpcDialogueTreeManager {
                     category: 'SENSUAL STORY PERK'
                 });
             }
+            // Mark stage completed in sideStoryManager
+            sideStoryManager.completeCurrentStage(this.activeTree.id);
         }
 
         this.notifyChange();
@@ -636,12 +716,16 @@ export class NpcDialogueTreeManager {
 
     notifyChange() {
         if (typeof this.onStateChanged === 'function') {
+            const storyState = this.activeTree ? sideStoryManager.getStoryState(this.activeTree.id) : null;
+            const currentStage = this.activeTree ? sideStoryManager.getCurrentStage(this.activeTree.id) : null;
             this.onStateChanged({
                 isOpen: Boolean(this.activeTree && this.currentNode),
                 tree: this.activeTree,
                 node: this.currentNode,
                 bond: this.activeTree ? this.getBondLevel(this.activeTree.id) : null,
-                bondScore: this.activeTree ? (this.bondState[this.activeTree.id] || 0) : 0
+                bondScore: this.activeTree ? (this.bondState[this.activeTree.id] || 0) : 0,
+                storyState,
+                currentStage
             });
         }
     }

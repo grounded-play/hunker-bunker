@@ -15944,6 +15944,63 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   border-radius: 2px;
 }
 
+.npc-story-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(14, 22, 34, 0.85);
+  border: 1px solid rgba(255, 170, 0, 0.25);
+  border-left: 3px solid #ffaa00;
+  padding: 8px 14px;
+  border-radius: 2px;
+}
+
+.npc-story-stage-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.npc-story-stage-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ffaa00;
+}
+
+.npc-story-progress-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.story-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.story-dot--active {
+  background: #ffaa00;
+  border-color: #ffd070;
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.8);
+}
+
+.story-dot--completed {
+  background: #00ffd2;
+  border-color: #a0ffee;
+  box-shadow: 0 0 6px rgba(0, 255, 210, 0.6);
+}
+
+.npc-story-objective-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  color: #c0d8e8;
+  letter-spacing: 0.02em;
+}
+
 .npc-dialogue-body {
   display: flex;
   gap: 22px;
