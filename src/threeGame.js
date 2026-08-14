@@ -960,8 +960,17 @@ function isChunkTraversalConnected(grid) {
     return seen.size === cells.length;
 }
 
+// loadKeyedSpriteTexture is called once per registry entry at boot but also
+// per-instance for repeated world dressing (e.g. camp civilian sprites, one
+// call per camp). Without this cache, every repeat call independently
+// re-decoded the image and re-ran the full-resolution chroma-key flood-fill
+// on identical bytes. Layout-based atlas sprites are excluded: they're
+// already skipped by the hasAlpha/hasSourceAlpha check in the common case,
+// and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
+const keyedSpriteTextureCache = new Map();
+
 export class ThreeGame {
-    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, deferGameplayAtlasLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
+    constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
         this.container = typeof parent === 'string' ? document.getElementById(parent) : parent;
         if (!this.container) {
             throw new Error('ThreeGame requires a valid parent container.');
@@ -969,7 +978,10 @@ export class ThreeGame {
 
         const initialType = String(playerType ?? 'TANK').trim().toUpperCase();
         this.playerType = PLAYER_COLORS[initialType] ? initialType : 'TANK';
-        this.deferGameplayAtlasLoad = Boolean(deferGameplayAtlasLoad);
+        // Chroma-keyed sprite textures are always processed via idle-time
+        // scheduling (see loadKeyedSpriteTexture); this queue is drained as a
+        // synchronous safety net once gameplay starts, in case anything
+        // hasn't had an idle slot yet.
         this._deferredGameplayAtlasProcessors = [];
         this.dialogueManager = dialogueManager;
         this.arcManager = ARC_PRELUDE_ENABLED ? arcManager : null;
@@ -5208,6 +5220,30 @@ export class ThreeGame {
         placeholder.height = 1;
         texture.image = placeholder;
 
+        // Atlas/layout sprites aren't cached: repackGeneratedSpriteAtlas's
+        // output isn't known to be safely shareable across texture instances,
+        // and in practice these are already skipped by the alpha check below.
+        const cacheKey = options?.layout ? null : `${safePath}::${threshold}::${options?.cropBottomRatio ?? ''}`;
+        const cached = cacheKey ? keyedSpriteTextureCache.get(cacheKey) : null;
+        if (cached) {
+            if (cached.image) {
+                queueMicrotask(() => {
+                    texture.image = cached.image;
+                    texture.needsUpdate = true;
+                    if (onLoad) onLoad(texture);
+                });
+            } else {
+                cached.waiters.push((image) => {
+                    texture.image = image;
+                    texture.needsUpdate = true;
+                    if (onLoad) onLoad(texture);
+                });
+            }
+            return texture;
+        }
+        const cacheEntry = cacheKey ? { image: null, waiters: [] } : null;
+        if (cacheKey) keyedSpriteTextureCache.set(cacheKey, cacheEntry);
+
         const image = new Image();
         const processImage = () => {
             const cropBottomRatioRaw = Number(options?.cropBottomRatio);
@@ -5244,23 +5280,46 @@ export class ThreeGame {
             }
 
             ctx.putImageData(imgData, 0, 0);
-            
-            texture.image = repackGeneratedSpriteAtlas(canvas, options?.layout);
+
+            const finalImage = repackGeneratedSpriteAtlas(canvas, options?.layout);
+            texture.image = finalImage;
             texture.needsUpdate = true;
+            if (cacheEntry) {
+                cacheEntry.image = finalImage;
+                const waiters = cacheEntry.waiters.splice(0);
+                waiters.forEach((notify) => notify(finalImage));
+            }
             if (onLoad) {
                 onLoad(texture);
             }
         };
         image.onload = () => {
-            if (options?.layout && this.deferGameplayAtlasLoad) {
-                this._deferredGameplayAtlasProcessors.push(processImage);
-                return;
+            // Chroma-keying (multiple full-resolution flood-fill passes) is
+            // expensive enough that a burst of these landing together used to
+            // freeze the main thread for seconds — worst-case right at deploy,
+            // starving the class-intro video of the main-thread time it needs
+            // to buffer before its readiness guard skips it. Always route
+            // through idle time instead of running inline in onload, whether
+            // the image finishes decoding during the menu or mid-deploy.
+            const entry = { run: processImage, done: false };
+            this._deferredGameplayAtlasProcessors.push(entry);
+            const runOnce = () => {
+                if (entry.done) return;
+                entry.done = true;
+                const idx = this._deferredGameplayAtlasProcessors.indexOf(entry);
+                if (idx !== -1) this._deferredGameplayAtlasProcessors.splice(idx, 1);
+                entry.run();
+            };
+            if (typeof window.requestIdleCallback === 'function') {
+                window.requestIdleCallback(runOnce, { timeout: 2000 });
+            } else {
+                window.setTimeout(runOnce, 300);
             }
-            processImage();
         };
 
         image.onerror = (err) => {
             console.error(`[ThreeGame] loadKeyedSpriteTexture: Failed to load image: ${safePath}`, err);
+            if (cacheKey) keyedSpriteTextureCache.delete(cacheKey);
         };
 
         image.src = safePath;
@@ -5405,6 +5464,38 @@ export class ThreeGame {
         );
     }
 
+    _flushDeferredAtlasProcessors() {
+        if (this._atlasFlushScheduled) return;
+        if (!this._deferredGameplayAtlasProcessors.length) return;
+        this._atlasFlushScheduled = true;
+        const startedAt = performance.now();
+        let processedCount = 0;
+        const FRAME_BUDGET_MS = 6;
+        const step = () => {
+            const stepStart = performance.now();
+            while (
+                this._deferredGameplayAtlasProcessors.length
+                && performance.now() - stepStart < FRAME_BUDGET_MS
+            ) {
+                const entry = this._deferredGameplayAtlasProcessors.shift();
+                if (entry.done) continue;
+                entry.done = true;
+                entry.run();
+                processedCount += 1;
+            }
+            if (this._deferredGameplayAtlasProcessors.length) {
+                requestAnimationFrame(step);
+            } else {
+                this._atlasFlushScheduled = false;
+                debugLog.info('PERF', 'Deferred sprite atlas processing complete', {
+                    atlasCount: processedCount,
+                    durationMs: Math.round((performance.now() - startedAt) * 10) / 10
+                });
+            }
+        };
+        requestAnimationFrame(step);
+    }
+
     setPerformanceProfile(profile = 'menu') {
         const nextProfile = profile === 'gameplay' ? 'gameplay' : 'menu';
         if (this.performanceProfile === nextProfile) return;
@@ -5414,14 +5505,13 @@ export class ThreeGame {
             ? this.defaultVisibleChunkRadius
             : 0;
         if (nextProfile === 'gameplay') {
-            this.deferGameplayAtlasLoad = false;
-            const deferredAtlasProcessors = this._deferredGameplayAtlasProcessors.splice(0);
-            const atlasFlushStartedAt = performance.now();
-            for (const processAtlas of deferredAtlasProcessors) processAtlas();
-            debugLog.info('PERF', 'Deferred sprite atlas processing complete', {
-                atlasCount: deferredAtlasProcessors.length,
-                durationMs: Math.round((performance.now() - atlasFlushStartedAt) * 10) / 10
-            });
+            // Idle-callback scheduling (see loadKeyedSpriteTexture) should have
+            // already drained most of this queue during menu idle time; this is
+            // just a safety-net for whatever didn't get an idle slot. It still
+            // needs to stay off the main thread's critical path (the deploy
+            // cutscene is racing a 4s readiness guard), so it drains in small
+            // per-frame chunks instead of one blocking pass.
+            this._flushDeferredAtlasProcessors();
             this.virtualInput.x = 0;
             this.virtualInput.z = 0;
             this._menuShowcaseTimer = 0;

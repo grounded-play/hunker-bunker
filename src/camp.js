@@ -141,6 +141,13 @@ function applyFallbackToTexture(texture, fallbackCanvas) {
     texture.needsUpdate = true;
 }
 
+// Camp prop/leader textures are reused verbatim across every SurvivorCamp
+// instance (three camps per run, each with the same ~11 prop sprites). Without
+// this cache each instance independently re-decoded and re-ran the
+// full-resolution chroma-key flood-fill on the identical bytes, multiplying
+// an already-expensive synchronous pass by the camp count for no visual gain.
+const keyedTextureCache = new Map();
+
 function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = null) {
     const texture = new THREE.Texture();
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -153,6 +160,23 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
 
     applyFallbackToTexture(texture, fallbackCanvas);
 
+    const cacheKey = `${path}::${threshold}`;
+    const cached = keyedTextureCache.get(cacheKey);
+    if (cached) {
+        if (cached.canvas) {
+            texture.image = cached.canvas;
+            texture.needsUpdate = true;
+            if (onLoad) onLoad(texture);
+        } else {
+            cached.waiters.push((canvas) => {
+                texture.image = canvas;
+                texture.needsUpdate = true;
+                if (onLoad) onLoad(texture);
+            });
+        }
+        return texture;
+    }
+
     if (typeof Image === 'undefined') {
         if (onLoad) {
             setTimeout(() => onLoad(texture), 0);
@@ -160,12 +184,19 @@ function loadKeyedTexture(path, threshold = 15, onLoad = null, fallbackCanvas = 
         return texture;
     }
 
+    const entry = { canvas: null, waiters: [] };
+    keyedTextureCache.set(cacheKey, entry);
+
     const image = new Image();
     image.onload = () => {
         applyImageToTexture(texture, image, threshold);
+        entry.canvas = texture.image;
+        const waiters = entry.waiters.splice(0);
+        waiters.forEach((notify) => notify(entry.canvas));
         if (onLoad) onLoad(texture);
     };
     image.onerror = () => {
+        keyedTextureCache.delete(cacheKey);
         applyFallbackToTexture(texture, fallbackCanvas);
         if (onLoad) onLoad(texture);
     };

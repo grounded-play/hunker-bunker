@@ -87,6 +87,7 @@ server/db_storage.json.tmp
 # Playwright e2e (Phase 13) output
 playwright-report/
 test-results/
+.playwright-mcp/
 
 # Local git worktrees (isolated workspaces)
 .worktrees/

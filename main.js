@@ -11065,7 +11065,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     parent: 'game-container',
                     playerType: targetType,
                     deferPlayerSpriteLoad: true,
-                    deferGameplayAtlasLoad: true,
                     bankManager,
                     dialogueManager,
                     arcManager,
