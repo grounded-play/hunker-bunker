@@ -31,6 +31,9 @@ describe('cinematic still fallback specs', () => {
 
     it('maps known death reasons and falls back for unknown hazards', () => {
         expect(getDeathCinematicSpec('abyss').images).toEqual(DEATH_CINEMATICS.abyss.images);
+        expect(getDeathCinematicSpec('pit-fall').id).toBe('death-abyss');
+        expect(getDeathCinematicSpec('pit-fall').images).toEqual(DEATH_CINEMATICS.abyss.images);
+        expect(getDeathCinematicSpec('crawler-melee').id).toBe('death-crawler');
         expect(getDeathCinematicSpec('o2-depletion').images).toEqual(DEATH_CINEMATICS.oxygen.images);
         expect(getDeathCinematicSpec('queen-shockwave').images).toEqual(DEATH_CINEMATICS.queen.images);
         expect(getDeathCinematicSpec('enemy-projectile').images).toEqual(DEATH_CINEMATICS.combat.images);

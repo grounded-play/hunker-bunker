@@ -111,11 +111,13 @@ export class SongInterstitialController {
                 settled = true;
                 clearTimeout(timeoutId);
                 this.video.oncanplay = null;
+                this.video.onloadeddata = null;
                 this.video.onerror = null;
                 resolve(loaded);
             };
             const timeoutId = setTimeout(() => done(false), 1200);
             this.video.oncanplay = () => done(true);
+            this.video.onloadeddata = () => done(true);
             this.video.onerror = () => done(false);
             this.video.src = assetUrl(spec.motion);
             this.video.load?.();

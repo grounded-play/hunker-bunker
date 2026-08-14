@@ -5748,6 +5748,12 @@ function setSnailSpawnState(enabled, { purgeExisting = false } = {}) {
     window.game?.setSnailsEnabled?.(Boolean(enabled), { removeExisting: purgeExisting });
 }
 
+const CLASS_CHARACTER_INTRO_BASENAMES = {
+    SCOUT: 'scout-class-intro',
+    TANK: 'tank-class-intro',
+    ENGINEER: 'engineer-class-intro'
+};
+
 const CLASS_INTRO_WEBM_BASENAMES = {
     SCOUT: 'scout-intro',
     TANK: 'tank-intro',
@@ -5850,12 +5856,15 @@ function preloadVideoReady(base) {
 }
 
 function warmClassIntroMedia(playerType = 'SCOUT') {
+    const charBase = CLASS_CHARACTER_INTRO_BASENAMES[playerType] ?? CLASS_CHARACTER_INTRO_BASENAMES.SCOUT;
     const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    warmCutsceneVideo(charBase);
     warmCutsceneVideo(webmBase);
 }
 
 function playClassIntroSequence(playerType = 'SCOUT') {
-    const webmBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
+    const charBase = CLASS_CHARACTER_INTRO_BASENAMES[playerType] ?? CLASS_CHARACTER_INTRO_BASENAMES.SCOUT;
+    const launchBase = CLASS_INTRO_WEBM_BASENAMES[playerType] ?? CLASS_INTRO_WEBM_BASENAMES.SCOUT;
     warmClassIntroMedia(playerType);
     window.AudioManager?.unlock?.();
 
@@ -5873,13 +5882,14 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
         overlay.className = 'class-intro-overlay';
-        overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${webmBase}-poster.jpg`)}')`);
+        overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${charBase}-poster.jpg`)}')`);
 
         const skipHint = document.createElement('div');
         skipHint.className = 'class-intro-skip';
         skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
 
         let settled = false;
+        let step = 'character'; // 'character' | 'launch' | 'done'
         let guardTimer = null;
         let videoElement = null;
         let checkSkipInterval = null;
@@ -5887,7 +5897,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         const armTimer = window.setTimeout(() => {
             inputArmed = true;
-        }, 600);
+        }, 500);
 
         const clearTimers = () => {
             if (guardTimer) {
@@ -5902,6 +5912,7 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         function cleanupAndResolve() {
             if (settled) return;
             settled = true;
+            step = 'done';
             clearTimers();
             if (checkSkipInterval) {
                 clearInterval(checkSkipInterval);
@@ -5928,16 +5939,91 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }, 280);
         }
 
+        function playVideoSource(baseName, onEnd) {
+            if (settled) return;
+            clearTimers();
+
+            if (!videoElement) {
+                videoElement = document.createElement('video');
+                videoElement.className = 'class-intro-video';
+                videoElement.playsInline = true;
+                videoElement.muted = true;
+                videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
+                videoElement.autoplay = true;
+                videoElement.controls = false;
+                videoElement.preload = 'auto';
+                overlay.insertBefore(videoElement, skipHint);
+            }
+
+            overlay.style.setProperty('--class-intro-poster', `url('${assetUrl(`/cutscenes/${baseName}-poster.jpg`)}')`);
+            videoElement.poster = assetUrl(`/cutscenes/${baseName}-poster.jpg`);
+            videoElement.style.opacity = '1';
+            videoElement.src = assetUrl(`/cutscenes/${baseName}.webm`);
+
+            guardTimer = window.setTimeout(() => {
+                if (videoElement.readyState < 2 && videoElement.currentTime <= 0) {
+                    onEnd();
+                }
+            }, 8500);
+
+            const onPlaying = () => {
+                if (guardTimer) {
+                    window.clearTimeout(guardTimer);
+                    guardTimer = null;
+                }
+                videoElement.style.opacity = '1';
+            };
+
+            const onEndedHandler = () => {
+                videoElement.removeEventListener('playing', onPlaying);
+                videoElement.removeEventListener('ended', onEndedHandler);
+                videoElement.removeEventListener('error', onErrorHandler);
+                onEnd();
+            };
+
+            const onErrorHandler = () => {
+                if (videoElement.src && !videoElement.src.endsWith('.mp4')) {
+                    videoElement.src = assetUrl(`/cutscenes/${baseName}.mp4`);
+                    videoElement.play().catch(onEndedHandler);
+                } else {
+                    onEndedHandler();
+                }
+            };
+
+            videoElement.addEventListener('playing', onPlaying);
+            videoElement.addEventListener('ended', onEndedHandler, { once: true });
+            videoElement.addEventListener('error', onErrorHandler, { once: true });
+
+            videoElement.play().catch(() => {
+                videoElement.muted = true;
+                return videoElement.play();
+            }).catch(onEndedHandler);
+        }
+
+        function startLaunchStep() {
+            if (settled || step === 'launch') return;
+            step = 'launch';
+            playVideoSource(launchBase, cleanupAndResolve);
+        }
+
         function onKey(event) {
             if (!inputArmed && event.key !== 'Escape') return;
             event.preventDefault();
-            cleanupAndResolve();
+            if (event.key === 'Escape' || step === 'launch') {
+                cleanupAndResolve();
+            } else {
+                startLaunchStep();
+            }
         }
 
         function onPointerUp(event) {
             if (!inputArmed) return;
             event.preventDefault();
-            cleanupAndResolve();
+            if (step === 'launch') {
+                cleanupAndResolve();
+            } else {
+                startLaunchStep();
+            }
         }
 
         window.addEventListener('keydown', onKey);
@@ -5951,54 +6037,8 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 
         overlay.append(skipHint);
         host.appendChild(overlay);
-        buildVideo();
 
-        function buildVideo() {
-            videoElement = document.createElement('video');
-            videoElement.className = 'class-intro-video';
-            videoElement.style.opacity = '1';
-            videoElement.playsInline = true;
-            videoElement.muted = true;
-            videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
-            videoElement.autoplay = true;
-            videoElement.controls = false;
-            videoElement.preload = 'auto';
-            videoElement.poster = assetUrl(`/cutscenes/${webmBase}-poster.jpg`);
-            videoElement.src = assetUrl(`/cutscenes/${webmBase}.webm`);
-
-            overlay.insertBefore(videoElement, skipHint);
-
-            guardTimer = window.setTimeout(() => {
-                if (videoElement.readyState < 2 && videoElement.currentTime <= 0) {
-                    cleanupAndResolve();
-                }
-            }, 8000);
-
-            videoElement.addEventListener('playing', () => {
-                if (guardTimer) {
-                    window.clearTimeout(guardTimer);
-                    guardTimer = null;
-                }
-                videoElement.style.opacity = '1';
-            });
-            videoElement.addEventListener('loadeddata', () => {
-                videoElement.style.opacity = '1';
-            }, { once: true });
-            videoElement.addEventListener('ended', cleanupAndResolve);
-            videoElement.addEventListener('error', () => {
-                if (videoElement.src && !videoElement.src.endsWith('.mp4')) {
-                    videoElement.src = assetUrl(`/cutscenes/${webmBase}.mp4`);
-                    videoElement.play().catch(cleanupAndResolve);
-                } else {
-                    cleanupAndResolve();
-                }
-            });
-
-            videoElement.play().catch(() => {
-                videoElement.muted = true;
-                return videoElement.play();
-            }).catch(cleanupAndResolve);
-        }
+        playVideoSource(charBase, startLaunchStep);
     });
 }
 
@@ -6006,7 +6046,15 @@ function playClassIntroSequence(playerType = 'SCOUT') {
 // fallback, {base}-poster.jpg). Skippable, and resolves immediately when the
 // asset doesn't exist so story beats never stall on missing files.
 function playCutsceneVideo(base, options = {}) {
-    const { onDoorCutoff = null } = (typeof options === 'object' && options !== null ? options : {});
+    const {
+        onDoorCutoff = null,
+        kicker = '',
+        title = '',
+        body = '',
+        fallback = null,
+        tone = 'event'
+    } = (typeof options === 'object' && options !== null ? options : {});
+
     warmCutsceneVideo(base);
     window.AudioManager?.unlock?.();
 
@@ -6018,7 +6066,8 @@ function playCutsceneVideo(base, options = {}) {
 
         const host = getCutsceneVideoHost();
         const overlay = document.createElement('div');
-        overlay.className = 'class-intro-overlay';
+        const activeTone = tone || fallback?.tone || 'event';
+        overlay.className = `class-intro-overlay cinematic-still-overlay--${activeTone}`;
         if (base === 'DoorIntro' || base.includes('DoorIntro')) {
             overlay.style.backgroundColor = '#000000';
             overlay.style.setProperty('--class-intro-poster', 'none');
@@ -6043,22 +6092,68 @@ function playCutsceneVideo(base, options = {}) {
         }
         if (base.startsWith('/')) {
             sources.push(base);
+            if (base.endsWith('.webm')) sources.push(base.replace(/\.webm$/, '.mp4'));
+        } else if (base.startsWith('int_') || base.includes('interstitial')) {
+            sources.push(`/interstitials/motion/${base}.webm`, `/interstitials/motion/${base}.mp4`);
         }
-        sources.push(`/cutscenes/${base}.webm`, `/cutscenes/${base}.mp4`, `/${base}.mp4`, `/${base}.webm`);
+        sources.push(
+            `/cutscenes/${base}.webm`,
+            `/cutscenes/${base}.mp4`,
+            `/interstitials/motion/${base}.webm`,
+            `/interstitials/motion/${base}.mp4`,
+            `/${base}.mp4`,
+            `/${base}.webm`
+        );
 
-        let primarySource = null;
         for (const src of [...new Set(sources)]) {
             const sourceEl = document.createElement('source');
             sourceEl.src = assetUrl(src);
             if (src.endsWith('.webm')) sourceEl.type = 'video/webm';
             if (src.endsWith('.mp4')) sourceEl.type = 'video/mp4';
             video.appendChild(sourceEl);
-            if (!primarySource) primarySource = sourceEl;
         }
 
         const skipHint = document.createElement('div');
-        skipHint.className = 'class-intro-skip';
+        skipHint.className = 'class-intro-skip cinematic-still-skip';
         skipHint.textContent = 'PRESS ANY BUTTON / KEY TO SKIP';
+
+        // Render text overlay on top of video when kicker/title/body are provided
+        const resolvedKicker = kicker || fallback?.kicker || '';
+        const resolvedTitle = title || fallback?.title || '';
+        const resolvedBody = body || fallback?.body || '';
+
+        let shade = null;
+        let copy = null;
+        if (resolvedTitle || resolvedKicker || resolvedBody) {
+            shade = document.createElement('div');
+            shade.className = 'cinematic-still-shade';
+
+            copy = document.createElement('div');
+            copy.className = 'cinematic-still-copy';
+
+            if (resolvedKicker) {
+                const kickerEl = document.createElement('div');
+                kickerEl.className = 'cinematic-still-kicker';
+                kickerEl.textContent = resolvedKicker;
+                copy.appendChild(kickerEl);
+            }
+            if (resolvedTitle) {
+                const titleEl = document.createElement('div');
+                titleEl.className = 'cinematic-still-title';
+                titleEl.textContent = resolvedTitle;
+                copy.appendChild(titleEl);
+            }
+            if (resolvedBody) {
+                const bodyEl = document.createElement('div');
+                bodyEl.className = 'cinematic-still-body';
+                bodyEl.textContent = resolvedBody;
+                copy.appendChild(bodyEl);
+            }
+
+            if (resolvedTitle || resolvedBody) {
+                window.AudioManager?.speakNarration?.(`${resolvedTitle}. ${resolvedBody || ''}`);
+            }
+        }
 
         let settled = false;
         let played = false;
@@ -6070,6 +6165,7 @@ function playCutsceneVideo(base, options = {}) {
             settled = true;
             window.clearTimeout(guardTimer);
             window.removeEventListener('keydown', onKey);
+            overlay.removeEventListener('pointerup', onPointer);
             if (typeof onDoorCutoff === 'function') {
                 onDoorCutoff();
             }
@@ -6091,6 +6187,11 @@ function playCutsceneVideo(base, options = {}) {
         };
 
         const onKey = (event) => {
+            event.preventDefault();
+            finish({ skipped: true });
+        };
+
+        const onPointer = (event) => {
             event.preventDefault();
             finish({ skipped: true });
         };
@@ -6118,22 +6219,25 @@ function playCutsceneVideo(base, options = {}) {
             video.style.opacity = '1';
         }, { once: true });
 
-        if (primarySource) {
-            primarySource.addEventListener('error', finish);
-        }
-        overlay.addEventListener('pointerup', finish);
+        overlay.addEventListener('pointerup', onPointer);
         window.addEventListener('keydown', onKey);
+
         guardTimer = window.setTimeout(() => {
-            if (video.readyState < 2) finish();
+            if (video.readyState < 2 && video.currentTime <= 0) finish();
         }, 4000);
+
         video.addEventListener('playing', () => {
             window.clearTimeout(guardTimer);
             played = true;
             video.style.opacity = '1';
         });
 
-        overlay.append(video, skipHint);
+        overlay.append(video);
+        if (shade) overlay.append(shade);
+        if (copy) overlay.append(copy);
+        overlay.append(skipHint);
         host.appendChild(overlay);
+
         video.play().catch(() => {
             video.muted = true;
             return video.play();
@@ -6250,11 +6354,13 @@ async function playCinematicBeat({
     videoBase = null,
     fallback = null
 } = {}) {
-    if (videoBase) {
-        const result = await playCutsceneVideo(videoBase);
+    const spec = fallback ? normalizeCinematicStillSpec(fallback) : null;
+    const targetVideo = videoBase || spec?.id || null;
+    if (targetVideo) {
+        const result = await playCutsceneVideo(targetVideo, { ...spec, fallback: spec });
         if (result?.played || result?.skipped) return result;
     }
-    return playCinematicStills(fallback ?? {});
+    return playCinematicStills(spec ?? {});
 }
 
 let cinematicEventQueue = Promise.resolve();
@@ -8878,7 +8984,7 @@ window.addEventListener('milestone-boss-warning', (event) => {
     const bossType = String(event?.detail?.type ?? '').replace(/^boss_/, '');
     const suffix = MILESTONE_BOSS_CINEMATIC_SUFFIXES.has(bossType) ? bossType : 'cryosnail';
     playAuthoredEventOnce(`boss_encounter_${suffix}`, {
-        videoBase: null,
+        videoBase: `event-boss-encounter-${suffix}`,
         eventDetail: event?.detail ?? {}
     });
 });

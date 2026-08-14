@@ -7326,7 +7326,11 @@ export class ThreeGame {
         if (!this.player) return 0;
         this.snailsEnabled = true;
         let spawned = 0;
-        const types = ['cybersnail', 'cybersnail', this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail'];
+        const playerDist = Math.hypot(this.player.position.x, this.player.position.z);
+        const isEarlyArea = playerDist < 55 || (this.maxDepthTierReached ?? 0) <= 0;
+        const types = isEarlyArea
+            ? ['cybersnail', 'crawler', 'cybersnail']
+            : ['cybersnail', 'crawler', this.currentBiomeKey === BIOME_KEYS.BIO ? 'sporesnail' : 'cryosnail'];
         for (let i = 0; i < 3; i++) {
             const type = types[i % types.length];
             const angle = Math.random() * Math.PI * 2;
@@ -7359,7 +7363,6 @@ export class ThreeGame {
             this.scatterSprites.push(sprite);
             spawned += 1;
         }
-        if (spawned > 0) window.dispatchEvent(new CustomEvent('milestone-boss-warning'));
         return spawned;
     }
 
@@ -20353,7 +20356,9 @@ export class ThreeGame {
                 opacity = 1;
                 hasLoreTerminalThisChunk = true;
             } else if (canSpawnSnail && roll < snailSpawnConfig.chance) {
-                if (chunkBiomeKey === BIOME_KEYS.BIO) {
+                if (depthTierForScatter <= 0 || distFromSpawn < 45) {
+                    type = 'cybersnail';
+                } else if (chunkBiomeKey === BIOME_KEYS.BIO) {
                     type = 'sporesnail';
                 } else if (chunkBiomeKey === BIOME_KEYS.CRYO) {
                     type = 'cryosnail';
