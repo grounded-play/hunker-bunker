@@ -1264,18 +1264,6 @@ function ensureVirtualGamepadCursor() {
     return virtualGamepadCursor;
 }
 
-// Controller aim feeds updateAimFromClient (and anything else listening for
-// real pointer motion) through a synthetic mousemove, since that's the same
-// path a physical mouse uses. Marking it lets #tactical-cursor's own
-// mousemove listener (initTacticalCursor) tell it apart from a real mouse and
-// skip showing its own lagged cursor on top of the instant virtual-gamepad
-// one -- without this, gameplay aim renders both crosshairs at once.
-function dispatchSyntheticControllerMousemove(clientX, clientY) {
-    const event = new MouseEvent('mousemove', { clientX, clientY, bubbles: true });
-    event.isControllerSynthetic = true;
-    window.dispatchEvent(event);
-}
-
 function updateVirtualGamepadCursorPosition(clientX, clientY, visible = true) {
     const cursor = ensureVirtualGamepadCursor();
     if (!cursor) return;
@@ -1429,58 +1417,22 @@ window.addEventListener('gamepad-menu-nav', (event) => {
 });
 
 // Trackpad and gyro aim arrive as per-frame mouse deltas rather than a stick
-// position, so they drive a virtual cursor that feeds the same screen->world
-// raycast a real mouse uses. Deltas are already in pixels; the sensitivity knob
-// on the Steam side does the heavy lifting, so this stays 1:1 by default.
-const CONTROLLER_CURSOR_SENSITIVITY = 1;
+// position; they drive facingYaw directly (see Task 2's updateFacingYaw),
+// mirroring how mouse pointer-lock deltas work.
+const CONTROLLER_YAW_SENSITIVITY = 0.0025;
 let controllerAimCursor = null;
-let lastPlayerAnchor = null;
-
-function getAimCursorAnchor() {
-    const playerPt = window.game?.getPlayerScreenPoint?.();
-    if (playerPt && Number.isFinite(playerPt.viewportX) && Number.isFinite(playerPt.viewportY)) {
-        return { x: playerPt.viewportX, y: playerPt.viewportY };
-    }
-    const width = window.innerWidth || 1280;
-    const height = window.innerHeight || 720;
-    return { x: width / 2, y: height / 2 };
-}
 
 function applyControllerCursorAim(controller) {
     const deltaX = Number(controller.cameraDelta?.x) || 0;
     const deltaY = Number(controller.cameraDelta?.y) || 0;
     // Sub-pixel motion is sensor noise, not a gesture.
     if (Math.hypot(deltaX, deltaY) < 1) return false;
-    if (typeof window.game?.updateAimFromClient !== 'function') return false;
-
-    const width = window.innerWidth || 0;
-    const height = window.innerHeight || 0;
-    if (!width || !height) return false;
-
-    const anchor = getAimCursorAnchor();
-    if (!controllerAimCursor) {
-        controllerAimCursor = { x: anchor.x, y: anchor.y };
-    } else if (lastPlayerAnchor) {
-        const playerMovedX = anchor.x - lastPlayerAnchor.x;
-        const playerMovedY = anchor.y - lastPlayerAnchor.y;
-        controllerAimCursor.x += playerMovedX;
-        controllerAimCursor.y += playerMovedY;
-    }
-    lastPlayerAnchor = { ...anchor };
+    if (typeof window.game?.updateFacingYaw !== 'function') return false;
 
     const sensitivity = state.settings.aimSensitivity ?? 1.0;
-    const invertSign = state.settings.invertAimY ? -1 : 1;
-    controllerAimCursor.x = Math.min(width, Math.max(0, controllerAimCursor.x + (deltaX * CONTROLLER_CURSOR_SENSITIVITY * sensitivity)));
-    controllerAimCursor.y = Math.min(height, Math.max(0, controllerAimCursor.y + (deltaY * CONTROLLER_CURSOR_SENSITIVITY * sensitivity * invertSign)));
-
-    dispatchSyntheticControllerMousemove(controllerAimCursor.x, controllerAimCursor.y);
-    updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
-
-    return Boolean(window.game.updateAimFromClient(
-        controllerAimCursor.x,
-        controllerAimCursor.y,
-        { keepMouseActive: true }
-    ));
+    const currentYaw = Number(window.game.facingYaw) || 0;
+    window.game.updateFacingYaw(currentYaw - deltaX * CONTROLLER_YAW_SENSITIVITY * sensitivity);
+    return true;
 }
 
 function handleSteamGameplayInput(controller) {
@@ -1495,27 +1447,10 @@ function handleSteamGameplayInput(controller) {
     }
 
     const cursorAimed = applyControllerCursorAim(controller);
-    const anchor = getAimCursorAnchor();
 
     if (!cursorAimed && (aimX || aimY)) {
-        const width = window.innerWidth || 1280;
-        const height = window.innerHeight || 800;
-        const sensitivity = state.settings.aimSensitivity ?? 1.0;
-        const invertSign = state.settings.invertAimY ? -1 : 1;
-        if (!controllerAimCursor) controllerAimCursor = { x: anchor.x, y: anchor.y };
-        if (lastPlayerAnchor) {
-            controllerAimCursor.x += anchor.x - lastPlayerAnchor.x;
-            controllerAimCursor.y += anchor.y - lastPlayerAnchor.y;
-        }
-        const cursorSpeed = 16 * sensitivity;
-        controllerAimCursor.x = Math.min(width - 4, Math.max(4, controllerAimCursor.x + aimX * cursorSpeed));
-        controllerAimCursor.y = Math.min(height - 4, Math.max(4, controllerAimCursor.y + aimY * cursorSpeed * invertSign));
-        lastPlayerAnchor = { ...anchor };
-        updateVirtualGamepadCursorPosition(controllerAimCursor.x, controllerAimCursor.y, true);
-        dispatchSyntheticControllerMousemove(controllerAimCursor.x, controllerAimCursor.y);
-        window.game?.updateAimFromClient?.(controllerAimCursor.x, controllerAimCursor.y, { keepMouseActive: true });
-    } else if (!cursorAimed) {
-        lastPlayerAnchor = { ...anchor };
+        window.game?.updateFacingYaw?.(Math.atan2(aimX, aimY));
+        updateVirtualGamepadCursorPosition(0, 0, false);
     }
 
     if (controller.fire) {
