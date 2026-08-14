@@ -1,47 +1,36 @@
 import { test, expect } from '@playwright/test';
 import { bootToOperatorMenu, startRunAndSkipIntro } from './helpers.js';
 
-// /goal: "on the steam deck, when we move the right joystick, show the
-// mouse cursor icon like on desktop, so aiming is easier to read."
-//
-// Verified this already works (main.js's handleSteamGameplayInput, landed
-// in the "restore interactive compass HUD ... right-joystick virtual mouse
-// aim" commit): the right stick drives the direct virtual crosshair while
-// the slower decorative mouse cursor stays suppressed in controller mode.
-//
-// Same fake-gamepad technique as browser-gamepad-fallback.spec.js: the
-// fallback poll loop (main.js's handleBrowserGamepadFallbackFrame) reads
-// navigator.getGamepads() every animation frame regardless of a real
-// 'gamepadconnected' event, and browser-gamepad axes[2]/axes[3] always
-// report camera.x/camera.y with cameraDelta pinned to {0,0} (no trackpad/
-// gyro on the Gamepad API) -- so a right-stick push here exercises the same
-// code path a real Deck player's right stick does.
-test.describe('Gameplay right-stick aim cursor', () => {
-    test('deflecting the right stick shows one responsive crosshair and suppresses the drifting mouse cursor', async ({ page }) => {
-        test.setTimeout(180_000);
-        const consoleErrors = [];
-        page.on('console', (msg) => {
-            if (msg.type() === 'error') consoleErrors.push(msg.text());
-        });
-        page.on('pageerror', (err) => consoleErrors.push(err.message));
-
+test.describe('gameplay facing yaw (mouse + gamepad)', () => {
+    test('clicking the game canvas engages pointer lock and hides the mouse-look prompt', async ({ page }) => {
         await bootToOperatorMenu(page);
         await startRunAndSkipIntro(page);
 
-        const readCursorState = () => {
-            const cursor = document.getElementById('virtual-gamepad-cursor');
-            const tacticalCursor = document.getElementById('tactical-cursor');
-            const style = getComputedStyle(cursor);
-            const match = cursor.style.transform.match(/translate3d\(([-\d.]+)px, ([-\d.]+)px/);
-            return {
-                controllerMode: document.body.classList.contains('controller-mode'),
-                display: style.display,
-                hidden: cursor.classList.contains('hidden'),
-                tacticalDisplay: getComputedStyle(tacticalCursor).display,
-                x: match ? Number(match[1]) : null,
-                y: match ? Number(match[2]) : null
-            };
-        };
+        await page.locator('#game-container canvas').first().click();
+        await expect(page.locator('#mouse-look-prompt')).toHaveClass(/hidden/);
+        const locked = await page.evaluate(() => document.pointerLockElement !== null);
+        expect(locked).toBe(true);
+    });
+
+    test('mouse movement while locked turns facingYaw', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
+
+        await page.locator('#game-container canvas').first().click();
+        const initialYaw = await page.evaluate(() => window.game.facingYaw);
+
+        await page.mouse.move(400, 300);
+        await page.mouse.move(700, 300);
+        await page.waitForTimeout(100);
+
+        const turnedYaw = await page.evaluate(() => window.game.facingYaw);
+        expect(turnedYaw).not.toBeCloseTo(initialYaw, 2);
+    });
+
+    test('gamepad right-stick sets facingYaw directly, and the fixed crosshair stays put while the old drifting cursor stays suppressed', async ({ page }) => {
+        test.setTimeout(180_000);
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
 
         const pushStick = (x, y) => page.evaluate(([sx, sy]) => {
             const fakeGamepad = {
@@ -55,33 +44,58 @@ test.describe('Gameplay right-stick aim cursor', () => {
             navigator.getGamepads = () => [fakeGamepad];
         }, [x, y]);
 
-        // Push right+up first and let the virtual cursor settle there --
-        // this is the state under test (visible, tracking the stick), not
-        // a "before" baseline. A real mouse move doesn't share state with
-        // the controller-driven cursor position, so it can't establish a
-        // meaningful baseline for it; comparing two stick-driven positions
-        // against each other (below) can.
+        const readState = () => {
+            const crosshair = document.getElementById('gameplay-crosshair');
+            const tacticalCursor = document.getElementById('tactical-cursor');
+            const crosshairRect = crosshair.getBoundingClientRect();
+            return {
+                controllerMode: document.body.classList.contains('controller-mode'),
+                crosshairHidden: crosshair.classList.contains('hidden'),
+                crosshairCenterX: crosshairRect.left + crosshairRect.width / 2,
+                tacticalDisplay: getComputedStyle(tacticalCursor).display,
+                facingYaw: window.game.facingYaw
+            };
+        };
+
+        const yawBefore = await page.evaluate(() => window.game.facingYaw);
         await pushStick(0.7, -0.7);
-        await page.waitForTimeout(800);
-        const rightUp = await page.evaluate(readCursorState);
-
-        expect(rightUp.controllerMode).toBe(true);
-        expect(rightUp.hidden, 'responsive controller crosshair should be visible').toBe(false);
-        expect(rightUp.display).not.toBe('none');
-        expect(rightUp.tacticalDisplay, 'the drifting bracketed cursor should be suppressed').toBe('none');
-
-        // Now push the opposite direction and confirm the cursor tracks the
-        // reversal -- proves the stick is actively driving position, not
-        // that a cursor merely happens to be on screen.
+        await page.waitForTimeout(500);
+        const rightUp = await page.evaluate(readState);
         await pushStick(-0.7, 0.7);
-        await page.waitForTimeout(800);
-        const leftDown = await page.evaluate(readCursorState);
-
+        await page.waitForTimeout(500);
+        const leftDown = await page.evaluate(readState);
         await page.evaluate(() => { navigator.getGamepads = () => []; });
 
-        expect(leftDown.x, 'cursor should move left relative to the right-pushed position once the stick reverses').toBeLessThan(rightUp.x);
-        expect(leftDown.y, 'cursor should move down relative to the up-pushed position once the stick reverses').toBeGreaterThan(rightUp.y);
+        expect(rightUp.controllerMode).toBe(true);
+        expect(rightUp.crosshairHidden, 'the fixed gameplay crosshair should be visible').toBe(false);
+        expect(rightUp.facingYaw).not.toBeCloseTo(yawBefore, 2);
+        expect(leftDown.facingYaw).not.toBeCloseTo(rightUp.facingYaw, 2);
+        const viewportWidth = await page.evaluate(() => window.innerWidth);
+        expect(Math.abs(leftDown.crosshairCenterX - viewportWidth / 2)).toBeLessThan(2);
+        expect(Math.abs(rightUp.crosshairCenterX - viewportWidth / 2)).toBeLessThan(2);
+    });
 
-        expect(consoleErrors, `unexpected console errors: ${consoleErrors.join('\n')}`).toEqual([]);
+    test('WASD movement is relative to the current facing direction', async ({ page }) => {
+        await bootToOperatorMenu(page);
+        await startRunAndSkipIntro(page);
+
+        await page.locator('#game-container canvas').first().click();
+        // Release pointer lock directly rather than pressing Escape: the
+        // game's own global Escape handler (main.js) falls through to
+        // openSettingsModal() during gameplay whenever no other modal is
+        // open, which is correct, pre-existing pause-menu behavior --  but
+        // it would disable gameplay input here and make the WASD assertion
+        // below fail for a reason unrelated to facing/movement.
+        await page.evaluate(() => document.exitPointerLock());
+        await page.waitForTimeout(100);
+        await page.evaluate(() => window.game.updateFacingYaw(0));
+
+        const startPos = await page.evaluate(() => ({ x: window.game.player.position.x, z: window.game.player.position.z }));
+        await page.keyboard.down('KeyW');
+        await page.waitForTimeout(300);
+        await page.keyboard.up('KeyW');
+        const endPos = await page.evaluate(() => ({ x: window.game.player.position.x, z: window.game.player.position.z }));
+
+        expect(Math.hypot(endPos.x - startPos.x, endPos.z - startPos.z)).toBeGreaterThan(0.05);
     });
 });

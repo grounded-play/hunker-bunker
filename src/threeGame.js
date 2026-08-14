@@ -4210,20 +4210,33 @@ export class ThreeGame {
 
             if (!this.isGameplayInputActive()) return;
 
-            if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
-                return;
-            }
-            if (this.tryInteractWithO2Pointer(event.clientX, event.clientY)) {
-                return;
-            }
-            if (this.tryInteractWithFoundryPointer(event.clientX, event.clientY)) {
-                return;
-            }
-            if (this.tryInteractWithBlackBoxPointer(event.clientX, event.clientY)) {
-                return;
+            // Under the player-centered camera, screen-center (where a mouse
+            // click naturally lands) raycasts to a world point right next to
+            // the player -- i.e. right next to whatever console/O2/foundry/
+            // black-box the player is standing near (very often true at
+            // mission start, beside the crashed ship). An unlocked mouse's
+            // first click exists to engage pointer-lock look, so it must not
+            // be intercepted by these click-to-interact checks; interacting
+            // by mouse click remains available once already locked, and E /
+            // gamepad-A remain the primary interact triggers regardless.
+            const wantsMouseLook = pointerType === 'mouse' && !this._pointerLocked;
+
+            if (!wantsMouseLook) {
+                if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
+                    return;
+                }
+                if (this.tryInteractWithO2Pointer(event.clientX, event.clientY)) {
+                    return;
+                }
+                if (this.tryInteractWithFoundryPointer(event.clientX, event.clientY)) {
+                    return;
+                }
+                if (this.tryInteractWithBlackBoxPointer(event.clientX, event.clientY)) {
+                    return;
+                }
             }
 
-            if (pointerType === 'mouse' && !this._pointerLocked) {
+            if (wantsMouseLook) {
                 this.requestMouseLook();
             }
             this.beginHeldFire(event.clientX, event.clientY, pointerType);
