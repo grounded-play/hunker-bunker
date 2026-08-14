@@ -46,7 +46,7 @@ export const TiltShiftPassShader = {
     `
 };
 import { assetUrl } from './assetUrl.js';
-import { wrapAngle, stepAngleTowards, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
+import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
@@ -973,9 +973,6 @@ function isChunkTraversalConnected(grid) {
 // already skipped by the hasAlpha/hasSourceAlpha check in the common case,
 // and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
 const keyedSpriteTextureCache = new Map();
-
-const CAMERA_ROT_SPEED = 4.0;
-const MOUSE_LOOK_SENSITIVITY = 0.0025;
 
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
