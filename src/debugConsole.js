@@ -651,9 +651,10 @@ export class DebugLogger {
                 break;
 
             case 'god':
-                if (game?.playerVitals) {
-                    game._godMode = !game._godMode;
-                    this.info('CHEAT', `God mode set to ${game._godMode ? 'ON (Invincible)' : 'OFF'}`);
+                if (game?.setGodMode) {
+                    const next = !game.godMode;
+                    game.setGodMode(next);
+                    this.info('CHEAT', `God mode set to ${next ? 'ON (Invincible)' : 'OFF'}`);
                 } else {
                     this.warn('CMD', 'Game or player vitals not active');
                 }
@@ -661,8 +662,8 @@ export class DebugLogger {
 
             case 'heal':
                 if (game?.playerVitals) {
-                    game.playerVitals.health = game.playerVitals.maxHealth || 100;
-                    game.playerVitals.oxygen = game.playerVitals.maxOxygen || 100;
+                    game.healPlayer?.(game.playerVitals.maxHp ?? 100);
+                    game.adjustOxygen?.(100);
                     this.info('CHEAT', 'Player Health & Oxygen fully restored.');
                 } else {
                     this.warn('CMD', 'Player vitals not active');
@@ -688,8 +689,12 @@ export class DebugLogger {
                     const enemyType = parts[1] || 'cybersnail';
                     const px = game.player?.position?.x ?? 0;
                     const pz = game.player?.position?.z ?? 0;
-                    game.spawnEnemyInstance(enemyType, px + 2, pz + 2);
-                    this.info('SPAWN', `Spawned ${enemyType} near player`);
+                    const spawned = game.spawnEnemyInstance(enemyType, px + 2, pz + 2);
+                    if (spawned) {
+                        this.info('SPAWN', `Spawned ${enemyType} near player`);
+                    } else {
+                        this.warn('CMD', `Unknown enemy type '${enemyType}'`);
+                    }
                 } else {
                     this.warn('CMD', 'Enemy spawner unavailable in current state');
                 }

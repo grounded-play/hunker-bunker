@@ -78,8 +78,12 @@ test.describe('Snail diplomacy encounter', () => {
             // 'latent' (default post-begin infectionStage) counts as
             // alien-aligned per the design doc — anything but 'cured'.
             const fakeSprite = {
+                isObject3D: true,
+                parent: null,
                 userData: { type: 'cybersnail', hp: 2, maxHp: 2 },
-                position: { x: game.player.position.x, z: game.player.position.z }
+                position: { x: game.player.position.x, z: game.player.position.z },
+                scale: { set: () => {} },
+                material: {}
             };
             game.openSnailEncounter(fakeSprite);
             // TALK_GAIN_ALIEN is 35/round with a 5% backfire chance — three
@@ -112,6 +116,7 @@ test.describe('Snail diplomacy encounter', () => {
             const fakeSprite = {
                 userData: { type: 'cybersnail', hp: 2, maxHp: 2 },
                 position: { x: startX, z: startZ },
+                scale: { set: () => {} },
                 material: {},
                 parent: { remove: () => {} }
             };

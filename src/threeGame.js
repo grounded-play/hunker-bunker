@@ -7168,6 +7168,42 @@ export class ThreeGame {
         return spawned;
     }
 
+    // Dev-console `spawn <type>` (src/debugConsole.js). Places one real
+    // enemy sprite of the requested type through the same createScatterInstance
+    // pipeline spawnPatrolNearPlayer() uses, rather than a fake/no-op.
+    spawnEnemyInstance(type = 'cybersnail', x = null, z = null) {
+        if (!this.player) return null;
+        const resolvedType = type === 'queen' ? 'boss_queen' : type;
+        if (!this.scatterMaterials[resolvedType]) return null;
+        this.snailsEnabled = true;
+        const spawnX = Number.isFinite(x) ? x : this.player.position.x + 2;
+        const spawnZ = Number.isFinite(z) ? z : this.player.position.z + 2;
+        const placement = {
+            x: spawnX,
+            z: spawnZ,
+            type: resolvedType,
+            scatterKey: `debug-spawn:${Date.now()}`,
+            scale: 1.25,
+            rotation: 0,
+            tiltX: 0,
+            tiltZ: 0,
+            elevation: 0.1,
+            groupType: 'enemy',
+            phase: Math.random() * Math.PI * 2,
+            opacity: 1,
+            biomeTint: 0xffffff,
+            isEnemy: true
+        };
+        const sprite = this.createScatterInstance(placement);
+        if (!sprite) return null;
+        const chunkX = Math.floor(spawnX / this.chunkSize);
+        const chunkY = Math.floor(spawnZ / this.chunkSize);
+        const group = this.chunkMeshes.get(`${chunkX},${chunkY}`) ?? this.scene;
+        group.add(sprite);
+        this.scatterSprites.push(sprite);
+        return sprite;
+    }
+
     revealNearbyExits() {
         this.showBunkerLine('OPEN PATHS REVEALED. COMPASS DATA IS TEMPORARILY UNTRUSTWORTHY.');
         window.dispatchEvent(new CustomEvent('terminal-routes-revealed'));
@@ -7185,6 +7221,22 @@ export class ThreeGame {
     grantSalvageCache({ tech = 0, coin = 0, med = 0 } = {}) {
         this.bank.deposit({ tech, coin, med });
         window.dispatchEvent(new CustomEvent('salvage-cache-opened', { detail: { tech, coin, med } }));
+    }
+
+    // Dev-console `give <resource> <qty>` (src/debugConsole.js). Routes into
+    // the real bank rather than a field the bank never reads.
+    addRunResource(resource = 'tech', amount = 50) {
+        const key = String(resource || 'tech').toLowerCase();
+        const qty = Number.isFinite(amount) ? amount : 50;
+        if (key === 'shell' || key === 'shells') {
+            this.bank.addShells(qty);
+            return true;
+        }
+        if (key === 'tech' || key === 'coin' || key === 'med') {
+            this.bank.deposit({ [key]: qty });
+            return true;
+        }
+        return false;
     }
 
     triggerLightsOut(seconds = 8) {
@@ -15029,6 +15081,34 @@ export class ThreeGame {
 
         const spawn = this.getSpawnTile();
         return { x: spawn.x, z: spawn.y };
+    }
+
+    // Dev-console `biome <active|cryo|bio>` (src/debugConsole.js). Biome
+    // isn't an independent flag anywhere in this class — updateBiomeEnvironment()
+    // recomputes currentBiomeKey every frame purely from the player's distance
+    // to the ship anchor, so the only real way to force one is to put the
+    // player at a distance that actually satisfies it.
+    forceBiome(key = 'cryo') {
+        const normalized = String(key || '').toLowerCase();
+        const targetKey = normalized === 'active' ? BIOME_KEYS.ACTIVE
+            : normalized === 'bio' ? BIOME_KEYS.BIO
+            : BIOME_KEYS.CRYO;
+        if (!this.player) return false;
+
+        const anchor = this.getBiomeAnchorPosition();
+        const margin = BIOME_BLEND_HALF_WIDTH + 2;
+        const distance = targetKey === BIOME_KEYS.ACTIVE
+            ? Math.max(0, BIOME_THRESHOLD_CRYO - margin)
+            : targetKey === BIOME_KEYS.CRYO
+                ? BIOME_THRESHOLD_CRYO + margin
+                : BIOME_THRESHOLD_BIO + margin;
+
+        const angle = Math.random() * Math.PI * 2;
+        const targetX = anchor.x + Math.cos(angle) * distance;
+        const targetZ = anchor.z + Math.sin(angle) * distance;
+        const result = this.teleportPlayerTo(targetX, targetZ, { safeFloor: false });
+        this.updateBiomeEnvironment({ immediate: true, forceEvent: true });
+        return Boolean(result);
     }
 
     getBiomeMixValues(distanceFromAnchor) {
@@ -23134,10 +23214,17 @@ export class ThreeGame {
 
         if (state.outcome === 'befriend' || state.outcome === 'pacified' || state.outcome === 'recruited') {
             if (sprite) {
+                sprite.userData = sprite.userData || {};
                 sprite.userData.isCompanion = true;
                 sprite.userData.encounterResolved = true;
-                this.scene.add(sprite);
-                this.companions = this.companions.filter((c) => c.sprite !== sprite);
+                if (typeof this.scene?.add === 'function') {
+                    if (sprite.isObject3D) {
+                        this.scene.add(sprite);
+                    } else {
+                        sprite.parent = this.scene;
+                    }
+                }
+                this.companions = (this.companions || []).filter((c) => c.sprite !== sprite);
                 this.companions.push({ sprite, assistCooldown: 0 });
             }
             this.act2?.completeScientistQuest?.('snail_befriended');
