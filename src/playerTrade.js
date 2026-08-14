@@ -68,6 +68,31 @@ export class PlayerTradeManager {
         this.myAccepted = false;
         this.peerAccepted = false;
         this.statusMessage = 'AWAITING OFFER SELECTION';
+
+        // Telemetry stats
+        this.completedTradesCount = 0;
+        this.shellsTraded = 0;
+        this.ammoTraded = 0;
+        this.medkitsTraded = 0;
+        this.o2Traded = 0;
+    }
+
+    getTradeStats() {
+        return {
+            completedCount: this.completedTradesCount,
+            shellsTraded: this.shellsTraded,
+            ammoTraded: this.ammoTraded,
+            medkitsTraded: this.medkitsTraded,
+            o2Traded: this.o2Traded
+        };
+    }
+
+    resetRunStats() {
+        this.completedTradesCount = 0;
+        this.shellsTraded = 0;
+        this.ammoTraded = 0;
+        this.medkitsTraded = 0;
+        this.o2Traded = 0;
     }
 
     setSocket(socket) {
@@ -184,6 +209,16 @@ export class PlayerTradeManager {
         });
 
         if (result.success) {
+            this.completedTradesCount += 1;
+            this.shellsTraded += Number(this.myOffer.shells || 0) + Number(this.peerOffer.shells || 0);
+            this.ammoTraded += Number(this.myOffer.ammo || 0) + Number(this.peerOffer.ammo || 0);
+            this.medkitsTraded += Number(this.myOffer.medkits || 0) + Number(this.peerOffer.medkits || 0);
+            this.o2Traded += Number(this.myOffer.o2Canisters || 0) + Number(this.peerOffer.o2Canisters || 0);
+
+            if (typeof window !== 'undefined' && window.profileManager?.recordTradeCompleted) {
+                window.profileManager.recordTradeCompleted();
+            }
+
             this.statusMessage = 'TRANSACTION COMPLETE — TELEMETRY COMMITTED';
             this.notifyChange();
             setTimeout(() => {

@@ -91,6 +91,14 @@ describe('PlayerTrade System', () => {
             expect(finalized.success).toBe(true);
             expect(finalized.inventory.shells).toBe(80);
             expect(finalized.inventory.ammo).toBe(50);
+
+            expect(manager.getTradeStats()).toEqual({
+                completedCount: 1,
+                shellsTraded: 20,
+                ammoTraded: 50,
+                medkitsTraded: 0,
+                o2Traded: 0
+            });
         });
     });
 });

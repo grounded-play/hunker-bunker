@@ -42,14 +42,28 @@ export class ProfileManager {
                     return {
                         callsign: sanitizeCallsign(parsed.callsign) || 'AGENT',
                         profileId: typeof parsed.profileId === 'string' ? parsed.profileId : randomId(),
-                        createdAt: Number.isFinite(parsed.createdAt) ? parsed.createdAt : Date.now()
+                        createdAt: Number.isFinite(parsed.createdAt) ? parsed.createdAt : Date.now(),
+                        multiplayerMatches: Number(parsed.multiplayerMatches) || 0,
+                        multiplayerVictories: Number(parsed.multiplayerVictories) || 0,
+                        tradesCompleted: Number(parsed.tradesCompleted) || 0,
+                        coopExpeditions: Number(parsed.coopExpeditions) || 0,
+                        pvpDuels: Number(parsed.pvpDuels) || 0
                     };
                 }
             }
         } catch {
             // fall through to a fresh profile
         }
-        return { callsign: 'AGENT', profileId: randomId(), createdAt: Date.now() };
+        return {
+            callsign: 'AGENT',
+            profileId: randomId(),
+            createdAt: Date.now(),
+            multiplayerMatches: 0,
+            multiplayerVictories: 0,
+            tradesCompleted: 0,
+            coopExpeditions: 0,
+            pvpDuels: 0
+        };
     }
 
     save() {
@@ -68,6 +82,36 @@ export class ProfileManager {
         this.state.callsign = clean;
         this.save();
         return clean;
+    }
+
+    getStats() {
+        return {
+            multiplayerMatches: Number(this.state.multiplayerMatches || 0),
+            multiplayerVictories: Number(this.state.multiplayerVictories || 0),
+            tradesCompleted: Number(this.state.tradesCompleted || 0),
+            coopExpeditions: Number(this.state.coopExpeditions || 0),
+            pvpDuels: Number(this.state.pvpDuels || 0)
+        };
+    }
+
+    recordMultiplayerRun({ mode = 'coop', isVictory = false } = {}) {
+        this.state.multiplayerMatches = (this.state.multiplayerMatches || 0) + 1;
+        if (isVictory) {
+            this.state.multiplayerVictories = (this.state.multiplayerVictories || 0) + 1;
+        }
+        if (mode === 'pvp') {
+            this.state.pvpDuels = (this.state.pvpDuels || 0) + 1;
+        } else {
+            this.state.coopExpeditions = (this.state.coopExpeditions || 0) + 1;
+        }
+        this.save();
+        return this.getStats();
+    }
+
+    recordTradeCompleted() {
+        this.state.tradesCompleted = (this.state.tradesCompleted || 0) + 1;
+        this.save();
+        return this.getStats();
     }
 }
 

@@ -3712,6 +3712,15 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
     const rating = window.game?.getRunRating?.(score) ?? { grade: 'D', label: 'AGENT LOST — MINIMAL TELEMETRY' };
     const wasDailyOpsRun = _isDailyOpsRun;
     const dailyOpsDate = wasDailyOpsRun ? getTodayDateString() : null;
+
+    const isMultiplayer = Boolean(window.game?.isMultiplayer || window.activeMultiplayerSession);
+    const mpMode = window.game?.multiplayerMode || window.activeMultiplayerSession?.mode || 'coop';
+    const roomCode = window.activeMultiplayerSession?.roomCode || null;
+    const peersCount = window.game?.remotePlayers?.size || 0;
+    const tradeStats = playerTradeManager?.getTradeStats?.() || {};
+    const breadcrumbCount = window.game?.explorationTracker?.getBreadcrumbTrail?.()?.length || 0;
+    const discoveredSectors = window.game?.discoveredMapChunkKeys?.size || 0;
+
     const steamRunPayload = buildSteamRunScorePayload({
         stats: {
             ...stats,
@@ -3729,8 +3738,36 @@ function showGameOverScreen(stats, { isVictory = false, deathReason = 'hazard' }
         dailyOpsDate,
         seed: activeRunSeed,
         runCards: activeRunCards,
-        depositedResources: window.game?.runDepositedResources ?? {}
+        depositedResources: window.game?.runDepositedResources ?? {},
+        multiplayer: {
+            isMultiplayer,
+            mode: mpMode,
+            roomCode,
+            peersCount,
+            tradesCompleted: tradeStats.completedCount || 0,
+            rivalKills: window.game?.pvpKillsCount || 0,
+            squadRevives: window.game?.squadRevivesCount || 0
+        },
+        exploration: {
+            breadcrumbsCount: breadcrumbCount,
+            trailDistanceMeters: stats.distanceTravelled || 0,
+            sectorsDiscovered: discoveredSectors
+        },
+        trades: tradeStats
     });
+
+    debugLog.info('TELEMETRY', 'Run score finalized', {
+        score,
+        outcome: steamRunPayload.outcome,
+        multiplayer: steamRunPayload.multiplayer,
+        exploration: steamRunPayload.exploration,
+        trades: steamRunPayload.trades
+    });
+
+    if (isMultiplayer) {
+        window.profileManager?.recordMultiplayerRun?.({ mode: mpMode, isVictory });
+    }
+
     dispatchSteamRunScoreFinalized(steamRunPayload, window);
     void renderGameOverLeaderboard(steamRunPayload);
 

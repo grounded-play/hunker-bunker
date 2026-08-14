@@ -21,6 +21,35 @@ function sanitizeString(value, maxLen = 32, fallback = 'AGENT') {
     return value.trim().slice(0, maxLen) || fallback;
 }
 
+export const sessionTelemetry = {
+    totalConnections: 0,
+    matchesDeployed: 0,
+    tradesExecuted: 0,
+    revivesExecuted: 0,
+    fatalHits: 0,
+    recentEvents: []
+};
+
+export function logRelayEvent(type, data = {}) {
+    const entry = { type, timestamp: Date.now(), ...data };
+    sessionTelemetry.recentEvents.push(entry);
+    if (sessionTelemetry.recentEvents.length > 100) {
+        sessionTelemetry.recentEvents.shift();
+    }
+    console.log(`[NET-RELAY] [${type}]`, JSON.stringify(data));
+}
+
+export function getRelayTelemetry() {
+    return {
+        totalConnections: sessionTelemetry.totalConnections,
+        matchesDeployed: sessionTelemetry.matchesDeployed,
+        tradesExecuted: sessionTelemetry.tradesExecuted,
+        revivesExecuted: sessionTelemetry.revivesExecuted,
+        fatalHits: sessionTelemetry.fatalHits,
+        recentEvents: [...sessionTelemetry.recentEvents]
+    };
+}
+
 export function attachRelay(server, { allowedOrigins = [] } = {}) {
     const io = new Server(server, {
         cors: {
@@ -62,6 +91,8 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
     };
 
     io.on('connection', (socket) => {
+        sessionTelemetry.totalConnections += 1;
+        logRelayEvent('CONNECT', { socketId: socket.id });
         const player = {
             id: socket.id,
             callsign: 'AGENT',
@@ -124,6 +155,9 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
                 startedBy: socket.id,
                 timestamp: Date.now()
             };
+
+            sessionTelemetry.matchesDeployed += 1;
+            logRelayEvent('MATCH_DEPLOY', { roomCode, mode: payload.mode, seed: payload.seed, startedBy: socket.id });
 
             io.to(roomCode).emit('matchStarted', payload);
         });
@@ -189,6 +223,11 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
             const damage = typeof dmgData.damage === 'number' ? Math.max(0, Math.min(999, dmgData.damage)) : 10;
             const isFatal = Boolean(dmgData.isFatal);
 
+            if (isFatal) {
+                sessionTelemetry.fatalHits += 1;
+                logRelayEvent('FATAL_HIT', { roomCode: player.roomCode, attackerId: socket.id, targetId, damage });
+            }
+
             if (player.roomCode && targetId) {
                 io.to(player.roomCode).emit('playerDamaged', {
                     attackerId: socket.id,
@@ -203,6 +242,9 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         socket.on('playerRevive', (reviveData) => {
             if (!reviveData || typeof reviveData !== 'object') return;
             const targetId = sanitizeString(reviveData.targetId, 64, '');
+
+            sessionTelemetry.revivesExecuted += 1;
+            logRelayEvent('REVIVE', { roomCode: player.roomCode, reviverId: socket.id, targetId });
 
             if (player.roomCode && targetId) {
                 io.to(player.roomCode).emit('playerRevived', {
@@ -240,6 +282,9 @@ export function attachRelay(server, { allowedOrigins = [] } = {}) {
         socket.on('playerTradeAccept', (tradeData) => {
             if (!tradeData || typeof tradeData !== 'object') return;
             const targetId = sanitizeString(tradeData.targetId, 64, '');
+            sessionTelemetry.tradesExecuted += 1;
+            logRelayEvent('TRADE_ACCEPT', { roomCode: player.roomCode, senderId: socket.id, targetId, offer: tradeData.offer });
+
             if (targetId) {
                 io.to(targetId).emit('playerTradeAccepted', {
                     senderId: socket.id,

@@ -89,4 +89,61 @@ describe('buildSteamRunScorePayload', () => {
             { name: 'fastest_extraction_ms', score: 2000, keep: 'best' }
         ]);
     });
+
+    it('packages multiplayer, exploration trail, and trade telemetry cleanly', () => {
+        const payload = buildSteamRunScorePayload({
+            stats: { distanceTravelled: 1250, depthTier: 4 },
+            score: 5400,
+            rating: { grade: 'A', label: 'TACTICAL LINK EXPEDITION' },
+            classType: 'TANK',
+            runStartTime: 1000,
+            endedAt: 61000,
+            isVictory: true,
+            multiplayer: {
+                isMultiplayer: true,
+                mode: 'coop',
+                roomCode: 'SECTOR-DELTA',
+                peersCount: 3,
+                tradesCompleted: 4,
+                rivalKills: 0,
+                squadRevives: 2
+            },
+            exploration: {
+                breadcrumbsCount: 142,
+                trailDistanceMeters: 1250,
+                sectorsDiscovered: 6
+            },
+            trades: {
+                completedCount: 4,
+                shellsTraded: 120,
+                ammoTraded: 90,
+                medkitsTraded: 2,
+                o2Traded: 3
+            }
+        });
+
+        expect(payload.multiplayer).toEqual({
+            isMultiplayer: true,
+            mode: 'coop',
+            roomCode: 'SECTOR-DELTA',
+            peersCount: 3,
+            tradesCompleted: 4,
+            rivalKills: 0,
+            squadRevives: 2
+        });
+
+        expect(payload.exploration).toEqual({
+            breadcrumbsCount: 142,
+            trailDistanceMeters: 1250,
+            sectorsDiscovered: 6
+        });
+
+        expect(payload.trades).toEqual({
+            completedCount: 4,
+            shellsTraded: 120,
+            ammoTraded: 90,
+            medkitsTraded: 2,
+            o2Traded: 3
+        });
+    });
 });
