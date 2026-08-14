@@ -253,15 +253,12 @@ Expected: FAIL — `game.updateFacingYaw is not a function` (`ThreeGame.prototyp
 Add the import near the top of `src/threeGame.js`, immediately after the existing `import { assetUrl } from './assetUrl.js';` line:
 
 ```js
-import { wrapAngle, stepAngleTowards, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
+import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
 ```
 
-Add two module-level constants immediately before `export class ThreeGame {` (right after the existing `const keyedSpriteTextureCache = new Map();` line):
+(Only these three — `stepAngleTowards` isn't used until Task 3's `updateCamera`, and this project's `npm run lint` fails the build on unused imports, so each task's commit must only import what it actually uses. Task 3 adds `stepAngleTowards` to this same import line when it needs it.)
 
-```js
-const CAMERA_ROT_SPEED = 4.0;
-const MOUSE_LOOK_SENSITIVITY = 0.0025;
-```
+Do not add `CAMERA_ROT_SPEED`/`MOUSE_LOOK_SENSITIVITY` yet — same reason: they're unused until Task 3 and Task 5 respectively. Task 3 adds `CAMERA_ROT_SPEED`; Task 5 adds `MOUSE_LOOK_SENSITIVITY`. Skip straight to the camera-basis block below.
 
 Replace the camera-basis construction block (current lines 1049-1052):
 
@@ -431,6 +428,8 @@ Run: `npx vitest run src/threeGame.facingYaw.test.js`
 Expected: FAIL — `cameraAzimuth` stays at its initial value (updateCamera doesn't touch it yet).
 
 - [ ] **Step 3: Implement**
+
+First, add `stepAngleTowards` to the `cameraYaw.js` import Task 2 added near the top of `src/threeGame.js` (it currently reads `import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';` — add `stepAngleTowards` to that list). Then add `const CAMERA_ROT_SPEED = 4.0;` on its own line immediately before `export class ThreeGame {`, right after the existing `const keyedSpriteTextureCache = new Map();` line. This project's `npm run lint` fails the build on unused symbols, so this constant must land in the same commit as its first use, below.
 
 Replace the top of `updateCamera` (current lines 17215-17220) — insert the azimuth-easing block before the existing `target` construction, and change `target` to use the freshly recomputed `this.cameraOffset`:
 
@@ -738,6 +737,8 @@ Replace `handleCanvasPointerMove` (current lines 4221-4235):
 ```
 
 - [ ] **Step 3: Add pointer-lock lifecycle methods and listeners**
+
+First, add `const MOUSE_LOOK_SENSITIVITY = 0.0025;` on its own line immediately before `export class ThreeGame {`, next to the `CAMERA_ROT_SPEED` constant Task 3 added there. This project's `npm run lint` fails the build on unused symbols, so this constant must land in the same commit as its first use, in `handleMouseLookMove` below.
 
 Add these methods near `handleCanvasPointerDown`/`handleCanvasPointerMove`:
 
