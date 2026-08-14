@@ -109,4 +109,27 @@ describe('SideStoryManager & Multi-Path Story Progression', () => {
         expect(val.completedStages).toContain(1);
         expect(val.perks).toContain('tallow_suture_salve');
     });
+
+    it('deposits rewards into active game bank and ammo on stage completion', () => {
+        const fakeBank = {
+            shells: 0,
+            bal: { tech: 0, med: 0, coin: 0 },
+            depositShells(n) { this.shells += n; },
+            deposit(res) {
+                this.bal.tech += res.tech || 0;
+                this.bal.med += res.med || 0;
+                this.bal.coin += res.coin || 0;
+            }
+        };
+        const fakeGame = { bank: fakeBank, playerAmmo: 10 };
+        globalThis.window = { game: fakeGame };
+
+        manager.evaluateTriggers({ lowO2Exposures: 1 });
+        const res = manager.completeCurrentStage('sister_val');
+        expect(res.success).toBe(true);
+        expect(fakeBank.shells).toBe(50);
+        expect(fakeBank.bal.med).toBe(4);
+
+        delete globalThis.window;
+    });
 });

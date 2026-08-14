@@ -429,6 +429,22 @@ export class SideStoryManager {
         this.save();
 
         if (typeof window !== 'undefined') {
+            if (rewards.shells && window.game?.bank?.depositShells) {
+                window.game.bank.depositShells(rewards.shells);
+            }
+            if (window.game?.bank?.deposit && (rewards.tech || rewards.med || rewards.coin)) {
+                window.game.bank.deposit({
+                    tech: rewards.tech || 0,
+                    med: rewards.med || 0,
+                    coin: rewards.coin || 0
+                });
+            }
+            if (rewards.ammo && typeof window.game?.addAmmo === 'function') {
+                window.game.addAmmo(rewards.ammo);
+            } else if (rewards.ammo && typeof window.game?.playerAmmo === 'number') {
+                window.game.playerAmmo += rewards.ammo;
+            }
+
             if (rewards.perk && window.showSteamDropToast) {
                 window.showSteamDropToast({
                     name: rewards.perk.name,

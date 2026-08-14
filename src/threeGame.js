@@ -14172,7 +14172,14 @@ export class ThreeGame {
             return false;
         }
         const previousHp = this.playerVitals.hp;
-        const damage = Math.max(0, Math.round(amount));
+        let effectiveAmount = amount;
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
+            effectiveAmount *= 0.8;
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_field_armor')) {
+            effectiveAmount *= 0.9;
+        }
+        const damage = Math.max(0, Math.round(effectiveAmount));
         this.playerVitals.hp = Math.max(0, this.playerVitals.hp - damage);
         if (this.playerVitals.hp === previousHp) return false;
         this.player3dOverlay?.trigger('hit');
@@ -14926,10 +14933,17 @@ export class ThreeGame {
         const pz = this.player.position.z;
 
         const upgrade1 = this.playerType === 'ENGINEER' && this.bank.isSkillUnlocked('engineer_radar_1');
+        let radarBonusMult = 1.0;
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('meridian_neural_overclock')) {
+            radarBonusMult += 0.50; // +50% Radar Reach
+        } else if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('meridian_sensor_pulse')) {
+            radarBonusMult += 0.25; // +25% Radar Reach
+        }
         const maxRadius = 18.0
             * (upgrade1 ? 1.3 : 1.0)
             * (radarEffects.rangeMult ?? 1)
-            * (campRadarEffects.rangeMult ?? 1);
+            * (campRadarEffects.rangeMult ?? 1)
+            * radarBonusMult;
         const compassHoldSeconds = Math.max(0, Number(campRadarEffects.compassHoldSeconds) || 0);
         if (compassHoldSeconds > 0) {
             const compassTarget = this.getMeridianCompassTarget();
@@ -15214,6 +15228,9 @@ export class ThreeGame {
             else if (reactorLevel >= 2) refillMult = 2.0;
 
             let refillRate = generatorState.refillRate * refillMult;
+            if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('flesh_communion_blessing')) {
+                refillRate *= 1.25;
+            }
             this.playerVitals.o2 = Math.min(100, this.playerVitals.o2 + refillRate * delta);
             this.playerVitals.o2HealthTimer = 0;
         } else {
@@ -15223,6 +15240,9 @@ export class ThreeGame {
                 * (this._sprintO2DrainMult ?? 1.0)
                 // THIN AIR run modifier: reserves are poor beyond the ship field.
                 * (this.getRunCardEffects().survival?.o2DrainMult ?? (this.currentRunModifier?.id === 'thin_air' ? 1.4 : 1.0));
+            if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('tallows_seductive_warmth')) {
+                drainRate *= 0.80; // Seductive warmth protects against freezing drain
+            }
             if (this.playerType === 'TANK' && this.bank && this.bank.isSkillUnlocked('tank_o2_efficiency')) {
                 drainRate *= 0.85;
             } else if (this.playerType === 'ENGINEER' && this.bank && this.bank.isSkillUnlocked('engineer_battery_1')) {
@@ -15431,6 +15451,9 @@ export class ThreeGame {
             const prevZ = this.player.position.z;
 
             let speed = this.moveSpeed * (this._sprintMoveSpeedMult ?? 1.0);
+            if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_vanguard_adrenaline')) {
+                speed *= 1.10;
+            }
             if (this.playerSlowTimer > 0 && !(this._sprintMoveSpeedMult > 1)) {
                 speed *= 0.55;
             }
@@ -17103,6 +17126,13 @@ export class ThreeGame {
         const playerHeight = this.getTerrainHeightAt(this.player?.position?.x ?? 0, this.player?.position?.z ?? 0);
         if (playerHeight > 0) {
             damage *= 1.15; // High-Ground +15% Damage Advantage!
+        }
+
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_unyielding_might')) {
+            const hpRatio = (this.playerVitals?.hp ?? 100) / Math.max(1, (this.playerVitals?.maxHp ?? 100));
+            if (hpRatio < 0.40 && Math.random() < 0.25) {
+                damage *= 1.5; // Unyielding Might Critical Strike!
+            }
         }
 
         // Stacked multipliers (reload, overclocks, high-ground) can land on a

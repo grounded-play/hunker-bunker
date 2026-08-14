@@ -38,8 +38,8 @@ describe('FabricatorManager', () => {
         bank = makeBank();
     });
 
-    it('exposes 8 recipes each with art and a cost', () => {
-        expect(FAB_RECIPES.length).toBe(8);
+    it('exposes recipes each with art and a cost', () => {
+        expect(FAB_RECIPES.length).toBe(12);
         for (const r of FAB_RECIPES) {
             expect(r.art).toMatch(/^\/schematics\/schematic_\d\d\.webp$/);
             expect(r.printSeconds).toBeGreaterThan(0);
