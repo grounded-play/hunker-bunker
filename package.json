@@ -29,6 +29,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:playthrough": "playwright test tests/e2e/automated-playthrough.spec.js",
     "coverage": "vitest run --coverage",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env ELECTRON_DEV=1 electron .\"",
     "steam:config": "node scripts/write-steam-config.js",

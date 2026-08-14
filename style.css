@@ -242,11 +242,11 @@ body {
   background: #fff;
 }
 
-.maze-debug-legend i[data-kind="room"] { background: #00e5ff; }
-.maze-debug-legend i[data-kind="hall"] { background: #ffb020; }
-.maze-debug-legend i[data-kind="wall"] { background: #ff2bd6; }
-.maze-debug-legend i[data-kind="door"] { background: #36ff72; }
-.maze-debug-legend i[data-kind="canyon"] { background: #287cff; }
+.maze-debug-legend i[data-kind="room"] { background: #00f0ff; }
+.maze-debug-legend i[data-kind="hall"] { background: #ff9d00; }
+.maze-debug-legend i[data-kind="wall"] { background: #ff007f; }
+.maze-debug-legend i[data-kind="door"] { background: #00ff66; }
+.maze-debug-legend i[data-kind="canyon"] { background: #1a3d8f; }
 
 .debug-btn {
   background: rgba(0, 0, 0, 0.6);

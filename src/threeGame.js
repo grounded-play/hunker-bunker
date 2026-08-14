@@ -194,6 +194,7 @@ import {
     getEnemyDirectionRow,
     getEnemySpriteLayout
 } from './enemySpriteLayouts.js';
+import { SHOWROOM_CHUNK_X, SHOWROOM_CHUNK_Y } from './debugShowroom.js';
 
 
 const PLAYER_COLORS = {
@@ -24697,11 +24698,11 @@ export class ThreeGame {
         if (!this.wfcDebugPlaneGeometry) {
             this.wfcDebugPlaneGeometry = new THREE.PlaneGeometry(0.76, 0.76);
             this.wfcDebugMaterials = {
-                room: new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.48, depthWrite: false }),
-                hall: new THREE.MeshBasicMaterial({ color: 0xffb020, transparent: true, opacity: 0.42, depthWrite: false }),
-                wall: new THREE.MeshBasicMaterial({ color: 0xff2bd6, transparent: true, opacity: 0.72, depthWrite: false }),
-                door: new THREE.MeshBasicMaterial({ color: 0x36ff72, transparent: true, opacity: 0.9, depthWrite: false }),
-                canyon: new THREE.MeshBasicMaterial({ color: 0x287cff, transparent: true, opacity: 0.68, depthWrite: false }),
+                room: new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.52, depthWrite: false }),
+                hall: new THREE.MeshBasicMaterial({ color: 0xff9d00, transparent: true, opacity: 0.46, depthWrite: false }),
+                wall: new THREE.MeshBasicMaterial({ color: 0xff007f, transparent: true, opacity: 0.78, depthWrite: false }),
+                door: new THREE.MeshBasicMaterial({ color: 0x00ff66, transparent: true, opacity: 0.92, depthWrite: false }),
+                canyon: new THREE.MeshBasicMaterial({ color: 0x1a3d8f, transparent: true, opacity: 0.72, depthWrite: false }),
                 seam: new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.82 }),
                 seamError: new THREE.LineBasicMaterial({ color: 0xff2020, transparent: true, opacity: 1 })
             };
@@ -24758,23 +24759,21 @@ export class ThreeGame {
             : this.wfcDebugMaterials.seam;
         for (let my = 0; my < 3; my += 1) {
             for (let mx = 0; mx < 3; mx += 1) {
-                const x0 = chunkX * this.chunkSize + mx * stride - 0.48;
-                const z0 = chunkY * this.chunkSize + my * stride - 0.48;
-                const x1 = x0 + 6.96;
-                const z1 = z0 + 6.96;
-                const geometry = new THREE.BufferGeometry().setFromPoints([
-                    new THREE.Vector3(x0, 0.11, z0),
-                    new THREE.Vector3(x1, 0.11, z0),
-                    new THREE.Vector3(x1, 0.11, z1),
-                    new THREE.Vector3(x0, 0.11, z1)
-                ]);
-                const line = new THREE.LineLoop(geometry, seamMaterial);
-                line.renderOrder = 101;
-                overlay.add(line);
+                const border = new THREE.LineSegments(
+                    this.wfcDebugBorderGeometry,
+                    seamMaterial
+                );
+                border.position.set(
+                    chunkX * this.chunkSize + mx * stride,
+                    0.09,
+                    chunkY * this.chunkSize + my * stride
+                );
+                overlay.add(border);
             }
         }
 
-        const makeFloorLabel = (text, color, width = 5.4, height = 1.25) => {
+        const makeFloorLabel = (text, color, width = 2.4, height = 0.52) => {
+            if (typeof document === 'undefined') return new THREE.Group();
             const canvas = document.createElement('canvas');
             canvas.width = 768;
             canvas.height = 160;
@@ -24813,7 +24812,7 @@ export class ThreeGame {
             const tile = metadata.lattice[index];
             const mx = index % 3;
             const my = Math.floor(index / 3);
-            const label = makeFloorLabel(tile.id ?? `tile-${index}`, '#00e5ff');
+            const label = makeFloorLabel(tile.id ?? `tile-${index}`, '#00f0ff');
             label.position.set(
                 chunkX * this.chunkSize + mx * stride + 3,
                 0.14,
@@ -24826,7 +24825,7 @@ export class ThreeGame {
         // socket side generated the connection.
         for (const door of metadata.doors ?? []) {
             const arrow = { n: '↑', s: '↓', e: '→', w: '←' }[door.side] ?? '↔';
-            const label = makeFloorLabel(`DOOR ${door.side?.toUpperCase() ?? ''} ${arrow}`, '#36ff72', 2.9, 0.72);
+            const label = makeFloorLabel(`DOOR ${door.side?.toUpperCase() ?? ''} ${arrow}`, '#00ff66', 2.9, 0.72);
             label.position.set(
                 chunkX * this.chunkSize + door.localX,
                 0.17,
@@ -24836,6 +24835,284 @@ export class ThreeGame {
             overlay.add(label);
         }
         group.add(overlay);
+    }
+
+    teleportPlayerTo(worldX, worldZ, { syncChunks = true, safeFloor = true } = {}) {
+        if (!this.player) return false;
+        const targetX = Number(worldX);
+        const targetZ = Number(worldZ);
+        if (!Number.isFinite(targetX) || !Number.isFinite(targetZ)) return false;
+
+        let finalX = targetX;
+        let finalZ = targetZ;
+
+        if (safeFloor && typeof this.isSnailTileWalkable === 'function') {
+            const tileX = Math.round(targetX);
+            const tileZ = Math.round(targetZ);
+            let bestX = targetX;
+            let bestZ = targetZ;
+            let found = false;
+
+            if (this.isSnailTileWalkable(tileX, tileZ)) {
+                bestX = tileX + 0.5;
+                bestZ = tileZ + 0.5;
+            } else {
+                for (let r = 1; r <= 5; r += 1) {
+                    for (let dx = -r; dx <= r; dx += 1) {
+                        for (let dz = -r; dz <= r; dz += 1) {
+                            if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue;
+                            if (this.isSnailTileWalkable(tileX + dx, tileZ + dz)) {
+                                bestX = tileX + dx + 0.5;
+                                bestZ = tileZ + dz + 0.5;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) break;
+                    }
+                    if (found) break;
+                }
+            }
+            finalX = bestX;
+            finalZ = bestZ;
+        }
+
+        this.player.position.set(finalX, 0, finalZ);
+        if (this.playerGlow) this.playerGlow.position.set(finalX, 1.6, finalZ);
+        if (this.playerMarker) this.playerMarker.position.set(finalX, this.playerMarkerHeight || 0.05, finalZ);
+        this.updatePlayerForwardLight?.(1, { immediate: true });
+
+        if (this.camera) {
+            const camOffset = this.getCameraOffset ? this.getCameraOffset() : { x: 0, y: 14, z: 12 };
+            this.camera.position.set(finalX + (camOffset.x || 0), (camOffset.y || 14), finalZ + (camOffset.z || 12));
+            this.camera.lookAt(finalX, 0, finalZ);
+        }
+
+        if (syncChunks) {
+            this.syncVisibleChunks(true);
+        }
+
+        const depth = this.getDepthTier?.(Math.floor(finalX / this.chunkSize), Math.floor(finalZ / this.chunkSize)) ?? 0;
+        this.emitDepthTierChanged?.(depth);
+        return { x: finalX, z: finalZ, chunkKey: `${Math.floor(finalX / this.chunkSize)},${Math.floor(finalZ / this.chunkSize)}` };
+    }
+
+    getDebugPointsOfInterest() {
+        const locations = [];
+        const spawn = this.getSpawnTile?.() ?? { x: 0, y: 0 };
+        locations.push({
+            id: 'spawn',
+            category: 'SPAWN',
+            name: 'Bunker Crash Site',
+            x: Number(spawn.x ?? 0),
+            z: Number(spawn.y ?? 0),
+            chunkKey: '0,0'
+        });
+
+        const radialPlan = this.getRadialMazePlan?.();
+        if (radialPlan?.sites) {
+            for (const site of radialPlan.sites) {
+                const sx = Number.isFinite(site.worldX) ? site.worldX : Number.isFinite(site.x) ? site.x : ((site.chunkX ?? 0) * this.chunkSize + this.chunkSize * 0.5);
+                const sz = Number.isFinite(site.worldZ) ? site.worldZ : Number.isFinite(site.z) ? site.z : ((site.chunkY ?? 0) * this.chunkSize + this.chunkSize * 0.5);
+                locations.push({
+                    id: site.id,
+                    category: site.category || (site.id.includes('camp') ? 'CAMP' : site.id.includes('hive') ? 'HIVE' : 'SITE'),
+                    name: site.name || site.label || site.id,
+                    x: sx,
+                    z: sz,
+                    ring: site.ring ?? 0,
+                    chunkKey: site.chunkKey || `${Math.floor(sx / this.chunkSize)},${Math.floor(sz / this.chunkSize)}`
+                });
+            }
+        }
+
+        if (this.camps) {
+            for (const camp of this.camps) {
+                if (!locations.some((l) => l.id === camp.id)) {
+                    const cx = Number.isFinite(camp.worldX) ? camp.worldX : Number.isFinite(camp.x) ? camp.x : ((camp.chunkX ?? 0) * this.chunkSize + 10);
+                    const cz = Number.isFinite(camp.worldZ) ? camp.worldZ : Number.isFinite(camp.z) ? camp.z : ((camp.chunkY ?? 0) * this.chunkSize + 10);
+                    locations.push({
+                        id: camp.id,
+                        category: 'CAMP',
+                        name: camp.label || camp.name || camp.id,
+                        x: cx,
+                        z: cz,
+                        chunkKey: camp.chunkKey || `${Math.floor(cx / this.chunkSize)},${Math.floor(cz / this.chunkSize)}`
+                    });
+                }
+            }
+        }
+
+        if (this.hiveSites) {
+            for (const hive of this.hiveSites) {
+                if (!locations.some((l) => l.id === hive.id)) {
+                    const hx = Number.isFinite(hive.worldX) ? hive.worldX : Number.isFinite(hive.x) ? hive.x : ((hive.chunkX ?? 0) * this.chunkSize + 10);
+                    const hz = Number.isFinite(hive.worldZ) ? hive.worldZ : Number.isFinite(hive.z) ? hive.z : ((hive.chunkY ?? 0) * this.chunkSize + 10);
+                    locations.push({
+                        id: hive.id,
+                        category: 'HIVE',
+                        name: hive.label || hive.name || hive.id,
+                        x: hx,
+                        z: hz,
+                        chunkKey: hive.chunkKey || `${Math.floor(hx / this.chunkSize)},${Math.floor(hz / this.chunkSize)}`
+                    });
+                }
+            }
+        }
+
+        locations.push({
+            id: 'showroom',
+            category: 'DEBUG',
+            name: '4-Wall Prop & Enemy Validation Gallery',
+            x: SHOWROOM_CHUNK_X * this.chunkSize + 10,
+            z: SHOWROOM_CHUNK_Y * this.chunkSize + 10,
+            chunkKey: `${SHOWROOM_CHUNK_X},${SHOWROOM_CHUNK_Y}`
+        });
+
+        return locations;
+    }
+
+    getComprehensiveDebugStats() {
+        const pX = this.player?.position?.x ?? 0;
+        const pZ = this.player?.position?.z ?? 0;
+        const chunkX = Math.floor(pX / this.chunkSize);
+        const chunkY = Math.floor(pZ / this.chunkSize);
+        const biome = this.getBiomeKeyForWorldPosition?.(pX, pZ) ?? 'ACTIVE';
+        const depthTier = this.getDepthTier?.(chunkX, chunkY) ?? 0;
+        const act = this.isAct2Active?.() ? 2 : 1;
+
+        const unlocks = this.bank?.getState?.()?.unlocks ?? {};
+        const totalBaseGoals = 6;
+        const builtBaseGoals = Object.values(unlocks).filter(Boolean).length;
+
+        const totalCamps = this.camps?.length ?? (Object.keys(ACT2_CAMP_LABELS ?? {}).length || 4);
+        const discoveredCamps = (this.camps ?? []).filter((c) => c.discovered || c.visited).length;
+        const completedCampQuests = (this.camps ?? []).filter((c) => c.questCompleted || c.status === 'secured').length;
+
+        const totalHives = this.hiveSites?.length ?? (ACT2_HIVE_SITES?.length ?? 4);
+        const destroyedHives = (this.hiveSites ?? []).filter((h) => h.status === 'destroyed' || h.destroyed).length;
+
+        const ringCrossings = this.worldPlan?.ringCrossings ?? [];
+        const totalRingCrossings = ringCrossings.length;
+        const openCrossings = this._openCrossings?.size ?? 0;
+
+        const totalMilestones = 3;
+        const defeatedBosses = this.killedBosses?.size ?? 0;
+
+        const temp = this.ambientTemperature ?? (biome === 'CRYO' ? -42 : biome === 'BIO' ? 18 : -15);
+        const o2Frac = Math.round(((this.playerVitals?.o2 ?? 100) / 100) * 100);
+        const hpFrac = Math.round(((this.playerVitals?.hp ?? 100) / Math.max(1, this.playerVitals?.maxHp ?? 100)) * 100);
+
+        const renderer = this.renderer;
+        const renderInfo = renderer?.info?.render ?? {};
+        const memoryInfo = renderer?.info?.memory ?? {};
+
+        return {
+            seed: this.runEntropy ?? 0,
+            act,
+            level: depthTier,
+            landform: this.getChunkLandform?.(chunkX, chunkY) ?? 'MAZE',
+            position: { x: Math.round(pX * 10) / 10, z: Math.round(pZ * 10) / 10, chunk: `${chunkX},${chunkY}` },
+            environment: {
+                biome,
+                temperatureC: temp,
+                hazardPressure: this.hazardZonePressure ?? 0,
+                infectionPressure: this.infectionPressure ?? 0,
+                dayNightPhase: this.dayNightCyclePhase ?? 'day'
+            },
+            player: {
+                type: this.playerType,
+                hp: `${hpFrac}%`,
+                o2: `${o2Frac}%`,
+                godMode: Boolean(this.godMode)
+            },
+            events: {
+                baseUpgrades: { completed: builtBaseGoals, total: totalBaseGoals, label: `${builtBaseGoals}/${totalBaseGoals}` },
+                camps: { discovered: discoveredCamps, questsCompleted: completedCampQuests, total: totalCamps, label: `${completedCampQuests}/${totalCamps}` },
+                hives: { neutralized: destroyedHives, total: totalHives, label: `${destroyedHives}/${totalHives}` },
+                ringGates: { unlocked: openCrossings, total: totalRingCrossings, label: `${openCrossings}/${totalRingCrossings}` },
+                bosses: { defeated: defeatedBosses, total: totalMilestones, label: `${defeatedBosses}/${totalMilestones}` }
+            },
+            performance: {
+                drawCalls: renderInfo.calls ?? 0,
+                triangles: renderInfo.triangles ?? 0,
+                textures: memoryInfo.textures ?? 0,
+                geometries: memoryInfo.geometries ?? 0,
+                activeChunks: this.chunkMeshes?.size ?? 0
+            }
+        };
+    }
+
+    async triggerDebugEvent(name, options = {}) {
+        const evt = String(name || '').toLowerCase();
+        switch (evt) {
+            case 'queen_hallucination': {
+                const intensity = Number(options.intensity ?? 0.85);
+                window.dispatchEvent(new CustomEvent('queen-hallucination', { detail: { intensity } }));
+                this.lineDirector?.requestLine?.('hallucination', this.buildLineDirectorContext?.({ intensity }));
+                return `Triggered Queen Hallucination (intensity: ${intensity})`;
+            }
+            case 'blackout': {
+                const seconds = Number(options.seconds ?? 8);
+                this.triggerLightsOut?.(seconds);
+                return `Triggered Sector Blackout (${seconds}s)`;
+            }
+            case 'corrupt_compass': {
+                const seconds = Number(options.seconds ?? 20);
+                this.corruptCompass?.(seconds);
+                return `Triggered Compass Corruption (${seconds}s)`;
+            }
+            case 'spawn_patrol': {
+                const count = this.spawnPatrolNearPlayer?.(Number(options.count ?? 3)) ?? 0;
+                return `Spawned patrol wave of ${count} hostiles`;
+            }
+            case 'milestone_boss': {
+                const bossType = options.bossId || 'boss_cybersnail';
+                const pos = this.player?.position ?? { x: 0, z: 0 };
+                this.spawnMilestoneBoss?.(bossType, pos.x + 4, pos.z + 4);
+                return `Spawned milestone boss: ${bossType}`;
+            }
+            case 'camp_quest': {
+                const camp = this.camps?.[0];
+                if (camp) {
+                    this.triggerCampQuestAdvance?.(camp.id);
+                    return `Advanced camp quest for ${camp.id}`;
+                }
+                return 'No active camp to advance quest';
+            }
+            case 'drop_gear':
+            case 'drop_relic':
+            case 'drop_lore': {
+                const pos = this.player?.position ?? { x: 0, z: 0 };
+                this.spawnPickupAt?.({ worldX: pos.x + 1, worldZ: pos.z + 1, type: evt === 'drop_relic' ? 'relic' : 'tech' });
+                return 'Spawned test drop near player';
+            }
+            case 'win':
+            case 'victory':
+            case 'ending': {
+                window.dispatchEvent(new CustomEvent('mission-complete', { detail: { reason: 'debug_win' } }));
+                return 'Triggered mission victory event';
+            }
+            case 'game_over':
+            case 'kill_player': {
+                this.handlePlayerDeath?.('debug_kill');
+                return 'Triggered player defeat event';
+            }
+            default:
+                return `Unknown event '${name}'. Available: queen_hallucination, blackout, corrupt_compass, spawn_patrol, milestone_boss, camp_quest, drop_gear, win, game_over`;
+        }
+    }
+
+    async buildDebugShowroom() {
+        if (this._debugShowroomBuilt && this._debugShowroomGroup) {
+            return this._debugShowroomGroup;
+        }
+        const { buildShowroomScene } = await import('./debugShowroom.js');
+        const showroom = await buildShowroomScene(this);
+        this._debugShowroomGroup = showroom.root;
+        this.scene.add(this._debugShowroomGroup);
+        this._debugShowroomBuilt = true;
+        return showroom;
     }
 
     getMazePersistenceState() {

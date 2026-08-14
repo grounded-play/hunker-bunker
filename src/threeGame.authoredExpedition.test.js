@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ThreeGame } from './threeGame.js';
 import { generateRadialMazeExpedition } from './mazeExpedition.js';
 import { buildWorldPlan } from './ringManifest.js';
@@ -202,29 +202,48 @@ describe('threeGame authored expedition runtime integration', () => {
     });
 
     describe('authored-world persistence rollback policy', () => {
-        it('does not let an enabled save override a currently disabled runtime flag', () => {
-            const fakeThis = {
-                authoredWorldTiles: false,
-                worldPlan: { seed: 7, version: 1 },
-                getBuiltGoalKeys: () => new Set(),
-                applyMilestoneBossRuntimeEvent: () => null,
-                reconcileAuthoredWorldProgression: () => null
-            };
+        it('does not let an enabled save override a currently disabled runtime flag', async () => {
+            // AUTHORED_WORLD_TILES_ENABLED is on in this build, so the
+            // "disabled runtime" branch of restoreMazePersistenceState's
+            // OR-guard can no longer be reached via the ambient module
+            // export -- isolate it with a scoped mock instead of weakening
+            // the assertion, since a future rollback of the flag still needs
+            // this safety property covered (a stale enabled=true in an old
+            // save must not resurrect authored-world content on a build that
+            // has since turned the feature back off).
+            vi.resetModules();
+            vi.doMock('./featureFlags.js', async (importOriginal) => ({
+                ...(await importOriginal()),
+                AUTHORED_WORLD_TILES_ENABLED: false
+            }));
+            try {
+                const { ThreeGame: ThreeGameWithFlagDisabled } = await import('./threeGame.js');
+                const fakeThis = {
+                    authoredWorldTiles: false,
+                    worldPlan: { seed: 7, version: 1 },
+                    getBuiltGoalKeys: () => new Set(),
+                    applyMilestoneBossRuntimeEvent: () => null,
+                    reconcileAuthoredWorldProgression: () => null
+                };
 
-            expect(ThreeGame.prototype.restoreMazePersistenceState.call(fakeThis, {
-                generationVersion: 2,
-                access: {},
-                doors: [],
-                authoredWorld: {
-                    enabled: true,
-                    seed: 7,
-                    version: 1,
-                    completedMissionIds: ['restore_ring_power']
-                }
-            })).toBe(true);
-            expect(fakeThis.authoredWorldTiles).toBe(false);
-            expect(fakeThis.worldPlan).toBeNull();
-            expect(fakeThis.completedRingCrossingMissionIds).toEqual(new Set(['restore_ring_power']));
+                expect(ThreeGameWithFlagDisabled.prototype.restoreMazePersistenceState.call(fakeThis, {
+                    generationVersion: 2,
+                    access: {},
+                    doors: [],
+                    authoredWorld: {
+                        enabled: true,
+                        seed: 7,
+                        version: 1,
+                        completedMissionIds: ['restore_ring_power']
+                    }
+                })).toBe(true);
+                expect(fakeThis.authoredWorldTiles).toBe(false);
+                expect(fakeThis.worldPlan).toBeNull();
+                expect(fakeThis.completedRingCrossingMissionIds).toEqual(new Set(['restore_ring_power']));
+            } finally {
+                vi.doUnmock('./featureFlags.js');
+                vi.resetModules();
+            }
         });
 
         it('fails closed when a restored authored plan identity does not match', () => {

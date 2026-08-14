@@ -3894,7 +3894,7 @@ window.addEventListener('run-cards-drawn', (event) => {
 
     const seedHUD = document.getElementById('hud-run-seed');
     if (seedHUD) {
-        if (activeRunSeed !== null) {
+        if (activeRunSeed !== null && document.body.classList.contains('show-debug')) {
             seedHUD.textContent = `SEED: ${activeRunSeed}`;
             seedHUD.classList.remove('hidden');
         } else {
@@ -5816,7 +5816,8 @@ const cutsceneImagePreloadCache = new Map();
 const cutsceneVideoPreloadCache = new Map();
 
 function getCutsceneVideoHost() {
-    return document.getElementById('game-viewport')
+    return document.getElementById('stage-root')
+        ?? document.getElementById('game-viewport')
         ?? document.getElementById('game-container')
         ?? document.body;
 }
@@ -5881,11 +5882,19 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         let guardTimer = null;
         let videoElement = null;
         let checkSkipInterval = null;
+        let inputArmed = false;
+
+        const armTimer = window.setTimeout(() => {
+            inputArmed = true;
+        }, 600);
 
         const clearTimers = () => {
             if (guardTimer) {
                 window.clearTimeout(guardTimer);
                 guardTimer = null;
+            }
+            if (armTimer) {
+                window.clearTimeout(armTimer);
             }
         };
 
@@ -5919,11 +5928,13 @@ function playClassIntroSequence(playerType = 'SCOUT') {
         }
 
         function onKey(event) {
+            if (!inputArmed && event.key !== 'Escape') return;
             event.preventDefault();
             cleanupAndResolve();
         }
 
         function onPointerUp(event) {
+            if (!inputArmed) return;
             event.preventDefault();
             cleanupAndResolve();
         }
@@ -5937,62 +5948,55 @@ function playClassIntroSequence(playerType = 'SCOUT') {
             }
         }, 50);
 
-        // Start directly on the authored class movie. The old GIF pre-roll
-        // looked like a stray flash/interstitial before the real intro loaded.
         overlay.append(skipHint);
         host.appendChild(overlay);
         buildVideo();
 
         function buildVideo() {
-        videoElement = document.createElement('video');
-        videoElement.className = 'class-intro-video';
-        videoElement.style.opacity = '0';
-        videoElement.playsInline = true;
-        // The class clips contain unexplained combat/gunfire audio that does
-        // not match the on-screen action. Keep the visual briefing clean.
-        videoElement.muted = true;
-        videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
-        videoElement.autoplay = true;
-        videoElement.controls = false;
-        videoElement.preload = 'auto';
-        videoElement.poster = assetUrl(`/cutscenes/${webmBase}-poster.jpg`);
-
-        const webmSource = document.createElement('source');
-        webmSource.src = assetUrl(`/cutscenes/${webmBase}.webm`);
-        webmSource.type = 'video/webm';
-
-        // The intro is a one-shot cutscene and never loops.
-        if (videoElement.canPlayType('video/webm')) {
-            videoElement.append(webmSource);
-        } else {
-            const mp4Fallback = document.createElement('source');
-            mp4Fallback.src = assetUrl(`/cutscenes/${webmBase}.mp4`);
-            mp4Fallback.type = 'video/mp4';
-            videoElement.append(mp4Fallback);
-        }
-        overlay.insertBefore(videoElement, skipHint);
-
-        guardTimer = window.setTimeout(() => {
-            if (videoElement.readyState < 2) cleanupAndResolve();
-        }, 4000);
-
-        videoElement.addEventListener('playing', () => {
-            if (guardTimer) {
-                window.clearTimeout(guardTimer);
-                guardTimer = null;
-            }
+            videoElement = document.createElement('video');
+            videoElement.className = 'class-intro-video';
             videoElement.style.opacity = '1';
-        });
-        videoElement.addEventListener('loadeddata', () => {
-            videoElement.style.opacity = '1';
-        }, { once: true });
-        videoElement.addEventListener('ended', cleanupAndResolve);
-        videoElement.addEventListener('error', cleanupAndResolve);
-
-        videoElement.play().catch(() => {
+            videoElement.playsInline = true;
             videoElement.muted = true;
-            return videoElement.play();
-        }).catch(cleanupAndResolve);
+            videoElement.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
+            videoElement.autoplay = true;
+            videoElement.controls = false;
+            videoElement.preload = 'auto';
+            videoElement.poster = assetUrl(`/cutscenes/${webmBase}-poster.jpg`);
+            videoElement.src = assetUrl(`/cutscenes/${webmBase}.webm`);
+
+            overlay.insertBefore(videoElement, skipHint);
+
+            guardTimer = window.setTimeout(() => {
+                if (videoElement.readyState < 2 && videoElement.currentTime <= 0) {
+                    cleanupAndResolve();
+                }
+            }, 8000);
+
+            videoElement.addEventListener('playing', () => {
+                if (guardTimer) {
+                    window.clearTimeout(guardTimer);
+                    guardTimer = null;
+                }
+                videoElement.style.opacity = '1';
+            });
+            videoElement.addEventListener('loadeddata', () => {
+                videoElement.style.opacity = '1';
+            }, { once: true });
+            videoElement.addEventListener('ended', cleanupAndResolve);
+            videoElement.addEventListener('error', () => {
+                if (videoElement.src && !videoElement.src.endsWith('.mp4')) {
+                    videoElement.src = assetUrl(`/cutscenes/${webmBase}.mp4`);
+                    videoElement.play().catch(cleanupAndResolve);
+                } else {
+                    cleanupAndResolve();
+                }
+            });
+
+            videoElement.play().catch(() => {
+                videoElement.muted = true;
+                return videoElement.play();
+            }).catch(cleanupAndResolve);
         }
     });
 }
@@ -6636,6 +6640,15 @@ function setDebugMode(active) {
         mainDebugToggle.checked = enabled;
         mainDebugToggle.disabled = !developerToolsAuthorized;
     }
+    const seedHUD = document.getElementById('hud-run-seed');
+    if (seedHUD) {
+        if (enabled && activeRunSeed !== null) {
+            seedHUD.textContent = `SEED: ${activeRunSeed}`;
+            seedHUD.classList.remove('hidden');
+        } else {
+            seedHUD.classList.add('hidden');
+        }
+    }
 }
 
 if (window.electronAPI?.getQaToolsEnabled) {
@@ -6911,6 +6924,10 @@ function executeDevCommand(input) {
         case 'commands':
         case '?':
             result = 'Available commands:\n'
+                + '  tp <target>         - Teleport: crash, showroom, camp [id], hive [id], queen, chunk <x y>, coords <x z>, list\n'
+                + '  stats / state       - Comprehensive game telemetry: Act, Level, Temp, Events x/total, FPS, and assets\n'
+                + '  event <type> [args] - Trigger event: queen_hallucination, blackout, corrupt_compass, milestone_boss, camp_quest, spawn_patrol, drop_gear, win, game_over\n'
+                + '  seed [number]       - View or set active run seed\n'
                 + '  unlock <key>        - Unlock specific achievement\n'
                 + '  unlock_all          - Unlock all achievements\n'
                 + '  reset_ach           - Clear local achievement unlocks\n'
@@ -6930,6 +6947,136 @@ function executeDevCommand(input) {
                 + '  steamlog            - View Steam startup diagnostics\n'
                 + '  clear / cls         - Clear console log';
             break;
+        case 'tp':
+        case 'teleport':
+        case 'goto': {
+            const game = window.game;
+            if (!game?.teleportPlayerTo) {
+                result = 'Game not initialized or inactive.';
+                resultType = 'error';
+                break;
+            }
+            const target = String(arg || '').trim().toLowerCase();
+            if (!target || target === 'list' || target === 'locations' || target === 'poi') {
+                const pois = game.getDebugPointsOfInterest?.() ?? [];
+                result = `POINTS OF INTEREST (${pois.length} locations):\n`
+                    + pois.map((p) => `  [${p.category.padEnd(6)}] ${p.id.padEnd(20)} (${p.x.toFixed(1)}, ${p.z.toFixed(1)}) chunk:${p.chunkKey} · ${p.name}`).join('\n')
+                    + '\nUsage: tp <id> (e.g. tp crash, tp showroom, tp camp, tp hive, tp queen, tp 120 45)';
+                break;
+            }
+            if (target === 'showroom' || target === 'gallery') {
+                result = 'Building 4-wall showroom gallery and teleporting...';
+                void game.buildDebugShowroom?.().then((showroom) => {
+                    game.godMode = true;
+                    game.teleportPlayerTo(showroom.spawnX || 9510, showroom.spawnZ || 9510, { syncChunks: false, safeFloor: false });
+                    logDevConsole(`Teleported to Debug Showroom Gallery at (${(showroom.spawnX || 9510).toFixed(1)}, ${(showroom.spawnZ || 9510).toFixed(1)})`, 'success');
+                }).catch((err) => {
+                    logDevConsole(`Failed opening showroom: ${err?.message ?? err}`, 'error');
+                });
+                break;
+            }
+            if (target === 'crash' || target === 'spawn' || target === 'origin') {
+                const spawn = game.getSpawnTile?.() ?? { x: 0, y: 0 };
+                const res = game.teleportPlayerTo(spawn.x, spawn.y);
+                result = res ? `Teleported to Bunker Spawn (${res.x.toFixed(1)}, ${res.z.toFixed(1)})` : 'Failed teleporting to spawn.';
+                break;
+            }
+            if (target.startsWith('chunk')) {
+                const chunkParts = target.split(/\s+/).slice(1);
+                const cx = parseInt(chunkParts[0], 10) || 0;
+                const cy = parseInt(chunkParts[1], 10) || 0;
+                const worldX = cx * game.chunkSize + game.chunkSize * 0.5;
+                const worldZ = cy * game.chunkSize + game.chunkSize * 0.5;
+                const res = game.teleportPlayerTo(worldX, worldZ);
+                result = res ? `Teleported to chunk (${cx}, ${cy}) at (${res.x.toFixed(1)}, ${res.z.toFixed(1)})` : 'Failed chunk teleport.';
+                break;
+            }
+            const coordMatch = target.match(/^(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)$/);
+            if (coordMatch) {
+                const wx = parseFloat(coordMatch[1]);
+                const wz = parseFloat(coordMatch[2]);
+                const res = game.teleportPlayerTo(wx, wz);
+                result = res ? `Teleported to world coordinates (${res.x.toFixed(1)}, ${res.z.toFixed(1)})` : 'Failed coordinates teleport.';
+                break;
+            }
+            const pois = game.getDebugPointsOfInterest?.() ?? [];
+            const matched = pois.find((p) => p.id === target || p.id.toLowerCase().includes(target) || p.name.toLowerCase().includes(target));
+            if (matched) {
+                const res = game.teleportPlayerTo(matched.x, matched.z);
+                result = res ? `Teleported to ${matched.name} (${res.x.toFixed(1)}, ${res.z.toFixed(1)}) [${matched.chunkKey}]` : `Failed teleporting to ${matched.id}.`;
+            } else {
+                result = `Unknown target '${target}'. Type 'tp list' for available points of interest.`;
+                resultType = 'error';
+            }
+            break;
+        }
+        case 'stats':
+        case 'state':
+        case 'telemetry':
+        case 'info': {
+            const game = window.game;
+            if (!game?.getComprehensiveDebugStats) {
+                result = 'Game not initialized or inactive.';
+                resultType = 'error';
+                break;
+            }
+            const s = game.getComprehensiveDebugStats();
+            result = `══════════════════ [ GAME STATE & TELEMETRY ] ══════════════════\n`
+                + `  RUN SEED:       ${s.seed} (entropy)\n`
+                + `  PROGRESSION:    Act ${s.act} · Level/Depth ${s.level} · Landform: ${s.landform}\n`
+                + `  POSITION:       (${s.position.x}, ${s.position.z}) [Chunk ${s.position.chunk}]\n`
+                + `  ENVIRONMENT:    Biome: ${s.environment.biome} · Temp: ${s.environment.temperatureC}°C · Phase: ${s.environment.dayNightPhase}\n`
+                + `                  Hazard: ${(s.environment.hazardPressure * 100).toFixed(0)}% · Infection: ${(s.environment.infectionPressure * 100).toFixed(0)}%\n`
+                + `  PLAYER:         ${s.player.type} · HP: ${s.player.hp} · O₂: ${s.player.o2} · God: ${s.player.godMode ? 'ON' : 'OFF'}\n`
+                + `────────────────────── [ EVENTS & QUESTS ] ──────────────────────\n`
+                + `  BASE UPGRADES:  ${s.events.baseUpgrades.label} goals built\n`
+                + `  CAMPS:          ${s.events.camps.discovered}/${s.events.camps.total} discovered · ${s.events.camps.questsCompleted}/${s.events.camps.total} quests done\n`
+                + `  HIVES:          ${s.events.hives.neutralized}/${s.events.hives.total} neutralized\n`
+                + `  RING GATES:     ${s.events.ringGates.unlocked}/${s.events.ringGates.total} unlocked\n`
+                + `  BOSSES:         ${s.events.bosses.defeated}/${s.events.bosses.total} defeated\n`
+                + `───────────────────── [ RENDERER PERFORMANCE ] ─────────────────────\n`
+                + `  FPS:            ${Math.round(fpsFrames / Math.max((performance.now() - fpsLastTime) / 1000, 0.001))} (sampled)\n`
+                + `  DRAWS/TRIS:     ${s.performance.drawCalls} calls · ${s.performance.triangles.toLocaleString()} triangles\n`
+                + `  ASSETS:         ${s.performance.textures} textures · ${s.performance.geometries} geometries · ${s.performance.activeChunks} active chunks\n`
+                + `════════════════════════════════════════════════════════════════`;
+            break;
+        }
+        case 'event':
+        case 'trigger': {
+            const game = window.game;
+            if (!game?.triggerDebugEvent) {
+                result = 'Game not initialized or inactive.';
+                resultType = 'error';
+                break;
+            }
+            const eventParts = String(arg || '').trim().split(/\s+/);
+            const evtName = eventParts[0];
+            const evtArg = eventParts[1];
+            result = 'Triggering event...';
+            void game.triggerDebugEvent(evtName, { intensity: evtArg, seconds: evtArg, bossId: evtArg, count: evtArg }).then((msg) => {
+                logDevConsole(msg, 'success');
+            }).catch((err) => {
+                logDevConsole(`Event trigger failed: ${err?.message ?? err}`, 'error');
+            });
+            break;
+        }
+        case 'seed': {
+            const game = window.game;
+            if (arg) {
+                const newSeed = parseInt(arg, 10);
+                if (Number.isFinite(newSeed) && game) {
+                    game.runEntropy = newSeed >>> 0;
+                    game.fixedRunEntropy = true;
+                    result = `Run seed set to ${game.runEntropy} (pinned).`;
+                } else {
+                    result = 'Invalid seed number.';
+                    resultType = 'error';
+                }
+            } else {
+                result = `Current Run Seed: ${game?.runEntropy ?? 'none'}`;
+            }
+            break;
+        }
         case 'layout':
         case 'stage':
         case 'metrics':
@@ -7081,6 +7228,61 @@ function executeDevCommand(input) {
     logDevConsole(result, resultType);
 }
 
+// Programmatic Automation and Testing API
+window.__DEBUG__ = {
+    teleport: (target, options) => {
+        const game = window.game;
+        if (!game) return Promise.reject(new Error('Game not initialized'));
+        if (target === 'showroom' || target === 'gallery') {
+            return game.buildDebugShowroom().then((showroom) => {
+                game.godMode = true;
+                return game.teleportPlayerTo(showroom.spawnX || 9510, showroom.spawnZ || 9510, { syncChunks: false, safeFloor: false });
+            });
+        }
+        if (typeof target === 'object' && target !== null && Number.isFinite(target.x) && Number.isFinite(target.z)) {
+            return Promise.resolve(game.teleportPlayerTo(target.x, target.z, options));
+        }
+        const targetStr = String(target).toLowerCase();
+        if (targetStr === 'crash' || targetStr === 'spawn') {
+            const spawn = game.getSpawnTile?.() ?? { x: 0, y: 0 };
+            return Promise.resolve(game.teleportPlayerTo(spawn.x, spawn.y, options));
+        }
+        const pois = game.getDebugPointsOfInterest?.() ?? [];
+        const matched = pois.find((p) => p.id === targetStr || p.id.toLowerCase().includes(targetStr) || p.name.toLowerCase().includes(targetStr));
+        if (matched) {
+            return Promise.resolve(game.teleportPlayerTo(matched.x, matched.z, options));
+        }
+        return Promise.reject(new Error(`Location '${target}' not found`));
+    },
+    triggerEvent: (type, options) => window.game?.triggerDebugEvent?.(type, options),
+    getLocations: () => window.game?.getDebugPointsOfInterest?.() ?? [],
+    getStats: () => window.game?.getComprehensiveDebugStats?.() ?? null,
+    getRunSeed: () => window.game?.runEntropy ?? 0,
+    openShowroom: () => window.__DEBUG__.teleport('showroom'),
+    getState: () => ({
+        appPhase,
+        playerType: window.game?.playerType,
+        inputEnabled: window.game?.inputEnabled,
+        stats: window.game?.getComprehensiveDebugStats?.()
+    }),
+    startRun: (options) => {
+        if (typeof launchStandardRun === 'function') {
+            launchStandardRun(options);
+            return true;
+        }
+        return false;
+    },
+    skipIntro: () => {
+        window.skipAllIntro = true;
+        return true;
+    },
+    nukeEnemies: () => devKillSnails(),
+    heal: () => devHealPlayer(),
+    grantResources: () => devGrantResources(),
+    log: (msg, type = 'system') => logDevConsole(msg, type)
+};
+
+
 function openDevConsoleModal() {
     if (!developerToolsAuthorized) {
         setDebugMode(false);
@@ -7153,6 +7355,7 @@ function populateDevAchievementDropdowns() {
 // Dev Console UI Bindings
 document.getElementById('debug-open-console')?.addEventListener('click', openDevConsoleModal);
 document.getElementById('debug-launch-rgb')?.addEventListener('click', () => launchRgb());
+document.getElementById('debug-open-showroom')?.addEventListener('click', () => executeDevCommand('tp showroom'));
 document.getElementById('debug-achievement-select')?.addEventListener('change', (e) => {
     const key = e.target.value;
     if (key) {

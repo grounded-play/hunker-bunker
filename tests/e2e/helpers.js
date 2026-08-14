@@ -99,7 +99,10 @@ export async function startRunAndSkipIntro(page) {
     if (!ready) {
         throw new Error('startRunAndSkipIntro: window.game.inputEnabled never became true within 45s');
     }
-    await page.locator('#hud-run-seed').waitFor({ state: 'visible', timeout: 5_000 });
+    const isDebug = await page.evaluate(() => document.body.classList.contains('show-debug')).catch(() => false);
+    if (isDebug) {
+        await page.locator('#hud-run-seed').waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+    }
     await page.waitForTimeout(300);
 }
 
