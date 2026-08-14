@@ -35,7 +35,13 @@ describe('ThreeGame - Menu Gyro & Motion Parallax System', () => {
     it('calculates menu camera parallax offset from device orientation and pointer input', () => {
         const fakeGame = {
             performanceProfile: 'menu',
+            facingYaw: 0,
+            cameraAzimuth: Math.PI,
+            cameraOrbitRadius: Math.hypot(8, 8),
+            cameraLift: 10,
             cameraOffset: new THREE.Vector3(8, 10, 8),
+            cameraPlanarForward: new THREE.Vector2(),
+            cameraPlanarRight: new THREE.Vector2(),
             player: { position: new THREE.Vector3(0, 0, 0) },
             camera: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
             _rawGyroX: 0.5,
@@ -56,7 +62,13 @@ describe('ThreeGame - Menu Gyro & Motion Parallax System', () => {
     it('decays menu parallax offset when switching to gameplay profile', () => {
         const fakeGame = {
             performanceProfile: 'gameplay',
+            facingYaw: 0,
+            cameraAzimuth: Math.PI,
+            cameraOrbitRadius: Math.hypot(8, 8),
+            cameraLift: 10,
             cameraOffset: new THREE.Vector3(8, 10, 8),
+            cameraPlanarForward: new THREE.Vector2(),
+            cameraPlanarRight: new THREE.Vector2(),
             player: { position: new THREE.Vector3(0, 0, 0) },
             camera: new THREE.PerspectiveCamera(60, 1, 0.1, 1000),
             _menuParallaxX: 1.0,

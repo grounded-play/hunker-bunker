@@ -46,7 +46,7 @@ export const TiltShiftPassShader = {
     `
 };
 import { assetUrl } from './assetUrl.js';
-import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw } from './cameraYaw.js';
+import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw, stepAngleTowards } from './cameraYaw.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
@@ -973,6 +973,7 @@ function isChunkTraversalConnected(grid) {
 // already skipped by the hasAlpha/hasSourceAlpha check in the common case,
 // and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
 const keyedSpriteTextureCache = new Map();
+const CAMERA_ROT_SPEED = 4.0;
 
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
@@ -17233,6 +17234,17 @@ export class ThreeGame {
     }
 
     updateCamera(delta) {
+        const targetAzimuth = this.facingYaw + Math.PI;
+        this.cameraAzimuth = stepAngleTowards(this.cameraAzimuth, targetAzimuth, CAMERA_ROT_SPEED, delta);
+        const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
+        this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
+        this.cameraPlanarRight.set(camBasis.right.x, camBasis.right.y);
+        this.cameraOffset.set(
+            this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
+            this.cameraLift,
+            this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
+        );
+
         const target = new THREE.Vector3(
             this.player.position.x + this.cameraOffset.x,
             this.player.position.y + this.cameraOffset.y,
@@ -17282,6 +17294,15 @@ export class ThreeGame {
 
     snapCameraToPlayer() {
         if (!this.player || !this.camera) return;
+        this.cameraAzimuth = wrapAngle(this.facingYaw + Math.PI);
+        const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
+        this.cameraPlanarForward.set(camBasis.forward.x, camBasis.forward.y);
+        this.cameraPlanarRight.set(camBasis.right.x, camBasis.right.y);
+        this.cameraOffset.set(
+            this.cameraOrbitRadius * Math.sin(this.cameraAzimuth),
+            this.cameraLift,
+            this.cameraOrbitRadius * Math.cos(this.cameraAzimuth)
+        );
         this.camera.position.set(
             this.player.position.x + this.cameraOffset.x,
             this.player.position.y + this.cameraOffset.y,
