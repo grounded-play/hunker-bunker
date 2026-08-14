@@ -134,10 +134,16 @@ export class SongInterstitialController {
         if (this.track) this.track.textContent = `TRACK ${spec.id}`;
         const [loaded, motionLoaded] = await Promise.all([
             this.loadStill(spec),
-            this.loadMotion(spec),
-            this.startSong(spec)
+            this.loadMotion(spec)
         ]);
         if (run !== this._run) return { shown: false, fallback: !loaded };
+
+        if (!motionLoaded) {
+            await this.startSong(spec);
+        } else {
+            this.AudioManager?.stopMusic?.({ fadeSeconds: 0.18 });
+        }
+
         this.root.classList.toggle('has-placeholder', !loaded);
         if (this.image) {
             this.image.hidden = !loaded || motionLoaded;
@@ -147,6 +153,8 @@ export class SongInterstitialController {
             this.video.hidden = !motionLoaded;
             if (motionLoaded) {
                 this.root.classList.add('has-motion');
+                this.video.muted = false;
+                this.video.volume = 0.86;
                 this.video.currentTime = 0;
                 this.video.play?.().catch?.(() => {});
             }
@@ -174,6 +182,7 @@ export class SongInterstitialController {
         if (this.video) {
             this.video.pause?.();
             this.video.removeAttribute?.('src');
+            this.video.load?.();
         }
     }
 }
