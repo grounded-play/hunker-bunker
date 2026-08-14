@@ -4247,9 +4247,10 @@ export class ThreeGame {
 
         this.updateMouseLookPrompt = () => {
             const prompt = document.getElementById('mouse-look-prompt');
-            if (!prompt) return;
-            const shouldShow = !this._pointerLocked && this.isGameplayInputActive();
-            prompt.classList.toggle('hidden', !shouldShow);
+            const crosshair = document.getElementById('gameplay-crosshair');
+            const gameplayActive = this.isGameplayInputActive();
+            if (prompt) prompt.classList.toggle('hidden', this._pointerLocked || !gameplayActive);
+            if (crosshair) crosshair.classList.toggle('hidden', !gameplayActive);
         };
 
         this.handlePointerLockChange = () => {
@@ -17198,6 +17199,7 @@ export class ThreeGame {
         if (this._pointerLocked && this.hasBlockingGameplayOverlay?.()) {
             document.exitPointerLock?.();
         }
+        this.updateMouseLookPrompt?.();
         const targetAzimuth = this.facingYaw + Math.PI;
         this.cameraAzimuth = stepAngleTowards(this.cameraAzimuth, targetAzimuth, CAMERA_ROT_SPEED, delta);
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);

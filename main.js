@@ -10817,6 +10817,7 @@ function initTacticalCursor() {
         // and only dispatches this for other listeners (updateAimFromClient etc).
         // Showing this lagged cursor too would put two crosshairs on screen.
         if (e.isControllerSynthetic) return;
+        if (document.pointerLockElement) return;
         // Ensure clientX and clientY are valid, finite numbers
         if (typeof e.clientX !== 'number' || typeof e.clientY !== 'number') return;
         if (isNaN(e.clientX) || isNaN(e.clientY) || !isFinite(e.clientX) || !isFinite(e.clientY)) return;
