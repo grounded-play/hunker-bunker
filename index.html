@@ -1162,11 +1162,14 @@
       <div id="objective-tracker" class="objective-tracker hidden" aria-live="polite"></div>
     </div>
 
-    <!-- Sibling of .hud-mission-stack, not a child: that container forces
-         `position: relative !important; top/left/right/bottom: auto !important`
-         on all direct children for its flex-stacked prompt layout, which
-         would clobber this element's fixed screen-center positioning. -->
-    <div id="gameplay-crosshair" class="hidden" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:var(--crosshair-color);pointer-events:none;z-index:500;"></div>
+    <!-- Fixed Screen-Center Gameplay Crosshair Reticle -->
+    <div id="gameplay-crosshair" class="gameplay-crosshair hidden" aria-hidden="true">
+      <div class="crosshair-center-dot"></div>
+      <div class="crosshair-reticle-tick tick-top"></div>
+      <div class="crosshair-reticle-tick tick-bottom"></div>
+      <div class="crosshair-reticle-tick tick-left"></div>
+      <div class="crosshair-reticle-tick tick-right"></div>
+    </div>
 
     <!-- Persistent loop-state cue: always shows the next thing to do -->
     <div id="loop-step-hud" class="loop-step-hud hidden" aria-live="polite">

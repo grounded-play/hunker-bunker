@@ -1823,6 +1823,72 @@ body {
   height: 100% !important;
 }
 
+/* Fixed screen-center gameplay crosshair */
+.gameplay-crosshair {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gameplay-crosshair.hidden {
+  display: none !important;
+}
+
+.gameplay-crosshair .crosshair-center-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--crosshair-color, #ff9f1c);
+  box-shadow: 0 0 6px var(--crosshair-color, #ff9f1c), 0 0 1px #000;
+}
+
+.gameplay-crosshair .crosshair-reticle-tick {
+  position: absolute;
+  background-color: var(--crosshair-color, #ff9f1c);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+  border-radius: 1px;
+}
+
+.gameplay-crosshair .crosshair-reticle-tick.tick-top {
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 6px;
+}
+
+.gameplay-crosshair .crosshair-reticle-tick.tick-bottom {
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 6px;
+}
+
+.gameplay-crosshair .crosshair-reticle-tick.tick-left {
+  left: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 2px;
+}
+
+.gameplay-crosshair .crosshair-reticle-tick.tick-right {
+  right: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 2px;
+}
+
 /* Screen-space miniature/tilt-shift focus. A tight clear action plane follows
    the camera-tracked player while peripheral scenery falls into silhouette. */
 .gameplay-tilt-shift {

@@ -10,8 +10,8 @@ export const TiltShiftPassShader = {
     uniforms: {
         tDiffuse: { value: null },
         focusY: { value: 0.5 },
-        focusRange: { value: 0.24 },
-        blurAmount: { value: 0.0050 },
+        focusRange: { value: 0.38 },
+        blurAmount: { value: 0.0035 },
         dir: { value: new THREE.Vector2(0, 1) }
     },
     vertexShader: `
@@ -16526,12 +16526,27 @@ export class ThreeGame {
     tryFireWeapon(clientX, clientY) {
         if (!this.isGameplayInputActive()) return false;
 
+        if (this._pointerLocked || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
+            const aim = aimVectorFromYaw(this.facingYaw);
+            this.aimDirX = aim.x;
+            this.aimDirZ = aim.z;
+            this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
+            this.hasActiveAim = true;
+            return this.fireWeaponAtCurrentAim();
+        }
+
         const worldPoint = this.updateAimFromClient(clientX, clientY, {
             keepMouseActive: this._canvasPointerType === 'mouse',
             persistDuration: this._canvasPointerType === 'mouse' ? 0 : 2.0
         });
 
-        if (!worldPoint && !this.hasActiveAim) return false;
+        if (!worldPoint && !this.hasActiveAim) {
+            const aim = aimVectorFromYaw(this.facingYaw);
+            this.aimDirX = aim.x;
+            this.aimDirZ = aim.z;
+            this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
+            this.hasActiveAim = true;
+        }
 
         return this.fireWeaponAtCurrentAim();
     }
@@ -17300,11 +17315,14 @@ export class ThreeGame {
 
         if (!isGameplay) return;
 
-        // Project player's torso position into screen percentage coordinates
+        // Project a focal lead point in front of the player along the aim direction
+        // so where the player looks and aims is always in sharp, crystal-clear focus.
+        const aim = aimVectorFromYaw(this.facingYaw ?? 0);
+        const focalLead = 4.0;
         this._tiltShiftProjectVec.set(
-            this.player.position.x,
-            this.player.position.y + 0.7,
-            this.player.position.z
+            this.player.position.x + aim.x * focalLead,
+            this.player.position.y + 0.4,
+            this.player.position.z + aim.z * focalLead
         ).project(this.camera);
 
         const targetX = Math.min(95, Math.max(5, (this._tiltShiftProjectVec.x * 0.5 + 0.5) * 100));
