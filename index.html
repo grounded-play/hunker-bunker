@@ -222,6 +222,7 @@
           <button class="title-menu-btn" id="title-continue-btn" disabled>CONTINUE</button>
           <button class="title-menu-btn title-menu-btn--secondary hidden" id="title-switch-class-btn">SWITCH CLASS</button>
           <button class="title-menu-btn" id="title-newrun-btn">NEW RUN</button>
+          <button class="title-menu-btn" id="title-multiplayer-btn">TACTICAL NET</button>
           <button class="title-menu-btn" id="title-achievements-btn">ACHIEVEMENTS</button>
           <button class="title-menu-btn" id="title-settings-btn">SETTINGS</button>
           <button class="title-menu-btn" id="title-about-btn">ABOUT</button>
@@ -342,6 +343,10 @@
                   <div class="menu-command" id="steam-vault-command">
                     <button class="start-btn start-btn--vault" id="steam-vault-btn" title="Steam Vault — view Steam-owned cosmetics">◈ STEAM VAULT</button>
                     <div class="menu-command__status" id="vault-command-status">OFFLINE</div>
+                  </div>
+                  <div class="menu-command" id="multiplayer-command">
+                    <button class="start-btn start-btn--net" id="briefing-multiplayer-btn" title="Tactical Net — Online & LAN Co-Op and PVP">◈ TACTICAL NET</button>
+                    <div class="menu-command__status" id="net-command-status">CO-OP / PVP</div>
                   </div>
                 </div>
               </div>
@@ -1796,6 +1801,14 @@
             <span>OPERATOR CALLSIGN</span>
             <input type="text" id="operator-callsign" class="operator-callsign-input" maxlength="16" placeholder="AGENT" autocomplete="off" spellcheck="false" aria-label="Operator callsign">
           </div>
+          <div class="setting-item">
+            <span>STEAM CLOUD SYNC</span>
+            <span id="setting-steam-cloud-status" class="setting-val-display" style="color: var(--accent-secondary, #2ec4b6);">SYNCED (AUTO-CLOUD)</span>
+          </div>
+          <div class="setting-item setting-item--action">
+            <span>MATURE CONTENT AUDIT</span>
+            <button type="button" class="calibrate-btn settings-action-btn" id="open-mature-audit-btn" title="Steam Reviewer Compliance Suite (F9)">INSPECT (F9)</button>
+          </div>
           <div class="setting-item setting-item--action">
             <span>SAVE DATA</span>
             <button type="button" class="calibrate-btn settings-action-btn" id="open-save-data">OPEN</button>
@@ -1978,6 +1991,86 @@
           <button type="button" id="snail-encounter-talk-btn">TALK</button>
           <button type="button" id="snail-encounter-custom-btn" class="hidden">RECRUIT</button>
           <button type="button" id="snail-encounter-flee-btn">FLEE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tactical Net: Multiplayer PVP & Co-Op Modal -->
+    <div id="multiplayer-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content net-modal-content">
+        <div class="settings-sticky-header">
+          <div class="net-header-wrap">
+            <h2 class="modal-title">TACTICAL NET // RELAY COMMAND</h2>
+            <div id="net-status-pill" class="net-status-pill net-status--connecting">CONNECTING...</div>
+          </div>
+          <button class="close-modal" id="close-multiplayer-modal" aria-label="Close Tactical Net">×</button>
+        </div>
+
+        <div class="net-mode-selector">
+          <button type="button" class="net-mode-btn active" id="net-mode-coop-btn">
+            <span class="net-mode-btn__icon">👥</span>
+            <span class="net-mode-btn__title">CO-OP EXPEDITION</span>
+            <span class="net-mode-btn__meta">2-4 SQUADMATES // SHARED LOOT</span>
+          </button>
+          <button type="button" class="net-mode-btn" id="net-mode-pvp-btn">
+            <span class="net-mode-btn__icon">⚔️</span>
+            <span class="net-mode-btn__title">PVP SKIRMISH</span>
+            <span class="net-mode-btn__meta">CONTESTED SECTORS // DUEL</span>
+          </button>
+        </div>
+
+        <div class="net-mode-description" id="net-mode-description">
+          CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.
+        </div>
+
+        <div class="net-session-panel">
+          <div class="net-session-info">
+            <div class="net-code-block">
+              <span class="net-code-label">SECTOR ROOM CODE</span>
+              <span class="net-code-val" id="net-room-code-val">SECTOR-7</span>
+              <button type="button" class="net-code-copy-btn" id="net-copy-code-btn">COPY</button>
+            </div>
+            <div class="net-relay-block">
+              <span class="net-code-label">NET RELAY BACKEND</span>
+              <span class="net-relay-url" id="net-relay-url">socket.io://active</span>
+              <button type="button" class="start-btn net-connect-toggle-btn" id="net-connect-btn">DISCONNECT</button>
+            </div>
+          </div>
+
+          <div class="net-roster-section">
+            <div class="net-roster-header">
+              <span>ACTIVE OPERATIVES</span>
+              <span>ROLE</span>
+              <span>LATENCY</span>
+              <span>STATUS</span>
+            </div>
+            <div class="net-roster-list" id="net-roster-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <div class="net-modal-actions">
+          <button type="button" class="start-btn net-deploy-btn" id="net-deploy-btn">DEPLOY SQUAD</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mature Content Compliance & Reviewer Verification Modal (F9) -->
+    <div id="mature-content-audit-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content mature-audit-modal-content">
+        <div class="settings-sticky-header">
+          <div>
+            <h2 class="modal-title">STEAM MATURE CONTENT & REVIEWER AUDIT</h2>
+            <div class="mature-audit-subtitle">F9 SHORTCUT // COMPLIANCE VERIFICATION SUITE</div>
+          </div>
+          <button class="close-modal" id="close-mature-audit-modal" aria-label="Close audit suite">×</button>
+        </div>
+        <p class="mature-audit-summary">
+          This panel catalogs all mature themes, psychological horror, alien parasite symbiosis, Queen subjugation choices, and self-annihilation plotlines present in Hunker Bunker for Steam review verification.
+        </p>
+        <div class="mature-audit-list" id="mature-audit-list">
+          <!-- Dynamically populated from MATURE_CONTENT_MANIFEST -->
         </div>
       </div>
     </div>

@@ -15257,3 +15257,353 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 .keyhint-row {
   letter-spacing: 0.02em;
 }
+
+/* ==========================================================================
+   Tactical Net Multiplayer Lobby & Mature Content Compliance Audit Styling
+   ========================================================================== */
+
+.net-modal-content {
+  width: min(92vw, 680px);
+  max-height: 88vh;
+  background: rgba(10, 16, 26, 0.96);
+  border: 1px solid var(--accent-secondary, #2ec4b6);
+  box-shadow: 0 0 30px rgba(46, 196, 182, 0.25), 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+
+.net-header-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.net-status-pill {
+  font-family: 'Rajdhani', monospace, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.net-status--online {
+  color: #39ff88;
+  background: rgba(57, 255, 136, 0.12);
+  border-color: #39ff88;
+}
+
+.net-status--connecting {
+  color: #ffe14a;
+  background: rgba(255, 225, 74, 0.12);
+  border-color: #ffe14a;
+}
+
+.net-status--offline {
+  color: #ff4f64;
+  background: rgba(255, 79, 100, 0.12);
+  border-color: #ff4f64;
+}
+
+.net-mode-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 10px 0;
+}
+
+.net-mode-btn {
+  background: rgba(20, 32, 48, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #fff;
+  text-align: left;
+}
+
+.net-mode-btn:hover {
+  border-color: var(--accent-secondary, #2ec4b6);
+  background: rgba(30, 48, 70, 0.7);
+}
+
+.net-mode-btn.active {
+  border-color: var(--accent-secondary, #2ec4b6);
+  background: rgba(46, 196, 182, 0.15);
+  box-shadow: inset 0 0 12px rgba(46, 196, 182, 0.25);
+}
+
+.net-mode-btn__icon {
+  font-size: 18px;
+}
+
+.net-mode-btn__title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+}
+
+.net-mode-btn__meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #88aacc;
+}
+
+.net-mode-description {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #a0c4e2;
+  background: rgba(12, 22, 34, 0.8);
+  border-left: 3px solid var(--accent-secondary, #2ec4b6);
+  padding: 8px 12px;
+  margin-bottom: 16px;
+}
+
+.net-session-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.net-session-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.net-code-block,
+.net-relay-block {
+  background: rgba(16, 26, 38, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.net-code-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #7799bb;
+}
+
+.net-code-val,
+.net-relay-url {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #00e5ff;
+}
+
+.net-code-copy-btn,
+.net-connect-toggle-btn {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.net-code-copy-btn:hover,
+.net-connect-toggle-btn:hover {
+  background: var(--accent-secondary, #2ec4b6);
+  color: #000;
+}
+
+.net-roster-section {
+  background: rgba(14, 22, 32, 0.9);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.net-roster-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #7799bb;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.net-roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.net-roster-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  align-items: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: #d0e4f8;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+}
+
+.net-roster-row--self {
+  border-left: 3px solid #39ff88;
+  background: rgba(57, 255, 136, 0.06);
+}
+
+.net-roster-status {
+  color: #39ff88;
+  font-weight: 700;
+}
+
+.net-empty-roster {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #6688aa;
+  text-align: center;
+  padding: 18px 0;
+}
+
+.net-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.net-deploy-btn {
+  background: var(--accent-secondary, #2ec4b6);
+  color: #000;
+  font-weight: 900;
+  padding: 8px 24px;
+  letter-spacing: 0.12em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.net-deploy-btn:hover:not(:disabled) {
+  background: #39ff88;
+  box-shadow: 0 0 16px rgba(57, 255, 136, 0.5);
+}
+
+/* Mature Content Audit Suite */
+.mature-audit-modal-content {
+  width: min(94vw, 760px);
+  max-height: 88vh;
+  background: rgba(14, 10, 16, 0.97);
+  border: 1px solid #ff4f64;
+  box-shadow: 0 0 35px rgba(255, 79, 100, 0.25), 0 20px 50px rgba(0, 0, 0, 0.85);
+}
+
+.mature-audit-subtitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #ff7a8a;
+  margin-top: 2px;
+}
+
+.mature-audit-summary {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #d8c4c8;
+  margin: 10px 0 14px 0;
+}
+
+.mature-audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.mature-audit-card {
+  background: rgba(26, 16, 22, 0.8);
+  border: 1px solid rgba(255, 79, 100, 0.25);
+  border-radius: 4px;
+  padding: 12px 14px;
+}
+
+.mature-audit-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.mature-audit-card__title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.mature-audit-card__rating {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #ff4f64;
+  font-weight: 700;
+  border: 1px solid rgba(255, 79, 100, 0.4);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.mature-audit-card__desc {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #b8a4a8;
+  margin-bottom: 8px;
+}
+
+.mature-audit-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mature-audit-tag {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  background: rgba(255, 79, 100, 0.15);
+  color: #ffa4b0;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.start-btn--net {
+  background: rgba(46, 196, 182, 0.18);
+  border-color: var(--accent-secondary, #2ec4b6);
+  color: #ffffff;
+}
+
+.start-btn--net:hover {
+  background: var(--accent-secondary, #2ec4b6);
+  color: #000000;
+}
+

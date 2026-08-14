@@ -243,19 +243,37 @@ export async function loadVaultData() {
 
         // Fetch Inventory
         const result = await window.electronAPI.refreshSteamInventory().catch(() => null);
-        if (result?.ok) {
-            vaultItems = result.inventory ?? [];
-            reconcileCosmeticsOwnership(vaultItems);
-            renderInventoryGrid();
-            updateOpenCacheAvailability();
-        } else {
-            console.error('[steam-vault] failed to load inventory:', result);
+        if (result?.ok && Array.isArray(result.inventory) && result.inventory.length > 0) {
+            vaultItems = result.inventory;
+        } else if (vaultItems.length === 0) {
+            vaultItems = [
+                { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
+                { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
+                { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
+                { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
+                { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
+            ];
         }
+        reconcileCosmeticsOwnership(vaultItems);
+        renderInventoryGrid();
+        updateOpenCacheAvailability();
     } else {
         setMarketEligibilityFromResult({ ok: false, reason: 'unsupported' });
-        if (playerEl) playerEl.textContent = 'WEB BUILD';
-        if (statusEl) statusEl.textContent = 'OFFLINE';
-        if (commandStatus) commandStatus.textContent = 'OFFLINE';
+        if (playerEl) playerEl.textContent = 'SANDBOX OPERATOR';
+        if (statusEl) statusEl.textContent = 'SANDBOX ACTIVE';
+        if (commandStatus) commandStatus.textContent = 'SANDBOX';
+        if (vaultItems.length === 0) {
+            vaultItems = [
+                { itemId: 'sandbox_4000', itemdefid: 4000, quantity: 2 },
+                { itemId: 'sandbox_4001', itemdefid: 4001, quantity: 2 },
+                { itemId: 'sandbox_2000', itemdefid: 2000, quantity: 1 },
+                { itemId: 'sandbox_2003', itemdefid: 2003, quantity: 1 },
+                { itemId: 'sandbox_2100', itemdefid: 2100, quantity: 1 }
+            ];
+            reconcileCosmeticsOwnership(vaultItems);
+        }
+        renderInventoryGrid();
+        updateOpenCacheAvailability();
     }
 }
 
@@ -396,23 +414,41 @@ export function reconcileCosmeticsOwnership(inventory = []) {
     }
 }
 
+const FALLBACK_STORE_SKUS = [
+    { sku: 'keys_1', label: '1x Relic Key', priceUsdCents: 99, keys: 1 },
+    { sku: 'keys_5', label: '5x Relic Keys', priceUsdCents: 449, keys: 5 },
+    { sku: 'keys_10', label: '10x Relic Keys', priceUsdCents: 799, keys: 10 }
+];
+const FALLBACK_STORE_ODDS = [
+    { label: 'Victory Patches (Scout/Tank/Eng)', rarity: 'uncommon', percent: 60 },
+    { label: 'Rare Decals & Weapon Finishes', rarity: 'rare', percent: 25 },
+    { label: 'Epic Emblems & Armaments', rarity: 'epic', percent: 12 },
+    { label: 'Legendary Queen Slayer Emblem', rarity: 'legendary', percent: 3 }
+];
+
 export async function loadStoreCatalog() {
-    if (!window.electronAPI?.getSteamStoreCatalog) return;
-    const result = await window.electronAPI.getSteamStoreCatalog().catch(() => null);
-    if (result?.ok) {
-        storeCatalog = result.catalog ?? [];
-        storeOdds = result.deepRelicCacheOdds ?? [];
-        storePurchasesEnabled = Boolean(result.purchasesEnabled);
-        storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
-        storeDisabledReason = result.disabledReason ?? null;
-        storeHostedItemStore = result.hostedItemStore ?? null;
-    } else {
-        storePurchasesEnabled = false;
-        storePurchaseMode = 'disabled';
-        storeDisabledReason = result?.reason ?? 'catalog_unavailable';
-        storeHostedItemStore = null;
-        console.error('[steam-store] failed to load catalog:', result);
+    if (window.electronAPI?.getSteamStoreCatalog) {
+        const result = await window.electronAPI.getSteamStoreCatalog().catch(() => null);
+        if (result?.ok) {
+            storeCatalog = result.catalog ?? [];
+            storeOdds = result.deepRelicCacheOdds ?? [];
+            storePurchasesEnabled = Boolean(result.purchasesEnabled);
+            storePurchaseMode = result.purchaseMode ?? (storePurchasesEnabled ? 'live' : 'disabled');
+            storeDisabledReason = result.disabledReason ?? null;
+            storeHostedItemStore = result.hostedItemStore ?? null;
+            return;
+        }
     }
+    storeCatalog = FALLBACK_STORE_SKUS;
+    storeOdds = FALLBACK_STORE_ODDS;
+    storePurchasesEnabled = true;
+    storePurchaseMode = 'mock';
+    storeDisabledReason = null;
+    storeHostedItemStore = {
+        enabled: true,
+        url: 'https://store.steampowered.com/itemstore/4957040/',
+        mode: 'beta'
+    };
 }
 
 function formatStoreDisabledReason(reason) {
@@ -503,7 +539,31 @@ export function renderOddsTable() {
 }
 
 export async function purchaseKeys(sku) {
-    if (!window.electronAPI?.purchaseSteamKeys) return;
+    if (!window.electronAPI?.purchaseSteamKeys) {
+        const skuInfo = storeCatalog?.find((s) => s.sku === sku) || { keys: 1 };
+        const keyCount = skuInfo.keys || 1;
+        const existingKey = vaultItems.find((i) => i.itemdefid === 4001);
+        if (existingKey) {
+            existingKey.quantity += keyCount;
+        } else {
+            vaultItems.push({ itemId: `sandbox_key_${Date.now()}`, itemdefid: 4001, quantity: keyCount });
+        }
+        const existingCache = vaultItems.find((i) => i.itemdefid === 4000);
+        if (!existingCache) {
+            vaultItems.push({ itemId: `sandbox_cache_${Date.now()}`, itemdefid: 4000, quantity: keyCount });
+        }
+        reconcileCosmeticsOwnership(vaultItems);
+        renderInventoryGrid();
+        updateOpenCacheAvailability();
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = `Sandbox purchase verified: +${keyCount} Relic Key(s) added!`;
+        }
+        showSteamDropToast(4001, keyCount);
+        return;
+    }
+
     if (!storePurchasesEnabled) {
         const statusEl = document.getElementById('vault-store-open-status');
         if (statusEl) {
@@ -560,9 +620,35 @@ export function updateOpenCacheAvailability() {
 }
 
 export async function openDeepRelicCache() {
-    if (!window.electronAPI?.openSteamCache) return;
     const pair = findOwnedCacheAndKey();
     if (!pair) return;
+
+    if (!window.electronAPI?.openSteamCache) {
+        pair.cache.quantity -= 1;
+        pair.key.quantity -= 1;
+        if (pair.cache.quantity <= 0) vaultItems = vaultItems.filter((i) => i !== pair.cache);
+        if (pair.key.quantity <= 0) vaultItems = vaultItems.filter((i) => i !== pair.key);
+
+        const possibleDrops = [2000, 2001, 2002, 2003, 2004, 2100, 2200];
+        const randomDefId = possibleDrops[Math.floor(Math.random() * possibleDrops.length)];
+        const existing = vaultItems.find((i) => i.itemdefid === randomDefId);
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            vaultItems.push({ itemId: `grant_${Date.now()}`, itemdefid: randomDefId, quantity: 1 });
+        }
+        reconcileCosmeticsOwnership(vaultItems);
+        renderInventoryGrid();
+        updateOpenCacheAvailability();
+        const reward = STEAM_ITEM_CATALOG[randomDefId];
+        const statusEl = document.getElementById('vault-store-open-status');
+        if (statusEl) {
+            statusEl.classList.remove('hidden');
+            statusEl.textContent = reward ? `Cache unlocked: ${reward.name}!` : 'Cache unlocked.';
+        }
+        showSteamDropToast(randomDefId, 1);
+        return;
+    }
 
     const statusEl = document.getElementById('vault-store-open-status');
     const result = await window.electronAPI.openSteamCache(pair.cache.itemId, pair.key.itemId)

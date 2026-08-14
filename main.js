@@ -47,6 +47,8 @@ import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSprite
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
+import { multiplayerLobby } from './src/multiplayerLobby.js';
+import { matureContentAudit } from './src/matureContentAudit.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
 import { STARTING_RUN_AMMO, CLASS_AMMO_CAPACITY } from './src/data/ammoEconomy.js';
@@ -343,6 +345,8 @@ const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
     'archive-sims-modal',
     'lore-modal',
     'steam-vault-modal',
+    'multiplayer-modal',
+    'mature-content-audit-modal',
     'operator-polish-modal',
     'tactical-map-modal',
     'base-turret-modal',
@@ -633,13 +637,15 @@ function adjustRangeInputValue(element, direction) {
 }
 
 function adjustSelectValue(element, direction) {
-    if (!element?.matches?.('select') || !element.options?.length) return false;
-    const currentIndex = Math.max(0, element.selectedIndex);
-    const nextIndex = wrapMenuIndex(currentIndex, direction, element.options.length);
-    if (nextIndex === element.selectedIndex) return true;
-    element.selectedIndex = nextIndex;
-    element.dispatchEvent(new Event('input', { bubbles: true }));
-    element.dispatchEvent(new Event('change', { bubbles: true }));
+    const select = element?.matches?.('select') ? element : element?.querySelector?.('select');
+    if (!select || !select.options?.length) return false;
+    const currentIndex = Math.max(0, select.selectedIndex);
+    const nextIndex = wrapMenuIndex(currentIndex, direction, select.options.length);
+    if (nextIndex === select.selectedIndex) return true;
+    select.selectedIndex = nextIndex;
+    select.dispatchEvent(new Event('input', { bubbles: true }));
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    window.AudioManager?.play?.('fx_menu_hover', { volume: 0.2, bus: 'sfx' });
     return true;
 }
 
@@ -11856,8 +11862,10 @@ if (window.electronAPI) {
     setSteamDebugStatus('STEAM: WEB BUILD\nBACKEND: OFF', 'offline');
 }
 
-// Initialize Steam Vault UI in all environments
+// Initialize Steam Vault, Tactical Net, and Mature Content Audit UI in all environments
 initSteamVaultUI();
+multiplayerLobby.init();
+matureContentAudit.init();
 
 // Keep the title art alive at rest while making pointer movement feel like a
 // reflection travelling across damp metal. Motion is deliberately tiny so the
