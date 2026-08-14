@@ -756,6 +756,132 @@
       </div>
     </div>
 
+    <!-- Tactical Trade & Operative Link Modal -->
+    <div id="player-trade-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-content trade-modal-content">
+        <div class="settings-sticky-header">
+          <div class="net-header-wrap">
+            <h2 class="modal-title">OPERATIVE LINK // FIELD BARTER</h2>
+            <div id="trade-status-pill" class="net-status-pill net-status--online">LINK ACTIVE</div>
+          </div>
+          <button class="close-modal" id="close-player-trade-modal" aria-label="Close Trade Link">×</button>
+        </div>
+
+        <div class="trade-grid">
+          <!-- Local Operative Column -->
+          <div class="trade-column trade-column--self">
+            <div class="trade-column-header">
+              <div class="trade-op-name" id="trade-self-callsign">LOCAL OPERATIVE</div>
+              <div class="trade-op-meta" id="trade-self-class">TANK // COMMAND</div>
+            </div>
+            <div class="trade-resource-list">
+              <div class="trade-resource-row">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">🐚</span>
+                  <span class="trade-res-name">SHELLS</span>
+                  <span class="trade-res-avail" id="trade-self-shells-avail">(0)</span>
+                </div>
+                <div class="trade-res-controls">
+                  <button type="button" class="trade-stepper-btn" id="trade-self-shells-minus">-10</button>
+                  <span class="trade-res-val" id="trade-self-shells-val">0</span>
+                  <button type="button" class="trade-stepper-btn" id="trade-self-shells-plus">+10</button>
+                </div>
+              </div>
+
+              <div class="trade-resource-row">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">⚡</span>
+                  <span class="trade-res-name">AMMO</span>
+                  <span class="trade-res-avail" id="trade-self-ammo-avail">(0)</span>
+                </div>
+                <div class="trade-res-controls">
+                  <button type="button" class="trade-stepper-btn" id="trade-self-ammo-minus">-10</button>
+                  <span class="trade-res-val" id="trade-self-ammo-val">0</span>
+                  <button type="button" class="trade-stepper-btn" id="trade-self-ammo-plus">+10</button>
+                </div>
+              </div>
+
+              <div class="trade-resource-row">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">💉</span>
+                  <span class="trade-res-name">MEDKITS</span>
+                  <span class="trade-res-avail" id="trade-self-meds-avail">(0)</span>
+                </div>
+                <div class="trade-res-controls">
+                  <button type="button" class="trade-stepper-btn" id="trade-self-meds-minus">-1</button>
+                  <span class="trade-res-val" id="trade-self-meds-val">0</span>
+                  <button type="button" class="trade-stepper-btn" id="trade-self-meds-plus">+1</button>
+                </div>
+              </div>
+
+              <div class="trade-resource-row">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">🫧</span>
+                  <span class="trade-res-name">O2 FILTER</span>
+                  <span class="trade-res-avail" id="trade-self-o2-avail">(0)</span>
+                </div>
+                <div class="trade-res-controls">
+                  <button type="button" class="trade-stepper-btn" id="trade-self-o2-minus">-1</button>
+                  <span class="trade-res-val" id="trade-self-o2-val">0</span>
+                  <button type="button" class="trade-stepper-btn" id="trade-self-o2-plus">+1</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Peer Operative Column -->
+          <div class="trade-column trade-column--peer">
+            <div class="trade-column-header">
+              <div class="trade-op-name" id="trade-peer-callsign">SQUADMATE</div>
+              <div class="trade-op-meta" id="trade-peer-class">SCOUT // RECON</div>
+            </div>
+            <div class="trade-resource-list">
+              <div class="trade-resource-row trade-resource-row--peer">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">🐚</span>
+                  <span class="trade-res-name">SHELLS OFFERED</span>
+                </div>
+                <span class="trade-res-val trade-res-val--peer" id="trade-peer-shells-val">0</span>
+              </div>
+
+              <div class="trade-resource-row trade-resource-row--peer">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">⚡</span>
+                  <span class="trade-res-name">AMMO OFFERED</span>
+                </div>
+                <span class="trade-res-val trade-res-val--peer" id="trade-peer-ammo-val">0</span>
+              </div>
+
+              <div class="trade-resource-row trade-resource-row--peer">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">💉</span>
+                  <span class="trade-res-name">MEDKITS OFFERED</span>
+                </div>
+                <span class="trade-res-val trade-res-val--peer" id="trade-peer-meds-val">0</span>
+              </div>
+
+              <div class="trade-resource-row trade-resource-row--peer">
+                <div class="trade-res-info">
+                  <span class="trade-res-icon">🫧</span>
+                  <span class="trade-res-name">O2 FILTERS OFFERED</span>
+                </div>
+                <span class="trade-res-val trade-res-val--peer" id="trade-peer-o2-val">0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="trade-status-bar" id="trade-status-bar-text">
+          AWAITING TRANSFER CONFIRMATION
+        </div>
+
+        <div class="trade-actions-footer">
+          <button type="button" class="start-btn trade-btn--cancel" id="trade-cancel-btn">CANCEL LINK</button>
+          <button type="button" class="start-btn trade-btn--confirm" id="trade-confirm-btn">CONFIRM TRANSFER</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Demo End Modal -->
     <div id="demo-end-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content demo-end-content">

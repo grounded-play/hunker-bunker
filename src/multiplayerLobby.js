@@ -3,6 +3,8 @@
  * Connects directly to server/relay.js Socket.IO server or local LAN loopback.
  */
 
+import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
+
 export const MULTIPLAYER_MODES = Object.freeze({
     COOP: 'coop',
     PVP: 'pvp'
@@ -22,6 +24,7 @@ export class MultiplayerLobby {
         this.players = new Map();
         this.pingMs = 18;
         this.isHost = true;
+        this.activeMatch = null;
     }
 
     init() {
@@ -96,7 +99,6 @@ export class MultiplayerLobby {
             statusEl.className = 'net-status-pill net-status--connecting';
         }
 
-        // Try Socket.IO if available globally or mock connection
         const callsign = (typeof window !== 'undefined' && window.profileManager?.getCallsign?.()) || 'AGENT';
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
 
@@ -109,6 +111,12 @@ export class MultiplayerLobby {
 
                 this.socket.on('connect', () => {
                     this.connected = true;
+                    this.socket.emit('joinRoom', {
+                        roomCode: this.roomCode,
+                        callsign,
+                        opClass
+                    });
+
                     this.players.set(this.socket.id, {
                         id: this.socket.id,
                         callsign: `${callsign} (HOST)`,
@@ -120,12 +128,12 @@ export class MultiplayerLobby {
                 });
 
                 this.socket.on('currentPlayers', (serverPlayers) => {
-                    Object.entries(serverPlayers).forEach(([id, _player]) => {
+                    Object.entries(serverPlayers).forEach(([id, player]) => {
                         if (id !== this.socket.id) {
                             this.players.set(id, {
                                 id,
-                                callsign: `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
-                                opClass: 'SCOUT',
+                                callsign: player.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
+                                opClass: player.opClass || 'SCOUT',
                                 ping: Math.floor(20 + Math.random() * 30),
                                 isSelf: false
                             });
@@ -138,8 +146,8 @@ export class MultiplayerLobby {
                     const id = p?.id || String(Date.now());
                     this.players.set(id, {
                         id,
-                        callsign: `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
-                        opClass: 'ENGINEER',
+                        callsign: p?.callsign || `OPERATIVE-${id.slice(0, 4).toUpperCase()}`,
+                        opClass: p?.opClass || 'ENGINEER',
                         ping: 28,
                         isSelf: false
                     });
@@ -150,6 +158,10 @@ export class MultiplayerLobby {
                 this.socket.on('playerDisconnected', (id) => {
                     this.players.delete(id);
                     this.updateUiState();
+                });
+
+                this.socket.on('matchStarted', (data) => {
+                    this.handleRemoteMatchStart(data);
                 });
 
                 this.socket.on('connect_error', () => {
@@ -177,11 +189,11 @@ export class MultiplayerLobby {
             isSelf: true
         });
 
-        // Add simulated squadmates for LAN/sandbox preview
+        // Simulated squadmate/rival for offline/local simulation
         if (this.currentMode === MULTIPLAYER_MODES.COOP) {
             this.players.set('peer-recon', {
                 id: 'peer-recon',
-                callsign: 'SPECTRE-9 (AI)',
+                callsign: 'SPECTRE-9',
                 opClass: 'SCOUT',
                 ping: 16,
                 isSelf: false
@@ -189,7 +201,7 @@ export class MultiplayerLobby {
         } else {
             this.players.set('peer-rival', {
                 id: 'peer-rival',
-                callsign: 'VULCAN-X (AI)',
+                callsign: 'VULCAN-X',
                 opClass: 'ENGINEER',
                 ping: 19,
                 isSelf: false
@@ -205,6 +217,7 @@ export class MultiplayerLobby {
         }
         this.connected = false;
         this.players.clear();
+        this.activeMatch = null;
         this.updateUiState();
     }
 
@@ -220,7 +233,37 @@ export class MultiplayerLobby {
         window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4, bus: 'sfx' });
         this.closeModal();
 
-        // Launch game run with multiplayer context active
+        const playerRoster = Array.from(this.players.values());
+        const crashPlan = planMultiplayerCrashSites({
+            seed: this.roomCode,
+            playerCount: playerRoster.length,
+            mode: this.currentMode,
+            playerRoster
+        });
+
+        this.activeMatch = {
+            roomCode: this.roomCode,
+            mode: this.currentMode,
+            seed: this.roomCode,
+            crashPlan,
+            isMultiplayer: true,
+            socket: this.socket
+        };
+
+        if (typeof window !== 'undefined') {
+            window.activeMultiplayerSession = this.activeMatch;
+        }
+
+        // Notify socket peers if connected
+        if (this.socket) {
+            this.socket.emit('matchDeploy', {
+                seed: this.roomCode,
+                mode: this.currentMode,
+                crashPlan
+            });
+        }
+
+        // Launch the game run
         const startBtn = document.getElementById('start-game') || document.getElementById('title-newrun-btn');
         if (startBtn) {
             startBtn.click();
@@ -229,6 +272,27 @@ export class MultiplayerLobby {
         const modeName = this.currentMode === MULTIPLAYER_MODES.COOP ? 'CO-OP EXPEDITION' : 'PVP SECTOR DUEL';
         if (typeof window !== 'undefined' && window.showToastNotification) {
             window.showToastNotification(`TACTICAL NET DEPLOYED: ${modeName}`);
+        }
+    }
+
+    handleRemoteMatchStart(data) {
+        this.activeMatch = {
+            roomCode: this.roomCode,
+            mode: data.mode || this.currentMode,
+            seed: data.seed || this.roomCode,
+            crashPlan: data.crashPlan || null,
+            isMultiplayer: true,
+            socket: this.socket
+        };
+
+        if (typeof window !== 'undefined') {
+            window.activeMultiplayerSession = this.activeMatch;
+        }
+
+        this.closeModal();
+        const startBtn = document.getElementById('start-game') || document.getElementById('title-newrun-btn');
+        if (startBtn) {
+            startBtn.click();
         }
     }
 
@@ -243,6 +307,10 @@ export class MultiplayerLobby {
             setTimeout(() => { btn.textContent = orig; }, 1800);
         }
         window.AudioManager?.play?.('fx_menu_click', { volume: 0.3, bus: 'sfx' });
+    }
+
+    getActiveSession() {
+        return this.activeMatch;
     }
 
     updateUiState() {

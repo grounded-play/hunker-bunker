@@ -11,10 +11,12 @@ export function gridToWorld(gx, gz, cellSize = DEFAULT_CELL_SIZE) {
 }
 
 export class ExplorationTracker {
-    constructor({ cellSize = DEFAULT_CELL_SIZE } = {}) {
+    constructor({ cellSize = DEFAULT_CELL_SIZE, maxTrailPoints = 1000 } = {}) {
         this.cellSize = cellSize;
+        this.maxTrailPoints = maxTrailPoints;
         this.exploredCells = new Map();
         this.landmarks = new Map();
+        this.breadcrumbTrail = [];
         this.currentCellKey = null;
         this.discoveredCount = 0;
         this.initDefaultLandmarks();
@@ -34,12 +36,26 @@ export class ExplorationTracker {
     reset() {
         this.exploredCells.clear();
         this.landmarks.clear();
+        this.breadcrumbTrail = [];
         this.currentCellKey = null;
         this.discoveredCount = 0;
         this.initDefaultLandmarks();
     }
 
     recordPlayerPosition(x, z, meta = {}) {
+        if (!Number.isFinite(x) || !Number.isFinite(z)) {
+            return { currentKey: this.currentCellKey, changedCell: false, newlyDiscovered: false };
+        }
+
+        const now = Date.now();
+        const lastPoint = this.breadcrumbTrail[this.breadcrumbTrail.length - 1];
+        if (!lastPoint || Math.hypot(x - lastPoint.x, z - lastPoint.z) >= 1.5) {
+            this.breadcrumbTrail.push({ x, z, timestamp: now });
+            if (this.breadcrumbTrail.length > this.maxTrailPoints) {
+                this.breadcrumbTrail.shift();
+            }
+        }
+
         const { gx, gz, key } = worldToGrid(x, z, this.cellSize);
         let newlyDiscovered = false;
 
@@ -48,7 +64,7 @@ export class ExplorationTracker {
                 gx,
                 gz,
                 key,
-                discoveredAt: Date.now(),
+                discoveredAt: now,
                 roomType: meta.roomType ?? 'chamber',
                 label: meta.label ?? '',
                 cleared: meta.cleared ?? false
@@ -67,6 +83,10 @@ export class ExplorationTracker {
             newlyDiscovered,
             cell: this.exploredCells.get(key)
         };
+    }
+
+    getBreadcrumbTrail() {
+        return this.breadcrumbTrail.slice();
     }
 
     registerLandmark(id, landmarkData = {}) {

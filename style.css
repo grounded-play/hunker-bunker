@@ -6018,33 +6018,108 @@ html.boot-cursor-hidden #tactical-cursor {
   opacity: 1;
 }
 
-/* --- Click Compression and White Flash --- */
+/* --- Enemy, Hostile & Door Target Lock-On State (Tactical Red) --- */
+#tactical-cursor.cursor-target,
+#tactical-cursor.cursor-enemy {
+  width: 44px;
+  height: 44px;
+}
+
+#tactical-cursor.cursor-target .cursor-dot,
+#tactical-cursor.cursor-enemy .cursor-dot {
+  background-color: #ff3333;
+  box-shadow: 0 0 10px #ff3333, 0 0 18px rgba(255, 51, 51, 0.6);
+  transform: translate(-50%, -50%) scale(1.5);
+}
+
+#tactical-cursor.cursor-target .cursor-ring,
+#tactical-cursor.cursor-enemy .cursor-ring {
+  border-color: #ff3333;
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 4px;
+  animation: spin-clockwise 2s linear infinite;
+  box-shadow: 0 0 10px rgba(255, 51, 51, 0.4);
+}
+
+#tactical-cursor.cursor-target .cursor-bracket,
+#tactical-cursor.cursor-enemy .cursor-bracket {
+  border-color: #ff4444;
+  border-width: 2px;
+  opacity: 1;
+}
+
+#tactical-cursor.cursor-target .cursor-bracket-tl,
+#tactical-cursor.cursor-enemy .cursor-bracket-tl {
+  transform: translate(4px, 4px);
+}
+
+#tactical-cursor.cursor-target .cursor-bracket-tr,
+#tactical-cursor.cursor-enemy .cursor-bracket-tr {
+  transform: translate(-4px, 4px);
+}
+
+#tactical-cursor.cursor-target .cursor-bracket-bl,
+#tactical-cursor.cursor-enemy .cursor-bracket-bl {
+  transform: translate(4px, -4px);
+}
+
+#tactical-cursor.cursor-target .cursor-bracket-br,
+#tactical-cursor.cursor-enemy .cursor-bracket-br {
+  transform: translate(-4px, -4px);
+}
+
+#tactical-cursor.cursor-target .cursor-interact-badge,
+#tactical-cursor.cursor-enemy .cursor-interact-badge {
+  opacity: 1;
+  color: #ffffff;
+  background: rgba(36, 8, 8, 0.92);
+  border: 1px solid #ff3333;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 8px rgba(255, 51, 51, 0.4);
+}
+
+/* --- Click Compression (Tactile, Localized, Non-Strobing) --- */
 
 #tactical-cursor.cursor-clicking .cursor-dot {
-  background-color: #ffffff;
-  box-shadow: 0 0 20px #ffffff, 0 0 40px #ffffff;
-  transform: translate(-50%, -50%) scale(1.8);
+  background-color: var(--crosshair-color, var(--accent-primary));
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6), 0 0 10px var(--crosshair-color, rgba(255, 159, 28, 0.4));
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+#tactical-cursor.cursor-clicking.cursor-enemy .cursor-dot,
+#tactical-cursor.cursor-clicking.cursor-target .cursor-dot {
+  background-color: #ff3333;
+  box-shadow: 0 0 8px rgba(255, 51, 51, 0.7);
 }
 
 #tactical-cursor.cursor-clicking .cursor-ring {
-  border-color: #ffffff;
-  border-style: solid;
-  opacity: 1;
+  border-color: var(--crosshair-color, rgba(255, 159, 28, 0.85));
+  opacity: 0.9;
+}
+
+#tactical-cursor.cursor-clicking.cursor-enemy .cursor-ring,
+#tactical-cursor.cursor-clicking.cursor-target .cursor-ring {
+  border-color: #ff3333;
 }
 
 #tactical-cursor.cursor-clicking .cursor-bracket {
-  border-color: #ffffff;
-  opacity: 1;
+  border-color: var(--crosshair-color, #ffffff);
+  opacity: 0.9;
 }
 
-/* --- Sonar Ripple Ring --- */
+#tactical-cursor.cursor-clicking.cursor-enemy .cursor-bracket,
+#tactical-cursor.cursor-clicking.cursor-target .cursor-bracket {
+  border-color: #ff4444;
+}
+
+/* --- Sonar Ripple Ring (Subtle, Localized Tactile Feedback) --- */
 .cursor-ripple {
   position: fixed;
   border-radius: 50%;
   pointer-events: none;
   z-index: 199999;
   transform: translate3d(-50%, -50%, 0);
-  animation: sonar-ping 0.6s cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
+  animation: sonar-ping 0.32s cubic-bezier(0.1, 0.8, 0.25, 1) forwards;
 }
 
 @keyframes spin-clockwise {
@@ -6060,20 +6135,21 @@ html.boot-cursor-hidden #tactical-cursor {
   0% {
     width: 6px;
     height: 6px;
-    border: 2px solid #ffffff;
-    opacity: 1;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    opacity: 0.7;
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
   }
   40% {
-    border: 1.5px solid var(--accent-secondary);
-    box-shadow: 0 0 15px rgba(46, 196, 182, 0.6);
+    border: 1px solid var(--accent-secondary, rgba(46, 196, 182, 0.6));
+    box-shadow: 0 0 6px rgba(46, 196, 182, 0.3);
+    opacity: 0.45;
   }
   100% {
-    width: 72px;
-    height: 72px;
-    border: 1px solid var(--accent-primary);
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgba(46, 196, 182, 0);
     opacity: 0;
-    box-shadow: 0 0 0 rgba(255, 159, 28, 0);
+    box-shadow: none;
   }
 }
 
@@ -15606,4 +15682,181 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   background: var(--accent-secondary, #2ec4b6);
   color: #000000;
 }
+
+/* ==========================================================================
+   Operative Field Link & Tactical Barter Modal
+   ========================================================================== */
+.trade-modal-content {
+  width: min(94vw, 740px);
+  max-height: 88vh;
+  background: rgba(8, 14, 22, 0.97);
+  border: 1px solid var(--accent-secondary, #2ec4b6);
+  box-shadow: 0 0 35px rgba(46, 196, 182, 0.22), 0 20px 50px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.trade-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 10px 0;
+}
+
+.trade-column {
+  background: rgba(15, 25, 38, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trade-column--self {
+  border-left: 3px solid var(--accent-secondary, #2ec4b6);
+}
+
+.trade-column--peer {
+  border-left: 3px solid #ffaa00;
+}
+
+.trade-column-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+}
+
+.trade-op-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+}
+
+.trade-op-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #88aacc;
+  margin-top: 2px;
+}
+
+.trade-resource-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trade-resource-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(8, 14, 24, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  padding: 8px 10px;
+}
+
+.trade-res-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trade-res-icon {
+  font-size: 14px;
+}
+
+.trade-res-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #d0e0f0;
+}
+
+.trade-res-avail {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #6080a0;
+}
+
+.trade-res-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trade-stepper-btn {
+  background: rgba(30, 48, 70, 0.8);
+  border: 1px solid rgba(46, 196, 182, 0.4);
+  color: #ffffff;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trade-stepper-btn:hover {
+  background: var(--accent-secondary, #2ec4b6);
+  color: #000000;
+}
+
+.trade-res-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #00ffd2;
+  min-width: 28px;
+  text-align: center;
+}
+
+.trade-res-val--peer {
+  color: #ffaa00;
+}
+
+.trade-status-bar {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #a0d8ef;
+  background: rgba(12, 22, 34, 0.9);
+  border-left: 3px solid #ffaa00;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.trade-actions-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.trade-btn--cancel {
+  background: rgba(255, 79, 100, 0.15);
+  border-color: #ff4f64;
+  color: #ff8899;
+}
+
+.trade-btn--cancel:hover {
+  background: #ff4f64;
+  color: #ffffff;
+}
+
+.trade-btn--confirm {
+  background: rgba(46, 196, 182, 0.25);
+  border-color: var(--accent-secondary, #2ec4b6);
+  color: #ffffff;
+}
+
+.trade-btn--confirm:hover {
+  background: var(--accent-secondary, #2ec4b6);
+  color: #000000;
+}
+
 

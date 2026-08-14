@@ -47,6 +47,8 @@ export const TiltShiftPassShader = {
 };
 import { assetUrl } from './assetUrl.js';
 import { wrapAngle, planarBasisFromOffsetAzimuth, aimVectorFromYaw, stepAngleTowards } from './cameraYaw.js';
+import { MULTIPLAYER_SPAWN_MODES } from './multiplayerCrashPlanner.js';
+import { multiplayerLobby } from './multiplayerLobby.js';
 import { BankManager, O2_GENERATOR_UPGRADES, BASE_TURRET_UPGRADES, BASE_TURRET_REPAIR_COST, TIER2_UPGRADE_ORDER, TIER2_UPGRADE_CONFIGS, WEAPON_UPGRADE_ORDER, WEAPON_UPGRADES_CONFIG, CLASS_SKILL_TREES, shellPriceOf } from './bank.js';
 import { MarkovGenerator } from './generator.js';
 import {
@@ -2914,6 +2916,7 @@ export class ThreeGame {
         this.setupLighting();
         this.setupWorld();
         this.setupPlayer();
+        this.setupMultiplayerNetwork();
         this.setupInput();
         this.resize();
         this.syncVisibleChunks(true);
@@ -3796,6 +3799,234 @@ export class ThreeGame {
         }
     }
 
+    setupMultiplayerNetwork() {
+        const session = (typeof window !== 'undefined' && window.activeMultiplayerSession) || multiplayerLobby?.getActiveSession?.();
+        if (!session) return;
+
+        this.isMultiplayer = true;
+        this.multiplayerMode = session.mode || MULTIPLAYER_SPAWN_MODES.COOP;
+        this.multiplayerRoomCode = session.roomCode || 'SECTOR-7';
+        this.multiplayerCrashPlan = session.crashPlan || null;
+        this.remotePlayers = new Map();
+        this.netSocket = session.socket || null;
+        this.lastNetBroadcastTime = 0;
+
+        // If a crash plan exists, adjust local player spawn if assigned
+        if (this.multiplayerCrashPlan?.players?.length && this.player) {
+            const myInfo = this.multiplayerCrashPlan.players.find(p => p.isHost) || this.multiplayerCrashPlan.players[0];
+            if (myInfo && Number.isFinite(myInfo.spawnX) && Number.isFinite(myInfo.spawnZ)) {
+                this.player.position.x = myInfo.spawnX;
+                this.player.position.z = myInfo.spawnZ;
+            }
+        }
+
+        // Bind socket network events
+        if (this.netSocket) {
+            this.netSocket.on('playerMoved', (data) => this.handleRemotePlayerMoved(data));
+            this.netSocket.on('playerFired', (data) => this.handleRemotePlayerFired(data));
+            this.netSocket.on('playerDamaged', (data) => this.handleRemotePlayerDamaged(data));
+            this.netSocket.on('playerRevived', (data) => this.handleRemotePlayerRevived(data));
+            this.netSocket.on('playerDisconnected', (id) => this.removeRemotePlayer(id));
+            this.netSocket.on('newPlayer', (player) => this.getOrCreateRemotePlayer(player));
+        }
+
+        // Spawn peers from crash plan / roster
+        if (this.multiplayerCrashPlan?.players) {
+            this.multiplayerCrashPlan.players.forEach((p) => {
+                if (!p.isHost) {
+                    this.getOrCreateRemotePlayer(p);
+                }
+            });
+        }
+    }
+
+    getOrCreateRemotePlayer(playerData) {
+        if (!playerData || !playerData.id) return null;
+        if (this.remotePlayers?.has(playerData.id)) {
+            return this.remotePlayers.get(playerData.id);
+        }
+        this.remotePlayers ??= new Map();
+
+        const group = new THREE.Group();
+        const spawnX = playerData.spawnX ?? playerData.x ?? 9;
+        const spawnZ = playerData.spawnZ ?? playerData.z ?? 9;
+        group.position.set(spawnX, 0, spawnZ);
+
+        const opClass = playerData.opClass || 'SCOUT';
+        const isPvP = this.multiplayerMode === 'pvp';
+        const themeColor = isPvP ? 0xff4444 : (playerData.color || (opClass === 'SCOUT' ? 0x7dff5a : (opClass === 'TANK' ? 0xffb700 : 0x00e5ff)));
+
+        // Create 2D Sprite visual fallback / base
+        const spriteMat = new THREE.SpriteMaterial({
+            color: themeColor,
+            transparent: true,
+            opacity: 0.95
+        });
+        const sprite = new THREE.Sprite(spriteMat);
+        sprite.center.set(0.5, 0);
+        sprite.position.set(0, 0.4, 0);
+        sprite.scale.set(this.playerSpriteScale || 2.2, this.playerSpriteScale || 2.2, 1);
+        group.add(sprite);
+
+        // Add 3D Overhead Nameplate
+        if (typeof document !== 'undefined') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.fillStyle = 'rgba(10, 16, 24, 0.85)';
+                ctx.fillRect(4, 4, 248, 56);
+                ctx.strokeStyle = isPvP ? '#ff4444' : '#2ec4b6';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(4, 4, 248, 56);
+
+                ctx.fillStyle = isPvP ? '#ff6666' : '#ffffff';
+                ctx.font = 'bold 20px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${isPvP ? '[RIVAL] ' : '[SQUAD] '}${playerData.callsign || opClass}`, 128, 38);
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            const nameplateMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+            const nameplateSprite = new THREE.Sprite(nameplateMat);
+            nameplateSprite.scale.set(2.2, 0.55, 1);
+            nameplateSprite.position.set(0, 2.2, 0);
+            group.add(nameplateSprite);
+        }
+
+        this.scene.add(group);
+
+        const remote = {
+            id: playerData.id,
+            callsign: playerData.callsign || 'OPERATIVE',
+            opClass,
+            mesh: group,
+            sprite,
+            targetPos: new THREE.Vector3(group.position.x, group.position.y, group.position.z),
+            targetYaw: playerData.yaw || 0,
+            currentYaw: 0,
+            hp: 100,
+            maxHp: 100,
+            isDown: false,
+            lastUpdate: Date.now()
+        };
+
+        this.remotePlayers.set(playerData.id, remote);
+        return remote;
+    }
+
+    handleRemotePlayerMoved(data) {
+        if (!data || !data.id) return;
+        const remote = this.getOrCreateRemotePlayer(data);
+        if (!remote) return;
+
+        if (Number.isFinite(data.x) && Number.isFinite(data.z)) {
+            remote.targetPos.set(data.x, 0, data.z);
+        }
+        if (Number.isFinite(data.yaw)) {
+            remote.targetYaw = data.yaw;
+        }
+        remote.animState = data.animState || 'idle';
+        remote.lastUpdate = Date.now();
+    }
+
+    handleRemotePlayerFired(data) {
+        if (!data) return;
+        const originX = data.originX;
+        const originZ = data.originZ;
+        const dirX = data.dirX;
+        const dirZ = data.dirZ;
+        if (!Number.isFinite(originX) || !Number.isFinite(originZ) || !Number.isFinite(dirX) || !Number.isFinite(dirZ)) return;
+
+        const isPvP = this.multiplayerMode === 'pvp';
+        this.spawnProjectile({
+            x: originX,
+            z: originZ,
+            vx: dirX * PROJECTILE_SPEED,
+            vz: dirZ * PROJECTILE_SPEED,
+            isEnemy: isPvP,
+            options: {
+                color: data.color ?? (isPvP ? 0xff4a4a : 0x2ec4b6),
+                glowColor: isPvP ? 0xff0000 : 0x00ffff
+            }
+        });
+        window.AudioManager?.play?.('weapon_fire_sidearm', { volume: 0.28, varyPitch: true });
+    }
+
+    handleRemotePlayerDamaged(data) {
+        if (!data) return;
+        if (data.targetId === this.netSocket?.id) {
+            // Local player was hit in PvP
+            this.takePlayerDamage?.(data.damage || 10, 'pvp-rival');
+        } else if (this.remotePlayers?.has(data.targetId)) {
+            const remote = this.remotePlayers.get(data.targetId);
+            remote.hp = Math.max(0, remote.hp - (data.damage || 10));
+            if (remote.hp === 0) {
+                remote.isDown = true;
+                if (this.multiplayerMode === 'pvp') {
+                    window.showToastNotification?.(`RIVAL ELIMINATED: ${remote.callsign}`);
+                    window.AudioManager?.play?.('fx_achievement', { volume: 0.4 });
+                } else {
+                    window.showToastNotification?.(`SQUADMATE DOWN: ${remote.callsign}`);
+                    window.AudioManager?.play?.('ui_error', { volume: 0.4 });
+                }
+            }
+        }
+    }
+
+    handleRemotePlayerRevived(data) {
+        if (!data || !this.remotePlayers?.has(data.targetId)) return;
+        const remote = this.remotePlayers.get(data.targetId);
+        remote.isDown = false;
+        remote.hp = remote.maxHp;
+        window.showToastNotification?.(`SQUADMATE REVIVED: ${remote.callsign}`);
+        window.AudioManager?.play?.('fx_level_up', { volume: 0.4 });
+    }
+
+    removeRemotePlayer(id) {
+        if (!this.remotePlayers?.has(id)) return;
+        const remote = this.remotePlayers.get(id);
+        if (remote.mesh) {
+            this.scene.remove(remote.mesh);
+        }
+        this.remotePlayers.delete(id);
+    }
+
+    updateMultiplayer(delta, now) {
+        if (!this.isMultiplayer) return;
+
+        // 1. Broadcast local position periodically (~30Hz)
+        if (this.netSocket && this.player && !this.isPlayerDead) {
+            if (now - (this.lastNetBroadcastTime ?? 0) >= 33) {
+                this.lastNetBroadcastTime = now;
+                this.netSocket.emit('playerMove', {
+                    x: this.player.position.x,
+                    z: this.player.position.z,
+                    yaw: this.facingYaw,
+                    vx: this.vx ?? 0,
+                    vz: this.vz ?? 0,
+                    animState: this.isMoving ? 'run' : 'idle'
+                });
+            }
+        }
+
+        // 2. Interpolate and animate remote players
+        if (this.remotePlayers?.size) {
+            for (const remote of this.remotePlayers.values()) {
+                const mesh = remote.mesh;
+                if (!mesh) continue;
+
+                // Smooth position lerp
+                mesh.position.lerp(remote.targetPos, Math.min(1.0, delta * 12));
+
+                // Smooth rotation lerp
+                const yawDelta = wrapAngle(remote.targetYaw - remote.currentYaw);
+                remote.currentYaw += yawDelta * Math.min(1.0, delta * 14);
+                mesh.rotation.y = remote.currentYaw;
+            }
+        }
+    }
+
     async setupEnemy3dCosmeticOverlay(sprite) {
         if (!sprite?.userData || sprite.userData.enemy3dLoading || sprite.userData.enemy3dVisual) return;
         sprite.userData.enemy3dLoading = true;
@@ -4223,6 +4454,9 @@ export class ThreeGame {
             if (this.tryInteractWithBunkerDoorPointer(event.clientX, event.clientY)) {
                 return;
             }
+            if (this.tryInteractWithPlayerTradePointer(event.clientX, event.clientY)) {
+                return;
+            }
             if (this.tryInteractWithCampPointer(event.clientX, event.clientY)) {
                 return;
             }
@@ -4348,6 +4582,7 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.addEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.addEventListener('pointermove', this.handleCanvasPointerMove);
+        window.addEventListener('pointermove', this.handleCanvasPointerMove, { passive: true });
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.addEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
@@ -4389,10 +4624,8 @@ export class ThreeGame {
         if (length <= 0.0001) return null;
 
         this.aimWorldPoint = worldPoint.clone();
-        this.aimDirX = aimDirX / length;
-        this.aimDirZ = aimDirZ / length;
-        this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
-        this.hasActiveAim = true;
+        const yaw = Math.atan2(aimDirX, aimDirZ);
+        this.updateFacingYaw(yaw);
         this.mouseAimActive = keepMouseActive;
         this._aimResetTimer = keepMouseActive ? 0 : Math.max(0, persistDuration);
         return worldPoint;
@@ -4592,6 +4825,17 @@ export class ThreeGame {
         this.emitWeaponClipState();
 
         this.spawnPlayerShot(normX, normZ);
+
+        if (this.isMultiplayer && this.netSocket && this.player) {
+            this.netSocket.emit('playerFire', {
+                originX: this.player.position.x,
+                originZ: this.player.position.z,
+                dirX: normX,
+                dirZ: normZ,
+                weaponType: this.currentWeaponType || 'plasma_carbine',
+                damage: this.playerDamage || 10
+            });
+        }
 
         window.AudioManager?.play('weapon_fire_sidearm', { volume: 0.34 });
 
@@ -5781,6 +6025,7 @@ export class ThreeGame {
         this.updateEngineerTurret(delta);
         this.updateRadarScans(delta);
         this.updatePlayer(delta);
+        this.updateMultiplayer?.(delta, now);
         this.updateWeaponState(delta);
         this.updateProjectiles(delta);
         this.updateCamera(delta);
@@ -7162,19 +7407,153 @@ export class ThreeGame {
         return false;
     }
 
+    tryInteractWithPlayerTradePointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player || !this.remotePlayers?.size) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        for (const remote of this.remotePlayers.values()) {
+            const rPos = remote.mesh?.position;
+            if (!rPos) continue;
+            const dist = Math.hypot(worldPoint.x - rPos.x, worldPoint.z - rPos.z);
+            if (dist <= 2.2) {
+                if (this.multiplayerMode !== 'pvp' && !remote.isDown) {
+                    window.openPlayerTradeWith?.(remote);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     checkHoverInteractable(clientX, clientY) {
         if (!this.isGameplayInputActive() || !this.player) {
             this.setCursorInteractState(false);
+            this.setCursorHostileState(false);
             return null;
         }
 
         const worldPoint = this.getWorldAimPoint(clientX, clientY);
         if (!worldPoint) {
             this.setCursorInteractState(false);
+            this.setCursorHostileState(false);
             return null;
         }
 
-        // 1. Check Crashed Ships / Consoles
+        // 0. Check Remote Players (Rivals in PvP or Downed/Trading Squadmates in Co-Op)
+        if (this.remotePlayers?.size) {
+            for (const remote of this.remotePlayers.values()) {
+                const rPos = remote.mesh?.position;
+                if (!rPos) continue;
+                const dist = Math.hypot(worldPoint.x - rPos.x, worldPoint.z - rPos.z);
+                if (dist <= 2.2) {
+                    if (this.multiplayerMode === 'pvp') {
+                        this.setCursorInteractState(false);
+                        this.setCursorHostileState(true, `RIVAL: ${(remote.callsign || 'OPERATIVE').toUpperCase()}`);
+                        return 'rival_player';
+                    } else if (remote.isDown) {
+                        this.setCursorHostileState(false);
+                        this.setCursorInteractState(true, `REVIVE: ${(remote.callsign || 'SQUADMATE').toUpperCase()}`);
+                        return 'revive_peer';
+                    } else {
+                        this.setCursorHostileState(false);
+                        this.setCursorInteractState(true, `[T] LINK // BARTER WITH ${(remote.callsign || 'SQUADMATE').toUpperCase()}`);
+                        return 'trade_peer';
+                    }
+                }
+            }
+        }
+
+        // 1. Check Active Enemies (Hostiles)
+        if (this.scatterSprites) {
+            for (const sprite of this.scatterSprites) {
+                if (!sprite?.parent || sprite.userData?.burstTriggered) continue;
+                const type = sprite.userData?.type;
+                if (!this.isEnemyType(type) && !sprite.userData?.isEnemy) continue;
+                const dist = Math.hypot(worldPoint.x - sprite.position.x, worldPoint.z - sprite.position.z);
+                const hoverRadius = sprite.userData?.isBoss ? 3.0 : (sprite.scale?.x ? Math.max(1.2, sprite.scale.x * 0.9) : 1.6);
+                if (dist <= hoverRadius) {
+                    const label = (type ? type.replace(/^boss_/, '').replace(/_/g, ' ') : 'HOSTILE').toUpperCase();
+                    this.setCursorInteractState(false);
+                    this.setCursorHostileState(true, label);
+                    return 'enemy';
+                }
+            }
+        }
+
+        // 2. Check Major Bosses
+        if (this.queenBossSprite?.parent) {
+            const dist = Math.hypot(worldPoint.x - this.queenBossSprite.position.x, worldPoint.z - this.queenBossSprite.position.z);
+            if (dist <= 4.2) {
+                this.setCursorInteractState(false);
+                this.setCursorHostileState(true, 'HIVE QUEEN');
+                return 'enemy';
+            }
+        }
+        if (this.sporesnailSprite?.parent) {
+            const dist = Math.hypot(worldPoint.x - this.sporesnailSprite.position.x, worldPoint.z - this.sporesnailSprite.position.z);
+            if (dist <= 3.6) {
+                this.setCursorInteractState(false);
+                this.setCursorHostileState(true, 'SPORESNAIL');
+                return 'enemy';
+            }
+        }
+
+        // 3. Check Procedural Doors / Biomechanical Doors / Blast Gates (Red targeting)
+        if (this.proceduralDoorStates) {
+            for (const door of this.proceduralDoorStates.values()) {
+                const dx = door.worldX ?? door.x;
+                const dz = door.worldZ ?? door.z;
+                if (Number.isFinite(dx) && Number.isFinite(dz)) {
+                    const dist = Math.hypot(worldPoint.x - dx, worldPoint.z - dz);
+                    if (dist <= 2.2) {
+                        const isLocked = door.state === 'locked' || door.locked;
+                        const label = isLocked ? 'LOCKED DOOR' : (door.state === 'open' ? 'OPEN DOOR' : 'SECURITY DOOR');
+                        this.setCursorInteractState(false);
+                        this.setCursorHostileState(true, label);
+                        return 'door';
+                    }
+                }
+            }
+        }
+
+        if (this.biomechanicalDoors) {
+            for (const door of this.biomechanicalDoors) {
+                const dist = Math.hypot(worldPoint.x - door.x, worldPoint.z - door.z);
+                if (dist <= 2.4) {
+                    this.setCursorInteractState(false);
+                    this.setCursorHostileState(true, 'BIO DOOR');
+                    return 'door';
+                }
+            }
+        }
+
+        // 4. Check Bunker Doors / Airlock Buttons
+        if (this.bunkerDoorButtons) {
+            const distDoor = Math.hypot(worldPoint.x - 8.5, worldPoint.z - 15.0);
+            const distInt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.interior.x, worldPoint.z - this.bunkerDoorButtons.interior.z);
+            const distExt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.exterior.x, worldPoint.z - this.bunkerDoorButtons.exterior.z);
+            if (distDoor <= 3.2 || distInt <= 2.0 || distExt <= 2.0) {
+                this.setCursorInteractState(false);
+                this.setCursorHostileState(true, 'AIRLOCK');
+                return 'door';
+            }
+        }
+
+        // 5. Check Destructible Corrupted / Cryo Barriers
+        const hoveredTileX = Math.round(worldPoint.x);
+        const hoveredTileZ = Math.round(worldPoint.z);
+        const tileType = this.getCachedTileType?.(hoveredTileX, hoveredTileZ) ?? this.getTileType?.(hoveredTileX, hoveredTileZ);
+        if (tileType === 'X' || tileType === 'C') {
+            const dist = Math.hypot(worldPoint.x - hoveredTileX, worldPoint.z - hoveredTileZ);
+            if (dist <= 1.35) {
+                this.setCursorInteractState(false);
+                this.setCursorHostileState(true, tileType === 'X' ? 'CORRUPTED BARRIER' : 'CRYO WALL');
+                return 'destructible_wall';
+            }
+        }
+
+        // 6. Check Crashed Ships / Consoles (Cyan/Green friendly interactable)
         if (this.crashedShips) {
             for (const ship of this.crashedShips) {
                 if (!ship.isVisible) continue;
@@ -7183,42 +7562,47 @@ export class ThreeGame {
                 const distWorld = Math.hypot(worldPoint.x - consoleX, worldPoint.z - consoleZ);
                 const playerDist = Math.hypot(this.player.position.x - consoleX, this.player.position.z - consoleZ);
                 if ((distWorld <= 2.5 || Math.hypot(worldPoint.x - ship.tileX, worldPoint.z - ship.tileZ) <= Math.max(1.5, ship.width * 0.9)) && playerDist <= 5.2) {
+                    this.setCursorHostileState(false);
                     this.setCursorInteractState(true, 'TERMINAL');
                     return 'console';
                 }
             }
         }
 
-        // 2. Check O2 Generator
+        // 7. Check O2 Generator
         const o2Pos = this.getActiveO2GeneratorPosition?.();
         if (o2Pos) {
             const distO2 = Math.hypot(worldPoint.x - o2Pos.x, worldPoint.z - o2Pos.z);
             const playerDist = Math.hypot(this.player.position.x - o2Pos.x, this.player.position.z - o2Pos.z);
             if (distO2 <= 2.0 && playerDist <= 5.2) {
+                this.setCursorHostileState(false);
                 this.setCursorInteractState(true, 'O2 STATION');
                 return 'o2';
             }
         }
 
-        // 3. Check Foundry
+        // 8. Check Foundry
         if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(worldPoint.x, worldPoint.z)) {
+            this.setCursorHostileState(false);
             this.setCursorInteractState(true, 'FOUNDRY');
             return 'foundry';
         }
 
-        // 4. Check Black Box
+        // 9. Check Black Box
         if (this._blackBoxMarkerActive && this._blackBoxState) {
             const distBB = Math.hypot(worldPoint.x - this._blackBoxState.x, worldPoint.z - this._blackBoxState.z);
             if (distBB <= 2.0) {
+                this.setCursorHostileState(false);
                 this.setCursorInteractState(true, 'BLACK BOX');
                 return 'black_box';
             }
         }
 
-        // 5. Check Camps & Camp Leaders
+        // 10. Check Camps & Camp Leaders
         const actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z);
         if (actionable) {
             const campLabel = actionable.camp?.leaderName ? `TALK: ${actionable.camp.leaderName.toUpperCase()}` : (actionable.camp?.label?.toUpperCase() || 'CAMP');
+            this.setCursorHostileState(false);
             this.setCursorInteractState(true, campLabel);
             return 'camp';
         }
@@ -7230,24 +7614,15 @@ export class ThreeGame {
                 const distCamp = Math.hypot(worldPoint.x - cx, worldPoint.z - cz);
                 const playerDist = Math.hypot(this.player.position.x - cx, this.player.position.z - cz);
                 if (distCamp <= (camp.radius || 3.5) && playerDist <= ((camp.radius || 3.5) + 3.0)) {
+                    this.setCursorHostileState(false);
                     this.setCursorInteractState(true, camp.leaderName ? `TALK: ${camp.leaderName.toUpperCase()}` : 'CAMP');
                     return 'camp';
                 }
             }
         }
 
-        // 6. Check Bunker Doors / Airlock Buttons
-        if (this.bunkerDoorButtons) {
-            const distDoor = Math.hypot(worldPoint.x - 8.5, worldPoint.z - 15.0);
-            const distInt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.interior.x, worldPoint.z - this.bunkerDoorButtons.interior.z);
-            const distExt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.exterior.x, worldPoint.z - this.bunkerDoorButtons.exterior.z);
-            if (distDoor <= 3.2 || distInt <= 2.0 || distExt <= 2.0) {
-                this.setCursorInteractState(true, 'AIRLOCK');
-                return 'door';
-            }
-        }
-
         this.setCursorInteractState(false);
+        this.setCursorHostileState(false);
         return null;
     }
 
@@ -7266,7 +7641,27 @@ export class ThreeGame {
                 cursor.appendChild(badge);
             }
             badge.textContent = label;
-        } else if (badge) {
+        } else if (!isInteract && !cursor.classList.contains('cursor-target') && badge) {
+            badge.textContent = '';
+        }
+    }
+
+    setCursorHostileState(isHostile, label = '') {
+        if (typeof document === 'undefined') return;
+        const cursor = document.getElementById('tactical-cursor');
+        if (!cursor) return;
+        cursor.classList.toggle('cursor-target', Boolean(isHostile));
+        cursor.classList.toggle('cursor-enemy', Boolean(isHostile));
+
+        let badge = cursor.querySelector('.cursor-interact-badge');
+        if (isHostile && label) {
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'cursor-interact-badge';
+                cursor.appendChild(badge);
+            }
+            badge.textContent = label;
+        } else if (!isHostile && !cursor.classList.contains('cursor-interact') && badge) {
             badge.textContent = '';
         }
     }
@@ -13187,31 +13582,34 @@ export class ThreeGame {
             });
         }
 
-        const detailedChunks = [];
-        for (const key of this.discoveredMapChunkKeys ?? []) {
-            const [chunkX, chunkY] = key.split(',').map(Number);
-            const grid = this.chunkCache.get(key);
-            if (!grid) continue;
-            const rooms = this.wfcMetadataCache?.get(key)?.roomInstances ?? [];
-            const roomCells = new Set(rooms
-                .filter((room) => this.discoveredMapRoomKeys?.has(`${key}:${room.id}`))
-                .flatMap((room) => room.footprint ?? [])
-                .map((cell) => `${cell.x},${cell.y}`));
-            const cells = [];
-            for (let y = 0; y < grid.length; y += 1) {
-                for (let x = 0; x < (grid[y]?.length ?? 0); x += 1) {
-                    const tile = grid[y][x];
-                    if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(tile)) continue;
-                    const worldKey = `${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`;
-                    // The crash-site chunk is an authored home chamber rather
-                    // than WFC room metadata. Elsewhere reveal whole rooms on
-                    // entry and only the hallway tiles the operator has swept.
-                    if (rooms.length > 0 && !roomCells.has(`${x},${y}`) && !this.discoveredMapCellKeys?.has(worldKey)) continue;
-                    cells.push({ x, y, kind: tile === 'D' ? 'door' : roomCells.has(`${x},${y}`) ? 'room' : 'hall' });
+        let detailedChunks = this._cachedDetailedChunks;
+        if (!detailedChunks || this._detailedChunksDirty) {
+            detailedChunks = [];
+            for (const key of this.discoveredMapChunkKeys ?? []) {
+                const [chunkX, chunkY] = key.split(',').map(Number);
+                const grid = this.chunkCache.get(key);
+                if (!grid) continue;
+                const rooms = this.wfcMetadataCache?.get(key)?.roomInstances ?? [];
+                const roomCells = new Set(rooms
+                    .filter((room) => this.discoveredMapRoomKeys?.has(`${key}:${room.id}`))
+                    .flatMap((room) => room.footprint ?? [])
+                    .map((cell) => `${cell.x},${cell.y}`));
+                const cells = [];
+                for (let y = 0; y < grid.length; y += 1) {
+                    for (let x = 0; x < (grid[y]?.length ?? 0); x += 1) {
+                        const tile = grid[y][x];
+                        if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(tile)) continue;
+                        const worldKey = `${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`;
+                        if (rooms.length > 0 && !roomCells.has(`${x},${y}`) && !this.discoveredMapCellKeys?.has(worldKey)) continue;
+                        cells.push({ x, y, kind: tile === 'D' ? 'door' : roomCells.has(`${x},${y}`) ? 'room' : 'hall' });
+                    }
                 }
+                detailedChunks.push({ key, chunkX, chunkY, cells });
             }
-            detailedChunks.push({ key, chunkX, chunkY, cells });
+            this._cachedDetailedChunks = detailedChunks;
+            this._detailedChunksDirty = false;
         }
+
         const topology = this.getRegionalRouteTopology?.();
         const scannedPaths = [];
         if (this.explorationTracker && this.player) {
@@ -13238,12 +13636,14 @@ export class ThreeGame {
                 }
             }
         }
+
         return {
             player: this.player ? { x: this.player.position.x, z: this.player.position.z, rotation: this.player.rotation?.y ?? 0 } : null,
             home: { x: CRASH_SITE_CENTER, z: CRASH_SITE_CENTER },
             chunkSize: this.chunkSize,
             detailedChunks,
             scannedPaths,
+            breadcrumbTrail: this.explorationTracker ? this.explorationTracker.getBreadcrumbTrail() : [],
             routeChunks: topology?.routeChunks ?? [],
             routeEdges: (topology?.routeEdges ?? []).map((edge) => {
                 const [from, to] = edge.split('|');
@@ -13274,6 +13674,7 @@ export class ThreeGame {
         this.discoveredMapChunkKeys ??= new Set();
         if (!this.discoveredMapChunkKeys.has(chunkKey)) {
             this.discoveredMapChunkKeys.add(chunkKey);
+            this._detailedChunksDirty = true;
             debugLog.info('MAP', 'Chunk revealed', { chunk: chunkKey });
         }
         this.discoveredMapRoomKeys ??= new Set();
@@ -13285,7 +13686,11 @@ export class ThreeGame {
                 const x = localX + dx;
                 const y = localY + dy;
                 if (!['.', 'D', 'R', 'B', 'L', 'O'].includes(grid?.[y]?.[x])) continue;
-                this.discoveredMapCellKeys.add(`${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`);
+                const worldKey = `${chunkX * this.chunkSize + x},${chunkY * this.chunkSize + y}`;
+                if (!this.discoveredMapCellKeys.has(worldKey)) {
+                    this.discoveredMapCellKeys.add(worldKey);
+                    this._detailedChunksDirty = true;
+                }
             }
         }
         for (const room of this.wfcMetadataCache?.get(chunkKey)?.roomInstances ?? []) {
@@ -13293,6 +13698,7 @@ export class ThreeGame {
                 const roomKey = `${chunkKey}:${room.id}`;
                 if (!this.discoveredMapRoomKeys.has(roomKey)) {
                     this.discoveredMapRoomKeys.add(roomKey);
+                    this._detailedChunksDirty = true;
                     debugLog.info('MAP', 'Room revealed', {
                         chunk: chunkKey,
                         roomId: room.id,
@@ -26636,6 +27042,23 @@ export class ThreeGame {
         this.applyMilestoneBossRuntimeEvent?.({ type: MILESTONE_BOSS_EVENT_TYPES.QUIT });
         this.renderer.setAnimationLoop(null);
         this.resetWeaponState({ emit: false });
+
+        if (this.remotePlayers) {
+            for (const remote of this.remotePlayers.values()) {
+                if (remote.mesh) this.scene.remove(remote.mesh);
+            }
+            this.remotePlayers.clear();
+        }
+        if (this.netSocket) {
+            this.netSocket.off('playerMoved');
+            this.netSocket.off('playerFired');
+            this.netSocket.off('playerDamaged');
+            this.netSocket.off('playerRevived');
+            this.netSocket.off('playerDisconnected');
+            this.netSocket.off('newPlayer');
+            this.netSocket = null;
+        }
+
         window.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('keyup', this.handleKeyUp);
         this.consolePromptEl?.removeEventListener('pointerup', this.handlePromptTap);
@@ -26659,6 +27082,7 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerdown', this.handleCanvasPointerDown);
         this.renderer.domElement.removeEventListener('contextmenu', this.handleCanvasContextMenu);
         this.renderer.domElement.removeEventListener('pointermove', this.handleCanvasPointerMove);
+        window.removeEventListener('pointermove', this.handleCanvasPointerMove);
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);

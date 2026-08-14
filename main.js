@@ -48,6 +48,7 @@ import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
+import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
 import { matureContentAudit } from './src/matureContentAudit.js';
 import { renderGameOverLeaderboard } from './src/leaderboardUi.js';
 import { OPERATOR_POLISHES, getSelectedPolish, getUnlockedPolishIds, selectPolish, unlockAllPolishes, unlockMilestonePolish } from './src/operatorPolishes.js';
@@ -7967,6 +7968,139 @@ function focusTacticalMapOnPlayer() {
     }
 }
 
+function getCurrentInventoryForTrade() {
+    const bankState = window.game?.bank?.getState?.() || {};
+    const ammoCount = Number(window.pickupCounterState?.ammo) || 0;
+    const medkitCount = Number(window.pickupCounterState?.medkits) || 0;
+    const o2Count = Number(window.pickupCounterState?.o2Canisters) || 0;
+    return {
+        shells: Number(bankState.shells) || 0,
+        ammo: ammoCount,
+        medkits: medkitCount,
+        o2Canisters: o2Count
+    };
+}
+
+function updatePlayerTradeUi(state) {
+    const modal = document.getElementById('player-trade-modal');
+    if (!modal) return;
+
+    if (!state.isOpen) {
+        modal.classList.add('hidden');
+        modal.setAttribute('aria-hidden', 'true');
+        return;
+    }
+
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+
+    const inv = getCurrentInventoryForTrade();
+    const selfCallsign = window.profileManager?.getCallsign?.() || 'LOCAL AGENT';
+    const selfClass = window.selectedPlayerType || 'TANK';
+
+    const selfCallsignEl = document.getElementById('trade-self-callsign');
+    const selfClassEl = document.getElementById('trade-self-class');
+    if (selfCallsignEl) selfCallsignEl.textContent = selfCallsign.toUpperCase();
+    if (selfClassEl) selfClassEl.textContent = `${selfClass} // OPERATIVE`;
+
+    const peerCallsignEl = document.getElementById('trade-peer-callsign');
+    const peerClassEl = document.getElementById('trade-peer-class');
+    if (peerCallsignEl) peerCallsignEl.textContent = (state.partner?.callsign || 'SQUADMATE').toUpperCase();
+    if (peerClassEl) peerClassEl.textContent = `${state.partner?.opClass || 'SCOUT'} // REMOTE`;
+
+    // Self availability
+    const shellAvailEl = document.getElementById('trade-self-shells-avail');
+    const ammoAvailEl = document.getElementById('trade-self-ammo-avail');
+    const medsAvailEl = document.getElementById('trade-self-meds-avail');
+    const o2AvailEl = document.getElementById('trade-self-o2-avail');
+    if (shellAvailEl) shellAvailEl.textContent = `(${inv.shells})`;
+    if (ammoAvailEl) ammoAvailEl.textContent = `(${inv.ammo})`;
+    if (medsAvailEl) medsAvailEl.textContent = `(${inv.medkits})`;
+    if (o2AvailEl) o2AvailEl.textContent = `(${inv.o2Canisters})`;
+
+    // Self offer values
+    const shellValEl = document.getElementById('trade-self-shells-val');
+    const ammoValEl = document.getElementById('trade-self-ammo-val');
+    const medsValEl = document.getElementById('trade-self-meds-val');
+    const o2ValEl = document.getElementById('trade-self-o2-val');
+    if (shellValEl) shellValEl.textContent = String(state.myOffer.shells || 0);
+    if (ammoValEl) ammoValEl.textContent = String(state.myOffer.ammo || 0);
+    if (medsValEl) medsValEl.textContent = String(state.myOffer.medkits || 0);
+    if (o2ValEl) o2ValEl.textContent = String(state.myOffer.o2Canisters || 0);
+
+    // Peer offer values
+    const peerShellValEl = document.getElementById('trade-peer-shells-val');
+    const peerAmmoValEl = document.getElementById('trade-peer-ammo-val');
+    const peerMedsValEl = document.getElementById('trade-peer-meds-val');
+    const peerO2ValEl = document.getElementById('trade-peer-o2-val');
+    if (peerShellValEl) peerShellValEl.textContent = String(state.peerOffer.shells || 0);
+    if (peerAmmoValEl) peerAmmoValEl.textContent = String(state.peerOffer.ammo || 0);
+    if (peerMedsValEl) peerMedsValEl.textContent = String(state.peerOffer.medkits || 0);
+    if (peerO2ValEl) peerO2ValEl.textContent = String(state.peerOffer.o2Canisters || 0);
+
+    const statusBarEl = document.getElementById('trade-status-bar-text');
+    if (statusBarEl) statusBarEl.textContent = state.statusMessage || 'AWAITING OFFER SELECTION';
+
+    const confirmBtn = document.getElementById('trade-confirm-btn');
+    if (confirmBtn) {
+        confirmBtn.textContent = state.myAccepted ? 'WAITING FOR SQUADMATE...' : 'CONFIRM TRANSFER';
+        confirmBtn.disabled = state.myAccepted;
+    }
+}
+
+let playerTradeEventsInitialized = false;
+function setupPlayerTradeEvents() {
+    if (playerTradeEventsInitialized) return;
+    playerTradeEventsInitialized = true;
+
+    playerTradeManager.onStateChanged = updatePlayerTradeUi;
+
+    // Local Steppers
+    const bindStepper = (minusId, plusId, key, step, maxSupplier) => {
+        document.getElementById(minusId)?.addEventListener('click', () => {
+            const current = playerTradeManager.myOffer[key] || 0;
+            playerTradeManager.setOfferItem(key, Math.max(0, current - step));
+            window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+        });
+        document.getElementById(plusId)?.addEventListener('click', () => {
+            const current = playerTradeManager.myOffer[key] || 0;
+            const maxVal = maxSupplier();
+            playerTradeManager.setOfferItem(key, Math.min(maxVal, current + step));
+            window.AudioManager?.play?.('ui_click', { volume: 0.25 });
+        });
+    };
+
+    const inv = () => getCurrentInventoryForTrade();
+    bindStepper('trade-self-shells-minus', 'trade-self-shells-plus', TRADEABLE_RESOURCES.SHELLS, 10, () => inv().shells);
+    bindStepper('trade-self-ammo-minus', 'trade-self-ammo-plus', TRADEABLE_RESOURCES.AMMO, 10, () => inv().ammo);
+    bindStepper('trade-self-meds-minus', 'trade-self-meds-plus', TRADEABLE_RESOURCES.MEDKITS, 1, () => inv().medkits);
+    bindStepper('trade-self-o2-minus', 'trade-self-o2-plus', TRADEABLE_RESOURCES.O2, 1, () => inv().o2Canisters);
+
+    document.getElementById('close-player-trade-modal')?.addEventListener('click', () => {
+        playerTradeManager.closeTrade();
+        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+    });
+    document.getElementById('trade-cancel-btn')?.addEventListener('click', () => {
+        playerTradeManager.closeTrade();
+        window.AudioManager?.play?.('ui_click', { volume: 0.3 });
+    });
+
+    document.getElementById('trade-confirm-btn')?.addEventListener('click', () => {
+        const invState = getCurrentInventoryForTrade();
+        const success = playerTradeManager.acceptTrade(invState);
+        if (success) {
+            window.AudioManager?.play?.('fx_menu_confirm', { volume: 0.4 });
+        } else {
+            window.AudioManager?.play?.('ui_error', { volume: 0.35 });
+        }
+    });
+
+    window.openPlayerTradeWith = (peerData) => {
+        setupPlayerTradeEvents();
+        playerTradeManager.openTrade(peerData);
+    };
+}
+
 function adjustTacticalMapZoom(delta) {
     tacticalMapState.zoom = Math.max(0.5, Math.min(3.5, tacticalMapState.zoom + delta));
 }
@@ -8124,9 +8258,16 @@ function drawTacticalMapOverlay() {
         }
     }
 
-    // Render the actual stamped floors. Rooms and halls retain their authored
-    // silhouettes, including bends, branches, and door connector lanes.
+    // Render the actual stamped floors with chunk-level culling
+    const chunkPixelSize = chunkSize * cellSize;
     for (const chunk of detailedChunks) {
+        const chunkScreenX = chunk.chunkX * chunkPixelSize + offsetX;
+        const chunkScreenY = chunk.chunkY * chunkPixelSize + offsetY;
+        if (chunkScreenX + chunkPixelSize < -50 || chunkScreenX > width + 50 ||
+            chunkScreenY + chunkPixelSize < -50 || chunkScreenY > height + 50) {
+            continue;
+        }
+
         for (const cell of chunk.cells ?? []) {
             const p = worldToMap(chunk.chunkX * chunkSize + cell.x, chunk.chunkY * chunkSize + cell.y);
             if (p.x < -cellSize || p.x > width || p.y < -cellSize || p.y > height) continue;
@@ -8135,6 +8276,44 @@ function drawTacticalMapOverlay() {
                     : 'rgba(55,145,178,.5)';
             ctx.fillRect(p.x, p.y, Math.max(1.2, cellSize + 0.25), Math.max(1.2, cellSize + 0.25));
         }
+    }
+
+    // Render Traversed Exploration Breadcrumb Trail (Real Historical Footsteps)
+    const breadcrumbTrail = mapState.breadcrumbTrail ?? [];
+    if (breadcrumbTrail.length >= 2) {
+        ctx.save();
+
+        // 1. Soft glowing outer trail path
+        ctx.beginPath();
+        const startPt = worldToMap(breadcrumbTrail[0].x, breadcrumbTrail[0].z);
+        ctx.moveTo(startPt.x, startPt.y);
+        for (let i = 1; i < breadcrumbTrail.length; i++) {
+            const pt = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
+            ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.strokeStyle = 'rgba(0, 229, 255, 0.22)';
+        ctx.lineWidth = 4.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        // 2. Inner crisp neon route trail
+        ctx.strokeStyle = 'rgba(46, 230, 255, 0.85)';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([4, 2]);
+        ctx.stroke();
+
+        // 3. Footstep waypoint pulse markers along the traveled route
+        const stepInterval = Math.max(3, Math.floor(breadcrumbTrail.length / 40));
+        for (let i = 0; i < breadcrumbTrail.length; i += stepInterval) {
+            const wp = worldToMap(breadcrumbTrail[i].x, breadcrumbTrail[i].z);
+            if (wp.x < -10 || wp.x > width + 10 || wp.y < -10 || wp.y > height + 10) continue;
+            ctx.beginPath();
+            ctx.arc(wp.x, wp.y, 2.0, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ffd2';
+            ctx.fill();
+        }
+        ctx.restore();
     }
 
     // Landmarks (including Home Base)
@@ -8196,7 +8375,7 @@ function drawTacticalMapOverlay() {
         ctx.fillRect(pt.x - 3, pt.y - 3, 6, 6);
     }
 
-    // Render scanned path connectivity lines & route vectors ("math paths of scanned area")
+    // Render scanned path connectivity lines & route vectors
     const scannedPaths = mapState.scannedPaths ?? [];
     for (const sp of scannedPaths) {
         if (!sp.path || sp.path.length < 2) continue;
@@ -8377,6 +8556,26 @@ document.addEventListener('keydown', (event) => {
         return;
     }
 
+    if (event.code === 'KeyT') {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag !== 'input' && activeTag !== 'textarea') {
+            const tradeModal = document.getElementById('player-trade-modal');
+            if (tradeModal && !tradeModal.classList.contains('hidden')) {
+                playerTradeManager.closeTrade();
+            } else {
+                setupPlayerTradeEvents();
+                const remotes = window.game?.remotePlayers;
+                let nearest = null;
+                if (remotes && remotes.size > 0) {
+                    nearest = Array.from(remotes.values())[0];
+                }
+                playerTradeManager.openTrade(nearest || { id: 'squad-peer', callsign: 'SQUAD-OPERATIVE', opClass: 'SCOUT' });
+            }
+            event.preventDefault();
+            return;
+        }
+    }
+
     if (event.code === 'KeyM' || (event.key === 'Tab' && !event.ctrlKey && !event.altKey)) {
         const activeTag = document.activeElement?.tagName?.toLowerCase();
         if (activeTag !== 'input' && activeTag !== 'textarea') {
@@ -8387,6 +8586,13 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.key === 'Escape') {
+        const tradeModal = document.getElementById('player-trade-modal');
+        if (tradeModal && !tradeModal.classList.contains('hidden')) {
+            playerTradeManager.closeTrade();
+            event.preventDefault();
+            return;
+        }
+
         const tacticalMapModal = document.getElementById('tactical-map-modal');
         if (tacticalMapModal && !tacticalMapModal.classList.contains('hidden')) {
             toggleTacticalMapModal(false);
