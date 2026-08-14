@@ -80,7 +80,6 @@ export async function startRunAndSkipIntro(page) {
         if (await dialogueSkipChoice.isVisible().catch(() => false)) {
             await dialogueSkipChoice.click({ timeout: 1_000 }).catch(() => {});
         }
-        await page.keyboard.press('Escape').catch(() => {});
         await page.waitForTimeout(400);
     }
     if (!ready) {
@@ -90,6 +89,14 @@ export async function startRunAndSkipIntro(page) {
             document.body.classList.remove('mission-intro-active', 'hud-hidden');
         }).catch(() => {});
     }
+    await page.evaluate(() => {
+        const settings = document.getElementById('settings-popup');
+        if (settings && !settings.classList.contains('hidden')) {
+            settings.classList.add('hidden');
+            settings.setAttribute('aria-hidden', 'true');
+        }
+    }).catch(() => {});
+
     const isDebug = await page.evaluate(() => document.body.classList.contains('show-debug')).catch(() => false);
     if (isDebug) {
         await page.locator('#hud-run-seed').waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});

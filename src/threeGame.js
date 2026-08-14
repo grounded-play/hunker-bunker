@@ -440,11 +440,6 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'decal_hive_growth',
     'decal_spore_growth_patch',
     'decal_bullet_holes',
-    'decal_wall_breach',
-    'decal_hazard_stripes',
-    'decal_biohazard_stencil',
-    'decal_meridian_stencil',
-    'decal_claw_scratches',
     'scatter_bolts',
     'scatter_cable_coil',
     'scatter_coolant_puddle',
@@ -455,7 +450,15 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'prop_blood_trail',
     'prop_iron_guild_dogtags'
 ]);
+const WALL_DECAL_TYPES = new Set([
+    'decal_wall_breach',
+    'decal_hazard_stripes',
+    'decal_biohazard_stencil',
+    'decal_meridian_stencil',
+    'decal_claw_scratches'
+]);
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
+const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
 const PROCEDURAL_DOOR_OPEN_RADIUS = 2.7;
 const PROCEDURAL_DOOR_CLOSE_RADIUS = 3.6;
 const BOSS_WALL_BREAK_COOLDOWN = 0.42;
@@ -2778,6 +2781,15 @@ export class ThreeGame {
                         #ifdef DECODE_VIDEO_TEXTURE
                             sampledDiffuseColor = vec4( mix( pow( sampledDiffuseColor.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), sampledDiffuseColor.rgb * 0.0773993808, vec3( lessThanEqual( sampledDiffuseColor.rgb, vec3( 0.04045 ) ) ) ), sampledDiffuseColor.w );
                         #endif
+                        // Source art (canyon_falloff_biomech/ice/alien) reads
+                        // near-black at native brightness -- lift it so the
+                        // rock detail actually reads near the rim, then let
+                        // it fall away to true darkness toward the pit floor
+                        // (rim ~= world y 0, floor ~= world y -9.8; see
+                        // createCliffPatch's column placement/height).
+                        sampledDiffuseColor.rgb = pow( sampledDiffuseColor.rgb, vec3( 0.55 ) ) * 1.35;
+                        float cliffDepthFade = smoothstep( -8.5, -0.3, vWorldPos.y );
+                        sampledDiffuseColor.rgb *= mix( 0.05, 1.0, cliffDepthFade );
                         diffuseColor *= sampledDiffuseColor;
                     #endif
                     `
@@ -2792,6 +2804,61 @@ export class ThreeGame {
                 );
             };
             this.cliffMaterials[biomeKey] = material;
+        }
+
+        this.canyonDropMaterials = {};
+        this.canyonDropGeometry = new THREE.PlaneGeometry(1.0, 10.0);
+        this.canyonDropGeometry.translate(0, -5.0, 0);
+
+        for (const [biomeKey, [path, , color, emissive]] of Object.entries(canyonMaterialConfigs)) {
+            const dropTex = this.loadTerrainTexture(path, textureLoader, maxAnisotropy);
+            dropTex.wrapS = THREE.RepeatWrapping;
+            dropTex.wrapT = THREE.ClampToEdgeWrapping;
+            dropTex.repeat.set(1.0, 1.0);
+            const dropMat = new THREE.MeshStandardMaterial({
+                map: dropTex,
+                color,
+                emissive: new THREE.Color(emissive),
+                emissiveIntensity: 0.75,
+                roughness: 0.95,
+                metalness: 0.05,
+                side: THREE.DoubleSide,
+                fog: true
+            });
+            dropMat.onBeforeCompile = (shader) => {
+                shader.vertexShader = shader.vertexShader.replace(
+                    'void main() {',
+                    `
+                    varying vec3 vCanyonDropWorldPos;
+                    void main() {
+                    `
+                );
+                shader.vertexShader = shader.vertexShader.replace(
+                    '#include <worldpos_vertex>',
+                    `
+                    #include <worldpos_vertex>
+                    #ifdef USE_INSTANCING
+                        vCanyonDropWorldPos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+                    #else
+                        vCanyonDropWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+                    #endif
+                    `
+                );
+                shader.fragmentShader = `
+                    varying vec3 vCanyonDropWorldPos;
+                    ${shader.fragmentShader}
+                `;
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    '#include <dithering_fragment>',
+                    `
+                    #include <dithering_fragment>
+                    float depthFade = clamp((vCanyonDropWorldPos.y + 9.5) / 9.5, 0.0, 1.0);
+                    depthFade = smoothstep(0.0, 1.0, depthFade);
+                    gl_FragColor.rgb *= depthFade * depthFade;
+                    `
+                );
+            };
+            this.canyonDropMaterials[biomeKey] = dropMat;
         }
 
         this.voidMaterial = new THREE.MeshBasicMaterial({
@@ -10590,13 +10657,17 @@ export class ThreeGame {
         for (let i = this.loreDrops.length - 1; i >= 0; i -= 1) {
             const entry = this.loreDrops[i];
             entry.t += delta;
-            entry.sprite.position.y = entry.baseY + 0.08 + Math.sin(entry.t * 2.2) * 0.07;
-            entry.sprite.material.opacity = 0.8 + Math.sin(entry.t * 3.1) * 0.2;
+            entry.sprite.position.y = entry.baseY + 0.12 + Math.sin(entry.t * 2.6) * 0.08;
+            entry.sprite.material.opacity = 0.85 + Math.sin(entry.t * 3.5) * 0.15;
             if (this.isPlayerDead) continue;
-            const d = Math.hypot(
-                entry.sprite.position.x - this.player.position.x,
-                entry.sprite.position.z - this.player.position.z
-            );
+            const dx = this.player.position.x - entry.sprite.position.x;
+            const dz = this.player.position.z - entry.sprite.position.z;
+            const d = Math.hypot(dx, dz);
+            if (d < 2.8 && d > 0.01) {
+                const pullSpeed = Math.min(8.0, (2.8 - d) * 3.5) * delta;
+                entry.sprite.position.x += (dx / d) * pullSpeed;
+                entry.sprite.position.z += (dz / d) * pullSpeed;
+            }
             if (d <= 1.25) this.collectLoreDrop(i);
         }
     }
@@ -10607,12 +10678,23 @@ export class ThreeGame {
         this.loreDrops.splice(index, 1);
         this.scene.remove(entry.sprite);
         markLoreDropFound(entry.drop.key);
-        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.6 });
+        window.AudioManager?.play?.('ui_scan_ping', { volume: 0.65 });
+        window.AudioManager?.play?.('item_pickup', { volume: 0.55 });
+        if (typeof this.spawnPhysicalBurst === 'function') {
+            this.spawnPhysicalBurst(entry.sprite.position.x, entry.sprite.position.z, {
+                color: entry.drop.rarity === 'legendary' ? 0xffd27a : entry.drop.rarity === 'rare' ? 0x9be8ff : 0x75d5a0,
+                count: 8,
+                upward: 0.28
+            });
+        }
         window.dispatchEvent(new CustomEvent('lore-drop-collected', {
             detail: { key: entry.drop.key, title: entry.drop.title, rarity: entry.drop.rarity }
         }));
         window.dispatchEvent(new CustomEvent('lore-terminal-read', {
             detail: { loreKey: entry.drop.key, loreText: entry.drop.text, skipSave: true }
+        }));
+        window.dispatchEvent(new CustomEvent('objective-resolved', {
+            detail: { id: 'retrieve-relic' }
         }));
     }
 
@@ -18564,9 +18646,21 @@ export class ThreeGame {
         const voidPatchMatrices = [];
         const cliffMatricesByBiome = new Map();
         const cliffEdgeMatricesByBiome = new Map();
+        const canyonDropMatricesByBiome = new Map();
         const rubbleMatrices = [];
         const floorRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
         const instMatrix = new THREE.Matrix4();
+
+        const addCanyonDropSkirt = (posX, posZ, rotY, biomeKey) => {
+            const skirtQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0));
+            const skirtMat = new THREE.Matrix4().compose(
+                new THREE.Vector3(posX, 0.0, posZ),
+                skirtQuat,
+                new THREE.Vector3(1.0, 1.0, 1.0)
+            );
+            if (!canyonDropMatricesByBiome.has(biomeKey)) canyonDropMatricesByBiome.set(biomeKey, []);
+            canyonDropMatricesByBiome.get(biomeKey).push(skirtMat);
+        };
 
         // Standard/damaged walls instance into one InstancedMesh per distinct
         // roomStyleId within this chunk (not one pool for the whole chunk):
@@ -18702,6 +18796,19 @@ export class ThreeGame {
                         const char = grid[localY + dy]?.[localX + dx];
                         return char === '.' || char === 'D' || char === '#' || char === 'C';
                     };
+                    const bKey = this.getBiomeKeyForWorldPosition?.(worldX, worldZ) ?? BIOME_KEYS.ACTIVE;
+                    if (hasWalkableOrWall(0, -1)) {
+                        addCanyonDropSkirt(worldX, worldZ - 0.5, 0, bKey);
+                    }
+                    if (hasWalkableOrWall(0, 1)) {
+                        addCanyonDropSkirt(worldX, worldZ + 0.5, Math.PI, bKey);
+                    }
+                    if (hasWalkableOrWall(-1, 0)) {
+                        addCanyonDropSkirt(worldX - 0.5, worldZ, Math.PI / 2, bKey);
+                    }
+                    if (hasWalkableOrWall(1, 0)) {
+                        addCanyonDropSkirt(worldX + 0.5, worldZ, -Math.PI / 2, bKey);
+                    }
                     if (
                         hasWalkableOrWall(0, -1) || hasWalkableOrWall(0, 1)
                         || hasWalkableOrWall(-1, 0) || hasWalkableOrWall(1, 0)
@@ -19082,6 +19189,21 @@ export class ThreeGame {
                 cliffEdges.castShadow = true;
                 cliffEdges.userData = { isCliffEdgeDressing: true };
                 group.add(cliffEdges);
+            }
+        }
+
+        if (this.canyonDropGeometry && canyonDropMatricesByBiome.size > 0) {
+            for (const [bKey, matrices] of canyonDropMatricesByBiome.entries()) {
+                if (matrices.length === 0) continue;
+                const mat = this.canyonDropMaterials?.[bKey] ?? this.canyonDropMaterials?.[BIOME_KEYS.ACTIVE];
+                if (!mat) continue;
+                const dropInstanced = new THREE.InstancedMesh(this.canyonDropGeometry, mat, matrices.length);
+                matrices.forEach((m, idx) => dropInstanced.setMatrixAt(idx, m));
+                dropInstanced.instanceMatrix.needsUpdate = true;
+                dropInstanced.receiveShadow = true;
+                dropInstanced.castShadow = false;
+                dropInstanced.userData = { isCanyonDropSkirt: true };
+                group.add(dropInstanced);
             }
         }
 
@@ -20299,6 +20421,63 @@ export class ThreeGame {
         const scaleX = placement.scale;
         const scaleY = placement.scale * (1.0 + placement.tiltX);
         const anchoredY = placement.elevation ?? 0;
+
+        if (placement.type.startsWith('drop_')) {
+            const dropKey = placement.type;
+            const loreEntry = LORE_DROPS.find((d) => d.key === dropKey) || {
+                key: dropKey,
+                title: dropKey.replace(/^drop_/, '').toUpperCase().replace(/_/g, ' '),
+                rarity: dropKey === 'drop_black_flask' ? 'rare' : 'common',
+                text: 'Recovered expedition artifact.'
+            };
+            const dropSprite = this.spawnLoreDropSprite(loreEntry, placement.x, placement.z);
+            if (dropSprite) return dropSprite;
+        }
+
+        if (isWallDecalType(placement.type) || placement.isWallDecal) {
+            const texture = this.scatterTextures[placement.type] || this.scatterMaterials[placement.type]?.map;
+            if (!texture) return null;
+            const material = new THREE.MeshStandardMaterial({
+                map: texture,
+                transparent: true,
+                alphaTest: 0.05,
+                roughness: 0.92,
+                metalness: 0.18,
+                polygonOffset: true,
+                polygonOffsetFactor: -2,
+                polygonOffsetUnits: -2,
+                side: THREE.DoubleSide,
+                fog: true
+            });
+            const decalWidth = Math.max(1.0, scaleX * 1.4);
+            const decalHeight = Math.max(1.0, scaleY * 1.4);
+            const wallDecalGeo = new THREE.PlaneGeometry(decalWidth, decalHeight);
+            const decalMesh = new THREE.Mesh(wallDecalGeo, material);
+            const wallY = (placement.elevation ?? 0) + (this.wallHeight ? this.wallHeight * 0.48 : 0.65);
+            decalMesh.position.set(placement.x, wallY, placement.z);
+            decalMesh.rotation.y = placement.rotation ?? 0;
+            decalMesh.renderOrder = 6;
+            decalMesh.userData = {
+                isScatter: true,
+                isWallDecal: true,
+                type: placement.type,
+                scatterKey: placement.scatterKey,
+                groupType: placement.groupType,
+                baseY: wallY,
+                elevationOffset: placement.elevation,
+                baseScaleX: scaleX,
+                baseScaleY: scaleY,
+                baseOpacity: placement.opacity ?? 1
+            };
+            decalMesh.onBeforeRender = () => {
+                const width = Number(texture.image?.width);
+                const height = Number(texture.image?.height);
+                if (!(width > 0 && height > 0) || decalMesh.userData.aspectApplied) return;
+                decalMesh.scale.x = (width / height);
+                decalMesh.userData.aspectApplied = true;
+            };
+            return decalMesh;
+        }
 
         if (isFloorOverlayType(placement.type)) {
             const texture = this.scatterTextures[placement.type];
@@ -26380,6 +26559,8 @@ export class ThreeGame {
         this.cliffPrimaryGeometry?.dispose?.();
         this.cliffRockGeometry?.dispose?.();
         this.cliffEdgeGeometry?.dispose?.();
+        Object.values(this.canyonDropMaterials ?? {}).forEach((material) => material?.dispose?.());
+        this.canyonDropGeometry?.dispose?.();
         this.voidMaterial?.dispose?.();
         Object.values(this.exteriorCanyonTextures ?? {}).forEach((texture) => texture?.dispose?.());
         this.wallMaterial?.dispose?.();

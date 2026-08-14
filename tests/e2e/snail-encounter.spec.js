@@ -58,6 +58,7 @@ test.describe('Snail diplomacy encounter', () => {
         });
 
         await page.locator('#snail-encounter-fight-btn').click();
+        await expect(page.locator('#snail-encounter-modal')).toHaveClass(/hidden/, { timeout: 5_000 });
 
         const result = await page.evaluate(() => ({
             encounterState: window.game.encounterState,
@@ -89,7 +90,7 @@ test.describe('Snail diplomacy encounter', () => {
             // TALK_GAIN_ALIEN is 35/round with a 5% backfire chance — three
             // rounds crosses RESOLVE_MAX (100) on every non-backfiring round,
             // and even one backfire still leaves room within a few more.
-            for (let i = 0; i < 6 && game.encounterState; i += 1) {
+            for (let i = 0; i < 6 && game.encounterState && !game.encounterState.outcome; i += 1) {
                 game.handleSnailEncounterTalk();
             }
             return {
@@ -114,6 +115,7 @@ test.describe('Snail diplomacy encounter', () => {
             const startX = game.player.position.x + 5;
             const startZ = game.player.position.z + 5;
             const fakeSprite = {
+                isObject3D: true,
                 userData: { type: 'cybersnail', hp: 2, maxHp: 2 },
                 position: { x: startX, z: startZ },
                 scale: { set: () => {} },
@@ -121,7 +123,7 @@ test.describe('Snail diplomacy encounter', () => {
                 parent: { remove: () => {} }
             };
             game.openSnailEncounter(fakeSprite);
-            for (let i = 0; i < 6 && game.encounterState; i += 1) game.handleSnailEncounterTalk();
+            for (let i = 0; i < 6 && game.encounterState && !game.encounterState.outcome; i += 1) game.handleSnailEncounterTalk();
 
             const before = Math.hypot(
                 fakeSprite.position.x - game.player.position.x,
