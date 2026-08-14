@@ -1823,71 +1823,6 @@ body {
   height: 100% !important;
 }
 
-/* Fixed screen-center gameplay crosshair */
-.gameplay-crosshair {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 28px;
-  height: 28px;
-  pointer-events: none;
-  z-index: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gameplay-crosshair.hidden {
-  display: none !important;
-}
-
-.gameplay-crosshair .crosshair-center-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background-color: var(--crosshair-color, #ff9f1c);
-  box-shadow: 0 0 6px var(--crosshair-color, #ff9f1c), 0 0 1px #000;
-}
-
-.gameplay-crosshair .crosshair-reticle-tick {
-  position: absolute;
-  background-color: var(--crosshair-color, #ff9f1c);
-  box-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
-  border-radius: 1px;
-}
-
-.gameplay-crosshair .crosshair-reticle-tick.tick-top {
-  top: 1px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 6px;
-}
-
-.gameplay-crosshair .crosshair-reticle-tick.tick-bottom {
-  bottom: 1px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 6px;
-}
-
-.gameplay-crosshair .crosshair-reticle-tick.tick-left {
-  left: 1px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 2px;
-}
-
-.gameplay-crosshair .crosshair-reticle-tick.tick-right {
-  right: 1px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 2px;
-}
 
 /* Screen-space miniature/tilt-shift focus. A tight clear action plane follows
    the camera-tracked player while peripheral scenery falls into silhouette. */
@@ -6003,6 +5938,84 @@ html.boot-cursor-hidden #tactical-cursor {
 
 #tactical-cursor.cursor-hovering .cursor-bracket-br {
   transform: translate(-3px, -3px);
+}
+
+/* --- Camp & Interactive World Station Hover State --- */
+#tactical-cursor.cursor-interact,
+#tactical-cursor.cursor-camp {
+  width: 44px;
+  height: 44px;
+}
+
+#tactical-cursor.cursor-interact .cursor-dot,
+#tactical-cursor.cursor-camp .cursor-dot {
+  background-color: var(--accent-secondary, #2ec4b6);
+  box-shadow: 0 0 14px var(--accent-secondary, #2ec4b6), 0 0 24px rgba(46, 196, 182, 0.6);
+  transform: translate(-50%, -50%) scale(1.6);
+}
+
+#tactical-cursor.cursor-interact .cursor-ring,
+#tactical-cursor.cursor-camp .cursor-ring {
+  border-color: var(--accent-secondary, #2ec4b6);
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 4px;
+  animation: spin-clockwise 4s linear infinite;
+  box-shadow: 0 0 12px rgba(46, 196, 182, 0.4);
+}
+
+#tactical-cursor.cursor-interact .cursor-bracket,
+#tactical-cursor.cursor-camp .cursor-bracket {
+  border-color: #ffffff;
+  border-width: 2px;
+  opacity: 1;
+}
+
+#tactical-cursor.cursor-interact .cursor-bracket-tl,
+#tactical-cursor.cursor-camp .cursor-bracket-tl {
+  transform: translate(4px, 4px);
+}
+
+#tactical-cursor.cursor-interact .cursor-bracket-tr,
+#tactical-cursor.cursor-camp .cursor-bracket-tr {
+  transform: translate(-4px, 4px);
+}
+
+#tactical-cursor.cursor-interact .cursor-bracket-bl,
+#tactical-cursor.cursor-camp .cursor-bracket-bl {
+  transform: translate(4px, -4px);
+}
+
+#tactical-cursor.cursor-interact .cursor-bracket-br,
+#tactical-cursor.cursor-camp .cursor-bracket-br {
+  transform: translate(-4px, -4px);
+}
+
+#tactical-cursor .cursor-interact-badge {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Rajdhani', monospace, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  background: rgba(10, 24, 38, 0.9);
+  border: 1px solid var(--accent-secondary, #2ec4b6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.8), 0 0 8px rgba(46, 196, 182, 0.3);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  margin-top: 6px;
+}
+
+#tactical-cursor.cursor-interact .cursor-interact-badge,
+#tactical-cursor.cursor-camp .cursor-interact-badge {
+  opacity: 1;
 }
 
 /* --- Click Compression and White Flash --- */

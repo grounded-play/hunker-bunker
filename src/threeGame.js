@@ -974,7 +974,6 @@ function isChunkTraversalConnected(grid) {
 // and repackGeneratedSpriteAtlas's output isn't safe to assume shareable.
 const keyedSpriteTextureCache = new Map();
 const CAMERA_ROT_SPEED = 4.0;
-const MOUSE_LOOK_SENSITIVITY = 0.0025;
 
 export class ThreeGame {
     constructor({ parent, playerType = 'TANK', deferPlayerSpriteLoad = false, bankManager = null, dialogueManager = null, arcManager = null, act2Manager = null } = {}) {
@@ -1063,7 +1062,6 @@ export class ThreeGame {
         this.facingPlanarForward = new THREE.Vector2(0, 0);
         this.facingPlanarRight = new THREE.Vector2(0, 0);
         this.updateFacingYaw(Math.PI / 2);
-        this._pointerLocked = false;
         this.chunkCache = new Map();
         this.pocketCache = new Map();
         this.wfcMetadataCache = new Map();
@@ -4210,35 +4208,25 @@ export class ThreeGame {
 
             if (!this.isGameplayInputActive()) return;
 
-            // Under the player-centered camera, screen-center (where a mouse
-            // click naturally lands) raycasts to a world point right next to
-            // the player -- i.e. right next to whatever console/O2/foundry/
-            // black-box the player is standing near (very often true at
-            // mission start, beside the crashed ship). An unlocked mouse's
-            // first click exists to engage pointer-lock look, so it must not
-            // be intercepted by these click-to-interact checks; interacting
-            // by mouse click remains available once already locked, and E /
-            // gamepad-A remain the primary interact triggers regardless.
-            const wantsMouseLook = pointerType === 'mouse' && !this._pointerLocked;
-
-            if (!wantsMouseLook) {
-                if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
-                    return;
-                }
-                if (this.tryInteractWithO2Pointer(event.clientX, event.clientY)) {
-                    return;
-                }
-                if (this.tryInteractWithFoundryPointer(event.clientX, event.clientY)) {
-                    return;
-                }
-                if (this.tryInteractWithBlackBoxPointer(event.clientX, event.clientY)) {
-                    return;
-                }
+            if (this.tryInteractWithConsolePointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithO2Pointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithFoundryPointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithBlackBoxPointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithBunkerDoorPointer(event.clientX, event.clientY)) {
+                return;
+            }
+            if (this.tryInteractWithCampPointer(event.clientX, event.clientY)) {
+                return;
             }
 
-            if (wantsMouseLook) {
-                this.requestMouseLook();
-            }
             this.beginHeldFire(event.clientX, event.clientY, pointerType);
         };
 
@@ -4252,33 +4240,13 @@ export class ThreeGame {
             if (pointerType !== 'mouse') return;
             this.lastMouseClientX = event.clientX;
             this.lastMouseClientY = event.clientY;
-        };
 
-        this.requestMouseLook = () => {
-            this.renderer.domElement.requestPointerLock?.();
-        };
-
-        this.updateMouseLookPrompt = () => {
-            const prompt = document.getElementById('mouse-look-prompt');
-            const crosshair = document.getElementById('gameplay-crosshair');
-            const gameplayActive = this.isGameplayInputActive();
-            if (prompt) prompt.classList.toggle('hidden', this._pointerLocked || !gameplayActive);
-            if (crosshair) crosshair.classList.toggle('hidden', !gameplayActive);
-        };
-
-        this.handlePointerLockChange = () => {
-            this._pointerLocked = document.pointerLockElement === this.renderer.domElement;
-            this.updateMouseLookPrompt();
-        };
-
-        this.handlePointerLockError = () => {
-            this._pointerLocked = false;
-            this.updateMouseLookPrompt();
-        };
-
-        this.handleMouseLookMove = (event) => {
-            if (!this._pointerLocked) return;
-            this.updateFacingYaw(this.facingYaw - (event.movementX || 0) * MOUSE_LOOK_SENSITIVITY);
+            // Direct tactical crosshair aim: turn player to face mouse pointer in world
+            this.updateAimFromClient(event.clientX, event.clientY, {
+                keepMouseActive: true,
+                persistDuration: 0
+            });
+            this.checkHoverInteractable(event.clientX, event.clientY);
         };
 
         this.handleCanvasTap = (event) => {
@@ -4383,9 +4351,6 @@ export class ThreeGame {
         this.renderer.domElement.addEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.addEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.addEventListener('pointerleave', this.handleCanvasPointerCancel);
-        document.addEventListener('pointerlockchange', this.handlePointerLockChange);
-        document.addEventListener('pointerlockerror', this.handlePointerLockError);
-        document.addEventListener('mousemove', this.handleMouseLookMove);
     }
 
     updateFacingYaw(yaw) {
@@ -7170,6 +7135,140 @@ export class ThreeGame {
         const dist = Math.hypot(worldPoint.x - state.x, worldPoint.z - state.z);
         if (dist > 1.45) return false;
         return this.interactWithBlackBox();
+    }
+
+    tryInteractWithCampPointer(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player) return false;
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) return false;
+
+        const actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z)
+            || this.getActionableCampAt?.(this.player.position.x, this.player.position.z);
+        if (actionable) {
+            return this.interactWithAct2Camp();
+        }
+
+        if (this.camps) {
+            for (const camp of this.camps) {
+                const cx = camp.tileX ?? camp.x ?? 0;
+                const cz = camp.tileZ ?? camp.z ?? 0;
+                const distCamp = Math.hypot(worldPoint.x - cx, worldPoint.z - cz);
+                const playerDist = Math.hypot(this.player.position.x - cx, this.player.position.z - cz);
+                if (distCamp <= (camp.radius || 3.5) && playerDist <= ((camp.radius || 3.5) + 3.0)) {
+                    return this.interactWithAct2Camp();
+                }
+            }
+        }
+        return false;
+    }
+
+    checkHoverInteractable(clientX, clientY) {
+        if (!this.isGameplayInputActive() || !this.player) {
+            this.setCursorInteractState(false);
+            return null;
+        }
+
+        const worldPoint = this.getWorldAimPoint(clientX, clientY);
+        if (!worldPoint) {
+            this.setCursorInteractState(false);
+            return null;
+        }
+
+        // 1. Check Crashed Ships / Consoles
+        if (this.crashedShips) {
+            for (const ship of this.crashedShips) {
+                if (!ship.isVisible) continue;
+                const consoleX = ship.tileX + ship.consoleOffset.x;
+                const consoleZ = ship.tileZ + ship.consoleOffset.z;
+                const distWorld = Math.hypot(worldPoint.x - consoleX, worldPoint.z - consoleZ);
+                const playerDist = Math.hypot(this.player.position.x - consoleX, this.player.position.z - consoleZ);
+                if ((distWorld <= 2.5 || Math.hypot(worldPoint.x - ship.tileX, worldPoint.z - ship.tileZ) <= Math.max(1.5, ship.width * 0.9)) && playerDist <= 5.2) {
+                    this.setCursorInteractState(true, 'TERMINAL');
+                    return 'console';
+                }
+            }
+        }
+
+        // 2. Check O2 Generator
+        const o2Pos = this.getActiveO2GeneratorPosition?.();
+        if (o2Pos) {
+            const distO2 = Math.hypot(worldPoint.x - o2Pos.x, worldPoint.z - o2Pos.z);
+            const playerDist = Math.hypot(this.player.position.x - o2Pos.x, this.player.position.z - o2Pos.z);
+            if (distO2 <= 2.0 && playerDist <= 5.2) {
+                this.setCursorInteractState(true, 'O2 STATION');
+                return 'o2';
+            }
+        }
+
+        // 3. Check Foundry
+        if (this.foundry?.isRevealed && this.foundry.isWithinInteractRange(worldPoint.x, worldPoint.z)) {
+            this.setCursorInteractState(true, 'FOUNDRY');
+            return 'foundry';
+        }
+
+        // 4. Check Black Box
+        if (this._blackBoxMarkerActive && this._blackBoxState) {
+            const distBB = Math.hypot(worldPoint.x - this._blackBoxState.x, worldPoint.z - this._blackBoxState.z);
+            if (distBB <= 2.0) {
+                this.setCursorInteractState(true, 'BLACK BOX');
+                return 'black_box';
+            }
+        }
+
+        // 5. Check Camps & Camp Leaders
+        const actionable = this.getActionableCampAt?.(worldPoint.x, worldPoint.z);
+        if (actionable) {
+            const campLabel = actionable.camp?.leaderName ? `TALK: ${actionable.camp.leaderName.toUpperCase()}` : (actionable.camp?.label?.toUpperCase() || 'CAMP');
+            this.setCursorInteractState(true, campLabel);
+            return 'camp';
+        }
+
+        if (this.camps) {
+            for (const camp of this.camps) {
+                const cx = camp.tileX ?? camp.x ?? 0;
+                const cz = camp.tileZ ?? camp.z ?? 0;
+                const distCamp = Math.hypot(worldPoint.x - cx, worldPoint.z - cz);
+                const playerDist = Math.hypot(this.player.position.x - cx, this.player.position.z - cz);
+                if (distCamp <= (camp.radius || 3.5) && playerDist <= ((camp.radius || 3.5) + 3.0)) {
+                    this.setCursorInteractState(true, camp.leaderName ? `TALK: ${camp.leaderName.toUpperCase()}` : 'CAMP');
+                    return 'camp';
+                }
+            }
+        }
+
+        // 6. Check Bunker Doors / Airlock Buttons
+        if (this.bunkerDoorButtons) {
+            const distDoor = Math.hypot(worldPoint.x - 8.5, worldPoint.z - 15.0);
+            const distInt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.interior.x, worldPoint.z - this.bunkerDoorButtons.interior.z);
+            const distExt = Math.hypot(worldPoint.x - this.bunkerDoorButtons.exterior.x, worldPoint.z - this.bunkerDoorButtons.exterior.z);
+            if (distDoor <= 3.2 || distInt <= 2.0 || distExt <= 2.0) {
+                this.setCursorInteractState(true, 'AIRLOCK');
+                return 'door';
+            }
+        }
+
+        this.setCursorInteractState(false);
+        return null;
+    }
+
+    setCursorInteractState(isInteract, label = '') {
+        if (typeof document === 'undefined') return;
+        const cursor = document.getElementById('tactical-cursor');
+        if (!cursor) return;
+        cursor.classList.toggle('cursor-interact', Boolean(isInteract));
+        cursor.classList.toggle('cursor-camp', Boolean(isInteract));
+
+        let badge = cursor.querySelector('.cursor-interact-badge');
+        if (isInteract && label) {
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'cursor-interact-badge';
+                cursor.appendChild(badge);
+            }
+            badge.textContent = label;
+        } else if (badge) {
+            badge.textContent = '';
+        }
     }
 
     getSessionInventory() {
@@ -16526,21 +16625,14 @@ export class ThreeGame {
     tryFireWeapon(clientX, clientY) {
         if (!this.isGameplayInputActive()) return false;
 
-        if (this._pointerLocked || !Number.isFinite(clientX) || !Number.isFinite(clientY)) {
-            const aim = aimVectorFromYaw(this.facingYaw);
-            this.aimDirX = aim.x;
-            this.aimDirZ = aim.z;
-            this.aimFacingRow = this.getFacingRow(this.aimDirX, this.aimDirZ);
-            this.hasActiveAim = true;
-            return this.fireWeaponAtCurrentAim();
+        if (Number.isFinite(clientX) && Number.isFinite(clientY)) {
+            this.updateAimFromClient(clientX, clientY, {
+                keepMouseActive: this._canvasPointerType === 'mouse',
+                persistDuration: this._canvasPointerType === 'mouse' ? 0 : 2.0
+            });
         }
 
-        const worldPoint = this.updateAimFromClient(clientX, clientY, {
-            keepMouseActive: this._canvasPointerType === 'mouse',
-            persistDuration: this._canvasPointerType === 'mouse' ? 0 : 2.0
-        });
-
-        if (!worldPoint && !this.hasActiveAim) {
+        if (!this.hasActiveAim) {
             const aim = aimVectorFromYaw(this.facingYaw);
             this.aimDirX = aim.x;
             this.aimDirZ = aim.z;
@@ -17224,10 +17316,6 @@ export class ThreeGame {
     }
 
     updateCamera(delta) {
-        if (this._pointerLocked && this.hasBlockingGameplayOverlay?.()) {
-            document.exitPointerLock?.();
-        }
-        this.updateMouseLookPrompt?.();
         const targetAzimuth = this.facingYaw + Math.PI;
         this.cameraAzimuth = stepAngleTowards(this.cameraAzimuth, targetAzimuth, CAMERA_ROT_SPEED, delta);
         const camBasis = planarBasisFromOffsetAzimuth(this.cameraAzimuth);
@@ -26569,9 +26657,6 @@ export class ThreeGame {
         this.renderer.domElement.removeEventListener('pointerup', this.handleCanvasTap);
         this.renderer.domElement.removeEventListener('pointercancel', this.handleCanvasPointerCancel);
         this.renderer.domElement.removeEventListener('pointerleave', this.handleCanvasPointerCancel);
-        document.removeEventListener('pointerlockchange', this.handlePointerLockChange);
-        document.removeEventListener('pointerlockerror', this.handlePointerLockError);
-        document.removeEventListener('mousemove', this.handleMouseLookMove);
         this.darknessOverlay?.remove?.();
         this.tiltShiftOverlay?.remove?.();
         Object.values(this.playerMaterials ?? {}).forEach((material) => material.dispose());
