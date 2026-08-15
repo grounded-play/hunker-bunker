@@ -9,13 +9,27 @@ describe('MatureContentAudit', () => {
     });
 
     it('contains all required mature content categories in the manifest', () => {
-        expect(MATURE_CONTENT_MANIFEST.length).toBe(5);
+        expect(MATURE_CONTENT_MANIFEST.length).toBe(7);
         const ids = MATURE_CONTENT_MANIFEST.map((m) => m.id);
         expect(ids).toContain('sensual_storylines_romance');
         expect(ids).toContain('parasite_symbiosis');
         expect(ids).toContain('queen_subjugation');
         expect(ids).toContain('self_annihilation');
+        expect(ids).toContain('veiled_nudity');
+        expect(ids).toContain('survival_economy_eroticism');
         expect(ids).toContain('combat_violence');
+    });
+
+    it('gives the veiled nudity category a real jump-to-log scene', () => {
+        const category = MATURE_CONTENT_MANIFEST.find((m) => m.id === 'veiled_nudity');
+        expect(category.scenes.length).toBeGreaterThanOrEqual(1);
+        expect(category.scenes[0].kind).toBe('log');
+    });
+
+    it('gives the non-explicit sexual content / prostitution category a real jump-to-log scene', () => {
+        const category = MATURE_CONTENT_MANIFEST.find((m) => m.id === 'survival_economy_eroticism');
+        expect(category.scenes.length).toBeGreaterThanOrEqual(1);
+        expect(category.scenes[0].kind).toBe('log');
     });
 
     it('toggles open state correctly', () => {

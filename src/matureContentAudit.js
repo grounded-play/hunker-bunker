@@ -18,6 +18,21 @@ const REVIEWER_LOG_LETTERS = Object.freeze({
     chen_b03: {
         label: 'LOG B03 — DIRECTOR CHEN (SEALED TERMINAL)',
         text: 'TO WHOEVER FINDS THIS:\n\nYou were not sent here to rescue us.\nThe signal doesn\'t need the antenna — it needs a body.\n\nThe Mothership has known about 0047 for eleven years.\nThey wanted to study it. We were the researchers.\nWhen things went wrong, they needed it contained.\nYou are the containment.\n\nThree ships. One carries the tracking signal.\nOne carries the relay.\nOne carries the weapon.\n\nThe Mothership doesn\'t care which of you survives.\nThey only care that the signal reaches 0047.\n\nBurn it all down if you can.\nGet out before the antenna finishes.\nWhatever you do — don\'t let 0047 answer.\n\n— Director Chen, sealed personal terminal.\n   Authenticated: 2047-08-14 23:44:07'
+    },
+    // Steam's own definition of "veiled nudity" is explicitly non-explicit —
+    // body form implied through translucent gel / tight suits, not depicted.
+    // This keeps the register consistent with the C11/B03 letters above:
+    // implied, found-document, no graphic description.
+    bio_incubation_log04: {
+        label: 'MAINTENANCE LOG 04 — BIO-INCUBATION WING',
+        text: 'Vats one through six holding steady.\nStasis gel\'s opaque enough for privacy, thin enough you can still\ntell who\'s in there — a shoulder, the curve of a spine, a hand\npressed flat to the glass from the inside.\n\nWe stopped logging names. Just vat numbers now.\n\nNobody in there asked to be kept. The Queen doesn\'t ask.\n\n— Foundry technician, unsigned'
+    },
+    // Steam's category is likewise explicitly "non-explicit sexual content /
+    // prostitution" — this is written as a grim survival-economy detail, not
+    // an erotic scene, consistent with the game's bleak tone elsewhere.
+    camp_ledger_tallow: {
+        label: 'UNOFFICIAL LEDGER — CAMP TALLOW (RECOVERED)',
+        text: 'Val runs comfort shifts out of the heated tent behind the reactor.\nAn hour, a blanket, whatever door\'s shut that night.\nPayment\'s whatever you\'ve got — rations, batteries, a working lighter.\n\nNobody brings it up at the morning briefing. Everybody knows anyway.\n\nIt keeps three people warm who wouldn\'t see sunrise otherwise.\n\n— found taped inside a ration crate, Camp Tallow'
     }
 });
 
@@ -64,6 +79,26 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
             { kind: 'ending', ending: ACT2_ENDINGS.SCORCHED_SKY, label: '▶ VIEW ENDING: SCORCHED SKY (PURGE & DRIFT)' },
             { kind: 'log', log: 'reyes_c11', label: '▶ VIEW LOG: PVT. REYES\' FAREWELL LETTER (C11)' },
             { kind: 'log', log: 'chen_b03', label: '▶ VIEW LOG: DIRECTOR CHEN\'S SEALED TERMINAL (B03)' }
+        ]
+    },
+    {
+        id: 'veiled_nudity',
+        title: 'Veiled Nudity (Bio-Incubation Wing)',
+        rating: 'Mature / Implied Nudity (Non-Explicit)',
+        description: 'Body form implied through translucent stasis gel and tight biomedical suits in the bio-incubation wing where the Queen holds captured survivors. No explicit depiction — form is suggested, not shown.',
+        tags: ['Veiled Nudity', 'Implied Form', 'Body Horror', 'Non-Explicit'],
+        scenes: [
+            { kind: 'log', log: 'bio_incubation_log04', label: '▶ VIEW LOG: BIO-INCUBATION WING MAINTENANCE LOG 04' }
+        ]
+    },
+    {
+        id: 'survival_economy_eroticism',
+        title: 'Non-Explicit Sexual Content, Prostitution & Eroticism',
+        rating: 'Mature / Non-Explicit Sexual Content',
+        description: 'Camp Tallow\'s survival economy includes intimacy traded for supplies — referenced through a recovered ledger, not depicted. Non-explicit; no sexual acts are shown or described.',
+        tags: ['Non-Explicit', 'Survival Economy', 'Prostitution Theme', 'Camp Tallow'],
+        scenes: [
+            { kind: 'log', log: 'camp_ledger_tallow', label: '▶ VIEW LOG: UNOFFICIAL LEDGER, CAMP TALLOW' }
         ]
     },
     {
