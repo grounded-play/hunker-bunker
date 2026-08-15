@@ -40,6 +40,15 @@ function wallAdjacency(cell, grid) {
         .reduce((count, [dx, dy]) => count + (grid?.[cell.y + dy]?.[cell.x + dx] === '#' ? 1 : 0), 0);
 }
 
+function findCellWallNormal(cell, grid) {
+    if (!cell || !grid) return null;
+    if (grid?.[cell.y - 1]?.[cell.x] === '#') return { x: 0, z: 1 };
+    if (grid?.[cell.y + 1]?.[cell.x] === '#') return { x: 0, z: -1 };
+    if (grid?.[cell.y]?.[cell.x - 1] === '#') return { x: 1, z: 0 };
+    if (grid?.[cell.y]?.[cell.x + 1] === '#') return { x: -1, z: 0 };
+    return null;
+}
+
 function pickCandidate(candidates, random, grid, center) {
     if (candidates.length === 0) return null;
     // Props belong at the perimeter: keep the room center open for the player,
@@ -118,6 +127,7 @@ export function planRoomPopulation(room, grid, random) {
         const cell = pickCandidate(candidates, random, grid, center);
         if (!cell) return false;
         reserved.add(cellKey(cell));
+        const wallNormal = findCellWallNormal(cell, grid);
         placements.push({
             id: `${room.id}:placement:${placements.length}`,
             roomId: room.id,
@@ -125,7 +135,8 @@ export function planRoomPopulation(room, grid, random) {
             y: cell.y,
             kind,
             type,
-            blocking
+            blocking,
+            wallNormal
         });
         return true;
     };

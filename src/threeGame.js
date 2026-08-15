@@ -442,7 +442,10 @@ const FLOOR_OVERLAY_TYPES = new Set([
     'decal_childlike_cave_map',
     'decal_hive_growth',
     'decal_spore_growth_patch',
-    'decal_bullet_holes',
+    'decal_abandoned_meal_tray',
+    'decal_failed_decon_kit',
+    'decal_worker_sleep_roll',
+    'decal_tallow_herb_cache',
     'scatter_bolts',
     'scatter_cable_coil',
     'scatter_coolant_puddle',
@@ -458,7 +461,12 @@ const WALL_DECAL_TYPES = new Set([
     'decal_hazard_stripes',
     'decal_biohazard_stencil',
     'decal_meridian_stencil',
-    'decal_claw_scratches'
+    'decal_claw_scratches',
+    'decal_bullet_holes',
+    'decal_machine_cult_shrine',
+    'decal_pod_312_breach',
+    'prop_torn_warning_poster',
+    'decal_scars'
 ]);
 const isFloorOverlayType = (type) => FLOOR_OVERLAY_TYPES.has(type);
 const isWallDecalType = (type) => WALL_DECAL_TYPES.has(type);
@@ -20243,13 +20251,14 @@ export class ThreeGame {
                         x: worldX,
                         z: worldZ,
                         type: propType,
+                        wallNormal: planned.wallNormal,
                         scatterKey: `room_plan:${planned.id}`,
                         scale: planned.kind === 'signature'
                             ? 1.3
                             : planned.kind === 'large'
                                 ? 1.15
                                 : planned.kind === 'ambient' ? 1.05 : 0.82,
-                        elevation: 0.08,
+                        elevation: isWallDecalType(propType) ? 0 : (isFloorOverlayType(propType) ? 0.035 : 0.08),
                         hp: propType === 'prop_specimen_tank' ? 4 : 3,
                         groupType: 'prop',
                         opacity: 1,
@@ -20520,7 +20529,7 @@ export class ThreeGame {
     }
 
     createChunkScatterPlacements(chunkX, chunkY, grid) {
-        if (this.performanceProfile === 'menu') {
+        if (this.performanceProfile === 'menu' || (chunkX >= SHOWROOM_CHUNK_X && chunkX <= SHOWROOM_CHUNK_X + 10 && chunkY >= SHOWROOM_CHUNK_Y && chunkY <= SHOWROOM_CHUNK_Y + 10)) {
             return [];
         }
         const random = this.createSeededRandom(((this.hashTile(chunkX * 523 + 43, chunkY * 859 + 71) ^ (this.runEntropy ?? 0)) >>> 0));
@@ -20863,13 +20872,14 @@ export class ThreeGame {
                 opacity = 1;
             } else {
                 type = this.chooseWeightedType(biomeVariants, random);
-                const isGroundCover = type.includes('puddle') || type === 'scatter_gravel'
+                const isGroundCover = isFloorOverlayType(type) || type.includes('puddle') || type === 'scatter_gravel'
                     || type === 'scatter_cable_coil' || type === 'scatter_bolts'
                     || type === 'scatter_cryo_shards' || type === 'scatter_bio_moss'
                     || type === 'scatter_camp_supplies' || type === 'scatter_hive_eggs'
                     || type === 'prop_blood_trail' || type === 'scatter_broken_drone'
                     || type === 'scatter_biomech_debris'
-                    || type === 'body_human_frozen_suit' || type === 'body_empty_exosuit';
+                    || type === 'body_human_frozen_suit' || type === 'body_empty_exosuit'
+                    || type.startsWith('decal_');
                 const isTallScatter = type === 'scatter_ice_stalagmite'
                     || type === 'scatter_bio_pod'
                     || type === 'prop_hive_resin_sac';
@@ -20878,6 +20888,10 @@ export class ThreeGame {
                     scaleMultiplier = 1.05 + random() * 0.3;
                     elevation = 0.12 + random() * 0.08;
                     opacity = 0.92;
+                } else if (isWallDecalType(type)) {
+                    scaleMultiplier = 0.95 + random() * 0.25;
+                    elevation = 0;
+                    opacity = 0.88 + random() * 0.12;
                 } else if (isGroundCover) {
                     if (type.startsWith('body_')) {
                         scaleMultiplier = 0.82 + random() * 0.16;
@@ -20885,7 +20899,7 @@ export class ThreeGame {
                         opacity = 0.9 + random() * 0.08;
                     } else {
                         scaleMultiplier = 0.85 + random() * 0.28;
-                        elevation = 0.05 + random() * 0.04;
+                        elevation = 0.04 + random() * 0.02;
                         opacity = 0.72 + random() * 0.14;
                     }
                 } else if (isTallScatter) {
@@ -20893,9 +20907,9 @@ export class ThreeGame {
                     elevation = 0.8 + random() * 0.55;
                     opacity = 0.68 + random() * 0.22;
                 } else {
-                    scaleMultiplier = 0.42 + random() * 0.1;
-                    elevation = 1.45 + random() * 0.95;
-                    opacity = 0.58 + random() * 0.16;
+                    scaleMultiplier = 0.55 + random() * 0.2;
+                    elevation = 0.08 + random() * 0.04;
+                    opacity = 0.75 + random() * 0.15;
                 }
             }
 
@@ -20908,7 +20922,7 @@ export class ThreeGame {
                 if (tooCloseToOtherJunk) {
                     type = this.chooseWeightedType(biomeVariants, random);
                     scaleMultiplier = 0.58 + random() * 0.18;
-                    elevation = 0.9 + random() * 0.7;
+                    elevation = 0.08 + random() * 0.04;
                     opacity = 0.62 + random() * 0.16;
                 } else {
                     junkPlacementAnchors.push({ x: p.x, z: p.z });
@@ -20935,10 +20949,32 @@ export class ThreeGame {
                 finalType = 'ship_wreckage';
             }
 
+            let wallNormal = null;
+            let finalX = p.x;
+            let finalZ = p.z;
+            if (isWallDecalType(finalType)) {
+                const localX = Math.round(p.x - chunkX * this.chunkSize);
+                const localY = Math.round(p.z - chunkY * this.chunkSize);
+                if (grid[localY - 1]?.[localX] === '#') {
+                    wallNormal = { x: 0, z: 1 };
+                    finalZ = (chunkY * this.chunkSize + localY) - 0.5 + 0.02;
+                } else if (grid[localY + 1]?.[localX] === '#') {
+                    wallNormal = { x: 0, z: -1 };
+                    finalZ = (chunkY * this.chunkSize + localY) + 0.5 - 0.02;
+                } else if (grid[localY]?.[localX - 1] === '#') {
+                    wallNormal = { x: 1, z: 0 };
+                    finalX = (chunkX * this.chunkSize + localX) - 0.5 + 0.02;
+                } else if (grid[localY]?.[localX + 1] === '#') {
+                    wallNormal = { x: -1, z: 0 };
+                    finalX = (chunkX * this.chunkSize + localX) + 0.5 - 0.02;
+                }
+            }
+
             finalPlacements.push({
-                x: p.x,
-                z: p.z,
+                x: finalX,
+                z: finalZ,
                 type: finalType,
+                wallNormal,
                 scatterKey: `${chunkX},${chunkY}:${finalPlacements.length}:${finalType}`,
                 scale,
                 rotation,
@@ -21035,22 +21071,74 @@ export class ThreeGame {
             const material = new THREE.MeshStandardMaterial({
                 map: texture,
                 transparent: true,
-                alphaTest: 0.05,
-                roughness: 0.92,
-                metalness: 0.18,
+                alphaTest: 0.04,
+                roughness: 0.85,
+                metalness: 0.12,
                 polygonOffset: true,
-                polygonOffsetFactor: -2,
-                polygonOffsetUnits: -2,
+                polygonOffsetFactor: -4,
+                polygonOffsetUnits: -4,
                 side: THREE.DoubleSide,
-                fog: true
+                fog: true,
+                depthWrite: false
             });
             const decalWidth = Math.max(1.0, scaleX * 1.4);
             const decalHeight = Math.max(1.0, scaleY * 1.4);
             const wallDecalGeo = new THREE.PlaneGeometry(decalWidth, decalHeight);
             const decalMesh = new THREE.Mesh(wallDecalGeo, material);
-            const wallY = (placement.elevation ?? 0) + (this.wallHeight ? this.wallHeight * 0.48 : 0.65);
-            decalMesh.position.set(placement.x, wallY, placement.z);
-            decalMesh.rotation.y = placement.rotation ?? 0;
+            
+            let nx = placement.wallNormal?.x ?? placement.normalX;
+            let nz = placement.wallNormal?.z ?? placement.normalZ;
+            let decalX = placement.x;
+            let decalZ = placement.z;
+
+            // If wall normal is not pre-calculated, detect adjacent wall from world tile
+            if (!Number.isFinite(nx) || !Number.isFinite(nz) || (nx === 0 && nz === 0)) {
+                const tileX = Math.round(placement.x);
+                const tileZ = Math.round(placement.z);
+                const neighbors = [
+                    { dx: 0, dz: -1, nx: 0, nz: 1 },  // North wall -> faces South (+Z)
+                    { dx: 0, dz: 1,  nx: 0, nz: -1 }, // South wall -> faces North (-Z)
+                    { dx: -1, dz: 0, nx: 1, nz: 0 },  // West wall -> faces East (+X)
+                    { dx: 1, dz: 0,  nx: -1, nz: 0 }  // East wall -> faces West (-X)
+                ];
+                let foundNeighbor = null;
+                for (const n of neighbors) {
+                    if (this.getTileType?.(tileX + n.dx, tileZ + n.dz) === '#') {
+                        foundNeighbor = n;
+                        break;
+                    }
+                }
+                if (foundNeighbor) {
+                    nx = foundNeighbor.nx;
+                    nz = foundNeighbor.nz;
+                    if (foundNeighbor.dz === -1) {
+                        decalZ = tileZ - 0.5 + 0.02;
+                    } else if (foundNeighbor.dz === 1) {
+                        decalZ = tileZ + 0.5 - 0.02;
+                    } else if (foundNeighbor.dx === -1) {
+                        decalX = tileX - 0.5 + 0.02;
+                    } else if (foundNeighbor.dx === 1) {
+                        decalX = tileX + 0.5 - 0.02;
+                    }
+                } else {
+                    nx = 0;
+                    nz = 1;
+                }
+            } else {
+                if (nz === 1) {
+                    decalZ = Math.round(placement.z) - 0.5 + 0.02;
+                } else if (nz === -1) {
+                    decalZ = Math.round(placement.z) + 0.5 - 0.02;
+                } else if (nx === 1) {
+                    decalX = Math.round(placement.x) - 0.5 + 0.02;
+                } else if (nx === -1) {
+                    decalX = Math.round(placement.x) + 0.5 - 0.02;
+                }
+            }
+
+            const wallY = this.wallHeight ? this.wallHeight * 0.48 : 1.34;
+            decalMesh.position.set(decalX, wallY, decalZ);
+            decalMesh.rotation.y = Math.atan2(nx, nz);
             decalMesh.renderOrder = 6;
             decalMesh.userData = {
                 isScatter: true,
@@ -21075,7 +21163,7 @@ export class ThreeGame {
         }
 
         if (isFloorOverlayType(placement.type)) {
-            const texture = this.scatterTextures[placement.type];
+            const texture = this.scatterTextures[placement.type] || this.scatterMaterials[placement.type]?.map;
             if (!texture) return null;
             const material = new THREE.MeshBasicMaterial({
                 map: texture,
@@ -21092,7 +21180,7 @@ export class ThreeGame {
             const overlay = new THREE.Mesh(this.floorGeometry, material);
             overlay.rotation.x = -Math.PI / 2;
             overlay.rotation.z = placement.rotation ?? 0;
-            overlay.position.set(placement.x, Math.max(0.03, anchoredY), placement.z);
+            overlay.position.set(placement.x, 0.035, placement.z);
             overlay.scale.set(scaleX, scaleY, 1);
             overlay.frustumCulled = false;
             overlay.renderOrder = 7;
@@ -21102,15 +21190,12 @@ export class ThreeGame {
                 type: placement.type,
                 scatterKey: placement.scatterKey,
                 groupType: placement.groupType,
-                baseY: overlay.position.y,
-                elevationOffset: overlay.position.y,
+                baseY: 0.035,
+                elevationOffset: 0.035,
                 baseScaleX: scaleX,
                 baseScaleY: scaleY,
                 baseOpacity: placement.opacity ?? 1
             };
-            // Keyed textures finish on an async canvas. Apply their real
-            // aspect ratio once available so wide prefabs do not get crushed
-            // into square floor icons.
             overlay.onBeforeRender = () => {
                 const width = Number(texture.image?.width);
                 const height = Number(texture.image?.height);
@@ -22583,6 +22668,11 @@ export class ThreeGame {
     }
 
     isSnailTileWalkable(tileX, tileZ) {
+        const chunkX = Math.floor(tileX / this.chunkSize);
+        const chunkY = Math.floor(tileZ / this.chunkSize);
+        if (chunkX >= SHOWROOM_CHUNK_X && chunkX <= SHOWROOM_CHUNK_X + 10 && chunkY >= SHOWROOM_CHUNK_Y && chunkY <= SHOWROOM_CHUNK_Y + 10) {
+            return true;
+        }
         if (this.isFilledHoleTile?.(tileX, tileZ)) return true;
         const tile = this.getTileType(tileX, tileZ);
         return tile === '.'
@@ -25985,11 +26075,12 @@ export class ThreeGame {
     }
 
     async buildDebugShowroom() {
-        if (this._debugShowroomBuilt && this._debugShowroomGroup) {
-            return this._debugShowroomGroup;
+        if (this._debugShowroomBuilt && this._debugShowroom) {
+            return this._debugShowroom;
         }
         const { buildShowroomScene } = await import('./debugShowroom.js');
         const showroom = await buildShowroomScene(this);
+        this._debugShowroom = showroom;
         this._debugShowroomGroup = showroom.root;
         this.scene.add(this._debugShowroomGroup);
         this._debugShowroomBuilt = true;
@@ -26120,7 +26211,7 @@ export class ThreeGame {
     }
 
     buildChunk(chunkX, chunkY) {
-        if (this.performanceProfile === 'menu') {
+        if (this.performanceProfile === 'menu' || (chunkX >= SHOWROOM_CHUNK_X && chunkX <= SHOWROOM_CHUNK_X + 10 && chunkY >= SHOWROOM_CHUNK_Y && chunkY <= SHOWROOM_CHUNK_Y + 10)) {
             return Array(this.chunkSize).fill(null).map(() => Array(this.chunkSize).fill('.'));
         }
 

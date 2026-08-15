@@ -49,6 +49,33 @@ export const SHOWROOM_CATEGORIES = Object.freeze({
         'bunker_junk_rare',
         'bunker_junk_uncommon'
     ],
+    WALL_DECALS: [
+        'decal_wall_breach',
+        'decal_hazard_stripes',
+        'decal_biohazard_stencil',
+        'decal_meridian_stencil',
+        'decal_claw_scratches',
+        'decal_bullet_holes',
+        'decal_machine_cult_shrine',
+        'decal_pod_312_breach',
+        'prop_torn_warning_poster',
+        'decal_scars'
+    ],
+    FLOOR_DECALS: [
+        'decal_oil_spill_patch',
+        'decal_footprints_mud',
+        'decal_tallow_symbol',
+        'decal_bio_sample_spill',
+        'decal_childlike_cave_map',
+        'decal_hive_growth',
+        'decal_spore_growth_patch',
+        'decal_abandoned_meal_tray',
+        'decal_failed_decon_kit',
+        'decal_worker_sleep_roll',
+        'decal_emergency_oxygen_nest',
+        'decal_maintenance_shrine',
+        'decal_barricade_last_stand'
+    ],
     ENEMIES: [
         'cryosnail',
         'sporesnail',
@@ -104,12 +131,13 @@ export async function buildShowroomScene(threeGame) {
     const root = new THREE.Group();
     root.name = 'debug-showroom-root';
 
-    const originX = SHOWROOM_CHUNK_X * threeGame.chunkSize;
-    const originZ = SHOWROOM_CHUNK_Y * threeGame.chunkSize;
+    const chunkSize = threeGame.chunkSize || 19;
+    const originX = SHOWROOM_CHUNK_X * chunkSize;
+    const originZ = SHOWROOM_CHUNK_Y * chunkSize;
 
     // Floor base
-    const floorSize = 120;
-    const floorGeo = new THREE.PlaneGeometry(floorSize, floorSize, 60, 60);
+    const floorSize = 160;
+    const floorGeo = new THREE.PlaneGeometry(floorSize, floorSize, 80, 80);
     const floorMat = new THREE.MeshStandardMaterial({
         color: 0x0a101a,
         roughness: 0.35,
@@ -123,7 +151,7 @@ export async function buildShowroomScene(threeGame) {
     root.add(floor);
 
     // Subtle showroom grid lines
-    const gridHelper = new THREE.GridHelper(floorSize, 60, 0x00f0ff, 0x1a3d8f);
+    const gridHelper = new THREE.GridHelper(floorSize, 80, 0x00f0ff, 0x1a3d8f);
     gridHelper.position.set(originX + floorSize * 0.5, 0.01, originZ + floorSize * 0.5);
     root.add(gridHelper);
 
@@ -144,8 +172,16 @@ export async function buildShowroomScene(threeGame) {
         ...SHOWROOM_CATEGORIES.TACTICAL_PROPS.map((id) => ({ id, type: 'prop', category: 'TACTICAL' })),
         ...SHOWROOM_CATEGORIES.BIOMECH_PROPS.map((id) => ({ id, type: 'prop', category: 'BIOMECH' })),
         ...SHOWROOM_CATEGORIES.SETPIECES.map((id) => ({ id, type: 'prop', category: 'SETPIECE' })),
+        ...SHOWROOM_CATEGORIES.WALL_DECALS.map((id) => ({ id, type: 'wall_decal', category: 'WALL_DECAL' })),
+        ...SHOWROOM_CATEGORIES.FLOOR_DECALS.map((id) => ({ id, type: 'floor_decal', category: 'FLOOR_DECAL' })),
         ...SHOWROOM_CATEGORIES.ENEMIES.map((id) => ({ id, type: 'enemy', category: 'ENEMY' }))
     ];
+
+    const sampleWallMat = new THREE.MeshStandardMaterial({
+        color: 0x1b2838,
+        roughness: 0.7,
+        metalness: 0.3
+    });
 
     for (let i = 0; i < allItems.length; i++) {
         const item = allItems[i];
@@ -164,8 +200,8 @@ export async function buildShowroomScene(threeGame) {
 
         // Stall title banner
         const stallLabel = createLabelSprite(item.id, {
-            color: item.type === 'enemy' ? '#ff007f' : '#00f0ff',
-            size: 34
+            color: item.type === 'enemy' ? '#ff007f' : (item.type.includes('decal') ? '#ffd000' : '#00f0ff'),
+            size: 30
         });
         stallLabel.position.set(stallCenterX, 3.0, stallCenterZ - STALL_SIZE * 0.5 + 0.5);
         root.add(stallLabel);
@@ -173,11 +209,11 @@ export async function buildShowroomScene(threeGame) {
         // Wall offsets: N, S, E, W, and Center Pedestal
         const WALL_DIST = STALL_SIZE * 0.38;
         const placements = [
-            { name: 'N', x: stallCenterX, z: stallCenterZ - WALL_DIST, yaw: 0 }, // North wall, faces South
-            { name: 'S', x: stallCenterX, z: stallCenterZ + WALL_DIST, yaw: Math.PI }, // South wall, faces North
-            { name: 'E', x: stallCenterX + WALL_DIST, z: stallCenterZ, yaw: -Math.PI / 2 }, // East wall, faces West
-            { name: 'W', x: stallCenterX - WALL_DIST, z: stallCenterZ, yaw: Math.PI / 2 }, // West wall, faces East
-            { name: 'CTR', x: stallCenterX, z: stallCenterZ, yaw: 0 } // Center pedestal
+            { name: 'N', x: stallCenterX, z: stallCenterZ - WALL_DIST, yaw: 0, nx: 0, nz: 1 }, // North wall, faces South
+            { name: 'S', x: stallCenterX, z: stallCenterZ + WALL_DIST, yaw: Math.PI, nx: 0, nz: -1 }, // South wall, faces North
+            { name: 'E', x: stallCenterX + WALL_DIST, z: stallCenterZ, yaw: -Math.PI / 2, nx: -1, nz: 0 }, // East wall, faces West
+            { name: 'W', x: stallCenterX - WALL_DIST, z: stallCenterZ, yaw: Math.PI / 2, nx: 1, nz: 0 }, // West wall, faces East
+            { name: 'CTR', x: stallCenterX, z: stallCenterZ, yaw: 0, nx: 0, nz: 1 } // Center pedestal
         ];
 
         for (const p of placements) {
@@ -216,6 +252,36 @@ export async function buildShowroomScene(threeGame) {
                     enemyMesh.position.set(p.x, 0, p.z);
                     enemyMesh.rotation.y = p.yaw;
                     root.add(enemyMesh);
+                }
+            } else if (item.type === 'wall_decal') {
+                // Exhibition wall panel for mounting the decal
+                const wallPanelGeo = new THREE.BoxGeometry(2.4, 2.6, 0.2);
+                const wallPanel = new THREE.Mesh(wallPanelGeo, sampleWallMat);
+                wallPanel.position.set(p.x, 1.3, p.z);
+                wallPanel.rotation.y = p.yaw;
+                root.add(wallPanel);
+
+                const decalInstance = threeGame.createScatterInstance?.({
+                    type: item.id,
+                    x: p.x,
+                    z: p.z,
+                    scale: 1.1,
+                    wallNormal: { x: p.nx, z: p.nz }
+                });
+                if (decalInstance) {
+                    root.add(decalInstance);
+                }
+            } else if (item.type === 'floor_decal') {
+                const floorInstance = threeGame.createScatterInstance?.({
+                    type: item.id,
+                    x: p.x,
+                    z: p.z,
+                    scale: 1.2,
+                    rotation: p.yaw,
+                    elevation: 0.035
+                });
+                if (floorInstance) {
+                    root.add(floorInstance);
                 }
             }
         }

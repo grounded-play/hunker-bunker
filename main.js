@@ -6820,14 +6820,20 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
             return prepareGameplayForDialogue({ loaderOverDoor: true });
         },
         () => {
-            if (playIntro) {
-                void runMissionIntroSequence({ deploymentHold });
-            } else {
+            if (!playIntro) {
                 window.game?.setInputEnabled?.(true);
             }
         },
         undefined,
-        { waitForClosedWork: true, openingHoldMs: 160 }
+        {
+            waitForClosedWork: true,
+            openingHoldMs: 160,
+            onOpeningStart: () => {
+                if (playIntro) {
+                    void runMissionIntroSequence({ deploymentHold });
+                }
+            }
+        }
     );
 }
 
@@ -6879,11 +6885,15 @@ if (dailyOpsBtn) {
                 // runs, with the progress readout mounted over the door face.
                 return prepareGameplayForDialogue({ loaderOverDoor: true });
             },
-            () => {
-                void runMissionIntroSequence({ deploymentHold });
-            },
+            () => {},
             undefined,
-            { waitForClosedWork: true, openingHoldMs: 160 }
+            {
+                waitForClosedWork: true,
+                openingHoldMs: 160,
+                onOpeningStart: () => {
+                    void runMissionIntroSequence({ deploymentHold });
+                }
+            }
             // Defaults to active class door
         );
     });
@@ -7181,6 +7191,45 @@ function devGetLayoutMetrics() {
         + `  Res Preset:      ${preset}`;
 }
 
+function transitionToGameplayForDebug() {
+    if (appPhase !== 'gameplay') {
+        const splash = document.getElementById('splash-screen');
+        const menu = document.getElementById('menu-screen');
+        splash?.classList.add('hidden');
+        menu?.classList.add('hidden');
+        setAppPhase('gameplay');
+        window.game?.setPerformanceProfile?.('gameplay');
+        document.getElementById('ui')?.classList.remove('hidden');
+        const gameContainer = document.getElementById('game-container');
+        const viewport = document.getElementById('game-viewport');
+        if (gameContainer && viewport && !viewport.contains(gameContainer)) {
+            viewport.insertBefore(gameContainer, document.getElementById('ui'));
+            gameContainer.classList.add('fullscreen-mode');
+            queueGameLayoutRefresh();
+        }
+        window.game?.setInputEnabled?.(true);
+    }
+}
+
+function openDebugShowroom() {
+    transitionToGameplayForDebug();
+    closeDevConsoleModal();
+    const game = window.game;
+    if (!game) return Promise.reject(new Error('Game not initialized'));
+    showBiomePrompt('> DEBUG: ENTERING SHOWROOM VALIDATION GALLERY');
+    return game.buildDebugShowroom().then((showroom) => {
+        game.godMode = true;
+        const targetX = showroom.spawnX || 9510;
+        const targetZ = showroom.spawnZ || 9510;
+        const pos = game.teleportPlayerTo(targetX, targetZ, { syncChunks: false, safeFloor: false });
+        logDevConsole(`Teleported to Debug Showroom Gallery at (${targetX.toFixed(1)}, ${targetZ.toFixed(1)})`, 'success');
+        return pos;
+    }).catch((err) => {
+        logDevConsole(`Failed opening showroom: ${err?.message ?? err}`, 'error');
+        throw err;
+    });
+}
+
 function executeDevCommand(input) {
     const raw = String(input ?? '').trim();
     if (!raw) return;
@@ -7240,13 +7289,7 @@ function executeDevCommand(input) {
             }
             if (target === 'showroom' || target === 'gallery') {
                 result = 'Building 4-wall showroom gallery and teleporting...';
-                void game.buildDebugShowroom?.().then((showroom) => {
-                    game.godMode = true;
-                    game.teleportPlayerTo(showroom.spawnX || 9510, showroom.spawnZ || 9510, { syncChunks: false, safeFloor: false });
-                    logDevConsole(`Teleported to Debug Showroom Gallery at (${(showroom.spawnX || 9510).toFixed(1)}, ${(showroom.spawnZ || 9510).toFixed(1)})`, 'success');
-                }).catch((err) => {
-                    logDevConsole(`Failed opening showroom: ${err?.message ?? err}`, 'error');
-                });
+                void openDebugShowroom();
                 break;
             }
             if (target === 'crash' || target === 'spawn' || target === 'origin') {
@@ -7508,10 +7551,7 @@ window.__DEBUG__ = {
         const game = window.game;
         if (!game) return Promise.reject(new Error('Game not initialized'));
         if (target === 'showroom' || target === 'gallery') {
-            return game.buildDebugShowroom().then((showroom) => {
-                game.godMode = true;
-                return game.teleportPlayerTo(showroom.spawnX || 9510, showroom.spawnZ || 9510, { syncChunks: false, safeFloor: false });
-            });
+            return openDebugShowroom();
         }
         if (typeof target === 'object' && target !== null && Number.isFinite(target.x) && Number.isFinite(target.z)) {
             return Promise.resolve(game.teleportPlayerTo(target.x, target.z, options));
@@ -7629,7 +7669,8 @@ function populateDevAchievementDropdowns() {
 // Dev Console UI Bindings
 document.getElementById('debug-open-console')?.addEventListener('click', openDevConsoleModal);
 document.getElementById('debug-launch-rgb')?.addEventListener('click', () => launchRgb());
-document.getElementById('debug-open-showroom')?.addEventListener('click', () => executeDevCommand('tp showroom'));
+document.getElementById('debug-open-showroom')?.addEventListener('click', () => openDebugShowroom());
+document.getElementById('dev-btn-open-showroom')?.addEventListener('click', () => openDebugShowroom());
 document.getElementById('debug-achievement-select')?.addEventListener('change', (e) => {
     const key = e.target.value;
     if (key) {
@@ -10869,11 +10910,13 @@ function preloadDoorAssets() {
 function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
     const {
         waitForClosedWork = false,
-        openingHoldMs = 300
+        openingHoldMs = 300,
+        onOpeningStart = null
     } = options;
     const overlay = transitionOverlay || document.getElementById('transition-overlay');
     if (!overlay) {
         if (onClosed) void onClosed();
+        if (onOpeningStart) onOpeningStart();
         if (onOpened) onOpened();
         return;
     }
@@ -10915,6 +10958,14 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
 
             // Force reflow
             void overlay.offsetWidth;
+
+            if (onOpeningStart) {
+                try {
+                    onOpeningStart();
+                } catch (err) {
+                    console.error('Door onOpeningStart callback error:', err);
+                }
+            }
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
