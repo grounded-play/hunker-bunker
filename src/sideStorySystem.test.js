@@ -50,6 +50,10 @@ describe('SideStoryManager & Multi-Path Story Progression', () => {
         // Aria unlocks on deep caves (depthTier 3+)
         manager.evaluateTriggers({ depthTier: 3 });
         expect(manager.getStoryState('aria_queen_mimic').status).toBe(SIDE_STORY_STATUS.AVAILABLE);
+
+        // Dr. Nahl unlocks on biolab visit or depthTier 2
+        manager.evaluateTriggers({ visitedBioLab: true });
+        expect(manager.getStoryState('dr_nahl').status).toBe(SIDE_STORY_STATUS.AVAILABLE);
     });
 
     it('supports pause and resume for flexible side story progression', () => {

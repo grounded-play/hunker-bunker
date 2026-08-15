@@ -39,7 +39,7 @@ describe('FabricatorManager', () => {
     });
 
     it('exposes recipes each with art and a cost', () => {
-        expect(FAB_RECIPES.length).toBe(12);
+        expect(FAB_RECIPES.length).toBe(13);
         for (const r of FAB_RECIPES) {
             expect(r.art).toMatch(/^\/schematics\/schematic_\d\d\.webp$/);
             expect(r.printSeconds).toBeGreaterThan(0);

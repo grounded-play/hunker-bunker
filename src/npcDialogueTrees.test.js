@@ -59,4 +59,18 @@ describe('NpcDialogueTreeManager & Sensual Storyline Trees', () => {
         expect(surrender.id).toBe('aria_surrender_response');
         expect(manager.activePerks.has('arias_psychic_mind_caress')).toBe(true);
     });
+
+    it('navigates Dr. Nahl renegade bio-resonant symbiosis tree', () => {
+        const manager = new NpcDialogueTreeManager();
+        const start = manager.startDialogue('dr_nahl');
+        expect(start.id).toBe('nahl_greeting');
+
+        const accept = manager.selectChoice('nahl_mind_accept');
+        expect(accept.id).toBe('nahl_symbiosis_response');
+        expect(manager.activePerks.has('nahl_symbiotic_resonance')).toBe(true);
+
+        const climax = manager.selectChoice('nahl_deep_communion');
+        expect(climax.id).toBe('nahl_intimate_climax');
+        expect(manager.activePerks.has('nahl_neural_freedom')).toBe(true);
+    });
 });

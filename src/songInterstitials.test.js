@@ -90,14 +90,15 @@ describe('song interstitial manifest', () => {
         await transition;
     });
 
-    it('provides 12 authored companion side-story interstitials with key art and audio cues', () => {
-        expect(Object.keys(SIDE_STORY_INTERSTITIALS)).toHaveLength(12);
+    it('provides 15 authored companion side-story interstitials with key art and audio cues', () => {
+        expect(Object.keys(SIDE_STORY_INTERSTITIALS)).toHaveLength(15);
 
         const expectedKeys = [
             'val_hearth_warmth', 'val_spore_communion', 'val_eternal_hearth',
             'briggs_scorched_rig', 'briggs_scar_tissue', 'briggs_vanguard_fire',
             'kaelen_diagnostic_cradle', 'kaelen_frequency_overclock', 'kaelen_supercharged_matrix',
-            'aria_whispers_abyss', 'aria_silk_trance', 'aria_queens_mark'
+            'aria_whispers_abyss', 'aria_silk_trance', 'aria_queens_mark',
+            'nahl_mind_link', 'nahl_co_evolution', 'nahl_transcendence'
         ];
 
         for (const key of expectedKeys) {

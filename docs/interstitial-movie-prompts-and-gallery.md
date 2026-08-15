@@ -608,3 +608,35 @@ Each entry includes:
 - **Image-to-Video Action Prompt**:
   > Grand slow dolly back from the pedestal. Luminous violet bio-filaments connect Aria's regal carapace directly into the player's suit ports. Millions of glowing spore motes drift like stars in the velvet purple subterranean cathedral.
 - **Ken Burns Direction**: Slow zoom-out 108% → 100% revealing the grand alien throne and cosmic spore atmosphere.
+
+---
+
+### Dr. Nahl: "The Resonant Bridge" (Renegade Bio-Resonant Symbiosis)
+
+#### nahl_mind_link — Synaptic Inoculation (Stage 1)
+![Synaptic Inoculation](../public/interstitials/int_nahl_mind_link_key_v1.webp)
+- **Key Master**: `public/interstitials/int_nahl_mind_link_key_v1.webp`
+- **Trigger**: Exploring Deep Caves (Ring 2+) / Encountering Bio-Resonant Relay.
+- **Scene Context**: Dr. Nahl extending a luminous hand to initiate a voluntary telepathic handshake in the overgrown bio-lab ruins.
+- **Image-to-Video Action Prompt**:
+  > Slow forward tracking shot across the mossy catwalk. Dr. Nahl's amber eyes and delicate antennae softly radiate golden light as electric bio-strands form between his outstretched fingers and the player's helmet visor.
+- **Ken Burns Direction**: Slow push-in 100% → 108% focusing on the meeting point of the glowing neural strands.
+
+#### nahl_co_evolution — Cellular Empathy (Stage 2)
+![Cellular Empathy](../public/interstitials/int_nahl_co_evolution_key_v1.webp)
+- **Key Master**: `public/interstitials/int_nahl_co_evolution_key_v1.webp`
+- **Trigger**: Stage 2 Cellular Empathy choice / Delivering Meds to Nahl.
+- **Scene Context**: Dr. Nahl and the player examining living tissue samples side-by-side on a steel cot in warm amber luminescent communion.
+- **Image-to-Video Action Prompt**:
+  > Tender dolly across the laboratory bench. Dr. Nahl and the player sit closely together, hands intertwined over a glowing data slate displaying synchronized DNA strands.
+- **Ken Burns Direction**: Gentle horizontal pan left-to-right (102% → 107%).
+
+#### nahl_transcendence — Neural Sovereignty (Stage 3)
+![Neural Sovereignty](../public/interstitials/int_nahl_transcendence_key_v1.webp)
+- **Key Master**: `public/interstitials/int_nahl_transcendence_key_v1.webp`
+- **Trigger**: Stage 3 Symbiotic Climax / Severing the Queen's Psychic Tether.
+- **Scene Context**: Dr. Nahl resting his forehead against the player's visor as unbroken rings of golden neural energy shatter the Queen's telepathic hold.
+- **Image-to-Video Action Prompt**:
+  > Intimate rotating camera shot. Golden filaments encircle the couple in a protective halo of light, dissolving the dark purple Queen psychic tendrils into sparkling stardust.
+- **Ken Burns Direction**: Slow zoom-in 100% → 110% into the golden halo of light.
+

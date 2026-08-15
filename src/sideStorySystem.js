@@ -233,6 +233,62 @@ export const SIDE_STORIES_CONFIG = Object.freeze({
                 ]
             }
         ]
+    },
+
+    dr_nahl: {
+        id: 'dr_nahl',
+        title: 'The Resonant Bridge',
+        npcName: 'Dr. Nahl',
+        faction: 'RENEGADE BIO-RESONANT // SYMBIOTIC ALLY',
+        icon: '🧬',
+        themeColor: '#00ffcc',
+        stages: [
+            {
+                index: 1,
+                title: 'Synaptic Inoculation',
+                objective: 'Encounter a Bio-Resonant Relay in Ring 2+ or explore Deep Caves.',
+                unlockCondition: (ctx) => Boolean(ctx.depthTier >= 2 || ctx.ringIndex >= 2 || ctx.visitedBioLab),
+                skipCost: { shells: 35, tech: 5 },
+                rewards: {
+                    shells: 50,
+                    tech: 8,
+                    perk: { id: 'nahl_bio_cloaking', name: 'Resonant Bio-Cloak', desc: '+15% Evasion & Reduced Sight Detection' }
+                },
+                dialogueNode: 'nahl_greeting'
+            },
+            {
+                index: 2,
+                title: 'Cellular Empathy',
+                objective: 'Deliver 10 Meds or survive low-HP combat near Bio-Nodes.',
+                unlockCondition: (ctx) => Boolean(ctx.medInventory >= 10 || ctx.lowHpSurvivals >= 1 || ctx.skipBribed),
+                skipCost: { shells: 75, med: 8 },
+                rewards: {
+                    shells: 120,
+                    med: 12,
+                    schematic: { id: 'nahl_resonant_chitin', name: 'Resonant Chitin Mesh', desc: 'Fabricator schematic for psychic-absorbing bio-mesh' },
+                    perk: { id: 'nahl_symbiotic_resonance', name: 'Symbiotic Life-Resonance', desc: '+20 Max HP & HP Regen when below 50% HP' }
+                },
+                dialogueNode: 'nahl_symbiosis_response'
+            },
+            {
+                index: 3,
+                title: 'Neural Sovereignty',
+                objective: 'Achieve Empathic Bond (Bond Level 2+) & Reach Ring 4.',
+                unlockCondition: (ctx) => Boolean((ctx.bondScore >= 50 && ctx.depthTier >= 3) || ctx.skipBribed),
+                skipCost: { shells: 140, tech: 15 },
+                rewards: {
+                    shells: 220,
+                    tech: 25,
+                    med: 15,
+                    titleBadge: 'SOUL RESONANT',
+                    perk: { id: 'nahl_neural_freedom', name: 'Neural Sovereignty', desc: 'Psychic Disorientation Immunity & +20% Boss Damage' }
+                },
+                dialogueNode: 'nahl_intimate_climax',
+                lockoutConditions: [
+                    { storyId: 'aria_queen_mimic', minStage: 3, reason: "Severing the Queen's neural link prevents full assimilation into the Hive Queen Brood." }
+                ]
+            }
+        ]
     }
 });
 

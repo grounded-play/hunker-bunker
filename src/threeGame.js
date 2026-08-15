@@ -12167,15 +12167,19 @@ export class ThreeGame {
             camp_meridian: 'overseer_kaelen',
             hive_suture: 'aria_queen_mimic',
             hive_relay: 'aria_queen_mimic',
-            hive_carapace: 'aria_queen_mimic'
+            hive_carapace: 'aria_queen_mimic',
+            camp_nahl: 'dr_nahl',
+            hive_nahl: 'dr_nahl',
+            hive_bio_relay: 'dr_nahl'
         };
-        const treeId = treeMap[entity.id];
+        const treeId = treeMap[entity.id] || (String(entity.id).includes('nahl') ? 'dr_nahl' : null);
         if (treeId && typeof window !== 'undefined') {
             if (window.sideStoryManager) {
                 window.sideStoryManager.evaluateTriggers({
                     visitedCampTallow: entity.id === 'camp_tallow',
                     visitedCampVesper: entity.id === 'camp_vesper',
                     visitedCampMeridian: entity.id === 'camp_meridian',
+                    visitedBioLab: String(entity.id).includes('nahl') || entity.id === 'hive_suture',
                     touchedHiveRelay: String(entity.id).startsWith('hive_'),
                     depthTier: this.depthTier ?? 1,
                     ringIndex: this.ringProgressionIndex ?? 1,
@@ -14171,10 +14175,20 @@ export class ThreeGame {
             window.dispatchEvent(new CustomEvent('player-blocked', { detail: { reason } }));
             return false;
         }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_bio_cloaking') && Math.random() < 0.15) {
+            window.dispatchEvent(new CustomEvent('player-evaded', { detail: { reason } }));
+            return false;
+        }
         const previousHp = this.playerVitals.hp;
         let effectiveAmount = amount;
         if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('arias_psychic_mind_caress') && ['poison', 'hazard-zone', 'bio', 'sporesnail'].includes(reason)) {
             effectiveAmount *= 0.8;
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_symbiotic_resonance') && (this.playerVitals?.hp ?? 100) < 50) {
+            effectiveAmount *= 0.85;
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_neural_freedom') && ['psychic', 'queen', 'dread'].includes(reason)) {
+            effectiveAmount *= 0.5;
         }
         if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('vesper_field_armor')) {
             effectiveAmount *= 0.9;
@@ -17133,6 +17147,9 @@ export class ThreeGame {
             if (hpRatio < 0.40 && Math.random() < 0.25) {
                 damage *= 1.5; // Unyielding Might Critical Strike!
             }
+        }
+        if (typeof window !== 'undefined' && window.npcDialogueTreeManager?.activePerks?.has?.('nahl_neural_freedom')) {
+            damage *= 1.15; // Neural Sovereignty +15% damage bonus
         }
 
         // Stacked multipliers (reload, overclocks, high-ground) can land on a

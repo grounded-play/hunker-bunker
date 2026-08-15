@@ -560,6 +560,127 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
                 ]
             }
         }
+    },
+
+    dr_nahl: {
+        id: 'dr_nahl',
+        name: 'Dr. Nahl',
+        faction: 'RENEGADE BIO-RESONANT // SYMBIOTIC ALLY',
+        portrait: 'public/lore_portraits/aria_mimic.png',
+        icon: '🧬',
+        themeColor: '#00ffcc',
+        initialNode: 'nahl_greeting',
+        nodes: {
+            nahl_greeting: {
+                id: 'nahl_greeting',
+                speaker: 'Dr. Nahl',
+                interstitial: 'nahl_mind_link',
+                narration: 'Dr. Nahl stands amidst overgrown moss and humming bio-relays. His luminous amber eyes and delicate neural antennae softly glow as he reaches out a warm, three-fingered hand toward your helmet.',
+                dialogue: "I hear the distress pulses in your neural mesh, operative. The Queen's telepathic frequency is predatory, but biological symbiosis does not have to mean subjugation. May I establish an empathic resonance?",
+                choices: [
+                    {
+                        id: 'nahl_mind_accept',
+                        tone: '[EMPATHIC RESONANCE]',
+                        text: 'Touch his hand and open your neural feed to his empathy.',
+                        nextNode: 'nahl_symbiosis_response'
+                    },
+                    {
+                        id: 'nahl_curious_lore',
+                        tone: '[SCIENTIFIC INQUIRY]',
+                        text: 'You rejected the Hive Mind? How did you retain your individuality?',
+                        nextNode: 'nahl_individuality_response'
+                    },
+                    {
+                        id: 'nahl_leave',
+                        tone: '[LEAVE]',
+                        text: 'I cannot risk neural contamination right now.',
+                        nextNode: null
+                    }
+                ]
+            },
+            nahl_symbiosis_response: {
+                id: 'nahl_symbiosis_response',
+                speaker: 'Dr. Nahl',
+                interstitial: 'nahl_co_evolution',
+                narration: 'A gentle, radiant warmth flows from his fingertips directly into your consciousness. It does not overpower your thoughts; rather, it harmonizes with them, shielding your vital signs from subzero shock and soothing dread.',
+                dialogue: "Remarkable... your human will is resilient and deeply feeling. When we share cellular awareness, the cold cannot freeze you, and the darkness cannot blind you. We are stronger together as equals.",
+                bondDelta: 30,
+                rewardPerk: {
+                    id: 'nahl_symbiotic_resonance',
+                    name: 'Symbiotic Life-Resonance',
+                    description: '+20 Max HP and health regeneration when below 50% HP.'
+                },
+                choices: [
+                    {
+                        id: 'nahl_deep_communion',
+                        tone: '[DEEPEN SYMBIOTIC BOND]',
+                        text: 'Let our cellular consciousness merge deeper, Nahl.',
+                        nextNode: 'nahl_intimate_climax'
+                    },
+                    {
+                        id: 'nahl_thank',
+                        tone: '[GRATEFUL COMMUNION]',
+                        text: 'The resonance is incredible. Thank you, Nahl.',
+                        nextNode: 'nahl_ready_response'
+                    }
+                ]
+            },
+            nahl_individuality_response: {
+                id: 'nahl_individuality_response',
+                speaker: 'Dr. Nahl',
+                narration: 'He smiles with gentle warmth, adjusting the weathered lapels of his coat as bioluminescent spores drift peacefully around his shoulders.',
+                dialogue: "Love and shared consciousness require two separate hearts choosing to beat in rhythm. The Queen demands subservience; I seek genuine partnership. In your eyes, I see the future of our two worlds.",
+                bondDelta: 20,
+                choices: [
+                    {
+                        id: 'nahl_offer_hand',
+                        tone: '[TAKE HIS HAND]',
+                        text: 'I choose this partnership with you.',
+                        nextNode: 'nahl_symbiosis_response'
+                    },
+                    {
+                        id: 'nahl_respect_leave',
+                        tone: '[DEPART]',
+                        text: 'A noble sentiment, Doctor. I must continue my mission.',
+                        nextNode: null
+                    }
+                ]
+            },
+            nahl_intimate_climax: {
+                id: 'nahl_intimate_climax',
+                speaker: 'Dr. Nahl',
+                interstitial: 'nahl_transcendence',
+                narration: 'Dr. Nahl steps close, resting his forehead gently against your visor. Golden neural filaments dance between you in an unbroken halo of light, shattering the Queen’s psychic hold permanently.',
+                dialogue: "Our resonance is complete, my beloved ally. Walk fearlessly into the core. No alien monarch can ever command your soul again.",
+                bondDelta: 50,
+                rewardPerk: {
+                    id: 'nahl_neural_freedom',
+                    name: 'Neural Sovereignty',
+                    description: 'Immunity to Queen disorientation and +20% damage vs Hive Bosses.'
+                },
+                choices: [
+                    {
+                        id: 'nahl_parting_vow',
+                        tone: '[PARTING VOW]',
+                        text: 'We will escape this world together, Nahl.',
+                        nextNode: null
+                    }
+                ]
+            },
+            nahl_ready_response: {
+                id: 'nahl_ready_response',
+                speaker: 'Dr. Nahl',
+                dialogue: 'May the cellular resonance protect your path, contractor. I will await your return.',
+                choices: [
+                    {
+                        id: 'nahl_depart',
+                        tone: '[DEPART]',
+                        text: 'Until next time, Doctor.',
+                        nextNode: null
+                    }
+                ]
+            }
+        }
     }
 });
 
@@ -572,7 +693,8 @@ export class NpcDialogueTreeManager {
             sister_val: 0,
             commander_briggs: 0,
             overseer_kaelen: 0,
-            aria_queen_mimic: 0
+            aria_queen_mimic: 0,
+            dr_nahl: 0
         };
         this.activePerks = new Set();
         this.history = [];

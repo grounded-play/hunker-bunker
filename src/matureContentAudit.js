@@ -16,7 +16,8 @@ export const MATURE_CONTENT_MANIFEST = Object.freeze([
             { id: 'sister_val', label: '🩸 SISTER VAL (TALLOW FLESH COMMUNION)' },
             { id: 'commander_briggs', label: '🛡️ BRIGGS (VESPER COMBAT ADRENALINE)' },
             { id: 'overseer_kaelen', label: '⚡ KAELEN (MERIDIAN BIO-LINK OVERCLOCK)' },
-            { id: 'aria_queen_mimic', label: '👑 ARIA (HIVE QUEEN SEDUCTIVE MIMIC)' }
+            { id: 'aria_queen_mimic', label: '👑 ARIA (HIVE QUEEN SEDUCTIVE MIMIC)' },
+            { id: 'dr_nahl', label: '🧬 DR. NAHL (BIO-RESONANT RENEGADE SYMBIOSIS)' }
         ]
     },
     {

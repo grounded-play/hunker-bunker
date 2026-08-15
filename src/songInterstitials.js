@@ -156,6 +156,36 @@ export const SIDE_STORY_INTERSTITIALS = Object.freeze({
         audio: '/audio/ost/Mother of the Last World.mp3',
         musicKey: 'music_interstitial_31',
         alt: "Symbiotic union in the heart of the Brood Queen chamber"
+    }),
+    nahl_mind_link: Object.freeze({
+        id: 'nahl_mind_link',
+        title: 'Synaptic Inoculation',
+        character: 'Dr. Nahl (Bio-Resonant)',
+        camp: 'Renegade Bio-Resonant',
+        image: '/interstitials/int_nahl_mind_link_key_v1.webp',
+        audio: '/audio/ost/Dr. Nahl Remembers the Tissue.mp3',
+        musicKey: 'music_interstitial_08',
+        alt: 'Dr. Nahl establishing voluntary neural handshake'
+    }),
+    nahl_co_evolution: Object.freeze({
+        id: 'nahl_co_evolution',
+        title: 'Cellular Empathy',
+        character: 'Dr. Nahl (Bio-Resonant)',
+        camp: 'Renegade Bio-Resonant',
+        image: '/interstitials/int_nahl_co_evolution_key_v1.webp',
+        audio: '/audio/ost/Dr. Nahl Remembers the Tissue.mp3',
+        musicKey: 'music_interstitial_08',
+        alt: 'Dr. Nahl and player examining tissue samples in warm communion'
+    }),
+    nahl_transcendence: Object.freeze({
+        id: 'nahl_transcendence',
+        title: 'Neural Sovereignty',
+        character: 'Dr. Nahl (Bio-Resonant)',
+        camp: 'Renegade Bio-Resonant',
+        image: '/interstitials/int_nahl_transcendence_key_v1.webp',
+        audio: '/audio/ost/We Escaped Together, Technically.mp3',
+        musicKey: 'music_interstitial_36',
+        alt: 'Dr. Nahl and player severing the Queen psychic tether'
     })
 });
 

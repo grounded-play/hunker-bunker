@@ -25,7 +25,8 @@ export const FAB_RECIPES = Object.freeze([
     { id: 'tallow_thermal_wrap', name: 'TALLOW THERMAL WRAP', klass: 'MODULE', rarity: 'RARE', art: '/schematics/schematic_05.webp', cost: { tech: 12, coin: 6, med: 6 }, printSeconds: 12, blurb: 'Freezing-resistant thermal underlayer woven from bio-spore fibers.' },
     { id: 'vesper_vanguard_rig', name: 'VESPER VANGUARD RIG', klass: 'MODULE', rarity: 'EPIC', art: '/schematics/schematic_07.webp', cost: { tech: 18, coin: 10, med: 4 }, printSeconds: 15, blurb: 'Hardened titanium chest harness crafted by Vanguard mechanics.' },
     { id: 'meridian_frequency_scanner', name: 'MERIDIAN FREQUENCY SCANNER', klass: 'TOOL', rarity: 'RARE', art: '/schematics/schematic_06.webp', cost: { tech: 20, coin: 8, med: 0 }, printSeconds: 14, blurb: 'High-frequency radar mast amplifier tuned to deep cavern signals.' },
-    { id: 'brood_chitin_plating', name: 'BROOD CHITIN PLATING', klass: 'MODULE', rarity: 'EPIC', art: '/schematics/schematic_03.webp', cost: { tech: 16, coin: 6, med: 10 }, printSeconds: 16, blurb: 'Living bio-chitin plates that reflect acidic spore splatter.' }
+    { id: 'brood_chitin_plating', name: 'BROOD CHITIN PLATING', klass: 'MODULE', rarity: 'EPIC', art: '/schematics/schematic_03.webp', cost: { tech: 16, coin: 6, med: 10 }, printSeconds: 16, blurb: 'Living bio-chitin plates that reflect acidic spore splatter.' },
+    { id: 'nahl_resonant_chitin', name: 'RESONANT CHITIN MESH', klass: 'MODULE', rarity: 'LEGENDARY', art: '/schematics/schematic_07.webp', cost: { tech: 24, coin: 14, med: 12 }, printSeconds: 18, blurb: 'Symbiotic bio-mesh that absorbs psychic shockwaves and regenerates armor.' }
 ]);
 
 // Flat "spin" cost for a fabricator roll (mothership's gamba metaphor, in HB
