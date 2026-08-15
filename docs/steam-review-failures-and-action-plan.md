@@ -417,9 +417,9 @@ fully implemented and verified all supported features:
        "VIEW LOG: PVT. REYES' FAREWELL LETTER (C11)" / "VIEW LOG: DIRECTOR CHEN'S SEALED TERMINAL (B03)"
      * Revealing Outfits & Seduction: open the Aria romance dialogue tree in the gallery's
        first category
+     * Veiled Nudity: Click "VIEW LOG: BIO-INCUBATION WING MAINTENANCE LOG 04"
+     * Non-Explicit Sexual Content / Prostitution: Click "VIEW LOG: UNOFFICIAL LEDGER, CAMP TALLOW"
      * Nudity & Adult Horror: Click "VIEW CINEMATIC: FULL BROOD (QUEEN WILL-CRUSH)"
-     * NOTE: "Veiled Nudity" and "Prostitution / Eroticism" have no corresponding in-game
-       content — do not claim these are verifiable until that content is built.
 
 4. IN-APP PURCHASES & STEAM WALLET:
    - Open Title Menu -> "◈ STEAM VAULT" -> "◈ STORE".
@@ -438,10 +438,8 @@ fully implemented and verified all supported features:
      pre-generated 2D interstitial art, music generation, and coding agent assistance.
 
 7. GRAPHICAL LIBRARY ASSETS:
-   - Uploaded full-bleed English Library Capsule (600x900), English Header (920x430), and
-     text-free Library Hero (3840x1240). NOTE: the Library Logo (1280x720) still has the
-     "DESCEND. BANK. SURVIVE." tagline baked in and must be re-cropped/regenerated to show
-     only the title before upload.
+   - Uploaded full-bleed English Library Capsule (600x900), English Header (920x430),
+     text-free Library Hero (3840x1240), and transparent title-only Logo (1280x720).
 
 --------------------------------------------------------------------------------
 ADDITIONAL REVIEWER SHORTCUTS (verified against the actual build):
