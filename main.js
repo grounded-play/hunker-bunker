@@ -12065,44 +12065,43 @@ document.addEventListener('DOMContentLoaded', async () => {
                 () => {
                     if (loadingScreen) loadingScreen.classList.add('hidden');
                     if (splash) splash.classList.add('hidden');
-                },
-                async () => {
-                    // Play DoorIntro cutscene against solid pitch-black background.
-                    // The second door transition triggers WHILE the video is playing (at ~70% mark)
-                    // so the heavy blast doors slam shut directly over the active video.
-                    await new Promise((resolve) => {
-                        let doorStarted = false;
-                        const triggerClosingDoors = () => {
-                            if (doorStarted) return;
-                            doorStarted = true;
-                            triggerDoorTransition(
-                                () => {
-                                    if (splash) splash.classList.remove('hidden');
-                                    setAppPhase('splash');
-                                    window.game?.setLoadingPaused?.(false);
-                                    transitionToMenuMusic();
-                                    finishBootDiagnostics();
-                                },
-                                () => {
-                                    document.documentElement.classList.remove(
-                                        'boot-cursor-hidden',
-                                        'custom-cursor-enabled'
-                                    );
-                                    ensureControllerMenuFocus();
-                                },
-                                'base'
-                            );
-                            resolve();
-                        };
 
-                        playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
-                            .then(triggerClosingDoors)
-                            .catch(async () => {
-                                await playCutsceneVideo('scout-intro').catch(() => null);
-                                triggerClosingDoors();
-                            });
-                    });
+                    // Start the DoorIntro cutscene right as the blast doors are
+                    // shut, against a solid pitch-black background, so it is
+                    // already loading/playing underneath while the doors swing
+                    // open — the doors should open TO REVEAL the video already
+                    // underway, not open onto black and only start it afterward.
+                    let doorStarted = false;
+                    const triggerClosingDoors = () => {
+                        if (doorStarted) return;
+                        doorStarted = true;
+                        triggerDoorTransition(
+                            () => {
+                                if (splash) splash.classList.remove('hidden');
+                                setAppPhase('splash');
+                                window.game?.setLoadingPaused?.(false);
+                                transitionToMenuMusic();
+                                finishBootDiagnostics();
+                            },
+                            () => {
+                                document.documentElement.classList.remove(
+                                    'boot-cursor-hidden',
+                                    'custom-cursor-enabled'
+                                );
+                                ensureControllerMenuFocus();
+                            },
+                            'base'
+                        );
+                    };
+
+                    playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
+                        .then(triggerClosingDoors)
+                        .catch(async () => {
+                            await playCutsceneVideo('scout-intro').catch(() => null);
+                            triggerClosingDoors();
+                        });
                 },
+                () => {},
                 'base'
             );
         }, 180);
