@@ -408,7 +408,7 @@ body {
 }
 
 #loading-screen.over-door-loader {
-  z-index: 150250;
+  z-index: 15250;
   background: transparent;
   pointer-events: none;
   opacity: 1;
@@ -457,12 +457,11 @@ body {
 
   #loading-screen.over-door-loader .loader-title {
     font-size: var(--font-xs);
-    letter-spacing: 2px;
   }
 }
 
 
-/* --- Door Transition Overlay --- */
+/* --- Tactical Door Transition --- */
 #transition-overlay {
   --gear-focus-x: calc(var(--vu) * 80);
   --gear-focus-y: calc(var(--vu) * 50);
@@ -480,20 +479,19 @@ body {
   --transition-scene-fade: 0;
   position: absolute;
   inset: 0;
-  z-index: 150000;
+  z-index: 15000;
   pointer-events: none;
   display: flex;
   overflow: hidden;
   visibility: hidden;
   opacity: 0;
-  contain: layout paint;
 }
 
 #transition-overlay::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 150000;
+  z-index: 15000;
   background:
     radial-gradient(circle at center, rgba(3, 4, 8, 0.65) 0%, rgba(1, 2, 4, 0.88) 45%, rgba(0, 0, 0, 0.98) 100%);
   opacity: var(--transition-scene-fade);
@@ -505,7 +503,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 150002;
+  z-index: 15002;
   box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.75);
   pointer-events: none;
   opacity: var(--transition-scene-fade);
@@ -517,11 +515,11 @@ body {
   opacity: 1;
 }
 
-#transition-overlay.closing-v {
+#transition-overlay.closing-v,
+#transition-overlay.opening-h {
   --transition-scene-fade: 1;
 }
 
-#transition-overlay.opening-h,
 #transition-overlay.opening-h.active {
   --transition-scene-fade: 0;
 }
@@ -531,27 +529,24 @@ body {
   background-image: var(--door-bg-image, url('/door_biomech_keyart_v2.webp'));
   background-repeat: no-repeat;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 0, 0, 0.7);
-  z-index: 150001;
-  visibility: hidden;
-  opacity: 0;
+  z-index: 15001;
+  display: none;
   overflow: visible;
   will-change: transform;
 }
 
 #transition-overlay .door {
-  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+  transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Vertical Close State */
 #transition-overlay.closing-v #door-top,
 #transition-overlay.closing-v #door-bottom {
-  visibility: visible;
-  opacity: 1;
+  display: block;
 }
 
 #transition-overlay.closing-v #door-top {
   top: 0;
-  left: 0;
   width: 100%;
   height: 50%;
   transform: translateY(-100%);
@@ -561,7 +556,6 @@ body {
 
 #transition-overlay.closing-v #door-bottom {
   bottom: 0;
-  left: 0;
   width: 100%;
   height: 50%;
   transform: translateY(100%);
@@ -577,8 +571,7 @@ body {
 /* Horizontal Open State */
 #transition-overlay.opening-h #door-left,
 #transition-overlay.opening-h #door-right {
-  visibility: visible;
-  opacity: 1;
+  display: block;
 }
 
 #transition-overlay.opening-h #door-left {
@@ -613,7 +606,7 @@ body {
 .shared-gear {
   position: absolute;
   pointer-events: none;
-  z-index: 150005;
+  z-index: 15005;
   display: block;
 }
 
@@ -681,7 +674,7 @@ body {
 }
 
 #transition-overlay.opening-h.active .focus-top-right {
-  transform: translate(calc(-50% + 120vw + 100%), -50%);
+  transform: translate(calc(-50% + var(--door-half-span) + var(--gear-focus-size) * 2 + calc(var(--vu) * 20)), -50%);
   transition: transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -691,7 +684,7 @@ body {
   background: radial-gradient(circle, rgba(220, 225, 235, 0.45) 0%, rgba(160, 175, 195, 0.15) 50%, transparent 75%);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 150100;
+  z-index: 15100;
   filter: blur(10px);
   animation: smoke-drift 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

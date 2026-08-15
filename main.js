@@ -6245,7 +6245,7 @@ function playCutsceneVideo(base, options = {}) {
 
         const video = document.createElement('video');
         video.className = 'class-intro-video';
-        video.style.opacity = '1';
+        video.style.opacity = '0';
         video.playsInline = true;
         video.muted = Boolean(window.AudioManager?.globalMuted);
         video.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
@@ -12116,48 +12116,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         setTimeout(() => {
+            let doorStarted = false;
+            const triggerClosingDoors = () => {
+                if (doorStarted) return;
+                doorStarted = true;
+                triggerDoorTransition(
+                    () => {
+                        if (splash) splash.classList.remove('hidden');
+                        setAppPhase('splash');
+                        window.game?.setLoadingPaused?.(false);
+                        transitionToMenuMusic();
+                        finishBootDiagnostics();
+                    },
+                    () => {
+                        document.documentElement.classList.remove(
+                            'boot-cursor-hidden',
+                            'custom-cursor-enabled'
+                        );
+                        ensureControllerMenuFocus();
+                    },
+                    'base'
+                );
+            };
+
+            // Same door mechanism used everywhere else (launchStandardRun,
+            // Daily Ops): the door's own close/open animation runs on its
+            // normal, un-lagged schedule, and onOpeningStart fires the
+            // instant the doors begin sliding open so the DoorIntro cutscene
+            // is already loading/playing by the time the panels finish
+            // their travel.
             triggerDoorTransition(
                 () => {
                     if (loadingScreen) loadingScreen.classList.add('hidden');
                     if (splash) splash.classList.add('hidden');
-
-                    // Start the DoorIntro cutscene right as the blast doors are
-                    // shut, against a solid pitch-black background, so it is
-                    // already loading/playing underneath while the doors swing
-                    // open — the doors should open TO REVEAL the video already
-                    // underway, not open onto black and only start it afterward.
-                    let doorStarted = false;
-                    const triggerClosingDoors = () => {
-                        if (doorStarted) return;
-                        doorStarted = true;
-                        triggerDoorTransition(
-                            () => {
-                                if (splash) splash.classList.remove('hidden');
-                                setAppPhase('splash');
-                                window.game?.setLoadingPaused?.(false);
-                                transitionToMenuMusic();
-                                finishBootDiagnostics();
-                            },
-                            () => {
-                                document.documentElement.classList.remove(
-                                    'boot-cursor-hidden',
-                                    'custom-cursor-enabled'
-                                );
-                                ensureControllerMenuFocus();
-                            },
-                            'base'
-                        );
-                    };
-
-                    playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
-                        .then(triggerClosingDoors)
-                        .catch(async () => {
-                            await playCutsceneVideo('scout-intro').catch(() => null);
-                            triggerClosingDoors();
-                        });
                 },
                 () => {},
-                'base'
+                'base',
+                {
+                    onOpeningStart: () => {
+                        playCutsceneVideo('DoorIntro', { onDoorCutoff: triggerClosingDoors })
+                            .then(triggerClosingDoors)
+                            .catch(async () => {
+                                await playCutsceneVideo('scout-intro').catch(() => null);
+                                triggerClosingDoors();
+                            });
+                    }
+                }
             );
         }, 180);
     };
