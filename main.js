@@ -6245,7 +6245,7 @@ function playCutsceneVideo(base, options = {}) {
 
         const video = document.createElement('video');
         video.className = 'class-intro-video';
-        video.style.opacity = '0';
+        video.style.opacity = '1';
         video.playsInline = true;
         video.muted = Boolean(window.AudioManager?.globalMuted);
         video.volume = Math.min(1, Math.max(0, window.AudioManager?.masterVolume ?? 1.0));
@@ -6365,9 +6365,7 @@ function playCutsceneVideo(base, options = {}) {
 
         video.addEventListener('timeupdate', () => {
             if (!fadingOut && Number.isFinite(video.duration) && video.duration > 0) {
-                const doorCutoffTime = (base === 'DoorIntro' || base.includes('DoorIntro') || base.includes('intro'))
-                    ? Math.min(video.duration * 0.40, 3.2)
-                    : (video.duration - 0.5);
+                const doorCutoffTime = Math.max(0, video.duration - 0.5);
 
                 if (video.currentTime >= doorCutoffTime) {
                     fadingOut = true;
