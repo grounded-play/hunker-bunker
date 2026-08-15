@@ -6365,7 +6365,9 @@ function playCutsceneVideo(base, options = {}) {
 
         video.addEventListener('timeupdate', () => {
             if (!fadingOut && Number.isFinite(video.duration) && video.duration > 0) {
-                const doorCutoffTime = Math.max(0, video.duration - 0.5);
+                const doorCutoffTime = (base === 'DoorIntro' || base.includes('DoorIntro') || base.includes('intro'))
+                    ? Math.min(video.duration * 0.40, 3.2)
+                    : (video.duration - 0.5);
 
                 if (video.currentTime >= doorCutoffTime) {
                     fadingOut = true;
@@ -7817,7 +7819,11 @@ function updateGearSpin(now) {
     gearSpinState.rotation += gearSpinState.velocity * dt;
 
     if (overlay && isVisible) {
-        overlay.style.setProperty('--gear-rotation', `${gearSpinState.rotation.toFixed(2)}deg`);
+        const stacks = overlay.querySelectorAll('.gear-stack');
+        const rot = `rotate(${gearSpinState.rotation.toFixed(1)}deg)`;
+        for (let i = 0; i < stacks.length; i++) {
+            stacks[i].style.transform = rot;
+        }
     }
 
     if (isVisible || Math.abs(gearSpinState.velocity) > 0.5) {

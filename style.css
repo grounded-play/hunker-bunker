@@ -486,6 +486,7 @@ body {
   overflow: hidden;
   visibility: hidden;
   opacity: 0;
+  contain: layout paint;
 }
 
 #transition-overlay::before {
