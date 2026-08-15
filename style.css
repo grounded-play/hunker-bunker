@@ -3766,15 +3766,25 @@ input:checked+.slider:before {
   transition: opacity 420ms ease-out;
 }
 
-.song-interstitial__placeholder {
-  background:
-    radial-gradient(circle at 50% 35%, rgba(223, 145, 43, 0.28), transparent 26%),
-    repeating-radial-gradient(ellipse at 50% 38%, rgba(104, 224, 220, 0.14) 0 2px, transparent 3px 32px),
-    linear-gradient(115deg, #030506 12%, #20201a 48%, #081417 76%, #020303);
-}
-
 .song-interstitial.is-open:not(.has-placeholder) .song-interstitial__media,
 .song-interstitial.is-open.has-placeholder .song-interstitial__placeholder { opacity: 1; }
+
+.song-interstitial.is-open img.song-interstitial__media {
+  animation: ken-burns-cinematic 8.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  transform-origin: center center;
+}
+
+@keyframes ken-burns-cinematic {
+  0% {
+    transform: scale(1.0) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.05) translate(-1.2%, -0.8%);
+  }
+  100% {
+    transform: scale(1.08) translate(-2.2%, -1.4%);
+  }
+}
 
 .song-interstitial__flash {
   position: absolute;

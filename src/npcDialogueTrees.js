@@ -22,6 +22,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             val_greeting: {
                 id: 'val_greeting',
                 speaker: 'Sister Val',
+                interstitial: 'val_hearth_warmth',
                 narration: 'She sets down a steaming bronze kettle of heated botanical resin. Her eyes, luminous and amber from spore exposure, linger on the ice crusted across your collarbone.',
                 dialogue: "You're shivering, contractor. That corporate suit is bleeding heat by the second. Step closer to the thermal hearth... let me unfasten your seals and see where the cold has bitten your skin.",
                 choices: [
@@ -54,6 +55,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             val_massage_response: {
                 id: 'val_massage_response',
                 speaker: 'Sister Val',
+                interstitial: 'val_spore_communion',
                 narration: 'Her fingertips are slick with warm, fragrant amber resin. She gently presses against the hollow of your throat, working down along the stiffened muscles of your shoulders. A shiver of intense, intoxicating heat cascades through your chest.',
                 dialogue: "Refined tallow-root and bioluminescent spore tallow. It sinks directly into your capillaries, melting away the frostbite. Feel how your skin warms under my palms? Out there, you're just corporate meat. In here... every breath between us is sacred.",
                 bondDelta: 25,
@@ -80,6 +82,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             val_embrace_response: {
                 id: 'val_embrace_response',
                 speaker: 'Sister Val',
+                interstitial: 'val_hearth_warmth',
                 narration: 'She steps into your space without hesitation, the heavy scent of crushed crimson petals and body heat wrapping around your senses. Her hands rest on your chest plate, feeling your frantic heartbeat.',
                 dialogue: "We are all walking ghosts on this glacier, love. But tonight... our flesh is hot, alive, and unyielding. Lie with me beside the burner. Let the ice rage against the bulkhead while we burn together.",
                 bondDelta: 35,
@@ -127,6 +130,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             val_intimate_climax: {
                 id: 'val_intimate_climax',
                 speaker: 'Sister Val',
+                interstitial: 'val_eternal_hearth',
                 narration: 'Her lips brush against your jawline, whispered words of devotion mixing with the gentle crackle of the thermal burner. Her bare shoulder presses firmly against your chest, sharing an intense, quiet sanctuary of human passion in the dark.',
                 dialogue: "Remember this heat when you descend into the abyss, my fierce contractor. When the cold tries to take you, remember the taste of my breath on your neck. You belong to Tallow now... and to me.",
                 bondDelta: 40,
@@ -167,6 +171,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             briggs_greeting: {
                 id: 'briggs_greeting',
                 speaker: 'Commander Briggs',
+                interstitial: 'briggs_scorched_rig',
                 narration: 'Briggs stands beside the weapon rack, his heavy titanium chest rig unbuckled, revealing a scarred, muscular torso glistening with sweat after repelling a swarm assault.',
                 dialogue: "You made it through the corridor gauntlet in one piece. Look at you... adrenaline still coursing through your veins, eyes dilated. Strip off that scorched harness before the shrapnel settles.",
                 choices: [
@@ -199,6 +204,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             briggs_clasps_response: {
                 id: 'briggs_clasps_response',
                 speaker: 'Commander Briggs',
+                interstitial: 'briggs_scar_tissue',
                 narration: 'He gives a low, raspy chuckle, stepping behind you. His calloused, heavy hands grasp the thermal buckles of your rig, fingers brushing against your nape as he unclips the armor plates with practiced ease.',
                 dialogue: "You always did like playing with live ordnance. There... let your shoulders breathe. You're tighter than a locked hydraulic valve. Feel that? That's what surviving feels like.",
                 bondDelta: 25,
@@ -225,6 +231,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             briggs_scars_response: {
                 id: 'briggs_scars_response',
                 speaker: 'Commander Briggs',
+                interstitial: 'briggs_scar_tissue',
                 narration: 'Briggs looks down at his scarred chest, a faint, nostalgic smirk forming on his rugged face as he takes your hand and places it directly over the jagged mark.',
                 dialogue: "Heavy drone blade during the first breach. Missed my lung by two inches. Every scar is just proof that whatever tried to kill me is dead, and I'm still standing right here with you.",
                 bondDelta: 20,
@@ -266,6 +273,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             briggs_intimate_climax: {
                 id: 'briggs_intimate_climax',
                 speaker: 'Commander Briggs',
+                interstitial: 'briggs_vanguard_fire',
                 narration: 'His gaze locks onto yours with raw intensity. His strong arm pulls you firmly against him, the heat radiating off his broad chest cutting through the bitter subzero chill of the bunker.',
                 dialogue: "You've got fire in you, operative. In a world this cold, that kind of heat is addictive. When this run is done... don't go looking for an empty bunk. You know where to find me.",
                 bondDelta: 40,
@@ -306,6 +314,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             kaelen_greeting: {
                 id: 'kaelen_greeting',
                 speaker: 'Overseer Kaelen',
+                interstitial: 'kaelen_diagnostic_cradle',
                 narration: 'Kaelen pushes his magnifying welding goggles onto his graying hair. The green glow of oscilloscope monitors highlights his sharp cheekbones and grease-smudged jaw.',
                 dialogue: "Your sensory telemetry is fluctuating wildly, contractor. Step into the diagnostic cradle. Let me jack into your suit's neural bio-link directly... try to hold still while the high-voltage diagnostic flows.",
                 choices: [
@@ -338,6 +347,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             kaelen_biolink_response: {
                 id: 'kaelen_biolink_response',
                 speaker: 'Overseer Kaelen',
+                interstitial: 'kaelen_frequency_overclock',
                 narration: 'He inserts a gleaming copper interface cable into the base of your helmet collar. A sharp, tingling surge of bio-electric current races down your spine, illuminating your HUD with brilliant cyan sparks.',
                 dialogue: "Fascinating... your synaptic conductance is extraordinary. Feel the signal pulse, contractor? It’s not just data. It’s synchronization. Every thought you have is echoing directly into my terminal.",
                 bondDelta: 25,
@@ -405,6 +415,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             kaelen_intimate_climax: {
                 id: 'kaelen_intimate_climax',
                 speaker: 'Overseer Kaelen',
+                interstitial: 'kaelen_supercharged_matrix',
                 narration: 'Kaelen exhales slowly, his warm breath fogging the edge of your visor as his gloved hand rests gently against your cheek. The hum of the generator fades into background static behind the intensity in his eyes.',
                 dialogue: "You've completely disrupted my diagnostics, contractor. But for the first time in six years on this glacier... my heart isn't cold. Come back alive, and we'll finish this link.",
                 bondDelta: 40,
@@ -445,6 +456,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             aria_whisper: {
                 id: 'aria_whisper',
                 speaker: 'Aria (Queen Mimic)',
+                interstitial: 'aria_whispers_abyss',
                 narration: 'A velvet, crystalline whisper resonates directly inside your temporal lobes, bypassing your suit audio completely. The air in the cavern turns fragrant with intoxicating pheromones as a shimmering silhouette appears before you.',
                 dialogue: "Why do you tremble so, sweet contractor? The ice above is cruel and indifferent, but our warmth... our love is eternal. Cast aside your heavy armor. Let our thoughts wrap around your mind like silk.",
                 choices: [
@@ -471,6 +483,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             aria_surrender_response: {
                 id: 'aria_surrender_response',
                 speaker: 'Aria (Queen Mimic)',
+                interstitial: 'aria_silk_trance',
                 narration: 'Waves of pure, euphoric warmth flood your nervous system. Bioluminescent tendrils of gentle light brush along your skin beneath the armor, erasing fatigue and dread with intense, hypnotic pleasure.',
                 dialogue: "Yes... let your barriers dissolve. Feel how deeply we understand your desires. You were never meant to suffer alone in the cold. You belong to the Brood now, my cherished guardian.",
                 bondDelta: 50,
@@ -497,6 +510,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             aria_duel_response: {
                 id: 'aria_duel_response',
                 speaker: 'Aria (Queen Mimic)',
+                interstitial: 'aria_silk_trance',
                 narration: 'A thrilling, seductive laughter echoes inside your skull. The psychic presence leans closer, a spectral sensation of lips brushing your ear in the cold dark.',
                 dialogue: "A defiant one... how exquisite. The hunt is so much sweeter when the prey bites back. We will savor peeling away your defenses until only passion remains.",
                 bondDelta: 35,
@@ -532,6 +546,7 @@ export const NPC_DIALOGUE_TREES = Object.freeze({
             aria_intimate_climax: {
                 id: 'aria_intimate_climax',
                 speaker: 'Aria (Queen Mimic)',
+                interstitial: 'aria_queens_mark',
                 narration: 'The vision of Aria envelops you in a radiant, supernatural embrace. A sublime sensation of bliss and connection binds your consciousness to the heartbeat of the deep hive.',
                 dialogue: "Your soul is branded with our mark, beloved. Walk fearlessly into the dark. The hive will sing for you.",
                 bondDelta: 50,
@@ -673,6 +688,10 @@ export class NpcDialogueTreeManager {
 
         this.currentNode = { ...nextNode, choices: [...nextNode.choices] };
         this.history.push(nextNode.id);
+
+        if (typeof window !== 'undefined' && nextNode.interstitial && typeof window.playSideStoryInterstitial === 'function') {
+            window.playSideStoryInterstitial(nextNode.interstitial);
+        }
 
         // Apply bond delta if arriving at a node with bondDelta
         if (nextNode.bondDelta && this.activeTree) {

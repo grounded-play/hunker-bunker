@@ -8270,9 +8270,13 @@ function setupNpcDialogueEvents() {
         }
     });
 
-    window.openNpcDialogueTree = (treeId) => {
+    window.openNpcDialogueTree = async (treeId) => {
         setupNpcDialogueEvents();
-        return npcDialogueTreeManager.startDialogue(treeId);
+        const node = npcDialogueTreeManager.startDialogue(treeId);
+        if (node?.interstitial && typeof window.playSideStoryInterstitial === 'function') {
+            await window.playSideStoryInterstitial(node.interstitial);
+        }
+        return node;
     };
     window.NPC_DIALOGUE_TREES = NPC_DIALOGUE_TREES;
     window.npcDialogueTreeManager = npcDialogueTreeManager;
@@ -9785,6 +9789,11 @@ const songInterstitial = new SongInterstitialController({
     AudioManager,
     reducedMotion: window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
 });
+
+window.playSideStoryInterstitial = async (id) => {
+    if (!songInterstitial) return { shown: false };
+    return await songInterstitial.show(id, { holdMs: 1400 });
+};
 
 window.addEventListener('camp-choice-open', async (event) => {
     const detail = event?.detail ?? {};

@@ -482,3 +482,129 @@ Each entry includes:
 - **Image-to-Video Action Prompt**:
   > Slow, elegant forward push toward the ship's forward viewport. Countless golden star systems sparkle in deep space. Millions of tiny amber hive larvae reflections glisten across the cockpit window glass as the ship accelerates into warp with a silent golden flash.
 - **Ken Burns Direction**: Forward warp push-in 100% → 112% toward the star clusters.
+
+---
+
+## 6. Companion Romance & Multi-Stage Side Story Arcs
+
+### Sister Val: "Warmth of the Suture" (Camp Tallow)
+
+#### val_hearth_warmth — Warmth of the Suture (Stage 1)
+![Warmth of the Suture](../public/interstitials/int_val_hearth_warmth_key_v1.webp)
+- **Key Master**: `public/interstitials/int_val_hearth_warmth_key_v1.webp`
+- **Trigger**: Subzero O2 frostbite exposure / Camp Tallow Sanctuary first contact.
+- **Scene Context**: Sister Val kneeling at the glowing geothermal hearth, extending warm hands toward the player's frosted exosuit.
+- **Image-to-Video Action Prompt**:
+  > Slow cinematic push-in toward Sister Val's compassionate eyes. The glowing copper hearth burns with warm golden embers, sending soft plumes of steam into the subzero blue glacier air. Her warm hands gently reach out to thaw the player's iced titanium gauntlets.
+- **Ken Burns Direction**: Slow push-in 100% → 108% centering on the meeting hands and hearth embers.
+
+#### val_spore_communion — Botanical Spore Oil (Stage 2)
+![Botanical Spore Oil](../public/interstitials/int_val_spore_communion_key_v1.webp)
+- **Key Master**: `public/interstitials/int_val_spore_communion_key_v1.webp`
+- **Trigger**: Spore oil massage choice / Stage 2 Suture Communion.
+- **Scene Context**: Sister Val applying warm, golden bioluminescent botanical salve to the player's exposed skin in the dim sanctuary tent.
+- **Image-to-Video Action Prompt**:
+  > Gentle dolly across the lantern-lit medical tent. Sister Val massages warm, glowing amber spore oil onto the player's neck and shoulders. Soft bioluminescent dust motes drift peacefully through the air. Warm steam rolls across the table in slow motion.
+- **Ken Burns Direction**: Gentle horizontal pan left-to-right with subtle zoom (102% → 107%).
+
+#### val_eternal_hearth — The Eternal Hearth (Stage 3)
+![The Eternal Hearth](../public/interstitials/int_val_eternal_hearth_key_v1.webp)
+- **Key Master**: `public/interstitials/int_val_eternal_hearth_key_v1.webp`
+- **Trigger**: Stage 3 Devotional Climax / Sister Val Romance Fulfillment.
+- **Scene Context**: Sister Val and the player deeply embraced beside the colossal volcanic hearth deep beneath the glacial caves.
+- **Image-to-Video Action Prompt**:
+  > Sweeping upward tracking shot from the blazing magma pipes up to the passionate embrace between Sister Val and the player. Fiery embers rise toward the vaulted ice stalactites above, casting pulsating crimson and gold reflections across their silhouettes.
+- **Ken Burns Direction**: Slow upward vertical pan 100% → 110% toward the embracing figures.
+
+---
+
+### Commander Briggs: "Blood & Vanguard" (Camp Vesper)
+
+#### briggs_scorched_rig — The Scorched Rig (Stage 1)
+![The Scorched Rig](../public/interstitials/int_briggs_scorched_rig_key_v1.webp)
+- **Key Master**: `public/interstitials/int_briggs_scorched_rig_key_v1.webp`
+- **Trigger**: Surviving combat breach / Camp Vesper Barracks first contact.
+- **Scene Context**: Commander Briggs resting against a smoking steel barricade after repelling a swarm assault.
+- **Image-to-Video Action Prompt**:
+  > Low-angle slow tracking shot past smoking spent shell casings and defeated drone debris. Revolving red emergency beacon lights slice through thick diesel exhaust. Briggs wipes sweat and grease from his rugged brow, looking up with fierce respect.
+- **Ken Burns Direction**: Diagonal pan bottom-left to top-right (100% → 106%).
+
+#### briggs_scar_tissue — Scar Tissue (Stage 2)
+![Scar Tissue](../public/interstitials/int_briggs_scar_tissue_key_v1.webp)
+- **Key Master**: `public/interstitials/int_briggs_scar_tissue_key_v1.webp`
+- **Trigger**: Unbuckling armor clasps / Stage 2 Vanguard Scar Examination.
+- **Scene Context**: Briggs showing jagged shrapnel battle scars in the warm, low-lit armory, sharing vulnerable combat intimacy.
+- **Image-to-Video Action Prompt**:
+  > Slow push-in toward the table in the dim bunker armory. Warm tungsten work lights illuminate Briggs's muscular, scarred chest as the player's fingers gently trace a deep shrapnel mark. Briggs exhales slowly, his steady gaze locked onto the player.
+- **Ken Burns Direction**: Direct zoom-in 100% → 108% focusing on the hand tracing the chest scar.
+
+#### briggs_vanguard_fire — Vanguard Unyielding (Stage 3)
+![Vanguard Unyielding](../public/interstitials/int_briggs_vanguard_fire_key_v1.webp)
+- **Key Master**: `public/interstitials/int_briggs_vanguard_fire_key_v1.webp`
+- **Trigger**: Stage 3 Vanguard Climax / Commander Briggs Romance Fulfillment.
+- **Scene Context**: Briggs and the player standing shoulder-to-shoulder on an elevated catwalk overlooking burning crimson vanguard flares in the subterranean abyss.
+- **Image-to-Video Action Prompt**:
+  > Grand cinematic pull-back along the industrial steel catwalk. Huge fiery red vanguard flares illuminate the massive frozen subterranean canyon below. Briggs places a heavy armored hand onto the player's shoulder with an unshakeable smile.
+- **Ken Burns Direction**: Slow pull-back 108% → 100% revealing the grand vista and the two silhouettes.
+
+---
+
+### Overseer Kaelen: "Synaptic Overclock" (Camp Meridian)
+
+#### kaelen_diagnostic_cradle — Diagnostic Cradle (Stage 1)
+![Diagnostic Cradle](../public/interstitials/int_kaelen_diagnostic_cradle_key_v1.webp)
+- **Key Master**: `public/interstitials/int_kaelen_diagnostic_cradle_key_v1.webp`
+- **Trigger**: Holding Tech salvage / Camp Meridian Substation first contact.
+- **Scene Context**: Overseer Kaelen leaning over humming high-voltage transformer coils and cyan neural conduits.
+- **Image-to-Video Action Prompt**:
+  > Slow dolly right across humming vacuum tubes and bundled cyan fiber-optic cables. Soft electric micro-arcs crackle over the copper terminals, casting neon turquoise highlights across Kaelen's sharp, focused features.
+- **Ken Burns Direction**: Slow horizontal pan left-to-right with 104% scale.
+
+#### kaelen_frequency_overclock — Frequency Overclock (Stage 2)
+![Frequency Overclock](../public/interstitials/int_kaelen_frequency_overclock_key_v1.webp)
+- **Key Master**: `public/interstitials/int_kaelen_frequency_overclock_key_v1.webp`
+- **Trigger**: Stage 2 Neural Jack-In / Frequency Overclock choice.
+- **Scene Context**: Kaelen guiding the player's hands to the glowing bio-neural terminal jack, electric currents arcing between fingertips.
+- **Image-to-Video Action Prompt**:
+  > Slow, intimate push-in toward their touching hands on the glowing bio-link interface. Electric violet and azure sparks dance playfully across their skin and cybernetic neural ports. Steam hisses softly from cooling vents in the background.
+- **Ken Burns Direction**: Zoom-in 100% → 109% toward the electrical arcs between touching fingers.
+
+#### kaelen_supercharged_matrix — Supercharged Matrix (Stage 3)
+![Supercharged Matrix](../public/interstitials/int_kaelen_supercharged_matrix_key_v1.webp)
+- **Key Master**: `public/interstitials/int_kaelen_supercharged_matrix_key_v1.webp`
+- **Trigger**: Stage 3 Power Core Climax / Overseer Kaelen Romance Fulfillment.
+- **Scene Context**: Kaelen and the player embraced inside the beating heart of the supercharged Meridian Power Reactor chamber.
+- **Image-to-Video Action Prompt**:
+  > Majestic rotating camera motion inside the reactor core. Brilliant rings of swirling cyan plasma energy encircle the embracing couple in a blinding, beautiful electrical aurora. Glowing sparks drift in slow motion around them.
+- **Ken Burns Direction**: Slow zoom-in 100% → 110% into the center of the plasma rings.
+
+---
+
+### Specimen 0047-B / Aria: "The Queen's Siren Song" (The Hive Brood)
+
+#### aria_whispers_abyss — Whispers in the Abyss (Stage 1)
+![Whispers in the Abyss](../public/interstitials/int_aria_whispers_abyss_key_v1.webp)
+- **Key Master**: `public/interstitials/int_aria_whispers_abyss_key_v1.webp`
+- **Trigger**: Exploring Deep Abyss (Ring 3+) / Touching Hive Relay.
+- **Scene Context**: Aria's ethereal humanoid silhouette suspended within the glowing bioluminescent purple egg-sac chamber.
+- **Image-to-Video Action Prompt**:
+  > Slow hypnotic tilt-up from the lone explorer on the rocky ledge up toward Aria's luminous biomechanical queen form. Shimmering purple and magenta bioluminescent fog swirls in slow pulses. Delicate crystalline tendrils ripple gracefully like deep-sea flora.
+- **Ken Burns Direction**: Upward tilt and zoom 100% → 108% toward Aria's glowing violet eyes.
+
+#### aria_silk_trance — The Silk Trance (Stage 2)
+![The Silk Trance](../public/interstitials/int_aria_silk_trance_key_v1.webp)
+- **Key Master**: `public/interstitials/int_aria_silk_trance_key_v1.webp`
+- **Trigger**: Stage 2 Psychic Communion / Silk Trance choice.
+- **Scene Context**: Aria cradling the player's glass visor with iridescent chitin tendrils, transmitting psychic ecstasy and intoxicating warmth.
+- **Image-to-Video Action Prompt**:
+  > Hypnotic close-up push-in. Aria's delicate alien fingertips gently stroke the curved glass of the helmet visor. Glowing spiral pheromone trails and psychic violet energy ribbons weave between their faces in a dreamy, surreal dance.
+- **Ken Burns Direction**: Slow push-in 100% → 109% focusing on the visor touch and swirling psychic spirals.
+
+#### aria_queens_mark — The Queen's Mark (Stage 3)
+![The Queen's Mark](../public/interstitials/int_aria_queens_mark_key_v1.webp)
+- **Key Master**: `public/interstitials/int_aria_queens_mark_key_v1.webp`
+- **Trigger**: Stage 3 Symbiotic Union / Aria Romance Fulfillment.
+- **Scene Context**: Full symbiotic communion on the ancient alien throne in the heart of the Brood Queen chamber.
+- **Image-to-Video Action Prompt**:
+  > Grand slow dolly back from the pedestal. Luminous violet bio-filaments connect Aria's regal carapace directly into the player's suit ports. Millions of glowing spore motes drift like stars in the velvet purple subterranean cathedral.
+- **Ken Burns Direction**: Slow zoom-out 108% → 100% revealing the grand alien throne and cosmic spore atmosphere.
