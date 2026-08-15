@@ -15693,6 +15693,68 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   color: #000000;
 }
 
+/* Controller-only on-screen keyboard (fallback text entry) */
+.virtual-keyboard-content {
+  width: min(94vw, 620px);
+  background: rgba(10, 12, 16, 0.97);
+  border: 1px solid var(--accent-secondary, #2ec4b6);
+  box-shadow: 0 0 35px rgba(46, 196, 182, 0.25), 0 20px 50px rgba(0, 0, 0, 0.85);
+}
+
+.virtual-keyboard-preview {
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 10px 12px;
+  min-height: 1.4em;
+  margin: 10px 0 16px 0;
+}
+
+.virtual-keyboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.virtual-keyboard-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.virtual-keyboard-key {
+  flex: 1;
+  min-width: 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.virtual-keyboard-key:hover,
+.virtual-keyboard-key:focus-visible {
+  background: var(--accent-secondary, #2ec4b6);
+  color: #000000;
+  outline: none;
+}
+
+.virtual-keyboard-key--wide {
+  flex: 2.5;
+}
+
+.virtual-keyboard-key--space {
+  flex: 4;
+}
+
 /* ==========================================================================
    Operative Field Link & Tactical Barter Modal
    ========================================================================== */

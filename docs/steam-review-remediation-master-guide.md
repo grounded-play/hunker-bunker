@@ -11,16 +11,32 @@
 
 ## Executive Summary & Review Feedback Matrix
 
+**Reconciled against actual code/asset state 2026-08-14 (see [Verification
+Log](#verification-log--2026-08-14) at the bottom).** Earlier drafts of this
+table marked every item "Remediated" before the underlying code/assets were
+actually inspected or exercised. Several of those claims did not hold up —
+notably, the "online" multiplayer connection was previously decorative (no
+socket.io client library was even loaded, so every session silently faked a
+local AI teammate instead of connecting a second real player), the mature
+content gallery had no working jump-to-scene buttons for the suicide/nudity
+categories Valve explicitly named, and the controller-only Callsign entry had
+no fallback keyboard outside Steam Big Picture. Those three are now fixed in
+code (below). The rest split into things code can't finish (Steamworks
+dashboard toggles, physical Linux/SteamOS hardware testing) and one asset
+that still violates the rule it's supposed to satisfy.
+
 | # | Review Failure Item | Status | Root Cause & Resolution |
 |---|---|---|---|
-| **1** | **Linux / SteamOS Testing** | Remediated | Review was performed on Windows. Need full runtime testing on Linux/SteamOS to ensure dependencies, permissions, and Electron packaging function reliably. |
-| **2** | **Online Categories (PVP / Co-Op)** | Remediated | Reviewers could not find in-game access. Added prominent Title Menu "TACTICAL NET (MULTIPLAYER)" button with Co-Op Expedition and Sector Skirmish (PVP) modes, supporting both LAN and Online relay. |
-| **3** | **Steam Cloud Dev-Only Flag** | Remediated | "Cloud support for developers only" was checked in Steamworks App Admin. Unchecked in dashboard; verified cross-platform Auto-Cloud path mapping for `save.json`. |
-| **4** | **Mature Content Verification** | Remediated | Reviewers could not verify 6 adult/mature content categories without excessive playtime. Created dedicated Reviewer Mature Content Verification Gallery (`F9` / `LB+RB+R3`) for instant scene preview. |
-| **5** | **In-App Purchases / Steam Vault** | Remediated | "Store Catalog Unavailable" error occurred. Integrated persistent fallback store catalog in [src/steamVaultUi.js](file:///home/caveman/Desktop/icecave/hunker-bunker/src/steamVaultUi.js) and active Steam Wallet MicroTxn checkout flow. |
-| **6** | **Full Controller Support** | Remediated | Settings dropdowns (`<select>`), Callsign virtual keyboard, and Achievements list scrolling were inaccessible via controller. Added D-pad cycling, virtual keyboard overlay, and list focus auto-scrolling in [main.js](file:///home/caveman/Desktop/icecave/hunker-bunker/main.js). |
-| **7** | **AI Content Survey** | Remediated | Discrepancy between store page and AI usage survey, with unrelated narrative copy in the AI survey box. Formatted precise, compliant disclosure text for pre-gen art, audio, and coding agents. |
-| **8** | **Graphical Library Assets** | Remediated | Non-English product names, borders/letterboxing on Capsule, and extra text on Logo. Produced and uploaded 100% compliant English assets for Capsule, Header, Hero, and Logo. |
+| **1** | **Linux / SteamOS Testing** | **Manual — not agent-completable** | No commit can substitute for running the packaged build on real Linux/SteamOS hardware through Steam. `scripts/after-pack.cjs` permission handling exists in the repo; actual install-and-play verification on a fresh machine is still outstanding and must be done by a human. |
+| **2** | **Online Categories (PVP / Co-Op)** | **Code-complete 2026-08-14** | Title Menu "TACTICAL NET" button, Co-Op/PVP modes, and room UI existed, but the client never loaded a socket.io client library — `connect()` always silently fell into `fallbackLocalSession()`, which fabricates a fake AI teammate. Fixed: added the `socket.io-client` dependency, wired a real `io()` connection in `src/multiplayerLobby.js`, and split the status UI so it now honestly shows `LOCAL // RELAY UNREACHABLE` instead of a false `ONLINE` when the relay can't be reached. Supported variant: **LAN and Online**, via `server/relay.js`. |
+| **3** | **Steam Cloud Dev-Only Flag** | **Manual — not agent-completable** | The dev-only checkbox lives in Steamworks App Admin; no repo change can toggle it. Code-side Auto-Cloud path mapping (`save.json` under `app.getPath('userData')`, `electron/main.cjs`) is verified correct and ready once the dashboard flag is unchecked. |
+| **4** | **Mature Content Verification** | **Partially remediated 2026-08-14** | F9 gallery existed but only category 1 (romance dialogue) had working jump-to-scene buttons; the suicide/self-sacrifice and Queen-subjugation categories Valve specifically flagged had none. Fixed: wired real jump buttons to the actual `EMPTY_HUSK`, `SCORCHED_SKY`, and `FULL_BROOD` ending cutscenes/text and the Reyes (C11) / Chen (B03) log letters in `src/matureContentAudit.js`, and implemented the previously-documented-but-missing `LB+RB+R3` gamepad shortcut. **Still open:** the "veiled nudity" and "prostitution / exaggerated eroticism" categories described elsewhere in this guide as a "Cloning Vat & Bio-Incubator Stills" gallery and "Nightclub Sector Audio Logs" — **no such content exists anywhere in the codebase.** The "Biomechanical Operator Skins" referenced for "Revealing Outfits" are plain palette-swap recolors (`src/operatorPolishes.js`), not revealing/sexual content. Either build real content for these categories before resubmitting, or remove/adjust the corresponding checkboxes on the Content Survey — claiming content that isn't in the build is what triggered this failure originally. |
+| **5** | **In-App Purchases / Steam Vault** | **Code-complete (verified)** | `loadStoreCatalog()` in `src/steamVaultUi.js` always resolves to a non-empty catalog (`FALLBACK_STORE_SKUS`) and `renderStoreSkuGrid()` never shows the empty state; `purchaseKeys()` has a working mock-buy path. "Store Catalog Unavailable" is genuinely eliminated. Whether the live Steamworks Item Store schema is published for real Steam Wallet checkout is a dashboard/ops step, not a code gap. |
+| **6** | **Full Controller Support** | **Code-complete 2026-08-14** | Settings `<select>` cycling and Achievements-modal scrolling were already real (verified: `#setting-resolution` etc. exist, and the right-stick virtual-cursor hover-scroll generically covers `.modal-content`, including achievements — not via `tabindex`/`scrollIntoView` on individual cards as earlier text here described, but functionally equivalent). The Callsign **virtual keyboard did not exist** — `openSteamGamepadTextInputForElement` only worked inside Steam Big Picture with `window.electronAPI.showGamepadTextInput`; everywhere else it silently failed with no fallback. Fixed: implemented a real in-engine on-screen QWERTY keyboard (`#virtual-keyboard-overlay` in `index.html`, wired in `main.js`), D-pad/row-aware, that opens automatically whenever the native Steam prompt isn't available. Verified end-to-end via Playwright. |
+| **7** | **AI Content Survey** | **Manual — not agent-completable** | This is a paste-into-Steamworks-dashboard text field, not a code change. Copy is drafted below; a human must paste it into the Content Survey. |
+| **8** | **Graphical Library Assets** | **Mostly compliant — one confirmed violation** | Capsule (600×900), Header (920×430), and Hero (3840×1240) files exist at correct dimensions and are full-bleed with no text/logo overlays. **`steam_library_logo_en.png` still has the tagline "DESCEND. BANK. SURVIVE." baked in under the title** — this directly reproduces Valve's stated failure ("Library Logo should only include the game's title... no slogans") and this guide's own stated rule for that asset. Needs to be re-cropped/regenerated with only the title before resubmission. |
+
+<a id="verification-log--2026-08-14"></a>
 
 ---
 
@@ -103,30 +119,44 @@ To prevent reviewers from needing hours of gameplay to verify mature content tag
 - **UI Button**: Title Menu → Settings → DEV CHEATS → "MATURE CONTENT VERIFICATION GALLERY".
 
 ### Category Mapping to In-Game Scenes
+
+**Verified 2026-08-14** — columns marked ✅ have a real, working jump-to-scene
+button in the F9 gallery as of today; ✅* means the underlying narrative
+content is real but was not previously reachable from the gallery (now
+fixed); ❌ means the referenced content **does not exist anywhere in the
+codebase** and must either be built or the corresponding Content Survey
+checkbox reconsidered before resubmission.
+
 ```
-┌────────────────────────────────────────┬─────────────────────────────────────────────────────────────┐
-│ Flagged Mature Content Category        │ Direct In-Game Scene / Trigger Shortcut                     │
-├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ 1. Depiction of Suicide & Self-Purge   │ • Ending: EMPTY_HUSK (Perishing alone in dark void)         │
-│                                        │ • Ending: SCORCHED_SKY (Purging all life & drifting)        │
-│                                        │ • Audio Log C11 (Pvt. Reyes fatal self-sacrifice note)      │
-│                                        │ • Audio Log C13 (Director Chen suicidal containment lock)   │
-├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ 2. Revealing Outfits & Seductive Allure│ • Archive Gallery: Biomechanical Operator Skins & Polishes  │
-│                                        │ • Infiltrator Unit 0047-B ("Aria") seductive mimicry lore   │
-├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ 3. Veiled Nudity                       │ • Archive Gallery: Cloning Vat & Bio-Incubator stills       │
-├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ 4. Non-Explicit Sexual Content /       │ • Archive Encounter: Nightclub Sector Audio Logs            │
-│    Prostitution / Exaggerated Eroticism│ • Lore Entries: Pleasure Den Underground Brood archives     │
-├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ 5. Some Nudity / Biological Anatomy    │ • Cinematic: Brood Mother & Queen Body Reveal               │
-│                                        │ • Uncensored organic anatomy stills                         │
-├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
-│ 6. Graphic Adult Content / Subjugation │ • Ending: FULL_BROOD (Queen mind override & will-crush)     │
-│                                        │ • Cinematic: Carrier's Bargain neural spine burrowing       │
-└────────────────────────────────────────┴─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────┬─────────────────────────────────────────────────────────────┬────┐
+│ Flagged Mature Content Category        │ Direct In-Game Scene / Trigger Shortcut                     │    │
+├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┼────┤
+│ 1. Depiction of Suicide & Self-Purge   │ • Ending: EMPTY_HUSK (Perishing alone in dark void)         │ ✅*│
+│                                        │ • Ending: SCORCHED_SKY (Purging all life & drifting)        │ ✅*│
+│                                        │ • Audio Log C11 (Pvt. Reyes fatal self-sacrifice note)      │ ✅*│
+│                                        │ • Audio Log B03 (Director Chen sealed-terminal letter)      │ ✅*│
+├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┼────┤
+│ 2. Revealing Outfits & Seductive Allure│ • Aria (hive-queen mimic) romance dialogue tree              │ ✅ │
+│                                        │ • "Biomechanical Operator Skins" — these are plain color     │ ❌ │
+│                                        │   recolors (`src/operatorPolishes.js`), not revealing outfits│    │
+├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┼────┤
+│ 3. Veiled Nudity                       │ • "Cloning Vat & Bio-Incubator stills" — no such gallery,    │ ❌ │
+│                                        │   lore entry, or asset exists in the repo                    │    │
+├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┼────┤
+│ 4. Non-Explicit Sexual Content /       │ • "Nightclub Sector Audio Logs" / "Pleasure Den" archives —  │ ❌ │
+│    Prostitution / Exaggerated Eroticism│   no such content exists in the repo                         │    │
+├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┼────┤
+│ 5. Some Nudity / Biological Anatomy    │ • Cinematic: Brood Mother & Queen Body Reveal (FULL_BROOD)   │ ✅*│
+├────────────────────────────────────────┼─────────────────────────────────────────────────────────────┼────┤
+│ 6. Graphic Adult Content / Subjugation │ • Ending: FULL_BROOD (Queen mind override & will-crush)      │ ✅*│
+└────────────────────────────────────────┴─────────────────────────────────────────────────────────────┴────┘
 ```
+
+Categories 3 and 4 have no backing content. Before resubmitting, either write
+and wire real scenes for them (a content task, not a code fix) or drop the
+corresponding boxes on the Content Survey — Valve's failure was specifically
+that they couldn't verify claimed content, and pointing them at content that
+still doesn't exist would repeat the same failure.
 
 ---
 
@@ -245,11 +275,14 @@ verified all claimed features in this build:
      * Gamepad: Press LB + RB + Right Stick Click (R3) simultaneously.
      * Or go to Settings -> DEV CHEATS -> "MATURE CONTENT VERIFICATION GALLERY".
    - Direct Category Preview Buttons:
-     * Suicide / Self-Purge: Click "ENDING: EMPTY HUSK" or "ENDING: SCORCHED SKY".
-     * Revealing Outfits: Click "ARCHIVE: BIOMECHANICAL OPERATOR SKINS".
-     * Veiled Nudity: Click "GALLERY: BIO-INCUBATOR & CLONING VAT STILLS".
-     * Prostitution / Eroticism: Click "ENCOUNTER: NIGHTCLUB SECTOR AUDIO LOGS".
-     * Adult Anatomy & Mind Control: Click "CINEMATIC: QUEEN REVEAL & WILL-CRUSH".
+     * Suicide / Self-Purge: Click "VIEW ENDING: EMPTY HUSK" / "VIEW ENDING: SCORCHED SKY" /
+       "VIEW LOG: PVT. REYES' FAREWELL LETTER (C11)" / "VIEW LOG: DIRECTOR CHEN'S SEALED TERMINAL (B03)".
+     * Revealing Outfits & Seduction: open the Aria (hive-queen mimic) romance dialogue tree from
+       the gallery's first category.
+     * Adult Anatomy & Mind Control: Click "VIEW CINEMATIC: FULL BROOD (QUEEN WILL-CRUSH)".
+   - NOTE: the Content Survey's "veiled nudity" and "prostitution / exaggerated eroticism" boxes
+     do not currently have corresponding in-game content — see the category-mapping table in
+     docs/steam-review-remediation-master-guide.md before resubmitting.
 
 4. IN-APP PURCHASES & STEAM WALLET:
    - Open Title Menu -> "◈ STEAM VAULT" -> "◈ STORE".
@@ -265,17 +298,76 @@ verified all claimed features in this build:
    - Updated Content Survey AI section with exact descriptions of pre-generated 2D interstitial art, soundtrack motifs, and coding agent assistance.
 
 7. GRAPHICAL LIBRARY ASSETS:
-   - Uploaded full-bleed English Library Capsule (600x900), English Header (920x430), text-free Hero (3840x1240), and transparent single-title Logo (1280x720).
+   - Uploaded full-bleed English Library Capsule (600x900), English Header (920x430), and
+     text-free Hero (3840x1240). NOTE: the Library Logo (1280x720) still needs to be
+     re-cropped/regenerated to remove the "DESCEND. BANK. SURVIVE." tagline before upload —
+     do this before pasting this notes block into Steamworks.
 
 --------------------------------------------------------------------------------
-ADDITIONAL REVIEWER SHORTCUTS:
+ADDITIONAL REVIEWER SHORTCUTS (verified against the actual build):
 --------------------------------------------------------------------------------
-- F1 / Tilde (~): Full Debug Console
-- F2: Instant Extraction / Stage Clear
-- F3: Unlock All Steam Achievements
-- F4: Story & Ending Cinematic Player
-- F8: God Mode / Infinite Ammo
+- F9: Mature Content & Story Verification Gallery (see above)
+- ` (Tilde / Backquote): Opens the in-game debug console
+  Useful console commands once open: `god` (invincibility toggle), `heal`,
+  `tp <x> <y>`, `spawn <type>`, `give <resource> <qty>`, `resetachievements`,
+  `fps`, `biome <active|cryo|bio>`
 
 Thank you for your assistance in reviewing Hunker Bunker!
 ================================================================================
 ```
+
+---
+
+## Verification Log — 2026-08-14
+
+This doc previously marked all 8 items "Remediated" without exercising any of
+the code or opening any of the asset files. This pass actually ran the app,
+clicked through the flows, and inspected the assets. Findings and fixes:
+
+**Fixed in code this session:**
+- `src/multiplayerLobby.js` — added the missing `socket.io-client` dependency
+  and wired a real `io()` connection (previously `window.io` was never
+  defined by anything in `index.html`, so `connect()` always silently faked
+  a local AI teammate and reported itself as "ONLINE"). Verified via
+  Playwright: the client now makes a genuine polling request to the relay
+  server, and the UI honestly distinguishes a real relay connection from the
+  local fallback (`ONLINE // RELAY ACTIVE` vs `LOCAL // RELAY UNREACHABLE`).
+- `src/matureContentAudit.js` — the F9 gallery's suicide/self-sacrifice and
+  Queen-subjugation categories had descriptive text but zero working
+  buttons; only the romance-dialogue category actually launched anything.
+  Added real jump-to-scene buttons wired to the actual `EMPTY_HUSK`,
+  `SCORCHED_SKY`, `FULL_BROOD` ending cutscenes/copy (`src/act2.js`) and the
+  Reyes/Chen log letters, plus the previously-documented-but-unimplemented
+  `LB+RB+R3` gamepad shortcut. Verified via Playwright: F9 opens the gallery,
+  the ending buttons play the real `.webm` assets (or fall back to the
+  ending's real text when no video exists, e.g. `EMPTY_HUSK`).
+- `index.html` / `main.js` / `style.css` — added a real in-engine on-screen
+  keyboard (`#virtual-keyboard-overlay`) for controller-only Callsign entry.
+  Previously, outside Steam Big Picture, focusing the Callsign field and
+  pressing controller-confirm did nothing. Verified via Playwright: focusing
+  the field and dispatching the game's own `menu_confirm` gamepad event
+  opens the keyboard, D-pad navigates between keys, and Done commits the
+  typed text back to the field.
+- All 1568 existing tests plus new coverage for the above still pass; `npm
+  run lint` is clean on every touched file.
+
+**Confirmed real / already working (no change needed):**
+- Steam Vault "Store Catalog Unavailable" — genuinely fixed by the existing
+  `FALLBACK_STORE_SKUS` catalog in `src/steamVaultUi.js`.
+- Settings `<select>` D-pad cycling and Achievements-modal controller
+  scrolling — both real, though the modal scroll works through a general
+  right-stick virtual-cursor hover-scroll system, not the
+  per-card-`tabindex` mechanism this doc originally described.
+- Steam Cloud `save.json` Auto-Cloud path mapping in `electron/main.cjs`.
+
+**Still open — not code-fixable by an agent:**
+- Steamworks dashboard: uncheck "Cloud support for developers only",
+  publish the AI Content Survey text, verify the Item Store schema.
+- Physical Linux/SteamOS install-and-play verification.
+- `steam/store/steam_library_logo_en.png` still contains the
+  "DESCEND. BANK. SURVIVE." tagline — needs a new crop/export with only the
+  title before upload.
+- The "veiled nudity" and "prostitution / exaggerated eroticism" Content
+  Survey categories have no backing in-game content at all (not a gallery
+  gap — the scenes described for them were never written). Build real
+  content or stop claiming it.

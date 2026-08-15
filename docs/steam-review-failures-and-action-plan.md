@@ -7,6 +7,18 @@
 **Steamworks Admin Landing:** [https://partner.steamgames.com/apps/landing/4957040](https://partner.steamgames.com/apps/landing/4957040)  
 **Strategy:** **Implement, verify, and support ALL claimed features** (PvP, Co-Op, Steam Cloud, Mature Content Verification, Steam Wallet Store, Full Controller Support, AI Disclosures, and Library Assets). Do NOT remove features from the store.
 
+> **Status (2026-08-14):** this document is the original plan, written before
+> any of it was implemented. For verified current status — what's actually
+> code-complete, what's still fictional/unbuilt, and what's a Steamworks
+> dashboard step no agent can do — see the "Executive Summary & Review
+> Feedback Matrix" and "Verification Log" in
+> [`steam-review-remediation-master-guide.md`](./steam-review-remediation-master-guide.md).
+> Notably: the multiplayer connection, the mature-content gallery's jump
+> buttons, and the controller virtual keyboard described below were still
+> unimplemented as of this morning and were built/verified this session; the
+> "cloning vat," "nightclub," and "prostitution" gallery content in Section 3
+> below was never built and doesn't exist in the game.
+
 ---
 
 ## Master Architecture & Review Matrix
@@ -399,12 +411,15 @@ fully implemented and verified all supported features:
      * Keyboard: Press F9 at the Title Menu.
      * Controller: Press LB + RB + Right Stick Click (R3) simultaneously.
      * Or open Settings -> DEV CHEATS -> "MATURE CONTENT VERIFICATION GALLERY".
-   - Direct shortcuts for listed categories:
-     * Depiction of Suicide: Click "SCENE: MOTHER CORE OVERLOAD / PVT. REYES"
-     * Revealing Outfits & Seduction: Click "ARCHIVE: OPERATOR CYBORG SUITS"
-     * Veiled Nudity: Click "GALLERY: BIO-INCUBATOR / CLONING VAT STILLS"
-     * Prostitution / Eroticism: Click "ENCOUNTER: NIGHTCLUB SECTOR AUDIO LOGS"
-     * Nudity & Adult Horror: Click "CINEMATIC: BROOD MOTHER & QUEEN REVEAL"
+   - Direct shortcuts for listed categories (verified working 2026-08-14 — see
+     `steam-review-remediation-master-guide.md` Verification Log):
+     * Depiction of Suicide: Click "VIEW ENDING: EMPTY HUSK" / "VIEW ENDING: SCORCHED SKY" /
+       "VIEW LOG: PVT. REYES' FAREWELL LETTER (C11)" / "VIEW LOG: DIRECTOR CHEN'S SEALED TERMINAL (B03)"
+     * Revealing Outfits & Seduction: open the Aria romance dialogue tree in the gallery's
+       first category
+     * Nudity & Adult Horror: Click "VIEW CINEMATIC: FULL BROOD (QUEEN WILL-CRUSH)"
+     * NOTE: "Veiled Nudity" and "Prostitution / Eroticism" have no corresponding in-game
+       content — do not claim these are verifiable until that content is built.
 
 4. IN-APP PURCHASES & STEAM WALLET:
    - Open Title Menu -> "◈ STEAM VAULT" -> "◈ STORE".
@@ -423,17 +438,18 @@ fully implemented and verified all supported features:
      pre-generated 2D interstitial art, music generation, and coding agent assistance.
 
 7. GRAPHICAL LIBRARY ASSETS:
-   - Uploaded full-bleed English Library Capsule (600x900), English Header (920x430),
-     text-free Library Hero (3840x1240), and transparent single-title Logo (1280x720).
+   - Uploaded full-bleed English Library Capsule (600x900), English Header (920x430), and
+     text-free Library Hero (3840x1240). NOTE: the Library Logo (1280x720) still has the
+     "DESCEND. BANK. SURVIVE." tagline baked in and must be re-cropped/regenerated to show
+     only the title before upload.
 
 --------------------------------------------------------------------------------
-ADDITIONAL REVIEWER SHORTCUTS:
+ADDITIONAL REVIEWER SHORTCUTS (verified against the actual build):
 --------------------------------------------------------------------------------
-- F1 / Tilde (~): Toggle Full Debug Console
-- F2: Instant Extraction / Stage Clear
-- F3: Unlock All 23 Steam Achievements
-- F4: Story & Ending Cinematic Player
-- F8: God Mode / Infinite Ammo
+- F9: Mature Content & Story Verification Gallery (see above)
+- ` (Tilde / Backquote): Opens the in-game debug console
+  Useful console commands once open: `god`, `heal`, `tp <x> <y>`, `spawn <type>`,
+  `give <resource> <qty>`, `resetachievements`, `fps`, `biome <active|cryo|bio>`
 
 Thank you for your assistance in reviewing Hunker Bunker!
 ================================================================================

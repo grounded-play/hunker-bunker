@@ -328,6 +328,7 @@ const STEAM_INPUT_PROMPT_IDS = Object.freeze([
 ]);
 
 const STEAM_INPUT_FOCUS_ROOT_IDS = Object.freeze([
+    'virtual-keyboard-overlay',
     'dev-console-modal',
     'confirm-modal',
     'reset-save-confirm-modal',
@@ -880,10 +881,44 @@ function moveHeroSelectPanelFocus(code) {
 }
 
 function moveMenuDirectionalFocus(code) {
+    if (moveVirtualKeyboardGridFocus(code)) return true;
     if (moveMenuCommandGridFocus(code)) return true;
     if (moveHeroSelectPanelFocus(code)) return true;
     const direction = menuKeyboardDirection(code);
     return direction ? Boolean(moveControllerFocus(direction)) : false;
+}
+
+// Row-aware grid navigation for the on-screen keyboard. Rows are uneven
+// widths (10/10/9/8/2 keys), so this clamps column position against each
+// row's own length rather than assuming a fixed column count.
+function moveVirtualKeyboardGridFocus(code) {
+    const active = document.activeElement;
+    if (!active?.classList?.contains('virtual-keyboard-key')) return false;
+
+    const row = active.closest('.virtual-keyboard-row');
+    const rows = Array.from(document.querySelectorAll('#virtual-keyboard-grid .virtual-keyboard-row'));
+    const rowIndex = rows.indexOf(row);
+    if (!row || rowIndex < 0) return false;
+
+    const keysInRow = Array.from(row.querySelectorAll('.virtual-keyboard-key'));
+    const colIndex = keysInRow.indexOf(active);
+
+    let target = null;
+    if (code === 'KeyA' || code === 'ArrowLeft') {
+        target = keysInRow[(colIndex - 1 + keysInRow.length) % keysInRow.length];
+    } else if (code === 'KeyD' || code === 'ArrowRight') {
+        target = keysInRow[(colIndex + 1) % keysInRow.length];
+    } else if (code === 'KeyW' || code === 'ArrowUp') {
+        const nextRow = rows[(rowIndex - 1 + rows.length) % rows.length];
+        const nextKeys = Array.from(nextRow.querySelectorAll('.virtual-keyboard-key'));
+        target = nextKeys[Math.min(colIndex, nextKeys.length - 1)];
+    } else if (code === 'KeyS' || code === 'ArrowDown') {
+        const nextRow = rows[(rowIndex + 1) % rows.length];
+        const nextKeys = Array.from(nextRow.querySelectorAll('.virtual-keyboard-key'));
+        target = nextKeys[Math.min(colIndex, nextKeys.length - 1)];
+    }
+
+    return target ? focusControllerTarget(target, { playHover: true }) : false;
 }
 
 function moveOperatorPolishGridFocus(code) {
@@ -1081,6 +1116,91 @@ async function openSteamGamepadTextInputForElement(element, {
     }
 }
 
+let virtualKeyboardTargetElement = null;
+
+// In-engine on-screen keyboard: fallback text entry for controller-only play
+// when Steam's native showGamepadTextInput isn't available (web build, or
+// Electron build running outside Steam Big Picture / without Steam Input).
+function openVirtualKeyboardForElement(element, { description = 'Enter text', maxCharacters = 32 } = {}) {
+    if (!element) return false;
+    const overlay = document.getElementById('virtual-keyboard-overlay');
+    if (!overlay) return false;
+
+    virtualKeyboardTargetElement = element;
+    element.dataset.virtualKeyboardMax = String(maxCharacters);
+
+    const label = document.getElementById('virtual-keyboard-label');
+    if (label) label.textContent = description.toUpperCase();
+
+    updateVirtualKeyboardPreview();
+
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    const firstKey = overlay.querySelector('.virtual-keyboard-key');
+    if (firstKey) focusControllerTarget(firstKey);
+    return true;
+}
+
+function updateVirtualKeyboardPreview() {
+    const preview = document.getElementById('virtual-keyboard-preview');
+    if (preview) preview.textContent = virtualKeyboardTargetElement?.value || '';
+}
+
+function closeVirtualKeyboard() {
+    const overlay = document.getElementById('virtual-keyboard-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    const target = virtualKeyboardTargetElement;
+    if (target) {
+        target.dataset.menuTextEditing = 'false';
+        target.classList.remove('is-menu-text-editing');
+        target.dispatchEvent(new Event('change', { bubbles: true }));
+        focusControllerTarget(target);
+    }
+    virtualKeyboardTargetElement = null;
+}
+
+function handleVirtualKeyboardKey(key) {
+    const target = virtualKeyboardTargetElement;
+    if (!target) return;
+    const maxLen = Number(target.dataset.virtualKeyboardMax) || 32;
+    if (target.value.length >= maxLen) return;
+    target.value += key;
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    updateVirtualKeyboardPreview();
+    AudioManager?.play?.('ui_click', { volume: 0.3 });
+}
+
+function handleVirtualKeyboardBackspace() {
+    const target = virtualKeyboardTargetElement;
+    if (!target) return;
+    target.value = target.value.slice(0, -1);
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    updateVirtualKeyboardPreview();
+    AudioManager?.play?.('ui_click', { volume: 0.3 });
+}
+
+function initVirtualKeyboard() {
+    const grid = document.getElementById('virtual-keyboard-grid');
+    grid?.addEventListener('click', (event) => {
+        const btn = event.target.closest('.virtual-keyboard-key');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        if (action === 'backspace') {
+            handleVirtualKeyboardBackspace();
+        } else if (action === 'done') {
+            closeVirtualKeyboard();
+        } else {
+            const key = btn.getAttribute('data-key');
+            if (key) handleVirtualKeyboardKey(key);
+        }
+    });
+    document.getElementById('virtual-keyboard-close')?.addEventListener('click', () => closeVirtualKeyboard());
+}
+
 function activateControllerFocusedElement() {
     const root = getControllerFocusRoot();
     const focusables = getVisibleControllerFocusables(root ?? document);
@@ -1093,22 +1213,29 @@ function activateControllerFocusedElement() {
     if (!activeElement) return false;
 
     if (isTextEditableElement(activeElement)) {
-        const usesSteamKeyboard = Boolean(isSteamControllerInputActive() && window.electronAPI?.showGamepadTextInput);
         activeElement.dataset.menuTextEditing = 'true';
         activeElement.classList.add('is-menu-text-editing');
+        const description = activeElement.getAttribute('aria-label')
+            || activeElement.getAttribute('placeholder')
+            || 'Enter text';
+        const maxCharacters = Number(activeElement.getAttribute('maxlength')) || (activeElement.tagName === 'TEXTAREA' ? 1024 : 32);
         const inputPromise = openSteamGamepadTextInputForElement(activeElement, {
-            description: activeElement.getAttribute('aria-label')
-                || activeElement.getAttribute('placeholder')
-                || 'Enter text',
-            maxCharacters: Number(activeElement.getAttribute('maxlength')) || (activeElement.tagName === 'TEXTAREA' ? 1024 : 32),
+            description,
+            maxCharacters,
             multiline: activeElement.tagName === 'TEXTAREA'
         });
-        if (usesSteamKeyboard) {
-            void inputPromise.finally(() => {
+        void inputPromise.then((usedNativeKeyboard) => {
+            if (usedNativeKeyboard) {
                 activeElement.dataset.menuTextEditing = 'false';
                 activeElement.classList.remove('is-menu-text-editing');
-            });
-        }
+                return;
+            }
+            // Native Steam gamepad text input isn't available (non-Steam
+            // build, or not running through Big Picture) — fall back to the
+            // in-engine on-screen keyboard so controller-only play can still
+            // edit this field, per Full Controller Support requirements.
+            openVirtualKeyboardForElement(activeElement, { description, maxCharacters });
+        });
         return true;
     }
 
@@ -8770,6 +8897,13 @@ document.addEventListener('keydown', (event) => {
     }
 
     if (event.key === 'Escape') {
+        const virtualKeyboardOverlay = document.getElementById('virtual-keyboard-overlay');
+        if (virtualKeyboardOverlay && !virtualKeyboardOverlay.classList.contains('hidden')) {
+            closeVirtualKeyboard();
+            event.preventDefault();
+            return;
+        }
+
         const tradeModal = document.getElementById('player-trade-modal');
         if (tradeModal && !tradeModal.classList.contains('hidden')) {
             playerTradeManager.closeTrade();
@@ -12367,6 +12501,7 @@ if (window.electronAPI) {
 initSteamVaultUI();
 multiplayerLobby.init();
 matureContentAudit.init();
+initVirtualKeyboard();
 setupNpcDialogueEvents();
 
 // Keep the title art alive at rest while making pointer movement feel like a

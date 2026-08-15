@@ -26,4 +26,27 @@ describe('MatureContentAudit', () => {
         // Since document is mocked/null in pure unit tests, verify flag behavior
         expect(typeof audit.toggleModal).toBe('function');
     });
+
+    it('gives the flagged suicide/self-sacrifice category real jump-to-scene buttons', () => {
+        const category = MATURE_CONTENT_MANIFEST.find((m) => m.id === 'self_annihilation');
+        expect(category.scenes.length).toBeGreaterThanOrEqual(4);
+        const kinds = category.scenes.map((s) => s.kind);
+        expect(kinds).toContain('ending');
+        expect(kinds).toContain('log');
+    });
+
+    it('gives the Queen subjugation category a jump-to-cinematic scene', () => {
+        const category = MATURE_CONTENT_MANIFEST.find((m) => m.id === 'queen_subjugation');
+        expect(category.scenes.length).toBeGreaterThanOrEqual(1);
+        expect(category.scenes[0].kind).toBe('ending');
+    });
+
+    it('playScene and closeSceneViewer are safe no-ops without a DOM', () => {
+        expect(() => audit.playScene({ kind: 'log', log: 'reyes_c11' })).not.toThrow();
+        expect(() => audit.closeSceneViewer()).not.toThrow();
+    });
+
+    it('bindGamepadShortcut does not throw when gamepad API is unavailable', () => {
+        expect(() => audit.bindGamepadShortcut()).not.toThrow();
+    });
 });

@@ -3,6 +3,7 @@
  * Connects directly to server/relay.js Socket.IO server or local LAN loopback.
  */
 
+import { io as connectSocketIo } from 'socket.io-client';
 import { planMultiplayerCrashSites } from './multiplayerCrashPlanner.js';
 
 export const MULTIPLAYER_MODES = Object.freeze({
@@ -25,6 +26,7 @@ export class MultiplayerLobby {
         this.pingMs = 18;
         this.isHost = true;
         this.activeMatch = null;
+        this.usingRelay = false;
     }
 
     init() {
@@ -103,14 +105,15 @@ export class MultiplayerLobby {
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
 
         try {
-            if (typeof window !== 'undefined' && typeof window.io === 'function') {
-                this.socket = window.io(this.serverUrl, {
+            if (typeof window !== 'undefined') {
+                this.socket = connectSocketIo(this.serverUrl, {
                     timeout: 4000,
                     reconnectionAttempts: 2
                 });
 
                 this.socket.on('connect', () => {
                     this.connected = true;
+                    this.usingRelay = true;
                     this.socket.emit('joinRoom', {
                         roomCode: this.roomCode,
                         callsign,
@@ -177,6 +180,7 @@ export class MultiplayerLobby {
 
     fallbackLocalSession() {
         this.connected = true;
+        this.usingRelay = false;
         const callsign = (typeof window !== 'undefined' && window.profileManager?.getCallsign?.()) || 'AGENT';
         const opClass = (typeof window !== 'undefined' && window.selectedPlayerType) || 'TANK';
 
@@ -216,6 +220,7 @@ export class MultiplayerLobby {
             this.socket = null;
         }
         this.connected = false;
+        this.usingRelay = false;
         this.players.clear();
         this.activeMatch = null;
         this.updateUiState();
@@ -332,13 +337,23 @@ export class MultiplayerLobby {
         const statusEl = document.getElementById('net-status-pill');
         const connectBtn = document.getElementById('net-connect-btn');
         if (statusEl) {
-            if (this.connected) {
+            if (this.connected && this.usingRelay) {
                 statusEl.textContent = 'ONLINE // RELAY ACTIVE';
                 statusEl.className = 'net-status-pill net-status--online';
+            } else if (this.connected) {
+                statusEl.textContent = 'LOCAL // RELAY UNREACHABLE';
+                statusEl.className = 'net-status-pill net-status--offline';
             } else {
                 statusEl.textContent = 'STANDBY // OFFLINE';
                 statusEl.className = 'net-status-pill net-status--offline';
             }
+        }
+
+        const relayUrlEl = document.getElementById('net-relay-url');
+        if (relayUrlEl) {
+            relayUrlEl.textContent = this.usingRelay
+                ? `socket.io://${this.serverUrl.replace(/^https?:\/\//, '')}`
+                : 'socket.io://unreachable (local fallback)';
         }
         if (connectBtn) {
             connectBtn.textContent = this.connected ? 'DISCONNECT' : 'CONNECT RELAY';

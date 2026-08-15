@@ -12,7 +12,16 @@ useful history but are not current status.
   — **CRITICAL (2026-08-14)**: Valve review rejection analysis, root causes,
   dashboard fix instructions, and code solutions for store categories, Steam
   Cloud dev-flag, mature content survey, in-app purchases, controller input,
-  AI disclosure, and library assets.
+  AI disclosure, and library assets. This is the original plan (written
+  before implementation) — for verified current status use the guide below.
+- **[`steam-review-remediation-master-guide.md`](./steam-review-remediation-master-guide.md)**
+  — **CRITICAL, reconciled against actual code 2026-08-14**: the executive
+  summary table and "Verification Log" section are the current source of
+  truth for what's actually code-complete vs. Steamworks-dashboard-only vs.
+  still unbuilt (multiplayer relay connection, mature-content gallery jump
+  buttons, and the controller virtual keyboard were fixed this session; the
+  Library Logo tagline and two mature-content categories with no backing
+  in-game content are still open).
 - **[`narrative-endings-and-mature-content-guide.md`](./narrative-endings-and-mature-content-guide.md)**
   — **CRITICAL (2026-08-14)**: Narrative endings, moral dilemmas, suicide / self-annihilation
   in the void choices (`EMPTY_HUSK`, `SCORCHED_SKY`), Queen will-crush subjugation (`FULL_BROOD`),

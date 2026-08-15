@@ -2266,6 +2266,72 @@
       </div>
     </div>
 
+    <!-- Controller-only On-Screen Keyboard: fallback for text fields (e.g.
+         Operator Callsign) when Steam's native gamepad text input isn't
+         available (outside Steam Big Picture / non-Steam build). -->
+    <div id="virtual-keyboard-overlay" class="modal hidden" aria-hidden="true">
+      <div class="modal-content virtual-keyboard-content">
+        <div class="settings-sticky-header">
+          <div>
+            <h2 class="modal-title" id="virtual-keyboard-label">ENTER TEXT</h2>
+          </div>
+          <button class="close-modal" id="virtual-keyboard-close" aria-label="Close on-screen keyboard">×</button>
+        </div>
+        <div id="virtual-keyboard-preview" class="virtual-keyboard-preview" aria-live="polite"></div>
+        <div class="virtual-keyboard-grid" id="virtual-keyboard-grid">
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key" data-key="1">1</button>
+            <button type="button" class="virtual-keyboard-key" data-key="2">2</button>
+            <button type="button" class="virtual-keyboard-key" data-key="3">3</button>
+            <button type="button" class="virtual-keyboard-key" data-key="4">4</button>
+            <button type="button" class="virtual-keyboard-key" data-key="5">5</button>
+            <button type="button" class="virtual-keyboard-key" data-key="6">6</button>
+            <button type="button" class="virtual-keyboard-key" data-key="7">7</button>
+            <button type="button" class="virtual-keyboard-key" data-key="8">8</button>
+            <button type="button" class="virtual-keyboard-key" data-key="9">9</button>
+            <button type="button" class="virtual-keyboard-key" data-key="0">0</button>
+          </div>
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key" data-key="Q">Q</button>
+            <button type="button" class="virtual-keyboard-key" data-key="W">W</button>
+            <button type="button" class="virtual-keyboard-key" data-key="E">E</button>
+            <button type="button" class="virtual-keyboard-key" data-key="R">R</button>
+            <button type="button" class="virtual-keyboard-key" data-key="T">T</button>
+            <button type="button" class="virtual-keyboard-key" data-key="Y">Y</button>
+            <button type="button" class="virtual-keyboard-key" data-key="U">U</button>
+            <button type="button" class="virtual-keyboard-key" data-key="I">I</button>
+            <button type="button" class="virtual-keyboard-key" data-key="O">O</button>
+            <button type="button" class="virtual-keyboard-key" data-key="P">P</button>
+          </div>
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key" data-key="A">A</button>
+            <button type="button" class="virtual-keyboard-key" data-key="S">S</button>
+            <button type="button" class="virtual-keyboard-key" data-key="D">D</button>
+            <button type="button" class="virtual-keyboard-key" data-key="F">F</button>
+            <button type="button" class="virtual-keyboard-key" data-key="G">G</button>
+            <button type="button" class="virtual-keyboard-key" data-key="H">H</button>
+            <button type="button" class="virtual-keyboard-key" data-key="J">J</button>
+            <button type="button" class="virtual-keyboard-key" data-key="K">K</button>
+            <button type="button" class="virtual-keyboard-key" data-key="L">L</button>
+          </div>
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key" data-key="Z">Z</button>
+            <button type="button" class="virtual-keyboard-key" data-key="X">X</button>
+            <button type="button" class="virtual-keyboard-key" data-key="C">C</button>
+            <button type="button" class="virtual-keyboard-key" data-key="V">V</button>
+            <button type="button" class="virtual-keyboard-key" data-key="B">B</button>
+            <button type="button" class="virtual-keyboard-key" data-key="N">N</button>
+            <button type="button" class="virtual-keyboard-key" data-key="M">M</button>
+            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--wide" data-action="backspace">⌫ BACK</button>
+          </div>
+          <div class="virtual-keyboard-row">
+            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--space" data-key=" ">SPACE</button>
+            <button type="button" class="virtual-keyboard-key virtual-keyboard-key--wide start-btn" id="virtual-keyboard-done" data-action="done">✓ DONE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Door Transition Overlay (Top Layer) -->
     <div id="transition-overlay">
       <div id="door-top" class="door"></div>
