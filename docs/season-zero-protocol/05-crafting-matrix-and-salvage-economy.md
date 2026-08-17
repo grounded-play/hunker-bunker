@@ -51,14 +51,49 @@ Players can directly purchase specific desired catalog items from the **Vault Bl
 
 ---
 
-## 4. Seasonal Crafting Recipes Matrix
+## 4. Quartermaster Seasonal Trade Shop
 
-| Output Item | Recipe Ingredients Required |
-| :--- | :--- |
-| **Cryo-Capacitor Overclock (4140)** | 20x Cryo-Alloy Ingots + 500x Scrap |
-| **Magnetic Scavenger Coil (4141)** | 25x Cryo-Alloy Ingots + 600x Scrap |
-| **Bio-Hazard Filter Vent (4142)** | 40x Cryo-Alloy Ingots + 1x Deep Sub-Core Matrix |
-| **Kinetic Impact Bushing (4143)** | 40x Cryo-Alloy Ingots + 1x Deep Sub-Core Matrix |
-| **Echo-Location Transceiver (4145)**| 80x Cryo-Alloy Ingots + 2x Deep Sub-Core Matrices + 1,000x Scrap |
-| **Symbiotic Adrenaline Pump (4146)**| 80x Cryo-Alloy Ingots + 2x Deep Sub-Core Matrices + 1x Refined Ambergris |
-| **Zero-Point Flux Overdrive (4147)**| 150x Cryo-Alloy Ingots + 5x Deep Sub-Core Matrices + 2x Refined Ambergris |
+The **Quartermaster Staging Shop** allows operators to trade their earned in-game **Bunker Scrap** and **Deep Core Shards (DCS)** for raw assembly reagents and seasonal blueprints:
+
+| Trade Item / Catalog Listing | Cost Currency | Availability | Description |
+| :--- | :--- | :--- | :--- |
+| **Cryo-Alloy Ingot Pack (x10)** | `400x Bunker Scrap` | Unlimited | Foundational metal required for all mechanical assemblies. |
+| **Titanium Carabiner Clasp** | `250x Bunker Scrap` | Unlimited | Mounting hardware component for weapon charms. |
+| **Micro-Capacitor Circuit Board** | `500x Bunker Scrap` | Unlimited | Component for electronics and rig overclocks. |
+| **Deep Sub-Core Matrix (4157)** | `35x Deep Core Shards` | Weekly (Max 3) | High-tier nuclear catalyst for Epic/Legendary gear. |
+| **Refined Ambergris Catalyst (4158)**| `50x Deep Core Shards` | Weekly (Max 2) | Exotic bioluminescent compound from the Queen Hive. |
+| **Class Weapon Blueprint Pack** | `1,500x Bunker Scrap` | One-Time Purchase | Unlocks Vector-9, Siege-Breaker, and Tesla-Lock modding. |
+| **Relic Decryption Key (4154)** | `75x Deep Core Shards` | Weekly (Max 1) | Free-to-play earned key for Deep Relic Caches. |
+
+---
+
+## 5. Tactical Weapon Charm Assembly Matrix (Combining)
+
+Players combine 3 hardware reagents + 1 blueprint to forge physical 3D weapon charms:
+
+| Output Charm | Component 1 | Component 2 | Component 3 | Assembly Cost |
+| :--- | :--- | :--- | :--- | :--- |
+| **Mini Cryo-Core Charm (4130)** | 10x Cryo-Alloy Ingots | 1x Titanium Clasp | 1x Micro-Capacitor | `300x Scrap` |
+| **Spent 50-Cal Casing Charm (4131)** | 15x Heavy Brass Shards | 1x Titanium Clasp | 1x Hazard Paint Pack | `250x Scrap` |
+| **Sporesnail Pearl Charm (4132)** | 1x Organic Pearl Core | 1x Titanium Claw Mount | 5x Cryo-Alloy Ingots | `400x Scrap` |
+| **Trench Whistle Charm (4133)** | 12x Weathered Steel | 1x Ball Bead Chain | 1x Military Stamping Dye | `200x Scrap` |
+| **Glitched RAM Card Charm (4134)** | 1x Green PCB Board | 4x Micro LED Diodes | 1x Tactical Lanyard Clip | `350x Scrap` |
+| **Geodetic Compass Charm (4135)** | 1x Brass Compass Housing | 1x Phosphor Dial | 1x Swivel Carabiner | `450x Scrap` |
+| **Mini Drone Bobble Charm (4136)** | 25x Cryo-Alloy Ingots | 1x Sentry Turret Lens | 1x Micro-Gimbal Motor | `600x Scrap + 15 DCS` |
+| **Golden Sub-Bunker Key (4139)** | 50x Solid Gold Leaf | 1x Deep Sub-Core Matrix | 1x Antique Key Cast | `1,200x Scrap + 50 DCS` |
+
+---
+
+## 6. Rig Overclock Module Assembly Matrix
+
+| Output Module | Component 1 | Component 2 | Component 3 | Assembly Cost |
+| :--- | :--- | :--- | :--- | :--- |
+| **Cryo-Capacitor Overclock (4140)** | 20x Cryo-Alloy Ingots | 1x Micro-Capacitor | 1x Coolant Line | `500x Scrap` |
+| **Magnetic Scavenger Coil (4141)** | 25x Cryo-Alloy Ingots | 2x Copper Induction Coils | 1x Hazard Enclosure | `600x Scrap` |
+| **Bio-Hazard Filter Vent (4142)** | 40x Cryo-Alloy Ingots | 1x Deep Sub-Core Matrix | 1x HEPA Suture Vent | `800x Scrap` |
+| **Kinetic Impact Bushing (4143)** | 40x Cryo-Alloy Ingots | 1x Deep Sub-Core Matrix | 1x Tungsten Rod Core | `800x Scrap` |
+| **Thermal Heat Exchanger (4144)** | 50x Cryo-Alloy Ingots | 1x Deep Sub-Core Matrix | 1x Radiator Matrix | `900x Scrap` |
+| **Echo-Location Transceiver (4145)**| 80x Cryo-Alloy Ingots | 2x Deep Sub-Core Matrices | 1x Sonar Transducer | `1,200x Scrap + 20 DCS` |
+| **Symbiotic Adrenaline Pump (4146)**| 80x Cryo-Alloy Ingots | 2x Deep Sub-Core Matrices | 1x Refined Ambergris | `1,500x Scrap + 30 DCS` |
+| **Zero-Point Flux Overdrive (4147)**| 150x Cryo-Alloy Ingots | 5x Deep Sub-Core Matrices | 2x Refined Ambergris | `2,500x Scrap + 75 DCS` |
+

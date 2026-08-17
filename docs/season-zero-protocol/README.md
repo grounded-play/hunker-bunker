@@ -35,3 +35,9 @@
 6. [06. Asset Production & Prompt Manifest](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/06-asset-production-and-prompt-manifest.md)
    - Technical 3D `.glb` polygon budgets, PBR texture formats, and LODs.
    - Complete prompt manifest for AI image, 3D mesh, and audio generation.
+
+7. [07. Pre-Mission Armory & Class-Unique Weapons](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/season-zero-protocol/07-pre-mission-armory-and-class-weapons.md)
+   - Staging room interface, 3D exosuit & weapon workbenches.
+   - Class-unique weapons (*Vector-9 Talon*, *Siege-Breaker 50*, *Tesla-Lock MK-IV*).
+   - Socket attachment hierarchies and secondary Verlet spring dynamics.
+

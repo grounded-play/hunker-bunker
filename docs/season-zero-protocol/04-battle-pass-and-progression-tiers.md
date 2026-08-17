@@ -82,3 +82,49 @@ The **Season 0 Tactical Dossier (Battle Pass)** is a 50-tier progression track t
 | **48**| **50x Deep Core Shards (4159)**| **Zero-Point Flux Overdrive (4147)**| Rig Overclock (Legendary)|
 | **49**| — | Golden Sub-Bunker Key Charm (4139)| Tactical Charm (Legendary)|
 | **50**| **Queen's Carapace Carbine (4110)**| **Hive-Lord Symbiote Exosuit (4119) & Solar Flare Antimatter Rifle (4111)** | Dual Legendary Capstones |
+
+---
+
+## 4. Seasonal Currency Economy & Trade Flow
+
+Season 0 establishes two interconnected progression currencies that ensure every run advances the player toward guaranteed craftable rewards:
+
+```mermaid
+flowchart TD
+    Run["Gameplay Runs & Mining"] -->|Earns| Scrap["Bunker Scrap (Standard Currency)"]
+    Bounties["Daily/Weekly Directives"] -->|Earns| DCS["Deep Core Shards (DCS - Premium Currency)"]
+    Lootboxes["Duplicate Unboxings"] -->|Recycles into| DCS
+    
+    Scrap -->|Purchase in Quartermaster| Reagents["Raw Crafting Reagents<br/>(Cryo-Alloy, Focus Crystals)"]
+    DCS -->|Purchase in Dispensary| Blueprints["Seasonal Blueprints & Exotic Reagents<br/>(Deep Sub-Cores, Ambergris)"]
+    
+    Reagents --> Assembly["Seasonal Assembly Bench"]
+    Blueprints --> Assembly
+    Assembly --> FinalItems["Socketed Charms, Rig Overclocks & Weapon Skins"]
+```
+
+### Currency Inflow Rates & Balancing
+1. **Bunker Scrap**:
+   - Awarded continuously per room cleared (`+15-25 scrap`), container salvaged (`+50-100 scrap`), and boss defeated (`+250-500 scrap`).
+   - Average yield: `~600-800 scrap` per 15-minute subterranean run.
+   - Used for foundational assembly costs, reagent purchasing, and weapon blueprint fabrication.
+2. **Deep Core Shards (DCS)**:
+   - Awarded from Battle Pass tier completions (`10-50 DCS` per milestone), completing weekly sector directives (`25 DCS` per directive), and unboxing duplicate cache items.
+   - Total seasonal free-track DCS earnable: **140 DCS**.
+   - Used in the Vault Dispensary for guaranteed specific item unlocks and exotic assembly combining.
+
+---
+
+## 5. Weekly Seasonal Assembly Directives
+
+Each week of the 12-week season features targeted assembly bounties:
+
+| Week | Directive Focus | Objective | Reward |
+| :--- | :--- | :--- | :--- |
+| **Week 1** | *Cryo Calibration* | Assemble 1 Cryo-Capacitor Overclock | `+7,500 XP` & `25x Cryo-Alloy Ingots` |
+| **Week 2** | *Trench Readiness* | Equip a Tactical Charm and clear Sector 3 | `+7,500 XP` & `15x Deep Core Shards` |
+| **Week 3** | *Magnetic Reclamation* | Collect 2,500 Scrap with Magnetic Scavenger equipped | `+7,500 XP` & `1x Deep Relic Cache` |
+| **Week 4** | *Bio-Shield Synthesis* | Neutralize 50 Sporesnail bio-shields using Arc Driver | `+7,500 XP` & `1x Relic Decryption Key` |
+| **Week 5** | *Sub-Zero Metallurgy* | Smelt 5 Uncommon items into 1 Rare item | `+7,500 XP` & `30x Deep Core Shards` |
+| **Week 6** | *Deep Core Extraction* | Defeat the Hive Queen with a socketed Overclock | `+10,000 XP` & `1x Deep Sub-Core Matrix` |
+
