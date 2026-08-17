@@ -17863,9 +17863,9 @@ export class ThreeGame {
         if (this.performanceProfile === 'menu' && typeof document !== 'undefined') {
             const menuEl = document.getElementById('menu') || document.getElementById('splash');
             if (menuEl && !menuEl.classList.contains('hidden')) {
-                const rotY = ((this._menuParallaxX || 0) * 4.5).toFixed(2);
-                const rotX = (-(this._menuParallaxY || 0) * 4.5).toFixed(2);
-                menuEl.style.transform = `perspective(1000px) rotateY(${rotY}deg) rotateX(${rotX}deg)`;
+                const rotY = ((this._menuParallaxX || 0) * 1.0).toFixed(2);
+                const rotX = (-(this._menuParallaxY || 0) * 1.0).toFixed(2);
+                menuEl.style.transform = `perspective(2400px) rotateY(${rotY}deg) rotateX(${rotX}deg)`;
             }
         }
 

@@ -12593,8 +12593,8 @@ if (splashHero && !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matc
             const bounds = splashHero.getBoundingClientRect();
             const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
             const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
-            splashHero.style.setProperty('--hero-shift-x', `${(x - 0.5) * -0.25}px`);
-            splashHero.style.setProperty('--hero-shift-y', `${(y - 0.5) * -0.15}px`);
+            splashHero.style.setProperty('--hero-shift-x', `${(x - 0.5) * -8}px`);
+            splashHero.style.setProperty('--hero-shift-y', `${(y - 0.5) * -5}px`);
             splashHero.style.setProperty('--hero-light-x', `${x * 100}%`);
             splashHero.style.setProperty('--hero-light-y', `${y * 100}%`);
             splashHeroFrame = 0;
