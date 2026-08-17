@@ -47,7 +47,11 @@ export const WORLD_3D_FACING_YAW = Math.PI;
 
 function loadTemplate(url) {
     if (!templates.has(url)) {
-        templates.set(url, new GLTFLoader().loadAsync(assetUrl(url)));
+        const promise = new GLTFLoader().loadAsync(assetUrl(url)).catch((err) => {
+            templates.delete(url);
+            throw err;
+        });
+        templates.set(url, promise);
     }
     return templates.get(url);
 }

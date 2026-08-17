@@ -262,7 +262,8 @@ describe('wall decals and showroom gallery', () => {
         const game = Object.assign(Object.create(ThreeGame.prototype), {
             chunkSize: 19,
             scene: new THREE.Scene(),
-            createScatterInstance: vi.fn(() => new THREE.Group())
+            createScatterInstance: vi.fn(() => new THREE.Group()),
+            createWorld3dModel: vi.fn(async () => new THREE.Group())
         });
 
         const showroom1 = await game.buildDebugShowroom();

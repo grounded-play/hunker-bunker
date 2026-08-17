@@ -31,7 +31,11 @@ export function hasEnemy3dModel(type) {
 
 function loadTemplate(url) {
     if (!templates.has(url)) {
-        templates.set(url, new GLTFLoader().loadAsync(assetUrl(url)));
+        const promise = new GLTFLoader().loadAsync(assetUrl(url)).catch((err) => {
+            templates.delete(url);
+            throw err;
+        });
+        templates.set(url, promise);
     }
     return templates.get(url);
 }

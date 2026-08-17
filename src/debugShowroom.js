@@ -236,7 +236,7 @@ export async function buildShowroomScene(threeGame) {
 
             if (item.type === 'prop') {
                 try {
-                    const modelGroup = await createWorld3dModel(item.id);
+                    const modelGroup = await (threeGame?.createWorld3dModel ? threeGame.createWorld3dModel(item.id) : createWorld3dModel(item.id));
                     if (modelGroup) {
                         modelGroup.position.set(p.x, 0, p.z);
                         modelGroup.rotation.y = p.yaw;

@@ -28,13 +28,20 @@ const characterTemplates = new Map();
 
 function loadCharacterTemplate(url) {
     if (!characterTemplates.has(url)) {
-        characterTemplates.set(url, new GLTFLoader().loadAsync(assetUrl(url)));
+        const promise = new GLTFLoader().loadAsync(assetUrl(url)).catch((err) => {
+            characterTemplates.delete(url);
+            throw err;
+        });
+        characterTemplates.set(url, promise);
     }
     return characterTemplates.get(url);
 }
 
 async function createGg1Weapon({ position = [0.03, 0.02, -0.10] } = {}) {
-    weaponTemplatePromise ??= new GLTFLoader().loadAsync(assetUrl(WEAPON_URL));
+    weaponTemplatePromise ??= new GLTFLoader().loadAsync(assetUrl(WEAPON_URL)).catch((err) => {
+        weaponTemplatePromise = null;
+        throw err;
+    });
     const template = await weaponTemplatePromise;
     const weapon = template.scene.clone(true);
     weapon.name = 'ScoutGG1';

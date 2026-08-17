@@ -4050,11 +4050,15 @@ export class ThreeGame {
         }
     }
 
+    async createWorld3dModel(modelType) {
+        return createWorld3dModel(modelType);
+    }
+
     async setupWorld3dReplacement(source, modelType, { owner = null, ownerKey = null } = {}) {
         if (!source || source.userData?.world3dLoading || source.userData?.world3dRoot) return;
         source.userData.world3dLoading = true;
         try {
-            const root = await createWorld3dModel(modelType);
+            const root = await (this.createWorld3dModel?.(modelType) ?? createWorld3dModel(modelType));
             if (!root || !source.parent) return;
             root.position.copy(source.position);
             root.rotation.y = source.material?.rotation ?? 0;
