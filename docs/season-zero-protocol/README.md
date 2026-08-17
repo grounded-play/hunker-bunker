@@ -41,4 +41,5 @@
    - Locks Season 0 to the shipped 3-class roster (Scout/Tank/Engineer) with named class-unique weapons (*Vector-9 Talon*, *Siege-Breaker 50*, *Tesla-Lock MK-IV*).
    - Unifies the two divergent cosmetic-equip systems into a single per-class `LoadoutManager` data model.
    - (`07-pre-mission-armory-and-class-weapons.md` is a concurrent-draft doc merged into this one — kept as a pointer.)
+   - **Build tracking**: [`docs/armory-and-class-weapons-worklog.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/armory-and-class-weapons-worklog.md) is the live task board/status log for implementation — check it before starting any code work on this doc.
 

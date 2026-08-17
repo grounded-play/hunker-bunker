@@ -6,29 +6,44 @@ Season 0's economy (docs 02–06) defines 60 sellable/craftable items — but in
 live codebase (2026-08-17) found two gaps that block all of it from actually mattering in
 gameplay:
 
-1. **No weapon is ever rendered.** Combat is stats-only glowing projectile spheres fired from an
-   invisible player collider (`src/threeGame.js` `spawnProjectile()`); the player is a flat 2D
-   class sprite. "Weapon Skins" and "Weapon Charms" have nothing physical to attach to.
+1. ~~No weapon is ever rendered~~ **CORRECTED same day.** This was true only for the state as of
+   2026-07-26. A real held-weapon pipeline shipped 2026-08-03 (`b2e976c`, "cosmetic Mixamo Scout
+   overlay") and was extended to all 3 classes shortly after — `src/player3dOverlay.js` loads a
+   rigged Mixamo body per class and parents a weapon mesh onto its right-hand bone
+   (`createGg1Weapon()`, `player3dOverlay.js:40-65`). **The gap that remains: it's one hardcoded
+   model (`public/3d/GG.1.glb`) shared by all 3 classes**, not class-unique, and not wired to
+   `LoadoutManager` at all — whatever's equipped in the (nonexistent) Armory has zero effect on
+   what actually renders. Read the full corrected picture, contracts, and task board in
+   [`docs/armory-and-class-weapons-worklog.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/armory-and-class-weapons-worklog.md)
+   before starting any build work — it supersedes this section's original framing and §6/§7 below
+   on asset location specifically (real convention is `public/3d/runtime/`, not
+   `public/models/weapons/`).
 2. **Cosmetic equip is split across two disconnected systems.** `LoadoutManager`
    (`src/loadout.js`, key `hb_loadout_v1`) defines `equipCharm`/`equipDecal`/`equipSkin`/
    `equipRigModule` setters, but no UI calls them. The Steam Vault modal (`src/steamVaultUi.js`)
    actually equips cosmetics through **separate raw `localStorage` keys**
    (`hb_equipped_patch`, `hb_equipped_decal`, `hb_equipped_weapon_finish`) that `LoadoutManager`
-   never sees.
+   never sees. Still an open gap — confirmed unchanged as of 2026-08-17.
 
-**The Armory is the fix for both.** It's a new mandatory pre-run screen where the player gears up
-a physical, rendered, class-unique gun, and the single UI surface that reads/writes one unified
-loadout record. This document is planning-only — it defines the flow, the data model, the
-class/gun/skin mapping, and the new asset list. No code is written yet; implementation follows in
-a future sprint plan once this is approved.
+**The Armory is the fix for both remaining gaps.** It's a new mandatory pre-run screen where the
+player gears up a physical, rendered, class-unique gun, and the single UI surface that reads/writes
+one unified loadout record that actually drives what `player3dOverlay.js` renders. This document
+defines the flow, the data model, the class/gun/skin mapping, and the (superseded-on-location, see
+above) asset list. The worklog doc is the authoritative build-sequencing and current-state tracker
+going forward; this doc stays the design-intent reference.
 
-**A note on scope:** rendering an actual held weapon requires the chassis pixel-snap pipeline from
-[`docs/superpowers/specs/2026-07-26-player-chassis-3d-vertical-slice-design.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/superpowers/specs/2026-07-26-player-chassis-3d-vertical-slice-design.md)
-and the weapon-render extension in
-[`docs/superpowers/specs/2026-07-26-cosmetics-and-loadout-system-design.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/superpowers/specs/2026-07-26-cosmetics-and-loadout-system-design.md) —
-both spec'd, neither built as of this writing. The Armory *screen* (UI, data model, bench layout)
-can be built and playtested against a static gun render before the live in-run held-weapon
-rendering lands; the two workstreams are sequenced in §7.
+**A note on scope (superseded 2026-08-17):** the two specs linked below were written 2026-07-26
+proposing a *pixel-snapped offscreen-render-to-sprite-texture* approach for a held weapon — that
+approach was **not** what got built. What actually shipped 2026-08-03 is a full 3D Mixamo body
+overlay drawn directly in-scene (sprite hidden once the overlay loads), with the weapon parented
+onto its hand bone — a different, already-working mechanism. Treat those two spec docs as
+historical context for the abandoned approach, not as the current plan; the worklog doc is
+authoritative on what's actually live. The Armory *screen* (UI, data model, bench layout) can
+still be built and playtested independently of the weapon-model work — see the worklog's task
+board for the current dependency graph, which replaces §7 below.
+
+[`docs/superpowers/specs/2026-07-26-player-chassis-3d-vertical-slice-design.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/superpowers/specs/2026-07-26-player-chassis-3d-vertical-slice-design.md) ·
+[`docs/superpowers/specs/2026-07-26-cosmetics-and-loadout-system-design.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/superpowers/specs/2026-07-26-cosmetics-and-loadout-system-design.md)
 
 ---
 
@@ -80,64 +95,63 @@ title/splash → menu (class select, unchanged)
 
 ---
 
-## 3. Armory Screen Layout
+## 3. Fullsize 3D Armory Staging Room & Bench Layout
 
-Three zones on one bench view, built around a live-rendered class gun as the visual centerpiece:
+The Armory is a **fullsize 3D subterranean staging environment** rendered via Three.js (`src/armoryScene.js`), illuminated by bunker industrial lighting, ceiling floodlamps, and diagnostic terminal screens.
 
+### A. Spatial & Visual Composition
 ```
-+---------------------------------------------------------------------------------------+
-|  HUNKER BUNKER // ARMORY [SECTOR ZERO]                            OPERATOR: AGENT-07   |
-+---------------------------------------------------------------------------------------+
-|                                           |                                           |
-|  [SUIT BENCH]                             |  [WEAPON BENCH]                           |
-|                                           |                                           |
-|  +-------------------------------------+  |  +-------------------------------------+  |
-|  |     3D OPERATOR EXOSUIT MODEL       |  |  |    3D CLASS GUN MODEL (live)        |  |
-|  |      (Full 360 Turntable View)      |  |  |    (Pivot on Receiver & Rail)       |  |
-|  +-------------------------------------+  |  +-------------------------------------+  |
-|                                           |                                           |
-|  CHASSIS SKIN:  [Cryo-Vanguard Mk-II]     |  ARCHETYPE:    [Talon SMG / Sidearm]     |
-|  SHOULDER PATCH:[Sub-Zero Pioneer]        |  WEAPON SKIN:  [Hazard Stripe v2]        |
-|                                           |  CHARM:        [Mini Cryo-Core 3D]       |
-|                                           |  MOD A / MOD B:[Scavenger / Cryo-Cap]    |
-|                                           |                                           |
-|  ACTIVE SUIT FX:                          |  ACTIVE MODS:                             |
-|  • Cosmetic only (skin/patch)             |  • +20% Scrap Magnet Pull Radius          |
-|                                           |  • +8% Cryo Freeze Duration                |
-|                                           |  • Charm spring physics active             |
-+---------------------------------------------------------------------------------------+
-|  [< SWITCH CLASS]            [QUARTERMASTER / CRAFTING]              [EMBARK >>]      |
-+---------------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------------------+
+|  HUNKER BUNKER // PRE-MISSION ARMORY [SECTOR ZERO]                            OPERATOR: AGENT-07  |
++---------------------------------------------------------------------------------------------------+
+|                                                                                                   |
+|    [SUIT STAGING PLATFORM - LEFT]               [MAGNETIC WEAPON WALL BENCH - CENTER/FOREGROUND]  |
+|                                                                                                   |
+|    +---------------------------------------+    +--------------------------------------------+    |
+|    |                                       |    |                                            |    |
+|    |     3D OPERATOR EXOSUIT MODEL         |    |        3D CLASS WEAPON MODEL (LARGE)       |    |
+|    |     • Looping Idle / Breathing Stance |    |        • Prominently Mounted on Wall Rack  |    |
+|    |     • 360° Turntable Orbit Inspection |    |        • Real-time Socket & Skin Swaps     |    |
+|    |     • Decal / Patch Projection        |    |        • Charm Secondary Physics Dangle    |    |
+|    |                                       |    |                                            |    |
+|    +---------------------------------------+    +--------------------------------------------+    |
+|                                                                                                   |
+|    CHASSIS:  [Cryo-Vanguard Scout]              GUN FRAME:    [Vector-9 Talon SMG]                |
+|    PATCH:    [Sub-Zero Pioneer Seal]            WEAPON FINISH:[Sub-Zero Frostbite v1]             |
+|                                                 CHARM SOCKET: [Mini Cryo-Core 3D]                 |
+|    SUIT TELEMETRY:                              MOD SLOT A:   [Cryo-Capacitor Overclock]          |
+|    • Class: SCOUT (Thermal Camo)                MOD SLOT B:   [Magnetic Scavenger Coil]           |
+|    • Status: Pressurized                                                                          |
+|                                                 ACTIVE COMBAT MODIFIERS:                          |
+|                                                 • +20% Scrap Magnet Pull Radius                   |
+|                                                 • +8% Cryo Freeze Duration                        |
+|                                                 • Dynamic Charm Spring Physics Active             |
++---------------------------------------------------------------------------------------------------+
+|  [< BACK TO CLASS SELECT]          [QUARTERMASTER DISPENSARY]             [EMBARK TO BUNKER >>]   |
++---------------------------------------------------------------------------------------------------+
 ```
+
+### B. Live Real-Time Visual Reaction
+1. **Prominent Wall-Mounted Weapon**: The class weapon is displayed prominently on the magnetic rack in the foreground. When the player clicks on a Weapon Skin, Charm, or Mod Chip, the 3D model immediately updates in place with PBR materials, emissive glows, and physical socket attachment.
+2. **Operator Looping Idle Animation**: The active class operator stands on the left hexagonal staging platform, playing a subtle procedural breathing/weight-shift idle loop.
+3. **Socket Highlight & Focus**: Selecting a socket (e.g. Charm rail or Mod bay) dynamically triggers a subtle camera focus nudge and an acoustic confirmation sound (`sfx_overclock_socket.wav` or `sfx_charm_clink_light.wav`).
+4. **Per-Class Saved State**: Every class (`SCOUT`, `TANK`, `ENGINEER`) maintains its own isolated weapon and socket loadout in `LoadoutManager` (`hb_loadout_v1`), switching instantly when navigating between classes.
 
 ```mermaid
 graph TD
-    A["Armory Screen (appPhase='armory')"] --> B["Weapon Bench (center/left)"]
-    A --> C["Suit Bench (right)"]
-    A --> D["Owned Items Carousel (bottom)"]
-    A --> E["EMBARK button"]
+    A["Armory Screen (appPhase='armory')"] --> B["3D Fullsize Bunker Staging Room"]
+    A --> C["Tactical Workbench HUD Overlay"]
+    A --> D["EMBARK Mission Button"]
 
-    B --> B1["Class Gun Render (live, class-specific mesh)"]
-    B --> B2["Weapon Skin slot"]
-    B --> B3["Charm socket (1x, accessory rail, physics dangle)"]
-    B --> B4["Mod Slot A / Mod Slot B (Rig Overclocks, gameplay-affecting)"]
+    B --> B1["Operator Platform (Left, Looping Breathing Idle, 360° Turntable)"]
+    B --> B2["Magnetic Wall Weapon Rack (Center, Prominent Large Gun Render)"]
+    B --> B3["Dynamic Charm Socket (Spring Physics Dangle)"]
+    B --> B4["Dual Overclock Mod Bays (Glowing Chip Terminals)"]
 
-    C --> C1["Chassis Skin slot"]
-    C --> C2["Shoulder Patch / Decal slot"]
-
-    D --> D1["Filtered by slot type of whatever's selected above"]
+    C --> C1["Suit Bench (Chassis Skin + Shoulder Decal)"]
+    C --> C2["Weapon Bench (Archetype + Finish + Charm + Overclocks A/B)"]
+    C --> C3["Live Modifier HUD Cards (+20% Magnet, +8% Cryo, etc.)"]
 ```
-
-**Interpretation note on "suit stuff... to the gun":** mods (Rig Overclocks) and charms are
-reframed here as clipping to the *weapon's* accessory rail — narratively and visually part of the
-gun, not the chassis — which is what "apply mods and charms to the gun" means in this design.
-Chassis skins and shoulder patches stay suit-scoped in their own bench zone, since they render on
-the body, not the weapon. If that split doesn't match intent, it's the one thing in this doc worth
-correcting before build.
-
-**Per-class loadouts, not one global loadout.** Switching the class card on the Briefing Console
-and re-entering the Armory shows *that class's own* saved bench — a Tank's mods shouldn't silently
-reappear on a Scout's sidearm. See §5 for the data shape.
 
 ---
 
@@ -224,6 +238,17 @@ from being equippable on a Scout Sidearm.
 
 ## 6. New Assets Required
 
+> **Superseded on file location and socket mechanics** — see
+> [`docs/armory-and-class-weapons-worklog.md`](file:///home/caveman/Desktop/icecave/hunker-bunker/docs/armory-and-class-weapons-worklog.md)
+> §2. Real convention: assets go under `public/3d/runtime/`, not `public/models/weapons/` (that
+> path doesn't exist in this repo). Real socket mechanism: weapons parent directly onto the
+> character's Mixamo `RightHand` bone at runtime (`player3dOverlay.js`'s existing
+> `createGg1Weapon`/hand-lookup code) — there is no separate `WeaponSocket_Charm` bone baked into
+> a bespoke gun rig as described below; that bone name is reused as a *logical* attach-point
+> concept inside the weapon mesh itself (a child empty/node the charm parents to), not a skeleton
+> bone on the character. The naming, polygon budgets, and per-archetype flavor below are still
+> accurate — only *where the files live* and *how attachment works at runtime* changed.
+
 Extends doc 06's asset manifest — same polygon/texture budgets, new entries:
 
 ### Class Gun Meshes (`public/models/weapons/*.glb`)
@@ -279,6 +304,10 @@ instead of a socket with nothing attached to it.
 ---
 
 ## 7. Build Sequencing
+
+> **Superseded** — the worklog's task board (§3) is the live, authoritative sequencing and status
+> tracker. The list below is kept for the original reasoning but step 4 in particular is stale:
+> held-weapon rendering already exists (§0), it just isn't class-unique or loadout-driven yet.
 
 1. **Data model migration** (`src/loadout.js` v1→v2, retire `steamVaultUi.js` raw keys) — no
    visual dependency, can land first and be verified against the current (gun-less) game.

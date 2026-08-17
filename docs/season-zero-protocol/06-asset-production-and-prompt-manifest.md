@@ -64,47 +64,67 @@ The following 13 3D models have been compressed for real-time WebGL rendering (1
 
 ---
 
-## 5. Next Batch: 7 Master 2D-to-3D Image Generation Prompts
+## 5. Master 2D-to-3D Image Generation Prompts (Pure Isolated Space & T-Pose)
 
-The following 7 prompts are tailored specifically for the 2D-to-3D model reconstruction pipeline (isolated clean 1:1 isometric view, high-contrast silhouette, studio lighting, PBR materials):
+All generation prompts below are engineered specifically for the 2D-to-3D photogrammetry and mesh reconstruction pipeline:
+- **Zero background interference**: Objects float cleanly in empty neutral dark space with zero ground, clutter, or scenery.
+- **T-Pose for characters**: Symmetrical T-pose with arms extended horizontally and feet shoulder-width apart.
+- **PBR lighting**: Studio three-point lighting highlighting metalness, roughness, and emissive conduits.
 
-### A. Class Base Weapons (3 Images)
+### A. Class Base Weapons (Floating in Space)
 
 1. **Scout Base Gun: *Vector-9 Talon SMG***
-   - **Prompt**: `"A 3D asset render of a sci-fi tactical submachine gun weapon model for the Scout class: sleek lightweight skeletonized dark magnesium receiver with an integrated top Picatinny accessory rail and forward charm mounting loop, ergonomic polymer grip, tactical flash hider muzzle compensator, clear polymer magazine with visible blue kinetic ammunition, isolated centered weapon on dark studio background, 8k PBR game asset prop, octane render, 1:1 square."`
+   - **Prompt**: `"Full side-profile 3D game asset render of a sci-fi tactical submachine gun floating in empty neutral dark grey space. Lightweight skeletonized magnesium receiver, top Picatinny accessory rail, forward charm loop eyelet, ergonomic pistol grip, tactical flash-hider muzzle, clear polymer magazine with visible blue ammunition. Clean sharp silhouette, studio three-point lighting, photorealistic PBR materials, octane render, zero background elements, pure isolated asset, 1:1 aspect ratio."`
    - **Target 3D Mesh**: `public/3d/runtime/new3ds/gun_scout_vector9_talon.glb`
 
 2. **Tank Base Gun: *Siege-Breaker 50 Autocannon***
-   - **Prompt**: `"A 3D asset render of a heavy micro-missile rotary autocannon weapon model for the Tank class: heavy reinforced dark industrial steel barrel shroud with yellow hazard caution placards, overhead reinforced carrying handle with rear charm mounting eyelet, dual pneumatic recoil damper pistons, drum magazine housing, isolated centered weapon on dark gritty background, 8k PBR textures, clean metallic luster, octane render, 1:1 square."`
+   - **Prompt**: `"Full side-profile 3D game asset render of a heavy micro-missile rotary autocannon floating in empty neutral dark grey space. Thick reinforced dark industrial steel barrel shroud with yellow hazard caution stripes, overhead carrying handle with rear charm mounting eyelet, dual pneumatic recoil damper pistons, heavy cylindrical drum magazine. Clean sharp silhouette, studio lighting, PBR textures, clean metallic luster, zero background elements, pure isolated asset, 1:1 aspect ratio."`
    - **Target 3D Mesh**: `public/3d/runtime/new3ds/gun_tank_siege_breaker50.glb`
 
 3. **Engineer Base Gun: *Tesla-Lock MK-IV Arc Driver***
-   - **Prompt**: `"A 3D asset render of a futuristic directed electromagnetic arc emitter and structural field welder for the Engineer class: heavy copper induction coils, insulated black rubber grip, central glass vacuum amplifier tube with glowing cyan electric plasma arcing between electrodes, side battery-bay locking latch with charm clip, isolated centered weapon on dark background, 8k PBR textures, octane render, 1:1 square."`
+   - **Prompt**: `"Full side-profile 3D game asset render of a directed electromagnetic arc emitter and structural field welder floating in empty neutral dark grey space. Heavy copper induction coils, insulated black rubber grip, central glass vacuum amplifier tube with glowing cyan electric plasma, side battery-bay latch with charm ring. Clean sharp silhouette, studio lighting, PBR textures, glowing emissive glass, zero background elements, pure isolated asset, 1:1 aspect ratio."`
    - **Target 3D Mesh**: `public/3d/runtime/new3ds/gun_engineer_tesla_lock.glb`
 
 ---
 
-### B. Class Weapon Skins (3 Images)
+### B. Class Weapon Skins (Floating in Space)
 
 4. **Scout Skin: *Sub-Zero Frostbite Talon SMG* (`Itemdef 4100`)**
-   - **Prompt**: `"A 3D asset render of a sub-zero weapon skin for a tactical submachine gun: frosted matte-white polymer frame with creeping crystalline blue ice frost patterns, glowing cyan cooling lines, frozen metal barrel with subtle frost mist, isolated centered weapon on clean dark background, 8k PBR game asset, 1:1 square."`
+   - **Prompt**: `"Full side-profile 3D game asset render of a sub-zero weapon skin for a tactical submachine gun floating in empty neutral dark grey space. Frosted matte-white polymer chassis, creeping crystalline blue ice patterns, glowing cyan conduit lines, subtle frost condensation on metal barrel. Clean sharp silhouette, studio lighting, PBR textures, zero background elements, pure isolated asset, 1:1 aspect ratio."`
    - **Target 3D Mesh**: `public/3d/runtime/new3ds/skin_scout_frostbite.glb`
 
 5. **Tank Skin: *Deep Core Melter Autocannon* (`Itemdef 4107`)**
-   - **Prompt**: `"A 3D asset render of an epic thermal weapon skin for a heavy autocannon: scorched black basalt and volcanic steel chassis with glowing molten orange heat channels and magma-venting cooling slots along the rotary barrel shroud, heat shimmer, isolated centered weapon on dark background, 8k PBR textures, 1:1 square."`
+   - **Prompt**: `"Full side-profile 3D game asset render of a thermal volcanic weapon skin for a heavy autocannon floating in empty neutral dark grey space. Scorched black basalt receiver, glowing molten orange magma channels, heat-venting cooling flutes along the rotary barrel shroud. Clean sharp silhouette, studio lighting, emissive orange glow, zero background elements, pure isolated asset, 1:1 aspect ratio."`
    - **Target 3D Mesh**: `public/3d/runtime/new3ds/skin_tank_deep_core_melter.glb`
 
 6. **Engineer Skin: *Cryo-Plasma Arc Driver* (`Itemdef 4103`)**
-   - **Prompt**: `"A 3D asset render of a high-tech rare weapon skin for an arc welder: polished titanium and cobalt-blue chassis with hyper-charged neon blue magnetic acceleration rails, glowing diamond vacuum chamber with lightning arcs, isolated centered weapon on dark background, 8k PBR textures, 1:1 square."`
+   - **Prompt**: `"Full side-profile 3D game asset render of an advanced high-tech weapon skin for an arc welder floating in empty neutral dark grey space. Polished titanium and cobalt-blue chassis, neon-blue superconducting magnetic rails, crystalline vacuum chamber with lightning arcs. Clean sharp silhouette, studio lighting, PBR textures, zero background elements, pure isolated asset, 1:1 aspect ratio."`
    - **Target 3D Mesh**: `public/3d/runtime/new3ds/skin_engineer_cryo_plasma.glb`
 
 ---
 
-### C. 7th Feature Asset (1 Image)
+### C. Tactical Attachables & Charms (Floating in Space)
 
 7. **Tactical Charm: *Amber Bio-Flask Specimen* (`Itemdef 4137`)**
-   - **Prompt**: `"A 3D asset render of an epic tactical weapon charm: an armored thick reinforced glass specimen ampoule containing glowing liquid amber and a tiny suspended alien embryo organism, protected by heavy titanium endcaps and a steel hanging clip, isolated centered object on dark background, game asset prop, octane render, 8k PBR textures, 1:1 square."`
+   - **Prompt**: `"3D game asset prop render of an armored tactical weapon charm floating in empty neutral dark grey space. Reinforced thick glass cylindrical specimen ampoule containing glowing amber liquid and a tiny suspended alien embryo organism, sealed with heavy titanium endcaps and a steel hanging clip. Centered, studio lighting, clean PBR textures, zero background elements, pure isolated asset, 1:1 aspect ratio."`
    - **Target 3D Mesh**: `public/3d/runtime/new3ds/charm_amber_bio_flask.glb`
+
+---
+
+### D. Class Exosuit Characters (Clean T-Pose in Space)
+
+8. **Scout Exosuit Operator (T-Pose)**
+   - **Prompt**: `"Full body 3D character asset render of a futuristic subterranean Scout operator standing in a perfect symmetrical T-pose with arms extended horizontally and feet shoulder-width apart, floating in empty neutral dark space. Lightweight pressurized thermal white and cyan stealth exosuit, sleek tactical helmet with cyan visor optic strip, utility pouches, magnetic boot seals. Clean outline, studio character turnaround lighting, PBR materials, zero background interference, 1:1 aspect ratio."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/char_scout_exosuit.glb`
+
+9. **Tank Exosuit Operator (T-Pose)**
+   - **Prompt**: `"Full body 3D character asset render of a heavy armored Tank operator standing in a perfect symmetrical T-pose with arms extended horizontally and feet shoulder-width apart, floating in empty neutral dark space. Heavy hydraulic blast-shield plate armor, industrial dark steel and hazard yellow plating, heavy reinforced chest respirator with twin air filters, heavy armored gauntlets. Clean outline, studio character lighting, PBR textures, zero background interference, 1:1 aspect ratio."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/char_tank_exosuit.glb`
+
+10. **Engineer Exosuit Operator (T-Pose)**
+    - **Prompt**: `"Full body 3D character asset render of an Engineer technician operator standing in a perfect symmetrical T-pose with arms extended horizontally and feet shoulder-width apart, floating in empty neutral dark space. Reinforced hazard exosuit with copper wiring conduits, tool harness, welding visor helmet with glowing amber scanning lens, auxiliary power battery pack on back. Clean outline, studio character lighting, PBR textures, zero background interference, 1:1 aspect ratio."`
+    - **Target 3D Mesh**: `public/3d/runtime/new3ds/char_engineer_exosuit.glb`
+
 
 ---
 
