@@ -46,6 +46,9 @@ import { STAGE_WIDTH, computeStageTransform } from './src/stage.js';
 import { PLAYER_SPRITE_LAYOUTS, getPlayerSpriteLayout } from './src/playerSpriteLayouts.js';
 import { repackGeneratedSpriteAtlas } from './src/spriteAtlasRuntime.js';
 import { createScoutHeroPreview } from './src/scoutHeroPreview.js';
+import { createArmoryScene } from './src/armoryScene.js';
+import { createArmoryUi } from './src/armoryUi.js';
+import { ARMORY_SCREEN_ENABLED } from './src/featureFlags.js';
 import { initSteamVaultUI, loadVaultData, openSteamVaultModal, showSteamDropToast, renderSteamMilestoneGrants, STEAM_ITEM_CATALOG } from './src/steamVaultUi.js';
 import { multiplayerLobby } from './src/multiplayerLobby.js';
 import { playerTradeManager, TRADEABLE_RESOURCES } from './src/playerTrade.js';
@@ -297,6 +300,7 @@ function setAppPhase(phase) {
         boot: 'BOOTSTRAP — renderer and account services starting',
         splash: 'TITLE READY — awaiting operator command',
         menu: 'LOADOUT CONSOLE — operator configuration active',
+        armory: 'PRE-MISSION ARMORY — weapon and module loadout active',
         gameplay: 'DEPLOYMENT — live simulation and input active',
         gameover: 'RUN COMPLETE — telemetry finalized',
         'demo-end': 'DEMO COMPLETE — session awaiting operator command'
@@ -6776,6 +6780,77 @@ const transitionFromTitleToMenu = (afterClosed = null) => {
     );
 };
 
+// ── Pre-Mission Armory Gate (docs/armory-and-class-weapons-worklog.md task 5) ──
+// Inserted between class-select (menu) and run launch. Off unless
+// ARMORY_SCREEN_ENABLED is flipped true in src/featureFlags.js, in which case
+// callers below fall straight through to their embark action unchanged.
+let armorySceneInstance = null;
+let armoryUiInstance = null;
+let armoryInitPromise = null;
+let pendingArmoryEmbarkAction = null;
+
+function ensureArmoryInitialized() {
+    if (!armoryInitPromise) {
+        armoryInitPromise = (async () => {
+            const canvas = document.getElementById('armory-canvas');
+            const hudContainer = document.getElementById('armory-hud-overlay');
+            armorySceneInstance = await createArmoryScene(canvas);
+            armoryUiInstance = createArmoryUi({
+                container: hudContainer,
+                loadoutManager: loadout,
+                armoryScene: armorySceneInstance,
+                onEmbark: () => closeArmoryScreen({ embark: true }),
+                onBack: () => closeArmoryScreen({ embark: false }),
+                onOpenVault: () => openSteamVaultModal()
+            });
+        })();
+    }
+    return armoryInitPromise;
+}
+
+function closeArmoryScreen({ embark }) {
+    document.getElementById('armory-screen')?.classList.add('hidden');
+    if (embark) {
+        // Heading into gameplay — tear the scene down rather than leaving its
+        // requestAnimationFrame loop rendering a hidden canvas indefinitely.
+        // ensureArmoryInitialized() rebuilds fresh next time INITIALIZE/DAILY
+        // OPS is pressed.
+        armorySceneInstance?.dispose?.();
+        armorySceneInstance = null;
+        armoryUiInstance = null;
+        armoryInitPromise = null;
+        const action = pendingArmoryEmbarkAction;
+        pendingArmoryEmbarkAction = null;
+        action?.();
+    } else {
+        menu?.classList.remove('hidden');
+        setAppPhase('menu');
+        pendingArmoryEmbarkAction = null;
+    }
+}
+
+// Wraps a run-launch action (launchStandardRun or the Daily Ops flow) so it
+// fires only after the player confirms their loadout in the Armory. Bypassed
+// entirely while the feature flag is off, or mid-campaign on an active Act 2
+// continuation run (doc 07 §2 — you don't re-gear for a boss-continuation run,
+// same reasoning as the existing Mothership-dialogue skip inside
+// runMissionIntroSequence).
+async function openArmoryGate(embarkAction) {
+    if (!ARMORY_SCREEN_ENABLED || isAct2RunActive()) {
+        embarkAction();
+        return;
+    }
+    pendingArmoryEmbarkAction = embarkAction;
+    await ensureArmoryInitialized();
+    const playerType = getSelectedHeroType();
+    splash?.classList.add('hidden');
+    menu?.classList.add('hidden');
+    document.getElementById('armory-screen')?.classList.remove('hidden');
+    setAppPhase('armory');
+    armoryUiInstance.setClass(playerType);
+    armorySceneInstance.resize();
+}
+
 function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
     const playerType = getSelectedHeroType();
     saveHeroType(playerType);
@@ -6839,7 +6914,7 @@ function launchStandardRun({ resetBank = false, playIntro = false } = {}) {
 
 if (startBtn) {
     startBtn.addEventListener('click', () => {
-        launchStandardRun({ resetBank: true, playIntro: true });
+        openArmoryGate(() => launchStandardRun({ resetBank: true, playIntro: true }));
     });
 }
 
@@ -6849,53 +6924,55 @@ if (dailyOpsBtn) {
     dailyOpsBtn.addEventListener('click', () => {
         const record = getDailyOpsRecord();
         if (record?.completed) return;
-        saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
-        _isDailyOpsRun = true;
-        if (window.game) {
-            window.game.globalSeedOffset = getDailySeedInt();
-            window.game.fixedRunEntropy = true;
-        }
-        document.body.classList.add('mission-intro-active');
-        const deploymentHold = suspendGameForFullscreenVideo();
-        triggerDoorTransition(
-            () => {
-                showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
-                if (menu) menu.classList.add('hidden');
-                setAppPhase('gameplay');
-                window.game?.setPerformanceProfile?.('gameplay');
-                window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
-                resetRunToStartingState({
-                    resetBank: false,
-                    skipEffects: true,
-                    snailSpawnEnabled: true,
-                    purgeSnails: false,
-                    deferChunkMount: true
-                });
-                document.getElementById('ui')?.classList.remove('hidden');
-                syncHudCompassVisibility();
-                const gameContainer = document.getElementById('game-container');
-                const viewport = document.getElementById('game-viewport');
-                if (gameContainer && viewport) {
-                    viewport.insertBefore(gameContainer, document.getElementById('ui'));
-                    gameContainer.classList.add('fullscreen-mode');
-                    queueGameLayoutRefresh();
-                }
-
-                // Keep the doors closed while the world build + shader warm-up
-                // runs, with the progress readout mounted over the door face.
-                return prepareGameplayForDialogue({ loaderOverDoor: true });
-            },
-            () => {},
-            undefined,
-            {
-                waitForClosedWork: true,
-                openingHoldMs: 160,
-                onOpeningStart: () => {
-                    void runMissionIntroSequence({ deploymentHold });
-                }
+        openArmoryGate(() => {
+            saveDailyOpsRecord({ attempted: true, completed: false, date: getTodayDateString() });
+            _isDailyOpsRun = true;
+            if (window.game) {
+                window.game.globalSeedOffset = getDailySeedInt();
+                window.game.fixedRunEntropy = true;
             }
-            // Defaults to active class door
-        );
+            document.body.classList.add('mission-intro-active');
+            const deploymentHold = suspendGameForFullscreenVideo();
+            triggerDoorTransition(
+                () => {
+                    showRunLoadingScreen('DOWNLOADING SECTOR PILLAR TOPOGRAPHY...', 0, { overDoor: true });
+                    if (menu) menu.classList.add('hidden');
+                    setAppPhase('gameplay');
+                    window.game?.setPerformanceProfile?.('gameplay');
+                    window.game?.updatePlayerType?.(getSelectedHeroType(), { poof: false, emitWorldEvents: false });
+                    resetRunToStartingState({
+                        resetBank: false,
+                        skipEffects: true,
+                        snailSpawnEnabled: true,
+                        purgeSnails: false,
+                        deferChunkMount: true
+                    });
+                    document.getElementById('ui')?.classList.remove('hidden');
+                    syncHudCompassVisibility();
+                    const gameContainer = document.getElementById('game-container');
+                    const viewport = document.getElementById('game-viewport');
+                    if (gameContainer && viewport) {
+                        viewport.insertBefore(gameContainer, document.getElementById('ui'));
+                        gameContainer.classList.add('fullscreen-mode');
+                        queueGameLayoutRefresh();
+                    }
+
+                    // Keep the doors closed while the world build + shader warm-up
+                    // runs, with the progress readout mounted over the door face.
+                    return prepareGameplayForDialogue({ loaderOverDoor: true });
+                },
+                () => {},
+                undefined,
+                {
+                    waitForClosedWork: true,
+                    openingHoldMs: 160,
+                    onOpeningStart: () => {
+                        void runMissionIntroSequence({ deploymentHold });
+                    }
+                }
+                // Defaults to active class door
+            );
+        });
     });
 }
 

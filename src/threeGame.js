@@ -3767,20 +3767,32 @@ export class ThreeGame {
         const playerRoot = this.player;
         const overlayType = this.playerType;
         try {
+            // Reads the equipped archetype/skin from LoadoutManager v2
+            // (docs/armory-and-class-weapons-worklog.md §2b/§2c) when available,
+            // falling back to each class's Armory base gun default otherwise
+            // (e.g. in tests, or a profile with no loadout saved yet).
+            const archetypeFor = (defaultId) => window.loadout?.getActiveArchetype?.(this.playerType) ?? defaultId;
+            const skinIdFor = () => window.loadout?.getEquippedSkinId?.(this.playerType) ?? null;
             const classVisuals = {
-                SCOUT: {},
+                SCOUT: {
+                    weaponArchetype: archetypeFor('talon'),
+                    weaponMount: { skinId: skinIdFor() }
+                },
                 ENGINEER: {
                     modelUrl: '/3d/runtime/engineer-rigged-gestures.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
+                    weaponArchetype: archetypeFor('tesla_lock'),
+                    weaponMount: { skinId: skinIdFor() }
                 },
                 TANK: {
                     modelUrl: '/3d/runtime/tank-rigged.glb',
                     animationModelUrl: '/3d/scouting-scout/Scout.game.glb',
                     animationBonePrefix: 'mixamorig',
                     weaponEnabled: true,
-                    weaponMount: { position: [0.03, 0.02, 0.03] }
+                    weaponArchetype: archetypeFor('siege_breaker'),
+                    weaponMount: { position: [0.03, 0.02, 0.03], skinId: skinIdFor() }
                 }
             };
             const overlay = await createPlayer3dOverlay({

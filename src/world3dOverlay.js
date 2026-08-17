@@ -1,7 +1,14 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { assetUrl } from './assetUrl.js';
+
+// docs/armory-and-class-weapons-worklog.md — gltf-transform's optimize pass applies
+// EXT_meshopt_compression; GLTFLoader throws without this registered first.
+function createGltfLoader() {
+    return new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+}
 
 export const WORLD_3D_MODELS = Object.freeze({
     broken_scout_ship: { url: '/3d/runtime/broken-scout-ship.glb', height: 1.35, yaw: 0 },
@@ -47,7 +54,7 @@ export const WORLD_3D_FACING_YAW = Math.PI;
 
 function loadTemplate(url) {
     if (!templates.has(url)) {
-        const promise = new GLTFLoader().loadAsync(assetUrl(url)).catch((err) => {
+        const promise = createGltfLoader().loadAsync(assetUrl(url)).catch((err) => {
             templates.delete(url);
             throw err;
         });

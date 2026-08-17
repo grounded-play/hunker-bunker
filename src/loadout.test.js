@@ -118,4 +118,73 @@ describe('LoadoutManager', () => {
         expect(reloaded.getEquippedRigModule(1)).toBeNull();
         expect(reloaded.getEquippedLabel(fakeFab('neon_smg'))).toBe(DEFAULT_WEAPON_LABEL);
     });
+
+    it('manages isolated per-class loadouts and archetypes', () => {
+        const lo = new LoadoutManager({ storage });
+        expect(lo.getActiveArchetype('scout')).toBe('talon');
+        expect(lo.getActiveArchetype('tank')).toBe('siege_breaker');
+        expect(lo.getActiveArchetype('engineer')).toBe('tesla_lock');
+
+        // Scout equips Talon skin 4100 and charm 4130
+        lo.equipWeaponSkin('scout', '4100');
+        lo.equipCharm('scout', '4130');
+        lo.equipRigModule('scout', 1, '4140');
+
+        // Tank equips skin 4102 and charm 4131
+        lo.equipWeaponSkin('tank', '4102');
+        lo.equipCharm('tank', '4131');
+        lo.equipRigModule('tank', 1, '4141');
+
+        // Verify isolation
+        expect(lo.getEquippedSkinId('scout')).toBe('4100');
+        expect(lo.getEquippedSkinId('tank')).toBe('4102');
+        expect(lo.getEquippedCharmId('scout')).toBe('4130');
+        expect(lo.getEquippedCharmId('tank')).toBe('4131');
+        expect(lo.getActiveModifiers('scout').cryoDurationMultiplier).toBeCloseTo(1.08);
+        expect(lo.getActiveModifiers('tank').scrapMagnetRadiusBonus).toBeCloseTo(0.20);
+
+        // Switch Scout archetype to Talon-C
+        expect(lo.setArchetype('scout', 'talon_c')).toBe(true);
+        expect(lo.getActiveArchetype('scout')).toBe('talon_c');
+        // Old Talon-only skin 4100 is cleared on archetype swap
+        expect(lo.getEquippedSkinId('scout')).toBeNull();
+        // Equip Talon-C skin 4110
+        lo.equipWeaponSkin('scout', '4110');
+        expect(lo.getEquippedSkinId('scout')).toBe('4110');
+
+        // Invalid archetype assignment fails
+        expect(lo.setArchetype('tank', 'talon')).toBe(false);
+    });
+
+    it('migrates legacy v1 and raw steamVault keys into v2 state', () => {
+        storage.setItem('hb_loadout_v1', JSON.stringify({
+            equippedWeaponId: 'neon_smg',
+            equippedSkinId: '4100',
+            equippedCharmId: '4130',
+            equippedRigModule1: '4141',
+            equippedDecalId: '4120'
+        }));
+        storage.setItem('hb_equipped_patch', '4124');
+
+        const lo = new LoadoutManager({ storage });
+        expect(lo.getEquippedId('scout')).toBe('neon_smg');
+        expect(lo.getEquippedSkinId('scout')).toBe('4100');
+        expect(lo.getEquippedCharmId('scout')).toBe('4130');
+        expect(lo.getEquippedRigModule(1, 'scout')).toBe('4141');
+        expect(lo.getEquippedDecalId()).toBe('4120');
+    });
+
+    it('reconciles cosmetics ownership against Steam inventory', () => {
+        const lo = new LoadoutManager({ storage });
+        lo.equipCharm('scout', '4130');
+        lo.equipWeaponSkin('scout', '4100');
+        lo.equipDecal('4120');
+
+        // Inventory only has 4130
+        lo.reconcileOwnership([{ itemdefid: 4130 }]);
+
+        expect(lo.getEquippedCharmId('scout')).toBe('4130');
+        expect(lo.getEquippedSkinId('scout')).toBeNull();
+        expect(lo.getEquippedDecalId()).toBeNull();
+    });
 });
