@@ -28,14 +28,16 @@ export const CATALOG_ITEMS = Object.freeze({
     '4134': { name: 'Glitched RAM Card', rarity: 'rare', type: 'charm', icon: '/economy/charm_glitched_ram.png' },
     '4135': { name: 'Geodetic Compass', rarity: 'rare', type: 'charm', icon: '/economy/charm_geodetic_compass.png' },
     '4136': { name: 'Mini Drone Bobble', rarity: 'epic', type: 'charm', icon: '/economy/charm_mini_drone_bobble.png' },
+    '4137': { name: 'Amber Bio-Flask', rarity: 'epic', type: 'charm', icon: '/economy/charm_amber_bio_flask.png' },
+    '4138': { name: 'Dark Matter Singularity', rarity: 'epic', type: 'charm', icon: '/economy/charm_dark_matter.png' },
     '4139': { name: 'Golden Sub-Bunker Key', rarity: 'legendary', type: 'charm', icon: '/economy/charm_golden_sub_bunker_key.png' },
 
     // Rig Overclocks
     '4140': { name: 'Cryo-Capacitor Overclock', perk: '+8% Cryo Freeze Duration', rarity: 'uncommon', type: 'mod', icon: '/economy/mod_cryo_capacitor.png' },
     '4141': { name: 'Magnetic Scavenger Coil', perk: '+20% Scrap Magnet Radius', rarity: 'uncommon', type: 'mod', icon: '/economy/mod_magnetic_scavenger.png' },
-    '4142': { name: 'Bio-Hazard Filter Vent', perk: '-12% Spore & Gas Damage', rarity: 'rare', type: 'mod' },
-    '4143': { name: 'Kinetic Impact Bushing', perk: '+1 Piercing Penetration', rarity: 'rare', type: 'mod' },
-    '4144': { name: 'Thermal Heat Exchanger', perk: '+10% Shield Recharge Rate', rarity: 'rare', type: 'mod' },
+    '4142': { name: 'Bio-Hazard Filter Vent', perk: '-12% Spore & Gas Damage', rarity: 'rare', type: 'mod', icon: '/economy/mod_bio_hazard_filter.png' },
+    '4143': { name: 'Kinetic Impact Bushing', perk: '+1 Piercing Penetration', rarity: 'rare', type: 'mod', icon: '/economy/mod_kinetic_impact.png' },
+    '4144': { name: 'Thermal Heat Exchanger', perk: '+10% Shield Recharge Rate', rarity: 'rare', type: 'mod', icon: '/economy/mod_thermal_heat_exchanger.png' },
     '4145': { name: 'Echo-Location Transceiver', perk: 'Pings Hidden Rooms (15m)', rarity: 'epic', type: 'mod' },
     '4146': { name: 'Symbiotic Adrenaline Pump', perk: '+15% Speed Below 25% HP', rarity: 'epic', type: 'mod' },
     '4147': { name: 'Zero-Point Flux Overdrive', perk: '5 Kills Refunds Dash Charge', rarity: 'legendary', type: 'mod', icon: '/economy/mod_zero_point_flux.png' },
@@ -162,7 +164,7 @@ export function createArmoryUi({
                                 <label>TACTICAL CHARM (ACCESSORY RAIL)</label>
                                 <select id="armory-charm-select" class="armory-select">
                                     <option value="">[NO CHARM EQUIPPED]</option>
-                                    ${['4130', '4131', '4132', '4133', '4134', '4135', '4136', '4139'].map((id) => `
+                                    ${['4130', '4131', '4132', '4133', '4134', '4135', '4136', '4137', '4138', '4139'].map((id) => `
                                         <option value="${id}" ${loadout.charmId === id ? 'selected' : ''}>
                                             ${CATALOG_ITEMS[id]?.name || id} (${CATALOG_ITEMS[id]?.rarity?.toUpperCase()})
                                         </option>
