@@ -593,19 +593,26 @@
       <div class="modal-content vault-modal-content">
         <div class="terminal-scanline"></div>
         <div class="vault-header">
-          <button class="close-modal" id="close-steam-vault-modal">×</button>
-          <div class="vault-title">◈ STEAM VAULT</div>
+          <button class="close-modal" id="close-steam-vault-modal" aria-label="Close Steam Vault">×</button>
+          <div class="vault-header-kicker">◈ SECURE STEAM INVENTORY & ITEM DISPENSARY // APPID 4957040</div>
+          <div class="vault-title">◈ STEAM VAULT <span class="vault-title-accent">// ITEM DISPATCH</span></div>
           <div class="vault-callsign-row">
             <span class="vault-callsign" id="vault-player-name">OFFLINE OPERATOR</span>
             <span class="vault-status" id="vault-connection-status">DEV FALLBACK</span>
           </div>
         </div>
         <div class="vault-tabs">
-          <button class="vault-tab-btn active" id="vault-tab-inventory">OWNED ITEMS</button>
-          <button class="vault-tab-btn" id="vault-tab-store">◈ STORE</button>
+          <button class="vault-tab-btn active" id="vault-tab-inventory"><span class="vault-tab-icon">📦</span> OWNED INVENTORY</button>
+          <button class="vault-tab-btn" id="vault-tab-store"><span class="vault-tab-icon">🗝️</span> ◈ RELIC STORE & DROP ODDS</button>
         </div>
+
+        <!-- Inventory Tab Layout -->
         <div class="vault-main-layout" id="vault-inventory-layout">
           <div class="vault-left-column">
+            <div class="vault-column-header">
+              <span class="vault-column-title">STEAM INVENTORY MANIFEST</span>
+              <span class="vault-column-badge">VERIFIED</span>
+            </div>
             <div class="vault-inventory-container" id="vault-inventory-container">
               <div class="vault-grid" id="vault-item-grid"></div>
               <div class="vault-empty-state hidden" id="vault-empty-state">NO ITEMS DETECTED IN STEAM VAULT</div>
@@ -619,7 +626,7 @@
               <div class="vault-details-name" id="vault-details-name">SELECT AN ITEM</div>
               <div class="vault-details-rarity" id="vault-details-rarity">—</div>
               <div class="vault-details-desc" id="vault-details-desc">Select any item from the grid to view Steam ownership details.</div>
-              <div class="vault-steam-disclaimer" style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px;">All items and transactions are securely managed through your linked Steam account.</div>
+              <div class="vault-steam-disclaimer">All items and cosmetics are securely managed through your linked Steam account.</div>
               <div class="vault-details-meta">
                 <span class="vault-meta-tag" id="vault-meta-tradable">TRADABLE</span>
                 <span class="vault-meta-tag" id="vault-meta-marketable">MARKETABLE</span>
@@ -631,25 +638,46 @@
             </div>
           </div>
         </div>
+
+        <!-- Store Tab Layout -->
         <div class="vault-store-layout hidden" id="vault-store-layout">
           <div class="vault-store-intro">
-            Deep Relic Caches drop for free during play. Cache Keys are the
-            only item sold for real money — buying a key does not guarantee
-            a Cache, and opening a Cache does not guarantee its best reward.
-            Odds below are exactly what the server rolls against.<br><br>
-            <span style="color: var(--text-muted); font-size: 0.9em;">All purchases and inventory actions happen securely through your Steam wallet.</span>
+            <div class="vault-store-intro__badges">
+              <span class="vault-notice-badge">🛡️ STEAM WALLET SECURED</span>
+              <span class="vault-notice-badge vault-notice-badge--odds">⚖️ TRANSPARENT DROP ROLLS</span>
+            </div>
+            <div class="vault-store-intro__body">
+              <strong>Deep Relic Caches</strong> drop naturally for free during gameplay exploration. <strong>Cache Keys</strong> are the only item sold for real money — purchasing a key decrypts a cache. Odds disclosed below are server-authoritative and match exact roll tables.
+            </div>
+            <div class="vault-store-intro__sub">
+              All transactions are processed securely through the Steam overlay and authenticated by Valve Steamworks.
+            </div>
           </div>
+
+          <div class="vault-store-section-label">RELIC KEY DISPENSARY</div>
           <div class="vault-store-grid" id="vault-store-sku-grid"></div>
+
           <div class="vault-store-hosted hidden" id="vault-store-hosted">
-            <span class="vault-store-hosted-status" id="vault-store-hosted-status">STEAM ITEM STORE OFFLINE</span>
-            <button class="start-btn vault-store-hosted-btn" id="vault-store-hosted-btn">OPEN STEAM ITEM STORE</button>
+            <div class="vault-store-hosted-info">
+              <span class="vault-store-hosted-dot">●</span>
+              <span class="vault-store-hosted-status" id="vault-store-hosted-status">STEAM ITEM STORE OFFLINE</span>
+            </div>
+            <button class="start-btn vault-store-hosted-btn" id="vault-store-hosted-btn">OPEN STEAM ITEM STORE ↗</button>
           </div>
+
           <div class="vault-store-odds">
-            <div class="vault-store-odds-title">DEEP RELIC CACHE — PUBLISHED ODDS</div>
+            <div class="vault-store-odds-header">
+              <div class="vault-store-odds-title">DEEP RELIC CACHE — PUBLISHED DROP ODDS</div>
+              <div class="vault-store-odds-badge">100% DISCLOSED</div>
+            </div>
             <div class="vault-store-odds-table" id="vault-store-odds-table"></div>
           </div>
+
           <div class="vault-store-open-row">
-            <span class="vault-store-open-status" id="vault-store-open-status">No Cache + Key pair detected in your inventory.</span>
+            <div class="vault-store-open-info">
+              <span class="vault-store-open-icon">◈</span>
+              <span class="vault-store-open-status" id="vault-store-open-status">No Cache + Key pair detected in your inventory.</span>
+            </div>
             <button class="start-btn vault-store-open-btn hidden" id="vault-store-open-btn">◈ OPEN DEEP RELIC CACHE</button>
           </div>
         </div>

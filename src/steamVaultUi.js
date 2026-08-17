@@ -472,11 +472,23 @@ export function renderStoreSkuGrid() {
         card.className = 'vault-store-sku-card';
         const priceLabel = `$${(sku.priceUsdCents / 100).toFixed(2)}`;
         const buttonLabel = storePurchasesEnabled
-            ? (storePurchaseMode === 'mock' ? 'DEV BUY' : 'BUY')
+            ? (storePurchaseMode === 'mock' ? '◈ BUY (DEV)' : '◈ BUY VIA STEAM')
             : formatStoreDisabledReason(storeDisabledReason);
+        const keyCount = sku.keys || 1;
+        const savingsTag = keyCount === 5
+            ? '<span class="vault-sku-save-badge">SAVE 10%</span>'
+            : (keyCount === 10 ? '<span class="vault-sku-save-badge vault-sku-save-badge--best">BEST VALUE // -20%</span>' : '');
         card.innerHTML = `
+            <div class="vault-store-sku-top">
+                <div class="vault-sku-icon-wrap">
+                    <span class="vault-sku-icon">🗝️</span>
+                    <span class="vault-sku-count">x${keyCount}</span>
+                </div>
+                ${savingsTag}
+            </div>
             <div class="vault-store-sku-label">${sku.label}</div>
             <div class="vault-store-sku-price">${priceLabel}</div>
+            <div class="vault-store-sku-sub">STEAM WALLET DIRECT</div>
             <button class="start-btn vault-store-buy-btn" data-sku="${sku.sku}" ${storePurchasesEnabled ? '' : 'disabled'}>${buttonLabel}</button>
         `;
         const buyBtn = card.querySelector('.vault-store-buy-btn');
@@ -530,9 +542,19 @@ export function renderOddsTable() {
     for (const row of storeOdds) {
         const rowEl = document.createElement('div');
         rowEl.className = 'vault-store-odds-row';
+        const color = getRarityColor(row.rarity);
+        const rarityLabel = (row.rarity || 'UNCOMMON').toUpperCase();
         rowEl.innerHTML = `
-            <span class="vault-store-odds-item">${row.label}</span>
-            <span class="vault-store-odds-percent" style="color:${getRarityColor(row.rarity)}">${row.percent}%</span>
+            <div class="vault-store-odds-left">
+                <span class="vault-odds-rarity-pill" style="color:${color}; border-color:${color}80; background:${color}1a;">${rarityLabel}</span>
+                <span class="vault-store-odds-item">${row.label}</span>
+            </div>
+            <div class="vault-store-odds-right">
+                <div class="vault-odds-gauge-track">
+                    <div class="vault-odds-gauge-fill" style="width:${row.percent}%; background:${color}; box-shadow:0 0 10px ${color}88;"></div>
+                </div>
+                <span class="vault-store-odds-percent" style="color:${color}">${row.percent}%</span>
+            </div>
         `;
         table.appendChild(rowEl);
     }
