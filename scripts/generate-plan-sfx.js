@@ -164,6 +164,26 @@ export const PLAN_SFX = Object.freeze({
             const mechan = noise() * pulse(t, 0.01, 0.05) * 0.15;
             return chime1 + chime2 + chime3 + crystal + mechan;
         }
+    },
+    voice_commander_breached: {
+        duration: 1.1,
+        synth(t, noise) {
+            const staticBurst = noise() * (pulse(t, 0.01, 0.06) + pulse(t, 1.02, 0.08)) * 0.35;
+            const formant1 = sine(220 + Math.sin(t * 12) * 20, t) * envelope(t, 1.1, 0.08, 0.2);
+            const formant2 = sine(440 + Math.sin(t * 18) * 40, t) * envelope(t, 1.1, 0.08, 0.2) * 0.6;
+            const throatNoise = noise() * envelope(t, 1.1, 0.1, 0.25) * 0.18;
+            return staticBurst + (formant1 + formant2) * 0.45 + throatNoise;
+        }
+    },
+    voice_aura_target_down: {
+        duration: 0.95,
+        synth(t, noise) {
+            const aiTone1 = sine(880 + Math.sin(t * 60) * 15, t) * envelope(t, 0.95, 0.03, 0.25) * 0.4;
+            const aiTone2 = sine(1760, t) * envelope(t, 0.95, 0.02, 0.3) * 0.25;
+            const shimmer = sine(3520, t) * pulse(t, 0.05, 0.15) * 0.2;
+            const vocoder = noise() * envelope(t, 0.95, 0.04, 0.3) * 0.08;
+            return aiTone1 + aiTone2 + shimmer + vocoder;
+        }
     }
 });
 

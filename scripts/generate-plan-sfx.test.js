@@ -18,7 +18,9 @@ describe('plan SFX generator', () => {
             'sfx_overclock_hum_magnetic',
             'sfx_overclock_socket',
             'sfx_smelt_forge_burst',
-            'sfx_trade_shard_dispense'
+            'sfx_trade_shard_dispense',
+            'voice_aura_target_down',
+            'voice_commander_breached'
         ]);
     });
 
