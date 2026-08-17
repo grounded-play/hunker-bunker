@@ -7,14 +7,14 @@ import {
 
 export const CATALOG_ITEMS = Object.freeze({
     // Weapon Skins
-    '4100': { name: 'Sub-Zero Frostbite', rarity: 'uncommon', type: 'skin', icon: '/economy/skin_void_walker_beam.png' },
+    '4100': { name: 'Sub-Zero Frostbite', rarity: 'uncommon', type: 'skin', icon: '/economy/skin_scout_frostbite.png' },
     '4101': { name: 'Hazard Stripe SMG', rarity: 'uncommon', type: 'skin' },
     '4102': { name: 'Tectonic Driller', rarity: 'uncommon', type: 'skin' },
     '4103': { name: 'Cryo-Plasma Arc', rarity: 'rare', type: 'skin' },
     '4104': { name: 'Rust & Bone Trench', rarity: 'rare', type: 'skin' },
     '4105': { name: 'Obsidian Shard', rarity: 'rare', type: 'skin' },
     '4106': { name: 'Biolume Spore Sprayer', rarity: 'rare', type: 'skin' },
-    '4107': { name: 'Deep Core Melter', rarity: 'epic', type: 'skin' },
+    '4107': { name: 'Deep Core Melter', rarity: 'epic', type: 'skin', icon: '/economy/skin_tank_deep_core_melter.png' },
     '4108': { name: 'Glitched Circuit Bolter', rarity: 'epic', type: 'skin' },
     '4109': { name: 'Void-Walker Beam', rarity: 'epic', type: 'skin', icon: '/economy/skin_void_walker_beam.png' },
     '4110': { name: "Queen's Carapace Carbine", rarity: 'legendary', type: 'skin', icon: '/economy/skin_queen_carapace_carbine.png' },
