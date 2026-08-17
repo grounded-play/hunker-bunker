@@ -706,11 +706,12 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
     }
 
     if (strip) {
-        strip.innerHTML = tiles.map((item) => {
+        strip.innerHTML = tiles.map((item, idx) => {
             const rarity = (item.rarity || 'uncommon').toLowerCase();
             const color = getRarityColor(rarity);
+            const isWinner = idx === WIN_INDEX;
             return `
-                <div class="vault-tile vault-tile--${rarity}" style="--rar-color:${color};">
+                <div class="vault-tile vault-tile--${rarity}${isWinner ? ' vault-tile--winner-slot' : ''}" id="${isWinner ? 'vault-tile-winner' : ''}" style="--rar-color:${color};">
                     <img src="${assetUrl(item.localImg || item.img)}" alt="${item.name}" onerror="this.src='/favicon.png'">
                     <span class="vault-tile-label">${(item.rarity || 'RARE').toUpperCase()}</span>
                 </div>
@@ -728,7 +729,7 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
         if (!strip) return;
         const firstTile = strip.firstElementChild;
         const tileRect = firstTile?.getBoundingClientRect?.();
-        const tileWidth = tileRect?.width || 80;
+        const tileWidth = tileRect?.width || 88;
         const tileGap = 12;
         const paddingLeft = 12;
         const center = (stripWrap?.clientWidth || 500) / 2;
@@ -739,7 +740,16 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
         strip.style.transform = `translateX(${target}px)`;
     });
 
-    // Reveal card after tape deceleration finishes
+    // Unblur and reveal winning tile under needle when it lands
+    setTimeout(() => {
+        const winnerEl = document.getElementById('vault-tile-winner');
+        if (winnerEl) {
+            winnerEl.classList.add('vault-tile--revealed');
+        }
+        window.AudioManager?.playProceduralLoot?.('weapon', (reward.rarity || 'rare').toLowerCase());
+    }, 2950);
+
+    // Reveal final grand showcase card
     setTimeout(() => {
         overlay.dataset.state = 'revealed';
         if (titleEl) titleEl.textContent = 'DECRYPTION COMPLETE';
@@ -749,7 +759,7 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
             const color = getRarityColor(reward.rarity);
             cardEl.className = `vault-reveal-card vault-reveal-card--${reward.rarity.toLowerCase()}`;
             cardEl.style.borderColor = color;
-            cardEl.style.boxShadow = `0 0 35px ${color}66, 0 0 70px ${color}33`;
+            cardEl.style.boxShadow = `0 0 40px ${color}80, 0 0 80px ${color}40`;
         }
 
         if (rarityPill) {
@@ -764,9 +774,8 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
         if (nameEl) nameEl.textContent = reward.name;
         if (descEl) descEl.textContent = reward.desc;
 
-        window.AudioManager?.playProceduralLoot?.('weapon', (reward.rarity || 'rare').toLowerCase());
         window.AudioManager?.play?.('fx_achievement', { volume: 0.5, bus: 'sfx' });
-    }, 3100);
+    }, 3200);
 
     const handleClaim = () => {
         overlay.classList.add('hidden');
