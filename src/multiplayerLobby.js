@@ -327,6 +327,11 @@ export class MultiplayerLobby {
         modeCoopBtn?.classList.toggle('active', isCoop);
         modePvpBtn?.classList.toggle('active', !isCoop);
 
+        const coopIndicator = modeCoopBtn?.querySelector('.net-mode-card__indicator');
+        const pvpIndicator = modePvpBtn?.querySelector('.net-mode-card__indicator');
+        if (coopIndicator) coopIndicator.textContent = isCoop ? 'ACTIVE MODE' : 'SELECT MODE';
+        if (pvpIndicator) pvpIndicator.textContent = !isCoop ? 'ACTIVE MODE' : 'SELECT MODE';
+
         const titleDesc = document.getElementById('net-mode-description');
         if (titleDesc) {
             titleDesc.textContent = isCoop
@@ -359,20 +364,43 @@ export class MultiplayerLobby {
             connectBtn.textContent = this.connected ? 'DISCONNECT' : 'CONNECT RELAY';
         }
 
+        const rosterCountEl = document.getElementById('net-roster-count');
+        if (rosterCountEl) {
+            rosterCountEl.textContent = `${isCoop ? 'SQUAD' : 'RIVALS'}: ${this.players.size} / 4`;
+        }
+
         const rosterGrid = document.getElementById('net-roster-list');
         if (rosterGrid) {
             rosterGrid.innerHTML = '';
             if (this.players.size === 0) {
-                rosterGrid.innerHTML = '<div class="net-empty-roster">NO OPERATIVES IN SECTOR</div>';
+                rosterGrid.innerHTML = `
+                    <div class="net-empty-roster">
+                        <div class="net-empty-title">NO OPERATIVES IN SECTOR</div>
+                        <div class="net-empty-sub">BROADCASTING DISTRESS FREQUENCY ON SECTOR CHANNEL...</div>
+                    </div>
+                `;
             } else {
                 this.players.forEach((player) => {
                     const row = document.createElement('div');
                     row.className = `net-roster-row ${player.isSelf ? 'net-roster-row--self' : ''}`;
+                    const normalizedClass = (player.opClass || 'TANK').toUpperCase();
+                    const classColor = normalizedClass === 'SCOUT' ? 'cyan' : (normalizedClass === 'TANK' ? 'amber' : 'green');
+                    const classIcon = normalizedClass === 'SCOUT' ? '↗' : (normalizedClass === 'TANK' ? '▰' : '⚙');
                     row.innerHTML = `
-                        <div class="net-roster-callsign">${player.callsign}</div>
-                        <div class="net-roster-class">${player.opClass}</div>
-                        <div class="net-roster-ping">${player.ping}ms</div>
-                        <div class="net-roster-status">READY</div>
+                        <div class="net-roster-callsign">
+                            <span class="net-roster-avatar net-avatar--${classColor}">${classIcon}</span>
+                            <span>${player.callsign}</span>
+                        </div>
+                        <div class="net-roster-class">
+                            <span class="net-class-badge net-class--${classColor}">${normalizedClass}</span>
+                        </div>
+                        <div class="net-roster-ping">
+                            <span class="net-ping-dot">●</span>
+                            <span>${player.ping}ms</span>
+                        </div>
+                        <div class="net-roster-status">
+                            <span class="net-status-tag">READY</span>
+                        </div>
                     `;
                     rosterGrid.appendChild(row);
                 });

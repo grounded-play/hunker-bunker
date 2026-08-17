@@ -2190,59 +2190,153 @@
     <!-- Tactical Net: Multiplayer PVP & Co-Op Modal -->
     <div id="multiplayer-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-content net-modal-content">
-        <div class="settings-sticky-header">
-          <div class="net-header-wrap">
-            <h2 class="modal-title">TACTICAL NET // RELAY COMMAND</h2>
-            <div id="net-status-pill" class="net-status-pill net-status--connecting">CONNECTING...</div>
+        <div class="terminal-scanline"></div>
+
+        <!-- Header -->
+        <div class="net-header">
+          <div class="net-header-meta">
+            <span class="net-header-kicker">◈ SUB-SURFACE COMMS // COMBAT DATA-LINK v2.1</span>
+            <div class="net-header-title-row">
+              <h2 class="net-modal-title">TACTICAL NET <span class="net-title-accent">// RELAY COMMAND</span></h2>
+              <div class="net-status-badge">
+                <span class="net-status-dot"></span>
+                <span id="net-status-pill" class="net-status-pill net-status--connecting">CONNECTING...</span>
+              </div>
+            </div>
           </div>
           <button class="close-modal" id="close-multiplayer-modal" aria-label="Close Tactical Net">×</button>
         </div>
 
+        <!-- Mode Selector Cards -->
         <div class="net-mode-selector">
-          <button type="button" class="net-mode-btn active" id="net-mode-coop-btn">
-            <span class="net-mode-btn__icon">👥</span>
-            <span class="net-mode-btn__title">CO-OP EXPEDITION</span>
-            <span class="net-mode-btn__meta">2-4 SQUADMATES // SHARED LOOT</span>
-          </button>
-          <button type="button" class="net-mode-btn" id="net-mode-pvp-btn">
-            <span class="net-mode-btn__icon">⚔️</span>
-            <span class="net-mode-btn__title">PVP SKIRMISH</span>
-            <span class="net-mode-btn__meta">CONTESTED SECTORS // DUEL</span>
-          </button>
-        </div>
-
-        <div class="net-mode-description" id="net-mode-description">
-          CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.
-        </div>
-
-        <div class="net-session-panel">
-          <div class="net-session-info">
-            <div class="net-code-block">
-              <span class="net-code-label">SECTOR ROOM CODE</span>
-              <span class="net-code-val" id="net-room-code-val">SECTOR-7</span>
-              <button type="button" class="net-code-copy-btn" id="net-copy-code-btn">COPY</button>
+          <button type="button" class="net-mode-card active" id="net-mode-coop-btn">
+            <div class="net-mode-card__badge">
+              <span class="net-mode-card__icon">◈</span>
+              <span class="net-mode-card__tag">PVE SQUAD</span>
             </div>
-            <div class="net-relay-block">
-              <span class="net-code-label">NET RELAY BACKEND</span>
-              <span class="net-relay-url" id="net-relay-url">socket.io://active</span>
-              <button type="button" class="start-btn net-connect-toggle-btn" id="net-connect-btn">DISCONNECT</button>
+            <div class="net-mode-card__info">
+              <div class="net-mode-card__title">CO-OP EXPEDITION</div>
+              <div class="net-mode-card__meta">2-4 OPERATIVES // SHARED SALVAGE & REVIVAL</div>
+            </div>
+            <div class="net-mode-card__perks">
+              <span class="net-perk-chip">SYNCED TELEMETRY</span>
+              <span class="net-perk-chip">EMERGENCY RESCUE</span>
+              <span class="net-perk-chip">SHARED O₂ LINK</span>
+            </div>
+            <div class="net-mode-card__indicator">ACTIVE MODE</div>
+          </button>
+
+          <button type="button" class="net-mode-card" id="net-mode-pvp-btn">
+            <div class="net-mode-card__badge net-mode-card__badge--pvp">
+              <span class="net-mode-card__icon">⚔</span>
+              <span class="net-mode-card__tag">PVP DUEL</span>
+            </div>
+            <div class="net-mode-card__info">
+              <div class="net-mode-card__title">PVP SECTOR SKIRMISH</div>
+              <div class="net-mode-card__meta">CONTESTED BUNKER // HIGH-TIER DROPS</div>
+            </div>
+            <div class="net-mode-card__perks">
+              <span class="net-perk-chip net-perk-chip--pvp">CONTESTED CORRIDORS</span>
+              <span class="net-perk-chip net-perk-chip--pvp">FULL LOOT CLAIM</span>
+              <span class="net-perk-chip net-perk-chip--pvp">RIVAL BOUNTIES</span>
+            </div>
+            <div class="net-mode-card__indicator">SELECT MODE</div>
+          </button>
+        </div>
+
+        <!-- Mode Mission Briefing Banner -->
+        <div class="net-briefing-banner">
+          <div class="net-briefing-label">MISSION OBJECTIVE:</div>
+          <div class="net-mode-description" id="net-mode-description">
+            CO-OP EXPEDITION: Deploy joint squads through the outer ring. Shared salvage, synchronized telemetry, and emergency revival.
+          </div>
+        </div>
+
+        <!-- Main Split Grid -->
+        <div class="net-main-grid">
+
+          <!-- Column 1: Network & Sector Frequency -->
+          <div class="net-column net-column--telemetry">
+            <div class="net-panel-header">
+              <span class="net-panel-title">SECTOR FREQUENCY & UPLINK</span>
+              <span class="net-panel-badge">CH-07</span>
+            </div>
+
+            <div class="net-telemetry-box">
+              <div class="net-field-group">
+                <span class="net-field-label">SECTOR ROOM CODE</span>
+                <div class="net-code-display">
+                  <span class="net-code-val" id="net-room-code-val">SECTOR-7</span>
+                  <button type="button" class="net-code-copy-btn" id="net-copy-code-btn" title="Copy Sector Frequency">
+                    <span>📋</span> COPY
+                  </button>
+                </div>
+              </div>
+
+              <div class="net-field-group">
+                <span class="net-field-label">NETWORK RELAY BACKEND</span>
+                <div class="net-relay-display">
+                  <div class="net-relay-url-wrap">
+                    <span class="net-relay-dot">●</span>
+                    <span class="net-relay-url" id="net-relay-url">socket.io://active</span>
+                  </div>
+                  <button type="button" class="start-btn net-connect-toggle-btn" id="net-connect-btn">DISCONNECT</button>
+                </div>
+              </div>
+
+              <div class="net-protocol-specs">
+                <div class="net-spec-row">
+                  <span class="net-spec-name">ENCRYPTION:</span>
+                  <span class="net-spec-val">AES-256 / SHARED SEED</span>
+                </div>
+                <div class="net-spec-row">
+                  <span class="net-spec-name">SYNC RATE:</span>
+                  <span class="net-spec-val">60 HZ STATE LOCK</span>
+                </div>
+                <div class="net-spec-row">
+                  <span class="net-spec-name">SECTOR MAP:</span>
+                  <span class="net-spec-val">PROCEDURAL RADIAL RING</span>
+                </div>
+                <div class="net-spec-row">
+                  <span class="net-spec-name">CRASH SITES:</span>
+                  <span class="net-spec-val">SYNCHRONIZED SPLIT-DROP</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="net-roster-section">
-            <div class="net-roster-header">
-              <span>ACTIVE OPERATIVES</span>
-              <span>ROLE</span>
-              <span>LATENCY</span>
-              <span>STATUS</span>
+          <!-- Column 2: Squad Manifest / Operatives Roster -->
+          <div class="net-column net-column--roster">
+            <div class="net-panel-header">
+              <div class="net-panel-title-wrap">
+                <span class="net-panel-title">SQUAD MANIFEST</span>
+                <span class="net-roster-count" id="net-roster-count">SQUAD: 1 / 4</span>
+              </div>
+              <span class="net-panel-badge net-panel-badge--green">MAX: 4</span>
             </div>
-            <div class="net-roster-list" id="net-roster-list">
-              <!-- Dynamically populated -->
+
+            <div class="net-roster-container">
+              <div class="net-roster-header">
+                <span>OPERATIVE CALLSIGN</span>
+                <span>CHASSIS FRAME</span>
+                <span>LATENCY</span>
+                <span>STATUS</span>
+              </div>
+              <div class="net-roster-list" id="net-roster-list">
+                <!-- Dynamically populated by JS -->
+              </div>
             </div>
           </div>
+
         </div>
 
+        <!-- Footer Action Bar -->
         <div class="net-modal-actions">
+          <div class="net-action-hints">
+            <span class="net-hint-item"><kbd>ESC</kbd> CLOSE</span>
+            <span class="net-hint-item"><kbd>CLICK</kbd> TOGGLE MODE</span>
+            <span class="net-hint-item"><kbd>HOST</kbd> DEPLOY SQUAD</span>
+          </div>
           <button type="button" class="start-btn net-deploy-btn" id="net-deploy-btn">DEPLOY SQUAD</button>
         </div>
       </div>
