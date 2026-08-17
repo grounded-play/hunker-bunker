@@ -718,7 +718,7 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
             `;
         }).join('');
         strip.style.transition = 'none';
-        strip.style.transform = 'translateX(0)';
+        strip.style.transform = 'translateY(-50%) translateX(0px)';
         strip.offsetWidth; // Force reflow
     }
 
@@ -736,7 +736,7 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
         const target = wrapCenter - winnerCenter;
 
         strip.style.transition = 'transform 3.0s cubic-bezier(0.12, 0.8, 0.18, 1)';
-        strip.style.transform = `translateX(${target}px)`;
+        strip.style.transform = `translateY(-50%) translateX(${target}px)`;
     });
 
     // Unblur and reveal winning tile under needle when it lands

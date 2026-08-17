@@ -13346,6 +13346,7 @@ button.archive-log-entry:active {
   align-items: center;
   justify-content: center;
   padding: calc(var(--vu) * 2);
+  padding-bottom: calc(var(--vu) * 6);
   border-radius: 12px;
   animation: revealFadeIn 0.25s ease;
 }
@@ -13357,6 +13358,7 @@ button.archive-log-entry:active {
   align-items: center;
   text-align: center;
   gap: calc(var(--vu) * 1.2);
+  transform: translateY(calc(var(--vu) * -2.5));
 }
 
 .vault-reveal-header {
@@ -13395,7 +13397,7 @@ button.archive-log-entry:active {
   display: none;
   position: relative;
   width: 100%;
-  height: calc(var(--vu) * 16.5);
+  height: calc(var(--vu) * 19);
   overflow: hidden;
   border: 1.5px solid rgba(6, 182, 212, 0.5);
   border-radius: 10px;
@@ -13404,9 +13406,7 @@ button.archive-log-entry:active {
 }
 
 .vault-reveal-overlay[data-state="spinning"] .vault-reveal-strip-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  display: block;
 }
 
 .vault-reveal-marker {
@@ -13421,19 +13421,21 @@ button.archive-log-entry:active {
 }
 
 .vault-reveal-strip {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 12px;
+  gap: 14px;
+  padding: 0 16px;
   will-change: transform;
-  height: auto;
-  position: relative;
 }
 
 .vault-tile {
-  flex: 0 0 calc(var(--vu) * 10);
-  width: calc(var(--vu) * 10);
-  height: calc(var(--vu) * 12);
+  flex: 0 0 calc(var(--vu) * 11);
+  width: calc(var(--vu) * 11);
+  height: calc(var(--vu) * 13);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -13454,7 +13456,7 @@ button.archive-log-entry:active {
 .vault-tile.vault-tile--revealed {
   filter: blur(0px) brightness(1.25) !important;
   opacity: 1 !important;
-  transform: scale(1.1) !important;
+  transform: scale(1.08) !important;
   box-shadow: 0 0 30px var(--rar-color), inset 0 0 15px rgba(255, 255, 255, 0.15) !important;
   border-width: 2px !important;
   z-index: 8;
@@ -13462,7 +13464,7 @@ button.archive-log-entry:active {
 
 .vault-tile img {
   width: 100%;
-  height: calc(var(--vu) * 7.5);
+  height: calc(var(--vu) * 8);
   object-fit: contain !important;
   padding: 2px;
   box-sizing: border-box;
