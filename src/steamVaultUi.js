@@ -618,6 +618,23 @@ export async function purchaseKeys(sku) {
     console.error('[steam-store] purchase failed:', result);
 }
 
+export function updateKeyCacheCounts() {
+    const cache = vaultItems.find((i) => i.itemdefid === 4000);
+    const key = vaultItems.find((i) => i.itemdefid === 4001);
+    const cacheQty = cache ? Number(cache.quantity) || 0 : 0;
+    const keyQty = key ? Number(key.quantity) || 0 : 0;
+
+    const cacheEl = document.getElementById('vault-cache-count');
+    const keyEl = document.getElementById('vault-key-count');
+    const storeCacheEl = document.getElementById('vault-store-cache-val');
+    const storeKeyEl = document.getElementById('vault-store-key-val');
+
+    if (cacheEl) cacheEl.textContent = String(cacheQty);
+    if (keyEl) keyEl.textContent = String(keyQty);
+    if (storeCacheEl) storeCacheEl.textContent = String(cacheQty);
+    if (storeKeyEl) storeKeyEl.textContent = String(keyQty);
+}
+
 function findOwnedCacheAndKey() {
     const cache = vaultItems.find((i) => i.itemdefid === 4000);
     const key = vaultItems.find((i) => i.itemdefid === 4001);
@@ -628,6 +645,7 @@ export function updateOpenCacheAvailability() {
     const statusEl = document.getElementById('vault-store-open-status');
     const btn = document.getElementById('vault-store-open-btn');
     const pair = findOwnedCacheAndKey();
+    updateKeyCacheCounts();
 
     if (pair) {
         statusEl?.classList.add('hidden');
@@ -639,6 +657,126 @@ export function updateOpenCacheAvailability() {
         }
         btn?.classList.add('hidden');
     }
+}
+
+export function playCacheRevealAnimation(rewardDefId, onClaim) {
+    const overlay = document.getElementById('vault-reveal-overlay');
+    const titleEl = document.getElementById('vault-reveal-title');
+    const statusEl = document.getElementById('vault-reveal-status');
+    const stripWrap = document.getElementById('vault-reveal-strip-wrap');
+    const strip = document.getElementById('vault-reveal-strip');
+    const cardEl = document.getElementById('vault-reveal-card');
+    const rarityPill = document.getElementById('vault-reveal-rarity-pill');
+    const img = document.getElementById('vault-reveal-img');
+    const nameEl = document.getElementById('vault-reveal-name');
+    const descEl = document.getElementById('vault-reveal-desc');
+    const claimBtn = document.getElementById('vault-reveal-claim-btn');
+
+    if (!overlay) {
+        if (typeof onClaim === 'function') onClaim();
+        return;
+    }
+
+    const reward = STEAM_ITEM_CATALOG[rewardDefId] || {
+        name: `Item #${rewardDefId}`,
+        rarity: 'rare',
+        desc: 'Subterranean relic recovered from deep vault cache.',
+        localImg: '/favicon.png'
+    };
+
+    overlay.classList.remove('hidden');
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.dataset.state = 'spinning';
+
+    if (titleEl) titleEl.textContent = 'DECRYPTING RELIC CACHE';
+    if (statusEl) statusEl.textContent = 'SPINNING CIPHER MATRIX...';
+
+    const CANDIDATE_ITEMS = Object.values(STEAM_ITEM_CATALOG).filter((i) => i.itemdefid !== 4000 && i.itemdefid !== 4001);
+    const WIN_INDEX = 38;
+    const TOTAL_TILES = 50;
+    const tiles = [];
+
+    for (let i = 0; i < TOTAL_TILES; i++) {
+        if (i === WIN_INDEX) {
+            tiles.push(reward);
+        } else {
+            const randomItem = CANDIDATE_ITEMS[Math.floor(Math.random() * CANDIDATE_ITEMS.length)] || reward;
+            tiles.push(randomItem);
+        }
+    }
+
+    if (strip) {
+        strip.innerHTML = tiles.map((item) => {
+            const rarity = (item.rarity || 'uncommon').toLowerCase();
+            const color = getRarityColor(rarity);
+            return `
+                <div class="vault-tile vault-tile--${rarity}" style="--rar-color:${color};">
+                    <img src="${assetUrl(item.localImg || item.img)}" alt="${item.name}" onerror="this.src='/favicon.png'">
+                    <span class="vault-tile-label">${(item.rarity || 'RARE').toUpperCase()}</span>
+                </div>
+            `;
+        }).join('');
+        strip.style.transition = 'none';
+        strip.style.transform = 'translateX(0)';
+        strip.offsetWidth; // Force reflow
+    }
+
+    window.AudioManager?.play?.('door_gears_spin', { volume: 0.45 });
+
+    // Smooth horizontal tape deceleration under needle
+    requestAnimationFrame(() => {
+        if (!strip) return;
+        const firstTile = strip.firstElementChild;
+        const tileRect = firstTile?.getBoundingClientRect?.();
+        const tileWidth = tileRect?.width || 80;
+        const tileGap = 12;
+        const paddingLeft = 12;
+        const center = (stripWrap?.clientWidth || 500) / 2;
+        const step = tileWidth + tileGap;
+        const target = center - (paddingLeft + (WIN_INDEX * step) + (tileWidth / 2));
+
+        strip.style.transition = 'transform 3.0s cubic-bezier(0.12, 0.8, 0.18, 1)';
+        strip.style.transform = `translateX(${target}px)`;
+    });
+
+    // Reveal card after tape deceleration finishes
+    setTimeout(() => {
+        overlay.dataset.state = 'revealed';
+        if (titleEl) titleEl.textContent = 'DECRYPTION COMPLETE';
+        if (statusEl) statusEl.textContent = 'ITEM SECURED & PERSISTED TO STEAM';
+
+        if (cardEl) {
+            const color = getRarityColor(reward.rarity);
+            cardEl.className = `vault-reveal-card vault-reveal-card--${reward.rarity.toLowerCase()}`;
+            cardEl.style.borderColor = color;
+            cardEl.style.boxShadow = `0 0 35px ${color}66, 0 0 70px ${color}33`;
+        }
+
+        if (rarityPill) {
+            rarityPill.textContent = `★ ${(reward.rarity || 'RARE').toUpperCase()} REWARD ★`;
+            const color = getRarityColor(reward.rarity);
+            rarityPill.style.color = color;
+            rarityPill.style.borderColor = color;
+            rarityPill.style.background = `${color}18`;
+        }
+
+        if (img) applyCatalogImage(img, reward);
+        if (nameEl) nameEl.textContent = reward.name;
+        if (descEl) descEl.textContent = reward.desc;
+
+        window.AudioManager?.playProceduralLoot?.('weapon', (reward.rarity || 'rare').toLowerCase());
+        window.AudioManager?.play?.('fx_achievement', { volume: 0.5, bus: 'sfx' });
+    }, 3100);
+
+    const handleClaim = () => {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+        overlay.dataset.state = 'idle';
+        claimBtn?.removeEventListener('click', handleClaim);
+        if (typeof onClaim === 'function') onClaim();
+    };
+
+    claimBtn?.addEventListener('click', handleClaim, { once: true });
 }
 
 export async function openDeepRelicCache() {
@@ -662,13 +800,16 @@ export async function openDeepRelicCache() {
         reconcileCosmeticsOwnership(vaultItems);
         renderInventoryGrid();
         updateOpenCacheAvailability();
-        const reward = STEAM_ITEM_CATALOG[randomDefId];
-        const statusEl = document.getElementById('vault-store-open-status');
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = reward ? `Cache unlocked: ${reward.name}!` : 'Cache unlocked.';
-        }
-        showSteamDropToast(randomDefId, 1);
+
+        playCacheRevealAnimation(randomDefId, () => {
+            const reward = STEAM_ITEM_CATALOG[randomDefId];
+            const statusEl = document.getElementById('vault-store-open-status');
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.textContent = reward ? `Cache unlocked: ${reward.name}!` : 'Cache unlocked.';
+            }
+            showSteamDropToast(randomDefId, 1);
+        });
         return;
     }
 
@@ -679,10 +820,22 @@ export async function openDeepRelicCache() {
     if (result?.ok) {
         await loadVaultData();
         updateOpenCacheAvailability();
-        const reward = STEAM_ITEM_CATALOG[result.granted?.[0]?.itemdefid];
-        if (statusEl) {
-            statusEl.classList.remove('hidden');
-            statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+        const grantedId = result.granted?.[0]?.itemdefid;
+        const reward = STEAM_ITEM_CATALOG[grantedId];
+
+        if (grantedId) {
+            playCacheRevealAnimation(grantedId, () => {
+                if (statusEl) {
+                    statusEl.classList.remove('hidden');
+                    statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+                }
+                showSteamDropToast(grantedId, 1);
+            });
+        } else {
+            if (statusEl) {
+                statusEl.classList.remove('hidden');
+                statusEl.textContent = reward ? `Cache opened: ${reward.name}!` : 'Cache opened.';
+            }
         }
     } else {
         console.error('[steam-store] cache open failed:', result);
