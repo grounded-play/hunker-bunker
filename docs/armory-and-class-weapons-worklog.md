@@ -226,6 +226,59 @@ Status to `Done` and add a one-line result to §5 when finished, don't just leav
 
 Append here, most recent first. One line per event: date, agent, what happened.
 
+- **2026-08-17 16:37** — Claude: **Fixed two user-reported bugs, both root-caused via live browser
+  testing before touching any code:**
+  1. **Armory CSS was spilling/clipping and didn't match the game's visual language.**
+     Root cause: `#armory-screen` used `position: fixed; width: 100vw; height: 100vh;`. But
+     `#game-viewport` (the game's actual letterboxed 16:10 stage every other screen lives inside —
+     `#menu` uses `position: absolute` relative to it) has `container-type: size`, which makes it
+     the *containing block* for `position: fixed` descendants — except `vw`/`vh` units don't
+     respect that, they still resolve against the true browser window. So the Armory sized itself
+     off the full window while `#game-viewport`'s `overflow: hidden` clipped it back down to the
+     smaller stage box, scrambling every absolutely-positioned child inside. Confirmed with
+     screenshots at 1920x1080 before/after. Fixed by switching to `position: absolute; inset: 0`
+     (matching `#menu`) and correcting `z-index` from `80` to `8000` (the rest of the game's
+     z-index scale runs `#menu`=8000 up to `200000` for top-level modals — `80` was getting
+     buried under nearly everything). Also replaced every hardcoded `#00e5ff` neon-cyan value
+     with the game's actual design tokens (`var(--accent-primary)` #ff9f1c orange for the primary
+     CTA/active states, `var(--accent-secondary)` #2ec4b6 teal for secondary borders/highlights,
+     `var(--bg-panel)`/`var(--text-main)`/`var(--text-muted)`/`var(--border-subtle)` elsewhere),
+     switched the two fixed-width panels (320px/440px) and all spacing to the game's `--vu`
+     responsive unit system (JS-computed off actual stage size, same system every other panel
+     uses), changed `.armory-main-layout` from an overlapping flex row to a 3-column grid (suit
+     panel | open 3D space | weapon panel) so panels no longer float on top of the character,
+     added `max-height`/`overflow-y: auto` to panels so content scrolls instead of clipping off
+     the bottom, and added an `@container (max-width: 900px)` fallback to a single scrollable
+     column for narrow stages. **Live-verified at 3 sizes** (1920x1080, Steam Deck's 1280x800,
+     and a worst-case 800x500): no clipping, EMBARK button now correctly orange/matches
+     `#start-game`'s style, full loadout flow still works. One remaining minor cosmetic overlap
+     (suit panel slightly under the character's feet/platform edge, not any interactive content)
+     — that's the 3D camera's screen-space framing (`armoryScene.js`, not CSS) and reads as
+     intentional foreground-panel layering rather than a bug; flagged, not chased further.
+  2. **`DoorIntro` video "missing" on Linux builds.** Root cause: every other cutscene in the
+     game ships as an `.mp4`/`.webm` pair and picks whichever the browser's `canPlayType('video/
+     webm')` supports — except `DoorIntro`, hardcoded to `/DoorIntro.mp4` in 3 places in
+     `main.js` with **no `.webm` fallback file existing at all**. Electron's bundled Chromium on
+     Linux commonly ships without H.264 decode support (licensing), so the file is physically
+     present in the build (confirmed via `npm run build` + the existing
+     `scripts/audit-build-media.js` audit, which passed) but silently fails to *play* on Linux —
+     looks "missing" even though it isn't. Fixed by transcoding the existing `DoorIntro.mp4` to
+     `DoorIntro.webm` (`ffmpeg -c:v libvpx-vp9 -crf 32 -c:a libopus`, matching this repo's
+     existing VP9 convention for every other cutscene — 2.5MB, smaller than the 4.7MB mp4, audio
+     preserved), updating all 3 `main.js` call sites to pick webm-when-supported like every other
+     cutscene does, and adding `DoorIntro.webm` to `audit-build-media.js`'s required-file list so
+     this can't silently regress again. Verified: fresh `npm run build` + audit both pass.
+  Full suite after both fixes: 190/190 files (a `caveat: another agent added
+  armoryScene.test.js/armoryUi.test.js concurrently this session, this run reflects both sets of
+  changes together`), 1587/1587 tests, all green.
+  **A caution for whoever reads this next**: mid-session, another agent was actively rewriting
+  `style.css` concurrently (visible via a `/* --- 12:42 TACTICAL RECONSTRUCTION --- */` comment
+  and a large unrelated diff landing in commit `e5372d0`). No content conflict resulted this time
+  — their changes and mine touched different regions — but a stale browser HTTP cache on the
+  hardcoded `style.css?v=1242_v33` query in `index.html` briefly made verification confusing
+  (the file on disk was correct; the browser kept serving an old cached response for that exact
+  URL). If CSS changes ever appear not to take effect during testing, bump that query string or
+  force-reload the stylesheet via a fresh query param before assuming the code is wrong.
 - **2026-08-17 16:04** — Claude: **The Armory is fully built, wired, and live-verified end to end** (task 5 done). Summary of this pass:
   1. Read `src/armoryScene.js`/`src/armoryUi.js` in full — confirmed they're real, complete implementations (516 + 319 lines), not stubs.
   2. Found and fixed the same path-divergence bug as before, this time in `armoryScene.js`: it kept its own local `WEAPON_ARCHETYPE_GLBS`/`WEAPON_SKIN_GLB_MAP` pointing at the invented `weapon-*.glb` paths from earlier today, and was missing 3 of the 5 skins now available. Consolidated onto `player3dOverlay.js`'s exported `WEAPON_ARCHETYPES`/`WEAPON_SKIN_MESHES` (added `4109`/`4110` there too, for the two pre-existing legendary skins `armoryScene.js` already referenced).

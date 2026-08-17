@@ -17,7 +17,22 @@
     "3d/runtime/hull-matrix.glb",
     "3d/runtime/new3ds/bunker_junk_rare.glb",
     "3d/runtime/new3ds/bunker_junk_uncommon.glb",
+    "3d/runtime/new3ds/charm_geodetic_compass.glb",
+    "3d/runtime/new3ds/charm_glitched_ram.glb",
+    "3d/runtime/new3ds/charm_golden_sub_bunker_key.glb",
+    "3d/runtime/new3ds/charm_mini_cryo_core.glb",
+    "3d/runtime/new3ds/charm_mini_drone_bobble.glb",
+    "3d/runtime/new3ds/charm_spent_50cal.glb",
+    "3d/runtime/new3ds/charm_sporesnail_pearl.glb",
+    "3d/runtime/new3ds/charm_trench_whistle.glb",
     "3d/runtime/new3ds/fungal_spore_vent.glb",
+    "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
+    "3d/runtime/new3ds/gun_scout_talon_c.glb",
+    "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
+    "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
+    "3d/runtime/new3ds/mod_cryo_capacitor.glb",
+    "3d/runtime/new3ds/mod_magnetic_scavenger.glb",
+    "3d/runtime/new3ds/mod_zero_point_flux.glb",
     "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
     "3d/runtime/new3ds/prop_biomech_arch.glb",
     "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
@@ -41,6 +56,11 @@
     "3d/runtime/new3ds/prop_surgical_cart.glb",
     "3d/runtime/new3ds/prop_tesla_coil_node.glb",
     "3d/runtime/new3ds/prop_vital_monitor.glb",
+    "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
+    "3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
+    "3d/runtime/new3ds/skin_scout_frostbite.glb",
+    "3d/runtime/new3ds/skin_tank_deep_core_melter.glb",
+    "3d/runtime/new3ds/skin_void_walker_beam.glb",
     "3d/runtime/new3ds/spore_mortar.glb",
     "3d/runtime/new3ds/sporesnail.glb",
     "3d/runtime/o2-generator.glb",
@@ -52,11 +72,13 @@
     "3d/runtime/tank-rigged.glb",
     "3d/scouting-scout/Scout.game.glb",
     "DoorIntro.mp4",
+    "DoorIntro.webm",
     "Eng.Full_v2.png",
     "Eng.walk_v4.png",
     "Scout.full_v2.png",
     "Tank.full_v2.png",
     "Tank.walk_v4.png",
+    "\\.webm",
     "ach_ending_alien_exodus.jpg",
     "ach_ending_empty_husk.jpg",
     "ach_ending_failed_carrier.jpg",
@@ -274,6 +296,14 @@
     "economy/cache_deep_relic_large.png",
     "economy/cache_key.png",
     "economy/cache_key_large.png",
+    "economy/charm_geodetic_compass.png",
+    "economy/charm_glitched_ram.png",
+    "economy/charm_golden_sub_bunker_key.png",
+    "economy/charm_mini_cryo_core.png",
+    "economy/charm_mini_drone_bobble.png",
+    "economy/charm_spent_50cal.png",
+    "economy/charm_sporesnail_pearl.png",
+    "economy/charm_trench_whistle.png",
     "economy/decal_carbon.png",
     "economy/decal_carbon_large.png",
     "economy/emblem_archivist.png",
@@ -282,6 +312,9 @@
     "economy/emblem_queen_slayer_large.png",
     "economy/finish_chrome.png",
     "economy/finish_chrome_large.png",
+    "economy/mod_cryo_capacitor.png",
+    "economy/mod_magnetic_scavenger.png",
+    "economy/mod_zero_point_flux.png",
     "economy/patch_engineer.png",
     "economy/patch_engineer_large.png",
     "economy/patch_scout.png",
@@ -292,6 +325,8 @@
     "economy/relic_common_large.png",
     "economy/relic_rare.png",
     "economy/relic_rare_large.png",
+    "economy/skin_queen_carapace_carbine.png",
+    "economy/skin_void_walker_beam.png",
     "ending_carriersbargain_eggs.png",
     "ending_cleanescape_cabin.png",
     "ending_fullbrood_ship.png",
@@ -307,6 +342,21 @@
     "ice_base_rock.png",
     "ice_grunge_snow.png",
     "ice_wall_glacier.png",
+    "interstitials/int_aria_queens_mark_key_v1.webp",
+    "interstitials/int_aria_silk_trance_key_v1.webp",
+    "interstitials/int_aria_whispers_abyss_key_v1.webp",
+    "interstitials/int_briggs_scar_tissue_key_v1.webp",
+    "interstitials/int_briggs_scorched_rig_key_v1.webp",
+    "interstitials/int_briggs_vanguard_fire_key_v1.webp",
+    "interstitials/int_kaelen_diagnostic_cradle_key_v1.webp",
+    "interstitials/int_kaelen_frequency_overclock_key_v1.webp",
+    "interstitials/int_kaelen_supercharged_matrix_key_v1.webp",
+    "interstitials/int_nahl_co_evolution_key_v1.webp",
+    "interstitials/int_nahl_mind_link_key_v1.webp",
+    "interstitials/int_nahl_transcendence_key_v1.webp",
+    "interstitials/int_val_eternal_hearth_key_v1.webp",
+    "interstitials/int_val_hearth_warmth_key_v1.webp",
+    "interstitials/int_val_spore_communion_key_v1.webp",
     "kaelen_camp_walk_v2.png",
     "lore_portraits/meridian_kaelen.jpg",
     "lore_portraits/meridian_kaelen.png",
@@ -362,8 +412,17 @@
     "prop_camp_grave_fresh.png",
     "prop_camp_grave_old.png",
     "prop_camp_laundry.png",
+    "prop_camp_meridian_battery_bank.jpg",
+    "prop_camp_meridian_radio.jpg",
+    "prop_camp_meridian_repair_rig.jpg",
     "prop_camp_sandbags.png",
     "prop_camp_shutter_lockdown.png",
+    "prop_camp_tallow_resin_urn.jpg",
+    "prop_camp_tallow_spore_trays.jpg",
+    "prop_camp_tallow_still.jpg",
+    "prop_camp_vesper_ammo_press.jpg",
+    "prop_camp_vesper_shield_rack.jpg",
+    "prop_camp_vesper_turret.jpg",
     "prop_camp_warning_placard.png",
     "prop_cave_bones.png",
     "prop_cave_eggs_hatched.png",
@@ -380,7 +439,13 @@
     "prop_engineering_bench.png",
     "prop_fabricator_workstation.jpg",
     "prop_fusion_generator.png",
+    "prop_hive_carapace_molt.jpg",
+    "prop_hive_chitin_hatchery.jpg",
+    "prop_hive_relay_antenna.jpg",
     "prop_hive_resin_sac.png",
+    "prop_hive_suture_organ.jpg",
+    "prop_hive_synaptic_web.jpg",
+    "prop_hive_wound_cauterizer.jpg",
     "prop_iron_guild_dogtags.png",
     "prop_laser_trap_emitter.jpg",
     "prop_medical_bed.png",
@@ -520,13 +585,83 @@
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/charm_geodetic_compass.glb",
+      "bytes": 1722644,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_glitched_ram.glb",
+      "bytes": 1874048,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_golden_sub_bunker_key.glb",
+      "bytes": 2204124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_mini_cryo_core.glb",
+      "bytes": 1992748,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_mini_drone_bobble.glb",
+      "bytes": 1898800,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_spent_50cal.glb",
+      "bytes": 1637676,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_sporesnail_pearl.glb",
+      "bytes": 1708652,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/charm_trench_whistle.glb",
+      "bytes": 1685548,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/fungal_spore_vent.glb",
       "bytes": 3284196,
       "classification": "runtime-required"
     },
     {
+      "path": "3d/runtime/new3ds/gun_engineer_tesla_lock.glb",
+      "bytes": 689520,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/gun_scout_vector9_talon.glb",
+      "bytes": 548956,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/gun_tank_siege_breaker50.glb",
+      "bytes": 614468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_cryo_capacitor.glb",
+      "bytes": 1975092,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_magnetic_scavenger.glb",
+      "bytes": 2129132,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/mod_zero_point_flux.glb",
+      "bytes": 2099316,
+      "classification": "runtime-required"
+    },
+    {
       "path": "3d/runtime/new3ds/prop_ammo_crate_stack.glb",
-      "bytes": 4403360,
+      "bytes": 1130116,
       "classification": "runtime-required"
     },
     {
@@ -536,32 +671,32 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_flesh_locker.glb",
-      "bytes": 4550796,
+      "bytes": 1159876,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_incubator.glb",
-      "bytes": 4445972,
+      "bytes": 1183816,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_neural_synapse.glb",
-      "bytes": 4811504,
+      "bytes": 1252528,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_respirator.glb",
-      "bytes": 4309780,
+      "bytes": 1127516,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_sphincter_trap.glb",
-      "bytes": 5437764,
+      "bytes": 1419608,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_biomech_triage_cradle.glb",
-      "bytes": 4750216,
+      "bytes": 1242384,
       "classification": "runtime-required"
     },
     {
@@ -596,12 +731,12 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_fabricator_workstation.glb",
-      "bytes": 4836172,
+      "bytes": 1296028,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_laser_trap_emitter.glb",
-      "bytes": 4387656,
+      "bytes": 1156788,
       "classification": "runtime-required"
     },
     {
@@ -611,7 +746,7 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_o2_filter_vat.glb",
-      "bytes": 4256964,
+      "bytes": 1119976,
       "classification": "runtime-required"
     },
     {
@@ -631,12 +766,37 @@
     },
     {
       "path": "3d/runtime/new3ds/prop_tesla_coil_node.glb",
-      "bytes": 4213092,
+      "bytes": 1111072,
       "classification": "runtime-required"
     },
     {
       "path": "3d/runtime/new3ds/prop_vital_monitor.glb",
-      "bytes": 4168220,
+      "bytes": 1060412,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_engineer_cryo_plasma.glb",
+      "bytes": 541968,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_queen_carapace_carbine.glb",
+      "bytes": 11966464,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_scout_frostbite.glb",
+      "bytes": 478056,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_tank_deep_core_melter.glb",
+      "bytes": 513376,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "3d/runtime/new3ds/skin_void_walker_beam.glb",
+      "bytes": 14057084,
       "classification": "runtime-required"
     },
     {
@@ -692,6 +852,11 @@
     {
       "path": "DoorIntro.mp4",
       "bytes": 4668690,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "DoorIntro.webm",
+      "bytes": 2533771,
       "classification": "runtime-required"
     },
     {
@@ -1353,6 +1518,51 @@
       "path": "audio/generated/camp_worker_panicked.wav",
       "bytes": 70604,
       "classification": "runtime-required"
+    },
+    {
+      "path": "audio/generated/sfx_charm_clink_heavy.wav",
+      "bytes": 30914,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/sfx_charm_clink_light.wav",
+      "bytes": 24740,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/sfx_overclock_hum_cryo.wav",
+      "bytes": 57374,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/sfx_overclock_hum_magnetic.wav",
+      "bytes": 48554,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/sfx_overclock_socket.wav",
+      "bytes": 37088,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/sfx_smelt_forge_burst.wav",
+      "bytes": 75014,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/sfx_trade_shard_dispense.wav",
+      "bytes": 66194,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_aura_target_down.wav",
+      "bytes": 83834,
+      "classification": "generated-intermediate"
+    },
+    {
+      "path": "audio/generated/voice_commander_breached.wav",
+      "bytes": 97064,
+      "classification": "generated-intermediate"
     },
     {
       "path": "audio/ost/A Snail Blocks the Hallway.mp3",
@@ -2231,7 +2441,7 @@
     },
     {
       "path": "cutscenes/README.md",
-      "bytes": 1938,
+      "bytes": 2170,
       "classification": "runtime-required"
     },
     {
@@ -2392,6 +2602,21 @@
     {
       "path": "cutscenes/ending-scorchedsky.webm",
       "bytes": 1228223,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/engineer-class-intro-poster.jpg",
+      "bytes": 70560,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/engineer-class-intro.mp4",
+      "bytes": 2307236,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/engineer-class-intro.webm",
+      "bytes": 4699250,
       "classification": "runtime-required"
     },
     {
@@ -2565,6 +2790,21 @@
       "classification": "runtime-required"
     },
     {
+      "path": "cutscenes/scout-class-intro-poster.jpg",
+      "bytes": 75498,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/scout-class-intro.mp4",
+      "bytes": 2468421,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/scout-class-intro.webm",
+      "bytes": 5030596,
+      "classification": "runtime-required"
+    },
+    {
       "path": "cutscenes/scout-intro-poster.jpg",
       "bytes": 64324,
       "classification": "runtime-required"
@@ -2572,6 +2812,21 @@
     {
       "path": "cutscenes/scout-intro.webm",
       "bytes": 1483713,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-class-intro-poster.jpg",
+      "bytes": 74024,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-class-intro.mp4",
+      "bytes": 2776712,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "cutscenes/tank-class-intro.webm",
+      "bytes": 5377618,
       "classification": "runtime-required"
     },
     {
@@ -2875,6 +3130,46 @@
       "classification": "runtime-required"
     },
     {
+      "path": "economy/charm_geodetic_compass.png",
+      "bytes": 730930,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_glitched_ram.png",
+      "bytes": 617429,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_golden_sub_bunker_key.png",
+      "bytes": 744498,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_mini_cryo_core.png",
+      "bytes": 726099,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_mini_drone_bobble.png",
+      "bytes": 685756,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_spent_50cal.png",
+      "bytes": 620963,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_sporesnail_pearl.png",
+      "bytes": 592503,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/charm_trench_whistle.png",
+      "bytes": 730661,
+      "classification": "runtime-required"
+    },
+    {
       "path": "economy/decal_carbon.png",
       "bytes": 45073,
       "classification": "runtime-required"
@@ -2912,6 +3207,21 @@
     {
       "path": "economy/finish_chrome_large.png",
       "bytes": 253584,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_cryo_capacitor.png",
+      "bytes": 765335,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_magnetic_scavenger.png",
+      "bytes": 853894,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/mod_zero_point_flux.png",
+      "bytes": 845798,
       "classification": "runtime-required"
     },
     {
@@ -2962,6 +3272,16 @@
     {
       "path": "economy/relic_rare_large.png",
       "bytes": 253859,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_queen_carapace_carbine.png",
+      "bytes": 657294,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "economy/skin_void_walker_beam.png",
+      "bytes": 727988,
       "classification": "runtime-required"
     },
     {
@@ -3347,6 +3667,561 @@
     {
       "path": "interstitials/int_38_destination_core_worlds_key_v1.webp",
       "bytes": 125734,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_aria_queens_mark_key_v1.webp",
+      "bytes": 285984,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_aria_silk_trance_key_v1.webp",
+      "bytes": 308122,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_aria_whispers_abyss_key_v1.webp",
+      "bytes": 310036,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_briggs_scar_tissue_key_v1.webp",
+      "bytes": 193478,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_briggs_scorched_rig_key_v1.webp",
+      "bytes": 323252,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_briggs_vanguard_fire_key_v1.webp",
+      "bytes": 283872,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_kaelen_diagnostic_cradle_key_v1.webp",
+      "bytes": 249298,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_kaelen_frequency_overclock_key_v1.webp",
+      "bytes": 144468,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_kaelen_supercharged_matrix_key_v1.webp",
+      "bytes": 328398,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_nahl_co_evolution_key_v1.webp",
+      "bytes": 336492,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_nahl_mind_link_key_v1.webp",
+      "bytes": 321788,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_nahl_transcendence_key_v1.webp",
+      "bytes": 384562,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_val_eternal_hearth_key_v1.webp",
+      "bytes": 336214,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_val_hearth_warmth_key_v1.webp",
+      "bytes": 255480,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/int_val_spore_communion_key_v1.webp",
+      "bytes": 236938,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_01_someone_is_still_alive_key_v1.mp4",
+      "bytes": 6205608,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_01_someone_is_still_alive_motion_v1.mp4",
+      "bytes": 6205608,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_01_someone_is_still_alive_motion_v1.webm",
+      "bytes": 2790610,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
+      "bytes": 8282853,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_02_kaelen_s_sleeping_machine_motion_v1.mp4",
+      "bytes": 8282853,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_02_kaelen_s_sleeping_machine_motion_v1.webm",
+      "bytes": 4870671,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_03_the_math_is_beautiful_now_key_v1.mp4",
+      "bytes": 8505266,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_03_the_math_is_beautiful_now_motion_v1.mp4",
+      "bytes": 8505266,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_03_the_math_is_beautiful_now_motion_v1.webm",
+      "bytes": 4560608,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_04_warmth_beneath_the_ice_key_v1.mp4",
+      "bytes": 7180538,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_04_warmth_beneath_the_ice_motion_v1.mp4",
+      "bytes": 7180538,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_04_warmth_beneath_the_ice_motion_v1.webm",
+      "bytes": 3989761,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_05_the_pipes_are_singing_key_v1.mp4",
+      "bytes": 9665825,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_05_the_pipes_are_singing_motion_v1.mp4",
+      "bytes": 9665825,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_05_the_pipes_are_singing_motion_v1.webm",
+      "bytes": 5239483,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_06_briggs_keeps_the_ledger_key_v1.mp4",
+      "bytes": 8603484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_06_briggs_keeps_the_ledger_motion_v1.mp4",
+      "bytes": 8603484,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_06_briggs_keeps_the_ledger_motion_v1.webm",
+      "bytes": 4856724,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_07_your_name_was_written_twice_key_v1.mp4",
+      "bytes": 6523322,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_07_your_name_was_written_twice_motion_v1.mp4",
+      "bytes": 6523322,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_07_your_name_was_written_twice_motion_v1.webm",
+      "bytes": 3336521,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_08_dr_nahl_remembers_the_tissue_key_v1.mp4",
+      "bytes": 8853498,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_08_dr_nahl_remembers_the_tissue_motion_v1.mp4",
+      "bytes": 8853498,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_08_dr_nahl_remembers_the_tissue_motion_v1.webm",
+      "bytes": 5432406,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_09_mothership_customer_support_key_v1.mp4",
+      "bytes": 8940257,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_09_mothership_customer_support_motion_v1.mp4",
+      "bytes": 8940257,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_09_mothership_customer_support_motion_v1.webm",
+      "bytes": 5215025,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_10_mothership_is_not_feeling_well_key_v1.mp4",
+      "bytes": 11308780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_10_mothership_is_not_feeling_well_motion_v1.mp4",
+      "bytes": 11308780,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_10_mothership_is_not_feeling_well_motion_v1.webm",
+      "bytes": 7148941,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_11_her_voice_inside_your_helmet_key_v1.mp4",
+      "bytes": 9383728,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.mp4",
+      "bytes": 9383728,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.webm",
+      "bytes": 5354158,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_key_v1.mp4",
+      "bytes": 8928628,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_motion_v1.mp4",
+      "bytes": 8928628,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_motion_v1.webm",
+      "bytes": 5344668,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_13_a_snail_blocks_the_hallway_key_v1.mp4",
+      "bytes": 7994570,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_13_a_snail_blocks_the_hallway_motion_v1.mp4",
+      "bytes": 7994570,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_13_a_snail_blocks_the_hallway_motion_v1.webm",
+      "bytes": 4599406,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_14_cold_enough_to_think_key_v1.mp4",
+      "bytes": 12347982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_14_cold_enough_to_think_motion_v1.mp4",
+      "bytes": 12347982,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_14_cold_enough_to_think_motion_v1.webm",
+      "bytes": 7012224,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_15_the_spores_know_your_name_key_v1.mp4",
+      "bytes": 14059035,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_15_the_spores_know_your_name_motion_v1.mp4",
+      "bytes": 14059035,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_15_the_spores_know_your_name_motion_v1.webm",
+      "bytes": 9079290,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_16_we_could_avoid_doing_this_key_v1.mp4",
+      "bytes": 5906919,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_16_we_could_avoid_doing_this_motion_v1.mp4",
+      "bytes": 5906919,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_16_we_could_avoid_doing_this_motion_v1.webm",
+      "bytes": 3042944,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_17_it_understands_the_gun_key_v1.mp4",
+      "bytes": 7052743,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_17_it_understands_the_gun_motion_v1.mp4",
+      "bytes": 7052743,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_17_it_understands_the_gun_motion_v1.webm",
+      "bytes": 3650593,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_18_the_creature_lets_you_pass_key_v1.mp4",
+      "bytes": 9183476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_18_the_creature_lets_you_pass_motion_v1.mp4",
+      "bytes": 9183476,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_18_the_creature_lets_you_pass_motion_v1.webm",
+      "bytes": 5054744,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_19_meridian_remembers_you_key_v1.mp4",
+      "bytes": 14294231,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_19_meridian_remembers_you_motion_v1.mp4",
+      "bytes": 14294231,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_19_meridian_remembers_you_motion_v1.webm",
+      "bytes": 9032567,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_20_tallow_keeps_the_steam_key_v1.mp4",
+      "bytes": 8823888,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_20_tallow_keeps_the_steam_motion_v1.mp4",
+      "bytes": 8823888,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_20_tallow_keeps_the_steam_motion_v1.webm",
+      "bytes": 4761184,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_21_vesper_sleeps_in_shifts_key_v1.mp4",
+      "bytes": 7647184,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.mp4",
+      "bytes": 7647184,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.webm",
+      "bytes": 4041361,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_22_you_robbed_the_only_people_left_key_v1.mp4",
+      "bytes": 8532810,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_22_you_robbed_the_only_people_left_motion_v1.mp4",
+      "bytes": 8532810,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_22_you_robbed_the_only_people_left_motion_v1.webm",
+      "bytes": 4320334,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_23_they_still_have_their_faces_key_v1.mp4",
+      "bytes": 7968052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_23_they_still_have_their_faces_motion_v1.mp4",
+      "bytes": 7968052,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_23_they_still_have_their_faces_motion_v1.webm",
+      "bytes": 3786334,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_24_nobody_says_goodbye_key_v1.mp4",
+      "bytes": 5659997,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_24_nobody_says_goodbye_motion_v1.mp4",
+      "bytes": 5659997,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_24_nobody_says_goodbye_motion_v1.webm",
+      "bytes": 2395556,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_25_gigawatt_goliath_key_v1.mp4",
+      "bytes": 11447642,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_25_gigawatt_goliath_motion_v1.mp4",
+      "bytes": 11447642,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_25_gigawatt_goliath_motion_v1.webm",
+      "bytes": 7094947,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_26_absolute_zero_has_a_shell_key_v1.mp4",
+      "bytes": 8207651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_26_absolute_zero_has_a_shell_motion_v1.mp4",
+      "bytes": 8207651,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_26_absolute_zero_has_a_shell_motion_v1.webm",
+      "bytes": 4236044,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_27_the_bloom_that_hunts_key_v1.mp4",
+      "bytes": 11829236,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_27_the_bloom_that_hunts_motion_v1.mp4",
+      "bytes": 11829236,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_27_the_bloom_that_hunts_motion_v1.webm",
+      "bytes": 7090124,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_28_martha_runs_faster_now_key_v1.mp4",
+      "bytes": 8442110,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_28_martha_runs_faster_now_motion_v1.mp4",
+      "bytes": 8442110,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_28_martha_runs_faster_now_motion_v1.webm",
+      "bytes": 4622922,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_29_briggs_became_the_barricade_key_v1.mp4",
+      "bytes": 5012028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.mp4",
+      "bytes": 5012028,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.webm",
+      "bytes": 2342114,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_30_kaelen_is_the_grid_key_v1.mp4",
+      "bytes": 17439242,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_30_kaelen_is_the_grid_motion_v1.mp4",
+      "bytes": 17439242,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_30_kaelen_is_the_grid_motion_v1.webm",
+      "bytes": 11576479,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_31_mother_of_the_last_world_key_v1.mp4",
+      "bytes": 10837581,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.mp4",
+      "bytes": 10837581,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.webm",
+      "bytes": 6437194,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_32_black_box_stain_key_v1.mp4",
+      "bytes": 9223148,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_32_black_box_stain_motion_v1.mp4",
+      "bytes": 9223148,
+      "classification": "runtime-required"
+    },
+    {
+      "path": "interstitials/motion/int_32_black_box_stain_motion_v1.webm",
+      "bytes": 5728278,
       "classification": "runtime-required"
     },
     {

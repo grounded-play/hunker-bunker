@@ -17539,7 +17539,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
    a clear middle lane instead of panels floating on top of the character. */
 .armory-main-layout {
   display: grid;
-  grid-template-columns: minmax(0, calc(var(--vu) * 46)) minmax(calc(var(--vu) * 20), 1fr) minmax(0, calc(var(--vu) * 60));
+  grid-template-columns: minmax(0, calc(var(--vu) * 38)) minmax(calc(var(--vu) * 28), 1fr) minmax(0, calc(var(--vu) * 60));
   align-items: end;
   gap: calc(var(--vu) * 2.4);
   min-height: 0;

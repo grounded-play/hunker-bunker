@@ -8,16 +8,34 @@
     "duplicateGroups": 15
   },
   "measured": {
-    "publicBytes": 1163812622,
-    "publicFileCount": 842
+    "publicBytes": 1969997981,
+    "publicFileCount": 1004
   },
   "classifications": {
-    "runtime-required": 696,
+    "runtime-required": 849,
     "source-reference": 0,
-    "generated-intermediate": 0,
+    "generated-intermediate": 9,
     "unknown": 146
   },
-  "missingReferences": [],
+  "missingReferences": [
+    "\\.webm",
+    "prop_camp_meridian_battery_bank.jpg",
+    "prop_camp_meridian_radio.jpg",
+    "prop_camp_meridian_repair_rig.jpg",
+    "prop_camp_tallow_resin_urn.jpg",
+    "prop_camp_tallow_spore_trays.jpg",
+    "prop_camp_tallow_still.jpg",
+    "prop_camp_vesper_ammo_press.jpg",
+    "prop_camp_vesper_shield_rack.jpg",
+    "prop_camp_vesper_turret.jpg",
+    "prop_hive_carapace_molt.jpg",
+    "prop_hive_chitin_hatchery.jpg",
+    "prop_hive_relay_antenna.jpg",
+    "prop_hive_suture_organ.jpg",
+    "prop_hive_synaptic_web.jpg",
+    "prop_hive_wound_cauterizer.jpg",
+    "3d/runtime/new3ds/gun_scout_talon_c.glb"
+  ],
   "invalidMedia": [],
   "codecMismatches": [
     {
@@ -366,6 +384,71 @@
       "detected": ".jpg"
     },
     {
+      "path": "economy/charm_geodetic_compass.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/charm_glitched_ram.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/charm_golden_sub_bunker_key.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/charm_mini_cryo_core.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/charm_mini_drone_bobble.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/charm_spent_50cal.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/charm_sporesnail_pearl.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/charm_trench_whistle.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/mod_cryo_capacitor.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/mod_magnetic_scavenger.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/mod_zero_point_flux.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/skin_queen_carapace_carbine.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
+      "path": "economy/skin_void_walker_beam.png",
+      "extension": ".png",
+      "detected": ".jpg"
+    },
+    {
       "path": "ending_carriersbargain_eggs.png",
       "extension": ".png",
       "detected": ".jpg"
@@ -699,6 +782,230 @@
       ]
     },
     {
+      "sha256": "b15e87b68a50e0ba5fc573fb8c5d695877f8c559513f0926614544100313bb29",
+      "files": [
+        "interstitials/motion/int_01_someone_is_still_alive_key_v1.mp4",
+        "interstitials/motion/int_01_someone_is_still_alive_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "6a0b4cc4958ab635c57dfdf35267564a43d1cc4f35fbe32f11028435505111f8",
+      "files": [
+        "interstitials/motion/int_02_kaelen_s_sleeping_machine_key_v1.mp4",
+        "interstitials/motion/int_02_kaelen_s_sleeping_machine_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "7a911bbe9782ad0c1787c18bfc0d215cabbafd0a7cca40b038147cb06c62153a",
+      "files": [
+        "interstitials/motion/int_03_the_math_is_beautiful_now_key_v1.mp4",
+        "interstitials/motion/int_03_the_math_is_beautiful_now_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "f30baaacf8e1c9f192a3cab17868250044ece23813359a568eeac3a96f0d3272",
+      "files": [
+        "interstitials/motion/int_04_warmth_beneath_the_ice_key_v1.mp4",
+        "interstitials/motion/int_04_warmth_beneath_the_ice_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "57c0537d44680e5778eb7c306578eddfe26254ed9f32311ea4e1ad1734cb8710",
+      "files": [
+        "interstitials/motion/int_05_the_pipes_are_singing_key_v1.mp4",
+        "interstitials/motion/int_05_the_pipes_are_singing_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "2a36aee3a8dd3e003fbc11b3b80195be746634caf278099f4ff82c53e1f24fd1",
+      "files": [
+        "interstitials/motion/int_06_briggs_keeps_the_ledger_key_v1.mp4",
+        "interstitials/motion/int_06_briggs_keeps_the_ledger_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "d48b82174acc5a97939147ec1991f583a932573f395740cc9d04709d48c59d10",
+      "files": [
+        "interstitials/motion/int_07_your_name_was_written_twice_key_v1.mp4",
+        "interstitials/motion/int_07_your_name_was_written_twice_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "df2e9fccf0f2d2825b5c5310774e3bc898d7a10379bf0eecb9dd6464798415f8",
+      "files": [
+        "interstitials/motion/int_08_dr_nahl_remembers_the_tissue_key_v1.mp4",
+        "interstitials/motion/int_08_dr_nahl_remembers_the_tissue_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "291662020993b1cabd9a3b0890b37d6d6c03ef05de34811f4c71b6a1f805be87",
+      "files": [
+        "interstitials/motion/int_09_mothership_customer_support_key_v1.mp4",
+        "interstitials/motion/int_09_mothership_customer_support_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "4e0c02a8ffa2d730e9fe96a24a72bed44236bdb853c5ba6bbc3bb44ea9659d13",
+      "files": [
+        "interstitials/motion/int_10_mothership_is_not_feeling_well_key_v1.mp4",
+        "interstitials/motion/int_10_mothership_is_not_feeling_well_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "208e7f16f947a077478fec6f988ef09087518203842ee8ac88265dd884692785",
+      "files": [
+        "interstitials/motion/int_11_her_voice_inside_your_helmet_key_v1.mp4",
+        "interstitials/motion/int_11_her_voice_inside_your_helmet_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "1ebfc5f359b6ae5812f8fc4fb4f96cf603b199761422244017432a7089494808",
+      "files": [
+        "interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_key_v1.mp4",
+        "interstitials/motion/int_12_the_queen_makes_a_reasonable_offer_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "491fc6044d208c466d47c4b4af5e996aaa0ada08221dac1b65bbd591a92e6334",
+      "files": [
+        "interstitials/motion/int_13_a_snail_blocks_the_hallway_key_v1.mp4",
+        "interstitials/motion/int_13_a_snail_blocks_the_hallway_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "c3d4c50e451b8d757bdcf25f7efbd043ebcc20af4fbcb84c4f87ece0583142d1",
+      "files": [
+        "interstitials/motion/int_14_cold_enough_to_think_key_v1.mp4",
+        "interstitials/motion/int_14_cold_enough_to_think_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "9734beccf6c627627c712e7c3f5cd0e58fa0d7d0f64658a10e997159a7579c3d",
+      "files": [
+        "interstitials/motion/int_15_the_spores_know_your_name_key_v1.mp4",
+        "interstitials/motion/int_15_the_spores_know_your_name_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "c3708a870ce6e3f71ee64763fabf70091bb1f0efa0233fb3390a2002b27813aa",
+      "files": [
+        "interstitials/motion/int_16_we_could_avoid_doing_this_key_v1.mp4",
+        "interstitials/motion/int_16_we_could_avoid_doing_this_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "d60894665d4254139aa6adf2ca0b50b74eecfd977e0e425df4d07f9e19b1c9bd",
+      "files": [
+        "interstitials/motion/int_17_it_understands_the_gun_key_v1.mp4",
+        "interstitials/motion/int_17_it_understands_the_gun_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "6ff91a1f317857787e7f89202633a034497b2a87fae20b14c233424e88cb0221",
+      "files": [
+        "interstitials/motion/int_18_the_creature_lets_you_pass_key_v1.mp4",
+        "interstitials/motion/int_18_the_creature_lets_you_pass_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "59739972e1a457f72d924795b129c77b3503d5b124a8754e7933e798f38c29df",
+      "files": [
+        "interstitials/motion/int_19_meridian_remembers_you_key_v1.mp4",
+        "interstitials/motion/int_19_meridian_remembers_you_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "73a40cd06d80ec9a81236015022a349779c7d37b4fb2216ced1667e8244de4f0",
+      "files": [
+        "interstitials/motion/int_20_tallow_keeps_the_steam_key_v1.mp4",
+        "interstitials/motion/int_20_tallow_keeps_the_steam_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "86eb83b8bceb483ce8ac03ef6f45a4aaffbc5bdb9827ea61f98e2e68afd357ce",
+      "files": [
+        "interstitials/motion/int_21_vesper_sleeps_in_shifts_key_v1.mp4",
+        "interstitials/motion/int_21_vesper_sleeps_in_shifts_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "24e0ac497923de822b05d4db160416ffa86c2e66124283eef2b42204f8e4ed79",
+      "files": [
+        "interstitials/motion/int_22_you_robbed_the_only_people_left_key_v1.mp4",
+        "interstitials/motion/int_22_you_robbed_the_only_people_left_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "b6913d504749b5e4fe53006bf8360f78ced0b0dc984eb0a562ecee39d29b7c15",
+      "files": [
+        "interstitials/motion/int_23_they_still_have_their_faces_key_v1.mp4",
+        "interstitials/motion/int_23_they_still_have_their_faces_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "a56ffd050e123c343ca9d8fefa7408cc716c27a8521b34c86bd670d3a5ca16d1",
+      "files": [
+        "interstitials/motion/int_24_nobody_says_goodbye_key_v1.mp4",
+        "interstitials/motion/int_24_nobody_says_goodbye_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "43ca967a9c4e19df237810fa166c60170641054f6cfed9bf8088decf8d8623c7",
+      "files": [
+        "interstitials/motion/int_25_gigawatt_goliath_key_v1.mp4",
+        "interstitials/motion/int_25_gigawatt_goliath_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "1dcd82715de878d750bace3dc21fe5b03672745333b31b376c437c3fb32a159e",
+      "files": [
+        "interstitials/motion/int_26_absolute_zero_has_a_shell_key_v1.mp4",
+        "interstitials/motion/int_26_absolute_zero_has_a_shell_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "51b225f38aa7c1405727138eae6899fbdf683d27ea8d4bfc24f44f90f2ca7de9",
+      "files": [
+        "interstitials/motion/int_27_the_bloom_that_hunts_key_v1.mp4",
+        "interstitials/motion/int_27_the_bloom_that_hunts_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "41808581e6a8773d0b614dbbf9115ed8c378dffed5d5892c0072fd1f2d121b6e",
+      "files": [
+        "interstitials/motion/int_28_martha_runs_faster_now_key_v1.mp4",
+        "interstitials/motion/int_28_martha_runs_faster_now_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "194e75f4ec99ec94c1511bdfeba73caa8b86bf428d55d75001ceb200bd01da0e",
+      "files": [
+        "interstitials/motion/int_29_briggs_became_the_barricade_key_v1.mp4",
+        "interstitials/motion/int_29_briggs_became_the_barricade_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "6288b5e7b6ee761ee71022554aa7855423716f5fa313f0ed11717c8ce75287db",
+      "files": [
+        "interstitials/motion/int_30_kaelen_is_the_grid_key_v1.mp4",
+        "interstitials/motion/int_30_kaelen_is_the_grid_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "b7c3629c1b90e01868ab6b83377e02c9c15dd0e30ada265c0fd0a115b3f36ed4",
+      "files": [
+        "interstitials/motion/int_31_mother_of_the_last_world_key_v1.mp4",
+        "interstitials/motion/int_31_mother_of_the_last_world_motion_v1.mp4"
+      ]
+    },
+    {
+      "sha256": "de339c5dfcc61cdb5798d338eec9404a2a5a176f0e96b4404dffd33c3f3463f7",
+      "files": [
+        "interstitials/motion/int_32_black_box_stain_key_v1.mp4",
+        "interstitials/motion/int_32_black_box_stain_motion_v1.mp4"
+      ]
+    },
+    {
       "sha256": "716798ee725171e5b19d81d708e66e7b39e0b28a6939d151f56afe8858be8643",
       "files": [
         "lore_portraits/meridian_kaelen.jpg",
@@ -729,5 +1036,9 @@
       ]
     }
   ],
-  "failures": []
+  "failures": [
+    "missing runtime assets: 17",
+    "public payload exceeds 1205862400 bytes",
+    "duplicate groups exceed 15"
+  ]
 }
