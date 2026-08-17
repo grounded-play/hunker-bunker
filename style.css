@@ -17434,13 +17434,19 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 /* ── Fullsize 3D Pre-Mission Armory (#armory-screen) ─────────────────── */
+/* Positioned/sized like #menu (position: absolute; inset: 0) rather than
+   position:fixed — #game-viewport establishes a containing block for fixed
+   descendants (container-type: size) but vw/vh units don't respect that, so
+   a fixed+100vw/100vh screen here sized itself off the full window while
+   #game-viewport's overflow:hidden clipped it to the smaller letterboxed
+   stage, spilling/clipping content. Absolute positioning avoids that
+   mismatch entirely and keeps this screen inside the same 16:10 stage
+   everything else in the game respects. */
 #armory-screen {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 80;
-  background: #060b13;
+  z-index: 8000;
+  background: var(--bg-dark);
   overflow: hidden;
   user-select: none;
 }
@@ -17462,10 +17468,10 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   position: absolute;
   inset: 0;
   z-index: 10;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 24px 32px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: calc(var(--vu) * 1.6);
+  padding: calc(var(--vu) * 3.2) calc(var(--vu) * 4);
   pointer-events: none;
   background: radial-gradient(circle at center, transparent 40%, rgba(6, 11, 19, 0.75) 100%);
 }
@@ -17485,28 +17491,28 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-tag {
   font-family: 'Space Mono', monospace;
-  font-size: 11px;
+  font-size: var(--font-xxs, 11px);
   font-weight: 700;
   letter-spacing: 0.15em;
-  color: #00e5ff;
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+  color: var(--accent-secondary);
+  text-shadow: 0 0 8px rgba(46, 196, 182, 0.55);
 }
 
 .armory-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 26px;
+  font-size: var(--font-lg, 26px);
   font-weight: 900;
   letter-spacing: 0.04em;
-  color: #ffffff;
+  color: var(--text-main);
   margin: 0;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 
 .armory-operator-status {
   background: rgba(10, 18, 28, 0.85);
-  border: 1px solid rgba(0, 229, 255, 0.35);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  padding: 8px 16px;
+  padding: calc(var(--vu) * 0.8) calc(var(--vu) * 1.6);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -17516,65 +17522,70 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-operator-status .status-label {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: #94a3b8;
+  font-size: var(--font-xxxs, 10px);
+  color: var(--text-muted);
   letter-spacing: 0.08em;
 }
 
 .armory-operator-status .status-value {
   font-family: 'Space Mono', monospace;
-  font-size: 14px;
+  font-size: var(--font-xs, 14px);
   font-weight: 900;
   letter-spacing: 0.1em;
-  color: #00e5ff;
+  color: var(--accent-primary);
 }
 
+/* Suit panel | open 3D stage | weapon panel, so the operator/gun render has
+   a clear middle lane instead of panels floating on top of the character. */
 .armory-main-layout {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 24px;
-  margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, calc(var(--vu) * 46)) minmax(calc(var(--vu) * 20), 1fr) minmax(0, calc(var(--vu) * 60));
+  align-items: end;
+  gap: calc(var(--vu) * 2.4);
+  min-height: 0;
   pointer-events: none;
 }
 
 .armory-panel {
   pointer-events: auto;
   background: rgba(10, 18, 28, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  padding: 18px 22px;
+  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 1.8);
   backdrop-filter: blur(12px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: calc(var(--vu) * 1.1);
+  max-height: 100%;
+  overflow-y: auto;
+  min-width: 0;
 }
 
 .suit-bench-panel {
-  width: 320px;
-  border-left: 3px solid #00e5ff;
+  grid-column: 1;
+  border-left: 3px solid var(--accent-secondary);
 }
 
 .weapon-bench-panel {
-  width: 440px;
-  border-right: 3px solid #00e5ff;
+  grid-column: 3;
+  border-right: 3px solid var(--accent-secondary);
 }
 
 .panel-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: calc(var(--vu) * 0.6);
 }
 
 .panel-header h2 {
   font-family: 'Outfit', sans-serif;
-  font-size: 16px;
+  font-size: var(--font-sm, 16px);
   font-weight: 800;
   letter-spacing: 0.06em;
-  color: #f1f5f9;
+  color: var(--text-main);
   margin: 0;
 }
 
@@ -17586,40 +17597,41 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .bench-field label {
   font-family: 'Space Mono', monospace;
-  font-size: 10px;
+  font-size: var(--font-xxxs, 10px);
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .field-value {
   font-family: 'Space Mono', monospace;
-  font-size: 12px;
+  font-size: var(--font-xxs, 12px);
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--text-main);
   background: rgba(255, 255, 255, 0.04);
   padding: 6px 10px;
   border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
 }
 
 .armory-select {
   font-family: 'Space Mono', monospace;
-  font-size: 11px;
+  font-size: var(--font-xxs, 11px);
   font-weight: 600;
-  color: #f8fafc;
-  background: #0f1a26;
-  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--text-main);
+  background: var(--bg-panel);
+  border: 1px solid rgba(46, 196, 182, 0.35);
   border-radius: 4px;
   padding: 7px 10px;
   outline: none;
   cursor: pointer;
   transition: all 0.2s ease;
+  max-width: 100%;
 }
 
 .armory-select:hover, .armory-select:focus {
-  border-color: #00e5ff;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 10px rgba(46, 196, 182, 0.3);
 }
 
 .bench-grid {
@@ -17630,7 +17642,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .telemetry-box {
   background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   padding: 10px 12px;
   display: flex;
@@ -17643,7 +17655,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.1em;
-  color: #00e5ff;
+  color: var(--accent-secondary);
   margin-bottom: 2px;
 }
 
@@ -17652,17 +17664,17 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   justify-content: space-between;
   font-family: 'Space Mono', monospace;
   font-size: 10px;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .telemetry-item strong {
-  color: #e2e8f0;
+  color: var(--text-main);
 }
 
 .modifiers-summary {
   margin-top: 6px;
   background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid rgba(46, 196, 182, 0.25);
   border-radius: 6px;
   padding: 10px 12px;
 }
@@ -17672,7 +17684,7 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #00e5ff;
+  color: var(--accent-secondary);
   margin-bottom: 8px;
 }
 
@@ -17689,15 +17701,15 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   padding: 4px 8px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.05);
-  color: #64748b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
 }
 
 .mod-badge.active {
-  background: rgba(0, 229, 255, 0.12);
-  color: #00e5ff;
-  border-color: rgba(0, 229, 255, 0.45);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+  background: rgba(255, 159, 28, 0.14);
+  color: var(--accent-primary);
+  border-color: rgba(255, 159, 28, 0.5);
+  box-shadow: 0 0 8px rgba(255, 159, 28, 0.25);
 }
 
 .armory-footer {
@@ -17710,10 +17722,10 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-btn {
   font-family: 'Space Mono', monospace;
-  font-size: 13px;
+  font-size: var(--font-xs, 13px);
   font-weight: 900;
   letter-spacing: 0.08em;
-  padding: 14px 28px;
+  padding: calc(var(--vu) * 1.4) calc(var(--vu) * 2.8);
   border-radius: 6px;
   border: none;
   cursor: pointer;
@@ -17725,39 +17737,39 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 
 .armory-btn.secondary-btn {
   background: rgba(30, 41, 59, 0.85);
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
 }
 
 .armory-btn.secondary-btn:hover {
   background: rgba(51, 65, 85, 0.95);
-  color: #ffffff;
-  border-color: #00e5ff;
+  color: var(--text-main);
+  border-color: var(--accent-secondary);
 }
 
 .armory-btn.tertiary-btn {
   background: rgba(16, 26, 40, 0.85);
-  color: #00e5ff;
-  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: var(--accent-secondary);
+  border: 1px solid rgba(46, 196, 182, 0.4);
 }
 
 .armory-btn.tertiary-btn:hover {
-  background: rgba(0, 229, 255, 0.15);
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.3);
+  background: rgba(46, 196, 182, 0.15);
+  box-shadow: 0 0 16px rgba(46, 196, 182, 0.3);
 }
 
 .armory-btn.primary-btn {
-  background: #00e5ff;
-  color: #060b13;
-  font-size: 15px;
+  background: var(--accent-primary);
+  color: #1a1103;
+  font-size: var(--font-sm, 15px);
   font-weight: 900;
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.55);
+  box-shadow: 0 4px 0 #c77b15;
 }
 
 .armory-btn.primary-btn:hover {
-  background: #38bdf8;
+  background: #ffb238;
   transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(0, 229, 255, 0.85);
+  box-shadow: 0 6px 0 #c77b15, 0 0 24px rgba(255, 159, 28, 0.55);
 }
 
 .embark-glow {
@@ -17765,8 +17777,26 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
 }
 
 @keyframes pulseGlow {
-  0% { box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
-  100% { box-shadow: 0 0 35px rgba(0, 229, 255, 0.9); }
+  0% { box-shadow: 0 4px 0 #c77b15; }
+  100% { box-shadow: 0 4px 0 #c77b15, 0 0 24px rgba(255, 159, 28, 0.7); }
+}
+
+/* Narrow stages (e.g. Steam Deck at 1280x800, or a small windowed launch):
+   drop to a single scrollable column instead of clipping the weapon panel
+   or overlapping the operator. */
+@container (max-width: 900px) {
+  .armory-main-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: min-content;
+    overflow-y: auto;
+    max-height: 100%;
+  }
+
+  .suit-bench-panel,
+  .weapon-bench-panel {
+    grid-column: 1;
+    max-height: none;
+  }
 }
 
 

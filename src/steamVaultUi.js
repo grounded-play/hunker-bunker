@@ -412,6 +412,15 @@ export function reconcileCosmeticsOwnership(inventory = []) {
         localStorage.removeItem('hb_equipped_weapon_finish');
         console.log('[steam-vault] Unequipped unowned weapon finish:', weapon);
     }
+
+    // Also reconcile LoadoutManager v2 per-class state
+    try {
+        if (window.loadout?.reconcileOwnership) {
+            window.loadout.reconcileOwnership(inventory);
+        }
+    } catch {
+        // best-effort
+    }
 }
 
 const FALLBACK_STORE_SKUS = [

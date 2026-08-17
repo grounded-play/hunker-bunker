@@ -5954,7 +5954,11 @@ function warmCutsceneVideo(base) {
     const canPlayWebm = document.createElement('video').canPlayType('video/webm');
     let source;
     if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
-        source = '/DoorIntro.mp4';
+        // Electron's bundled Chromium on Linux commonly ships without H.264
+        // decode support (licensing); webm/VP9 always works there. Every
+        // other cutscene already falls back this way — DoorIntro lives at
+        // the repo root instead of /cutscenes/ so it needs its own branch.
+        source = canPlayWebm ? '/DoorIntro.webm' : '/DoorIntro.mp4';
     } else if (base.startsWith('/')) {
         source = base;
     } else {
@@ -5985,7 +5989,7 @@ function preloadVideoReady(base) {
         const canPlayWebm = document.createElement('video').canPlayType('video/webm');
         let source;
         if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
-            source = '/DoorIntro.mp4';
+            source = canPlayWebm ? '/DoorIntro.webm' : '/DoorIntro.mp4';
         } else if (base.startsWith('/')) {
             source = base;
         } else {
@@ -6259,7 +6263,9 @@ function playCutsceneVideo(base, options = {}) {
 
         const sources = [];
         if (base === 'DoorIntro' || base === '/DoorIntro.mp4' || base === 'DoorIntro.mp4') {
-            sources.push('/DoorIntro.mp4');
+            // webm first so browsers without H.264 support (Linux Electron
+            // builds commonly lack it) pick it up via native <source> fallback.
+            sources.push('/DoorIntro.webm', '/DoorIntro.mp4');
         }
         if (base.startsWith('/')) {
             sources.push(base);
