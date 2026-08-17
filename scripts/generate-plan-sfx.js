@@ -98,6 +98,72 @@ export const PLAN_SFX = Object.freeze({
             const lock = sine(118, t) * pulse(t, 0.6, 0.18) * 0.42;
             return metal * 0.2 + mechanism + lock;
         }
+    },
+    sfx_charm_clink_light: {
+        duration: 0.28,
+        synth(t, noise) {
+            const metallic1 = sine(2400 + t * 400, t) * envelope(t, 0.28, 0.002, 0.12);
+            const metallic2 = sine(3850, t) * envelope(t, 0.28, 0.001, 0.08) * 0.6;
+            const tap = noise() * pulse(t, 0.001, 0.02) * 0.25;
+            return (metallic1 + metallic2) * 0.45 + tap;
+        }
+    },
+    sfx_charm_clink_heavy: {
+        duration: 0.35,
+        synth(t, noise) {
+            const brass = sine(980 + Math.sin(t * 40) * 80, t) * envelope(t, 0.35, 0.005, 0.18);
+            const ring = sine(1740, t) * envelope(t, 0.35, 0.002, 0.14) * 0.5;
+            const clunk = noise() * pulse(t, 0.004, 0.04) * 0.35;
+            return (brass + ring) * 0.5 + clunk;
+        }
+    },
+    sfx_overclock_socket: {
+        duration: 0.42,
+        synth(t, noise) {
+            const slide = noise() * pulse(t, 0.01, 0.08) * 0.22;
+            const click = sine(1250, t) * pulse(t, 0.09, 0.03) * 0.6;
+            const latch = sine(440, t) * envelope(t, 0.42, 0.1, 0.22) * 0.55;
+            const sub = sine(110, t) * pulse(t, 0.12, 0.18) * 0.4;
+            return slide + click + latch + sub;
+        }
+    },
+    sfx_overclock_hum_cryo: {
+        duration: 0.65,
+        synth(t, noise) {
+            const frostRise = sine(320 + t * 480, t) * envelope(t, 0.65, 0.05, 0.3);
+            const shimmer = sine(1600 + Math.sin(t * 50) * 120, t) * envelope(t, 0.65, 0.02, 0.25) * 0.25;
+            const air = noise() * envelope(t, 0.65, 0.08, 0.35) * 0.15;
+            return frostRise * 0.4 + shimmer + air;
+        }
+    },
+    sfx_overclock_hum_magnetic: {
+        duration: 0.55,
+        synth(t, noise) {
+            const coil = sine(65 + Math.sin(t * 120) * 15, t) * envelope(t, 0.55, 0.04, 0.25);
+            const arc = noise() * (pulse(t, 0.06, 0.05) + pulse(t, 0.22, 0.06)) * 0.2;
+            const surge = sine(180, t) * pulse(t, 0.08, 0.22) * 0.35;
+            return coil * 0.55 + arc + surge;
+        }
+    },
+    sfx_smelt_forge_burst: {
+        duration: 0.85,
+        synth(t, noise) {
+            const blast = noise() * envelope(t, 0.85, 0.01, 0.45) * 0.45;
+            const heatDrone = sine(85 + t * 65, t) * envelope(t, 0.85, 0.06, 0.35) * 0.4;
+            const anvil = sine(880, t) * pulse(t, 0.04, 0.15) * 0.35;
+            return blast + heatDrone + anvil;
+        }
+    },
+    sfx_trade_shard_dispense: {
+        duration: 0.75,
+        synth(t, noise) {
+            const chime1 = sine(1046.5, t) * pulse(t, 0.02, 0.25) * 0.4; // C6
+            const chime2 = sine(1318.5, t) * pulse(t, 0.12, 0.3) * 0.45; // E6
+            const chime3 = sine(1567.98, t) * pulse(t, 0.24, 0.35) * 0.5; // G6
+            const crystal = sine(2093, t) * pulse(t, 0.36, 0.35) * 0.35; // C7
+            const mechan = noise() * pulse(t, 0.01, 0.05) * 0.15;
+            return chime1 + chime2 + chime3 + crystal + mechan;
+        }
     }
 });
 

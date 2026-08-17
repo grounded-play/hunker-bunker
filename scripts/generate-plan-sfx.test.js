@@ -11,7 +11,14 @@ describe('plan SFX generator', () => {
             'camp_worker_armed',
             'camp_worker_fleeing',
             'camp_worker_infected',
-            'camp_worker_panicked'
+            'camp_worker_panicked',
+            'sfx_charm_clink_heavy',
+            'sfx_charm_clink_light',
+            'sfx_overclock_hum_cryo',
+            'sfx_overclock_hum_magnetic',
+            'sfx_overclock_socket',
+            'sfx_smelt_forge_burst',
+            'sfx_trade_shard_dispense'
         ]);
     });
 
