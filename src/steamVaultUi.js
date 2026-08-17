@@ -724,17 +724,16 @@ export function playCacheRevealAnimation(rewardDefId, onClaim) {
 
     window.AudioManager?.play?.('door_gears_spin', { volume: 0.45 });
 
-    // Smooth horizontal tape deceleration under needle
+    // Smooth horizontal tape deceleration landing exactly on winner tile under needle
     requestAnimationFrame(() => {
-        if (!strip) return;
-        const firstTile = strip.firstElementChild;
-        const tileRect = firstTile?.getBoundingClientRect?.();
-        const tileWidth = tileRect?.width || 88;
-        const tileGap = 12;
-        const paddingLeft = 12;
-        const center = (stripWrap?.clientWidth || 500) / 2;
-        const step = tileWidth + tileGap;
-        const target = center - (paddingLeft + (WIN_INDEX * step) + (tileWidth / 2));
+        if (!strip || !stripWrap) return;
+        const winnerTile = document.getElementById('vault-tile-winner') || strip.children[WIN_INDEX];
+        if (!winnerTile) return;
+
+        // Exact pixel measurement of winner center relative to strip and stripWrap center (needle)
+        const wrapCenter = stripWrap.clientWidth / 2;
+        const winnerCenter = winnerTile.offsetLeft + (winnerTile.offsetWidth / 2);
+        const target = wrapCenter - winnerCenter;
 
         strip.style.transition = 'transform 3.0s cubic-bezier(0.12, 0.8, 0.18, 1)';
         strip.style.transform = `translateX(${target}px)`;

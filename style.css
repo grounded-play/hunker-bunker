@@ -13404,7 +13404,9 @@ button.archive-log-entry:active {
 }
 
 .vault-reveal-overlay[data-state="spinning"] .vault-reveal-strip-wrap {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .vault-reveal-marker {
@@ -13415,17 +13417,17 @@ button.archive-log-entry:active {
   background: #22d3ee;
   box-shadow: 0 0 12px #22d3ee, 0 0 24px #22d3ee;
   z-index: 10;
+  pointer-events: none;
 }
 
 .vault-reveal-strip {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
   display: flex;
+  align-items: center;
   gap: 12px;
   padding: 0 12px;
   will-change: transform;
+  height: auto;
+  position: relative;
 }
 
 .vault-tile {
