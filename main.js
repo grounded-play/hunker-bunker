@@ -10963,14 +10963,6 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
             // Force reflow
             void overlay.offsetWidth;
 
-            if (onOpeningStart) {
-                try {
-                    onOpeningStart();
-                } catch (err) {
-                    console.error('Door onOpeningStart callback error:', err);
-                }
-            }
-
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     // 4. Start opening after a small "hold" gap
@@ -10979,6 +10971,28 @@ function triggerDoorTransition(onClosed, onOpened, doorKey, options = {}) {
                         overlay.classList.add('active');
                         AudioManager.play('door_slide_horiz', { volume: 0.4 });
                         AudioManager.play('door_gears_spin', { volume: 0.25 });
+
+                        // onOpeningStart fires here, alongside the 'active'
+                        // class that actually triggers the CSS transition --
+                        // NOT immediately after the forced reflow above.
+                        // Callers use this hook to insert a lot of DOM (a
+                        // fullscreen video overlay, mission-intro UI); doing
+                        // that between the reflow and the double-RAF that
+                        // commits the door's "closed" starting position can
+                        // make the browser coalesce the style changes and
+                        // skip the transition entirely -- the doors jump
+                        // straight to their end state (effectively
+                        // vanishing) instead of visibly sliding open. Firing
+                        // it here, once the transition is already underway,
+                        // avoids that race.
+                        if (onOpeningStart) {
+                            try {
+                                onOpeningStart();
+                            } catch (err) {
+                                console.error('Door onOpeningStart callback error:', err);
+                            }
+                        }
+
                         // Opening owns the reveal. Do not transfer control or
                         // start intro work until the panels have visibly
                         // completed their 800ms travel.
