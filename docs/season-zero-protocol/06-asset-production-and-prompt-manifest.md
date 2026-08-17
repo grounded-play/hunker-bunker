@@ -22,9 +22,29 @@ Season 0 assets reflect the **Deep Crust Protocol** thematic identity:
 
 ---
 
-## 3. Generated 2D Master References (Ready for 2D-to-3D Pipeline)
+## 3. Deployed Runtime 3D Models (`public/3d/runtime/new3ds/*.glb`)
 
-The following master 2D key art assets have been generated and deployed to `public/economy/`, ready for image-to-3D (`.glb`) mesh reconstruction and direct in-game icon display:
+The following 13 3D models have been compressed for real-time WebGL rendering (1024x1024 WebP PBR textures, optimized vertex buffers, ~1.5–2.2MB per charm/mod, decimated weapon meshes) and deployed to the runtime assets folder. Original high-poly 4K source assets are preserved in the non-build directory [`art/source/new3d/`](file:///home/caveman/Desktop/icecave/hunker-bunker/art/source/new3d/):
+
+| Itemdef | 3D Asset Name | Runtime File Path | Compressed Size | Category / Slot |
+| :--- | :--- | :--- | :--- | :--- |
+| `4130` | **Mini Cryo-Core Charm** | [`public/3d/runtime/new3ds/charm_mini_cryo_core.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_mini_cryo_core.glb) | `1.90 MB` | Weapon Charm |
+| `4131` | **Spent 50-Cal Casing Charm** | [`public/3d/runtime/new3ds/charm_spent_50cal.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_spent_50cal.glb) | `1.56 MB` | Weapon Charm |
+| `4132` | **Sporesnail Pearl Charm** | [`public/3d/runtime/new3ds/charm_sporesnail_pearl.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_sporesnail_pearl.glb) | `1.63 MB` | Weapon Charm |
+| `4133` | **Trench Whistle Charm** | [`public/3d/runtime/new3ds/charm_trench_whistle.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_trench_whistle.glb) | `1.61 MB` | Weapon Charm |
+| `4134` | **Glitched RAM Card Charm** | [`public/3d/runtime/new3ds/charm_glitched_ram.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_glitched_ram.glb) | `1.79 MB` | Weapon Charm |
+| `4135` | **Geodetic Compass Charm** | [`public/3d/runtime/new3ds/charm_geodetic_compass.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_geodetic_compass.glb) | `1.64 MB` | Weapon Charm |
+| `4136` | **Mini Drone Bobble Charm** | [`public/3d/runtime/new3ds/charm_mini_drone_bobble.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_mini_drone_bobble.glb) | `1.81 MB` | Weapon Charm (Epic) |
+| `4139` | **Golden Sub-Bunker Key** | [`public/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb) | `2.10 MB` | Weapon Charm (Legendary) |
+| `4140` | **Cryo-Capacitor Overclock** | [`public/3d/runtime/new3ds/mod_cryo_capacitor.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/mod_cryo_capacitor.glb) | `1.88 MB` | Rig Overclock Module |
+| `4141` | **Magnetic Scavenger Module**| [`public/3d/runtime/new3ds/mod_magnetic_scavenger.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/mod_magnetic_scavenger.glb) | `2.03 MB` | Rig Overclock Module |
+| `4147` | **Zero-Point Flux Overdrive** | [`public/3d/runtime/new3ds/mod_zero_point_flux.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/mod_zero_point_flux.glb) | `2.00 MB` | Rig Overclock (Legendary) |
+| `4109` | **Void-Walker Beam Cannon** | [`public/3d/runtime/new3ds/skin_void_walker_beam.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/skin_void_walker_beam.glb) | `14.06 MB` | Weapon Frame (Epic) |
+| `4110` | **Queen's Carapace Carbine** | [`public/3d/runtime/new3ds/skin_queen_carapace_carbine.glb`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/3d/runtime/new3ds/skin_queen_carapace_carbine.glb) | `11.97 MB` | Weapon Frame (Legendary) |
+
+---
+
+## 4. Master 2D Key Art References (`public/economy/*.png`)
 
 | Itemdef | Asset Name | File Path | Type / Category | Visual Key Highlights |
 | :--- | :--- | :--- | :--- | :--- |
@@ -44,43 +64,45 @@ The following master 2D key art assets have been generated and deployed to `publ
 
 ---
 
-## 4. Asset Generation Prompts Manifest
+## 5. Next Batch: 7 Master 2D-to-3D Image Generation Prompts
 
-### A. Tactical Weapon Charms (Image & 3D Prompts)
-```markdown
-1. Mini Cryo-Core Charm (4130)
-Prompt: "A miniature tactical weapon charm, tiny glowing cryogenic reactor cube venting faint blue frost vapor, attached to a heavy steel keyring and carabiner chain, industrial sci-fi aesthetic, dark background, 8k resolution, octane render, unreal engine 5, clean PBR textures."
+The following 7 prompts are tailored specifically for the 2D-to-3D model reconstruction pipeline (isolated clean 1:1 isometric view, high-contrast silhouette, studio lighting, PBR materials):
 
-2. Spent 50-Cal Casing Charm (4131)
-Prompt: "A heavy brass 50-caliber spent bullet casing weapon charm, laser-engraved with retro bunker coordinates and hazard stripes, dangling from a weathered dog-tag chain, metallic luster, photorealistic, micro-detail."
+### A. Class Base Weapons (3 Images)
 
-3. Sporesnail Pearl Charm (4132)
-Prompt: "An iridescent bio-luminescent alien pearl charm, held in a delicate four-pronged titanium claw setting, emitting a faint green bioluminescent glow, sci-fi subterranean artifact, high fidelity."
+1. **Scout Base Gun: *Vector-9 Talon SMG***
+   - **Prompt**: `"A 3D asset render of a sci-fi tactical submachine gun weapon model for the Scout class: sleek lightweight skeletonized dark magnesium receiver with an integrated top Picatinny accessory rail and forward charm mounting loop, ergonomic polymer grip, tactical flash hider muzzle compensator, clear polymer magazine with visible blue kinetic ammunition, isolated centered weapon on dark studio background, 8k PBR game asset prop, octane render, 1:1 square."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/gun_scout_vector9_talon.glb`
 
-4. Miniaturized Drone Bobble (4136)
-Prompt: "A cute, stylized chibi sentry turret drone weapon charm, white and orange chassis with an active cyan optical sensor, hanging from a braided paracord strap, crisp edges, premium 3D game asset."
+2. **Tank Base Gun: *Siege-Breaker 50 Autocannon***
+   - **Prompt**: `"A 3D asset render of a heavy micro-missile rotary autocannon weapon model for the Tank class: heavy reinforced dark industrial steel barrel shroud with yellow hazard caution placards, overhead reinforced carrying handle with rear charm mounting eyelet, dual pneumatic recoil damper pistons, drum magazine housing, isolated centered weapon on dark gritty background, 8k PBR textures, clean metallic luster, octane render, 1:1 square."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/gun_tank_siege_breaker50.glb`
 
-5. Golden Sub-Bunker Key Charm (4139)
-Prompt: "An ornate solid gold antique bunker skeleton key weapon charm, detailed geometric engravings, emitting radiant golden god-rays and amber particle sparkles, luxury legendary game cosmetic, 8k."
-```
+3. **Engineer Base Gun: *Tesla-Lock MK-IV Arc Driver***
+   - **Prompt**: `"A 3D asset render of a futuristic directed electromagnetic arc emitter and structural field welder for the Engineer class: heavy copper induction coils, insulated black rubber grip, central glass vacuum amplifier tube with glowing cyan electric plasma arcing between electrodes, side battery-bay locking latch with charm clip, isolated centered weapon on dark background, 8k PBR textures, octane render, 1:1 square."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/gun_engineer_tesla_lock.glb`
 
-### B. Weapon Skins (Albedo & Texture Prompts)
-```markdown
-1. Sub-Zero Frostbite Sidearm (4100)
-Prompt: "Weapon skin texture map for a futuristic tactical pistol, frosted white polymer frame with creeping ice crystal frost patterns, glowing cyan cooling lines, cryogenic aesthetic, clean flat game texture layout."
+---
 
-2. Queen's Carapace Carbine (4110)
-Prompt: "Legendary weapon skin for a tactical assault rifle, crafted from living alien insectoid chitin and black biomechanical muscle fibers, glowing orange bio-vents pulsing along the receiver, organic alien weapon, hyper-detailed."
+### B. Class Weapon Skins (3 Images)
 
-3. Solar Flare Antimatter Rifle (4111)
-Prompt: "Legendary railgun sniper rifle skin, pure polished gold and obsidian carbon fiber construction, glowing corona of solar plasma swirling along the barrel rails, celestial antimatter weapon, radiant visual design."
-```
+4. **Scout Skin: *Sub-Zero Frostbite Talon SMG* (`Itemdef 4100`)**
+   - **Prompt**: `"A 3D asset render of a sub-zero weapon skin for a tactical submachine gun: frosted matte-white polymer frame with creeping crystalline blue ice frost patterns, glowing cyan cooling lines, frozen metal barrel with subtle frost mist, isolated centered weapon on clean dark background, 8k PBR game asset, 1:1 square."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/skin_scout_frostbite.glb`
 
-### C. Audio Callout & SFX Prompts
-```markdown
-1. Soviet Sub-Commander Radio (4148)
-Prompt: "Heavy radio static burst followed by a deep, authoritative military commander voice speaking through a tactical throat microphone in English: 'Sector breached! Reloading heavy ordnance, hold the corridor!'"
+5. **Tank Skin: *Deep Core Melter Autocannon* (`Itemdef 4107`)**
+   - **Prompt**: `"A 3D asset render of an epic thermal weapon skin for a heavy autocannon: scorched black basalt and volcanic steel chassis with glowing molten orange heat channels and magma-venting cooling slots along the rotary barrel shroud, heat shimmer, isolated centered weapon on dark background, 8k PBR textures, 1:1 square."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/skin_tank_deep_core_melter.glb`
 
-2. Synthesized AI Unit 'AURA' (4149)
-Prompt: "Clean, synthesized female tactical combat AI voice with light harmonic reverb: 'Warning: Cryo-core capacity at maximum. Subterranean entity neutralized. Proceed to next checkpoint.'"
-```
+6. **Engineer Skin: *Cryo-Plasma Arc Driver* (`Itemdef 4103`)**
+   - **Prompt**: `"A 3D asset render of a high-tech rare weapon skin for an arc welder: polished titanium and cobalt-blue chassis with hyper-charged neon blue magnetic acceleration rails, glowing diamond vacuum chamber with lightning arcs, isolated centered weapon on dark background, 8k PBR textures, 1:1 square."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/skin_engineer_cryo_plasma.glb`
+
+---
+
+### C. 7th Feature Asset (1 Image)
+
+7. **Tactical Charm: *Amber Bio-Flask Specimen* (`Itemdef 4137`)**
+   - **Prompt**: `"A 3D asset render of an epic tactical weapon charm: an armored thick reinforced glass specimen ampoule containing glowing liquid amber and a tiny suspended alien embryo organism, protected by heavy titanium endcaps and a steel hanging clip, isolated centered object on dark background, game asset prop, octane render, 8k PBR textures, 1:1 square."`
+   - **Target 3D Mesh**: `public/3d/runtime/new3ds/charm_amber_bio_flask.glb`
+
