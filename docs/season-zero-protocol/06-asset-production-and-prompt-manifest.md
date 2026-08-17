@@ -22,7 +22,26 @@ Season 0 assets reflect the **Deep Crust Protocol** thematic identity:
 
 ---
 
-## 3. Asset Generation Prompts Manifest
+## 3. Generated 2D Master References (Ready for 2D-to-3D Pipeline)
+
+The following master 2D key art assets have been generated and deployed to `public/economy/`, ready for image-to-3D (`.glb`) mesh reconstruction and direct in-game icon display:
+
+| Itemdef | Asset Name | File Path | Type / Category | Visual Key Highlights |
+| :--- | :--- | :--- | :--- | :--- |
+| `4130` | **Mini Cryo-Core Charm** | [`public/economy/charm_mini_cryo_core.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_mini_cryo_core.png) | Tactical Charm | Frosted reactor cube, cyan cooling coils, carabiner chain |
+| `4131` | **Spent 50-Cal Casing Charm** | [`public/economy/charm_spent_50cal.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_spent_50cal.png) | Tactical Charm | Engraved brass shell, hazard stripes, military ball chain |
+| `4132` | **Sporesnail Pearl Charm** | [`public/economy/charm_sporesnail_pearl.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_sporesnail_pearl.png) | Tactical Charm | Bioluminescent green pearl, 4-prong titanium mechanical claw |
+| `4136` | **Mini Drone Bobble Charm** | [`public/economy/charm_mini_drone_bobble.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_mini_drone_bobble.png) | Tactical Charm | Chibi sentry turret, orange/white livery, cyan LED eye |
+| `4139` | **Golden Sub-Bunker Key** | [`public/economy/charm_golden_sub_bunker_key.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/charm_golden_sub_bunker_key.png) | Tactical Charm (Legendary) | Solid gold antique bunker skeleton key, radiant god-rays |
+| `4140` | **Cryo-Capacitor Overclock** | [`public/economy/mod_cryo_capacitor.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/mod_cryo_capacitor.png) | Rig Overclock Module | Frosted heatsink fins, cyan conduits, gold connector pins |
+| `4141` | **Magnetic Scavenger Module**| [`public/economy/mod_magnetic_scavenger.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/mod_magnetic_scavenger.png) | Rig Overclock Module | Yellow hazard chassis, copper induction coils, toggle switch |
+| `4147` | **Zero-Point Flux Overdrive** | [`public/economy/mod_zero_point_flux.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/mod_zero_point_flux.png) | Rig Overclock (Legendary) | Obsidian casing, glass sphere with cosmic purple singularity |
+| `4109` | **Void-Walker Beam Cannon** | [`public/economy/skin_void_walker_beam.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/skin_void_walker_beam.png) | Weapon Skin (Epic) | Obsidian frame, violet event horizon emitter, neon coils |
+| `4110` | **Queen's Carapace Carbine** | [`public/economy/skin_queen_carapace_carbine.png`](file:///home/caveman/Desktop/icecave/hunker-bunker/public/economy/skin_queen_carapace_carbine.png) | Weapon Skin (Legendary) | Living insectoid chitin, pulsing orange heat vents, sinew |
+
+---
+
+## 4. Asset Generation Prompts Manifest
 
 ### A. Tactical Weapon Charms (Image & 3D Prompts)
 ```markdown
