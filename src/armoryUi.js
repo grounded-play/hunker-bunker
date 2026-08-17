@@ -10,7 +10,7 @@ export const CATALOG_ITEMS = Object.freeze({
     '4100': { name: 'Sub-Zero Frostbite', rarity: 'uncommon', type: 'skin', icon: '/economy/skin_scout_frostbite.png' },
     '4101': { name: 'Hazard Stripe SMG', rarity: 'uncommon', type: 'skin' },
     '4102': { name: 'Tectonic Driller', rarity: 'uncommon', type: 'skin' },
-    '4103': { name: 'Cryo-Plasma Arc', rarity: 'rare', type: 'skin' },
+    '4103': { name: 'Cryo-Plasma Arc', rarity: 'rare', type: 'skin', icon: '/economy/skin_engineer_cryo_plasma.png' },
     '4104': { name: 'Rust & Bone Trench', rarity: 'rare', type: 'skin' },
     '4105': { name: 'Obsidian Shard', rarity: 'rare', type: 'skin' },
     '4106': { name: 'Biolume Spore Sprayer', rarity: 'rare', type: 'skin' },
