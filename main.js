@@ -8808,6 +8808,11 @@ function toggleTacticalMapModal(forceState) {
     const isHidden = modal.classList.contains('hidden');
     const shouldOpen = typeof forceState === 'boolean' ? forceState : isHidden;
 
+    // Tactical map is an in-run tool -- never let it open from the title
+    // menu, settings, or any other non-gameplay screen. Closing (forceState
+    // === false) is always allowed so an in-progress close can't get stuck.
+    if (shouldOpen && appPhase !== 'gameplay') return;
+
     if (shouldOpen) {
         modal.classList.remove('hidden');
         modal.setAttribute('aria-hidden', 'false');
