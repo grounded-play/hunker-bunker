@@ -106,3 +106,21 @@ The following 7 prompts are tailored specifically for the 2D-to-3D model reconst
    - **Prompt**: `"A 3D asset render of an epic tactical weapon charm: an armored thick reinforced glass specimen ampoule containing glowing liquid amber and a tiny suspended alien embryo organism, protected by heavy titanium endcaps and a steel hanging clip, isolated centered object on dark background, game asset prop, octane render, 8k PBR textures, 1:1 square."`
    - **Target 3D Mesh**: `public/3d/runtime/new3ds/charm_amber_bio_flask.glb`
 
+---
+
+## 6. Synthesized Audio Assets Matrix (`public/audio/generated/*.wav`)
+
+The following 9 original, lossless 44.1kHz WAV SFX and announcer audio assets have been procedurally synthesized and deployed to support the Armory, tactical attachables, smelting economy, and announcer callouts:
+
+| Sound Key / Filename | Category | Description / Acoustic Characteristics |
+| :--- | :--- | :--- |
+| `sfx_charm_clink_light.wav` | Tactical Charm | High-pitched titanium keyring clink when moving/sprinting. |
+| `sfx_charm_clink_heavy.wav` | Tactical Charm | Deep brass casing resonance and receiver impact during weapon fire. |
+| `sfx_overclock_socket.wav` | Armory Bench | Crisp hydraulic pneumatic latch and magnetic snap when slotting a Rig Overclock. |
+| `sfx_overclock_hum_cryo.wav` | Rig Overclock | Sub-zero cryogenic capacitor frequency pulse and frost hiss. |
+| `sfx_overclock_hum_magnetic.wav`| Rig Overclock | Heavy electromagnetic copper induction coil surge and electrical arc. |
+| `sfx_smelt_forge_burst.wav` | Economy / Forge | High-temperature thermal forge blast for 5:1 trade-up smelting contracts. |
+| `sfx_trade_shard_dispense.wav` | Economy / Token | Deep Core Shard crystalline dispensary chime sequence (C6–E6–G6–C7). |
+| `voice_commander_breached.wav` | Voice Callout | Heavy squelch burst with gruff military commander throat-mic tactical callout. |
+| `voice_aura_target_down.wav` | Voice Callout | Clean synthesized female AI multi-tone harmonic announcer chime. |
+
