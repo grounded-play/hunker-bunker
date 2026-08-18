@@ -26047,6 +26047,19 @@ export class ThreeGame {
         if (landform === LANDFORMS.RUINS) return 0.08;
         if (landform === LANDFORMS.FIELD) return 0.03;
         if (landform === LANDFORMS.CANYON) return 0.0;
+        // CRATER was missing here (every other per-landform density table in
+        // this file -- addTerrainStepDressing's stepChanceByLandform, the
+        // damagedCut ladder below, the wallHeightScale switch -- explicitly
+        // tunes CRATER). Landing on the generic fallback meant it inherited
+        // hazardCut's fallback too (0.22 vs the ~0.05-0.12 every named
+        // landform gets), a 4-8x wider hazard-wall roll window than intended
+        // -- confirmed live via mountChunk producing 100+ individual
+        // hazard-wall meshes in a single crater chunk (hazard walls are
+        // deliberately kept as individual animated Meshes, so this alone
+        // was a major per-chunk mount-cost outlier). 0.05/0.08 mirrors
+        // stepChanceByLandform's CRATER value sitting between FIELD and
+        // MAZE/RUINS.
+        if (landform === LANDFORMS.CRATER) return 0.05;
         return 0.06;
     }
 
@@ -26059,6 +26072,8 @@ export class ThreeGame {
         if (landform === LANDFORMS.RUINS) return 0.12;
         if (landform === LANDFORMS.FIELD) return 0.05;
         if (landform === LANDFORMS.CANYON) return 0.06;
+        // See getHoleCutForLandform's CRATER comment above.
+        if (landform === LANDFORMS.CRATER) return 0.08;
         return 0.22;
     }
 
