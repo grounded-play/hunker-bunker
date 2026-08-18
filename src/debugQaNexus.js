@@ -5,7 +5,6 @@
  * warp, boss encounter initialization, camp state simulation, and loadout overrides.
  */
 import { openDebugMuseum } from './debugMuseum.js';
-import { openDebugShowroom } from './debugShowroom.js';
 import { openDebugTileGrid } from './debugTileGrid.js';
 import { openDebugBossArenas, BOSS_ENCOUNTERS } from './debugBossArenas.js';
 import { openDebugCampSimulator, CAMP_SCENARIOS } from './debugCampSimulator.js';
@@ -140,7 +139,9 @@ function bindNexusListeners(modal) {
 
     modal.querySelector('#qa-btn-showroom')?.addEventListener('click', () => {
         closeQaNexusModal();
-        void openDebugShowroom(window.game || window.threeGame);
+        // main.js's openDebugShowroom() isn't exported (module-local); the correct public
+        // entry point is window.__DEBUG__.teleport('showroom'), which already calls it.
+        void window.__DEBUG__?.teleport?.('showroom');
     });
 
     modal.querySelector('#qa-btn-wing2')?.addEventListener('click', () => {

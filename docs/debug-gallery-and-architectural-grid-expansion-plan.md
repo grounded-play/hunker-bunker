@@ -308,3 +308,53 @@ a tab switcher between "Mature Content" and "Full Progression")? The latter avoi
 near-identical modal/gallery UI; the former keeps the reviewer-compliance tool's scope narrow
 and undiluted. No strong recommendation either way — flagging for your call rather than
 guessing.
+
+**Resolved by implementation**: went with the standalone file (`src/progressionWalkthrough.js`,
+F10 shortcut, `progression`/`walkthrough` console command) to keep the Steam-reviewer-facing
+tool's scope undiluted — see §8 below.
+
+---
+
+## 8. Implementation Status (2026-08-17, later pass — "implement them now")
+
+**Built and live-verified this pass:**
+
+- **`src/debugZoneRegistry.js`** (+ test): resolves §6a/§7a's coordinate-collision findings.
+  Every debug zone now registers `{originX, originZ, width, depth}` and the registry throws on
+  real overlap. Pre-registered `debugShowroom` and `debugMuseum` at their *actual* verified
+  coordinates (not the plan's hand-picked ones) so new zones can't silently collide. Wing 2
+  moved to `(11000, 9500)`, clear of everything. The other agent has already started
+  registering Wings 3/4 here too.
+- **Wing 1 (Asset Colonnade)**: built by evolving `debugMuseum.js` in place (per §6c/§7's
+  "supersedes debugMuseum" decision) rather than a new file — every spawned item now sits on a
+  procedural pedestal (hex cylinder + glowing cyan base ring), uniform `rotation.y = 0`
+  orientation, and an upgraded placard showing live triangle counts pulled from the actual
+  mesh. Live-verified: 117 pedestals + 117 base rings spawn correctly, 0 console errors.
+  Confirmed §6b's AI-safety requirement was **already satisfied by construction** — spawned
+  enemies were never pushed into `game.scatterSprites`, the array the real AI tick loop
+  iterates, so they were already inert; no new AI-bypass code was needed.
+- **Wing 5 (Progression Walkthrough)**: `src/progressionWalkthrough.js` + `#progression-
+  walkthrough-modal` (reuses `matureContentAudit.js`'s CSS classes, no new styling), F10
+  shortcut. All 8 categories from §7's design, 23 real trigger buttons, zero invented hooks —
+  reuses `window.__DEBUG__.runCommand()` (new: runs a command string through the exact
+  `executeDevCommand()` dispatcher the console itself uses), `getDebugPointsOfInterest()` for
+  camp/hive jumps, `window.seasonPass.addXp()` for Battle Pass tiers, and the same ending-
+  cutscene/log-viewer logic `matureContentAudit.js` already has for Act 2's 10 endings.
+  Live-verified real state changes: Battle Pass tier 46→47 via the "+1 TIER" button,
+  achievements 0→24 unlocked via "UNLOCK: ALL ACHIEVEMENTS" — not just UI, actual persisted
+  state.
+- **Found and fixed a real app-breaking bug along the way**: `src/debugQaNexus.js` (the other
+  agent's Wing 3/4/Nexus UI, built concurrently) imported `openDebugShowroom` from
+  `debugShowroom.js`, but that function actually lives in `main.js` and was never exported —
+  broke the module graph, the entire app failed to boot (blank page, console showed the import
+  error). Fixed by routing through `window.__DEBUG__.teleport('showroom')`, the existing public
+  entry point, instead of the broken direct import.
+
+**Not attempted this pass**: Wing 2 (Room Grid — real WFC output, flagged in §7a item 5 as
+comparable in difficulty to everything else built combined) and Wings 3/4 (boss arenas, camp
+labs) — the other agent already has `debugTileGrid.js`, `debugBossArenas.js`,
+`debugCampSimulator.js`, and `debugQaNexus.js` in progress; duplicating that work risked a
+repeat of the debugMuseum/debugShowroom collision from earlier tonight, so left to them.
+
+**Verification**: 203 test files, 1676 tests, 100% passing. Lint clean across every touched
+file. Live-verified in a real browser, not just unit tests.
