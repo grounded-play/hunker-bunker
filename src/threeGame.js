@@ -19913,6 +19913,18 @@ export class ThreeGame {
         const rubbleMatrices = [];
         const floorRotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
         const instMatrix = new THREE.Matrix4();
+        // Pit/hole/filled-patch/deck tiles were each an individual THREE.Mesh
+        // (same shared floorGeometry + one of two shared materials, only the
+        // transform differs) -- a maze chunk can carry a couple hundred of
+        // these, and profiling showed mountChunk costing 20-50ms/chunk mostly
+        // from per-tile scene-graph child creation like this. None of their
+        // old per-instance userData tags (isLethalPit/isFilledHolePatch/
+        // isElevatedTraversal) are read anywhere else in the codebase, so
+        // batching them into two InstancedMesh pools (grouped by material,
+        // since renderOrder/shadow flags are pool-wide, not per-instance)
+        // loses nothing gameplay-relevant.
+        const holeOverlayMatrices = [];
+        const flatOverlayMatrices = [];
 
         const addCanyonDropSkirt = (posX, posZ, rotY, biomeKey) => {
             const skirtQuat = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0));
@@ -20170,14 +20182,11 @@ export class ThreeGame {
                     continue;
                 }
                 if (tileChar === VERTICAL_TILE.PIT) {
-                    const pit = new THREE.Mesh(this.floorGeometry, this.holeMaterial);
-                    pit.rotation.x = -Math.PI / 2;
-                    pit.scale.set(0.5, 0.5, 1);
-                    pit.position.set(worldX, 0.01, worldZ);
-                    pit.renderOrder = 2;
-                    pit.receiveShadow = true;
-                    pit.userData = { isLethalPit: true, worldX, worldZ };
-                    group.add(pit);
+                    holeOverlayMatrices.push(new THREE.Matrix4().compose(
+                        new THREE.Vector3(worldX, 0.01, worldZ),
+                        floorRotation,
+                        new THREE.Vector3(0.5, 0.5, 1)
+                    ));
                     continue;
                 }
                 if (
@@ -20185,19 +20194,11 @@ export class ThreeGame {
                     || tileChar === VERTICAL_TILE.BRIDGE
                     || tileChar === VERTICAL_TILE.LADDER
                 ) {
-                    const deck = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
-                    deck.rotation.x = -Math.PI / 2;
-                    deck.position.set(worldX, grid.heightmap?.[localY]?.[localX] ?? 0, worldZ);
-                    deck.receiveShadow = true;
-                    deck.userData = {
-                        isElevatedTraversal: true,
-                        traversalType: tileChar === VERTICAL_TILE.RAMP
-                            ? 'ramp'
-                            : tileChar === VERTICAL_TILE.LADDER
-                                ? 'ladder'
-                                : 'bridge'
-                    };
-                    group.add(deck);
+                    flatOverlayMatrices.push(new THREE.Matrix4().compose(
+                        new THREE.Vector3(worldX, grid.heightmap?.[localY]?.[localX] ?? 0, worldZ),
+                        floorRotation,
+                        new THREE.Vector3(1, 1, 1)
+                    ));
                     continue;
                 }
                 if (tileChar !== '#') continue;
@@ -20207,25 +20208,21 @@ export class ThreeGame {
 
                 if (wallTypeRoll < holeCut) {
                     if (this.filledHoleKeys?.has(this.getWallKey(worldX, worldZ))) {
-                        const filledMesh = new THREE.Mesh(this.floorGeometry, this.floorMaterial);
-                        filledMesh.rotation.x = -Math.PI / 2;
-                        filledMesh.position.set(worldX, 0.005, worldZ);
-                        filledMesh.receiveShadow = true;
-                        filledMesh.userData = { isFilledHolePatch: true, wallKey: this.getWallKey(worldX, worldZ) };
-                        group.add(filledMesh);
+                        flatOverlayMatrices.push(new THREE.Matrix4().compose(
+                            new THREE.Vector3(worldX, 0.005, worldZ),
+                            floorRotation,
+                            new THREE.Vector3(1, 1, 1)
+                        ));
                         continue;
                     }
                     const holeInfo = this.getHoleVisualInfo(worldX, worldZ);
                     if (!holeInfo) continue;
                     // Hole / Pit (flat on the ground)
-                    const holeMesh = new THREE.Mesh(this.floorGeometry, this.holeMaterial);
-                    holeMesh.rotation.x = -Math.PI / 2;
-                    holeMesh.scale.set(holeInfo.scale, holeInfo.scale, 1);
-                    holeMesh.rotation.z = holeInfo.rotationZ;
-                    holeMesh.position.set(holeInfo.x, 0.01, holeInfo.z);
-                    holeMesh.renderOrder = 2;
-                    holeMesh.receiveShadow = true;
-                    group.add(holeMesh);
+                    holeOverlayMatrices.push(new THREE.Matrix4().compose(
+                        new THREE.Vector3(holeInfo.x, 0.01, holeInfo.z),
+                        new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, holeInfo.rotationZ)),
+                        new THREE.Vector3(holeInfo.scale, holeInfo.scale, 1)
+                    ));
 
                     // Seeded chance (~40%) to spawn a Fungal Spore Vent (Stage 1 Fungal Enemy) on hole tiles
                     if (wallTypeRng() < 0.40) {
@@ -20414,6 +20411,25 @@ export class ThreeGame {
                     }
                 }
             }
+        }
+
+        if (this.floorGeometry && this.holeMaterial && holeOverlayMatrices.length > 0) {
+            const holeOverlayInstanced = new THREE.InstancedMesh(this.floorGeometry, this.holeMaterial, holeOverlayMatrices.length);
+            holeOverlayMatrices.forEach((m, idx) => holeOverlayInstanced.setMatrixAt(idx, m));
+            holeOverlayInstanced.instanceMatrix.needsUpdate = true;
+            holeOverlayInstanced.renderOrder = 2;
+            holeOverlayInstanced.receiveShadow = true;
+            holeOverlayInstanced.userData = { isLethalPit: true };
+            group.add(holeOverlayInstanced);
+        }
+
+        if (this.floorGeometry && this.floorMaterial && flatOverlayMatrices.length > 0) {
+            const flatOverlayInstanced = new THREE.InstancedMesh(this.floorGeometry, this.floorMaterial, flatOverlayMatrices.length);
+            flatOverlayMatrices.forEach((m, idx) => flatOverlayInstanced.setMatrixAt(idx, m));
+            flatOverlayInstanced.instanceMatrix.needsUpdate = true;
+            flatOverlayInstanced.receiveShadow = true;
+            flatOverlayInstanced.userData = { isElevatedTraversal: true, isFilledHolePatch: true };
+            group.add(flatOverlayInstanced);
         }
 
         if (this.floorGeometry && this.voidMaterial && voidPatchMatrices.length > 0) {
