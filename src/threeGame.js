@@ -14252,6 +14252,12 @@ export class ThreeGame {
             this.hadNearDeath = true;
         }
 
+        if (this.playerVitals.hp > 0 && (this.playerVitals.hp / (this.playerVitals.maxHp || 100)) <= 0.25 && !this._lowHealthVoiceCooldown) {
+            this._lowHealthVoiceCooldown = true;
+            window.AudioManager?.playVoiceCallout?.('low_health');
+            setTimeout(() => { this._lowHealthVoiceCooldown = false; }, 12000);
+        }
+
         if (this.playerVitals.hp <= 0) {
             this.handleDeath(reason);
         }
@@ -17109,6 +17115,7 @@ export class ThreeGame {
         this.weaponReloadTimer = this.weaponReloadDuration;
         this.emitWeaponClipState();
         window.AudioManager?.play('weapon_reload', { volume: 0.52 });
+        window.AudioManager?.playVoiceCallout?.('reload');
         return true;
     }
 

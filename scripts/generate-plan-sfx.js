@@ -175,6 +175,51 @@ export const PLAN_SFX = Object.freeze({
             return staticBurst + (formant1 + formant2) * 0.45 + throatNoise;
         }
     },
+    voice_commander_reloading: {
+        duration: 0.9,
+        synth(t, noise) {
+            const squelch = noise() * (pulse(t, 0.01, 0.05) + pulse(t, 0.82, 0.06)) * 0.32;
+            const voice = sine(210 + Math.sin(t * 16) * 25, t) * envelope(t, 0.9, 0.05, 0.18) * 0.5;
+            const slide = noise() * pulse(t, 0.35, 0.12) * 0.25;
+            return squelch + voice + slide;
+        }
+    },
+    voice_commander_low_health: {
+        duration: 1.25,
+        synth(t, noise) {
+            const squelch = noise() * pulse(t, 0.01, 0.08) * 0.4;
+            const alarm = sine(660, t) * (pulse(t, 0.05, 0.2) + pulse(t, 0.45, 0.2) + pulse(t, 0.85, 0.2)) * 0.25;
+            const voice = sine(190 + Math.sin(t * 10) * 30, t) * envelope(t, 1.25, 0.08, 0.3) * 0.55;
+            return squelch + alarm + voice;
+        }
+    },
+    voice_commander_boss_spotted: {
+        duration: 1.35,
+        synth(t, noise) {
+            const squelch = noise() * (pulse(t, 0.01, 0.07) + pulse(t, 1.25, 0.08)) * 0.38;
+            const klaxon = sine(440 + Math.sin(t * 8) * 80, t) * envelope(t, 1.35, 0.04, 0.3) * 0.35;
+            const voice = sine(240 + Math.sin(t * 14) * 35, t) * envelope(t, 1.35, 0.06, 0.25) * 0.5;
+            return squelch + klaxon + voice;
+        }
+    },
+    voice_commander_killstreak: {
+        duration: 1.05,
+        synth(t, noise) {
+            const squelch = noise() * pulse(t, 0.01, 0.06) * 0.3;
+            const surge = sine(160 + t * 90, t) * envelope(t, 1.05, 0.03, 0.2) * 0.45;
+            const voice = sine(260 + Math.sin(t * 15) * 20, t) * envelope(t, 1.05, 0.05, 0.25) * 0.5;
+            return squelch + surge + voice;
+        }
+    },
+    voice_commander_victory: {
+        duration: 1.4,
+        synth(t, noise) {
+            const squelch = noise() * pulse(t, 0.01, 0.06) * 0.28;
+            const chime = (sine(523.25, t) + sine(659.25, t) * 0.6 + sine(783.99, t) * 0.4) * envelope(t, 1.4, 0.08, 0.45) * 0.35;
+            const voice = sine(220 + Math.sin(t * 11) * 20, t) * envelope(t, 1.4, 0.06, 0.3) * 0.45;
+            return squelch + chime + voice;
+        }
+    },
     voice_aura_target_down: {
         duration: 0.95,
         synth(t, noise) {
@@ -183,6 +228,53 @@ export const PLAN_SFX = Object.freeze({
             const shimmer = sine(3520, t) * pulse(t, 0.05, 0.15) * 0.2;
             const vocoder = noise() * envelope(t, 0.95, 0.04, 0.3) * 0.08;
             return aiTone1 + aiTone2 + shimmer + vocoder;
+        }
+    },
+    voice_aura_shield_critical: {
+        duration: 1.1,
+        synth(t, noise) {
+            const warnTone = sine(987.77, t) * (pulse(t, 0.02, 0.15) + pulse(t, 0.32, 0.15) + pulse(t, 0.62, 0.15)) * 0.4;
+            const vocoder = (sine(659.25, t) + sine(1318.5, t) * 0.5) * envelope(t, 1.1, 0.05, 0.3) * 0.35;
+            const sub = sine(110, t) * pulse(t, 0.05, 0.4) * 0.25;
+            return warnTone + vocoder + sub;
+        }
+    },
+    voice_aura_reloading: {
+        duration: 0.85,
+        synth(t, noise) {
+            const chime = sine(1046.5 + t * 200, t) * envelope(t, 0.85, 0.02, 0.2) * 0.35;
+            const vocoder = sine(880, t) * envelope(t, 0.85, 0.04, 0.25) * 0.35;
+            const tech = noise() * pulse(t, 0.2, 0.08) * 0.12;
+            return chime + vocoder + tech;
+        }
+    },
+    voice_aura_threat_high: {
+        duration: 1.3,
+        synth(t, noise) {
+            const sweep = sine(440 + t * 880, t) * envelope(t, 1.3, 0.04, 0.35) * 0.35;
+            const vocoder = (sine(784, t) + sine(1568, t) * 0.5) * envelope(t, 1.3, 0.06, 0.3) * 0.4;
+            const shimmer = sine(3136, t) * pulse(t, 0.05, 0.2) * 0.2;
+            return sweep + vocoder + shimmer;
+        }
+    },
+    voice_aura_overdrive_ready: {
+        duration: 1.15,
+        synth(t, noise) {
+            const triad = (sine(523.25, t) * pulse(t, 0.02, 0.3) +
+                sine(659.25, t) * pulse(t, 0.18, 0.3) +
+                sine(783.99, t) * pulse(t, 0.36, 0.4) +
+                sine(1046.5, t) * pulse(t, 0.54, 0.5)) * 0.45;
+            const vocoder = sine(880, t) * envelope(t, 1.15, 0.05, 0.3) * 0.3;
+            return triad + vocoder;
+        }
+    },
+    voice_aura_sector_cleared: {
+        duration: 1.25,
+        synth(t, noise) {
+            const bell = sine(1318.5, t) * envelope(t, 1.25, 0.01, 0.6) * 0.4 +
+                sine(1567.98, t) * envelope(t, 1.25, 0.01, 0.5) * 0.3;
+            const vocoder = sine(659.25, t) * envelope(t, 1.25, 0.08, 0.4) * 0.35;
+            return bell + vocoder;
         }
     }
 });

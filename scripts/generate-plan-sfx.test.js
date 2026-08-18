@@ -19,8 +19,18 @@ describe('plan SFX generator', () => {
             'sfx_overclock_socket',
             'sfx_smelt_forge_burst',
             'sfx_trade_shard_dispense',
+            'voice_aura_overdrive_ready',
+            'voice_aura_reloading',
+            'voice_aura_sector_cleared',
+            'voice_aura_shield_critical',
             'voice_aura_target_down',
-            'voice_commander_breached'
+            'voice_aura_threat_high',
+            'voice_commander_boss_spotted',
+            'voice_commander_breached',
+            'voice_commander_killstreak',
+            'voice_commander_low_health',
+            'voice_commander_reloading',
+            'voice_commander_victory'
         ]);
     });
 

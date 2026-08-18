@@ -19,15 +19,12 @@ intentionally flat effects are excluded.
   laser trap emitter (`prop_laser_trap_emitter`), O2 filter vat (`prop_o2_filter_vat`),
   tesla coil node (`prop_tesla_coil_node`), vital monitor (`prop_vital_monitor`)
 - Operators: Scout, Tank, Engineer
-- Class weapons: Vector-9 Talon (`gun_scout_vector9_talon`), Siege-Breaker 50
-  (`gun_tank_siege_breaker50`), Tesla-Lock MK-IV (`gun_engineer_tesla_lock`) — one
-  per class, parented onto the operator's hand bone (`src/player3dOverlay.js`).
+- Class weapons: All 4 base weapon archetypes complete — Vector-9 Talon (`gun_scout_vector9_talon`),
+  Talon-C Carbine (`gun_scout_talon_c`), Siege-Breaker 50 (`gun_tank_siege_breaker50`),
+  Tesla-Lock MK-IV (`gun_engineer_tesla_lock`) — parented onto the operator's hand bone (`src/player3dOverlay.js`).
   Weapon skins: Sub-Zero Frostbite (`skin_scout_frostbite`, itemdef 4100), Deep
-  Core Melter (`skin_tank_deep_core_melter`, itemdef 4107 — filename says "tank"
-  but `src/loadout.js`'s `ARCHETYPE_SKINS` currently assigns 4107 to Engineer;
-  unresolved naming/assignment conflict, see `docs/armory-and-class-weapons-worklog.md`),
-  Cryo-Plasma Arc Driver (`skin_engineer_cryo_plasma`, itemdef 4103). Talon-C
-  Carbine (Scout's tier-unlocked secondary archetype) has no mesh yet.
+  Core Melter (`skin_tank_deep_core_melter`, itemdef 4107), Cryo-Plasma Arc Driver
+  (`skin_engineer_cryo_plasma`, itemdef 4103). All 4 base weapon meshes are 100% complete on disk.
 - Enemies: cybersnail, cryosnail, sporesnail, crawler/parasite, mycelium stalker,
   cybersnail boss, cryosnail boss, sporesnail boss, Queen, spore mortar, fungal spore vent
 

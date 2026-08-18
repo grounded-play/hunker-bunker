@@ -179,29 +179,46 @@ bounties.
 
 ## 5. What's Genuinely Still Open (art/catalog being 100% doesn't mean the season is 100%)
 
-1. **5 items with 2D art but no 3D mesh**: `4137`, `4138` (charms), `4142`, `4143`, `4144`
-   (mods). 2D→3D conversion pass, blocked on getting Blender MCP running (needs a GUI or
-   `xvfb-run` — neither available in this environment as of this pass; `apt-get install xvfb`
-   needs a sudo password not available to the agent).
+1. **~~5 items with 2D art but no 3D mesh~~ — closed, real AI-generated meshes.** `4137`,
+   `4138` (charms), `4142`, `4143`, `4144` (mods) now have real, textured, loadable `.glb`
+   models (`public/3d/runtime/new3ds/{charm_amber_bio_flask,charm_dark_matter,
+   mod_bio_hazard_filter,mod_kinetic_impact,mod_thermal_heat_exchanger}.glb`), wired into
+   `armoryScene.js`'s `CHARM_GLB_MAP`/`MOD_GLB_MAP`. Generated via Hyper3D Rodin through a
+   live Blender MCP connection — the user installed `xvfb`, started Blender under it, and the
+   MCP socket connected; Hyper3D was enabled programmatically (`bpy.context.scene.
+   blendermcp_use_hyper3d`, free-trial key) since its UI checkbox isn't reachable without a
+   visible display. Live-verified in-browser: all 5 load through `GLTFLoader` as single
+   textured meshes (`material.map` present), 5,300–9,600 triangles each, file sizes
+   1.3–2.1MB — matching the fidelity of their 8 AI-generated siblings in the same maps, not
+   the earlier hand-built primitive placeholders (kept as `scripts/blender/
+   build-missing-season-models.py` — a documented, zero-cost headless-Blender fallback that
+   bypasses the MCP socket server entirely if the live connection ever drops again; that
+   script's own docstring explains why: the addon's server explicitly refuses to start in
+   `blender -b` background mode).
 2. **§F runtime-effect gap** (see updated table above): voice packs (4148/4149) have no
    callout system to plug into; tracer/muzzle FX (4152/4153) have no rendering system to hook.
    Both are real new-feature builds, not wiring — left honest and unbuilt.
 3. **Doc 05 Crafting Matrix — now real, not a doc-only spec.** `src/craftingMatrix.js` (new)
-   implements the 5:1 trade-up smelter and Deep Core Shard duplicate-protection dispensary from
-   doc 05 §2/§3, unit-tested (`src/craftingMatrix.test.js`). Wired into a new SMELTER &
-   DISPENSARY tab in the Steam Vault UI (`src/steamVaultUi.js`, `index.html`). Operates on the
-   same local sandbox `vaultItems` array the rest of the Vault already uses — there's no real
-   Steamworks `ExchangeItems` backend in this codebase, so this matches the existing "real"
-   baseline rather than faking a server call. Doc 05 §4's Quartermaster Trade Shop (spending
-   "Bunker Scrap" on raw reagents) is **not built** — it assumes a `Scrap` currency that
-   doesn't exist in `BankManager` (real currencies are `tech`/`coin`/`med`/`shells`), the same
-   false-currency assumption caught earlier in the Season Pass work; needs a currency decision
-   before it can be built honestly.
+   implements the 5:1 trade-up smelter, Deep Core Shard duplicate-protection dispensary, and
+   the Quartermaster Trade Shop's one real SKU (10x Cryo-Alloy Ingot Pack, doc 05 §4) —
+   unit-tested (`src/craftingMatrix.test.js`, 17 tests). Wired into a new SMELTER &
+   DISPENSARY tab in the Steam Vault UI (`src/steamVaultUi.js`, `index.html`), live-verified
+   end-to-end for all three actions (smelt, shard-redeem, tech-purchase) with zero console
+   errors. Operates on the same local sandbox `vaultItems` array the rest of the Vault already
+   uses — there's no real Steamworks `ExchangeItems` backend in this codebase, so this matches
+   the existing "real" baseline rather than faking a server call. The Ingot Pack spends `tech`
+   (real `BankManager` currency) instead of doc 05's fictional "Bunker Scrap" — a 1:1
+   substitution, documented in `craftingMatrix.js`. The rest of §4's Quartermaster listing
+   (Titanium Clasp, Micro-Capacitor Board, Blueprint Pack, and the weekly-capped
+   Shard-for-reagent rows) isn't built: those three don't correspond to any of the 60
+   registered itemdefs, and the weekly-cap rows need purchase-limit infrastructure this
+   codebase doesn't have — left honest and unbuilt rather than faked.
 4. **Rig Overclock Module gameplay hooks (doc 03 §4)**: `LoadoutManager.getActiveModifiers()`
    already existed but was completely unwired. Now wired for the 2 modifiers that map to real
    systems: `scrapMagnetRadiusBonus` → pickup magnet radius (`src/threeGame.js`
    `updatePlayerType`), `gasDamageReduction` → poison tick damage (closest real analog to
    "gas/toxic" in this game's vocabulary). The other 6 modifiers (cryo duration, kinetic
    pierce, shield recharge, hidden-room radar, low-HP speed boost, dash refund) reference
-   gameplay systems that don't exist (no enemy-freeze mechanic, no pierce/shield/dash-refund
-   systems) — left unwired rather than faked.
+   gameplay systems that don't exist anywhere in `src/threeGame.js` (grepped broadly for
+   shield/pierce/secret-wall/kill-streak/low-HP-speed synonyms, zero matches beyond an
+   unrelated comment) — left unwired rather than faked.

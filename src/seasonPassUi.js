@@ -5,12 +5,21 @@
 // and BankManager for currency so claimed rewards land in the same places
 // everything else in the game reads from — not a second parallel system.
 import { SeasonPassManager, TIER_REWARDS, TOTAL_TIERS, XP_PER_TIER, XP_SOURCES } from './seasonPass.js';
+import { BountyManager } from './bountySystem.js';
 import { grantVaultItem } from './steamVaultUi.js';
 
 export const seasonPass = new SeasonPassManager();
 if (typeof window !== 'undefined') window.seasonPass = seasonPass;
 
+export const bountyManager = new BountyManager({
+    onAwardXp: (amount, source, label) => {
+        awardXp(amount, source, `Directive Complete: ${label}`);
+    }
+});
+if (typeof window !== 'undefined') window.bountyManager = bountyManager;
+
 let hudCardSeq = 0;
+let activeTab = 'tiers'; // 'tiers' | 'bounties'
 
 function showSeasonPassToast(title, blurb) {
     const stack = document.querySelector('.hud-notification-stack');
@@ -60,12 +69,7 @@ function awardXp(amount, source, label) {
     if (isModalOpen()) renderSeasonPassBody();
 }
 
-// Real gameplay-completion signals (window CustomEvents already fired by src/threeGame.js —
-// confirmed via code inspection, not assumed from the design doc's fictional event names).
-// "Daily Tactical Bounty" / "Weekly Sector Directive" XP sources from doc 04 §2 are NOT wired:
-// no quest/bounty-tracking system exists anywhere in this codebase to hook, and building one
-// is a separate feature (tracking + reset timers + UI) beyond battle-pass plumbing. Flagged as
-// a known gap rather than faked with a wrong signal.
+// Real gameplay-completion signals wired to XP and Bounty tracking
 export function wireSeasonPassXpEvents() {
     window.addEventListener('mission-objective-complete', () => {
         awardXp(XP_SOURCES.roomCleared, 'roomCleared', 'Objective cleared.');
@@ -81,6 +85,16 @@ export function wireSeasonPassXpEvents() {
     window.addEventListener('depth-tier-changed', () => {
         awardXp(XP_SOURCES.floorCleared, 'floorCleared', 'Descended to a new sub-level.');
     });
+
+    bountyManager.wireGameEvents();
+
+    window.addEventListener('bounty-completed', (event) => {
+        const bounty = event.detail?.bounty;
+        if (bounty) {
+            showSeasonPassToast('DIRECTIVE COMPLETE', `${bounty.title} — +${bounty.xp.toLocaleString()} XP`);
+            if (isModalOpen()) renderSeasonPassBody();
+        }
+    });
 }
 
 function grantReward(reward) {
@@ -88,8 +102,6 @@ function grantReward(reward) {
     if (reward.kind === 'item' || reward.kind === 'cache') {
         grantVaultItem(reward.itemdefid, reward.qty ?? 1);
     } else if (reward.kind === 'currency') {
-        // doc 04's "Fabrication Scrap" has no matching real currency (src/bank.js only tracks
-        // tech/coin/med/shells) — realized as `coin`, the closest generic spendable resource.
         window.bankManager?.deposit?.({ [reward.currency === 'scrap' ? 'coin' : reward.currency]: reward.qty });
     }
     showSeasonPassToast('REWARD CLAIMED', reward.label);
@@ -146,6 +158,48 @@ function renderTierCard(tierNumber) {
     `;
 }
 
+function renderBountyCard(bounty) {
+    const pct = Math.min(100, Math.round((bounty.progress / (bounty.target || 1)) * 100));
+    return `
+        <div class="bounty-card ${bounty.completed ? 'completed' : ''}">
+            <div class="bounty-card__top">
+                <div class="bounty-card__title">${bounty.title}</div>
+                <div class="bounty-card__badge">+${bounty.xp.toLocaleString()} XP</div>
+            </div>
+            <div class="bounty-card__desc">${bounty.desc}</div>
+            <div class="bounty-card__footer">
+                <div class="bounty-card__progress-info">
+                    <span>PROGRESS</span>
+                    <span>${bounty.progress} / ${bounty.target} (${pct}%)</span>
+                </div>
+                <div class="bounty-card__progress-bar">
+                    <div class="bounty-card__progress-fill" style="width:${pct}%"></div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function getTimeUntilDailyReset() {
+    const now = new Date();
+    const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+    const diff = Math.max(0, tomorrow - now);
+    const hrs = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    return `${hrs}h ${mins}m`;
+}
+
+function getTimeUntilWeeklyReset() {
+    const now = new Date();
+    const day = now.getUTCDay();
+    const daysUntilMonday = (8 - (day || 7)) % 7 || 7;
+    const nextMonday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilMonday));
+    const diff = Math.max(0, nextMonday - now);
+    const days = Math.floor(diff / 86400000);
+    const hrs = Math.floor((diff % 86400000) / 3600000);
+    return `${days}d ${hrs}h`;
+}
+
 function renderSeasonPassBody() {
     const body = document.getElementById('season-pass-body');
     const summary = document.getElementById('season-pass-progress-summary');
@@ -159,30 +213,64 @@ function renderSeasonPassBody() {
             <div class="season-pass-progress-bar"><div class="season-pass-progress-fill" style="width:${Math.round(progress.fraction * 100)}%"></div></div>
             <span class="season-pass-xp-next">${progress.xpIntoTier} / ${progress.xpForNextTier || XP_PER_TIER} XP to next tier</span>
             ${!seasonPass.hasPremium() ? '<button id="season-pass-unlock-premium" class="season-pass-unlock-btn">UNLOCK CLASSIFIED DOSSIER</button>' : '<span class="season-pass-premium-active">CLASSIFIED DOSSIER ACTIVE</span>'}
+            <div class="season-pass-tabs">
+                <button class="season-pass-tab-btn ${activeTab === 'tiers' ? 'active' : ''}" data-tab="tiers">PROGRESSION REWARDS (1-50)</button>
+                <button class="season-pass-tab-btn ${activeTab === 'bounties' ? 'active' : ''}" data-tab="bounties">DIRECTIVES & BOUNTIES</button>
+            </div>
         `;
         summary.querySelector('#season-pass-unlock-premium')?.addEventListener('click', () => {
-            // No real payment backend reachable from this build — same sandbox-purchase
-            // convention already used by src/steamVaultUi.js's store tab in dev/offline mode.
             seasonPass.setPremium(true);
             showSeasonPassToast('CLASSIFIED DOSSIER UNLOCKED', 'Premium track rewards now claimable.');
             renderSeasonPassBody();
         });
+        summary.querySelectorAll('.season-pass-tab-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                activeTab = btn.dataset.tab;
+                renderSeasonPassBody();
+            });
+        });
     }
 
-    let rows = '';
-    for (let t = 1; t <= TOTAL_TIERS; t++) rows += renderTierCard(t);
-    body.innerHTML = `<div class="season-pass-tier-list">${rows}</div>`;
+    if (activeTab === 'tiers') {
+        let rows = '';
+        for (let t = 1; t <= TOTAL_TIERS; t++) rows += renderTierCard(t);
+        body.innerHTML = `<div class="season-pass-tier-list">${rows}</div>`;
 
-    body.querySelectorAll('.season-pass-claim-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const tier = Number(btn.dataset.tier);
-            const track = btn.dataset.track;
-            const reward = seasonPass.claim(tier, track);
-            if (reward) grantReward(reward);
-            updateMenuStatus();
-            renderSeasonPassBody();
+        body.querySelectorAll('.season-pass-claim-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const tier = Number(btn.dataset.tier);
+                const track = btn.dataset.track;
+                const reward = seasonPass.claim(tier, track);
+                if (reward) grantReward(reward);
+                updateMenuStatus();
+                renderSeasonPassBody();
+            });
         });
-    });
+    } else {
+        const dailies = bountyManager.getActiveDailies();
+        const weeklies = bountyManager.getActiveWeeklies();
+
+        body.innerHTML = `
+            <div class="bounty-section">
+                <div class="bounty-section__header">
+                    <span class="bounty-section__title">◈ DAILY TACTICAL DIRECTIVES</span>
+                    <span class="bounty-section__timer">RESETS IN: ${getTimeUntilDailyReset()}</span>
+                </div>
+                <div class="bounty-grid">
+                    ${dailies.map(renderBountyCard).join('')}
+                </div>
+            </div>
+            <div class="bounty-section">
+                <div class="bounty-section__header">
+                    <span class="bounty-section__title">◈ WEEKLY SECTOR OPERATIONS</span>
+                    <span class="bounty-section__timer">RESETS IN: ${getTimeUntilWeeklyReset()}</span>
+                </div>
+                <div class="bounty-grid">
+                    ${weeklies.map(renderBountyCard).join('')}
+                </div>
+            </div>
+        `;
+    }
 }
 
 export function openSeasonPassModal() {
@@ -209,3 +297,4 @@ export function initSeasonPassUI() {
     wireSeasonPassXpEvents();
     updateMenuStatus();
 }
+

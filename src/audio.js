@@ -281,6 +281,39 @@ export class AudioManager {
         return { source, gainNode, panner };
     }
 
+    static playVoiceCallout(cueType, options = {}) {
+        if (this.globalMuted || !this.voiceEnabled) return null;
+        const voicePackId = (typeof window !== 'undefined' ? (window.loadout?.state?.voicePackId || window.loadout?.getEquippedVoicePackId?.()) : null);
+        if (!voicePackId) return null;
+
+        let prefix = null;
+        const idStr = String(voicePackId);
+        if (idStr === '4148' || idStr === 'voicepack_soviet_commander') {
+            prefix = 'voice_commander';
+        } else if (idStr === '4149' || idStr === 'voicepack_aura') {
+            prefix = 'voice_aura';
+        }
+        if (!prefix) return null;
+
+        const cueMap = {
+            breached: `${prefix}_breached`,
+            reload: `${prefix}_reloading`,
+            reloading: `${prefix}_reloading`,
+            low_health: prefix === 'voice_commander' ? 'voice_commander_low_health' : 'voice_aura_shield_critical',
+            shield_critical: prefix === 'voice_commander' ? 'voice_commander_low_health' : 'voice_aura_shield_critical',
+            boss_spotted: prefix === 'voice_commander' ? 'voice_commander_boss_spotted' : 'voice_aura_threat_high',
+            threat_high: prefix === 'voice_commander' ? 'voice_commander_boss_spotted' : 'voice_aura_threat_high',
+            killstreak: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_target_down',
+            target_down: `${prefix}_target_down`,
+            victory: prefix === 'voice_commander' ? 'voice_commander_victory' : 'voice_aura_sector_cleared',
+            sector_cleared: prefix === 'voice_commander' ? 'voice_commander_victory' : 'voice_aura_sector_cleared',
+            overdrive_ready: prefix === 'voice_commander' ? 'voice_commander_killstreak' : 'voice_aura_overdrive_ready'
+        };
+
+        const targetKey = cueMap[cueType] || `${prefix}_${cueType}`;
+        return this.play(targetKey, { bus: 'voice', volume: options.volume ?? 0.85, ...options });
+    }
+
     static playVoiceForMessage(speakerInfo = {}, messageText = '') {
         if (this.globalMuted || !this.isUnlocked || !this.voiceEnabled) return null;
         if (this.voiceGain.gain.value <= 0.001) return null;

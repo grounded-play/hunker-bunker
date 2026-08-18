@@ -18012,6 +18012,168 @@ body.show-debug .map-tool-btn--debug { display: inline-flex; }
   letter-spacing: 0.06em;
 }
 
+.season-pass-tabs {
+  display: flex;
+  gap: calc(var(--vu) * 1);
+  margin-top: calc(var(--vu) * 1);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: calc(var(--vu) * 0.8);
+}
+
+.season-pass-tab-btn {
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xs, 12px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: calc(var(--vu) * 0.6) calc(var(--vu) * 1.4);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.season-pass-tab-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.season-pass-tab-btn.active {
+  color: var(--accent-primary);
+  border-color: rgba(255, 159, 28, 0.4);
+  background: rgba(255, 159, 28, 0.12);
+}
+
+.bounty-section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 1);
+  margin-bottom: calc(var(--vu) * 2);
+}
+
+.bounty-section__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xs, 12px);
+  color: var(--text-muted);
+  padding-bottom: calc(var(--vu) * 0.4);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.bounty-section__title {
+  font-weight: 900;
+  color: var(--accent-secondary);
+  letter-spacing: 0.06em;
+}
+
+.bounty-section__timer {
+  font-size: var(--font-xxs, 11px);
+  color: var(--accent-primary);
+}
+
+.bounty-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--vu) * 36), 1fr));
+  gap: calc(var(--vu) * 1.2);
+}
+
+.bounty-card {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vu) * 0.8);
+  padding: calc(var(--vu) * 1.2);
+  background: rgba(20, 23, 26, 0.75);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.bounty-card:hover {
+  border-color: rgba(46, 196, 182, 0.35);
+  transform: translateY(-2px);
+}
+
+.bounty-card.completed {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.bounty-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: calc(var(--vu) * 0.8);
+}
+
+.bounty-card__title {
+  font-family: 'Outfit', sans-serif;
+  font-size: var(--font-sm, 15px);
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.bounty-card__badge {
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xxxs, 10px);
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(255, 159, 28, 0.15);
+  color: var(--accent-primary);
+  border: 1px solid rgba(255, 159, 28, 0.3);
+  white-space: nowrap;
+}
+
+.bounty-card.completed .bounty-card__badge {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.bounty-card__desc {
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xxs, 11px);
+  color: var(--text-muted);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.bounty-card__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bounty-card__progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: var(--font-xxxs, 10px);
+  color: var(--text-muted);
+}
+
+.bounty-card__progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bounty-card__progress-fill {
+  height: 100%;
+  background: var(--accent-secondary);
+  transition: width 0.3s ease;
+}
+
+.bounty-card.completed .bounty-card__progress-fill {
+  background: #10b981;
+}
+
+
 
 
 

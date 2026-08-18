@@ -13,12 +13,20 @@ const CHARM_GLB_MAP = Object.freeze({
     '4134': '/3d/runtime/new3ds/charm_glitched_ram.glb',
     '4135': '/3d/runtime/new3ds/charm_geodetic_compass.glb',
     '4136': '/3d/runtime/new3ds/charm_mini_drone_bobble.glb',
+    // 4137/4138: Hyper3D Rodin AI-generated via Blender MCP (docs/season-zero-protocol/08 §5
+    // item 1) — same generation pipeline as the rest of this map, textured, matching quality.
+    '4137': '/3d/runtime/new3ds/charm_amber_bio_flask.glb',
+    '4138': '/3d/runtime/new3ds/charm_dark_matter.glb',
     '4139': '/3d/runtime/new3ds/charm_golden_sub_bunker_key.glb'
 });
 
 const MOD_GLB_MAP = Object.freeze({
     '4140': '/3d/runtime/new3ds/mod_cryo_capacitor.glb',
     '4141': '/3d/runtime/new3ds/mod_magnetic_scavenger.glb',
+    // 4142/4143/4144 — same Hyper3D Rodin generation as 4137/4138 above.
+    '4142': '/3d/runtime/new3ds/mod_bio_hazard_filter.glb',
+    '4143': '/3d/runtime/new3ds/mod_kinetic_impact.glb',
+    '4144': '/3d/runtime/new3ds/mod_thermal_heat_exchanger.glb',
     '4147': '/3d/runtime/new3ds/mod_zero_point_flux.glb'
 });
 
